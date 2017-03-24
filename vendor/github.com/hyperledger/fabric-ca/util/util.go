@@ -33,8 +33,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
+
+	"golang.org/x/crypto/ocsp"
 
 	"github.com/cloudflare/cfssl/log"
 	"github.com/hyperledger/fabric/bccsp"
@@ -54,6 +59,26 @@ const (
 	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
+
+// RevocationReasonCodes is a map between string reason codes to integers as defined in RFC 5280
+var RevocationReasonCodes = map[string]int{
+	"unspecified":          ocsp.Unspecified,
+	"keycompromise":        ocsp.KeyCompromise,
+	"cacompromise":         ocsp.CACompromise,
+	"affiliationchanged":   ocsp.AffiliationChanged,
+	"superseded":           ocsp.Superseded,
+	"cessationofoperation": ocsp.CessationOfOperation,
+	"certificatehold":      ocsp.CertificateHold,
+	"removefromcrl":        ocsp.RemoveFromCRL,
+	"privilegewithdrawn":   ocsp.PrivilegeWithdrawn,
+	"aacompromise":         ocsp.AACompromise,
+}
+
+// SecretTag to tag a field as secret as in password, token
+const SecretTag = "secret"
+
+// PassExpr is the regular expression to check if a tag has 'password'
+var PassExpr = regexp.MustCompile(`[,]?password[,]?`)
 
 //ECDSASignature forms the structure for R and S value for ECDSA
 type ECDSASignature struct {
@@ -416,16 +441,17 @@ func GetDefaultConfigFile(cmdName string) string {
 
 	var fname = fmt.Sprintf("%s-config.yaml", cmdName)
 	// First check home env variables
-	home := "."
-	envs := []string{"FABRIC_CA_CLIENT_HOME", "FABRIC_CA_HOME", "CA_CFG_PATH", "HOME"}
+	var home string
+	envs := []string{"FABRIC_CA_CLIENT_HOME", "FABRIC_CA_HOME", "CA_CFG_PATH"}
 	for _, env := range envs {
 		envVal := os.Getenv(env)
 		if envVal != "" {
 			home = envVal
-			break
+			return path.Join(home, fname)
 		}
 	}
-	return path.Join(home, ".fabric-ca-client", fname)
+
+	return path.Join(os.Getenv("HOME"), ".fabric-ca-client", fname)
 }
 
 // GetX509CertificateFromPEM converts a PEM buffer to an X509 Certificate
@@ -527,4 +553,40 @@ func GetKeyFromBytes(csp bccsp.BCCSP, key []byte) (bccsp.Key, error) {
 	}
 
 	return csp.KeyImport(pkb, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: true})
+}
+
+// GetSerialAsHex returns the serial number from certificate as hex format
+func GetSerialAsHex(serial *big.Int) string {
+	hex := fmt.Sprintf("%x", serial)
+
+	if utf8.RuneCountInString(hex) < 80 {
+		hex = fmt.Sprintf("0%s", hex)
+	}
+
+	return hex
+}
+
+// StructToString converts a struct to a string. If a field
+// has a 'secret' tag, it is masked in the returned string
+func StructToString(si interface{}) string {
+	rval := reflect.ValueOf(si).Elem()
+	tipe := rval.Type()
+	var buffer bytes.Buffer
+	buffer.WriteString("{ ")
+	for i := 0; i < rval.NumField(); i++ {
+		tf := tipe.Field(i)
+		if !rval.FieldByName(tf.Name).CanSet() {
+			continue // skip unexported fields
+		}
+		var fStr string
+		tagv := tf.Tag.Get(SecretTag)
+		if PassExpr.MatchString(tagv) {
+			fStr = fmt.Sprintf("%s:**** ", tf.Name)
+		} else {
+			fStr = fmt.Sprintf("%s:%v ", tf.Name, rval.Field(i).Interface())
+		}
+		buffer.WriteString(fStr)
+	}
+	buffer.WriteString(" }")
+	return buffer.String()
 }

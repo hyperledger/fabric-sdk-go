@@ -27,11 +27,11 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/config"
-	fabric_ca_client "github.com/hyperledger/fabric-sdk-go/fabric-ca-client"
+	fabricCAClient "github.com/hyperledger/fabric-sdk-go/fabric-ca-client"
 	"github.com/hyperledger/fabric-sdk-go/fabric-client/events"
 	"github.com/hyperledger/fabric/bccsp"
 
-	fabric_client "github.com/hyperledger/fabric-sdk-go/fabric-client"
+	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
 	kvs "github.com/hyperledger/fabric-sdk-go/fabric-client/keyvaluestore"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -41,7 +41,7 @@ import (
 // it performs setup activities like user enrollment, chain creation,
 // crypto suite selection, and event hub initialization
 type BaseTestSetup interface {
-	GetChains(t *testing.T) (*fabric_client.Chain, *fabric_client.Chain)
+	GetChains(t *testing.T) (*fabricClient.Chain, *fabricClient.Chain)
 	GetEventHub(t *testing.T, interestedEvents []*pb.Interest) *events.EventHub
 }
 
@@ -50,8 +50,8 @@ type BaseSetupImpl struct {
 }
 
 // GetChains initializes and returns a query chain and invoke chain
-func (setup *BaseSetupImpl) GetChains(t *testing.T) (fabric_client.Chain, fabric_client.Chain) {
-	client := fabric_client.NewClient()
+func (setup *BaseSetupImpl) GetChains(t *testing.T) (fabricClient.Chain, fabricClient.Chain, fabricClient.Chain) {
+	client := fabricClient.NewClient()
 
 	err := bccspFactory.InitFactories(&bccspFactory.FactoryOpts{
 		ProviderName: "SW",
@@ -75,21 +75,21 @@ func (setup *BaseSetupImpl) GetChains(t *testing.T) (fabric_client.Chain, fabric
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
 	client.SetStateStore(stateStore)
-	user, err := client.GetUserContext("testUser")
+	user, err := client.GetUserContext("admin")
 	if err != nil {
 		t.Fatalf("client.GetUserContext return error: %v", err)
 	}
 	if user == nil {
-		fabricCAClient, err1 := fabric_ca_client.NewFabricCAClient()
+		fabricCAClient, err1 := fabricCAClient.NewFabricCAClient()
 		if err1 != nil {
 			t.Fatalf("NewFabricCAClient return error: %v", err)
 		}
-		key, cert, err1 := fabricCAClient.Enroll("testUser", "user1")
+		key, cert, err1 := fabricCAClient.Enroll("admin", "adminpw")
 		keyPem, _ := pem.Decode(key)
 		if err1 != nil {
 			t.Fatalf("Enroll return error: %v", err1)
 		}
-		user := fabric_client.NewUser("testUser")
+		user := fabricClient.NewUser("admin")
 		k, err1 := client.GetCryptoSuite().KeyImport(keyPem.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: false})
 		if err1 != nil {
 			t.Fatalf("KeyImport return error: %v", err)
@@ -107,25 +107,47 @@ func (setup *BaseSetupImpl) GetChains(t *testing.T) (fabric_client.Chain, fabric
 		t.Fatalf("NewChain return error: %v", err)
 	}
 
-	for _, p := range config.GetPeersConfig() {
-		endorser := fabric_client.CreateNewPeer(fmt.Sprintf("%s:%s", p.Host, p.Port))
-		querychain.AddPeer(endorser)
-		break
-	}
-
 	invokechain, err := client.NewChain("invokechain")
 	if err != nil {
 		t.Fatalf("NewChain return error: %v", err)
 	}
-	orderer := fabric_client.CreateNewOrderer(fmt.Sprintf("%s:%s", config.GetOrdererHost(), config.GetOrdererPort()))
+	orderer, err := fabricClient.CreateNewOrderer(fmt.Sprintf("%s:%s", config.GetOrdererHost(), config.GetOrdererPort()),
+		config.GetOrdererTLSCertificate(), config.GetOrdererTLSServerHostOverride())
+	if err != nil {
+		t.Fatalf("CreateNewOrderer return error: %v", err)
+	}
 	invokechain.AddOrderer(orderer)
 
 	for _, p := range config.GetPeersConfig() {
-		endorser := fabric_client.CreateNewPeer(fmt.Sprintf("%s:%s", p.Host, p.Port))
+		endorser, err := fabricClient.CreateNewPeer(fmt.Sprintf("%s:%s", p.Host, p.Port), p.TLSCertificate, p.TLSServerHostOverride)
+		if err != nil {
+			t.Fatalf("CreateNewPeer return error: %v", err)
+		}
+		querychain.AddPeer(endorser)
 		invokechain.AddPeer(endorser)
+		break
 	}
 
-	return querychain, invokechain
+	deploychain, err := client.NewChain("deploychain")
+	if err != nil {
+		t.Fatalf("NewChain return error: %v", err)
+	}
+	orderer, err = fabricClient.CreateNewOrderer(fmt.Sprintf("%s:%s", config.GetOrdererHost(), config.GetOrdererPort()),
+		config.GetOrdererTLSCertificate(), config.GetOrdererTLSServerHostOverride())
+	if err != nil {
+		t.Fatalf("CreateNewOrderer return error: %v", err)
+	}
+	deploychain.AddOrderer(orderer)
+
+	for _, p := range config.GetPeersConfig() {
+		endorser, err := fabricClient.CreateNewPeer(fmt.Sprintf("%s:%s", p.Host, p.Port), p.TLSCertificate, p.TLSServerHostOverride)
+		if err != nil {
+			t.Fatalf("CreateNewPeer return error: %v", err)
+		}
+		deploychain.AddPeer(endorser)
+	}
+
+	return querychain, invokechain, deploychain
 
 }
 
@@ -136,7 +158,7 @@ func (setup *BaseSetupImpl) GetEventHub(t *testing.T,
 	foundEventHub := false
 	for _, p := range config.GetPeersConfig() {
 		if p.EventHost != "" && p.EventPort != "" {
-			eventHub.SetPeerAddr(fmt.Sprintf("%s:%s", p.EventHost, p.EventPort))
+			eventHub.SetPeerAddr(fmt.Sprintf("%s:%s", p.EventHost, p.EventPort), p.TLSCertificate, p.TLSServerHostOverride)
 			foundEventHub = true
 			break
 		}
@@ -150,7 +172,6 @@ func (setup *BaseSetupImpl) GetEventHub(t *testing.T,
 	/*if interestedEvents != nil {
 		eventHub.SetInterestedEvents(interestedEvents)
 	}*/
-
 	if err := eventHub.Connect(); err != nil {
 		t.Fatalf("Failed eventHub.Connect() [%s]", err)
 	}

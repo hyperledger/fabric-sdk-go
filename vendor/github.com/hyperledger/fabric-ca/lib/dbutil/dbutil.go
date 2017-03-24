@@ -78,7 +78,7 @@ func createSQLiteDBTables(datasource string) error {
 	}
 	log.Debug("Created users table")
 
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS affiliations (name VARCHAR(64), parent_id VARCHAR(64), prekey VARCHAR(64))"); err != nil {
+	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS affiliations (name VARCHAR(64), prekey VARCHAR(64))"); err != nil {
 		return err
 	}
 	log.Debug("Created affiliation table")
@@ -99,9 +99,13 @@ func NewUserRegistryPostgres(datasource string, clientTLSConfig *tls.ClientTLSCo
 	dbName := getDBName(datasource)
 	log.Debug("Database Name: ", dbName)
 
+	if strings.Contains(dbName, "-") || strings.HasSuffix(dbName, ".db") {
+		return nil, false, fmt.Errorf("Database name %s cannot contain any '-' or end with '.db'", dbName)
+	}
+
 	connStr := getConnStr(datasource)
 
-	if clientTLSConfig != nil {
+	if clientTLSConfig.Enabled {
 		if len(clientTLSConfig.CertFilesList) > 0 {
 			root := clientTLSConfig.CertFilesList[0]
 			connStr = fmt.Sprintf("%s sslrootcert=%s", connStr, root)
@@ -172,7 +176,7 @@ func createPostgresDBTables(datasource string, dbName string, db *sqlx.DB) error
 		log.Errorf("Error creating users table [error: %s] ", err)
 		return err
 	}
-	if _, err := database.Exec("CREATE TABLE affiliations (name VARCHAR(64), parent_id VARCHAR(64), prekey VARCHAR(64))"); err != nil {
+	if _, err := database.Exec("CREATE TABLE affiliations (name VARCHAR(64), prekey VARCHAR(64))"); err != nil {
 		log.Errorf("Error creating affiliations table [error: %s] ", err)
 		return err
 	}
@@ -194,7 +198,7 @@ func NewUserRegistryMySQL(datasource string, clientTLSConfig *tls.ClientTLSConfi
 	re := regexp.MustCompile(`\/([a-zA-z]+)`)
 	connStr := re.ReplaceAllString(datasource, "/")
 
-	if clientTLSConfig != nil {
+	if clientTLSConfig.Enabled {
 		tlsConfig, err := tls.GetClientTLSConfig(clientTLSConfig)
 		if err != nil {
 			log.Errorf("Failed to create TLS configuration [error: %s]", err)
@@ -258,11 +262,11 @@ func createMySQLTables(datasource string, dbName string, db *sqlx.DB) error {
 		log.Errorf("Error creating users table [error: %s] ", err)
 		return err
 	}
-	if _, err := database.Exec("CREATE TABLE affiliations (name VARCHAR(64), parent_id VARCHAR(64), prekey VARCHAR(64))"); err != nil {
+	if _, err := database.Exec("CREATE TABLE affiliations (name VARCHAR(64), prekey VARCHAR(64))"); err != nil {
 		log.Errorf("Error creating affiliations table [error: %s] ", err)
 		return err
 	}
-	if _, err := database.Exec("CREATE TABLE certificates (id VARCHAR(64), serial_number varbinary(20) NOT NULL, authority_key_identifier varbinary(128) NOT NULL, ca_label varbinary(128), status varbinary(128) NOT NULL, reason int, expiry timestamp DEFAULT '1970-01-01 00:00:01', revoked_at timestamp DEFAULT '1970-01-01 00:00:01', pem varbinary(4096) NOT NULL, PRIMARY KEY(serial_number, authority_key_identifier))"); err != nil {
+	if _, err := database.Exec("CREATE TABLE certificates (id VARCHAR(64), serial_number varbinary(128) NOT NULL, authority_key_identifier varbinary(128) NOT NULL, ca_label varbinary(128), status varbinary(128) NOT NULL, reason int, expiry timestamp DEFAULT '1970-01-01 00:00:01', revoked_at timestamp DEFAULT '1970-01-01 00:00:01', pem varbinary(4096) NOT NULL, PRIMARY KEY(serial_number, authority_key_identifier))"); err != nil {
 		log.Errorf("Error creating certificates table [error: %s] ", err)
 		return err
 	}

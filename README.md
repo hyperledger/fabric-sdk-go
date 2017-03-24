@@ -10,15 +10,15 @@ This SDK is targeted both towards the external access to a Hyperledger Fabric bl
 
 This project must be cloned into `$GOPATH/src/github.com/hyperledger`. Package names have been chosen to match the Hyperledger project.
 
-Execute `go test` from the project root to build the library and run the basic headless tests.
+Execute `go test` from the fabric-client and fabric-ca-client to build the library and run the basic headless tests.
 
-Execute `go test` in the `integration_test` to run end-to-end tests. This requires you to have:
+Execute `go test` in the `test/integration` to run end-to-end tests. This requires you to have:
 - A working fabric and fabric-ca set up. Refer to the Hyperledger Fabric [documentation](https://github.com/hyperledger/fabric) on how to do this.
 - Customized settings in the `integration_test/test_resources/config/config_test.yaml` in case your Hyperledger Fabric network is not running on `localhost` or is using different ports.
 
 ## Work in Progress
 
 This client was last tested and found to be compatible with the following Hyperledger Fabric commit levels:
-- fabric: `22d98b9e5ea36a6b209b3ea67def50a678718679`
-- fabric-ca: `f18b6b769b80c889cb6b82ce34d755d9303ec881`
+- fabric: v1.0.0-alpha 
+- fabric-ca: `4651512e4e85728e6ecaf21b8cba52f51ed16633`
 

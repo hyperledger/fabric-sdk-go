@@ -20,7 +20,6 @@ limitations under the License.
 package fabricca
 
 import (
-	"encoding/base64"
 	"fmt"
 	"os"
 
@@ -120,11 +119,11 @@ func (fabricCAServices *services) Enroll(enrollmentID string, enrollmentSecret s
 		Name:   enrollmentID,
 		Secret: enrollmentSecret,
 	}
-	id, err := fabricCAServices.fabricCAClient.Enroll(req)
+	enrollmentResponse, err := fabricCAServices.fabricCAClient.Enroll(req)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Enroll failed: %s", err)
 	}
-	return id.GetECert().Key(), id.GetECert().Cert(), nil
+	return enrollmentResponse.Identity.GetECert().Key(), enrollmentResponse.Identity.GetECert().Cert(), nil
 }
 
 // Register a User with the Fabric CA
@@ -160,13 +159,8 @@ func (fabricCAServices *services) Register(registrar fabricclient.User,
 	if err != nil {
 		return "", fmt.Errorf("Error Registering User: %s", err.Error())
 	}
-	// Decode enrolment secret
-	secret, err := base64.StdEncoding.DecodeString(response.Secret)
-	if err != nil {
-		return "", fmt.Errorf("Error decoding enrolment secret: %s", err.Error())
-	}
 
-	return string(secret), nil
+	return response.Secret, nil
 }
 
 // Revoke a User with the Fabric CA

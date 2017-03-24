@@ -76,16 +76,20 @@ type peer struct {
  *
  * @param {string} url The URL with format of "host:port".
  */
-func CreateNewPeer(url string) Peer {
+func CreateNewPeer(url string, certificate string, serverHostOverride string) (Peer, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(time.Second*3))
 	if config.IsTLSEnabled() {
-		creds := credentials.NewClientTLSFromCert(config.GetTLSCACertPool(), config.GetTLSServerHostOverride())
+		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
+		if err != nil {
+			return nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}
-	return &peer{url: url, grpcDialOption: opts, name: "", roles: nil}
+	return &peer{url: url, grpcDialOption: opts, name: "", roles: nil}, nil
 }
 
 // ConnectEventSource ...
@@ -233,5 +237,6 @@ func (p *peer) SendProposal(proposal *TransactionProposal) (*TransactionProposal
 		proposal:         proposal,
 		proposalResponse: proposalResponse,
 		Endorser:         p.url,
+		Status:           proposalResponse.GetResponse().Status,
 	}, nil
 }

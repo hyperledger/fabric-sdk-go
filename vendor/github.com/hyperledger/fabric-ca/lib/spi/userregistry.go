@@ -53,6 +53,6 @@ type UserRegistry interface {
 	UpdateUser(user UserInfo) error
 	DeleteUser(id string) error
 	GetAffiliation(name string) (Affiliation, error)
-	InsertAffiliation(name string, parentID string) error
+	InsertAffiliation(name string, prekey string) error
 	DeleteAffiliation(name string) error
 }

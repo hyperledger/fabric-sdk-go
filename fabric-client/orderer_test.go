@@ -36,7 +36,7 @@ func TestOrdererViaChain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	orderer := CreateNewOrderer("localhost:7050")
+	orderer, err := CreateNewOrderer("localhost:7050", "", "")
 	chain.AddOrderer(orderer)
 
 	orderers := chain.GetOrderers()
@@ -44,7 +44,10 @@ func TestOrdererViaChain(t *testing.T) {
 		t.Fatalf("Failed to retieve the new orderer URL from the chain")
 	}
 	chain.RemoveOrderer(orderer)
-	orderer2 := CreateNewOrderer("localhost:7054")
+	orderer2, err := CreateNewOrderer("localhost:7054", "", "")
+	if err != nil {
+		t.Fatalf("Failed to CreateNewOrderer error(%v)", err)
+	}
 	chain.AddOrderer(orderer2)
 	orderers = chain.GetOrderers()
 
@@ -90,7 +93,10 @@ func TestOrdererViaChainNilData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	orderer := CreateNewOrderer("localhost:7050")
+	orderer, err := CreateNewOrderer("localhost:7050", "", "")
+	if err != nil {
+		t.Fatalf("Failed to CreateNewOrderer error(%v)", err)
+	}
 	chain.AddOrderer(orderer)
 	_, err = chain.SendTransaction(nil)
 	if err == nil {

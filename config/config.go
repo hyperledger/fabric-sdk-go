@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"strconv"
 
 	"github.com/op/go-logging"
@@ -34,10 +35,12 @@ import (
 
 // PeerConfig ...
 type PeerConfig struct {
-	Host      string
-	Port      string
-	EventHost string
-	EventPort string
+	Host                  string
+	Port                  string
+	EventHost             string
+	EventPort             string
+	TLSCertificate        string
+	TLSServerHostOverride string
 }
 
 type fabricCAConfig struct {
@@ -106,20 +109,29 @@ func GetPeersConfig() []PeerConfig {
 		var port int
 		var eventHost string
 		var eventPort int
-
+		var tlsCertificate string
+		var tlsServerHostOverride string
 		if ok {
 			host, _ = mm["host"].(string)
 			port, _ = mm["port"].(int)
 			eventHost, _ = mm["event_host"].(string)
 			eventPort, _ = mm["event_port"].(int)
+			tlsCertificate, _ = mm["tls"].(map[string]interface{})["certificate"].(string)
+			tlsServerHostOverride, _ = mm["tls"].(map[string]interface{})["serverhostoverride"].(string)
+
 		} else {
 			mm1 := value.(map[interface{}]interface{})
 			host, _ = mm1["host"].(string)
 			port, _ = mm1["port"].(int)
 			eventHost, _ = mm1["event_host"].(string)
 			eventPort, _ = mm1["event_port"].(int)
+			tlsCertificate, _ = mm1["tls"].(map[string]interface{})["certificate"].(string)
+			tlsServerHostOverride, _ = mm1["tls"].(map[string]interface{})["serverhostoverride"].(string)
+
 		}
-		p := PeerConfig{Host: host, Port: strconv.Itoa(port), EventHost: eventHost, EventPort: strconv.Itoa(eventPort)}
+
+		p := PeerConfig{Host: host, Port: strconv.Itoa(port), EventHost: eventHost, EventPort: strconv.Itoa(eventPort),
+			TLSCertificate: tlsCertificate, TLSServerHostOverride: tlsServerHostOverride}
 		if p.Host == "" {
 			panic(fmt.Sprintf("host key not exist or empty for %s", key))
 		}
@@ -132,6 +144,11 @@ func GetPeersConfig() []PeerConfig {
 		if p.EventPort == "" {
 			panic(fmt.Sprintf("event_port not exist or empty for %s", key))
 		}
+		if IsTLSEnabled() && p.TLSCertificate == "" {
+			panic(fmt.Sprintf("tls.certificate not exist or empty for %s", key))
+		}
+
+		p.TLSCertificate = path.Join(os.Getenv("GOPATH"), p.TLSCertificate)
 		peersConfig = append(peersConfig, p)
 	}
 	return peersConfig
@@ -144,21 +161,18 @@ func IsTLSEnabled() bool {
 }
 
 // GetTLSCACertPool ...
-func GetTLSCACertPool() *x509.CertPool {
+func GetTLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
-	if myViper.GetString("client.tls.certificate") != "" {
-		rawData, err := ioutil.ReadFile(myViper.GetString("tls.certificate"))
+	if tlsCertificate != "" {
+		rawData, err := ioutil.ReadFile(tlsCertificate)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
+
 		certPool.AddCert(loadCAKey(rawData))
 	}
-	return certPool
-}
 
-// GetTLSServerHostOverride ...
-func GetTLSServerHostOverride() string {
-	return myViper.GetString("client.tls.serverhostoverride")
+	return certPool, nil
 }
 
 // IsSecurityEnabled ...
@@ -185,6 +199,21 @@ func GetSecurityLevel() int {
 // GetOrdererHost ...
 func GetOrdererHost() string {
 	return myViper.GetString("client.orderer.host")
+}
+
+// GetOrdererPort ...
+func GetOrdererPort() string {
+	return strconv.Itoa(myViper.GetInt("client.orderer.port"))
+}
+
+// GetOrdererTLSServerHostOverride ...
+func GetOrdererTLSServerHostOverride() string {
+	return myViper.GetString("client.orderer.tls.serverhostoverride")
+}
+
+// GetOrdererTLSCertificate ...
+func GetOrdererTLSCertificate() string {
+	return path.Join(os.Getenv("GOPATH"), myViper.GetString("client.orderer.tls.certificate"))
 }
 
 // GetFabricCAID ...
@@ -214,11 +243,6 @@ func GetFabricCAClientPath() (string, error) {
 // GetKeyStorePath ...
 func GetKeyStorePath() string {
 	return myViper.GetString("client.keystore.path")
-}
-
-// GetOrdererPort ...
-func GetOrdererPort() string {
-	return strconv.Itoa(myViper.GetInt("client.orderer.port"))
 }
 
 // loadCAKey

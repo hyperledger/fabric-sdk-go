@@ -32,8 +32,8 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/config"
 )
 
-var chainCodeId = ""
-var chainId = "testchainid"
+var chainCodeID = ""
+var chainID = "mychannel"
 var chainCodePath = "github.com/example_cc"
 var chainCodeVersion = "v0"
 
@@ -42,29 +42,29 @@ func TestChainCodeInvoke(t *testing.T) {
 	testSetup := BaseSetupImpl{}
 
 	eventHub := testSetup.GetEventHub(t, nil)
-	querychain, invokechain := testSetup.GetChains(t)
+	queryChain, invokeChain, deployChain := testSetup.GetChains(t)
 	testSetup.SetupChaincodeDeploy()
-	err := installCC(invokechain)
+	err := installCC(deployChain)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
-	err = instantiateCC(invokechain, eventHub)
+	err = instantiateCC(deployChain, eventHub)
 	if err != nil {
-		t.Fatalf("installCC return error: %v", err)
+		t.Fatalf("instantiateCC return error: %v", err)
 	}
 	// Get Query value before invoke
-	value, err := getQueryValue(t, querychain)
+	value, err := getQueryValue(t, queryChain)
 	if err != nil {
 		t.Fatalf("getQueryValue return error: %v", err)
 	}
 	fmt.Printf("*** QueryValue before invoke %s\n", value)
 
-	err = invoke(t, invokechain, eventHub)
+	err = invoke(t, invokeChain, eventHub)
 	if err != nil {
 		t.Fatalf("invoke return error: %v", err)
 	}
 
-	valueAfterInvoke, err := getQueryValue(t, querychain)
+	valueAfterInvoke, err := getQueryValue(t, queryChain)
 	if err != nil {
 		t.Errorf("getQueryValue return error: %v", err)
 		return
@@ -88,7 +88,7 @@ func getQueryValue(t *testing.T, chain fabric_client.Chain) (string, error) {
 	args = append(args, "query")
 	args = append(args, "b")
 
-	signedProposal, err := chain.CreateTransactionProposal(chainCodeId, chainId, args, true, nil)
+	signedProposal, err := chain.CreateTransactionProposal(chainCodeID, chainID, args, true, nil)
 	if err != nil {
 		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
 	}
@@ -115,7 +115,7 @@ func invoke(t *testing.T, chain fabric_client.Chain, eventHub events.EventHub) e
 	args = append(args, "b")
 	args = append(args, "1")
 
-	signedProposal, err := chain.CreateTransactionProposal(chainCodeId, chainId, args, true, nil)
+	signedProposal, err := chain.CreateTransactionProposal(chainCodeID, chainID, args, true, nil)
 	if err != nil {
 		return fmt.Errorf("SendTransactionProposal return error: %v", err)
 	}
@@ -128,7 +128,7 @@ func invoke(t *testing.T, chain fabric_client.Chain, eventHub events.EventHub) e
 		if v.Err != nil {
 			return fmt.Errorf("invoke Endorser %s return error: %v", v.Endorser, v.Err)
 		}
-		fmt.Printf("invoke Endorser '%s' return ProposalResponse:%v\n", v.Endorser, v.GetResponsePayload())
+		fmt.Printf("invoke Endorser '%s' return ProposalResponse status:%v\n", v.Endorser, v.Status)
 	}
 
 	tx, err := chain.CreateTransaction(transactionProposalResponse)
@@ -147,15 +147,22 @@ func invoke(t *testing.T, chain fabric_client.Chain, eventHub events.EventHub) e
 		}
 	}
 	done := make(chan bool)
+	fail := make(chan error)
 	eventHub.RegisterTxEvent(signedProposal.TransactionID, func(txId string, err error) {
-		fmt.Printf("receive success event for txid(%s)\n", txId)
-		done <- true
+		if err != nil {
+			fail <- err
+		} else {
+			fmt.Printf("invoke receive success event for txid(%s)\n", txId)
+			done <- true
+		}
 	})
 
 	select {
 	case <-done:
-	case <-time.After(time.Second * 20):
-		return fmt.Errorf("Didn't receive block event for txid(%s)\n", signedProposal.TransactionID)
+	case <-fail:
+		return fmt.Errorf("invoke Error received from eventhub for txid(%s) error(%v)", signedProposal.TransactionID, fail)
+	case <-time.After(time.Second * 30):
+		return fmt.Errorf("invoke Didn't receive block event for txid(%s)", signedProposal.TransactionID)
 	}
 	return nil
 
@@ -163,7 +170,7 @@ func invoke(t *testing.T, chain fabric_client.Chain, eventHub events.EventHub) e
 
 func installCC(chain fabric_client.Chain) error {
 
-	transactionProposalResponse, _, err := chain.SendInstallProposal(chainCodeId, chainCodePath, chainCodeVersion, nil)
+	transactionProposalResponse, _, err := chain.SendInstallProposal(chainCodeID, chainCodePath, chainCodeVersion, nil)
 	if err != nil {
 		return fmt.Errorf("SendInstallProposal return error: %v", err)
 	}
@@ -172,7 +179,7 @@ func installCC(chain fabric_client.Chain) error {
 		if v.Err != nil {
 			return fmt.Errorf("SendInstallProposal Endorser %s return error: %v", v.Endorser, v.Err)
 		}
-		fmt.Printf("SendInstallProposal Endorser '%s' return ProposalResponse:%v\n", v.Endorser, v.GetResponsePayload())
+		fmt.Printf("SendInstallProposal Endorser '%s' return ProposalResponse status:%v\n", v.Endorser, v.Status)
 	}
 
 	return nil
@@ -188,7 +195,7 @@ func instantiateCC(chain fabric_client.Chain, eventHub events.EventHub) error {
 	args = append(args, "b")
 	args = append(args, "200")
 
-	transactionProposalResponse, txID, err := chain.SendInstantiateProposal(chainCodeId, chainId, args, chainCodePath, chainCodeVersion)
+	transactionProposalResponse, txID, err := chain.SendInstantiateProposal(chainCodeID, chainID, args, chainCodePath, chainCodeVersion)
 	if err != nil {
 		return fmt.Errorf("SendInstantiateProposal return error: %v", err)
 	}
@@ -197,7 +204,7 @@ func instantiateCC(chain fabric_client.Chain, eventHub events.EventHub) error {
 		if v.Err != nil {
 			return fmt.Errorf("SendInstantiateProposal Endorser %s return error: %v", v.Endorser, v.Err)
 		}
-		fmt.Printf("SendInstantiateProposal Endorser '%s' return ProposalResponse:%v\n", v.Endorser, v.GetResponsePayload())
+		fmt.Printf("SendInstantiateProposal Endorser '%s' return ProposalResponse status:%v\n", v.Endorser, v.Status)
 	}
 
 	tx, err := chain.CreateTransaction(transactionProposalResponse)
@@ -216,15 +223,24 @@ func instantiateCC(chain fabric_client.Chain, eventHub events.EventHub) error {
 		}
 	}
 	done := make(chan bool)
+	fail := make(chan error)
+
 	eventHub.RegisterTxEvent(txID, func(txId string, err error) {
-		fmt.Printf("receive success event for txid(%s)\n", txId)
-		done <- true
+		if err != nil {
+			fail <- err
+		} else {
+			fmt.Printf("instantiateCC receive success event for txid(%s)\n", txId)
+			done <- true
+		}
+
 	})
 
 	select {
 	case <-done:
-	case <-time.After(time.Second * 20):
-		return fmt.Errorf("Didn't receive block event for txid(%s)\n", txID)
+	case <-fail:
+		return fmt.Errorf("instantiateCC Error received from eventhub for txid(%s) error(%v)", txID, fail)
+	case <-time.After(time.Second * 30):
+		return fmt.Errorf("instantiateCC Didn't receive block event for txid(%s)", txID)
 	}
 	return nil
 
@@ -248,5 +264,5 @@ func randomString(strlen int) string {
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
-	chainCodeId = randomString(10)
+	chainCodeID = randomString(10)
 }

@@ -22,34 +22,8 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	"github.com/cloudflare/cfssl/log"
+	"github.com/hyperledger/fabric-ca/util"
 )
-
-// userHasAttribute returns nil if the user has the attribute, or an
-// appropriate error if the user does not have this attribute.
-func userHasAttribute(username, attrname string) error {
-	val, err := getUserAttrValue(username, attrname)
-	if err != nil {
-		return err
-	}
-	if val == "" {
-		return fmt.Errorf("user '%s' does not have attribute '%s'", username, attrname)
-	}
-	return nil
-}
-
-// getUserAttrValue returns a user's value for an attribute
-func getUserAttrValue(username, attrname string) (string, error) {
-	log.Debugf("getUserAttrValue user=%s, attr=%s", username, attrname)
-	user, err := UserRegistry.GetUser(username, []string{attrname})
-	if err != nil {
-		return "", err
-	}
-	attrval := user.GetAttribute(attrname)
-	log.Debugf("getUserAttrValue user=%s, name=%s, value=%s", username, attrname, attrval)
-	return attrval, nil
-
-}
 
 // GetCertID returns both the serial number and AKI (Authority Key ID) for the certificate
 func GetCertID(bytes []byte) (string, string, error) {
@@ -57,7 +31,7 @@ func GetCertID(bytes []byte) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	serial := cert.SerialNumber.String()
+	serial := util.GetSerialAsHex(cert.SerialNumber)
 	aki := hex.EncodeToString(cert.AuthorityKeyId)
 	return serial, aki, nil
 }

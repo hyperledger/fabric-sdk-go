@@ -49,7 +49,7 @@ type RegistrationRequest struct {
 // RegistrationResponse is a registration response
 type RegistrationResponse struct {
 	// The secret returned from a successful registration response
-	Secret string `json:"credential,omitempty"`
+	Secret string `json:"secret"`
 }
 
 // EnrollmentRequest is a request to enroll an identity

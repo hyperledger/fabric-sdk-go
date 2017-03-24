@@ -33,33 +33,36 @@ import (
 
 // Handler for tcert requests
 type tcertHandler struct {
+	server  *Server
 	mgr     *tcert.Mgr
 	keyTree *tcert.KeyTree
 }
 
-// NewTCertHandler is constructor for tcert handler
-func NewTCertHandler() (h http.Handler, err error) {
-	handler, err := initTCertHandler()
+// newTCertHandler is constructor for tcert handler
+func newTCertHandler(server *Server) (h http.Handler, err error) {
+	handler, err := initTCertHandler(server)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to initialize TCert handler: %s", err)
 	}
 	return handler, nil
 }
 
-func initTCertHandler() (h http.Handler, err error) {
+func initTCertHandler(server *Server) (h http.Handler, err error) {
 	log.Debug("Initializing TCert handler")
-	mgr, err := tcert.LoadMgr(CAKeyFile, CACertFile)
+	keyfile := server.Config.CA.Keyfile
+	certfile := server.Config.CA.Certfile
+	mgr, err := tcert.LoadMgr(keyfile, certfile)
 	if err != nil {
 		return nil, err
 	}
 	// FIXME: The root prekey must be stored persistently in DB and retrieved here if not found
-	rootKey, err := genRootKey(MyCSP)
+	rootKey, err := genRootKey(server.csp)
 	if err != nil {
 		return nil, err
 	}
-	keyTree := tcert.NewKeyTree(MyCSP, rootKey)
+	keyTree := tcert.NewKeyTree(server.csp, rootKey)
 	handler := &cfsslapi.HTTPHandler{
-		Handler: &tcertHandler{mgr: mgr, keyTree: keyTree},
+		Handler: &tcertHandler{server: server, mgr: mgr, keyTree: keyTree},
 		Methods: []string{"POST"},
 	}
 	return handler, nil
@@ -95,7 +98,7 @@ func (h *tcertHandler) handle(w http.ResponseWriter, r *http.Request) error {
 
 	// Get the user's attribute values and affiliation path
 	id := tcert.GetEnrollmentIDFromCert(cert)
-	attrs, affiliationPath, err := getUserInfo(id, req.AttrNames)
+	attrs, affiliationPath, err := h.getUserInfo(id, req.AttrNames)
 	if err != nil {
 		return err
 	}
@@ -131,22 +134,9 @@ func (h *tcertHandler) handle(w http.ResponseWriter, r *http.Request) error {
 
 }
 
-// Get the X509 certificate from the authorization header of the request
-func getCertFromAuthHdr(r *http.Request) (*x509.Certificate, error) {
-	authHdr := r.Header.Get("authorization")
-	if authHdr == "" {
-		return nil, errNoAuthHdr
-	}
-	cert, _, _, err := util.DecodeToken(authHdr)
-	if err != nil {
-		return nil, err
-	}
-	return cert, nil
-}
-
 // getUserinfo returns the users requested attribute values and user's affiliation path
-func getUserInfo(id string, attrNames []string) ([]tcert.Attribute, []string, error) {
-	user, err := UserRegistry.GetUser(id, attrNames)
+func (h *tcertHandler) getUserInfo(id string, attrNames []string) ([]tcert.Attribute, []string, error) {
+	user, err := h.server.registry.GetUser(id, attrNames)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -162,6 +152,19 @@ func getUserInfo(id string, attrNames []string) ([]tcert.Attribute, []string, er
 		}
 	}
 	return attrs, user.GetAffiliationPath(), nil
+}
+
+// Get the X509 certificate from the authorization header of the request
+func getCertFromAuthHdr(r *http.Request) (*x509.Certificate, error) {
+	authHdr := r.Header.Get("authorization")
+	if authHdr == "" {
+		return nil, errNoAuthHdr
+	}
+	cert, _, _, err := util.DecodeToken(authHdr)
+	if err != nil {
+		return nil, err
+	}
+	return cert, nil
 }
 
 // genRootKey generates a new root key

@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -47,18 +48,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"    // import to support SQLite3
 )
 
-// FIXME: These variables are temporary and will be removed once
-// the cobra/viper move is complete and we no longer support the fabric command.
-// The correct way is to pass the Server object (and thus ServerConfig)
-// to the endpoint handler constructors, thus using no global variables.
-var (
-	EnrollSigner     signer.Signer
-	UserRegistry     spi.UserRegistry
-	MaxEnrollments   int
-	MyCertDBAccessor *CertDBAccessor
-	CAKeyFile        string
-	CACertFile       string
-	MyCSP            bccsp.BCCSP
+const (
+	defaultDatabaseType = "sqlite3"
 )
 
 // Server is the fabric-ca server
@@ -99,9 +90,8 @@ func (s *Server) Init(renew bool) (err error) {
 	if err != nil {
 		return err
 	}
-
-	MyCSP = factory.GetDefault()
-
+	// Initialize the Crypto Service Provider
+	s.csp = factory.GetDefault()
 	// Initialize key materials
 	err = s.initKeyMaterial(renew)
 	if err != nil {
@@ -136,10 +126,6 @@ func (s *Server) Start() (err error) {
 		return err
 	}
 
-	// TEMP
-	CAKeyFile = s.Config.CA.Keyfile
-	CACertFile = s.Config.CA.Certfile
-
 	// Register http handlers
 	s.registerHandlers()
 
@@ -163,7 +149,7 @@ func (s *Server) Stop() error {
 
 // Initialize the fabric-ca server's key material
 func (s *Server) initKeyMaterial(renew bool) error {
-	log.Debugf("Init with home %s and config %+v", s.HomeDir, s.Config)
+	log.Debugf("Init with home %s and config %+v", s.HomeDir, *s.Config)
 
 	// Make the path names absolute in the config
 	s.makeFileNamesAbsolute()
@@ -225,17 +211,35 @@ func (s *Server) getCACertAndKey() (cert, key []byte, err error) {
 			clientCfg.Enrollment.CSR.CA = &cfcsr.CAConfig{PathLength: 0, PathLenZero: true}
 		}
 		log.Debugf("Intermediate enrollment request: %v", clientCfg.Enrollment)
-		var id *Identity
-		id, err = clientCfg.Enroll(s.ParentServerURL, s.HomeDir)
+		var resp *EnrollmentResponse
+		resp, err = clientCfg.Enroll(s.ParentServerURL, s.HomeDir)
 		if err != nil {
 			return nil, nil, err
 		}
-		ecert := id.GetECert()
+		ecert := resp.Identity.GetECert()
 		if ecert == nil {
 			return nil, nil, errors.New("No ECert from parent server")
 		}
 		cert = ecert.Cert()
 		key = ecert.Key()
+		// Store the chain file as the concatenation of the parent's chain plus the cert.
+		chainPath := s.Config.CA.Chainfile
+		if chainPath == "" {
+			chainPath, err = util.MakeFileAbs("ca-chain.pem", s.HomeDir)
+			if err != nil {
+				return nil, nil, fmt.Errorf("Failed to create intermediate chain file path: %s", err)
+			}
+		}
+		chain := s.concatChain(resp.ServerInfo.CAChain, cert)
+		err = os.MkdirAll(path.Dir(chainPath), 0755)
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to create intermediate chain file directory: %s", err)
+		}
+		err = util.WriteFile(chainPath, chain, 0644)
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to create intermediate chain file: %s", err)
+		}
+		log.Debugf("Stored intermediate certificate chain at %s", chainPath)
 	} else {
 		// This is a root CA, so call cfssl to get the key and cert.
 		csr := &s.Config.CSR
@@ -257,6 +261,33 @@ func (s *Server) getCACertAndKey() (cert, key []byte, err error) {
 	return cert, key, nil
 }
 
+// Return a chain which is the concatenation of chain and cert
+func (s *Server) concatChain(chain []byte, cert []byte) []byte {
+	result := make([]byte, len(chain)+len(cert))
+	copy(result[:len(chain)], chain)
+	copy(result[len(chain):], cert)
+	return result
+}
+
+// Get the CA chain
+func (s *Server) getCAChain() (chain []byte, err error) {
+	if s.Config == nil {
+		return nil, errors.New("The server has no configuration")
+	}
+	ca := &s.Config.CA
+	// If the chain file exists, we always return the chain from here
+	if util.FileExists(ca.Chainfile) {
+		return util.ReadFile(ca.Chainfile)
+	}
+	// Otherwise, if this is a root CA, we always return the contents of the CACertfile
+	if s.ParentServerURL == "" {
+		return util.ReadFile(ca.Certfile)
+	}
+	// If this is an intermediate CA but the ca.Chainfile doesn't exist,
+	// it is an error.  It should have been created during intermediate CA enrollment.
+	return nil, fmt.Errorf("Chain file does not exist at %s", ca.Chainfile)
+}
+
 // RegisterBootstrapUser registers the bootstrap user with appropriate privileges
 func (s *Server) RegisterBootstrapUser(user, pass, affiliation string) error {
 	// Initialize the config, setting defaults, etc
@@ -269,11 +300,13 @@ func (s *Server) RegisterBootstrapUser(user, pass, affiliation string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to register bootstrap user '%s': %s", user, err)
 	}
+
 	id := ServerConfigIdentity{
-		Name:        user,
-		Pass:        pass,
-		Type:        "user",
-		Affiliation: affiliation,
+		Name:           user,
+		Pass:           pass,
+		Type:           "user",
+		Affiliation:    affiliation,
+		MaxEnrollments: s.Config.Registry.MaxEnrollments,
 		Attrs: map[string]string{
 			"hf.Registrar.Roles":         "client,user,peer,validator,auditor",
 			"hf.Registrar.DelegateRoles": "client,user,validator,auditor",
@@ -283,7 +316,7 @@ func (s *Server) RegisterBootstrapUser(user, pass, affiliation string) error {
 	}
 	registry := &s.Config.Registry
 	registry.Identities = append(registry.Identities, id)
-	log.Debugf("Registered bootstrap identity: %+v", id)
+	log.Debugf("Registered bootstrap identity: %+v", &id)
 	return nil
 }
 
@@ -334,24 +367,27 @@ func (s *Server) initConfig() (err error) {
 func (s *Server) initDB() error {
 	db := &s.Config.DB
 
-	log.Debugf("Initializing '%s' data base at '%s'", db.Type, db.Datasource)
-
 	var err error
 	var exists bool
 
-	if db.Type == "" {
-		db.Type = "sqlite3"
-	}
-	if db.Datasource == "" {
-		var ds string
-		ds, err = util.MakeFileAbs("fabric-ca-server.db", s.HomeDir)
+	if db.Type == "" || db.Type == defaultDatabaseType {
+
+		db.Type = defaultDatabaseType
+
+		if db.Datasource == "" {
+			db.Datasource = "fabric-ca-server.db"
+		}
+
+		db.Datasource, err = util.MakeFileAbs(db.Datasource, s.HomeDir)
 		if err != nil {
 			return err
 		}
-		db.Datasource = ds
 	}
+
+	log.Debugf("Initializing '%s' data base at '%s'", db.Type, db.Datasource)
+
 	switch db.Type {
-	case "sqlite3":
+	case defaultDatabaseType:
 		s.db, exists, err = dbutil.NewUserRegistrySQLLite3(db.Datasource)
 		if err != nil {
 			return err
@@ -372,7 +408,6 @@ func (s *Server) initDB() error {
 
 	// Set the certificate DB accessor
 	s.certDBAccessor = NewCertDBAccessor(s.db)
-	MyCertDBAccessor = s.certDBAccessor
 
 	// Initialize the user registry.
 	// If LDAP is not configured, the fabric-ca server functions as a user
@@ -406,7 +441,6 @@ func (s *Server) initUserRegistry() error {
 	if ldapCfg.Enabled {
 		// Use LDAP for the user registry
 		s.registry, err = ldap.NewClient(ldapCfg)
-		UserRegistry = s.registry
 		log.Debugf("Initialized LDAP user registry; err=%s", err)
 		return err
 	}
@@ -415,7 +449,6 @@ func (s *Server) initUserRegistry() error {
 	dbAccessor := new(Accessor)
 	dbAccessor.SetDB(s.db)
 	s.registry = dbAccessor
-	UserRegistry = s.registry
 	log.Debug("Initialized DB user registry")
 	return nil
 }
@@ -454,7 +487,6 @@ func (s *Server) initEnrollmentSigner() (err error) {
 		ForceRemote: c.Remote != "",
 	}
 	s.enrollSigner, err = universal.NewSigner(root, policy)
-	EnrollSigner = s.enrollSigner
 	if err != nil {
 		return err
 	}
@@ -467,42 +499,36 @@ func (s *Server) initEnrollmentSigner() (err error) {
 // Register all endpoint handlers
 func (s *Server) registerHandlers() {
 	s.mux = http.NewServeMux()
-	s.registerHandlerLog("register", NewRegisterHandler)
-	s.registerHandlerLog("enroll", NewEnrollHandler)
-	s.registerHandlerLog("reenroll", NewReenrollHandler)
-	s.registerHandlerLog("revoke", NewRevokeHandler)
-	s.registerHandlerLog("tcert", NewTCertHandler)
+	s.registerHandler("info", newInfoHandler, noAuth)
+	s.registerHandler("register", newRegisterHandler, token)
+	s.registerHandler("enroll", newEnrollHandler, basic)
+	s.registerHandler("reenroll", newReenrollHandler, token)
+	s.registerHandler("revoke", newRevokeHandler, token)
+	s.registerHandler("tcert", newTCertHandler, token)
 }
 
-// Register an endpoint handler and log success or error
-func (s *Server) registerHandlerLog(
-	path string,
-	getHandler func() (http.Handler, error)) {
-	err := s.registerHandler(path, getHandler)
-	if err != nil {
-		log.Warningf("Endpoint '%s' is disabled: %s", path, err)
-	} else {
-		log.Infof("Endpoint '%s' is enabled", path)
-	}
-}
-
-// Register an endpoint handler and return an error if unsuccessful
+// Register an endpoint handler
 func (s *Server) registerHandler(
 	path string,
-	getHandler func() (http.Handler, error)) (err error) {
+	getHandler func(server *Server) (http.Handler, error),
+	at authType) {
 
 	var handler http.Handler
 
-	handler, err = getHandler()
+	handler, err := getHandler(s)
 	if err != nil {
-		return fmt.Errorf("Endpoint '%s' is disabled: %s", path, err)
+		log.Warningf("Endpoint '%s' is disabled: %s", path, err)
+		return
 	}
-	path, handler, err = NewAuthWrapper(path, handler, err)
-	if err != nil {
-		return fmt.Errorf("Endpoint '%s' has been disabled: %s", path, err)
+	handler = &fcaAuthHandler{
+		server:   s,
+		authType: at,
+		next:     handler,
 	}
-	s.mux.Handle(path, handler)
-	return nil
+	s.mux.Handle("/"+path, handler)
+	// TODO: Remove the following line once all SDKs stop using the prefixed paths
+	// See https://jira.hyperledger.org/browse/FAB-2597
+	s.mux.Handle("/api/v1/cfssl/"+path, handler)
 }
 
 // Starting listening and serving
@@ -665,8 +691,13 @@ func (s *Server) addAffiliation(path, parentPath string) error {
 	return s.registry.InsertAffiliation(path, parentPath)
 }
 
+// CertDBAccessor returns the certificate DB accessor for server
+func (s *Server) CertDBAccessor() *CertDBAccessor {
+	return s.certDBAccessor
+}
+
 func (s *Server) convertAttrs(inAttrs map[string]string) []api.Attribute {
-	outAttrs := make([]api.Attribute, 0)
+	var outAttrs []api.Attribute
 	for name, value := range inAttrs {
 		outAttrs = append(outAttrs, api.Attribute{
 			Name:  name,
@@ -702,6 +733,7 @@ func (s *Server) makeFileNamesAbsolute() error {
 	fields := []*string{
 		&s.Config.CA.Certfile,
 		&s.Config.CA.Keyfile,
+		&s.Config.CA.Chainfile,
 		&s.Config.TLS.CertFile,
 		&s.Config.TLS.KeyFile,
 	}
@@ -712,6 +744,54 @@ func (s *Server) makeFileNamesAbsolute() error {
 		}
 		*namePtr = abs
 	}
+	return nil
+}
+
+// userHasAttribute returns nil if the user has the attribute, or an
+// appropriate error if the user does not have this attribute.
+func (s *Server) userHasAttribute(username, attrname string) error {
+	val, err := s.getUserAttrValue(username, attrname)
+	if err != nil {
+		return err
+	}
+	if val == "" {
+		return fmt.Errorf("user '%s' does not have attribute '%s'", username, attrname)
+	}
+	return nil
+}
+
+// getUserAttrValue returns a user's value for an attribute
+func (s *Server) getUserAttrValue(username, attrname string) (string, error) {
+	log.Debugf("getUserAttrValue user=%s, attr=%s", username, attrname)
+	user, err := s.registry.GetUser(username, []string{attrname})
+	if err != nil {
+		return "", err
+	}
+	attrval := user.GetAttribute(attrname)
+	log.Debugf("getUserAttrValue user=%s, name=%s, value=%s", username, attrname, attrval)
+	return attrval, nil
+}
+
+// getUserAffiliation returns a user's affiliation
+func (s *Server) getUserAffiliation(username string) (string, error) {
+	log.Debugf("getUserAffilliation user=%s", username)
+	user, err := s.registry.GetUserInfo(username)
+	if err != nil {
+		return "", err
+	}
+	aff := user.Affiliation
+	log.Debugf("getUserAttrValue user=%s, aff=%s, value=%s", username, aff)
+	return aff, nil
+}
+
+// Fill the server info structure appropriately
+func (s *Server) fillServerInfo(info *serverInfoResponseNet) error {
+	caChain, err := s.getCAChain()
+	if err != nil {
+		return err
+	}
+	info.CAName = s.Config.CA.Name
+	info.CAChain = util.B64Encode(caChain)
 	return nil
 }
 

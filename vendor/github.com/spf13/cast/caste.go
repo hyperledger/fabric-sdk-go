@@ -18,21 +18,15 @@ import (
 func ToTimeE(i interface{}) (tim time.Time, err error) {
 	i = indirect(i)
 
-	switch v := i.(type) {
+	switch s := i.(type) {
 	case time.Time:
-		return v, nil
+		return s, nil
 	case string:
-		d, e := StringToDate(v)
+		d, e := StringToDate(s)
 		if e == nil {
 			return d, nil
 		}
 		return time.Time{}, fmt.Errorf("Could not parse Date/Time format: %v\n", e)
-	case int:
-		return time.Unix(int64(v), 0), nil
-	case int32:
-		return time.Unix(int64(v), 0), nil
-	case int64:
-		return time.Unix(v, 0), nil
 	default:
 		return time.Time{}, fmt.Errorf("Unable to Cast %#v to Time\n", i)
 	}
@@ -510,21 +504,15 @@ func StringToDate(s string) (time.Time, error) {
 		time.RFC1123,
 		time.RFC822Z,
 		time.RFC822,
-		time.RFC850,
 		time.ANSIC,
 		time.UnixDate,
 		time.RubyDate,
-		"2006-01-02 15:04:05.999999999 -0700 MST", // Time.String()
+		"2006-01-02 15:04:05Z07:00",
+		"02 Jan 06 15:04 MST",
 		"2006-01-02",
 		"02 Jan 2006",
 		"2006-01-02 15:04:05 -07:00",
 		"2006-01-02 15:04:05 -0700",
-		"2006-01-02 15:04:05",
-		time.Kitchen,
-		time.Stamp,
-		time.StampMilli,
-		time.StampMicro,
-		time.StampNano,
 	})
 }
 

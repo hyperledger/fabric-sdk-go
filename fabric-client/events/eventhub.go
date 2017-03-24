@@ -25,6 +25,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	consumer "github.com/hyperledger/fabric-sdk-go/fabric-client/events/consumer"
+	"github.com/hyperledger/fabric/core/ledger/util"
 	common "github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"github.com/hyperledger/fabric/protos/utils"
@@ -35,7 +36,7 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
 
 // EventHub ...
 type EventHub interface {
-	SetPeerAddr(peerURL string)
+	SetPeerAddr(peerURL string, certificate string, serverHostOverride string)
 	IsConnected() bool
 	Connect() error
 	RegisterChaincodeEvent(ccid string, eventname string, callback func(*pb.ChaincodeEvent)) *ChainCodeCBE
@@ -50,11 +51,15 @@ type eventHub struct {
 	// Map of clients registered for chaincode events
 	chaincodeRegistrants map[string][]*ChainCodeCBE
 	// Map of clients registered for block events
-	blockRegistrants []func(*common.Block, string, string)
+	blockRegistrants []func(*common.Block)
 	// Map of clients registered for transactional events
 	txRegistrants map[string]func(string, error)
 	// peer addr to connect to
 	peerAddr string
+	// peer tls certificate
+	peerTLSCertificate string
+	// peer tls server host override
+	peerTLSServerHostOverride string
 	// grpc event client interface
 	client consumer.EventsClient
 	// fabric connection state of this eventhub
@@ -80,12 +85,12 @@ type ChainCodeCBE struct {
 // NewEventHub ...
 func NewEventHub() EventHub {
 	chaincodeRegistrants := make(map[string][]*ChainCodeCBE)
-	blockRegistrants := make([]func(*common.Block, string, string), 0)
+	blockRegistrants := make([]func(*common.Block), 0)
 	txRegistrants := make(map[string]func(string, error))
 
 	// default interested events
 	// TODO: set interestedEvents based on handler registration
-	interestedEvents := []*pb.Interest{{EventType: pb.EventType_BLOCK}, {EventType: pb.EventType_REJECTION}}
+	interestedEvents := []*pb.Interest{{EventType: pb.EventType_BLOCK}}
 
 	eventHub := &eventHub{chaincodeRegistrants: chaincodeRegistrants, blockRegistrants: blockRegistrants, txRegistrants: txRegistrants, interestedEvents: interestedEvents}
 
@@ -99,9 +104,14 @@ func NewEventHub() EventHub {
  * creates a default eventHub that most Node clients can
  * use (see eventHubConnect, eventHubDisconnect and getEventHub).
  * @param {string} peeraddr peer url
+ * @param {string} peerTLSCertificate peer tls certificate
+ * @param {string} peerTLSServerHostOverride tls serverhostoverride
  */
-func (eventHub *eventHub) SetPeerAddr(peerURL string) {
+func (eventHub *eventHub) SetPeerAddr(peerURL string, peerTLSCertificate string, peerTLSServerHostOverride string) {
 	eventHub.peerAddr = peerURL
+	eventHub.peerTLSCertificate = peerTLSCertificate
+	eventHub.peerTLSServerHostOverride = peerTLSServerHostOverride
+
 }
 
 // Isconnected ...
@@ -125,10 +135,10 @@ func (eventHub *eventHub) Connect() error {
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
 
-	eventHub.blockRegistrants = make([]func(*common.Block, string, string), 0)
+	eventHub.blockRegistrants = make([]func(*common.Block), 0)
 	eventHub.blockRegistrants = append(eventHub.blockRegistrants, eventHub.txCallback)
 
-	eventsClient, _ := consumer.NewEventsClient(eventHub.peerAddr, 5, eventHub)
+	eventsClient, _ := consumer.NewEventsClient(eventHub.peerAddr, eventHub.peerTLSCertificate, eventHub.peerTLSServerHostOverride, 5, eventHub)
 	if err := eventsClient.Start(); err != nil {
 		eventsClient.Stop()
 		return fmt.Errorf("Error from eventsClient.Start (%s)", err.Error())
@@ -154,7 +164,7 @@ func (eventHub *eventHub) Recv(msg *pb.Event) (bool, error) {
 		blockEvent := msg.Event.(*pb.Event_Block)
 		logger.Debugf("Recv blockEvent:%v\n", blockEvent)
 		for _, v := range eventHub.blockRegistrants {
-			v(blockEvent.Block, "", "")
+			v(blockEvent.Block)
 		}
 		return true, nil
 	case *pb.Event_ChaincodeEvent:
@@ -173,13 +183,6 @@ func (eventHub *eventHub) Recv(msg *pb.Event) (bool, error) {
 					callback(ccEvent.ChaincodeEvent)
 				}
 			}
-		}
-		return true, nil
-	case *pb.Event_Rejection:
-		rejectionEvent := msg.Event.(*pb.Event_Rejection)
-		logger.Debugf("Recv rejectionEvent:%v\n", rejectionEvent)
-		for _, v := range eventHub.blockRegistrants {
-			v(nil, "", rejectionEvent.Rejection.ErrorMsg)
 		}
 		return true, nil
 	default:
@@ -301,13 +304,13 @@ func (eventHub *eventHub) UnregisterTxEvent(txID string) {
  * @param {object} block json object representing block of tx
  * from the fabric
  */
-func (eventHub *eventHub) txCallback(block *common.Block, txID string, errMsg string) {
+func (eventHub *eventHub) txCallback(block *common.Block) {
 	logger.Debugf("txCallback block=%v\n", block)
 
 	eventHub.mtx.RLock()
 	defer eventHub.mtx.RUnlock()
-
-	for _, v := range block.Data.Data {
+	txFilter := util.TxValidationFlags(block.Metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER])
+	for i, v := range block.Data.Data {
 		if env, err := utils.GetEnvelopeFromBlock(v); err != nil {
 			return
 		} else if env != nil {
@@ -326,10 +329,14 @@ func (eventHub *eventHub) txCallback(block *common.Block, txID string, errMsg st
 
 			callback := eventHub.txRegistrants[channelHeader.TxId]
 			if callback != nil {
-				callback(channelHeader.TxId, nil)
+				if txFilter.IsInvalid(i) {
+					callback(channelHeader.TxId, fmt.Errorf("Received invalid transaction from channel %s\n", channelHeader.ChannelId))
+
+				} else {
+					callback(channelHeader.TxId, nil)
+				}
 			}
 		}
-
 	}
 
 }

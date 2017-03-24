@@ -27,6 +27,7 @@ import (
 type ClientConfig struct {
 	Debug      bool   `def:"false" opt:"d" help:"Enable debug level logging"`
 	URL        string `def:"http://localhost:7054" opt:"u" help:"URL of fabric-ca-server"`
+	MSPDir     string `def:"msp" opt:"M" help:"Membership Service Provider directory"`
 	TLS        tls.ClientTLSConfig
 	Enrollment api.EnrollmentRequest
 	CSR        api.CSRInfo
@@ -36,7 +37,7 @@ type ClientConfig struct {
 // Enroll a client given the server's URL and the client's home directory.
 // The URL may be of the form: http://user:pass@host:port where user and pass
 // are the enrollment ID and secret, respectively.
-func (c *ClientConfig) Enroll(rawurl, home string) (id *Identity, err error) {
+func (c *ClientConfig) Enroll(rawurl, home string) (*EnrollmentResponse, error) {
 	purl, err := url.Parse(rawurl)
 	if err != nil {
 		return nil, err

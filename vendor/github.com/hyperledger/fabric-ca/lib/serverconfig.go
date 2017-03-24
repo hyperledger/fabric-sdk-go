@@ -21,6 +21,7 @@ import (
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/hyperledger/fabric-ca/lib/ldap"
 	"github.com/hyperledger/fabric-ca/lib/tls"
+	"github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric/bccsp/factory"
 )
 
@@ -58,8 +59,10 @@ type ServerConfig struct {
 
 // ServerConfigCA is the CA config for the fabric-ca server
 type ServerConfigCA struct {
-	Certfile string `def:"ca-cert.pem" help:"PEM-encoded CA certificate file"`
-	Keyfile  string `def:"ca-key.pem" help:"PEM-encoded CA key file"`
+	Name      string `opt:"n" help:"Certificate Authority name"`
+	Keyfile   string `def:"ca-key.pem" help:"PEM-encoded CA key file"`
+	Certfile  string `def:"ca-cert.pem" help:"PEM-encoded CA certificate file"`
+	Chainfile string `def:"ca-chain.pem" help:"PEM-encoded CA chain file"`
 }
 
 // ServerConfigDB is the database part of the server's config
@@ -78,9 +81,13 @@ type ServerConfigRegistry struct {
 // ServerConfigIdentity is identity information in the server's config
 type ServerConfigIdentity struct {
 	Name           string
-	Pass           string
+	Pass           string `secret:"password"`
 	Type           string
 	Affiliation    string
 	MaxEnrollments int
 	Attrs          map[string]string
+}
+
+func (sc *ServerConfigIdentity) String() string {
+	return util.StructToString(sc)
 }

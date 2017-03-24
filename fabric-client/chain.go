@@ -98,6 +98,7 @@ type TransactionProposal struct {
 type TransactionProposalResponse struct {
 	Endorser string
 	Err      error
+	Status   int32
 
 	proposal         *TransactionProposal
 	proposalResponse *pb.ProposalResponse
@@ -141,10 +142,10 @@ type SignedEnvelope struct {
  */
 func NewChain(name string, client Client) (Chain, error) {
 	if name == "" {
-		return nil, fmt.Errorf("Failed to create Chain. Missing requirement 'name' parameter.")
+		return nil, fmt.Errorf("failed to create Chain. Missing required 'name' parameter")
 	}
 	if client == nil {
-		return nil, fmt.Errorf("Failed to create Chain. Missing requirement 'clientContext' parameter.")
+		return nil, fmt.Errorf("failed to create Chain. Missing required 'clientContext' parameter")
 	}
 	p := make(map[string]Peer)
 	o := make(map[string]Orderer)

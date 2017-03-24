@@ -45,14 +45,16 @@ type EventsClient interface {
 
 type eventsClient struct {
 	sync.RWMutex
-	peerAddress string
-	regTimeout  time.Duration
-	stream      ehpb.Events_ChatClient
-	adapter     consumer.EventAdapter
+	peerAddress           string
+	regTimeout            time.Duration
+	stream                ehpb.Events_ChatClient
+	adapter               consumer.EventAdapter
+	TLSCertificate        string
+	TLSServerHostOverride string
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
-func NewEventsClient(peerAddress string, regTimeout time.Duration, adapter consumer.EventAdapter) (EventsClient, error) {
+func NewEventsClient(peerAddress string, certificate string, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (EventsClient, error) {
 	var err error
 	if regTimeout < 100*time.Millisecond {
 		regTimeout = 100 * time.Millisecond
@@ -61,15 +63,19 @@ func NewEventsClient(peerAddress string, regTimeout time.Duration, adapter consu
 		regTimeout = 60 * time.Second
 		err = fmt.Errorf("regTimeout > 60, setting to 60 sec")
 	}
-	return &eventsClient{sync.RWMutex{}, peerAddress, regTimeout, nil, adapter}, err
+	return &eventsClient{sync.RWMutex{}, peerAddress, regTimeout, nil, adapter, certificate, serverhostoverride}, err
 }
 
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
-func newEventsClientConnectionWithAddress(peerAddress string) (*grpc.ClientConn, error) {
+func newEventsClientConnectionWithAddress(peerAddress string, certificate string, serverhostoverride string) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(time.Second*3))
 	if config.IsTLSEnabled() {
-		creds := credentials.NewClientTLSFromCert(config.GetTLSCACertPool(), config.GetTLSServerHostOverride())
+		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
+		if err != nil {
+			return nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverhostoverride)
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
 		opts = append(opts, grpc.WithInsecure())
@@ -217,9 +223,9 @@ func (ec *eventsClient) processEvents() error {
 
 //Start establishes connection with Event hub and registers interested events with it
 func (ec *eventsClient) Start() error {
-	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress)
+	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress, ec.TLSCertificate, ec.TLSServerHostOverride)
 	if err != nil {
-		return fmt.Errorf("Could not create client conn to %s", ec.peerAddress)
+		return fmt.Errorf("Could not create client conn to %s (%v)", ec.peerAddress, err)
 	}
 
 	ies, err := ec.adapter.GetInterestedEvents()

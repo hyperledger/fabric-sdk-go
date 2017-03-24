@@ -16,19 +16,24 @@ limitations under the License.
 
 package spi
 
-// AffiliationInfo defines a group name and its parent
-type AffiliationInfo struct {
-	Name     string `db:"name"`
-	ParentID string `db:"parent_id"`
-	Prekey   string `db:"prekey"`
+// AffiliationImpl defines a group name and its parent
+type AffiliationImpl struct {
+	Name   string `db:"name"`
+	Prekey string `db:"prekey"`
 }
 
-// Affiliation is the API for a group
+// Affiliation is the API for a user's affiliation
 type Affiliation interface {
 	GetName() string
+	GetPrekey() string
 }
 
-// GetName returns the name of group
-func (g *AffiliationInfo) GetName() string {
+// GetName returns the name of the affiliation
+func (g *AffiliationImpl) GetName() string {
 	return g.Name
+}
+
+// GetPrekey returns the prekey of the affiliation
+func (g *AffiliationImpl) GetPrekey() string {
+	return g.Prekey
 }

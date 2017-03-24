@@ -53,16 +53,20 @@ type orderer struct {
 /**
  * Returns a Orderer instance
  */
-func CreateNewOrderer(url string) Orderer {
+func CreateNewOrderer(url string, certificate string, serverHostOverride string) (Orderer, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(time.Second*3))
 	if config.IsTLSEnabled() {
-		creds := credentials.NewClientTLSFromCert(config.GetTLSCACertPool(), config.GetTLSServerHostOverride())
+		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
+		if err != nil {
+			return nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}
-	return &orderer{url: url, grpcDialOption: opts}
+	return &orderer{url: url, grpcDialOption: opts}, nil
 }
 
 // GetURL ...

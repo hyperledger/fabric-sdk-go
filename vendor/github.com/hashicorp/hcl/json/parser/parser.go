@@ -86,7 +86,6 @@ func (p *Parser) objectList() (*ast.ObjectList, error) {
 			break
 		}
 	}
-
 	return node, nil
 }
 

@@ -41,7 +41,7 @@ func TestChainMethods(t *testing.T) {
 	if err == nil {
 		t.Fatalf("NewChain didn't return error")
 	}
-	if err.Error() != "Failed to create Chain. Missing requirement 'name' parameter." {
+	if err.Error() != "failed to create Chain. Missing required 'name' parameter" {
 		t.Fatalf("NewChain didn't return right error")
 	}
 
@@ -49,7 +49,7 @@ func TestChainMethods(t *testing.T) {
 	if err == nil {
 		t.Fatalf("NewChain didn't return error")
 	}
-	if err.Error() != "Failed to create Chain. Missing requirement 'clientContext' parameter." {
+	if err.Error() != "failed to create Chain. Missing required 'clientContext' parameter" {
 		t.Fatalf("NewChain didn't return right error")
 	}
 

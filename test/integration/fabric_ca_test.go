@@ -73,12 +73,13 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 
 	// Admin user is used to register, enrol and revoke a test user
-	user, err := client.GetUserContext("admin2")
+	adminUser, err := client.GetUserContext("admin")
+
 	if err != nil {
 		t.Fatalf("client.GetUserContext return error: %v", err)
 	}
-	if user == nil {
-		key, cert, err := fabricCAClient.Enroll("admin2", "adminpw2")
+	if adminUser == nil {
+		key, cert, err := fabricCAClient.Enroll("admin", "adminpw")
 		if err != nil {
 			t.Fatalf("Enroll return error: %v", err)
 		}
@@ -98,7 +99,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		if err != nil {
 			t.Fatalf("x509 ParseCertificate return error: %v", err)
 		}
-		if cert509.Subject.CommonName != "admin2" {
+		if cert509.Subject.CommonName != "admin" {
 			t.Fatalf("CommonName in x509 cert is not the enrollmentID")
 		}
 
@@ -106,22 +107,22 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		if err != nil {
 			t.Fatalf("pem Decode return error: %v", err)
 		}
-		user := fabric_client.NewUser("admin2")
+		adminUser = fabric_client.NewUser("admin")
 		k, err := client.GetCryptoSuite().KeyImport(keyPem.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: false})
 		if err != nil {
 			t.Fatalf("KeyImport return error: %v", err)
 		}
-		user.SetPrivateKey(k)
-		user.SetEnrollmentCertificate(cert)
-		err = client.SetUserContext(user, false)
+		adminUser.SetPrivateKey(k)
+		adminUser.SetEnrollmentCertificate(cert)
+		err = client.SetUserContext(adminUser, false)
 		if err != nil {
 			t.Fatalf("client.SetUserContext return error: %v", err)
 		}
-		user, err = client.GetUserContext("admin2")
+		adminUser, err = client.GetUserContext("admin")
 		if err != nil {
 			t.Fatalf("client.GetUserContext return error: %v", err)
 		}
-		if user == nil {
+		if adminUser == nil {
 			t.Fatalf("client.GetUserContext return nil")
 		}
 	}
@@ -129,24 +130,24 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	// Register a random user
 	userName := createRandomName()
 	registerRequest := fabric_ca_client.RegistrationRequest{Name: userName, Type: "user", Affiliation: "org1.department1"}
-	enrolmentSecret, err := fabricCAClient.Register(user, &registerRequest)
+	enrolmentSecret, err := fabricCAClient.Register(adminUser, &registerRequest)
 	if err != nil {
-		fmt.Printf("Error from Register: %s", err)
-		t.FailNow()
+		t.Fatalf("Error from Register: %s", err)
 	}
 	fmt.Printf("Registered User: %s, Secret: %s\n", userName, enrolmentSecret)
 	// Enrol the previously registered user
 	_, _, err = fabricCAClient.Enroll(userName, enrolmentSecret)
+
 	if err != nil {
 		t.Fatalf("Error enroling user: %s", err.Error())
 	}
 
 	revokeRequest := fabric_ca_client.RevocationRequest{Name: userName}
-	err = fabricCAClient.Revoke(user, &revokeRequest)
+	err = fabricCAClient.Revoke(adminUser, &revokeRequest)
 	if err != nil {
-		fmt.Printf("Error from Revoke: %s", err)
-		t.FailNow()
+		t.Fatalf("Error from Revoke: %s", err)
 	}
+
 }
 
 func InitConfigForFabricCA() {

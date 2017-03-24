@@ -55,7 +55,7 @@ SELECT * FROM users
 	WHERE (id = ?)`
 
 	insertAffiliation = `
-INSERT INTO affiliations (name, parent_id)
+INSERT INTO affiliations (name, prekey)
 	VALUES (?, ?)`
 
 	deleteAffiliation = `
@@ -63,7 +63,7 @@ DELETE FROM affiliations
 	WHERE (name = ?)`
 
 	getAffiliation = `
-SELECT name, parent_id FROM affiliations
+SELECT name, prekey FROM affiliations
 	WHERE (name = ?)`
 )
 
@@ -256,13 +256,13 @@ func (d *Accessor) GetUserInfo(id string) (spi.UserInfo, error) {
 }
 
 // InsertAffiliation inserts affiliation into database
-func (d *Accessor) InsertAffiliation(name string, parentID string) error {
+func (d *Accessor) InsertAffiliation(name string, prekey string) error {
 	log.Debugf("DB: Insert Affiliation (%s)", name)
 	err := d.checkDB()
 	if err != nil {
 		return err
 	}
-	_, err = d.db.Exec(d.db.Rebind(insertAffiliation), name, parentID)
+	_, err = d.db.Exec(d.db.Rebind(insertAffiliation), name, prekey)
 	if err != nil {
 		return err
 	}
@@ -294,14 +294,14 @@ func (d *Accessor) GetAffiliation(name string) (spi.Affiliation, error) {
 		return nil, err
 	}
 
-	var affiliationInfo spi.AffiliationInfo
+	var affiliation spi.AffiliationImpl
 
-	err = d.db.Get(&affiliationInfo, d.db.Rebind(getAffiliation), name)
+	err = d.db.Get(&affiliation, d.db.Rebind(getAffiliation), name)
 	if err != nil {
 		return nil, err
 	}
 
-	return &affiliationInfo, nil
+	return &affiliation, nil
 }
 
 // Creates a DBUser object from the DB user record
@@ -355,7 +355,7 @@ func (u *DBUser) Login(pass string) error {
 		// If maxEnrollments is set to 0, user has unlimited enrollment
 		if u.MaxEnrollments != 0 {
 			if u.State >= u.MaxEnrollments {
-				return fmt.Errorf("The maximum number of enrollments is %d", u.MaxEnrollments)
+				return fmt.Errorf("No more enrollments left. The maximum number of enrollments is %d", u.MaxEnrollments)
 			}
 		}
 

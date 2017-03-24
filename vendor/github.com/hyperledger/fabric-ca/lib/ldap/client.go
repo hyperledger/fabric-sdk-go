@@ -206,7 +206,7 @@ func (lc *Client) GetRootAffiliation() (spi.Affiliation, error) {
 }
 
 // InsertAffiliation adds an affiliation group
-func (lc *Client) InsertAffiliation(name string, parentID string) error {
+func (lc *Client) InsertAffiliation(name string, prekey string) error {
 	return errNotSupported
 }
 

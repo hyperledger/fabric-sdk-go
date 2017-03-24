@@ -5,17 +5,23 @@ client:
     port: 7051
     event_host: "localhost"
     event_port: 7053
+    tls:
+      # certificate location relative path the system will env variable $GOPATH
+      certificate: "src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/peers/peer0/ca-cert.pem"
+      serverHostOverride: "peer0"
 
   peer2:
     host: "localhost"
     port: 7056
     event_host: "localhost"
-    event_port: 7053
+    event_port: 7058
+    tls:
+      # certificate location relative path the system will env variable $GOPATH
+      certificate: "src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/peers/peer1/ca-cert.pem"
+      serverHostOverride: "peer1"
 
  tls:
-  enabled: false
-  certificate:
-  serverhostoverride:
+  enabled: true
 
  security:
   enabled: true
@@ -29,12 +35,16 @@ client:
  orderer:
   host: "localhost"
   port: 7050
+  tls:
+    # certificate location relative path the system will env variable $GOPATH
+    certificate: "src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/orderer/ca-cert.pem"
+    serverHostOverride: "orderer0"
 
  logging:
   level: info
 
  fabricCA:
-  id: "DEFAULT"
+  id: "Org1MSP"
   serverURL: "http://localhost:7054"
   certfiles :
     - "../test/fixtures/root.pem"

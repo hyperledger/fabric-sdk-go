@@ -61,9 +61,9 @@ func (i *Identity) GetTCertBatch(req *api.GetTCertBatchRequest) ([]*Signer, erro
 	if err != nil {
 		return nil, err
 	}
-	_, err2 := i.Post("tcert", reqBody)
-	if err2 != nil {
-		return nil, err2
+	err = i.Post("tcert", reqBody, nil)
+	if err != nil {
+		return nil, err
 	}
 	// Ignore the contents of the response for now.  They will be processed in the future when we need to
 	// support the Go SDK.   We currently have Node and Java SDKs which process this and they are the
@@ -74,11 +74,7 @@ func (i *Identity) GetTCertBatch(req *api.GetTCertBatchRequest) ([]*Signer, erro
 // Register registers a new identity
 // @param req The registration request
 func (i *Identity) Register(req *api.RegistrationRequest) (rr *api.RegistrationResponse, err error) {
-	var reqBody []byte
-	var secret string
-	var resp interface{}
-
-	log.Debugf("Register %+v", req)
+	log.Debugf("Register %+v", &req)
 	if req.Name == "" {
 		return nil, errors.New("Register was called without a Name set")
 	}
@@ -86,34 +82,26 @@ func (i *Identity) Register(req *api.RegistrationRequest) (rr *api.RegistrationR
 		return nil, errors.New("Registration request does not have an affiliation")
 	}
 
-	reqBody, err = util.Marshal(req, "RegistrationRequest")
+	reqBody, err := util.Marshal(req, "RegistrationRequest")
 	if err != nil {
 		return nil, err
 	}
 
 	// Send a post to the "register" endpoint with req as body
-	resp, err = i.Post("register", reqBody)
+	resp := &api.RegistrationResponse{}
+	err = i.Post("register", reqBody, resp)
 	if err != nil {
 		return nil, err
 	}
 
-	switch resp.(type) {
-	case string:
-		secret = resp.(string)
-	case map[string]interface{}:
-		secret = resp.(map[string]interface{})["credential"].(string)
-	default:
-		return nil, fmt.Errorf("Response is neither string nor map: %+v", resp)
-	}
-
 	log.Debug("The register request completely successfully")
-	return &api.RegistrationResponse{Secret: secret}, nil
+	return resp, nil
 }
 
 // Reenroll reenrolls an existing Identity and returns a new Identity
 // @param req The reenrollment request
-func (i *Identity) Reenroll(req *api.ReenrollmentRequest) (*Identity, error) {
-	log.Debugf("Reenrolling %s", req)
+func (i *Identity) Reenroll(req *api.ReenrollmentRequest) (*EnrollmentResponse, error) {
+	log.Debugf("Reenrolling %s", &req)
 
 	csrPEM, key, err := i.client.GenCSR(req.CSR, i.GetName())
 	if err != nil {
@@ -131,23 +119,22 @@ func (i *Identity) Reenroll(req *api.ReenrollmentRequest) (*Identity, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	result, err := i.Post("reenroll", body)
+	var result enrollmentResponseNet
+	err = i.Post("reenroll", body, &result)
 	if err != nil {
 		return nil, err
 	}
-
-	return i.client.newIdentityFromResponse(result, i.GetName(), key)
+	return i.client.newEnrollmentResponse(&result, i.GetName(), key)
 }
 
 // Revoke the identity associated with 'id'
 func (i *Identity) Revoke(req *api.RevocationRequest) error {
-	log.Debugf("Entering identity.Revoke %+v", req)
+	log.Debugf("Entering identity.Revoke %+v", &req)
 	reqBody, err := util.Marshal(req, "RevocationRequest")
 	if err != nil {
 		return err
 	}
-	_, err = i.Post("revoke", reqBody)
+	err = i.Post("revoke", reqBody, nil)
 	if err != nil {
 		return err
 	}
@@ -177,16 +164,16 @@ func (i *Identity) Store() error {
 // This adds an authorization header which contains the signature
 // of this identity over the body and non-signature part of the authorization header.
 // The return value is the body of the response.
-func (i *Identity) Post(endpoint string, reqBody []byte) (interface{}, error) {
-	req, err := i.client.NewPost(endpoint, reqBody)
+func (i *Identity) Post(endpoint string, reqBody []byte, result interface{}) error {
+	req, err := i.client.newPost(endpoint, reqBody)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = i.addTokenAuthHdr(req, reqBody)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return i.client.SendPost(req)
+	return i.client.SendReq(req, result)
 }
 
 func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
@@ -202,14 +189,4 @@ func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
 	}
 	req.Header.Set("authorization", token)
 	return nil
-}
-
-// GetMyKeyFile returns the path to this identity's key file
-func (i *Identity) GetMyKeyFile() string {
-	return i.client.GetMyKeyFile()
-}
-
-// GetMyCertFile returns the path to this identity's key file
-func (i *Identity) GetMyCertFile() string {
-	return i.client.GetMyCertFile()
 }
