@@ -22,7 +22,11 @@ package integration
 import (
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
+	"math/rand"
+	"strconv"
 	"testing"
+	"time"
 
 	config "github.com/hyperledger/fabric-sdk-go/config"
 	fabric_client "github.com/hyperledger/fabric-sdk-go/fabric-client"
@@ -33,11 +37,9 @@ import (
 	fabric_ca_client "github.com/hyperledger/fabric-sdk-go/fabric-ca-client"
 )
 
-// this test uses the FabricCAServices to enroll a user, and
-// saves the enrollment materials into a key value store.
-// then uses the Client class to load the member from the
-// key value store
-func TestEnroll(t *testing.T) {
+// This test loads/enrols an admin user
+// Using the admin, it registers, enrols, and revokes a test user
+func TestRegisterEnrollRevoke(t *testing.T) {
 	InitConfigForFabricCA()
 	client := fabric_client.NewClient()
 
@@ -69,55 +71,89 @@ func TestEnroll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
-	key, cert, err := fabricCAClient.Enroll("testUser2", "user2")
-	if err != nil {
-		t.Fatalf("Enroll return error: %v", err)
-	}
-	if key == nil {
-		t.Fatalf("private key return from Enroll is nil")
-	}
-	if cert == nil {
-		t.Fatalf("cert return from Enroll is nil")
-	}
 
-	certPem, _ := pem.Decode(cert)
-	if err != nil {
-		t.Fatalf("pem Decode return error: %v", err)
-	}
-
-	cert509, err := x509.ParseCertificate(certPem.Bytes)
-	if err != nil {
-		t.Fatalf("x509 ParseCertificate return error: %v", err)
-	}
-	if cert509.Subject.CommonName != "testUser2" {
-		t.Fatalf("CommonName in x509 cert is not the enrollmentID")
-	}
-
-	keyPem, _ := pem.Decode(key)
-	if err != nil {
-		t.Fatalf("pem Decode return error: %v", err)
-	}
-	user := fabric_client.NewUser("testUser2")
-	k, err := client.GetCryptoSuite().KeyImport(keyPem.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: false})
-	if err != nil {
-		t.Fatalf("KeyImport return error: %v", err)
-	}
-	user.SetPrivateKey(k)
-	user.SetEnrollmentCertificate(cert)
-	err = client.SetUserContext(user, false)
-	if err != nil {
-		t.Fatalf("client.SetUserContext return error: %v", err)
-	}
-	user, err = client.GetUserContext("testUser2")
+	// Admin user is used to register, enrol and revoke a test user
+	user, err := client.GetUserContext("admin2")
 	if err != nil {
 		t.Fatalf("client.GetUserContext return error: %v", err)
 	}
 	if user == nil {
-		t.Fatalf("client.GetUserContext return nil")
+		key, cert, err := fabricCAClient.Enroll("admin2", "adminpw2")
+		if err != nil {
+			t.Fatalf("Enroll return error: %v", err)
+		}
+		if key == nil {
+			t.Fatalf("private key return from Enroll is nil")
+		}
+		if cert == nil {
+			t.Fatalf("cert return from Enroll is nil")
+		}
+
+		certPem, _ := pem.Decode(cert)
+		if err != nil {
+			t.Fatalf("pem Decode return error: %v", err)
+		}
+
+		cert509, err := x509.ParseCertificate(certPem.Bytes)
+		if err != nil {
+			t.Fatalf("x509 ParseCertificate return error: %v", err)
+		}
+		if cert509.Subject.CommonName != "admin2" {
+			t.Fatalf("CommonName in x509 cert is not the enrollmentID")
+		}
+
+		keyPem, _ := pem.Decode(key)
+		if err != nil {
+			t.Fatalf("pem Decode return error: %v", err)
+		}
+		user := fabric_client.NewUser("admin2")
+		k, err := client.GetCryptoSuite().KeyImport(keyPem.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: false})
+		if err != nil {
+			t.Fatalf("KeyImport return error: %v", err)
+		}
+		user.SetPrivateKey(k)
+		user.SetEnrollmentCertificate(cert)
+		err = client.SetUserContext(user, false)
+		if err != nil {
+			t.Fatalf("client.SetUserContext return error: %v", err)
+		}
+		user, err = client.GetUserContext("admin2")
+		if err != nil {
+			t.Fatalf("client.GetUserContext return error: %v", err)
+		}
+		if user == nil {
+			t.Fatalf("client.GetUserContext return nil")
+		}
 	}
 
+	// Register a random user
+	userName := createRandomName()
+	registerRequest := fabric_ca_client.RegistrationRequest{Name: userName, Type: "user", Affiliation: "org1.department1"}
+	enrolmentSecret, err := fabricCAClient.Register(user, &registerRequest)
+	if err != nil {
+		fmt.Printf("Error from Register: %s", err)
+		t.FailNow()
+	}
+	fmt.Printf("Registered User: %s, Secret: %s\n", userName, enrolmentSecret)
+	// Enrol the previously registered user
+	_, _, err = fabricCAClient.Enroll(userName, enrolmentSecret)
+	if err != nil {
+		t.Fatalf("Error enroling user: %s", err.Error())
+	}
+
+	revokeRequest := fabric_ca_client.RevocationRequest{Name: userName}
+	err = fabricCAClient.Revoke(user, &revokeRequest)
+	if err != nil {
+		fmt.Printf("Error from Revoke: %s", err)
+		t.FailNow()
+	}
 }
 
 func InitConfigForFabricCA() {
-	config.InitConfig("./test_resources/config/config_test.yaml")
+	config.InitConfig("../fixtures/config/config_test.yaml")
+}
+
+func createRandomName() string {
+	rand.Seed(time.Now().UnixNano())
+	return "user" + strconv.Itoa(rand.Intn(5000))
 }
