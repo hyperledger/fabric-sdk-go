@@ -1,0 +1,46 @@
+client:
+ peers:
+  peer1:
+    host: "localhost"
+    port: 7051
+    event_host: "localhost"
+    event_port: 7053
+
+  peer2:
+    host: "localhost"
+    port: 7056
+    event_host: "localhost"
+    event_port: 7053
+
+ tls:
+  enabled: false
+  certificate:
+  serverhostoverride:
+
+ security:
+  enabled: true
+  hashAlgorithm: "SHA2"
+  level: 256
+
+ tcert:
+  batch:
+    size: 200
+
+ orderer:
+  host: "localhost"
+  port: 7050
+
+ logging:
+  level: info
+
+ fabricCA:
+  id: "DEFAULT"
+  serverURL: "http://localhost:7054"
+  certfiles :
+    - "../test/fixtures/root.pem"
+  client:
+   keyfile: "../test/fixtures/tls_client-key.pem"
+   certfile: "../test/fixtures/tls_client-cert.pem"
+
+ keystore:
+  path: "/tmp/keystore"

@@ -1,0 +1,57 @@
+/*
+Copyright IBM Corp. 2016 All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+                 http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+
+option go_package = "github.com/hyperledger/fabric/protos/orderer";
+
+package orderer;
+
+// KafkaMessage is a wrapper type for the messages
+// that the Kafka-based orderer deals with.
+message KafkaMessage {
+    oneof Type {
+        KafkaMessageRegular regular = 1;
+        KafkaMessageTimeToCut time_to_cut = 2;
+        KafkaMessageConnect connect = 3;
+    }
+}
+
+// KafkaMessageRegular wraps a marshalled envelope.
+message KafkaMessageRegular {
+    bytes payload = 1;
+}
+
+// KafkaMessageTimeToCut is used to signal to the orderers
+// that it is time to cut block <block_number>.
+message KafkaMessageTimeToCut {
+    uint64 block_number = 1;
+}
+
+// KafkaMessageConnect is posted by an orderer upon booting up.
+// It is used to prevent the panic that would be caused if we
+// were to consume an empty partition. It is ignored by all
+// orderers when processing the partition.
+message KafkaMessageConnect {
+    bytes payload = 1;
+}
+
+// LastOffsetPersisted is the encoded value for the Metadata message
+// which is encoded in the ORDERER block metadata index for the case
+// of the Kafka-based orderer.
+message KafkaMetadata {
+	int64 last_offset_persisted  = 1;
+}
