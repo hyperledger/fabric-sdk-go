@@ -13,12 +13,14 @@ This project must be cloned into `$GOPATH/src/github.com/hyperledger`. Package n
 Execute `go test` from the fabric-client and fabric-ca-client to build the library and run the basic headless tests.
 
 Execute `go test` in the `test/integration` to run end-to-end tests. This requires you to have:
-- A working fabric and fabric-ca set up. Refer to the Hyperledger Fabric [documentation](https://github.com/hyperledger/fabric) on how to do this.
+- A working fabric, fabric-ca and fabric-sdk-node set up. Refer to the Hyperledger Fabric [documentation](https://github.com/hyperledger/fabric) on how to do this.
 - Customized settings in the `integration_test/test_resources/config/config_test.yaml` in case your Hyperledger Fabric network is not running on `localhost` or is using different ports.
+- Run `create-channel.js` and `join-channel.js` in fabric-sdk-node test.
+
 
 ## Work in Progress
 
 This client was last tested and found to be compatible with the following Hyperledger Fabric commit levels:
 - fabric: v1.0.0-alpha 
 - fabric-ca: `4651512e4e85728e6ecaf21b8cba52f51ed16633`
-
+- fabric-sdk-node: v1.0.0-alpha
