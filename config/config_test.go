@@ -62,7 +62,7 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testValue before config initialization got: %s", testValue1)
 	}
 	// initialize go sdk
-	err = InitConfig("../integration_test/test_resources/config/config_test.yaml")
+	err = InitConfig("../test/fixtures/config/config_test.yaml")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -79,7 +79,7 @@ func TestMultipleVipers(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	err := InitConfig("../integration_test/test_resources/config/config_test.yaml")
+	err := InitConfig("../test/fixtures/config/config_test.yaml")
 	if err != nil {
 		fmt.Println(err.Error())
 	}

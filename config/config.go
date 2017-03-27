@@ -26,8 +26,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"strconv"
+	"strings"
 
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"
@@ -148,7 +148,7 @@ func GetPeersConfig() []PeerConfig {
 			panic(fmt.Sprintf("tls.certificate not exist or empty for %s", key))
 		}
 
-		p.TLSCertificate = path.Join(os.Getenv("GOPATH"), p.TLSCertificate)
+		p.TLSCertificate = strings.Replace(p.TLSCertificate, "$GOPATH", os.Getenv("GOPATH"), -1)
 		peersConfig = append(peersConfig, p)
 	}
 	return peersConfig
@@ -213,7 +213,7 @@ func GetOrdererTLSServerHostOverride() string {
 
 // GetOrdererTLSCertificate ...
 func GetOrdererTLSCertificate() string {
-	return path.Join(os.Getenv("GOPATH"), myViper.GetString("client.orderer.tls.certificate"))
+	return strings.Replace(myViper.GetString("client.orderer.tls.certificate"), "$GOPATH", os.Getenv("GOPATH"), -1)
 }
 
 // GetFabricCAID ...
