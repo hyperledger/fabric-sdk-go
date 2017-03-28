@@ -22,9 +22,11 @@ package integration
 import (
 	"encoding/pem"
 	"fmt"
+	"math/rand"
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/config"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/fabric-ca-client"
@@ -37,20 +39,34 @@ import (
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
+var chainCodeID = ""
+var chainID = "mychannel"
+var chainCodePath = "github.com/example_cc"
+var chainCodeVersion = "v0"
+var goPath string
+
 // BaseTestSetup is an interface used by the integration tests
 // it performs setup activities like user enrollment, chain creation,
 // crypto suite selection, and event hub initialization
 type BaseTestSetup interface {
-	GetChains(t *testing.T) (*fabricClient.Chain, *fabricClient.Chain)
-	GetEventHub(t *testing.T, interestedEvents []*pb.Interest) *events.EventHub
+	GetChain() (fabricClient.Chain, error)
+	GetEventHub(interestedEvents []*pb.Interest) (events.EventHub, error)
+	InstallCC(chain fabricClient.Chain, chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte, targets []fabricClient.Peer) error
+	InstantiateCC(chain fabricClient.Chain, eventHub events.EventHub) error
+	GetQueryValue(t *testing.T, chain fabricClient.Chain) (string, error)
+	Invoke(chain fabricClient.Chain, eventHub events.EventHub) (string, error)
+	InitConfig()
+	ChangeGOPATHToDeploy()
+	ResetGOPATH()
+	GenerateRandomCCID()
 }
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
 }
 
-// GetChains initializes and returns a query chain and invoke chain
-func (setup *BaseSetupImpl) GetChains(t *testing.T) (fabricClient.Chain, fabricClient.Chain, fabricClient.Chain) {
+// GetChain initializes and returns a chain
+func (setup *BaseSetupImpl) GetChain() (fabricClient.Chain, error) {
 	client := fabricClient.NewClient()
 
 	err := bccspFactory.InitFactories(&bccspFactory.FactoryOpts{
@@ -65,95 +81,71 @@ func (setup *BaseSetupImpl) GetChains(t *testing.T) (fabricClient.Chain, fabricC
 		},
 	})
 	if err != nil {
-		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
+		return nil, fmt.Errorf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
 	cryptoSuite := bccspFactory.GetDefault()
 
 	client.SetCryptoSuite(cryptoSuite)
 	stateStore, err := kvs.CreateNewFileKeyValueStore("/tmp/enroll_user")
 	if err != nil {
-		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
+		return nil, fmt.Errorf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
 	client.SetStateStore(stateStore)
 	user, err := client.GetUserContext("admin")
 	if err != nil {
-		t.Fatalf("client.GetUserContext return error: %v", err)
+		return nil, fmt.Errorf("client.GetUserContext return error: %v", err)
 	}
 	if user == nil {
 		fabricCAClient, err1 := fabricCAClient.NewFabricCAClient()
 		if err1 != nil {
-			t.Fatalf("NewFabricCAClient return error: %v", err)
+			return nil, fmt.Errorf("NewFabricCAClient return error: %v", err)
 		}
 		key, cert, err1 := fabricCAClient.Enroll("admin", "adminpw")
 		keyPem, _ := pem.Decode(key)
 		if err1 != nil {
-			t.Fatalf("Enroll return error: %v", err1)
+			return nil, fmt.Errorf("Enroll return error: %v", err1)
 		}
 		user := fabricClient.NewUser("admin")
 		k, err1 := client.GetCryptoSuite().KeyImport(keyPem.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: false})
 		if err1 != nil {
-			t.Fatalf("KeyImport return error: %v", err)
+			return nil, fmt.Errorf("KeyImport return error: %v", err)
 		}
 		user.SetPrivateKey(k)
 		user.SetEnrollmentCertificate(cert)
 		err = client.SetUserContext(user, false)
 		if err != nil {
-			t.Fatalf("client.SetUserContext return error: %v", err)
+			return nil, fmt.Errorf("client.SetUserContext return error: %v", err)
 		}
 	}
 
-	querychain, err := client.NewChain("mychannel")
+	chain, err := client.NewChain(chainID)
 	if err != nil {
-		t.Fatalf("NewChain return error: %v", err)
-	}
-
-	invokechain, err := client.NewChain("invokechain")
-	if err != nil {
-		t.Fatalf("NewChain return error: %v", err)
+		return nil, fmt.Errorf("NewChain return error: %v", err)
 	}
 	orderer, err := fabricClient.CreateNewOrderer(fmt.Sprintf("%s:%s", config.GetOrdererHost(), config.GetOrdererPort()),
 		config.GetOrdererTLSCertificate(), config.GetOrdererTLSServerHostOverride())
 	if err != nil {
-		t.Fatalf("CreateNewOrderer return error: %v", err)
+		return nil, fmt.Errorf("CreateNewOrderer return error: %v", err)
 	}
-	invokechain.AddOrderer(orderer)
+	chain.AddOrderer(orderer)
 
 	for _, p := range config.GetPeersConfig() {
 		endorser, err := fabricClient.CreateNewPeer(fmt.Sprintf("%s:%s", p.Host, p.Port), p.TLSCertificate, p.TLSServerHostOverride)
 		if err != nil {
-			t.Fatalf("CreateNewPeer return error: %v", err)
+			return nil, fmt.Errorf("CreateNewPeer return error: %v", err)
 		}
-		querychain.AddPeer(endorser)
-		invokechain.AddPeer(endorser)
-		break
-	}
-
-	deploychain, err := client.NewChain("deploychain")
-	if err != nil {
-		t.Fatalf("NewChain return error: %v", err)
-	}
-	orderer, err = fabricClient.CreateNewOrderer(fmt.Sprintf("%s:%s", config.GetOrdererHost(), config.GetOrdererPort()),
-		config.GetOrdererTLSCertificate(), config.GetOrdererTLSServerHostOverride())
-	if err != nil {
-		t.Fatalf("CreateNewOrderer return error: %v", err)
-	}
-	deploychain.AddOrderer(orderer)
-
-	for _, p := range config.GetPeersConfig() {
-		endorser, err := fabricClient.CreateNewPeer(fmt.Sprintf("%s:%s", p.Host, p.Port), p.TLSCertificate, p.TLSServerHostOverride)
-		if err != nil {
-			t.Fatalf("CreateNewPeer return error: %v", err)
+		chain.AddPeer(endorser)
+		if p.Port == "7051" {
+			chain.SetPrimaryPeer(endorser)
 		}
-		deploychain.AddPeer(endorser)
 	}
 
-	return querychain, invokechain, deploychain
+	return chain, nil
 
 }
 
 // GetEventHub initilizes the event hub
-func (setup *BaseSetupImpl) GetEventHub(t *testing.T,
-	interestedEvents []*pb.Interest) events.EventHub {
+func (setup *BaseSetupImpl) GetEventHub(interestedEvents []*pb.Interest) (events.EventHub, error) {
 	eventHub := events.NewEventHub()
 	foundEventHub := false
 	for _, p := range config.GetPeersConfig() {
@@ -165,7 +157,7 @@ func (setup *BaseSetupImpl) GetEventHub(t *testing.T,
 	}
 
 	if !foundEventHub {
-		t.Fatalf("No EventHub configuration found")
+		return nil, fmt.Errorf("No EventHub configuration found")
 	}
 
 	// TODO: this is coming back in some other form
@@ -173,18 +165,210 @@ func (setup *BaseSetupImpl) GetEventHub(t *testing.T,
 		eventHub.SetInterestedEvents(interestedEvents)
 	}*/
 	if err := eventHub.Connect(); err != nil {
-		t.Fatalf("Failed eventHub.Connect() [%s]", err)
+		return nil, fmt.Errorf("Failed eventHub.Connect() [%s]", err)
 	}
 
-	return eventHub
+	return eventHub, nil
 }
 
-// SetupChaincodeDeploy set up environment
-func (setup *BaseSetupImpl) SetupChaincodeDeploy() {
+func (setup *BaseSetupImpl) InstallCC(chain fabricClient.Chain, chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte, targets []fabricClient.Peer) error {
+	setup.ChangeGOPATHToDeploy()
+	transactionProposalResponse, _, err := chain.SendInstallProposal(chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, targets)
+	if err != nil {
+		return fmt.Errorf("SendInstallProposal return error: %v", err)
+	}
+	setup.ResetGOPATH()
+
+	for _, v := range transactionProposalResponse {
+		if v.Err != nil {
+			return fmt.Errorf("SendInstallProposal Endorser %s return error: %v", v.Endorser, v.Err)
+		}
+		fmt.Printf("SendInstallProposal Endorser '%s' return ProposalResponse status:%v\n", v.Endorser, v.Status)
+	}
+
+	return nil
+
+}
+
+func (setup *BaseSetupImpl) InstantiateCC(chain fabricClient.Chain, eventHub events.EventHub) error {
+
+	var args []string
+	args = append(args, "init")
+	args = append(args, "a")
+	args = append(args, "100")
+	args = append(args, "b")
+	args = append(args, "200")
+
+	transactionProposalResponse, txID, err := chain.SendInstantiateProposal(chainCodeID, chainID, args, chainCodePath, chainCodeVersion, nil)
+	if err != nil {
+		return fmt.Errorf("SendInstantiateProposal return error: %v", err)
+	}
+
+	for _, v := range transactionProposalResponse {
+		if v.Err != nil {
+			return fmt.Errorf("SendInstantiateProposal Endorser %s return error: %v", v.Endorser, v.Err)
+		}
+		fmt.Printf("SendInstantiateProposal Endorser '%s' return ProposalResponse status:%v\n", v.Endorser, v.Status)
+	}
+
+	tx, err := chain.CreateTransaction(transactionProposalResponse)
+	if err != nil {
+		return fmt.Errorf("CreateTransaction return error: %v", err)
+
+	}
+	transactionResponse, err := chain.SendTransaction(tx)
+	if err != nil {
+		return fmt.Errorf("SendTransaction return error: %v", err)
+
+	}
+	for _, v := range transactionResponse {
+		if v.Err != nil {
+			return fmt.Errorf("Orderer %s return error: %v", v.Orderer, v.Err)
+		}
+	}
+	done := make(chan bool)
+	fail := make(chan error)
+
+	eventHub.RegisterTxEvent(txID, func(txId string, err error) {
+		if err != nil {
+			fail <- err
+		} else {
+			fmt.Printf("instantiateCC receive success event for txid(%s)\n", txId)
+			done <- true
+		}
+
+	})
+
+	select {
+	case <-done:
+	case <-fail:
+		return fmt.Errorf("instantiateCC Error received from eventhub for txid(%s) error(%v)", txID, fail)
+	case <-time.After(time.Second * 30):
+		return fmt.Errorf("instantiateCC Didn't receive block event for txid(%s)", txID)
+	}
+	return nil
+
+}
+
+func (setup *BaseSetupImpl) GetQueryValue(t *testing.T, chain fabricClient.Chain) (string, error) {
+
+	var args []string
+	args = append(args, "invoke")
+	args = append(args, "query")
+	args = append(args, "b")
+
+	signedProposal, err := chain.CreateTransactionProposal(chainCodeID, chainID, args, true, nil)
+	if err != nil {
+		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
+	}
+	transactionProposalResponses, err := chain.SendTransactionProposal(signedProposal, 0, []fabricClient.Peer{chain.GetPrimaryPeer()})
+	if err != nil {
+		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
+	}
+
+	for _, v := range transactionProposalResponses {
+		if v.Err != nil {
+			return "", fmt.Errorf("query Endorser %s return error: %v", v.Endorser, v.Err)
+		}
+		return string(v.GetResponsePayload()), nil
+	}
+	return "", nil
+}
+
+func (setup *BaseSetupImpl) Invoke(chain fabricClient.Chain, eventHub events.EventHub) (string, error) {
+
+	var args []string
+	args = append(args, "invoke")
+	args = append(args, "move")
+	args = append(args, "a")
+	args = append(args, "b")
+	args = append(args, "1")
+
+	signedProposal, err := chain.CreateTransactionProposal(chainCodeID, chainID, args, true, nil)
+	if err != nil {
+		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
+	}
+	transactionProposalResponse, err := chain.SendTransactionProposal(signedProposal, 0, []fabricClient.Peer{chain.GetPrimaryPeer()})
+	if err != nil {
+		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
+	}
+
+	for _, v := range transactionProposalResponse {
+		if v.Err != nil {
+			return "", fmt.Errorf("invoke Endorser %s return error: %v", v.Endorser, v.Err)
+		}
+		fmt.Printf("invoke Endorser '%s' return ProposalResponse status:%v\n", v.Endorser, v.Status)
+	}
+
+	tx, err := chain.CreateTransaction(transactionProposalResponse)
+	if err != nil {
+		return "", fmt.Errorf("CreateTransaction return error: %v", err)
+
+	}
+	transactionResponse, err := chain.SendTransaction(tx)
+	if err != nil {
+		return "", fmt.Errorf("SendTransaction return error: %v", err)
+
+	}
+	for _, v := range transactionResponse {
+		if v.Err != nil {
+			return "", fmt.Errorf("Orderer %s return error: %v", v.Orderer, v.Err)
+		}
+	}
+	done := make(chan bool)
+	fail := make(chan error)
+	eventHub.RegisterTxEvent(signedProposal.TransactionID, func(txId string, err error) {
+		if err != nil {
+			fail <- err
+		} else {
+			fmt.Printf("invoke receive success event for txid(%s)\n", txId)
+			done <- true
+		}
+	})
+
+	select {
+	case <-done:
+	case <-fail:
+		return "", fmt.Errorf("invoke Error received from eventhub for txid(%s) error(%v)", signedProposal.TransactionID, fail)
+	case <-time.After(time.Second * 30):
+		return "", fmt.Errorf("invoke Didn't receive block event for txid(%s)", signedProposal.TransactionID)
+	}
+	return signedProposal.TransactionID, nil
+
+}
+
+func randomString(strlen int) string {
+	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+	result := make([]byte, strlen)
+	for i := 0; i < strlen; i++ {
+		result[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(result)
+}
+
+func (setup *BaseSetupImpl) ChangeGOPATHToDeploy() {
+	goPath = os.Getenv("GOPATH")
 	pwd, err := os.Getwd()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 	os.Setenv("GOPATH", path.Join(pwd, "../fixtures"))
+}
+
+func (setup *BaseSetupImpl) ResetGOPATH() {
+	os.Setenv("GOPATH", goPath)
+}
+
+func (setup *BaseSetupImpl) InitConfig() {
+	err := config.InitConfig("../fixtures/config/config_test.yaml")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	setup.GenerateRandomCCID()
+}
+
+func (setup *BaseSetupImpl) GenerateRandomCCID() {
+	rand.Seed(time.Now().UnixNano())
+	chainCodeID = randomString(10)
 }

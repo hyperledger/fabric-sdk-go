@@ -26,39 +26,44 @@ import (
 
 func TestChainQueries(t *testing.T) {
 
-	InitConfigForEndToEnd()
 	testSetup := BaseSetupImpl{}
+	testSetup.InitConfig()
 
-	eventHub := testSetup.GetEventHub(t, nil)
-	queryChain, invokeChain, deployChain := testSetup.GetChains(t)
-	testSetup.SetupChaincodeDeploy()
-	err := installCC(deployChain)
+	eventHub, err := testSetup.GetEventHub(nil)
+	if err != nil {
+		t.Fatalf("GetEventHub return error: %v", err)
+	}
+	chain, err := testSetup.GetChain()
+	if err != nil {
+		t.Fatalf("GetChain return error: %v", err)
+	}
+	err = testSetup.InstallCC(chain, chainCodeID, chainCodePath, chainCodeVersion, nil, nil)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
-	err = instantiateCC(deployChain, eventHub)
+	err = testSetup.InstantiateCC(chain, eventHub)
 	if err != nil {
 		t.Fatalf("instantiateCC return error: %v", err)
 	}
 
 	// Test Query Info - retrieve values before transaction
-	bciBeforeTx, err := queryChain.QueryInfo()
+	bciBeforeTx, err := chain.QueryInfo()
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
 	// Start transaction that will change block state
-	value, err := getQueryValue(t, queryChain)
+	value, err := testSetup.GetQueryValue(t, chain)
 	if err != nil {
 		t.Fatalf("getQueryValue return error: %v", err)
 	}
 
-	txID, err := invoke(t, invokeChain, eventHub)
+	txID, err := testSetup.Invoke(chain, eventHub)
 	if err != nil {
 		t.Fatalf("invoke return error: %v", err)
 	}
 
-	valueAfterInvoke, err := getQueryValue(t, queryChain)
+	valueAfterInvoke, err := testSetup.GetQueryValue(t, chain)
 	if err != nil {
 		t.Fatalf("getQueryValue return error: %v", err)
 	}
@@ -74,7 +79,7 @@ func TestChainQueries(t *testing.T) {
 	// End transaction that changed block state
 
 	// Test Query Info - retrieve values after transaction
-	bciAfterTx, err := queryChain.QueryInfo()
+	bciAfterTx, err := chain.QueryInfo()
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
@@ -85,7 +90,7 @@ func TestChainQueries(t *testing.T) {
 	}
 
 	// Test Query Transaction -- verify that transaction has been processed
-	processedTransaction, err := queryChain.QueryTransaction(txID)
+	processedTransaction, err := chain.QueryTransaction(txID)
 	if err != nil {
 		t.Fatalf("QueryTransaction return error: %v", err)
 	}
@@ -95,13 +100,13 @@ func TestChainQueries(t *testing.T) {
 	}
 
 	// Test Query Transaction -- Retrieve non existing transaction
-	processedTransaction, err = queryChain.QueryTransaction("123ABC")
+	processedTransaction, err = chain.QueryTransaction("123ABC")
 	if err == nil {
 		t.Fatalf("QueryTransaction non-existing didn't return an error")
 	}
 
 	// Test Query Block by Hash - retrieve current block by hash
-	block, err := queryChain.QueryBlockByHash(bciAfterTx.CurrentBlockHash)
+	block, err := chain.QueryBlockByHash(bciAfterTx.CurrentBlockHash)
 	if err != nil {
 		t.Fatalf("QueryBlockByHash return error: %v", err)
 	}
@@ -111,13 +116,13 @@ func TestChainQueries(t *testing.T) {
 	}
 
 	// Test Query Block by Hash - retrieve block by non-existent hash
-	block, err = queryChain.QueryBlockByHash([]byte("non-existent"))
+	block, err = chain.QueryBlockByHash([]byte("non-existent"))
 	if err == nil {
 		t.Fatalf("QueryBlockByHash non-existent didn't return an error")
 	}
 
 	// Test Query Block - retrieve block by number
-	block, err = queryChain.QueryBlock(1)
+	block, err = chain.QueryBlock(1)
 	if err != nil {
 		t.Fatalf("QueryBlock return error: %v", err)
 	}
@@ -127,7 +132,7 @@ func TestChainQueries(t *testing.T) {
 	}
 
 	// Test Query Block - retrieve block by non-existent number
-	block, err = queryChain.QueryBlock(2147483647)
+	block, err = chain.QueryBlock(2147483647)
 	if err == nil {
 		t.Fatalf("QueryBlock return error: %v", err)
 	}
