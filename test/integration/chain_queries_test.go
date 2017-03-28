@@ -134,6 +134,6 @@ func TestChainQueries(t *testing.T) {
 	// Test Query Block - retrieve block by non-existent number
 	block, err = chain.QueryBlock(2147483647)
 	if err == nil {
-		t.Fatalf("QueryBlock return error: %v", err)
+		t.Fatalf("QueryBlock non-existent didn't return an error")
 	}
 }

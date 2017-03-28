@@ -14,7 +14,7 @@ Profiles:
             <<: *OrdererDefaults
             Organizations:
                 - *OrdererOrg
-        Application: 
+        Application:
             <<: *ApplicationDefaults
             Organizations:
                 - *Org0
@@ -43,9 +43,9 @@ Organizations:
         # MSPDir is the filesystem path which contains the MSP configuration
         #########################################################################
         # FIXME: this path needs to be fixed to point to the actual location of #
-        # the project 'fabric-sdk-node' in the file system                      #
+        # the project 'fabric-sdk-go' in the file system                      #
         #########################################################################
-        MSPDir: /fabric-sdk-node/test/fixtures/channel/crypto-config/ordererOrganizations/ordererOrg1/msp
+        MSPDir: /fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/ordererOrg1/msp
 
         # BCCSP (Blockchain crypto provider): Select which crypto implementation or
         # library to use
@@ -54,11 +54,11 @@ Organizations:
             SW:
                 Hash: SHA2
                 Security: 256
-                # Location of Key Store. If this is unset, a location will 
+                # Location of Key Store. If this is unset, a location will
                 # be chosen using 'MSPDir'/keystore
-                FileKeyStore: 
-                    KeyStore: 
-                
+                FileKeyStore:
+                    KeyStore:
+
     - &Org0
         # DefaultOrg defines the organization which is used in the sampleconfig
         # of the fabric.git development environment
@@ -70,9 +70,9 @@ Organizations:
         # MSPDir is the filesystem path which contains the MSP configuration
         #########################################################################
         # FIXME: this path needs to be fixed to point to the actual location of #
-        # the project 'fabric-sdk-node' in the file system                      #
+        # the project 'fabric-sdk-go' in the file system                      #
         #########################################################################
-        MSPDir: /fabric-sdk-node/test/fixtures/channel/crypto-config/peerOrganizations/peerOrg1/msp/
+        MSPDir: /fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/peerOrg1/msp/
 
         # BCCSP (Blockchain crypto provider): Select which crypto implementation or
         # library to use
@@ -81,11 +81,11 @@ Organizations:
             SW:
                 Hash: SHA2
                 Security: 256
-                # Location of Key Store. If this is unset, a location will 
+                # Location of Key Store. If this is unset, a location will
                 # be chosen using 'MSPDir'/keystore
-                FileKeyStore: 
-                    KeyStore: 
-                
+                FileKeyStore:
+                    KeyStore:
+
         AnchorPeers:
             # AnchorPeers defines the location of peers which can be used
             # for cross org gossip communication.  Note, this value is only
@@ -106,9 +106,9 @@ Organizations:
         # MSPDir is the filesystem path which contains the MSP configuration
         #########################################################################
         # FIXME: this path needs to be fixed to point to the actual location of #
-        # the project 'fabric-sdk-node' in the file system                      #
+        # the project 'fabric-sdk-go' in the file system                      #
         #########################################################################
-        MSPDir: /fabric-sdk-node/test/fixtures/channel/crypto-config/peerOrganizations/peerOrg2/msp/
+        MSPDir: /fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/peerOrg2/msp/
 
         # BCCSP (Blockchain crypto provider): Select which crypto implementation or
         # library to use
@@ -117,11 +117,11 @@ Organizations:
             SW:
                 Hash: SHA2
                 Security: 256
-                # Location of Key Store. If this is unset, a location will 
+                # Location of Key Store. If this is unset, a location will
                 # be chosen using 'MSPDir'/keystore
-                FileKeyStore: 
-                    KeyStore: 
-                
+                FileKeyStore:
+                    KeyStore:
+
         AnchorPeers:
             # AnchorPeers defines the location of peers which can be used
             # for cross org gossip communication.  Note, this value is only
@@ -149,7 +149,7 @@ Orderer: &OrdererDefaults
         - orderer0:7050
 
     # Batch Timeout: The amount of time to wait before creating a batch
-    BatchTimeout: 10s
+    BatchTimeout: 1s
 
     # Batch Size: Controls the number of messages batched into a block
     BatchSize:

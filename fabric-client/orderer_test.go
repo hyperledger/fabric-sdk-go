@@ -36,7 +36,7 @@ func TestOrdererViaChain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	orderer, err := CreateNewOrderer("localhost:7050", "", "")
+	orderer, _ := CreateNewOrderer("localhost:7050", "", "")
 	chain.AddOrderer(orderer)
 
 	orderers := chain.GetOrderers()

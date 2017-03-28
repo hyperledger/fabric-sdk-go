@@ -55,7 +55,7 @@ type fabricCAConfig struct {
 var myViper = viper.New()
 var log = logging.MustGetLogger("fabric_sdk_go")
 var format = logging.MustStringFormatter(
-	`%{color}%{time:15:04:05.000} [%{module}] %{level:.4s} : %{message}`,
+	`%{color}%{time:15:04:05.000} [%{module}] %{level:.4s} : %{color:reset} %{message}`,
 )
 
 // InitConfig ...

@@ -63,7 +63,7 @@ type Chain interface {
 	AddOrderer(orderer Orderer)
 	RemoveOrderer(orderer Orderer)
 	GetOrderers() []Orderer
-	InitializeChain() bool
+	CreateChannel(request CreateChannelRequest) error
 	UpdateChain() bool
 	IsReadonly() bool
 	QueryInfo() (*common.BlockchainInfo, error)
@@ -136,6 +136,12 @@ type TransactionResponse struct {
 type SignedEnvelope struct {
 	Payload   []byte
 	signature []byte
+}
+
+// CreateChannelRequest requests channel creation on the network
+type CreateChannelRequest struct {
+	// Contains channel configuration (ConfigTx)
+	ConfigData []byte
 }
 
 // NewChain ...
@@ -335,17 +341,45 @@ func (c *chain) GetOrderers() []Orderer {
 	return orderersArray
 }
 
-// InitializeChain ...
-/**
- * Calls the orderer(s) to start building the new chain, which is a combination
- * of opening new message stream and connecting the list of participating peers.
- * This is a long-running process. Only one of the application instances needs
- * to call this method. Once the chain is successfully created, other application
- * instances only need to call getChain() to obtain the information about this chain.
- * @returns {bool} Whether the chain initialization process was successful.
- */
-func (c *chain) InitializeChain() bool {
-	return false
+// CreateChannel calls the an orderer to create a channel on the network
+// @param {CreateChannelRequest} request Contains cofiguration information
+// @returns {bool} result of the channel creation
+func (c *chain) CreateChannel(request CreateChannelRequest) error {
+	var failureCount int
+	// Validate request
+	if request.ConfigData == nil {
+		return fmt.Errorf("Configuration is required to create a chanel")
+	}
+
+	signedEnvelope := &common.Envelope{}
+	err := proto.Unmarshal(request.ConfigData, signedEnvelope)
+	if err != nil {
+		return fmt.Errorf("Error unmarshalling channel configuration data: %s",
+			err.Error())
+	}
+	// Send request
+	responseMap, err := c.broadcastEnvelope(&SignedEnvelope{
+		signature: signedEnvelope.Signature,
+		Payload:   signedEnvelope.Payload,
+	})
+	if err != nil {
+		return fmt.Errorf("Error broadcasting channel configuration: %s", err.Error())
+	}
+
+	for URL, resp := range responseMap {
+		if resp.Err != nil {
+			logger.Warningf("Could not broadcast to orderer: %s", URL)
+			failureCount++
+		}
+	}
+	// If all orderers returned error, the operation failed
+	if failureCount == len(responseMap) {
+		return fmt.Errorf(
+			"Broadcast failed: Received error from all configured orderers: %s",
+			responseMap[0].Err)
+	}
+
+	return nil
 }
 
 // UpdateChain ...

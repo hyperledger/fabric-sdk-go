@@ -44,6 +44,7 @@ type services struct {
 	fabricCAClient *fabric_ca.Client
 }
 
+// RegistrationRequest defines the attributes required to register a user with the CA
 type RegistrationRequest struct {
 	// Name is the unique name of the identity
 	Name string
@@ -58,6 +59,7 @@ type RegistrationRequest struct {
 	Attributes []Attribute
 }
 
+// RevocationRequest defines the attributes required to revoke credentials with the CA
 type RevocationRequest struct {
 	// Name of the identity whose certificates should be revoked
 	// If this field is omitted, then Serial and AKI must be specified.
@@ -72,6 +74,7 @@ type RevocationRequest struct {
 	Reason int
 }
 
+// Attribute defines additional attributes that may be passed along during registration
 type Attribute struct {
 	Key   string
 	Value string
@@ -144,7 +147,7 @@ func (fabricCAServices *services) Register(registrar fabricclient.User,
 	}
 	// Contruct request for Fabric CA client
 	var attributes []api.Attribute
-	for i, _ := range request.Attributes {
+	for i := range request.Attributes {
 		attributes = append(attributes, api.Attribute{Name: request.
 			Attributes[i].Key, Value: request.Attributes[i].Value})
 	}

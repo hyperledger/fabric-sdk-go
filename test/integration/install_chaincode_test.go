@@ -37,7 +37,7 @@ var chain fabricClient.Chain
 func TestChaincodeInstallUsingChaincodePath(t *testing.T) {
 	testSetup := BaseSetupImpl{}
 
-	chainCodeVersion := "v0" + strconv.Itoa(rand.Intn(100))
+	chainCodeVersion := getRandomCCVersion()
 	err := testSetup.InstallCC(chain, "install", chainCodePath, chainCodeVersion, nil, nil)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
@@ -59,7 +59,7 @@ func TestChaincodeInstallUsingChaincodePath(t *testing.T) {
 func TestChaincodeInstallUsingChaincodePackage(t *testing.T) {
 	testSetup := BaseSetupImpl{}
 
-	chainCodeVersion := "v0" + strconv.Itoa(rand.Intn(100))
+	chainCodeVersion := getRandomCCVersion()
 	testSetup.ChangeGOPATHToDeploy()
 	chaincodePackage, err := fabricClient.PackageCC(chainCodePath, "")
 	if err != nil {
@@ -96,6 +96,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func init() {
+func getRandomCCVersion() string {
 	rand.Seed(time.Now().UnixNano())
+	return "v0" + strconv.Itoa(rand.Intn(10000000))
 }
