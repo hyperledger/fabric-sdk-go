@@ -1,10 +1,15 @@
 # Hyperledger Fabric Client SDK for Go
+[![Go Report Card](https://goreportcard.com/badge/github.com/hyperledger/fabric-sdk-go)](https://goreportcard.com/report/github.com/hyperledger/fabric-sdk-go)
+[![GoDoc](https://godoc.org/github.com/hyperledger/fabric-sdk-go?status.svg)](https://godoc.org/github.com/hyperledger/fabric-sdk-go)
 
 The Hyperledger Fabric Client SDK makes it easy to use APIs to interact with a Hyperledger Fabric blockchain.
 
 This SDK is targeted both towards the external access to a Hyperledger Fabric blockchain using a Go application, as well as being targeted at the internal library in a peer to access API functions on other parts of the network.
 
 **NOTE:** In an effort to make the codebase more modular, there will be interface changes over the course of the next week.
+
+This is a **read-only mirror** of the formal [Gerrit](https://gerrit.hyperledger.org/r/#/admin/projects/fabric-sdk-go)
+repository, where active development is ongoing. Issue tracking is handled in [Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa?projectKey=FAB&rapidView=7&view=planning)
 
 ## Build and Test
 
@@ -18,7 +23,7 @@ Execute `go test` in the `test/integration` to run end-to-end tests. This requir
 - Run `create-channel.js` and `join-channel.js` in fabric-sdk-node test.
 
 
-## Work in Progress
+## Compatibility
 
 This client was last tested and found to be compatible with the following Hyperledger Fabric commit levels:
 - fabric: v1.0.0-alpha 
