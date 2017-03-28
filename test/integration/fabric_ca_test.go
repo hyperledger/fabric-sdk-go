@@ -29,19 +29,21 @@ import (
 	"time"
 
 	config "github.com/hyperledger/fabric-sdk-go/config"
-	fabric_client "github.com/hyperledger/fabric-sdk-go/fabric-client"
+	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
 	kvs "github.com/hyperledger/fabric-sdk-go/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 
-	fabric_ca_client "github.com/hyperledger/fabric-sdk-go/fabric-ca-client"
+	fabricCAClient "github.com/hyperledger/fabric-sdk-go/fabric-ca-client"
 )
 
 // This test loads/enrols an admin user
 // Using the admin, it registers, enrols, and revokes a test user
 func TestRegisterEnrollRevoke(t *testing.T) {
-	InitConfigForFabricCA()
-	client := fabric_client.NewClient()
+	testSetup := BaseSetupImpl{}
+
+	testSetup.InitConfig()
+	client := fabricClient.NewClient()
 
 	err := bccspFactory.InitFactories(&bccspFactory.FactoryOpts{
 		ProviderName: "SW",
@@ -67,7 +69,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 	client.SetStateStore(stateStore)
 
-	fabricCAClient, err := fabric_ca_client.NewFabricCAClient()
+	caClient, err := fabricCAClient.NewFabricCAClient()
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
@@ -79,7 +81,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		t.Fatalf("client.GetUserContext return error: %v", err)
 	}
 	if adminUser == nil {
-		key, cert, err := fabricCAClient.Enroll("admin", "adminpw")
+		key, cert, err := caClient.Enroll("admin", "adminpw")
 		if err != nil {
 			t.Fatalf("Enroll return error: %v", err)
 		}
@@ -107,7 +109,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		if err != nil {
 			t.Fatalf("pem Decode return error: %v", err)
 		}
-		adminUser = fabric_client.NewUser("admin")
+		adminUser = fabricClient.NewUser("admin")
 		k, err := client.GetCryptoSuite().KeyImport(keyPem.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: false})
 		if err != nil {
 			t.Fatalf("KeyImport return error: %v", err)
@@ -129,29 +131,25 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 	// Register a random user
 	userName := createRandomName()
-	registerRequest := fabric_ca_client.RegistrationRequest{Name: userName, Type: "user", Affiliation: "org1.department1"}
-	enrolmentSecret, err := fabricCAClient.Register(adminUser, &registerRequest)
+	registerRequest := fabricCAClient.RegistrationRequest{Name: userName, Type: "user", Affiliation: "org1.department1"}
+	enrolmentSecret, err := caClient.Register(adminUser, &registerRequest)
 	if err != nil {
 		t.Fatalf("Error from Register: %s", err)
 	}
 	fmt.Printf("Registered User: %s, Secret: %s\n", userName, enrolmentSecret)
 	// Enrol the previously registered user
-	_, _, err = fabricCAClient.Enroll(userName, enrolmentSecret)
+	_, _, err = caClient.Enroll(userName, enrolmentSecret)
 
 	if err != nil {
 		t.Fatalf("Error enroling user: %s", err.Error())
 	}
 
-	revokeRequest := fabric_ca_client.RevocationRequest{Name: userName}
-	err = fabricCAClient.Revoke(adminUser, &revokeRequest)
+	revokeRequest := fabricCAClient.RevocationRequest{Name: userName}
+	err = caClient.Revoke(adminUser, &revokeRequest)
 	if err != nil {
 		t.Fatalf("Error from Revoke: %s", err)
 	}
 
-}
-
-func InitConfigForFabricCA() {
-	config.InitConfig("../fixtures/config/config_test.yaml")
 }
 
 func createRandomName() string {
