@@ -59,7 +59,7 @@ func TestChainCodeInvoke(t *testing.T) {
 	}
 	fmt.Printf("*** QueryValue before invoke %s\n", value)
 
-	err = invoke(t, invokeChain, eventHub)
+	_, err = invoke(t, invokeChain, eventHub)
 	if err != nil {
 		t.Fatalf("invoke return error: %v", err)
 	}
@@ -92,7 +92,7 @@ func getQueryValue(t *testing.T, chain fabric_client.Chain) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
 	}
-	transactionProposalResponses, err := chain.SendTransactionProposal(signedProposal, 0)
+	transactionProposalResponses, err := chain.SendTransactionProposal(signedProposal, 0, nil)
 	if err != nil {
 		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
 	}
@@ -106,7 +106,7 @@ func getQueryValue(t *testing.T, chain fabric_client.Chain) (string, error) {
 	return "", nil
 }
 
-func invoke(t *testing.T, chain fabric_client.Chain, eventHub events.EventHub) error {
+func invoke(t *testing.T, chain fabric_client.Chain, eventHub events.EventHub) (string, error) {
 
 	var args []string
 	args = append(args, "invoke")
@@ -117,33 +117,33 @@ func invoke(t *testing.T, chain fabric_client.Chain, eventHub events.EventHub) e
 
 	signedProposal, err := chain.CreateTransactionProposal(chainCodeID, chainID, args, true, nil)
 	if err != nil {
-		return fmt.Errorf("SendTransactionProposal return error: %v", err)
+		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
 	}
-	transactionProposalResponse, err := chain.SendTransactionProposal(signedProposal, 0)
+	transactionProposalResponse, err := chain.SendTransactionProposal(signedProposal, 0, nil)
 	if err != nil {
-		return fmt.Errorf("SendTransactionProposal return error: %v", err)
+		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
 	}
 
 	for _, v := range transactionProposalResponse {
 		if v.Err != nil {
-			return fmt.Errorf("invoke Endorser %s return error: %v", v.Endorser, v.Err)
+			return "", fmt.Errorf("invoke Endorser %s return error: %v", v.Endorser, v.Err)
 		}
 		fmt.Printf("invoke Endorser '%s' return ProposalResponse status:%v\n", v.Endorser, v.Status)
 	}
 
 	tx, err := chain.CreateTransaction(transactionProposalResponse)
 	if err != nil {
-		return fmt.Errorf("CreateTransaction return error: %v", err)
+		return "", fmt.Errorf("CreateTransaction return error: %v", err)
 
 	}
 	transactionResponse, err := chain.SendTransaction(tx)
 	if err != nil {
-		return fmt.Errorf("SendTransaction return error: %v", err)
+		return "", fmt.Errorf("SendTransaction return error: %v", err)
 
 	}
 	for _, v := range transactionResponse {
 		if v.Err != nil {
-			return fmt.Errorf("Orderer %s return error: %v", v.Orderer, v.Err)
+			return "", fmt.Errorf("Orderer %s return error: %v", v.Orderer, v.Err)
 		}
 	}
 	done := make(chan bool)
@@ -160,17 +160,17 @@ func invoke(t *testing.T, chain fabric_client.Chain, eventHub events.EventHub) e
 	select {
 	case <-done:
 	case <-fail:
-		return fmt.Errorf("invoke Error received from eventhub for txid(%s) error(%v)", signedProposal.TransactionID, fail)
+		return "", fmt.Errorf("invoke Error received from eventhub for txid(%s) error(%v)", signedProposal.TransactionID, fail)
 	case <-time.After(time.Second * 30):
-		return fmt.Errorf("invoke Didn't receive block event for txid(%s)", signedProposal.TransactionID)
+		return "", fmt.Errorf("invoke Didn't receive block event for txid(%s)", signedProposal.TransactionID)
 	}
-	return nil
+	return signedProposal.TransactionID, nil
 
 }
 
 func installCC(chain fabric_client.Chain) error {
 
-	transactionProposalResponse, _, err := chain.SendInstallProposal(chainCodeID, chainCodePath, chainCodeVersion, nil)
+	transactionProposalResponse, _, err := chain.SendInstallProposal(chainCodeID, chainCodePath, chainCodeVersion, nil, nil)
 	if err != nil {
 		return fmt.Errorf("SendInstallProposal return error: %v", err)
 	}
@@ -195,7 +195,7 @@ func instantiateCC(chain fabric_client.Chain, eventHub events.EventHub) error {
 	args = append(args, "b")
 	args = append(args, "200")
 
-	transactionProposalResponse, txID, err := chain.SendInstantiateProposal(chainCodeID, chainID, args, chainCodePath, chainCodeVersion)
+	transactionProposalResponse, txID, err := chain.SendInstantiateProposal(chainCodeID, chainID, args, chainCodePath, chainCodeVersion, nil)
 	if err != nil {
 		return fmt.Errorf("SendInstantiateProposal return error: %v", err)
 	}

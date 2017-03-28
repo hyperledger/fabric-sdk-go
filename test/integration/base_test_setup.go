@@ -102,7 +102,7 @@ func (setup *BaseSetupImpl) GetChains(t *testing.T) (fabricClient.Chain, fabricC
 		}
 	}
 
-	querychain, err := client.NewChain("querychain")
+	querychain, err := client.NewChain("mychannel")
 	if err != nil {
 		t.Fatalf("NewChain return error: %v", err)
 	}
@@ -179,6 +179,7 @@ func (setup *BaseSetupImpl) GetEventHub(t *testing.T,
 	return eventHub
 }
 
+// SetupChaincodeDeploy set up environment
 func (setup *BaseSetupImpl) SetupChaincodeDeploy() {
 	pwd, err := os.Getwd()
 	if err != nil {

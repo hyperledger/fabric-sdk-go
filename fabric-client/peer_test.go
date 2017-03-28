@@ -72,7 +72,7 @@ func TestOrdererViaChainMissingOrderer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	_, err = chain.SendTransactionProposal(nil, 0)
+	_, err = chain.SendTransactionProposal(nil, 0, nil)
 	if err == nil {
 		t.Fatalf("SendTransactionProposal didn't return error")
 	}
@@ -99,7 +99,7 @@ func TestPeerViaChainNilData(t *testing.T) {
 		t.Fatalf("Failed to CreateNewPeer error(%v)", err)
 	}
 	chain.AddPeer(peer)
-	_, err = chain.SendTransactionProposal(nil, 0)
+	_, err = chain.SendTransactionProposal(nil, 0, nil)
 	if err == nil {
 		t.Fatalf("SendTransaction didn't return error")
 	}
