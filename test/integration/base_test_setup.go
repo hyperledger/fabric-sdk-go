@@ -201,7 +201,7 @@ func (setup *BaseSetupImpl) InstantiateCC(chain fabricClient.Chain, eventHub eve
 	args = append(args, "b")
 	args = append(args, "200")
 
-	transactionProposalResponse, txID, err := chain.SendInstantiateProposal(chainCodeID, chainID, args, chainCodePath, chainCodeVersion, nil)
+	transactionProposalResponse, txID, err := chain.SendInstantiateProposal(chainCodeID, chainID, args, chainCodePath, chainCodeVersion, []fabricClient.Peer{chain.GetPrimaryPeer()})
 	if err != nil {
 		return fmt.Errorf("SendInstantiateProposal return error: %v", err)
 	}
