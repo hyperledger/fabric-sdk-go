@@ -108,7 +108,7 @@ func (o *orderer) SendBroadcast(envelope *SignedEnvelope) error {
 				continue
 			}
 			if broadcastResponse.Status != common.Status_SUCCESS {
-				broadcastErr = fmt.Errorf("broadcast respone is not success : %v", broadcastResponse.Status)
+				broadcastErr = fmt.Errorf("broadcast response is not success : %v", broadcastResponse.Status)
 			}
 		}
 	}()

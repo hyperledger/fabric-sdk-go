@@ -177,7 +177,7 @@ func (ec *eventsClient) unregister(ies []*ehpb.Interest) error {
 	return err
 }
 
-// Recv recieves next event - use when client has not called Start
+// Recv receives next event - use when client has not called Start
 func (ec *eventsClient) Recv() (*ehpb.Event, error) {
 	in, err := ec.stream.Recv()
 	if err == io.EOF {

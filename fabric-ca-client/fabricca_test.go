@@ -72,12 +72,12 @@ func TestRegister(t *testing.T) {
 	}
 	user.SetEnrollmentCertificate(readCert(t))
 	user.SetPrivateKey(mockKey)
-	// Register without registration name paramter
+	// Register without registration name parameter
 	_, err = fabricCAClient.Register(user, &RegistrationRequest{})
 	if err.Error() != "Error Registering User: Register was called without a Name set" {
 		t.Fatalf("Expected error without registration information. Got: %s", err.Error())
 	}
-	// Register without registration affiliation paramter
+	// Register without registration affiliation parameter
 	_, err = fabricCAClient.Register(user, &RegistrationRequest{Name: "test"})
 	if err.Error() != "Error Registering User: Registration request does not have an affiliation" {
 		t.Fatalf("Expected error without registration information. Got: %s", err.Error())

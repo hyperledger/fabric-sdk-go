@@ -171,6 +171,7 @@ func (setup *BaseSetupImpl) GetEventHub(interestedEvents []*pb.Interest) (events
 	return eventHub, nil
 }
 
+// InstallCC ...
 func (setup *BaseSetupImpl) InstallCC(chain fabricClient.Chain, chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte, targets []fabricClient.Peer) error {
 	setup.ChangeGOPATHToDeploy()
 	transactionProposalResponse, _, err := chain.SendInstallProposal(chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, targets)
@@ -190,6 +191,7 @@ func (setup *BaseSetupImpl) InstallCC(chain fabricClient.Chain, chainCodeID stri
 
 }
 
+// InstantiateCC ...
 func (setup *BaseSetupImpl) InstantiateCC(chain fabricClient.Chain, eventHub events.EventHub) error {
 
 	var args []string
@@ -250,6 +252,7 @@ func (setup *BaseSetupImpl) InstantiateCC(chain fabricClient.Chain, eventHub eve
 
 }
 
+// GetQueryValue ...
 func (setup *BaseSetupImpl) GetQueryValue(t *testing.T, chain fabricClient.Chain) (string, error) {
 
 	var args []string
@@ -275,6 +278,7 @@ func (setup *BaseSetupImpl) GetQueryValue(t *testing.T, chain fabricClient.Chain
 	return "", nil
 }
 
+// Invoke ...
 func (setup *BaseSetupImpl) Invoke(chain fabricClient.Chain, eventHub events.EventHub) (string, error) {
 
 	var args []string
@@ -346,6 +350,7 @@ func randomString(strlen int) string {
 	return string(result)
 }
 
+// ChangeGOPATHToDeploy ...
 func (setup *BaseSetupImpl) ChangeGOPATHToDeploy() {
 	goPath = os.Getenv("GOPATH")
 	pwd, err := os.Getwd()
@@ -356,10 +361,12 @@ func (setup *BaseSetupImpl) ChangeGOPATHToDeploy() {
 	os.Setenv("GOPATH", path.Join(pwd, "../fixtures"))
 }
 
+// ResetGOPATH ...
 func (setup *BaseSetupImpl) ResetGOPATH() {
 	os.Setenv("GOPATH", goPath)
 }
 
+// InitConfig ...
 func (setup *BaseSetupImpl) InitConfig() {
 	err := config.InitConfig("../fixtures/config/config_test.yaml")
 	if err != nil {
@@ -368,6 +375,7 @@ func (setup *BaseSetupImpl) InitConfig() {
 	setup.GenerateRandomCCID()
 }
 
+// GenerateRandomCCID ...
 func (setup *BaseSetupImpl) GenerateRandomCCID() {
 	rand.Seed(time.Now().UnixNano())
 	chainCodeID = randomString(10)
