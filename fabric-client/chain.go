@@ -76,6 +76,19 @@ type Chain interface {
 	SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
 	SendInstallProposal(chaincodeName string, chaincodePath string, chaincodeVersion string, chaincodePackage []byte, targets []Peer) ([]*TransactionProposalResponse, string, error)
 	SendInstantiateProposal(chaincodeName string, chainID string, args []string, chaincodePath string, chaincodeVersion string, targets []Peer) ([]*TransactionProposalResponse, string, error)
+
+	QueryExtensionInterface() ChainExtension
+}
+
+// The ChainExtension interface allows extensions of the SDK to add functionality to Chain overloads.
+type ChainExtension interface {
+	GetClientContext() Client
+
+	SignPayload(payload []byte) (*SignedEnvelope, error)
+	BroadcastEnvelope(envelope *SignedEnvelope) ([]*TransactionResponse, error)
+
+	// TODO: This should go somewhere else?
+	GetProposalBytes(tp *TransactionProposal) ([]byte, error)
 }
 
 type chain struct {
@@ -165,6 +178,20 @@ func NewChain(name string, client Client) (Chain, error) {
 	logger.Infof("Constructed Chain instance: %v", c)
 
 	return c, nil
+}
+
+func (c *chain) QueryExtensionInterface() ChainExtension {
+	return c
+}
+
+// GetClientContext returns the Client that was passed in to NewChain
+func (c *chain) GetClientContext() Client {
+	return c.clientContext
+}
+
+// GetProposalBytes returns the serialized transaction.
+func (c *chain) GetProposalBytes(tp *TransactionProposal) ([]byte, error) {
+	return proto.Marshal(tp.signedProposal)
 }
 
 // GetName ...
@@ -358,7 +385,7 @@ func (c *chain) CreateChannel(request CreateChannelRequest) error {
 			err.Error())
 	}
 	// Send request
-	responseMap, err := c.broadcastEnvelope(&SignedEnvelope{
+	responseMap, err := c.BroadcastEnvelope(&SignedEnvelope{
 		signature: signedEnvelope.Signature,
 		Payload:   signedEnvelope.Payload,
 	})
@@ -788,12 +815,12 @@ func (c *chain) SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
 	}
 
 	// here's the envelope
-	envelope, err := c.signPayload(paylBytes)
+	envelope, err := c.SignPayload(paylBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	transactionResponses, err := c.broadcastEnvelope(envelope)
+	transactionResponses, err := c.BroadcastEnvelope(envelope)
 	if err != nil {
 		return nil, err
 	}
@@ -944,7 +971,7 @@ func (c *chain) SendInstantiateProposal(chaincodeName string, chainID string,
 	return transactionProposalResponse, txID, err
 }
 
-func (c *chain) signPayload(payload []byte) (*SignedEnvelope, error) {
+func (c *chain) SignPayload(payload []byte) (*SignedEnvelope, error) {
 	//Get user info
 	user, err := c.clientContext.GetUserContext("")
 	if err != nil {
@@ -961,7 +988,7 @@ func (c *chain) signPayload(payload []byte) (*SignedEnvelope, error) {
 }
 
 //broadcastEnvelope will send the given envelope to each orderer
-func (c *chain) broadcastEnvelope(envelope *SignedEnvelope) ([]*TransactionResponse, error) {
+func (c *chain) BroadcastEnvelope(envelope *SignedEnvelope) ([]*TransactionResponse, error) {
 	// Check if orderers are defined
 	if c.orderers == nil || len(c.orderers) == 0 {
 		return nil, fmt.Errorf("orderers not set")

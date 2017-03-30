@@ -39,10 +39,16 @@ type EventHub interface {
 	SetPeerAddr(peerURL string, certificate string, serverHostOverride string)
 	IsConnected() bool
 	Connect() error
-	RegisterChaincodeEvent(ccid string, eventname string, callback func(*pb.ChaincodeEvent)) *ChainCodeCBE
+	RegisterChaincodeEvent(ccid string, eventname string, callback func(*ChaincodeEvent)) *ChainCodeCBE
 	UnregisterChaincodeEvent(cbe *ChainCodeCBE)
 	RegisterTxEvent(txID string, callback func(string, error))
 	UnregisterTxEvent(txID string)
+}
+
+// The EventHubExt interface allows extensions of the SDK to add functionality to EventHub overloads.
+type EventHubExt interface {
+	SetInterests(block bool, rejection bool)
+	AddChaincodeInterest(ChaincodeID string, EventName string)
 }
 
 type eventHub struct {
@@ -68,6 +74,14 @@ type eventHub struct {
 	interestedEvents []*pb.Interest
 }
 
+// ChaincodeEvent contains the current event data for the event handler
+type ChaincodeEvent struct {
+	ChaincodeId string
+	TxId        string
+	EventName   string
+	Payload     []byte
+}
+
 // ChainCodeCBE ...
 /**
  * The ChainCodeCBE is used internal to the EventHub to hold chaincode
@@ -79,7 +93,7 @@ type ChainCodeCBE struct {
 	// event name regex filter
 	EventNameFilter string
 	// callback function to invoke on successful filter match
-	CallbackFunc func(*pb.ChaincodeEvent)
+	CallbackFunc func(*ChaincodeEvent)
 }
 
 // NewEventHub ...
@@ -88,13 +102,38 @@ func NewEventHub() EventHub {
 	blockRegistrants := make([]func(*common.Block), 0)
 	txRegistrants := make(map[string]func(string, error))
 
+	eventHub := &eventHub{chaincodeRegistrants: chaincodeRegistrants, blockRegistrants: blockRegistrants, txRegistrants: txRegistrants, interestedEvents: nil}
 	// default interested events
-	// TODO: set interestedEvents based on handler registration
-	interestedEvents := []*pb.Interest{{EventType: pb.EventType_BLOCK}}
-
-	eventHub := &eventHub{chaincodeRegistrants: chaincodeRegistrants, blockRegistrants: blockRegistrants, txRegistrants: txRegistrants, interestedEvents: interestedEvents}
+	eventHub.SetInterests(true, true)
 
 	return eventHub
+}
+
+// SetInterests clears all interests and sets the interests for BLOCK and REJECTION type of events.
+func (eventHub *eventHub) SetInterests(block bool, rejection bool) {
+	eventHub.mtx.Lock()
+	defer eventHub.mtx.Unlock()
+
+	eventHub.interestedEvents = nil
+	if block {
+		eventHub.interestedEvents = append(eventHub.interestedEvents, &pb.Interest{EventType: pb.EventType_BLOCK})
+	}
+	if rejection {
+		eventHub.interestedEvents = append(eventHub.interestedEvents, &pb.Interest{EventType: pb.EventType_REJECTION})
+	}
+}
+
+// AddChaincodeInterest adds interest for specific CHAINCODE events.
+func (eventHub *eventHub) AddChaincodeInterest(ChaincodeID string, EventName string) {
+	eventHub.interestedEvents = append(eventHub.interestedEvents, &pb.Interest{
+		EventType: pb.EventType_CHAINCODE,
+		RegInfo: &pb.Interest_ChaincodeRegInfo{
+			ChaincodeRegInfo: &pb.ChaincodeReg{
+				ChaincodeId: ChaincodeID,
+				EventName:   EventName,
+			},
+		},
+	})
 }
 
 // SetPeerAddr ...
@@ -149,6 +188,11 @@ func (eventHub *eventHub) Connect() error {
 	return nil
 }
 
+//SetInterestedEvents set events that client is interested in
+func (eventHub *eventHub) SetInterestedEvents(events []*pb.Interest) {
+	eventHub.interestedEvents = events
+}
+
 //GetInterestedEvents implements consumer.EventAdapter interface for registering interested events
 func (eventHub *eventHub) GetInterestedEvents() ([]*pb.Interest, error) {
 	return eventHub.interestedEvents, nil
@@ -180,7 +224,12 @@ func (eventHub *eventHub) Recv(msg *pb.Event) (bool, error) {
 			if v.EventNameFilter == ccEvent.ChaincodeEvent.EventName {
 				callback := v.CallbackFunc
 				if callback != nil {
-					callback(ccEvent.ChaincodeEvent)
+					callback(&ChaincodeEvent{
+						ChaincodeId: ccEvent.ChaincodeEvent.ChaincodeId,
+						TxId:        ccEvent.ChaincodeEvent.TxId,
+						EventName:   ccEvent.ChaincodeEvent.EventName,
+						Payload:     ccEvent.ChaincodeEvent.Payload,
+					})
 				}
 			}
 		}
@@ -217,13 +266,11 @@ func (eventHub *eventHub) Disconnected(err error) {
  * @returns {object} ChainCodeCBE object that should be treated as an opaque
  * handle used to unregister (see unregisterChaincodeEvent)
  */
-func (eventHub *eventHub) RegisterChaincodeEvent(ccid string, eventname string, callback func(*pb.ChaincodeEvent)) *ChainCodeCBE {
-	if !eventHub.connected {
-		return nil
-	}
-
+func (eventHub *eventHub) RegisterChaincodeEvent(ccid string, eventname string, callback func(*ChaincodeEvent)) *ChainCodeCBE {
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
+
+	eventHub.AddChaincodeInterest(ccid, eventname)
 
 	cbe := ChainCodeCBE{CCID: ccid, EventNameFilter: eventname, CallbackFunc: callback}
 	cbeArray := eventHub.chaincodeRegistrants[ccid]
@@ -245,10 +292,6 @@ func (eventHub *eventHub) RegisterChaincodeEvent(ccid string, eventname string, 
  * registerChaincodeEvent.
  */
 func (eventHub *eventHub) UnregisterChaincodeEvent(cbe *ChainCodeCBE) {
-	if !eventHub.connected {
-		return
-	}
-
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
 
