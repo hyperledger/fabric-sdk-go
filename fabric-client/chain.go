@@ -87,7 +87,7 @@ type ChainExtension interface {
 	SignPayload(payload []byte) (*SignedEnvelope, error)
 	BroadcastEnvelope(envelope *SignedEnvelope) ([]*TransactionResponse, error)
 
-	// TODO: This should go somewhere else?
+	// TODO: This should go somewhere else - see TransactionProposal.GetBytes(). - deprecated
 	GetProposalBytes(tp *TransactionProposal) ([]byte, error)
 }
 
@@ -109,6 +109,11 @@ type TransactionProposal struct {
 	proposal       *pb.Proposal
 }
 
+// GetBytes returns the serialized bytes of this proposal
+func (tp *TransactionProposal) GetBytes() ([]byte, error) {
+	return proto.Marshal(tp.signedProposal)
+}
+
 // TransactionProposalResponse ...
 /**
  * The TransactionProposalResponse result object returned from endorsers.
@@ -122,12 +127,20 @@ type TransactionProposalResponse struct {
 	proposalResponse *pb.ProposalResponse
 }
 
-// GetResponsePayload returns the response payload
+// GetResponsePayload returns the response object payload
 func (tpr *TransactionProposalResponse) GetResponsePayload() []byte {
 	if tpr == nil || tpr.proposalResponse == nil {
 		return nil
 	}
 	return tpr.proposalResponse.GetResponse().Payload
+}
+
+// GetPayload returns the response payload
+func (tpr *TransactionProposalResponse) GetPayload() []byte {
+	if tpr == nil || tpr.proposalResponse == nil {
+		return nil
+	}
+	return tpr.proposalResponse.Payload
 }
 
 // The Transaction object created from an endorsed proposal
