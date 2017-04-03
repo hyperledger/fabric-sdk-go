@@ -44,13 +44,14 @@ client:
   level: info
 
  fabricCA:
+  tlsEnabled: true
   id: "Org1MSP"
-  serverURL: "http://localhost:7054"
+  serverURL: "http://localhost:9054"
   certfiles :
-    - "../test/fixtures/root.pem"
+    - "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/root.pem"
   client:
-   keyfile: "../test/fixtures/tls_client-key.pem"
-   certfile: "../test/fixtures/tls_client-cert.pem"
+   keyfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls_client-key.pem"
+   certfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls_client-cert.pem"
 
  keystore:
   path: "/tmp/keystore"

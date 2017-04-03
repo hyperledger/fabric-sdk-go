@@ -28,6 +28,7 @@ import (
 )
 
 func TestEnrollWithMissingParameters(t *testing.T) {
+
 	fabricCAClient, err := NewFabricCAClient()
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
@@ -49,6 +50,7 @@ func TestEnrollWithMissingParameters(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
+
 	fabricCAClient, err := NewFabricCAClient()
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
@@ -94,6 +96,7 @@ func TestRegister(t *testing.T) {
 }
 
 func TestRevoke(t *testing.T) {
+
 	fabricCAClient, err := NewFabricCAClient()
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)

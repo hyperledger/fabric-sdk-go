@@ -21,12 +21,14 @@ package fabricca
 
 import (
 	"fmt"
-	"os"
+	"strings"
 
 	"github.com/hyperledger/fabric-ca/api"
 	fabric_ca "github.com/hyperledger/fabric-ca/lib"
 	"github.com/hyperledger/fabric-sdk-go/config"
 	fabricclient "github.com/hyperledger/fabric-sdk-go/fabric-client"
+
+	"io/ioutil"
 
 	"github.com/op/go-logging"
 )
@@ -85,18 +87,40 @@ type Attribute struct {
  * @param {string} clientConfigFile for fabric-ca services"
  */
 func NewFabricCAClient() (Services, error) {
-	configPath, err := config.GetFabricCAClientPath()
-	if err != nil {
-		return nil, fmt.Errorf("error setting up fabric-ca configurations: %s", err.Error())
-	}
-	//Remove temporary config file after setup
-	defer os.Remove(configPath)
-	// Create new Fabric-ca client with configs
-	c, err := fabric_ca.NewClient(configPath)
+
+	// Create new Fabric-ca client without configs
+	c, err := fabric_ca.NewClient("")
 	if err != nil {
 		return nil, fmt.Errorf("New fabricCAClient failed: %s", err)
 	}
 
+	certFile := config.GetFabricCAClientCertFile()
+	keyFile := config.GetFabricCAClientKeyFile()
+	serverCertFiles := config.GetServerCertFiles()
+
+	//set server URL
+	c.Config.URL = config.GetServerURL()
+	//certs file list
+	c.Config.TLS.CertFilesList = serverCertFiles
+	//concat cert files
+	c.Config.TLS.CertFiles = strings.Join(serverCertFiles[:], ",")
+	//set cert file into TLS context
+	file, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		logger.Errorf("Error reading fabric ca client propertiy certfile: %v", err)
+		return nil, fmt.Errorf("New fabricCAClient failed: %s", err)
+	}
+	c.Config.TLS.Client.CertFile = string(file)
+	//set key file into TLS context
+	keyfile, err := ioutil.ReadFile(keyFile)
+	if err != nil {
+		logger.Errorf("Error reading fabric ca client property keyfile: %v", err)
+		return nil, fmt.Errorf("New fabricCAClient failed: %s", err)
+	}
+	c.Config.TLS.Client.KeyFile = string(keyfile)
+
+	//TLS falg enabled/disabled
+	c.Config.TLS.Enabled = config.GetFabricCATLSEnabledFlag()
 	fabricCAClient := &services{fabricCAClient: c}
 	logger.Infof("Constructed fabricCAClient instance: %v", fabricCAClient)
 

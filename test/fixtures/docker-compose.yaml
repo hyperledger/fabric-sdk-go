@@ -6,7 +6,7 @@ services:
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
     ports:
-      - "7054:7054"
+      - "9054:7054"
     command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/peerOrg1-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/d8a5b3cac1b821f6e4b487ceaf1fd239cdcfc310894150908b90f05e9179556a_sk -b admin:adminpw' -d
     volumes:
       - ./channel/crypto-config/peerOrganizations/peerOrg1/ca/:/etc/hyperledger/fabric-ca-server-config

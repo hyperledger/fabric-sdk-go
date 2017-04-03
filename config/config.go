@@ -21,7 +21,6 @@ package config
 
 import (
 	"crypto/x509"
-	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -41,15 +40,6 @@ type PeerConfig struct {
 	EventPort             string
 	TLSCertificate        string
 	TLSServerHostOverride string
-}
-
-type fabricCAConfig struct {
-	ServerURL string   `json:"serverURL"`
-	Certfiles []string `json:"certfiles"`
-	Client    struct {
-		Keyfile  string `json:"keyfile"`
-		Certfile string `json:"certfile"`
-	} `json:"client"`
 }
 
 var myViper = viper.New()
@@ -74,7 +64,7 @@ func InitConfig(configFile string) error {
 			return fmt.Errorf("Fatal error config file: %v", err)
 		}
 	}
-
+	log.Debug(myViper.GetString("client.fabricCA.serverURL"))
 	backend := logging.NewLogBackend(os.Stderr, "", 0)
 	backendFormatter := logging.NewBackendFormatter(backend, format)
 
@@ -91,6 +81,36 @@ func InitConfig(configFile string) error {
 	logging.SetBackend(backendFormatter).SetLevel(logging.Level(logLevel), "fabric_sdk_go")
 
 	return nil
+}
+
+//GetServerURL Read configuration option for the fabric CA server URL
+func GetServerURL() string {
+	return strings.Replace(myViper.GetString("client.fabricCA.serverURL"), "$GOPATH", os.Getenv("GOPATH"), -1)
+}
+
+//GetServerCertFiles Read configuration option for the server certificate files
+func GetServerCertFiles() []string {
+	certFiles := myViper.GetStringSlice("client.fabricCA.certfiles")
+	certFileModPath := make([]string, len(certFiles))
+	for i, v := range certFiles {
+		certFileModPath[i] = strings.Replace(v, "$GOPATH", os.Getenv("GOPATH"), -1)
+	}
+	return certFileModPath
+}
+
+//GetFabricCAClientKeyFile Read configuration option for the fabric CA client key file
+func GetFabricCAClientKeyFile() string {
+	return strings.Replace(myViper.GetString("client.fabricCA.client.keyfile"), "$GOPATH", os.Getenv("GOPATH"), -1)
+}
+
+//GetFabricCAClientCertFile Read configuration option for the fabric CA client cert file
+func GetFabricCAClientCertFile() string {
+	return strings.Replace(myViper.GetString("client.fabricCA.client.keyfile"), "$GOPATH", os.Getenv("GOPATH"), -1)
+}
+
+//GetFabricCATLSEnabledFlag Read configuration option for the fabric CA TLS flag
+func GetFabricCATLSEnabledFlag() bool {
+	return myViper.GetBool("client.fabricCA.tlsEnabled")
 }
 
 // GetFabricClientViper returns the internal viper instance used by the
@@ -219,25 +239,6 @@ func GetOrdererTLSCertificate() string {
 // GetFabricCAID ...
 func GetFabricCAID() string {
 	return myViper.GetString("client.fabricCA.id")
-}
-
-// GetFabricCAClientPath This method will read the fabric-ca configurations from the
-// config yaml file and return the path to a json client config file
-// in the format that is expected by the fabric-ca client
-func GetFabricCAClientPath() (string, error) {
-	filePath := "/tmp/client-config.json"
-	fabricCAConf := fabricCAConfig{}
-	err := myViper.UnmarshalKey("client.fabricCA", &fabricCAConf)
-	if err != nil {
-		return "", err
-	}
-	jsonConfig, err := json.Marshal(fabricCAConf)
-	if err != nil {
-		return "", err
-	}
-
-	err = ioutil.WriteFile(filePath, jsonConfig, 0644)
-	return filePath, err
 }
 
 // GetKeyStorePath ...
