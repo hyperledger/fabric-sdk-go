@@ -253,7 +253,7 @@ func (setup *BaseSetupImpl) InstantiateCC(chain fabricClient.Chain, eventHub eve
 }
 
 // GetQueryValue ...
-func (setup *BaseSetupImpl) GetQueryValue(t *testing.T, chain fabricClient.Chain) (string, error) {
+func (setup *BaseSetupImpl) GetQueryValue(chain fabricClient.Chain) (string, error) {
 
 	var args []string
 	args = append(args, "invoke")

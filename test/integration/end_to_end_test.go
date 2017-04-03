@@ -47,7 +47,7 @@ func TestChainCodeInvoke(t *testing.T) {
 		t.Fatalf("instantiateCC return error: %v", err)
 	}
 	// Get Query value before invoke
-	value, err := testSetup.GetQueryValue(t, chain)
+	value, err := testSetup.GetQueryValue(chain)
 	if err != nil {
 		t.Fatalf("getQueryValue return error: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestChainCodeInvoke(t *testing.T) {
 		t.Fatalf("invoke return error: %v", err)
 	}
 
-	valueAfterInvoke, err := testSetup.GetQueryValue(t, chain)
+	valueAfterInvoke, err := testSetup.GetQueryValue(chain)
 	if err != nil {
 		t.Errorf("getQueryValue return error: %v", err)
 		return

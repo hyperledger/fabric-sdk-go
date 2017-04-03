@@ -69,6 +69,31 @@ func TestQueryMethods(t *testing.T) {
 		t.Fatalf("Query hash cannot be nil")
 	}
 
+	_, err = chain.QueryChannels(nil)
+	if err == nil {
+		t.Fatalf("QueryChanels: peer cannot be nil")
+	}
+
+	_, err = chain.QueryInstalledChaincodes(nil)
+	if err == nil {
+		t.Fatalf("QueryInstalledChaincodes: peer cannot be nil")
+	}
+
+	_, err = chain.QueryByChaincode("", []string{"method"}, nil)
+	if err == nil {
+		t.Fatalf("QueryByChaincode: name cannot be empty")
+	}
+
+	_, err = chain.QueryByChaincode("qscc", nil, nil)
+	if err == nil {
+		t.Fatalf("QueryByChaincode: arguments cannot be empty")
+	}
+
+	_, err = chain.QueryByChaincode("qscc", []string{"method"}, nil)
+	if err == nil {
+		t.Fatalf("QueryByChaincode: targets cannot be empty")
+	}
+
 }
 
 func TestTargetPeers(t *testing.T) {

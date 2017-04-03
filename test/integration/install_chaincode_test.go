@@ -37,14 +37,34 @@ var chain fabricClient.Chain
 func TestChaincodeInstallUsingChaincodePath(t *testing.T) {
 	testSetup := BaseSetupImpl{}
 
+	chainCodeName := "install"
+
 	chainCodeVersion := getRandomCCVersion()
-	err := testSetup.InstallCC(chain, "install", chainCodePath, chainCodeVersion, nil, nil)
+	err := testSetup.InstallCC(chain, chainCodeName, chainCodePath, chainCodeVersion, nil, nil)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
+	// Retrieve installed chaincodes
+	chaincodeQueryResponse, err := chain.QueryInstalledChaincodes(chain.GetPrimaryPeer())
+	if err != nil {
+		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
+	}
+
+	ccFound := false
+	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+		if chaincode.Name == chainCodeName && chaincode.Path == chainCodePath && chaincode.Version == chainCodeVersion {
+			fmt.Printf("Found chaincode: %s\n", chaincode)
+			ccFound = true
+		}
+	}
+
+	if !ccFound {
+		t.Fatalf("Failed to retrieve installed chaincode.")
+	}
+
 	//Install same chaincode again, should fail
-	err = testSetup.InstallCC(chain, "install", chainCodePath, chainCodeVersion, nil, nil)
+	err = testSetup.InstallCC(chain, chainCodeName, chainCodePath, chainCodeVersion, nil, nil)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
