@@ -70,6 +70,10 @@ type Chain interface {
 	QueryBlock(blockNumber int) (*common.Block, error)
 	QueryBlockByHash(blockHash []byte) (*common.Block, error)
 	QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error)
+	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
+	QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error)
+	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
+	QueryByChaincode(chaincodeName string, args []string, targets []Peer) ([][]byte, error)
 	CreateTransactionProposal(chaincodeName string, chainID string, args []string, sign bool, transientData map[string][]byte) (*TransactionProposal, error)
 	SendTransactionProposal(proposal *TransactionProposal, retry int, targets []Peer) ([]*TransactionProposalResponse, error)
 	CreateTransaction(resps []*TransactionProposalResponse) (*Transaction, error)
@@ -448,6 +452,7 @@ func (c *chain) IsReadonly() bool {
 /**
  * Queries for various useful information on the state of the Chain
  * (height, known peers).
+ * This query will be made to the primary peer.
  * @returns {object} With height, currently the only useful info.
  */
 func (c *chain) QueryInfo() (*common.BlockchainInfo, error) {
@@ -457,7 +462,7 @@ func (c *chain) QueryInfo() (*common.BlockchainInfo, error) {
 	args = append(args, "GetChainInfo")
 	args = append(args, c.GetName())
 
-	payload, err := c.query(args)
+	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetChainInfo return error: %v", err)
 	}
@@ -474,6 +479,7 @@ func (c *chain) QueryInfo() (*common.BlockchainInfo, error) {
 // QueryBlock ...
 /**
  * Queries the ledger for Block by block number.
+ * This query will be made to the primary peer.
  * @param {int} blockNumber The number which is the ID of the Block.
  * @returns {object} Object containing the block.
  */
@@ -489,7 +495,7 @@ func (c *chain) QueryBlock(blockNumber int) (*common.Block, error) {
 	args = append(args, c.GetName())
 	args = append(args, strconv.Itoa(blockNumber))
 
-	payload, err := c.query(args)
+	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetBlockByNumber return error: %v", err)
 	}
@@ -522,7 +528,7 @@ func (c *chain) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 	args = append(args, c.GetName())
 	args = append(args, string(blockHash[:len(blockHash)]))
 
-	payload, err := c.query(args)
+	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetBlockByHash return error: %v", err)
 	}
@@ -551,7 +557,7 @@ func (c *chain) QueryTransaction(transactionID string) (*pb.ProcessedTransaction
 	args = append(args, c.GetName())
 	args = append(args, transactionID)
 
-	payload, err := c.query(args)
+	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetBlockByNumber return error: %v", err)
 	}
@@ -565,40 +571,153 @@ func (c *chain) QueryTransaction(transactionID string) (*pb.ProcessedTransaction
 	return transaction, nil
 }
 
+//QueryInstalledChaincodes
 /**
- * Generic query functionality for qscc
+ * Queries the installed chaincodes on a peer
+ * Returning the details of all chaincodes installed on a peer.
+ * @param {Peer} peer
+ * @returns {object} ChaincodeQueryResponse proto
+ */
+
+func (c *chain) QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error) {
+
+	payload, err := c.queryByChaincodeByTarget("lccc", []string{"getinstalledchaincodes"}, peer)
+	if err != nil {
+		return nil, fmt.Errorf("Invoke lccc getinstalledchaincodes return error: %v", err)
+	}
+
+	response := new(pb.ChaincodeQueryResponse)
+	err = proto.Unmarshal(payload, response)
+	if err != nil {
+		return nil, fmt.Errorf("Unmarshal ChaincodeQueryResponse return error: %v", err)
+	}
+
+	return response, nil
+}
+
+//QueryInstantiatedChaincodes
+/**
+ * Queries the instantiated chaincodes on this channel.
  * This query will be made to the primary peer.
+ * @returns {object} ChaincodeQueryResponse proto
+ */
+func (c *chain) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
+
+	payload, err := c.queryByChaincodeByTarget("lccc", []string{"getchaincodes"}, c.GetPrimaryPeer())
+	if err != nil {
+		return nil, fmt.Errorf("Invoke lccc getchaincodes return error: %v", err)
+	}
+
+	response := new(pb.ChaincodeQueryResponse)
+	err = proto.Unmarshal(payload, response)
+	if err != nil {
+		return nil, fmt.Errorf("Unmarshal ChaincodeQueryResponse return error: %v", err)
+	}
+
+	return response, nil
+}
+
+//QueryChannels
+/**
+ * Queries the names of all the channels that a
+ * peer has joined.
+ * @param {Peer} peer
+ * @returns {object} ChannelQueryResponse proto
+ */
+
+func (c *chain) QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error) {
+
+	payload, err := c.queryByChaincodeByTarget("cscc", []string{"GetChannels"}, peer)
+	if err != nil {
+		return nil, fmt.Errorf("Invoke cscc GetChannels return error: %v", err)
+	}
+
+	response := new(pb.ChannelQueryResponse)
+	err = proto.Unmarshal(payload, response)
+	if err != nil {
+		return nil, fmt.Errorf("Unmarshal ChannelQueryResponse return error: %v", err)
+	}
+
+	return response, nil
+}
+
+/**
+ * Generic helper for query functionality for chain
+ * This query will be made to one target peer and will return one result only.
+ * @parame {string} chaincode name
  * @param {[]string} invoke arguments
+ * @param {Peer} target peer
  * @returns {[]byte} payload
  */
-func (c *chain) query(args []string) ([]byte, error) {
+func (c *chain) queryByChaincodeByTarget(chaincodeName string, args []string, target Peer) ([]byte, error) {
 
-	signedProposal, err := c.CreateTransactionProposal("qscc", "", args, true, nil)
+	queryResponses, err := c.QueryByChaincode(chaincodeName, args, []Peer{target})
 	if err != nil {
-		return nil, fmt.Errorf("query - CreateTransactionProposal return error: %v", err)
+		return nil, fmt.Errorf("QueryByChaincode return error: %v", err)
 	}
 
-	primary := c.GetPrimaryPeer()
+	// we are only querying one peer hence one result
+	if len(queryResponses) != 1 {
+		return nil, fmt.Errorf("queryByChaincodeByTarget should have one result only - result number: %d", len(queryResponses))
+	}
 
-	logger.Debugf("Calling QSCC function %v on primary: %s\n", args[0], primary.GetURL())
+	return queryResponses[0], nil
 
-	transactionProposalResponses, err := c.SendTransactionProposal(signedProposal, 0, []Peer{primary})
+}
+
+//QueryByChaincode
+/**
+* Sends a proposal to one or more endorsing peers that will be handled by the chaincode.
+* This request will be presented to the chaincode 'invoke' and must understand
+* from the arguments that this is a query request. The chaincode must also return
+* results in the byte array format and the caller will have to be able to decode
+* these results
+ * @parame {string} chaincode name
+ * @param {[]string} invoke arguments
+ * @param {[]Peer} target peers
+ * @returns {[][]byte} an array of payloads
+*/
+func (c *chain) QueryByChaincode(chaincodeName string, args []string, targets []Peer) ([][]byte, error) {
+
+	if chaincodeName == "" {
+		return nil, fmt.Errorf("Missing chaincode name")
+	}
+
+	if args == nil || len(args) < 1 {
+		return nil, fmt.Errorf("Missing invoke arguments")
+	}
+
+	if targets == nil || len(targets) < 1 {
+		return nil, fmt.Errorf("Missing target peers")
+	}
+
+	logger.Debugf("Calling %s function %v on targets: %s\n", chaincodeName, args[0], targets)
+
+	signedProposal, err := c.CreateTransactionProposal(chaincodeName, "", args, true, nil)
 	if err != nil {
-		return nil, fmt.Errorf("query - SendTransactionProposal return error: %v", err)
+		return nil, fmt.Errorf("CreateTransactionProposal return error: %v", err)
 	}
 
-	// we are only querying the primary peer hence one result
-	if len(transactionProposalResponses) != 1 {
-		return nil, fmt.Errorf("query - Should have one result only - result number: %d", len(transactionProposalResponses))
+	transactionProposalResponses, err := c.SendTransactionProposal(signedProposal, 0, targets)
+	if err != nil {
+		return nil, fmt.Errorf("SendTransactionProposal return error: %v", err)
 	}
 
-	response := transactionProposalResponses[0]
-	if response.Err != nil {
-		return nil, fmt.Errorf("query qscc %s return error: %v", response.Endorser, response.Err)
+	var responses [][]byte
+	errMsg := ""
+	for _, response := range transactionProposalResponses {
+		if response.Err != nil {
+			errMsg = errMsg + response.Err.Error() + "\n"
+		} else {
+			responses = append(responses, response.GetResponsePayload())
+		}
 	}
 
-	return response.GetResponsePayload(), nil
+	if len(errMsg) > 0 {
+		return responses, fmt.Errorf(errMsg)
+	}
 
+	return responses, nil
 }
 
 // CreateTransactionProposal ...
@@ -661,14 +780,18 @@ func (c *chain) SendTransactionProposal(proposal *TransactionProposal, retry int
 		return nil, fmt.Errorf("signedProposal is nil")
 	}
 
-	var responseMtx sync.Mutex
-	var transactionProposalResponses []*TransactionProposalResponse
-	var wg sync.WaitGroup
-
 	targetPeers, err := c.getTargetPeers(targets)
 	if err != nil {
 		return nil, fmt.Errorf("GetTargetPeers return error: %s", err)
 	}
+
+	if len(targetPeers) < 1 {
+		return nil, fmt.Errorf("Missing peer objects for sending transaction proposal")
+	}
+
+	var responseMtx sync.Mutex
+	var transactionProposalResponses []*TransactionProposalResponse
+	var wg sync.WaitGroup
 
 	for _, p := range targetPeers {
 		wg.Add(1)
@@ -874,6 +997,10 @@ func (c *chain) SendInstallProposal(chaincodeName string, chaincodePath string, 
 		return nil, "", fmt.Errorf("Invalid target peers return error: %s", err)
 	}
 
+	if len(targetPeers) < 1 {
+		return nil, "", fmt.Errorf("Missing peer objects for install CC proposal")
+	}
+
 	now := time.Now()
 	cds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion}},
@@ -936,6 +1063,10 @@ func (c *chain) SendInstantiateProposal(chaincodeName string, chainID string,
 	targetPeers, err := c.getTargetPeers(targets)
 	if err != nil {
 		return nil, "", fmt.Errorf("GetTargetPeers return error: %s", err)
+	}
+
+	if len(targetPeers) < 1 {
+		return nil, "", fmt.Errorf("Missing peer objects for instantiate CC proposal")
 	}
 
 	argsArray := make([][]byte, len(args))
