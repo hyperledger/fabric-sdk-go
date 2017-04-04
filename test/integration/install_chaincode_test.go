@@ -68,7 +68,6 @@ func TestChaincodeInstallUsingChaincodePath(t *testing.T) {
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
-	fmt.Println(err.Error())
 	if strings.Contains(err.Error(), "chaincodes/install.v"+chainCodeVersion+" exists") {
 		t.Fatalf("install same chaincode didn't return the correct error")
 	}
@@ -96,7 +95,6 @@ func TestChaincodeInstallUsingChaincodePackage(t *testing.T) {
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
-	fmt.Println(err.Error())
 	if strings.Contains(err.Error(), "chaincodes/install.v"+chainCodeVersion+" exists") {
 		t.Fatalf("install same chaincode didn't return the correct error")
 	}

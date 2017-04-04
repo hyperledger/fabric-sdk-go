@@ -27,7 +27,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/fabric-client"
 )
 
-func TestChannelCreation(t *testing.T) {
+func testChannelCreation(t *testing.T) {
 	initializeConfiguration(t)
 
 	testSetup := BaseSetupImpl{}

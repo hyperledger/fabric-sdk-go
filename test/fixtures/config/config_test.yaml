@@ -46,7 +46,7 @@ client:
  fabricCA:
   tlsEnabled: true
   id: "Org1MSP"
-  serverURL: "http://localhost:9054"
+  serverURL: "http://localhost:7054"
   certfiles :
     - "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/root.pem"
   client:
