@@ -105,7 +105,7 @@ func GetFabricCAClientKeyFile() string {
 
 //GetFabricCAClientCertFile Read configuration option for the fabric CA client cert file
 func GetFabricCAClientCertFile() string {
-	return strings.Replace(myViper.GetString("client.fabricCA.client.keyfile"), "$GOPATH", os.Getenv("GOPATH"), -1)
+	return strings.Replace(myViper.GetString("client.fabricCA.client.certfile"), "$GOPATH", os.Getenv("GOPATH"), -1)
 }
 
 //GetFabricCATLSEnabledFlag Read configuration option for the fabric CA TLS flag
