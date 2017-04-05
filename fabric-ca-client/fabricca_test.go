@@ -20,12 +20,22 @@ limitations under the License.
 package fabricca
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/config"
 	"github.com/hyperledger/fabric-sdk-go/fabric-ca-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/fabric-client"
 )
+
+// Load testing config
+func TestMain(t *testing.T) {
+	err := config.InitConfig("../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+}
 
 func TestEnrollWithMissingParameters(t *testing.T) {
 
