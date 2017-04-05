@@ -22,11 +22,17 @@ package fabricclient
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"testing"
 
+	"google.golang.org/grpc"
+
 	mocks "github.com/hyperledger/fabric-sdk-go/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
+
+var testAddress = "0.0.0.0:5244"
 
 func TestChainMethods(t *testing.T) {
 	client := NewClient()
@@ -181,7 +187,7 @@ func TestCreateChain(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	// Create channel without configuration
-	err = chain.CreateChannel(CreateChannelRequest{})
+	err = chain.CreateChannel(&CreateChannelRequest{})
 	if err == nil {
 		t.Fatalf("Expected error creating channel without config tx")
 	}
@@ -194,7 +200,7 @@ func TestCreateChain(t *testing.T) {
 	orderer := mockOrderer{fmt.Sprintf("0.0.0.0:1234"), nil}
 	chain.AddOrderer(&orderer)
 	// Test with valid cofiguration
-	err = chain.CreateChannel(CreateChannelRequest{ConfigData: configTx})
+	err = chain.CreateChannel(&CreateChannelRequest{ConfigData: configTx})
 	if err != nil {
 		t.Fatalf("Did not expect error from create channel. Got error: %s", err.Error())
 	}
@@ -238,6 +244,55 @@ func TestConcurrentOrderers(t *testing.T) {
 	}
 }
 
+func TestJoinChannel(t *testing.T) {
+	var peers []Peer
+	endorserServer := startEndorserServer(t)
+	chain, _ := setupTestChain()
+	peer, _ := CreateNewPeer(testAddress, "", "")
+	peers = append(peers, peer)
+	orderer := &mockOrderer{}
+	nonce, _ := util.GenerateRandomNonce()
+	txID, _ := util.ComputeTxID(nonce, []byte("testID"))
+	request := &JoinChannelRequest{Targets: peers, Nonce: nonce, TxID: txID}
+	chain.AddOrderer(orderer)
+	chain.AddPeer(peer)
+	// Test join channel with valid arguments
+	err := chain.JoinChannel(request)
+	if err != nil {
+		t.Fatalf("Did not expect error from join channel. Got: %s", err)
+	}
+	// Test join channel without request
+	err = chain.JoinChannel(nil)
+	if err.Error() != "JoinChannelRequest argument is required to join channel" {
+		t.Fatalf("Expected error without join channel request")
+	}
+	// Test join channel without target peers
+	request = &JoinChannelRequest{Targets: nil, Nonce: nonce, TxID: txID}
+	err = chain.JoinChannel(request)
+	if err.Error() != "Atleast one target peer is required to join channel" {
+		t.Fatalf("Expected error without target peers")
+	}
+	// Test join channel without nonce
+	request = &JoinChannelRequest{Targets: peers, Nonce: nil, TxID: txID}
+	err = chain.JoinChannel(request)
+	if err.Error() != "Nonce is required to join channel" {
+		t.Fatalf("Expected error without nonce")
+	}
+	// Test join channel without TxID
+	request = &JoinChannelRequest{Targets: peers, Nonce: nonce, TxID: ""}
+	err = chain.JoinChannel(request)
+	if err.Error() != "Transaction ID is required to join channel" {
+		t.Fatalf("Expected error without transaction ID")
+	}
+	// Test failed proposal error handling
+	endorserServer.ProposalError = fmt.Errorf("Test Error")
+	request = &JoinChannelRequest{Targets: peers, Nonce: nonce, TxID: txID}
+	err = chain.JoinChannel(request)
+	if err == nil {
+		t.Fatalf("Expected error")
+	}
+}
+
 func setupTestChain() (Chain, error) {
 	client := NewClient()
 	user := NewUser("test")
@@ -264,4 +319,18 @@ func setupMassiveTestChain(numberOfPeers int, numberOfOrderers int) (Chain, erro
 	}
 
 	return chain, error
+}
+
+func startEndorserServer(t *testing.T) *mocks.MockEndorserServer {
+	grpcServer := grpc.NewServer()
+	lis, err := net.Listen("tcp", testAddress)
+	endorserServer := &mocks.MockEndorserServer{}
+	pb.RegisterEndorserServer(grpcServer, endorserServer)
+	if err != nil {
+		fmt.Printf("Error starting test server %s", err)
+		t.FailNow()
+	}
+	fmt.Printf("Starting test server\n")
+	go grpcServer.Serve(lis)
+	return endorserServer
 }

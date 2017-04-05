@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
 	"github.com/hyperledger/fabric/bccsp"
 	msp "github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric/protos/common"
@@ -63,7 +64,8 @@ type Chain interface {
 	AddOrderer(orderer Orderer)
 	RemoveOrderer(orderer Orderer)
 	GetOrderers() []Orderer
-	CreateChannel(request CreateChannelRequest) error
+	CreateChannel(request *CreateChannelRequest) error
+	JoinChannel(request *JoinChannelRequest) error
 	UpdateChain() bool
 	IsReadonly() bool
 	QueryInfo() (*common.BlockchainInfo, error)
@@ -172,6 +174,13 @@ type SignedEnvelope struct {
 type CreateChannelRequest struct {
 	// Contains channel configuration (ConfigTx)
 	ConfigData []byte
+}
+
+// JoinChannelRequest allows a set of peers to transact on a channel on the network
+type JoinChannelRequest struct {
+	Targets []Peer
+	TxID    string
+	Nonce   []byte
 }
 
 // NewChain ...
@@ -388,10 +397,10 @@ func (c *chain) GetOrderers() []Orderer {
 // CreateChannel calls the an orderer to create a channel on the network
 // @param {CreateChannelRequest} request Contains cofiguration information
 // @returns {bool} result of the channel creation
-func (c *chain) CreateChannel(request CreateChannelRequest) error {
+func (c *chain) CreateChannel(request *CreateChannelRequest) error {
 	var failureCount int
 	// Validate request
-	if request.ConfigData == nil {
+	if request == nil || request.ConfigData == nil {
 		return fmt.Errorf("Configuration is required to create a chanel")
 	}
 
@@ -421,6 +430,89 @@ func (c *chain) CreateChannel(request CreateChannelRequest) error {
 		return fmt.Errorf(
 			"Broadcast failed: Received error from all configured orderers: %s",
 			responseMap[0].Err)
+	}
+
+	return nil
+}
+
+// JoinChannel instructs a set of peers to join the channel represented by
+// this chain
+// @param {JoinChannelRequest} Join channel request
+// @returns error, if applicable
+func (c *chain) JoinChannel(request *JoinChannelRequest) error {
+	joinCommand := "JoinChain"
+	err := validateJoinChannelRequest(request)
+	if err != nil {
+		return err
+	}
+	// Fetch genesis block
+	block, err := c.fetchGenesisBlock()
+	if err != nil {
+		return err
+	}
+	blockBytes, err := proto.Marshal(block)
+	if err != nil {
+		return fmt.Errorf("Error unmarshalling block: %s", err)
+	}
+	// Get user enrolment info and serialize for signing requests
+	user, err := c.clientContext.GetUserContext("")
+	if err != nil {
+		return fmt.Errorf("GetUserContext returned error: %s", err)
+	}
+	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
+	if err != nil {
+		return err
+	}
+	// Create join channel transaction proposal for target peers
+	var args [][]byte
+	args = append(args, []byte(joinCommand))
+	args = append(args, blockBytes)
+	ccis := &pb.ChaincodeInvocationSpec{ChaincodeSpec: &pb.ChaincodeSpec{
+		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: "cscc"},
+		Input: &pb.ChaincodeInput{Args: args}}}
+
+	// create a proposal from a ChaincodeInvocationSpec
+	proposal, _, err := protos_utils.
+		CreateChaincodeProposalWithTxIDNonceAndTransient(request.TxID,
+			common.HeaderType_ENDORSER_TRANSACTION, "", ccis,
+			request.Nonce, creatorID, nil)
+	if err != nil {
+		return fmt.Errorf("Could not create chaincode proposal, err %s", err)
+	}
+	// Serialize join proposal
+	proposalBytes, err := protos_utils.GetBytesProposal(proposal)
+	if err != nil {
+		return err
+	}
+	// Sign join proposal
+	signature, err := c.signObjectWithKey(proposalBytes, user.GetPrivateKey(),
+		&bccsp.SHAOpts{}, nil)
+	if err != nil {
+		return err
+	}
+	// Send join proposal
+	proposalResponses, err := c.SendTransactionProposal(&TransactionProposal{
+		TransactionID: request.TxID,
+		signedProposal: &pb.SignedProposal{
+			ProposalBytes: proposalBytes,
+			Signature:     signature},
+		proposal: proposal,
+	}, 0, request.Targets)
+	if err != nil {
+		return fmt.Errorf("Error sending join transaction proposal: %s", err)
+	}
+
+	// Check responses from target peers for success/failure
+	var joinError string
+	for _, response := range proposalResponses {
+		if response.Err != nil {
+			joinError = joinError +
+				fmt.Sprintf("Join channel proposal response error: %s \n",
+					response.Err.Error())
+		}
+	}
+	if joinError != "" {
+		return fmt.Errorf(joinError)
 	}
 
 	return nil
@@ -1204,6 +1296,38 @@ func (c *chain) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error) 
 	return &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}, nil
 }
 
+// fetchGenesisBlock fetches the configuration block for this channel
+func (c *chain) fetchGenesisBlock() (*common.Block, error) {
+	// Get user enrolment info and serialize for signing requests
+	user, err := c.clientContext.GetUserContext("")
+	if err != nil {
+		return nil, fmt.Errorf("GetUserContext returned error: %s", err)
+	}
+	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
+	if err != nil {
+		return nil, err
+	}
+	// Seek block zero (the configuration tx for this channel)
+	payload := util.CreateGenesisBlockRequest(c.name, creatorID)
+	blockRequest, err := c.SignPayload(payload)
+	if err != nil {
+		return nil, fmt.Errorf("Error signing payload: %s", err)
+	}
+	// Request genesis block from ordering service
+	var block *common.Block
+	// TODO: what if the primary orderer is down?
+	responses, errors := c.GetOrderers()[0].SendDeliver(blockRequest)
+	// Block on channels for genesis block or error
+	select {
+	case block = <-responses:
+		logger.Debugf("Got genesis block from ordering service: %#v", block)
+	case err = <-errors:
+		return nil, fmt.Errorf("Error from SendDeliver(): %s", err)
+	}
+
+	return block, nil
+}
+
 func getSerializedIdentity(userCertificate []byte) ([]byte, error) {
 	serializedIdentity := &msp.SerializedIdentity{Mspid: config.GetFabricCAID(),
 		IdBytes: userCertificate}
@@ -1241,4 +1365,20 @@ func buildChaincodePolicy(mspid string) (*common.SignaturePolicyEnvelope, error)
 		Identities: []*common.MSPPrincipal{onePrn},
 	}
 	return p, nil
+}
+func validateJoinChannelRequest(request *JoinChannelRequest) error {
+	// Validate arguments
+	if request == nil {
+		return fmt.Errorf("JoinChannelRequest argument is required to join channel")
+	}
+	if request.Targets == nil || len(request.Targets) == 0 {
+		return fmt.Errorf("Atleast one target peer is required to join channel")
+	}
+	if request.TxID == "" {
+		return fmt.Errorf("Transaction ID is required to join channel")
+	}
+	if request.Nonce == nil {
+		return fmt.Errorf("Nonce is required to join channel")
+	}
+	return nil
 }

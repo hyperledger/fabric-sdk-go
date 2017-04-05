@@ -38,6 +38,9 @@ func TestChainCodeInvoke(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetChain return error: %v", err)
 	}
+	// Create and join channel represented by 'chain'
+	testSetup.CreateAndJoinChannel(t, chain)
+
 	err = testSetup.InstallCC(chain, chainCodeID, chainCodePath, chainCodeVersion, nil, nil)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)

@@ -154,5 +154,5 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 func createRandomName() string {
 	rand.Seed(time.Now().UnixNano())
-	return "user" + strconv.Itoa(rand.Intn(5000))
+	return "user" + strconv.Itoa(rand.Intn(500000))
 }

@@ -20,8 +20,18 @@ limitations under the License.
 package fabricclient
 
 import (
+	"fmt"
+	"net"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/fabric-client/mocks"
+	ab "github.com/hyperledger/fabric/protos/orderer"
+	"google.golang.org/grpc"
 )
+
+var testOrdererURL = "0.0.0.0:4584"
 
 //
 // Orderer via chain setOrderer/getOrderer
@@ -105,4 +115,64 @@ func TestOrdererViaChainNilData(t *testing.T) {
 	if err.Error() != "proposal is nil" {
 		t.Fatalf("SendTransaction didn't return right error")
 	}
+}
+
+func TestSendDeliver(t *testing.T) {
+	mockServer := startMockServer(t)
+	orderer, _ := CreateNewOrderer(testOrdererURL, "", "")
+	// Test deliver happy path
+	blocks, errors := orderer.SendDeliver(&SignedEnvelope{})
+	select {
+	case block := <-blocks:
+		if string(block.Data.Data[0]) != "test" {
+			t.Fatalf("Expected test block got: %#v", block)
+		}
+	case err := <-errors:
+		t.Fatalf("Unexpected error from SendDeliver(): %s", err)
+	case <-time.After(time.Second * 5):
+		t.Fatalf("Did not receive block or error from SendDeliver")
+	}
+
+	// Test deliver without valid envelope
+	blocks, errors = orderer.SendDeliver(nil)
+	select {
+	case block := <-blocks:
+		t.Fatalf("Expected error got block: %#v", block)
+	case err := <-errors:
+		if err == nil {
+			t.Fatalf("Expected error with nil envelope")
+		}
+	case <-time.After(time.Second * 5):
+		t.Fatalf("Did not receive block or error from SendDeliver")
+	}
+
+	// Test deliver with deliver error from OS
+	testError := fmt.Errorf("test error")
+	mockServer.DeliverError = testError
+	blocks, errors = orderer.SendDeliver(&SignedEnvelope{})
+	select {
+	case block := <-blocks:
+		t.Fatalf("Expected error got block: %#v", block)
+	case err := <-errors:
+		if !strings.Contains(err.Error(), "test error") {
+			t.Fatalf("Expected test error when OS Recv() fails")
+		}
+	case <-time.After(time.Second * 5):
+		t.Fatalf("Did not receive block or error from SendDeliver")
+	}
+}
+
+func startMockServer(t *testing.T) *mocks.MockBroadcastServer {
+	grpcServer := grpc.NewServer()
+	lis, err := net.Listen("tcp", testOrdererURL)
+	broadcastServer := new(mocks.MockBroadcastServer)
+	ab.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
+	if err != nil {
+		fmt.Printf("Error starting test server %s", err)
+		t.FailNow()
+	}
+	fmt.Printf("Starting test server\n")
+	go grpcServer.Serve(lis)
+
+	return broadcastServer
 }

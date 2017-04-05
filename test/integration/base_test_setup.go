@@ -22,16 +22,20 @@ package integration
 import (
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/config"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/fabric-ca-client"
 	"github.com/hyperledger/fabric-sdk-go/fabric-client/events"
+	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
 	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/msp"
 
 	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
 	kvs "github.com/hyperledger/fabric-sdk-go/fabric-client/keyvaluestore"
@@ -40,7 +44,7 @@ import (
 )
 
 var chainCodeID = ""
-var chainID = "mychannel"
+var chainID = "testchannel"
 var chainCodePath = "github.com/example_cc"
 var chainCodeVersion = "v0"
 var goPath string
@@ -51,18 +55,24 @@ var goPath string
 type BaseTestSetup interface {
 	GetChain() (fabricClient.Chain, error)
 	GetEventHub(interestedEvents []*pb.Interest) (events.EventHub, error)
-	InstallCC(chain fabricClient.Chain, chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte, targets []fabricClient.Peer) error
+	InstallCC(chain fabricClient.Chain, chainCodeID string, chainCodePath string,
+		chainCodeVersion string, chaincodePackage []byte, targets []fabricClient.Peer) error
 	InstantiateCC(chain fabricClient.Chain, eventHub events.EventHub) error
 	GetQueryValue(t *testing.T, chain fabricClient.Chain) (string, error)
 	Invoke(chain fabricClient.Chain, eventHub events.EventHub) (string, error)
+	CreateAndJoinChannel(t *testing.T, chain fabricClient.Chain, eventHub events.EventHub)
+	GetCreatorID() ([]byte, error)
 	InitConfig()
 	ChangeGOPATHToDeploy()
 	ResetGOPATH()
 	GenerateRandomCCID()
+	RegisterEvent(txID string, eventHub events.EventHub) (chan bool, chan error)
 }
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
+	Client      fabricClient.Client
+	Initialized bool
 }
 
 // GetChain initializes and returns a chain
@@ -140,8 +150,8 @@ func (setup *BaseSetupImpl) GetChain() (fabricClient.Chain, error) {
 		}
 	}
 
+	setup.Client = client
 	return chain, nil
-
 }
 
 // GetEventHub initilizes the event hub
@@ -206,6 +216,9 @@ func (setup *BaseSetupImpl) InstantiateCC(chain fabricClient.Chain, eventHub eve
 		return fmt.Errorf("SendInstantiateProposal return error: %v", err)
 	}
 
+	// Register for commit event
+	done, fail := setup.RegisterEvent(txID, eventHub)
+
 	for _, v := range transactionProposalResponse {
 		if v.Err != nil {
 			return fmt.Errorf("SendInstantiateProposal Endorser %s return error: %v", v.Endorser, v.Err)
@@ -228,18 +241,6 @@ func (setup *BaseSetupImpl) InstantiateCC(chain fabricClient.Chain, eventHub eve
 			return fmt.Errorf("Orderer %s return error: %v", v.Orderer, v.Err)
 		}
 	}
-	done := make(chan bool)
-	fail := make(chan error)
-
-	eventHub.RegisterTxEvent(txID, func(txId string, err error) {
-		if err != nil {
-			fail <- err
-		} else {
-			fmt.Printf("instantiateCC receive success event for txid(%s)\n", txId)
-			done <- true
-		}
-
-	})
 
 	select {
 	case <-done:
@@ -292,7 +293,10 @@ func (setup *BaseSetupImpl) Invoke(chain fabricClient.Chain, eventHub events.Eve
 	if err != nil {
 		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
 	}
-	transactionProposalResponse, err := chain.SendTransactionProposal(signedProposal, 0, []fabricClient.Peer{chain.GetPrimaryPeer()})
+	// Register for commit event
+	done, fail := setup.RegisterEvent(signedProposal.TransactionID, eventHub)
+	transactionProposalResponse, err := chain.SendTransactionProposal(signedProposal,
+		0, []fabricClient.Peer{chain.GetPrimaryPeer()})
 	if err != nil {
 		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
 	}
@@ -307,8 +311,8 @@ func (setup *BaseSetupImpl) Invoke(chain fabricClient.Chain, eventHub events.Eve
 	tx, err := chain.CreateTransaction(transactionProposalResponse)
 	if err != nil {
 		return "", fmt.Errorf("CreateTransaction return error: %v", err)
-
 	}
+
 	transactionResponse, err := chain.SendTransaction(tx)
 	if err != nil {
 		return "", fmt.Errorf("SendTransaction return error: %v", err)
@@ -319,16 +323,6 @@ func (setup *BaseSetupImpl) Invoke(chain fabricClient.Chain, eventHub events.Eve
 			return "", fmt.Errorf("Orderer %s return error: %v", v.Orderer, v.Err)
 		}
 	}
-	done := make(chan bool)
-	fail := make(chan error)
-	eventHub.RegisterTxEvent(signedProposal.TransactionID, func(txId string, err error) {
-		if err != nil {
-			fail <- err
-		} else {
-			fmt.Printf("invoke receive success event for txid(%s)\n", txId)
-			done <- true
-		}
-	})
 
 	select {
 	case <-done:
@@ -341,6 +335,67 @@ func (setup *BaseSetupImpl) Invoke(chain fabricClient.Chain, eventHub events.Eve
 
 }
 
+// CreateAndJoinChannel creates the channel represented by this chain
+// and makes the primary peer join it.
+func (setup *BaseSetupImpl) CreateAndJoinChannel(t *testing.T,
+	chain fabricClient.Chain) {
+	// Check if primary peer has joined this channel
+	var foundChannel bool
+	primaryPeer := chain.GetPrimaryPeer()
+	response, err := chain.QueryChannels(primaryPeer)
+	if err != nil {
+		t.Fatalf("Error querying channels for primary peer: %s", err)
+	}
+	for _, channel := range response.Channels {
+		if channel.ChannelId == chain.GetName() {
+			foundChannel = true
+		}
+	}
+
+	if foundChannel {
+		// There's no need to create a channel, return
+		return
+	}
+
+	fmt.Printf("********* Creating and Joining channel: %s **********\n",
+		chain.GetName())
+	configTx, err := ioutil.ReadFile("../fixtures/channel/testchannel.tx")
+	if err != nil {
+		t.Fatalf("Error reading config file: %s", err.Error())
+	}
+
+	request := fabricClient.CreateChannelRequest{ConfigData: configTx}
+	err = chain.CreateChannel(&request)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	// Wait for orderer to process channel metadata
+	time.Sleep(time.Second * 2)
+	// Test join channel
+	creator, err := setup.GetCreatorID()
+	if err != nil {
+		t.Fatalf("Could not generate creator ID: %s", err)
+	}
+	nonce, err := util.GenerateRandomNonce()
+	if err != nil {
+		t.Fatalf("Could not compute nonce: %s", err)
+	}
+	txID, err := util.ComputeTxID(nonce, creator)
+	if err != nil {
+		t.Fatalf("Could not compute TxID: %s", err)
+	}
+
+	req := &fabricClient.JoinChannelRequest{
+		Targets: []fabricClient.Peer{chain.GetPrimaryPeer()}, TxID: txID, Nonce: nonce}
+	err = chain.JoinChannel(req)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	fmt.Printf("********* Created and Joined channel: %s **********\n",
+		chain.GetName())
+}
+
 func randomString(strlen int) string {
 	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 	result := make([]byte, strlen)
@@ -348,6 +403,27 @@ func randomString(strlen int) string {
 		result[i] = chars[rand.Intn(len(chars))]
 	}
 	return string(result)
+}
+
+// GetCreatorID gets serialized enrollment certificate
+func (setup *BaseSetupImpl) GetCreatorID() ([]byte, error) {
+	if setup.Initialized == false {
+		return nil, fmt.Errorf("Setup must be initialized with InitConfig")
+	}
+	if setup.Client == nil {
+		return nil, fmt.Errorf("Client must be initialized with GetChain")
+	}
+	user, err := setup.Client.GetUserContext("")
+	if err != nil {
+		return nil, fmt.Errorf("GetUserContext returned error: %s", err)
+	}
+	serializedIdentity := &msp.SerializedIdentity{Mspid: config.GetFabricCAID(),
+		IdBytes: user.GetEnrollmentCertificate()}
+	creatorID, err := proto.Marshal(serializedIdentity)
+	if err != nil {
+		return nil, fmt.Errorf("Could not Marshal serializedIdentity, err %s", err)
+	}
+	return creatorID, nil
 }
 
 // ChangeGOPATHToDeploy ...
@@ -372,6 +448,7 @@ func (setup *BaseSetupImpl) InitConfig() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+	setup.Initialized = true
 	setup.GenerateRandomCCID()
 }
 
@@ -379,4 +456,24 @@ func (setup *BaseSetupImpl) InitConfig() {
 func (setup *BaseSetupImpl) GenerateRandomCCID() {
 	rand.Seed(time.Now().UnixNano())
 	chainCodeID = randomString(10)
+}
+
+// RegisterEvent registers on the given eventhub for the give transaction
+// returns a boolean channel which receives true when the event is complete
+// and an error channel for errors
+func (setup *BaseSetupImpl) RegisterEvent(txID string,
+	eventHub events.EventHub) (chan bool, chan error) {
+	done := make(chan bool)
+	fail := make(chan error)
+
+	eventHub.RegisterTxEvent(txID, func(txId string, err error) {
+		if err != nil {
+			fail <- err
+		} else {
+			fmt.Printf("Received success event for txid(%s)\n", txId)
+			done <- true
+		}
+	})
+
+	return done, fail
 }

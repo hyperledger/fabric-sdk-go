@@ -19,6 +19,22 @@ limitations under the License.
 
 package fabricclient
 
+import (
+	"github.com/hyperledger/fabric/protos/common"
+	ab "github.com/hyperledger/fabric/protos/orderer"
+)
+
+// TestBlock is a test block
+var testBlock = &ab.DeliverResponse{
+	Type: &ab.DeliverResponse_Block{
+		Block: &common.Block{
+			Data: &common.BlockData{
+				Data: [][]byte{[]byte("test")},
+			},
+		},
+	},
+}
+
 // mockOrderer is a mock fabricclient.Orderer
 type mockOrderer struct {
 	MockURL   string
@@ -33,4 +49,13 @@ func (o *mockOrderer) GetURL() string {
 // SendBroadcast mocks sending a broadcast by sending nothing nowhere
 func (o *mockOrderer) SendBroadcast(envelope *SignedEnvelope) error {
 	return o.MockError
+}
+
+// SendBroadcast mocks sending a deliver request to the ordering service
+func (o *mockOrderer) SendDeliver(envelope *SignedEnvelope) (chan *common.Block,
+	chan error) {
+	responses := make(chan *common.Block, 1)
+	errors := make(chan error, 1)
+	responses <- testBlock.GetBlock()
+	return responses, errors
 }

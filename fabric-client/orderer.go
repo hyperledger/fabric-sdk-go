@@ -33,15 +33,12 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// Orderer ...
-/**
- * The Orderer class represents a peer in the target blockchain network to which
- * HFC sends a block of transactions of endorsed proposals requiring ordering.
- *
- */
+// Orderer The Orderer class represents a peer in the target blockchain network to which
+// HFC sends a block of transactions of endorsed proposals requiring ordering.
 type Orderer interface {
 	GetURL() string
 	SendBroadcast(envelope *SignedEnvelope) error
+	SendDeliver(envelope *SignedEnvelope) (chan *common.Block, chan error)
 }
 
 type orderer struct {
@@ -49,10 +46,7 @@ type orderer struct {
 	grpcDialOption []grpc.DialOption
 }
 
-// CreateNewOrderer ...
-/**
- * Returns a Orderer instance
- */
+// CreateNewOrderer Returns a Orderer instance
 func CreateNewOrderer(url string, certificate string, serverHostOverride string) (Orderer, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(time.Second*3))
@@ -69,19 +63,13 @@ func CreateNewOrderer(url string, certificate string, serverHostOverride string)
 	return &orderer{url: url, grpcDialOption: opts}, nil
 }
 
-// GetURL ...
-/**
- * Get the Orderer url. Required property for the instance objects.
- * @returns {string} The address of the Orderer
- */
+// GetURL Get the Orderer url. Required property for the instance objects.
+// @returns {string} The address of the Orderer
 func (o *orderer) GetURL() string {
 	return o.url
 }
 
-// SendBroadcast ...
-/**
- * Send the created transaction to Orderer.
- */
+// SendBroadcast Send the created transaction to Orderer.
 func (o *orderer) SendBroadcast(envelope *SignedEnvelope) error {
 	conn, err := grpc.Dial(o.url, o.grpcDialOption...)
 	if err != nil {
@@ -121,4 +109,72 @@ func (o *orderer) SendBroadcast(envelope *SignedEnvelope) error {
 	broadcastStream.CloseSend()
 	<-done
 	return broadcastErr
+}
+
+// SendDeliver sends a deliver request to the ordering service and returns the
+// blocks requested
+// @param {*SignedEnvelope} envelope that contains the seek request for blocks
+// @return {chan *common.Block} channel with the requested blocks
+// @return {chan error} a buffered channel that can contain a single error
+func (o *orderer) SendDeliver(envelope *SignedEnvelope) (chan *common.Block,
+	chan error) {
+	responses := make(chan *common.Block)
+	errors := make(chan error, 1)
+	// Validate envelope
+	if envelope == nil {
+		errors <- fmt.Errorf("Envelope cannot be nil")
+		return responses, errors
+	}
+	// Establish connection to Ordering Service
+	conn, err := grpc.Dial(o.url, o.grpcDialOption...)
+	if err != nil {
+		errors <- err
+		return responses, errors
+	}
+	// Create atomic broadcast client
+	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).
+		Deliver(context.Background())
+	if err != nil {
+		errors <- fmt.Errorf("Error creating NewAtomicBroadcastClient %s", err)
+		return responses, errors
+	}
+	// Send block request envolope
+	logger.Debugf("Requesting blocks from ordering service")
+	if err := broadcastStream.Send(&common.Envelope{
+		Payload:   envelope.Payload,
+		Signature: envelope.signature,
+	}); err != nil {
+		errors <- fmt.Errorf("Failed to send block request to orderer: %s", err)
+		return responses, errors
+	}
+	// Receive blocks from the GRPC stream and put them on the channel
+	go func() {
+		defer conn.Close()
+		for {
+			response, err := broadcastStream.Recv()
+			if err != nil {
+				errors <- fmt.Errorf("Got error from ordering service: %s", err)
+				return
+			}
+			// Assert response type
+			switch t := response.Type.(type) {
+			// Seek operation success, no more resposes
+			case *ab.DeliverResponse_Status:
+				if t.Status == common.Status_SUCCESS {
+					close(responses)
+					return
+				}
+			// Response is a requested block
+			case *ab.DeliverResponse_Block:
+				logger.Debug("Received block from ordering service")
+				responses <- response.GetBlock()
+			// Unknown response
+			default:
+				errors <- fmt.Errorf("Received unknown response from ordering service: %s", t)
+				return
+			}
+		}
+	}()
+
+	return responses, errors
 }
