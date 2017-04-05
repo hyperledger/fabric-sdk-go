@@ -22,6 +22,7 @@ package fabricca
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/config"
@@ -30,11 +31,13 @@ import (
 )
 
 // Load testing config
-func TestMain(t *testing.T) {
+func TestMain(m *testing.M) {
 	err := config.InitConfig("../test/fixtures/config/config_test.yaml")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+	os.Exit(m.Run())
+
 }
 
 func TestEnrollWithMissingParameters(t *testing.T) {
