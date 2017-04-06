@@ -107,7 +107,7 @@ func TestMain(m *testing.M) {
 	var err error
 	chain, err = testSetup.GetChain()
 	if err != nil {
-		fmt.Printf("error from GetChains %v", err)
+		fmt.Printf("error from GetChain %v", err)
 		os.Exit(-1)
 	}
 	code := m.Run()
