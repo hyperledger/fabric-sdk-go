@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestChainCodeInvoke(t *testing.T) {
@@ -30,7 +31,7 @@ func TestChainCodeInvoke(t *testing.T) {
 
 	testSetup.InitConfig()
 
-	eventHub, err := testSetup.GetEventHub(nil)
+	eventHub, err := testSetup.GetEventHubAndConnect()
 	if err != nil {
 		t.Fatalf("GetEventHub return error: %v", err)
 	}
@@ -49,6 +50,7 @@ func TestChainCodeInvoke(t *testing.T) {
 	if err != nil {
 		t.Fatalf("instantiateCC return error: %v", err)
 	}
+
 	// Get Query value before invoke
 	value, err := testSetup.GetQueryValue(chain)
 	if err != nil {
@@ -56,10 +58,23 @@ func TestChainCodeInvoke(t *testing.T) {
 	}
 	fmt.Printf("*** QueryValue before invoke %s\n", value)
 
+	eventID := "test([a-zA-Z]+)"
+
+	// Register callback for chaincode event
+	done, rce := testSetup.RegisterCCEvent(chainCodeID, eventID, eventHub)
+
 	_, err = testSetup.Invoke(chain, eventHub)
 	if err != nil {
 		t.Fatalf("invoke return error: %v", err)
 	}
+
+	select {
+	case <-done:
+	case <-time.After(time.Second * 20):
+		t.Fatalf("Did NOT receive CC for eventId(%s)\n", eventID)
+	}
+
+	eventHub.UnregisterChaincodeEvent(rce)
 
 	valueAfterInvoke, err := testSetup.GetQueryValue(chain)
 	if err != nil {

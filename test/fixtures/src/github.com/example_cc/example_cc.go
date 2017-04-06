@@ -97,7 +97,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.query(stub, args)
 	}
 	if args[0] == "move" {
-		// Deletes an entity from its state
+		if err := stub.SetEvent("testEvent", []byte("Test Payload")); err != nil {
+			return shim.Error("Unable to set CC event: testEvent. Aborting transaction ...")
+		}
 		return t.move(stub, args)
 	}
 	return shim.Error("Unknown action, check the first argument, must be one of 'delete', 'query', or 'move'")
