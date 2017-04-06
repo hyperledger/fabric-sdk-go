@@ -40,7 +40,6 @@ import (
 	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
 	kvs "github.com/hyperledger/fabric-sdk-go/fabric-client/keyvaluestore"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
-	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 var chainCodeID = ""
@@ -54,7 +53,8 @@ var goPath string
 // crypto suite selection, and event hub initialization
 type BaseTestSetup interface {
 	GetChain() (fabricClient.Chain, error)
-	GetEventHub(interestedEvents []*pb.Interest) (events.EventHub, error)
+	GetEventHub() (events.EventHub, error)
+	GetEventHubAndConnect() (events.EventHub, error)
 	InstallCC(chain fabricClient.Chain, chainCodeID string, chainCodePath string,
 		chainCodeVersion string, chaincodePackage []byte, targets []fabricClient.Peer) error
 	InstantiateCC(chain fabricClient.Chain, eventHub events.EventHub) error
@@ -155,7 +155,7 @@ func (setup *BaseSetupImpl) GetChain() (fabricClient.Chain, error) {
 }
 
 // GetEventHub initilizes the event hub
-func (setup *BaseSetupImpl) GetEventHub(interestedEvents []*pb.Interest) (events.EventHub, error) {
+func (setup *BaseSetupImpl) GetEventHub() (events.EventHub, error) {
 	eventHub := events.NewEventHub()
 	foundEventHub := false
 	for _, p := range config.GetPeersConfig() {
@@ -170,15 +170,22 @@ func (setup *BaseSetupImpl) GetEventHub(interestedEvents []*pb.Interest) (events
 		return nil, fmt.Errorf("No EventHub configuration found")
 	}
 
-	// TODO: this is coming back in some other form
-	/*if interestedEvents != nil {
-		eventHub.SetInterestedEvents(interestedEvents)
-	}*/
+	return eventHub, nil
+}
+
+// GetEventHubAndConnect initilizes the event hub and connects to peer
+func (setup *BaseSetupImpl) GetEventHubAndConnect() (events.EventHub, error) {
+	eventHub, err := setup.GetEventHub()
+	if err != nil {
+		return nil, err
+	}
+
 	if err := eventHub.Connect(); err != nil {
 		return nil, fmt.Errorf("Failed eventHub.Connect() [%s]", err)
 	}
 
 	return eventHub, nil
+
 }
 
 // InstallCC ...
@@ -476,4 +483,20 @@ func (setup *BaseSetupImpl) RegisterEvent(txID string,
 	})
 
 	return done, fail
+}
+
+// RegisterCCEvent registers chain code event on the given eventhub
+// @returns {chan bool} channel which receives true when the event is complete
+// @returns {object} ChainCodeCBE object handle that should be used to unregister
+func (setup *BaseSetupImpl) RegisterCCEvent(chainCodeID, eventID string,
+	eventHub events.EventHub) (chan bool, *events.ChainCodeCBE) {
+	done := make(chan bool)
+
+	// Register callback for valid CE
+	rce := eventHub.RegisterChaincodeEvent(chainCodeID, eventID, func(ce *events.ChaincodeEvent) {
+		fmt.Printf("Received CC event ( %s ): \n%v\n", time.Now().Format(time.RFC850), ce)
+		done <- true
+	})
+
+	return done, rce
 }

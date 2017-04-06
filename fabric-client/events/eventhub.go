@@ -20,7 +20,9 @@ limitations under the License.
 package events
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -47,7 +49,7 @@ type EventHub interface {
 
 // The EventHubExt interface allows extensions of the SDK to add functionality to EventHub overloads.
 type EventHubExt interface {
-	SetInterests(block bool, rejection bool)
+	SetInterests(block bool)
 	AddChaincodeInterest(ChaincodeID string, EventName string)
 }
 
@@ -103,23 +105,21 @@ func NewEventHub() EventHub {
 	txRegistrants := make(map[string]func(string, error))
 
 	eventHub := &eventHub{chaincodeRegistrants: chaincodeRegistrants, blockRegistrants: blockRegistrants, txRegistrants: txRegistrants, interestedEvents: nil}
-	// default interested events
-	eventHub.SetInterests(true, true)
+
+	// default to listening for block events
+	eventHub.SetInterests(true)
 
 	return eventHub
 }
 
-// SetInterests clears all interests and sets the interests for BLOCK and REJECTION type of events.
-func (eventHub *eventHub) SetInterests(block bool, rejection bool) {
+// SetInterests clears all interests and sets the interests for BLOCK type of events.
+func (eventHub *eventHub) SetInterests(block bool) {
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
 
 	eventHub.interestedEvents = nil
 	if block {
 		eventHub.interestedEvents = append(eventHub.interestedEvents, &pb.Interest{EventType: pb.EventType_BLOCK})
-	}
-	if rejection {
-		eventHub.interestedEvents = append(eventHub.interestedEvents, &pb.Interest{EventType: pb.EventType_REJECTION})
 	}
 }
 
@@ -188,11 +188,6 @@ func (eventHub *eventHub) Connect() error {
 	return nil
 }
 
-//SetInterestedEvents set events that client is interested in
-func (eventHub *eventHub) SetInterestedEvents(events []*pb.Interest) {
-	eventHub.interestedEvents = events
-}
-
 //GetInterestedEvents implements consumer.EventAdapter interface for registering interested events
 func (eventHub *eventHub) GetInterestedEvents() ([]*pb.Interest, error) {
 	return eventHub.interestedEvents, nil
@@ -210,28 +205,21 @@ func (eventHub *eventHub) Recv(msg *pb.Event) (bool, error) {
 		for _, v := range eventHub.blockRegistrants {
 			v(blockEvent.Block)
 		}
+
+		for _, tdata := range blockEvent.Block.Data.Data {
+			if ccEvent, err := getChainCodeEvent(tdata); err != nil {
+				logger.Warningf("getChainCodeEvent return error: %v\n", err)
+			} else if ccEvent != nil {
+				eventHub.notifyChaincodeRegistrants(ccEvent, true)
+			}
+		}
 		return true, nil
 	case *pb.Event_ChaincodeEvent:
 		ccEvent := msg.Event.(*pb.Event_ChaincodeEvent)
 		logger.Debugf("Recv ccEvent:%v\n", ccEvent)
 
-		cbeArray := eventHub.chaincodeRegistrants[ccEvent.ChaincodeEvent.ChaincodeId]
-		if len(cbeArray) <= 0 {
-			logger.Debugf("No event registration for ccid %s \n", ccEvent.ChaincodeEvent.ChaincodeId)
-		}
-
-		for _, v := range cbeArray {
-			if v.EventNameFilter == ccEvent.ChaincodeEvent.EventName {
-				callback := v.CallbackFunc
-				if callback != nil {
-					callback(&ChaincodeEvent{
-						ChaincodeId: ccEvent.ChaincodeEvent.ChaincodeId,
-						TxId:        ccEvent.ChaincodeEvent.TxId,
-						EventName:   ccEvent.ChaincodeEvent.EventName,
-						Payload:     ccEvent.ChaincodeEvent.Payload,
-					})
-				}
-			}
+		if ccEvent != nil {
+			eventHub.notifyChaincodeRegistrants(ccEvent.ChaincodeEvent, false)
 		}
 		return true, nil
 	default:
@@ -239,12 +227,9 @@ func (eventHub *eventHub) Recv(msg *pb.Event) (bool, error) {
 	}
 }
 
-// Disconnected implements consumer.EventAdapter interface for receiving events
+// Disconnect implements consumer.EventAdapter interface for receiving events
 /**
  * Disconnects peer event source<p>
- * Note: Only use this if creating your own EventHub. The chain
- * class creates a default eventHub that most Node clients can
- * use (see eventHubConnect, eventHubDisconnect and getEventHub).
  */
 func (eventHub *eventHub) Disconnected(err error) {
 	if !eventHub.connected {
@@ -252,7 +237,6 @@ func (eventHub *eventHub) Disconnected(err error) {
 	}
 	eventHub.client.Stop()
 	eventHub.connected = false
-
 }
 
 // RegisterChaincodeEvent ...
@@ -269,8 +253,6 @@ func (eventHub *eventHub) Disconnected(err error) {
 func (eventHub *eventHub) RegisterChaincodeEvent(ccid string, eventname string, callback func(*ChaincodeEvent)) *ChainCodeCBE {
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
-
-	eventHub.AddChaincodeInterest(ccid, eventname)
 
 	cbe := ChainCodeCBE{CCID: ccid, EventNameFilter: eventname, CallbackFunc: callback}
 	cbeArray := eventHub.chaincodeRegistrants[ccid]
@@ -302,9 +284,7 @@ func (eventHub *eventHub) UnregisterChaincodeEvent(cbe *ChainCodeCBE) {
 	}
 	for i, v := range cbeArray {
 		if v.EventNameFilter == cbe.EventNameFilter {
-
 			cbeArray = append(cbeArray[:i], cbeArray[i+1:]...)
-
 		}
 	}
 	if len(cbeArray) <= 0 {
@@ -381,5 +361,82 @@ func (eventHub *eventHub) txCallback(block *common.Block) {
 			}
 		}
 	}
+}
 
+// getChainCodeEvents parses block events for chaincode events associated with individual transactions
+func getChainCodeEvent(tdata []byte) (*pb.ChaincodeEvent, error) {
+
+	if tdata == nil {
+		return nil, errors.New("Cannot extract payload from nil transaction")
+	}
+
+	if env, err := utils.GetEnvelopeFromBlock(tdata); err != nil {
+		return nil, fmt.Errorf("Error getting tx from block(%s)", err)
+	} else if env != nil {
+		// get the payload from the envelope
+		payload, err := utils.GetPayload(env)
+		if err != nil {
+			return nil, fmt.Errorf("Could not extract payload from envelope, err %s", err)
+		}
+
+		channelHeaderBytes := payload.Header.ChannelHeader
+		channelHeader := &common.ChannelHeader{}
+		err = proto.Unmarshal(channelHeaderBytes, channelHeader)
+		if err != nil {
+			return nil, fmt.Errorf("Could not extract channel header from envelope, err %s", err)
+		}
+
+		// Chaincode events apply to endorser transaction only
+		if common.HeaderType(channelHeader.Type) == common.HeaderType_ENDORSER_TRANSACTION {
+			tx, err := utils.GetTransaction(payload.Data)
+			if err != nil {
+				return nil, fmt.Errorf("Error unmarshalling transaction payload for block event: %s", err)
+			}
+			chaincodeActionPayload, err := utils.GetChaincodeActionPayload(tx.Actions[0].Payload)
+			if err != nil {
+				return nil, fmt.Errorf("Error unmarshalling transaction action payload for block event: %s", err)
+			}
+			propRespPayload, err := utils.GetProposalResponsePayload(chaincodeActionPayload.Action.ProposalResponsePayload)
+			if err != nil {
+				return nil, fmt.Errorf("Error unmarshalling proposal response payload for block event: %s", err)
+			}
+			caPayload, err := utils.GetChaincodeAction(propRespPayload.Extension)
+			if err != nil {
+				return nil, fmt.Errorf("Error unmarshalling chaincode action for block event: %s", err)
+			}
+			ccEvent, err := utils.GetChaincodeEvents(caPayload.Events)
+
+			if ccEvent != nil {
+				return ccEvent, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+// Utility function to fire callbacks for chaincode registrants
+func (eventHub *eventHub) notifyChaincodeRegistrants(ccEvent *pb.ChaincodeEvent, patternMatch bool) {
+
+	cbeArray := eventHub.chaincodeRegistrants[ccEvent.ChaincodeId]
+	if len(cbeArray) <= 0 {
+		logger.Debugf("No event registration for ccid %s \n", ccEvent.ChaincodeId)
+	}
+
+	for _, v := range cbeArray {
+		match := v.EventNameFilter == ccEvent.EventName
+		if !match && patternMatch {
+			match, _ = regexp.MatchString(v.EventNameFilter, ccEvent.EventName)
+		}
+		if match {
+			callback := v.CallbackFunc
+			if callback != nil {
+				callback(&ChaincodeEvent{
+					ChaincodeId: ccEvent.ChaincodeId,
+					TxId:        ccEvent.TxId,
+					EventName:   ccEvent.EventName,
+					Payload:     ccEvent.Payload,
+				})
+			}
+		}
+	}
 }

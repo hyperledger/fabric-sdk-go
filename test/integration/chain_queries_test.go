@@ -33,7 +33,7 @@ func TestChainQueries(t *testing.T) {
 	testSetup := BaseSetupImpl{}
 	testSetup.InitConfig()
 
-	eventHub, err := testSetup.GetEventHub(nil)
+	eventHub, err := testSetup.GetEventHubAndConnect()
 	if err != nil {
 		t.Fatalf("GetEventHub return error: %v", err)
 	}
@@ -278,8 +278,6 @@ func testQueryByChaincode(t *testing.T, chain fabricClient.Chain) {
 	if err == nil {
 		t.Fatalf("QueryByChaincode failed to return error for non-existing target")
 	}
-
-	fmt.Printf("QueryByChaincode invalid target error: %s\n", err)
 
 	// Verify that valid targets returned response
 	if len(queryResponses) != len(targets) {
