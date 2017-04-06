@@ -22,8 +22,11 @@
 # images were created using the make docker command in the respective directories
 #
 # Supported Targets:
+# all : runs unit and integration tests
 # unit-test: runs all the unit tests
 # integration-test: runs all the integration tests
+
+all: unit-test integration-test
 
 unit-test:
 	 sh scripts/unit.sh
