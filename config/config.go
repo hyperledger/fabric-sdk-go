@@ -158,12 +158,7 @@ func GetPeersConfig() []PeerConfig {
 		if p.Port == "" {
 			panic(fmt.Sprintf("port key not exist or empty for %s", key))
 		}
-		if p.EventHost == "" {
-			panic(fmt.Sprintf("event_host not exist or empty for %s", key))
-		}
-		if p.EventPort == "" {
-			panic(fmt.Sprintf("event_port not exist or empty for %s", key))
-		}
+
 		if IsTLSEnabled() && p.TLSCertificate == "" {
 			panic(fmt.Sprintf("tls.certificate not exist or empty for %s", key))
 		}

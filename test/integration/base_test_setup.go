@@ -160,6 +160,7 @@ func (setup *BaseSetupImpl) GetEventHub() (events.EventHub, error) {
 	foundEventHub := false
 	for _, p := range config.GetPeersConfig() {
 		if p.EventHost != "" && p.EventPort != "" {
+			fmt.Printf("******* EventHub connect to peer (%s:%s) *******\n", p.EventHost, p.EventPort)
 			eventHub.SetPeerAddr(fmt.Sprintf("%s:%s", p.EventHost, p.EventPort), p.TLSCertificate, p.TLSServerHostOverride)
 			foundEventHub = true
 			break
