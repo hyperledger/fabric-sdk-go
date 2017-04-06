@@ -240,7 +240,7 @@ func (ec *eventsClient) Start() error {
 	serverClient := ehpb.NewEventsClient(conn)
 	ec.stream, err = serverClient.Chat(context.Background())
 	if err != nil {
-		return fmt.Errorf("Could not create client conn to %s", ec.peerAddress)
+		return fmt.Errorf("Could not create client conn to %s (%v)", ec.peerAddress, err)
 	}
 
 	if err = ec.register(ies); err != nil {
