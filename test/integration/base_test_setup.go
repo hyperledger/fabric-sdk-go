@@ -58,7 +58,7 @@ type BaseTestSetup interface {
 	InstallCC(chain fabricClient.Chain, chainCodeID string, chainCodePath string,
 		chainCodeVersion string, chaincodePackage []byte, targets []fabricClient.Peer) error
 	InstantiateCC(chain fabricClient.Chain, eventHub events.EventHub) error
-	GetQueryValue(t *testing.T, chain fabricClient.Chain) (string, error)
+	GetQueryValue(chain fabricClient.Chain) (string, error)
 	Invoke(chain fabricClient.Chain, eventHub events.EventHub) (string, error)
 	CreateAndJoinChannel(t *testing.T, chain fabricClient.Chain, eventHub events.EventHub)
 	GetCreatorID() ([]byte, error)
