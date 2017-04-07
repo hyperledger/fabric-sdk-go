@@ -19,7 +19,7 @@ Execute `go test` from the fabric-client and fabric-ca-client to build the libra
 
 Execute `go test` in the `test/integration` to run end-to-end tests. This requires you to have:
 - A working fabric, and fabric-ca set up. It is recommended that you use the docker-compose file provided in `test/fixtures`. Refer to the Hyperledger Fabric [documentation](https://github.com/hyperledger/fabric) on how to do this.
-- Customized settings in the `integration_test/test_resources/config/config_test.yaml` in case your Hyperledger Fabric network is not running on `localhost` or is using different ports.
+- Customized settings in the `test/fixtures/config/config_test.yaml` in case your Hyperledger Fabric network is not running on `localhost` or is using different ports.
 
 
 ## Compatibility
@@ -27,4 +27,3 @@ Execute `go test` in the `test/integration` to run end-to-end tests. This requir
 This client was last tested and found to be compatible with the following Hyperledger Fabric commit levels:
 - fabric: v1.0.0-alpha
 - fabric-ca: `4651512e4e85728e6ecaf21b8cba52f51ed16633`
-- fabric-sdk-node: v1.0.0-alpha
