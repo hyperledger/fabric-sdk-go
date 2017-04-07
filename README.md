@@ -1,4 +1,5 @@
 # Hyperledger Fabric Client SDK for Go
+[![Build Status](https://jenkins.hyperledger.org/buildStatus/icon?job=fabric-sdk-go-tests-verify-x86_64)](https://jenkins.hyperledger.org/job/fabric-sdk-go-tests-verify-x86_64)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hyperledger/fabric-sdk-go)](https://goreportcard.com/report/github.com/hyperledger/fabric-sdk-go)
 [![GoDoc](https://godoc.org/github.com/hyperledger/fabric-sdk-go?status.svg)](https://godoc.org/github.com/hyperledger/fabric-sdk-go)
 
@@ -27,3 +28,4 @@ Execute `go test` in the `test/integration` to run end-to-end tests. This requir
 This client was last tested and found to be compatible with the following Hyperledger Fabric commit levels:
 - fabric: v1.0.0-alpha
 - fabric-ca: v1.0.0-alpha
+
