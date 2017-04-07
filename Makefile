@@ -17,26 +17,32 @@
 # limitations under the License.
 #
 
-
+#
 # This MakeFile assumes that fabric, and fabric-ca were cloned and their docker
 # images were created using the make docker command in the respective directories
 #
 # Supported Targets:
 # all : runs unit and integration tests
+# depend: installs test dependencies
 # unit-test: runs all the unit tests
 # integration-test: runs all the integration tests
+# clean: stops docker conatainers used for integration testing
+#
 
 all: unit-test integration-test
 
-unit-test:
-	 sh scripts/unit.sh
+depend:
+	go get github.com/axw/gocov/... && go get github.com/AlekSi/gocov-xml
+
+unit-test: depend
+	 sh test/scripts/unit.sh
 
 unit-tests: unit-test
 
-integration-test:
-	sh scripts/integration.sh
+integration-test: clean depend
+	sh test/scripts/integration.sh
 
 integration-tests: integration-test
 
 clean:
-	cd test/fixtures && docker-compose down && docker ps -q -a | xargs docker rm -f
+	cd test/fixtures && docker-compose down

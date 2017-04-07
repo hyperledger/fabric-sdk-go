@@ -26,4 +26,4 @@ Execute `go test` in the `test/integration` to run end-to-end tests. This requir
 
 This client was last tested and found to be compatible with the following Hyperledger Fabric commit levels:
 - fabric: v1.0.0-alpha
-- fabric-ca: `4651512e4e85728e6ecaf21b8cba52f51ed16633`
+- fabric-ca: v1.0.0-alpha
