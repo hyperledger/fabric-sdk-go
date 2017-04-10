@@ -38,6 +38,10 @@ import (
 	"github.com/op/go-logging"
 
 	config "github.com/hyperledger/fabric-sdk-go/config"
+	fabric_config "github.com/hyperledger/fabric/common/config"
+	"github.com/hyperledger/fabric/common/configtx"
+	mb "github.com/hyperledger/fabric/protos/msp"
+	ab "github.com/hyperledger/fabric/protos/orderer"
 )
 
 var logger = logging.MustGetLogger("fabric_sdk_go")
@@ -53,6 +57,7 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
  */
 type Chain interface {
 	GetName() string
+	Initialize(data []byte) error
 	IsSecurityEnabled() bool
 	GetTCertBatchSize() int
 	SetTCertBatchSize(batchSize int)
@@ -181,6 +186,20 @@ type JoinChannelRequest struct {
 	Targets []Peer
 	TxID    string
 	Nonce   []byte
+}
+
+// configItems contains the configuration values retrieved from the Orderer Service
+type configItems struct {
+	msps        []*mb.FabricMSPConfig
+	anchorPeers []*orgAnchorPeer
+	orderers    []string
+}
+
+// orgAnchorPeer contains inormation about a peer
+type orgAnchorPeer struct {
+	org  string
+	host string
+	port int32
 }
 
 // NewChain ...
@@ -392,6 +411,45 @@ func (c *chain) GetOrderers() []Orderer {
 		orderersArray = append(orderersArray, v)
 	}
 	return orderersArray
+}
+
+// Initialize initializes the chain
+/**
+ * Retrieve the configuration from the orderer and initializes this chain (channel)
+ * with those values. Optionally a configuration may be passed in to initialize this channel
+ * without making the call to the orderer.
+ * @param {byte[]} config - Optional - A serialized form of the protobuf configuration update envelope
+ */
+func (c *chain) Initialize(config []byte) error {
+	var configItems *configItems
+
+	if len(config) > 0 {
+		var err error
+		if configItems, err = c.loadConfigUpdateEnvelope(config); err != nil {
+			return fmt.Errorf("Unable to load config update envelope: %v", err)
+		}
+	} else {
+		configEnvelope, err := c.getChannelConfig()
+		if err != nil {
+			return fmt.Errorf("Unable to retrieve channel configuration from orderer service: %v", err)
+		}
+
+		configItems, err = c.loadConfigEnvelope(configEnvelope)
+		if err != nil {
+			return fmt.Errorf("Unable to load config envelope: %v", err)
+		}
+	}
+
+	c.init(configItems)
+
+	return nil
+}
+
+func (c *chain) init(configItems *configItems) {
+	// TODO:
+	// c.msp_manager.loadMSPs(config_items.msps)
+	// c.anchor_peers = config_items.anchor_peers
+	// //TODO should we create orderers and endorsing peers
 }
 
 // CreateChannel calls the an orderer to create a channel on the network
@@ -1260,6 +1318,59 @@ func (c *chain) BroadcastEnvelope(envelope *SignedEnvelope) ([]*TransactionRespo
 	return transactionResponses, nil
 }
 
+// SendEnvelope sends the given envelope to each orderer and returns a block response
+func (c *chain) SendEnvelope(envelope *SignedEnvelope) (*common.Block, error) {
+	if c.orderers == nil || len(c.orderers) == 0 {
+		return nil, fmt.Errorf("orderers not set")
+	}
+
+	var blockResponse *common.Block
+	var errorResponses []error
+	var wg sync.WaitGroup
+	var mutex sync.Mutex
+
+	// TODO: make it so you don't need to wait for all orderers to return a response
+	for _, o := range c.orderers {
+		wg.Add(1)
+		go func(orderer Orderer) {
+			defer wg.Done()
+
+			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.GetURL())
+			blocks, errors := orderer.SendDeliver(envelope)
+			select {
+			case block := <-blocks:
+				mutex.Lock()
+				if blockResponse == nil {
+					blockResponse = block
+				}
+				mutex.Unlock()
+
+			case err := <-errors:
+				mutex.Lock()
+				errorResponses = append(errorResponses, err)
+				mutex.Unlock()
+
+			case <-time.After(time.Second * 5):
+				mutex.Lock()
+				errorResponses = append(errorResponses, fmt.Errorf("Timeout waiting for response from orderer"))
+				mutex.Unlock()
+			}
+		}(o)
+	}
+	wg.Wait()
+
+	if blockResponse != nil {
+		return blockResponse, nil
+	}
+
+	// There must be an error
+	if len(errorResponses) > 0 {
+		return nil, fmt.Errorf("error returned from orderer service: %v", errorResponses[0])
+	}
+
+	return nil, fmt.Errorf("unexpected: didn't receive a block from any of the orderer servces and didn't receive any error")
+}
+
 // signObjectWithKey will sign the given object with the given key,
 // hashOpts and signerOpts
 func (c *chain) signObjectWithKey(object []byte, key bccsp.Key,
@@ -1366,6 +1477,7 @@ func buildChaincodePolicy(mspid string) (*common.SignaturePolicyEnvelope, error)
 	}
 	return p, nil
 }
+
 func validateJoinChannelRequest(request *JoinChannelRequest) error {
 	// Validate arguments
 	if request == nil {
@@ -1381,4 +1493,462 @@ func validateJoinChannelRequest(request *JoinChannelRequest) error {
 		return fmt.Errorf("Nonce is required to join channel")
 	}
 	return nil
+}
+
+func (c *chain) getChannelConfig() (*common.ConfigEnvelope, error) {
+	// Get the newest block
+	block, err := c.getBlock(util.NewNewestSeekPosition())
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Debugf("GetChannelConfig - Retrieved newest block index: %d\n", block.Header.Number)
+
+	// Get the index of the last config block
+	lastConfig, err := util.GetLastConfigFromBlock(block)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to get last config from block: %v", err)
+	}
+
+	logger.Debugf("GetChannelConfig - Last config index: %d\n", lastConfig.Index)
+
+	// Get the last config block
+	block, err = c.getBlock(util.NewSpecificSeekPosition(lastConfig.Index))
+	if err != nil {
+		return nil, fmt.Errorf("Unable to retrieve block at index %d: %v", lastConfig.Index, err)
+	}
+
+	logger.Debugf("GetChannelConfig - Last config block number %d, Number of tx: %d", block.Header.Number, len(block.Data.Data))
+
+	if len(block.Data.Data) != 1 {
+		return nil, fmt.Errorf("Config block must only contain one transaction but contains %d", len(block.Data.Data))
+	}
+
+	envelope, err := protos_utils.ExtractEnvelope(block, 0)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to extract envelope from config block: %v", err)
+	}
+
+	payload, err := protos_utils.ExtractPayload(envelope)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to extract payload from config block envelope: %v", err)
+	}
+
+	channelHeader, err := protos_utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to extract channel header from config block payload: %v", err)
+	}
+
+	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG {
+		return nil, fmt.Errorf("Block must be of type 'CONFIG'")
+	}
+
+	configEnvelope := &common.ConfigEnvelope{}
+	if err := proto.Unmarshal(payload.Data, configEnvelope); err != nil {
+		return nil, fmt.Errorf("Unable to unmarshal config envelope: %v", err)
+	}
+
+	return configEnvelope, nil
+}
+
+/*
+ * Utility method to load this chain with configuration information
+ * from a Configuration block
+ * @param {ConfigEnvelope} the envelope with the configuration items
+ * @see /protos/common/configtx.proto
+ */
+func (c *chain) loadConfigEnvelope(config *common.ConfigEnvelope) (*configItems, error) {
+	configItems := &configItems{msps: []*mb.FabricMSPConfig{}, anchorPeers: []*orgAnchorPeer{}, orderers: []string{}}
+	err := loadConfigGroup(configItems, config.Config.ChannelGroup, "base", "", true, false)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to load config items from channel group: %v", err)
+	}
+
+	logger.Debugf("Chain config: %v", configItems)
+
+	return configItems, nil
+}
+
+/*
+ * Utility method to load this chain with configuration information
+ * from an Envelope that contains a Configuration
+ * @param {byte[]} the envelope with the configuration update items
+ */
+func (c *chain) loadConfigUpdateEnvelope(data []byte) (*configItems, error) {
+	logger.Debugf("loadConfigData - start")
+
+	envelope := &common.Envelope{}
+	err := proto.Unmarshal(data, envelope)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to unmarshal envelope: %v", err)
+	}
+	logger.Debugf("loadConfigData - envelope: %v\n", envelope)
+
+	payload, err := protos_utils.ExtractPayload(envelope)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to extract payload from config update envelope: %v", err)
+	}
+	logger.Debugf("loadConfigData - payload: %v", payload)
+
+	channelHeader, err := protos_utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to extract channel header from config update payload: %v", err)
+	}
+
+	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG_UPDATE {
+		return nil, fmt.Errorf("Block must be of type 'CONFIG_UPDATE'")
+	}
+
+	configUpdateEnvelope := &common.ConfigUpdateEnvelope{}
+	if err := proto.Unmarshal(payload.Data, configUpdateEnvelope); err != nil {
+		return nil, fmt.Errorf("Unable to unmarshal config update envelope: %v", err)
+	}
+
+	configUpdate := &common.ConfigUpdate{}
+	if err := proto.Unmarshal(configUpdateEnvelope.ConfigUpdate, configUpdate); err != nil {
+		return nil, fmt.Errorf("Unable to unmarshal config update from envelope: %v", err)
+	}
+
+	logger.Debugf("loadConfigUpdateEnvelope - channel ::%s", configUpdate.ChannelId)
+
+	configItems := &configItems{msps: []*mb.FabricMSPConfig{}, anchorPeers: []*orgAnchorPeer{}, orderers: []string{}}
+
+	// Do the write_set second so they update anything in the read set
+	err = loadConfigGroup(configItems, configUpdate.ReadSet, "read_set", "", true, false)
+	err = loadConfigGroup(configItems, configUpdate.WriteSet, "write_set", "", true, false)
+
+	return configItems, nil
+}
+
+func loadConfigGroup(configItems *configItems, group *common.ConfigGroup, name string, org string, top bool, keepChildren bool) error {
+	logger.Debugf("loadConfigGroup - %s - START groups Org: %s  keep: %b", name, org, keepChildren)
+	if group == nil {
+		return nil
+	}
+
+	var groups map[string]*common.ConfigGroup
+	if top {
+		groups = group.GetGroups()
+	} else {
+		// groups = group.Value.GetGroups()
+	}
+
+	if groups != nil {
+		for key, g := range groups {
+			logger.Debug("loadConfigGroup - %s - found config group ==> %s", name, key)
+			// The Application group is where config settings are that we want to find
+			loadConfigGroup(configItems, g, name+"."+key, key, false, (key == fabric_config.ApplicationGroupKey || keepChildren))
+		}
+	} else {
+		logger.Debug("loadConfigGroup - %s - no groups", name)
+	}
+
+	logger.Debugf("loadConfigGroup - %s - START values", name)
+
+	var values map[string]*common.ConfigValue
+	if top {
+		values = group.Values
+	} else {
+		// values = group.value.values
+	}
+
+	if values != nil {
+		for key, configValue := range values {
+			loadConfigValue(configItems, key, configValue, name, org, keepChildren)
+		}
+	} else {
+		logger.Debugf("loadConfigGroup - %s - no values", name)
+	}
+
+	logger.Debugf("loadConfigGroup - %s - END values", name)
+
+	logger.Debugf("loadConfigGroup - %s - START policies", name)
+
+	var policies map[string]*common.ConfigPolicy
+	if top {
+		policies = group.Policies
+	} else {
+		// policies = group.value.policies
+	}
+
+	if policies != nil {
+		for key, configPolicy := range policies {
+			loadConfigPolicy(configItems, key, configPolicy, name, org, keepChildren)
+		}
+	} else {
+		logger.Debugf("loadConfigGroup - %s - no policies", name)
+	}
+
+	logger.Debugf("loadConfigGroup - %s - END policies", name)
+
+	logger.Debugf("loadConfigGroup - %s - END group", name)
+
+	return nil
+}
+
+func loadConfigValue(configItems *configItems, key string, configValue *common.ConfigValue, groupName string, org string, keepValue bool) error {
+	logger.Debugf("loadConfigValue - %s - START value name: %s  keep:%s", groupName, key, keepValue)
+	logger.Debugf("loadConfigValue - %s   - version: %d", groupName, configValue.Version)
+	logger.Debugf("loadConfigValue - %s   - mod_policy: %s", groupName, configValue.ModPolicy)
+
+	switch key {
+	case fabric_config.AnchorPeersKey:
+		anchorPeers := &pb.AnchorPeers{}
+		err := proto.Unmarshal(configValue.Value, anchorPeers)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal anchor peers from config value: %v", err)
+		}
+
+		logger.Debugf("loadConfigValue - %s   - AnchorPeers :: %s", groupName, anchorPeers)
+
+		if len(anchorPeers.AnchorPeers) > 0 {
+			for _, anchorPeer := range anchorPeers.AnchorPeers {
+				oap := &orgAnchorPeer{org: org, host: anchorPeer.Host, port: anchorPeer.Port}
+				configItems.anchorPeers = append(configItems.anchorPeers, oap)
+				logger.Debugf("loadConfigValue - %s   - AnchorPeer :: %s:%d:%s", groupName, oap.host, oap.port, oap.org)
+			}
+		}
+		break
+
+	case fabric_config.MSPKey:
+		mspConfig := &mb.MSPConfig{}
+		err := proto.Unmarshal(configValue.Value, mspConfig)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal MSPConfig from config value: %v", err)
+		}
+
+		logger.Debugf("loadConfigValue - %s   - MSP found", groupName)
+
+		if keepValue {
+			mspType := msp.ProviderType(mspConfig.Type)
+			if mspType != msp.FABRIC {
+				return fmt.Errorf("unsupported MSP type: %v", mspType)
+			}
+
+			mspConfigValue := &mb.FabricMSPConfig{}
+			err := proto.Unmarshal(mspConfig.Config, mspConfigValue)
+			if err != nil {
+				return fmt.Errorf("Unable to unmarshal FabricMSPConfig from config value: %v", err)
+			}
+			configItems.msps = append(configItems.msps, mspConfigValue)
+		}
+		break
+
+	case fabric_config.ConsensusTypeKey:
+		consensusType := &ab.ConsensusType{}
+		err := proto.Unmarshal(configValue.Value, consensusType)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal ConsensusType from config value: %v", err)
+		}
+
+		logger.Debug("loadConfigValue - %s   - Consensus type value :: %s", groupName, consensusType.Type)
+		// TODO: Do something with this value
+		break
+
+	case fabric_config.BatchSizeKey:
+		batchSize := &ab.BatchSize{}
+		err := proto.Unmarshal(configValue.Value, batchSize)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal BatchSize from config value: %v", err)
+		}
+
+		logger.Debugf("loadConfigValue - %s   - BatchSize  maxMessageCount :: %s", groupName, batchSize.MaxMessageCount)
+		logger.Debugf("loadConfigValue - %s   - BatchSize  absoluteMaxBytes :: %s", groupName, batchSize.AbsoluteMaxBytes)
+		logger.Debugf("loadConfigValue - %s   - BatchSize  preferredMaxBytes :: %s", groupName, batchSize.PreferredMaxBytes)
+		// TODO: Do something with this value
+		break
+
+	case fabric_config.BatchTimeoutKey:
+		batchTimeout := &ab.BatchTimeout{}
+		err := proto.Unmarshal(configValue.Value, batchTimeout)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal BatchTimeout from config value: %v", err)
+		}
+		logger.Debugf("loadConfigValue - %s   - BatchTimeout timeout value :: %s", groupName, batchTimeout.Timeout)
+		// TODO: Do something with this value
+		break
+
+	case fabric_config.ChannelRestrictionsKey:
+		channelRestrictions := &ab.ChannelRestrictions{}
+		err := proto.Unmarshal(configValue.Value, channelRestrictions)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal ChannelRestrictions from config value: %v", err)
+		}
+		logger.Debugf("loadConfigValue - %s   - ChannelRestrictions max_count value :: %s", groupName, channelRestrictions.MaxCount)
+		// TODO: Do something with this value
+		break
+
+	case configtx.CreationPolicyKey:
+		creationPolicy := &ab.CreationPolicy{}
+		err := proto.Unmarshal(configValue.Value, creationPolicy)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal CreationPolicy from config value: %v", err)
+		}
+		logger.Debugf("loadConfigValue - %s   - CreationPolicy policy value :: %s", groupName, creationPolicy.Policy)
+		// TODO: Do something with this value
+		break
+
+	case fabric_config.ChainCreationPolicyNamesKey:
+		chainCreationPolicyNames := &ab.ChainCreationPolicyNames{}
+		err := proto.Unmarshal(configValue.Value, chainCreationPolicyNames)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal ChainCreationPolicyNames from config value: %v", err)
+		}
+		logger.Debugf("loadConfigValue - %s   - ChainCreationPolicyNames names value :: %s", groupName, chainCreationPolicyNames.Names)
+		// TODO: Do something with this value
+		break
+
+	case fabric_config.HashingAlgorithmKey:
+		hashingAlgorithm := &common.HashingAlgorithm{}
+		err := proto.Unmarshal(configValue.Value, hashingAlgorithm)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal HashingAlgorithm from config value: %v", err)
+		}
+		logger.Debugf("loadConfigValue - %s   - HashingAlgorithm names value :: %s", groupName, hashingAlgorithm.Name)
+		// TODO: Do something with this value
+		break
+
+	case fabric_config.BlockDataHashingStructureKey:
+		bdhstruct := &common.BlockDataHashingStructure{}
+		err := proto.Unmarshal(configValue.Value, bdhstruct)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal BlockDataHashingStructure from config value: %v", err)
+		}
+		logger.Debugf("loadConfigValue - %s   - BlockDataHashingStructure width value :: %s", groupName, bdhstruct.Width)
+		// TODO: Do something with this value
+		break
+
+	case fabric_config.OrdererAddressesKey:
+		ordererAddresses := &common.OrdererAddresses{}
+		err := proto.Unmarshal(configValue.Value, ordererAddresses)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal OrdererAddresses from config value: %v", err)
+		}
+		logger.Debugf("loadConfigValue - %s   - OrdererAddresses addresses value :: %s", groupName, ordererAddresses.Addresses)
+		if len(ordererAddresses.Addresses) > 0 {
+			for _, ordererAddress := range ordererAddresses.Addresses {
+				configItems.orderers = append(configItems.orderers, ordererAddress)
+			}
+		}
+		break
+
+	default:
+		logger.Debugf("loadConfigValue - %s   - value: %s", groupName, configValue.Value)
+	}
+	return nil
+}
+
+func loadConfigPolicy(configItems *configItems, key string, configPolicy *common.ConfigPolicy, groupName string, org string, keepPolicy bool) error {
+	logger.Debugf("loadConfigPolicy - %s - name: %s  keep:%s", groupName, key, keepPolicy)
+	logger.Debugf("loadConfigPolicy - %s - version: %s", groupName, configPolicy.Version)
+	logger.Debugf("loadConfigPolicy - %s - mod_policy: %s", groupName, configPolicy.ModPolicy)
+
+	policyType := common.Policy_PolicyType(configPolicy.Policy.Type)
+
+	switch policyType {
+	case common.Policy_SIGNATURE:
+		sigPolicyEnv := &common.SignaturePolicyEnvelope{}
+		err := proto.Unmarshal(configPolicy.Policy.Policy, sigPolicyEnv)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal SignaturePolicyEnvelope from config policy: %v", err)
+		}
+		logger.Debugf("loadConfigPolicy - %s - policy SIGNATURE :: %s", groupName, sigPolicyEnv.Policy)
+		// TODO: Do something with this value
+		break
+
+	case common.Policy_MSP:
+		// TODO: Not implemented yet
+		logger.Debugf("loadConfigPolicy - %s - policy :: MSP POLICY NOT PARSED ", groupName)
+		break
+
+	case common.Policy_IMPLICIT_META:
+		implicitMetaPolicy := &common.ImplicitMetaPolicy{}
+		err := proto.Unmarshal(configPolicy.Policy.Policy, implicitMetaPolicy)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal ImplicitMetaPolicy from config policy: %v", err)
+		}
+		logger.Debugf("loadConfigPolicy - %s - policy IMPLICIT_META :: %v", groupName, implicitMetaPolicy)
+		// TODO: Do something with this value
+		break
+
+	default:
+		return fmt.Errorf("Unknown Policy type: %v", policyType)
+	}
+	return nil
+}
+
+// getBlock retrieves the block at the given position
+func (c *chain) getBlock(pos *ab.SeekPosition) (*common.Block, error) {
+	nonce, err := util.GenerateRandomNonce()
+	if err != nil {
+		return nil, fmt.Errorf("error when generating nonce: %v", err)
+	}
+
+	user, err := c.clientContext.GetUserContext("")
+	if err != nil {
+		return nil, fmt.Errorf("GetUserContext return error: %s", err)
+	}
+
+	creator, err := getSerializedIdentity(user.GetEnrollmentCertificate())
+	if err != nil {
+		return nil, fmt.Errorf("error when serializing identity: %v", err)
+	}
+
+	txID, err := protos_utils.ComputeProposalTxID(nonce, creator)
+	if err != nil {
+		return nil, fmt.Errorf("error when generating TX ID: %v", err)
+	}
+
+	seekInfoHeader, err := util.BuildChannelHeader(c.GetName(), common.HeaderType_DELIVER_SEEK_INFO, txID, 0)
+	if err != nil {
+		return nil, fmt.Errorf("error when building channel header: %v", err)
+	}
+
+	seekInfoHeaderBytes, err := protos_utils.Marshal(seekInfoHeader)
+	if err != nil {
+		return nil, fmt.Errorf("error when marshalling channel header: %v", err)
+	}
+
+	signatureHeader := &common.SignatureHeader{
+		Creator: creator,
+		Nonce:   nonce,
+	}
+
+	signatureHeaderBytes, err := protos_utils.Marshal(signatureHeader)
+	if err != nil {
+		return nil, fmt.Errorf("error when marshalling signature header: %v", err)
+	}
+
+	seekHeader := &common.Header{
+		ChannelHeader:   seekInfoHeaderBytes,
+		SignatureHeader: signatureHeaderBytes,
+	}
+
+	seekInfo := &ab.SeekInfo{
+		Start:    pos,
+		Stop:     pos,
+		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
+	}
+
+	seekInfoBytes, err := protos_utils.Marshal(seekInfo)
+	if err != nil {
+		return nil, fmt.Errorf("error when marshalling seek info: %v", err)
+	}
+
+	seekPayload := &common.Payload{
+		Header: seekHeader,
+		Data:   seekInfoBytes,
+	}
+
+	seekPayloadBytes, err := protos_utils.Marshal(seekPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	signedEnvelope, err := c.SignPayload(seekPayloadBytes)
+	if err != nil {
+		return nil, fmt.Errorf("error when signing payload: %v", err)
+	}
+
+	return c.SendEnvelope(signedEnvelope)
 }

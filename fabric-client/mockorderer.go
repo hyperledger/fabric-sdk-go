@@ -24,21 +24,11 @@ import (
 	ab "github.com/hyperledger/fabric/protos/orderer"
 )
 
-// TestBlock is a test block
-var testBlock = &ab.DeliverResponse{
-	Type: &ab.DeliverResponse_Block{
-		Block: &common.Block{
-			Data: &common.BlockData{
-				Data: [][]byte{[]byte("test")},
-			},
-		},
-	},
-}
-
 // mockOrderer is a mock fabricclient.Orderer
 type mockOrderer struct {
-	MockURL   string
-	MockError error
+	MockURL         string
+	MockError       error
+	DeliverResponse *ab.DeliverResponse
 }
 
 // GetURL returns the mock URL of the mock Orderer
@@ -56,6 +46,13 @@ func (o *mockOrderer) SendDeliver(envelope *SignedEnvelope) (chan *common.Block,
 	chan error) {
 	responses := make(chan *common.Block, 1)
 	errors := make(chan error, 1)
-	responses <- testBlock.GetBlock()
+	responses <- o.DeliverResponse.GetBlock()
 	return responses, errors
+}
+
+// NewMockDeliverResponse returns a mock DeliverResponse with the given block
+func NewMockDeliverResponse(block *common.Block) *ab.DeliverResponse {
+	return &ab.DeliverResponse{
+		Type: &ab.DeliverResponse_Block{Block: block},
+	}
 }

@@ -197,7 +197,7 @@ func TestCreateChain(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	// Setup mock orderer
-	orderer := mockOrderer{fmt.Sprintf("0.0.0.0:1234"), nil}
+	orderer := mockOrderer{MockURL: fmt.Sprintf("0.0.0.0:1234")}
 	chain.AddOrderer(&orderer)
 	// Test with valid cofiguration
 	err = chain.CreateChannel(&CreateChannelRequest{ConfigData: configTx})
@@ -250,7 +250,7 @@ func TestJoinChannel(t *testing.T) {
 	chain, _ := setupTestChain()
 	peer, _ := CreateNewPeer(testAddress, "", "")
 	peers = append(peers, peer)
-	orderer := &mockOrderer{}
+	orderer := &mockOrderer{DeliverResponse: NewMockDeliverResponse(mocks.NewSimpleMockBlock())}
 	nonce, _ := util.GenerateRandomNonce()
 	txID, _ := util.ComputeTxID(nonce, []byte("testID"))
 	request := &JoinChannelRequest{Targets: peers, Nonce: nonce, TxID: txID}
@@ -293,6 +293,30 @@ func TestJoinChannel(t *testing.T) {
 	}
 }
 
+func TestChainInitializeFromOrderer(t *testing.T) {
+	chain, _ := setupTestChain()
+	builder := &mocks.MockConfigBlockBuilder{Index: 0, LastConfigIndex: 0}
+	orderer := &mockOrderer{DeliverResponse: NewMockDeliverResponse(builder.Build())}
+	chain.AddOrderer(orderer)
+
+	err := chain.Initialize([]byte{})
+	if err != nil {
+		t.Fatalf("channel Initialize failed : %v", err)
+	}
+	// TODO: Check data in chain
+}
+
+func TestChainInitializeFromUpdate(t *testing.T) {
+	chain, _ := setupTestChain()
+	builder := &mocks.MockConfigUpdateEnvelopeBuilder{}
+
+	err := chain.Initialize(builder.BuildBytes())
+	if err != nil {
+		t.Fatalf("channel Initialize failed : %v", err)
+	}
+	// TODO: Check data in chain
+}
+
 func setupTestChain() (Chain, error) {
 	client := NewClient()
 	user := NewUser("test")
@@ -314,7 +338,7 @@ func setupMassiveTestChain(numberOfPeers int, numberOfOrderers int) (Chain, erro
 	}
 
 	for i := 0; i < numberOfOrderers; i++ {
-		orderer := mockOrderer{fmt.Sprintf("http://mock%d.orderers.r.us", i), nil}
+		orderer := mockOrderer{MockURL: fmt.Sprintf("http://mock%d.orderers.r.us", i)}
 		chain.AddOrderer(&orderer)
 	}
 

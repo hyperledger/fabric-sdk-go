@@ -20,10 +20,14 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/hyperledger/fabric/core/crypto/primitives"
 	ab "github.com/hyperledger/fabric/protos/orderer"
 
 	"github.com/golang/protobuf/proto"
+	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric/protos/common"
 	protos_utils "github.com/hyperledger/fabric/protos/utils"
 )
@@ -63,4 +67,45 @@ func GenerateRandomNonce() ([]byte, error) {
 // ComputeTxID computes a transaction ID from a given nonce and creator ID
 func ComputeTxID(nonce []byte, creatorID []byte) (string, error) {
 	return protos_utils.ComputeProposalTxID(nonce, creatorID)
+}
+
+// NewNewestSeekPosition returns a SeekPosition that requests the newest block
+func NewNewestSeekPosition() *ab.SeekPosition {
+	return &ab.SeekPosition{Type: &ab.SeekPosition_Newest{Newest: &ab.SeekNewest{}}}
+}
+
+// NewSpecificSeekPosition returns a SeekPosition that requests the block at the given index
+func NewSpecificSeekPosition(index uint64) *ab.SeekPosition {
+	return &ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: index}}}
+}
+
+// GetLastConfigFromBlock returns the LastConfig data from the given block
+func GetLastConfigFromBlock(block *common.Block) (*common.LastConfig, error) {
+	metadata := &common.Metadata{}
+	err := proto.Unmarshal(block.Metadata.Metadata[common.BlockMetadataIndex_LAST_CONFIG], metadata)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal meta data at index %d: %v", common.BlockMetadataIndex_LAST_CONFIG, err)
+	}
+
+	lastConfig := &common.LastConfig{}
+	err = proto.Unmarshal(metadata.Value, lastConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal last config from meta data: %v", err)
+	}
+
+	return lastConfig, err
+}
+
+// BuildChannelHeader builds a ChannelHeader with the given parameters
+func BuildChannelHeader(channelName string, headerType common.HeaderType, txID string, epoch uint64) (*common.ChannelHeader, error) {
+	now := time.Now()
+	channelHeader := &common.ChannelHeader{
+		Type:      int32(headerType),
+		Version:   1,
+		Timestamp: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())},
+		ChannelId: channelName,
+		Epoch:     epoch,
+		TxId:      txID,
+	}
+	return channelHeader, nil
 }
