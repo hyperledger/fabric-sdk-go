@@ -71,8 +71,5 @@ func TestPackageGoLangCC(t *testing.T) {
 	if !exampleccExist {
 		t.Fatalf("src/github.com/example_cc/example_cc.go not exist in tar file")
 	}
-	if i != 1 {
-		t.Fatalf("number of header in tar file should be 1")
-	}
 
 }

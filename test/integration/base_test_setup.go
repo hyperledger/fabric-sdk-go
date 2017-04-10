@@ -225,7 +225,7 @@ func (setup *BaseSetupImpl) InstantiateCC(chain fabricClient.Chain, eventHub eve
 	}
 
 	// Register for commit event
-	done, fail := setup.RegisterEvent(txID, eventHub)
+	done, fail := RegisterEvent(txID, eventHub)
 
 	for _, v := range transactionProposalResponse {
 		if v.Err != nil {
@@ -269,22 +269,12 @@ func (setup *BaseSetupImpl) GetQueryValue(chain fabricClient.Chain) (string, err
 	args = append(args, "query")
 	args = append(args, "b")
 
-	signedProposal, err := chain.CreateTransactionProposal(chainCodeID, chainID, args, true, nil)
+	transactionProposalResponses, _, err := CreateAndSendTransactionProposal(chain, chainCodeID, chainID, args, []fabricClient.Peer{chain.GetPrimaryPeer()})
 	if err != nil {
-		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
-	}
-	transactionProposalResponses, err := chain.SendTransactionProposal(signedProposal, 0, []fabricClient.Peer{chain.GetPrimaryPeer()})
-	if err != nil {
-		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
+		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
-	for _, v := range transactionProposalResponses {
-		if v.Err != nil {
-			return "", fmt.Errorf("query Endorser %s return error: %v", v.Endorser, v.Err)
-		}
-		return string(v.GetResponsePayload()), nil
-	}
-	return "", nil
+	return string(transactionProposalResponses[0].GetResponsePayload()), nil
 }
 
 // Invoke ...
@@ -297,49 +287,27 @@ func (setup *BaseSetupImpl) Invoke(chain fabricClient.Chain, eventHub events.Eve
 	args = append(args, "b")
 	args = append(args, "1")
 
-	signedProposal, err := chain.CreateTransactionProposal(chainCodeID, chainID, args, true, nil)
+	transactionProposalResponse, txID, err := CreateAndSendTransactionProposal(chain, chainCodeID, chainID, args, []fabricClient.Peer{chain.GetPrimaryPeer()})
 	if err != nil {
-		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
+		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
+
 	// Register for commit event
-	done, fail := setup.RegisterEvent(signedProposal.TransactionID, eventHub)
-	transactionProposalResponse, err := chain.SendTransactionProposal(signedProposal,
-		0, []fabricClient.Peer{chain.GetPrimaryPeer()})
+	done, fail := RegisterEvent(txID, eventHub)
+
+	_, err = CreateAndSendTransaction(chain, transactionProposalResponse)
 	if err != nil {
-		return "", fmt.Errorf("SendTransactionProposal return error: %v", err)
-	}
-
-	for _, v := range transactionProposalResponse {
-		if v.Err != nil {
-			return "", fmt.Errorf("invoke Endorser %s return error: %v", v.Endorser, v.Err)
-		}
-		fmt.Printf("invoke Endorser '%s' return ProposalResponse status:%v\n", v.Endorser, v.Status)
-	}
-
-	tx, err := chain.CreateTransaction(transactionProposalResponse)
-	if err != nil {
-		return "", fmt.Errorf("CreateTransaction return error: %v", err)
-	}
-
-	transactionResponse, err := chain.SendTransaction(tx)
-	if err != nil {
-		return "", fmt.Errorf("SendTransaction return error: %v", err)
-
-	}
-	for _, v := range transactionResponse {
-		if v.Err != nil {
-			return "", fmt.Errorf("Orderer %s return error: %v", v.Orderer, v.Err)
-		}
+		return "", fmt.Errorf("CreateAndSendTransaction return error: %v", err)
 	}
 
 	select {
 	case <-done:
 	case <-fail:
-		return "", fmt.Errorf("invoke Error received from eventhub for txid(%s) error(%v)", signedProposal.TransactionID, fail)
+		return "", fmt.Errorf("invoke Error received from eventhub for txid(%s) error(%v)", txID, fail)
 	case <-time.After(time.Second * 30):
-		return "", fmt.Errorf("invoke Didn't receive block event for txid(%s)", signedProposal.TransactionID)
+		return "", fmt.Errorf("invoke Didn't receive block event for txid(%s)", txID)
 	}
-	return signedProposal.TransactionID, nil
+	return txID, nil
 
 }
 
@@ -464,40 +432,4 @@ func (setup *BaseSetupImpl) InitConfig() {
 func (setup *BaseSetupImpl) GenerateRandomCCID() {
 	rand.Seed(time.Now().UnixNano())
 	chainCodeID = randomString(10)
-}
-
-// RegisterEvent registers on the given eventhub for the give transaction
-// returns a boolean channel which receives true when the event is complete
-// and an error channel for errors
-func (setup *BaseSetupImpl) RegisterEvent(txID string,
-	eventHub events.EventHub) (chan bool, chan error) {
-	done := make(chan bool)
-	fail := make(chan error)
-
-	eventHub.RegisterTxEvent(txID, func(txId string, err error) {
-		if err != nil {
-			fail <- err
-		} else {
-			fmt.Printf("Received success event for txid(%s)\n", txId)
-			done <- true
-		}
-	})
-
-	return done, fail
-}
-
-// RegisterCCEvent registers chain code event on the given eventhub
-// @returns {chan bool} channel which receives true when the event is complete
-// @returns {object} ChainCodeCBE object handle that should be used to unregister
-func (setup *BaseSetupImpl) RegisterCCEvent(chainCodeID, eventID string,
-	eventHub events.EventHub) (chan bool, *events.ChainCodeCBE) {
-	done := make(chan bool)
-
-	// Register callback for valid CE
-	rce := eventHub.RegisterChaincodeEvent(chainCodeID, eventID, func(ce *events.ChaincodeEvent) {
-		fmt.Printf("Received CC event ( %s ): \n%v\n", time.Now().Format(time.RFC850), ce)
-		done <- true
-	})
-
-	return done, rce
 }

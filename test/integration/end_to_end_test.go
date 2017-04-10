@@ -61,7 +61,7 @@ func TestChainCodeInvoke(t *testing.T) {
 	eventID := "test([a-zA-Z]+)"
 
 	// Register callback for chaincode event
-	done, rce := testSetup.RegisterCCEvent(chainCodeID, eventID, eventHub)
+	done, rce := RegisterCCEvent(chainCodeID, eventID, eventHub)
 
 	_, err = testSetup.Invoke(chain, eventHub)
 	if err != nil {
