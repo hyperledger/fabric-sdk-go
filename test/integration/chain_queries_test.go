@@ -25,32 +25,25 @@ import (
 	"testing"
 
 	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/events"
 )
 
 func TestChainQueries(t *testing.T) {
 
-	testSetup := BaseSetupImpl{}
-	testSetup.InitConfig()
+	testSetup := BaseSetupImpl{
+		ConfigFile:      "../fixtures/config/config_test.yaml",
+		ChainID:         "testchannel",
+		ChannelConfig:   "../fixtures/channel/testchannel.tx",
+		ConnectEventHub: true,
+	}
 
-	eventHub, err := testSetup.GetEventHubAndConnect()
-	if err != nil {
-		t.Fatalf("GetEventHub return error: %v", err)
+	if err := testSetup.Initialize(); err != nil {
+		t.Fatalf(err.Error())
 	}
-	chain, err := testSetup.GetChain()
-	if err != nil {
-		t.Fatalf("GetChain return error: %v", err)
-	}
-	// Create and join channel represented by 'chain'
-	testSetup.CreateAndJoinChannel(t, chain)
 
-	err = testSetup.InstallCC(chain, chainCodeID, chainCodePath, chainCodeVersion, nil, nil)
-	if err != nil {
-		t.Fatalf("installCC return error: %v", err)
-	}
-	err = testSetup.InstantiateCC(chain, eventHub)
-	if err != nil {
-		t.Fatalf("instantiateCC return error: %v", err)
+	chain := testSetup.Chain
+
+	if err := testSetup.InstallAndInstantiateExampleCC(); err != nil {
+		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
 	// Test Query Info - retrieve values before transaction
@@ -60,7 +53,7 @@ func TestChainQueries(t *testing.T) {
 	}
 
 	// Invoke transaction that changes block state
-	txID, err := changeBlockState(testSetup, chain, eventHub)
+	txID, err := changeBlockState(testSetup)
 	if err != nil {
 		t.Fatalf("Failed to change block state (invoke transaction). Return error: %v", err)
 	}
@@ -91,20 +84,20 @@ func TestChainQueries(t *testing.T) {
 
 }
 
-func changeBlockState(testSetup BaseSetupImpl, chain fabricClient.Chain, eventHub events.EventHub) (string, error) {
+func changeBlockState(testSetup BaseSetupImpl) (string, error) {
 
-	value, err := testSetup.GetQueryValue(chain)
+	value, err := testSetup.QueryAsset()
 	if err != nil {
 		return "", fmt.Errorf("getQueryValue return error: %v", err)
 	}
 
 	// Start transaction that will change block state
-	txID, err := testSetup.Invoke(chain, eventHub)
+	txID, err := testSetup.MoveFunds()
 	if err != nil {
-		return "", fmt.Errorf("invoke return error: %v", err)
+		return "", fmt.Errorf("Move funds return error: %v", err)
 	}
 
-	valueAfterInvoke, err := testSetup.GetQueryValue(chain)
+	valueAfterInvoke, err := testSetup.QueryAsset()
 	if err != nil {
 		return "", fmt.Errorf("getQueryValue return error: %v", err)
 	}

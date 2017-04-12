@@ -40,7 +40,9 @@ import (
 // This test loads/enrols an admin user
 // Using the admin, it registers, enrols, and revokes a test user
 func TestRegisterEnrollRevoke(t *testing.T) {
-	testSetup := BaseSetupImpl{}
+	testSetup := BaseSetupImpl{
+		ConfigFile: "../fixtures/config/config_test.yaml",
+	}
 
 	testSetup.InitConfig()
 	client := fabricClient.NewClient()

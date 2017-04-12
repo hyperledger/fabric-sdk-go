@@ -5,6 +5,7 @@ client:
     port: 7051
     event_host: "localhost"
     event_port: 7053
+    primary: true
     tls:
       # Certificate location absolute path
       certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/peers/peer0/ca-cert.pem"
@@ -13,6 +14,7 @@ client:
   peer2:
     host: "localhost"
     port: 7056
+    primary: false
     tls:
       # Certificate location absolute path
       certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/peers/peer1/ca-cert.pem"

@@ -29,24 +29,26 @@ import (
 	"time"
 
 	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
+	fcUtil "github.com/hyperledger/fabric-sdk-go/fabric-client/helpers"
 )
 
-var chain fabricClient.Chain
+var chainCodeName = "install"
+var chainCodePath = "github.com/example_cc"
+
+var testSetup BaseSetupImpl
 
 // Test chaincode install using chaincodePath to create chaincodePackage
 func TestChaincodeInstallUsingChaincodePath(t *testing.T) {
-	testSetup := BaseSetupImpl{}
-
-	chainCodeName := "install"
 
 	chainCodeVersion := getRandomCCVersion()
-	err := testSetup.InstallCC(chain, chainCodeName, chainCodePath, chainCodeVersion, nil, nil)
-	if err != nil {
+
+	// Install and Instantiate Events CC
+	if err := testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, nil); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
 	// Retrieve installed chaincodes
-	chaincodeQueryResponse, err := chain.QueryInstalledChaincodes(chain.GetPrimaryPeer())
+	chaincodeQueryResponse, err := testSetup.Chain.QueryInstalledChaincodes(testSetup.Chain.GetPrimaryPeer())
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
@@ -64,7 +66,7 @@ func TestChaincodeInstallUsingChaincodePath(t *testing.T) {
 	}
 
 	//Install same chaincode again, should fail
-	err = testSetup.InstallCC(chain, chainCodeName, chainCodePath, chainCodeVersion, nil, nil)
+	err = testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, nil)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
@@ -76,22 +78,21 @@ func TestChaincodeInstallUsingChaincodePath(t *testing.T) {
 
 // Test chaincode install using chaincodePackage[byte]
 func TestChaincodeInstallUsingChaincodePackage(t *testing.T) {
-	testSetup := BaseSetupImpl{}
 
 	chainCodeVersion := getRandomCCVersion()
-	testSetup.ChangeGOPATHToDeploy()
+	fcUtil.ChangeGOPATHToDeploy(testSetup.GetDeployPath())
 	chaincodePackage, err := fabricClient.PackageCC(chainCodePath, "")
+	fcUtil.ResetGOPATH()
 	if err != nil {
 		t.Fatalf("PackageCC return error: %s", err)
 	}
-	testSetup.ResetGOPATH()
 
-	err = testSetup.InstallCC(chain, "install", "github.com/example_cc_pkg", chainCodeVersion, chaincodePackage, nil)
+	err = testSetup.InstallCC("install", "github.com/example_cc_pkg", chainCodeVersion, chaincodePackage)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 	//Install same chaincode again, should fail
-	err = testSetup.InstallCC(chain, "install", chainCodePath, chainCodeVersion, chaincodePackage, nil)
+	err = testSetup.InstallCC("install", chainCodePath, chainCodeVersion, chaincodePackage)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
@@ -101,15 +102,19 @@ func TestChaincodeInstallUsingChaincodePackage(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	testSetup := BaseSetupImpl{}
 
-	testSetup.InitConfig()
-	var err error
-	chain, err = testSetup.GetChain()
-	if err != nil {
-		fmt.Printf("error from GetChain %v", err)
+	testSetup = BaseSetupImpl{
+		ConfigFile:      "../fixtures/config/config_test.yaml",
+		ChainID:         "testchannel",
+		ChannelConfig:   "../fixtures/channel/testchannel.tx",
+		ConnectEventHub: true,
+	}
+
+	if err := testSetup.Initialize(); err != nil {
+		fmt.Printf("error from Initialize %v", err)
 		os.Exit(-1)
 	}
+
 	code := m.Run()
 	os.Exit(code)
 }

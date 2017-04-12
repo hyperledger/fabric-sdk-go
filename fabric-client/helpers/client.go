@@ -17,14 +17,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package integration
+package helpers
 
 import (
+	"encoding/pem"
 	"fmt"
-	"time"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/config"
 	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/events"
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/msp"
+
+	fabricCAClient "github.com/hyperledger/fabric-sdk-go/fabric-ca-client"
+
+	kvs "github.com/hyperledger/fabric-sdk-go/fabric-client/keyvaluestore"
+	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // CreateAndSendTransactionProposal combines create and send transaction proposal methods into one method.
@@ -45,7 +53,7 @@ func CreateAndSendTransactionProposal(chain fabricClient.Chain, chainCodeID stri
 		if v.Err != nil {
 			return nil, signedProposal.TransactionID, fmt.Errorf("invoke Endorser %s return error: %v", v.Endorser, v.Err)
 		}
-		fmt.Printf("invoke Endorser '%s' return ProposalResponse status:%v\n", v.Endorser, v.Status)
+		logger.Debugf("invoke Endorser '%s' return ProposalResponse status:%v\n", v.Endorser, v.Status)
 	}
 
 	return transactionProposalResponses, signedProposal.TransactionID, nil
@@ -74,37 +82,61 @@ func CreateAndSendTransaction(chain fabricClient.Chain, resps []*fabricClient.Tr
 	return transactionResponse, nil
 }
 
-// RegisterEvent registers on the given eventhub for the give transaction
-// returns a boolean channel which receives true when the event is complete
-// and an error channel for errors
-func RegisterEvent(txID string, eventHub events.EventHub) (chan bool, chan error) {
-	done := make(chan bool)
-	fail := make(chan error)
+// GetClient initializes and returns a client based on config and user
+func GetClient(name string, pwd string, stateStorePath string) (fabricClient.Client, error) {
+	client := fabricClient.NewClient()
 
-	eventHub.RegisterTxEvent(txID, func(txId string, err error) {
-		if err != nil {
-			fmt.Printf("Received error event for txid(%s)\n", txId)
-			fail <- err
-		} else {
-			fmt.Printf("Received success event for txid(%s)\n", txId)
-			done <- true
+	cryptoSuite := bccspFactory.GetDefault()
+
+	client.SetCryptoSuite(cryptoSuite)
+	stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
+	if err != nil {
+		return nil, fmt.Errorf("CreateNewFileKeyValueStore return error[%s]", err)
+	}
+	client.SetStateStore(stateStore)
+	user, err := client.GetUserContext(name)
+	if err != nil {
+		return nil, fmt.Errorf("client.GetUserContext return error: %v", err)
+	}
+	if user == nil {
+		fabricCAClient, err1 := fabricCAClient.NewFabricCAClient()
+		if err1 != nil {
+			return nil, fmt.Errorf("NewFabricCAClient return error: %v", err)
 		}
-	})
+		key, cert, err1 := fabricCAClient.Enroll(name, pwd)
+		keyPem, _ := pem.Decode(key)
+		if err1 != nil {
+			return nil, fmt.Errorf("Enroll return error: %v", err1)
+		}
+		user := fabricClient.NewUser(name)
+		k, err1 := client.GetCryptoSuite().KeyImport(keyPem.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: false})
+		if err1 != nil {
+			return nil, fmt.Errorf("KeyImport return error: %v", err)
+		}
+		user.SetPrivateKey(k)
+		user.SetEnrollmentCertificate(cert)
+		err = client.SetUserContext(user, false)
+		if err != nil {
+			return nil, fmt.Errorf("client.SetUserContext return error: %v", err)
+		}
+	}
 
-	return done, fail
+	return client, nil
+
 }
 
-// RegisterCCEvent registers chain code event on the given eventhub
-// @returns {chan bool} channel which receives true when the event is complete
-// @returns {object} ChainCodeCBE object handle that should be used to unregister
-func RegisterCCEvent(chainCodeID, eventID string, eventHub events.EventHub) (chan bool, *events.ChainCodeCBE) {
-	done := make(chan bool)
+// Utility method gets serialized enrollment certificate
+func getCreatorID(client fabricClient.Client) ([]byte, error) {
 
-	// Register callback for CE
-	rce := eventHub.RegisterChaincodeEvent(chainCodeID, eventID, func(ce *events.ChaincodeEvent) {
-		fmt.Printf("Received CC event ( %s ): \n%v\n", time.Now().Format(time.RFC850), ce)
-		done <- true
-	})
-
-	return done, rce
+	user, err := client.GetUserContext("")
+	if err != nil {
+		return nil, fmt.Errorf("GetUserContext returned error: %s", err)
+	}
+	serializedIdentity := &msp.SerializedIdentity{Mspid: config.GetFabricCAID(),
+		IdBytes: user.GetEnrollmentCertificate()}
+	creatorID, err := proto.Marshal(serializedIdentity)
+	if err != nil {
+		return nil, fmt.Errorf("Could not Marshal serializedIdentity, err %s", err)
+	}
+	return creatorID, nil
 }

@@ -24,41 +24,37 @@ import (
 	"time"
 
 	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/events"
+	fcUtil "github.com/hyperledger/fabric-sdk-go/fabric-client/helpers"
 )
 
 func TestEvents(t *testing.T) {
-
-	testSetup := BaseSetupImpl{}
-
-	testSetup.InitConfig()
-
-	eventHub, err := testSetup.GetEventHubAndConnect()
-	if err != nil {
-		t.Fatalf("GetEventHub return error: %v", err)
+	testSetup := BaseSetupImpl{
+		ConfigFile:      "../fixtures/config/config_test.yaml",
+		ChainID:         "testchannel",
+		ChannelConfig:   "../fixtures/channel/testchannel.tx",
+		ConnectEventHub: true,
 	}
-	chain, err := testSetup.GetChain()
-	if err != nil {
-		t.Fatalf("GetChain return error: %v", err)
+
+	if err := testSetup.Initialize(); err != nil {
+		t.Fatalf(err.Error())
 	}
-	// Create and join channel represented by 'chain'
-	testSetup.CreateAndJoinChannel(t, chain)
+
+	testSetup.ChainCodeID = fcUtil.GenerateRandomID()
 
 	// Install and Instantiate Events CC
-	err = testSetup.InstallCC(chain, chainCodeID, "github.com/events_cc", chainCodeVersion, nil, nil)
-	if err != nil {
+	if err := testSetup.InstallCC(testSetup.ChainCodeID, "github.com/events_cc", "v0", nil); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
-	err = testSetup.InstantiateCC(chain, eventHub)
-	if err != nil {
+
+	if err := testSetup.InstantiateCC(testSetup.ChainCodeID, testSetup.ChainID, "github.com/events_cc", "v0", nil); err != nil {
 		t.Fatalf("instantiateCC return error: %v", err)
 	}
 
-	testFailedTx(t, chain, eventHub)
+	testFailedTx(t, testSetup)
 
 }
 
-func testFailedTx(t *testing.T, chain fabricClient.Chain, eventHub events.EventHub) {
+func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 
 	// Arguments for events CC
 	var args []string
@@ -66,30 +62,30 @@ func testFailedTx(t *testing.T, chain fabricClient.Chain, eventHub events.EventH
 	args = append(args, "invoke")
 	args = append(args, "SEVERE")
 
-	tpResponses1, tx1, err := CreateAndSendTransactionProposal(chain, chainCodeID, chainID, args, []fabricClient.Peer{chain.GetPrimaryPeer()})
+	tpResponses1, tx1, err := fcUtil.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()})
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
 
-	tpResponses2, tx2, err := CreateAndSendTransactionProposal(chain, chainCodeID, chainID, args, []fabricClient.Peer{chain.GetPrimaryPeer()})
+	tpResponses2, tx2, err := fcUtil.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()})
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
 
 	// Register tx1 and tx2 for commit/block event(s)
-	done1, fail1 := RegisterEvent(tx1, eventHub)
-	defer eventHub.UnregisterTxEvent(tx1)
+	done1, fail1 := fcUtil.RegisterTxEvent(tx1, testSetup.EventHub)
+	defer testSetup.EventHub.UnregisterTxEvent(tx1)
 
-	done2, fail2 := RegisterEvent(tx2, eventHub)
-	defer eventHub.UnregisterTxEvent(tx2)
+	done2, fail2 := fcUtil.RegisterTxEvent(tx2, testSetup.EventHub)
+	defer testSetup.EventHub.UnregisterTxEvent(tx2)
 
 	// Test invalid transaction: create 2 invoke requests in quick succession that modify
 	// the same state variable which should cause one invoke to be invalid
-	_, err = CreateAndSendTransaction(chain, tpResponses1)
+	_, err = fcUtil.CreateAndSendTransaction(testSetup.Chain, tpResponses1)
 	if err != nil {
 		t.Fatalf("First invoke failed err: %v", err)
 	}
-	_, err = CreateAndSendTransaction(chain, tpResponses2)
+	_, err = fcUtil.CreateAndSendTransaction(testSetup.Chain, tpResponses2)
 	if err != nil {
 		t.Fatalf("Second invoke failed err: %v", err)
 	}

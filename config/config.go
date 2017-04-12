@@ -40,6 +40,7 @@ type PeerConfig struct {
 	EventPort             string
 	TLSCertificate        string
 	TLSServerHostOverride string
+	Primary               bool
 }
 
 var myViper = viper.New()
@@ -127,13 +128,16 @@ func GetPeersConfig() []PeerConfig {
 		mm, ok := value.(map[string]interface{})
 		var host string
 		var port int
+		var primary bool
 		var eventHost string
 		var eventPort int
 		var tlsCertificate string
 		var tlsServerHostOverride string
+
 		if ok {
 			host, _ = mm["host"].(string)
 			port, _ = mm["port"].(int)
+			primary, _ = mm["primary"].(bool)
 			eventHost, _ = mm["event_host"].(string)
 			eventPort, _ = mm["event_port"].(int)
 			tlsCertificate, _ = mm["tls"].(map[string]interface{})["certificate"].(string)
@@ -143,6 +147,7 @@ func GetPeersConfig() []PeerConfig {
 			mm1 := value.(map[interface{}]interface{})
 			host, _ = mm1["host"].(string)
 			port, _ = mm1["port"].(int)
+			primary, _ = mm1["primary"].(bool)
 			eventHost, _ = mm1["event_host"].(string)
 			eventPort, _ = mm1["event_port"].(int)
 			tlsCertificate, _ = mm1["tls"].(map[string]interface{})["certificate"].(string)
@@ -151,7 +156,7 @@ func GetPeersConfig() []PeerConfig {
 		}
 
 		p := PeerConfig{Host: host, Port: strconv.Itoa(port), EventHost: eventHost, EventPort: strconv.Itoa(eventPort),
-			TLSCertificate: tlsCertificate, TLSServerHostOverride: tlsServerHostOverride}
+			TLSCertificate: tlsCertificate, TLSServerHostOverride: tlsServerHostOverride, Primary: primary}
 		if p.Host == "" {
 			panic(fmt.Sprintf("host key not exist or empty for %s", key))
 		}
