@@ -38,6 +38,8 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
 // Services ...
 type Services interface {
 	Enroll(enrollmentID string, enrollmentSecret string) ([]byte, []byte, error)
+	//reenroll  to renew user's enrollment certificate
+	Reenroll(user fabricclient.User) ([]byte, []byte, error)
 	Register(registrar fabricclient.User, request *RegistrationRequest) (string, error)
 	Revoke(registrar fabricclient.User, request *RevocationRequest) error
 }
@@ -151,6 +153,40 @@ func (fabricCAServices *services) Enroll(enrollmentID string, enrollmentSecret s
 		return nil, nil, fmt.Errorf("Enroll failed: %s", err)
 	}
 	return enrollmentResponse.Identity.GetECert().Key(), enrollmentResponse.Identity.GetECert().Cert(), nil
+}
+
+/**
+ * ReEnroll an enrolled user in order to receive a signed X509 certificate
+ * @param {user} fabricclient.User to be reenrolled
+ * @returns {[]byte} X509 certificate
+ * @returns {[]byte} private key
+ */
+func (fabricCAServices *services) Reenroll(user fabricclient.User) ([]byte, []byte, error) {
+	if user == nil {
+		return nil, nil, fmt.Errorf("User does not exist")
+	}
+	if user.GetName() == "" {
+		logger.Infof("Invalid re-enroll request, missing argument user")
+		return nil, nil, fmt.Errorf("User is empty")
+	}
+	req := &api.ReenrollmentRequest{}
+	// Create signing identity
+	identity, err := fabricCAServices.createSigningIdentity(user)
+	if err != nil {
+		logger.Infof("Invalid re-enroll request, %s is not a valid user  %s\n", user.GetName(), err)
+		return nil, nil, fmt.Errorf("Reenroll has failed; Cannot create user identity: %s", err)
+	}
+
+	if identity.GetECert() == nil {
+		logger.Infof("Invalid re-enroll request for user '%s'. Enrollment cert does not exist %s\n", user.GetName(), err)
+		return nil, nil, fmt.Errorf("Reenroll has failed; enrollment cert does not exist: %s", err)
+	}
+
+	reenrollmentResponse, err := identity.Reenroll(req)
+	if err != nil {
+		return nil, nil, fmt.Errorf("ReEnroll failed: %s", err)
+	}
+	return reenrollmentResponse.Identity.GetECert().Key(), reenrollmentResponse.Identity.GetECert().Cert(), nil
 }
 
 // Register a User with the Fabric CA
