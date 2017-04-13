@@ -14,14 +14,36 @@ repository, where active development is ongoing. Issue tracking is handled in [J
 
 ## Build and Test
 
-This project must be cloned into `$GOPATH/src/github.com/hyperledger`. Package names have been chosen to match the Hyperledger project.
-
-Execute `go test` from the fabric-client and fabric-ca-client to build the library and run the basic headless tests.
-
-Execute `go test` in the `test/integration` to run end-to-end tests. This requires you to have:
-- A working fabric, and fabric-ca set up. It is recommended that you use the docker-compose file provided in `test/fixtures`. Refer to the Hyperledger Fabric [documentation](https://github.com/hyperledger/fabric) on how to do this.
+You need:
+- A working fabric, and fabric-ca set up. It is recommended that you use the docker-compose file provided in `test/fixtures`. See steps below.
 - Customized settings in the `test/fixtures/config/config_test.yaml` in case your Hyperledger Fabric network is not running on `localhost` or is using different ports.
+```
+# Build fabric:
+cd $GOPATH/src/github.com/hyperledger/
+git clone https://github.com/hyperledger/fabric
+cd $GOPATH/src/github.com/hyperledger/fabric/
+git checkout v1.0.0-alpha
+make docker
 
+# Build fabric-ca:
+cd $GOPATH/src/github.com/hyperledger/
+git clone https://github.com/hyperledger/fabric-ca
+cd $GOPATH/src/github.com/hyperledger/fabric-ca/
+git checkout v1.0.0-alpha
+make docker
+
+# Start fabric
+cd $GOPATH/src/github.com/hyperledger/
+git clone https://github.com/hyperledger/fabric-sdk-go
+cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/
+docker-compose -f docker-compose.yaml up --force-recreate
+```
+
+Fabric should now be running. In a diferent shell, run integration tests
+```
+cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/integration/
+go test
+```
 
 ## Compatibility
 
