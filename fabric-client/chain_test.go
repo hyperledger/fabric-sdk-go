@@ -21,7 +21,6 @@ package fabricclient
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"testing"
 
@@ -180,32 +179,6 @@ func TestPrimaryPeer(t *testing.T) {
 
 }
 
-func TestCreateChain(t *testing.T) {
-	client := NewClient()
-	chain, err := NewChain("testChain", client)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-	// Create channel without configuration
-	err = chain.CreateChannel(&CreateChannelRequest{})
-	if err == nil {
-		t.Fatalf("Expected error creating channel without config tx")
-	}
-
-	configTx, err := ioutil.ReadFile("../test/fixtures/channel/testchannel.tx")
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-	// Setup mock orderer
-	orderer := mockOrderer{MockURL: fmt.Sprintf("0.0.0.0:1234")}
-	chain.AddOrderer(&orderer)
-	// Test with valid cofiguration
-	err = chain.CreateChannel(&CreateChannelRequest{ConfigData: configTx})
-	if err != nil {
-		t.Fatalf("Did not expect error from create channel. Got error: %s", err.Error())
-	}
-}
-
 func TestConcurrentPeers(t *testing.T) {
 	const numPeers = 10000
 	chain, err := setupMassiveTestChain(numPeers, 0)
@@ -294,27 +267,96 @@ func TestJoinChannel(t *testing.T) {
 }
 
 func TestChainInitializeFromOrderer(t *testing.T) {
+	org1MSPID := "ORG1MSP"
+	org2MSPID := "ORG2MSP"
+
 	chain, _ := setupTestChain()
-	builder := &mocks.MockConfigBlockBuilder{Index: 0, LastConfigIndex: 0}
+	builder := &mocks.MockConfigBlockBuilder{
+		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
+			ModPolicy: "Admins",
+			MSPNames: []string{
+				org1MSPID,
+				org2MSPID,
+			},
+			OrdererAddress: "localhost:7054",
+		},
+		Index:           0,
+		LastConfigIndex: 0,
+	}
 	orderer := &mockOrderer{DeliverResponse: NewMockDeliverResponse(builder.Build())}
 	chain.AddOrderer(orderer)
 
-	err := chain.Initialize([]byte{})
+	err := chain.Initialize(nil)
 	if err != nil {
 		t.Fatalf("channel Initialize failed : %v", err)
 	}
-	// TODO: Check data in chain
+	mspManager := chain.GetMSPManager()
+	if mspManager == nil {
+		t.Fatalf("nil MSPManager on new chain")
+	}
+	msps, err := mspManager.GetMSPs()
+	if err != nil || len(msps) == 0 {
+		t.Fatalf("At least one MSP expected in MSPManager")
+	}
+	msp, ok := msps[org1MSPID]
+	if !ok {
+		t.Fatalf("Could not find %s", org1MSPID)
+	}
+	if identifier, _ := msp.GetIdentifier(); identifier != org1MSPID {
+		t.Fatalf("Expecting MSP identifier to be %s but got %s", org1MSPID, identifier)
+	}
+	msp, ok = msps[org2MSPID]
+	if !ok {
+		t.Fatalf("Could not find %s", org2MSPID)
+	}
+	if identifier, _ := msp.GetIdentifier(); identifier != org2MSPID {
+		t.Fatalf("Expecting MSP identifier to be %s but got %s", org2MSPID, identifier)
+	}
 }
 
 func TestChainInitializeFromUpdate(t *testing.T) {
+	org1MSPID := "ORG1MSP"
+	org2MSPID := "ORG2MSP"
+
 	chain, _ := setupTestChain()
-	builder := &mocks.MockConfigUpdateEnvelopeBuilder{}
+	builder := &mocks.MockConfigUpdateEnvelopeBuilder{
+		ChannelID: "testchannel",
+		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
+			ModPolicy: "Admins",
+			MSPNames: []string{
+				org1MSPID,
+				org2MSPID,
+			},
+			OrdererAddress: "localhost:7054",
+		},
+	}
 
 	err := chain.Initialize(builder.BuildBytes())
 	if err != nil {
 		t.Fatalf("channel Initialize failed : %v", err)
 	}
-	// TODO: Check data in chain
+	mspManager := chain.GetMSPManager()
+	if mspManager == nil {
+		t.Fatalf("nil MSPManager on new chain")
+	}
+	msps, err := mspManager.GetMSPs()
+	if err != nil || len(msps) == 0 {
+		t.Fatalf("At least one MSP expected in MSPManager")
+	}
+	msp, ok := msps[org1MSPID]
+	if !ok {
+		t.Fatalf("Could not find %s", org1MSPID)
+	}
+	if identifier, _ := msp.GetIdentifier(); identifier != org1MSPID {
+		t.Fatalf("Expecting MSP identifier to be %s but got %s", org1MSPID, identifier)
+	}
+	msp, ok = msps[org2MSPID]
+	if !ok {
+		t.Fatalf("Could not find %s", org2MSPID)
+	}
+	if identifier, _ := msp.GetIdentifier(); identifier != org2MSPID {
+		t.Fatalf("Expecting MSP identifier to be %s but got %s", org2MSPID, identifier)
+	}
 }
 
 func setupTestChain() (Chain, error) {
