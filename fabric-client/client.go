@@ -23,8 +23,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
 	kvs "github.com/hyperledger/fabric-sdk-go/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/protos/common"
 )
 
 // Client ...
@@ -47,6 +49,7 @@ import (
 type Client interface {
 	NewChain(name string) (Chain, error)
 	GetChain(name string) Chain
+	CreateChannel(request *CreateChannelRequest) (Chain, error)
 	QueryChainInfo(name string, peers []Peer) (Chain, error)
 	SetStateStore(stateStore kvs.KeyValueStore)
 	GetStateStore() kvs.KeyValueStore
@@ -61,6 +64,16 @@ type client struct {
 	cryptoSuite bccsp.BCCSP
 	stateStore  kvs.KeyValueStore
 	userContext User
+}
+
+// CreateChannelRequest requests channel creation on the network
+type CreateChannelRequest struct {
+	// The name of the channel
+	Name string
+	// Orderer object to create the channel
+	Orderer Orderer
+	// Contains channel configuration (ConfigTx)
+	Envelope []byte
 }
 
 // NewClient ...
@@ -231,4 +244,64 @@ func (c *client) GetUserContext(name string) (User, error) {
 	c.userContext = user
 	return c.userContext, nil
 
+}
+
+// CreateChannel calls an orderer to create a channel on the network.
+// Only one of the application instances needs to call this method.
+// Once the chain is successfully created, this and other application
+// instances only need to call Chain joinChannel() to participate on the channel
+func (c *client) CreateChannel(request *CreateChannelRequest) (Chain, error) {
+	// Validate request
+	if request == nil {
+		return nil, fmt.Errorf("Missing all required input request parameters for initialize channel")
+	}
+
+	if request.Envelope == nil {
+		return nil, fmt.Errorf("Missing envelope request parameter containing the configuration of the new channel")
+	}
+
+	if request.Orderer == nil {
+		return nil, fmt.Errorf("Missing orderer request parameter for the initialize channel")
+	}
+
+	if request.Name == "" {
+		return nil, fmt.Errorf("Missing name request parameter for the new channel")
+	}
+
+	signedEnvelope := &common.Envelope{}
+	err := proto.Unmarshal(request.Envelope, signedEnvelope)
+	if err != nil {
+		return nil, fmt.Errorf("Error unmarshalling channel configuration data: %s",
+			err.Error())
+	}
+	// Send request
+	err = request.Orderer.SendBroadcast(&SignedEnvelope{
+		signature: signedEnvelope.Signature,
+		Payload:   signedEnvelope.Payload,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Could not broadcast to orderer %s: %s", request.Orderer.GetURL(), err.Error())
+	}
+
+	// Initialize the new chain
+
+	// FIXME: Temporary code checks if the chain already exists
+	// and, if not, creates the chain. This check should be removed after
+	// the end-to-end test is refactored to not create the chain before invoking CreateChannel
+	chain := c.GetChain(request.Name)
+	if chain == nil {
+		logger.Debugf("Creating new chain: %", request.Name)
+		chain, err = c.NewChain(request.Name)
+		if err != nil {
+			return nil, fmt.Errorf("Error while creating new chain %s: %v", request.Name, err)
+		}
+	}
+
+	if err := chain.Initialize(request.Envelope); err != nil {
+		return nil, fmt.Errorf("Error while initializing chain: %v", err)
+	}
+
+	chain.AddOrderer(request.Orderer)
+
+	return chain, nil
 }

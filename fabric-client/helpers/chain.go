@@ -137,7 +137,10 @@ func CreateAndJoinChannel(client fabricClient.Client, chain fabricClient.Chain, 
 	}
 
 	if foundChannel {
-		// There's no need to create a channel, return
+		// There's no need to create a channel, initialize the chain from the orderer and return
+		if err := chain.Initialize(nil); err != nil {
+			return fmt.Errorf("Error initializing chain: %v", err)
+		}
 		return nil
 	}
 
@@ -148,9 +151,17 @@ func CreateAndJoinChannel(client fabricClient.Client, chain fabricClient.Chain, 
 		return fmt.Errorf("Error reading config file: %v", err)
 	}
 
-	request := fabricClient.CreateChannelRequest{ConfigData: configTx}
-	if err = chain.CreateChannel(&request); err != nil {
+	request := fabricClient.CreateChannelRequest{
+		Name:     chain.GetName(),
+		Orderer:  chain.GetOrderers()[0],
+		Envelope: configTx,
+	}
+	newChain, err := client.CreateChannel(&request)
+	if err != nil {
 		return err
+	}
+	if newChain == nil {
+		return fmt.Errorf("CreateChannel returned nil chain")
 	}
 
 	// Wait for orderer to process channel metadata
