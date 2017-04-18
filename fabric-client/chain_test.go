@@ -314,6 +314,60 @@ func TestChainInitializeFromOrderer(t *testing.T) {
 	}
 }
 
+func TestOrganizationUnits(t *testing.T) {
+	org1MSPID := "ORG1MSP"
+	org2MSPID := "ORG2MSP"
+
+	chain, _ := setupTestChain()
+	orgUnits, err := chain.GetOrganizationUnits()
+	if len(orgUnits) > 0 {
+		t.Fatalf("Returned non configured organizational unit : %v", err)
+	}
+	builder := &mocks.MockConfigBlockBuilder{
+		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
+			ModPolicy: "Admins",
+			MSPNames: []string{
+				chain.GetName(),
+				org1MSPID,
+				org2MSPID,
+			},
+			OrdererAddress: "localhost:7054",
+		},
+		Index:           0,
+		LastConfigIndex: 0,
+	}
+	orderer := &mockOrderer{DeliverResponse: NewMockDeliverResponse(builder.Build())}
+	chain.AddOrderer(orderer)
+
+	err = chain.Initialize(nil)
+	if err != nil {
+		t.Fatalf("channel Initialize failed : %v", err)
+	}
+	orgUnits, err = chain.GetOrganizationUnits()
+	if err != nil {
+		t.Fatalf("CANNOT retrieve organizational units : %v", err)
+	}
+	if !isValueInList(chain.GetName(), orgUnits) {
+		t.Fatalf("Could not find %s in the list of organizations", chain.GetName())
+	}
+	if !isValueInList(org1MSPID, orgUnits) {
+		t.Fatalf("Could not find %s in the list of organizations", org1MSPID)
+	}
+	if !isValueInList(org2MSPID, orgUnits) {
+		t.Fatalf("Could not find %s in the list of organizations", org2MSPID)
+	}
+
+}
+
+func isValueInList(value string, list []string) bool {
+	for _, v := range list {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
 func TestChainInitializeFromUpdate(t *testing.T) {
 	org1MSPID := "ORG1MSP"
 	org2MSPID := "ORG2MSP"
