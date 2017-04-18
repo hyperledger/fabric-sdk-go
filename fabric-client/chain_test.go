@@ -417,7 +417,7 @@ func setupTestChain() (Chain, error) {
 	client := NewClient()
 	user := NewUser("test")
 	cryptoSuite := &mocks.MockCryptoSuite{}
-	client.SetUserContext(user, true)
+	client.SaveUserToStateStore(user, true)
 	client.SetCryptoSuite(cryptoSuite)
 	return NewChain("testChain", client)
 }

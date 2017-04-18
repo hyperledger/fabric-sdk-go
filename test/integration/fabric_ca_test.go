@@ -77,10 +77,10 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 
 	// Admin user is used to register, enrol and revoke a test user
-	adminUser, err := client.GetUserContext("admin")
+	adminUser, err := client.LoadUserFromStateStore("admin")
 
 	if err != nil {
-		t.Fatalf("client.GetUserContext return error: %v", err)
+		t.Fatalf("client.LoadUserFromStateStore return error: %v", err)
 	}
 	if adminUser == nil {
 		key, cert, err := caClient.Enroll("admin", "adminpw")
@@ -118,16 +118,16 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		}
 		adminUser.SetPrivateKey(k)
 		adminUser.SetEnrollmentCertificate(cert)
-		err = client.SetUserContext(adminUser, false)
+		err = client.SaveUserToStateStore(adminUser, false)
 		if err != nil {
-			t.Fatalf("client.SetUserContext return error: %v", err)
+			t.Fatalf("client.SaveUserToStateStore return error: %v", err)
 		}
-		adminUser, err = client.GetUserContext("admin")
+		adminUser, err = client.LoadUserFromStateStore("admin")
 		if err != nil {
-			t.Fatalf("client.GetUserContext return error: %v", err)
+			t.Fatalf("client.LoadUserFromStateStore return error: %v", err)
 		}
 		if adminUser == nil {
-			t.Fatalf("client.GetUserContext return nil")
+			t.Fatalf("client.LoadUserFromStateStore return nil")
 		}
 	}
 

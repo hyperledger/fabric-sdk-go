@@ -45,57 +45,57 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("Client getCryptoSuite should not be nil after setCryptoSuite")
 	}
 
-	//Client tests: getUserContext successful nill user
-	user, err := client.GetUserContext("")
+	//Client tests: LoadUserFromStateStore successful nill user
+	user, err := client.LoadUserFromStateStore("")
 	if err != nil {
-		t.Fatalf("client.GetUserContext return error[%s]", err)
+		t.Fatalf("client.LoadUserFromStateStore return error[%s]", err)
 	}
 	if user != nil {
-		t.Fatalf("client.GetUserContext should return nil user")
+		t.Fatalf("client.LoadUserFromStateStore should return nil user")
 	}
 
 	//Client tests: Should return error "user is nil"
-	err = client.SetUserContext(nil, false)
+	err = client.SaveUserToStateStore(nil, false)
 	if err == nil {
-		t.Fatalf("client.SetUserContext didn't return error")
+		t.Fatalf("client.SaveUserToStateStore didn't return error")
 	}
 	if err.Error() != "user is nil" {
-		t.Fatalf("client.SetUserContext didn't return right error")
+		t.Fatalf("client.SaveUserToStateStore didn't return right error")
 	}
 
-	//Client tests: getUserContext with no context in memory or persisted returns nil
-	user, err = client.GetUserContext("someUser")
+	//Client tests: LoadUserFromStateStore with no context in memory or persisted returns nil
+	user, err = client.LoadUserFromStateStore("someUser")
 	if err != nil {
-		t.Fatalf("client.GetUserContext return error[%s]", err)
+		t.Fatalf("client.LoadUserFromStateStore return error[%s]", err)
 	}
 	if user != nil {
-		t.Fatalf("client.GetUserContext should return nil user")
+		t.Fatalf("client.LoadUserFromStateStore should return nil user")
 	}
 
-	//Client tests: successfully setUserContext with skipPersistence true
+	//Client tests: successfully SaveUserToStateStore with skipPersistence true
 	user = NewUser("someUser")
-	err = client.SetUserContext(user, true)
+	err = client.SaveUserToStateStore(user, true)
 	if err != nil {
-		t.Fatalf("client.SetUserContext return error[%s]", err)
+		t.Fatalf("client.SaveUserToStateStore return error[%s]", err)
 	}
-	user, err = client.GetUserContext("someUser")
+	user, err = client.LoadUserFromStateStore("someUser")
 	if err != nil {
-		t.Fatalf("client.GetUserContext return error[%s]", err)
+		t.Fatalf("client.LoadUserFromStateStore return error[%s]", err)
 	}
 	if user == nil {
-		t.Fatalf("client.GetUserContext return nil user")
+		t.Fatalf("client.LoadUserFromStateStore return nil user")
 	}
 	if user.GetName() != "someUser" {
-		t.Fatalf("client.GetUserContext didn't return the right user")
+		t.Fatalf("client.LoadUserFromStateStore didn't return the right user")
 	}
 
 	//Client tests: Should throw "stateStore is nil"
-	err = client.SetUserContext(user, false)
+	err = client.SaveUserToStateStore(user, false)
 	if err == nil {
-		t.Fatalf("client.SetUserContext didn't return error")
+		t.Fatalf("client.SaveUserToStateStore didn't return error")
 	}
 	if err.Error() != "stateStore is nil" {
-		t.Fatalf("client.SetUserContext didn't return right error")
+		t.Fatalf("client.SaveUserToStateStore didn't return right error")
 	}
 
 	//Client tests: Create new chain

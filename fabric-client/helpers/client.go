@@ -94,9 +94,9 @@ func GetClient(name string, pwd string, stateStorePath string) (fabricClient.Cli
 		return nil, fmt.Errorf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
 	client.SetStateStore(stateStore)
-	user, err := client.GetUserContext(name)
+	user, err := client.LoadUserFromStateStore(name)
 	if err != nil {
-		return nil, fmt.Errorf("client.GetUserContext return error: %v", err)
+		return nil, fmt.Errorf("client.LoadUserFromStateStore return error: %v", err)
 	}
 	if user == nil {
 		fabricCAClient, err1 := fabricCAClient.NewFabricCAClient()
@@ -115,9 +115,9 @@ func GetClient(name string, pwd string, stateStorePath string) (fabricClient.Cli
 		}
 		user.SetPrivateKey(k)
 		user.SetEnrollmentCertificate(cert)
-		err = client.SetUserContext(user, false)
+		err = client.SaveUserToStateStore(user, false)
 		if err != nil {
-			return nil, fmt.Errorf("client.SetUserContext return error: %v", err)
+			return nil, fmt.Errorf("client.SaveUserToStateStore return error: %v", err)
 		}
 	}
 
@@ -128,9 +128,9 @@ func GetClient(name string, pwd string, stateStorePath string) (fabricClient.Cli
 // Utility method gets serialized enrollment certificate
 func getCreatorID(client fabricClient.Client) ([]byte, error) {
 
-	user, err := client.GetUserContext("")
+	user, err := client.LoadUserFromStateStore("")
 	if err != nil {
-		return nil, fmt.Errorf("GetUserContext returned error: %s", err)
+		return nil, fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
 	}
 	serializedIdentity := &msp.SerializedIdentity{Mspid: config.GetFabricCAID(),
 		IdBytes: user.GetEnrollmentCertificate()}
