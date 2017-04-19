@@ -493,9 +493,9 @@ func (c *chain) JoinChannel(request *JoinChannelRequest) error {
 		return fmt.Errorf("Error unmarshalling block: %s", err)
 	}
 	// Get user enrolment info and serialize for signing requests
-	user, err := c.clientContext.GetUserContext("")
+	user, err := c.clientContext.LoadUserFromStateStore("")
 	if err != nil {
-		return fmt.Errorf("GetUserContext returned error: %s", err)
+		return fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
 	}
 	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
 	if err != nil {
@@ -867,9 +867,9 @@ func (c *chain) CreateTransactionProposal(chaincodeName string, chainID string,
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName},
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
-	user, err := c.clientContext.GetUserContext("")
+	user, err := c.clientContext.LoadUserFromStateStore("")
 	if err != nil {
-		return nil, fmt.Errorf("GetUserContext return error: %s", err)
+		return nil, fmt.Errorf("LoadUserFromStateStore return error: %s", err)
 	}
 
 	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
@@ -1136,9 +1136,9 @@ func (c *chain) SendInstallProposal(chaincodeName string, chaincodePath string, 
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion}},
 		CodePackage: chaincodePackage, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
 
-	user, err := c.clientContext.GetUserContext("")
+	user, err := c.clientContext.LoadUserFromStateStore("")
 	if err != nil {
-		return nil, "", fmt.Errorf("GetUserContext return error: %s", err)
+		return nil, "", fmt.Errorf("LoadUserFromStateStore return error: %s", err)
 	}
 
 	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
@@ -1208,9 +1208,9 @@ func (c *chain) SendInstantiateProposal(chaincodeName string, chainID string,
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion},
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
-	user, err := c.clientContext.GetUserContext("")
+	user, err := c.clientContext.LoadUserFromStateStore("")
 	if err != nil {
-		return nil, "", fmt.Errorf("GetUserContext return error: %s", err)
+		return nil, "", fmt.Errorf("LoadUserFromStateStore return error: %s", err)
 	}
 
 	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
@@ -1247,9 +1247,9 @@ func (c *chain) SendInstantiateProposal(chaincodeName string, chainID string,
 
 func (c *chain) SignPayload(payload []byte) (*SignedEnvelope, error) {
 	//Get user info
-	user, err := c.clientContext.GetUserContext("")
+	user, err := c.clientContext.LoadUserFromStateStore("")
 	if err != nil {
-		return nil, fmt.Errorf("GetUserContext returned error: %s", err)
+		return nil, fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
 	}
 
 	signature, err := c.signObjectWithKey(payload, user.GetPrivateKey(),
@@ -1381,9 +1381,9 @@ func (c *chain) signObjectWithKey(object []byte, key bccsp.Key,
 }
 
 func (c *chain) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error) {
-	user, err := c.clientContext.GetUserContext("")
+	user, err := c.clientContext.LoadUserFromStateStore("")
 	if err != nil {
-		return nil, fmt.Errorf("GetUserContext return error: %s", err)
+		return nil, fmt.Errorf("LoadUserFromStateStore return error: %s", err)
 	}
 
 	proposalBytes, err := protos_utils.GetBytesProposal(proposal)
@@ -1402,9 +1402,9 @@ func (c *chain) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error) 
 // fetchGenesisBlock fetches the configuration block for this channel
 func (c *chain) fetchGenesisBlock() (*common.Block, error) {
 	// Get user enrolment info and serialize for signing requests
-	user, err := c.clientContext.GetUserContext("")
+	user, err := c.clientContext.LoadUserFromStateStore("")
 	if err != nil {
-		return nil, fmt.Errorf("GetUserContext returned error: %s", err)
+		return nil, fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
 	}
 	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
 	if err != nil {
@@ -1848,9 +1848,9 @@ func (c *chain) getBlock(pos *ab.SeekPosition) (*common.Block, error) {
 		return nil, fmt.Errorf("error when generating nonce: %v", err)
 	}
 
-	user, err := c.clientContext.GetUserContext("")
+	user, err := c.clientContext.LoadUserFromStateStore("")
 	if err != nil {
-		return nil, fmt.Errorf("GetUserContext return error: %s", err)
+		return nil, fmt.Errorf("LoadUserFromStateStore return error: %s", err)
 	}
 
 	creator, err := getSerializedIdentity(user.GetEnrollmentCertificate())

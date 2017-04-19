@@ -55,8 +55,8 @@ type Client interface {
 	GetStateStore() kvs.KeyValueStore
 	SetCryptoSuite(cryptoSuite bccsp.BCCSP)
 	GetCryptoSuite() bccsp.BCCSP
-	SetUserContext(user User, skipPersistence bool) error
-	GetUserContext(name string) (User, error)
+	SaveUserToStateStore(user User, skipPersistence bool) error
+	LoadUserFromStateStore(name string) (User, error)
 }
 
 type client struct {
@@ -169,7 +169,7 @@ func (c *client) GetCryptoSuite() bccsp.BCCSP {
 	return c.cryptoSuite
 }
 
-// SetUserContext ...
+// SaveUserToStateStore ...
 /*
  * Sets an instance of the User class as the security context of this client instance. This user’s credentials (ECert) will be
  * used to conduct transactions and queries with the blockchain network. Upon setting the user context, the SDK saves the object
@@ -177,7 +177,7 @@ func (c *client) GetCryptoSuite() bccsp.BCCSP {
  * this cache will not be established and the application is responsible for setting the user context again when the application
  * crashed and is recovered.
  */
-func (c *client) SetUserContext(user User, skipPersistence bool) error {
+func (c *client) SaveUserToStateStore(user User, skipPersistence bool) error {
 	if user == nil {
 		return fmt.Errorf("user is nil")
 	}
@@ -197,14 +197,14 @@ func (c *client) SetUserContext(user User, skipPersistence bool) error {
 		}
 		err = c.stateStore.SetValue(user.GetName(), data)
 		if err != nil {
-			return fmt.Errorf("stateStore SetValue return error: %v", err)
+			return fmt.Errorf("stateStore SaveUserToStateStore return error: %v", err)
 		}
 	}
 	return nil
 
 }
 
-// GetUserContext ...
+// LoadUserFromStateStore ...
 /*
  * The client instance can have an optional state store. The SDK saves enrolled users in the storage which can be accessed by
  * authorized users of the application (authentication is done by the application outside of the SDK).
@@ -212,7 +212,7 @@ func (c *client) SetUserContext(user User, skipPersistence bool) error {
  * The loaded user object must represent an enrolled user with a valid enrollment certificate signed by a trusted CA
  * (such as the COP server).
  */
-func (c *client) GetUserContext(name string) (User, error) {
+func (c *client) LoadUserFromStateStore(name string) (User, error) {
 	if c.userContext != nil {
 		return c.userContext, nil
 	}

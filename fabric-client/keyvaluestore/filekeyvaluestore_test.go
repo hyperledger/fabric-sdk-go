@@ -31,7 +31,7 @@ func TestFKVSMethods(t *testing.T) {
 	stateStore.SetValue("testvalue", []byte("data"))
 	value, err := stateStore.GetValue("testvalue")
 	if err != nil {
-		t.Fatalf("stateStore.SetValue return error[%s]", err)
+		t.Fatalf("stateStore.GetValue return error[%s]", err)
 	}
 	if string(value) != "data" {
 		t.Fatalf("stateStore.GetValue didn't return the right value")
