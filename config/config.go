@@ -22,6 +22,7 @@ package config
 import (
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -189,7 +190,28 @@ func GetTLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 			return nil, err
 		}
 
-		certPool.AddCert(loadCAKey(rawData))
+		cert, err := loadCAKey(rawData)
+		if err != nil {
+			return nil, err
+		}
+
+		certPool.AddCert(cert)
+	}
+
+	return certPool, nil
+}
+
+// GetTLSCACertPoolFromRoots ...
+func GetTLSCACertPoolFromRoots(ordererRootCAs [][]byte) (*x509.CertPool, error) {
+	certPool := x509.NewCertPool()
+
+	for _, root := range ordererRootCAs {
+		cert, err := loadCAKey(root)
+		if err != nil {
+			return nil, err
+		}
+
+		certPool.AddCert(cert)
 	}
 
 	return certPool, nil
@@ -247,12 +269,16 @@ func GetKeyStorePath() string {
 }
 
 // loadCAKey
-func loadCAKey(rawData []byte) *x509.Certificate {
+func loadCAKey(rawData []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(rawData)
 
-	pub, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		panic(err)
+	if block != nil {
+		pub, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, errors.New("Failed to parse certificate: " + err.Error())
+		}
+
+		return pub, nil
 	}
-	return pub
+	return nil, errors.New("No pem data found")
 }

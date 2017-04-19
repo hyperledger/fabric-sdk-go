@@ -20,6 +20,7 @@ limitations under the License.
 package fabricclient
 
 import (
+	"crypto/x509"
 	"fmt"
 	"io"
 	"strings"
@@ -48,19 +49,41 @@ type orderer struct {
 
 // CreateNewOrderer Returns a Orderer instance
 func CreateNewOrderer(url string, certificate string, serverHostOverride string) (Orderer, error) {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(time.Second*3))
 	if config.IsTLSEnabled() {
 		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
 		if err != nil {
 			return nil, err
 		}
-		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else {
-		opts = append(opts, grpc.WithInsecure())
+		return createNewOrdererWithCertPool(url, tlsCaCertPool, serverHostOverride), nil
 	}
-	return &orderer{url: url, grpcDialOption: opts}, nil
+	return createNewOrdererWithoutTLS(url), nil
+}
+
+// CreateNewOrdererWithRootCAs Returns a new Orderer instance using the passed in orderer root CAs
+func CreateNewOrdererWithRootCAs(url string, ordererRootCAs [][]byte, serverHostOverride string) (Orderer, error) {
+	if config.IsTLSEnabled() {
+		tlsCaCertPool, err := config.GetTLSCACertPoolFromRoots(ordererRootCAs)
+		if err != nil {
+			return nil, err
+		}
+		return createNewOrdererWithCertPool(url, tlsCaCertPool, serverHostOverride), nil
+	}
+	return createNewOrdererWithoutTLS(url), nil
+}
+
+func createNewOrdererWithoutTLS(url string) Orderer {
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithTimeout(time.Second*3))
+	opts = append(opts, grpc.WithInsecure())
+	return &orderer{url: url, grpcDialOption: opts}
+}
+
+func createNewOrdererWithCertPool(url string, tlsCaCertPool *x509.CertPool, serverHostOverride string) Orderer {
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithTimeout(time.Second*3))
+	creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
+	opts = append(opts, grpc.WithTransportCredentials(creds))
+	return &orderer{url: url, grpcDialOption: opts}
 }
 
 // GetURL Get the Orderer url. Required property for the instance objects.
