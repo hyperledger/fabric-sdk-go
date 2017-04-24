@@ -22,11 +22,19 @@ package fabricclient
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/golang/protobuf/proto"
+	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/hyperledger/fabric-sdk-go/config"
 	kvs "github.com/hyperledger/fabric-sdk-go/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	protos_utils "github.com/hyperledger/fabric/protos/utils"
 )
 
 // Client ...
@@ -57,6 +65,9 @@ type Client interface {
 	GetCryptoSuite() bccsp.BCCSP
 	SaveUserToStateStore(user User, skipPersistence bool) error
 	LoadUserFromStateStore(name string) (User, error)
+	InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string, chaincodePackage []byte, targets []Peer) ([]*TransactionProposalResponse, string, error)
+	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
+	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
 }
 
 type client struct {
@@ -304,4 +315,169 @@ func (c *client) CreateChannel(request *CreateChannelRequest) (Chain, error) {
 	chain.AddOrderer(request.Orderer)
 
 	return chain, nil
+}
+
+// NewPeer ...
+/**
+ * Constructs a Peer given its endpoint configuration settings.
+ *
+ * @param {string} url The URL with format of "host:port".
+ */
+func NewPeer(url string, certificate string, serverHostOverride string) (Peer, error) {
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithTimeout(time.Second*3))
+	if config.IsTLSEnabled() {
+		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
+		if err != nil {
+			return nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else {
+		opts = append(opts, grpc.WithInsecure())
+	}
+	return &peer{url: url, grpcDialOption: opts, name: "", roles: nil}, nil
+
+}
+
+// NewOrderer Returns a Orderer instance
+func NewOrderer(url string, certificate string, serverHostOverride string) (Orderer, error) {
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithTimeout(time.Second*3))
+	if config.IsTLSEnabled() {
+		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
+		if err != nil {
+			return nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else {
+		opts = append(opts, grpc.WithInsecure())
+	}
+	return &orderer{url: url, grpcDialOption: opts}, nil
+}
+
+//QueryChannels
+/**
+ * Queries the names of all the channels that a
+ * peer has joined.
+ * @param {Peer} peer
+ * @returns {object} ChannelQueryResponse proto
+ */
+func (c *client) QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error) {
+
+	if peer == nil {
+		return nil, fmt.Errorf("QueryChannels requires peer")
+	}
+
+	responses, err := QueryByChaincode("cscc", []string{"GetChannels"}, []Peer{peer}, c)
+	if err != nil {
+		return nil, fmt.Errorf("QueryByChaincode return error: %v", err)
+	}
+
+	payload := responses[0]
+	response := new(pb.ChannelQueryResponse)
+	err = proto.Unmarshal(payload, response)
+	if err != nil {
+		return nil, fmt.Errorf("Unmarshal ChannelQueryResponse return error: %v", err)
+	}
+	return response, nil
+}
+
+//QueryInstalledChaincodes
+/**
+ * Queries the installed chaincodes on a peer
+ * Returning the details of all chaincodes installed on a peer.
+ * @param {Peer} peer
+ * @returns {object} ChaincodeQueryResponse proto
+ */
+func (c *client) QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error) {
+
+	if peer == nil {
+		return nil, fmt.Errorf("To query installed chaincdes you need to pass peer")
+	}
+	responses, err := QueryByChaincode("lccc", []string{"getinstalledchaincodes"}, []Peer{peer}, c)
+	if err != nil {
+		return nil, fmt.Errorf("Invoke lccc getinstalledchaincodes return error: %v", err)
+	}
+	payload := responses[0]
+	response := new(pb.ChaincodeQueryResponse)
+	err = proto.Unmarshal(payload, response)
+	if err != nil {
+		return nil, fmt.Errorf("Unmarshal ChaincodeQueryResponse return error: %v", err)
+	}
+
+	return response, nil
+}
+
+// InstallChaincode
+/**
+* Sends an install proposal to one or more endorsing peers.
+* @param {string} chaincodeName: required - The name of the chaincode.
+* @param {[]string} chaincodePath: required - string of the path to the location of the source code of the chaincode
+* @param {[]string} chaincodeVersion: required - string of the version of the chaincode
+* @param {[]string} chaincodeVersion: optional - Array of byte the chaincodePackage
+ */
+func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
+	chaincodePackage []byte, targets []Peer) ([]*TransactionProposalResponse, string, error) {
+
+	if chaincodeName == "" {
+		return nil, "", fmt.Errorf("Missing 'chaincodeName' parameter")
+	}
+	if chaincodePath == "" {
+		return nil, "", fmt.Errorf("Missing 'chaincodePath' parameter")
+	}
+	if chaincodeVersion == "" {
+		return nil, "", fmt.Errorf("Missing 'chaincodeVersion' parameter")
+	}
+
+	if chaincodePackage == nil {
+		var err error
+		chaincodePackage, err = PackageCC(chaincodePath, "")
+		if err != nil {
+			return nil, "", fmt.Errorf("PackageCC return error: %s", err)
+		}
+	}
+
+	now := time.Now()
+	cds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
+		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion}},
+		CodePackage: chaincodePackage, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
+
+	user, err := c.LoadUserFromStateStore("")
+	if err != nil {
+		return nil, "", fmt.Errorf("GetUserContext return error: %s", err)
+	}
+
+	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
+	if err != nil {
+		return nil, "", err
+	}
+
+	// create an install from a chaincodeDeploymentSpec
+	proposal, txID, err := protos_utils.CreateInstallProposalFromCDS(cds, creatorID)
+	if err != nil {
+		return nil, "", fmt.Errorf("Could not create chaincode Deploy proposal, err %s", err)
+	}
+	proposalBytes, err := protos_utils.GetBytesProposal(proposal)
+	if err != nil {
+		return nil, "", err
+	}
+	signature, err := signObjectWithKey(proposalBytes, user.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
+	if err != nil {
+		return nil, "", err
+	}
+
+	signedProposal, err := &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}, nil
+	if err != nil {
+		return nil, "", err
+	}
+
+	transactionProposalResponse, err := SendTransactionProposal(&TransactionProposal{
+		signedProposal: signedProposal,
+		proposal:       proposal,
+		TransactionID:  txID,
+	}, 0, targets)
+
+	return transactionProposalResponse, txID, err
 }

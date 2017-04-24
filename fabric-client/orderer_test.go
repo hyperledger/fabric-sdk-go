@@ -46,7 +46,7 @@ func TestOrdererViaChain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	orderer, _ := CreateNewOrderer("localhost:7050", "", "")
+	orderer, _ := NewOrderer("localhost:7050", "", "")
 	chain.AddOrderer(orderer)
 
 	orderers := chain.GetOrderers()
@@ -54,9 +54,9 @@ func TestOrdererViaChain(t *testing.T) {
 		t.Fatalf("Failed to retieve the new orderer URL from the chain")
 	}
 	chain.RemoveOrderer(orderer)
-	orderer2, err := CreateNewOrderer("localhost:7054", "", "")
+	orderer2, err := NewOrderer("localhost:7054", "", "")
 	if err != nil {
-		t.Fatalf("Failed to CreateNewOrderer error(%v)", err)
+		t.Fatalf("Failed to create NewOrderer error(%v)", err)
 	}
 	chain.AddOrderer(orderer2)
 	orderers = chain.GetOrderers()
@@ -103,9 +103,9 @@ func TestOrdererViaChainNilData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	orderer, err := CreateNewOrderer("localhost:7050", "", "")
+	orderer, err := NewOrderer("localhost:7050", "", "")
 	if err != nil {
-		t.Fatalf("Failed to CreateNewOrderer error(%v)", err)
+		t.Fatalf("Failed to create NewOrderer error(%v)", err)
 	}
 	chain.AddOrderer(orderer)
 	_, err = chain.SendTransaction(nil)
@@ -119,7 +119,7 @@ func TestOrdererViaChainNilData(t *testing.T) {
 
 func TestSendDeliver(t *testing.T) {
 	mockServer := startMockServer(t)
-	orderer, _ := CreateNewOrderer(testOrdererURL, "", "")
+	orderer, _ := NewOrderer(testOrdererURL, "", "")
 	// Test deliver happy path
 	blocks, errors := orderer.SendDeliver(&SignedEnvelope{})
 	select {

@@ -36,9 +36,9 @@ func TestPeerViaChain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	peer, err := CreateNewPeer("localhost:7050", "", "")
+	peer, err := NewPeer("localhost:7050", "", "")
 	if err != nil {
-		t.Fatalf("Failed to CreateNewPeer error(%v)", err)
+		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
 	chain.AddPeer(peer)
 
@@ -47,9 +47,9 @@ func TestPeerViaChain(t *testing.T) {
 		t.Fatalf("Failed to retieve the new peers URL from the chain")
 	}
 	chain.RemovePeer(peer)
-	peer2, err := CreateNewPeer("localhost:7054", "", "")
+	peer2, err := NewPeer("localhost:7054", "", "")
 	if err != nil {
-		t.Fatalf("Failed to CreateNewPeer error(%v)", err)
+		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
 	chain.AddPeer(peer2)
 	peers = chain.GetPeers()
@@ -94,9 +94,9 @@ func TestPeerViaChainNilData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	peer, err := CreateNewPeer("localhost:7050", "", "")
+	peer, err := NewPeer("localhost:7050", "", "")
 	if err != nil {
-		t.Fatalf("Failed to CreateNewPeer error(%v)", err)
+		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
 	chain.AddPeer(peer)
 	_, err = chain.SendTransactionProposal(nil, 0, nil)

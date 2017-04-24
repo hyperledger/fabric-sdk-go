@@ -130,6 +130,7 @@ func testQueryTransaction(t *testing.T, chain fabricClient.Chain, txID string) {
 	if err == nil {
 		t.Fatalf("QueryTransaction non-existing didn't return an error")
 	}
+
 }
 
 func testQueryBlock(t *testing.T, chain fabricClient.Chain) {
@@ -178,11 +179,8 @@ func testQueryChannels(t *testing.T, chain fabricClient.Chain) {
 
 	// Our target will be primary peer on this channel
 	target := chain.GetPrimaryPeer()
-
 	fmt.Printf("****QueryChannels for %s\n", target.GetURL())
-
-	// Test Query Channels for target
-	channelQueryResponse, err := chain.QueryChannels(target)
+	channelQueryResponse, err := testSetup.Client.QueryChannels(target)
 	if err != nil {
 		t.Fatalf("QueryChannels return error: %v", err)
 	}
@@ -199,9 +197,8 @@ func testInstalledChaincodes(t *testing.T, chain fabricClient.Chain) {
 	target := chain.GetPrimaryPeer()
 
 	fmt.Printf("****QueryInstalledChaincodes for %s\n", target.GetURL())
-
 	// Test Query Installed chaincodes for target (primary)
-	chaincodeQueryResponse, err := chain.QueryInstalledChaincodes(target)
+	chaincodeQueryResponse, err := testSetup.Client.QueryInstalledChaincodes(target)
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
@@ -247,15 +244,15 @@ func testQueryByChaincode(t *testing.T, chain fabricClient.Chain) {
 	}
 
 	// Create invalid target
-	firstInvalidTarget, err := fabricClient.CreateNewPeer("test:1111", "", "")
+	firstInvalidTarget, err := fabricClient.NewPeer("test:1111", "", "")
 	if err != nil {
-		t.Fatalf("CreateNewPeer error(%v)", err)
+		t.Fatalf("Create NewPeer error(%v)", err)
 	}
 
 	// Create second invalid target
-	secondInvalidTarget, err := fabricClient.CreateNewPeer("test:2222", "", "")
+	secondInvalidTarget, err := fabricClient.NewPeer("test:2222", "", "")
 	if err != nil {
-		t.Fatalf("CreateNewPeer error(%v)", err)
+		t.Fatalf("Create NewPeer error(%v)", err)
 	}
 
 	// Add invalid targets to targets
@@ -279,5 +276,4 @@ func testQueryByChaincode(t *testing.T, chain fabricClient.Chain) {
 
 	chain.RemovePeer(firstInvalidTarget)
 	chain.RemovePeer(secondInvalidTarget)
-
 }

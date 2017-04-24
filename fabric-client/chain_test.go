@@ -73,17 +73,6 @@ func TestQueryMethods(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Query hash cannot be nil")
 	}
-
-	_, err = chain.QueryChannels(nil)
-	if err == nil {
-		t.Fatalf("QueryChanels: peer cannot be nil")
-	}
-
-	_, err = chain.QueryInstalledChaincodes(nil)
-	if err == nil {
-		t.Fatalf("QueryInstalledChaincodes: peer cannot be nil")
-	}
-
 	_, err = chain.QueryByChaincode("", []string{"method"}, nil)
 	if err == nil {
 		t.Fatalf("QueryByChaincode: name cannot be empty")
@@ -221,7 +210,7 @@ func TestJoinChannel(t *testing.T) {
 	var peers []Peer
 	endorserServer := startEndorserServer(t)
 	chain, _ := setupTestChain()
-	peer, _ := CreateNewPeer(testAddress, "", "")
+	peer, _ := NewPeer(testAddress, "", "")
 	peers = append(peers, peer)
 	orderer := &mockOrderer{DeliverResponse: NewMockDeliverResponse(mocks.NewSimpleMockBlock())}
 	nonce, _ := util.GenerateRandomNonce()

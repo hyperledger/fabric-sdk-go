@@ -39,20 +39,19 @@ var testSetup BaseSetupImpl
 
 // Test chaincode install using chaincodePath to create chaincodePackage
 func TestChaincodeInstallUsingChaincodePath(t *testing.T) {
-
 	chainCodeVersion := getRandomCCVersion()
 
 	// Install and Instantiate Events CC
+	// Retrieve installed chaincodes
+	client := testSetup.Client
+
 	if err := testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, nil); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
-
-	// Retrieve installed chaincodes
-	chaincodeQueryResponse, err := testSetup.Chain.QueryInstalledChaincodes(testSetup.Chain.GetPrimaryPeer())
+	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(testSetup.Chain.GetPrimaryPeer())
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
-
 	ccFound := false
 	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
 		if chaincode.Name == chainCodeName && chaincode.Path == chainCodePath && chaincode.Version == chainCodeVersion {
@@ -64,7 +63,6 @@ func TestChaincodeInstallUsingChaincodePath(t *testing.T) {
 	if !ccFound {
 		t.Fatalf("Failed to retrieve installed chaincode.")
 	}
-
 	//Install same chaincode again, should fail
 	err = testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, nil)
 	if err == nil {
@@ -99,6 +97,7 @@ func TestChaincodeInstallUsingChaincodePackage(t *testing.T) {
 	if strings.Contains(err.Error(), "chaincodes/install.v"+chainCodeVersion+" exists") {
 		t.Fatalf("install same chaincode didn't return the correct error")
 	}
+
 }
 
 func TestMain(m *testing.M) {

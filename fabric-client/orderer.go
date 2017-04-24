@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	config "github.com/hyperledger/fabric-sdk-go/config"
+	"github.com/hyperledger/fabric-sdk-go/config"
 	"github.com/hyperledger/fabric/protos/common"
 	ab "github.com/hyperledger/fabric/protos/orderer"
 	"golang.org/x/net/context"
@@ -45,18 +45,6 @@ type Orderer interface {
 type orderer struct {
 	url            string
 	grpcDialOption []grpc.DialOption
-}
-
-// CreateNewOrderer Returns a Orderer instance
-func CreateNewOrderer(url string, certificate string, serverHostOverride string) (Orderer, error) {
-	if config.IsTLSEnabled() {
-		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
-		if err != nil {
-			return nil, err
-		}
-		return createNewOrdererWithCertPool(url, tlsCaCertPool, serverHostOverride), nil
-	}
-	return createNewOrdererWithoutTLS(url), nil
 }
 
 // CreateNewOrdererWithRootCAs Returns a new Orderer instance using the passed in orderer root CAs

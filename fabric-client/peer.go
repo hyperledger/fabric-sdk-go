@@ -21,14 +21,10 @@ package fabricclient
 
 import (
 	"encoding/pem"
-	"time"
 
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
-	config "github.com/hyperledger/fabric-sdk-go/config"
 )
 
 // Peer ...
@@ -68,28 +64,6 @@ type peer struct {
 	name                  string
 	roles                 []string
 	enrollmentCertificate *pem.Block
-}
-
-// CreateNewPeer ...
-/**
- * Constructs a Peer given its endpoint configuration settings.
- *
- * @param {string} url The URL with format of "host:port".
- */
-func CreateNewPeer(url string, certificate string, serverHostOverride string) (Peer, error) {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(time.Second*3))
-	if config.IsTLSEnabled() {
-		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
-		if err != nil {
-			return nil, err
-		}
-		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-	}
-	return &peer{url: url, grpcDialOption: opts, name: "", roles: nil}, nil
 }
 
 // ConnectEventSource ...

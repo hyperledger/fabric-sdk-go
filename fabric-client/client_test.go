@@ -188,3 +188,18 @@ func TestCreateChannel(t *testing.T) {
 		t.Fatalf("At least one MSP expected in MSPManager")
 	}
 }
+
+func TestQueryMethodsOnClient(t *testing.T) {
+	client := NewClient()
+
+	_, err := client.QueryChannels(nil)
+	if err == nil {
+		t.Fatalf("QueryChanels: peer cannot be nil")
+	}
+
+	_, err = client.QueryInstalledChaincodes(nil)
+	if err == nil {
+		t.Fatalf("QueryInstalledChaincodes: peer cannot be nil")
+	}
+
+}

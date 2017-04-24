@@ -28,6 +28,7 @@ import (
 )
 
 func TestEvents(t *testing.T) {
+
 	testSetup := BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
 		ChainID:         "testchannel",
@@ -103,4 +104,5 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 			t.Fatalf("invoke Didn't receive block event for txid1(%s) or txid1(%s)", tx1, tx2)
 		}
 	}
+
 }

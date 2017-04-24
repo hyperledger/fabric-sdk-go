@@ -121,20 +121,19 @@ func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainID string, ch
 
 // InstallCC ...
 func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte) error {
-
-	if err := fcUtil.SendInstallCC(setup.Chain, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, setup.Chain.GetPeers(), setup.GetDeployPath()); err != nil {
+	if err := fcUtil.SendInstallCC(setup.Client, setup.Chain, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, setup.Chain.GetPeers(), setup.GetDeployPath()); err != nil {
 		return fmt.Errorf("SendInstallProposal return error: %v", err)
 	}
 	return nil
 }
 
-// GetDeployPath
+// GetDeployPath ..
 func (setup *BaseSetupImpl) GetDeployPath() string {
 	pwd, _ := os.Getwd()
 	return path.Join(pwd, "../fixtures")
 }
 
-// InstallAndInstantiateExampleCC ...
+// InstallAndInstantiateExampleCC ..
 func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 
 	chainCodePath := "github.com/example_cc"
