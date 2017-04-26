@@ -27,6 +27,9 @@ import (
 
 	"time"
 
+	"reflect"
+
+	"github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -174,4 +177,54 @@ func flood(invocationsPerThread int, threads int, f func()) {
 			}
 		}()
 	}
+}
+
+func TestRegisterBlockEvent(t *testing.T) {
+	eventHub, _ := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+
+	// Transaction callback is registered by default
+	if len(eventHub.interestedEvents) != 1 || len(eventHub.blockRegistrants) != 1 {
+		t.Fatalf("Transaction callback should be registered by default")
+	}
+
+	f1 := reflect.ValueOf(eventHub.txCallback)
+	f2 := reflect.ValueOf(eventHub.blockRegistrants[0])
+
+	if f1.Pointer() != f2.Pointer() {
+		t.Fatalf("Registered callback is not txCallback")
+	}
+
+	eventHub.RegisterBlockEvent(testCallback)
+
+	if len(eventHub.blockRegistrants) != 2 {
+		t.Fatalf("Failed to add test callback for block event")
+	}
+
+	f1 = reflect.ValueOf(testCallback)
+	f2 = reflect.ValueOf(eventHub.blockRegistrants[1])
+
+	if f1.Pointer() != f2.Pointer() {
+		t.Fatalf("Registered callback is not testCallback")
+	}
+
+	eventHub.UnregisterBlockEvent(testCallback)
+
+	if len(eventHub.interestedEvents) != 1 || len(eventHub.blockRegistrants) != 1 {
+		t.Fatalf("Failed to unregister testCallback")
+	}
+
+	eventHub.UnregisterBlockEvent(eventHub.txCallback)
+
+	if len(eventHub.interestedEvents) != 0 || len(eventHub.blockRegistrants) != 0 {
+		t.Fatalf("Failed to unregister txCallback")
+	}
+
+}
+
+// private test callback to be executed on block event
+func testCallback(block *common.Block) {
+	fmt.Println("testCallback called on block")
 }

@@ -22,6 +22,7 @@ package events
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 	"sync"
 
@@ -49,6 +50,9 @@ type EventHub interface {
 	UnregisterChaincodeEvent(cbe *ChainCodeCBE)
 	RegisterTxEvent(txID string, callback func(string, error))
 	UnregisterTxEvent(txID string)
+	RegisterBlockEvent(callback func(*common.Block))
+	UnregisterBlockEvent(callback func(*common.Block))
+	Disconnect()
 }
 
 // The EventHubExt interface allows extensions of the SDK to add functionality to EventHub overloads.
@@ -130,8 +134,8 @@ func NewEventHub() EventHub {
 		eventsClientFactory:  &consumerClientFactory{},
 	}
 
-	// default to listening for block events
-	eventHub.SetInterests(true)
+	// register default transaction callback
+	eventHub.RegisterBlockEvent(eventHub.txCallback)
 
 	return eventHub
 }
@@ -141,9 +145,64 @@ func (eventHub *eventHub) SetInterests(block bool) {
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
 
-	eventHub.interestedEvents = nil
+	eventHub.interestedEvents = make([]*pb.Interest, 0)
+	eventHub.blockRegistrants = make([]func(*common.Block), 0)
+
 	if block {
+		eventHub.blockRegistrants = append(eventHub.blockRegistrants, eventHub.txCallback)
 		eventHub.interestedEvents = append(eventHub.interestedEvents, &pb.Interest{EventType: pb.EventType_BLOCK})
+	}
+}
+
+// Disconnect disconnects from peer event source
+func (eventHub *eventHub) Disconnect() {
+	if !eventHub.connected {
+		return
+	}
+
+	eventHub.mtx.Lock()
+	defer eventHub.mtx.Unlock()
+
+	// Unregister interests with server and stop the stream
+	eventHub.client.UnregisterAsync(eventHub.interestedEvents)
+	eventHub.client.Stop()
+	eventHub.connected = false
+}
+
+// RegisterBlockEvent - register callback function for block events
+func (eventHub *eventHub) RegisterBlockEvent(callback func(*common.Block)) {
+	eventHub.mtx.Lock()
+	defer eventHub.mtx.Unlock()
+
+	eventHub.blockRegistrants = append(eventHub.blockRegistrants, callback)
+	if len(eventHub.blockRegistrants) == 1 {
+		eventHub.interestedEvents = append(eventHub.interestedEvents, &pb.Interest{EventType: pb.EventType_BLOCK})
+	}
+}
+
+// UnregisterBlockEvent unregister callback for block event
+func (eventHub *eventHub) UnregisterBlockEvent(callback func(*common.Block)) {
+	eventHub.mtx.Lock()
+	defer eventHub.mtx.Unlock()
+
+	f1 := reflect.ValueOf(callback)
+
+	for i := range eventHub.blockRegistrants {
+		f2 := reflect.ValueOf(eventHub.blockRegistrants[i])
+		if f1.Pointer() == f2.Pointer() {
+			eventHub.blockRegistrants = append(eventHub.blockRegistrants[:i], eventHub.blockRegistrants[i+1:]...)
+			break
+		}
+	}
+
+	if len(eventHub.blockRegistrants) < 1 {
+		blockEventInterest := pb.Interest{EventType: pb.EventType_BLOCK}
+		eventHub.client.UnregisterAsync([]*pb.Interest{&blockEventInterest})
+		for i, v := range eventHub.interestedEvents {
+			if *v == blockEventInterest {
+				eventHub.interestedEvents = append(eventHub.interestedEvents[:i], eventHub.interestedEvents[i+1:]...)
+			}
+		}
 	}
 }
 
@@ -191,6 +250,12 @@ func (eventHub *eventHub) IsConnected() bool {
  * Establishes connection with peer event source<p>
  */
 func (eventHub *eventHub) Connect() error {
+
+	if eventHub.connected {
+		logger.Debugf("Nothing to do - EventHub already connected")
+		return nil
+	}
+
 	if eventHub.peerAddr == "" {
 		return fmt.Errorf("eventHub.peerAddr is empty")
 	}
@@ -198,17 +263,18 @@ func (eventHub *eventHub) Connect() error {
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
 
-	eventHub.blockRegistrants = make([]func(*common.Block), 0)
-	eventHub.blockRegistrants = append(eventHub.blockRegistrants, eventHub.txCallback)
-
-	eventsClient, _ := eventHub.eventsClientFactory.newEventsClient(eventHub.peerAddr, eventHub.peerTLSCertificate, eventHub.peerTLSServerHostOverride, 5, eventHub)
-	if err := eventsClient.Start(); err != nil {
-		eventsClient.Stop()
-		return fmt.Errorf("Error from eventsClient.Start (%s)", err.Error())
-
+	if eventHub.client == nil {
+		eventsClient, _ := eventHub.eventsClientFactory.newEventsClient(eventHub.peerAddr, eventHub.peerTLSCertificate, eventHub.peerTLSServerHostOverride, 5, eventHub)
+		eventHub.client = eventsClient
 	}
+
+	if err := eventHub.client.Start(); err != nil {
+		eventHub.client.Stop()
+		return fmt.Errorf("Error from eventsClient.Start (%s)", err.Error())
+	}
+
 	eventHub.connected = true
-	eventHub.client = eventsClient
+
 	return nil
 }
 
@@ -248,14 +314,15 @@ func (eventHub *eventHub) Recv(msg *pb.Event) (bool, error) {
 	}
 }
 
-// Disconnect implements consumer.EventAdapter interface for receiving events
-/**
- * Disconnects peer event source<p>
- */
+// Disconnected implements consumer.EventAdapter interface for receiving events
 func (eventHub *eventHub) Disconnected(err error) {
 	if !eventHub.connected {
 		return
 	}
+
+	eventHub.mtx.Lock()
+	defer eventHub.mtx.Unlock()
+
 	eventHub.client.Stop()
 	eventHub.connected = false
 }

@@ -20,11 +20,13 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
 	fcUtil "github.com/hyperledger/fabric-sdk-go/fabric-client/helpers"
+	"github.com/hyperledger/fabric/protos/common"
 )
 
 func TestEvents(t *testing.T) {
@@ -52,6 +54,19 @@ func TestEvents(t *testing.T) {
 	}
 
 	testFailedTx(t, testSetup)
+
+	// Test disconnect event hub
+	testSetup.EventHub.Disconnect()
+	if testSetup.EventHub.IsConnected() {
+		t.Fatalf("Failed to disconnect event hub")
+	}
+
+	// Reconnect event hub
+	if err := testSetup.EventHub.Connect(); err != nil {
+		t.Fatalf("Failed to connect event hub")
+	}
+
+	testMultipleBlockEventCallbacks(t, testSetup)
 
 }
 
@@ -102,6 +117,47 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 			return
 		case <-time.After(time.Second * 30):
 			t.Fatalf("invoke Didn't receive block event for txid1(%s) or txid1(%s)", tx1, tx2)
+		}
+	}
+
+}
+
+func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
+
+	// Arguments for events CC
+	var args []string
+	args = append(args, "invoke")
+	args = append(args, "invoke")
+	args = append(args, "SEVERE")
+
+	// Create and register test callback that will be invoked upon block event
+	test := make(chan bool)
+	testSetup.EventHub.RegisterBlockEvent(func(block *common.Block) {
+		fmt.Println("Invoked test callback on block event")
+		test <- true
+	})
+
+	tpResponses, tx, err := fcUtil.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()})
+	if err != nil {
+		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
+	}
+
+	// Register tx for commit/block event(s)
+	done, fail := fcUtil.RegisterTxEvent(tx, testSetup.EventHub)
+	defer testSetup.EventHub.UnregisterTxEvent(tx)
+
+	_, err = fcUtil.CreateAndSendTransaction(testSetup.Chain, tpResponses)
+	if err != nil {
+		t.Fatalf("First invoke failed err: %v", err)
+	}
+
+	for i := 0; i < 2; i++ {
+		select {
+		case <-done:
+		case <-fail:
+		case <-test:
+		case <-time.After(time.Second * 30):
+			t.Fatalf("invoke Didn't receive test callback event")
 		}
 	}
 
