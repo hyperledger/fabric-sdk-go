@@ -1,19 +1,20 @@
 client:
  peers:
-  peer1:
-    host: "localhost"
+  # peer0
+  - host: "localhost"
     port: 7051
-    event_host: "localhost"
-    event_port: 7053
+    eventHost: "localhost"
+    eventPort: 7053
     primary: true
     tls:
       # Certificate location absolute path
       certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/peers/peer0/ca-cert.pem"
       serverHostOverride: "peer0"
-
-  peer2:
-    host: "localhost"
+  # peer 1
+  - host: "localhost"
     port: 7056
+    eventHost: "localhost"
+    eventPort: 7058
     primary: false
     tls:
       # Certificate location absolute path

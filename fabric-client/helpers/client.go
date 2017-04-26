@@ -101,7 +101,7 @@ func GetClient(name string, pwd string, stateStorePath string) (fabricClient.Cli
 	if user == nil {
 		fabricCAClient, err1 := fabricCAClient.NewFabricCAClient()
 		if err1 != nil {
-			return nil, fmt.Errorf("NewFabricCAClient return error: %v", err)
+			return nil, fmt.Errorf("NewFabricCAClient return error: %v", err1)
 		}
 		key, cert, err1 := fabricCAClient.Enroll(name, pwd)
 		keyPem, _ := pem.Decode(key)
@@ -111,7 +111,7 @@ func GetClient(name string, pwd string, stateStorePath string) (fabricClient.Cli
 		user := fabricClient.NewUser(name)
 		k, err1 := client.GetCryptoSuite().KeyImport(keyPem.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: false})
 		if err1 != nil {
-			return nil, fmt.Errorf("KeyImport return error: %v", err)
+			return nil, fmt.Errorf("KeyImport return error: %v", err1)
 		}
 		user.SetPrivateKey(k)
 		user.SetEnrollmentCertificate(cert)
@@ -125,8 +125,8 @@ func GetClient(name string, pwd string, stateStorePath string) (fabricClient.Cli
 
 }
 
-// Utility method gets serialized enrollment certificate
-func getCreatorID(client fabricClient.Client) ([]byte, error) {
+// GetCreatorID gets serialized enrollment certificate
+func GetCreatorID(client fabricClient.Client) ([]byte, error) {
 
 	user, err := client.LoadUserFromStateStore("")
 	if err != nil {

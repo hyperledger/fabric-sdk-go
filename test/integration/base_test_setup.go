@@ -217,10 +217,15 @@ func (setup *BaseSetupImpl) MoveFunds() (string, error) {
 func getEventHub() (events.EventHub, error) {
 	eventHub := events.NewEventHub()
 	foundEventHub := false
-	for _, p := range config.GetPeersConfig() {
-		if p.EventHost != "" && p.EventPort != "" {
-			fmt.Printf("******* EventHub connect to peer (%s:%s) *******\n", p.EventHost, p.EventPort)
-			eventHub.SetPeerAddr(fmt.Sprintf("%s:%s", p.EventHost, p.EventPort), p.TLSCertificate, p.TLSServerHostOverride)
+	peerConfig, err := config.GetPeersConfig()
+	if err != nil {
+		return nil, fmt.Errorf("Error reading peer config: %v", err)
+	}
+	for _, p := range peerConfig {
+		if p.EventHost != "" && p.EventPort != 0 {
+			fmt.Printf("******* EventHub connect to peer (%s:%d) *******\n", p.EventHost, p.EventPort)
+			eventHub.SetPeerAddr(fmt.Sprintf("%s:%d", p.EventHost, p.EventPort),
+				p.TLS.Certificate, p.TLS.ServerHostOverride)
 			foundEventHub = true
 			break
 		}

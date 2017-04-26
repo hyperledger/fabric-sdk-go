@@ -1,1 +1,3 @@
 *.db
+*report.xml
+.DS_Store

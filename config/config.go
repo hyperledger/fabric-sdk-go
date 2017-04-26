@@ -33,15 +33,17 @@ import (
 	"github.com/spf13/viper"
 )
 
-// PeerConfig ...
+// PeerConfig A set of configurations required to connect to a Fabric peer
 type PeerConfig struct {
-	Host                  string
-	Port                  string
-	EventHost             string
-	EventPort             string
-	TLSCertificate        string
-	TLSServerHostOverride string
-	Primary               bool
+	Host      string
+	Port      int
+	EventHost string
+	EventPort int
+	Primary   bool
+	TLS       struct {
+		Certificate        string
+		ServerHostOverride string
+	}
 }
 
 var myViper = viper.New()
@@ -121,59 +123,27 @@ func GetFabricClientViper() *viper.Viper {
 	return myViper
 }
 
-// GetPeersConfig ...
-func GetPeersConfig() []PeerConfig {
+// GetPeersConfig Retrieves the fabric peers from the config file provided
+func GetPeersConfig() ([]PeerConfig, error) {
 	peersConfig := []PeerConfig{}
-	peers := myViper.GetStringMap("client.peers")
-	for key, value := range peers {
-		mm, ok := value.(map[string]interface{})
-		var host string
-		var port int
-		var primary bool
-		var eventHost string
-		var eventPort int
-		var tlsCertificate string
-		var tlsServerHostOverride string
-
-		if ok {
-			host, _ = mm["host"].(string)
-			port, _ = mm["port"].(int)
-			primary, _ = mm["primary"].(bool)
-			eventHost, _ = mm["event_host"].(string)
-			eventPort, _ = mm["event_port"].(int)
-			tlsCertificate, _ = mm["tls"].(map[string]interface{})["certificate"].(string)
-			tlsServerHostOverride, _ = mm["tls"].(map[string]interface{})["serverhostoverride"].(string)
-
-		} else {
-			mm1 := value.(map[interface{}]interface{})
-			host, _ = mm1["host"].(string)
-			port, _ = mm1["port"].(int)
-			primary, _ = mm1["primary"].(bool)
-			eventHost, _ = mm1["event_host"].(string)
-			eventPort, _ = mm1["event_port"].(int)
-			tlsCertificate, _ = mm1["tls"].(map[string]interface{})["certificate"].(string)
-			tlsServerHostOverride, _ = mm1["tls"].(map[string]interface{})["serverhostoverride"].(string)
-
-		}
-
-		p := PeerConfig{Host: host, Port: strconv.Itoa(port), EventHost: eventHost, EventPort: strconv.Itoa(eventPort),
-			TLSCertificate: tlsCertificate, TLSServerHostOverride: tlsServerHostOverride, Primary: primary}
-		if p.Host == "" {
-			panic(fmt.Sprintf("host key not exist or empty for %s", key))
-		}
-		if p.Port == "" {
-			panic(fmt.Sprintf("port key not exist or empty for %s", key))
-		}
-
-		if IsTLSEnabled() && p.TLSCertificate == "" {
-			panic(fmt.Sprintf("tls.certificate not exist or empty for %s", key))
-		}
-
-		p.TLSCertificate = strings.Replace(p.TLSCertificate, "$GOPATH", os.Getenv("GOPATH"), -1)
-		peersConfig = append(peersConfig, p)
+	err := myViper.UnmarshalKey("client.peers", &peersConfig)
+	if err != nil {
+		return nil, err
 	}
-	return peersConfig
-
+	for index, p := range peersConfig {
+		if p.Host == "" {
+			return nil, fmt.Errorf("host key not exist or empty for peer %d", index)
+		}
+		if p.Port == 0 {
+			return nil, fmt.Errorf("port key not exist or empty for peer %d", index)
+		}
+		if IsTLSEnabled() && p.TLS.Certificate == "" {
+			return nil, fmt.Errorf("tls.certificate not exist or empty for peer %d", index)
+		}
+		peersConfig[index].TLS.Certificate = strings.Replace(p.TLS.Certificate, "$GOPATH",
+			os.Getenv("GOPATH"), -1)
+	}
+	return peersConfig, nil
 }
 
 // IsTLSEnabled ...
