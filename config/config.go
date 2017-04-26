@@ -52,9 +52,16 @@ var format = logging.MustStringFormatter(
 	`%{color}%{time:15:04:05.000} [%{module}] %{level:.4s} : %{color:reset} %{message}`,
 )
 
+const cmdRoot = "fabric_sdk"
+
 // InitConfig ...
 // initConfig reads in config file
 func InitConfig(configFile string) error {
+
+	myViper.SetEnvPrefix(cmdRoot)
+	myViper.AutomaticEnv()
+	replacer := strings.NewReplacer(".", "_")
+	myViper.SetEnvKeyReplacer(replacer)
 
 	if configFile != "" {
 		// create new viper

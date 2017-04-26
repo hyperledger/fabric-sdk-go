@@ -81,6 +81,30 @@ func TestMultipleVipers(t *testing.T) {
 	}
 }
 
+func TestEnvironmentVariables(t *testing.T) {
+	testValue := myViper.GetString("env.test")
+	if testValue != "" {
+		t.Fatalf("Expected environment variable value to be empty but got: %s", testValue)
+	}
+
+	err := os.Setenv("FABRIC_SDK_ENV_TEST", "123")
+	defer os.Unsetenv("FABRIC_SDK_ENV_TEST")
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	err = InitConfig("../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	testValue = myViper.GetString("env.test")
+	if testValue != "123" {
+		t.Fatalf("Expected environment variable value but got: %s", testValue)
+	}
+}
+
 func TestMain(m *testing.M) {
 	err := InitConfig("../test/fixtures/config/config_test.yaml")
 	if err != nil {
