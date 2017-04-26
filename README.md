@@ -30,6 +30,10 @@ cd $GOPATH/src/github.com/hyperledger/fabric-ca/
 git checkout v1.0.0-alpha
 make docker
 
+# Before running the test, make sure you don't have stale invalid certificates from previous runs
+rm -rf /tmp/keystore/
+rm -rf /tmp/enroll_user/
+
 # Start fabric
 cd $GOPATH/src/github.com/hyperledger/
 git clone https://github.com/hyperledger/fabric-sdk-go
