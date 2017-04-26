@@ -51,8 +51,13 @@ func GetChain(client fabricClient.Client, chainID string) (fabricClient.Chain, e
 	}
 	chain.AddOrderer(orderer)
 
-	for _, p := range config.GetPeersConfig() {
-		endorser, err := fabricClient.NewPeer(fmt.Sprintf("%s:%s", p.Host, p.Port), p.TLSCertificate, p.TLSServerHostOverride)
+	peerConfig, err := config.GetPeersConfig()
+	if err != nil {
+		return nil, fmt.Errorf("Error reading peer config: %v", err)
+	}
+	for _, p := range peerConfig {
+		endorser, err := fabricClient.NewPeer(fmt.Sprintf("%s:%d", p.Host, p.Port),
+			p.TLS.Certificate, p.TLS.ServerHostOverride)
 		if err != nil {
 			return nil, fmt.Errorf("NewPeer return error: %v", err)
 		}
@@ -164,7 +169,7 @@ func CreateAndJoinChannel(client fabricClient.Client, chain fabricClient.Chain, 
 	// Wait for orderer to process channel metadata
 	time.Sleep(time.Second * 2)
 	// Test join channel
-	creator, err := getCreatorID(client)
+	creator, err := GetCreatorID(client)
 	if err != nil {
 		return fmt.Errorf("Could not generate creator ID: %v", err)
 	}

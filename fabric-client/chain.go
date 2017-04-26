@@ -1318,17 +1318,10 @@ func (c *chain) fetchGenesisBlock() (*common.Block, error) {
 		return nil, fmt.Errorf("Error signing payload: %s", err)
 	}
 	// Request genesis block from ordering service
-	var block *common.Block
-	// TODO: what if the primary orderer is down?
-	responses, errors := c.GetOrderers()[0].SendDeliver(blockRequest)
-	// Block on channels for genesis block or error
-	select {
-	case block = <-responses:
-		logger.Debugf("Got genesis block from ordering service: %#v", block)
-	case err = <-errors:
-		return nil, fmt.Errorf("Error from SendDeliver(): %s", err)
+	block, err := c.SendEnvelope(blockRequest)
+	if err != nil {
+		return nil, fmt.Errorf("Error from SendEnvelope: %s", err.Error())
 	}
-
 	return block, nil
 }
 

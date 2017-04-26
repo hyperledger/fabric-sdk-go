@@ -28,19 +28,22 @@ import (
 )
 
 func TestGetPeersConfig(t *testing.T) {
-	pc := GetPeersConfig()
+	pc, err := GetPeersConfig()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 
 	for _, value := range pc {
 		if value.Host == "" {
 			t.Fatalf("Host value is empty")
 		}
-		if value.Port == "" {
+		if value.Port == 0 {
 			t.Fatalf("Port value is empty")
 		}
-		if value.Port == "" {
+		if value.EventHost == "" {
 			t.Fatalf("EventHost value is empty")
 		}
-		if value.Port == "" {
+		if value.EventPort == 0 {
 			t.Fatalf("EventPort value is empty")
 		}
 
@@ -72,8 +75,8 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testvalue after config initialization")
 	}
 	// Make sure Go SDK config is unaffected
-	testValue3 := myViper.GetString("client.peers.peer1.host")
-	if testValue3 != "localhost" {
+	testValue3 := myViper.GetBool("client.tls.enabled")
+	if testValue3 != true {
 		t.Fatalf("Expected existing config value to remain unchanged")
 	}
 }
