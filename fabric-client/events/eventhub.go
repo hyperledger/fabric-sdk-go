@@ -97,6 +97,7 @@ type ChaincodeEvent struct {
 	TxId        string
 	EventName   string
 	Payload     []byte
+	ChannelID   string
 }
 
 // ChainCodeCBE ...
@@ -294,10 +295,10 @@ func (eventHub *eventHub) Recv(msg *pb.Event) (bool, error) {
 		}
 
 		for _, tdata := range blockEvent.Block.Data.Data {
-			if ccEvent, err := getChainCodeEvent(tdata); err != nil {
+			if ccEvent, channelID, err := getChainCodeEvent(tdata); err != nil {
 				logger.Warningf("getChainCodeEvent return error: %v\n", err)
 			} else if ccEvent != nil {
-				eventHub.notifyChaincodeRegistrants(ccEvent, true)
+				eventHub.notifyChaincodeRegistrants(channelID, ccEvent, true)
 			}
 		}
 		return true, nil
@@ -306,7 +307,7 @@ func (eventHub *eventHub) Recv(msg *pb.Event) (bool, error) {
 		logger.Debugf("Recv ccEvent:%v\n", ccEvent)
 
 		if ccEvent != nil {
-			eventHub.notifyChaincodeRegistrants(ccEvent.ChaincodeEvent, false)
+			eventHub.notifyChaincodeRegistrants("", ccEvent.ChaincodeEvent, false)
 		}
 		return true, nil
 	default:
@@ -493,58 +494,60 @@ func (eventHub *eventHub) getTXRegistrant(txID string) func(string, error) {
 }
 
 // getChainCodeEvents parses block events for chaincode events associated with individual transactions
-func getChainCodeEvent(tdata []byte) (*pb.ChaincodeEvent, error) {
+func getChainCodeEvent(tdata []byte) (event *pb.ChaincodeEvent, channelID string, err error) {
 
 	if tdata == nil {
-		return nil, errors.New("Cannot extract payload from nil transaction")
+		return nil, "", errors.New("Cannot extract payload from nil transaction")
 	}
 
 	if env, err := utils.GetEnvelopeFromBlock(tdata); err != nil {
-		return nil, fmt.Errorf("Error getting tx from block(%s)", err)
+		return nil, "", fmt.Errorf("Error getting tx from block(%s)", err)
 	} else if env != nil {
 		// get the payload from the envelope
 		payload, err := utils.GetPayload(env)
 		if err != nil {
-			return nil, fmt.Errorf("Could not extract payload from envelope, err %s", err)
+			return nil, "", fmt.Errorf("Could not extract payload from envelope, err %s", err)
 		}
 
 		channelHeaderBytes := payload.Header.ChannelHeader
 		channelHeader := &common.ChannelHeader{}
 		err = proto.Unmarshal(channelHeaderBytes, channelHeader)
 		if err != nil {
-			return nil, fmt.Errorf("Could not extract channel header from envelope, err %s", err)
+			return nil, "", fmt.Errorf("Could not extract channel header from envelope, err %s", err)
 		}
+
+		channelID := channelHeader.ChannelId
 
 		// Chaincode events apply to endorser transaction only
 		if common.HeaderType(channelHeader.Type) == common.HeaderType_ENDORSER_TRANSACTION {
 			tx, err := utils.GetTransaction(payload.Data)
 			if err != nil {
-				return nil, fmt.Errorf("Error unmarshalling transaction payload for block event: %s", err)
+				return nil, "", fmt.Errorf("Error unmarshalling transaction payload for block event: %s", err)
 			}
 			chaincodeActionPayload, err := utils.GetChaincodeActionPayload(tx.Actions[0].Payload)
 			if err != nil {
-				return nil, fmt.Errorf("Error unmarshalling transaction action payload for block event: %s", err)
+				return nil, "", fmt.Errorf("Error unmarshalling transaction action payload for block event: %s", err)
 			}
 			propRespPayload, err := utils.GetProposalResponsePayload(chaincodeActionPayload.Action.ProposalResponsePayload)
 			if err != nil {
-				return nil, fmt.Errorf("Error unmarshalling proposal response payload for block event: %s", err)
+				return nil, "", fmt.Errorf("Error unmarshalling proposal response payload for block event: %s", err)
 			}
 			caPayload, err := utils.GetChaincodeAction(propRespPayload.Extension)
 			if err != nil {
-				return nil, fmt.Errorf("Error unmarshalling chaincode action for block event: %s", err)
+				return nil, "", fmt.Errorf("Error unmarshalling chaincode action for block event: %s", err)
 			}
 			ccEvent, err := utils.GetChaincodeEvents(caPayload.Events)
 
 			if ccEvent != nil {
-				return ccEvent, nil
+				return ccEvent, channelID, nil
 			}
 		}
 	}
-	return nil, nil
+	return nil, "", nil
 }
 
 // Utility function to fire callbacks for chaincode registrants
-func (eventHub *eventHub) notifyChaincodeRegistrants(ccEvent *pb.ChaincodeEvent, patternMatch bool) {
+func (eventHub *eventHub) notifyChaincodeRegistrants(channelID string, ccEvent *pb.ChaincodeEvent, patternMatch bool) {
 
 	cbeArray := eventHub.getChaincodeRegistrants(ccEvent.ChaincodeId)
 	if len(cbeArray) <= 0 {
@@ -564,6 +567,7 @@ func (eventHub *eventHub) notifyChaincodeRegistrants(ccEvent *pb.ChaincodeEvent,
 					TxId:        ccEvent.TxId,
 					EventName:   ccEvent.EventName,
 					Payload:     ccEvent.Payload,
+					ChannelID:   channelID,
 				})
 			}
 		}

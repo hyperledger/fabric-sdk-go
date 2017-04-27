@@ -134,60 +134,186 @@ func createMockedEventHub(t *testing.T) (*eventHub, *mockEventClientFactory) {
 	return eventHub, &clientFactory
 }
 
-func buildMockTxEvent(txID string) *pb.Event_Block {
+// MockTxEventBuilder builds a mock TX event block
+type MockTxEventBuilder struct {
+	ChannelID string
+	TxID      string
+}
+
+// MockCCEventBuilder builds a mock chaincode event
+type MockCCEventBuilder struct {
+	CCID      string
+	EventName string
+	Payload   []byte
+}
+
+// MockCCBlockEventBuilder builds a mock CC event block
+type MockCCBlockEventBuilder struct {
+	CCID      string
+	EventName string
+	ChannelID string
+	TxID      string
+	Payload   []byte
+}
+
+// Build builds a mock TX event block
+func (b *MockTxEventBuilder) Build() *pb.Event_Block {
 	return &pb.Event_Block{
 		Block: &common.Block{
 			Header:   &common.BlockHeader{},
-			Metadata: buildBlockMetadata(),
+			Metadata: b.buildBlockMetadata(),
 			Data: &common.BlockData{
-				Data: [][]byte{util.MarshalOrPanic(buildEnvelope(txID))},
+				Data: [][]byte{util.MarshalOrPanic(b.buildEnvelope())},
 			},
 		},
 	}
 }
 
-func buildMockCCEvent(ccID string, eventName string) *pb.Event_ChaincodeEvent {
-	return &pb.Event_ChaincodeEvent{
-		ChaincodeEvent: &pb.ChaincodeEvent{
-			ChaincodeId: ccID,
-			EventName:   eventName,
-		},
-	}
-}
-
-func buildBlockMetadata() *common.BlockMetadata {
+func (b *MockTxEventBuilder) buildBlockMetadata() *common.BlockMetadata {
 	return &common.BlockMetadata{
 		Metadata: [][]byte{
 			[]byte{},
 			[]byte{},
-			buildTransactionsFilterMetaDataBytes(),
+			b.buildTransactionsFilterMetaDataBytes(),
 			[]byte{},
 		},
 	}
 }
 
-func buildTransactionsFilterMetaDataBytes() []byte {
+func (b *MockTxEventBuilder) buildTransactionsFilterMetaDataBytes() []byte {
 	return []byte(ledger_util.TxValidationFlags{uint8(pb.TxValidationCode_VALID)})
 }
 
-func buildEnvelope(txID string) *common.Envelope {
-	return &common.Envelope{
-		Payload: util.MarshalOrPanic(buildPayload(txID)),
-	}
-}
-
-func buildPayload(txID string) *common.Payload {
-	return &common.Payload{
-		Header: &common.Header{
-			ChannelHeader: util.MarshalOrPanic(buildChannelHeader(txID)),
+// Build builds a mock chaincode event
+func (b *MockCCEventBuilder) Build() *pb.Event_ChaincodeEvent {
+	return &pb.Event_ChaincodeEvent{
+		ChaincodeEvent: &pb.ChaincodeEvent{
+			ChaincodeId: b.CCID,
+			EventName:   b.EventName,
+			Payload:     b.Payload,
 		},
 	}
 }
 
-func buildChannelHeader(txID string) *common.ChannelHeader {
+func (b *MockTxEventBuilder) buildEnvelope() *common.Envelope {
+	return &common.Envelope{
+		Payload: util.MarshalOrPanic(b.buildPayload()),
+	}
+}
+
+func (b *MockTxEventBuilder) buildPayload() *common.Payload {
+	return &common.Payload{
+		Header: &common.Header{
+			ChannelHeader: util.MarshalOrPanic(b.buildChannelHeader()),
+		},
+	}
+}
+
+func (b *MockTxEventBuilder) buildChannelHeader() *common.ChannelHeader {
 	return &common.ChannelHeader{
-		TxId:      txID,
-		ChannelId: "testchannel",
+		TxId:      b.TxID,
+		ChannelId: b.ChannelID,
+	}
+}
+
+// Build builds a mock chaincode event block
+func (b *MockCCBlockEventBuilder) Build() *pb.Event_Block {
+	return &pb.Event_Block{
+		Block: &common.Block{
+			Header:   &common.BlockHeader{},
+			Metadata: b.buildBlockMetadata(),
+			Data: &common.BlockData{
+				Data: [][]byte{util.MarshalOrPanic(b.buildEnvelope())},
+			},
+		},
+	}
+}
+
+func (b *MockCCBlockEventBuilder) buildBlockMetadata() *common.BlockMetadata {
+	return &common.BlockMetadata{
+		Metadata: [][]byte{
+			[]byte{},
+			[]byte{},
+			b.buildTransactionsFilterMetaDataBytes(),
+			[]byte{},
+		},
+	}
+}
+
+func (b *MockCCBlockEventBuilder) buildEnvelope() *common.Envelope {
+	return &common.Envelope{
+		Payload: util.MarshalOrPanic(b.buildPayload()),
+	}
+}
+
+func (b *MockCCBlockEventBuilder) buildTransactionsFilterMetaDataBytes() []byte {
+	return []byte(ledger_util.TxValidationFlags{uint8(pb.TxValidationCode_VALID)})
+}
+
+func (b *MockCCBlockEventBuilder) buildPayload() *common.Payload {
+	fmt.Printf("MockCCBlockEventBuilder.buildPayload\n")
+	return &common.Payload{
+		Header: &common.Header{
+			ChannelHeader: util.MarshalOrPanic(b.buildChannelHeader()),
+		},
+		Data: util.MarshalOrPanic(b.buildTransaction()),
+	}
+}
+
+func (b *MockCCBlockEventBuilder) buildChannelHeader() *common.ChannelHeader {
+	return &common.ChannelHeader{
+		Type:      int32(common.HeaderType_ENDORSER_TRANSACTION),
+		TxId:      b.TxID,
+		ChannelId: b.ChannelID,
+	}
+}
+
+func (b *MockCCBlockEventBuilder) buildTransaction() *pb.Transaction {
+	return &pb.Transaction{
+		Actions: []*pb.TransactionAction{b.buildTransactionAction()},
+	}
+}
+
+func (b *MockCCBlockEventBuilder) buildTransactionAction() *pb.TransactionAction {
+	return &pb.TransactionAction{
+		Header:  []byte{},
+		Payload: util.MarshalOrPanic(b.buildChaincodeActionPayload()),
+	}
+}
+
+func (b *MockCCBlockEventBuilder) buildChaincodeActionPayload() *pb.ChaincodeActionPayload {
+	return &pb.ChaincodeActionPayload{
+		Action: b.buildChaincodeEndorsedAction(),
+		ChaincodeProposalPayload: []byte{},
+	}
+}
+
+func (b *MockCCBlockEventBuilder) buildChaincodeEndorsedAction() *pb.ChaincodeEndorsedAction {
+	return &pb.ChaincodeEndorsedAction{
+		ProposalResponsePayload: util.MarshalOrPanic(b.buildProposalResponsePayload()),
+		Endorsements:            []*pb.Endorsement{},
+	}
+}
+
+func (b *MockCCBlockEventBuilder) buildProposalResponsePayload() *pb.ProposalResponsePayload {
+	return &pb.ProposalResponsePayload{
+		ProposalHash: []byte("somehash"),
+		Extension:    util.MarshalOrPanic(b.buildChaincodeAction()),
+	}
+}
+
+func (b *MockCCBlockEventBuilder) buildChaincodeAction() *pb.ChaincodeAction {
+	return &pb.ChaincodeAction{
+		Events: util.MarshalOrPanic(b.buildChaincodeEvent()),
+	}
+}
+
+func (b *MockCCBlockEventBuilder) buildChaincodeEvent() *pb.ChaincodeEvent {
+	return &pb.ChaincodeEvent{
+		ChaincodeId: b.CCID,
+		EventName:   b.EventName,
+		TxId:        b.TxID,
+		Payload:     b.Payload,
 	}
 }
 

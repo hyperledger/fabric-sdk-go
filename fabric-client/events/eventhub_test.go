@@ -34,6 +34,9 @@ import (
 )
 
 func TestDeadlock(t *testing.T) {
+	channelID := "testchannel"
+	ccID := "testccid"
+
 	eventHub, clientFactory := createMockedEventHub(t)
 	if t.Failed() {
 		return
@@ -65,7 +68,10 @@ func TestDeadlock(t *testing.T) {
 		})
 
 		go client.MockEvent(&pb.Event{
-			Event: buildMockTxEvent(transactionID),
+			Event: (&MockTxEventBuilder{
+				TxID:      transactionID,
+				ChannelID: channelID,
+			}).Build(),
 		})
 
 		// Wait for the TX event and then unregister
@@ -78,13 +84,16 @@ func TestDeadlock(t *testing.T) {
 	go flood(eventsPerThread, threads, func() {
 		eventName := generateTxID()
 		received := newCompletionHandler(timeout)
-		registration := eventHub.RegisterChaincodeEvent("testccid", eventName, func(event *ChaincodeEvent) {
+		registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *ChaincodeEvent) {
 			ccCompletion.done()
 			received.done()
 		})
 
 		go client.MockEvent(&pb.Event{
-			Event: buildMockCCEvent("testccid", eventName),
+			Event: (&MockCCEventBuilder{
+				CCID:      ccID,
+				EventName: eventName,
+			}).Build(),
 		})
 
 		// Wait for the CC event and then unregister
@@ -106,6 +115,112 @@ func TestDeadlock(t *testing.T) {
 		t.Errorf("Sent %d CC events but received %d - could indicate a deadlock", eventsSent, ccCompletion.numDone())
 	} else {
 		fmt.Printf("Received all %d CC events.\n", ccCompletion.numDone())
+	}
+}
+
+func TestChaincodeEvent(t *testing.T) {
+	ccID := "someccid"
+	eventName := "someevent"
+
+	eventHub, clientFactory := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+
+	fmt.Printf("EventHub Chaincode event test\n")
+
+	client := clientFactory.clients[0]
+	if client == nil {
+		t.Fatalf("No client")
+	}
+
+	eventReceived := make(chan *ChaincodeEvent)
+
+	// Register for CC event
+	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *ChaincodeEvent) {
+		eventReceived <- event
+	})
+
+	// Publish CC event
+	go client.MockEvent(&pb.Event{
+		Event: (&MockCCEventBuilder{
+			CCID:      ccID,
+			EventName: eventName,
+		}).Build(),
+	})
+
+	// Wait for the CC event
+	var event *ChaincodeEvent
+	select {
+	case event = <-eventReceived:
+		eventHub.UnregisterChaincodeEvent(registration)
+	case <-time.After(time.Second * 5):
+		t.Fatalf("Timed out waiting for CC event")
+	}
+
+	// Check CC event
+	if event.ChaincodeId != ccID {
+		t.Fatalf("Expecting chaincode ID [%s] but got [%s]", ccID, event.ChaincodeId)
+	}
+	if event.EventName != eventName {
+		t.Fatalf("Expecting event name [%s] but got [%s]", eventName, event.EventName)
+	}
+}
+
+func TestChaincodeBlockEvent(t *testing.T) {
+	channelID := "somechannelid"
+	ccID := "someccid"
+	eventName := "someevent"
+	txID := generateTxID()
+
+	eventHub, clientFactory := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+
+	client := clientFactory.clients[0]
+	if client == nil {
+		t.Fatalf("No client")
+	}
+
+	eventReceived := make(chan *ChaincodeEvent)
+
+	// Register for CC event
+	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *ChaincodeEvent) {
+		eventReceived <- event
+	})
+
+	// Publish CC event
+	go client.MockEvent(&pb.Event{
+		Event: (&MockCCBlockEventBuilder{
+			CCID:      ccID,
+			EventName: eventName,
+			ChannelID: channelID,
+			TxID:      txID,
+		}).Build(),
+	})
+
+	// Wait for CC event
+	var event *ChaincodeEvent
+	select {
+	case event = <-eventReceived:
+		eventHub.UnregisterChaincodeEvent(registration)
+	case <-time.After(time.Second * 5):
+		t.Fatalf("Timed out waiting for CC event")
+	}
+
+	// Check CC event
+	if event.ChannelID != channelID {
+		t.Fatalf("Expecting channel ID [%s] but got [%s]", channelID, event.ChannelID)
+	}
+	if event.ChaincodeId != ccID {
+		t.Fatalf("Expecting chaincode ID [%s] but got [%s]", ccID, event.ChaincodeId)
+	}
+	if event.EventName != eventName {
+		t.Fatalf("Expecting event name [%s] but got [%s]", eventName, event.EventName)
+	}
+	if event.TxId == "" {
+		t.Fatalf("Expecting TxID [%s] but got [%s]", txID, event.TxId)
 	}
 }
 
