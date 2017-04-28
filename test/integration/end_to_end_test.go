@@ -82,7 +82,6 @@ func TestChainCodeInvoke(t *testing.T) {
 	valueAfterInvokeInt, _ := strconv.Atoi(valueAfterInvoke)
 	if valueInt != valueAfterInvokeInt {
 		t.Fatalf("SendTransaction didn't change the QueryValue")
-
 	}
 
 }

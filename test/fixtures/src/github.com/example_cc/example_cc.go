@@ -64,6 +64,12 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 		return shim.Error(err.Error())
 	}
 
+	if transientMap, err := stub.GetTransient(); err == nil {
+		if transientData, ok := transientMap["result"]; ok {
+			fmt.Printf("Transient data in 'init' : %s\n", transientData)
+			return shim.Success(transientData)
+		}
+	}
 	return shim.Success(nil)
 
 }
@@ -111,7 +117,6 @@ func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) 
 	var Aval, Bval int // Asset holdings
 	var X int          // Transaction value
 	var err error
-
 	if len(args) != 4 {
 		return shim.Error("Incorrect number of arguments. Expecting 4, function followed by 2 names and 1 value")
 	}
@@ -159,6 +164,12 @@ func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) 
 		return shim.Error(err.Error())
 	}
 
+	if transientMap, err := stub.GetTransient(); err == nil {
+		if transientData, ok := transientMap["result"]; ok {
+			fmt.Printf("Transient data in 'move' : %s\n", transientData)
+			return shim.Success(transientData)
+		}
+	}
 	return shim.Success(nil)
 }
 
@@ -181,7 +192,6 @@ func (t *SimpleChaincode) delete(stub shim.ChaincodeStubInterface, args []string
 
 // Query callback representing the query of a chaincode
 func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-
 	var A string // Entities
 	var err error
 

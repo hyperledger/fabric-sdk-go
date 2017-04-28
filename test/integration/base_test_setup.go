@@ -159,12 +159,10 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 
 // Query ...
 func (setup *BaseSetupImpl) Query(chainID string, chainCodeID string, args []string) (string, error) {
-
-	transactionProposalResponses, _, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, chainCodeID, chainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()})
+	transactionProposalResponses, _, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, chainCodeID, chainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, nil)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
-
 	return string(transactionProposalResponses[0].GetResponsePayload()), nil
 }
 
@@ -175,7 +173,6 @@ func (setup *BaseSetupImpl) QueryAsset() (string, error) {
 	args = append(args, "invoke")
 	args = append(args, "query")
 	args = append(args, "b")
-
 	return setup.Query(setup.ChainID, setup.ChainCodeID, args)
 }
 
@@ -189,19 +186,21 @@ func (setup *BaseSetupImpl) MoveFunds() (string, error) {
 	args = append(args, "b")
 	args = append(args, "1")
 
-	transactionProposalResponse, txID, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()})
+	transientDataMap := make(map[string][]byte)
+	transientDataMap["result"] = []byte("Transient data in move funds...")
+
+	transactionProposalResponse, txID, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
-
 	// Register for commit event
 	done, fail := fcUtil.RegisterTxEvent(txID, setup.EventHub)
 
-	_, err = fcUtil.CreateAndSendTransaction(setup.Chain, transactionProposalResponse)
+	txResponse, err := fcUtil.CreateAndSendTransaction(setup.Chain, transactionProposalResponse)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransaction return error: %v", err)
 	}
-
+	fmt.Println(txResponse)
 	select {
 	case <-done:
 	case <-fail:

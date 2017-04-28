@@ -37,9 +37,9 @@ import (
 
 // CreateAndSendTransactionProposal combines create and send transaction proposal methods into one method.
 // See CreateTransactionProposal and SendTransactionProposal
-func CreateAndSendTransactionProposal(chain fabricClient.Chain, chainCodeID string, chainID string, args []string, targets []fabricClient.Peer) ([]*fabricClient.TransactionProposalResponse, string, error) {
+func CreateAndSendTransactionProposal(chain fabricClient.Chain, chainCodeID string, chainID string, args []string, targets []fabricClient.Peer, transientData map[string][]byte) ([]*fabricClient.TransactionProposalResponse, string, error) {
 
-	signedProposal, err := chain.CreateTransactionProposal(chainCodeID, chainID, args, true, nil)
+	signedProposal, err := chain.CreateTransactionProposal(chainCodeID, chainID, args, true, transientData)
 	if err != nil {
 		return nil, "", fmt.Errorf("SendTransactionProposal return error: %v", err)
 	}
