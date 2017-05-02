@@ -57,8 +57,13 @@ const cmdRoot = "fabric_sdk"
 // InitConfig ...
 // initConfig reads in config file
 func InitConfig(configFile string) error {
+	return InitConfigWithCmdRoot(configFile, cmdRoot)
+}
 
-	myViper.SetEnvPrefix(cmdRoot)
+// InitConfigWithCmdRoot reads in a config file and allows the
+// environment variable prefixed to be specified
+func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) error {
+	myViper.SetEnvPrefix(cmdRootPrefix)
 	myViper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
 	myViper.SetEnvKeyReplacer(replacer)

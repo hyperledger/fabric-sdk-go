@@ -81,7 +81,7 @@ func TestMultipleVipers(t *testing.T) {
 	}
 }
 
-func TestEnvironmentVariables(t *testing.T) {
+func TestEnvironmentVariablesDefaultCmdRoot(t *testing.T) {
 	testValue := myViper.GetString("env.test")
 	if testValue != "" {
 		t.Fatalf("Expected environment variable value to be empty but got: %s", testValue)
@@ -101,6 +101,30 @@ func TestEnvironmentVariables(t *testing.T) {
 
 	testValue = myViper.GetString("env.test")
 	if testValue != "123" {
+		t.Fatalf("Expected environment variable value but got: %s", testValue)
+	}
+}
+
+func TestEnvironmentVariablesSpecificCmdRoot(t *testing.T) {
+	testValue := myViper.GetString("env.test")
+	if testValue != "" {
+		t.Fatalf("Expected environment variable value to be empty but got: %s", testValue)
+	}
+
+	err := os.Setenv("TEST_ROOT_ENV_TEST", "456")
+	defer os.Unsetenv("TEST_ROOT_ENV_TEST")
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	err = InitConfigWithCmdRoot("../test/fixtures/config/config_test.yaml", "test_root")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	testValue = myViper.GetString("env.test")
+	if testValue != "456" {
 		t.Fatalf("Expected environment variable value but got: %s", testValue)
 	}
 }
