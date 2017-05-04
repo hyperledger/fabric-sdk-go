@@ -27,10 +27,13 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/config"
 	consumer "github.com/hyperledger/fabric/events/consumer"
 	ehpb "github.com/hyperledger/fabric/protos/peer"
+	logging "github.com/op/go-logging"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
+
+var logger = logging.MustGetLogger("fabric_sdk_go")
 
 const defaultTimeout = time.Second * 3
 
@@ -51,6 +54,7 @@ type eventsClient struct {
 	adapter               consumer.EventAdapter
 	TLSCertificate        string
 	TLSServerHostOverride string
+	clientConn            *grpc.ClientConn
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
@@ -63,7 +67,7 @@ func NewEventsClient(peerAddress string, certificate string, serverhostoverride 
 		regTimeout = 60 * time.Second
 		err = fmt.Errorf("regTimeout > 60, setting to 60 sec")
 	}
-	return &eventsClient{sync.RWMutex{}, peerAddress, regTimeout, nil, adapter, certificate, serverhostoverride}, err
+	return &eventsClient{sync.RWMutex{}, peerAddress, regTimeout, nil, adapter, certificate, serverhostoverride, nil}, err
 }
 
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
@@ -140,7 +144,7 @@ func (ec *eventsClient) UnregisterAsync(ies []*ehpb.Interest) error {
 	emsg := &ehpb.Event{Event: &ehpb.Event_Unregister{Unregister: &ehpb.Unregister{Events: ies}}}
 	var err error
 	if err = ec.send(emsg); err != nil {
-		err = fmt.Errorf("error on unregister send %s\n", err)
+		err = fmt.Errorf("error on unregister send %s", err)
 	}
 
 	return err
@@ -181,7 +185,7 @@ func (ec *eventsClient) unregister(ies []*ehpb.Interest) error {
 func (ec *eventsClient) Recv() (*ehpb.Event, error) {
 	in, err := ec.stream.Recv()
 	if err == io.EOF {
-		// read done.
+		// read done
 		if ec.adapter != nil {
 			ec.adapter.Disconnected(nil)
 		}
@@ -227,6 +231,7 @@ func (ec *eventsClient) Start() error {
 	if err != nil {
 		return fmt.Errorf("Could not create client conn to %s (%v)", ec.peerAddress, err)
 	}
+	ec.clientConn = conn
 
 	ies, err := ec.adapter.GetInterestedEvents()
 	if err != nil {
@@ -258,5 +263,18 @@ func (ec *eventsClient) Stop() error {
 		// in case the stream/chat server has not been established earlier, we assume that it's closed, successfully
 		return nil
 	}
-	return ec.stream.CloseSend()
+	//this closes only sending direction of the stream; event is still there
+	//read will not return an error
+	err := ec.stream.CloseSend()
+	if err != nil {
+		return err
+	}
+	//close  client connection
+	if ec.clientConn != nil {
+		err := ec.clientConn.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
