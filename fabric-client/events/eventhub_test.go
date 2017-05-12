@@ -62,7 +62,7 @@ func TestDeadlock(t *testing.T) {
 	go flood(eventsPerThread, threads, func() {
 		transactionID := generateTxID()
 		received := newCompletionHandler(timeout)
-		eventHub.RegisterTxEvent(transactionID, func(txID string, err error) {
+		eventHub.RegisterTxEvent(transactionID, func(txID string, code pb.TxValidationCode, err error) {
 			txCompletion.done()
 			received.done()
 		})

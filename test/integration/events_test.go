@@ -27,6 +27,7 @@ import (
 	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
 	fcUtil "github.com/hyperledger/fabric-sdk-go/fabric-client/helpers"
 	"github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 func TestEvents(t *testing.T) {
@@ -55,6 +56,7 @@ func TestEvents(t *testing.T) {
 
 	testFailedTx(t, testSetup)
 
+	testFailedTxErrorCode(t, testSetup)
 	// Test disconnect event hub
 	testSetup.EventHub.Disconnect()
 	if testSetup.EventHub.IsConnected() {
@@ -109,10 +111,89 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 		select {
 		case <-done1:
 		case <-fail1:
+			t.Fatalf("Received fail  for second invoke")
 		case <-done2:
 			t.Fatalf("Received success for second invoke")
 		case <-fail2:
 			// success
+			return
+		case <-time.After(time.Second * 30):
+			t.Fatalf("invoke Didn't receive block event for txid1(%s) or txid1(%s)", tx1, tx2)
+		}
+	}
+
+}
+
+func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
+
+	// Arguments for events CC
+	var args []string
+	args = append(args, "invoke")
+	args = append(args, "invoke")
+	args = append(args, "SEVERE")
+
+	tpResponses1, tx1, err := fcUtil.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	if err != nil {
+		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
+	}
+
+	tpResponses2, tx2, err := fcUtil.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	if err != nil {
+		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
+	}
+
+	done := make(chan bool)
+	fail := make(chan error)
+	var errorValidationCode pb.TxValidationCode
+	testSetup.EventHub.RegisterTxEvent(tx1, func(txId string, errorCode pb.TxValidationCode, err error) {
+		if err != nil {
+			errorValidationCode = errorCode
+			fail <- err
+		} else {
+			done <- true
+		}
+	})
+
+	defer testSetup.EventHub.UnregisterTxEvent(tx1)
+
+	done2 := make(chan bool)
+	fail2 := make(chan error)
+
+	testSetup.EventHub.RegisterTxEvent(tx2, func(txId string, errorCode pb.TxValidationCode, err error) {
+		if err != nil {
+			errorValidationCode = errorCode
+			fail2 <- err
+		} else {
+			done2 <- true
+		}
+	})
+
+	defer testSetup.EventHub.UnregisterTxEvent(tx2)
+
+	// Test invalid transaction: create 2 invoke requests in quick succession that modify
+	// the same state variable which should cause one invoke to be invalid
+	_, err = fcUtil.CreateAndSendTransaction(testSetup.Chain, tpResponses1)
+	if err != nil {
+		t.Fatalf("First invoke failed err: %v", err)
+	}
+	_, err = fcUtil.CreateAndSendTransaction(testSetup.Chain, tpResponses2)
+	if err != nil {
+		t.Fatalf("Second invoke failed err: %v", err)
+	}
+
+	for i := 0; i < 2; i++ {
+		select {
+		case <-done:
+		case <-fail:
+			t.Fatalf("Received fail  for second invoke")
+		case <-done2:
+			t.Fatalf("Received success for second invoke")
+		case <-fail2:
+			// success
+			fmt.Println("Received error validation Code ", errorValidationCode)
+			if errorValidationCode.String() != "MVCC_READ_CONFLICT" {
+				t.Fatalf("Expected error code MVCC_READ_CONFLICT")
+			}
 			return
 		case <-time.After(time.Second * 30):
 			t.Fatalf("invoke Didn't receive block event for txid1(%s) or txid1(%s)", tx1, tx2)

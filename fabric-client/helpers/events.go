@@ -19,7 +19,10 @@ limitations under the License.
 
 package helpers
 
-import "github.com/hyperledger/fabric-sdk-go/fabric-client/events"
+import (
+	"github.com/hyperledger/fabric-sdk-go/fabric-client/events"
+	pb "github.com/hyperledger/fabric/protos/peer"
+)
 
 // RegisterTxEvent registers on the given eventhub for the give transaction
 // returns a boolean channel which receives true when the event is complete
@@ -28,7 +31,7 @@ func RegisterTxEvent(txID string, eventHub events.EventHub) (chan bool, chan err
 	done := make(chan bool)
 	fail := make(chan error)
 
-	eventHub.RegisterTxEvent(txID, func(txId string, err error) {
+	eventHub.RegisterTxEvent(txID, func(txId string, errorCode pb.TxValidationCode, err error) {
 		if err != nil {
 			logger.Debugf("Received error event for txid(%s)\n", txId)
 			fail <- err

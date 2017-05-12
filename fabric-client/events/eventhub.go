@@ -49,7 +49,7 @@ type EventHub interface {
 	Disconnect()
 	RegisterChaincodeEvent(ccid string, eventname string, callback func(*ChaincodeEvent)) *ChainCodeCBE
 	UnregisterChaincodeEvent(cbe *ChainCodeCBE)
-	RegisterTxEvent(txID string, callback func(string, error))
+	RegisterTxEvent(txID string, callback func(string, pb.TxValidationCode, error))
 	UnregisterTxEvent(txID string)
 	RegisterBlockEvent(callback func(*common.Block))
 	UnregisterBlockEvent(callback func(*common.Block))
@@ -74,7 +74,7 @@ type eventHub struct {
 	// Map of clients registered for block events
 	blockRegistrants []func(*common.Block)
 	// Map of clients registered for transactional events
-	txRegistrants map[string]func(string, error)
+	txRegistrants map[string]func(string, pb.TxValidationCode, error)
 	// peer addr to connect to
 	peerAddr string
 	// peer tls certificate
@@ -125,7 +125,7 @@ func (ccf *consumerClientFactory) newEventsClient(peerAddress string, certificat
 func NewEventHub() EventHub {
 	chaincodeRegistrants := make(map[string][]*ChainCodeCBE)
 	blockRegistrants := make([]func(*common.Block), 0)
-	txRegistrants := make(map[string]func(string, error))
+	txRegistrants := make(map[string]func(string, pb.TxValidationCode, error))
 
 	eventHub := &eventHub{
 		chaincodeRegistrants: chaincodeRegistrants,
@@ -395,7 +395,7 @@ func (eventHub *eventHub) UnregisterChaincodeEvent(cbe *ChainCodeCBE) {
  * @param {function} callback Function that takes a single parameter which
  * is a json object representation of type "message Transaction"
  */
-func (eventHub *eventHub) RegisterTxEvent(txID string, callback func(string, error)) {
+func (eventHub *eventHub) RegisterTxEvent(txID string, callback func(string, pb.TxValidationCode, error)) {
 	logger.Debugf("reg txid %s\n", txID)
 
 	eventHub.mtx.Lock()
@@ -424,6 +424,7 @@ func (eventHub *eventHub) txCallback(block *common.Block) {
 
 	txFilter := util.TxValidationFlags(block.Metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER])
 	for i, v := range block.Data.Data {
+
 		if env, err := utils.GetEnvelopeFromBlock(v); err != nil {
 			logger.Errorf("error extracting Envelope from block: %v\n", err)
 			return
@@ -446,10 +447,9 @@ func (eventHub *eventHub) txCallback(block *common.Block) {
 			callback := eventHub.getTXRegistrant(channelHeader.TxId)
 			if callback != nil {
 				if txFilter.IsInvalid(i) {
-					callback(channelHeader.TxId, fmt.Errorf("Received invalid transaction from channel %s\n", channelHeader.ChannelId))
-
+					callback(channelHeader.TxId, txFilter.Flag(i), fmt.Errorf("Received invalid transaction from channel %s", channelHeader.ChannelId))
 				} else {
-					callback(channelHeader.TxId, nil)
+					callback(channelHeader.TxId, txFilter.Flag(i), nil)
 				}
 			} else {
 				logger.Debugf("No callback registered for TxID: %s\n", channelHeader.TxId)
@@ -487,7 +487,7 @@ func (eventHub *eventHub) getChaincodeRegistrants(chaincodeID string) []*ChainCo
 	return clone
 }
 
-func (eventHub *eventHub) getTXRegistrant(txID string) func(string, error) {
+func (eventHub *eventHub) getTXRegistrant(txID string) func(string, pb.TxValidationCode, error) {
 	eventHub.mtx.RLock()
 	defer eventHub.mtx.RUnlock()
 	return eventHub.txRegistrants[txID]
