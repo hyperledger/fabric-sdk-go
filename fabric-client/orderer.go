@@ -113,7 +113,7 @@ func (o *orderer) SendBroadcast(envelope *SignedEnvelope) error {
 	}()
 	if err := broadcastStream.Send(&common.Envelope{
 		Payload:   envelope.Payload,
-		Signature: envelope.signature,
+		Signature: envelope.Signature,
 	}); err != nil {
 		return fmt.Errorf("Failed to send a envelope to orderer: %v", err)
 	}
@@ -153,7 +153,7 @@ func (o *orderer) SendDeliver(envelope *SignedEnvelope) (chan *common.Block,
 	logger.Debugf("Requesting blocks from ordering service")
 	if err := broadcastStream.Send(&common.Envelope{
 		Payload:   envelope.Payload,
-		Signature: envelope.signature,
+		Signature: envelope.Signature,
 	}); err != nil {
 		errors <- fmt.Errorf("Failed to send block request to orderer: %s", err)
 		return responses, errors

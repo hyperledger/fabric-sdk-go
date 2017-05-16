@@ -115,13 +115,13 @@ type chain struct {
 type TransactionProposal struct {
 	TransactionID string
 
-	signedProposal *pb.SignedProposal
-	proposal       *pb.Proposal
+	SignedProposal *pb.SignedProposal
+	Proposal       *pb.Proposal
 }
 
 // GetBytes returns the serialized bytes of this proposal
 func (tp *TransactionProposal) GetBytes() ([]byte, error) {
-	return proto.Marshal(tp.signedProposal)
+	return proto.Marshal(tp.SignedProposal)
 }
 
 // TransactionProposalResponse ...
@@ -133,24 +133,24 @@ type TransactionProposalResponse struct {
 	Err      error
 	Status   int32
 
-	proposal         *TransactionProposal
-	proposalResponse *pb.ProposalResponse
+	Proposal         *TransactionProposal
+	ProposalResponse *pb.ProposalResponse
 }
 
 // GetResponsePayload returns the response object payload
 func (tpr *TransactionProposalResponse) GetResponsePayload() []byte {
-	if tpr == nil || tpr.proposalResponse == nil {
+	if tpr == nil || tpr.ProposalResponse == nil {
 		return nil
 	}
-	return tpr.proposalResponse.GetResponse().Payload
+	return tpr.ProposalResponse.GetResponse().Payload
 }
 
 // GetPayload returns the response payload
 func (tpr *TransactionProposalResponse) GetPayload() []byte {
-	if tpr == nil || tpr.proposalResponse == nil {
+	if tpr == nil || tpr.ProposalResponse == nil {
 		return nil
 	}
-	return tpr.proposalResponse.Payload
+	return tpr.ProposalResponse.Payload
 }
 
 // The Transaction object created from an endorsed proposal
@@ -171,7 +171,7 @@ type TransactionResponse struct {
 // A SignedEnvelope can can be sent to an orderer for broadcasting
 type SignedEnvelope struct {
 	Payload   []byte
-	signature []byte
+	Signature []byte
 }
 
 // JoinChannelRequest allows a set of peers to transact on a channel on the network
@@ -229,7 +229,7 @@ func (c *chain) GetClientContext() Client {
 
 // GetProposalBytes returns the serialized transaction.
 func (c *chain) GetProposalBytes(tp *TransactionProposal) ([]byte, error) {
-	return proto.Marshal(tp.signedProposal)
+	return proto.Marshal(tp.SignedProposal)
 }
 
 // GetName ...
@@ -527,10 +527,10 @@ func (c *chain) JoinChannel(request *JoinChannelRequest) error {
 	// Send join proposal
 	proposalResponses, err := c.SendTransactionProposal(&TransactionProposal{
 		TransactionID: request.TxID,
-		signedProposal: &pb.SignedProposal{
+		SignedProposal: &pb.SignedProposal{
 			ProposalBytes: proposalBytes,
 			Signature:     signature},
-		proposal: proposal,
+		Proposal: proposal,
 	}, 0, request.Targets)
 	if err != nil {
 		return fmt.Errorf("Error sending join transaction proposal: %s", err)
@@ -852,8 +852,8 @@ func CreateTransactionProposal(chaincodeName string, chainID string,
 	signedProposal := &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}
 	return &TransactionProposal{
 		TransactionID:  txID,
-		signedProposal: signedProposal,
-		proposal:       proposal,
+		SignedProposal: signedProposal,
+		Proposal:       proposal,
 	}, nil
 
 }
@@ -864,7 +864,7 @@ func (c *chain) SendTransactionProposal(proposal *TransactionProposal, retry int
 	if c.peers == nil || len(c.peers) == 0 {
 		return nil, fmt.Errorf("peers is nil")
 	}
-	if proposal == nil || proposal.signedProposal == nil {
+	if proposal == nil || proposal.SignedProposal == nil {
 		return nil, fmt.Errorf("signedProposal is nil")
 	}
 
@@ -883,7 +883,7 @@ func (c *chain) SendTransactionProposal(proposal *TransactionProposal, retry int
 //SendTransactionProposal ...
 func SendTransactionProposal(proposal *TransactionProposal, retry int, targetPeers []Peer) ([]*TransactionProposalResponse, error) {
 
-	if proposal == nil || proposal.signedProposal == nil {
+	if proposal == nil || proposal.SignedProposal == nil {
 		return nil, fmt.Errorf("signedProposal is nil")
 	}
 
@@ -907,10 +907,10 @@ func SendTransactionProposal(proposal *TransactionProposal, retry int, targetPee
 				proposalResponse = &TransactionProposalResponse{
 					Endorser: peer.GetURL(),
 					Err:      fmt.Errorf("Error calling endorser '%s':  %s", peer.GetURL(), err),
-					proposal: proposal,
+					Proposal: proposal,
 				}
 			} else {
-				prp1, _ := protos_utils.GetProposalResponsePayload(proposalResponse.proposalResponse.Payload)
+				prp1, _ := protos_utils.GetProposalResponsePayload(proposalResponse.ProposalResponse.Payload)
 				act1, _ := protos_utils.GetChaincodeAction(prp1.Extension)
 				logger.Debugf("%s ProposalResponsePayload Extension ChaincodeAction Results\n%s\n", peer.GetURL(), string(act1.Results))
 
@@ -935,16 +935,16 @@ func (c *chain) CreateTransaction(resps []*TransactionProposalResponse) (*Transa
 		return nil, fmt.Errorf("At least one proposal response is necessary")
 	}
 
-	proposal := resps[0].proposal
+	proposal := resps[0].Proposal
 
 	// the original header
-	hdr, err := protos_utils.GetHeader(proposal.proposal.Header)
+	hdr, err := protos_utils.GetHeader(proposal.Proposal.Header)
 	if err != nil {
 		return nil, fmt.Errorf("Could not unmarshal the proposal header")
 	}
 
 	// the original payload
-	pPayl, err := protos_utils.GetChaincodeProposalPayload(proposal.proposal.Payload)
+	pPayl, err := protos_utils.GetChaincodeProposalPayload(proposal.Proposal.Payload)
 	if err != nil {
 		return nil, fmt.Errorf("Could not unmarshal the proposal payload")
 	}
@@ -974,18 +974,18 @@ func (c *chain) CreateTransaction(resps []*TransactionProposalResponse) (*Transa
 	//	}
 
 	for _, r := range resps {
-		if r.proposalResponse.Response.Status != 200 {
-			return nil, fmt.Errorf("Proposal response was not successful, error code %d, msg %s", r.proposalResponse.Response.Status, r.proposalResponse.Response.Message)
+		if r.ProposalResponse.Response.Status != 200 {
+			return nil, fmt.Errorf("Proposal response was not successful, error code %d, msg %s", r.ProposalResponse.Response.Status, r.ProposalResponse.Response.Message)
 		}
 	}
 
 	// fill endorsements
 	endorsements := make([]*pb.Endorsement, len(resps))
 	for n, r := range resps {
-		endorsements[n] = r.proposalResponse.Endorsement
+		endorsements[n] = r.ProposalResponse.Endorsement
 	}
 	// create ChaincodeEndorsedAction
-	cea := &pb.ChaincodeEndorsedAction{ProposalResponsePayload: resps[0].proposalResponse.Payload, Endorsements: endorsements}
+	cea := &pb.ChaincodeEndorsedAction{ProposalResponsePayload: resps[0].ProposalResponse.Payload, Endorsements: endorsements}
 
 	// obtain the bytes of the proposal payload that will go to the transaction
 	propPayloadBytes, err := protos_utils.GetBytesProposalPayloadForTx(pPayl, hdrExt.PayloadVisibility)
@@ -1028,14 +1028,14 @@ func (c *chain) SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
 	if c.orderers == nil || len(c.orderers) == 0 {
 		return nil, fmt.Errorf("orderers is nil")
 	}
-	if tx == nil || tx.proposal == nil || tx.proposal.proposal == nil {
+	if tx == nil || tx.proposal == nil || tx.proposal.Proposal == nil {
 		return nil, fmt.Errorf("proposal is nil")
 	}
 	if tx == nil {
 		return nil, fmt.Errorf("Transaction is nil")
 	}
 	// the original header
-	hdr, err := protos_utils.GetHeader(tx.proposal.proposal.Header)
+	hdr, err := protos_utils.GetHeader(tx.proposal.Proposal.Header)
 	if err != nil {
 		return nil, fmt.Errorf("Could not unmarshal the proposal header")
 	}
@@ -1139,8 +1139,8 @@ func (c *chain) SendInstantiateProposal(chaincodeName string, chainID string,
 	}
 
 	transactionProposalResponse, err := c.SendTransactionProposal(&TransactionProposal{
-		signedProposal: signedProposal,
-		proposal:       proposal,
+		SignedProposal: signedProposal,
+		Proposal:       proposal,
 		TransactionID:  txID,
 	}, 0, targetPeers)
 
@@ -1160,7 +1160,7 @@ func (c *chain) SignPayload(payload []byte) (*SignedEnvelope, error) {
 		return nil, err
 	}
 	// here's the envelope
-	return &SignedEnvelope{Payload: payload, signature: signature}, nil
+	return &SignedEnvelope{Payload: payload, Signature: signature}, nil
 }
 
 //broadcastEnvelope will send the given envelope to each orderer

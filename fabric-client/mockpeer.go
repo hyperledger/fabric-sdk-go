@@ -94,7 +94,7 @@ func (p *mockPeer) GetURL() string {
 func (p *mockPeer) SendProposal(tp *TransactionProposal) (*TransactionProposalResponse, error) {
 	return &TransactionProposalResponse{
 		Endorser:         p.MockURL,
-		proposal:         tp,
-		proposalResponse: &pb.ProposalResponse{},
+		Proposal:         tp,
+		ProposalResponse: &pb.ProposalResponse{},
 	}, nil
 }

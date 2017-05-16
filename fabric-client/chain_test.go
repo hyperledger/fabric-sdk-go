@@ -176,7 +176,7 @@ func TestConcurrentPeers(t *testing.T) {
 	}
 
 	result, err := chain.SendTransactionProposal(&TransactionProposal{
-		signedProposal: &pb.SignedProposal{},
+		SignedProposal: &pb.SignedProposal{},
 	}, 1, nil)
 	if err != nil {
 		t.Fatalf("SendTransactionProposal return error: %s", err)
@@ -196,7 +196,7 @@ func TestConcurrentOrderers(t *testing.T) {
 
 	txn := Transaction{
 		proposal: &TransactionProposal{
-			proposal: &pb.Proposal{},
+			Proposal: &pb.Proposal{},
 		},
 		transaction: &pb.Transaction{},
 	}

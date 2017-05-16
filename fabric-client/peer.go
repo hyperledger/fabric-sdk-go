@@ -203,13 +203,13 @@ func (p *peer) SendProposal(proposal *TransactionProposal) (*TransactionProposal
 	}
 	defer conn.Close()
 	endorserClient := pb.NewEndorserClient(conn)
-	proposalResponse, err := endorserClient.ProcessProposal(context.Background(), proposal.signedProposal)
+	proposalResponse, err := endorserClient.ProcessProposal(context.Background(), proposal.SignedProposal)
 	if err != nil {
 		return nil, err
 	}
 	return &TransactionProposalResponse{
-		proposal:         proposal,
-		proposalResponse: proposalResponse,
+		Proposal:         proposal,
+		ProposalResponse: proposalResponse,
 		Endorser:         p.url,
 		Status:           proposalResponse.GetResponse().Status,
 	}, nil

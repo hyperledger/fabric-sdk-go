@@ -287,7 +287,7 @@ func (c *client) CreateChannel(request *CreateChannelRequest) (Chain, error) {
 	}
 	// Send request
 	err = request.Orderer.SendBroadcast(&SignedEnvelope{
-		signature: signedEnvelope.Signature,
+		Signature: signedEnvelope.Signature,
 		Payload:   signedEnvelope.Payload,
 	})
 	if err != nil {
@@ -474,8 +474,8 @@ func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	}
 
 	transactionProposalResponse, err := SendTransactionProposal(&TransactionProposal{
-		signedProposal: signedProposal,
-		proposal:       proposal,
+		SignedProposal: signedProposal,
+		Proposal:       proposal,
 		TransactionID:  txID,
 	}, 0, targets)
 
