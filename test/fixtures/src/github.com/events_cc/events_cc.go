@@ -39,13 +39,13 @@ func (t *EventSender) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
 // Invoke function
 func (t *EventSender) invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	_ , args := stub.GetFunctionAndParameters()
+	_, args := stub.GetFunctionAndParameters()
 	if len(args) != 2 {
 		return shim.Error("Incorrect number of arguments. Expecting 2")
 	}
 	b, err := stub.GetState("noevents")
 	if err != nil {
-		return  shim.Error("Failed to get state")
+		return shim.Error("Failed to get state")
 	}
 	noevts, _ := strconv.Atoi(string(b))
 
@@ -82,6 +82,8 @@ func (t *EventSender) query(stub shim.ChaincodeStubInterface) pb.Response {
 	return shim.Success(b)
 }
 
+// Invoke (CC shim method)
+// Implements events testing
 func (t *EventSender) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	function, args := stub.GetFunctionAndParameters()
 

@@ -139,7 +139,7 @@ func generateTarGz(descriptors []*Descriptor) ([]byte, error) {
 		err := packEntry(tw, gw, v)
 		if err != nil {
 			closeStream(tw, gw)
-			return nil, fmt.Errorf("error from packEntry for %s error %s:", v.fqp, err.Error())
+			return nil, fmt.Errorf("error from packEntry for %s error %s", v.fqp, err.Error())
 		}
 	}
 	closeStream(tw, gw)

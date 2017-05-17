@@ -124,12 +124,11 @@ func (ccf *consumerClientFactory) newEventsClient(peerAddress string, certificat
 // NewEventHub ...
 func NewEventHub() EventHub {
 	chaincodeRegistrants := make(map[string][]*ChainCodeCBE)
-	blockRegistrants := make([]func(*common.Block), 0)
 	txRegistrants := make(map[string]func(string, pb.TxValidationCode, error))
 
 	eventHub := &eventHub{
 		chaincodeRegistrants: chaincodeRegistrants,
-		blockRegistrants:     blockRegistrants,
+		blockRegistrants:     nil,
 		txRegistrants:        txRegistrants,
 		interestedEvents:     nil,
 		eventsClientFactory:  &consumerClientFactory{},

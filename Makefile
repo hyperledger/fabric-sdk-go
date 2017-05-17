@@ -33,14 +33,16 @@
 all: unit-test integration-test
 
 depend:
-	go get -u github.com/axw/gocov/... && go get -u github.com/AlekSi/gocov-xml
-	go get -u github.com/client9/misspell/cmd/misspell
+	@test/scripts/dependencies.sh
 
-checks: depend license spelling
+checks: depend license lint spelling
 
 .PHONY: license
 license:
 	@test/scripts/check_license.sh
+
+lint:
+	@test/scripts/check_lint.sh
 
 spelling:
 	@test/scripts/check_spelling.sh
