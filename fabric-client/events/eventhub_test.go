@@ -159,8 +159,8 @@ func TestChaincodeEvent(t *testing.T) {
 	}
 
 	// Check CC event
-	if event.ChaincodeId != ccID {
-		t.Fatalf("Expecting chaincode ID [%s] but got [%s]", ccID, event.ChaincodeId)
+	if event.ChaincodeID != ccID {
+		t.Fatalf("Expecting chaincode ID [%s] but got [%s]", ccID, event.ChaincodeID)
 	}
 	if event.EventName != eventName {
 		t.Fatalf("Expecting event name [%s] but got [%s]", eventName, event.EventName)
@@ -213,14 +213,14 @@ func TestChaincodeBlockEvent(t *testing.T) {
 	if event.ChannelID != channelID {
 		t.Fatalf("Expecting channel ID [%s] but got [%s]", channelID, event.ChannelID)
 	}
-	if event.ChaincodeId != ccID {
-		t.Fatalf("Expecting chaincode ID [%s] but got [%s]", ccID, event.ChaincodeId)
+	if event.ChaincodeID != ccID {
+		t.Fatalf("Expecting chaincode ID [%s] but got [%s]", ccID, event.ChaincodeID)
 	}
 	if event.EventName != eventName {
 		t.Fatalf("Expecting event name [%s] but got [%s]", eventName, event.EventName)
 	}
-	if event.TxId == "" {
-		t.Fatalf("Expecting TxID [%s] but got [%s]", txID, event.TxId)
+	if event.TxID == "" {
+		t.Fatalf("Expecting TxID [%s] but got [%s]", txID, event.TxID)
 	}
 }
 

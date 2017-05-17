@@ -93,8 +93,8 @@ type eventHub struct {
 
 // ChaincodeEvent contains the current event data for the event handler
 type ChaincodeEvent struct {
-	ChaincodeId string
-	TxId        string
+	ChaincodeID string
+	TxID        string
 	EventName   string
 	Payload     []byte
 	ChannelID   string
@@ -562,8 +562,8 @@ func (eventHub *eventHub) notifyChaincodeRegistrants(channelID string, ccEvent *
 			callback := v.CallbackFunc
 			if callback != nil {
 				callback(&ChaincodeEvent{
-					ChaincodeId: ccEvent.ChaincodeId,
-					TxId:        ccEvent.TxId,
+					ChaincodeID: ccEvent.ChaincodeId,
+					TxID:        ccEvent.TxId,
 					EventName:   ccEvent.EventName,
 					Payload:     ccEvent.Payload,
 					ChannelID:   channelID,
