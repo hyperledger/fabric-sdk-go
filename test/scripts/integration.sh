@@ -1,4 +1,4 @@
-#!/bin/bash -exu
+#!/bin/bash
 
 # Packages to exclude
 PKGS=`go list github.com/hyperledger/fabric-sdk-go/test/... 2> /dev/null | \
@@ -9,7 +9,7 @@ cd ./test/fixtures && docker-compose up --force-recreate -d
 
 echo "Running integration tests..."
 cd ../../
-gocov test -ldflags "$GO_LDFLAGS" $PKGS -p 1 -timeout=10m | gocov-xml > integration-report.xml
+gocov test $PKGS -p 1 -timeout=10m | gocov-xml > integration-report.xml
 
 if [ $? -eq 0 ]
 then
