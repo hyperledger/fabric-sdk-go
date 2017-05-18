@@ -35,14 +35,22 @@ var TestBlock = &orderer.DeliverResponse{
 	},
 }
 
+var broadcastResponseSuccess = &orderer.BroadcastResponse{Status: common.Status_SUCCESS}
+var broadcastResponseError = &orderer.BroadcastResponse{Status: common.Status_INTERNAL_SERVER_ERROR}
+
 // MockBroadcastServer mock broadcast server
 type MockBroadcastServer struct {
-	DeliverError error
+	DeliverError                 error
+	BroadcastInternalServerError bool
 }
 
 // Broadcast mock broadcast
-func (m *MockBroadcastServer) Broadcast(orderer.AtomicBroadcast_BroadcastServer) error {
-	// Not implemented
+func (m *MockBroadcastServer) Broadcast(server orderer.AtomicBroadcast_BroadcastServer) error {
+	if m.BroadcastInternalServerError {
+		server.Send(broadcastResponseError)
+		return nil
+	}
+	server.Send(broadcastResponseSuccess)
 	return nil
 }
 
