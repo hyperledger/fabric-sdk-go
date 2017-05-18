@@ -41,6 +41,7 @@ const defaultTimeout = time.Second * 3
 type EventsClient interface {
 	RegisterAsync(ies []*ehpb.Interest) error
 	UnregisterAsync(ies []*ehpb.Interest) error
+	Unregister(ies []*ehpb.Interest) error
 	Recv() (*ehpb.Event, error)
 	Start() error
 	Stop() error
@@ -151,7 +152,7 @@ func (ec *eventsClient) UnregisterAsync(ies []*ehpb.Interest) error {
 }
 
 // unregister - unregisters interest in a event
-func (ec *eventsClient) unregister(ies []*ehpb.Interest) error {
+func (ec *eventsClient) Unregister(ies []*ehpb.Interest) error {
 	var err error
 	if err = ec.UnregisterAsync(ies); err != nil {
 		return err
