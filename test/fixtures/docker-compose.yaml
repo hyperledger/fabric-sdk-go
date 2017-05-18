@@ -2,7 +2,7 @@ version: '2'
 
 services:
   ca0:
-    image: hyperledger/fabric-ca
+    image: ${FABRIC_CA_FIXTURE_IMAGE}:${FABRIC_CA_FIXTURE_TAG}
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
     ports:
@@ -14,7 +14,7 @@ services:
     container_name: ca_peerOrg1
 
   ca1:
-    image: hyperledger/fabric-ca
+    image: ${FABRIC_CA_FIXTURE_IMAGE}:${FABRIC_CA_FIXTURE_TAG}
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
     ports:
@@ -27,7 +27,7 @@ services:
 
   orderer0:
     container_name: orderer0
-    image: hyperledger/fabric-orderer
+    image: ${FABRIC_ORDERER_FIXTURE_IMAGE}:${FABRIC_ORDERER_FIXTURE_TAG}
     environment:
       - GRPC_TRACE=all
       - GRPC_VERBOSITY=debug
@@ -53,7 +53,7 @@ services:
 
   peer0:
     container_name: peer0
-    image: hyperledger/fabric-peer
+    image: ${FABRIC_PEER_FIXTURE_IMAGE}:${FABRIC_PEER_FIXTURE_TAG}
     environment:
       - CORE_LOGGING_LEVEL=DEBUG
       - CORE_NEXT=true
@@ -62,6 +62,7 @@ services:
       - CORE_PEER_ENDORSER_ENABLED=true
       - CORE_PEER_LOCALMSPID=Org1MSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
+      - CORE_PEER_CHAINCODE_BUILDER=${FABRIC_BUILDER_FIXTURE_IMAGE}:${FABRIC_BUILDER_FIXTURE_TAG}      
       - CORE_PEER_GOSSIP_ORGLEADER=true
       - CORE_PEER_ADDRESS=peer0:7051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0:7051
@@ -85,10 +86,11 @@ services:
         - ./tls/peers/peer0:/etc/hyperledger/tls
     depends_on:
       - orderer0
+      - builder
 
   peer1:
     container_name: peer1
-    image: hyperledger/fabric-peer
+    image: ${FABRIC_PEER_FIXTURE_IMAGE}:${FABRIC_PEER_FIXTURE_TAG}
     environment:
       - CORE_NEXT=true
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
@@ -96,6 +98,7 @@ services:
       - CORE_PEER_ENDORSER_ENABLED=true
       - CORE_PEER_LOCALMSPID=Org1MSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
+      - CORE_PEER_CHAINCODE_BUILDER=${FABRIC_BUILDER_FIXTURE_IMAGE}:${FABRIC_BUILDER_FIXTURE_TAG}
       - CORE_PEER_GOSSIP_ORGLEADER=false
       - CORE_PEER_ADDRESS=peer1:7051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1:7051
@@ -120,10 +123,11 @@ services:
     depends_on:
       - orderer0
       - peer0
+      - builder
 
   peer2:
     container_name: peer2
-    image: hyperledger/fabric-peer
+    image: ${FABRIC_PEER_FIXTURE_IMAGE}:${FABRIC_PEER_FIXTURE_TAG}
     environment:
       - CORE_NEXT=true
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
@@ -131,6 +135,7 @@ services:
       - CORE_PEER_ENDORSER_ENABLED=true
       - CORE_PEER_LOCALMSPID=Org2MSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
+      - CORE_PEER_CHAINCODE_BUILDER=${FABRIC_BUILDER_FIXTURE_IMAGE}:${FABRIC_BUILDER_FIXTURE_TAG}      
       - CORE_PEER_GOSSIP_ORGLEADER=true
       - CORE_PEER_ADDRESS=peer2:7051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer2:7051
@@ -154,10 +159,11 @@ services:
         - ./tls/peers/peer2:/etc/hyperledger/tls
     depends_on:
       - orderer0
+      - builder
 
   peer3:
     container_name: peer3
-    image: hyperledger/fabric-peer
+    image: ${FABRIC_PEER_FIXTURE_IMAGE}:${FABRIC_PEER_FIXTURE_TAG}
     environment:
       - CORE_NEXT=true
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
@@ -165,6 +171,7 @@ services:
       - CORE_PEER_ENDORSER_ENABLED=true
       - CORE_PEER_LOCALMSPID=Org2MSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
+      - CORE_PEER_CHAINCODE_BUILDER=${FABRIC_BUILDER_FIXTURE_IMAGE}:${FABRIC_BUILDER_FIXTURE_TAG}      
       - CORE_PEER_GOSSIP_ORGLEADER=false
       - CORE_PEER_ADDRESS=peer3:7051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer3:7051
@@ -189,3 +196,7 @@ services:
     depends_on:
       - orderer0
       - peer2
+      - builder
+  # builder is only here to create a dependency on the image (not used as part of compose)
+  builder:
+    image: ${FABRIC_BUILDER_FIXTURE_IMAGE}:${FABRIC_BUILDER_FIXTURE_TAG}

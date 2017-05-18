@@ -12,9 +12,54 @@ repository, where active development is ongoing. Issue tracking is handled in [J
 
 ## Build and Test
 
+### Full Test Suite Using Default Configuration and Versions
+```
+# Before running the test suite, make sure you don't have stale invalid certificates from previous runs
+rm -rf /tmp/keystore/
+rm -rf /tmp/enroll_user/
+
+# Runs test suite
+make
+```
+### Running Unit Tests Manually
+```
+# In a package directory
+go test
+```
+
+### Running Integration Tests Manually
 You need:
 - A working fabric, and fabric-ca set up. It is recommended that you use the docker-compose file provided in `test/fixtures`. See steps below.
 - Customized settings in the `test/fixtures/config/config_test.yaml` in case your Hyperledger Fabric network is not running on `localhost` or is using different ports.
+
+*Testing with Fabric Images at Docker Hub*
+
+The test suite defaults to the latest compatible tag of fabric images at Docker Hub.
+The following commands starts Fabric:
+
+```
+# Start fabric
+cd $GOPATH/src/github.com/hyperledger/
+git clone https://github.com/hyperledger/fabric-sdk-go
+cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/
+docker-compose up --force-recreate
+```
+
+*Running Integration Tests*
+
+Fabric should now be running. In a diferent shell, run integration tests
+```
+# Before running the test, make sure you don't have stale invalid certificates from previous runs
+rm -rf /tmp/keystore/
+rm -rf /tmp/enroll_user/
+
+cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/integration/
+go test
+```
+
+*Testing with Local Build of Fabric (Advanced)*
+
+Alternatively you can build and run Fabric on your own box using the following commands:
 ```
 # Build fabric:
 cd $GOPATH/src/github.com/hyperledger/
@@ -30,21 +75,11 @@ cd $GOPATH/src/github.com/hyperledger/fabric-ca/
 git checkout v1.0.0-alpha
 make docker
 
-# Before running the test, make sure you don't have stale invalid certificates from previous runs
-rm -rf /tmp/keystore/
-rm -rf /tmp/enroll_user/
-
 # Start fabric
 cd $GOPATH/src/github.com/hyperledger/
 git clone https://github.com/hyperledger/fabric-sdk-go
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/
-docker-compose -f docker-compose.yaml up --force-recreate
-```
-
-Fabric should now be running. In a diferent shell, run integration tests
-```
-cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/integration/
-go test
+(source latest-env.sh && docker-compose up --force-recreate)
 ```
 
 ## Compatibility
