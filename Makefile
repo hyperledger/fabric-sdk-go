@@ -58,4 +58,6 @@ integration-test: clean depend
 integration-tests: integration-test
 
 clean:
+	rm -Rf /tmp/enroll_user /tmp/keystore /tmp/keyvaluestore
+	rm -f integration-report.xml report.xml
 	cd test/fixtures && docker-compose down

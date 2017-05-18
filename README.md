@@ -12,15 +12,15 @@ repository, where active development is ongoing. Issue tracking is handled in [J
 
 ## Build and Test
 
-### Full Test Suite Using Default Configuration and Versions
+### Runnng Full Test Suite Using Default Configuration and Versions
 ```
-# Before running the test suite, make sure you don't have stale invalid certificates from previous runs
-rm -rf /tmp/keystore/
-rm -rf /tmp/enroll_user/
-
 # Runs test suite
 make
+
+# Clean test suite run artifacts
+make clean
 ```
+
 ### Running Unit Tests Manually
 ```
 # In a package directory
@@ -49,9 +49,9 @@ docker-compose up --force-recreate
 
 Fabric should now be running. In a diferent shell, run integration tests
 ```
-# Before running the test, make sure you don't have stale invalid certificates from previous runs
-rm -rf /tmp/keystore/
-rm -rf /tmp/enroll_user/
+# Clean previous test run artifacts
+cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/
+make clean
 
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/integration/
 go test
