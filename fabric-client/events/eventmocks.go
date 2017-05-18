@@ -95,6 +95,11 @@ func (mec *mockEventClient) UnregisterAsync(ies []*pb.Interest) error {
 	return nil
 }
 
+// Unregister does not unregister anything anywhere but acts like all is well
+func (mec *mockEventClient) Unregister(ies []*pb.Interest) error {
+	return mec.UnregisterAsync(ies)
+}
+
 // Recv will return mock events sent to the event channel. Warning! This might block indefinitely
 func (mec *mockEventClient) Recv() (*pb.Event, error) {
 	event := <-mec.events

@@ -20,7 +20,6 @@ limitations under the License.
 package integration
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -31,7 +30,15 @@ import (
 )
 
 func TestEvents(t *testing.T) {
+	testSetup := initializeTests(t)
 
+	testFailedTx(t, testSetup)
+	testFailedTxErrorCode(t, testSetup)
+	testReconnectEventHub(t, testSetup)
+	testMultipleBlockEventCallbacks(t, testSetup)
+}
+
+func initializeTests(t *testing.T) BaseSetupImpl {
 	testSetup := BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
 		ChainID:         "testchannel",
@@ -54,22 +61,7 @@ func TestEvents(t *testing.T) {
 		t.Fatalf("instantiateCC return error: %v", err)
 	}
 
-	testFailedTx(t, testSetup)
-
-	testFailedTxErrorCode(t, testSetup)
-	// Test disconnect event hub
-	testSetup.EventHub.Disconnect()
-	if testSetup.EventHub.IsConnected() {
-		t.Fatalf("Failed to disconnect event hub")
-	}
-
-	// Reconnect event hub
-	if err := testSetup.EventHub.Connect(); err != nil {
-		t.Fatalf("Failed to connect event hub")
-	}
-
-	testMultipleBlockEventCallbacks(t, testSetup)
-
+	return testSetup
 }
 
 func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
@@ -121,11 +113,9 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 			t.Fatalf("invoke Didn't receive block event for txid1(%s) or txid1(%s)", tx1, tx2)
 		}
 	}
-
 }
 
 func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
-
 	// Arguments for events CC
 	var args []string
 	args = append(args, "invoke")
@@ -190,7 +180,7 @@ func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
 			t.Fatalf("Received success for second invoke")
 		case <-fail2:
 			// success
-			fmt.Println("Received error validation Code ", errorValidationCode)
+			t.Logf("Received error validation code %s", errorValidationCode.String())
 			if errorValidationCode.String() != "MVCC_READ_CONFLICT" {
 				t.Fatalf("Expected error code MVCC_READ_CONFLICT")
 			}
@@ -202,8 +192,20 @@ func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
 
 }
 
-func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
+func testReconnectEventHub(t *testing.T, testSetup BaseSetupImpl) {
+	// Test disconnect event hub
+	testSetup.EventHub.Disconnect()
+	if testSetup.EventHub.IsConnected() {
+		t.Fatalf("Failed to disconnect event hub")
+	}
 
+	// Reconnect event hub
+	if err := testSetup.EventHub.Connect(); err != nil {
+		t.Fatalf("Failed to connect event hub")
+	}
+}
+
+func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 	// Arguments for events CC
 	var args []string
 	args = append(args, "invoke")
@@ -213,13 +215,13 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 	// Create and register test callback that will be invoked upon block event
 	test := make(chan bool)
 	testSetup.EventHub.RegisterBlockEvent(func(block *common.Block) {
-		fmt.Println("Invoked test callback on block event")
+		t.Logf("Received test callback on block event")
 		test <- true
 	})
 
 	tpResponses, tx, err := fcUtil.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
 	if err != nil {
-		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
+		t.Fatalf("CreateAndSendTransactionProposal returned error: %v \n", err)
 	}
 
 	// Register tx for commit/block event(s)
@@ -228,7 +230,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 
 	_, err = fcUtil.CreateAndSendTransaction(testSetup.Chain, tpResponses)
 	if err != nil {
-		t.Fatalf("First invoke failed err: %v", err)
+		t.Fatalf("CreateAndSendTransaction failed with error: %v", err)
 	}
 
 	for i := 0; i < 2; i++ {
@@ -237,7 +239,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 		case <-fail:
 		case <-test:
 		case <-time.After(time.Second * 30):
-			t.Fatalf("invoke Didn't receive test callback event")
+			t.Fatalf("Didn't receive test callback event")
 		}
 	}
 

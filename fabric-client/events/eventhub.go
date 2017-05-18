@@ -164,8 +164,9 @@ func (eventHub *eventHub) Disconnect() {
 	}
 
 	// Unregister interests with server and stop the stream
-	eventHub.client.UnregisterAsync(eventHub.interestedEvents)
+	eventHub.client.Unregister(eventHub.interestedEvents)
 	eventHub.client.Stop()
+
 	eventHub.connected = false
 }
 
@@ -175,6 +176,8 @@ func (eventHub *eventHub) RegisterBlockEvent(callback func(*common.Block)) {
 	defer eventHub.mtx.Unlock()
 
 	eventHub.blockRegistrants = append(eventHub.blockRegistrants, callback)
+
+	// Register interest for blocks (only declare interest once, so do this for the first registrant)
 	if len(eventHub.blockRegistrants) == 1 {
 		eventHub.interestedEvents = append(eventHub.interestedEvents, &pb.Interest{EventType: pb.EventType_BLOCK})
 	}
@@ -195,6 +198,7 @@ func (eventHub *eventHub) UnregisterBlockEvent(callback func(*common.Block)) {
 		}
 	}
 
+	// Unregister interest for blocks if there are no more registrants
 	if len(eventHub.blockRegistrants) < 1 {
 		blockEventInterest := pb.Interest{EventType: pb.EventType_BLOCK}
 		eventHub.client.UnregisterAsync([]*pb.Interest{&blockEventInterest})

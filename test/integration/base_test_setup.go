@@ -86,6 +86,16 @@ func (setup *BaseSetupImpl) Initialize() error {
 		return fmt.Errorf("CreateAndJoinChannel return error: %v", err)
 	}
 
+	if err := setup.setupEventHub(); err != nil {
+		return err
+	}
+
+	setup.Initialized = true
+
+	return nil
+}
+
+func (setup *BaseSetupImpl) setupEventHub() error {
 	eventHub, err := getEventHub()
 	if err != nil {
 		return err
@@ -97,8 +107,6 @@ func (setup *BaseSetupImpl) Initialize() error {
 		}
 	}
 	setup.EventHub = eventHub
-
-	setup.Initialized = true
 
 	return nil
 }
