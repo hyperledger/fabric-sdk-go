@@ -286,7 +286,7 @@ func (c *client) CreateChannel(request *CreateChannelRequest) (Chain, error) {
 			err.Error())
 	}
 	// Send request
-	err = request.Orderer.SendBroadcast(&SignedEnvelope{
+	err, _ = request.Orderer.SendBroadcast(&SignedEnvelope{
 		Signature: signedEnvelope.Signature,
 		Payload:   signedEnvelope.Payload,
 	})

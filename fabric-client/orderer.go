@@ -22,8 +22,6 @@ package fabricclient
 import (
 	"crypto/x509"
 	"fmt"
-	"io"
-	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/config"
@@ -38,7 +36,7 @@ import (
 // HFC sends a block of transactions of endorsed proposals requiring ordering.
 type Orderer interface {
 	GetURL() string
-	SendBroadcast(envelope *SignedEnvelope) error
+	SendBroadcast(envelope *SignedEnvelope) (error, *common.Status)
 	SendDeliver(envelope *SignedEnvelope) (chan *common.Block, chan error)
 }
 
@@ -81,33 +79,39 @@ func (o *orderer) GetURL() string {
 }
 
 // SendBroadcast Send the created transaction to Orderer.
-func (o *orderer) SendBroadcast(envelope *SignedEnvelope) error {
+func (o *orderer) SendBroadcast(envelope *SignedEnvelope) (error, *common.Status) {
 	conn, err := grpc.Dial(o.url, o.grpcDialOption...)
 	if err != nil {
-		return err
+		return err, nil
 	}
 	defer conn.Close()
 
 	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Broadcast(context.Background())
 	if err != nil {
-		return fmt.Errorf("Error Create NewAtomicBroadcastClient %v", err)
+		return fmt.Errorf("Error Create NewAtomicBroadcastClient %v", err), nil
 	}
 	done := make(chan bool)
 	var broadcastErr error
+	var broadcastStatus *common.Status = nil
+
 	go func() {
 		for {
 			broadcastResponse, err := broadcastStream.Recv()
 			logger.Debugf("Orderer.broadcastStream - response:%v, error:%v\n", broadcastResponse, err)
 			if err != nil {
-				if strings.Contains(err.Error(), io.EOF.Error()) {
-					done <- true
-					return
-				}
 				broadcastErr = fmt.Errorf("error broadcast response : %v", err)
-				continue
+				done <- true
+				return
+			}
+			broadcastStatus = &broadcastResponse.Status
+			if broadcastResponse.Status == common.Status_SUCCESS {
+				done <- true
+				return
 			}
 			if broadcastResponse.Status != common.Status_SUCCESS {
 				broadcastErr = fmt.Errorf("broadcast response is not success : %v", broadcastResponse.Status)
+				done <- true
+				return
 			}
 		}
 	}()
@@ -115,11 +119,11 @@ func (o *orderer) SendBroadcast(envelope *SignedEnvelope) error {
 		Payload:   envelope.Payload,
 		Signature: envelope.Signature,
 	}); err != nil {
-		return fmt.Errorf("Failed to send a envelope to orderer: %v", err)
+		return fmt.Errorf("Failed to send a envelope to orderer: %v", err), nil
 	}
 	broadcastStream.CloseSend()
 	<-done
-	return broadcastErr
+	return broadcastErr, broadcastStatus
 }
 
 // SendDeliver sends a deliver request to the ordering service and returns the
@@ -175,6 +179,12 @@ func (o *orderer) SendDeliver(envelope *SignedEnvelope) (chan *common.Block,
 					close(responses)
 					return
 				}
+				if t.Status != common.Status_SUCCESS {
+					errors <- fmt.Errorf("Got error status from ordering service: %s",
+						t.Status)
+					return
+				}
+
 			// Response is a requested block
 			case *ab.DeliverResponse_Block:
 				logger.Debug("Received block from ordering service")

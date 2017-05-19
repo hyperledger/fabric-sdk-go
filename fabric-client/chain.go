@@ -1181,7 +1181,7 @@ func (c *chain) BroadcastEnvelope(envelope *SignedEnvelope) ([]*TransactionRespo
 			var transactionResponse *TransactionResponse
 
 			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.GetURL())
-			if err := orderer.SendBroadcast(envelope); err != nil {
+			if err, _ := orderer.SendBroadcast(envelope); err != nil {
 				logger.Debugf("Receive Error Response from orderer :%v\n", err)
 				transactionResponse = &TransactionResponse{orderer.GetURL(),
 					fmt.Errorf("Error calling orderer '%s':  %s", orderer.GetURL(), err)}

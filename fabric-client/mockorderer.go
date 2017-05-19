@@ -37,8 +37,8 @@ func (o *mockOrderer) GetURL() string {
 }
 
 // SendBroadcast mocks sending a broadcast by sending nothing nowhere
-func (o *mockOrderer) SendBroadcast(envelope *SignedEnvelope) error {
-	return o.MockError
+func (o *mockOrderer) SendBroadcast(envelope *SignedEnvelope) (error, *common.Status) {
+	return o.MockError, nil
 }
 
 // SendBroadcast mocks sending a deliver request to the ordering service
