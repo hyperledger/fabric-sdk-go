@@ -10,18 +10,63 @@ This SDK is targeted both towards the external access to a Hyperledger Fabric bl
 This is a **read-only mirror** of the formal [Gerrit](https://gerrit.hyperledger.org/r/#/admin/projects/fabric-sdk-go)
 repository, where active development is ongoing. Issue tracking is handled in [Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa?projectKey=FAB&rapidView=7&view=planning)
 
-## Build and Test
-
-### Runnng Full Test Suite Using Default Configuration and Versions
+## Obtaining the SDK
 ```
-# Runs test suite
+go get -u github.com/hyperledger/fabric-sdk-go/...
+```
+
+You're good to go, happy coding!
+
+### Compatibility
+This client was last tested and found to be compatible with the following Hyperledger Fabric commit levels:
+- fabric: v1.0.0-alpha
+- fabric-ca: v1.0.0-alpha
+
+### Running the Test Suite
+
+```
+# In the Fabric SDK Go directory
+cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/
+
+# Running test suite
 make
 
 # Clean test suite run artifacts
 make clean
 ```
 
-### Running Unit Tests Manually
+## Contributing to the Go SDK
+If you want to contribute to the Go SDK, please run the test suite and submit patches to the Gerrit git repostory for review. For general guidelines, please refer to the Fabric project's [contribution page](http://hyperledger-fabric.readthedocs.io/en/latest/CONTRIBUTING.html).
+
+You need:
+- Go
+- Make
+- Docker
+- Docker Compose
+- Git
+
+### Gerrit Git Repository
+To contribute patches, you will need to clone (or add a remote) from [Gerrit](https://gerrit.hyperledger.org/r/#/admin/projects/fabric-sdk-go) with authentication.
+
+### Running Portion of Test Suite
+```
+# In the Fabric SDK Go directory
+cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/
+
+# Ensure dependencies are installed
+make depend
+
+# Running code checks (license, linting, spelling, etc)
+make check
+
+# Running all unit tests
+make unit-test
+
+# Running all integration tests
+make integration-test
+```
+
+### Running Package Unit Tests Manually
 ```
 # In a package directory
 go test
@@ -29,7 +74,7 @@ go test
 
 ### Running Integration Tests Manually
 You need:
-- A working fabric, and fabric-ca set up. It is recommended that you use the docker-compose file provided in `test/fixtures`. See steps below.
+- A working fabric, and fabric-ca set up. It is recommended that you use the docker-compose file provided in `test/fixtures`. It is also recommended that you use the default .env settings provided in `test/fixtures`. See steps below.
 - Customized settings in the `test/fixtures/config/config_test.yaml` in case your Hyperledger Fabric network is not running on `localhost` or is using different ports.
 
 *Testing with Fabric Images at Docker Hub*
@@ -47,12 +92,15 @@ docker-compose up --force-recreate
 
 *Running Integration Tests*
 
-Fabric should now be running. In a diferent shell, run integration tests
+Fabric should now be running. In a different shell, run integration tests
 ```
-# Clean previous test run artifacts
+# In the Fabric SDK Go directory
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/
+
+# Clean previous test run artifacts
 make clean
 
+# In the Fabric SDK integration tests directory
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/integration/
 go test
 ```
@@ -75,15 +123,7 @@ cd $GOPATH/src/github.com/hyperledger/fabric-ca/
 git checkout v1.0.0-alpha
 make docker
 
-# Start fabric
-cd $GOPATH/src/github.com/hyperledger/
-git clone https://github.com/hyperledger/fabric-sdk-go
+# Start fabric - latest-env.sh overrides the default docker tags in .env
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/
 (source latest-env.sh && docker-compose up --force-recreate)
 ```
-
-## Compatibility
-
-This client was last tested and found to be compatible with the following Hyperledger Fabric commit levels:
-- fabric: v1.0.0-alpha
-- fabric-ca: v1.0.0-alpha
