@@ -18,8 +18,8 @@
 # limitations under the License.
 #
 
-# Packages to exclude
-PKGS=`go list github.com/hyperledger/fabric-sdk-go/test/... 2> /dev/null | \
+# Packages to include in test run
+PKGS=`go list github.com/hyperledger/fabric-sdk-go/test/integration/... 2> /dev/null | \
                                                   grep -v /vendor/`
 
 # Detect Hyperledger CI environment
