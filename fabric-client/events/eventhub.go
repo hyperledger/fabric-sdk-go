@@ -58,7 +58,6 @@ type EventHub interface {
 // The EventHubExt interface allows extensions of the SDK to add functionality to EventHub overloads.
 type EventHubExt interface {
 	SetInterests(block bool)
-	AddChaincodeInterest(ChaincodeID string, EventName string)
 }
 
 // eventClientFactory creates an EventsClient instance
@@ -210,17 +209,48 @@ func (eventHub *eventHub) UnregisterBlockEvent(callback func(*common.Block)) {
 	}
 }
 
-// AddChaincodeInterest adds interest for specific CHAINCODE events.
-func (eventHub *eventHub) AddChaincodeInterest(ChaincodeID string, EventName string) {
-	eventHub.interestedEvents = append(eventHub.interestedEvents, &pb.Interest{
+// addChaincodeInterest adds interest for specific CHAINCODE events.
+func (eventHub *eventHub) addChaincodeInterest(ChaincodeId string, EventName string) {
+	ccInterest := &pb.Interest{
 		EventType: pb.EventType_CHAINCODE,
 		RegInfo: &pb.Interest_ChaincodeRegInfo{
 			ChaincodeRegInfo: &pb.ChaincodeReg{
-				ChaincodeId: ChaincodeID,
+				ChaincodeId: ChaincodeId,
 				EventName:   EventName,
 			},
 		},
-	})
+	}
+
+	eventHub.interestedEvents = append(eventHub.interestedEvents, ccInterest)
+
+	if eventHub.IsConnected() {
+		eventHub.client.RegisterAsync([]*pb.Interest{ccInterest})
+	}
+
+}
+
+// removeChaincodeInterest remove interest for specific CHAINCODE event
+func (eventHub *eventHub) removeChaincodeInterest(ChaincodeId string, EventName string) {
+	ccInterest := &pb.Interest{
+		EventType: pb.EventType_CHAINCODE,
+		RegInfo: &pb.Interest_ChaincodeRegInfo{
+			ChaincodeRegInfo: &pb.ChaincodeReg{
+				ChaincodeId: ChaincodeId,
+				EventName:   EventName,
+			},
+		},
+	}
+
+	for i, v := range eventHub.interestedEvents {
+		if v.EventType == ccInterest.EventType && *(v.GetChaincodeRegInfo()) == *(ccInterest.GetChaincodeRegInfo()) {
+			eventHub.interestedEvents = append(eventHub.interestedEvents[:i], eventHub.interestedEvents[i+1:]...)
+		}
+	}
+
+	if eventHub.IsConnected() {
+		eventHub.client.UnregisterAsync([]*pb.Interest{ccInterest})
+	}
+
 }
 
 // SetPeerAddr ...
@@ -265,6 +295,10 @@ func (eventHub *eventHub) Connect() error {
 
 	if eventHub.peerAddr == "" {
 		return fmt.Errorf("eventHub.peerAddr is empty")
+	}
+
+	if eventHub.interestedEvents == nil || len(eventHub.interestedEvents) == 0 {
+		return fmt.Errorf("You must register for at least one event before connecting")
 	}
 
 	if eventHub.client == nil {
@@ -346,6 +380,8 @@ func (eventHub *eventHub) RegisterChaincodeEvent(ccid string, eventname string, 
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
 
+	eventHub.addChaincodeInterest(ccid, eventname)
+
 	cbe := ChainCodeCBE{CCID: ccid, EventNameFilter: eventname, CallbackFunc: callback}
 	cbeArray := eventHub.chaincodeRegistrants[ccid]
 	if cbeArray == nil && len(cbeArray) <= 0 {
@@ -368,6 +404,8 @@ func (eventHub *eventHub) RegisterChaincodeEvent(ccid string, eventname string, 
 func (eventHub *eventHub) UnregisterChaincodeEvent(cbe *ChainCodeCBE) {
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
+
+	eventHub.removeChaincodeInterest(cbe.CCID, cbe.EventNameFilter)
 
 	cbeArray := eventHub.chaincodeRegistrants[cbe.CCID]
 	if len(cbeArray) <= 0 {

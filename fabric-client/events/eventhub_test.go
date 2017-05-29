@@ -343,3 +343,49 @@ func TestRegisterBlockEvent(t *testing.T) {
 func testCallback(block *common.Block) {
 	fmt.Println("testCallback called on block")
 }
+
+func TestRegisterChaincodeEvent(t *testing.T) {
+	eventHub, _ := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+
+	// Interest in block event is registered by default
+	if len(eventHub.interestedEvents) != 1 {
+		t.Fatalf("Transaction callback should be registered by default")
+	}
+
+	cbe := eventHub.RegisterChaincodeEvent("testCC", "eventID", testChaincodeCallback)
+
+	if len(eventHub.interestedEvents) != 2 {
+		t.Fatalf("Failed to register interest for CC event")
+	}
+
+	interest := eventHub.interestedEvents[1]
+
+	if interest.EventType != pb.EventType_CHAINCODE {
+		t.Fatalf("Expecting chaincode event type, got (%v)", interest.EventType)
+	}
+
+	ccRegInfo := interest.GetChaincodeRegInfo()
+
+	if ccRegInfo.ChaincodeId != "testCC" {
+		t.Fatalf("Expecting chaincode id (%s), got (%s)", "testCC", ccRegInfo.ChaincodeId)
+	}
+
+	if ccRegInfo.EventName != "eventID" {
+		t.Fatalf("Expecting event id (%s), got (%s)", "eventID", ccRegInfo.EventName)
+	}
+
+	eventHub.UnregisterChaincodeEvent(cbe)
+
+	if len(eventHub.interestedEvents) != 1 {
+		t.Fatalf("Expecting one registered interest, got %d", len(eventHub.interestedEvents))
+	}
+
+}
+
+// private test callback to be executed on chaincode event
+func testChaincodeCallback(ce *ChaincodeEvent) {
+	fmt.Printf("Received CC event: %v\n", ce)
+}
