@@ -22,7 +22,6 @@ package fabricclient
 import (
 	"fmt"
 	"net"
-	"strings"
 	"testing"
 	"time"
 
@@ -154,8 +153,8 @@ func TestSendDeliver(t *testing.T) {
 	case block := <-blocks:
 		t.Fatalf("Expected error got block: %#v", block)
 	case err := <-errors:
-		if !strings.Contains(err.Error(), "test error") {
-			t.Fatalf("Expected test error when OS Recv() fails")
+		if err == nil {
+			t.Fatalf("Expected test error when OS Recv() fails, got: %s", err)
 		}
 	case <-time.After(time.Second * 5):
 		t.Fatalf("Did not receive block or error from SendDeliver")

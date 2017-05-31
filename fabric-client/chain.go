@@ -63,6 +63,7 @@ type Chain interface {
 	AddPeer(peer Peer)
 	RemovePeer(peer Peer)
 	GetPeers() []Peer
+	GetAnchorPeers() []OrgAnchorPeer
 	SetPrimaryPeer(peer Peer) error
 	GetPrimaryPeer() Peer
 	AddOrderer(orderer Orderer)
@@ -108,7 +109,7 @@ type chain struct {
 	clientContext   Client
 	primaryPeer     Peer
 	mspManager      msp.MSPManager
-	anchorPeers     []*orgAnchorPeer
+	anchorPeers     []*OrgAnchorPeer
 }
 
 // The TransactionProposal object to be send to the endorsers
@@ -184,15 +185,15 @@ type JoinChannelRequest struct {
 // configItems contains the configuration values retrieved from the Orderer Service
 type configItems struct {
 	msps        []*mb.MSPConfig
-	anchorPeers []*orgAnchorPeer
+	anchorPeers []*OrgAnchorPeer
 	orderers    []string
 }
 
-// orgAnchorPeer contains inormation about a peer
-type orgAnchorPeer struct {
-	org  string
-	host string
-	port int32
+// OrgAnchorPeer contains information about an anchor peer on this chain
+type OrgAnchorPeer struct {
+	Org  string
+	Host string
+	Port int32
 }
 
 // NewChain ...
@@ -295,6 +296,17 @@ func (c *chain) GetPeers() []Peer {
 		peersArray = append(peersArray, v)
 	}
 	return peersArray
+}
+
+// GetAnchorPeers returns the anchor peers for this chain.
+// Note: chain.Initialize() must be called first to retrieve anchor peers
+func (c *chain) GetAnchorPeers() []OrgAnchorPeer {
+	anchors := []OrgAnchorPeer{}
+	for _, anchor := range c.anchorPeers {
+		anchors = append(anchors, *anchor)
+	}
+
+	return anchors
 }
 
 /**
@@ -910,10 +922,6 @@ func SendTransactionProposal(proposal *TransactionProposal, retry int, targetPee
 					Proposal: proposal,
 				}
 			} else {
-				prp1, _ := protos_utils.GetProposalResponsePayload(proposalResponse.ProposalResponse.Payload)
-				act1, _ := protos_utils.GetChaincodeAction(prp1.Extension)
-				logger.Debugf("%s ProposalResponsePayload Extension ChaincodeAction Results\n%s\n", peer.GetURL(), string(act1.Results))
-
 				logger.Debugf("Receive Proposal ChaincodeActionResponse :%v\n", proposalResponse)
 			}
 
@@ -1440,7 +1448,7 @@ func (c *chain) getChannelConfig() (*common.ConfigEnvelope, error) {
 func (c *chain) loadConfigEnvelope(config *common.ConfigEnvelope) (*configItems, error) {
 	configItems := &configItems{
 		msps:        []*mb.MSPConfig{},
-		anchorPeers: []*orgAnchorPeer{},
+		anchorPeers: []*OrgAnchorPeer{},
 		orderers:    []string{},
 	}
 	err := loadConfigGroup(configItems, config.Config.ChannelGroup, "base", "", true, false)
@@ -1490,7 +1498,7 @@ func (c *chain) loadConfigUpdateEnvelope(data []byte) (*configItems, error) {
 
 	configItems := &configItems{
 		msps:        []*mb.MSPConfig{},
-		anchorPeers: []*orgAnchorPeer{},
+		anchorPeers: []*OrgAnchorPeer{},
 		orderers:    []string{},
 	}
 
@@ -1566,9 +1574,9 @@ func loadConfigValue(configItems *configItems, key string, configValue *common.C
 
 		if len(anchorPeers.AnchorPeers) > 0 {
 			for _, anchorPeer := range anchorPeers.AnchorPeers {
-				oap := &orgAnchorPeer{org: org, host: anchorPeer.Host, port: anchorPeer.Port}
+				oap := &OrgAnchorPeer{Org: org, Host: anchorPeer.Host, Port: anchorPeer.Port}
 				configItems.anchorPeers = append(configItems.anchorPeers, oap)
-				logger.Debugf("loadConfigValue - %s   - AnchorPeer :: %s:%d:%s", groupName, oap.host, oap.port, oap.org)
+				logger.Debugf("loadConfigValue - %s   - AnchorPeer :: %s:%d:%s", groupName, oap.Host, oap.Port, oap.Org)
 			}
 		}
 		break

@@ -183,7 +183,7 @@ func CreateAndJoinChannel(client fabricClient.Client, chain fabricClient.Chain, 
 	}
 
 	req := &fabricClient.JoinChannelRequest{
-		Targets: []fabricClient.Peer{chain.GetPrimaryPeer()}, TxID: txID, Nonce: nonce}
+		Targets: chain.GetPeers(), TxID: txID, Nonce: nonce}
 	if err = chain.JoinChannel(req); err != nil {
 		return err
 	}
