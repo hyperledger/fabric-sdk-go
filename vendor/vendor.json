@@ -542,6 +542,12 @@
 			"revisionTime": "2017-03-15T19:19:41Z"
 		},
 		{
+			"checksumSHA1": "t86JgxkVo1XGuc0oELi0uchNHGY=",
+			"path": "github.com/hyperledger/fabric/common/ledger/util",
+			"revision": "78982f07447f2835add0af508a822322f8b4df66",
+			"revisionTime": "2017-04-26T16:37:14Z"
+		},
+		{
 			"checksumSHA1": "xaeBVESqbEslblpXcO0BYO1A2W4=",
 			"path": "github.com/hyperledger/fabric/common/metadata",
 			"revision": "fa3d88cde177750804c7175ae000e0923199735c",
@@ -612,6 +618,18 @@
 			"path": "github.com/hyperledger/fabric/core/crypto/primitives",
 			"revision": "fa3d88cde177750804c7175ae000e0923199735c",
 			"revisionTime": "2017-03-15T19:19:41Z"
+		},
+		{
+			"checksumSHA1": "CVGorjV5Y4pvWY8GuXwDDYcUzSU=",
+			"path": "github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwset",
+			"revision": "78982f07447f2835add0af508a822322f8b4df66",
+			"revisionTime": "2017-04-26T16:37:14Z"
+		},
+		{
+			"checksumSHA1": "XiZ03foYOI7HhXEkBKkJ/vLbHgY=",
+			"path": "github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version",
+			"revision": "78982f07447f2835add0af508a822322f8b4df66",
+			"revisionTime": "2017-04-26T16:37:14Z"
 		},
 		{
 			"checksumSHA1": "Gk77xKSTQOER+063VjQQmoGSdhc=",
