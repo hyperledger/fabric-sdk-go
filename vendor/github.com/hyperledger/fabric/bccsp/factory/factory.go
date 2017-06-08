@@ -20,7 +20,7 @@ import (
 	"sync"
 
 	"github.com/hyperledger/fabric/bccsp"
-	"github.com/op/go-logging"
+	"github.com/hyperledger/fabric/common/flogging"
 )
 
 var (
@@ -41,7 +41,7 @@ var (
 	// Factories' Initialization Error
 	factoriesInitError error
 
-	logger = logging.MustGetLogger("BCCSP_FACTORY")
+	logger = flogging.MustGetLogger("bccsp")
 )
 
 // BCCSPFactory is used to get instances of the BCCSP interface.
@@ -75,56 +75,6 @@ func GetDefault() bccsp.BCCSP {
 // GetBCCSP returns a BCCSP created according to the options passed in input.
 func GetBCCSP(name string) (bccsp.BCCSP, error) {
 	return bccspMap[name], nil
-}
-
-// InitFactories must be called before using factory interfaces
-// It is acceptable to call with config = nil, in which case
-// some defaults will get used
-// Error is returned only if defaultBCCSP cannot be found
-func InitFactories(config *FactoryOpts) error {
-	factoriesInitOnce.Do(func() {
-		// Take some precautions on default opts
-		if config == nil {
-			config = &DefaultOpts
-		}
-
-		if config.ProviderName == "" {
-			config.ProviderName = "SW"
-		}
-
-		if config.SwOpts == nil {
-			config.SwOpts = DefaultOpts.SwOpts
-		}
-
-		// Initialize factories map
-		bccspMap = make(map[string]bccsp.BCCSP)
-
-		// Software-Based BCCSP
-		if config.SwOpts != nil {
-			f := &SWFactory{}
-			err := initBCCSP(f, config)
-			if err != nil {
-				factoriesInitError = fmt.Errorf("[%s]", err)
-			}
-		}
-
-		// PKCS11-Based BCCSP
-		if config.Pkcs11Opts != nil {
-			f := &PKCS11Factory{}
-			err := initBCCSP(f, config)
-			if err != nil {
-				factoriesInitError = fmt.Errorf("%s\n[%s]", factoriesInitError, err)
-			}
-		}
-
-		var ok bool
-		defaultBCCSP, ok = bccspMap[config.ProviderName]
-		if !ok {
-			factoriesInitError = fmt.Errorf("%s\nCould not find default `%s` BCCSP", factoriesInitError, config.ProviderName)
-		}
-	})
-
-	return factoriesInitError
 }
 
 func initBCCSP(f BCCSPFactory, config *FactoryOpts) error {

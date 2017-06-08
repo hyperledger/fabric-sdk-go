@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/cloudflare/cfssl/certdb"
@@ -101,11 +102,14 @@ func (d *CertDBAccessor) InsertCertificate(cr certdb.CertificateRecord) error {
 	ip.SetString(cr.Serial, 10) //base 10
 
 	serial := util.GetSerialAsHex(ip)
+	aki := strings.TrimLeft(cr.AKI, "0")
+
+	log.Debug("Saved serial number as hex ", serial)
 
 	var record = new(CertRecord)
 	record.ID = id
 	record.Serial = serial
-	record.AKI = cr.AKI
+	record.AKI = aki
 	record.CALabel = cr.CALabel
 	record.Status = cr.Status
 	record.Reason = cr.Reason

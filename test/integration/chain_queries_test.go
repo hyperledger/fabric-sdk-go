@@ -29,10 +29,10 @@ import (
 
 func TestChainQueries(t *testing.T) {
 
-	testSetup := BaseSetupImpl{
+	testSetup := &BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
-		ChainID:         "testchannel",
-		ChannelConfig:   "../fixtures/channel/testchannel.tx",
+		ChainID:         "mychannel",
+		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}
 
@@ -41,6 +41,7 @@ func TestChainQueries(t *testing.T) {
 	}
 
 	chain := testSetup.Chain
+	client := testSetup.Client
 
 	if err := testSetup.InstallAndInstantiateExampleCC(); err != nil {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
@@ -73,9 +74,9 @@ func TestChainQueries(t *testing.T) {
 
 	testQueryBlock(t, chain)
 
-	testQueryChannels(t, chain)
+	testQueryChannels(t, chain, client)
 
-	testInstalledChaincodes(t, chain)
+	testInstalledChaincodes(t, chain, client)
 
 	testQueryByChaincode(t, chain)
 
@@ -84,7 +85,7 @@ func TestChainQueries(t *testing.T) {
 
 }
 
-func changeBlockState(testSetup BaseSetupImpl) (string, error) {
+func changeBlockState(testSetup *BaseSetupImpl) (string, error) {
 
 	value, err := testSetup.QueryAsset()
 	if err != nil {
@@ -175,12 +176,12 @@ func testQueryBlock(t *testing.T, chain fabricClient.Chain) {
 
 }
 
-func testQueryChannels(t *testing.T, chain fabricClient.Chain) {
+func testQueryChannels(t *testing.T, chain fabricClient.Chain, client fabricClient.Client) {
 
 	// Our target will be primary peer on this channel
 	target := chain.GetPrimaryPeer()
 	fmt.Printf("****QueryChannels for %s\n", target.GetURL())
-	channelQueryResponse, err := testSetup.Client.QueryChannels(target)
+	channelQueryResponse, err := client.QueryChannels(target)
 	if err != nil {
 		t.Fatalf("QueryChannels return error: %v", err)
 	}
@@ -191,14 +192,14 @@ func testQueryChannels(t *testing.T, chain fabricClient.Chain) {
 
 }
 
-func testInstalledChaincodes(t *testing.T, chain fabricClient.Chain) {
+func testInstalledChaincodes(t *testing.T, chain fabricClient.Chain, client fabricClient.Client) {
 
 	// Our target will be primary peer on this channel
 	target := chain.GetPrimaryPeer()
 
 	fmt.Printf("****QueryInstalledChaincodes for %s\n", target.GetURL())
 	// Test Query Installed chaincodes for target (primary)
-	chaincodeQueryResponse, err := testSetup.Client.QueryInstalledChaincodes(target)
+	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(target)
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
@@ -233,7 +234,7 @@ func testQueryByChaincode(t *testing.T, chain fabricClient.Chain) {
 	// Test valid targets
 	targets := chain.GetPeers()
 
-	queryResponses, err := chain.QueryByChaincode("lccc", []string{"getinstalledchaincodes"}, targets)
+	queryResponses, err := chain.QueryByChaincode("lscc", []string{"getinstalledchaincodes"}, targets)
 	if err != nil {
 		t.Fatalf("QueryByChaincode failed %s", err)
 	}
@@ -260,11 +261,17 @@ func testQueryByChaincode(t *testing.T, chain fabricClient.Chain) {
 	invalidTargets = append(invalidTargets, secondInvalidTarget)
 
 	// Add invalid targets to chain otherwise validation will fail
-	chain.AddPeer(firstInvalidTarget)
-	chain.AddPeer(secondInvalidTarget)
+	err = chain.AddPeer(firstInvalidTarget)
+	if err != nil {
+		t.Fatalf("Error adding peer: %v", err)
+	}
+	err = chain.AddPeer(secondInvalidTarget)
+	if err != nil {
+		t.Fatalf("Error adding peer: %v", err)
+	}
 
 	// Test valid + invalid targets
-	queryResponses, err = chain.QueryByChaincode("lccc", []string{"getinstalledchaincodes"}, invalidTargets)
+	queryResponses, err = chain.QueryByChaincode("lscc", []string{"getinstalledchaincodes"}, invalidTargets)
 	if err == nil {
 		t.Fatalf("QueryByChaincode failed to return error for non-existing target")
 	}

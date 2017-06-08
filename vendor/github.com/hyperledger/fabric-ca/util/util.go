@@ -19,6 +19,7 @@ package util
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
@@ -37,14 +38,11 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"unicode/utf8"
-
-	"golang.org/x/crypto/ocsp"
 
 	"github.com/cloudflare/cfssl/log"
 	"github.com/hyperledger/fabric/bccsp"
-	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/ocsp"
 )
 
 var (
@@ -154,16 +152,6 @@ func Unmarshal(from []byte, to interface{}, what string) error {
 	return nil
 }
 
-// DERCertToPEM converts DER to PEM format
-func DERCertToPEM(der []byte) []byte {
-	return pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "CERTIFICATE",
-			Bytes: der,
-		},
-	)
-}
-
 // CreateToken creates a JWT-like token.
 // In a normal JWT token, the format of the token created is:
 //      <algorithm,claims,signature>
@@ -177,7 +165,7 @@ func DERCertToPEM(der []byte) []byte {
 // @param cert The pem-encoded certificate
 // @param key The pem-encoded key
 // @param body The body of an HTTP request
-func CreateToken(csp bccsp.BCCSP, cert []byte, key []byte, body []byte) (string, error) {
+func CreateToken(csp bccsp.BCCSP, cert []byte, key bccsp.Key, body []byte) (string, error) {
 
 	block, _ := pem.Decode(cert)
 	if block == nil {
@@ -235,13 +223,7 @@ func GenRSAToken(csp bccsp.BCCSP, cert []byte, key []byte, body []byte) (string,
 */
 
 //GenECDSAToken signs the http body and cert with ECDSA using EC private key
-func GenECDSAToken(csp bccsp.BCCSP, cert []byte, key []byte, body []byte) (string, error) {
-
-	sk, err := GetKeyFromBytes(csp, key)
-	if err != nil {
-		return "", err
-	}
-
+func GenECDSAToken(csp bccsp.BCCSP, cert []byte, key bccsp.Key, body []byte) (string, error) {
 	b64body := B64Encode(body)
 	b64cert := B64Encode(cert)
 	bodyAndcert := b64body + "." + b64cert
@@ -251,8 +233,8 @@ func GenECDSAToken(csp bccsp.BCCSP, cert []byte, key []byte, body []byte) (strin
 		return "", fmt.Errorf("Hash operation on %s\t failed with error : %s", bodyAndcert, digestError)
 	}
 
-	ecSignature, signatureError := csp.Sign(sk, digest, nil)
-	if signatureError != nil {
+	ecSignature, err := csp.Sign(key, digest, nil)
+	if err != nil {
 		return "", fmt.Errorf("BCCSP signature generation failed with error :%s", err)
 	}
 	if len(ecSignature) == 0 {
@@ -349,9 +331,6 @@ func GetECPrivateKey(raw []byte) (*ecdsa.PrivateKey, error) {
 }
 
 //GetRSAPrivateKey get *rsa.PrivateKey from key pem
-// This function is commented out as there is no
-// adequate support for RSA
-/*
 func GetRSAPrivateKey(raw []byte) (*rsa.PrivateKey, error) {
 	decoded, _ := pem.Decode(raw)
 	if decoded == nil {
@@ -363,7 +342,6 @@ func GetRSAPrivateKey(raw []byte) (*rsa.PrivateKey, error) {
 	}
 	return RSAprivKey, nil
 }
-*/
 
 // B64Encode base64 encodes bytes
 func B64Encode(buf []byte) string {
@@ -373,11 +351,6 @@ func B64Encode(buf []byte) string {
 // B64Decode base64 decodes a string
 func B64Decode(str string) (buf []byte, err error) {
 	return base64.StdEncoding.DecodeString(str)
-}
-
-// GetDB returns a handle to an established driver-specific database connection
-func GetDB(driver string, dbPath string) (*sqlx.DB, error) {
-	return sqlx.Open(driver, dbPath)
 }
 
 // StrContained returns true if 'str' is in 'strs'; otherwise return false
@@ -496,6 +469,18 @@ func MakeFileAbs(file, dir string) (string, error) {
 	return path, nil
 }
 
+// MakeFileNamesAbsolute makes all file names in the list absolute, relative to home
+func MakeFileNamesAbsolute(files []*string, home string) error {
+	for _, filePtr := range files {
+		abs, err := MakeFileAbs(*filePtr, home)
+		if err != nil {
+			return err
+		}
+		*filePtr = abs
+	}
+	return nil
+}
+
 // Fatal logs a fatal message and exits
 func Fatal(format string, v ...interface{}) {
 	log.Fatalf(format, v...)
@@ -529,40 +514,9 @@ func GetUser() (string, string, error) {
 	return eid, pass, nil
 }
 
-// GetKeyFromBytes returns a BCCSP key given a byte buffer.  The byte buffer
-// should always contain the SKI and not the real private key;  however,
-// until we have complete BCCSP integration, we tolerate it being the real
-// private key.
-func GetKeyFromBytes(csp bccsp.BCCSP, key []byte) (bccsp.Key, error) {
-
-	// This should succeed if key is an SKI
-	sk, err := csp.GetKey(key)
-	if err == nil {
-		return sk, nil
-	}
-
-	// Nope, try handling as a private key itself
-	pk, err := GetECPrivateKey(key)
-	if err != nil {
-		return nil, err
-	}
-
-	pkb, err := x509.MarshalECPrivateKey(pk)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal EC private key: %s", err)
-	}
-
-	return csp.KeyImport(pkb, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: true})
-}
-
 // GetSerialAsHex returns the serial number from certificate as hex format
 func GetSerialAsHex(serial *big.Int) string {
 	hex := fmt.Sprintf("%x", serial)
-
-	if utf8.RuneCountInString(hex) < 80 {
-		hex = fmt.Sprintf("0%s", hex)
-	}
-
 	return hex
 }
 
@@ -589,4 +543,37 @@ func StructToString(si interface{}) string {
 	}
 	buffer.WriteString(" }")
 	return buffer.String()
+}
+
+// NormalizeStringSlice checks for seperators
+func NormalizeStringSlice(slice []string) []string {
+	var normalizedSlice []string
+
+	if len(slice) > 0 {
+		for _, item := range slice {
+			if strings.Contains(item, ",") {
+				normalizedSlice = append(normalizedSlice, strings.Split(item, ",")...)
+			} else {
+				normalizedSlice = append(normalizedSlice, item)
+			}
+		}
+	}
+
+	return normalizedSlice
+}
+
+// NormalizeFileList provides absolute pathing for the list of files
+func NormalizeFileList(files []string, homeDir string) ([]string, error) {
+	var err error
+
+	files = NormalizeStringSlice(files)
+
+	for i, file := range files {
+		files[i], err = MakeFileAbs(file, homeDir)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return files, nil
 }

@@ -40,12 +40,14 @@ type RegistrationResponseNet struct {
 // EnrollmentRequestNet is a request to enroll an identity
 type EnrollmentRequestNet struct {
 	signer.SignRequest
+	CAName string
 }
 
 // ReenrollmentRequestNet is a request to reenroll an identity.
 // This is useful to renew a certificate before it has expired.
 type ReenrollmentRequestNet struct {
 	signer.SignRequest
+	CAName string
 }
 
 // RevocationRequestNet is a revocation request which flows over the network

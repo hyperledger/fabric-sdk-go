@@ -20,8 +20,12 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/cloudflare/cfssl/log"
+	"github.com/mitchellh/mapstructure"
+	"github.com/op/go-logging"
+	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -104,6 +108,15 @@ func (fr *flagRegistrar) Register(f *Field) (err error) {
 			}
 		}
 		fr.flags.BoolVarP(f.Addr.(*bool), f.Path, opt, boolDef, help)
+	case reflect.Slice:
+		if f.Type.Elem().Kind() == reflect.String {
+			if help == "" {
+				return fmt.Errorf("Field is missing a help tag: %s", f.Path)
+			}
+			fr.flags.StringSliceVarP(f.Addr.(*[]string), f.Path, opt, nil, help)
+		} else {
+			return nil
+		}
 	default:
 		log.Debugf("Not registering flag for '%s' because it is a currently unsupported type: %s\n",
 			f.Path, f.Kind)
@@ -130,24 +143,16 @@ func CmdRunBegin() {
 	// If -d or --debug, set debug logging level
 	if viper.GetBool("debug") {
 		log.Level = log.LevelDebug
+
+		logging.SetLevel(logging.INFO, "bccsp")
+		logging.SetLevel(logging.INFO, "bccsp_p11")
+		logging.SetLevel(logging.INFO, "bccsp_sw")
 	}
 }
 
 // FlagString sets up a flag for a string, binding it to its name
 func FlagString(flags *pflag.FlagSet, name, short string, def string, desc string) {
 	flags.StringP(name, short, def, desc)
-	bindFlag(flags, name)
-}
-
-// FlagInt sets up a flag for an int, binding it to its name
-func FlagInt(flags *pflag.FlagSet, name, short string, def int, desc string) {
-	flags.IntP(name, short, def, desc)
-	bindFlag(flags, name)
-}
-
-// FlagBool sets up a flag for a bool, binding it to its name
-func FlagBool(flags *pflag.FlagSet, name, short string, def bool, desc string) {
-	flags.BoolP(name, short, def, desc)
 	bindFlag(flags, name)
 }
 
@@ -158,4 +163,49 @@ func bindFlag(flags *pflag.FlagSet, name string) {
 		panic(fmt.Errorf("failed to lookup '%s'", name))
 	}
 	viper.BindPFlag(name, flag)
+}
+
+// ViperUnmarshal is a work around for a bug in viper.Unmarshal
+// This can be removed once https://github.com/spf13/viper/issues/327 is fixed
+// and vendored.
+func ViperUnmarshal(cfg interface{}, stringSliceFields []string, vp *viper.Viper) error {
+	decoderConfig := &mapstructure.DecoderConfig{
+		Metadata:         nil,
+		Result:           cfg,
+		WeaklyTypedInput: true,
+		DecodeHook:       mapstructure.StringToTimeDurationHookFunc(),
+	}
+	decoder, err := mapstructure.NewDecoder(decoderConfig)
+	if err != nil {
+		return fmt.Errorf("Failed to create decoder: %s", err)
+	}
+	settings := vp.AllSettings()
+	for _, field := range stringSliceFields {
+		var ok bool
+		path := strings.Split(field, ".")
+		m := settings
+		name := path[0]
+		// If it is a top level option check to see if nil before continuing
+		if _, ok = m[name]; !ok {
+			continue
+		}
+
+		if len(path) > 1 {
+			for _, field2 := range path[1:] {
+				m = m[name].(map[string]interface{})
+				name = field2
+
+				// Inspect nested options to see if nil before proceeding with loop
+				if _, ok = m[name]; !ok {
+					break
+				}
+			}
+		}
+		// Only do casting if path was valid
+		if ok {
+			m[name] = cast.ToStringSlice(m[name])
+		}
+	}
+
+	return decoder.Decode(settings)
 }

@@ -16,14 +16,7 @@ limitations under the License.
 
 package lib
 
-import (
-	"github.com/cloudflare/cfssl/config"
-	"github.com/cloudflare/cfssl/csr"
-	"github.com/hyperledger/fabric-ca/lib/ldap"
-	"github.com/hyperledger/fabric-ca/lib/tls"
-	"github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric/bccsp/factory"
-)
+import "github.com/hyperledger/fabric-ca/lib/tls"
 
 const (
 	// DefaultServerPort is the default listening port for the fabric-ca server
@@ -41,53 +34,23 @@ const (
 // "help" - the help message to display on the command line;
 // "skip" - to skip the field.
 type ServerConfig struct {
-	Port         int    `def:"7054" opt:"p" help:"Listening port of fabric-ca-server"`
-	Address      string `def:"0.0.0.0" help:"Listening address of fabric-ca-server"`
-	Debug        bool   `def:"false" opt:"d" help:"Enable debug level logging"`
-	TLS          tls.ServerTLSConfig
-	CSP          *factory.FactoryOpts
-	CA           ServerConfigCA
-	Signing      *config.Signing
-	CSR          csr.CertificateRequest
-	Registry     ServerConfigRegistry
-	Affiliations map[string]interface{}
-	LDAP         ldap.Config
-	DB           ServerConfigDB
-	Remote       string `skip:"true"`
-	Client       *ClientConfig
-}
-
-// ServerConfigCA is the CA config for the fabric-ca server
-type ServerConfigCA struct {
-	Name      string `opt:"n" help:"Certificate Authority name"`
-	Keyfile   string `def:"ca-key.pem" help:"PEM-encoded CA key file"`
-	Certfile  string `def:"ca-cert.pem" help:"PEM-encoded CA certificate file"`
-	Chainfile string `def:"ca-chain.pem" help:"PEM-encoded CA chain file"`
-}
-
-// ServerConfigDB is the database part of the server's config
-type ServerConfigDB struct {
-	Type       string `def:"sqlite3" help:"Type of database; one of: sqlite3, postgres, mysql"`
-	Datasource string `def:"fabric-ca-server.db" help:"Data source which is database specific"`
-	TLS        tls.ClientTLSConfig
-}
-
-// ServerConfigRegistry is the registry part of the server's config
-type ServerConfigRegistry struct {
-	MaxEnrollments int `def:"0" help:"Maximum number of enrollments; valid if LDAP not enabled"`
-	Identities     []ServerConfigIdentity
-}
-
-// ServerConfigIdentity is identity information in the server's config
-type ServerConfigIdentity struct {
-	Name           string
-	Pass           string `secret:"password"`
-	Type           string
-	Affiliation    string
-	MaxEnrollments int
-	Attrs          map[string]string
-}
-
-func (sc *ServerConfigIdentity) String() string {
-	return util.StructToString(sc)
+	// Listening port for the server
+	Port int `def:"7054" opt:"p" help:"Listening port of fabric-ca-server"`
+	// Bind address for the server
+	Address string `def:"0.0.0.0" help:"Listening address of fabric-ca-server"`
+	// Enables debug logging
+	Debug bool `def:"false" opt:"d" help:"Enable debug level logging"`
+	// TLS for the server's listening endpoint
+	TLS tls.ServerTLSConfig
+	// Optional client config for an intermediate server which acts as a client
+	// of the root (or parent) server
+	Client *ClientConfig
+	// CACfg is the default CA's config
+	CAcfg CAConfig `skip:"true"`
+	// The names of the CA configuration files
+	// This is empty unless there are non-default CAs served by this server
+	CAfiles []string `help:"CA configuration files"`
+	// The number of non-default CAs, which is useful for a dev environment to
+	// quickly start any number of CAs in a single server
+	CAcount int `def:"0" help:"Number of non-default CA instances"`
 }

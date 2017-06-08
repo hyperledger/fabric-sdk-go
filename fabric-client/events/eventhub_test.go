@@ -20,6 +20,7 @@ limitations under the License.
 package events
 
 import (
+	"os"
 	"sync/atomic"
 	"testing"
 
@@ -29,12 +30,21 @@ import (
 
 	"reflect"
 
+	"github.com/hyperledger/fabric-sdk-go/config"
 	"github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
+func TestMain(m *testing.M) {
+	err := config.InitConfig("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	os.Exit(m.Run())
+}
+
 func TestDeadlock(t *testing.T) {
-	channelID := "testchannel"
+	channelID := "mychannel"
 	ccID := "testccid"
 
 	eventHub, clientFactory := createMockedEventHub(t)

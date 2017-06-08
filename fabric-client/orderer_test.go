@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/mocks"
 	ab "github.com/hyperledger/fabric/protos/orderer"
 	"google.golang.org/grpc"
 )
@@ -46,7 +45,10 @@ func TestOrdererViaChain(t *testing.T) {
 		t.Fatalf("error from NewChain %v", err)
 	}
 	orderer, _ := NewOrderer("localhost:7050", "", "")
-	chain.AddOrderer(orderer)
+	err = chain.AddOrderer(orderer)
+	if err != nil {
+		t.Fatalf("Error adding orderer: %v", err)
+	}
 
 	orderers := chain.GetOrderers()
 	if orderers == nil || len(orderers) != 1 || orderers[0].GetURL() != "localhost:7050" {
@@ -57,7 +59,10 @@ func TestOrdererViaChain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create NewOrderer error(%v)", err)
 	}
-	chain.AddOrderer(orderer2)
+	err = chain.AddOrderer(orderer2)
+	if err != nil {
+		t.Fatalf("Error adding orderer: %v", err)
+	}
 	orderers = chain.GetOrderers()
 
 	if orderers == nil || len(orderers) != 1 || orderers[0].GetURL() != "localhost:7054" {
@@ -106,7 +111,11 @@ func TestOrdererViaChainNilData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create NewOrderer error(%v)", err)
 	}
-	chain.AddOrderer(orderer)
+	err = chain.AddOrderer(orderer)
+	if err != nil {
+		t.Fatalf("Error adding orderer: %v", err)
+	}
+
 	_, err = chain.SendTransaction(nil)
 	if err == nil {
 		t.Fatalf("SendTransaction didn't return error")
@@ -161,10 +170,10 @@ func TestSendDeliver(t *testing.T) {
 	}
 }
 
-func startMockServer(t *testing.T) *mocks.MockBroadcastServer {
+func startMockServer(t *testing.T) *MockBroadcastServer {
 	grpcServer := grpc.NewServer()
 	lis, err := net.Listen("tcp", testOrdererURL)
-	broadcastServer := new(mocks.MockBroadcastServer)
+	broadcastServer := new(MockBroadcastServer)
 	ab.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
 	if err != nil {
 		fmt.Printf("Error starting test server %s", err)

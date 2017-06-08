@@ -32,7 +32,6 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/config"
 	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
 	kvs "github.com/hyperledger/fabric-sdk-go/fabric-client/keyvaluestore"
-	"github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/fabric-ca-client"
@@ -48,17 +47,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	testSetup.InitConfig()
 	client := fabricClient.NewClient()
 
-	err := bccspFactory.InitFactories(&bccspFactory.FactoryOpts{
-		ProviderName: "SW",
-		SwOpts: &bccspFactory.SwOpts{
-			HashFamily: config.GetSecurityAlgorithm(),
-			SecLevel:   config.GetSecurityLevel(),
-			FileKeystore: &bccspFactory.FileKeystoreOpts{
-				KeyStorePath: config.GetKeyStorePath(),
-			},
-			Ephemeral: false,
-		},
-	})
+	err := bccspFactory.InitFactories(config.GetCSPConfig())
 	if err != nil {
 		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
@@ -107,17 +96,8 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		if cert509.Subject.CommonName != "admin" {
 			t.Fatalf("CommonName in x509 cert is not the enrollmentID")
 		}
-
-		keyPem, _ := pem.Decode(key)
-		if err != nil {
-			t.Fatalf("pem Decode return error: %v", err)
-		}
 		adminUser = fabricClient.NewUser("admin")
-		k, err := client.GetCryptoSuite().KeyImport(keyPem.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: false})
-		if err != nil {
-			t.Fatalf("KeyImport return error: %v", err)
-		}
-		adminUser.SetPrivateKey(k)
+		adminUser.SetPrivateKey(key)
 		adminUser.SetEnrollmentCertificate(cert)
 		err = client.SaveUserToStateStore(adminUser, false)
 		if err != nil {
@@ -134,7 +114,12 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 	// Register a random user
 	userName := createRandomName()
-	registerRequest := fabricCAClient.RegistrationRequest{Name: userName, Type: "user", Affiliation: "org1.department1"}
+	registerRequest := fabricCAClient.RegistrationRequest{
+		Name:        userName,
+		Type:        "user",
+		Affiliation: "org1.department1",
+		CAName:      config.GetFabricCAName(),
+	}
 	enrolmentSecret, err := caClient.Register(adminUser, &registerRequest)
 	if err != nil {
 		t.Fatalf("Error from Register: %s", err)
@@ -147,19 +132,10 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 	//re-enroll
 	fmt.Printf("** Attempt to re-enrolled user:  '%s'\n", userName)
-	keyPem, _ := pem.Decode(ekey)
-	if err != nil {
-		t.Fatalf("pem Decode return error: %v", err)
-	}
-	//convert key to bccsp
-	k, err := client.GetCryptoSuite().KeyImport(keyPem.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: false})
-	if err != nil {
-		t.Fatalf("KeyImport return error: %v", err)
-	}
 	//create new user object and set certificate and private key of the previously enrolled user
 	enrolleduser := fabricClient.NewUser(userName)
 	enrolleduser.SetEnrollmentCertificate(ecert)
-	enrolleduser.SetPrivateKey(k)
+	enrolleduser.SetPrivateKey(ekey)
 	//reenroll
 	_, reenrollCert, err := caClient.Reenroll(enrolleduser)
 	if err != nil {
@@ -170,7 +146,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		t.Fatalf("Error Reenroling user. Enrollmet and Reenrollment certificates are the same.")
 	}
 
-	revokeRequest := fabricCAClient.RevocationRequest{Name: userName}
+	revokeRequest := fabricCAClient.RevocationRequest{Name: userName, CAName: "ca-org1"}
 	err = caClient.Revoke(adminUser, &revokeRequest)
 	if err != nil {
 		t.Fatalf("Error from Revoke: %s", err)

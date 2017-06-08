@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
-	fcUtil "github.com/hyperledger/fabric-sdk-go/fabric-client/helpers"
+	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
 )
 
 // TestTransient ...
@@ -31,8 +31,8 @@ func TestTransient(t *testing.T) {
 
 	testSetup := BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
-		ChainID:         "testchannel",
-		ChannelConfig:   "../fixtures/channel/testchannel.tx",
+		ChainID:         "mychannel",
+		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}
 
@@ -55,7 +55,7 @@ func TestTransient(t *testing.T) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte(transientData)
 
-	transactionProposalResponse, _, err := fcUtil.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, _, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestTransient(t *testing.T) {
 	}
 	//transient data null
 	transientDataMap["result"] = []byte{}
-	transactionProposalResponse, _, err = fcUtil.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, _, err = util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal with empty transient data return an error: %v", err)
 	}

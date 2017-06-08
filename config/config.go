@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"strings"
 
+	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"
 )
@@ -245,9 +246,19 @@ func GetFabricCAID() string {
 	return myViper.GetString("client.fabricCA.id")
 }
 
+//GetFabricCAName Read the fabric CA name
+func GetFabricCAName() string {
+	return myViper.GetString("client.fabricCA.name")
+}
+
 // GetKeyStorePath ...
 func GetKeyStorePath() string {
 	return myViper.GetString("client.keystore.path")
+}
+
+// GetCryptoConfigPath ...
+func GetCryptoConfigPath() string {
+	return strings.Replace(myViper.GetString("client.cryptoconfig.path"), "$GOPATH", os.Getenv("GOPATH"), -1)
 }
 
 // loadCAKey
@@ -263,4 +274,19 @@ func loadCAKey(rawData []byte) (*x509.Certificate, error) {
 		return pub, nil
 	}
 	return nil, errors.New("No pem data found")
+}
+
+// GetCSPConfig ...
+func GetCSPConfig() *bccspFactory.FactoryOpts {
+	return &bccspFactory.FactoryOpts{
+		ProviderName: "SW",
+		SwOpts: &bccspFactory.SwOpts{
+			HashFamily: GetSecurityAlgorithm(),
+			SecLevel:   GetSecurityLevel(),
+			FileKeystore: &bccspFactory.FileKeystoreOpts{
+				KeyStorePath: GetKeyStorePath(),
+			},
+			Ephemeral: false,
+		},
+	}
 }

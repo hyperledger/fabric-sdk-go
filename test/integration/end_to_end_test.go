@@ -25,15 +25,15 @@ import (
 	"testing"
 	"time"
 
-	fcUtil "github.com/hyperledger/fabric-sdk-go/fabric-client/helpers"
+	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
 )
 
 func TestChainCodeInvoke(t *testing.T) {
 
 	testSetup := BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
-		ChainID:         "testchannel",
-		ChannelConfig:   "../fixtures/channel/testchannel.tx",
+		ChainID:         "mychannel",
+		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}
 
@@ -55,7 +55,7 @@ func TestChainCodeInvoke(t *testing.T) {
 	eventID := "test([a-zA-Z]+)"
 
 	// Register callback for chaincode event
-	done, rce := fcUtil.RegisterCCEvent(testSetup.ChainCodeID, eventID, testSetup.EventHub)
+	done, rce := util.RegisterCCEvent(testSetup.ChainCodeID, eventID, testSetup.EventHub)
 
 	_, err = testSetup.MoveFunds()
 	if err != nil {

@@ -31,7 +31,7 @@ var (
 	errNoTokenAuthHdr      = errors.New("No Token Authorization header was found")
 	errBasicAuthNotAllowed = errors.New("Basic authorization is not permitted")
 	errTokenAuthNotAllowed = errors.New("Token authorization is not permitted")
-	errInvalidUserPass     = errors.New("Invalid user name or password")
+	errInvalidUserPass     = errors.New("Invalid identity name or password")
 	errInputNotSeeker      = errors.New("Input stream was not a seeker")
 )
 

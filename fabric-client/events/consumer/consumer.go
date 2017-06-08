@@ -24,8 +24,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	config "github.com/hyperledger/fabric-sdk-go/config"
+	fc "github.com/hyperledger/fabric-sdk-go/fabric-client"
+	"github.com/hyperledger/fabric/bccsp"
 	consumer "github.com/hyperledger/fabric/events/consumer"
+	"github.com/hyperledger/fabric/protos/peer"
 	ehpb "github.com/hyperledger/fabric/protos/peer"
 	logging "github.com/op/go-logging"
 	"golang.org/x/net/context"
@@ -56,10 +60,11 @@ type eventsClient struct {
 	TLSCertificate        string
 	TLSServerHostOverride string
 	clientConn            *grpc.ClientConn
+	client                fc.Client
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
-func NewEventsClient(peerAddress string, certificate string, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (EventsClient, error) {
+func NewEventsClient(client fc.Client, peerAddress string, certificate string, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (EventsClient, error) {
 	var err error
 	if regTimeout < 100*time.Millisecond {
 		regTimeout = 100 * time.Millisecond
@@ -68,7 +73,7 @@ func NewEventsClient(peerAddress string, certificate string, serverhostoverride 
 		regTimeout = 60 * time.Second
 		err = fmt.Errorf("regTimeout > 60, setting to 60 sec")
 	}
-	return &eventsClient{sync.RWMutex{}, peerAddress, regTimeout, nil, adapter, certificate, serverhostoverride, nil}, err
+	return &eventsClient{sync.RWMutex{}, peerAddress, regTimeout, nil, adapter, certificate, serverhostoverride, nil, client}, err
 }
 
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
@@ -96,13 +101,35 @@ func newEventsClientConnectionWithAddress(peerAddress string, certificate string
 func (ec *eventsClient) send(emsg *ehpb.Event) error {
 	ec.Lock()
 	defer ec.Unlock()
-	return ec.stream.Send(emsg)
+
+	user, err := ec.client.LoadUserFromStateStore("")
+	if err != nil {
+		return fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
+	}
+	payload, err := proto.Marshal(emsg)
+	if err != nil {
+		return fmt.Errorf("Error marshaling message: %s", err)
+	}
+	signature, err := fc.SignObjectWithKey(payload, user.GetPrivateKey(),
+		&bccsp.SHAOpts{}, nil, ec.client.GetCryptoSuite())
+	if err != nil {
+		return fmt.Errorf("Error signing message: %s", err)
+	}
+	signedEvt := &peer.SignedEvent{EventBytes: payload, Signature: signature}
+
+	return ec.stream.Send(signedEvt)
 }
 
 // RegisterAsync - registers interest in a event and doesn't wait for a response
 func (ec *eventsClient) RegisterAsync(ies []*ehpb.Interest) error {
-	emsg := &ehpb.Event{Event: &ehpb.Event_Register{Register: &ehpb.Register{Events: ies}}}
-	var err error
+	creator, err := ec.client.GetIdentity()
+	if err != nil {
+		return fmt.Errorf("Error getting creator: %v", err)
+	}
+	emsg := &ehpb.Event{
+		Event:   &ehpb.Event_Register{Register: &ehpb.Register{Events: ies}},
+		Creator: creator,
+	}
 	if err = ec.send(emsg); err != nil {
 		fmt.Printf("error on Register send %s\n", err)
 	}

@@ -27,8 +27,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric/common/crypto"
+	"github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/core/chaincode/platforms"
-	"github.com/hyperledger/fabric/core/crypto/primitives"
 	"github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/protos/peer"
 )
@@ -324,7 +325,7 @@ func CreateChaincodeProposal(typ common.HeaderType, chainID string, cis *peer.Ch
 // It returns the proposal and the transaction id associated to the proposal
 func CreateChaincodeProposalWithTransient(typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte, transientMap map[string][]byte) (*peer.Proposal, string, error) {
 	// generate a random nonce
-	nonce, err := primitives.GetRandomNonce()
+	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
 		return nil, "", err
 	}
@@ -361,9 +362,12 @@ func CreateChaincodeProposalWithTxIDNonceAndTransient(txid string, typ common.He
 	// get a more appropriate mechanism to handle it in.
 	var epoch uint64 = 0
 
+	timestamp := util.CreateUtcTimestamp()
+
 	hdr := &common.Header{ChannelHeader: MarshalOrPanic(&common.ChannelHeader{
 		Type:      int32(typ),
 		TxId:      txid,
+		Timestamp: timestamp,
 		ChannelId: chainID,
 		Extension: ccHdrExtBytes,
 		Epoch:     epoch}),
@@ -378,8 +382,8 @@ func CreateChaincodeProposalWithTxIDNonceAndTransient(txid string, typ common.He
 }
 
 // GetBytesProposalResponsePayload gets proposal response payload
-func GetBytesProposalResponsePayload(hash []byte, response *peer.Response, result []byte, event []byte) ([]byte, error) {
-	cAct := &peer.ChaincodeAction{Events: event, Results: result, Response: response}
+func GetBytesProposalResponsePayload(hash []byte, response *peer.Response, result []byte, event []byte, ccid *peer.ChaincodeID) ([]byte, error) {
+	cAct := &peer.ChaincodeAction{Events: event, Results: result, Response: response, ChaincodeId: ccid}
 	cActBytes, err := proto.Marshal(cAct)
 	if err != nil {
 		return nil, err
@@ -535,8 +539,8 @@ func CreateProposalFromCIS(typ common.HeaderType, chainID string, cis *peer.Chai
 }
 
 // CreateInstallProposalFromCDS returns a install proposal given a serialized identity and a ChaincodeDeploymentSpec
-func CreateInstallProposalFromCDS(cds *peer.ChaincodeDeploymentSpec, creator []byte) (*peer.Proposal, string, error) {
-	return createProposalFromCDS("", cds, creator, nil, nil, nil, "install")
+func CreateInstallProposalFromCDS(ccpack proto.Message, creator []byte) (*peer.Proposal, string, error) {
+	return createProposalFromCDS("", ccpack, creator, nil, nil, nil, "install")
 }
 
 // CreateDeployProposalFromCDS returns a deploy proposal given a serialized identity and a ChaincodeDeploymentSpec
@@ -550,13 +554,13 @@ func CreateUpgradeProposalFromCDS(chainID string, cds *peer.ChaincodeDeploymentS
 }
 
 // createProposalFromCDS returns a deploy or upgrade proposal given a serialized identity and a ChaincodeDeploymentSpec
-func createProposalFromCDS(chainID string, cds *peer.ChaincodeDeploymentSpec, creator []byte, policy []byte, escc []byte, vscc []byte, propType string) (*peer.Proposal, string, error) {
+func createProposalFromCDS(chainID string, msg proto.Message, creator []byte, policy []byte, escc []byte, vscc []byte, propType string) (*peer.Proposal, string, error) {
 	//in the new mode, cds will be nil, "deploy" and "upgrade" are instantiates.
 	var ccinp *peer.ChaincodeInput
 	var b []byte
 	var err error
-	if cds != nil {
-		b, err = proto.Marshal(cds)
+	if msg != nil {
+		b, err = proto.Marshal(msg)
 		if err != nil {
 			return nil, "", err
 		}
@@ -565,20 +569,24 @@ func createProposalFromCDS(chainID string, cds *peer.ChaincodeDeploymentSpec, cr
 	case "deploy":
 		fallthrough
 	case "upgrade":
+		cds, ok := msg.(*peer.ChaincodeDeploymentSpec)
+		if !ok || cds == nil {
+			return nil, "", fmt.Errorf("invalid message for creating lifecycle chaincode proposal from")
+		}
 		ccinp = &peer.ChaincodeInput{Args: [][]byte{[]byte(propType), []byte(chainID), b, policy, escc, vscc}}
 	case "install":
 		ccinp = &peer.ChaincodeInput{Args: [][]byte{[]byte(propType), b}}
 	}
 
-	//wrap the deployment in an invocation spec to lccc...
-	lcccSpec := &peer.ChaincodeInvocationSpec{
+	//wrap the deployment in an invocation spec to lscc...
+	lsccSpec := &peer.ChaincodeInvocationSpec{
 		ChaincodeSpec: &peer.ChaincodeSpec{
 			Type:        peer.ChaincodeSpec_GOLANG,
-			ChaincodeId: &peer.ChaincodeID{Name: "lccc"},
+			ChaincodeId: &peer.ChaincodeID{Name: "lscc"},
 			Input:       ccinp}}
 
 	//...and get the proposal for it
-	return CreateProposalFromCIS(common.HeaderType_ENDORSER_TRANSACTION, chainID, lcccSpec, creator)
+	return CreateProposalFromCIS(common.HeaderType_ENDORSER_TRANSACTION, chainID, lsccSpec, creator)
 }
 
 // ComputeProposalTxID computes TxID as the Hash computed

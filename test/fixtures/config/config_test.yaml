@@ -8,18 +8,18 @@ client:
     primary: true
     tls:
       # Certificate location absolute path
-      certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/peers/peer0/ca-cert.pem"
-      serverHostOverride: "peer0"
+      certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/cacerts/org1.example.com-cert.pem"
+      serverHostOverride: "peer0.org1.example.com"
   # peer 1
-  - host: "localhost"
-    port: 7056
-    eventHost: "localhost"
-    eventPort: 7058
-    primary: false
-    tls:
-      # Certificate location absolute path
-      certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/peers/peer1/ca-cert.pem"
-      serverHostOverride: "peer1"
+  # - host: "localhost"
+  #   port: 8051
+  #   eventHost: "localhost"
+  #   eventPort: 8053
+  #   primary: false
+  #   tls:
+  #     # Certificate location absolute path
+  #     certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/peers/peer1/ca-cert.pem"
+  #     serverHostOverride: "peer1.org1.example.com"
 
  tls:
   enabled: true
@@ -38,8 +38,8 @@ client:
   port: 7050
   tls:
     # Certificate location absolute path
-    certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/orderer/ca-cert.pem"
-    serverHostOverride: "orderer0"
+    certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/cacerts/example.com-cert.pem"
+    serverHostOverride: "orderer.example.com"
 
  logging:
   level: info
@@ -47,12 +47,16 @@ client:
  fabricCA:
   tlsEnabled: true
   id: "Org1MSP"
-  serverURL: "http://localhost:7054"
+  name: "ca-org1"
+  serverURL: "https://localhost:7054"
   certfiles :
-    - "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/root.pem"
+    - "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/ca/ca_root.pem"
   client:
-   keyfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls_client-key.pem"
-   certfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls_client-cert.pem"
+   keyfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1-key.pem"
+   certfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1.pem"
 
  keystore:
   path: "/tmp/keystore"
+
+ cryptoconfig:
+  path: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config"

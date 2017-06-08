@@ -27,18 +27,18 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
 	"github.com/hyperledger/fabric/bccsp"
-	msp "github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric/protos/common"
+	mspprotos "github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric/protos/peer"
 
 	protos_utils "github.com/hyperledger/fabric/protos/utils"
 	"github.com/op/go-logging"
 
+	proto_ts "github.com/golang/protobuf/ptypes/timestamp"
 	config "github.com/hyperledger/fabric-sdk-go/config"
 	fabric_config "github.com/hyperledger/fabric/common/config"
-	"github.com/hyperledger/fabric/common/configtx"
 	mb "github.com/hyperledger/fabric/protos/msp"
 	ab "github.com/hyperledger/fabric/protos/orderer"
 )
@@ -47,12 +47,13 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
 
 // Chain ...
 /**
+ * Chain representing a chain with which the client SDK interacts.
+ *
  * The “Chain” object captures settings for a channel, which is created by
  * the orderers to isolate transactions delivery to peers participating on channel.
  * A chain must be initialized after it has been configured with the list of peers
- * and orderers. The initialization sends a CONFIGURATION transaction to the orderers
- * to create the specified channel and asks the peers to join that channel.
- *
+ * and orderers. The initialization sends a get configuration block request to the
+ * primary orderer to retrieve the configuration settings for this channel.
  */
 type Chain interface {
 	GetName() string
@@ -60,18 +61,19 @@ type Chain interface {
 	IsSecurityEnabled() bool
 	GetTCertBatchSize() int
 	SetTCertBatchSize(batchSize int)
-	AddPeer(peer Peer)
+	AddPeer(peer Peer) error
 	RemovePeer(peer Peer)
 	GetPeers() []Peer
 	GetAnchorPeers() []OrgAnchorPeer
 	SetPrimaryPeer(peer Peer) error
 	GetPrimaryPeer() Peer
-	AddOrderer(orderer Orderer)
+	AddOrderer(orderer Orderer) error
 	RemoveOrderer(orderer Orderer)
 	GetOrderers() []Orderer
 	SetMSPManager(mspManager msp.MSPManager)
 	GetMSPManager() msp.MSPManager
-	JoinChannel(request *JoinChannelRequest) error
+	GetGenesisBlock(request *GenesisBlockRequest) (*common.Block, error)
+	JoinChannel(request *JoinChannelRequest) ([]*TransactionProposalResponse, error)
 	UpdateChain() bool
 	IsReadonly() bool
 	QueryInfo() (*common.BlockchainInfo, error)
@@ -87,6 +89,7 @@ type Chain interface {
 	SendInstantiateProposal(chaincodeName string, chainID string, args []string, chaincodePath string, chaincodeVersion string, targets []Peer) ([]*TransactionProposalResponse, string, error)
 	GetOrganizationUnits() ([]string, error)
 	QueryExtensionInterface() ChainExtension
+	LoadConfigUpdateEnvelope(data []byte) error
 }
 
 // The ChainExtension interface allows extensions of the SDK to add functionality to Chain overloads.
@@ -169,17 +172,18 @@ type TransactionResponse struct {
 	Err     error
 }
 
-// A SignedEnvelope can can be sent to an orderer for broadcasting
-type SignedEnvelope struct {
-	Payload   []byte
-	Signature []byte
+// GenesisBlockRequest ...
+type GenesisBlockRequest struct {
+	TxID  string
+	Nonce []byte
 }
 
 // JoinChannelRequest allows a set of peers to transact on a channel on the network
 type JoinChannelRequest struct {
-	Targets []Peer
-	TxID    string
-	Nonce   []byte
+	Targets      []Peer
+	GenesisBlock *common.Block
+	TxID         string
+	Nonce        []byte
 }
 
 // configItems contains the configuration values retrieved from the Orderer Service
@@ -187,6 +191,14 @@ type configItems struct {
 	msps        []*mb.MSPConfig
 	anchorPeers []*OrgAnchorPeer
 	orderers    []string
+	versions    *versions
+}
+
+// versions ...
+type versions struct {
+	ReadSet  *common.ConfigGroup
+	WriteSet *common.ConfigGroup
+	Channel  *common.ConfigGroup
 }
 
 // OrgAnchorPeer contains information about an anchor peer on this chain
@@ -198,10 +210,10 @@ type OrgAnchorPeer struct {
 
 // NewChain ...
 /**
- * @param {string} name to identify different chain instances. The naming of chain instances
- * is enforced by the ordering service and must be unique within the blockchain network
- * @param {Client} clientContext An instance of {@link Client} that provides operational context
- * such as submitting User etc.
+* @param {string} name to identify different chain instances. The naming of chain instances
+* is enforced by the ordering service and must be unique within the blockchain network
+* @param {Client} clientContext An instance of {@link Client} that provides operational context
+* such as submitting User etc.
  */
 func NewChain(name string, client Client) (Chain, error) {
 	if name == "" {
@@ -269,11 +281,17 @@ func (c *chain) SetTCertBatchSize(batchSize int) {
 // AddPeer ...
 /**
  * Add peer endpoint to chain.
- * @param {Peer} peer An instance of the Peer that has been initialized with URL,
+ * @param {Peer} peer An instance of the Peer class that has been initialized with URL,
  * TLC certificate, and enrollment certificate.
+ * @throws {Error} if the peer with that url already exists.
  */
-func (c *chain) AddPeer(peer Peer) {
-	c.peers[peer.GetURL()] = peer
+func (c *chain) AddPeer(peer Peer) error {
+	url := peer.GetURL()
+	if c.peers[url] != nil {
+		return fmt.Errorf("Peer with URL %s already exists", url)
+	}
+	c.peers[url] = peer
+	return nil
 }
 
 // RemovePeer ...
@@ -282,7 +300,11 @@ func (c *chain) AddPeer(peer Peer) {
  * @param {Peer} peer An instance of the Peer.
  */
 func (c *chain) RemovePeer(peer Peer) {
-	delete(c.peers, peer.GetURL())
+	url := peer.GetURL()
+	if c.peers[url] != nil {
+		delete(c.peers, url)
+		logger.Debugf("Removed peer with URL %s", url)
+	}
 }
 
 // GetPeers ...
@@ -377,6 +399,7 @@ func (c *chain) GetPrimaryPeer() Peer {
 	// When no primary peer has been set default to the first peer
 	// from map range - order is not guaranteed
 	for _, peer := range c.peers {
+		logger.Infof("Primary peer was not set, using %s", peer.GetName())
 		return peer
 	}
 
@@ -391,9 +414,15 @@ func (c *chain) GetPrimaryPeer() Peer {
  * the orderer nodes, it can choose to use more than one by adding them to the chain instance.
  * All APIs concerning the orderer will broadcast to all orderers simultaneously.
  * @param {Orderer} orderer An instance of the Orderer class.
+ * @throws {Error} if the orderer with that url already exists.
  */
-func (c *chain) AddOrderer(orderer Orderer) {
+func (c *chain) AddOrderer(orderer Orderer) error {
+	url := orderer.GetURL()
+	if c.orderers[url] != nil {
+		return fmt.Errorf("Orderer with URL %s already exists", url)
+	}
 	c.orderers[orderer.GetURL()] = orderer
+	return nil
 }
 
 // RemoveOrderer ...
@@ -402,8 +431,11 @@ func (c *chain) AddOrderer(orderer Orderer) {
  * @param {Orderer} orderer An instance of the Orderer class.
  */
 func (c *chain) RemoveOrderer(orderer Orderer) {
-	delete(c.orderers, orderer.GetURL())
-
+	url := orderer.GetURL()
+	if c.orderers[url] != nil {
+		delete(c.orderers, url)
+		logger.Debugf("Removed orderer with URL %s", url)
+	}
 }
 
 // GetOrderers ...
@@ -451,117 +483,326 @@ func (c *chain) GetOrganizationUnits() ([]string, error) {
 	return orgIdentifiers, nil
 }
 
-// Initialize initializes the chain
+// GetGenesisBlock ...
 /**
- * Retrieve the configuration from the orderer and initializes this chain (channel)
- * with those values. Optionally a configuration may be passed in to initialize this channel
- * without making the call to the orderer.
- * @param {byte[]} config - Optional - A serialized form of the protobuf configuration update envelope
+ * Will get the genesis block from the defined orderer that may be
+ * used in a join request
+ * @param {Object} request - An object containing the following fields:
+ *		<br>`txId` : required - String of the transaction id
+ *		<br>`nonce` : required - Integer of the once time number
+ *
+ * @returns A Genesis block
+ * @see /protos/peer/proposal_response.proto
  */
-func (c *chain) Initialize(config []byte) error {
-	var configItems *configItems
+func (c *chain) GetGenesisBlock(request *GenesisBlockRequest) (*common.Block, error) {
+	logger.Debug("GetGenesisBlock - start")
 
-	if len(config) > 0 {
-		var err error
-		if configItems, err = c.loadConfigUpdateEnvelope(config); err != nil {
-			return fmt.Errorf("Unable to load config update envelope: %v", err)
-		}
-	} else {
-		configEnvelope, err := c.getChannelConfig()
-		if err != nil {
-			return fmt.Errorf("Unable to retrieve channel configuration from orderer service: %v", err)
-		}
-
-		configItems, err = c.loadConfigEnvelope(configEnvelope)
-		if err != nil {
-			return fmt.Errorf("Unable to load config envelope: %v", err)
-		}
+	// verify that we have an orderer configured
+	if len(c.GetOrderers()) == 0 {
+		return nil, fmt.Errorf("GetGenesisBlock - error: Missing orderer assigned to this channel for the getGenesisBlock request")
+	}
+	// verify that we have transaction id
+	if request.TxID == "" {
+		return nil, fmt.Errorf("GetGenesisBlock - error: Missing txId input parameter with the required transaction identifier")
+	}
+	// verify that we have the nonce
+	if request.Nonce == nil {
+		return nil, fmt.Errorf("GetGenesisBlock - error: Missing nonce input parameter with the required single use number")
 	}
 
-	return c.initializeFromConfig(configItems)
+	creator, err := c.clientContext.GetIdentity()
+	if err != nil {
+		return nil, fmt.Errorf("Error getting creator: %v", err)
+	}
+
+	// now build the seek info , will be used once the chain is created
+	// to get the genesis block back
+	seekStart := NewSpecificSeekPosition(0)
+	seekStop := NewSpecificSeekPosition(0)
+	seekInfo := &ab.SeekInfo{
+		Start:    seekStart,
+		Stop:     seekStop,
+		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
+	}
+	protos_utils.MakeChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, 1, c.GetName(), 0)
+	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.GetName(), request.TxID, 0, "", time.Now())
+	if err != nil {
+		return nil, fmt.Errorf("Error building channel header: %v", err)
+	}
+	seekHeader, err := BuildHeader(creator, seekInfoHeader, request.Nonce)
+	if err != nil {
+		return nil, fmt.Errorf("Error building header: %v", err)
+	}
+	seekPayload := &common.Payload{
+		Header: seekHeader,
+		Data:   MarshalOrPanic(seekInfo),
+	}
+	seekPayloadBytes := MarshalOrPanic(seekPayload)
+
+	signedEnvelope, err := c.SignPayload(seekPayloadBytes)
+	if err != nil {
+		return nil, fmt.Errorf("Error signing payload: %v", err)
+	}
+
+	block, err := c.SendEnvelope(signedEnvelope)
+	if err != nil {
+		return nil, fmt.Errorf("Error sending envelope: %v", err)
+	}
+	return block, nil
 }
 
-// JoinChannel instructs a set of peers to join the channel represented by
-// this chain
-// @param {JoinChannelRequest} Join channel request
-// @returns error, if applicable
-func (c *chain) JoinChannel(request *JoinChannelRequest) error {
-	joinCommand := "JoinChain"
-	err := validateJoinChannelRequest(request)
-	if err != nil {
-		return err
+// JoinChannel ...
+/**
+ * Sends a join channel proposal to one or more endorsing peers
+ * Will get the genesis block from the defined orderer to be used
+ * in the proposal.
+ * @param {Object} request - An object containing the following fields:
+ *   <br>`targets` : required - An array of `Peer` objects that will join
+ *                   this channel
+ *   <br>`block` : the genesis block of the channel
+ *                 see getGenesisBlock() method
+ *   <br>`txId` : required - String of the transaction id
+ *   <br>`nonce` : required - Integer of the once time number
+ * @returns {Promise} A Promise for a `ProposalResponse`
+ * @see /protos/peer/proposal_response.proto
+ */
+func (c *chain) JoinChannel(request *JoinChannelRequest) ([]*TransactionProposalResponse, error) {
+	logger.Debug("joinChannel - start")
+
+	// verify that we have targets (Peers) to join this channel
+	// defined by the caller
+	if request == nil {
+		return nil, fmt.Errorf("JoinChannel - error: Missing all required input request parameters")
 	}
-	// Fetch genesis block
-	block, err := c.fetchGenesisBlock()
-	if err != nil {
-		return err
+
+	// verify that a Peer(s) has been selected to join this channel
+	if request.Targets == nil {
+		return nil, fmt.Errorf("JoinChannel - error: Missing targets input parameter with the peer objects for the join channel proposal")
 	}
-	blockBytes, err := proto.Marshal(block)
-	if err != nil {
-		return fmt.Errorf("Error unmarshalling block: %s", err)
+
+	// verify that we have transaction id
+	if request.TxID == "" {
+		return nil, fmt.Errorf("JoinChannel - error: Missing txId input parameter with the required transaction identifier")
 	}
-	// Get user enrolment info and serialize for signing requests
-	user, err := c.clientContext.LoadUserFromStateStore("")
-	if err != nil {
-		return fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
+
+	// verify that we have the nonce
+	if request.Nonce == nil {
+		return nil, fmt.Errorf("JoinChannel - error: Missing nonce input parameter with the required single use number")
 	}
-	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
-	if err != nil {
-		return err
+
+	if request.GenesisBlock == nil {
+		return nil, fmt.Errorf("JoinChannel - error: Missing block input parameter with the required genesis block")
 	}
+
+	creator, err := c.clientContext.GetIdentity()
+	if err != nil {
+		return nil, fmt.Errorf("Error getting creator ID: %v", err)
+	}
+
+	genesisBlockBytes, err := proto.Marshal(request.GenesisBlock)
+	if err != nil {
+		return nil, fmt.Errorf("Error marshalling genesis block: %v", err)
+	}
+
 	// Create join channel transaction proposal for target peers
+	joinCommand := "JoinChain"
 	var args [][]byte
 	args = append(args, []byte(joinCommand))
-	args = append(args, blockBytes)
-	ccis := &pb.ChaincodeInvocationSpec{ChaincodeSpec: &pb.ChaincodeSpec{
-		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: "cscc"},
-		Input: &pb.ChaincodeInput{Args: args}}}
+	args = append(args, genesisBlockBytes)
+	ccSpec := &pb.ChaincodeSpec{
+		Type:        pb.ChaincodeSpec_GOLANG,
+		ChaincodeId: &pb.ChaincodeID{Name: "cscc"},
+		Input:       &pb.ChaincodeInput{Args: args},
+	}
+	cciSpec := &pb.ChaincodeInvocationSpec{
+		ChaincodeSpec: ccSpec,
+	}
 
-	// create a proposal from a ChaincodeInvocationSpec
-	proposal, _, err := protos_utils.
-		CreateChaincodeProposalWithTxIDNonceAndTransient(request.TxID,
-			common.HeaderType_ENDORSER_TRANSACTION, "", ccis,
-			request.Nonce, creatorID, nil)
+	proposal, txID, err := protos_utils.CreateChaincodeProposalWithTxIDNonceAndTransient(request.TxID, common.HeaderType_ENDORSER_TRANSACTION, "", cciSpec, request.Nonce, creator, nil)
 	if err != nil {
-		return fmt.Errorf("Could not create chaincode proposal, err %s", err)
+		return nil, fmt.Errorf("Error building proposal: %v", err)
 	}
-	// Serialize join proposal
-	proposalBytes, err := protos_utils.GetBytesProposal(proposal)
+	signedProposal, err := c.signProposal(proposal)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("Error signing proposal: %v", err)
 	}
-	// Sign join proposal
-	signature, err := signObjectWithKey(proposalBytes, user.GetPrivateKey(),
-		&bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
-	if err != nil {
-		return err
+	transactionProposal := &TransactionProposal{
+		TransactionID:  txID,
+		SignedProposal: signedProposal,
+		Proposal:       proposal,
 	}
+
 	// Send join proposal
-	proposalResponses, err := c.SendTransactionProposal(&TransactionProposal{
-		TransactionID: request.TxID,
-		SignedProposal: &pb.SignedProposal{
-			ProposalBytes: proposalBytes,
-			Signature:     signature},
-		Proposal: proposal,
-	}, 0, request.Targets)
+	proposalResponses, err := c.SendTransactionProposal(transactionProposal, 0, request.Targets)
 	if err != nil {
-		return fmt.Errorf("Error sending join transaction proposal: %s", err)
+		return nil, fmt.Errorf("Error sending join transaction proposal: %s", err)
+	}
+	return proposalResponses, nil
+}
+
+/**
+ * Queries for the current config block for this chain(channel).
+ * This transaction will be made to the orderer.
+ * @returns {ConfigEnvelope} Object containing the configuration items.
+ * @see /protos/orderer/ab.proto
+ * @see /protos/common/configtx.proto
+ */
+func (c *chain) getChannelConfig() (*common.ConfigEnvelope, error) {
+	logger.Debugf("getChannelConfig - start for channel %s", c.name)
+
+	// Get the newest block
+	block, err := c.getBlock(NewNewestSeekPosition())
+	if err != nil {
+		return nil, err
+	}
+	logger.Debugf("GetChannelConfig - Retrieved newest block number: %d\n", block.Header.Number)
+
+	// Get the index of the last config block
+	lastConfig, err := GetLastConfigFromBlock(block)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to get last config from block: %v", err)
+	}
+	logger.Debugf("GetChannelConfig - Last config index: %d\n", lastConfig.Index)
+
+	// Get the last config block
+	//block, err = c.getBlock(NewSpecificSeekPosition(lastConfig.Index))
+	block, err = c.getBlock(NewSpecificSeekPosition(0)) //FIXME: temporary hack to workaround https://jira.hyperledger.org/browse/FAB-3493
+	if err != nil {
+		return nil, fmt.Errorf("Unable to retrieve block at index %d: %v", lastConfig.Index, err)
+	}
+	logger.Debugf("GetChannelConfig - Last config block number %d, Number of tx: %d", block.Header.Number, len(block.Data.Data))
+
+	if len(block.Data.Data) != 1 {
+		return nil, fmt.Errorf("Config block must only contain one transaction but contains %d", len(block.Data.Data))
 	}
 
-	// Check responses from target peers for success/failure
-	var joinError string
-	for _, response := range proposalResponses {
-		if response.Err != nil {
-			joinError = joinError +
-				fmt.Sprintf("Join channel proposal response error: %s \n",
-					response.Err.Error())
-		}
+	envelope := &common.Envelope{}
+	if err = proto.Unmarshal(block.Data.Data[0], envelope); err != nil {
+		return nil, fmt.Errorf("Error extracting envelope from config block: %v", err)
 	}
-	if joinError != "" {
-		return fmt.Errorf(joinError)
+	payload := &common.Payload{}
+	if err := proto.Unmarshal(envelope.Payload, payload); err != nil {
+		return nil, fmt.Errorf("Error extracting payload from envelope: %s", err)
+	}
+	channelHeader := &common.ChannelHeader{}
+	if err := proto.Unmarshal(payload.Header.ChannelHeader, channelHeader); err != nil {
+		return nil, fmt.Errorf("Error extracting payload from envelope: %s", err)
+	}
+	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG {
+		return nil, fmt.Errorf("Block must be of type 'CONFIG'")
+	}
+	configEnvelope := &common.ConfigEnvelope{}
+	if err := proto.Unmarshal(payload.Data, configEnvelope); err != nil {
+		return nil, fmt.Errorf("Unable to unmarshal config envelope: %v", err)
+	}
+	return configEnvelope, nil
+}
+
+// LoadConfigUpdateEnvelope ...
+/*
+ * Utility method to load this chain with configuration information
+ * from an Envelope that contains a Configuration
+ * @param {byte[]} the envelope with the configuration update items
+ * @see /protos/common/configtx.proto
+ */
+func (c *chain) LoadConfigUpdateEnvelope(data []byte) error {
+	logger.Debugf("loadConfigUpdateEnvelope - start")
+
+	envelope := &common.Envelope{}
+	err := proto.Unmarshal(data, envelope)
+	if err != nil {
+		return fmt.Errorf("Unable to unmarshal envelope: %v", err)
 	}
 
-	return nil
+	payload, err := protos_utils.ExtractPayload(envelope)
+	if err != nil {
+		return fmt.Errorf("Unable to extract payload from config update envelope: %v", err)
+	}
+
+	channelHeader, err := protos_utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+	if err != nil {
+		return fmt.Errorf("Unable to extract channel header from config update payload: %v", err)
+	}
+
+	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG_UPDATE {
+		return fmt.Errorf("Block must be of type 'CONFIG_UPDATE'")
+	}
+
+	configUpdateEnvelope := &common.ConfigUpdateEnvelope{}
+	if err := proto.Unmarshal(payload.Data, configUpdateEnvelope); err != nil {
+		return fmt.Errorf("Unable to unmarshal config update envelope: %v", err)
+	}
+
+	_, err = c.loadConfigUpdate(configUpdateEnvelope.ConfigUpdate)
+	return err
+}
+
+func (c *chain) loadConfigUpdate(configUpdateBytes []byte) (*configItems, error) {
+
+	configUpdate := &common.ConfigUpdate{}
+	if err := proto.Unmarshal(configUpdateBytes, configUpdate); err != nil {
+		return nil, fmt.Errorf("Unable to unmarshal config update: %v", err)
+	}
+	logger.Debugf("loadConfigUpdate - channel ::" + configUpdate.ChannelId)
+
+	readSet := configUpdate.ReadSet
+	writeSet := configUpdate.WriteSet
+
+	versions := &versions{
+		ReadSet:  readSet,
+		WriteSet: writeSet,
+	}
+
+	configItems := &configItems{
+		msps:        []*mb.MSPConfig{},
+		anchorPeers: []*OrgAnchorPeer{},
+		orderers:    []string{},
+		versions:    versions,
+	}
+
+	err := loadConfigGroup(configItems, configItems.versions.ReadSet, readSet, "read_set", "", false)
+	if err != nil {
+		return nil, err
+	}
+	// do the write_set second so they update anything in the read set
+	err = loadConfigGroup(configItems, configItems.versions.WriteSet, writeSet, "write_set", "", false)
+	if err != nil {
+		return nil, err
+	}
+	err = c.initializeFromConfig(configItems)
+	if err != nil {
+		return nil, fmt.Errorf("chain initialization errort: %v", err)
+	}
+
+	//TODO should we create orderers and endorsing peers
+	return configItems, nil
+}
+
+func (c *chain) loadConfigEnvelope(configEnvelope *common.ConfigEnvelope) (*configItems, error) {
+
+	group := configEnvelope.Config.ChannelGroup
+
+	versions := &versions{
+		Channel: &common.ConfigGroup{},
+	}
+
+	configItems := &configItems{
+		msps:        []*mb.MSPConfig{},
+		anchorPeers: []*OrgAnchorPeer{},
+		orderers:    []string{},
+		versions:    versions,
+	}
+
+	err := loadConfigGroup(configItems, configItems.versions.Channel, group, "base", "", true)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to load config items from channel group: %v", err)
+	}
+
+	err = c.initializeFromConfig(configItems)
+
+	logger.Debugf("Chain config: %v", configItems)
+
+	return configItems, err
 }
 
 // UpdateChain ...
@@ -594,6 +835,7 @@ func (c *chain) IsReadonly() bool {
  * @returns {object} With height, currently the only useful info.
  */
 func (c *chain) QueryInfo() (*common.BlockchainInfo, error) {
+	logger.Debug("queryInfo - start")
 
 	// prepare arguments to call qscc GetChainInfo function
 	var args []string
@@ -612,6 +854,39 @@ func (c *chain) QueryInfo() (*common.BlockchainInfo, error) {
 	}
 
 	return bci, nil
+}
+
+// QueryBlockByHash ...
+/**
+ * Queries the ledger for Block by block hash.
+ * This query will be made to the primary peer.
+ * @param {byte[]} block hash of the Block.
+ * @returns {object} Object containing the block.
+ */
+func (c *chain) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
+
+	if blockHash == nil {
+		return nil, fmt.Errorf("Blockhash bytes are required")
+	}
+
+	// prepare arguments to call qscc GetBlockByNumber function
+	var args []string
+	args = append(args, "GetBlockByHash")
+	args = append(args, c.GetName())
+	args = append(args, string(blockHash[:len(blockHash)]))
+
+	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
+	if err != nil {
+		return nil, fmt.Errorf("Invoke qscc GetBlockByHash return error: %v", err)
+	}
+
+	block := &common.Block{}
+	err = proto.Unmarshal(payload, block)
+	if err != nil {
+		return nil, fmt.Errorf("Unmarshal Block return error: %v", err)
+	}
+
+	return block, nil
 }
 
 // QueryBlock ...
@@ -647,37 +922,33 @@ func (c *chain) QueryBlock(blockNumber int) (*common.Block, error) {
 	return block, nil
 }
 
-// QueryBlockByHash ...
+// Initialize initializes the chain
 /**
- * Queries the ledger for Block by block hash.
- * This query will be made to the primary peer.
- * @param {byte[]} block hash of the Block.
- * @returns {object} Object containing the block.
+ * Retrieve the configuration from the primary orderer and initializes this chain (channel)
+ * with those values. Optionally a configuration may be passed in to initialize this channel
+ * without making the call to the orderer.
+ * @param {byte[]} config_update- Optional - A serialized form of the protobuf configuration update
  */
-func (c *chain) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
+func (c *chain) Initialize(configUpdate []byte) error {
 
-	if blockHash == nil {
-		return nil, fmt.Errorf("Blockhash bytes are required")
+	if len(configUpdate) > 0 {
+		var err error
+		if _, err = c.loadConfigUpdate(configUpdate); err != nil {
+			return fmt.Errorf("Unable to load config update envelope: %v", err)
+		}
+		return nil
 	}
 
-	// prepare arguments to call qscc GetBlockByNumber function
-	var args []string
-	args = append(args, "GetBlockByHash")
-	args = append(args, c.GetName())
-	args = append(args, string(blockHash[:len(blockHash)]))
-
-	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
+	configEnvelope, err := c.getChannelConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Invoke qscc GetBlockByHash return error: %v", err)
+		return fmt.Errorf("Unable to retrieve channel configuration from orderer service: %v", err)
 	}
 
-	block := &common.Block{}
-	err = proto.Unmarshal(payload, block)
+	_, err = c.loadConfigEnvelope(configEnvelope)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshal Block return error: %v", err)
+		return fmt.Errorf("Unable to load config envelope: %v", err)
 	}
-
-	return block, nil
+	return nil
 }
 
 // QueryTransaction ...
@@ -717,9 +988,9 @@ func (c *chain) QueryTransaction(transactionID string) (*pb.ProcessedTransaction
  */
 func (c *chain) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
 
-	payload, err := c.queryByChaincodeByTarget("lccc", []string{"getchaincodes"}, c.GetPrimaryPeer())
+	payload, err := c.queryByChaincodeByTarget("lscc", []string{"getchaincodes"}, c.GetPrimaryPeer())
 	if err != nil {
-		return nil, fmt.Errorf("Invoke lccc getchaincodes return error: %v", err)
+		return nil, fmt.Errorf("Invoke lscc getchaincodes return error: %v", err)
 	}
 
 	response := new(pb.ChaincodeQueryResponse)
@@ -757,16 +1028,16 @@ func (c *chain) queryByChaincodeByTarget(chaincodeName string, args []string, ta
 
 //QueryByChaincode ..
 /**
-* Sends a proposal to one or more endorsing peers that will be handled by the chaincode.
-* This request will be presented to the chaincode 'invoke' and must understand
-* from the arguments that this is a query request. The chaincode must also return
-* results in the byte array format and the caller will have to be able to decode
-* these results
+ * Sends a proposal to one or more endorsing peers that will be handled by the chaincode.
+ * This request will be presented to the chaincode 'invoke' and must understand
+ * from the arguments that this is a query request. The chaincode must also return
+ * results in the byte array format and the caller will have to be able to decode
+ * these results
  * @parame {string} chaincode name
  * @param {[]string} invoke arguments
  * @param {[]Peer} target peers
  * @returns {[][]byte} an array of payloads
-*/
+ */
 func QueryByChaincode(chaincodeName string, args []string, targets []Peer, clientContext Client) ([][]byte, error) {
 	if chaincodeName == "" {
 		return nil, fmt.Errorf("Missing chaincode name")
@@ -836,27 +1107,28 @@ func CreateTransactionProposal(chaincodeName string, chainID string,
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName},
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
-	user, err := clientContext.LoadUserFromStateStore("")
+	creator, err := clientContext.GetIdentity()
 	if err != nil {
-		return nil, fmt.Errorf("LoadUserFromStateStore return error: %s", err)
+		return nil, fmt.Errorf("Error getting creator: %v", err)
 	}
 
-	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
-	if err != nil {
-		return nil, err
-	}
 	// create a proposal from a ChaincodeInvocationSpec
-	proposal, txID, err := protos_utils.CreateChaincodeProposalWithTransient(common.HeaderType_ENDORSER_TRANSACTION, chainID, ccis, creatorID, transientData)
+	proposal, txID, err := protos_utils.CreateChaincodeProposalWithTransient(common.HeaderType_ENDORSER_TRANSACTION, chainID, ccis, creator, transientData)
 	if err != nil {
 		return nil, fmt.Errorf("Could not create chaincode proposal, err %s", err)
 	}
 
-	proposalBytes, err := protos_utils.GetBytesProposal(proposal)
+	proposalBytes, err := proto.Marshal(proposal)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error marshalling proposal: %v", err)
 	}
 
-	signature, err := signObjectWithKey(proposalBytes, user.GetPrivateKey(),
+	user, err := clientContext.LoadUserFromStateStore("")
+	if err != nil {
+		return nil, fmt.Errorf("Error loading user from store: %s", err)
+	}
+
+	signature, err := SignObjectWithKey(proposalBytes, user.GetPrivateKey(),
 		&bccsp.SHAOpts{}, nil, clientContext.GetCryptoSuite())
 	if err != nil {
 		return nil, err
@@ -913,9 +1185,9 @@ func SendTransactionProposal(proposal *TransactionProposal, retry int, targetPee
 			defer wg.Done()
 			var err error
 			var proposalResponse *TransactionProposalResponse
-			logger.Debugf("Send ProposalRequest to peer :%s\n", peer.GetURL())
+			logger.Debugf("Send ProposalRequest to peer :%s", peer.GetURL())
 			if proposalResponse, err = peer.SendProposal(proposal); err != nil {
-				logger.Debugf("Receive Error Response :%v\n", proposalResponse)
+				logger.Debugf("Receive Error Response :%v", proposalResponse)
 				proposalResponse = &TransactionProposalResponse{
 					Endorser: peer.GetURL(),
 					Err:      fmt.Errorf("Error calling endorser '%s':  %s", peer.GetURL(), err),
@@ -1118,14 +1390,9 @@ func (c *chain) SendInstantiateProposal(chaincodeName string, chainID string,
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion},
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
-	user, err := c.clientContext.LoadUserFromStateStore("")
+	creator, err := c.clientContext.GetIdentity()
 	if err != nil {
-		return nil, "", fmt.Errorf("LoadUserFromStateStore return error: %s", err)
-	}
-
-	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
-	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("Error getting creator: %v", err)
 	}
 	chaincodePolicy, err := buildChaincodePolicy(config.GetFabricCAID())
 	if err != nil {
@@ -1136,7 +1403,7 @@ func (c *chain) SendInstantiateProposal(chaincodeName string, chainID string,
 		return nil, "", err
 	}
 	// create a proposal from a chaincodeDeploymentSpec
-	proposal, txID, err := protos_utils.CreateDeployProposalFromCDS(chainID, ccds, creatorID, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
+	proposal, txID, err := protos_utils.CreateDeployProposalFromCDS(chainID, ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
 	if err != nil {
 		return nil, "", fmt.Errorf("Could not create chaincode Deploy proposal, err %s", err)
 	}
@@ -1162,7 +1429,7 @@ func (c *chain) SignPayload(payload []byte) (*SignedEnvelope, error) {
 		return nil, fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
 	}
 
-	signature, err := signObjectWithKey(payload, user.GetPrivateKey(),
+	signature, err := SignObjectWithKey(payload, user.GetPrivateKey(),
 		&bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
 	if err != nil {
 		return nil, err
@@ -1189,7 +1456,7 @@ func (c *chain) BroadcastEnvelope(envelope *SignedEnvelope) ([]*TransactionRespo
 			var transactionResponse *TransactionResponse
 
 			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.GetURL())
-			if err, _ := orderer.SendBroadcast(envelope); err != nil {
+			if _, err := orderer.SendBroadcast(envelope); err != nil {
 				logger.Debugf("Receive Error Response from orderer :%v\n", err)
 				transactionResponse = &TransactionResponse{orderer.GetURL(),
 					fmt.Errorf("Error calling orderer '%s':  %s", orderer.GetURL(), err)}
@@ -1273,36 +1540,20 @@ func (c *chain) SendEnvelope(envelope *SignedEnvelope) (*common.Block, error) {
 	return nil, fmt.Errorf("unexpected: didn't receive a block from any of the orderer servces and didn't receive any error")
 }
 
-// signObjectWithKey will sign the given object with the given key,
-// hashOpts and signerOpts
-func signObjectWithKey(object []byte, key bccsp.Key,
-	hashOpts bccsp.HashOpts, signerOpts bccsp.SignerOpts, cryptoSuite bccsp.BCCSP) ([]byte, error) {
-	digest, err := cryptoSuite.Hash(object, hashOpts)
-	if err != nil {
-		return nil, err
-	}
-	signature, err := cryptoSuite.Sign(key, digest, signerOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	return signature, nil
-}
-
 func (c *chain) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error) {
 	user, err := c.clientContext.LoadUserFromStateStore("")
 	if err != nil {
 		return nil, fmt.Errorf("LoadUserFromStateStore return error: %s", err)
 	}
 
-	proposalBytes, err := protos_utils.GetBytesProposal(proposal)
+	proposalBytes, err := proto.Marshal(proposal)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error mashalling proposal: %s", err)
 	}
 
-	signature, err := signObjectWithKey(proposalBytes, user.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
+	signature, err := SignObjectWithKey(proposalBytes, user.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error signing proposal: %s", err)
 	}
 
 	return &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}, nil
@@ -1311,16 +1562,12 @@ func (c *chain) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error) 
 // fetchGenesisBlock fetches the configuration block for this channel
 func (c *chain) fetchGenesisBlock() (*common.Block, error) {
 	// Get user enrolment info and serialize for signing requests
-	user, err := c.clientContext.LoadUserFromStateStore("")
+	creator, err := c.clientContext.GetIdentity()
 	if err != nil {
-		return nil, fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
-	}
-	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error getting creator: %v", err)
 	}
 	// Seek block zero (the configuration tx for this channel)
-	payload := util.CreateGenesisBlockRequest(c.name, creatorID)
+	payload := CreateSeekGenesisBlockRequest(c.name, creator)
 	blockRequest, err := c.SignPayload(payload)
 	if err != nil {
 		return nil, fmt.Errorf("Error signing payload: %s", err)
@@ -1333,28 +1580,18 @@ func (c *chain) fetchGenesisBlock() (*common.Block, error) {
 	return block, nil
 }
 
-func getSerializedIdentity(userCertificate []byte) ([]byte, error) {
-	serializedIdentity := &msp.SerializedIdentity{Mspid: config.GetFabricCAID(),
-		IdBytes: userCertificate}
-	creatorID, err := proto.Marshal(serializedIdentity)
-	if err != nil {
-		return nil, fmt.Errorf("Could not Marshal serializedIdentity, err %s", err)
-	}
-	return creatorID, nil
-}
-
 // internal utility method to build chaincode policy
 // FIXME: for now always construct a 'Signed By any member of an organization by mspid' policy
 func buildChaincodePolicy(mspid string) (*common.SignaturePolicyEnvelope, error) {
 	// Define MSPRole
-	memberRole, err := proto.Marshal(&common.MSPRole{Role: common.MSPRole_MEMBER, MspIdentifier: mspid})
+	memberRole, err := proto.Marshal(&mspprotos.MSPRole{Role: mspprotos.MSPRole_MEMBER, MspIdentifier: mspid})
 	if err != nil {
 		return nil, fmt.Errorf("Error marshal MSPRole: %s", err)
 	}
 
 	// construct a list of msp principals to select from using the 'n out of' operator
-	onePrn := &common.MSPPrincipal{
-		PrincipalClassification: common.MSPPrincipal_ROLE,
+	onePrn := &mspprotos.MSPPrincipal{
+		PrincipalClassification: mspprotos.MSPPrincipal_ROLE,
 		Principal:               memberRole}
 
 	// construct 'signed by msp principal at index 0'
@@ -1367,200 +1604,70 @@ func buildChaincodePolicy(mspid string) (*common.SignaturePolicyEnvelope, error)
 	p := &common.SignaturePolicyEnvelope{
 		Version:    0,
 		Policy:     oneOfone,
-		Identities: []*common.MSPPrincipal{onePrn},
+		Identities: []*mspprotos.MSPPrincipal{onePrn},
 	}
 	return p, nil
 }
 
-func validateJoinChannelRequest(request *JoinChannelRequest) error {
-	// Validate arguments
-	if request == nil {
-		return fmt.Errorf("JoinChannelRequest argument is required to join channel")
-	}
-	if request.Targets == nil || len(request.Targets) == 0 {
-		return fmt.Errorf("Atleast one target peer is required to join channel")
-	}
-	if request.TxID == "" {
-		return fmt.Errorf("Transaction ID is required to join channel")
-	}
-	if request.Nonce == nil {
-		return fmt.Errorf("Nonce is required to join channel")
-	}
-	return nil
-}
-
-func (c *chain) getChannelConfig() (*common.ConfigEnvelope, error) {
-	// Get the newest block
-	block, err := c.getBlock(util.NewNewestSeekPosition())
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Debugf("GetChannelConfig - Retrieved newest block index: %d\n", block.Header.Number)
-
-	// Get the index of the last config block
-	lastConfig, err := util.GetLastConfigFromBlock(block)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to get last config from block: %v", err)
-	}
-
-	logger.Debugf("GetChannelConfig - Last config index: %d\n", lastConfig.Index)
-
-	// Get the last config block
-	block, err = c.getBlock(util.NewSpecificSeekPosition(lastConfig.Index))
-	if err != nil {
-		return nil, fmt.Errorf("Unable to retrieve block at index %d: %v", lastConfig.Index, err)
-	}
-
-	logger.Debugf("GetChannelConfig - Last config block number %d, Number of tx: %d", block.Header.Number, len(block.Data.Data))
-
-	if len(block.Data.Data) != 1 {
-		return nil, fmt.Errorf("Config block must only contain one transaction but contains %d", len(block.Data.Data))
-	}
-
-	envelope, err := protos_utils.ExtractEnvelope(block, 0)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to extract envelope from config block: %v", err)
-	}
-
-	payload, err := protos_utils.ExtractPayload(envelope)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to extract payload from config block envelope: %v", err)
-	}
-
-	channelHeader, err := protos_utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to extract channel header from config block payload: %v", err)
-	}
-
-	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG {
-		return nil, fmt.Errorf("Block must be of type 'CONFIG'")
-	}
-
-	configEnvelope := &common.ConfigEnvelope{}
-	if err := proto.Unmarshal(payload.Data, configEnvelope); err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal config envelope: %v", err)
-	}
-
-	return configEnvelope, nil
-}
-
-func (c *chain) loadConfigEnvelope(config *common.ConfigEnvelope) (*configItems, error) {
-	configItems := &configItems{
-		msps:        []*mb.MSPConfig{},
-		anchorPeers: []*OrgAnchorPeer{},
-		orderers:    []string{},
-	}
-	err := loadConfigGroup(configItems, config.Config.ChannelGroup, "base", "", true, false)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to load config items from channel group: %v", err)
-	}
-
-	logger.Debugf("Chain config: %v", configItems)
-
-	return configItems, nil
-}
-
-func (c *chain) loadConfigUpdateEnvelope(data []byte) (*configItems, error) {
-	logger.Debugf("loadConfigUpdateEnvelope - start")
-
-	envelope := &common.Envelope{}
-	err := proto.Unmarshal(data, envelope)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal envelope: %v", err)
-	}
-
-	payload, err := protos_utils.ExtractPayload(envelope)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to extract payload from config update envelope: %v", err)
-	}
-
-	channelHeader, err := protos_utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to extract channel header from config update payload: %v", err)
-	}
-
-	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG_UPDATE {
-		return nil, fmt.Errorf("Block must be of type 'CONFIG_UPDATE'")
-	}
-
-	configUpdateEnvelope := &common.ConfigUpdateEnvelope{}
-	if err := proto.Unmarshal(payload.Data, configUpdateEnvelope); err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal config update envelope: %v", err)
-	}
-
-	configUpdate := &common.ConfigUpdate{}
-	if err := proto.Unmarshal(configUpdateEnvelope.ConfigUpdate, configUpdate); err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal config update from envelope: %v", err)
-	}
-
-	logger.Debugf("loadConfigUpdateEnvelope - channel ::%s", configUpdate.ChannelId)
-
-	configItems := &configItems{
-		msps:        []*mb.MSPConfig{},
-		anchorPeers: []*OrgAnchorPeer{},
-		orderers:    []string{},
-	}
-
-	// Do the write_set second so they update anything in the read set
-	err = loadConfigGroup(configItems, configUpdate.ReadSet, "read_set", "", true, false)
-	err = loadConfigGroup(configItems, configUpdate.WriteSet, "write_set", "", true, false)
-
-	return configItems, nil
-}
-
-func loadConfigGroup(configItems *configItems, group *common.ConfigGroup, name string, org string, top bool, keepChildren bool) error {
-	logger.Debugf("loadConfigGroup - %s - START groups Org: %s  keep: %v", name, org, keepChildren)
+func loadConfigGroup(configItems *configItems, versionsGroup *common.ConfigGroup, group *common.ConfigGroup, name string, org string, top bool) error {
+	logger.Debugf("loadConfigGroup - %s - START groups Org: %s", name, org)
 	if group == nil {
 		return nil
 	}
 
+	logger.Debugf("loadConfigGroup - %s   - version %v", name, group.Version)
+	logger.Debugf("loadConfigGroup - %s   - mod policy %s", name, group.ModPolicy)
+	logger.Debugf("loadConfigGroup - %s - >> groups", name)
+
 	groups := group.GetGroups()
 	if groups != nil {
-		for key, g := range groups {
+		versionsGroup.Groups = make(map[string]*common.ConfigGroup)
+		for key, configGroup := range groups {
 			logger.Debugf("loadConfigGroup - %s - found config group ==> %s", name, key)
 			// The Application group is where config settings are that we want to find
-			loadConfigGroup(configItems, g, name+"."+key, key, false, (key == fabric_config.ApplicationGroupKey || keepChildren))
+			versionsGroup.Groups[key] = &common.ConfigGroup{}
+			loadConfigGroup(configItems, versionsGroup.Groups[key], configGroup, name+"."+key, key, false)
 		}
 	} else {
 		logger.Debugf("loadConfigGroup - %s - no groups", name)
 	}
+	logger.Debugf("loadConfigGroup - %s - << groups", name)
 
-	logger.Debugf("loadConfigGroup - %s - START values", name)
-
+	logger.Debugf("loadConfigGroup - %s - >> values", name)
 	values := group.GetValues()
 	if values != nil {
+		versionsGroup.Values = make(map[string]*common.ConfigValue)
 		for key, configValue := range values {
-			loadConfigValue(configItems, key, configValue, name, org, keepChildren)
+			versionsGroup.Values[key] = &common.ConfigValue{}
+			loadConfigValue(configItems, key, versionsGroup.Values[key], configValue, name, org)
 		}
 	} else {
 		logger.Debugf("loadConfigGroup - %s - no values", name)
 	}
+	logger.Debugf("loadConfigGroup - %s - << values", name)
 
-	logger.Debugf("loadConfigGroup - %s - END values", name)
-
-	logger.Debugf("loadConfigGroup - %s - START policies", name)
-
+	logger.Debugf("loadConfigGroup - %s - >> policies", name)
 	policies := group.GetPolicies()
 	if policies != nil {
+		versionsGroup.Policies = make(map[string]*common.ConfigPolicy)
 		for key, configPolicy := range policies {
-			loadConfigPolicy(configItems, key, configPolicy, name, org, keepChildren)
+			versionsGroup.Policies[key] = &common.ConfigPolicy{}
+			loadConfigPolicy(configItems, key, versionsGroup.Policies[key], configPolicy, name, org)
 		}
 	} else {
 		logger.Debugf("loadConfigGroup - %s - no policies", name)
 	}
-
-	logger.Debugf("loadConfigGroup - %s - END policies", name)
-
-	logger.Debugf("loadConfigGroup - %s - END group", name)
-
+	logger.Debugf("loadConfigGroup - %s - << policies", name)
+	logger.Debugf("loadConfigGroup - %s - < group", name)
 	return nil
 }
 
-func loadConfigValue(configItems *configItems, key string, configValue *common.ConfigValue, groupName string, org string, keepValue bool) error {
-	logger.Debugf("loadConfigValue - %s - START value name: %s  keep:%v", groupName, key, keepValue)
-	logger.Debugf("loadConfigValue - %s   - version: %d", groupName, configValue.Version)
-	logger.Debugf("loadConfigValue - %s   - modPolicy: %s", groupName, configValue.ModPolicy)
+func loadConfigValue(configItems *configItems, key string, versionsValue *common.ConfigValue, configValue *common.ConfigValue, groupName string, org string) error {
+	logger.Infof("loadConfigValue - %s - START value name: %s", groupName, key)
+	logger.Infof("loadConfigValue - %s   - version: %d", groupName, configValue.Version)
+	logger.Infof("loadConfigValue - %s   - modPolicy: %s", groupName, configValue.ModPolicy)
+
+	versionsValue.Version = configValue.Version
 
 	switch key {
 	case fabric_config.AnchorPeersKey:
@@ -1590,14 +1697,12 @@ func loadConfigValue(configItems *configItems, key string, configValue *common.C
 
 		logger.Debugf("loadConfigValue - %s   - MSP found", groupName)
 
-		if keepValue {
-			mspType := msp.ProviderType(mspConfig.Type)
-			if mspType != msp.FABRIC {
-				return fmt.Errorf("unsupported MSP type: %v", mspType)
-			}
-
-			configItems.msps = append(configItems.msps, mspConfig)
+		mspType := msp.ProviderType(mspConfig.Type)
+		if mspType != msp.FABRIC {
+			return fmt.Errorf("unsupported MSP type: %v", mspType)
 		}
+
+		configItems.msps = append(configItems.msps, mspConfig)
 		break
 
 	case fabric_config.ConsensusTypeKey:
@@ -1644,26 +1749,6 @@ func loadConfigValue(configItems *configItems, key string, configValue *common.C
 		// TODO: Do something with this value
 		break
 
-	case configtx.CreationPolicyKey:
-		creationPolicy := &ab.CreationPolicy{}
-		err := proto.Unmarshal(configValue.Value, creationPolicy)
-		if err != nil {
-			return fmt.Errorf("Unable to unmarshal CreationPolicy from config value: %v", err)
-		}
-		logger.Debugf("loadConfigValue - %s   - CreationPolicy policy value :: %s", groupName, creationPolicy.Policy)
-		// TODO: Do something with this value
-		break
-
-	case fabric_config.ChainCreationPolicyNamesKey:
-		chainCreationPolicyNames := &ab.ChainCreationPolicyNames{}
-		err := proto.Unmarshal(configValue.Value, chainCreationPolicyNames)
-		if err != nil {
-			return fmt.Errorf("Unable to unmarshal ChainCreationPolicyNames from config value: %v", err)
-		}
-		logger.Debugf("loadConfigValue - %s   - ChainCreationPolicyNames names value :: %s", groupName, chainCreationPolicyNames.Names)
-		// TODO: Do something with this value
-		break
-
 	case fabric_config.HashingAlgorithmKey:
 		hashingAlgorithm := &common.HashingAlgorithm{}
 		err := proto.Unmarshal(configValue.Value, hashingAlgorithm)
@@ -1671,6 +1756,16 @@ func loadConfigValue(configItems *configItems, key string, configValue *common.C
 			return fmt.Errorf("Unable to unmarshal HashingAlgorithm from config value: %v", err)
 		}
 		logger.Debugf("loadConfigValue - %s   - HashingAlgorithm names value :: %s", groupName, hashingAlgorithm.Name)
+		// TODO: Do something with this value
+		break
+
+	case fabric_config.ConsortiumKey:
+		consortium := &common.Consortium{}
+		err := proto.Unmarshal(configValue.Value, consortium)
+		if err != nil {
+			return fmt.Errorf("Unable to unmarshal Consortium from config value: %v", err)
+		}
+		logger.Debugf("loadConfigValue - %s   - Consortium names value :: %s", groupName, consortium.Name)
 		// TODO: Do something with this value
 		break
 
@@ -1704,17 +1799,23 @@ func loadConfigValue(configItems *configItems, key string, configValue *common.C
 	return nil
 }
 
-func loadConfigPolicy(configItems *configItems, key string, configPolicy *common.ConfigPolicy, groupName string, org string, keepPolicy bool) error {
-	logger.Debugf("loadConfigPolicy - %s - name: %s  keep: %v", groupName, key, keepPolicy)
+func loadConfigPolicy(configItems *configItems, key string, versionsPolicy *common.ConfigPolicy, configPolicy *common.ConfigPolicy, groupName string, org string) error {
+	logger.Debugf("loadConfigPolicy - %s - name: %s", groupName, key)
 	logger.Debugf("loadConfigPolicy - %s - version: %d", groupName, configPolicy.Version)
 	logger.Debugf("loadConfigPolicy - %s - mod_policy: %s", groupName, configPolicy.ModPolicy)
 
-	policyType := common.Policy_PolicyType(configPolicy.Policy.Type)
+	versionsPolicy.Version = configPolicy.Version
+	return loadPolicy(configItems, versionsPolicy, key, configPolicy.Policy, groupName, org)
+}
+
+func loadPolicy(configItems *configItems, versionsPolicy *common.ConfigPolicy, key string, policy *common.Policy, groupName string, org string) error {
+
+	policyType := common.Policy_PolicyType(policy.Type)
 
 	switch policyType {
 	case common.Policy_SIGNATURE:
 		sigPolicyEnv := &common.SignaturePolicyEnvelope{}
-		err := proto.Unmarshal(configPolicy.Policy.Policy, sigPolicyEnv)
+		err := proto.Unmarshal(policy.Policy, sigPolicyEnv)
 		if err != nil {
 			return fmt.Errorf("Unable to unmarshal SignaturePolicyEnvelope from config policy: %v", err)
 		}
@@ -1729,7 +1830,7 @@ func loadConfigPolicy(configItems *configItems, key string, configPolicy *common
 
 	case common.Policy_IMPLICIT_META:
 		implicitMetaPolicy := &common.ImplicitMetaPolicy{}
-		err := proto.Unmarshal(configPolicy.Policy.Policy, implicitMetaPolicy)
+		err := proto.Unmarshal(policy.Policy, implicitMetaPolicy)
 		if err != nil {
 			return fmt.Errorf("Unable to unmarshal ImplicitMetaPolicy from config policy: %v", err)
 		}
@@ -1745,17 +1846,12 @@ func loadConfigPolicy(configItems *configItems, key string, configPolicy *common
 
 // getBlock retrieves the block at the given position
 func (c *chain) getBlock(pos *ab.SeekPosition) (*common.Block, error) {
-	nonce, err := util.GenerateRandomNonce()
+	nonce, err := GenerateRandomNonce()
 	if err != nil {
 		return nil, fmt.Errorf("error when generating nonce: %v", err)
 	}
 
-	user, err := c.clientContext.LoadUserFromStateStore("")
-	if err != nil {
-		return nil, fmt.Errorf("LoadUserFromStateStore return error: %s", err)
-	}
-
-	creator, err := getSerializedIdentity(user.GetEnrollmentCertificate())
+	creator, err := c.clientContext.GetIdentity()
 	if err != nil {
 		return nil, fmt.Errorf("error when serializing identity: %v", err)
 	}
@@ -1765,12 +1861,12 @@ func (c *chain) getBlock(pos *ab.SeekPosition) (*common.Block, error) {
 		return nil, fmt.Errorf("error when generating TX ID: %v", err)
 	}
 
-	seekInfoHeader, err := util.BuildChannelHeader(c.GetName(), common.HeaderType_DELIVER_SEEK_INFO, txID, 0)
+	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.GetName(), txID, 0, "", time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("error when building channel header: %v", err)
 	}
 
-	seekInfoHeaderBytes, err := protos_utils.Marshal(seekInfoHeader)
+	seekInfoHeaderBytes, err := proto.Marshal(seekInfoHeader)
 	if err != nil {
 		return nil, fmt.Errorf("error when marshalling channel header: %v", err)
 	}
@@ -1780,7 +1876,7 @@ func (c *chain) getBlock(pos *ab.SeekPosition) (*common.Block, error) {
 		Nonce:   nonce,
 	}
 
-	signatureHeaderBytes, err := protos_utils.Marshal(signatureHeader)
+	signatureHeaderBytes, err := proto.Marshal(signatureHeader)
 	if err != nil {
 		return nil, fmt.Errorf("error when marshalling signature header: %v", err)
 	}
@@ -1796,7 +1892,7 @@ func (c *chain) getBlock(pos *ab.SeekPosition) (*common.Block, error) {
 		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
 	}
 
-	seekInfoBytes, err := protos_utils.Marshal(seekInfo)
+	seekInfoBytes, err := proto.Marshal(seekInfo)
 	if err != nil {
 		return nil, fmt.Errorf("error when marshalling seek info: %v", err)
 	}
@@ -1806,7 +1902,7 @@ func (c *chain) getBlock(pos *ab.SeekPosition) (*common.Block, error) {
 		Data:   seekInfoBytes,
 	}
 
-	seekPayloadBytes, err := protos_utils.Marshal(seekPayload)
+	seekPayloadBytes, err := proto.Marshal(seekPayload)
 	if err != nil {
 		return nil, err
 	}
@@ -1820,15 +1916,17 @@ func (c *chain) getBlock(pos *ab.SeekPosition) (*common.Block, error) {
 }
 
 func (c *chain) initializeFromConfig(configItems *configItems) error {
-	msps, err := c.loadMSPs(configItems.msps)
-	if err != nil {
-		return fmt.Errorf("unable to load MSPs from config: %v", err)
-	}
+	// TODO revisit this if
+	if len(configItems.msps) > 0 {
+		msps, err := c.loadMSPs(configItems.msps)
+		if err != nil {
+			return fmt.Errorf("unable to load MSPs from config: %v", err)
+		}
 
-	if err := c.mspManager.Setup(msps); err != nil {
-		return fmt.Errorf("error calling Setup on MSPManager: %v", err)
+		if err := c.mspManager.Setup(msps); err != nil {
+			return fmt.Errorf("error calling Setup on MSPManager: %v", err)
+		}
 	}
-
 	c.anchorPeers = configItems.anchorPeers
 
 	// TODO should we create orderers and endorsing peers
@@ -1838,7 +1936,7 @@ func (c *chain) initializeFromConfig(configItems *configItems) error {
 func (c *chain) loadMSPs(mspConfigs []*mb.MSPConfig) ([]msp.MSP, error) {
 	logger.Debugf("loadMSPs - start number of msps=%d", len(mspConfigs))
 
-	var msps []msp.MSP
+	msps := []msp.MSP{}
 	for _, config := range mspConfigs {
 		mspType := msp.ProviderType(config.Type)
 		if mspType != msp.FABRIC {
@@ -1892,4 +1990,37 @@ func (c *chain) loadMSPs(mspConfigs []*mb.MSPConfig) ([]msp.MSP, error) {
 
 	logger.Debugf("loadMSPs - loaded %d MSPs", len(msps))
 	return msps, nil
+}
+
+// BuildChannelHeader is a utility method to build a common chain header
+func BuildChannelHeader(headerType common.HeaderType, chainID string, txID string, epoch uint64, chaincodeID string, timestamp time.Time) (*common.ChannelHeader, error) {
+	logger.Debugf("buildChannelHeader - headerType: %s chainID: %s txID: %d epoch: % chaincodeID: %s timestamp: %v", headerType, chainID, txID, epoch, chaincodeID, timestamp)
+	channelHeader := &common.ChannelHeader{
+		Type:      int32(headerType),
+		Version:   1,
+		ChannelId: chainID,
+		TxId:      txID,
+		Epoch:     epoch,
+	}
+	if !timestamp.IsZero() {
+		ts := &proto_ts.Timestamp{
+			Seconds: int64(timestamp.Second()),
+			Nanos:   int32(timestamp.Nanosecond()),
+		}
+		channelHeader.Timestamp = ts
+	}
+	if chaincodeID != "" {
+		ccID := &pb.ChaincodeID{
+			Name: chaincodeID,
+		}
+		headerExt := &pb.ChaincodeHeaderExtension{
+			ChaincodeId: ccID,
+		}
+		headerExtBytes, err := proto.Marshal(headerExt)
+		if err != nil {
+			return nil, fmt.Errorf("Error marshaling header extension: %v", err)
+		}
+		channelHeader.Extension = headerExtBytes
+	}
+	return channelHeader, nil
 }

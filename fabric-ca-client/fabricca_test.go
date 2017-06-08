@@ -37,7 +37,6 @@ func TestMain(m *testing.M) {
 		fmt.Println(err.Error())
 	}
 	os.Exit(m.Run())
-
 }
 
 func TestEnrollWithMissingParameters(t *testing.T) {

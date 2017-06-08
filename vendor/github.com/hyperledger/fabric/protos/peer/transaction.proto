@@ -17,6 +17,8 @@ limitations under the License.
 syntax = "proto3";
 
 option go_package = "github.com/hyperledger/fabric/protos/peer";
+option java_package = "org.hyperledger.fabric.protos.peer";
+option java_outer_classname = "TransactionPackage";
 
 package protos;
 
@@ -138,5 +140,12 @@ enum TxValidationCode {
 	TARGET_CHAIN_NOT_FOUND = 14;
 	MARSHAL_TX_ERROR = 15;
 	NIL_TXACTION = 16;
+	EXPIRED_CHAINCODE = 17;
+	CHAINCODE_VERSION_CONFLICT = 18;
+	BAD_HEADER_EXTENSION = 19;
+	BAD_CHANNEL_HEADER = 20;
+	BAD_RESPONSE_PAYLOAD = 21;
+	BAD_RWSET = 22;
+	ILLEGAL_WRITESET = 23;
 	INVALID_OTHER_REASON = 255;
 }

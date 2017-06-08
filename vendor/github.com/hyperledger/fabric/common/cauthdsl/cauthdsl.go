@@ -19,15 +19,16 @@ package cauthdsl
 import (
 	"fmt"
 
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/msp"
 	cb "github.com/hyperledger/fabric/protos/common"
-	"github.com/op/go-logging"
+	mb "github.com/hyperledger/fabric/protos/msp"
 )
 
-var cauthdslLogger = logging.MustGetLogger("cauthdsl")
+var cauthdslLogger = flogging.MustGetLogger("cauthdsl")
 
 // compile recursively builds a go evaluatable function corresponding to the policy specified
-func compile(policy *cb.SignaturePolicy, identities []*cb.MSPPrincipal, deserializer msp.IdentityDeserializer) (func([]*cb.SignedData, []bool) bool, error) {
+func compile(policy *cb.SignaturePolicy, identities []*mb.MSPPrincipal, deserializer msp.IdentityDeserializer) (func([]*cb.SignedData, []bool) bool, error) {
 	switch t := policy.Type.(type) {
 	case *cb.SignaturePolicy_NOutOf_:
 		policies := make([]func([]*cb.SignedData, []bool) bool, len(t.NOutOf.Policies))
@@ -40,7 +41,7 @@ func compile(policy *cb.SignaturePolicy, identities []*cb.MSPPrincipal, deserial
 
 		}
 		return func(signedData []*cb.SignedData, used []bool) bool {
-			cauthdslLogger.Debugf("Gate evaluation starts: (%s)", t)
+			cauthdslLogger.Debugf("Gate evaluation starts: (%v)", t)
 			verified := int32(0)
 			_used := make([]bool, len(used))
 			for _, policy := range policies {
@@ -52,20 +53,20 @@ func compile(policy *cb.SignaturePolicy, identities []*cb.MSPPrincipal, deserial
 			}
 
 			if verified >= t.NOutOf.N {
-				cauthdslLogger.Debugf("Gate evaluation succeeds: (%s)", t)
+				cauthdslLogger.Debugf("Gate evaluation succeeds: (%v)", t)
 			} else {
-				cauthdslLogger.Debugf("Gate evaluation fails: (%s)", t)
+				cauthdslLogger.Debugf("Gate evaluation fails: (%v)", t)
 			}
 
 			return verified >= t.NOutOf.N
 		}, nil
 	case *cb.SignaturePolicy_SignedBy:
 		if t.SignedBy < 0 || t.SignedBy >= int32(len(identities)) {
-			return nil, fmt.Errorf("Identity index out of range, requested %d, but identies length is %d", t.SignedBy, len(identities))
+			return nil, fmt.Errorf("Identity index out of range, requested %v, but identies length is %d", t.SignedBy, len(identities))
 		}
 		signedByID := identities[t.SignedBy]
 		return func(signedData []*cb.SignedData, used []bool) bool {
-			cauthdslLogger.Debugf("Principal evaluation starts: (%s) (used %s)", t, used)
+			cauthdslLogger.Debugf("Principal evaluation starts: (%v) (used %v)", t, used)
 			for i, sd := range signedData {
 				if used[i] {
 					continue
@@ -77,15 +78,18 @@ func compile(policy *cb.SignaturePolicy, identities []*cb.MSPPrincipal, deserial
 				}
 				err = identity.SatisfiesPrincipal(signedByID)
 				if err == nil {
-					err := identity.Verify(sd.Data, sd.Signature)
+					cauthdslLogger.Debugf("Principal matched by identity: (%v) for %v", t, sd.Identity)
+					err = identity.Verify(sd.Data, sd.Signature)
 					if err == nil {
-						cauthdslLogger.Debugf("Principal evaluation succeeds: (%s) (used %s)", t, used)
+						cauthdslLogger.Debugf("Principal evaluation succeeds: (%v) (used %v)", t, used)
 						used[i] = true
 						return true
 					}
+				} else {
+					cauthdslLogger.Debugf("Identity (%v) does not satisfy principal: %s", sd.Identity, err)
 				}
 			}
-			cauthdslLogger.Debugf("Principal evaluation fails: (%s)", t, used)
+			cauthdslLogger.Debugf("Principal evaluation fails: (%v) %v", t, used)
 			return false
 		}, nil
 	default:

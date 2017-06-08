@@ -1,3 +1,5 @@
 *.db
 *report.xml
 .DS_Store
+.vscode
+debug.test

@@ -32,6 +32,9 @@ import (
 	"strconv"
 
 	"github.com/cloudflare/cfssl/log"
+	"github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric/bccsp"
+	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
 )
 
 var (
@@ -54,15 +57,25 @@ var (
 // LoadMgr is the constructor for a TCert manager given key and certificate file names
 // @parameter caKeyFile is the file name for the CA's key
 // @parameter caCertFile is the file name for the CA's cert
-func LoadMgr(caKeyFile, caCertFile string) (*Mgr, error) {
-	caKey, err := LoadKey(caKeyFile)
-	if err != nil {
-		return nil, err
+func LoadMgr(caKeyFile, caCertFile string, myCSP bccsp.BCCSP) (*Mgr, error) {
+	_, caKey, caCert, err := util.GetSignerFromCertFile(caCertFile, myCSP)
+	if err != nil && caCert == nil {
+		return nil, fmt.Errorf("Failed to load cert [%s]", err)
 	}
-	caCert, err := LoadCert(caCertFile)
 	if err != nil {
-		return nil, err
+		// Fallback: attempt to read out of keyFile and import
+		log.Debugf("No key found in BCCSP keystore, attempting fallback")
+		key, err := util.ImportBCCSPKeyFromPEM(caKeyFile, myCSP, true)
+		if err != nil {
+			return nil, err
+		}
+		signer, err := cspsigner.New(myCSP, key)
+		if err != nil {
+			return nil, fmt.Errorf("Failed initializing CryptoSigner [%s]", err)
+		}
+		caKey = signer
 	}
+
 	return NewMgr(caKey, caCert)
 }
 

@@ -30,6 +30,7 @@ import (
 	cferr "github.com/cloudflare/cfssl/errors"
 	"github.com/cloudflare/cfssl/log"
 	"github.com/cloudflare/cfssl/signer"
+	"github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-ca/util"
 )
 
@@ -86,8 +87,8 @@ func (sh *signHandler) Handle(w http.ResponseWriter, r *http.Request) error {
 	}
 	r.Body.Close()
 
-	// Unmarshall the request body
-	var req signer.SignRequest
+	var req api.EnrollmentRequestNet
+
 	err = util.Unmarshal(body, &req, sh.endpoint)
 	if err != nil {
 		return err
@@ -95,15 +96,17 @@ func (sh *signHandler) Handle(w http.ResponseWriter, r *http.Request) error {
 
 	log.Debugf("Enrollment request: %+v\n", req)
 
+	caname := r.Header.Get(caHdrName)
+
 	// Make any authorization checks needed, depending on the contents
 	// of the CSR (Certificate Signing Request)
-	err = sh.csrAuthCheck(&req, r)
+	err = sh.csrAuthCheck(&req.SignRequest, r)
 	if err != nil {
 		return err
 	}
 
 	// Sign the certificate
-	cert, err := sh.server.enrollSigner.Sign(req)
+	cert, err := sh.server.caMap[caname].enrollSigner.Sign(req.SignRequest)
 	if err != nil {
 		err = fmt.Errorf("Failed signing for endpoint %s: %s", sh.endpoint, err)
 		log.Error(err.Error())
@@ -112,7 +115,7 @@ func (sh *signHandler) Handle(w http.ResponseWriter, r *http.Request) error {
 
 	// Send the response with the cert and the server info
 	resp := &enrollmentResponseNet{Cert: util.B64Encode(cert)}
-	err = sh.server.fillServerInfo(&resp.ServerInfo)
+	err = sh.server.caMap[caname].fillCAInfo(&resp.ServerInfo)
 	if err != nil {
 		return err
 	}
@@ -126,6 +129,7 @@ func (sh *signHandler) Handle(w http.ResponseWriter, r *http.Request) error {
 // the caller must have the "hf.IntermediateCA" attribute.
 func (sh *signHandler) csrAuthCheck(req *signer.SignRequest, r *http.Request) error {
 	// Decode and parse the request into a CSR so we can make checks
+	caname := r.Header.Get(caHdrName)
 	block, _ := pem.Decode([]byte(req.Request))
 	if block == nil {
 		return cferr.New(cferr.CSRError, cferr.DecodeFailed)
@@ -152,7 +156,7 @@ func (sh *signHandler) csrAuthCheck(req *signer.SignRequest, r *http.Request) er
 				log.Debug("CSR request received for an intermediate CA")
 				// This is a request for a CA certificate, so make sure the caller
 				// has the 'hf.IntermediateCA' attribute
-				return sh.server.userHasAttribute(r.Header.Get(enrollmentIDHdrName), "hf.IntermediateCA")
+				return sh.server.caMap[caname].userHasAttribute(r.Header.Get(enrollmentIDHdrName), "hf.IntermediateCA")
 			}
 		}
 	}

@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	fc "github.com/hyperledger/fabric-sdk-go/fabric-client"
 	consumer "github.com/hyperledger/fabric-sdk-go/fabric-client/events/consumer"
 	cnsmr "github.com/hyperledger/fabric/events/consumer"
 
@@ -62,7 +63,7 @@ type EventHubExt interface {
 
 // eventClientFactory creates an EventsClient instance
 type eventClientFactory interface {
-	newEventsClient(peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (consumer.EventsClient, error)
+	newEventsClient(client fc.Client, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (consumer.EventsClient, error)
 }
 
 type eventHub struct {
@@ -81,13 +82,15 @@ type eventHub struct {
 	// peer tls server host override
 	peerTLSServerHostOverride string
 	// grpc event client interface
-	client consumer.EventsClient
+	grpcClient consumer.EventsClient
 	// fabric connection state of this eventhub
 	connected bool
 	// List of events client is interested in
 	interestedEvents []*pb.Interest
 	// Factory that creates EventsClient
 	eventsClientFactory eventClientFactory
+	// Client
+	client fc.Client
 }
 
 // ChaincodeEvent contains the current event data for the event handler
@@ -116,12 +119,16 @@ type ChainCodeCBE struct {
 // consumerClientFactory is the default implementation oif the eventClientFactory
 type consumerClientFactory struct{}
 
-func (ccf *consumerClientFactory) newEventsClient(peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (consumer.EventsClient, error) {
-	return consumer.NewEventsClient(peerAddress, certificate, serverHostOverride, regTimeout, adapter)
+func (ccf *consumerClientFactory) newEventsClient(client fc.Client, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (consumer.EventsClient, error) {
+	return consumer.NewEventsClient(client, peerAddress, certificate, serverHostOverride, regTimeout, adapter)
 }
 
 // NewEventHub ...
-func NewEventHub() EventHub {
+func NewEventHub(client fc.Client) (EventHub, error) {
+
+	if client == nil {
+		return nil, fmt.Errorf("Client is nil")
+	}
 	chaincodeRegistrants := make(map[string][]*ChainCodeCBE)
 	txRegistrants := make(map[string]func(string, pb.TxValidationCode, error))
 
@@ -131,12 +138,13 @@ func NewEventHub() EventHub {
 		txRegistrants:        txRegistrants,
 		interestedEvents:     nil,
 		eventsClientFactory:  &consumerClientFactory{},
+		client:               client,
 	}
 
 	// register default transaction callback
 	eventHub.RegisterBlockEvent(eventHub.txCallback)
 
-	return eventHub
+	return eventHub, nil
 }
 
 // SetInterests clears all interests and sets the interests for BLOCK type of events.
@@ -163,8 +171,8 @@ func (eventHub *eventHub) Disconnect() {
 	}
 
 	// Unregister interests with server and stop the stream
-	eventHub.client.Unregister(eventHub.interestedEvents)
-	eventHub.client.Stop()
+	eventHub.grpcClient.Unregister(eventHub.interestedEvents)
+	eventHub.grpcClient.Stop()
 
 	eventHub.connected = false
 }
@@ -200,7 +208,7 @@ func (eventHub *eventHub) UnregisterBlockEvent(callback func(*common.Block)) {
 	// Unregister interest for blocks if there are no more registrants
 	if len(eventHub.blockRegistrants) < 1 {
 		blockEventInterest := pb.Interest{EventType: pb.EventType_BLOCK}
-		eventHub.client.UnregisterAsync([]*pb.Interest{&blockEventInterest})
+		eventHub.grpcClient.UnregisterAsync([]*pb.Interest{&blockEventInterest})
 		for i, v := range eventHub.interestedEvents {
 			if *v == blockEventInterest {
 				eventHub.interestedEvents = append(eventHub.interestedEvents[:i], eventHub.interestedEvents[i+1:]...)
@@ -210,12 +218,12 @@ func (eventHub *eventHub) UnregisterBlockEvent(callback func(*common.Block)) {
 }
 
 // addChaincodeInterest adds interest for specific CHAINCODE events.
-func (eventHub *eventHub) addChaincodeInterest(ChaincodeId string, EventName string) {
+func (eventHub *eventHub) addChaincodeInterest(ChaincodeID string, EventName string) {
 	ccInterest := &pb.Interest{
 		EventType: pb.EventType_CHAINCODE,
 		RegInfo: &pb.Interest_ChaincodeRegInfo{
 			ChaincodeRegInfo: &pb.ChaincodeReg{
-				ChaincodeId: ChaincodeId,
+				ChaincodeId: ChaincodeID,
 				EventName:   EventName,
 			},
 		},
@@ -224,18 +232,18 @@ func (eventHub *eventHub) addChaincodeInterest(ChaincodeId string, EventName str
 	eventHub.interestedEvents = append(eventHub.interestedEvents, ccInterest)
 
 	if eventHub.IsConnected() {
-		eventHub.client.RegisterAsync([]*pb.Interest{ccInterest})
+		eventHub.grpcClient.RegisterAsync([]*pb.Interest{ccInterest})
 	}
 
 }
 
 // removeChaincodeInterest remove interest for specific CHAINCODE event
-func (eventHub *eventHub) removeChaincodeInterest(ChaincodeId string, EventName string) {
+func (eventHub *eventHub) removeChaincodeInterest(ChaincodeID string, EventName string) {
 	ccInterest := &pb.Interest{
 		EventType: pb.EventType_CHAINCODE,
 		RegInfo: &pb.Interest_ChaincodeRegInfo{
 			ChaincodeRegInfo: &pb.ChaincodeReg{
-				ChaincodeId: ChaincodeId,
+				ChaincodeId: ChaincodeID,
 				EventName:   EventName,
 			},
 		},
@@ -248,7 +256,7 @@ func (eventHub *eventHub) removeChaincodeInterest(ChaincodeId string, EventName 
 	}
 
 	if eventHub.IsConnected() {
-		eventHub.client.UnregisterAsync([]*pb.Interest{ccInterest})
+		eventHub.grpcClient.UnregisterAsync([]*pb.Interest{ccInterest})
 	}
 
 }
@@ -301,13 +309,13 @@ func (eventHub *eventHub) Connect() error {
 		return fmt.Errorf("You must register for at least one event before connecting")
 	}
 
-	if eventHub.client == nil {
-		eventsClient, _ := eventHub.eventsClientFactory.newEventsClient(eventHub.peerAddr, eventHub.peerTLSCertificate, eventHub.peerTLSServerHostOverride, 5, eventHub)
-		eventHub.client = eventsClient
+	if eventHub.grpcClient == nil {
+		eventsClient, _ := eventHub.eventsClientFactory.newEventsClient(eventHub.client, eventHub.peerAddr, eventHub.peerTLSCertificate, eventHub.peerTLSServerHostOverride, 5, eventHub)
+		eventHub.grpcClient = eventsClient
 	}
 
-	if err := eventHub.client.Start(); err != nil {
-		eventHub.client.Stop()
+	if err := eventHub.grpcClient.Start(); err != nil {
+		eventHub.grpcClient.Stop()
 		return fmt.Errorf("Error from eventsClient.Start (%s)", err.Error())
 	}
 
@@ -361,7 +369,7 @@ func (eventHub *eventHub) Disconnected(err error) {
 		return
 	}
 
-	eventHub.client.Stop()
+	eventHub.grpcClient.Stop()
 	eventHub.connected = false
 }
 

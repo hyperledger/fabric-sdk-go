@@ -63,9 +63,11 @@ func (h *registerHandler) Handle(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
+	caname := r.Header.Get(caHdrName)
+
 	// Register User
 	callerID := r.Header.Get(enrollmentIDHdrName)
-	secret, err := h.RegisterUser(&req, callerID)
+	secret, err := h.RegisterUser(&req, callerID, caname)
 	if err != nil {
 		return err
 	}
@@ -77,7 +79,7 @@ func (h *registerHandler) Handle(w http.ResponseWriter, r *http.Request) error {
 }
 
 // RegisterUser will register a user
-func (h *registerHandler) RegisterUser(req *api.RegistrationRequestNet, registrar string) (string, error) {
+func (h *registerHandler) RegisterUser(req *api.RegistrationRequestNet, registrar, caname string) (string, error) {
 
 	secret := req.Secret
 	req.Secret = "<<user-specified>>"
@@ -88,20 +90,20 @@ func (h *registerHandler) RegisterUser(req *api.RegistrationRequestNet, registra
 
 	if registrar != "" {
 		// Check the permissions of member named 'registrar' to perform this registration
-		err = h.canRegister(registrar, req.Type)
+		err = h.canRegister(registrar, req.Type, caname)
 		if err != nil {
 			log.Debugf("Registration of '%s' failed: %s", req.Name, err)
 			return "", err
 		}
 	}
 
-	err = h.validateID(req)
+	err = h.validateID(req, caname)
 	if err != nil {
 		log.Debugf("Registration of '%s' failed: %s", req.Name, err)
 		return "", err
 	}
 
-	secret, err = h.registerUserID(req)
+	secret, err = h.registerUserID(req, caname)
 
 	if err != nil {
 		log.Debugf("Registration of '%s' failed: %s", req.Name, err)
@@ -111,12 +113,12 @@ func (h *registerHandler) RegisterUser(req *api.RegistrationRequestNet, registra
 	return secret, nil
 }
 
-func (h *registerHandler) validateID(req *api.RegistrationRequestNet) error {
+func (h *registerHandler) validateID(req *api.RegistrationRequestNet, caname string) error {
 	log.Debug("Validate ID")
 	// Check whether the affiliation is required for the current user.
 	if h.requireAffiliation(req.Type) {
 		// If yes, is the affiliation valid
-		err := h.isValidAffiliation(req.Affiliation)
+		err := h.isValidAffiliation(req.Affiliation, caname)
 		if err != nil {
 			return err
 		}
@@ -125,14 +127,14 @@ func (h *registerHandler) validateID(req *api.RegistrationRequestNet) error {
 }
 
 // registerUserID registers a new user and its enrollmentID, role and state
-func (h *registerHandler) registerUserID(req *api.RegistrationRequestNet) (string, error) {
+func (h *registerHandler) registerUserID(req *api.RegistrationRequestNet, caname string) (string, error) {
 	log.Debugf("Registering user id: %s\n", req.Name)
 
 	if req.Secret == "" {
 		req.Secret = util.RandomString(12)
 	}
 
-	maxEnrollments := h.server.Config.Registry.MaxEnrollments
+	maxEnrollments := h.server.caMap[caname].Config.Registry.MaxEnrollments
 
 	if (req.MaxEnrollments > maxEnrollments && maxEnrollments != 0) || (req.MaxEnrollments < 0) {
 		return "", fmt.Errorf("Invalid max enrollment value specified, value must be equal to or less then %d", maxEnrollments)
@@ -148,14 +150,14 @@ func (h *registerHandler) registerUserID(req *api.RegistrationRequestNet) (strin
 		Type:           req.Type,
 		Affiliation:    req.Affiliation,
 		Attributes:     req.Attributes,
-		MaxEnrollments: req.MaxEnrollments,
+		MaxEnrollments: maxEnrollments,
 	}
 
-	registry := h.server.registry
+	registry := h.server.caMap[caname].registry
 
 	_, err := registry.GetUser(req.Name, nil)
 	if err == nil {
-		return "", fmt.Errorf("User '%s' is already registered", req.Name)
+		return "", fmt.Errorf("Identity '%s' is already registered", req.Name)
 	}
 
 	err = registry.InsertUser(insert)
@@ -166,10 +168,10 @@ func (h *registerHandler) registerUserID(req *api.RegistrationRequestNet) (strin
 	return req.Secret, nil
 }
 
-func (h *registerHandler) isValidAffiliation(affiliation string) error {
+func (h *registerHandler) isValidAffiliation(affiliation string, caname string) error {
 	log.Debug("Validating affiliation: " + affiliation)
 
-	_, err := h.server.registry.GetAffiliation(affiliation)
+	_, err := h.server.caMap[caname].registry.GetAffiliation(affiliation)
 	if err != nil {
 		return fmt.Errorf("Failed getting affiliation '%s': %s", affiliation, err)
 	}
@@ -183,10 +185,10 @@ func (h *registerHandler) requireAffiliation(idType string) bool {
 	return true
 }
 
-func (h *registerHandler) canRegister(registrar string, userType string) error {
+func (h *registerHandler) canRegister(registrar string, userType string, caname string) error {
 	log.Debugf("canRegister - Check to see if user %s can register", registrar)
 
-	user, err := h.server.registry.GetUser(registrar, nil)
+	user, err := h.server.caMap[caname].registry.GetUser(registrar, nil)
 	if err != nil {
 		return fmt.Errorf("Registrar does not exist: %s", err)
 	}
@@ -200,10 +202,10 @@ func (h *registerHandler) canRegister(registrar string, userType string) error {
 	}
 	if userType != "" {
 		if !util.StrContained(userType, roles) {
-			return fmt.Errorf("User '%s' may not register type '%s'", registrar, userType)
+			return fmt.Errorf("Identity '%s' may not register type '%s'", registrar, userType)
 		}
 	} else {
-		return errors.New("No user type provied. Please provide user type")
+		return errors.New("No identity type provided. Please provide identity type")
 	}
 
 	return nil

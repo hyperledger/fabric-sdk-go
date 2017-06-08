@@ -27,6 +27,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+func TestCAConfig(t *testing.T) {
+	caname := GetFabricCAName()
+	if caname != "ca-org1" {
+		t.Fatalf("caname doesn't match")
+	}
+}
+
 func TestGetPeersConfig(t *testing.T) {
 	pc, err := GetPeersConfig()
 	if err != nil {
@@ -75,7 +82,7 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testvalue after config initialization")
 	}
 	// Make sure Go SDK config is unaffected
-	testValue3 := myViper.GetBool("client.tls.enabled")
+	testValue3 := myViper.GetBool("client.security.enabled")
 	if testValue3 != true {
 		t.Fatalf("Expected existing config value to remain unchanged")
 	}

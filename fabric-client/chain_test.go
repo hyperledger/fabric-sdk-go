@@ -26,8 +26,6 @@ import (
 
 	"google.golang.org/grpc"
 
-	mocks "github.com/hyperledger/fabric-sdk-go/fabric-client/mocks"
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -114,9 +112,15 @@ func TestTargetPeers(t *testing.T) {
 
 	// Chain has two peers
 	peer1 := mockPeer{"Peer1", "http://peer1.com", []string{}, nil}
-	chain.AddPeer(&peer1)
+	err := chain.AddPeer(&peer1)
+	if err != nil {
+		t.Fatalf("Error adding peer: %v", err)
+	}
 	peer2 := mockPeer{"Peer2", "http://peer2.com", []string{}, nil}
-	chain.AddPeer(&peer2)
+	err = chain.AddPeer(&peer2)
+	if err != nil {
+		t.Fatalf("Error adding peer: %v", err)
+	}
 
 	// Set target to invalid URL
 	invalidChoice := mockPeer{"", "http://xyz.com", []string{}, nil}
@@ -151,7 +155,10 @@ func TestPrimaryPeer(t *testing.T) {
 
 	// Chain had one peer
 	peer1 := mockPeer{"Peer1", "http://peer1.com", []string{}, nil}
-	chain.AddPeer(&peer1)
+	err := chain.AddPeer(&peer1)
+	if err != nil {
+		t.Fatalf("Error adding peer: %v", err)
+	}
 
 	// Test primary defaults to chain peer
 	primary := chain.GetPrimaryPeer()
@@ -161,11 +168,14 @@ func TestPrimaryPeer(t *testing.T) {
 
 	// Chain has two peers
 	peer2 := mockPeer{"Peer2", "http://peer2.com", []string{}, nil}
-	chain.AddPeer(&peer2)
+	err = chain.AddPeer(&peer2)
+	if err != nil {
+		t.Fatalf("Error adding peer: %v", err)
+	}
 
 	// Set primary to invalid URL
 	invalidChoice := mockPeer{"", "http://xyz.com", []string{}, nil}
-	err := chain.SetPrimaryPeer(&invalidChoice)
+	err = chain.SetPrimaryPeer(&invalidChoice)
 	if err == nil {
 		t.Fatalf("Primary Peer was set to an invalid peer")
 	}
@@ -229,44 +239,105 @@ func TestJoinChannel(t *testing.T) {
 	chain, _ := setupTestChain()
 	peer, _ := NewPeer(testAddress, "", "")
 	peers = append(peers, peer)
-	orderer := &mockOrderer{DeliverResponse: NewMockDeliverResponse(mocks.NewSimpleMockBlock())}
-	nonce, _ := util.GenerateRandomNonce()
-	txID, _ := util.ComputeTxID(nonce, []byte("testID"))
-	request := &JoinChannelRequest{Targets: peers, Nonce: nonce, TxID: txID}
-	chain.AddOrderer(orderer)
-	chain.AddPeer(peer)
+	orderer := NewMockOrderer("", nil)
+	orderer.(MockOrderer).EnqueueForSendDeliver(NewSimpleMockBlock())
+	nonce, _ := GenerateRandomNonce()
+	txID, _ := ComputeTxID(nonce, []byte("testID"))
+
+	genesisBlockReqeust := &GenesisBlockRequest{
+		TxID:  txID,
+		Nonce: nonce,
+	}
+	genesisBlock, err := chain.GetGenesisBlock(genesisBlockReqeust)
+	if err == nil {
+		t.Fatalf("Should not have been able to get genesis block because of orderer missing")
+	}
+
+	err = chain.AddOrderer(orderer)
+	if err != nil {
+		t.Fatalf("Error adding orderer: %v", err)
+	}
+	genesisBlock, err = chain.GetGenesisBlock(genesisBlockReqeust)
+	if err != nil {
+		t.Fatalf("Error getting genesis block: %v", err)
+	}
+
+	_, err = chain.JoinChannel(nil)
+	if err == nil {
+		t.Fatalf("Should not have been able to join channel because of missing request parameter")
+	}
+
+	request := &JoinChannelRequest{
+		Targets:      peers,
+		GenesisBlock: genesisBlock,
+		Nonce:        nonce,
+		//TxID:         txID,
+	}
+	_, err = chain.JoinChannel(request)
+	if err == nil {
+		t.Fatalf("Should not have been able to join channel because of missing TxID parameter")
+	}
+
+	request = &JoinChannelRequest{
+		Targets:      peers,
+		GenesisBlock: genesisBlock,
+		//Nonce:        nonce,
+		TxID: txID,
+	}
+	_, err = chain.JoinChannel(request)
+	if err == nil {
+		t.Fatalf("Should not have been able to join channel because of missing Nonce parameter")
+	}
+
+	request = &JoinChannelRequest{
+		Targets: peers,
+		//GenesisBlock: genesisBlock,
+		Nonce: nonce,
+		TxID:  txID,
+	}
+	_, err = chain.JoinChannel(request)
+	if err == nil {
+		t.Fatalf("Should not have been able to join channel because of missing GenesisBlock parameter")
+	}
+
+	request = &JoinChannelRequest{
+		//Targets: peers,
+		GenesisBlock: genesisBlock,
+		Nonce:        nonce,
+		TxID:         txID,
+	}
+	_, err = chain.JoinChannel(request)
+	if err == nil {
+		t.Fatalf("Should not have been able to join channel because of missing Targets parameter")
+	}
+
+	request = &JoinChannelRequest{
+		Targets:      peers,
+		GenesisBlock: genesisBlock,
+		Nonce:        nonce,
+		TxID:         txID,
+	}
+	if err == nil {
+		t.Fatalf("Should not have been able to join channel because of invalid targets")
+	}
+
+	err = chain.AddPeer(peer)
+	if err != nil {
+		t.Fatalf("Error adding peer: %v", err)
+	}
 	// Test join channel with valid arguments
-	err := chain.JoinChannel(request)
+	response, err := chain.JoinChannel(request)
 	if err != nil {
 		t.Fatalf("Did not expect error from join channel. Got: %s", err)
 	}
-	// Test join channel without request
-	err = chain.JoinChannel(nil)
-	if err.Error() != "JoinChannelRequest argument is required to join channel" {
-		t.Fatalf("Expected error without join channel request")
+	if response == nil {
+		t.Fatalf("nil response")
 	}
-	// Test join channel without target peers
-	request = &JoinChannelRequest{Targets: nil, Nonce: nonce, TxID: txID}
-	err = chain.JoinChannel(request)
-	if err.Error() != "Atleast one target peer is required to join channel" {
-		t.Fatalf("Expected error without target peers")
-	}
-	// Test join channel without nonce
-	request = &JoinChannelRequest{Targets: peers, Nonce: nil, TxID: txID}
-	err = chain.JoinChannel(request)
-	if err.Error() != "Nonce is required to join channel" {
-		t.Fatalf("Expected error without nonce")
-	}
-	// Test join channel without TxID
-	request = &JoinChannelRequest{Targets: peers, Nonce: nonce, TxID: ""}
-	err = chain.JoinChannel(request)
-	if err.Error() != "Transaction ID is required to join channel" {
-		t.Fatalf("Expected error without transaction ID")
-	}
+
 	// Test failed proposal error handling
 	endorserServer.ProposalError = fmt.Errorf("Test Error")
 	request = &JoinChannelRequest{Targets: peers, Nonce: nonce, TxID: txID}
-	err = chain.JoinChannel(request)
+	_, err = chain.JoinChannel(request)
 	if err == nil {
 		t.Fatalf("Expected error")
 	}
@@ -277,8 +348,8 @@ func TestChainInitializeFromOrderer(t *testing.T) {
 	org2MSPID := "ORG2MSP"
 
 	chain, _ := setupTestChain()
-	builder := &mocks.MockConfigBlockBuilder{
-		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
+	builder := &MockConfigBlockBuilder{
+		MockConfigGroupBuilder: MockConfigGroupBuilder{
 			ModPolicy: "Admins",
 			MSPNames: []string{
 				org1MSPID,
@@ -290,10 +361,15 @@ func TestChainInitializeFromOrderer(t *testing.T) {
 		Index:           0,
 		LastConfigIndex: 0,
 	}
-	orderer := &mockOrderer{DeliverResponse: NewMockDeliverResponse(builder.Build())}
-	chain.AddOrderer(orderer)
+	orderer := NewMockOrderer("", nil)
+	orderer.(MockOrderer).EnqueueForSendDeliver(builder.Build())
+	orderer.(MockOrderer).EnqueueForSendDeliver(builder.Build())
+	err := chain.AddOrderer(orderer)
+	if err != nil {
+		t.Fatalf("Error adding orderer: %v", err)
+	}
 
-	err := chain.Initialize(nil)
+	err = chain.Initialize(nil)
 	if err != nil {
 		t.Fatalf("channel Initialize failed : %v", err)
 	}
@@ -330,8 +406,8 @@ func TestOrganizationUnits(t *testing.T) {
 	if len(orgUnits) > 0 {
 		t.Fatalf("Returned non configured organizational unit : %v", err)
 	}
-	builder := &mocks.MockConfigBlockBuilder{
-		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
+	builder := &MockConfigBlockBuilder{
+		MockConfigGroupBuilder: MockConfigGroupBuilder{
 			ModPolicy: "Admins",
 			MSPNames: []string{
 				chain.GetName(),
@@ -344,8 +420,13 @@ func TestOrganizationUnits(t *testing.T) {
 		Index:           0,
 		LastConfigIndex: 0,
 	}
-	orderer := &mockOrderer{DeliverResponse: NewMockDeliverResponse(builder.Build())}
-	chain.AddOrderer(orderer)
+	orderer := NewMockOrderer("", nil)
+	orderer.(MockOrderer).EnqueueForSendDeliver(builder.Build())
+	orderer.(MockOrderer).EnqueueForSendDeliver(builder.Build())
+	err = chain.AddOrderer(orderer)
+	if err != nil {
+		t.Fatalf("Error adding orderer: %v", err)
+	}
 
 	err = chain.Initialize(nil)
 	if err != nil {
@@ -381,9 +462,9 @@ func TestChainInitializeFromUpdate(t *testing.T) {
 	org2MSPID := "ORG2MSP"
 
 	chain, _ := setupTestChain()
-	builder := &mocks.MockConfigUpdateEnvelopeBuilder{
-		ChannelID: "testchannel",
-		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
+	builder := &MockConfigUpdateEnvelopeBuilder{
+		ChannelID: "mychannel",
+		MockConfigGroupBuilder: MockConfigGroupBuilder{
 			ModPolicy: "Admins",
 			MSPNames: []string{
 				org1MSPID,
@@ -402,30 +483,12 @@ func TestChainInitializeFromUpdate(t *testing.T) {
 	if mspManager == nil {
 		t.Fatalf("nil MSPManager on new chain")
 	}
-	msps, err := mspManager.GetMSPs()
-	if err != nil || len(msps) == 0 {
-		t.Fatalf("At least one MSP expected in MSPManager")
-	}
-	msp, ok := msps[org1MSPID]
-	if !ok {
-		t.Fatalf("Could not find %s", org1MSPID)
-	}
-	if identifier, _ := msp.GetIdentifier(); identifier != org1MSPID {
-		t.Fatalf("Expecting MSP identifier to be %s but got %s", org1MSPID, identifier)
-	}
-	msp, ok = msps[org2MSPID]
-	if !ok {
-		t.Fatalf("Could not find %s", org2MSPID)
-	}
-	if identifier, _ := msp.GetIdentifier(); identifier != org2MSPID {
-		t.Fatalf("Expecting MSP identifier to be %s but got %s", org2MSPID, identifier)
-	}
 }
 
 func setupTestChain() (Chain, error) {
 	client := NewClient()
 	user := NewUser("test")
-	cryptoSuite := &mocks.MockCryptoSuite{}
+	cryptoSuite := &MockCryptoSuite{}
 	client.SaveUserToStateStore(user, true)
 	client.SetCryptoSuite(cryptoSuite)
 	return NewChain("testChain", client)
@@ -439,21 +502,27 @@ func setupMassiveTestChain(numberOfPeers int, numberOfOrderers int) (Chain, erro
 
 	for i := 0; i < numberOfPeers; i++ {
 		peer := mockPeer{fmt.Sprintf("MockPeer%d", i), fmt.Sprintf("http://mock%d.peers.r.us", i), []string{}, nil}
-		chain.AddPeer(&peer)
+		err := chain.AddPeer(&peer)
+		if err != nil {
+			return nil, fmt.Errorf("Error adding peer: %v", err)
+		}
 	}
 
 	for i := 0; i < numberOfOrderers; i++ {
-		orderer := mockOrderer{MockURL: fmt.Sprintf("http://mock%d.orderers.r.us", i)}
-		chain.AddOrderer(&orderer)
+		orderer := NewMockOrderer(fmt.Sprintf("http://mock%d.orderers.r.us", i), nil)
+		err := chain.AddOrderer(orderer)
+		if err != nil {
+			return nil, fmt.Errorf("Error adding orderer: %v", err)
+		}
 	}
 
 	return chain, error
 }
 
-func startEndorserServer(t *testing.T) *mocks.MockEndorserServer {
+func startEndorserServer(t *testing.T) *MockEndorserServer {
 	grpcServer := grpc.NewServer()
 	lis, err := net.Listen("tcp", testAddress)
-	endorserServer := &mocks.MockEndorserServer{}
+	endorserServer := &MockEndorserServer{}
 	pb.RegisterEndorserServer(grpcServer, endorserServer)
 	if err != nil {
 		fmt.Printf("Error starting test server %s", err)

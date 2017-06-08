@@ -20,39 +20,109 @@ limitations under the License.
 package fabricclient
 
 import (
+	"fmt"
+
 	"github.com/hyperledger/fabric/protos/common"
-	ab "github.com/hyperledger/fabric/protos/orderer"
 )
 
-// mockOrderer is a mock fabricclient.Orderer
+// MockOrderer is a mock fabricclient.Orderer
+// Nothe that calling broadcast doesn't deliver anythng. This implies
+// that the broadcast side and the deliver side are totally
+// independent from the mocking point of view.
+type MockOrderer interface {
+	Orderer
+	// Enqueues a mock error to be returned to the client calling SendBroadcast
+	EnqueueSendBroadcastError(err error)
+	// Enqueues a mock value (block or error) for delivery
+	EnqueueForSendDeliver(value interface{})
+}
 type mockOrderer struct {
-	MockURL         string
-	MockError       error
-	DeliverResponse *ab.DeliverResponse
+	URL               string
+	BroadcastListener chan *SignedEnvelope
+	BroadcastErrors   chan error
+	Deliveries        chan *common.Block
+	DeliveryErrors    chan error
+	// These queues are used to detach the client, to avoid deadlocks
+	BroadcastQueue chan *SignedEnvelope
+	DeliveryQueue  chan interface{}
 }
 
-// GetURL returns the mock URL of the mock Orderer
+// NewMockOrderer ...
+func NewMockOrderer(url string, broadcastListener chan *SignedEnvelope) Orderer {
+	o := &mockOrderer{
+		URL:               url,
+		BroadcastListener: broadcastListener,
+		BroadcastErrors:   make(chan error, 100),
+		Deliveries:        make(chan *common.Block, 1),
+		DeliveryErrors:    make(chan error, 1),
+		BroadcastQueue:    make(chan *SignedEnvelope, 100),
+		DeliveryQueue:     make(chan interface{}, 100),
+	}
+
+	go broadcast(o)
+	go delivery(o)
+	return o
+}
+
+func broadcast(o *mockOrderer) {
+	for {
+		value := <-o.BroadcastQueue
+		o.BroadcastListener <- value
+	}
+}
+
+func delivery(o *mockOrderer) {
+	for {
+		value := <-o.DeliveryQueue
+		switch value.(type) {
+		case *common.Block:
+			o.Deliveries <- value.(*common.Block)
+		case error:
+			o.DeliveryErrors <- value.(error)
+		default:
+			panic(fmt.Sprintf("Value not *common.Block nor error: %v", value))
+		}
+	}
+}
+
+// GetURL returns the URL of the mock Orderer
 func (o *mockOrderer) GetURL() string {
-	return o.MockURL
+	return o.URL
 }
 
-// SendBroadcast mocks sending a broadcast by sending nothing nowhere
-func (o *mockOrderer) SendBroadcast(envelope *SignedEnvelope) (error, *common.Status) {
-	return o.MockError, nil
+// SendBroadcast accepts client broadcast calls and reports them to the listener channel
+// Returns the first enqueued error, or nil if there are no enqueued errors
+func (o *mockOrderer) SendBroadcast(envelope *SignedEnvelope) (*common.Status, error) {
+	// Report this call to the listener
+	if o.BroadcastListener != nil {
+		o.BroadcastQueue <- envelope
+	}
+	select {
+	case err := <-o.BroadcastErrors:
+		return nil, err
+	default:
+		return nil, nil
+	}
 }
 
-// SendBroadcast mocks sending a deliver request to the ordering service
+// SendDeliver returns the channels for delivery of prepared mock values and errors (if any)
 func (o *mockOrderer) SendDeliver(envelope *SignedEnvelope) (chan *common.Block,
 	chan error) {
-	responses := make(chan *common.Block, 1)
-	errors := make(chan error, 1)
-	responses <- o.DeliverResponse.GetBlock()
-	return responses, errors
+	return o.Deliveries, o.DeliveryErrors
 }
 
-// NewMockDeliverResponse returns a mock DeliverResponse with the given block
-func NewMockDeliverResponse(block *common.Block) *ab.DeliverResponse {
-	return &ab.DeliverResponse{
-		Type: &ab.DeliverResponse_Block{Block: block},
+func (o *mockOrderer) EnqueueSendBroadcastError(err error) {
+	o.BroadcastErrors <- err
+}
+
+// EnqueueForSendDeliver enqueues a mock value (block or error) for delivery
+func (o *mockOrderer) EnqueueForSendDeliver(value interface{}) {
+	switch value.(type) {
+	case *common.Block:
+		o.DeliveryQueue <- value.(*common.Block)
+	case error:
+		o.DeliveryQueue <- value.(error)
+	default:
+		panic(fmt.Sprintf("Value not *common.Block nor error: %v", value))
 	}
 }

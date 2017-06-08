@@ -17,6 +17,8 @@ limitations under the License.
 syntax = "proto3";
 
 option go_package = "github.com/hyperledger/fabric/protos/peer";
+option java_package = "org.hyperledger.fabric.protos.peer";
+option java_outer_classname = "ProposalPackage";
 
 package protos;
 
@@ -261,4 +263,11 @@ message ChaincodeAction {
 
 	// This field contains the result of executing this invocation.
 	Response response = 3;
+
+	// This field contains the ChaincodeID of executing this invocation. Endorser
+	// will set it with the ChaincodeID called by endorser while simulating proposal.
+	// Committer will validate the version matching with latest chaincode version.
+	// Adding ChaincodeID to keep version opens up the possibility of multiple
+	// ChaincodeAction per transaction.
+	ChaincodeID chaincode_id = 4;
 }

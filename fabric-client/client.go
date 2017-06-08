@@ -24,17 +24,18 @@ import (
 	"fmt"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
 	"github.com/golang/protobuf/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric-sdk-go/config"
 	kvs "github.com/hyperledger/fabric-sdk-go/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric/bccsp"
+	fcutils "github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric/protos/utils"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // Client ...
@@ -57,7 +58,9 @@ import (
 type Client interface {
 	NewChain(name string) (Chain, error)
 	GetChain(name string) Chain
-	CreateChannel(request *CreateChannelRequest) (Chain, error)
+	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
+	SignChannelConfig(config []byte) (*common.ConfigSignature, error)
+	CreateChannel(request *CreateChannelRequest) error
 	QueryChainInfo(name string, peers []Peer) (Chain, error)
 	SetStateStore(stateStore kvs.KeyValueStore)
 	GetStateStore() kvs.KeyValueStore
@@ -68,6 +71,9 @@ type Client interface {
 	InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string, chaincodePackage []byte, targets []Peer) ([]*TransactionProposalResponse, string, error)
 	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
 	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
+	GetIdentity() ([]byte, error)
+	GetUserContext() User
+	SetUserContext(user User)
 }
 
 type client struct {
@@ -79,12 +85,28 @@ type client struct {
 
 // CreateChannelRequest requests channel creation on the network
 type CreateChannelRequest struct {
-	// The name of the channel
+	// required - The name of the new channel
 	Name string
-	// Orderer object to create the channel
+	// required - The Orderer to send the update request
 	Orderer Orderer
-	// Contains channel configuration (ConfigTx)
+	// optional - the envelope object containing all
+	// required settings and signatures to initialize this channel.
+	// This envelope would have been created by the command
+	// line tool "configtx"
 	Envelope []byte
+	// optional - ConfigUpdate object built by the
+	// buildChannelConfig() method of this package
+	Config []byte
+	// optional - the list of collected signatures
+	// required by the channel create policy when using the `config` parameter.
+	// see signChannelConfig() method of this package
+	Signatures []*common.ConfigSignature
+	// optional - transaction ID
+	// required when using the `config` parameter
+	TxID string
+	// optional - nonce
+	// required when using the `config` parameter
+	Nonce []byte
 }
 
 // NewClient ...
@@ -216,12 +238,10 @@ func (c *client) SaveUserToStateStore(user User, skipPersistence bool) error {
 }
 
 // LoadUserFromStateStore ...
-/*
- * The client instance can have an optional state store. The SDK saves enrolled users in the storage which can be accessed by
- * authorized users of the application (authentication is done by the application outside of the SDK).
- * This function attempts to load the user by name from the local storage (via the KeyValueStore interface).
- * The loaded user object must represent an enrolled user with a valid enrollment certificate signed by a trusted CA
- * (such as the COP server).
+/**
+ * Restore the state of this member from the key value store (if found).  If not found, do nothing.
+ * @returns {Promise} A Promise for a {User} object upon successful restore, or if the user by the name
+ * does not exist in the state store, returns null without rejecting the promise
  */
 func (c *client) LoadUserFromStateStore(name string) (User, error) {
 	if c.userContext != nil {
@@ -254,67 +274,216 @@ func (c *client) LoadUserFromStateStore(name string) (User, error) {
 	user.SetPrivateKey(key)
 	c.userContext = user
 	return c.userContext, nil
-
 }
 
-// CreateChannel calls an orderer to create a channel on the network.
-// Only one of the application instances needs to call this method.
-// Once the chain is successfully created, this and other application
-// instances only need to call Chain joinChannel() to participate on the channel
-func (c *client) CreateChannel(request *CreateChannelRequest) (Chain, error) {
-	// Validate request
-	if request == nil {
-		return nil, fmt.Errorf("Missing all required input request parameters for initialize channel")
+// ExtractChannelConfig ...
+/**
+ * Extracts the protobuf 'ConfigUpdate' object out of the 'ConfigEnvelope'
+ * that is produced by the ConfigTX tool. The returned object may then be
+ * signed using the signChannelConfig() method of this class. Once the all
+ * signatures have been collected this object and the signatures may be used
+ * on the updateChannel or createChannel requests.
+ * @param {byte[]} The bytes of the ConfigEnvelope protopuf
+ * @returns {byte[]} The bytes of the ConfigUpdate protobuf
+ */
+func (c *client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
+	logger.Debug("extractConfigUpdate - start")
+
+	envelope := &common.Envelope{}
+	err := proto.Unmarshal(configEnvelope, envelope)
+	if err != nil {
+		return nil, fmt.Errorf("Error unmarshalling config envelope: %v", err)
 	}
 
-	if request.Envelope == nil {
-		return nil, fmt.Errorf("Missing envelope request parameter containing the configuration of the new channel")
+	payload := &common.Payload{}
+	err = proto.Unmarshal(envelope.Payload, payload)
+	if err != nil {
+		return nil, fmt.Errorf("Error unmarshalling config payload: %v", err)
+	}
+
+	configUpdateEnvelope := &common.ConfigUpdateEnvelope{}
+	err = proto.Unmarshal(payload.Data, configUpdateEnvelope)
+	if err != nil {
+		return nil, fmt.Errorf("Error unmarshalling config update envelope: %v", err)
+	}
+
+	return configUpdateEnvelope.ConfigUpdate, nil
+}
+
+// SignChannelConfig ...
+/**
+ * Sign a configuration
+ * @param {byte[]} config - The Configuration Update in byte form
+ * @return {ConfigSignature} - The signature of the current user on the config bytes
+ */
+func (c *client) SignChannelConfig(config []byte) (*common.ConfigSignature, error) {
+	logger.Debug("SignChannelConfig - start")
+
+	if config == nil {
+		return nil, fmt.Errorf("Channel configuration parameter is required")
+	}
+
+	creator, err := c.GetIdentity()
+	if err != nil {
+		return nil, fmt.Errorf("Error getting creator: %v", err)
+	}
+	nonce, err := GenerateRandomNonce()
+	if err != nil {
+		return nil, fmt.Errorf("Error generating nonce: %v", err)
+	}
+
+	// signature is across a signature header and the config update
+	signatureHeader := &common.SignatureHeader{
+		Creator: creator,
+		Nonce:   nonce,
+	}
+	signatureHeaderBytes, err := proto.Marshal(signatureHeader)
+	if err != nil {
+		return nil, fmt.Errorf("Error marshalling signatureHeader: %v", err)
+	}
+
+	user, err := c.LoadUserFromStateStore("")
+	if err != nil {
+		return nil, fmt.Errorf("Error getting user from store: %s", err)
+	}
+
+	// get all the bytes to be signed together, then sign
+	signingBytes := fcutils.ConcatenateBytes(signatureHeaderBytes, config)
+	signature, err := SignObjectWithKey(signingBytes, user.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
+	if err != nil {
+		return nil, fmt.Errorf("error singing config: %v", err)
+	}
+
+	// build the return object
+	configSignature := &common.ConfigSignature{
+		SignatureHeader: signatureHeaderBytes,
+		Signature:       signature,
+	}
+	return configSignature, nil
+}
+
+// CreateChannel ...
+/**
+ * Calls the orderer to start building the new channel.
+ * Only one of the application instances needs to call this method.
+ * Once the chain is successfully created, this and other application
+ * instances only need to call Chain joinChannel() to participate on the channel.
+ * @param {Object} request - An object containing the following fields:
+ *      <br>`name` : required - {string} The name of the new channel
+ *      <br>`orderer` : required - {Orderer} object instance representing the
+ *                      Orderer to send the create request
+ *      <br>`envelope` : optional - byte[] of the envelope object containing all
+ *                       required settings and signatures to initialize this channel.
+ *                       This envelope would have been created by the command
+ *                       line tool "configtx".
+ *      <br>`config` : optional - {byte[]} Protobuf ConfigUpdate object extracted from
+ *                     a ConfigEnvelope created by the ConfigTX tool.
+ *                     see extractChannelConfig()
+ *      <br>`signatures` : optional - {ConfigSignature[]} the list of collected signatures
+ *                         required by the channel create policy when using the `config` parameter.
+ * @returns {Result} Result Object with status on the create process.
+ */
+func (c *client) CreateChannel(request *CreateChannelRequest) error {
+	haveEnvelope := false
+	if request != nil && request.Envelope != nil {
+		logger.Debug("createChannel - have envelope")
+		haveEnvelope = true
+	}
+	return c.CreateOrUpdateChannel(request, haveEnvelope)
+}
+
+func (c *client) CreateOrUpdateChannel(request *CreateChannelRequest, haveEnvelope bool) error {
+	// Validate request
+	if request == nil {
+		return fmt.Errorf("Missing all required input request parameters for initialize channel")
+	}
+
+	if request.Config == nil && !haveEnvelope {
+		return fmt.Errorf("Missing envelope request parameter containing the configuration of the new channel")
+	}
+
+	if request.Signatures == nil && !haveEnvelope {
+		return fmt.Errorf("Missing signatures request parameter for the new channel")
+	}
+
+	if request.TxID == "" && !haveEnvelope {
+		return fmt.Errorf("Missing txId request parameter")
+	}
+
+	if request.Nonce == nil && !haveEnvelope {
+		return fmt.Errorf("Missing nonce request parameter")
 	}
 
 	if request.Orderer == nil {
-		return nil, fmt.Errorf("Missing orderer request parameter for the initialize channel")
+		return fmt.Errorf("Missing orderer request parameter for the initialize channel")
 	}
 
 	if request.Name == "" {
-		return nil, fmt.Errorf("Missing name request parameter for the new channel")
+		return fmt.Errorf("Missing name request parameter for the new channel")
 	}
 
-	signedEnvelope := &common.Envelope{}
-	err := proto.Unmarshal(request.Envelope, signedEnvelope)
-	if err != nil {
-		return nil, fmt.Errorf("Error unmarshalling channel configuration data: %s",
-			err.Error())
-	}
-	// Send request
-	err, _ = request.Orderer.SendBroadcast(&SignedEnvelope{
-		Signature: signedEnvelope.Signature,
-		Payload:   signedEnvelope.Payload,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Could not broadcast to orderer %s: %s", request.Orderer.GetURL(), err.Error())
-	}
+	// chain = null;
+	var signature []byte
+	var payloadBytes []byte
 
-	// Initialize the new chain
-
-	// FIXME: Temporary code checks if the chain already exists
-	// and, if not, creates the chain. This check should be removed after
-	// the end-to-end test is refactored to not create the chain before invoking CreateChannel
-	chain := c.GetChain(request.Name)
-	if chain == nil {
-		logger.Debugf("Creating new chain: %", request.Name)
-		chain, err = c.NewChain(request.Name)
+	if haveEnvelope {
+		logger.Debug("createOrUpdateChannel - have envelope")
+		envelope := &common.Envelope{}
+		err := proto.Unmarshal(request.Envelope, envelope)
 		if err != nil {
-			return nil, fmt.Errorf("Error while creating new chain %s: %v", request.Name, err)
+			return fmt.Errorf("Error unmarshalling channel configuration data: %s", err.Error())
+		}
+		signature = envelope.Signature
+		payloadBytes = envelope.Payload
+	} else {
+		logger.Debug("createOrUpdateChannel - have config_update")
+		configUpdateEnvelope := &common.ConfigUpdateEnvelope{
+			ConfigUpdate: request.Config,
+			Signatures:   request.Signatures,
+		}
+
+		channelHeader, err := BuildChannelHeader(common.HeaderType_CONFIG_UPDATE, request.Name, request.TxID, 0, "", time.Now())
+		if err != nil {
+			return fmt.Errorf("error when building channel header: %v", err)
+		}
+		creator, err := c.GetIdentity()
+		if err != nil {
+			return fmt.Errorf("Error getting creator: %v", err)
+		}
+
+		header, err := BuildHeader(creator, channelHeader, request.Nonce)
+		if err != nil {
+			return fmt.Errorf("error when building header: %v", err)
+		}
+		configUpdateEnvelopeBytes, err := proto.Marshal(configUpdateEnvelope)
+		if err != nil {
+			return fmt.Errorf("error marshaling configUpdateEnvelope: %v", err)
+		}
+		payload := &common.Payload{
+			Header: header,
+			Data:   configUpdateEnvelopeBytes,
+		}
+		payloadBytes, err = proto.Marshal(payload)
+		if err != nil {
+			return fmt.Errorf("error marshaling payload: %v", err)
+		}
+
+		signature, err = SignObjectWithKey(payloadBytes, c.userContext.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
+		if err != nil {
+			return fmt.Errorf("error singing payload: %v", err)
 		}
 	}
 
-	if err := chain.Initialize(request.Envelope); err != nil {
-		return nil, fmt.Errorf("Error while initializing chain: %v", err)
+	// Send request
+	_, err := request.Orderer.SendBroadcast(&SignedEnvelope{
+		Signature: signature,
+		Payload:   payloadBytes,
+	})
+	if err != nil {
+		return fmt.Errorf("Could not broadcast to orderer %s: %s", request.Orderer.GetURL(), err.Error())
 	}
 
-	chain.AddOrderer(request.Orderer)
-
-	return chain, nil
+	return nil
 }
 
 // NewPeer ...
@@ -396,9 +565,9 @@ func (c *client) QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse
 	if peer == nil {
 		return nil, fmt.Errorf("To query installed chaincdes you need to pass peer")
 	}
-	responses, err := QueryByChaincode("lccc", []string{"getinstalledchaincodes"}, []Peer{peer}, c)
+	responses, err := QueryByChaincode("lscc", []string{"getinstalledchaincodes"}, []Peer{peer}, c)
 	if err != nil {
-		return nil, fmt.Errorf("Invoke lccc getinstalledchaincodes return error: %v", err)
+		return nil, fmt.Errorf("Invoke lscc getinstalledchaincodes return error: %v", err)
 	}
 	payload := responses[0]
 	response := new(pb.ChaincodeQueryResponse)
@@ -444,18 +613,13 @@ func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion}},
 		CodePackage: chaincodePackage, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
 
-	user, err := c.LoadUserFromStateStore("")
+	creator, err := c.GetIdentity()
 	if err != nil {
-		return nil, "", fmt.Errorf("GetUserContext return error: %s", err)
-	}
-
-	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
-	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("Error getting creator: %v", err)
 	}
 
 	// create an install from a chaincodeDeploymentSpec
-	proposal, txID, err := protos_utils.CreateInstallProposalFromCDS(cds, creatorID)
+	proposal, txID, err := protos_utils.CreateInstallProposalFromCDS(cds, creator)
 	if err != nil {
 		return nil, "", fmt.Errorf("Could not create chaincode Deploy proposal, err %s", err)
 	}
@@ -463,7 +627,11 @@ func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	if err != nil {
 		return nil, "", err
 	}
-	signature, err := signObjectWithKey(proposalBytes, user.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
+	user, err := c.LoadUserFromStateStore("")
+	if err != nil {
+		return nil, "", fmt.Errorf("Error loading user from store: %s", err)
+	}
+	signature, err := SignObjectWithKey(proposalBytes, user.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
 	if err != nil {
 		return nil, "", err
 	}
@@ -480,4 +648,29 @@ func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	}, 0, targets)
 
 	return transactionProposalResponse, txID, err
+}
+
+// GetIdentity returns client's serialized identity
+func (c *client) GetIdentity() ([]byte, error) {
+
+	if c.userContext == nil {
+		return nil, fmt.Errorf("User is nil")
+	}
+	serializedIdentity := &msp.SerializedIdentity{Mspid: config.GetFabricCAID(),
+		IdBytes: c.userContext.GetEnrollmentCertificate()}
+	identity, err := proto.Marshal(serializedIdentity)
+	if err != nil {
+		return nil, fmt.Errorf("Could not Marshal serializedIdentity, err %s", err)
+	}
+	return identity, nil
+}
+
+// GetUserContext ...
+func (c *client) GetUserContext() User {
+	return c.userContext
+}
+
+// SetUserContext ...
+func (c *client) SetUserContext(user User) {
+	c.userContext = user
 }

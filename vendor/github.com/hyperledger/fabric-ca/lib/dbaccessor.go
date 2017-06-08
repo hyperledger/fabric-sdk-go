@@ -47,7 +47,7 @@ DELETE FROM users
 
 	updateUser = `
 UPDATE users
-	SET token = :token, type = :type, affiliation = :affiliation, attributes = :attributes
+	SET token = :token, type = :type, affiliation = :affiliation, attributes = :attributes, state = :state
 	WHERE (id = :id);`
 
 	getUser = `
@@ -102,7 +102,7 @@ func (d *Accessor) SetDB(db *sqlx.DB) {
 
 // InsertUser inserts user into database
 func (d *Accessor) InsertUser(user spi.UserInfo) error {
-	log.Debugf("DB: Insert User (%s) to database", user.Name)
+	log.Debugf("DB: Add identity %s", user.Name)
 
 	err := d.checkDB()
 	if err != nil {
@@ -125,7 +125,7 @@ func (d *Accessor) InsertUser(user spi.UserInfo) error {
 	})
 
 	if err != nil {
-		log.Error("Error during inserting of user, error: ", err)
+		log.Errorf("Error adding identity %s to the database: %s", user.Name, err)
 		return err
 	}
 
@@ -135,14 +135,14 @@ func (d *Accessor) InsertUser(user spi.UserInfo) error {
 	}
 
 	if numRowsAffected == 0 {
-		return fmt.Errorf("Failed to insert the user record")
+		return fmt.Errorf("Failed to add identity %s to the database", user.Name)
 	}
 
 	if numRowsAffected != 1 {
-		return fmt.Errorf("Expected one user record to be inserted, but %d records were inserted", numRowsAffected)
+		return fmt.Errorf("Expected to add one record to the database, but %d records were added", numRowsAffected)
 	}
 
-	log.Debugf("User %s inserted into database successfully", user.Name)
+	log.Debugf("Successfully added Identity %s to the database", user.Name)
 
 	return nil
 
@@ -150,7 +150,7 @@ func (d *Accessor) InsertUser(user spi.UserInfo) error {
 
 // DeleteUser deletes user from database
 func (d *Accessor) DeleteUser(id string) error {
-	log.Debugf("DB: Delete User (%s)", id)
+	log.Debugf("DB: Delete identity %s", id)
 	err := d.checkDB()
 	if err != nil {
 		return err
@@ -166,7 +166,7 @@ func (d *Accessor) DeleteUser(id string) error {
 
 // UpdateUser updates user in database
 func (d *Accessor) UpdateUser(user spi.UserInfo) error {
-	log.Debugf("DB: Update User (%s) in database", user.Name)
+	log.Debugf("DB: Update identity %s", user.Name)
 	err := d.checkDB()
 	if err != nil {
 		return err
@@ -188,18 +188,18 @@ func (d *Accessor) UpdateUser(user spi.UserInfo) error {
 	})
 
 	if err != nil {
-		log.Errorf("Failed to update user record [error: %s]", err)
+		log.Errorf("Failed to update identity record [error: %s]", err)
 		return err
 	}
 
 	numRowsAffected, err := res.RowsAffected()
 
 	if numRowsAffected == 0 {
-		return fmt.Errorf("Failed to update the user record")
+		return fmt.Errorf("Failed to update the identity record")
 	}
 
 	if numRowsAffected != 1 {
-		return fmt.Errorf("Expected one user record to be updated, but %d records were updated", numRowsAffected)
+		return fmt.Errorf("Expected one identity record to be updated, but %d records were updated", numRowsAffected)
 	}
 
 	return err
@@ -208,7 +208,7 @@ func (d *Accessor) UpdateUser(user spi.UserInfo) error {
 
 // GetUser gets user from database
 func (d *Accessor) GetUser(id string, attrs []string) (spi.User, error) {
-	log.Debugf("Getting user %s from the database", id)
+	log.Debugf("DB: Getting identity %s", id)
 
 	err := d.checkDB()
 	if err != nil {
@@ -226,7 +226,7 @@ func (d *Accessor) GetUser(id string, attrs []string) (spi.User, error) {
 
 // GetUserInfo gets user information from database
 func (d *Accessor) GetUserInfo(id string) (spi.UserInfo, error) {
-	log.Debugf("Getting user %s information from the database", id)
+	log.Debugf("DB: Getting information for identity %s", id)
 
 	var userInfo spi.UserInfo
 
@@ -257,7 +257,7 @@ func (d *Accessor) GetUserInfo(id string) (spi.UserInfo, error) {
 
 // InsertAffiliation inserts affiliation into database
 func (d *Accessor) InsertAffiliation(name string, prekey string) error {
-	log.Debugf("DB: Insert Affiliation (%s)", name)
+	log.Debugf("DB: Add affiliation %s", name)
 	err := d.checkDB()
 	if err != nil {
 		return err
@@ -272,7 +272,7 @@ func (d *Accessor) InsertAffiliation(name string, prekey string) error {
 
 // DeleteAffiliation deletes affiliation from database
 func (d *Accessor) DeleteAffiliation(name string) error {
-	log.Debugf("DB: Delete Affiliation (%s)", name)
+	log.Debugf("DB: Delete affiliation %s", name)
 	err := d.checkDB()
 	if err != nil {
 		return err
@@ -288,7 +288,7 @@ func (d *Accessor) DeleteAffiliation(name string) error {
 
 // GetAffiliation gets affiliation from database
 func (d *Accessor) GetAffiliation(name string) (spi.Affiliation, error) {
-	log.Debugf("DB: Get Affiliation (%s)", name)
+	log.Debugf("DB: Get affiliation %s", name)
 	err := d.checkDB()
 	if err != nil {
 		return nil, err
@@ -341,21 +341,23 @@ func (u *DBUser) GetName() string {
 
 // Login the user with a password
 func (u *DBUser) Login(pass string) error {
-	log.Debugf("DB: Login user %s with max enrollments of %d and state of %d", u.Name, u.MaxEnrollments, u.State)
+	log.Debugf("DB: Login identity %s with max enrollments of %d and state of %d",
+		u.Name, u.MaxEnrollments, u.State)
 
 	// Check the password
 	if u.Pass != pass {
 		return errors.New("Incorrect password")
 	}
 
-	// If the maxEnrollments is set (i.e. >= 0), make sure we haven't exceeded this number of logins.
-	// The state variable keeps track of the number of previously successful logins.
+	// If the maxEnrollments is set (i.e. >= 0), make sure we haven't exceeded
+	// this number of logins. The state variable keeps track of the number of
+	// previously successful logins.
 	if u.MaxEnrollments >= 0 {
-
 		// If maxEnrollments is set to 0, user has unlimited enrollment
 		if u.MaxEnrollments != 0 {
 			if u.State >= u.MaxEnrollments {
-				return fmt.Errorf("No more enrollments left. The maximum number of enrollments is %d", u.MaxEnrollments)
+				return fmt.Errorf("No more enrollments left. The maximum number of enrollments is %d",
+					u.MaxEnrollments)
 			}
 		}
 
@@ -363,7 +365,8 @@ func (u *DBUser) Login(pass string) error {
 		state := u.State + 1
 		res, err := u.db.Exec(u.db.Rebind("UPDATE users SET state = ? WHERE (id = ?)"), state, u.Name)
 		if err != nil {
-			return fmt.Errorf("Failed to update state of user %s to %d: %s", u.Name, state, err)
+			return fmt.Errorf("Failed to update state of identity %s to %d: %s",
+				u.Name, state, err)
 		}
 
 		numRowsAffected, err := res.RowsAffected()
@@ -373,17 +376,20 @@ func (u *DBUser) Login(pass string) error {
 		}
 
 		if numRowsAffected == 0 {
-			return fmt.Errorf("no rows were affected when updating the state of user %s", u.Name)
+			return fmt.Errorf("no rows were affected when updating the state of identity %s",
+				u.Name)
 		}
 
 		if numRowsAffected != 1 {
-			return fmt.Errorf("%d rows were affected when updating the state of user %s", numRowsAffected, u.Name)
+			return fmt.Errorf("%d rows were affected when updating the state of identity %s",
+				numRowsAffected, u.Name)
 		}
 
-		log.Debugf("Successfully incremented state for user %s to %d", u.Name, state)
+		log.Debugf("DB: Successfully incremented state for identity %s to %d",
+			u.Name, state)
 	}
 
-	log.Debugf("DB: user %s successfully logged in", u.Name)
+	log.Debugf("DB: identity %s successfully logged in", u.Name)
 
 	return nil
 

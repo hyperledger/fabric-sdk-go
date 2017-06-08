@@ -17,7 +17,6 @@ limitations under the License.
 package msp
 
 import (
-	"github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric/protos/msp"
 )
 
@@ -100,7 +99,18 @@ type MSP interface {
 	// the description supplied in MSPPrincipal. The check may
 	// involve a byte-by-byte comparison (if the principal is
 	// a serialized identity) or may require MSP validation
-	SatisfiesPrincipal(id Identity, principal *common.MSPPrincipal) error
+	SatisfiesPrincipal(id Identity, principal *msp.MSPPrincipal) error
+}
+
+// OUIdentifier represents an organizational unit and
+// its related chain of trust identifier.
+type OUIdentifier struct {
+	// CertifiersIdentifier is the hash of certificates chain of trust
+	// related to this organizational unit
+	CertifiersIdentifier []byte
+	// OrganizationUnitIdentifier defines the organizational unit under the
+	// MSP identified with MSPIdentifier
+	OrganizationalUnitIdentifier string
 }
 
 // From this point on, there are interfaces that are shared within the peer and client API
@@ -138,7 +148,7 @@ type Identity interface {
 	// TODO: For X.509 based identities, check if we need a dedicated type
 	//       for OU where the Certificate OU is properly namespaced by the
 	//       signer's identity
-	GetOrganizationalUnits() []string
+	GetOrganizationalUnits() []*OUIdentifier
 
 	// Verify a signature over some message using this identity as reference
 	Verify(msg []byte, sig []byte) error
@@ -156,7 +166,7 @@ type Identity interface {
 	// the description supplied in MSPPrincipal. The check may
 	// involve a byte-by-byte comparison (if the principal is
 	// a serialized identity) or may require MSP validation
-	SatisfiesPrincipal(principal *common.MSPPrincipal) error
+	SatisfiesPrincipal(principal *msp.MSPPrincipal) error
 }
 
 // SigningIdentity is an extension of Identity to cover signing capabilities.

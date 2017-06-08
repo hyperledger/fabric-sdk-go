@@ -27,7 +27,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -38,68 +37,22 @@ import (
 	"github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-ca/lib/tls"
 	"github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric/bccsp"
 	"github.com/mitchellh/mapstructure"
 )
 
-const (
-	clientConfigFile = "client-config.json"
-)
-
-// NewClient is the constructor for the fabric-ca client API
-func NewClient(configFile string) (*Client, error) {
-	c := new(Client)
-
-	if configFile != "" {
-		if _, err := os.Stat(configFile); err != nil {
-			log.Info("Fabric-ca client configuration file not found. Using Defaults...")
-		} else {
-			var config []byte
-			var err error
-			config, err = ioutil.ReadFile(configFile)
-			if err != nil {
-				return nil, err
-			}
-			// Override any defaults
-			err = util.Unmarshal([]byte(config), c, "NewClient")
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	var cfg = new(ClientConfig)
-	c.Config = cfg
-
-	// Set defaults
-	if c.Config.URL == "" {
-		c.Config.URL = util.GetServerURL()
-	}
-
-	if c.HomeDir == "" {
-		c.HomeDir = filepath.Dir(util.GetDefaultConfigFile("fabric-ca-client"))
-	}
-
-	if _, err := os.Stat(c.HomeDir); err != nil {
-		if os.IsNotExist(err) {
-			_, err := util.CreateClientHome()
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return c, nil
-}
-
 // Client is the fabric-ca client object
 type Client struct {
-	// HomeDir is the home directory
+	// The client's home directory
 	HomeDir string `json:"homeDir,omitempty"`
 	// The client's configuration
-	Config                        *ClientConfig
-	initialized                   bool
+	Config *ClientConfig
+	// Denotes if the client object is already initialized
+	initialized bool
+	// File and directory paths
 	keyFile, certFile, caCertsDir string
+	// The crypto service provider (BCCSP)
+	csp bccsp.BCCSP
 }
 
 // Init initializes the client
@@ -134,10 +87,12 @@ func (c *Client) Init() error {
 		if err != nil {
 			return fmt.Errorf("Failed to create cacerts directory: %s", err)
 		}
-		err = factory.InitFactories(nil)
+		// Initialize BCCSP (the crypto layer)
+		c.csp, err = util.InitBCCSP(&cfg.CSP, c.HomeDir)
 		if err != nil {
-			return fmt.Errorf("Failed to initialize BCCSP: %s", err)
+			return err
 		}
+		// Successfully initialized the client
 		c.initialized = true
 	}
 	return nil
@@ -152,18 +107,22 @@ type GetServerInfoResponse struct {
 	CAChain []byte
 }
 
-// GetServerInfo returns generic server information
-func (c *Client) GetServerInfo() (*GetServerInfoResponse, error) {
+// GetCAInfo returns generic CA information
+func (c *Client) GetCAInfo(req *api.GetCAInfoRequest) (*GetServerInfoResponse, error) {
 	err := c.Init()
 	if err != nil {
 		return nil, err
 	}
-	req, err := c.newGet("info")
+	body, err := util.Marshal(req, "GetCAInfo")
+	if err != nil {
+		return nil, err
+	}
+	cainforeq, err := c.newPost("cainfo", body)
 	if err != nil {
 		return nil, err
 	}
 	netSI := &serverInfoResponseNet{}
-	err = c.SendReq(req, netSI)
+	err = c.SendReq(cainforeq, netSI)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +154,7 @@ type EnrollmentResponse struct {
 // Enroll enrolls a new identity
 // @param req The enrollment request
 func (c *Client) Enroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error) {
-	log.Debugf("Enrolling %+v", &req)
+	log.Debugf("Enrolling %+v", req)
 
 	err := c.Init()
 	if err != nil {
@@ -209,14 +168,16 @@ func (c *Client) Enroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error)
 		return nil, err
 	}
 
-	// Get the body of the request
-	sreq := signer.SignRequest{
-		Hosts:   signer.SplitHosts(req.Hosts),
-		Request: string(csrPEM),
-		Profile: req.Profile,
-		Label:   req.Label,
+	reqNet := &api.EnrollmentRequestNet{
+		CAName: req.CAName,
 	}
-	body, err := util.Marshal(sreq, "SignRequest")
+
+	reqNet.Hosts = signer.SplitHosts(req.Hosts)
+	reqNet.Request = string(csrPEM)
+	reqNet.Profile = req.Profile
+	reqNet.Label = req.Label
+
+	body, err := util.Marshal(reqNet, "SignRequest")
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +202,7 @@ func (c *Client) Enroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error)
 // @param result The result from server
 // @param id Name of identity being enrolled or reenrolled
 // @param key The private key which was used to sign the request
-func (c *Client) newEnrollmentResponse(result *enrollmentResponseNet, id string, key []byte) (*EnrollmentResponse, error) {
+func (c *Client) newEnrollmentResponse(result *enrollmentResponseNet, id string, key bccsp.Key) (*EnrollmentResponse, error) {
 	log.Debugf("newEnrollmentResponse %s", id)
 	certByte, err := util.B64Decode(result.Cert)
 	if err != nil {
@@ -258,8 +219,8 @@ func (c *Client) newEnrollmentResponse(result *enrollmentResponseNet, id string,
 }
 
 // GenCSR generates a CSR (Certificate Signing Request)
-func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, []byte, error) {
-	log.Debugf("GenCSR %+v", &req)
+func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, bccsp.Key, error) {
+	log.Debugf("GenCSR %+v", req)
 
 	err := c.Init()
 	if err != nil {
@@ -269,7 +230,17 @@ func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, []byte, error) {
 	cr := c.newCertificateRequest(req)
 	cr.CN = id
 
-	csrPEM, key, err := csr.ParseRequest(cr)
+	if cr.KeyRequest == nil {
+		cr.KeyRequest = csr.NewBasicKeyRequest()
+	}
+
+	key, cspSigner, err := util.BCCSPKeyRequestGenerate(cr, c.csp)
+	if err != nil {
+		log.Debugf("failed generating BCCSP key: %s", err)
+		return nil, nil, err
+	}
+
+	csrPEM, err := csr.Generate(cspSigner, cr)
 	if err != nil {
 		log.Debugf("failed generating CSR: %s", err)
 		return nil, nil, err
@@ -315,16 +286,11 @@ func (c *Client) LoadMyIdentity() (*Identity, error) {
 }
 
 // StoreMyIdentity stores my identity to disk
-func (c *Client) StoreMyIdentity(key, cert []byte) error {
+func (c *Client) StoreMyIdentity(cert []byte) error {
 	err := c.Init()
 	if err != nil {
 		return err
 	}
-	err = util.WriteFile(c.keyFile, key, 0600)
-	if err != nil {
-		return fmt.Errorf("Failed to store my key: %s", err)
-	}
-	log.Infof("Stored client key at %s", c.keyFile)
 	err = util.WriteFile(c.certFile, cert, 0644)
 	if err != nil {
 		return fmt.Errorf("Failed to store my certificate: %s", err)
@@ -335,19 +301,25 @@ func (c *Client) StoreMyIdentity(key, cert []byte) error {
 
 // LoadIdentity loads an identity from disk
 func (c *Client) LoadIdentity(keyFile, certFile string) (*Identity, error) {
-	key, err := util.ReadFile(keyFile)
-	if err != nil {
-		return nil, err
-	}
 	cert, err := util.ReadFile(certFile)
 	if err != nil {
+		log.Debugf("No cert found at %s", certFile)
 		return nil, err
+	}
+	key, _, _, err := util.GetSignerFromCertFile(certFile, c.csp)
+	if err != nil {
+		// Fallback: attempt to read out of keyFile and import
+		log.Debugf("No key found in BCCSP keystore, attempting fallback")
+		key, err = util.ImportBCCSPKeyFromPEM(keyFile, c.csp, true)
+		if err != nil {
+			return nil, fmt.Errorf("Could not find the private key in BCCSP keystore nor in keyfile %s: %s", keyFile, err)
+		}
 	}
 	return c.NewIdentity(key, cert)
 }
 
 // NewIdentity creates a new identity
-func (c *Client) NewIdentity(key, cert []byte) (*Identity, error) {
+func (c *Client) NewIdentity(key bccsp.Key, cert []byte) (*Identity, error) {
 	name, err := util.GetEnrollmentIDFromPEM(cert)
 	if err != nil {
 		return nil, err
@@ -444,7 +416,7 @@ func (c *Client) SendReq(req *http.Request, result interface{}) (err error) {
 		body = new(cfsslapi.Response)
 		err = json.Unmarshal(respBody, body)
 		if err != nil {
-			return fmt.Errorf("Failed to parse response [%s] for request:\n%s", err, reqStr)
+			return fmt.Errorf("Failed to parse response: %s\n%s", err, respBody)
 		}
 		if len(body.Errors) > 0 {
 			msg := body.Errors[0].Message
@@ -483,20 +455,21 @@ func (c *Client) CheckEnrollment() error {
 	if err != nil {
 		return err
 	}
-	if !util.FileExists(c.certFile) || !util.FileExists(c.keyFile) {
-		return errors.New("Enrollment information does not exist. Please execute enroll command first. Example: fabric-ca-client enroll -u http://user:userpw@serverAddr:serverPort")
+	keyFileExists := util.FileExists(c.keyFile)
+	certFileExists := util.FileExists(c.certFile)
+	if keyFileExists && certFileExists {
+		return nil
 	}
-	return nil
-}
-
-func (c *Client) getClientConfig(path string) ([]byte, error) {
-	log.Debug("Retrieving client config")
-	// fcaClient := filepath.Join(path, clientConfigFile)
-	fileBytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
+	// If key file does not exist, but certFile does, key file is probably
+	// stored by bccsp, so check to see if this is the case
+	if certFileExists {
+		_, _, _, err := util.GetSignerFromCertFile(c.certFile, c.csp)
+		if err == nil {
+			// Yes, the key is stored by BCCSP
+			return nil
+		}
 	}
-	return fileBytes, nil
+	return errors.New("Enrollment information does not exist. Please execute enroll command first. Example: fabric-ca-client enroll -u http://user:userpw@serverAddr:serverPort")
 }
 
 // NormalizeURL normalizes a URL (from cfssl)

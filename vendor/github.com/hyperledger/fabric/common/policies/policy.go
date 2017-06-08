@@ -24,6 +24,7 @@ import (
 	cb "github.com/hyperledger/fabric/protos/common"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric/common/flogging"
 	logging "github.com/op/go-logging"
 )
 
@@ -59,7 +60,7 @@ const (
 	BlockValidation = PathSeparator + ChannelPrefix + PathSeparator + OrdererPrefix + PathSeparator + "BlockValidation"
 )
 
-var logger = logging.MustGetLogger("common/policies")
+var logger = flogging.MustGetLogger("policies")
 
 // Policy is used to determine if a signature is valid
 type Policy interface {
@@ -229,7 +230,7 @@ func (pm *ManagerImpl) BeginPolicyProposals(tx interface{}, groups []string) ([]
 	defer pm.pendingLock.Unlock()
 	pendingConfig, ok := pm.pendingConfig[tx]
 	if ok {
-		logger.Panicf("Serious Programming error: cannot call begin mulitply for the same proposal")
+		logger.Panicf("Serious Programming error: cannot call begin multiply for the same proposal")
 	}
 
 	pendingConfig = &policyConfig{

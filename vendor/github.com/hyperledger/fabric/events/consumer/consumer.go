@@ -17,6 +17,7 @@ limitations under the License.
 package consumer
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -25,9 +26,14 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/comm"
+	mspmgmt "github.com/hyperledger/fabric/msp/mgmt"
 	ehpb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/utils"
 )
+
+var consumerLogger = flogging.MustGetLogger("eventhub_consumer")
 
 //EventsClient holds the stream and adapter for consumer to work with
 type EventsClient struct {
@@ -62,7 +68,24 @@ func newEventsClientConnectionWithAddress(peerAddress string) (*grpc.ClientConn,
 func (ec *EventsClient) send(emsg *ehpb.Event) error {
 	ec.Lock()
 	defer ec.Unlock()
-	return ec.stream.Send(emsg)
+
+	// obtain the default signing identity for this peer; it will be used to sign the event
+	localMsp := mspmgmt.GetLocalMSP()
+	if localMsp == nil {
+		return errors.New("nil local MSP manager")
+	}
+
+	signer, err := localMsp.GetDefaultSigningIdentity()
+	if err != nil {
+		return fmt.Errorf("could not obtain the default signing identity, err %s", err)
+	}
+
+	signedEvt, err := utils.GetSignedEvent(emsg, signer)
+	if err != nil {
+		return fmt.Errorf("could not sign outgoing event, err %s", err)
+	}
+
+	return ec.stream.Send(signedEvt)
 }
 
 // RegisterAsync - registers interest in a event and doesn't wait for a response
@@ -70,7 +93,7 @@ func (ec *EventsClient) RegisterAsync(ies []*ehpb.Interest) error {
 	emsg := &ehpb.Event{Event: &ehpb.Event_Register{Register: &ehpb.Register{Events: ies}}}
 	var err error
 	if err = ec.send(emsg); err != nil {
-		fmt.Printf("error on Register send %s\n", err)
+		consumerLogger.Errorf("error on Register send %s\n", err)
 	}
 	return err
 }
@@ -117,38 +140,7 @@ func (ec *EventsClient) UnregisterAsync(ies []*ehpb.Interest) error {
 	return err
 }
 
-// unregister - unregisters interest in a event
-func (ec *EventsClient) unregister(ies []*ehpb.Interest) error {
-	var err error
-	if err = ec.UnregisterAsync(ies); err != nil {
-		return err
-	}
-
-	regChan := make(chan struct{})
-	go func() {
-		defer close(regChan)
-		in, inerr := ec.stream.Recv()
-		if inerr != nil {
-			err = inerr
-			return
-		}
-		switch in.Event.(type) {
-		case *ehpb.Event_Unregister:
-		case nil:
-			err = fmt.Errorf("invalid nil object for unregister")
-		default:
-			err = fmt.Errorf("invalid unregistration object")
-		}
-	}()
-	select {
-	case <-regChan:
-	case <-time.After(ec.regTimeout):
-		err = fmt.Errorf("timeout waiting for unregistration")
-	}
-	return err
-}
-
-// Recv recieves next event - use when client has not called Start
+// Recv receives next event - use when client has not called Start
 func (ec *EventsClient) Recv() (*ehpb.Event, error) {
 	in, err := ec.stream.Recv()
 	if err == io.EOF {
@@ -196,7 +188,7 @@ func (ec *EventsClient) processEvents() error {
 func (ec *EventsClient) Start() error {
 	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress)
 	if err != nil {
-		return fmt.Errorf("Could not create client conn to %s", ec.peerAddress)
+		return fmt.Errorf("could not create client conn to %s:%s", ec.peerAddress, err)
 	}
 
 	ies, err := ec.adapter.GetInterestedEvents()
@@ -211,7 +203,7 @@ func (ec *EventsClient) Start() error {
 	serverClient := ehpb.NewEventsClient(conn)
 	ec.stream, err = serverClient.Chat(context.Background())
 	if err != nil {
-		return fmt.Errorf("Could not create client conn to %s", ec.peerAddress)
+		return fmt.Errorf("could not create client conn to %s:%s", ec.peerAddress, err)
 	}
 
 	if err = ec.register(ies); err != nil {

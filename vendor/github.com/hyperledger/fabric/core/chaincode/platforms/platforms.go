@@ -27,13 +27,14 @@ import (
 
 	"io/ioutil"
 
+	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/common/metadata"
 	"github.com/hyperledger/fabric/core/chaincode/platforms/car"
 	"github.com/hyperledger/fabric/core/chaincode/platforms/golang"
 	"github.com/hyperledger/fabric/core/chaincode/platforms/java"
+	"github.com/hyperledger/fabric/core/config"
 	cutil "github.com/hyperledger/fabric/core/container/util"
 	pb "github.com/hyperledger/fabric/protos/peer"
-	"github.com/op/go-logging"
 	"github.com/spf13/viper"
 )
 
@@ -47,7 +48,7 @@ type Platform interface {
 	GenerateDockerBuild(spec *pb.ChaincodeDeploymentSpec, tw *tar.Writer) error
 }
 
-var logger = logging.MustGetLogger("chaincode-platform")
+var logger = flogging.MustGetLogger("chaincode-platform")
 
 // Find returns the platform interface for the given platform type
 func Find(chaincodeType pb.ChaincodeSpec_Type) (Platform, error) {
@@ -82,10 +83,10 @@ func getPeerTLSCert() ([]byte, error) {
 	}
 	var path string
 	// first we check for the rootcert
-	path = viper.GetString("peer.tls.rootcert.file")
+	path = config.GetPath("peer.tls.rootcert.file")
 	if path == "" {
 		// check for tls cert
-		path = viper.GetString("peer.tls.cert.file")
+		path = config.GetPath("peer.tls.cert.file")
 	}
 	// this should not happen if the peer is running with TLS enabled
 	if _, err := os.Stat(path); err != nil {
@@ -121,6 +122,9 @@ func generateDockerfile(platform Platform, cds *pb.ChaincodeDeploymentSpec, tls 
 	// ----------------------------------------------------------------------------------------------------
 	// Then augment it with any general options
 	// ----------------------------------------------------------------------------------------------------
+	//append version so chaincode build version can be campared against peer build version
+	buf = append(buf, fmt.Sprintf("ENV CORE_CHAINCODE_BUILDLEVEL=%s", metadata.Version))
+
 	if tls {
 		const guestTLSPath = "/etc/hyperledger/fabric/peer.crt"
 

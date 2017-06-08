@@ -19,9 +19,10 @@ package lib
 import (
 	"github.com/cloudflare/cfssl/log"
 	"github.com/hyperledger/fabric-ca/api"
+	"github.com/hyperledger/fabric/bccsp"
 )
 
-func newSigner(key, cert []byte, id *Identity) *Signer {
+func newSigner(key bccsp.Key, cert []byte, id *Identity) *Signer {
 	return &Signer{
 		key:    key,
 		cert:   cert,
@@ -34,14 +35,14 @@ func newSigner(key, cert []byte, id *Identity) *Signer {
 // Each identity may have multiple signers, currently one ecert and multiple tcerts
 type Signer struct {
 	name   string
-	key    []byte
+	key    bccsp.Key
 	cert   []byte
 	id     *Identity
 	client *Client
 }
 
 // Key returns the key bytes of this signer
-func (s *Signer) Key() []byte {
+func (s *Signer) Key() bccsp.Key {
 	return s.key
 }
 

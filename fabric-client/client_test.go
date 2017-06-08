@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	kvs "github.com/hyperledger/fabric-sdk-go/fabric-client/keyvaluestore"
-
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 )
 
@@ -130,33 +130,36 @@ func TestClientMethods(t *testing.T) {
 func TestCreateChannel(t *testing.T) {
 	client := NewClient()
 
-	configTx, err := ioutil.ReadFile("../test/fixtures/channel/testchannel.tx")
+	configTx, err := ioutil.ReadFile("../test/fixtures/channel/mychannel.tx")
+	//configTx, err := ioutil.ReadFile("../test/fixtures/channel/testchannel.tx")
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
+
 	// Setup mock orderer
-	orderer := &mockOrderer{MockURL: fmt.Sprintf("0.0.0.0:1234")}
+	verifyBroadcast := make(chan *SignedEnvelope)
+	orderer := NewMockOrderer(fmt.Sprintf("0.0.0.0:1234"), verifyBroadcast)
 
 	// Create channel without envelope
-	chain, err := client.CreateChannel(&CreateChannelRequest{
+	err = client.CreateChannel(&CreateChannelRequest{
 		Orderer: orderer,
-		Name:    "testchannel",
+		Name:    "mychannel",
 	})
 	if err == nil {
 		t.Fatalf("Expected error creating channel without envelope")
 	}
 
 	// Create channel without orderer
-	chain, err = client.CreateChannel(&CreateChannelRequest{
+	err = client.CreateChannel(&CreateChannelRequest{
 		Envelope: configTx,
-		Name:     "testchannel",
+		Name:     "mychannel",
 	})
 	if err == nil {
 		t.Fatalf("Expected error creating channel without orderer")
 	}
 
 	// Create channel without name
-	chain, err = client.CreateChannel(&CreateChannelRequest{
+	err = client.CreateChannel(&CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 	})
@@ -165,27 +168,20 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Test with valid cofiguration
-	chain, err = client.CreateChannel(&CreateChannelRequest{
+	request := &CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
-		Name:     "testchannel",
-	})
+		Name:     "mychannel",
+	}
+	err = client.CreateChannel(request)
 	if err != nil {
-		t.Fatalf("Did not expect error from create channel. Got error: %s", err.Error())
+		t.Fatalf("Did not expect error from create channel. Got error: %v", err)
 	}
-	if chain == nil {
-		t.Fatalf("Nil chain returned from CreateChannel")
-	}
-	if chain.GetName() != "testchannel" {
-		t.Fatalf("Invalid name %s of chain. Expecting testchannel", chain.GetName())
-	}
-	mspManager := chain.GetMSPManager()
-	if mspManager == nil {
-		t.Fatalf("nil MSPManager on new chain")
-	}
-	msps, err := mspManager.GetMSPs()
-	if err != nil || len(msps) == 0 {
-		t.Fatalf("At least one MSP expected in MSPManager")
+	select {
+	case b := <-verifyBroadcast:
+		logger.Debugf("Verified broadcast: %v", b)
+	case <-time.After(time.Second):
+		t.Fatalf("Expected broadcast")
 	}
 }
 

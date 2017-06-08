@@ -17,7 +17,6 @@ limitations under the License.
 package ldap
 
 import (
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -27,6 +26,7 @@ import (
 
 	"github.com/cloudflare/cfssl/log"
 	"github.com/hyperledger/fabric-ca/lib/spi"
+	ctls "github.com/hyperledger/fabric-ca/lib/tls"
 	ldap "gopkg.in/ldap.v2"
 )
 
@@ -41,6 +41,7 @@ type Config struct {
 	URL         string `help:"LDAP client URL of form ldap://adminDN:adminPassword@host[:port]/base"`
 	UserFilter  string `def:"(uid=%s)" help:"The LDAP user filter to use when searching for users"`
 	GroupFilter string `def:"(memberUid=%s)" help:"The LDAP group filter for a single affiliation group"`
+	TLS         ctls.ClientTLSConfig
 }
 
 // NewClient creates an LDAP client
@@ -93,6 +94,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	}
 	c.UserFilter = cfgVal(cfg.UserFilter, "(uid=%s)")
 	c.GroupFilter = cfgVal(cfg.GroupFilter, "(memberUid=%s)")
+	c.TLS = &cfg.TLS
 	log.Debug("LDAP client was successfully created")
 	return c, nil
 }
@@ -115,6 +117,7 @@ type Client struct {
 	UserFilter    string // e.g. "(uid=%s)"
 	GroupFilter   string // e.g. "(memberUid=%s)"
 	AdminConn     *ldap.Conn
+	TLS           *ctls.ClientTLSConfig
 }
 
 // GetUser returns a user object for username and attribute values
@@ -238,7 +241,14 @@ func (lc *Client) newConnection() (conn *ldap.Conn, err error) {
 		}
 	} else {
 		log.Debug("Connecting to LDAP server over TLS")
-		conn, err = ldap.DialTLS("tcp", address, &tls.Config{ServerName: lc.Host})
+		tlsConfig, err2 := ctls.GetClientTLSConfig(lc.TLS)
+		if err2 != nil {
+			return nil, fmt.Errorf("Failed to get client TLS config: %s", err2)
+		}
+
+		tlsConfig.ServerName = lc.Host
+
+		conn, err = ldap.DialTLS("tcp", address, tlsConfig)
 		if err != nil {
 			return conn, fmt.Errorf("Failed to connect to LDAP server over TLS at %s: %s", address, err)
 		}

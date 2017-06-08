@@ -32,11 +32,17 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+// A SignedEnvelope can can be sent to an orderer for broadcasting
+type SignedEnvelope struct {
+	Payload   []byte
+	Signature []byte
+}
+
 // Orderer The Orderer class represents a peer in the target blockchain network to which
 // HFC sends a block of transactions of endorsed proposals requiring ordering.
 type Orderer interface {
 	GetURL() string
-	SendBroadcast(envelope *SignedEnvelope) (error, *common.Status)
+	SendBroadcast(envelope *SignedEnvelope) (*common.Status, error)
 	SendDeliver(envelope *SignedEnvelope) (chan *common.Block, chan error)
 }
 
@@ -79,20 +85,20 @@ func (o *orderer) GetURL() string {
 }
 
 // SendBroadcast Send the created transaction to Orderer.
-func (o *orderer) SendBroadcast(envelope *SignedEnvelope) (error, *common.Status) {
+func (o *orderer) SendBroadcast(envelope *SignedEnvelope) (*common.Status, error) {
 	conn, err := grpc.Dial(o.url, o.grpcDialOption...)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 	defer conn.Close()
 
 	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Broadcast(context.Background())
 	if err != nil {
-		return fmt.Errorf("Error Create NewAtomicBroadcastClient %v", err), nil
+		return nil, fmt.Errorf("Error Create NewAtomicBroadcastClient %v", err)
 	}
 	done := make(chan bool)
 	var broadcastErr error
-	var broadcastStatus *common.Status = nil
+	var broadcastStatus *common.Status
 
 	go func() {
 		for {
@@ -119,11 +125,11 @@ func (o *orderer) SendBroadcast(envelope *SignedEnvelope) (error, *common.Status
 		Payload:   envelope.Payload,
 		Signature: envelope.Signature,
 	}); err != nil {
-		return fmt.Errorf("Failed to send a envelope to orderer: %v", err), nil
+		return nil, fmt.Errorf("Failed to send a envelope to orderer: %v", err)
 	}
 	broadcastStream.CloseSend()
 	<-done
-	return broadcastErr, broadcastStatus
+	return broadcastStatus, broadcastErr
 }
 
 // SendDeliver sends a deliver request to the ordering service and returns the

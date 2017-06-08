@@ -25,10 +25,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/config"
+	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
 	consumer "github.com/hyperledger/fabric-sdk-go/fabric-client/events/consumer"
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/factory"
+	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 	ledger_util "github.com/hyperledger/fabric/core/ledger/util"
 	fcConsumer "github.com/hyperledger/fabric/events/consumer"
 	"github.com/hyperledger/fabric/protos/common"
@@ -56,15 +58,15 @@ type mockEventClientFactory struct {
 	clients []*mockEventClient
 }
 
-func (mecf *mockEventClientFactory) newEventsClient(peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (consumer.EventsClient, error) {
-	client := &mockEventClient{
+func (mecf *mockEventClientFactory) newEventsClient(client fabricClient.Client, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (consumer.EventsClient, error) {
+	mec := &mockEventClient{
 		PeerAddress: peerAddress,
 		RegTimeout:  regTimeout,
 		Adapter:     adapter,
 		events:      make(chan pb.Event),
 	}
-	mecf.clients = append(mecf.clients, client)
-	return client, nil
+	mecf.clients = append(mecf.clients, mec)
+	return mec, nil
 }
 
 // MockEvent mocks an event
@@ -119,7 +121,16 @@ func (mec *mockEventClient) Stop() error {
 }
 
 func createMockedEventHub(t *testing.T) (*eventHub, *mockEventClientFactory) {
-	eventHub, ok := NewEventHub().(*eventHub)
+	// Initialize bccsp factories before calling get client
+	err := bccspFactory.InitFactories(config.GetCSPConfig())
+	if err != nil {
+		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
+	}
+	eh, err := NewEventHub(fabricClient.NewClient())
+	if err != nil {
+		t.Fatalf("Error creating event hub: %v", err)
+	}
+	eventHub, ok := eh.(*eventHub)
 	if !ok {
 		t.Fatalf("Could not create eventHub")
 		return nil, nil
@@ -130,7 +141,7 @@ func createMockedEventHub(t *testing.T) (*eventHub, *mockEventClientFactory) {
 
 	eventHub.SetPeerAddr("mock://mock", "", "")
 
-	err := eventHub.Connect()
+	err = eventHub.Connect()
 	if err != nil {
 		t.Fatalf("Failed to connect: %v", err)
 		return nil, nil
@@ -168,7 +179,7 @@ func (b *MockTxEventBuilder) Build() *pb.Event_Block {
 			Header:   &common.BlockHeader{},
 			Metadata: b.buildBlockMetadata(),
 			Data: &common.BlockData{
-				Data: [][]byte{util.MarshalOrPanic(b.buildEnvelope())},
+				Data: [][]byte{fabricClient.MarshalOrPanic(b.buildEnvelope())},
 			},
 		},
 	}
@@ -202,14 +213,14 @@ func (b *MockCCEventBuilder) Build() *pb.Event_ChaincodeEvent {
 
 func (b *MockTxEventBuilder) buildEnvelope() *common.Envelope {
 	return &common.Envelope{
-		Payload: util.MarshalOrPanic(b.buildPayload()),
+		Payload: fabricClient.MarshalOrPanic(b.buildPayload()),
 	}
 }
 
 func (b *MockTxEventBuilder) buildPayload() *common.Payload {
 	return &common.Payload{
 		Header: &common.Header{
-			ChannelHeader: util.MarshalOrPanic(b.buildChannelHeader()),
+			ChannelHeader: fabricClient.MarshalOrPanic(b.buildChannelHeader()),
 		},
 	}
 }
@@ -228,7 +239,7 @@ func (b *MockCCBlockEventBuilder) Build() *pb.Event_Block {
 			Header:   &common.BlockHeader{},
 			Metadata: b.buildBlockMetadata(),
 			Data: &common.BlockData{
-				Data: [][]byte{util.MarshalOrPanic(b.buildEnvelope())},
+				Data: [][]byte{fabricClient.MarshalOrPanic(b.buildEnvelope())},
 			},
 		},
 	}
@@ -247,7 +258,7 @@ func (b *MockCCBlockEventBuilder) buildBlockMetadata() *common.BlockMetadata {
 
 func (b *MockCCBlockEventBuilder) buildEnvelope() *common.Envelope {
 	return &common.Envelope{
-		Payload: util.MarshalOrPanic(b.buildPayload()),
+		Payload: fabricClient.MarshalOrPanic(b.buildPayload()),
 	}
 }
 
@@ -259,9 +270,9 @@ func (b *MockCCBlockEventBuilder) buildPayload() *common.Payload {
 	fmt.Printf("MockCCBlockEventBuilder.buildPayload\n")
 	return &common.Payload{
 		Header: &common.Header{
-			ChannelHeader: util.MarshalOrPanic(b.buildChannelHeader()),
+			ChannelHeader: fabricClient.MarshalOrPanic(b.buildChannelHeader()),
 		},
-		Data: util.MarshalOrPanic(b.buildTransaction()),
+		Data: fabricClient.MarshalOrPanic(b.buildTransaction()),
 	}
 }
 
@@ -282,7 +293,7 @@ func (b *MockCCBlockEventBuilder) buildTransaction() *pb.Transaction {
 func (b *MockCCBlockEventBuilder) buildTransactionAction() *pb.TransactionAction {
 	return &pb.TransactionAction{
 		Header:  []byte{},
-		Payload: util.MarshalOrPanic(b.buildChaincodeActionPayload()),
+		Payload: fabricClient.MarshalOrPanic(b.buildChaincodeActionPayload()),
 	}
 }
 
@@ -295,7 +306,7 @@ func (b *MockCCBlockEventBuilder) buildChaincodeActionPayload() *pb.ChaincodeAct
 
 func (b *MockCCBlockEventBuilder) buildChaincodeEndorsedAction() *pb.ChaincodeEndorsedAction {
 	return &pb.ChaincodeEndorsedAction{
-		ProposalResponsePayload: util.MarshalOrPanic(b.buildProposalResponsePayload()),
+		ProposalResponsePayload: fabricClient.MarshalOrPanic(b.buildProposalResponsePayload()),
 		Endorsements:            []*pb.Endorsement{},
 	}
 }
@@ -303,13 +314,13 @@ func (b *MockCCBlockEventBuilder) buildChaincodeEndorsedAction() *pb.ChaincodeEn
 func (b *MockCCBlockEventBuilder) buildProposalResponsePayload() *pb.ProposalResponsePayload {
 	return &pb.ProposalResponsePayload{
 		ProposalHash: []byte("somehash"),
-		Extension:    util.MarshalOrPanic(b.buildChaincodeAction()),
+		Extension:    fabricClient.MarshalOrPanic(b.buildChaincodeAction()),
 	}
 }
 
 func (b *MockCCBlockEventBuilder) buildChaincodeAction() *pb.ChaincodeAction {
 	return &pb.ChaincodeAction{
-		Events: util.MarshalOrPanic(b.buildChaincodeEvent()),
+		Events: fabricClient.MarshalOrPanic(b.buildChaincodeEvent()),
 	}
 }
 
@@ -323,7 +334,7 @@ func (b *MockCCBlockEventBuilder) buildChaincodeEvent() *pb.ChaincodeEvent {
 }
 
 func generateTxID() string {
-	nonce, err := util.GenerateRandomNonce()
+	nonce, err := fabricClient.GenerateRandomNonce()
 	if err != nil {
 		panic(fmt.Errorf("error generating nonce: %v", err))
 	}
