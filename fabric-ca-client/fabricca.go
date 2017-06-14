@@ -62,6 +62,10 @@ type RegistrationRequest struct {
 	Attributes []Attribute
 	// CAName is the name of the CA to connect to
 	CAName string
+	// Secret is an optional password.  If not specified,
+	// a random secret is generated.  In both cases, the secret
+	// is returned from registration.
+	Secret string
 }
 
 // RevocationRequest defines the attributes required to revoke credentials with the CA
@@ -219,6 +223,7 @@ func (fabricCAServices *services) Register(registrar fabricclient.User,
 		Type:           request.Type,
 		MaxEnrollments: request.MaxEnrollments,
 		Affiliation:    request.Affiliation,
+		Secret:         request.Secret,
 		Attributes:     attributes}
 	// Make registration request
 	response, err := identity.Register(&req)
