@@ -22,13 +22,6 @@
 PKGS=`go list github.com/hyperledger/fabric-sdk-go/test/integration/... 2> /dev/null | \
                                                   grep -v /vendor/`
 
-# Detect Hyperledger CI environment
-if [ "$JENKINS_URL" == "https://jenkins.hyperledger.org/" ]
-then
-  echo "In Hyperledger CI - Setting docker integration fixture tags to latest..."
-  source ./test/fixtures/latest-env.sh
-fi
-
 echo "Starting fabric and fabric-ca docker images..."
 cd ./test/fixtures && docker-compose up --force-recreate -d
 
