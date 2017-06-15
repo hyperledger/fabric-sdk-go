@@ -29,7 +29,7 @@ You're good to go, happy coding! Check out the examples for usage demonstrations
 ### Community
 
 - Discussion is happening in [Rocket Chat](https://chat.hyperledger.org/channel/fabric-sdk-go).
-- Issue tracking is handled in [Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa?projectKey=FAB&rapidView=7&view=planning). 
+- Issue tracking is handled in [Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa?projectKey=FAB&rapidView=7&view=planning).
 - Active development occurs in the [Gerrit](https://gerrit.hyperledger.org/r/#/admin/projects/fabric-sdk-go)
 repository.
 
@@ -107,6 +107,12 @@ The test suite defaults to the latest compatible tag of fabric images at Docker 
 The following commands starts Fabric:
 
 ```
+# In the Fabric SDK Go directory
+cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/
+
+# Clean previous test run artifacts
+make clean
+
 # Start fabric
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/
 docker-compose up --force-recreate
@@ -116,12 +122,6 @@ docker-compose up --force-recreate
 
 Fabric should now be running. In a different shell, run integration tests
 ```
-# In the Fabric SDK Go directory
-cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/
-
-# Clean previous test run artifacts
-make clean
-
 # In the Fabric SDK integration tests directory
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/integration/
 go test
