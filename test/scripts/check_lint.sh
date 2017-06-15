@@ -1,6 +1,10 @@
 #!/bin/bash
+#
+# Copyright Greg Haskins, IBM Corp, SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 # This script runs Go linting and vetting tools
-# Original script from Hyperledger Fabric and Fabric CA projects
 
 set -e
 

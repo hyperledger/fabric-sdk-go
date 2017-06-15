@@ -151,5 +151,7 @@ cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/
 ```
 
 ## License
+Hyperledger Fabric SDK Go software is licensed under the [Apache License Version 2.0](LICENSE) license.
 
-This project uses the [Apache License Version 2.0](LICENSE).
+---
+This document is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.

@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 # This script installs dependencies for testing tools
 
 echo "Installing dependencies..."
