@@ -17,6 +17,7 @@ limitations under the License.
 package lib
 
 import (
+	"fmt"
 	"net/url"
 
 	"github.com/hyperledger/fabric-ca/api"
@@ -53,6 +54,14 @@ func (c *ClientConfig) Enroll(rawurl, home string) (*EnrollmentResponse, error) 
 		c.Enrollment.Name = name
 		c.Enrollment.Secret = secret
 		purl.User = nil
+	}
+	if c.Enrollment.Name == "" {
+		expecting := fmt.Sprintf(
+			"%s://<enrollmentID>:<secret>@%s",
+			purl.Scheme, purl.Host)
+		return nil, fmt.Errorf(
+			"The URL of the fabric CA server is missing the enrollment ID and secret;"+
+				" found '%s' but expecting '%s'", rawurl, expecting)
 	}
 	c.Enrollment.CAName = c.CAName
 	c.URL = purl.String()

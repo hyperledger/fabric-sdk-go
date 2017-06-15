@@ -129,19 +129,25 @@ func (h *registerHandler) validateID(req *api.RegistrationRequestNet, caname str
 // registerUserID registers a new user and its enrollmentID, role and state
 func (h *registerHandler) registerUserID(req *api.RegistrationRequestNet, caname string) (string, error) {
 	log.Debugf("Registering user id: %s\n", req.Name)
+	var err error
 
 	if req.Secret == "" {
 		req.Secret = util.RandomString(12)
 	}
 
-	maxEnrollments := h.server.caMap[caname].Config.Registry.MaxEnrollments
+	caMaxEnrollments := h.server.caMap[caname].Config.Registry.MaxEnrollments
 
-	if (req.MaxEnrollments > maxEnrollments && maxEnrollments != 0) || (req.MaxEnrollments < 0) {
-		return "", fmt.Errorf("Invalid max enrollment value specified, value must be equal to or less then %d", maxEnrollments)
+	req.MaxEnrollments, err = getMaxEnrollments(req.MaxEnrollments, caMaxEnrollments)
+	if err != nil {
+		return "", err
 	}
 
-	if req.MaxEnrollments == 0 && maxEnrollments != 0 {
-		return "", fmt.Errorf("Unlimited enrollments not allowed, value must be equal to or less then %d", maxEnrollments)
+	// Make sure delegateRoles is not larger than roles
+	roles := GetAttrValue(req.Attributes, attrRoles)
+	delegateRoles := GetAttrValue(req.Attributes, attrDelegateRoles)
+	err = util.IsSubsetOf(delegateRoles, roles)
+	if err != nil {
+		return "", fmt.Errorf("delegateRoles is superset of roles: %s", err)
 	}
 
 	insert := spi.UserInfo{
@@ -150,12 +156,12 @@ func (h *registerHandler) registerUserID(req *api.RegistrationRequestNet, caname
 		Type:           req.Type,
 		Affiliation:    req.Affiliation,
 		Attributes:     req.Attributes,
-		MaxEnrollments: maxEnrollments,
+		MaxEnrollments: req.MaxEnrollments,
 	}
 
 	registry := h.server.caMap[caname].registry
 
-	_, err := registry.GetUser(req.Name, nil)
+	_, err = registry.GetUser(req.Name, nil)
 	if err == nil {
 		return "", fmt.Errorf("Identity '%s' is already registered", req.Name)
 	}

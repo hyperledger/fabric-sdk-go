@@ -49,7 +49,7 @@ type ServerConfig struct {
 	CAcfg CAConfig `skip:"true"`
 	// The names of the CA configuration files
 	// This is empty unless there are non-default CAs served by this server
-	CAfiles []string `help:"CA configuration files"`
+	CAfiles []string `help:"A list of comma-separated CA configuration files"`
 	// The number of non-default CAs, which is useful for a dev environment to
 	// quickly start any number of CAs in a single server
 	CAcount int `def:"0" help:"Number of non-default CA instances"`

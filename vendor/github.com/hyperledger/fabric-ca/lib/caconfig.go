@@ -18,7 +18,7 @@ package lib
 
 import (
 	"github.com/cloudflare/cfssl/config"
-	"github.com/cloudflare/cfssl/csr"
+	"github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-ca/lib/ldap"
 	"github.com/hyperledger/fabric-ca/lib/tls"
 	"github.com/hyperledger/fabric-ca/util"
@@ -69,15 +69,17 @@ csr:
 // "skip" - to skip the field.
 type CAConfig struct {
 	CA           CAInfo
-	ParentServer ParentServer
 	Signing      *config.Signing
-	CSR          csr.CertificateRequest
+	CSR          api.CSRInfo
 	Registry     CAConfigRegistry
 	Affiliations map[string]interface{}
 	LDAP         ldap.Config
 	DB           CAConfigDB
 	CSP          *factory.FactoryOpts `mapstructure:"bccsp"`
+	// Optional client config for an intermediate server which acts as a client
+	// of the root (or parent) server
 	Client       *ClientConfig
+	Intermediate IntermediateCA
 }
 
 // CAInfo is the CA information on a fabric-ca-server
@@ -97,7 +99,7 @@ type CAConfigDB struct {
 
 // CAConfigRegistry is the registry part of the server's config
 type CAConfigRegistry struct {
-	MaxEnrollments int `def:"0" help:"Maximum number of enrollments; valid if LDAP not enabled"`
+	MaxEnrollments int `def:"-1" help:"Maximum number of enrollments; valid if LDAP not enabled"`
 	Identities     []CAConfigIdentity
 }
 
@@ -116,6 +118,14 @@ type CAConfigIdentity struct {
 type ParentServer struct {
 	URL    string `opt:"u" help:"URL of the parent fabric-ca-server (e.g. http://<username>:<password>@<address>:<port)"`
 	CAName string `help:"Name of the CA to connect to on fabric-ca-serve"`
+}
+
+// IntermediateCA contains parent server information, TLS configuration, and
+// enrollment request for an intermetiate CA
+type IntermediateCA struct {
+	ParentServer ParentServer
+	TLS          tls.ClientTLSConfig
+	Enrollment   api.EnrollmentRequest
 }
 
 func (cc *CAConfigIdentity) String() string {

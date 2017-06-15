@@ -22,7 +22,6 @@ import (
 	"net/http"
 
 	"github.com/cloudflare/cfssl/log"
-	"github.com/cloudflare/cfssl/signer"
 	"github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric/bccsp"
@@ -52,6 +51,11 @@ type Identity struct {
 // GetName returns the identity name
 func (i *Identity) GetName() string {
 	return i.name
+}
+
+// GetClient returns the client associated with this identity
+func (i *Identity) GetClient() *Client {
+	return i.client
 }
 
 // GetECert returns the enrollment certificate signer for this identity
@@ -102,6 +106,25 @@ func (i *Identity) Register(req *api.RegistrationRequest) (rr *api.RegistrationR
 	return resp, nil
 }
 
+// RegisterAndEnroll registers and enrolls an identity and returns the identity
+func (i *Identity) RegisterAndEnroll(req *api.RegistrationRequest) (*Identity, error) {
+	if i.client == nil {
+		return nil, errors.New("No client is associated with this identity")
+	}
+	rresp, err := i.Register(req)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to register %s: %s", req.Name, err)
+	}
+	eresp, err := i.client.Enroll(&api.EnrollmentRequest{
+		Name:   req.Name,
+		Secret: rresp.Secret,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Failed to enroll %s: %s", req.Name, err)
+	}
+	return eresp.Identity, nil
+}
+
 // Reenroll reenrolls an existing Identity and returns a new Identity
 // @param req The reenrollment request
 func (i *Identity) Reenroll(req *api.ReenrollmentRequest) (*EnrollmentResponse, error) {
@@ -117,10 +140,12 @@ func (i *Identity) Reenroll(req *api.ReenrollmentRequest) (*EnrollmentResponse, 
 	}
 
 	// Get the body of the request
-	reqNet.Hosts = signer.SplitHosts(req.Hosts)
-	reqNet.Request = string(csrPEM)
-	reqNet.Profile = req.Profile
-	reqNet.Label = req.Label
+	if req.CSR != nil {
+		reqNet.SignRequest.Hosts = req.CSR.Hosts
+	}
+	reqNet.SignRequest.Request = string(csrPEM)
+	reqNet.SignRequest.Profile = req.Profile
+	reqNet.SignRequest.Label = req.Label
 
 	body, err := util.Marshal(reqNet, "SignRequest")
 	if err != nil {

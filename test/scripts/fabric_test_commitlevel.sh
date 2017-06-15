@@ -6,5 +6,5 @@ export USE_PREBUILT_IMAGES=true
 
 #file used for automatic integration build test
 #This should always match the compatibility specified in the README.md
-export FABRIC_COMMIT=v1.0.0-alpha2
-export FABRIC_CA_COMMIT=v1.0.0-alpha2
+export FABRIC_COMMIT=v1.0.0-beta
+export FABRIC_CA_COMMIT=v1.0.0-beta

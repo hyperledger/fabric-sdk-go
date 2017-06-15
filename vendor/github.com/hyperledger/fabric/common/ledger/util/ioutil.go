@@ -23,10 +23,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/op/go-logging"
+	"github.com/hyperledger/fabric/common/flogging"
 )
 
-var logger = logging.MustGetLogger("kvledger.util")
+var logger = flogging.MustGetLogger("kvledger.util")
 
 // CreateDirIfMissing creates a dir for dirPath if not already exists. If the dir is empty it returns true
 func CreateDirIfMissing(dirPath string) (bool, error) {
@@ -89,7 +89,7 @@ func ListSubdirs(dirPath string) ([]string, error) {
 func logDirStatus(msg string, dirPath string) {
 	exists, _, err := FileExists(dirPath)
 	if err != nil {
-		logger.Errorf("Error while checking for dir existance")
+		logger.Errorf("Error while checking for dir existence")
 	}
 	if exists {
 		logger.Debugf("%s - [%s] exists", msg, dirPath)

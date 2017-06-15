@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
@@ -253,7 +254,17 @@ func GetFabricCAName() string {
 
 // GetKeyStorePath ...
 func GetKeyStorePath() string {
-	return myViper.GetString("client.keystore.path")
+	return path.Join(GetFabricCAHomeDir(), GetFabricCAMspDir(), "keystore")
+}
+
+// GetFabricCAHomeDir ...
+func GetFabricCAHomeDir() string {
+	return myViper.GetString("client.fabricCA.homeDir")
+}
+
+// GetFabricCAMspDir ...
+func GetFabricCAMspDir() string {
+	return myViper.GetString("client.fabricCA.mspDir")
 }
 
 // GetCryptoConfigPath ...

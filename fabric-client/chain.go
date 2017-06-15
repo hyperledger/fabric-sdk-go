@@ -1599,11 +1599,11 @@ func buildChaincodePolicy(mspid string) (*common.SignaturePolicyEnvelope, error)
 
 	// construct 'one of one' policy
 	oneOfone := &common.SignaturePolicy{Type: &common.SignaturePolicy_NOutOf_{NOutOf: &common.SignaturePolicy_NOutOf{
-		N: 1, Policies: []*common.SignaturePolicy{signedBy}}}}
+		N: 1, Rules: []*common.SignaturePolicy{signedBy}}}}
 
 	p := &common.SignaturePolicyEnvelope{
 		Version:    0,
-		Policy:     oneOfone,
+		Rule:       oneOfone,
 		Identities: []*mspprotos.MSPPrincipal{onePrn},
 	}
 	return p, nil
@@ -1815,11 +1815,11 @@ func loadPolicy(configItems *configItems, versionsPolicy *common.ConfigPolicy, k
 	switch policyType {
 	case common.Policy_SIGNATURE:
 		sigPolicyEnv := &common.SignaturePolicyEnvelope{}
-		err := proto.Unmarshal(policy.Policy, sigPolicyEnv)
+		err := proto.Unmarshal(policy.Value, sigPolicyEnv)
 		if err != nil {
 			return fmt.Errorf("Unable to unmarshal SignaturePolicyEnvelope from config policy: %v", err)
 		}
-		logger.Debugf("loadConfigPolicy - %s - policy SIGNATURE :: %v", groupName, sigPolicyEnv.Policy)
+		logger.Debugf("loadConfigPolicy - %s - policy SIGNATURE :: %v", groupName, sigPolicyEnv.Rule)
 		// TODO: Do something with this value
 		break
 
@@ -1830,7 +1830,7 @@ func loadPolicy(configItems *configItems, versionsPolicy *common.ConfigPolicy, k
 
 	case common.Policy_IMPLICIT_META:
 		implicitMetaPolicy := &common.ImplicitMetaPolicy{}
-		err := proto.Unmarshal(policy.Policy, implicitMetaPolicy)
+		err := proto.Unmarshal(policy.Value, implicitMetaPolicy)
 		if err != nil {
 			return fmt.Errorf("Unable to unmarshal ImplicitMetaPolicy from config policy: %v", err)
 		}

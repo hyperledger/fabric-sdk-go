@@ -53,6 +53,15 @@ const (
 	defaultDatabaseType = "sqlite3"
 )
 
+var (
+	// Default root CA certificate expiration is 15 years (in hours).
+	defaultRootCACertificateExpiration = "131400h"
+	// Default intermediate CA certificate expiration is 5 years (in hours).
+	defaultIntermediateCACertificateExpiration = parseDuration("43800h")
+	// Default issued certificate expiration is 1 year (in hours).
+	defaultIssuedCertificateExpiration = parseDuration("8760h")
+)
+
 // CA represents a certificate authority which signs, issues and revokes certificates
 type CA struct {
 	// The home directory for the CA
@@ -60,7 +69,7 @@ type CA struct {
 	// The CA's configuration
 	Config *CAConfig
 	// The file path of the config file
-	configFilePath string
+	ConfigFilePath string
 	// The database handle used to store certificates and optionally
 	// the user registry information, unless LDAP it enabled for the
 	// user registry function.
@@ -87,9 +96,10 @@ const (
 
 // NewCA creates a new CA with the specified
 // home directory, parent server URL, and config
-func NewCA(homeDir string, config *CAConfig, server *Server, renew bool) (*CA, error) {
+func NewCA(caFile string, config *CAConfig, server *Server, renew bool) (*CA, error) {
 	ca := new(CA)
-	err := initCA(ca, homeDir, config, server, renew)
+	ca.ConfigFilePath = caFile
+	err := initCA(ca, filepath.Dir(caFile), config, server, renew)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +129,7 @@ func (ca *CA) init(renew bool) (err error) {
 		return err
 	}
 	// Initialize the crypto layer (BCCSP) for this CA
-	ca.csp, err = util.InitBCCSP(&ca.Config.CSP, ca.HomeDir)
+	ca.csp, err = util.InitBCCSP(&ca.Config.CSP, "", ca.HomeDir)
 	if err != nil {
 		return err
 	}
@@ -178,9 +188,16 @@ func (ca *CA) initKeyMaterial(renew bool) error {
 			log.Info("The CA key and certificate files already exist")
 			log.Infof("Key file location: %s", keyFile)
 			log.Infof("Certificate file location: %s", certFile)
-			err := ca.validateCert(certFile, keyFile)
+			err = ca.validateCert(certFile, keyFile)
 			if err != nil {
 				return fmt.Errorf("Validation of certificate and key failed: %s", err)
+			}
+			// Load CN from existing enrollment information and set CSR accordingly
+			// CN needs to be set, having a multi CA setup requires a unique CN and can't
+			// be left blank
+			ca.Config.CSR.CN, err = ca.loadCNFromEnrollmentInfo(certFile)
+			if err != nil {
+				return err
 			}
 			return nil
 		}
@@ -194,6 +211,13 @@ func (ca *CA) initKeyMaterial(renew bool) error {
 				log.Info("The CA key and certificate already exist")
 				log.Infof("The key is stored by BCCSP provider '%s'", ca.Config.CSP.ProviderName)
 				log.Infof("The certificate is at: %s", certFile)
+				// Load CN from existing enrollment information and set CSR accordingly
+				// CN needs to be set, having a multi CA setup requires a unique CN and can't
+				// be left blank
+				ca.Config.CSR.CN, err = ca.loadCNFromEnrollmentInfo(certFile)
+				if err != nil {
+					return err
+				}
 				return nil
 			}
 		}
@@ -217,13 +241,21 @@ func (ca *CA) initKeyMaterial(renew bool) error {
 
 // Get the CA certificate for this CA
 func (ca *CA) getCACert() (cert []byte, err error) {
-	log.Debugf("Getting CA cert; parent server URL is '%s'", ca.Config.ParentServer.URL)
-	if ca.Config.ParentServer.URL != "" {
+	log.Debugf("Getting CA cert; parent server URL is '%s'", ca.Config.Intermediate.ParentServer.URL)
+	if ca.Config.Intermediate.ParentServer.URL != "" {
 		// This is an intermediate CA, so call the parent fabric-ca-server
 		// to get the cert
 		clientCfg := ca.Config.Client
 		if clientCfg == nil {
 			clientCfg = &ClientConfig{}
+		}
+		// Copy over the intermediate configuration into client configuration
+		clientCfg.TLS = ca.Config.Intermediate.TLS
+		clientCfg.Enrollment = ca.Config.Intermediate.Enrollment
+		clientCfg.CAName = ca.Config.Intermediate.ParentServer.CAName
+		clientCfg.CSR = ca.Config.CSR
+		if ca.Config.CSR.CN != "" {
+			return nil, fmt.Errorf("CN '%s' cannot be specified for an intermediate CA. Remove CN from CSR section for enrollment of intermediate CA to be successful", ca.Config.CSR.CN)
 		}
 		if clientCfg.Enrollment.Profile == "" {
 			clientCfg.Enrollment.Profile = "ca"
@@ -231,15 +263,14 @@ func (ca *CA) getCACert() (cert []byte, err error) {
 		if clientCfg.Enrollment.CSR == nil {
 			clientCfg.Enrollment.CSR = &api.CSRInfo{}
 		}
-		if clientCfg.Enrollment.CSR.CA == nil {
-			clientCfg.Enrollment.CSR.CA = &cfcsr.CAConfig{PathLength: 0, PathLenZero: true}
-		}
 		log.Debugf("Intermediate enrollment request: %v", clientCfg.Enrollment)
 		var resp *EnrollmentResponse
-		resp, err = clientCfg.Enroll(ca.Config.ParentServer.URL, ca.HomeDir)
+		resp, err = clientCfg.Enroll(ca.Config.Intermediate.ParentServer.URL, ca.HomeDir)
 		if err != nil {
 			return nil, err
 		}
+		// Set the CN for an intermediate server to be the ID used to enroll with root CA
+		ca.Config.CSR.CN = resp.Identity.GetName()
 		ecert := resp.Identity.GetECert()
 		if ecert == nil {
 			return nil, errors.New("No enrollment certificate returned by parent server")
@@ -265,7 +296,16 @@ func (ca *CA) getCACert() (cert []byte, err error) {
 		log.Debugf("Stored intermediate certificate chain at %s", chainPath)
 	} else {
 		// This is a root CA, so create a CSR (Certificate Signing Request)
+		if ca.Config.CSR.CN == "" {
+			ca.Config.CSR.CN = "fabric-ca-server"
+		}
 		csr := &ca.Config.CSR
+		if csr.CA == nil {
+			csr.CA = &cfcsr.CAConfig{}
+		}
+		if csr.CA.Expiry == "" {
+			csr.CA.Expiry = defaultRootCACertificateExpiration
+		}
 		req := cfcsr.CertificateRequest{
 			CN:    csr.CN,
 			Names: csr.Names,
@@ -275,6 +315,7 @@ func (ca *CA) getCACert() (cert []byte, err error) {
 			CA:           csr.CA,
 			SerialNumber: csr.SerialNumber,
 		}
+		log.Debugf("Root CA certificate request: %+v", req)
 		// Generate the key/signer
 		_, cspSigner, err := util.BCCSPKeyRequestGenerate(&req, ca.csp)
 		if err != nil {
@@ -308,7 +349,7 @@ func (ca *CA) getCAChain() (chain []byte, err error) {
 		return util.ReadFile(certAuth.Chainfile)
 	}
 	// Otherwise, if this is a root CA, we always return the contents of the CACertfile
-	if ca.Config.ParentServer.URL == "" {
+	if ca.Config.Intermediate.ParentServer.URL == "" {
 		return util.ReadFile(certAuth.Certfile)
 	}
 	// If this is an intermediate CA but the ca.Chainfile doesn't exist,
@@ -329,6 +370,7 @@ func (ca *CA) initConfig() (err error) {
 	// Init config if not set
 	if ca.Config == nil {
 		ca.Config = new(CAConfig)
+		ca.Config.Registry.MaxEnrollments = -1
 	}
 	// Set config defaults
 	cfg := ca.Config
@@ -338,9 +380,28 @@ func (ca *CA) initConfig() (err error) {
 	if cfg.CA.Keyfile == "" {
 		cfg.CA.Keyfile = "ca-key.pem"
 	}
-	if cfg.CSR.CN == "" {
-		cfg.CSR.CN = "fabric-ca-server"
+	if cfg.CSR.CA == nil {
+		cfg.CSR.CA = &cfcsr.CAConfig{}
 	}
+	if cfg.CSR.CA.Expiry == "" {
+		cfg.CSR.CA.Expiry = defaultRootCACertificateExpiration
+	}
+	if cfg.Signing == nil {
+		cfg.Signing = &config.Signing{}
+	}
+	cs := cfg.Signing
+	if cs.Profiles == nil {
+		cs.Profiles = make(map[string]*config.SigningProfile)
+	}
+	caProfile := cs.Profiles["ca"]
+	initSigningProfile(&caProfile,
+		defaultIntermediateCACertificateExpiration,
+		true)
+	cs.Profiles["ca"] = caProfile
+	initSigningProfile(
+		&cs.Default,
+		defaultIssuedCertificateExpiration,
+		false)
 	// Set log level if debug is true
 	if ca.server.Config.Debug {
 		log.Level = log.LevelDebug
@@ -384,7 +445,7 @@ func (ca *CA) initDB() error {
 			return err
 		}
 	case "mysql":
-		ca.db, exists, err = dbutil.NewUserRegistryMySQL(db.Datasource, &db.TLS)
+		ca.db, exists, err = dbutil.NewUserRegistryMySQL(db.Datasource, &db.TLS, ca.csp)
 		if err != nil {
 			return err
 		}
@@ -405,9 +466,13 @@ func (ca *CA) initDB() error {
 
 	// If the DB doesn't exist, bootstrap it
 	if !exists {
-		err = ca.loadUsersTable()
-		if err != nil {
-			return err
+		// Since users come from LDAP when enabled,
+		// load them from the config file only when LDAP is disabled
+		if !ca.Config.LDAP.Enabled {
+			err = ca.loadUsersTable()
+			if err != nil {
+				return err
+			}
 		}
 		err = ca.loadAffiliationsTable()
 		if err != nil {
@@ -426,8 +491,13 @@ func (ca *CA) initUserRegistry() error {
 
 	if ldapCfg.Enabled {
 		// Use LDAP for the user registry
-		ca.registry, err = ldap.NewClient(ldapCfg)
+		ca.registry, err = ldap.NewClient(ldapCfg, ca.server.csp)
 		log.Debugf("Initialized LDAP identity registry; err=%s", err)
+		if err == nil {
+			log.Info("Successfully initialized LDAP client")
+		} else {
+			log.Warningf("Failed to initialize LDAP client; err=%s", err)
+		}
 		return err
 	}
 
@@ -457,7 +527,7 @@ func (ca *CA) initEnrollmentSigner() (err error) {
 	}
 
 	// Make sure the policy reflects the new remote
-	parentServerURL := ca.Config.ParentServer.URL
+	parentServerURL := ca.Config.Intermediate.ParentServer.URL
 	if parentServerURL != "" {
 		err = policy.OverrideRemotes(parentServerURL)
 		if err != nil {
@@ -556,17 +626,18 @@ func (ca *CA) addIdentity(id *CAConfigIdentity, errIfFound bool) error {
 		return nil
 	}
 
-	maxEnrollments, err := ca.getMaxEnrollments(id.MaxEnrollments)
+	id.MaxEnrollments, err = getMaxEnrollments(id.MaxEnrollments, ca.Config.Registry.MaxEnrollments)
 	if err != nil {
 		return err
 	}
+
 	rec := spi.UserInfo{
 		Name:           id.Name,
 		Pass:           id.Pass,
 		Type:           id.Type,
 		Affiliation:    id.Affiliation,
 		Attributes:     ca.convertAttrs(id.Attrs),
-		MaxEnrollments: maxEnrollments,
+		MaxEnrollments: id.MaxEnrollments,
 	}
 	err = ca.registry.InsertUser(rec)
 	if err != nil {
@@ -842,6 +913,21 @@ func validateMatchingKeys(cert *x509.Certificate, keyFile string) error {
 	return nil
 }
 
+// Load CN from existing enrollment information
+func (ca *CA) loadCNFromEnrollmentInfo(certFile string) (string, error) {
+	log.Debug("Loading CN from existing enrollment information")
+	cert, err := util.ReadFile(certFile)
+	if err != nil {
+		log.Debugf("No cert found at %s", certFile)
+		return "", err
+	}
+	name, err := util.GetEnrollmentIDFromPEM(cert)
+	if err != nil {
+		return "", err
+	}
+	return name, nil
+}
+
 func writeFile(file string, buf []byte, perm os.FileMode) error {
 	err := os.MkdirAll(filepath.Dir(file), 0755)
 	if err != nil {
@@ -855,4 +941,26 @@ func affiliationPath(name, parent string) string {
 		return name
 	}
 	return fmt.Sprintf("%s.%s", parent, name)
+}
+
+func parseDuration(str string) time.Duration {
+	d, err := time.ParseDuration(str)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
+func initSigningProfile(spp **config.SigningProfile, expiry time.Duration, isCA bool) {
+	sp := *spp
+	if sp == nil {
+		sp = &config.SigningProfile{CAConstraint: config.CAConstraint{IsCA: isCA}}
+		*spp = sp
+	}
+	if sp.Usage == nil {
+		sp.Usage = []string{"cert sign"}
+	}
+	if sp.Expiry == 0 {
+		sp.Expiry = expiry
+	}
 }

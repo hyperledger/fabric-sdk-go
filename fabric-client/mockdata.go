@@ -280,8 +280,8 @@ func (b *MockConfigGroupBuilder) buildSignatureConfigPolicy() *common.ConfigPoli
 
 func (b *MockConfigGroupBuilder) buildSignaturePolicy() *common.Policy {
 	return &common.Policy{
-		Type:   int32(common.Policy_SIGNATURE),
-		Policy: MarshalOrPanic(b.buildSignedBySignaturePolicy()),
+		Type:  int32(common.Policy_SIGNATURE),
+		Value: MarshalOrPanic(b.buildSignedBySignaturePolicy()),
 	}
 }
 

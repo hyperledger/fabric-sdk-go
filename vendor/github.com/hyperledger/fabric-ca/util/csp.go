@@ -20,7 +20,9 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -48,8 +50,8 @@ func GetDefaultBCCSP() bccsp.BCCSP {
 }
 
 // InitBCCSP initializes BCCSP
-func InitBCCSP(optsPtr **factory.FactoryOpts, homeDir string) (bccsp.BCCSP, error) {
-	err := ConfigureBCCSP(optsPtr)
+func InitBCCSP(optsPtr **factory.FactoryOpts, mspDir, homeDir string) (bccsp.BCCSP, error) {
+	err := ConfigureBCCSP(optsPtr, mspDir)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +63,7 @@ func InitBCCSP(optsPtr **factory.FactoryOpts, homeDir string) (bccsp.BCCSP, erro
 }
 
 // ConfigureBCCSP configures BCCSP, using
-func ConfigureBCCSP(optsPtr **factory.FactoryOpts) error {
+func ConfigureBCCSP(optsPtr **factory.FactoryOpts, mspDir string) error {
 	var err error
 	if optsPtr == nil {
 		return errors.New("nil argument not allowed")
@@ -83,10 +85,14 @@ func ConfigureBCCSP(optsPtr **factory.FactoryOpts) error {
 		if opts.SwOpts.SecLevel == 0 {
 			opts.SwOpts.SecLevel = 256
 		}
-		// Only override the KeyStorePath if it was left empty
-		if opts.SwOpts.FileKeystore == nil ||
-			opts.SwOpts.FileKeystore.KeyStorePath == "" {
-			opts.SwOpts.FileKeystore = &factory.FileKeystoreOpts{KeyStorePath: path.Join("msp", "keystore")}
+		if opts.SwOpts.FileKeystore == nil {
+			opts.SwOpts.FileKeystore = &factory.FileKeystoreOpts{}
+		}
+		// The mspDir overrides the KeyStorePath; otherwise, if not set, set default
+		if mspDir != "" {
+			opts.SwOpts.FileKeystore.KeyStorePath = path.Join(mspDir, "keystore")
+		} else if opts.SwOpts.FileKeystore.KeyStorePath == "" {
+			opts.SwOpts.FileKeystore.KeyStorePath = path.Join("msp", "keystore")
 		}
 	}
 	log.Debugf("Initializing BCCSP: %+v", opts)
@@ -107,6 +113,7 @@ func ConfigureBCCSP(optsPtr **factory.FactoryOpts) error {
 
 // GetBCCSP returns BCCSP
 func GetBCCSP(opts *factory.FactoryOpts, homeDir string) (bccsp.BCCSP, error) {
+
 	err := makeFileNamesAbsolute(opts, homeDir)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to make BCCSP files absolute: %s", err)
@@ -138,12 +145,14 @@ func BccspBackedSigner(caFile, keyFile string, policy *config.Signing, csp bccsp
 		// Fallback: attempt to read out of keyFile and import
 		log.Debugf("No key found in BCCSP keystore, attempting fallback")
 		var key bccsp.Key
+		var signer crypto.Signer
+
 		key, err = ImportBCCSPKeyFromPEM(keyFile, csp, false)
 		if err != nil {
 			return nil, fmt.Errorf("Could not find the private key in BCCSP keystore nor in keyfile %s: %s", keyFile, err)
 		}
 
-		signer, err := cspsigner.New(csp, key)
+		signer, err = cspsigner.New(csp, key)
 		if err != nil {
 			return nil, fmt.Errorf("Failed initializing CryptoSigner: %s", err)
 		}
@@ -281,4 +290,68 @@ func ImportBCCSPKeyFromPEM(keyFile string, myCSP bccsp.BCCSP, temporary bool) (b
 	default:
 		return nil, fmt.Errorf("Failed to import key from %s: invalid secret key type", keyFile)
 	}
+}
+
+// LoadX509KeyPair reads and parses a public/private key pair from a pair
+// of files. The files must contain PEM encoded data. The certificate file
+// may contain intermediate certificates following the leaf certificate to
+// form a certificate chain. On successful return, Certificate.Leaf will
+// be nil because the parsed form of the certificate is not retained.
+//
+// This function originated from crypto/tls/tls.go and was adapted to use a
+// BCCSP Signer
+func LoadX509KeyPair(certFile, keyFile string, csp bccsp.BCCSP) (*tls.Certificate, error) {
+
+	certPEMBlock, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return nil, err
+	}
+
+	cert := &tls.Certificate{}
+	var skippedBlockTypes []string
+	for {
+		var certDERBlock *pem.Block
+		certDERBlock, certPEMBlock = pem.Decode(certPEMBlock)
+		if certDERBlock == nil {
+			break
+		}
+		if certDERBlock.Type == "CERTIFICATE" {
+			cert.Certificate = append(cert.Certificate, certDERBlock.Bytes)
+		} else {
+			skippedBlockTypes = append(skippedBlockTypes, certDERBlock.Type)
+		}
+	}
+
+	if len(cert.Certificate) == 0 {
+		if len(skippedBlockTypes) == 0 {
+			return nil, fmt.Errorf("Failed to find PEM block in file %s", certFile)
+		}
+		if len(skippedBlockTypes) == 1 && strings.HasSuffix(skippedBlockTypes[0], "PRIVATE KEY") {
+			return nil, fmt.Errorf("Failed to find certificate PEM data in file %s, but did find a private key; PEM inputs may have been switched", certFile)
+		}
+		return nil, fmt.Errorf("Failed to find \"CERTIFICATE\" PEM block in file %s after skipping PEM blocks of the following types: %v", certFile, skippedBlockTypes)
+	}
+
+	x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
+	if err != nil {
+		return nil, err
+	}
+
+	_, cert.PrivateKey, err = GetSignerFromCert(x509Cert, csp)
+	if err != nil {
+		if keyFile != "" {
+			log.Debugf("Could not load TLS certificate with BCCSP: %s", err)
+			log.Debugf("Attempting fallback with certfile %s and keyfile %s", certFile, keyFile)
+			fallbackCerts, err := tls.LoadX509KeyPair(certFile, keyFile)
+			if err != nil {
+				return nil, fmt.Errorf("Could not get the private key %s that matches %s: %s", keyFile, certFile, err)
+			}
+			cert = &fallbackCerts
+		} else {
+			return nil, fmt.Errorf("Could not load TLS certificate with BCCSP: %s", err)
+		}
+
+	}
+
+	return cert, nil
 }

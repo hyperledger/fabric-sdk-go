@@ -77,8 +77,15 @@ func newSignHandler(server *Server, endpoint string) (h http.Handler, err error)
 // Authentication has already occurred for both enroll and reenroll prior
 // to calling this function in auth.go.
 func (sh *signHandler) Handle(w http.ResponseWriter, r *http.Request) error {
-
 	log.Debugf("Received request for endpoint %s", sh.endpoint)
+	err := sh.handle(w, r)
+	if err != nil {
+		log.Errorf("Enrollment failure: %s", err)
+	}
+	return err
+}
+
+func (sh *signHandler) handle(w http.ResponseWriter, r *http.Request) error {
 
 	// Read the request's body
 	body, err := ioutil.ReadAll(r.Body)
@@ -97,6 +104,9 @@ func (sh *signHandler) Handle(w http.ResponseWriter, r *http.Request) error {
 	log.Debugf("Enrollment request: %+v\n", req)
 
 	caname := r.Header.Get(caHdrName)
+	if sh.server.caMap[caname].Config.Registry.MaxEnrollments == 0 {
+		return errors.New("The enroll API is disabled")
+	}
 
 	// Make any authorization checks needed, depending on the contents
 	// of the CSR (Certificate Signing Request)
@@ -108,9 +118,7 @@ func (sh *signHandler) Handle(w http.ResponseWriter, r *http.Request) error {
 	// Sign the certificate
 	cert, err := sh.server.caMap[caname].enrollSigner.Sign(req.SignRequest)
 	if err != nil {
-		err = fmt.Errorf("Failed signing for endpoint %s: %s", sh.endpoint, err)
-		log.Error(err.Error())
-		return err
+		return fmt.Errorf("Failed signing: %s", err)
 	}
 
 	// Send the response with the cert and the server info

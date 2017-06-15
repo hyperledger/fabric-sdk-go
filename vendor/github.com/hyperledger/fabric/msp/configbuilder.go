@@ -109,14 +109,14 @@ const (
 	configfilename    = "config.yaml"
 )
 
-func SetupBCCSPKeystoreConfig(bccspConfig *factory.FactoryOpts, keystoreDir string) {
+func SetupBCCSPKeystoreConfig(bccspConfig *factory.FactoryOpts, keystoreDir string) *factory.FactoryOpts {
 	if bccspConfig == nil {
-		bccspConfig = &factory.DefaultOpts
+		bccspConfig = factory.GetDefaultOpts()
 	}
 
 	if bccspConfig.ProviderName == "SW" {
 		if bccspConfig.SwOpts == nil {
-			bccspConfig.SwOpts = factory.DefaultOpts.SwOpts
+			bccspConfig.SwOpts = factory.GetDefaultOpts().SwOpts
 		}
 
 		// Only override the KeyStorePath if it was left empty
@@ -126,12 +126,14 @@ func SetupBCCSPKeystoreConfig(bccspConfig *factory.FactoryOpts, keystoreDir stri
 			bccspConfig.SwOpts.FileKeystore = &factory.FileKeystoreOpts{KeyStorePath: keystoreDir}
 		}
 	}
+
+	return bccspConfig
 }
 
 func GetLocalMspConfig(dir string, bccspConfig *factory.FactoryOpts, ID string) (*msp.MSPConfig, error) {
 	signcertDir := filepath.Join(dir, signcerts)
 	keystoreDir := filepath.Join(dir, keystore)
-	SetupBCCSPKeystoreConfig(bccspConfig, keystoreDir)
+	bccspConfig = SetupBCCSPKeystoreConfig(bccspConfig, keystoreDir)
 
 	err := factory.InitFactories(bccspConfig)
 	if err != nil {
@@ -145,20 +147,20 @@ func GetLocalMspConfig(dir string, bccspConfig *factory.FactoryOpts, ID string) 
 
 	/* FIXME: for now we're making the following assumptions
 	1) there is exactly one signing cert
-	2) BCCSP's KeyStore has the the private key that matches SKI of
+	2) BCCSP's KeyStore has the private key that matches SKI of
 	   signing cert
 	*/
 
 	sigid := &msp.SigningIdentityInfo{PublicSigner: signcert[0], PrivateSigner: nil}
 
-	return getMspConfig(dir, bccspConfig, ID, sigid)
+	return getMspConfig(dir, ID, sigid)
 }
 
-func GetVerifyingMspConfig(dir string, bccspConfig *factory.FactoryOpts, ID string) (*msp.MSPConfig, error) {
-	return getMspConfig(dir, bccspConfig, ID, nil)
+func GetVerifyingMspConfig(dir string, ID string) (*msp.MSPConfig, error) {
+	return getMspConfig(dir, ID, nil)
 }
 
-func getMspConfig(dir string, bccspConfig *factory.FactoryOpts, ID string, sigid *msp.SigningIdentityInfo) (*msp.MSPConfig, error) {
+func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.MSPConfig, error) {
 	cacertDir := filepath.Join(dir, cacerts)
 	signcertDir := filepath.Join(dir, signcerts)
 	admincertDir := filepath.Join(dir, admincerts)

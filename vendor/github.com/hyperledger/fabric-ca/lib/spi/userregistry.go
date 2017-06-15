@@ -38,7 +38,7 @@ type User interface {
 	// Returns the enrollment ID of the user
 	GetName() string
 	// Login the user with a password
-	Login(password string) error
+	Login(password string, caMaxEnrollment int) error
 	// Get the complete path for the user's affiliation.
 	GetAffiliationPath() []string
 	// GetAttribute returns the value for an attribute name

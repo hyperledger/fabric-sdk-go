@@ -27,6 +27,7 @@ import (
 	"github.com/cloudflare/cfssl/log"
 	"github.com/hyperledger/fabric-ca/lib/spi"
 	ctls "github.com/hyperledger/fabric-ca/lib/tls"
+	"github.com/hyperledger/fabric/bccsp"
 	ldap "gopkg.in/ldap.v2"
 )
 
@@ -45,7 +46,7 @@ type Config struct {
 }
 
 // NewClient creates an LDAP client
-func NewClient(cfg *Config) (*Client, error) {
+func NewClient(cfg *Config, csp bccsp.BCCSP) (*Client, error) {
 	log.Debugf("Creating new LDAP client for %+v", cfg)
 	if cfg == nil {
 		return nil, errors.New("LDAP configuration is nil")
@@ -95,6 +96,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	c.UserFilter = cfgVal(cfg.UserFilter, "(uid=%s)")
 	c.GroupFilter = cfgVal(cfg.GroupFilter, "(memberUid=%s)")
 	c.TLS = &cfg.TLS
+	c.CSP = csp
 	log.Debug("LDAP client was successfully created")
 	return c, nil
 }
@@ -118,6 +120,7 @@ type Client struct {
 	GroupFilter   string // e.g. "(memberUid=%s)"
 	AdminConn     *ldap.Conn
 	TLS           *ctls.ClientTLSConfig
+	CSP           bccsp.BCCSP
 }
 
 // GetUser returns a user object for username and attribute values
@@ -241,7 +244,7 @@ func (lc *Client) newConnection() (conn *ldap.Conn, err error) {
 		}
 	} else {
 		log.Debug("Connecting to LDAP server over TLS")
-		tlsConfig, err2 := ctls.GetClientTLSConfig(lc.TLS)
+		tlsConfig, err2 := ctls.GetClientTLSConfig(lc.TLS, lc.CSP)
 		if err2 != nil {
 			return nil, fmt.Errorf("Failed to get client TLS config: %s", err2)
 		}
@@ -278,7 +281,7 @@ func (u *User) GetName() string {
 }
 
 // Login logs a user in using password
-func (u *User) Login(password string) error {
+func (u *User) Login(password string, caMaxEnrollment int) error {
 
 	// Get a connection to use to bind over as the user to check the password
 	conn, err := u.client.newConnection()

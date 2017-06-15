@@ -33,7 +33,6 @@ import (
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/cloudflare/cfssl/log"
-	"github.com/cloudflare/cfssl/signer"
 	"github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-ca/lib/tls"
 	"github.com/hyperledger/fabric-ca/util"
@@ -88,7 +87,7 @@ func (c *Client) Init() error {
 			return fmt.Errorf("Failed to create cacerts directory: %s", err)
 		}
 		// Initialize BCCSP (the crypto layer)
-		c.csp, err = util.InitBCCSP(&cfg.CSP, c.HomeDir)
+		c.csp, err = util.InitBCCSP(&cfg.CSP, mspDir, c.HomeDir)
 		if err != nil {
 			return err
 		}
@@ -172,10 +171,12 @@ func (c *Client) Enroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error)
 		CAName: req.CAName,
 	}
 
-	reqNet.Hosts = signer.SplitHosts(req.Hosts)
-	reqNet.Request = string(csrPEM)
-	reqNet.Profile = req.Profile
-	reqNet.Label = req.Label
+	if req.CSR != nil {
+		reqNet.SignRequest.Hosts = req.CSR.Hosts
+	}
+	reqNet.SignRequest.Request = string(csrPEM)
+	reqNet.SignRequest.Profile = req.Profile
+	reqNet.SignRequest.Label = req.Label
 
 	body, err := util.Marshal(reqNet, "SignRequest")
 	if err != nil {
@@ -342,6 +343,11 @@ func (c *Client) LoadCSRInfo(path string) (*api.CSRInfo, error) {
 	return &csrInfo, nil
 }
 
+// GetCertFilePath returns the path to the certificate file for this client
+func (c *Client) GetCertFilePath() string {
+	return c.certFile
+}
+
 // NewGet create a new GET request
 func (c *Client) newGet(endpoint string) (*http.Request, error) {
 	curl, err := c.getURL(endpoint)
@@ -389,7 +395,7 @@ func (c *Client) SendReq(req *http.Request, result interface{}) (err error) {
 			return err
 		}
 
-		tlsConfig, err2 := tls.GetClientTLSConfig(&c.Config.TLS)
+		tlsConfig, err2 := tls.GetClientTLSConfig(&c.Config.TLS, c.csp)
 		if err2 != nil {
 			return fmt.Errorf("Failed to get client TLS config: %s", err2)
 		}

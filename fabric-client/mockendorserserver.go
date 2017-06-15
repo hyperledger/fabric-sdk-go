@@ -23,7 +23,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
-	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwset"
+	rwsetutil "github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
+	kvrwset "github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
+
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -53,16 +55,17 @@ func (m *MockEndorserServer) createProposalResponsePayload() []byte {
 
 	prp := &pb.ProposalResponsePayload{}
 	ccAction := &pb.ChaincodeAction{}
-	var nsReadWriteSet []*rwset.NsReadWriteSet
-	var kvWrite []*rwset.KVWrite
+	txRwSet := &rwsetutil.TxRwSet{}
+
 	if m.AddkvWrite {
-		kvWrite = append(kvWrite, &rwset.KVWrite{Key: "write", Value: []byte("value")})
-	} else {
-		kvWrite = nil
+		txRwSet.NsRwSets = []*rwsetutil.NsRwSet{
+			&rwsetutil.NsRwSet{NameSpace: "ns1", KvRwSet: &kvrwset.KVRWSet{
+				Reads:  []*kvrwset.KVRead{&kvrwset.KVRead{Key: "key1", Version: &kvrwset.Version{BlockNum: 1, TxNum: 1}}},
+				Writes: []*kvrwset.KVWrite{&kvrwset.KVWrite{Key: "key2", IsDelete: false, Value: []byte("value2")}},
+			}}}
 	}
-	nsReadWriteSet = append(nsReadWriteSet, &rwset.NsReadWriteSet{Writes: kvWrite})
-	txRWSet := &rwset.TxReadWriteSet{NsRWs: nsReadWriteSet}
-	txRWSetBytes, err := txRWSet.Marshal()
+
+	txRWSetBytes, err := txRwSet.ToProtoBytes()
 	if err != nil {
 		return nil
 	}

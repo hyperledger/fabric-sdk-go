@@ -117,7 +117,8 @@ func NewFabricCAClient() (Services, error) {
 	c.Config.TLS.Enabled = config.GetFabricCATLSEnabledFlag()
 	fabricCAClient := &services{fabricCAClient: c}
 	logger.Infof("Constructed fabricCAClient instance: %v", fabricCAClient)
-
+	c.HomeDir = config.GetFabricCAHomeDir()
+	c.Config.MSPDir = config.GetFabricCAMspDir()
 	c.Config.CSP = config.GetCSPConfig()
 
 	err := c.Init()

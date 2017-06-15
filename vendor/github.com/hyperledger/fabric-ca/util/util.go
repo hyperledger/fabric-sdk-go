@@ -21,6 +21,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
@@ -166,14 +167,9 @@ func Unmarshal(from []byte, to interface{}, what string) error {
 // @param key The pem-encoded key
 // @param body The body of an HTTP request
 func CreateToken(csp bccsp.BCCSP, cert []byte, key bccsp.Key, body []byte) (string, error) {
-
-	block, _ := pem.Decode(cert)
-	if block == nil {
-		return "", errors.New("Failed to PEM decode certificate")
-	}
-	x509Cert, err := x509.ParseCertificate(block.Bytes)
+	x509Cert, err := GetX509CertificateFromPEM(cert)
 	if err != nil {
-		return "", fmt.Errorf("Error from x509.ParseCertificate: %s", err)
+		return "", err
 	}
 	publicKey := x509Cert.PublicKey
 
@@ -306,11 +302,7 @@ func DecodeToken(token string) (*x509.Certificate, string, string, error) {
 	if err != nil {
 		return nil, "", "", fmt.Errorf("Failed to decode base64 encoded x509 cert: %s", err)
 	}
-	block, _ := pem.Decode(certDecoded)
-	if block == nil {
-		return nil, "", "", errors.New("Failed to PEM decode the certificate")
-	}
-	x509Cert, err := x509.ParseCertificate(block.Bytes)
+	x509Cert, err := GetX509CertificateFromPEM(certDecoded)
 	if err != nil {
 		return nil, "", "", fmt.Errorf("Error in parsing x509 cert given Block Bytes: %s", err)
 	}
@@ -321,26 +313,48 @@ func DecodeToken(token string) (*x509.Certificate, string, string, error) {
 func GetECPrivateKey(raw []byte) (*ecdsa.PrivateKey, error) {
 	decoded, _ := pem.Decode(raw)
 	if decoded == nil {
-		return nil, errors.New("Failed to decode the given PEM-encoded ECDSA key")
+		return nil, errors.New("Failed to decode the PEM-encoded ECDSA key")
 	}
 	ECprivKey, err := x509.ParseECPrivateKey(decoded.Bytes)
-	if err != nil {
-		return nil, fmt.Errorf("x509.ParseECPrivateKey failed: %s", err)
+	if err == nil {
+		return ECprivKey, nil
 	}
-	return ECprivKey, nil
+	key, err2 := x509.ParsePKCS8PrivateKey(decoded.Bytes)
+	if err2 == nil {
+		switch key.(type) {
+		case *ecdsa.PrivateKey:
+			return key.(*ecdsa.PrivateKey), nil
+		case *rsa.PrivateKey:
+			return nil, errors.New("Expecting EC private key but found RSA private key")
+		default:
+			return nil, errors.New("Invalid private key type in PKCS#8 wrapping")
+		}
+	}
+	return nil, fmt.Errorf("Failed parsing EC private key: %s", err)
 }
 
 //GetRSAPrivateKey get *rsa.PrivateKey from key pem
 func GetRSAPrivateKey(raw []byte) (*rsa.PrivateKey, error) {
 	decoded, _ := pem.Decode(raw)
 	if decoded == nil {
-		return nil, errors.New("Failed to decode the given PEM-encoded RSA key")
+		return nil, errors.New("Failed to decode the PEM-encoded RSA key")
 	}
 	RSAprivKey, err := x509.ParsePKCS1PrivateKey(decoded.Bytes)
-	if err != nil {
-		return nil, fmt.Errorf("Failure in x509.ParsePKCS1PrivateKey: %s", err)
+	if err == nil {
+		return RSAprivKey, nil
 	}
-	return RSAprivKey, nil
+	key, err2 := x509.ParsePKCS8PrivateKey(raw)
+	if err2 == nil {
+		switch key.(type) {
+		case *ecdsa.PrivateKey:
+			return nil, errors.New("Expecting RSA private key but found EC private key")
+		case *rsa.PrivateKey:
+			return key.(*rsa.PrivateKey), nil
+		default:
+			return nil, errors.New("Invalid private key type in PKCS#8 wrapping")
+		}
+	}
+	return nil, fmt.Errorf("Failed parsing RSA private key: %s", err)
 }
 
 // B64Encode base64 encodes bytes
@@ -361,6 +375,23 @@ func StrContained(str string, strs []string) bool {
 		}
 	}
 	return false
+}
+
+// IsSubsetOf returns an error if there is something in 'small' that
+// is not in 'big'.  Both small and big are assumed to be comma-separated
+// strings.  All string comparisons are case-insensitive.
+// Examples:
+// 1) IsSubsetOf('a,B', 'A,B,C') returns nil
+// 2) IsSubsetOf('A,B,C', 'B,C') returns an error because A is not in the 2nd set.
+func IsSubsetOf(small, big string) error {
+	bigSet := strings.Split(big, ",")
+	smallSet := strings.Split(small, ",")
+	for _, s := range smallSet {
+		if s != "" && !StrContained(s, bigSet) {
+			return fmt.Errorf("'%s' is not a member of '%s'", s, big)
+		}
+	}
+	return nil
 }
 
 // HTTPRequestToString returns a string for an HTTP request for debuggging
@@ -427,7 +458,20 @@ func GetDefaultConfigFile(cmdName string) string {
 	return path.Join(os.Getenv("HOME"), ".fabric-ca-client", fname)
 }
 
-// GetX509CertificateFromPEM converts a PEM buffer to an X509 Certificate
+// GetX509CertificateFromPEMFile gets an X509 certificate from a file
+func GetX509CertificateFromPEMFile(file string) (*x509.Certificate, error) {
+	pemBytes, err := ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	x509Cert, err := GetX509CertificateFromPEM(pemBytes)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid certificate in %s: %s", file, err)
+	}
+	return x509Cert, nil
+}
+
+// GetX509CertificateFromPEM get an X509 certificate from bytes in PEM format
 func GetX509CertificateFromPEM(cert []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(cert)
 	if block == nil {
@@ -435,9 +479,24 @@ func GetX509CertificateFromPEM(cert []byte) (*x509.Certificate, error) {
 	}
 	x509Cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("Error from x509.ParseCertificate: %s", err)
+		return nil, fmt.Errorf("Error parsing certificate: %s", err)
 	}
 	return x509Cert, nil
+}
+
+// GetCertificateDurationFromFile returns the validity duration for a certificate
+// in a file.
+func GetCertificateDurationFromFile(file string) (time.Duration, error) {
+	cert, err := GetX509CertificateFromPEMFile(file)
+	if err != nil {
+		return 0, err
+	}
+	return GetCertificateDuration(cert), nil
+}
+
+// GetCertificateDuration returns the validity duration for a certificate
+func GetCertificateDuration(cert *x509.Certificate) time.Duration {
+	return cert.NotAfter.Sub(cert.NotBefore)
 }
 
 // GetEnrollmentIDFromPEM returns the EnrollmentID from a PEM buffer
@@ -576,4 +635,34 @@ func NormalizeFileList(files []string, homeDir string) ([]string, error) {
 	}
 
 	return files, nil
+}
+
+// CheckHostsInCert checks to see if host correctly inserted into certificate
+func CheckHostsInCert(certFile string, host string) error {
+	containsHost := false
+	certBytes, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return fmt.Errorf("Failed to read file: %s", err)
+	}
+
+	cert, err := GetX509CertificateFromPEM(certBytes)
+	if err != nil {
+		return fmt.Errorf("Failed to get certificate: %s", err)
+	}
+	// Run through the extensions for the certificates
+	for _, ext := range cert.Extensions {
+		// asn1 identifier for 'Subject Alternative Name'
+		if ext.Id.Equal(asn1.ObjectIdentifier{2, 5, 29, 17}) {
+			if !strings.Contains(string(ext.Value), host) {
+				return fmt.Errorf("Host '%s' was not found in the certificate in file '%s'", host, certFile)
+			}
+			containsHost = true
+		}
+	}
+
+	if !containsHost {
+		return errors.New("Certificate contains no hosts")
+	}
+
+	return nil
 }

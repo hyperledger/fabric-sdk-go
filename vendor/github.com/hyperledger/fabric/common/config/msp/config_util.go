@@ -63,15 +63,12 @@ func TemplateGroupMSPWithAdminRolePrincipal(configPath []string, mspConfig *mspp
 	}
 
 	// add the MSP to the map of pending MSPs
-	mspID, err := mspInst.GetIdentifier()
-	if err != nil {
-		logger.Panicf("Could not extract msp identifier, err %s", err)
-	}
+	mspID, _ := mspInst.GetIdentifier()
 
 	memberPolicy := &cb.ConfigPolicy{
 		Policy: &cb.Policy{
-			Type:   int32(cb.Policy_SIGNATURE),
-			Policy: utils.MarshalOrPanic(cauthdsl.SignedByMspMember(mspID)),
+			Type:  int32(cb.Policy_SIGNATURE),
+			Value: utils.MarshalOrPanic(cauthdsl.SignedByMspMember(mspID)),
 		},
 	}
 
@@ -84,8 +81,8 @@ func TemplateGroupMSPWithAdminRolePrincipal(configPath []string, mspConfig *mspp
 
 	adminPolicy := &cb.ConfigPolicy{
 		Policy: &cb.Policy{
-			Type:   int32(cb.Policy_SIGNATURE),
-			Policy: adminSigPolicy,
+			Type:  int32(cb.Policy_SIGNATURE),
+			Value: adminSigPolicy,
 		},
 	}
 

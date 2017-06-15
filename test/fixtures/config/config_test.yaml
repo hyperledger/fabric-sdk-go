@@ -48,15 +48,14 @@ client:
   tlsEnabled: true
   id: "Org1MSP"
   name: "ca-org1"
+  homeDir: "/tmp/"
+  mspDir: "msp"
   serverURL: "https://localhost:7054"
   certfiles :
     - "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/ca/ca_root.pem"
   client:
    keyfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1-key.pem"
    certfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1.pem"
-
- keystore:
-  path: "/tmp/keystore"
 
  cryptoconfig:
   path: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config"

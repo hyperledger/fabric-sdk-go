@@ -131,18 +131,21 @@ func ConvertDERToPEM(der []byte, datatype string) []byte {
 }
 
 //GenNumber generates random numbers of type *big.Int with fixed length
-func GenNumber(numlen *big.Int) *big.Int {
+func GenNumber(numlen *big.Int) (*big.Int, error) {
 	lowerBound := new(big.Int).Exp(big.NewInt(10), new(big.Int).Sub(numlen, big.NewInt(1)), nil)
 	upperBound := new(big.Int).Exp(big.NewInt(10), numlen, nil)
-	randomNum, _ := rand.Int(rand.Reader, upperBound)
+	randomNum, err := rand.Int(rand.Reader, upperBound)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to generate random number: %s", err)
+	}
 	val := new(big.Int).Add(randomNum, lowerBound)
 	valMod := new(big.Int).Mod(val, upperBound)
 
 	if valMod.Cmp(lowerBound) == -1 {
 		newval := new(big.Int).Add(valMod, lowerBound)
-		return newval
+		return newval, nil
 	}
-	return valMod
+	return valMod, nil
 }
 
 // GetEnrollmentIDFromCert retrieves Enrollment Id from certificate

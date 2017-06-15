@@ -26,6 +26,8 @@ import (
 
 	"github.com/cloudflare/cfssl/log"
 	"github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // ServerTLSConfig defines key material for a TLS server
@@ -39,13 +41,13 @@ type ServerTLSConfig struct {
 // ClientAuth defines the key material needed to verify client certificates
 type ClientAuth struct {
 	Type      string   `def:"noclientcert" help:"Policy the server will follow for TLS Client Authentication."`
-	CertFiles []string `help:"PEM-encoded list of trusted certificate files"`
+	CertFiles []string `help:"A list of comma-separated PEM-encoded trusted certificate files (e.g. root1.pem,root2.pem)"`
 }
 
 // ClientTLSConfig defines the key material for a TLS client
 type ClientTLSConfig struct {
 	Enabled   bool     `skip:"true"`
-	CertFiles []string `help:"PEM-encoded list of trusted certificate files"`
+	CertFiles []string `help:"A list of comma-separated PEM-encoded trusted certificate files (e.g. root1.pem,root2.pem)"`
 	Client    KeyCertFiles
 }
 
@@ -56,39 +58,41 @@ type KeyCertFiles struct {
 }
 
 // GetClientTLSConfig creates a tls.Config object from certs and roots
-func GetClientTLSConfig(cfg *ClientTLSConfig) (*tls.Config, error) {
+func GetClientTLSConfig(cfg *ClientTLSConfig, csp bccsp.BCCSP) (*tls.Config, error) {
 	var certs []tls.Certificate
+
+	if csp == nil {
+		csp = factory.GetDefault()
+	}
 
 	log.Debugf("CA Files: %+v\n", cfg.CertFiles)
 	log.Debugf("Client Cert File: %s\n", cfg.Client.CertFile)
 	log.Debugf("Client Key File: %s\n", cfg.Client.KeyFile)
 
-	if cfg.Client.CertFile != "" && cfg.Client.KeyFile != "" {
+	if cfg.Client.CertFile != "" {
 		err := checkCertDates(cfg.Client.CertFile)
 		if err != nil {
 			return nil, err
 		}
 
-		clientCert, err := tls.LoadX509KeyPair(cfg.Client.CertFile, cfg.Client.KeyFile)
+		clientCert, err := util.LoadX509KeyPair(cfg.Client.CertFile, cfg.Client.KeyFile, csp)
 		if err != nil {
 			return nil, err
 		}
 
-		certs = append(certs, clientCert)
+		certs = append(certs, *clientCert)
 	} else {
 		log.Debug("Client TLS certificate and/or key file not provided")
 	}
-
 	rootCAPool := x509.NewCertPool()
-
 	if len(cfg.CertFiles) == 0 {
-		return nil, errors.New("No CA certificate files provided")
+		return nil, errors.New("No TLS certificate files were provided")
 	}
 
 	for _, cacert := range cfg.CertFiles {
 		caCert, err := ioutil.ReadFile(cacert)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Failed to read '%s': %s", cacert, err)
 		}
 		ok := rootCAPool.AppendCertsFromPEM(caCert)
 		if !ok {
@@ -122,6 +126,31 @@ func AbsTLSClient(cfg *ClientTLSConfig, configDir string) error {
 	}
 
 	cfg.Client.KeyFile, err = util.MakeFileAbs(cfg.Client.KeyFile, configDir)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AbsTLSServer makes TLS client files absolute
+func AbsTLSServer(cfg *ServerTLSConfig, configDir string) error {
+	var err error
+
+	for i := 0; i < len(cfg.ClientAuth.CertFiles); i++ {
+		cfg.ClientAuth.CertFiles[i], err = util.MakeFileAbs(cfg.ClientAuth.CertFiles[i], configDir)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	cfg.CertFile, err = util.MakeFileAbs(cfg.CertFile, configDir)
+	if err != nil {
+		return err
+	}
+
+	cfg.KeyFile, err = util.MakeFileAbs(cfg.KeyFile, configDir)
 	if err != nil {
 		return err
 	}

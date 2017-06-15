@@ -50,7 +50,7 @@ func GetPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeActionPayloa
 	}
 
 	if pRespPayload.Extension == nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("response payload is missing extension")
 	}
 
 	respPayload := &peer.ChaincodeAction{}
@@ -225,7 +225,7 @@ func CreateProposalResponse(hdrbytes []byte, payl []byte, response *peer.Respons
 	// get the bytes of the proposal response payload - we need to sign them
 	prpBytes, err := GetBytesProposalResponsePayload(pHashBytes, response, results, events, ccid)
 	if err != nil {
-		return nil, errors.New("Failure while unmarshalling the ProposalResponsePayload")
+		return nil, errors.New("Failure while marshaling the ProposalResponsePayload")
 	}
 
 	// serialize the signing identity
@@ -246,6 +246,35 @@ func CreateProposalResponse(hdrbytes []byte, payl []byte, response *peer.Respons
 		Endorsement: &peer.Endorsement{Signature: signature, Endorser: endorser},
 		Payload:     prpBytes,
 		Response:    &peer.Response{Status: 200, Message: "OK"}}
+
+	return resp, nil
+}
+
+// CreateProposalResponseFailure creates a proposal response for cases where
+// endorsement proposal fails either due to a endorsement failure or a chaincode
+// failure (chaincode response status >= shim.ERRORTHRESHOLD)
+func CreateProposalResponseFailure(hdrbytes []byte, payl []byte, response *peer.Response, results []byte, events []byte, ccid *peer.ChaincodeID, visibility []byte) (*peer.ProposalResponse, error) {
+	hdr, err := GetHeader(hdrbytes)
+	if err != nil {
+		return nil, err
+	}
+
+	// obtain the proposal hash given proposal header, payload and the requested visibility
+	pHashBytes, err := GetProposalHash1(hdr, payl, visibility)
+	if err != nil {
+		return nil, fmt.Errorf("Could not compute proposal hash: err %s", err)
+	}
+
+	// get the bytes of the proposal response payload
+	prpBytes, err := GetBytesProposalResponsePayload(pHashBytes, response, results, events, ccid)
+	if err != nil {
+		return nil, errors.New("Failure while marshaling the ProposalResponsePayload")
+	}
+
+	resp := &peer.ProposalResponse{
+		// Timestamp: TODO!
+		Payload:  prpBytes,
+		Response: &peer.Response{Status: 500, Message: "Chaincode Error"}}
 
 	return resp, nil
 }

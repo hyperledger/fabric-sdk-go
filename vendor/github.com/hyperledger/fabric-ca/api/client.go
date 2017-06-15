@@ -35,13 +35,11 @@ type RegistrationRequest struct {
 	Secret string `json:"secret,omitempty" help:"The enrollment secret for the identity being registered"`
 	// MaxEnrollments is the maximum number of times the secret can
 	// be reused to enroll.
-	MaxEnrollments int `json:"max_enrollments,omitempty" help:"The maximum number of times the secret can be reused to enroll."`
+	MaxEnrollments int `json:"max_enrollments,omitempty" def:"-1" help:"The maximum number of times the secret can be reused to enroll."`
 	// is returned in the response.
 	// The identity's affiliation.
 	// For example, an affiliation of "org1.department1" associates the identity with "department1" in "org1".
 	Affiliation string `json:"affiliation" help:"The identity's affiliation"`
-	// Attr is used to support a single attribute provided through the fabric-ca-client CLI
-	Attr string `help:"Attributes associated with this identity (e.g. hf.Revoker=true)"`
 	// Attributes associated with this identity
 	Attributes []Attribute `json:"attrs,omitempty"`
 	// CAName is the name of the CA to connect to
@@ -60,8 +58,6 @@ type EnrollmentRequest struct {
 	Name string `json:"name" skip:"true"`
 	// The secret returned via Register
 	Secret string `json:"secret,omitempty" skip:"true"`
-	// Hosts is a comma-separated host list in the CSR
-	Hosts string `json:"hosts,omitempty" help:"Comma-separated host list"`
 	// Profile is the name of the signing profile to use in issuing the certificate
 	Profile string `json:"profile,omitempty" help:"Name of the signing profile to use in issuing the certificate"`
 	// Label is the label to use in HSM operations
@@ -75,8 +71,6 @@ type EnrollmentRequest struct {
 // ReenrollmentRequest is a request to reenroll an identity.
 // This is useful to renew a certificate before it has expired.
 type ReenrollmentRequest struct {
-	// Hosts is a comma-separated host list in the CSR
-	Hosts string `json:"hosts,omitempty"`
 	// Profile is the name of the signing profile to use in issuing the certificate
 	Profile string `json:"profile,omitempty"`
 	// Label is the label to use in HSM operations

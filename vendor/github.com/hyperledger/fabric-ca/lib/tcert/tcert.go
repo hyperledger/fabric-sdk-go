@@ -211,7 +211,11 @@ func (tm *Mgr) GetBatch(req *GetBatchRequest, ecert *x509.Certificate) (*GetBatc
 		set = append(set, TCert{pem, ks})
 	}
 
-	tcertID := GenNumber(big.NewInt(20))
+	tcertID, randNumErr := GenNumber(big.NewInt(20))
+	if randNumErr != nil {
+		return nil, randNumErr
+	}
+
 	tcertResponse := &GetBatchResponse{tcertID, time.Now(), kdfKey, set}
 
 	return tcertResponse, nil
