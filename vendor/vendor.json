@@ -549,17 +549,7 @@
 			"revisionTime": "2017-05-12T16:44:56Z"
 		},
 		{
-<<<<<<< HEAD
-			"checksumSHA1": "t86JgxkVo1XGuc0oELi0uchNHGY=",
-			"path": "github.com/hyperledger/fabric/common/ledger/util",
-			"revision": "78982f07447f2835add0af508a822322f8b4df66",
-			"revisionTime": "2017-04-26T16:37:14Z"
-		},
-		{
-			"checksumSHA1": "xaeBVESqbEslblpXcO0BYO1A2W4=",
-=======
 			"checksumSHA1": "CXhL57BYtBJmDUirc5JbG66WOr8=",
->>>>>>> [FAB-3757] Update to 1.0.0-alpha2
 			"path": "github.com/hyperledger/fabric/common/metadata",
 			"revision": "6b6bfcfbd1e798a8a08fa9c3bf4dc0ff766a6b87",
 			"revisionTime": "2017-05-12T16:44:56Z"
@@ -631,23 +621,7 @@
 			"revisionTime": "2017-05-12T16:44:56Z"
 		},
 		{
-<<<<<<< HEAD
-			"checksumSHA1": "CVGorjV5Y4pvWY8GuXwDDYcUzSU=",
-			"path": "github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwset",
-			"revision": "78982f07447f2835add0af508a822322f8b4df66",
-			"revisionTime": "2017-04-26T16:37:14Z"
-		},
-		{
-			"checksumSHA1": "XiZ03foYOI7HhXEkBKkJ/vLbHgY=",
-			"path": "github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version",
-			"revision": "78982f07447f2835add0af508a822322f8b4df66",
-			"revisionTime": "2017-04-26T16:37:14Z"
-		},
-		{
-			"checksumSHA1": "Gk77xKSTQOER+063VjQQmoGSdhc=",
-=======
 			"checksumSHA1": "aan6sv5WCa4N5SJG1Mq4XqUPDxw=",
->>>>>>> [FAB-3757] Update to 1.0.0-alpha2
 			"path": "github.com/hyperledger/fabric/core/ledger/util",
 			"revision": "6b6bfcfbd1e798a8a08fa9c3bf4dc0ff766a6b87",
 			"revisionTime": "2017-05-12T16:44:56Z"
