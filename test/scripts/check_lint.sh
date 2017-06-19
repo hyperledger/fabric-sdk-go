@@ -9,9 +9,9 @@
 set -e
 
 declare -a arr=(
-"./config"
-"./fabric-ca-client"
-"./fabric-client"
+"./pkg/config"
+"./pkg/fabric-ca-client"
+"./pkg/fabric-client"
 "./test"
 )
 

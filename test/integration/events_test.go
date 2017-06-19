@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
+	api "github.com/hyperledger/fabric-sdk-go/api"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/util"
 	"github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -28,7 +29,7 @@ func TestEvents(t *testing.T) {
 func initializeTests(t *testing.T) BaseSetupImpl {
 	testSetup := BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
-		ChainID:         "mychannel",
+		ChannelID:       "mychannel",
 		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}
@@ -44,7 +45,7 @@ func initializeTests(t *testing.T) BaseSetupImpl {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
-	if err := testSetup.InstantiateCC(testSetup.ChainCodeID, testSetup.ChainID, "github.com/events_cc", "v0", nil); err != nil {
+	if err := testSetup.InstantiateCC(testSetup.ChainCodeID, testSetup.ChannelID, "github.com/events_cc", "v0", nil); err != nil {
 		t.Fatalf("instantiateCC return error: %v", err)
 	}
 
@@ -58,12 +59,12 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 	args = append(args, "invoke")
 	args = append(args, "SEVERE")
 
-	tpResponses1, tx1, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	tpResponses1, tx1, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
 
-	tpResponses2, tx2, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	tpResponses2, tx2, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
@@ -77,11 +78,11 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 
 	// Test invalid transaction: create 2 invoke requests in quick succession that modify
 	// the same state variable which should cause one invoke to be invalid
-	_, err = util.CreateAndSendTransaction(testSetup.Chain, tpResponses1)
+	_, err = util.CreateAndSendTransaction(testSetup.Channel, tpResponses1)
 	if err != nil {
 		t.Fatalf("First invoke failed err: %v", err)
 	}
-	_, err = util.CreateAndSendTransaction(testSetup.Chain, tpResponses2)
+	_, err = util.CreateAndSendTransaction(testSetup.Channel, tpResponses2)
 	if err != nil {
 		t.Fatalf("Second invoke failed err: %v", err)
 	}
@@ -109,12 +110,12 @@ func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
 	args = append(args, "invoke")
 	args = append(args, "SEVERE")
 
-	tpResponses1, tx1, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	tpResponses1, tx1, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
 
-	tpResponses2, tx2, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	tpResponses2, tx2, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
@@ -149,11 +150,11 @@ func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
 
 	// Test invalid transaction: create 2 invoke requests in quick succession that modify
 	// the same state variable which should cause one invoke to be invalid
-	_, err = util.CreateAndSendTransaction(testSetup.Chain, tpResponses1)
+	_, err = util.CreateAndSendTransaction(testSetup.Channel, tpResponses1)
 	if err != nil {
 		t.Fatalf("First invoke failed err: %v", err)
 	}
-	_, err = util.CreateAndSendTransaction(testSetup.Chain, tpResponses2)
+	_, err = util.CreateAndSendTransaction(testSetup.Channel, tpResponses2)
 	if err != nil {
 		t.Fatalf("Second invoke failed err: %v", err)
 	}
@@ -206,7 +207,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 		test <- true
 	})
 
-	tpResponses, tx, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	tpResponses, tx, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal returned error: %v \n", err)
 	}
@@ -215,7 +216,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 	done, fail := util.RegisterTxEvent(tx, testSetup.EventHub)
 	defer testSetup.EventHub.UnregisterTxEvent(tx)
 
-	_, err = util.CreateAndSendTransaction(testSetup.Chain, tpResponses)
+	_, err = util.CreateAndSendTransaction(testSetup.Channel, tpResponses)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransaction failed with error: %v", err)
 	}

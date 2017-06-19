@@ -12,14 +12,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util"
 )
 
 func TestChainCodeInvoke(t *testing.T) {
 
 	testSetup := BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
-		ChainID:         "mychannel",
+		ChannelID:       "mychannel",
 		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}

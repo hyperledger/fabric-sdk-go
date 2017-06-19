@@ -9,8 +9,8 @@ package integration
 import (
 	"testing"
 
-	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
+	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util"
 )
 
 // TestTransient ...
@@ -18,7 +18,7 @@ func TestTransient(t *testing.T) {
 
 	testSetup := BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
-		ChainID:         "mychannel",
+		ChannelID:       "mychannel",
 		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}
@@ -42,11 +42,11 @@ func TestTransient(t *testing.T) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte(transientData)
 
-	transactionProposalResponse, _, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, _, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
-	strResponse := string(transactionProposalResponse[0].GetResponsePayload())
+	strResponse := string(transactionProposalResponse[0].ProposalResponse.GetResponse().Payload)
 	//validate transient data exists in proposal
 	if len(strResponse) == 0 {
 		t.Fatalf("Transient data does not exist: expected %s", transientData)
@@ -57,12 +57,12 @@ func TestTransient(t *testing.T) {
 	}
 	//transient data null
 	transientDataMap["result"] = []byte{}
-	transactionProposalResponse, _, err = util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, _, err = util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal with empty transient data return an error: %v", err)
 	}
 	//validate that transient data does not exist in proposal
-	strResponse = string(transactionProposalResponse[0].GetResponsePayload())
+	strResponse = string(transactionProposalResponse[0].ProposalResponse.GetResponse().Payload)
 	if len(strResponse) != 0 {
 		t.Fatalf("Transient data validation has failed. An empty transient data was expected but %s was returned", strResponse)
 	}

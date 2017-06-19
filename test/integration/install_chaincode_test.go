@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
+	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util"
 )
 
 const (
@@ -27,7 +27,7 @@ func TestChaincodeInstal(t *testing.T) {
 
 	testSetup := &BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
-		ChainID:         "mychannel",
+		ChannelID:       "mychannel",
 		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}
@@ -52,7 +52,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupIm
 	if err := testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, nil); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
-	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(testSetup.Chain.GetPrimaryPeer())
+	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(testSetup.Channel.GetPrimaryPeer())
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
@@ -82,7 +82,7 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *BaseSetu
 
 	chainCodeVersion := getRandomCCVersion()
 	util.ChangeGOPATHToDeploy(testSetup.GetDeployPath())
-	chaincodePackage, err := fabricClient.PackageCC(chainCodePath, "")
+	chaincodePackage, err := packager.PackageCC(chainCodePath, "")
 	util.ResetGOPATH()
 	if err != nil {
 		t.Fatalf("PackageCC return error: %s", err)
