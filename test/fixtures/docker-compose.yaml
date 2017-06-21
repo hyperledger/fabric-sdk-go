@@ -7,7 +7,7 @@ version: '2'
 
 services:
   ca0:
-    image: ${FABRIC_CA_FIXTURE_IMAGE}:${FABRIC_CA_FIXTURE_TAG}
+    image: ${FABRIC_CA_FIXTURE_IMAGE}:${ARCH}-${FABRIC_CA_FIXTURE_TAG}
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca-org1
@@ -25,7 +25,7 @@ services:
     container_name: ca_peerOrg1
 
   ca1:
-    image: ${FABRIC_CA_FIXTURE_IMAGE}:${FABRIC_CA_FIXTURE_TAG}
+    image: ${FABRIC_CA_FIXTURE_IMAGE}:${ARCH}-${FABRIC_CA_FIXTURE_TAG}
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca-org2
@@ -44,7 +44,7 @@ services:
 
   orderer.example.com:
     container_name: orderer.example.com
-    image: ${FABRIC_ORDERER_FIXTURE_IMAGE}:${FABRIC_ORDERER_FIXTURE_TAG}
+    image: ${FABRIC_ORDERER_FIXTURE_IMAGE}:${ARCH}-${FABRIC_ORDERER_FIXTURE_TAG}
     environment:
       - ORDERER_GENERAL_LOGLEVEL=debug
       - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
@@ -68,7 +68,7 @@ services:
 
   peer0.org1.example.com:
     container_name: peer0.org1.example.com
-    image: ${FABRIC_PEER_FIXTURE_IMAGE}:${FABRIC_PEER_FIXTURE_TAG}
+    image: ${FABRIC_PEER_FIXTURE_IMAGE}:${ARCH}-${FABRIC_PEER_FIXTURE_TAG}
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - CORE_PEER_ID=peer0.org1.example.com
@@ -100,7 +100,7 @@ services:
 
   peer0.org2.example.com:
     container_name: peer0.org2.example.com
-    image: ${FABRIC_PEER_FIXTURE_IMAGE}:${FABRIC_PEER_FIXTURE_TAG}
+    image: ${FABRIC_PEER_FIXTURE_IMAGE}:${ARCH}-${FABRIC_PEER_FIXTURE_TAG}
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - CORE_PEER_ID=peer0.org2.example.com
@@ -130,4 +130,4 @@ services:
 
  # builder is only here to create a dependency on the image (not used as part of compose)
   builder:
-    image: ${FABRIC_BUILDER_FIXTURE_IMAGE}:${FABRIC_BUILDER_FIXTURE_TAG}
+    image: ${FABRIC_BUILDER_FIXTURE_IMAGE}:${ARCH}-${FABRIC_BUILDER_FIXTURE_TAG}
