@@ -40,7 +40,7 @@ type Channel interface {
 	SetMSPManager(mspManager msp.MSPManager)
 	GetMSPManager() msp.MSPManager
 	GetGenesisBlock(request *GenesisBlockRequest) (*common.Block, error)
-	JoinChannel(request *JoinChannelRequest) ([]*TransactionProposalResponse, error)
+	JoinChannel(request *JoinChannelRequest) error
 	UpdateChannel() bool
 	IsReadonly() bool
 	QueryInfo() (*common.BlockchainInfo, error)

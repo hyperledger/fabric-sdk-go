@@ -254,7 +254,7 @@ func TestJoinChannel(t *testing.T) {
 		t.Fatalf("Error getting genesis block: %v", err)
 	}
 
-	_, err = channel.JoinChannel(nil)
+	err = channel.JoinChannel(nil)
 	if err == nil {
 		t.Fatalf("Should not have been able to join channel because of missing request parameter")
 	}
@@ -265,7 +265,7 @@ func TestJoinChannel(t *testing.T) {
 		Nonce:        nonce,
 		//TxID:         txID,
 	}
-	_, err = channel.JoinChannel(request)
+	err = channel.JoinChannel(request)
 	if err == nil {
 		t.Fatalf("Should not have been able to join channel because of missing TxID parameter")
 	}
@@ -276,7 +276,7 @@ func TestJoinChannel(t *testing.T) {
 		//Nonce:        nonce,
 		TxID: txID,
 	}
-	_, err = channel.JoinChannel(request)
+	err = channel.JoinChannel(request)
 	if err == nil {
 		t.Fatalf("Should not have been able to join channel because of missing Nonce parameter")
 	}
@@ -287,7 +287,7 @@ func TestJoinChannel(t *testing.T) {
 		Nonce: nonce,
 		TxID:  txID,
 	}
-	_, err = channel.JoinChannel(request)
+	err = channel.JoinChannel(request)
 	if err == nil {
 		t.Fatalf("Should not have been able to join channel because of missing GenesisBlock parameter")
 	}
@@ -298,7 +298,7 @@ func TestJoinChannel(t *testing.T) {
 		Nonce:        nonce,
 		TxID:         txID,
 	}
-	_, err = channel.JoinChannel(request)
+	err = channel.JoinChannel(request)
 	if err == nil {
 		t.Fatalf("Should not have been able to join channel because of missing Targets parameter")
 	}
@@ -318,18 +318,15 @@ func TestJoinChannel(t *testing.T) {
 		t.Fatalf("Error adding peer: %v", err)
 	}
 	// Test join channel with valid arguments
-	response, err := channel.JoinChannel(request)
+	err = channel.JoinChannel(request)
 	if err != nil {
 		t.Fatalf("Did not expect error from join channel. Got: %s", err)
-	}
-	if response == nil {
-		t.Fatalf("nil response")
 	}
 
 	// Test failed proposal error handling
 	endorserServer.ProposalError = fmt.Errorf("Test Error")
 	request = &api.JoinChannelRequest{Targets: peers, Nonce: nonce, TxID: txID}
-	_, err = channel.JoinChannel(request)
+	err = channel.JoinChannel(request)
 	if err == nil {
 		t.Fatalf("Expected error")
 	}

@@ -8,6 +8,7 @@ package channel
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 	"sync"
 
@@ -101,8 +102,8 @@ func (c *channel) GetProposalBytes(tp *api.TransactionProposal) ([]byte, error) 
 
 // GetName ...
 /**
- * Get the channel name.
- * @returns {string} The name of the channel.
+* Get the channel name.
+* @returns {string} The name of the channel.
  */
 func (c *channel) GetName() string {
 	return c.name
@@ -110,7 +111,7 @@ func (c *channel) GetName() string {
 
 // IsSecurityEnabled ...
 /**
- * Determine if security is enabled.
+* Determine if security is enabled.
  */
 func (c *channel) IsSecurityEnabled() bool {
 	return c.securityEnabled
@@ -118,7 +119,7 @@ func (c *channel) IsSecurityEnabled() bool {
 
 // GetTCertBatchSize ...
 /**
- * Get the tcert batch size.
+* Get the tcert batch size.
  */
 func (c *channel) GetTCertBatchSize() int {
 	return c.tcertBatchSize
@@ -126,7 +127,7 @@ func (c *channel) GetTCertBatchSize() int {
 
 // SetTCertBatchSize ...
 /**
- * Set the tcert batch size.
+* Set the tcert batch size.
  */
 func (c *channel) SetTCertBatchSize(batchSize int) {
 	c.tcertBatchSize = batchSize
@@ -134,10 +135,10 @@ func (c *channel) SetTCertBatchSize(batchSize int) {
 
 // AddPeer ...
 /**
- * Add peer endpoint to channel.
- * @param {Peer} peer An instance of the Peer class that has been initialized with URL,
- * TLC certificate, and enrollment certificate.
- * @throws {Error} if the peer with that url already exists.
+* Add peer endpoint to channel.
+* @param {Peer} peer An instance of the Peer class that has been initialized with URL,
+* TLC certificate, and enrollment certificate.
+* @throws {Error} if the peer with that url already exists.
  */
 func (c *channel) AddPeer(peer api.Peer) error {
 	url := peer.GetURL()
@@ -150,8 +151,8 @@ func (c *channel) AddPeer(peer api.Peer) error {
 
 // RemovePeer ...
 /**
- * Remove peer endpoint from channel.
- * @param {Peer} peer An instance of the Peer.
+* Remove peer endpoint from channel.
+* @param {Peer} peer An instance of the Peer.
  */
 func (c *channel) RemovePeer(peer api.Peer) {
 	url := peer.GetURL()
@@ -163,8 +164,8 @@ func (c *channel) RemovePeer(peer api.Peer) {
 
 // GetPeers ...
 /**
- * Get peers of a channel from local information.
- * @returns {[]Peer} The peer list on the channel.
+* Get peers of a channel from local information.
+* @returns {[]Peer} The peer list on the channel.
  */
 func (c *channel) GetPeers() []api.Peer {
 	var peersArray []api.Peer
@@ -186,10 +187,10 @@ func (c *channel) GetAnchorPeers() []api.OrgAnchorPeer {
 }
 
 /**
- * Utility function to get target peers (target peer is valid only if it belongs to channel's peer list).
- * If targets is empty return channel's peer list
- * @returns {[]Peer} The target peer list
- * @returns {error} if target peer is not in channel's peer list
+* Utility function to get target peers (target peer is valid only if it belongs to channel's peer list).
+* If targets is empty return channel's peer list
+* @returns {[]Peer} The target peer list
+* @returns {error} if target peer is not in channel's peer list
  */
 func (c *channel) getTargetPeers(targets []api.Peer) ([]api.Peer, error) {
 
@@ -209,8 +210,8 @@ func (c *channel) getTargetPeers(targets []api.Peer) ([]api.Peer, error) {
 }
 
 /**
- * Utility function to ensure that a peer exists on this channel
- * @returns {bool} true if peer exists on this channel
+* Utility function to ensure that a peer exists on this channel
+* @returns {bool} true if peer exists on this channel
  */
 func (c *channel) isValidPeer(peer api.Peer) bool {
 	return peer != nil && c.peers[peer.GetURL()] != nil
@@ -262,13 +263,13 @@ func (c *channel) GetPrimaryPeer() api.Peer {
 
 // AddOrderer ...
 /**
- * Add orderer endpoint to a channel object, this is a local-only operation.
- * A channel instance may choose to use a single orderer node, which will broadcast
- * requests to the rest of the orderer network. Or if the application does not trust
- * the orderer nodes, it can choose to use more than one by adding them to the channel instance.
- * All APIs concerning the orderer will broadcast to all orderers simultaneously.
- * @param {Orderer} orderer An instance of the Orderer class.
- * @throws {Error} if the orderer with that url already exists.
+* Add orderer endpoint to a channel object, this is a local-only operation.
+* A channel instance may choose to use a single orderer node, which will broadcast
+* requests to the rest of the orderer network. Or if the application does not trust
+* the orderer nodes, it can choose to use more than one by adding them to the channel instance.
+* All APIs concerning the orderer will broadcast to all orderers simultaneously.
+* @param {Orderer} orderer An instance of the Orderer class.
+* @throws {Error} if the orderer with that url already exists.
  */
 func (c *channel) AddOrderer(orderer api.Orderer) error {
 	url := orderer.GetURL()
@@ -281,8 +282,8 @@ func (c *channel) AddOrderer(orderer api.Orderer) error {
 
 // RemoveOrderer ...
 /**
- * Remove orderer endpoint from a channel object, this is a local-only operation.
- * @param {Orderer} orderer An instance of the Orderer class.
+* Remove orderer endpoint from a channel object, this is a local-only operation.
+* @param {Orderer} orderer An instance of the Orderer class.
  */
 func (c *channel) RemoveOrderer(orderer api.Orderer) {
 	url := orderer.GetURL()
@@ -294,7 +295,7 @@ func (c *channel) RemoveOrderer(orderer api.Orderer) {
 
 // GetOrderers ...
 /**
- * Get orderers of a channel.
+* Get orderers of a channel.
  */
 func (c *channel) GetOrderers() []api.Orderer {
 	var orderersArray []api.Orderer
@@ -339,14 +340,14 @@ func (c *channel) GetOrganizationUnits() ([]string, error) {
 
 // GetGenesisBlock ...
 /**
- * Will get the genesis block from the defined orderer that may be
- * used in a join request
- * @param {Object} request - An object containing the following fields:
- *		<br>`txId` : required - String of the transaction id
- *		<br>`nonce` : required - Integer of the once time number
- *
- * @returns A Genesis block
- * @see /protos/peer/proposal_response.proto
+* Will get the genesis block from the defined orderer that may be
+* used in a join request
+* @param {Object} request - An object containing the following fields:
+*                            <br>`txId` : required - String of the transaction id
+*                            <br>`nonce` : required - Integer of the once time number
+*
+* @returns A Genesis block
+* @see /protos/peer/proposal_response.proto
  */
 func (c *channel) GetGenesisBlock(request *api.GenesisBlockRequest) (*common.Block, error) {
 	logger.Debug("GetGenesisBlock - start")
@@ -407,55 +408,55 @@ func (c *channel) GetGenesisBlock(request *api.GenesisBlockRequest) (*common.Blo
 
 // JoinChannel ...
 /**
- * Sends a join channel proposal to one or more endorsing peers
- * Will get the genesis block from the defined orderer to be used
- * in the proposal.
- * @param {Object} request - An object containing the following fields:
- *   <br>`targets` : required - An array of `Peer` objects that will join
- *                   this channel
- *   <br>`block` : the genesis block of the channel
- *                 see getGenesisBlock() method
- *   <br>`txId` : required - String of the transaction id
- *   <br>`nonce` : required - Integer of the once time number
- * @returns {Promise} A Promise for a `ProposalResponse`
- * @see /protos/peer/proposal_response.proto
+* Sends a join channel proposal to one or more endorsing peers
+* Will get the genesis block from the defined orderer to be used
+* in the proposal.
+* @param {Object} request - An object containing the following fields:
+*   <br>`targets` : required - An array of `Peer` objects that will join
+*                   this channel
+*   <br>`block` : the genesis block of the channel
+*                 see getGenesisBlock() method
+*   <br>`txId` : required - String of the transaction id
+*   <br>`nonce` : required - Integer of the once time number
+* @returns {Promise} A Promise for a `ProposalResponse`
+* @see /protos/peer/proposal_response.proto
  */
-func (c *channel) JoinChannel(request *api.JoinChannelRequest) ([]*api.TransactionProposalResponse, error) {
+func (c *channel) JoinChannel(request *api.JoinChannelRequest) error {
 	logger.Debug("joinChannel - start")
 
 	// verify that we have targets (Peers) to join this channel
 	// defined by the caller
 	if request == nil {
-		return nil, fmt.Errorf("JoinChannel - error: Missing all required input request parameters")
+		return fmt.Errorf("JoinChannel - error: Missing all required input request parameters")
 	}
 
 	// verify that a Peer(s) has been selected to join this channel
 	if request.Targets == nil {
-		return nil, fmt.Errorf("JoinChannel - error: Missing targets input parameter with the peer objects for the join channel proposal")
+		return fmt.Errorf("JoinChannel - error: Missing targets input parameter with the peer objects for the join channel proposal")
 	}
 
 	// verify that we have transaction id
 	if request.TxID == "" {
-		return nil, fmt.Errorf("JoinChannel - error: Missing txId input parameter with the required transaction identifier")
+		return fmt.Errorf("JoinChannel - error: Missing txId input parameter with the required transaction identifier")
 	}
 
 	// verify that we have the nonce
 	if request.Nonce == nil {
-		return nil, fmt.Errorf("JoinChannel - error: Missing nonce input parameter with the required single use number")
+		return fmt.Errorf("JoinChannel - error: Missing nonce input parameter with the required single use number")
 	}
 
 	if request.GenesisBlock == nil {
-		return nil, fmt.Errorf("JoinChannel - error: Missing block input parameter with the required genesis block")
+		return fmt.Errorf("JoinChannel - error: Missing block input parameter with the required genesis block")
 	}
 
 	creator, err := c.clientContext.GetIdentity()
 	if err != nil {
-		return nil, fmt.Errorf("Error getting creator ID: %v", err)
+		return fmt.Errorf("Error getting creator ID: %v", err)
 	}
 
 	genesisBlockBytes, err := proto.Marshal(request.GenesisBlock)
 	if err != nil {
-		return nil, fmt.Errorf("Error marshalling genesis block: %v", err)
+		return fmt.Errorf("Error marshalling genesis block: %v", err)
 	}
 
 	// Create join channel transaction proposal for target peers
@@ -474,11 +475,11 @@ func (c *channel) JoinChannel(request *api.JoinChannelRequest) ([]*api.Transacti
 
 	proposal, txID, err := protos_utils.CreateChaincodeProposalWithTxIDNonceAndTransient(request.TxID, common.HeaderType_ENDORSER_TRANSACTION, "", cciSpec, request.Nonce, creator, nil)
 	if err != nil {
-		return nil, fmt.Errorf("Error building proposal: %v", err)
+		return fmt.Errorf("Error building proposal: %v", err)
 	}
 	signedProposal, err := c.signProposal(proposal)
 	if err != nil {
-		return nil, fmt.Errorf("Error signing proposal: %v", err)
+		return fmt.Errorf("Error signing proposal: %v", err)
 	}
 	transactionProposal := &api.TransactionProposal{
 		TransactionID:  txID,
@@ -489,17 +490,35 @@ func (c *channel) JoinChannel(request *api.JoinChannelRequest) ([]*api.Transacti
 	// Send join proposal
 	proposalResponses, err := c.SendTransactionProposal(transactionProposal, 0, request.Targets)
 	if err != nil {
-		return nil, fmt.Errorf("Error sending join transaction proposal: %s", err)
+		return fmt.Errorf("Error sending join transaction proposal: %s", err)
 	}
-	return proposalResponses, nil
+	// Check responses from target peers for success/failure and join all errors
+	var joinError string
+	for _, response := range proposalResponses {
+		if response.Err != nil {
+			joinError = joinError +
+				fmt.Sprintf("Join channel proposal response error: %s \n",
+					response.Err.Error())
+		} else if response.Status != http.StatusOK {
+			joinError = joinError +
+				fmt.Sprintf("Join channel proposal HTTP response error: %s \n",
+					response.Err.Error())
+		}
+	}
+
+	if joinError != "" {
+		return fmt.Errorf(joinError)
+	}
+
+	return nil
 }
 
 /**
- * Queries for the current config block for this channel.
- * This transaction will be made to the orderer.
- * @returns {ConfigEnvelope} Object containing the configuration items.
- * @see /protos/orderer/ab.proto
- * @see /protos/common/configtx.proto
+* Queries for the current config block for this channel.
+* This transaction will be made to the orderer.
+* @returns {ConfigEnvelope} Object containing the configuration items.
+* @see /protos/orderer/ab.proto
+* @see /protos/common/configtx.proto
  */
 func (c *channel) getChannelConfig() (*common.ConfigEnvelope, error) {
 	logger.Debugf("getChannelConfig - start for channel %s", c.name)
@@ -554,10 +573,10 @@ func (c *channel) getChannelConfig() (*common.ConfigEnvelope, error) {
 
 // LoadConfigUpdateEnvelope ...
 /*
- * Utility method to load this channel with configuration information
- * from an Envelope that contains a Configuration
- * @param {byte[]} the envelope with the configuration update items
- * @see /protos/common/configtx.proto
+* Utility method to load this channel with configuration information
+* from an Envelope that contains a Configuration
+* @param {byte[]} the envelope with the configuration update items
+* @see /protos/common/configtx.proto
  */
 func (c *channel) LoadConfigUpdateEnvelope(data []byte) error {
 	logger.Debugf("loadConfigUpdateEnvelope - start")
@@ -661,10 +680,10 @@ func (c *channel) loadConfigEnvelope(configEnvelope *common.ConfigEnvelope) (*co
 
 // UpdateChannel ...
 /**
- * Calls the orderer(s) to update an existing channel. This allows the addition and
- * deletion of Peer nodes to an existing channel, as well as the update of Peer
- * certificate information upon certificate renewals.
- * @returns {bool} Whether the channel update process was successful.
+* Calls the orderer(s) to update an existing channel. This allows the addition and
+* deletion of Peer nodes to an existing channel, as well as the update of Peer
+* certificate information upon certificate renewals.
+* @returns {bool} Whether the channel update process was successful.
  */
 func (c *channel) UpdateChannel() bool {
 	return false
@@ -672,10 +691,10 @@ func (c *channel) UpdateChannel() bool {
 
 // IsReadonly ...
 /**
- * Get channel status to see if the underlying channel has been terminated,
- * making it a read-only channel, where information (transactions and states)
- * can be queried but no new transactions can be submitted.
- * @returns {bool} Is read-only, true or not.
+* Get channel status to see if the underlying channel has been terminated,
+* making it a read-only channel, where information (transactions and states)
+* can be queried but no new transactions can be submitted.
+* @returns {bool} Is read-only, true or not.
  */
 func (c *channel) IsReadonly() bool {
 	return false //to do
@@ -683,10 +702,10 @@ func (c *channel) IsReadonly() bool {
 
 // QueryInfo ...
 /**
- * Queries for various useful information on the state of the channel
- * (height, known peers).
- * This query will be made to the primary peer.
- * @returns {object} With height, currently the only useful info.
+* Queries for various useful information on the state of the channel
+* (height, known peers).
+* This query will be made to the primary peer.
+* @returns {object} With height, currently the only useful info.
  */
 func (c *channel) QueryInfo() (*common.BlockchainInfo, error) {
 	logger.Debug("queryInfo - start")
@@ -712,10 +731,10 @@ func (c *channel) QueryInfo() (*common.BlockchainInfo, error) {
 
 // QueryBlockByHash ...
 /**
- * Queries the ledger for Block by block hash.
- * This query will be made to the primary peer.
- * @param {byte[]} block hash of the Block.
- * @returns {object} Object containing the block.
+* Queries the ledger for Block by block hash.
+* This query will be made to the primary peer.
+* @param {byte[]} block hash of the Block.
+* @returns {object} Object containing the block.
  */
 func (c *channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 
@@ -745,10 +764,10 @@ func (c *channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 
 // QueryBlock ...
 /**
- * Queries the ledger for Block by block number.
- * This query will be made to the primary peer.
- * @param {int} blockNumber The number which is the ID of the Block.
- * @returns {object} Object containing the block.
+* Queries the ledger for Block by block number.
+* This query will be made to the primary peer.
+* @param {int} blockNumber The number which is the ID of the Block.
+* @returns {object} Object containing the block.
  */
 func (c *channel) QueryBlock(blockNumber int) (*common.Block, error) {
 
@@ -778,10 +797,10 @@ func (c *channel) QueryBlock(blockNumber int) (*common.Block, error) {
 
 // Initialize initializes the channel
 /**
- * Retrieve the configuration from the primary orderer and initializes this channel
- * with those values. Optionally a configuration may be passed in to initialize this channel
- * without making the call to the orderer.
- * @param {byte[]} config_update- Optional - A serialized form of the protobuf configuration update
+* Retrieve the configuration from the primary orderer and initializes this channel
+* with those values. Optionally a configuration may be passed in to initialize this channel
+* without making the call to the orderer.
+* @param {byte[]} config_update- Optional - A serialized form of the protobuf configuration update
  */
 func (c *channel) Initialize(configUpdate []byte) error {
 
@@ -836,9 +855,9 @@ func (c *channel) QueryTransaction(transactionID string) (*pb.ProcessedTransacti
 
 //QueryInstantiatedChaincodes
 /**
- * Queries the instantiated chaincodes on this channel.
- * This query will be made to the primary peer.
- * @returns {object} ChaincodeQueryResponse proto
+* Queries the instantiated chaincodes on this channel.
+* This query will be made to the primary peer.
+* @returns {object} ChaincodeQueryResponse proto
  */
 func (c *channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
 
@@ -857,12 +876,12 @@ func (c *channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, err
 }
 
 /**
- * Generic helper for query functionality for chain
- * This query will be made to one target peer and will return one result only.
- * @parame {string} chaincode name
- * @param {[]string} invoke arguments
- * @param {Peer} target peer
- * @returns {[]byte} payload
+* Generic helper for query functionality for chain
+* This query will be made to one target peer and will return one result only.
+* @parame {string} chaincode name
+* @param {[]string} invoke arguments
+* @param {Peer} target peer
+* @returns {[]byte} payload
  */
 func (c *channel) queryByChaincodeByTarget(chaincodeName string, args []string, target api.Peer) ([]byte, error) {
 
@@ -882,16 +901,16 @@ func (c *channel) queryByChaincodeByTarget(chaincodeName string, args []string, 
 
 //QueryByChaincode ..
 /**
- * Sends a proposal to one or more endorsing peers that will be handled by the chaincode.
- * This request will be presented to the chaincode 'invoke' and must understand
- * from the arguments that this is a query request. The chaincode must also return
- * results in the byte array format and the caller will have to be able to decode
- * these results
- * @parame {string} chaincode name
- * @param {[]string} invoke arguments
- * @param {[]Peer} target peers
- * @param {FabricClient} fabric client
- * @returns {[][]byte} an array of payloads
+* Sends a proposal to one or more endorsing peers that will be handled by the chaincode.
+* This request will be presented to the chaincode 'invoke' and must understand
+* from the arguments that this is a query request. The chaincode must also return
+* results in the byte array format and the caller will have to be able to decode
+* these results
+* @parame {string} chaincode name
+* @param {[]string} invoke arguments
+* @param {[]Peer} target peers
+* @param {FabricClient} fabric client
+* @returns {[][]byte} an array of payloads
  */
 func QueryByChaincode(chaincodeName string, args []string, targets []api.Peer, clientContext api.FabricClient) ([][]byte, error) {
 	if chaincodeName == "" {
@@ -941,9 +960,9 @@ func (c *channel) QueryByChaincode(chaincodeName string, args []string, targets 
 
 // CreateTransactionProposal ...
 /**
- * Create  a proposal for transaction. This involves assembling the proposal
- * with the data (chaincodeName, function to call, arguments, transient data, etc.) and signing it using the private key corresponding to the
- * ECert to sign.
+* Create  a proposal for transaction. This involves assembling the proposal
+* with the data (chaincodeName, function to call, arguments, transient data, etc.) and signing it using the private key corresponding to the
+* ECert to sign.
  */
 func (c *channel) CreateTransactionProposal(chaincodeName string, channelID string,
 	args []string, sign bool, transientData map[string][]byte) (*api.TransactionProposal, error) {
@@ -1063,7 +1082,7 @@ func SendTransactionProposal(proposal *api.TransactionProposal, retry int, targe
 
 // CreateTransaction ...
 /**
- * Create a transaction with proposal response, following the endorsement policy.
+* Create a transaction with proposal response, following the endorsement policy.
  */
 func (c *channel) CreateTransaction(resps []*api.TransactionProposalResponse) (*api.Transaction, error) {
 	if len(resps) == 0 {
@@ -1093,20 +1112,20 @@ func (c *channel) CreateTransaction(resps []*api.TransactionProposalResponse) (*
 	// This code is commented out because the ProposalResponsePayload Extension ChaincodeAction Results
 	// return from endorsements is different so the compare will fail
 
-	//	var a1 []byte
-	//	for n, r := range resps {
-	//		if n == 0 {
-	//			a1 = r.Payload
-	//			if r.Response.Status != 200 {
-	//				return nil, fmt.Errorf("Proposal response was not successful, error code %d, msg %s", r.Response.Status, r.Response.Message)
-	//			}
-	//			continue
-	//		}
+	//            var a1 []byte
+	//            for n, r := range resps {
+	//                            if n == 0 {
+	//                                            a1 = r.Payload
+	//                                            if r.Response.Status != 200 {
+	//                                                            return nil, fmt.Errorf("Proposal response was not successful, error code %d, msg %s", r.Response.Status, r.Response.Message)
+	//                                            }
+	//                                            continue
+	//                            }
 
-	//		if bytes.Compare(a1, r.Payload) != 0 {
-	//			return nil, fmt.Errorf("ProposalResponsePayloads do not match")
-	//		}
-	//	}
+	//                            if bytes.Compare(a1, r.Payload) != 0 {
+	//                                            return nil, fmt.Errorf("ProposalResponsePayloads do not match")
+	//                            }
+	//            }
 
 	for _, r := range resps {
 		if r.ProposalResponse.Response.Status != 200 {
@@ -1148,16 +1167,16 @@ func (c *channel) CreateTransaction(resps []*api.TransactionProposalResponse) (*
 
 // SendTransaction ...
 /**
- * Send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
- * This call is asynchronous and the successful transaction commit is notified via a BLOCK or CHAINCODE event. This method must provide a mechanism for applications to attach event listeners to handle “transaction submitted”, “transaction complete” and “error” events.
- * Note that under the cover there are two different kinds of communications with the fabric backend that trigger different events to
- * be emitted back to the application’s handlers:
- * 1-)The grpc client with the orderer service uses a “regular” stateless HTTP connection in a request/response fashion with the “broadcast” call.
- * The method implementation should emit “transaction submitted” when a successful acknowledgement is received in the response,
- * or “error” when an error is received
- * 2-)The method implementation should also maintain a persistent connection with the Chain’s event source Peer as part of the
- * internal event hub mechanism in order to support the fabric events “BLOCK”, “CHAINCODE” and “TRANSACTION”.
- * These events should cause the method to emit “complete” or “error” events to the application.
+* Send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
+* This call is asynchronous and the successful transaction commit is notified via a BLOCK or CHAINCODE event. This method must provide a mechanism for applications to attach event listeners to handle “transaction submitted”, “transaction complete” and “error” events.
+* Note that under the cover there are two different kinds of communications with the fabric backend that trigger different events to
+* be emitted back to the application’s handlers:
+* 1-)The grpc client with the orderer service uses a “regular” stateless HTTP connection in a request/response fashion with the “broadcast” call.
+* The method implementation should emit “transaction submitted” when a successful acknowledgement is received in the response,
+* or “error” when an error is received
+* 2-)The method implementation should also maintain a persistent connection with the Chain’s event source Peer as part of the
+* internal event hub mechanism in order to support the fabric events “BLOCK”, “CHAINCODE” and “TRANSACTION”.
+* These events should cause the method to emit “complete” or “error” events to the application.
  */
 func (c *channel) SendTransaction(tx *api.Transaction) ([]*api.TransactionResponse, error) {
 	if c.orderers == nil || len(c.orderers) == 0 {

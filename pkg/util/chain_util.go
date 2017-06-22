@@ -228,16 +228,9 @@ func CreateAndJoinChannel(client api.FabricClient, ordererUser api.User, orgUser
 		TxID:         txID,
 		Nonce:        nonce,
 	}
-	transactionProposalResponse, err := channel.JoinChannel(joinChannelRequest)
+	err = channel.JoinChannel(joinChannelRequest)
 	if err != nil {
 		return fmt.Errorf("Error joining channel: %s", err)
-	}
-
-	for _, v := range transactionProposalResponse {
-		if v.Err != nil {
-			return fmt.Errorf("JoinChannel Endorser %s return error: %v", v.Endorser, v.Err)
-		}
-		logger.Debug("JoinChannel Endorser '%s' return ProposalResponse status:%v\n", v.Endorser, v.Status)
 	}
 
 	logger.Infof("***** Created and Joined channel: %s *****\n", channel.GetName())
