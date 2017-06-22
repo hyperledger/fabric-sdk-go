@@ -23,16 +23,15 @@ import (
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
-	Client             api.FabricClient
-	OrdererAdminClient api.FabricClient
-	Channel            api.Channel
-	EventHub           api.EventHub
-	ConnectEventHub    bool
-	ConfigFile         string
-	ChannelID          string
-	ChainCodeID        string
-	Initialized        bool
-	ChannelConfig      string
+	Client          api.FabricClient
+	Channel         api.Channel
+	EventHub        api.EventHub
+	ConnectEventHub bool
+	ConfigFile      string
+	ChannelID       string
+	ChainCodeID     string
+	Initialized     bool
+	ChannelConfig   string
 }
 
 // Initialize reads configuration from file and sets up client, channel and event hub
