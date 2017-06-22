@@ -9,7 +9,7 @@ package util
 import (
 	"fmt"
 
-	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/client"
+	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	sdkUser "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/user"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"

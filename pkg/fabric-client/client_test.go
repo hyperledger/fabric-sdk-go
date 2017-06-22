@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package client
+package fabricclient
 
 import (
 	"fmt"
@@ -121,7 +121,7 @@ func TestClientMethods(t *testing.T) {
 func TestCreateChannel(t *testing.T) {
 	client := NewClient(mocks.NewMockConfig())
 
-	configTx, err := ioutil.ReadFile("../../../test/fixtures/channel/mychannel.tx")
+	configTx, err := ioutil.ReadFile("../../test/fixtures/channel/mychannel.tx")
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

@@ -12,10 +12,10 @@ Obtain the client SDK packages for Fabric and Fabric CA.
 
 ```
 # Hyperledger Fabric client package
-go get -u github.com/hyperledger/fabric-sdk-go/fabric-client
+go get -u github.com/hyperledger/fabric-sdk-go/pkg/fabric-client
 
 # Hyperledger Fabric CA client package
-go get -u github.com/hyperledger/fabric-sdk-go/fabric-ca-client
+go get -u github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client
 ```
 
 You're good to go, happy coding! Check out the examples for usage demonstrations.

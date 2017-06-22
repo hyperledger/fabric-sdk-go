@@ -18,7 +18,7 @@ import (
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
 
-	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/client"
+	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	sdkUser "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/user"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"

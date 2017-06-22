@@ -9,7 +9,7 @@ package peer
 import (
 	"testing"
 
-	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/client"
+	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
