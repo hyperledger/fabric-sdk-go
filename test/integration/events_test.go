@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -26,8 +27,10 @@ func TestEvents(t *testing.T) {
 
 	testFailedTx(t, testSetup)
 	testFailedTxErrorCode(t, testSetup)
-	testReconnectEventHub(t, testSetup)
 	testMultipleBlockEventCallbacks(t, testSetup)
+
+	// TODO: The ordering of the reconnect test can affect the result - needs investigation.
+	testReconnectEventHub(t, testSetup)
 }
 
 func initializeTests(t *testing.T) BaseSetupImpl {
@@ -80,7 +83,13 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 	done2, fail2 := util.RegisterTxEvent(tx2, testSetup.EventHub)
 	defer testSetup.EventHub.UnregisterTxEvent(tx2)
 
-	go monitorFailedTx(t, testSetup, done1, fail1, done2, fail2)
+	// Setup monitoring of events
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		monitorFailedTx(t, testSetup, done1, fail1, done2, fail2)
+	}()
 
 	// Test invalid transaction: create 2 invoke requests in quick succession that modify
 	// the same state variable which should cause one invoke to be invalid
@@ -93,6 +102,7 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 		t.Fatalf("Second invoke failed err: %v", err)
 	}
 
+	wg.Wait()
 }
 
 func monitorFailedTx(t *testing.T, testSetup BaseSetupImpl, done1 chan bool, fail1 chan error, done2 chan bool, fail2 chan error) {
@@ -165,7 +175,13 @@ func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
 
 	defer testSetup.EventHub.UnregisterTxEvent(tx2)
 
-	go monitorFailedTxErrorCode(t, testSetup, done, fail, done2, fail2)
+	// Setup monitoring of events
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		monitorFailedTxErrorCode(t, testSetup, done, fail, done2, fail2)
+	}()
 
 	// Test invalid transaction: create 2 invoke requests in quick succession that modify
 	// the same state variable which should cause one invoke to be invalid
@@ -177,6 +193,8 @@ func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
 	if err != nil {
 		t.Fatalf("Second invoke failed err: %v", err)
 	}
+
+	wg.Wait()
 }
 
 func monitorFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl, done chan bool, fail chan pb.TxValidationCode, done2 chan bool, fail2 chan pb.TxValidationCode) {
@@ -245,35 +263,43 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 	done, fail := util.RegisterTxEvent(tx, testSetup.EventHub)
 	defer testSetup.EventHub.UnregisterTxEvent(tx)
 
-	go monitorMultipleBlockEventCallbacks(t, testSetup, done, fail, test)
+	// Setup monitoring of events
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		monitorMultipleBlockEventCallbacks(t, testSetup, done, fail, test)
+	}()
 
 	_, err = util.CreateAndSendTransaction(testSetup.Channel, tpResponses)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransaction failed with error: %v", err)
 	}
+
+	wg.Wait()
 }
 
 func monitorMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl, done chan bool, fail chan error, test chan bool) {
-	rcvBlock := false
-	rcvTx := false
+	rcvTxDone := false
+	rcvTxEvent := false
 	timeout := time.After(eventTimeout)
 
 Loop:
-	for !rcvTx || !rcvBlock {
+	for !rcvTxDone || !rcvTxEvent {
 		select {
 		case <-done:
-			rcvTx = true
+			rcvTxDone = true
 		case <-fail:
 			t.Fatalf("Received tx failure")
 		case <-test:
-			rcvBlock = true
+			rcvTxEvent = true
 		case <-timeout:
 			t.Logf("Timeout while waiting for events")
 			break Loop
 		}
 	}
 
-	if !rcvTx || !rcvBlock {
-		t.Fatalf("Didn't receive events (tx: %t; block %t)", rcvTx, rcvBlock)
+	if !rcvTxDone || !rcvTxEvent {
+		t.Fatalf("Didn't receive events (tx event: %t; tx done %t)", rcvTxEvent, rcvTxDone)
 	}
 }
