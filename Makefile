@@ -13,6 +13,9 @@
 # clean: stops docker conatainers used for integration testing
 #
 
+export ARCH=$(shell uname -m)
+export LDFLAGS=-ldflags "-s"
+
 all: checks unit-test integration-test
 
 depend:
