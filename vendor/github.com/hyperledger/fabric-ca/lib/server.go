@@ -449,6 +449,8 @@ func (s *Server) listenAndServe() (err error) {
 			Certificates: []tls.Certificate{*cer},
 			ClientAuth:   clientAuth,
 			ClientCAs:    certPool,
+			MinVersion:   tls.VersionTLS12,
+			MaxVersion:   tls.VersionTLS12,
 		}
 
 		listener, err = tls.Listen("tcp", addr, config)

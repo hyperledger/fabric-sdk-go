@@ -73,11 +73,14 @@ func decodeUrl(spec *pb.ChaincodeSpec) (string, error) {
 }
 
 func getGopath() (string, error) {
-	gopath := os.Getenv("GOPATH")
+	env, err := getGoEnv()
+	if err != nil {
+		return "", err
+	}
 	// Only take the first element of GOPATH
-	splitGoPath := filepath.SplitList(gopath)
+	splitGoPath := filepath.SplitList(env["GOPATH"])
 	if len(splitGoPath) == 0 {
-		return "", fmt.Errorf("invalid GOPATH environment variable value:[%s]", gopath)
+		return "", fmt.Errorf("invalid GOPATH environment variable value:[%s]", env["GOPATH"])
 	}
 	return splitGoPath[0], nil
 }
@@ -194,7 +197,10 @@ func (goPlatform *Platform) GetDeploymentPayload(spec *pb.ChaincodeSpec) ([]byte
 	// --------------------------------------------------------------------------------------
 	// Update our environment for the purposes of executing go-list directives
 	// --------------------------------------------------------------------------------------
-	env := getEnv()
+	env, err := getGoEnv()
+	if err != nil {
+		return nil, err
+	}
 	gopaths := splitEnvPaths(env["GOPATH"])
 	goroots := splitEnvPaths(env["GOROOT"])
 	gopaths[code.Gopath] = true
@@ -239,18 +245,29 @@ func (goPlatform *Platform) GetDeploymentPayload(spec *pb.ChaincodeSpec) ([]byte
 	})
 
 	// --------------------------------------------------------------------------------------
-	// Assemble the fully resolved list of transitive dependencies from the imports that remain
+	// Assemble the fully resolved list of direct and transitive dependencies based on the
+	// imports that remain after filtering
 	// --------------------------------------------------------------------------------------
 	deps := make(map[string]bool)
 
 	for _, pkg := range imports {
-		_deps, err := listDeps(env, pkg)
+		// ------------------------------------------------------------------------------
+		// Resolve direct import's transitives
+		// ------------------------------------------------------------------------------
+		transitives, err := listDeps(env, pkg)
 		if err != nil {
 			return nil, fmt.Errorf("Error obtaining dependencies for %s: %s", pkg, err)
 		}
 
-		// Merge with our top list
-		for _, dep := range _deps {
+		// ------------------------------------------------------------------------------
+		// Merge all results with our top list
+		// ------------------------------------------------------------------------------
+
+		// Merge direct dependency...
+		deps[pkg] = true
+
+		// .. and then all transitives
+		for _, dep := range transitives {
 			deps[dep] = true
 		}
 	}

@@ -143,10 +143,18 @@ func (ah *fcaAuthHandler) serveHTTP(w http.ResponseWriter, r *http.Request) erro
 		return authError
 	case token:
 
+		ca := ah.server.caMap[req.CAName]
+
 		// verify token
-		cert, err2 := util.VerifyToken(ah.server.caMap[req.CAName].csp, authHdr, body)
+		cert, err2 := util.VerifyToken(ca.csp, authHdr, body)
 		if err2 != nil {
 			log.Debugf("Failed to verify token: %s", err2)
+			return authError
+		}
+		// Make sure the caller's cert was issued by this CA
+		err2 = ca.VerifyCertificate(cert)
+		if err2 != nil {
+			log.Debugf("Failed to verify certificate: %s", err2)
 			return authError
 		}
 		id := util.GetEnrollmentIDFromX509Certificate(cert)
@@ -170,7 +178,7 @@ func (ah *fcaAuthHandler) serveHTTP(w http.ResponseWriter, r *http.Request) erro
 		aki = strings.ToLower(strings.TrimLeft(aki, "0"))
 		serial = strings.ToLower(strings.TrimLeft(serial, "0"))
 
-		certs, err := ah.server.caMap[req.CAName].CertDBAccessor().GetCertificate(serial, aki)
+		certs, err := ca.CertDBAccessor().GetCertificate(serial, aki)
 		if err != nil {
 			return authError
 		}

@@ -51,7 +51,7 @@ func GetDefaultBCCSP() bccsp.BCCSP {
 
 // InitBCCSP initializes BCCSP
 func InitBCCSP(optsPtr **factory.FactoryOpts, mspDir, homeDir string) (bccsp.BCCSP, error) {
-	err := ConfigureBCCSP(optsPtr, mspDir)
+	err := ConfigureBCCSP(optsPtr, mspDir, homeDir)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func InitBCCSP(optsPtr **factory.FactoryOpts, mspDir, homeDir string) (bccsp.BCC
 }
 
 // ConfigureBCCSP configures BCCSP, using
-func ConfigureBCCSP(optsPtr **factory.FactoryOpts, mspDir string) error {
+func ConfigureBCCSP(optsPtr **factory.FactoryOpts, mspDir, homeDir string) error {
 	var err error
 	if optsPtr == nil {
 		return errors.New("nil argument not allowed")
@@ -95,6 +95,10 @@ func ConfigureBCCSP(optsPtr **factory.FactoryOpts, mspDir string) error {
 			opts.SwOpts.FileKeystore.KeyStorePath = path.Join("msp", "keystore")
 		}
 	}
+	err = makeFileNamesAbsolute(opts, homeDir)
+	if err != nil {
+		return fmt.Errorf("Failed to make BCCSP files absolute: %s", err)
+	}
 	log.Debugf("Initializing BCCSP: %+v", opts)
 	if opts.SwOpts != nil {
 		log.Debugf("Initializing BCCSP with software options %+v", opts.SwOpts)
@@ -114,10 +118,6 @@ func ConfigureBCCSP(optsPtr **factory.FactoryOpts, mspDir string) error {
 // GetBCCSP returns BCCSP
 func GetBCCSP(opts *factory.FactoryOpts, homeDir string) (bccsp.BCCSP, error) {
 
-	err := makeFileNamesAbsolute(opts, homeDir)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to make BCCSP files absolute: %s", err)
-	}
 	// Get BCCSP from the opts
 	csp, err := factory.GetBCCSPFromOpts(opts)
 	if err != nil {

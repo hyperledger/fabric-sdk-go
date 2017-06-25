@@ -341,6 +341,9 @@ func (u *DBUser) GetName() string {
 
 // Login the user with a password
 func (u *DBUser) Login(pass string, caMaxEnrollments int) error {
+	var stateUpdateSQL string
+	var args []interface{}
+
 	log.Debugf("DB: Login user %s with max enrollments of %d and state of %d", u.Name, u.MaxEnrollments, u.State)
 
 	// Check the password
@@ -371,7 +374,16 @@ func (u *DBUser) Login(pass string, caMaxEnrollments int) error {
 
 	// Not exceeded, so attempt to increment the count
 	state := u.State + 1
-	res, err := u.db.Exec(u.db.Rebind("UPDATE users SET state = ? WHERE (id = ?)"), state, u.Name)
+	args = append(args, u.Name)
+	if u.MaxEnrollments == -1 {
+		// unlimited so no state check
+		stateUpdateSQL = "UPDATE users SET state = state + 1 WHERE (id = ?)"
+	} else {
+		// state must be less than max enrollments
+		stateUpdateSQL = "UPDATE users SET state = state + 1 WHERE (id = ? AND state < ?)"
+		args = append(args, u.MaxEnrollments)
+	}
+	res, err := u.db.Exec(u.db.Rebind(stateUpdateSQL), args...)
 	if err != nil {
 		return fmt.Errorf("Failed to update state of identity %s to %d: %s", u.Name, state, err)
 	}

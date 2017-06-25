@@ -79,7 +79,7 @@ func (h *revokeHandler) Handle(w http.ResponseWriter, r *http.Request) error {
 	// to revoke a certificate.  This attribute comes from the user registry, which
 	// is either in the DB if LDAP is not configured, or comes from LDAP if LDAP is
 	// configured.
-	err = h.server.caMap[caname].userHasAttribute(cert.Subject.CommonName, "hf.Revoker")
+	err = h.server.caMap[caname].attributeIsTrue(cert.Subject.CommonName, "hf.Revoker")
 	if err != nil {
 		return authErr(w, err)
 	}

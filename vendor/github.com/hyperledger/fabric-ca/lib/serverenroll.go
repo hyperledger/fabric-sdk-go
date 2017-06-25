@@ -110,7 +110,8 @@ func (sh *signHandler) handle(w http.ResponseWriter, r *http.Request) error {
 
 	// Make any authorization checks needed, depending on the contents
 	// of the CSR (Certificate Signing Request)
-	err = sh.csrAuthCheck(&req.SignRequest, r)
+	enrollmentID := r.Header.Get(enrollmentIDHdrName)
+	err = sh.csrAuthCheck(&req.SignRequest, enrollmentID, r)
 	if err != nil {
 		return err
 	}
@@ -135,7 +136,7 @@ func (sh *signHandler) handle(w http.ResponseWriter, r *http.Request) error {
 // of the CSR (Certificate Signing Request).
 // In particular, if the request is for an intermediate CA certificate,
 // the caller must have the "hf.IntermediateCA" attribute.
-func (sh *signHandler) csrAuthCheck(req *signer.SignRequest, r *http.Request) error {
+func (sh *signHandler) csrAuthCheck(req *signer.SignRequest, enrollmentID string, r *http.Request) error {
 	// Decode and parse the request into a CSR so we can make checks
 	caname := r.Header.Get(caHdrName)
 	block, _ := pem.Decode([]byte(req.Request))
@@ -149,6 +150,10 @@ func (sh *signHandler) csrAuthCheck(req *signer.SignRequest, r *http.Request) er
 	csrReq, err := x509.ParseCertificateRequest(block.Bytes)
 	if err != nil {
 		return err
+	}
+	log.Debugf("csrAuthCheck: enrollment ID=%s, CommonName=%s, Subject=%+v", enrollmentID, csrReq.Subject.CommonName, req.Subject)
+	if (req.Subject != nil && req.Subject.CN != enrollmentID) || csrReq.Subject.CommonName != enrollmentID {
+		return fmt.Errorf("The CSR subject common name must equal the enrollment ID")
 	}
 	// Check the CSR for the X.509 BasicConstraints extension (RFC 5280, 4.2.1.9)
 	for _, val := range csrReq.Extensions {
@@ -164,7 +169,7 @@ func (sh *signHandler) csrAuthCheck(req *signer.SignRequest, r *http.Request) er
 				log.Debug("CSR request received for an intermediate CA")
 				// This is a request for a CA certificate, so make sure the caller
 				// has the 'hf.IntermediateCA' attribute
-				return sh.server.caMap[caname].userHasAttribute(r.Header.Get(enrollmentIDHdrName), "hf.IntermediateCA")
+				return sh.server.caMap[caname].attributeIsTrue(r.Header.Get(enrollmentIDHdrName), "hf.IntermediateCA")
 			}
 		}
 	}
