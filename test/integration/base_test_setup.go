@@ -32,6 +32,8 @@ type BaseSetupImpl struct {
 	ChainCodeID     string
 	Initialized     bool
 	ChannelConfig   string
+	AdminUser       api.User
+	NormalUser      api.User
 }
 
 // Initialize reads configuration from file and sets up client, channel and event hub
@@ -56,9 +58,13 @@ func (setup *BaseSetupImpl) Initialize() error {
 	setup.Client = client
 
 	org1Admin, err := GetAdmin(client, "org1")
+	org1User, err := GetUser(client, "org1")
 	if err != nil {
 		return fmt.Errorf("Error getting org admin user: %v", err)
 	}
+
+	setup.AdminUser = org1Admin
+	setup.NormalUser = org1User
 
 	channel, err := fcutil.GetChannel(setup.Client, setup.ChannelID)
 	if err != nil {
@@ -76,7 +82,9 @@ func (setup *BaseSetupImpl) Initialize() error {
 		return fmt.Errorf("CreateAndJoinChannel return error: %v", err)
 	}
 
-	client.SetUserContext(org1Admin)
+	//by default client's user context should use regular user, for admin actions, UserContext must be set to AdminUser
+	client.SetUserContext(org1User)
+
 	if err := setup.setupEventHub(client); err != nil {
 		return err
 	}
@@ -113,6 +121,11 @@ func (setup *BaseSetupImpl) InitConfig() (api.Config, error) {
 
 // InstantiateCC ...
 func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, channelID string, chainCodePath string, chainCodeVersion string, args []string) error {
+	// InstantiateCC requires AdminUser privileges so setting user context with Admin User
+	setup.Client.SetUserContext(setup.AdminUser)
+
+	// must reset client user context to normal user once done with Admin privilieges
+	defer setup.Client.SetUserContext(setup.NormalUser)
 	if err := fcutil.SendInstantiateCC(setup.Channel, chainCodeID, channelID, args, chainCodePath, chainCodeVersion, []api.Peer{setup.Channel.GetPrimaryPeer()}, setup.EventHub); err != nil {
 		return err
 	}
@@ -121,9 +134,15 @@ func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, channelID string, 
 
 // InstallCC ...
 func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte) error {
+	// installCC requires AdminUser privileges so setting user context with Admin User
+	setup.Client.SetUserContext(setup.AdminUser)
+
+	// must reset client user context to normal user once done with Admin privilieges
+	defer setup.Client.SetUserContext(setup.NormalUser)
 	if err := fcutil.SendInstallCC(setup.Client, setup.Channel, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, setup.Channel.GetPeers(), setup.GetDeployPath()); err != nil {
 		return fmt.Errorf("SendInstallProposal return error: %v", err)
 	}
+
 	return nil
 }
 

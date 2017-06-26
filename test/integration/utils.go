@@ -27,3 +27,11 @@ func GetAdmin(c api.FabricClient, userOrg string) (api.User, error) {
 	username := fmt.Sprintf("peer%sAdmin", userOrg)
 	return util.GetPreEnrolledUser(c, keyDir, certDir, username)
 }
+
+// GetUser ...
+func GetUser(c api.FabricClient, userOrg string) (api.User, error) {
+	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/keystore", userOrg, userOrg)
+	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/signcerts", userOrg, userOrg)
+	username := fmt.Sprintf("peer%sUser1", userOrg)
+	return util.GetPreEnrolledUser(c, keyDir, certDir, username)
+}
