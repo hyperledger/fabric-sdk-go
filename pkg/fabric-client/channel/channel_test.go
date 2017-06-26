@@ -136,7 +136,7 @@ func TestTargetPeers(t *testing.T) {
 	}
 
 	// Test target equals our choice
-	if len(targetPeers) != 1 || targetPeers[0].GetURL() != peer2.GetURL() || targetPeers[0].GetName() != peer2.GetName() {
+	if len(targetPeers) != 1 || targetPeers[0].URL() != peer2.URL() || targetPeers[0].Name() != peer2.Name() {
 		t.Fatalf("Primary and our choice are not equal")
 	}
 
@@ -154,7 +154,7 @@ func TestPrimaryPeer(t *testing.T) {
 
 	// Test primary defaults to channel peer
 	primary := channel.GetPrimaryPeer()
-	if primary.GetURL() != peer1.GetURL() {
+	if primary.URL() != peer1.URL() {
 		t.Fatalf("Primary Peer failed to default")
 	}
 
@@ -181,7 +181,7 @@ func TestPrimaryPeer(t *testing.T) {
 
 	// Test primary equals our choice
 	primary = channel.GetPrimaryPeer()
-	if primary.GetURL() != peer2.GetURL() || primary.GetName() != peer2.GetName() {
+	if primary.URL() != peer2.URL() || primary.Name() != peer2.Name() {
 		t.Fatalf("Primary and our choice are not equal")
 	}
 
@@ -229,7 +229,7 @@ func TestJoinChannel(t *testing.T) {
 	var peers []api.Peer
 	endorserServer := startEndorserServer(t)
 	channel, _ := setupTestChannel()
-	peer, _ := peer.NewPeer(testAddress, "", "", mocks.NewMockConfig())
+	peer, _ := peer.NewPeer(testAddress, mocks.NewMockConfig())
 	peers = append(peers, peer)
 	orderer := mocks.NewMockOrderer("", nil)
 	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockBlock())

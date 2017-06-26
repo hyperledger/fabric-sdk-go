@@ -49,7 +49,7 @@ func GetChannel(client api.FabricClient, channelID string) (api.Channel, error) 
 		return nil, fmt.Errorf("Error reading peer config: %v", err)
 	}
 	for _, p := range peerConfig {
-		endorser, err := peer.NewPeer(fmt.Sprintf("%s:%d", p.Host, p.Port),
+		endorser, err := peer.NewPeerTLSFromCert(fmt.Sprintf("%s:%d", p.Host, p.Port),
 			p.TLS.Certificate, p.TLS.ServerHostOverride, client.GetConfig())
 		if err != nil {
 			return nil, fmt.Errorf("NewPeer return error: %v", err)

@@ -44,8 +44,8 @@ func (p *MockPeer) RemoveListener(eventListenerRef string) (bool, error) {
 	return false, errors.New("Not implemented")
 }
 
-// GetName returns the mock peer's mock name
-func (p MockPeer) GetName() string {
+// Name returns the mock peer's mock name
+func (p MockPeer) Name() string {
 	return p.MockName
 }
 
@@ -54,8 +54,8 @@ func (p *MockPeer) SetName(name string) {
 	p.MockName = name
 }
 
-// GetRoles returns the mock peer's mock roles
-func (p *MockPeer) GetRoles() []string {
+// Roles returns the mock peer's mock roles
+func (p *MockPeer) Roles() []string {
 	return p.MockRoles
 }
 
@@ -64,8 +64,8 @@ func (p *MockPeer) SetRoles(roles []string) {
 	p.MockRoles = roles
 }
 
-// GetEnrollmentCertificate returns the mock peer's mock enrollment certificate
-func (p *MockPeer) GetEnrollmentCertificate() *pem.Block {
+// EnrollmentCertificate returns the mock peer's mock enrollment certificate
+func (p *MockPeer) EnrollmentCertificate() *pem.Block {
 	return p.MockCert
 }
 
@@ -74,8 +74,8 @@ func (p *MockPeer) SetEnrollmentCertificate(pem *pem.Block) {
 	p.MockCert = pem
 }
 
-// GetURL returns the mock peer's mock URL
-func (p *MockPeer) GetURL() string {
+// URL returns the mock peer's mock URL
+func (p *MockPeer) URL() string {
 	return p.MockURL
 }
 

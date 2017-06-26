@@ -141,7 +141,7 @@ func (c *channel) SetTCertBatchSize(batchSize int) {
 * @throws {Error} if the peer with that url already exists.
  */
 func (c *channel) AddPeer(peer api.Peer) error {
-	url := peer.GetURL()
+	url := peer.URL()
 	if c.peers[url] != nil {
 		return fmt.Errorf("Peer with URL %s already exists", url)
 	}
@@ -155,7 +155,7 @@ func (c *channel) AddPeer(peer api.Peer) error {
 * @param {Peer} peer An instance of the Peer.
  */
 func (c *channel) RemovePeer(peer api.Peer) {
-	url := peer.GetURL()
+	url := peer.URL()
 	if c.peers[url] != nil {
 		delete(c.peers, url)
 		logger.Debugf("Removed peer with URL %s", url)
@@ -203,7 +203,7 @@ func (c *channel) getTargetPeers(targets []api.Peer) ([]api.Peer, error) {
 		if !c.isValidPeer(target) {
 			return nil, fmt.Errorf("The target peer must be on this channel peer list")
 		}
-		targetPeers = append(targetPeers, c.peers[target.GetURL()])
+		targetPeers = append(targetPeers, c.peers[target.URL()])
 	}
 
 	return targetPeers, nil
@@ -214,7 +214,7 @@ func (c *channel) getTargetPeers(targets []api.Peer) ([]api.Peer, error) {
 * @returns {bool} true if peer exists on this channel
  */
 func (c *channel) isValidPeer(peer api.Peer) bool {
-	return peer != nil && c.peers[peer.GetURL()] != nil
+	return peer != nil && c.peers[peer.URL()] != nil
 }
 
 // SetPrimaryPeer ...
@@ -233,7 +233,7 @@ func (c *channel) SetPrimaryPeer(peer api.Peer) error {
 		return fmt.Errorf("The primary peer must be on this channel peer list")
 	}
 
-	c.primaryPeer = c.peers[peer.GetURL()]
+	c.primaryPeer = c.peers[peer.URL()]
 	return nil
 }
 
@@ -254,7 +254,7 @@ func (c *channel) GetPrimaryPeer() api.Peer {
 	// When no primary peer has been set default to the first peer
 	// from map range - order is not guaranteed
 	for _, peer := range c.peers {
-		logger.Infof("Primary peer was not set, using %s", peer.GetName())
+		logger.Infof("Primary peer was not set, using %s", peer.Name())
 		return peer
 	}
 
@@ -1059,12 +1059,12 @@ func SendTransactionProposal(proposal *api.TransactionProposal, retry int, targe
 			defer wg.Done()
 			var err error
 			var proposalResponse *api.TransactionProposalResponse
-			logger.Debugf("Send ProposalRequest to peer :%s", peer.GetURL())
+			logger.Debugf("Send ProposalRequest to peer :%s", peer.URL())
 			if proposalResponse, err = peer.SendProposal(proposal); err != nil {
 				logger.Debugf("Receive Error Response :%v", proposalResponse)
 				proposalResponse = &api.TransactionProposalResponse{
-					Endorser: peer.GetURL(),
-					Err:      fmt.Errorf("Error calling endorser '%s':  %s", peer.GetURL(), err),
+					Endorser: peer.URL(),
+					Err:      fmt.Errorf("Error calling endorser '%s':  %s", peer.URL(), err),
 					Proposal: proposal,
 				}
 			} else {

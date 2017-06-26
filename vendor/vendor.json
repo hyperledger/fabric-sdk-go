@@ -297,6 +297,12 @@
 			"revisionTime": "2017-06-20T09:16:39Z"
 		},
 		{
+			"checksumSHA1": "HGhun7iAP0ery4shaajz8qleUfQ=",
+			"path": "github.com/golang/mock/gomock",
+			"revision": "93f6609a15b7de76bd49259f1f9a6b58df358936",
+			"revisionTime": "2017-06-22T20:25:52Z"
+		},
+		{
 			"checksumSHA1": "kBeNcaKk56FguvPSUCEaH6AxpRc=",
 			"origin": "github.com/hyperledger/fabric/vendor/github.com/golang/protobuf/proto",
 			"path": "github.com/golang/protobuf/proto",

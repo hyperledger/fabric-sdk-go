@@ -11,10 +11,11 @@
 # integration-test: runs all the integration tests
 # checks: runs all check conditions (license, spelling, linting)
 # clean: stops docker conatainers used for integration testing
+# mock-gen: generate mocks needed for testing (using mockgen)
 #
 
 export ARCH=$(shell uname -m)
-export LDFLAGS=-ldflags "-s"
+export LDFLAGS=-ldflags=-s
 
 all: checks unit-test integration-test
 
@@ -42,6 +43,12 @@ integration-test: clean depend
 	@test/scripts/integration.sh
 
 integration-tests: integration-test
+
+mock-gen:
+	go get -u github.com/golang/mock/gomock
+	go get -u github.com/golang/mock/mockgen
+	mockgen -source=pkg/fabric-client/peer/peer.go -destination=pkg/fabric-client/peer/mocks/mockpeer.gen.go
+	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/mocks/mockconfig.gen.go
 
 clean:
 	rm -Rf /tmp/enroll_user /tmp/msp /tmp/keyvaluestore

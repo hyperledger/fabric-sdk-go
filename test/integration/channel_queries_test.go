@@ -168,7 +168,7 @@ func testQueryChannels(t *testing.T, channel api.Channel, client api.FabricClien
 
 	// Our target will be primary peer on this channel
 	target := channel.GetPrimaryPeer()
-	fmt.Printf("****QueryChannels for %s\n", target.GetURL())
+	fmt.Printf("****QueryChannels for %s\n", target.URL())
 	channelQueryResponse, err := client.QueryChannels(target)
 	if err != nil {
 		t.Fatalf("QueryChannels return error: %v", err)
@@ -185,7 +185,7 @@ func testInstalledChaincodes(t *testing.T, channel api.Channel, client api.Fabri
 	// Our target will be primary peer on this channel
 	target := channel.GetPrimaryPeer()
 
-	fmt.Printf("****QueryInstalledChaincodes for %s\n", target.GetURL())
+	fmt.Printf("****QueryInstalledChaincodes for %s\n", target.URL())
 	// Test Query Installed chaincodes for target (primary)
 	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(target)
 	if err != nil {
@@ -203,7 +203,7 @@ func testInstantiatedChaincodes(t *testing.T, channel api.Channel) {
 	// Our target will indirectly be primary peer on this channel
 	target := channel.GetPrimaryPeer()
 
-	fmt.Printf("QueryInstantiatedChaincodes for primary %s\n", target.GetURL())
+	fmt.Printf("QueryInstantiatedChaincodes for primary %s\n", target.URL())
 
 	// Test Query Instantiated chaincodes
 	chaincodeQueryResponse, err := channel.QueryInstantiatedChaincodes()
@@ -232,14 +232,17 @@ func testQueryByChaincode(t *testing.T, channel api.Channel, config api.Config) 
 		t.Fatalf("QueryByChaincode number of results mismatch. Expected: %d Got: %d", len(targets), len(queryResponses))
 	}
 
+	// Configured cert for cert pool
+	cert := config.GetFabricCAClientCertFile()
+
 	// Create invalid target
-	firstInvalidTarget, err := peer.NewPeer("test:1111", "", "", config)
+	firstInvalidTarget, err := peer.NewPeerTLSFromCert("test:1111", cert, "", config)
 	if err != nil {
 		t.Fatalf("Create NewPeer error(%v)", err)
 	}
 
 	// Create second invalid target
-	secondInvalidTarget, err := peer.NewPeer("test:2222", "", "", config)
+	secondInvalidTarget, err := peer.NewPeerTLSFromCert("test:2222", cert, "", config)
 	if err != nil {
 		t.Fatalf("Create NewPeer error(%v)", err)
 	}

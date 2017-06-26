@@ -31,12 +31,12 @@ type Peer interface {
 	IsEventListened(event string, channel Channel) (bool, error)
 	AddListener(eventType string, eventTypeData interface{}, eventCallback interface{}) (string, error)
 	RemoveListener(eventListenerRef string) (bool, error)
-	GetName() string
+	Name() string
 	SetName(name string)
-	GetRoles() []string
+	Roles() []string
 	SetRoles(roles []string)
-	GetEnrollmentCertificate() *pem.Block
+	EnrollmentCertificate() *pem.Block
 	SetEnrollmentCertificate(pem *pem.Block)
-	GetURL() string
+	URL() string
 	SendProposal(proposal *TransactionProposal) (*TransactionProposalResponse, error)
 }

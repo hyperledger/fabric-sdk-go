@@ -146,6 +146,7 @@ func (c *config) IsTLSEnabled() bool {
 }
 
 // GetTLSCACertPool ...
+// TODO: Should be related to configuration.
 func (c *config) GetTLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
 	if tlsCertificate != "" {
