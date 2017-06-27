@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util"
 )
 
 // TestTransient ...
@@ -42,7 +41,7 @@ func TestTransient(t *testing.T) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte(transientData)
 
-	transactionProposalResponse, _, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, _, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
@@ -51,13 +50,14 @@ func TestTransient(t *testing.T) {
 	if len(strResponse) == 0 {
 		t.Fatalf("Transient data does not exist: expected %s", transientData)
 	}
+
 	//verify transient data content
 	if strResponse != transientData {
 		t.Fatalf("Expected '%s' in transient data field. Received '%s' ", transientData, strResponse)
 	}
 	//transient data null
 	transientDataMap["result"] = []byte{}
-	transactionProposalResponse, _, err = util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, _, err = testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal with empty transient data return an error: %v", err)
 	}

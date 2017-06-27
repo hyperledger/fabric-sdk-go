@@ -97,51 +97,6 @@ func TestQueryMethods(t *testing.T) {
 
 }
 
-func TestTargetPeers(t *testing.T) {
-
-	p := make(map[string]api.Peer)
-	channel := &channel{name: "targetChannel", peers: p}
-
-	// Channel has two peers
-	peer1 := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
-	err := channel.AddPeer(&peer1)
-	if err != nil {
-		t.Fatalf("Error adding peer: %v", err)
-	}
-	peer2 := mocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil}
-	err = channel.AddPeer(&peer2)
-	if err != nil {
-		t.Fatalf("Error adding peer: %v", err)
-	}
-
-	// Set target to invalid URL
-	invalidChoice := mocks.MockPeer{MockName: "", MockURL: "http://xyz.com", MockRoles: []string{}, MockCert: nil}
-	targetPeers, err := channel.getTargetPeers([]api.Peer{&invalidChoice})
-	if err == nil {
-		t.Fatalf("Target peer didn't fail for an invalid peer")
-	}
-
-	// Test target peers default to channel peers if target peers are not provided
-	targetPeers, err = channel.getTargetPeers(nil)
-
-	if err != nil || targetPeers == nil || len(targetPeers) != 2 {
-		t.Fatalf("Target Peers failed to default")
-	}
-
-	// Set target to valid peer 2 URL
-	choice := mocks.MockPeer{MockName: "", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil}
-	targetPeers, err = channel.getTargetPeers([]api.Peer{&choice})
-	if err != nil {
-		t.Fatalf("Failed to get valid target peer")
-	}
-
-	// Test target equals our choice
-	if len(targetPeers) != 1 || targetPeers[0].URL() != peer2.URL() || targetPeers[0].Name() != peer2.Name() {
-		t.Fatalf("Primary and our choice are not equal")
-	}
-
-}
-
 func TestPrimaryPeer(t *testing.T) {
 	channel, _ := setupTestChannel()
 

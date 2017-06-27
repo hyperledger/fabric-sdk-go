@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/util"
+	fabricTxn "github.com/hyperledger/fabric-sdk-go/fabric-txn"
 )
 
 func TestChainCodeInvoke(t *testing.T) {
@@ -42,9 +42,9 @@ func TestChainCodeInvoke(t *testing.T) {
 	eventID := "test([a-zA-Z]+)"
 
 	// Register callback for chaincode event
-	done, rce := util.RegisterCCEvent(testSetup.ChainCodeID, eventID, testSetup.EventHub)
+	done, rce := fabricTxn.RegisterCCEvent(testSetup.ChainCodeID, eventID, testSetup.EventHub)
 
-	_, err = testSetup.MoveFunds()
+	err = testSetup.MoveFunds()
 	if err != nil {
 		t.Fatalf("Move funds return error: %v", err)
 	}

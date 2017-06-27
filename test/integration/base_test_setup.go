@@ -16,9 +16,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-
-	fcutil "github.com/hyperledger/fabric-sdk-go/pkg/util"
+	fabricTxn "github.com/hyperledger/fabric-sdk-go/fabric-txn"
+	admin "github.com/hyperledger/fabric-sdk-go/fabric-txn/admin"
+	defaultImpl "github.com/hyperledger/fabric-sdk-go/fabric-txn/defaultImpl"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 // BaseSetupImpl implementation of BaseTestSetup
@@ -49,24 +51,32 @@ func (setup *BaseSetupImpl) Initialize() error {
 		return fmt.Errorf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
 
-	client, err := fcutil.GetClient("admin", "adminpw", "/tmp/enroll_user", configImpl)
+	mspClient, err := defaultImpl.NewMspClient(configImpl)
+	if err != nil {
+		return fmt.Errorf("Failed to get default msp client: %v", err)
+	}
+
+	client, err := defaultImpl.NewClientWithUser("admin", "adminpw", "/tmp/enroll_user", configImpl, mspClient)
 	if err != nil {
 		return fmt.Errorf("Create client failed: %v", err)
 	}
-	//clientUser := client.GetUserContext()
 
 	setup.Client = client
 
 	org1Admin, err := GetAdmin(client, "org1")
+	if err != nil {
+		return fmt.Errorf("Error getting org1 admin: %v", err)
+	}
+
 	org1User, err := GetUser(client, "org1")
 	if err != nil {
-		return fmt.Errorf("Error getting org admin user: %v", err)
+		return fmt.Errorf("Error getting org1 user: %v", err)
 	}
 
 	setup.AdminUser = org1Admin
 	setup.NormalUser = org1User
 
-	channel, err := fcutil.GetChannel(setup.Client, setup.ChannelID)
+	channel, err := setup.GetChannel(setup.Client, setup.ChannelID)
 	if err != nil {
 		return fmt.Errorf("Create channel (%s) failed: %v", setup.ChannelID, err)
 	}
@@ -78,8 +88,12 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 
 	// Create and join channel
-	if err := fcutil.CreateAndJoinChannel(client, ordererAdmin, org1Admin, channel, setup.ChannelConfig); err != nil {
-		return fmt.Errorf("CreateAndJoinChannel return error: %v", err)
+	if err = admin.CreateChannel(client, ordererAdmin, org1Admin, channel, setup.ChannelConfig); err != nil {
+		return fmt.Errorf("CreateChannel returned error: %v", err)
+	}
+	time.Sleep(time.Second * 3)
+	if err = admin.JoinChannel(client, org1Admin, channel); err != nil {
+		return fmt.Errorf("JoinChannel returned error: %v", err)
 	}
 
 	//by default client's user context should use regular user, for admin actions, UserContext must be set to AdminUser
@@ -126,7 +140,8 @@ func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, channelID string, 
 
 	// must reset client user context to normal user once done with Admin privilieges
 	defer setup.Client.SetUserContext(setup.NormalUser)
-	if err := fcutil.SendInstantiateCC(setup.Channel, chainCodeID, channelID, args, chainCodePath, chainCodeVersion, []api.Peer{setup.Channel.GetPrimaryPeer()}, setup.EventHub); err != nil {
+
+	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, channelID, args, chainCodePath, chainCodeVersion, []api.Peer{setup.Channel.GetPrimaryPeer()}, setup.EventHub); err != nil {
 		return err
 	}
 	return nil
@@ -139,7 +154,8 @@ func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, 
 
 	// must reset client user context to normal user once done with Admin privilieges
 	defer setup.Client.SetUserContext(setup.NormalUser)
-	if err := fcutil.SendInstallCC(setup.Client, setup.Channel, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, setup.Channel.GetPeers(), setup.GetDeployPath()); err != nil {
+
+	if err := admin.SendInstallCC(setup.Client, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, setup.Channel.GetPeers(), setup.GetDeployPath()); err != nil {
 		return fmt.Errorf("SendInstallProposal return error: %v", err)
 	}
 
@@ -159,7 +175,7 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 	chainCodeVersion := "v0"
 
 	if setup.ChainCodeID == "" {
-		setup.ChainCodeID = fcutil.GenerateRandomID()
+		setup.ChainCodeID = GenerateRandomID()
 	}
 
 	if err := setup.InstallCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, nil); err != nil {
@@ -178,11 +194,7 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 
 // Query ...
 func (setup *BaseSetupImpl) Query(channelID string, chainCodeID string, args []string) (string, error) {
-	transactionProposalResponses, _, err := fcutil.CreateAndSendTransactionProposal(setup.Channel, chainCodeID, channelID, args, []api.Peer{setup.Channel.GetPrimaryPeer()}, nil)
-	if err != nil {
-		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
-	}
-	return string(transactionProposalResponses[0].ProposalResponse.GetResponse().Payload), nil
+	return fabricTxn.QueryChaincode(setup.Client, setup.Channel, chainCodeID, args)
 }
 
 // QueryAsset ...
@@ -196,7 +208,7 @@ func (setup *BaseSetupImpl) QueryAsset() (string, error) {
 }
 
 // MoveFunds ...
-func (setup *BaseSetupImpl) MoveFunds() (string, error) {
+func (setup *BaseSetupImpl) MoveFunds() error {
 
 	var args []string
 	args = append(args, "invoke")
@@ -208,14 +220,30 @@ func (setup *BaseSetupImpl) MoveFunds() (string, error) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	transactionProposalResponse, txID, err := fcutil.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, setup.ChannelID, args, []api.Peer{setup.Channel.GetPrimaryPeer()}, transientDataMap)
+	return fabricTxn.InvokeChaincode(setup.Client, setup.Channel, []api.Peer{setup.Channel.GetPrimaryPeer()}, setup.EventHub, setup.ChainCodeID, args, transientDataMap)
+}
+
+// MoveFundsAndGetTxID ...
+func (setup *BaseSetupImpl) MoveFundsAndGetTxID() (string, error) {
+
+	var args []string
+	args = append(args, "invoke")
+	args = append(args, "move")
+	args = append(args, "a")
+	args = append(args, "b")
+	args = append(args, "1")
+
+	transientDataMap := make(map[string][]byte)
+	transientDataMap["result"] = []byte("Transient data in move funds...")
+
+	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, setup.ChannelID, args, []api.Peer{setup.Channel.GetPrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 	// Register for commit event
-	done, fail := fcutil.RegisterTxEvent(txID, setup.EventHub)
+	done, fail := setup.RegisterTxEvent(txID, setup.EventHub)
 
-	txResponse, err := fcutil.CreateAndSendTransaction(setup.Channel, transactionProposalResponse)
+	txResponse, err := setup.CreateAndSendTransaction(setup.Channel, transactionProposalResponse)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransaction return error: %v", err)
 	}
@@ -228,7 +256,111 @@ func (setup *BaseSetupImpl) MoveFunds() (string, error) {
 		return "", fmt.Errorf("invoke Didn't receive block event for txid(%s)", txID)
 	}
 	return txID, nil
+}
 
+// GetChannel initializes and returns a channel based on config
+func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string) (api.Channel, error) {
+
+	channel, err := client.NewChannel(channelID)
+	if err != nil {
+		return nil, fmt.Errorf("NewChannel return error: %v", err)
+	}
+	orderer, err := defaultImpl.NewOrderer(fmt.Sprintf("%s:%s", client.GetConfig().GetOrdererHost(), client.GetConfig().GetOrdererPort()),
+		client.GetConfig().GetOrdererTLSCertificate(), client.GetConfig().GetOrdererTLSServerHostOverride(), client.GetConfig())
+	if err != nil {
+		return nil, fmt.Errorf("NewOrderer return error: %v", err)
+	}
+	err = channel.AddOrderer(orderer)
+	if err != nil {
+		return nil, fmt.Errorf("Error adding orderer: %v", err)
+	}
+
+	peerConfig, err := client.GetConfig().GetPeersConfig()
+	if err != nil {
+		return nil, fmt.Errorf("Error reading peer config: %v", err)
+	}
+	for _, p := range peerConfig {
+		endorser, err := defaultImpl.NewPeer(fmt.Sprintf("%s:%d", p.Host, p.Port),
+			p.TLS.Certificate, p.TLS.ServerHostOverride, client.GetConfig())
+		if err != nil {
+			return nil, fmt.Errorf("NewPeer return error: %v", err)
+		}
+		err = channel.AddPeer(endorser)
+		if err != nil {
+			return nil, fmt.Errorf("Error adding peer: %v", err)
+		}
+		if p.Primary {
+			channel.SetPrimaryPeer(endorser)
+		}
+	}
+
+	return channel, nil
+}
+
+// CreateAndSendTransactionProposal ...
+func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel api.Channel, chainCodeID string, channelID string,
+	args []string, targets []api.Peer, transientData map[string][]byte) ([]*api.TransactionProposalResponse, string, error) {
+
+	signedProposal, err := channel.CreateTransactionProposal(chainCodeID, channelID, args, true, transientData)
+	if err != nil {
+		return nil, "", fmt.Errorf("SendTransactionProposal returned error: %v", err)
+	}
+
+	transactionProposalResponses, err := channel.SendTransactionProposal(signedProposal, 0, targets)
+	if err != nil {
+		return nil, "", fmt.Errorf("SendTransactionProposal returned error: %v", err)
+	}
+
+	for _, v := range transactionProposalResponses {
+		if v.Err != nil {
+			return nil, signedProposal.TransactionID, fmt.Errorf("invoke Endorser %s returned error: %v", v.Endorser, v.Err)
+		}
+		fmt.Printf("invoke Endorser '%s' returned ProposalResponse status:%v\n", v.Endorser, v.Status)
+	}
+
+	return transactionProposalResponses, signedProposal.TransactionID, nil
+}
+
+// CreateAndSendTransaction ...
+func (setup *BaseSetupImpl) CreateAndSendTransaction(channel api.Channel, resps []*api.TransactionProposalResponse) ([]*api.TransactionResponse, error) {
+
+	tx, err := channel.CreateTransaction(resps)
+	if err != nil {
+		return nil, fmt.Errorf("CreateTransaction return error: %v", err)
+	}
+
+	transactionResponse, err := channel.SendTransaction(tx)
+	if err != nil {
+		return nil, fmt.Errorf("SendTransaction return error: %v", err)
+
+	}
+	for _, v := range transactionResponse {
+		if v.Err != nil {
+			return nil, fmt.Errorf("Orderer %s return error: %v", v.Orderer, v.Err)
+		}
+	}
+
+	return transactionResponse, nil
+}
+
+// RegisterTxEvent registers on the given eventhub for the give transaction
+// returns a boolean channel which receives true when the event is complete
+// and an error channel for errors
+func (setup *BaseSetupImpl) RegisterTxEvent(txID string, eventHub api.EventHub) (chan bool, chan error) {
+	done := make(chan bool)
+	fail := make(chan error)
+
+	eventHub.RegisterTxEvent(txID, func(txId string, errorCode pb.TxValidationCode, err error) {
+		if err != nil {
+			fmt.Printf("Received error event for txid(%s)\n", txId)
+			fail <- err
+		} else {
+			fmt.Printf("Received success event for txid(%s)\n", txId)
+			done <- true
+		}
+	})
+
+	return done, fail
 }
 
 // getEventHub initilizes the event hub

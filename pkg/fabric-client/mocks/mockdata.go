@@ -345,6 +345,11 @@ func (b *MockConfigUpdateEnvelopeBuilder) buildConfigUpdate() *common.ConfigUpda
 	}
 }
 
+// BuildConfigUpdateBytes builds an mock ConfigUpdate returns the marshaled bytes
+func (b *MockConfigUpdateEnvelopeBuilder) BuildConfigUpdateBytes() []byte {
+	return marshalOrPanic(b.buildConfigUpdate())
+}
+
 // marshalOrPanic serializes a protobuf message and panics if this operation fails.
 func marshalOrPanic(pb proto.Message) []byte {
 	data, err := proto.Marshal(pb)

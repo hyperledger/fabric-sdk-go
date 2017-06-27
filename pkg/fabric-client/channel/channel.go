@@ -46,6 +46,7 @@ type channel struct {
 	primaryPeer     api.Peer
 	mspManager      msp.MSPManager
 	anchorPeers     []*api.OrgAnchorPeer
+	initialized     bool
 }
 
 // configItems contains the configuration values retrieved from the Orderer Service
@@ -184,29 +185,6 @@ func (c *channel) GetAnchorPeers() []api.OrgAnchorPeer {
 	}
 
 	return anchors
-}
-
-/**
-* Utility function to get target peers (target peer is valid only if it belongs to channel's peer list).
-* If targets is empty return channel's peer list
-* @returns {[]Peer} The target peer list
-* @returns {error} if target peer is not in channel's peer list
- */
-func (c *channel) getTargetPeers(targets []api.Peer) ([]api.Peer, error) {
-
-	if targets == nil || len(targets) == 0 {
-		return c.GetPeers(), nil
-	}
-
-	var targetPeers []api.Peer
-	for _, target := range targets {
-		if !c.isValidPeer(target) {
-			return nil, fmt.Errorf("The target peer must be on this channel peer list")
-		}
-		targetPeers = append(targetPeers, c.peers[target.URL()])
-	}
-
-	return targetPeers, nil
 }
 
 /**
@@ -644,7 +622,7 @@ func (c *channel) loadConfigUpdate(configUpdateBytes []byte) (*configItems, erro
 	}
 	err = c.initializeFromConfig(configItems)
 	if err != nil {
-		return nil, fmt.Errorf("channel initialization errort: %v", err)
+		return nil, fmt.Errorf("channel initialization error: %v", err)
 	}
 
 	//TODO should we create orderers and endorsing peers
@@ -821,6 +799,7 @@ func (c *channel) Initialize(configUpdate []byte) error {
 	if err != nil {
 		return fmt.Errorf("Unable to load config envelope: %v", err)
 	}
+	c.initialized = true
 	return nil
 }
 
@@ -1019,23 +998,19 @@ func CreateTransactionProposal(chaincodeName string, channelID string,
 // SendTransactionProposal ...
 // Send  the created proposal to peer for endorsement.
 func (c *channel) SendTransactionProposal(proposal *api.TransactionProposal, retry int, targets []api.Peer) ([]*api.TransactionProposalResponse, error) {
-	if c.peers == nil || len(c.peers) == 0 {
-		return nil, fmt.Errorf("peers is nil")
-	}
 	if proposal == nil || proposal.SignedProposal == nil {
 		return nil, fmt.Errorf("signedProposal is nil")
 	}
 
-	targetPeers, err := c.getTargetPeers(targets)
-	if err != nil {
-		return nil, fmt.Errorf("GetTargetPeers return error: %s", err)
-	}
-	if len(targetPeers) < 1 {
-		return nil, fmt.Errorf("Missing peer objects for sending transaction proposal")
+	if targets == nil || len(targets) == 0 {
+		if c.peers == nil || len(c.peers) == 0 {
+			return nil, fmt.Errorf("peers and target peers is nil or empty")
+		}
+
+		return SendTransactionProposal(proposal, retry, c.GetPeers())
 	}
 
-	return SendTransactionProposal(proposal, retry, targetPeers)
-
+	return SendTransactionProposal(proposal, retry, targets)
 }
 
 //SendTransactionProposal ...
@@ -1246,12 +1221,7 @@ func (c *channel) SendInstantiateProposal(chaincodeName string, channelID string
 		return nil, "", fmt.Errorf("Missing 'chaincodeVersion' parameter")
 	}
 
-	targetPeers, err := c.getTargetPeers(targets)
-	if err != nil {
-		return nil, "", fmt.Errorf("GetTargetPeers return error: %s", err)
-	}
-
-	if len(targetPeers) < 1 {
+	if targets == nil || len(targets) < 1 {
 		return nil, "", fmt.Errorf("Missing peer objects for instantiate CC proposal")
 	}
 
@@ -1291,7 +1261,7 @@ func (c *channel) SendInstantiateProposal(chaincodeName string, channelID string
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
 		TransactionID:  txID,
-	}, 0, targetPeers)
+	}, 0, targets)
 
 	return transactionProposalResponse, txID, err
 }
@@ -1787,6 +1757,10 @@ func (c *channel) getBlock(pos *ab.SeekPosition) (*common.Block, error) {
 	}
 
 	return c.SendEnvelope(signedEnvelope)
+}
+
+func (c *channel) IsInitialized() bool {
+	return c.initialized
 }
 
 func (c *channel) initializeFromConfig(configItems *configItems) error {

@@ -25,6 +25,7 @@ import (
 type Channel interface {
 	GetName() string
 	Initialize(data []byte) error
+	IsInitialized() bool
 	IsSecurityEnabled() bool
 	GetTCertBatchSize() int
 	SetTCertBatchSize(batchSize int)

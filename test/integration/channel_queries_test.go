@@ -81,7 +81,7 @@ func changeBlockState(testSetup *BaseSetupImpl) (string, error) {
 	}
 
 	// Start transaction that will change block state
-	txID, err := testSetup.MoveFunds()
+	txID, err := testSetup.MoveFundsAndGetTxID()
 	if err != nil {
 		return "", fmt.Errorf("Move funds return error: %v", err)
 	}

@@ -83,9 +83,6 @@ func TestOrdererViaChannelMissingOrderer(t *testing.T) {
 	if err == nil {
 		t.Fatalf("SendTransactionProposal didn't return error")
 	}
-	if err.Error() != "peers is nil" {
-		t.Fatalf("SendTransactionProposal didn't return right error")
-	}
 }
 
 //
