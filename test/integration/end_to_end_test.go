@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/api"
 	fabricTxn "github.com/hyperledger/fabric-sdk-go/fabric-txn"
 )
 
@@ -20,6 +21,7 @@ func TestChainCodeInvoke(t *testing.T) {
 	testSetup := BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
 		ChannelID:       "mychannel",
+		OrgID:           "peerorg1",
 		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}
@@ -44,7 +46,7 @@ func TestChainCodeInvoke(t *testing.T) {
 	// Register callback for chaincode event
 	done, rce := fabricTxn.RegisterCCEvent(testSetup.ChainCodeID, eventID, testSetup.EventHub)
 
-	err = testSetup.MoveFunds()
+	err = moveFunds(&testSetup)
 	if err != nil {
 		t.Fatalf("Move funds return error: %v", err)
 	}
@@ -71,4 +73,20 @@ func TestChainCodeInvoke(t *testing.T) {
 		t.Fatalf("SendTransaction didn't change the QueryValue")
 	}
 
+}
+
+// moveFunds ...
+func moveFunds(setup *BaseSetupImpl) error {
+
+	var args []string
+	args = append(args, "invoke")
+	args = append(args, "move")
+	args = append(args, "a")
+	args = append(args, "b")
+	args = append(args, "1")
+
+	transientDataMap := make(map[string][]byte)
+	transientDataMap["result"] = []byte("Transient data in move funds...")
+
+	return fabricTxn.InvokeChaincode(setup.Client, setup.Channel, []api.Peer{setup.Channel.GetPrimaryPeer()}, setup.EventHub, setup.ChainCodeID, args, transientDataMap)
 }

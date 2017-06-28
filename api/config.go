@@ -13,15 +13,18 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config ...
+// Config fabric-sdk-go configuration interface
 type Config interface {
-	GetServerURL() string
-	GetServerCertFiles() []string
-	GetFabricCAClientKeyFile() string
-	GetFabricCAClientCertFile() string
-	GetFabricCATLSEnabledFlag() bool
+	GetCAConfig(org string) (*CAConfig, error)
+	GetCAServerCertFiles(org string) ([]string, error)
+	GetCAClientKeyFile(org string) (string, error)
+	GetCAClientCertFile(org string) (string, error)
+	GetMspID(org string) (string, error)
 	GetFabricClientViper() *viper.Viper
-	GetPeersConfig() ([]PeerConfig, error)
+	GetRandomOrdererConfig() (*OrdererConfig, error)
+	GetOrdererConfig(name string) (*OrdererConfig, error)
+	GetPeersConfig(org string) ([]PeerConfig, error)
+	GetNetworkConfig() (*NetworkConfig, error)
 	IsTLSEnabled() bool
 	GetTLSCACertPool(tlsCertificate string) (*x509.CertPool, error)
 	GetTLSCACertPoolFromRoots(ordererRootCAs [][]byte) (*x509.CertPool, error)
@@ -29,28 +32,8 @@ type Config interface {
 	TcertBatchSize() int
 	GetSecurityAlgorithm() string
 	GetSecurityLevel() int
-	GetOrdererHost() string
-	GetOrdererPort() string
-	GetOrdererTLSServerHostOverride() string
-	GetOrdererTLSCertificate() string
-	GetFabricCAID() string
-	GetFabricCAName() string
 	GetKeyStorePath() string
-	GetFabricCAHomeDir() string
-	GetFabricCAMspDir() string
+	GetCAKeyStorePath() string
 	GetCryptoConfigPath() string
 	GetCSPConfig() *bccspFactory.FactoryOpts
-}
-
-// PeerConfig A set of configurations required to connect to a Fabric peer
-type PeerConfig struct {
-	Host      string
-	Port      int
-	EventHost string
-	EventPort int
-	Primary   bool
-	TLS       struct {
-		Certificate        string
-		ServerHostOverride string
-	}
 }

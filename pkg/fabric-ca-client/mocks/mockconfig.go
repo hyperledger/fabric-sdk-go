@@ -24,29 +24,24 @@ func NewMockConfig() api.Config {
 	return &MockConfig{}
 }
 
-//GetServerURL Read configuration option for the fabric CA server URL
-func (c *MockConfig) GetServerURL() string {
-	return ""
+// GetCAConfig not implemented
+func (c *MockConfig) GetCAConfig(org string) (*api.CAConfig, error) {
+	return &api.CAConfig{}, nil
 }
 
-//GetServerCertFiles Read configuration option for the server certificate files
-func (c *MockConfig) GetServerCertFiles() []string {
-	return nil
+//GetCAServerCertFiles Read configuration option for the server certificate files
+func (c *MockConfig) GetCAServerCertFiles(org string) ([]string, error) {
+	return nil, nil
 }
 
-//GetFabricCAClientKeyFile Read configuration option for the fabric CA client key file
-func (c *MockConfig) GetFabricCAClientKeyFile() string {
-	return ""
+//GetCAClientKeyFile Read configuration option for the fabric CA client key file
+func (c *MockConfig) GetCAClientKeyFile(org string) (string, error) {
+	return "", nil
 }
 
-//GetFabricCAClientCertFile Read configuration option for the fabric CA client cert file
-func (c *MockConfig) GetFabricCAClientCertFile() string {
-	return ""
-}
-
-//GetFabricCATLSEnabledFlag Read configuration option for the fabric CA TLS flag
-func (c *MockConfig) GetFabricCATLSEnabledFlag() bool {
-	return false
+//GetCAClientCertFile Read configuration option for the fabric CA client cert file
+func (c *MockConfig) GetCAClientCertFile(org string) (string, error) {
+	return "", nil
 }
 
 // GetFabricClientViper returns the internal viper instance used by the
@@ -56,7 +51,7 @@ func (c *MockConfig) GetFabricClientViper() *viper.Viper {
 }
 
 // GetPeersConfig Retrieves the fabric peers from the config file provided
-func (c *MockConfig) GetPeersConfig() ([]api.PeerConfig, error) {
+func (c *MockConfig) GetPeersConfig(org string) ([]api.PeerConfig, error) {
 	return nil, nil
 }
 
@@ -96,34 +91,19 @@ func (c *MockConfig) GetSecurityLevel() int {
 
 }
 
-// GetOrdererHost ...
-func (c *MockConfig) GetOrdererHost() string {
-	return ""
+// GetRandomOrdererConfig not implemented
+func (c *MockConfig) GetRandomOrdererConfig() (*api.OrdererConfig, error) {
+	return nil, nil
 }
 
-// GetOrdererPort ...
-func (c *MockConfig) GetOrdererPort() string {
-	return ""
+// GetOrdererConfig not implemented
+func (c *MockConfig) GetOrdererConfig(name string) (*api.OrdererConfig, error) {
+	return nil, nil
 }
 
-// GetOrdererTLSServerHostOverride ...
-func (c *MockConfig) GetOrdererTLSServerHostOverride() string {
-	return ""
-}
-
-// GetOrdererTLSCertificate ...
-func (c *MockConfig) GetOrdererTLSCertificate() string {
-	return ""
-}
-
-// GetFabricCAID ...
-func (c *MockConfig) GetFabricCAID() string {
-	return ""
-}
-
-//GetFabricCAName Read the fabric CA name
-func (c *MockConfig) GetFabricCAName() string {
-	return ""
+// GetMspID ...
+func (c *MockConfig) GetMspID(org string) (string, error) {
+	return "", nil
 }
 
 // GetKeyStorePath ...
@@ -131,13 +111,8 @@ func (c *MockConfig) GetKeyStorePath() string {
 	return ""
 }
 
-// GetFabricCAHomeDir ...
-func (c *MockConfig) GetFabricCAHomeDir() string {
-	return ""
-}
-
-// GetFabricCAMspDir ...
-func (c *MockConfig) GetFabricCAMspDir() string {
+// GetCAKeyStorePath not implemented
+func (c *MockConfig) GetCAKeyStorePath() string {
 	return ""
 }
 
@@ -149,4 +124,9 @@ func (c *MockConfig) GetCryptoConfigPath() string {
 // GetCSPConfig ...
 func (c *MockConfig) GetCSPConfig() *bccspFactory.FactoryOpts {
 	return nil
+}
+
+// GetNetworkConfig not implemented
+func (c *MockConfig) GetNetworkConfig() (*api.NetworkConfig, error) {
+	return nil, nil
 }

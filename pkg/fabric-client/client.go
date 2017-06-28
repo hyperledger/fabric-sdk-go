@@ -158,7 +158,12 @@ func (c *client) SaveUserToStateStore(user api.User, skipPersistence bool) error
 		if c.stateStore == nil {
 			return fmt.Errorf("stateStore is nil")
 		}
-		userJSON := &fcUser.JSON{PrivateKeySKI: user.GetPrivateKey().SKI(), EnrollmentCertificate: user.GetEnrollmentCertificate()}
+		userJSON := &fcUser.JSON{
+			MspID:                 user.GetMspID(),
+			Roles:                 user.GetRoles(),
+			PrivateKeySKI:         user.GetPrivateKey().SKI(),
+			EnrollmentCertificate: user.GetEnrollmentCertificate(),
+		}
 		data, err := json.Marshal(userJSON)
 		if err != nil {
 			return fmt.Errorf("Marshal json return error: %v", err)
@@ -200,7 +205,8 @@ func (c *client) LoadUserFromStateStore(name string) (api.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("stateStore GetValue return error: %v", err)
 	}
-	user := fcUser.NewUser(name)
+	user := fcUser.NewUser(name, userJSON.MspID)
+	user.SetRoles(userJSON.Roles)
 	user.SetEnrollmentCertificate(userJSON.EnrollmentCertificate)
 	key, err := c.cryptoSuite.GetKey(userJSON.PrivateKeySKI)
 	if err != nil {
@@ -551,7 +557,7 @@ func (c *client) GetIdentity() ([]byte, error) {
 	if c.userContext == nil {
 		return nil, fmt.Errorf("User is nil")
 	}
-	serializedIdentity := &msp.SerializedIdentity{Mspid: c.config.GetFabricCAID(),
+	serializedIdentity := &msp.SerializedIdentity{Mspid: c.userContext.GetMspID(),
 		IdBytes: c.userContext.GetEnrollmentCertificate()}
 	identity, err := proto.Marshal(serializedIdentity)
 	if err != nil {

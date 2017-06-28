@@ -18,6 +18,7 @@ func TestTransient(t *testing.T) {
 	testSetup := BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
 		ChannelID:       "mychannel",
+		OrgID:           "peerorg1",
 		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}

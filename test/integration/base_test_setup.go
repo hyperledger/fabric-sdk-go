@@ -14,6 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
 	fabricTxn "github.com/hyperledger/fabric-sdk-go/fabric-txn"
@@ -30,6 +31,7 @@ type BaseSetupImpl struct {
 	EventHub        api.EventHub
 	ConnectEventHub bool
 	ConfigFile      string
+	OrgID           string
 	ChannelID       string
 	ChainCodeID     string
 	Initialized     bool
@@ -51,38 +53,38 @@ func (setup *BaseSetupImpl) Initialize() error {
 		return fmt.Errorf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
 
-	mspClient, err := defaultImpl.NewMspClient(configImpl)
+	mspClient, err := defaultImpl.NewCAClient(configImpl, setup.OrgID)
 	if err != nil {
 		return fmt.Errorf("Failed to get default msp client: %v", err)
 	}
 
-	client, err := defaultImpl.NewClientWithUser("admin", "adminpw", "/tmp/enroll_user", configImpl, mspClient)
+	client, err := defaultImpl.NewClientWithUser("admin", "adminpw", setup.OrgID, "/tmp/enroll_user", configImpl, mspClient)
 	if err != nil {
 		return fmt.Errorf("Create client failed: %v", err)
 	}
 
 	setup.Client = client
 
-	org1Admin, err := GetAdmin(client, "org1")
+	org1Admin, err := GetAdmin(client, "org1", setup.OrgID)
 	if err != nil {
-		return fmt.Errorf("Error getting org1 admin: %v", err)
+		return fmt.Errorf("Error getting org admin user: %v", err)
 	}
 
-	org1User, err := GetUser(client, "org1")
+	org1User, err := GetUser(client, "org1", setup.OrgID)
 	if err != nil {
-		return fmt.Errorf("Error getting org1 user: %v", err)
+		return fmt.Errorf("Error getting org user: %v", err)
 	}
 
 	setup.AdminUser = org1Admin
 	setup.NormalUser = org1User
 
-	channel, err := setup.GetChannel(setup.Client, setup.ChannelID)
+	channel, err := setup.GetChannel(setup.Client, setup.ChannelID, []string{setup.OrgID})
 	if err != nil {
 		return fmt.Errorf("Create channel (%s) failed: %v", setup.ChannelID, err)
 	}
 	setup.Channel = channel
 
-	ordererAdmin, err := GetOrdererAdmin(client)
+	ordererAdmin, err := GetOrdererAdmin(client, setup.OrgID)
 	if err != nil {
 		return fmt.Errorf("Error getting orderer admin user: %v", err)
 	}
@@ -109,7 +111,7 @@ func (setup *BaseSetupImpl) Initialize() error {
 }
 
 func (setup *BaseSetupImpl) setupEventHub(client api.FabricClient) error {
-	eventHub, err := getEventHub(client)
+	eventHub, err := setup.getEventHub(client)
 	if err != nil {
 		return err
 	}
@@ -207,66 +209,22 @@ func (setup *BaseSetupImpl) QueryAsset() (string, error) {
 	return setup.Query(setup.ChannelID, setup.ChainCodeID, args)
 }
 
-// MoveFunds ...
-func (setup *BaseSetupImpl) MoveFunds() error {
-
-	var args []string
-	args = append(args, "invoke")
-	args = append(args, "move")
-	args = append(args, "a")
-	args = append(args, "b")
-	args = append(args, "1")
-
-	transientDataMap := make(map[string][]byte)
-	transientDataMap["result"] = []byte("Transient data in move funds...")
-
-	return fabricTxn.InvokeChaincode(setup.Client, setup.Channel, []api.Peer{setup.Channel.GetPrimaryPeer()}, setup.EventHub, setup.ChainCodeID, args, transientDataMap)
-}
-
-// MoveFundsAndGetTxID ...
-func (setup *BaseSetupImpl) MoveFundsAndGetTxID() (string, error) {
-
-	var args []string
-	args = append(args, "invoke")
-	args = append(args, "move")
-	args = append(args, "a")
-	args = append(args, "b")
-	args = append(args, "1")
-
-	transientDataMap := make(map[string][]byte)
-	transientDataMap["result"] = []byte("Transient data in move funds...")
-
-	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, setup.ChannelID, args, []api.Peer{setup.Channel.GetPrimaryPeer()}, transientDataMap)
-	if err != nil {
-		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
-	}
-	// Register for commit event
-	done, fail := setup.RegisterTxEvent(txID, setup.EventHub)
-
-	txResponse, err := setup.CreateAndSendTransaction(setup.Channel, transactionProposalResponse)
-	if err != nil {
-		return "", fmt.Errorf("CreateAndSendTransaction return error: %v", err)
-	}
-	fmt.Println(txResponse)
-	select {
-	case <-done:
-	case <-fail:
-		return "", fmt.Errorf("invoke Error received from eventhub for txid(%s) error(%v)", txID, fail)
-	case <-time.After(time.Second * 30):
-		return "", fmt.Errorf("invoke Didn't receive block event for txid(%s)", txID)
-	}
-	return txID, nil
-}
-
 // GetChannel initializes and returns a channel based on config
-func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string) (api.Channel, error) {
+func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string, orgs []string) (api.Channel, error) {
 
 	channel, err := client.NewChannel(channelID)
 	if err != nil {
 		return nil, fmt.Errorf("NewChannel return error: %v", err)
 	}
-	orderer, err := defaultImpl.NewOrderer(fmt.Sprintf("%s:%s", client.GetConfig().GetOrdererHost(), client.GetConfig().GetOrdererPort()),
-		client.GetConfig().GetOrdererTLSCertificate(), client.GetConfig().GetOrdererTLSServerHostOverride(), client.GetConfig())
+
+	ordererConfig, err := client.GetConfig().GetRandomOrdererConfig()
+	if err != nil {
+		return nil, fmt.Errorf("GetRandomOrdererConfig() return error: %s", err)
+	}
+
+	orderer, err := orderer.NewOrderer(fmt.Sprintf("%s:%d", ordererConfig.Host,
+		ordererConfig.Port), ordererConfig.TLS.Certificate,
+		ordererConfig.TLS.ServerHostOverride, client.GetConfig())
 	if err != nil {
 		return nil, fmt.Errorf("NewOrderer return error: %v", err)
 	}
@@ -275,22 +233,24 @@ func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string
 		return nil, fmt.Errorf("Error adding orderer: %v", err)
 	}
 
-	peerConfig, err := client.GetConfig().GetPeersConfig()
-	if err != nil {
-		return nil, fmt.Errorf("Error reading peer config: %v", err)
-	}
-	for _, p := range peerConfig {
-		endorser, err := defaultImpl.NewPeer(fmt.Sprintf("%s:%d", p.Host, p.Port),
-			p.TLS.Certificate, p.TLS.ServerHostOverride, client.GetConfig())
+	for _, org := range orgs {
+		peerConfig, err := client.GetConfig().GetPeersConfig(org)
 		if err != nil {
-			return nil, fmt.Errorf("NewPeer return error: %v", err)
+			return nil, fmt.Errorf("Error reading peer config: %v", err)
 		}
-		err = channel.AddPeer(endorser)
-		if err != nil {
-			return nil, fmt.Errorf("Error adding peer: %v", err)
-		}
-		if p.Primary {
-			channel.SetPrimaryPeer(endorser)
+		for _, p := range peerConfig {
+			endorser, err := defaultImpl.NewPeer(fmt.Sprintf("%s:%d", p.Host, p.Port),
+				p.TLS.Certificate, p.TLS.ServerHostOverride, client.GetConfig())
+			if err != nil {
+				return nil, fmt.Errorf("NewPeer return error: %v", err)
+			}
+			err = channel.AddPeer(endorser)
+			if err != nil {
+				return nil, fmt.Errorf("Error adding peer: %v", err)
+			}
+			if p.Primary {
+				channel.SetPrimaryPeer(endorser)
+			}
 		}
 	}
 
@@ -364,13 +324,13 @@ func (setup *BaseSetupImpl) RegisterTxEvent(txID string, eventHub api.EventHub) 
 }
 
 // getEventHub initilizes the event hub
-func getEventHub(client api.FabricClient) (api.EventHub, error) {
+func (setup *BaseSetupImpl) getEventHub(client api.FabricClient) (api.EventHub, error) {
 	eventHub, err := events.NewEventHub(client)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating new event hub: %v", err)
 	}
 	foundEventHub := false
-	peerConfig, err := client.GetConfig().GetPeersConfig()
+	peerConfig, err := client.GetConfig().GetPeersConfig(setup.OrgID)
 	if err != nil {
 		return nil, fmt.Errorf("Error reading peer config: %v", err)
 	}

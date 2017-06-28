@@ -14,6 +14,7 @@ import (
 // MockUser ...
 type MockUser struct {
 	name                  string
+	mspID                 string
 	roles                 []string
 	PrivateKey            bccsp.Key // ****This key is temporary We use it to sign transaction until we have tcerts
 	enrollmentCertificate []byte
@@ -86,6 +87,16 @@ func (u *MockUser) SetPrivateKey(privateKey bccsp.Key) {
  */
 func (u *MockUser) GetPrivateKey() bccsp.Key {
 	return u.PrivateKey
+}
+
+// SetMspID sets the MSP for this user
+func (u *MockUser) SetMspID(mspID string) {
+	u.mspID = mspID
+}
+
+// GetMspID returns the MSP for this user
+func (u *MockUser) GetMspID() string {
+	return u.mspID
 }
 
 // GenerateTcerts ...

@@ -36,6 +36,7 @@ func initializeTests(t *testing.T) BaseSetupImpl {
 	testSetup := BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
 		ChannelID:       "mychannel",
+		OrgID:           "peerorg1",
 		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}

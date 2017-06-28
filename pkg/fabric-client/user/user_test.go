@@ -11,7 +11,7 @@ import (
 )
 
 func TestUserMethods(t *testing.T) {
-	user := NewUser("testUser")
+	user := NewUser("testUser", "testMSP")
 	if user.GetName() != "testUser" {
 		t.Fatalf("NewUser create wrong user")
 	}

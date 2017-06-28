@@ -12,10 +12,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path"
-	"strconv"
 	"strings"
+	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
 
@@ -33,6 +34,8 @@ var format = logging.MustStringFormatter(
 const cmdRoot = "fabric_sdk"
 
 type config struct {
+	networkConfig       *api.NetworkConfig
+	networkConfigCached bool
 }
 
 // InitConfig ...
@@ -81,34 +84,62 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (api.Config,
 
 }
 
-//GetServerURL Read configuration option for the fabric CA server URL
-func (c *config) GetServerURL() string {
-	return strings.Replace(myViper.GetString("client.fabricCA.serverURL"), "$GOPATH", os.Getenv("GOPATH"), -1)
+func (c *config) GetCAConfig(org string) (*api.CAConfig, error) {
+	config, err := c.GetNetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+	caConfig := config.Organizations[org].CA
+
+	return &caConfig, nil
 }
 
-//GetServerCertFiles Read configuration option for the server certificate files
-func (c *config) GetServerCertFiles() []string {
-	certFiles := myViper.GetStringSlice("client.fabricCA.certfiles")
+//GetCAServerCertFiles Read configuration option for the server certificate files
+func (c *config) GetCAServerCertFiles(org string) ([]string, error) {
+	config, err := c.GetNetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	certFiles := strings.Split(config.Organizations[org].CA.TLS.Certfiles, ",")
+
 	certFileModPath := make([]string, len(certFiles))
 	for i, v := range certFiles {
 		certFileModPath[i] = strings.Replace(v, "$GOPATH", os.Getenv("GOPATH"), -1)
 	}
-	return certFileModPath
+	return certFileModPath, nil
 }
 
-//GetFabricCAClientKeyFile Read configuration option for the fabric CA client key file
-func (c *config) GetFabricCAClientKeyFile() string {
-	return strings.Replace(myViper.GetString("client.fabricCA.client.keyfile"), "$GOPATH", os.Getenv("GOPATH"), -1)
+//GetCAClientKeyFile Read configuration option for the fabric CA client key file
+func (c *config) GetCAClientKeyFile(org string) (string, error) {
+	config, err := c.GetNetworkConfig()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Replace(config.Organizations[org].CA.TLS.Client.Keyfile,
+		"$GOPATH", os.Getenv("GOPATH"), -1), nil
 }
 
-//GetFabricCAClientCertFile Read configuration option for the fabric CA client cert file
-func (c *config) GetFabricCAClientCertFile() string {
-	return strings.Replace(myViper.GetString("client.fabricCA.client.certfile"), "$GOPATH", os.Getenv("GOPATH"), -1)
+//GetCAClientCertFile Read configuration option for the fabric CA client cert file
+func (c *config) GetCAClientCertFile(org string) (string, error) {
+	config, err := c.GetNetworkConfig()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Replace(config.Organizations[org].CA.TLS.Client.Certfile,
+		"$GOPATH", os.Getenv("GOPATH"), -1), nil
 }
 
-//GetFabricCATLSEnabledFlag Read configuration option for the fabric CA TLS flag
-func (c *config) GetFabricCATLSEnabledFlag() bool {
-	return myViper.GetBool("client.fabricCA.tlsEnabled")
+// GetMspID returns the MSP ID for the requested organization
+func (c *config) GetMspID(org string) (string, error) {
+	config, err := c.GetNetworkConfig()
+	if err != nil {
+		return "", err
+	}
+
+	return config.Organizations[org].MspID, nil
 }
 
 // GetFabricClientViper returns the internal viper instance used by the
@@ -117,30 +148,95 @@ func (c *config) GetFabricClientViper() *viper.Viper {
 	return myViper
 }
 
-// GetPeersConfig Retrieves the fabric peers from the config file provided
-func (c *config) GetPeersConfig() ([]api.PeerConfig, error) {
-	peersConfig := []api.PeerConfig{}
-	err := myViper.UnmarshalKey("client.peers", &peersConfig)
+func (c *config) cacheNetworkConfiguration() error {
+	err := myViper.UnmarshalKey("client.network", &c.networkConfig)
+	if err == nil {
+		c.networkConfigCached = true
+		return nil
+	}
+
+	return err
+}
+
+// GetRandomOrdererConfig returns a pseudo-random orderer from the network config
+func (c *config) GetRandomOrdererConfig() (*api.OrdererConfig, error) {
+	config, err := c.GetNetworkConfig()
 	if err != nil {
 		return nil, err
 	}
-	for index, p := range peersConfig {
-		if p.Host == "" {
-			return nil, fmt.Errorf("host key not exist or empty for peer %d", index)
-		}
-		if p.Port == 0 {
-			return nil, fmt.Errorf("port key not exist or empty for peer %d", index)
-		}
-		if c.IsTLSEnabled() && p.TLS.Certificate == "" {
-			return nil, fmt.Errorf("tls.certificate not exist or empty for peer %d", index)
-		}
-		peersConfig[index].TLS.Certificate = strings.Replace(p.TLS.Certificate, "$GOPATH",
+
+	rs := rand.NewSource(time.Now().Unix())
+	r := rand.New(rs)
+	randomNumber := r.Intn(len(config.Orderers))
+
+	var i int
+	for _, value := range config.Orderers {
+		value.TLS.Certificate = strings.Replace(value.TLS.Certificate, "$GOPATH",
 			os.Getenv("GOPATH"), -1)
+		if i == randomNumber {
+			return &value, nil
+		}
+		i++
 	}
-	return peersConfig, nil
+
+	return nil, nil
 }
 
-// IsTLSEnabled ...
+// GetOrdererConfig returns the requested orderer
+func (c *config) GetOrdererConfig(name string) (*api.OrdererConfig, error) {
+	config, err := c.GetNetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+	orderer := config.Orderers[name]
+
+	orderer.TLS.Certificate = strings.Replace(orderer.TLS.Certificate, "$GOPATH",
+		os.Getenv("GOPATH"), -1)
+
+	return &orderer, nil
+}
+
+// GetPeersConfig Retrieves the fabric peers for the specified org from the
+// config file provided
+func (c *config) GetPeersConfig(org string) ([]api.PeerConfig, error) {
+	config, err := c.GetNetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	peersConfig := config.Organizations[org].Peers
+	peers := []api.PeerConfig{}
+
+	for key, p := range peersConfig {
+		if p.Host == "" {
+			return nil, fmt.Errorf("host key not exist or empty for peer %s", key)
+		}
+		if p.Port == 0 {
+			return nil, fmt.Errorf("port key not exist or empty for peer %s", key)
+		}
+		if c.IsTLSEnabled() && p.TLS.Certificate == "" {
+			return nil, fmt.Errorf("tls.certificate not exist or empty for peer %s", key)
+		}
+		p.TLS.Certificate = strings.Replace(p.TLS.Certificate, "$GOPATH",
+			os.Getenv("GOPATH"), -1)
+		peers = append(peers, p)
+	}
+	return peers, nil
+}
+
+// GetNetworkConfig returns the network configuration defined in the config file
+func (c *config) GetNetworkConfig() (*api.NetworkConfig, error) {
+	if c.networkConfigCached {
+		return c.networkConfig, nil
+	}
+
+	if err := c.cacheNetworkConfiguration(); err != nil {
+		return nil, fmt.Errorf("Error reading network configuration: %s", err)
+	}
+	return c.networkConfig, nil
+}
+
+// IsTLSEnabled is TLS enabled?
 func (c *config) IsTLSEnabled() bool {
 	return myViper.GetBool("client.tls.enabled")
 }
@@ -203,54 +299,25 @@ func (c *config) GetSecurityLevel() int {
 
 }
 
-// GetOrdererHost ...
-func (c *config) GetOrdererHost() string {
-	return myViper.GetString("client.orderer.host")
-}
-
-// GetOrdererPort ...
-func (c *config) GetOrdererPort() string {
-	return strconv.Itoa(myViper.GetInt("client.orderer.port"))
-}
-
-// GetOrdererTLSServerHostOverride ...
-func (c *config) GetOrdererTLSServerHostOverride() string {
-	return myViper.GetString("client.orderer.tls.serverhostoverride")
-}
-
-// GetOrdererTLSCertificate ...
-func (c *config) GetOrdererTLSCertificate() string {
-	return strings.Replace(myViper.GetString("client.orderer.tls.certificate"), "$GOPATH", os.Getenv("GOPATH"), -1)
-}
-
-// GetFabricCAID ...
-func (c *config) GetFabricCAID() string {
-	return myViper.GetString("client.fabricCA.id")
-}
-
-//GetFabricCAName Read the fabric CA name
-func (c *config) GetFabricCAName() string {
-	return myViper.GetString("client.fabricCA.name")
-}
-
-// GetKeyStorePath ...
+// GetKeyStorePath returns the keystore path used by BCCSP
 func (c *config) GetKeyStorePath() string {
-	return path.Join(c.GetFabricCAHomeDir(), c.GetFabricCAMspDir(), "keystore")
+	keystorePath := strings.Replace(myViper.GetString("client.keystore.path"),
+		"$GOPATH", os.Getenv("GOPATH"), -1)
+	return path.Join(keystorePath, "keystore")
 }
 
-// GetFabricCAHomeDir ...
-func (c *config) GetFabricCAHomeDir() string {
-	return myViper.GetString("client.fabricCA.homeDir")
-}
-
-// GetFabricCAMspDir ...
-func (c *config) GetFabricCAMspDir() string {
-	return myViper.GetString("client.fabricCA.mspDir")
+// GetCAKeystorePath returns the same path as GetKeyStorePath() without the
+// 'keystore' directory added. This is done because the fabric-ca-client
+// adds this to the path
+func (c *config) GetCAKeyStorePath() string {
+	return strings.Replace(myViper.GetString("client.keystore.path"),
+		"$GOPATH", os.Getenv("GOPATH"), -1)
 }
 
 // GetCryptoConfigPath ...
 func (c *config) GetCryptoConfigPath() string {
-	return strings.Replace(myViper.GetString("client.cryptoconfig.path"), "$GOPATH", os.Getenv("GOPATH"), -1)
+	return strings.Replace(myViper.GetString("client.cryptoconfig.path"),
+		"$GOPATH", os.Getenv("GOPATH"), -1)
 }
 
 // loadCAKey

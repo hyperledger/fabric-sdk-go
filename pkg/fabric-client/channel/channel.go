@@ -1238,7 +1238,7 @@ func (c *channel) SendInstantiateProposal(chaincodeName string, channelID string
 	if err != nil {
 		return nil, "", fmt.Errorf("Error getting creator: %v", err)
 	}
-	chaincodePolicy, err := buildChaincodePolicy(c.GetClientContext().GetConfig().GetFabricCAID())
+	chaincodePolicy, err := buildChaincodePolicy(c.clientContext.GetUserContext().GetMspID())
 	if err != nil {
 		return nil, "", err
 	}

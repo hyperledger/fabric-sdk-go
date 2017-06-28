@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
 	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
@@ -20,6 +21,7 @@ func TestChannelQueries(t *testing.T) {
 	testSetup := &BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
 		ChannelID:       "mychannel",
+		OrgID:           org1Name,
 		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}
@@ -81,7 +83,7 @@ func changeBlockState(testSetup *BaseSetupImpl) (string, error) {
 	}
 
 	// Start transaction that will change block state
-	txID, err := testSetup.MoveFundsAndGetTxID()
+	txID, err := moveFundsAndGetTxID(testSetup)
 	if err != nil {
 		return "", fmt.Errorf("Move funds return error: %v", err)
 	}
@@ -238,7 +240,10 @@ func testQueryByChaincode(t *testing.T, channel api.Channel, config api.Config, 
 	}
 
 	// Configured cert for cert pool
-	cert := config.GetFabricCAClientCertFile()
+	cert, err := config.GetCAClientCertFile(org1Name)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Create invalid target
 	firstInvalidTarget, err := peer.NewPeerTLSFromCert("test:1111", cert, "", config)
@@ -280,4 +285,39 @@ func testQueryByChaincode(t *testing.T, channel api.Channel, config api.Config, 
 	testSetup.Client.SetUserContext(testSetup.NormalUser)
 	channel.RemovePeer(firstInvalidTarget)
 	channel.RemovePeer(secondInvalidTarget)
+}
+
+// MoveFundsAndGetTxID ...
+func moveFundsAndGetTxID(setup *BaseSetupImpl) (string, error) {
+
+	var args []string
+	args = append(args, "invoke")
+	args = append(args, "move")
+	args = append(args, "a")
+	args = append(args, "b")
+	args = append(args, "1")
+
+	transientDataMap := make(map[string][]byte)
+	transientDataMap["result"] = []byte("Transient data in move funds...")
+
+	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, setup.ChannelID, args, []api.Peer{setup.Channel.GetPrimaryPeer()}, transientDataMap)
+	if err != nil {
+		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
+	}
+	// Register for commit event
+	done, fail := setup.RegisterTxEvent(txID, setup.EventHub)
+
+	txResponse, err := setup.CreateAndSendTransaction(setup.Channel, transactionProposalResponse)
+	if err != nil {
+		return "", fmt.Errorf("CreateAndSendTransaction return error: %v", err)
+	}
+	fmt.Println(txResponse)
+	select {
+	case <-done:
+	case <-fail:
+		return "", fmt.Errorf("invoke Error received from eventhub for txid(%s) error(%v)", txID, fail)
+	case <-time.After(time.Second * 30):
+		return "", fmt.Errorf("invoke Didn't receive block event for txid(%s)", txID)
+	}
+	return txID, nil
 }

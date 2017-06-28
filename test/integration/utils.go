@@ -17,19 +17,27 @@ import (
 	defaultImpl "github.com/hyperledger/fabric-sdk-go/fabric-txn/defaultImpl"
 )
 
-// GetOrdererAdmin ...
-func GetOrdererAdmin(c api.FabricClient) (api.User, error) {
+// GetOrdererAdmin returns a pre-enrolled orderer admin user
+func GetOrdererAdmin(c api.FabricClient, orgName string) (api.User, error) {
 	keyDir := "ordererOrganizations/example.com/users/Admin@example.com/keystore"
 	certDir := "ordererOrganizations/example.com/users/Admin@example.com/signcerts"
-	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, "ordererAdmin")
+	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, "ordererAdmin", orgName)
 }
 
-// GetAdmin ...
-func GetAdmin(c api.FabricClient, userOrg string) (api.User, error) {
-	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/keystore", userOrg, userOrg)
-	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/signcerts", userOrg, userOrg)
-	username := fmt.Sprintf("peer%sAdmin", userOrg)
-	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, username)
+// GetAdmin returns a pre-enrolled org admin user
+func GetAdmin(c api.FabricClient, orgPath string, orgName string) (api.User, error) {
+	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/keystore", orgPath, orgPath)
+	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/signcerts", orgPath, orgPath)
+	username := fmt.Sprintf("peer%sAdmin", orgPath)
+	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, username, orgName)
+}
+
+// GetUser returns a pre-enrolled org user
+func GetUser(c api.FabricClient, orgPath string, orgName string) (api.User, error) {
+	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/keystore", orgPath, orgPath)
+	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/signcerts", orgPath, orgPath)
+	username := fmt.Sprintf("peer%sUser1", orgPath)
+	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, username, orgName)
 }
 
 // GenerateRandomID generates random ID
@@ -49,7 +57,7 @@ func randomString(strlen int) string {
 }
 
 // GetDefaultImplPreEnrolledUser ...
-func getDefaultImplPreEnrolledUser(client api.FabricClient, keyDir string, certDir string, username string) (api.User, error) {
+func getDefaultImplPreEnrolledUser(client api.FabricClient, keyDir string, certDir string, username string, orgName string) (api.User, error) {
 	privateKeyDir := filepath.Join(client.GetConfig().GetCryptoConfigPath(), keyDir)
 	privateKeyPath, err := getFirstPathFromDir(privateKeyDir)
 	if err != nil {
@@ -62,7 +70,7 @@ func getDefaultImplPreEnrolledUser(client api.FabricClient, keyDir string, certD
 		return nil, fmt.Errorf("Error finding the enrollment cert path: %v", err)
 	}
 
-	return defaultImpl.NewPreEnrolledUser(client, privateKeyPath, enrollmentCertPath, username)
+	return defaultImpl.NewPreEnrolledUser(client, privateKeyPath, enrollmentCertPath, username, orgName)
 }
 
 // Gets the first path from the dir directory
@@ -92,12 +100,4 @@ func getFirstPathFromDir(dir string) (string, error) {
 	}
 
 	return "", fmt.Errorf("No paths found in directory: %s", dir)
-}
-
-// GetUser ...
-func GetUser(c api.FabricClient, userOrg string) (api.User, error) {
-	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/keystore", userOrg, userOrg)
-	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/signcerts", userOrg, userOrg)
-	username := fmt.Sprintf("peer%sUser1", userOrg)
-	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, username)
 }

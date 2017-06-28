@@ -43,7 +43,8 @@ func NewClient(user api.User, skipUserPersistence bool, stateStorePath string, c
 
 // NewClientWithUser returns a new default implementation of the Client interface.
 // It creates a default implementation of User, enrolls the user, and saves it to the state store.
-func NewClientWithUser(name string, pwd string, stateStorePath string, config api.Config, msp api.Services) (api.FabricClient, error) {
+func NewClientWithUser(name string, pwd string, orgName string,
+	stateStorePath string, config api.Config, msp api.FabricCAClient) (api.FabricClient, error) {
 	client := clientImpl.NewClient(config)
 
 	cryptoSuite := bccspFactory.GetDefault()
@@ -55,7 +56,7 @@ func NewClientWithUser(name string, pwd string, stateStorePath string, config ap
 	}
 	client.SetStateStore(stateStore)
 
-	user, err := NewUser(client, msp, name, pwd)
+	user, err := NewUser(client, msp, name, pwd, orgName)
 	if err != nil {
 		return nil, fmt.Errorf("NewUser returned error: %v", err)
 	}
@@ -66,7 +67,10 @@ func NewClientWithUser(name string, pwd string, stateStorePath string, config ap
 
 // NewClientWithPreEnrolledUser returns a new default Client implementation
 // by using a the default implementation of a pre-enrolled user.
-func NewClientWithPreEnrolledUser(config api.Config, stateStorePath string, skipUserPersistence bool, username string, keyDir string, certDir string) (api.FabricClient, error) {
+func NewClientWithPreEnrolledUser(config api.Config, stateStorePath string,
+	skipUserPersistence bool, username string, keyDir string, certDir string,
+	orgName string) (api.FabricClient, error) {
+
 	client := clientImpl.NewClient(config)
 
 	cryptoSuite := bccspFactory.GetDefault()
@@ -79,7 +83,7 @@ func NewClientWithPreEnrolledUser(config api.Config, stateStorePath string, skip
 		}
 		client.SetStateStore(stateStore)
 	}
-	user, err := NewPreEnrolledUser(client, keyDir, certDir, username)
+	user, err := NewPreEnrolledUser(client, keyDir, certDir, username, orgName)
 	if err != nil {
 		return nil, fmt.Errorf("NewPreEnrolledUser returned error: %v", err)
 	}
@@ -90,18 +94,24 @@ func NewClientWithPreEnrolledUser(config api.Config, stateStorePath string, skip
 }
 
 // NewUser returns a new default implementation of a User.
-func NewUser(client api.FabricClient, msp api.Services, name string, pwd string) (api.User, error) {
+func NewUser(client api.FabricClient, msp api.FabricCAClient, name string, pwd string,
+	orgName string) (api.User, error) {
 	user, err := client.LoadUserFromStateStore(name)
 	if err != nil {
 		return nil, fmt.Errorf("client.LoadUserFromStateStore returned error: %v", err)
 	}
 
 	if user == nil {
+		mspID, err := client.GetConfig().GetMspID(orgName)
+		if err != nil {
+			return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
+		}
+
 		key, cert, err := msp.Enroll(name, pwd)
 		if err != nil {
 			return nil, fmt.Errorf("Enroll returned error: %v", err)
 		}
-		user = userImpl.NewUser(name)
+		user = userImpl.NewUser(name, mspID)
 		user.SetPrivateKey(key)
 		user.SetEnrollmentCertificate(cert)
 		err = client.SaveUserToStateStore(user, false)
@@ -115,8 +125,12 @@ func NewUser(client api.FabricClient, msp api.Services, name string, pwd string)
 
 // NewPreEnrolledUser returns a new default implementation of User.
 // The user should already be pre-enrolled.
-func NewPreEnrolledUser(client api.FabricClient, privateKeyPath string, enrollmentCertPath string, username string) (api.User, error) {
-
+func NewPreEnrolledUser(client api.FabricClient, privateKeyPath string,
+	enrollmentCertPath string, username string, orgName string) (api.User, error) {
+	mspID, err := client.GetConfig().GetMspID(orgName)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
+	}
 	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEM(privateKeyPath, client.GetCryptoSuite(), true)
 	if err != nil {
 		return nil, fmt.Errorf("Error importing private key: %v", err)
@@ -126,7 +140,7 @@ func NewPreEnrolledUser(client api.FabricClient, privateKeyPath string, enrollme
 		return nil, fmt.Errorf("Error reading from the enrollment cert path: %v", err)
 	}
 
-	user := userImpl.NewUser(username)
+	user := userImpl.NewUser(username, mspID)
 	user.SetEnrollmentCertificate(enrollmentCert)
 	user.SetPrivateKey(privateKey)
 
@@ -176,9 +190,9 @@ func NewConfig(configFile string) (api.Config, error) {
 	return configImpl.InitConfig(configFile)
 }
 
-// NewMspClient returns a new default implmentation of the MSP client
-func NewMspClient(config api.Config) (api.Services, error) {
-	mspClient, err := fabricCAClient.NewFabricCAClient(config)
+// NewCAClient returns a new default implmentation of the MSP client
+func NewCAClient(config api.Config, orgName string) (api.FabricCAClient, error) {
+	mspClient, err := fabricCAClient.NewFabricCAClient(config, orgName)
 	if err != nil {
 		return nil, fmt.Errorf("NewFabricCAClient returned error: %v", err)
 	}

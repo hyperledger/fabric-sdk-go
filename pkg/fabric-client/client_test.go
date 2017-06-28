@@ -20,6 +20,8 @@ import (
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 )
 
+var testMsp = "testMsp"
+
 func TestClientMethods(t *testing.T) {
 	client := NewClient(mocks.NewMockConfig())
 	if client.GetCryptoSuite() != nil {
@@ -64,7 +66,7 @@ func TestClientMethods(t *testing.T) {
 	}
 
 	//Client tests: successfully SaveUserToStateStore with skipPersistence true
-	user = fcUser.NewUser("someUser")
+	user = fcUser.NewUser("someUser", testMsp)
 	err = client.SaveUserToStateStore(user, true)
 	if err != nil {
 		t.Fatalf("client.SaveUserToStateStore return error[%s]", err)
@@ -78,6 +80,10 @@ func TestClientMethods(t *testing.T) {
 	}
 	if user.GetName() != "someUser" {
 		t.Fatalf("client.LoadUserFromStateStore didn't return the right user")
+	}
+
+	if user.GetMspID() != testMsp {
+		t.Fatalf("client.LoadUserFromStateStore didn't return the right msp")
 	}
 
 	//Client tests: Should throw "stateStore is nil"

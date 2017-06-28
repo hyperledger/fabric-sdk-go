@@ -4,28 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 client:
- peers:
-  # peer0
-  - host: "localhost"
-    port: 7051
-    eventHost: "localhost"
-    eventPort: 7053
-    primary: true
-    tls:
-      # Certificate location absolute path
-      certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/cacerts/org1.example.com-cert.pem"
-      serverHostOverride: "peer0.org1.example.com"
-  # peer 1
-  # - host: "localhost"
-  #   port: 8051
-  #   eventHost: "localhost"
-  #   eventPort: 8053
-  #   primary: false
-  #   tls:
-  #     # Certificate location absolute path
-  #     certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/peers/peer1/ca-cert.pem"
-  #     serverHostOverride: "peer1.org1.example.com"
-
  tls:
   enabled: true
 
@@ -38,29 +16,83 @@ client:
   batch:
     size: 200
 
- orderer:
-  host: "localhost"
-  port: 7050
-  tls:
-    # Certificate location absolute path
-    certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/cacerts/example.com-cert.pem"
-    serverHostOverride: "orderer.example.com"
-
  logging:
   level: info
 
- fabricCA:
-  tlsEnabled: true
-  id: "Org1MSP"
-  name: "ca-org1"
-  homeDir: "/tmp/"
-  mspDir: "msp"
-  serverURL: "https://localhost:7054"
-  certfiles :
-    - "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/ca/ca_root.pem"
-  client:
-   keyfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1-key.pem"
-   certfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1.pem"
+ keystore:
+  path: /tmp/msp
 
  cryptoconfig:
   path: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config"
+
+# network provides a static definition of a Hyperledger Fabric network
+ network:
+  # list of ordering service nodes
+  orderers:
+   # orderer name
+   orderer0:
+    host: "localhost"
+    port: 7050
+    tls:
+     # Certificate location absolute path
+     certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/cacerts/example.com-cert.pem"
+     # For testing only: overrides the virtual host name of the authority
+     serverHostOverride: "orderer.example.com"
+  # ap of member organizations forming the network
+  organizations:
+    # Org1 name
+    peerorg1:
+      # Membership Service Provider ID for this organization
+      mspID: "Org1MSP"
+      # CA config defines the fabric-ca instance that issues identities for this org
+      ca:
+       # TLS secured connections with the CA
+       tlsEnabled: true
+       # CA name
+       name: "ca-org1"
+       # CA URL. Note: https prefix required for TLS
+       serverURL: "https://localhost:7054"
+       # Configuration for mutual TLS with the CA
+       tls:
+        # Comma-Separated list of paths
+        certfiles : "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/ca/ca_root.pem"
+        client:
+         keyfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1-key.pem"
+         certfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1.pem"
+      # Peers that are part of this organization
+      peers:
+       # Peer name
+       peer0:
+        host: "localhost"
+        port: 7051
+        eventHost: "localhost"
+        eventPort: 7053
+        primary: true
+        tls:
+         # Certificate location absolute path
+         certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/cacerts/org1.example.com-cert.pem"
+         serverHostOverride: "peer0.org1.example.com"
+    # Org2
+    peerorg2:
+      mspID: "Org2MSP"
+      ca:
+       tlsEnabled: true
+       name: "ca-org2"
+       serverURL: "https://localhost:8054"
+       tls:
+        # Comma-Separated list of paths
+        certfiles : "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/ca/ca_root.pem"
+        client:
+         keyfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1-key.pem"
+         certfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1.pem"
+      peers:
+       peer0:
+        host: "localhost"
+        port: 8051
+        eventHost: "localhost"
+        eventPort: 8053
+        primary: true
+        tls:
+         # Certificate location absolute path
+         certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/cacerts/org2.example.com-cert.pem"
+         serverHostOverride: "peer0.org2.example.com"

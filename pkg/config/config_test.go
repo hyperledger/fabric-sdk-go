@@ -16,16 +16,20 @@ import (
 )
 
 var configImpl api.Config
+var org1 = "peerorg1"
 
 func TestCAConfig(t *testing.T) {
-	caname := configImpl.GetFabricCAName()
-	if caname != "ca-org1" {
-		t.Fatalf("caname doesn't match")
+	config, err := configImpl.GetCAConfig(org1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Name != "ca-org1" {
+		t.Fatalf("caname doesn't match. got: %s", config.Name)
 	}
 }
 
 func TestGetPeersConfig(t *testing.T) {
-	pc, err := configImpl.GetPeersConfig()
+	pc, err := configImpl.GetPeersConfig(org1)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -123,6 +127,22 @@ func TestEnvironmentVariablesSpecificCmdRoot(t *testing.T) {
 	testValue = myViper.GetString("env.test")
 	if testValue != "456" {
 		t.Fatalf("Expected environment variable value but got: %s", testValue)
+	}
+}
+
+func TestNetworkConfig(t *testing.T) {
+	conf, err := configImpl.GetNetworkConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(conf.Orderers) == 0 {
+		t.Fatal("Expected orderers to be set")
+	}
+	if len(conf.Organizations) == 0 {
+		t.Fatal("Expected atleast one organisation to be set")
+	}
+	if len(conf.Organizations[org1].Peers) == 0 {
+		t.Fatalf("Expected org %s to be present in network configuration and peers to be set", org1)
 	}
 }
 

@@ -34,6 +34,70 @@ func (_m *MockConfig) EXPECT() *MockConfigMockRecorder {
 	return _m.recorder
 }
 
+// GetCAClientCertFile mocks base method
+func (_m *MockConfig) GetCAClientCertFile(_param0 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "GetCAClientCertFile", _param0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCAClientCertFile indicates an expected call of GetCAClientCertFile
+func (_mr *MockConfigMockRecorder) GetCAClientCertFile(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetCAClientCertFile", arg0)
+}
+
+// GetCAClientKeyFile mocks base method
+func (_m *MockConfig) GetCAClientKeyFile(_param0 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "GetCAClientKeyFile", _param0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCAClientKeyFile indicates an expected call of GetCAClientKeyFile
+func (_mr *MockConfigMockRecorder) GetCAClientKeyFile(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetCAClientKeyFile", arg0)
+}
+
+// GetCAConfig mocks base method
+func (_m *MockConfig) GetCAConfig(_param0 string) (*api.CAConfig, error) {
+	ret := _m.ctrl.Call(_m, "GetCAConfig", _param0)
+	ret0, _ := ret[0].(*api.CAConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCAConfig indicates an expected call of GetCAConfig
+func (_mr *MockConfigMockRecorder) GetCAConfig(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetCAConfig", arg0)
+}
+
+// GetCAKeyStorePath mocks base method
+func (_m *MockConfig) GetCAKeyStorePath() string {
+	ret := _m.ctrl.Call(_m, "GetCAKeyStorePath")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetCAKeyStorePath indicates an expected call of GetCAKeyStorePath
+func (_mr *MockConfigMockRecorder) GetCAKeyStorePath() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetCAKeyStorePath")
+}
+
+// GetCAServerCertFiles mocks base method
+func (_m *MockConfig) GetCAServerCertFiles(_param0 string) ([]string, error) {
+	ret := _m.ctrl.Call(_m, "GetCAServerCertFiles", _param0)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCAServerCertFiles indicates an expected call of GetCAServerCertFiles
+func (_mr *MockConfigMockRecorder) GetCAServerCertFiles(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetCAServerCertFiles", arg0)
+}
+
 // GetCSPConfig mocks base method
 func (_m *MockConfig) GetCSPConfig() *factory.FactoryOpts {
 	ret := _m.ctrl.Call(_m, "GetCSPConfig")
@@ -56,90 +120,6 @@ func (_m *MockConfig) GetCryptoConfigPath() string {
 // GetCryptoConfigPath indicates an expected call of GetCryptoConfigPath
 func (_mr *MockConfigMockRecorder) GetCryptoConfigPath() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetCryptoConfigPath")
-}
-
-// GetFabricCAClientCertFile mocks base method
-func (_m *MockConfig) GetFabricCAClientCertFile() string {
-	ret := _m.ctrl.Call(_m, "GetFabricCAClientCertFile")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetFabricCAClientCertFile indicates an expected call of GetFabricCAClientCertFile
-func (_mr *MockConfigMockRecorder) GetFabricCAClientCertFile() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetFabricCAClientCertFile")
-}
-
-// GetFabricCAClientKeyFile mocks base method
-func (_m *MockConfig) GetFabricCAClientKeyFile() string {
-	ret := _m.ctrl.Call(_m, "GetFabricCAClientKeyFile")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetFabricCAClientKeyFile indicates an expected call of GetFabricCAClientKeyFile
-func (_mr *MockConfigMockRecorder) GetFabricCAClientKeyFile() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetFabricCAClientKeyFile")
-}
-
-// GetFabricCAHomeDir mocks base method
-func (_m *MockConfig) GetFabricCAHomeDir() string {
-	ret := _m.ctrl.Call(_m, "GetFabricCAHomeDir")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetFabricCAHomeDir indicates an expected call of GetFabricCAHomeDir
-func (_mr *MockConfigMockRecorder) GetFabricCAHomeDir() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetFabricCAHomeDir")
-}
-
-// GetFabricCAID mocks base method
-func (_m *MockConfig) GetFabricCAID() string {
-	ret := _m.ctrl.Call(_m, "GetFabricCAID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetFabricCAID indicates an expected call of GetFabricCAID
-func (_mr *MockConfigMockRecorder) GetFabricCAID() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetFabricCAID")
-}
-
-// GetFabricCAMspDir mocks base method
-func (_m *MockConfig) GetFabricCAMspDir() string {
-	ret := _m.ctrl.Call(_m, "GetFabricCAMspDir")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetFabricCAMspDir indicates an expected call of GetFabricCAMspDir
-func (_mr *MockConfigMockRecorder) GetFabricCAMspDir() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetFabricCAMspDir")
-}
-
-// GetFabricCAName mocks base method
-func (_m *MockConfig) GetFabricCAName() string {
-	ret := _m.ctrl.Call(_m, "GetFabricCAName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetFabricCAName indicates an expected call of GetFabricCAName
-func (_mr *MockConfigMockRecorder) GetFabricCAName() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetFabricCAName")
-}
-
-// GetFabricCATLSEnabledFlag mocks base method
-func (_m *MockConfig) GetFabricCATLSEnabledFlag() bool {
-	ret := _m.ctrl.Call(_m, "GetFabricCATLSEnabledFlag")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// GetFabricCATLSEnabledFlag indicates an expected call of GetFabricCATLSEnabledFlag
-func (_mr *MockConfigMockRecorder) GetFabricCATLSEnabledFlag() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetFabricCATLSEnabledFlag")
 }
 
 // GetFabricClientViper mocks base method
@@ -166,65 +146,69 @@ func (_mr *MockConfigMockRecorder) GetKeyStorePath() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetKeyStorePath")
 }
 
-// GetOrdererHost mocks base method
-func (_m *MockConfig) GetOrdererHost() string {
-	ret := _m.ctrl.Call(_m, "GetOrdererHost")
+// GetMspID mocks base method
+func (_m *MockConfig) GetMspID(_param0 string) (string, error) {
+	ret := _m.ctrl.Call(_m, "GetMspID", _param0)
 	ret0, _ := ret[0].(string)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// GetOrdererHost indicates an expected call of GetOrdererHost
-func (_mr *MockConfigMockRecorder) GetOrdererHost() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetOrdererHost")
+// GetMspID indicates an expected call of GetMspID
+func (_mr *MockConfigMockRecorder) GetMspID(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetMspID", arg0)
 }
 
-// GetOrdererPort mocks base method
-func (_m *MockConfig) GetOrdererPort() string {
-	ret := _m.ctrl.Call(_m, "GetOrdererPort")
-	ret0, _ := ret[0].(string)
-	return ret0
+// GetNetworkConfig mocks base method
+func (_m *MockConfig) GetNetworkConfig() (*api.NetworkConfig, error) {
+	ret := _m.ctrl.Call(_m, "GetNetworkConfig")
+	ret0, _ := ret[0].(*api.NetworkConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// GetOrdererPort indicates an expected call of GetOrdererPort
-func (_mr *MockConfigMockRecorder) GetOrdererPort() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetOrdererPort")
+// GetNetworkConfig indicates an expected call of GetNetworkConfig
+func (_mr *MockConfigMockRecorder) GetNetworkConfig() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetNetworkConfig")
 }
 
-// GetOrdererTLSCertificate mocks base method
-func (_m *MockConfig) GetOrdererTLSCertificate() string {
-	ret := _m.ctrl.Call(_m, "GetOrdererTLSCertificate")
-	ret0, _ := ret[0].(string)
-	return ret0
+// GetOrdererConfig mocks base method
+func (_m *MockConfig) GetOrdererConfig(_param0 string) (*api.OrdererConfig, error) {
+	ret := _m.ctrl.Call(_m, "GetOrdererConfig", _param0)
+	ret0, _ := ret[0].(*api.OrdererConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// GetOrdererTLSCertificate indicates an expected call of GetOrdererTLSCertificate
-func (_mr *MockConfigMockRecorder) GetOrdererTLSCertificate() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetOrdererTLSCertificate")
-}
-
-// GetOrdererTLSServerHostOverride mocks base method
-func (_m *MockConfig) GetOrdererTLSServerHostOverride() string {
-	ret := _m.ctrl.Call(_m, "GetOrdererTLSServerHostOverride")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetOrdererTLSServerHostOverride indicates an expected call of GetOrdererTLSServerHostOverride
-func (_mr *MockConfigMockRecorder) GetOrdererTLSServerHostOverride() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetOrdererTLSServerHostOverride")
+// GetOrdererConfig indicates an expected call of GetOrdererConfig
+func (_mr *MockConfigMockRecorder) GetOrdererConfig(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetOrdererConfig", arg0)
 }
 
 // GetPeersConfig mocks base method
-func (_m *MockConfig) GetPeersConfig() ([]api.PeerConfig, error) {
-	ret := _m.ctrl.Call(_m, "GetPeersConfig")
+func (_m *MockConfig) GetPeersConfig(_param0 string) ([]api.PeerConfig, error) {
+	ret := _m.ctrl.Call(_m, "GetPeersConfig", _param0)
 	ret0, _ := ret[0].([]api.PeerConfig)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPeersConfig indicates an expected call of GetPeersConfig
-func (_mr *MockConfigMockRecorder) GetPeersConfig() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetPeersConfig")
+func (_mr *MockConfigMockRecorder) GetPeersConfig(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetPeersConfig", arg0)
+}
+
+// GetRandomOrdererConfig mocks base method
+func (_m *MockConfig) GetRandomOrdererConfig() (*api.OrdererConfig, error) {
+	ret := _m.ctrl.Call(_m, "GetRandomOrdererConfig")
+	ret0, _ := ret[0].(*api.OrdererConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRandomOrdererConfig indicates an expected call of GetRandomOrdererConfig
+func (_mr *MockConfigMockRecorder) GetRandomOrdererConfig() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetRandomOrdererConfig")
 }
 
 // GetSecurityAlgorithm mocks base method
@@ -249,30 +233,6 @@ func (_m *MockConfig) GetSecurityLevel() int {
 // GetSecurityLevel indicates an expected call of GetSecurityLevel
 func (_mr *MockConfigMockRecorder) GetSecurityLevel() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetSecurityLevel")
-}
-
-// GetServerCertFiles mocks base method
-func (_m *MockConfig) GetServerCertFiles() []string {
-	ret := _m.ctrl.Call(_m, "GetServerCertFiles")
-	ret0, _ := ret[0].([]string)
-	return ret0
-}
-
-// GetServerCertFiles indicates an expected call of GetServerCertFiles
-func (_mr *MockConfigMockRecorder) GetServerCertFiles() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetServerCertFiles")
-}
-
-// GetServerURL mocks base method
-func (_m *MockConfig) GetServerURL() string {
-	ret := _m.ctrl.Call(_m, "GetServerURL")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetServerURL indicates an expected call of GetServerURL
-func (_mr *MockConfigMockRecorder) GetServerURL() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetServerURL")
 }
 
 // GetTLSCACertPool mocks base method
