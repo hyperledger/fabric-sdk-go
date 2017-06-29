@@ -44,7 +44,7 @@ func TestPeerViaChannel(t *testing.T) {
 		t.Fatalf("Error adding peer: %v", err)
 	}
 
-	peers := channel.GetPeers()
+	peers := channel.Peers()
 	if peers == nil || len(peers) != 1 || peers[0].URL() != peer1URL {
 		t.Fatalf("Failed to retieve the new peers URL from the channel")
 	}
@@ -57,7 +57,7 @@ func TestPeerViaChannel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error adding peer: %v", err)
 	}
-	peers = channel.GetPeers()
+	peers = channel.Peers()
 
 	if peers == nil || len(peers) != 1 || peers[0].URL() != peer2URL {
 		t.Fatalf("Failed to retieve the new peers URL from the channel")

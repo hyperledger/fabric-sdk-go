@@ -84,8 +84,8 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (api.Config,
 
 }
 
-func (c *config) GetCAConfig(org string) (*api.CAConfig, error) {
-	config, err := c.GetNetworkConfig()
+func (c *config) CAConfig(org string) (*api.CAConfig, error) {
+	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +95,8 @@ func (c *config) GetCAConfig(org string) (*api.CAConfig, error) {
 }
 
 //GetCAServerCertFiles Read configuration option for the server certificate files
-func (c *config) GetCAServerCertFiles(org string) ([]string, error) {
-	config, err := c.GetNetworkConfig()
+func (c *config) CAServerCertFiles(org string) ([]string, error) {
+	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +111,8 @@ func (c *config) GetCAServerCertFiles(org string) ([]string, error) {
 }
 
 //GetCAClientKeyFile Read configuration option for the fabric CA client key file
-func (c *config) GetCAClientKeyFile(org string) (string, error) {
-	config, err := c.GetNetworkConfig()
+func (c *config) CAClientKeyFile(org string) (string, error) {
+	config, err := c.NetworkConfig()
 	if err != nil {
 		return "", err
 	}
@@ -122,8 +122,8 @@ func (c *config) GetCAClientKeyFile(org string) (string, error) {
 }
 
 //GetCAClientCertFile Read configuration option for the fabric CA client cert file
-func (c *config) GetCAClientCertFile(org string) (string, error) {
-	config, err := c.GetNetworkConfig()
+func (c *config) CAClientCertFile(org string) (string, error) {
+	config, err := c.NetworkConfig()
 	if err != nil {
 		return "", err
 	}
@@ -132,9 +132,9 @@ func (c *config) GetCAClientCertFile(org string) (string, error) {
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
 }
 
-// GetMspID returns the MSP ID for the requested organization
-func (c *config) GetMspID(org string) (string, error) {
-	config, err := c.GetNetworkConfig()
+// MspID returns the MSP ID for the requested organization
+func (c *config) MspID(org string) (string, error) {
+	config, err := c.NetworkConfig()
 	if err != nil {
 		return "", err
 	}
@@ -142,9 +142,9 @@ func (c *config) GetMspID(org string) (string, error) {
 	return config.Organizations[org].MspID, nil
 }
 
-// GetFabricClientViper returns the internal viper instance used by the
+// FabricClientViper returns the internal viper instance used by the
 // SDK to read configuration options
-func (c *config) GetFabricClientViper() *viper.Viper {
+func (c *config) FabricClientViper() *viper.Viper {
 	return myViper
 }
 
@@ -158,9 +158,9 @@ func (c *config) cacheNetworkConfiguration() error {
 	return err
 }
 
-// GetRandomOrdererConfig returns a pseudo-random orderer from the network config
-func (c *config) GetRandomOrdererConfig() (*api.OrdererConfig, error) {
-	config, err := c.GetNetworkConfig()
+// RandomOrdererConfig returns a pseudo-random orderer from the network config
+func (c *config) RandomOrdererConfig() (*api.OrdererConfig, error) {
+	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -182,9 +182,9 @@ func (c *config) GetRandomOrdererConfig() (*api.OrdererConfig, error) {
 	return nil, nil
 }
 
-// GetOrdererConfig returns the requested orderer
-func (c *config) GetOrdererConfig(name string) (*api.OrdererConfig, error) {
-	config, err := c.GetNetworkConfig()
+// OrdererConfig returns the requested orderer
+func (c *config) OrdererConfig(name string) (*api.OrdererConfig, error) {
+	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -196,10 +196,10 @@ func (c *config) GetOrdererConfig(name string) (*api.OrdererConfig, error) {
 	return &orderer, nil
 }
 
-// GetPeersConfig Retrieves the fabric peers for the specified org from the
+// PeersConfig Retrieves the fabric peers for the specified org from the
 // config file provided
-func (c *config) GetPeersConfig(org string) ([]api.PeerConfig, error) {
-	config, err := c.GetNetworkConfig()
+func (c *config) PeersConfig(org string) ([]api.PeerConfig, error) {
+	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -224,8 +224,8 @@ func (c *config) GetPeersConfig(org string) ([]api.PeerConfig, error) {
 	return peers, nil
 }
 
-// GetNetworkConfig returns the network configuration defined in the config file
-func (c *config) GetNetworkConfig() (*api.NetworkConfig, error) {
+// NetworkConfig returns the network configuration defined in the config file
+func (c *config) NetworkConfig() (*api.NetworkConfig, error) {
 	if c.networkConfigCached {
 		return c.networkConfig, nil
 	}
@@ -241,9 +241,9 @@ func (c *config) IsTLSEnabled() bool {
 	return myViper.GetBool("client.tls.enabled")
 }
 
-// GetTLSCACertPool ...
+// TLSCACertPool ...
 // TODO: Should be related to configuration.
-func (c *config) GetTLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
+func (c *config) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
 	if tlsCertificate != "" {
 		rawData, err := ioutil.ReadFile(tlsCertificate)
@@ -262,8 +262,8 @@ func (c *config) GetTLSCACertPool(tlsCertificate string) (*x509.CertPool, error)
 	return certPool, nil
 }
 
-// GetTLSCACertPoolFromRoots ...
-func (c *config) GetTLSCACertPoolFromRoots(ordererRootCAs [][]byte) (*x509.CertPool, error) {
+// TLSCACertPoolFromRoots ...
+func (c *config) TLSCACertPoolFromRoots(ordererRootCAs [][]byte) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
 
 	for _, root := range ordererRootCAs {
@@ -288,34 +288,34 @@ func (c *config) TcertBatchSize() int {
 	return myViper.GetInt("client.tcert.batch.size")
 }
 
-// GetSecurityAlgorithm ...
-func (c *config) GetSecurityAlgorithm() string {
+// SecurityAlgorithm ...
+func (c *config) SecurityAlgorithm() string {
 	return myViper.GetString("client.security.hashAlgorithm")
 }
 
-// GetSecurityLevel ...
-func (c *config) GetSecurityLevel() int {
+// SecurityLevel ...
+func (c *config) SecurityLevel() int {
 	return myViper.GetInt("client.security.level")
 
 }
 
-// GetKeyStorePath returns the keystore path used by BCCSP
-func (c *config) GetKeyStorePath() string {
+// KeyStorePath returns the keystore path used by BCCSP
+func (c *config) KeyStorePath() string {
 	keystorePath := strings.Replace(myViper.GetString("client.keystore.path"),
 		"$GOPATH", os.Getenv("GOPATH"), -1)
 	return path.Join(keystorePath, "keystore")
 }
 
-// GetCAKeystorePath returns the same path as GetKeyStorePath() without the
+// CAKeystorePath returns the same path as KeyStorePath() without the
 // 'keystore' directory added. This is done because the fabric-ca-client
 // adds this to the path
-func (c *config) GetCAKeyStorePath() string {
+func (c *config) CAKeyStorePath() string {
 	return strings.Replace(myViper.GetString("client.keystore.path"),
 		"$GOPATH", os.Getenv("GOPATH"), -1)
 }
 
-// GetCryptoConfigPath ...
-func (c *config) GetCryptoConfigPath() string {
+// CryptoConfigPath ...
+func (c *config) CryptoConfigPath() string {
 	return strings.Replace(myViper.GetString("client.cryptoconfig.path"),
 		"$GOPATH", os.Getenv("GOPATH"), -1)
 }
@@ -335,15 +335,15 @@ func loadCAKey(rawData []byte) (*x509.Certificate, error) {
 	return nil, errors.New("No pem data found")
 }
 
-// GetCSPConfig ...
-func (c *config) GetCSPConfig() *bccspFactory.FactoryOpts {
+// CSPConfig ...
+func (c *config) CSPConfig() *bccspFactory.FactoryOpts {
 	return &bccspFactory.FactoryOpts{
 		ProviderName: "SW",
 		SwOpts: &bccspFactory.SwOpts{
-			HashFamily: c.GetSecurityAlgorithm(),
-			SecLevel:   c.GetSecurityLevel(),
+			HashFamily: c.SecurityAlgorithm(),
+			SecLevel:   c.SecurityLevel(),
 			FileKeystore: &bccspFactory.FileKeystoreOpts{
-				KeyStorePath: c.GetKeyStorePath(),
+				KeyStorePath: c.KeyStorePath(),
 			},
 			Ephemeral: false,
 		},

@@ -100,11 +100,11 @@ func TestClientMethods(t *testing.T) {
 	if err != nil {
 		t.Fatalf("client.NewChain return error[%s]", err)
 	}
-	if chain.GetName() != "someChain" {
+	if chain.Name() != "someChain" {
 		t.Fatalf("client.NewChain create wrong chain")
 	}
 	chain1 := client.GetChannel("someChain")
-	if chain1.GetName() != "someChain" {
+	if chain1.Name() != "someChain" {
 		t.Fatalf("client.NewChain create wrong chain")
 	}
 

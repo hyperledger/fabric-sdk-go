@@ -91,22 +91,22 @@ func (c *channel) QueryExtensionInterface() api.ChannelExtension {
 	return c
 }
 
-// GetClientContext returns the Client that was passed in to NewChannel
-func (c *channel) GetClientContext() api.FabricClient {
+// ClientContext returns the Client that was passed in to NewChannel
+func (c *channel) ClientContext() api.FabricClient {
 	return c.clientContext
 }
 
-// GetProposalBytes returns the serialized transaction.
-func (c *channel) GetProposalBytes(tp *api.TransactionProposal) ([]byte, error) {
+// ProposalBytes returns the serialized transaction.
+func (c *channel) ProposalBytes(tp *api.TransactionProposal) ([]byte, error) {
 	return proto.Marshal(tp.SignedProposal)
 }
 
-// GetName ...
+// Name ...
 /**
 * Get the channel name.
 * @returns {string} The name of the channel.
  */
-func (c *channel) GetName() string {
+func (c *channel) Name() string {
 	return c.name
 }
 
@@ -118,11 +118,11 @@ func (c *channel) IsSecurityEnabled() bool {
 	return c.securityEnabled
 }
 
-// GetTCertBatchSize ...
+// TCertBatchSize ...
 /**
 * Get the tcert batch size.
  */
-func (c *channel) GetTCertBatchSize() int {
+func (c *channel) TCertBatchSize() int {
 	return c.tcertBatchSize
 }
 
@@ -163,12 +163,12 @@ func (c *channel) RemovePeer(peer api.Peer) {
 	}
 }
 
-// GetPeers ...
+// Peers ...
 /**
 * Get peers of a channel from local information.
 * @returns {[]Peer} The peer list on the channel.
  */
-func (c *channel) GetPeers() []api.Peer {
+func (c *channel) Peers() []api.Peer {
 	var peersArray []api.Peer
 	for _, v := range c.peers {
 		peersArray = append(peersArray, v)
@@ -176,9 +176,9 @@ func (c *channel) GetPeers() []api.Peer {
 	return peersArray
 }
 
-// GetAnchorPeers returns the anchor peers for this channel.
+// AnchorPeers returns the anchor peers for this channel.
 // Note: channel.Initialize() must be called first to retrieve anchor peers
-func (c *channel) GetAnchorPeers() []api.OrgAnchorPeer {
+func (c *channel) AnchorPeers() []api.OrgAnchorPeer {
 	anchors := []api.OrgAnchorPeer{}
 	for _, anchor := range c.anchorPeers {
 		anchors = append(anchors, *anchor)
@@ -215,7 +215,7 @@ func (c *channel) SetPrimaryPeer(peer api.Peer) error {
 	return nil
 }
 
-// GetPrimaryPeer ...
+// PrimaryPeer ...
 /**
 * Get the primary peer
 * The peer to use for doing queries.
@@ -223,7 +223,7 @@ func (c *channel) SetPrimaryPeer(peer api.Peer) error {
 * from map range will be used.
 * @returns {Peer} peer An instance of the Peer class.
  */
-func (c *channel) GetPrimaryPeer() api.Peer {
+func (c *channel) PrimaryPeer() api.Peer {
 
 	if c.primaryPeer != nil {
 		return c.primaryPeer
@@ -271,11 +271,11 @@ func (c *channel) RemoveOrderer(orderer api.Orderer) {
 	}
 }
 
-// GetOrderers ...
+// Orderers ...
 /**
 * Get orderers of a channel.
  */
-func (c *channel) GetOrderers() []api.Orderer {
+func (c *channel) Orderers() []api.Orderer {
 	var orderersArray []api.Orderer
 	for _, v := range c.orderers {
 		orderersArray = append(orderersArray, v)
@@ -292,14 +292,14 @@ func (c *channel) SetMSPManager(mspManager msp.MSPManager) {
 	c.mspManager = mspManager
 }
 
-// GetMSPManager returns the MSP Manager for this channel
-func (c *channel) GetMSPManager() msp.MSPManager {
+// MSPManager returns the MSP Manager for this channel
+func (c *channel) MSPManager() msp.MSPManager {
 	return c.mspManager
 }
 
-// GetOrganizationUnits - to get identifier for the organization configured on the channel
-func (c *channel) GetOrganizationUnits() ([]string, error) {
-	channelMSPManager := c.GetMSPManager()
+// OrganizationUnits - to get identifier for the organization configured on the channel
+func (c *channel) OrganizationUnits() ([]string, error) {
+	channelMSPManager := c.MSPManager()
 	msps, err := channelMSPManager.GetMSPs()
 	if err != nil {
 		logger.Info("Cannot get channel manager")
@@ -316,7 +316,7 @@ func (c *channel) GetOrganizationUnits() ([]string, error) {
 	return orgIdentifiers, nil
 }
 
-// GetGenesisBlock ...
+// GenesisBlock ...
 /**
 * Will get the genesis block from the defined orderer that may be
 * used in a join request
@@ -327,20 +327,20 @@ func (c *channel) GetOrganizationUnits() ([]string, error) {
 * @returns A Genesis block
 * @see /protos/peer/proposal_response.proto
  */
-func (c *channel) GetGenesisBlock(request *api.GenesisBlockRequest) (*common.Block, error) {
-	logger.Debug("GetGenesisBlock - start")
+func (c *channel) GenesisBlock(request *api.GenesisBlockRequest) (*common.Block, error) {
+	logger.Debug("GenesisBlock - start")
 
 	// verify that we have an orderer configured
-	if len(c.GetOrderers()) == 0 {
-		return nil, fmt.Errorf("GetGenesisBlock - error: Missing orderer assigned to this channel for the getGenesisBlock request")
+	if len(c.Orderers()) == 0 {
+		return nil, fmt.Errorf("GenesisBlock - error: Missing orderer assigned to this channel for the GenesisBlock request")
 	}
 	// verify that we have transaction id
 	if request.TxID == "" {
-		return nil, fmt.Errorf("GetGenesisBlock - error: Missing txId input parameter with the required transaction identifier")
+		return nil, fmt.Errorf("GenesisBlock - error: Missing txId input parameter with the required transaction identifier")
 	}
 	// verify that we have the nonce
 	if request.Nonce == nil {
-		return nil, fmt.Errorf("GetGenesisBlock - error: Missing nonce input parameter with the required single use number")
+		return nil, fmt.Errorf("GenesisBlock - error: Missing nonce input parameter with the required single use number")
 	}
 
 	creator, err := c.clientContext.GetIdentity()
@@ -357,8 +357,8 @@ func (c *channel) GetGenesisBlock(request *api.GenesisBlockRequest) (*common.Blo
 		Stop:     seekStop,
 		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
 	}
-	protos_utils.MakeChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, 1, c.GetName(), 0)
-	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.GetName(), request.TxID, 0, "", time.Now())
+	protos_utils.MakeChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, 1, c.Name(), 0)
+	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), request.TxID, 0, "", time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("Error building channel header: %v", err)
 	}
@@ -393,7 +393,7 @@ func (c *channel) GetGenesisBlock(request *api.GenesisBlockRequest) (*common.Blo
 *   <br>`targets` : required - An array of `Peer` objects that will join
 *                   this channel
 *   <br>`block` : the genesis block of the channel
-*                 see getGenesisBlock() method
+*                 see genesisBlock() method
 *   <br>`txId` : required - String of the transaction id
 *   <br>`nonce` : required - Integer of the once time number
 * @returns {Promise} A Promise for a `ProposalResponse`
@@ -498,30 +498,30 @@ func (c *channel) JoinChannel(request *api.JoinChannelRequest) error {
 * @see /protos/orderer/ab.proto
 * @see /protos/common/configtx.proto
  */
-func (c *channel) getChannelConfig() (*common.ConfigEnvelope, error) {
-	logger.Debugf("getChannelConfig - start for channel %s", c.name)
+func (c *channel) channelConfig() (*common.ConfigEnvelope, error) {
+	logger.Debugf("channelConfig - start for channel %s", c.name)
 
 	// Get the newest block
-	block, err := c.getBlock(fc.NewNewestSeekPosition())
+	block, err := c.block(fc.NewNewestSeekPosition())
 	if err != nil {
 		return nil, err
 	}
-	logger.Debugf("GetChannelConfig - Retrieved newest block number: %d\n", block.Header.Number)
+	logger.Debugf("channelConfig - Retrieved newest block number: %d\n", block.Header.Number)
 
 	// Get the index of the last config block
 	lastConfig, err := fc.GetLastConfigFromBlock(block)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get last config from block: %v", err)
 	}
-	logger.Debugf("GetChannelConfig - Last config index: %d\n", lastConfig.Index)
+	logger.Debugf("channelConfig - Last config index: %d\n", lastConfig.Index)
 
 	// Get the last config block
-	block, err = c.getBlock(fc.NewSpecificSeekPosition(lastConfig.Index))
+	block, err = c.block(fc.NewSpecificSeekPosition(lastConfig.Index))
 
 	if err != nil {
 		return nil, fmt.Errorf("Unable to retrieve block at index %d: %v", lastConfig.Index, err)
 	}
-	logger.Debugf("GetChannelConfig - Last config block number %d, Number of tx: %d", block.Header.Number, len(block.Data.Data))
+	logger.Debugf("channelConfig - Last config block number %d, Number of tx: %d", block.Header.Number, len(block.Data.Data))
 
 	if len(block.Data.Data) != 1 {
 		return nil, fmt.Errorf("Config block must only contain one transaction but contains %d", len(block.Data.Data))
@@ -691,9 +691,9 @@ func (c *channel) QueryInfo() (*common.BlockchainInfo, error) {
 	// prepare arguments to call qscc GetChainInfo function
 	var args []string
 	args = append(args, "GetChainInfo")
-	args = append(args, c.GetName())
+	args = append(args, c.Name())
 
-	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
+	payload, err := c.queryByChaincodeByTarget("qscc", args, c.PrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetChainInfo return error: %v", err)
 	}
@@ -723,10 +723,10 @@ func (c *channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 	// prepare arguments to call qscc GetBlockByNumber function
 	var args []string
 	args = append(args, "GetBlockByHash")
-	args = append(args, c.GetName())
+	args = append(args, c.Name())
 	args = append(args, string(blockHash[:len(blockHash)]))
 
-	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
+	payload, err := c.queryByChaincodeByTarget("qscc", args, c.PrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetBlockByHash return error: %v", err)
 	}
@@ -756,10 +756,10 @@ func (c *channel) QueryBlock(blockNumber int) (*common.Block, error) {
 	// prepare arguments to call qscc GetBlockByNumber function
 	var args []string
 	args = append(args, "GetBlockByNumber")
-	args = append(args, c.GetName())
+	args = append(args, c.Name())
 	args = append(args, strconv.Itoa(blockNumber))
 
-	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
+	payload, err := c.queryByChaincodeByTarget("qscc", args, c.PrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetBlockByNumber return error: %v", err)
 	}
@@ -790,7 +790,7 @@ func (c *channel) Initialize(configUpdate []byte) error {
 		return nil
 	}
 
-	configEnvelope, err := c.getChannelConfig()
+	configEnvelope, err := c.channelConfig()
 	if err != nil {
 		return fmt.Errorf("Unable to retrieve channel configuration from orderer service: %v", err)
 	}
@@ -815,10 +815,10 @@ func (c *channel) QueryTransaction(transactionID string) (*pb.ProcessedTransacti
 	// prepare arguments to call qscc GetTransactionByID function
 	var args []string
 	args = append(args, "GetTransactionByID")
-	args = append(args, c.GetName())
+	args = append(args, c.Name())
 	args = append(args, transactionID)
 
-	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
+	payload, err := c.queryByChaincodeByTarget("qscc", args, c.PrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetBlockByNumber return error: %v", err)
 	}
@@ -840,7 +840,7 @@ func (c *channel) QueryTransaction(transactionID string) (*pb.ProcessedTransacti
  */
 func (c *channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
 
-	payload, err := c.queryByChaincodeByTarget("lscc", []string{"getchaincodes"}, c.GetPrimaryPeer())
+	payload, err := c.queryByChaincodeByTarget("lscc", []string{"getchaincodes"}, c.PrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke lscc getchaincodes return error: %v", err)
 	}
@@ -1007,7 +1007,7 @@ func (c *channel) SendTransactionProposal(proposal *api.TransactionProposal, ret
 			return nil, fmt.Errorf("peers and target peers is nil or empty")
 		}
 
-		return SendTransactionProposal(proposal, retry, c.GetPeers())
+		return SendTransactionProposal(proposal, retry, c.Peers())
 	}
 
 	return SendTransactionProposal(proposal, retry, targets)
@@ -1157,12 +1157,13 @@ func (c *channel) SendTransaction(tx *api.Transaction) ([]*api.TransactionRespon
 	if c.orderers == nil || len(c.orderers) == 0 {
 		return nil, fmt.Errorf("orderers is nil")
 	}
-	if tx == nil || tx.Proposal == nil || tx.Proposal.Proposal == nil {
-		return nil, fmt.Errorf("proposal is nil")
-	}
 	if tx == nil {
 		return nil, fmt.Errorf("Transaction is nil")
 	}
+	if tx.Proposal == nil || tx.Proposal.Proposal == nil {
+		return nil, fmt.Errorf("proposal is nil")
+	}
+
 	// the original header
 	hdr, err := protos_utils.GetHeader(tx.Proposal.Proposal.Header)
 	if err != nil {
@@ -1401,27 +1402,6 @@ func (c *channel) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error
 	}
 
 	return &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}, nil
-}
-
-// fetchGenesisBlock fetches the configuration block for this channel
-func (c *channel) fetchGenesisBlock() (*common.Block, error) {
-	// Get user enrolment info and serialize for signing requests
-	creator, err := c.clientContext.GetIdentity()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting creator: %v", err)
-	}
-	// Seek block zero (the configuration tx for this channel)
-	payload := fc.CreateSeekGenesisBlockRequest(c.name, creator)
-	blockRequest, err := c.SignPayload(payload)
-	if err != nil {
-		return nil, fmt.Errorf("Error signing payload: %s", err)
-	}
-	// Request genesis block from ordering service
-	block, err := c.SendEnvelope(blockRequest)
-	if err != nil {
-		return nil, fmt.Errorf("Error from SendEnvelope: %s", err.Error())
-	}
-	return block, nil
 }
 
 // internal utility method to build chaincode policy
@@ -1689,7 +1669,7 @@ func loadPolicy(configItems *configItems, versionsPolicy *common.ConfigPolicy, k
 }
 
 // getBlock retrieves the block at the given position
-func (c *channel) getBlock(pos *ab.SeekPosition) (*common.Block, error) {
+func (c *channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 	nonce, err := fc.GenerateRandomNonce()
 	if err != nil {
 		return nil, fmt.Errorf("error when generating nonce: %v", err)
@@ -1705,7 +1685,7 @@ func (c *channel) getBlock(pos *ab.SeekPosition) (*common.Block, error) {
 		return nil, fmt.Errorf("error when generating TX ID: %v", err)
 	}
 
-	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.GetName(), txID, 0, "", time.Now())
+	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), txID, 0, "", time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("error when building channel header: %v", err)
 	}

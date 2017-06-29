@@ -39,7 +39,7 @@ func NewFabricCAClient(config sdkApi.Config, org string) (sdkApi.FabricCAClient,
 		Config: &fabric_ca.ClientConfig{},
 	}
 
-	conf, err := config.GetCAConfig(org)
+	conf, err := config.CAConfig(org)
 	if err != nil {
 		return nil, err
 	}
@@ -49,26 +49,26 @@ func NewFabricCAClient(config sdkApi.Config, org string) (sdkApi.FabricCAClient,
 	//set server URL
 	c.Config.URL = conf.ServerURL
 	//certs file list
-	c.Config.TLS.CertFiles, err = config.GetCAServerCertFiles(org)
+	c.Config.TLS.CertFiles, err = config.CAServerCertFiles(org)
 	if err != nil {
 		return nil, err
 	}
 
 	// set key file and cert file
-	c.Config.TLS.Client.CertFile, err = config.GetCAClientCertFile(org)
+	c.Config.TLS.Client.CertFile, err = config.CAClientCertFile(org)
 	if err != nil {
 		return nil, err
 	}
 
-	c.Config.TLS.Client.KeyFile, err = config.GetCAClientKeyFile(org)
+	c.Config.TLS.Client.KeyFile, err = config.CAClientKeyFile(org)
 	if err != nil {
 		return nil, err
 	}
 
 	//TLS flag enabled/disabled
 	c.Config.TLS.Enabled = conf.TLSEnabled
-	c.Config.MSPDir = config.GetCAKeyStorePath()
-	c.Config.CSP = config.GetCSPConfig()
+	c.Config.MSPDir = config.CAKeyStorePath()
+	c.Config.CSP = config.CSPConfig()
 
 	fabricCAClient := &fabricCA{fabricCAClient: c}
 	logger.Infof("Constructed fabricCAClient instance: %v", fabricCAClient)

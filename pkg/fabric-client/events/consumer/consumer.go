@@ -59,7 +59,7 @@ func newEventsClientConnectionWithAddress(peerAddress string, certificate string
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(time.Second*3))
 	if config.IsTLSEnabled() {
-		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
+		tlsCaCertPool, err := config.TLSCACertPool(certificate)
 		if err != nil {
 			return nil, err
 		}

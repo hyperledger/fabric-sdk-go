@@ -102,7 +102,7 @@ func NewUser(client api.FabricClient, msp api.FabricCAClient, name string, pwd s
 	}
 
 	if user == nil {
-		mspID, err := client.GetConfig().GetMspID(orgName)
+		mspID, err := client.GetConfig().MspID(orgName)
 		if err != nil {
 			return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
 		}
@@ -127,7 +127,7 @@ func NewUser(client api.FabricClient, msp api.FabricCAClient, name string, pwd s
 // The user should already be pre-enrolled.
 func NewPreEnrolledUser(client api.FabricClient, privateKeyPath string,
 	enrollmentCertPath string, username string, orgName string) (api.User, error) {
-	mspID, err := client.GetConfig().GetMspID(orgName)
+	mspID, err := client.GetConfig().MspID(orgName)
 	if err != nil {
 		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
 	}

@@ -31,7 +31,7 @@ type orderer struct {
 // CreateNewOrdererWithRootCAs Returns a new Orderer instance using the passed in orderer root CAs
 func CreateNewOrdererWithRootCAs(url string, ordererRootCAs [][]byte, serverHostOverride string, config api.Config) (api.Orderer, error) {
 	if config.IsTLSEnabled() {
-		tlsCaCertPool, err := config.GetTLSCACertPoolFromRoots(ordererRootCAs)
+		tlsCaCertPool, err := config.TLSCACertPoolFromRoots(ordererRootCAs)
 		if err != nil {
 			return nil, err
 		}
@@ -188,7 +188,7 @@ func NewOrderer(url string, certificate string, serverHostOverride string, confi
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(time.Second*3))
 	if config.IsTLSEnabled() {
-		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
+		tlsCaCertPool, err := config.TLSCACertPool(certificate)
 		if err != nil {
 			return nil, err
 		}

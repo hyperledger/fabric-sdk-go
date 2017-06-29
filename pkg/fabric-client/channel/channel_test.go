@@ -46,7 +46,7 @@ func TestChannelMethods(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewChannel return error[%s]", err)
 	}
-	if channel.GetName() != "testChannel" {
+	if channel.Name() != "testChannel" {
 		t.Fatalf("NewChannel create wrong channel")
 	}
 
@@ -108,7 +108,7 @@ func TestPrimaryPeer(t *testing.T) {
 	}
 
 	// Test primary defaults to channel peer
-	primary := channel.GetPrimaryPeer()
+	primary := channel.PrimaryPeer()
 	if primary.URL() != peer1.URL() {
 		t.Fatalf("Primary Peer failed to default")
 	}
@@ -135,7 +135,7 @@ func TestPrimaryPeer(t *testing.T) {
 	}
 
 	// Test primary equals our choice
-	primary = channel.GetPrimaryPeer()
+	primary = channel.PrimaryPeer()
 	if primary.URL() != peer2.URL() || primary.Name() != peer2.Name() {
 		t.Fatalf("Primary and our choice are not equal")
 	}
@@ -195,7 +195,7 @@ func TestJoinChannel(t *testing.T) {
 		TxID:  txID,
 		Nonce: nonce,
 	}
-	genesisBlock, err := channel.GetGenesisBlock(genesisBlockReqeust)
+	genesisBlock, err := channel.GenesisBlock(genesisBlockReqeust)
 	if err == nil {
 		t.Fatalf("Should not have been able to get genesis block because of orderer missing")
 	}
@@ -204,7 +204,7 @@ func TestJoinChannel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error adding orderer: %v", err)
 	}
-	genesisBlock, err = channel.GetGenesisBlock(genesisBlockReqeust)
+	genesisBlock, err = channel.GenesisBlock(genesisBlockReqeust)
 	if err != nil {
 		t.Fatalf("Error getting genesis block: %v", err)
 	}
@@ -317,7 +317,7 @@ func TestChannelInitializeFromOrderer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("channel Initialize failed : %v", err)
 	}
-	mspManager := channel.GetMSPManager()
+	mspManager := channel.MSPManager()
 	if mspManager == nil {
 		t.Fatalf("nil MSPManager on new channel")
 	}
@@ -346,7 +346,7 @@ func TestOrganizationUnits(t *testing.T) {
 	org2MSPID := "ORG2MSP"
 
 	channel, _ := setupTestChannel()
-	orgUnits, err := channel.GetOrganizationUnits()
+	orgUnits, err := channel.OrganizationUnits()
 	if len(orgUnits) > 0 {
 		t.Fatalf("Returned non configured organizational unit : %v", err)
 	}
@@ -354,7 +354,7 @@ func TestOrganizationUnits(t *testing.T) {
 		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
 			ModPolicy: "Admins",
 			MSPNames: []string{
-				channel.GetName(),
+				channel.Name(),
 				org1MSPID,
 				org2MSPID,
 			},
@@ -376,12 +376,12 @@ func TestOrganizationUnits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("channel Initialize failed : %v", err)
 	}
-	orgUnits, err = channel.GetOrganizationUnits()
+	orgUnits, err = channel.OrganizationUnits()
 	if err != nil {
 		t.Fatalf("CANNOT retrieve organizational units : %v", err)
 	}
-	if !isValueInList(channel.GetName(), orgUnits) {
-		t.Fatalf("Could not find %s in the list of organizations", channel.GetName())
+	if !isValueInList(channel.Name(), orgUnits) {
+		t.Fatalf("Could not find %s in the list of organizations", channel.Name())
 	}
 	if !isValueInList(org1MSPID, orgUnits) {
 		t.Fatalf("Could not find %s in the list of organizations", org1MSPID)
@@ -423,7 +423,7 @@ func TestChannelInitializeFromUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("channel Initialize failed : %v", err)
 	}
-	mspManager := channel.GetMSPManager()
+	mspManager := channel.MSPManager()
 	if mspManager == nil {
 		t.Fatalf("nil MSPManager on new channel")
 	}

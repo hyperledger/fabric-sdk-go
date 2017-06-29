@@ -41,7 +41,7 @@ func TestOrdererViaChain(t *testing.T) {
 		t.Fatalf("Error adding orderer: %v", err)
 	}
 
-	orderers := chain.GetOrderers()
+	orderers := chain.Orderers()
 	if orderers == nil || len(orderers) != 1 || orderers[0].GetURL() != "localhost:7050" {
 		t.Fatalf("Failed to retieve the new orderer URL from the chain")
 	}
@@ -54,7 +54,7 @@ func TestOrdererViaChain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error adding orderer: %v", err)
 	}
-	orderers = chain.GetOrderers()
+	orderers = chain.Orderers()
 
 	if orderers == nil || len(orderers) != 1 || orderers[0].GetURL() != "localhost:7054" {
 		t.Fatalf("Failed to retieve the new orderer URL from the chain")
@@ -111,7 +111,7 @@ func TestOrdererViaChainNilData(t *testing.T) {
 	if err == nil {
 		t.Fatalf("SendTransaction didn't return error")
 	}
-	if err.Error() != "proposal is nil" {
+	if err.Error() != "Transaction is nil" {
 		t.Fatalf("SendTransaction didn't return right error")
 	}
 }

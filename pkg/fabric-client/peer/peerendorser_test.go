@@ -42,7 +42,7 @@ func TestNewPeerEndorserTLS(t *testing.T) {
 	certPool := x509.NewCertPool()
 
 	config.EXPECT().IsTLSEnabled().Return(true)
-	config.EXPECT().GetTLSCACertPool("cert").Return(certPool, nil)
+	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
 
 	conn, err := newPeerEndorser(url, "cert", "", connTimeout, true, config)
 	if err != nil {
@@ -70,7 +70,7 @@ func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 	certPool := x509.NewCertPool()
 
 	config.EXPECT().IsTLSEnabled().Return(true)
-	config.EXPECT().GetTLSCACertPool("cert").Return(certPool, fmt.Errorf("ohoh"))
+	config.EXPECT().TLSCACertPool("cert").Return(certPool, fmt.Errorf("ohoh"))
 
 	_, err := newPeerEndorser(url, "cert", "", connTimeout, true, config)
 	if err == nil {
