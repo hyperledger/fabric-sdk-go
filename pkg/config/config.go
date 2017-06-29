@@ -138,8 +138,12 @@ func (c *config) MspID(org string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	mspID := config.Organizations[org].MspID
+	if mspID == "" {
+		return "", fmt.Errorf("MSP ID is empty for org: %s", org)
+	}
 
-	return config.Organizations[org].MspID, nil
+	return mspID, nil
 }
 
 // FabricClientViper returns the internal viper instance used by the
@@ -156,6 +160,23 @@ func (c *config) cacheNetworkConfiguration() error {
 	}
 
 	return err
+}
+
+// GetOrderersConfig returns a list of defined orderers
+func (c *config) OrderersConfig() ([]api.OrdererConfig, error) {
+	orderers := []api.OrdererConfig{}
+	config, err := c.NetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, orderer := range config.Orderers {
+		orderer.TLS.Certificate = strings.Replace(orderer.TLS.Certificate, "$GOPATH",
+			os.Getenv("GOPATH"), -1)
+		orderers = append(orderers, orderer)
+	}
+
+	return orderers, nil
 }
 
 // RandomOrdererConfig returns a pseudo-random orderer from the network config

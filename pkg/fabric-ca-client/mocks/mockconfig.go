@@ -91,6 +91,11 @@ func (c *MockConfig) SecurityLevel() int {
 
 }
 
+// OrderersConfig returns a list of defined orderers
+func (c *MockConfig) OrderersConfig() ([]api.OrdererConfig, error) {
+	return nil, nil
+}
+
 // RandomOrdererConfig not implemented
 func (c *MockConfig) RandomOrdererConfig() (*api.OrdererConfig, error) {
 	return nil, nil

@@ -21,6 +21,7 @@ type Config interface {
 	CAClientCertFile(org string) (string, error)
 	MspID(org string) (string, error)
 	FabricClientViper() *viper.Viper
+	OrderersConfig() ([]OrdererConfig, error)
 	RandomOrdererConfig() (*OrdererConfig, error)
 	OrdererConfig(name string) (*OrdererConfig, error)
 	PeersConfig(org string) ([]PeerConfig, error)

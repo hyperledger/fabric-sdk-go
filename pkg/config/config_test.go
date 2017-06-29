@@ -9,6 +9,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -286,6 +287,17 @@ func TestNetworkConfig(t *testing.T) {
 	}
 	if len(conf.Organizations[org1].Peers) == 0 {
 		t.Fatalf("Expected org %s to be present in network configuration and peers to be set", org1)
+	}
+}
+
+func TestOrdererConfig(t *testing.T) {
+	orderers, err := configImpl.OrderersConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !filepath.IsAbs(orderers[0].TLS.Certificate) {
+		t.Fatal("Expected GOPATH relative path to be replaced")
 	}
 }
 

@@ -87,7 +87,7 @@ func getFirstPathFromDir(dir string) (string, error) {
 		}
 
 		fullName := filepath.Join(dir, string(filepath.Separator), p.Name())
-		fmt.Printf("Reading file %s", fullName)
+		fmt.Printf("Reading file %s\n", fullName)
 	}
 
 	for _, f := range files {
