@@ -382,3 +382,119 @@ func TestRegisterChaincodeEvent(t *testing.T) {
 func testChaincodeCallback(ce *api.ChaincodeEvent) {
 	fmt.Printf("Received CC event: %v\n", ce)
 }
+
+func TestDisconnect(t *testing.T) {
+	eventHub, _ := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+	eventHub.Disconnect()
+	verifyDisconnectedEventHub(eventHub, t)
+}
+
+func TestDisconnectWhenDisconnected(t *testing.T) {
+	eventHub, _ := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+	eventHub.connected = false
+	eventHub.Disconnect()
+	verifyDisconnectedEventHub(eventHub, t)
+}
+
+func TestDiconnected(t *testing.T) {
+	eventHub, _ := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+
+	eventHub.Disconnected(nil)
+	verifyDisconnectedEventHub(eventHub, t)
+
+}
+func TestDiconnectedWhenDisconnected(t *testing.T) {
+	eventHub, _ := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+	eventHub.connected = false
+	eventHub.Disconnected(nil)
+	verifyDisconnectedEventHub(eventHub, t)
+
+}
+
+func verifyDisconnectedEventHub(eventHub *eventHub, t *testing.T) {
+	if eventHub.connected == true {
+		t.Fatalf("EventHub is not disconnected after Disconnect call")
+	}
+}
+
+func TestConnectWhenConnected(t *testing.T) {
+	eventHub, _ := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+
+	eventHub.connected = true
+	err := eventHub.Connect()
+	if err != nil {
+		t.Fatalf("EventHub failed to connect after Connect call %s", err)
+	}
+}
+
+func TestConnectWhenPeerAddrEmpty(t *testing.T) {
+	eventHub, _ := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+
+	eventHub.connected = false // need to reset connected in order to reach peerAddr check
+	eventHub.peerAddr = ""
+	err := eventHub.Connect()
+
+	if err == nil {
+		t.Fatal("peerAddr empty, failed to get expected connect error")
+	}
+	return
+}
+
+func TestConnectWithInterestsTrueAndGetInterests(t *testing.T) {
+	eventHub, _ := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+
+	eventHub.connected = false
+	eventHub.SetInterests(true)
+	err := eventHub.Connect()
+
+	if err != nil {
+		t.Fatalf("InterestedEvents must not be empty. Error received: %s", err)
+	}
+
+	interestedEvents, _ := eventHub.GetInterestedEvents()
+	if interestedEvents == nil || len(interestedEvents) == 0 {
+		t.Fatalf("GetInterests must not be empty. Received: %s", err)
+	}
+}
+
+func TestConnectWithInterestsFalseAndGetInterests(t *testing.T) {
+	eventHub, _ := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+
+	eventHub.connected = false
+	eventHub.SetInterests(false)
+	err := eventHub.Connect()
+
+	if err == nil {
+		t.Fatalf("InterestedEvents must not be empty. Error received: %s", err)
+	}
+
+	interestedEvents, _ := eventHub.GetInterestedEvents()
+	if interestedEvents != nil && len(interestedEvents) > 0 {
+		t.Fatalf("GetInterests must be empty. Received: %s", err)
+	}
+
+}
