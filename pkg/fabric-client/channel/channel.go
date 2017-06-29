@@ -1668,7 +1668,7 @@ func loadPolicy(configItems *configItems, versionsPolicy *common.ConfigPolicy, k
 	return nil
 }
 
-// getBlock retrieves the block at the given position
+// block retrieves the block at the given position
 func (c *channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 	nonce, err := fc.GenerateRandomNonce()
 	if err != nil {

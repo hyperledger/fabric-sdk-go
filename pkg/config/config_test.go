@@ -70,17 +70,138 @@ func TestCAConfig(t *testing.T) {
 	//Test Crypto config path
 	crossCheckWithViperConfig(myViper.GetString("client.cryptoconfig.path"), configImpl.CryptoConfigPath(), "Incorrect crypto config path", t)
 
+	//Testing CA Client File Location
+	certfile, err := configImpl.CAClientCertFile("peerorg1")
+
+	if certfile == "" || err != nil {
+		t.Fatal("CA Cert file location read failed")
+	}
+
+	//Testing CA Key File Location
+	keyFile, err := configImpl.CAClientKeyFile("peerorg1")
+
+	if keyFile == "" || err != nil {
+		t.Fatal("CA Key file location read failed")
+	}
+
+	//Testing CA Server Cert Files
+	sCertFiles, err := configImpl.CAServerCertFiles("peerorg1")
+
+	if sCertFiles == nil || len(sCertFiles) == 0 || err != nil {
+		t.Fatal("Getting CA server cert files failed")
+	}
+
+	//Testing MSPID
+	mspID, err := configImpl.MspID("peerorg1")
+	if mspID == "" || mspID != "Org1MSP" || err != nil {
+		t.Fatal("Get MSP ID failed")
+	}
+
+	//Testing CAConfig
+	caConfig, err := configImpl.CAConfig("peerorg1")
+	if caConfig == nil || err != nil {
+		t.Fatal("Get CA Config failed")
+	}
+
+	// Test CA KeyStore Path
+	if vConfig.GetString("client.keystore.path") != configImpl.CAKeyStorePath() {
+		t.Fatalf("Incorrect CA keystore path")
+	}
+
+	// Test KeyStore Path
+	if vConfig.GetString("client.keystore.path")+"/keystore" != configImpl.KeyStorePath() {
+		t.Fatalf("Incorrect keystore path ")
+	}
+
+}
+
+func TestCAConfigFailsByNetworkConfig(t *testing.T) {
+
+	//Tamper 'client.network' value and use a new config to avoid conflicting with other tests
+	sampleConfig, err := InitConfig("../../test/fixtures/config/config_test.yaml")
+	myViper := sampleConfig.FabricClientViper()
+	clientNetworks := myViper.Get("client.network")
+	myViper.Set("client.network", "INVALID")
+	//...
+
+	_, err = sampleConfig.NetworkConfig()
+	if err == nil {
+		t.Fatal("Network config load supposed to fail")
+	}
+
+	//Test CA client cert file failure scenario
+	certfile, err := sampleConfig.CAClientCertFile("peerorg1")
+	if certfile != "" || err == nil {
+		t.Fatal("CA Cert file location read supposed to fail")
+	}
+
+	//Test CA client cert file failure scenario
+	keyFile, err := sampleConfig.CAClientKeyFile("peerorg1")
+	if keyFile != "" || err == nil {
+		t.Fatal("CA Key file location read supposed to fail")
+	}
+
+	//Testing CA Server Cert Files failure scenario
+	sCertFiles, err := sampleConfig.CAServerCertFiles("peerorg1")
+	if len(sCertFiles) > 0 || err == nil {
+		t.Fatal("Getting CA server cert files supposed to fail")
+	}
+
+	//Testing MSPID failure scenario
+	mspID, err := sampleConfig.MspID("peerorg1")
+	if mspID != "" || err == nil {
+		t.Fatal("Get MSP ID supposed to fail")
+	}
+
+	//Testing CAConfig failure scenario
+	caConfig, err := sampleConfig.CAConfig("peerorg1")
+	if caConfig != nil || err == nil {
+		t.Fatal("Get CA Config supposed to fail")
+	}
+
+	//Testing RandomOrdererConfig failure scenario
+	oConfig, err := sampleConfig.RandomOrdererConfig()
+	if oConfig != nil || err == nil {
+		t.Fatal("Testing get RandomOrdererConfig supposed to fail")
+	}
+
+	//Testing RandomOrdererConfig failure scenario
+	oConfig, err = sampleConfig.OrdererConfig("peerorg1")
+	if oConfig != nil || err == nil {
+		t.Fatal("Testing get OrdererConfig supposed to fail")
+	}
+
+	//Testing PeersConfig failure scenario
+	pConfig, err := sampleConfig.PeersConfig("peerorg1")
+	if pConfig != nil || err == nil {
+		t.Fatal("Testing PeersConfig supposed to fail")
+	}
+
+	//Set it back to valid one, otherwise other tests may fail
+	myViper.Set("client.network", clientNetworks)
 }
 
 func TestTLSACAConfig(t *testing.T) {
+	//Test TLSCA Cert Pool (Positive test case)
+	certFile, _ := configImpl.CAClientCertFile("peerorg1")
+	_, err := configImpl.TLSCACertPool(certFile)
+	if err != nil {
+		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
+	}
 
-	//Test TLSCA Cert Pool (Negative test case
-	_, err := configImpl.TLSCACertPool("some random invalid path")
+	//Test TLSCA Cert Pool (Negative test case)
+	_, err = configImpl.TLSCACertPool("some random invalid path")
 	if err == nil {
 		t.Fatalf("TLS CA cert pool was supposed to fail")
 	}
 
-	//Test TLSCA Cert Pool from roots(Negative test case
+	keyFile, _ := configImpl.CAClientKeyFile("peerorg1")
+	_, err = configImpl.TLSCACertPool(keyFile)
+	if err == nil {
+		t.Fatalf("TLS CA cert pool was supposed to fail when provided with wrong cert file")
+	}
+
+	//Test TLSCA Cert Pool from roots(Negative test case)
 	samplebytes := [][]byte{
 		[]byte(validRootCA),
 	}
@@ -89,7 +210,7 @@ func TestTLSACAConfig(t *testing.T) {
 		t.Fatalf("TLS CA cert pool fetch failed, reason %v", err)
 	}
 
-	//Test TLSCA Cert Pool from roots(Negative test case
+	//Test TLSCA Cert Pool from roots(Negative test case)
 	samplebytes = [][]byte{
 		[]byte("sample invalid string"),
 	}
@@ -98,6 +219,20 @@ func TestTLSACAConfig(t *testing.T) {
 		t.Fatalf("TLS CA cert pool was supposed to fail")
 	}
 
+}
+
+func TestOrdererConfig(t *testing.T) {
+	oConfig, err := configImpl.RandomOrdererConfig()
+
+	if oConfig == nil || err != nil {
+		t.Fatal("Testing get RandomOrdererConfig failed")
+	}
+
+	oConfig, err = configImpl.OrdererConfig("peerorg1")
+
+	if oConfig == nil || err != nil {
+		t.Fatal("Testing get OrdererConfig failed")
+	}
 }
 
 func TestCSPConfig(t *testing.T) {
