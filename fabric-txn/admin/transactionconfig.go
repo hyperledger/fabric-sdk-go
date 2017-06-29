@@ -75,31 +75,15 @@ func SendInstantiateCC(channel api.Channel, chainCodeID string, channelID string
 	return nil
 }
 
-// CreateChannel ...
-func CreateChannel(client api.FabricClient, ordererUser api.User, orgUser api.User, channel api.Channel, channelConfig string) error {
-	// Check if primary peer has joined this channel
-	var foundChannel bool
-	primaryPeer := channel.GetPrimaryPeer()
+// CreateOrUpdateChannel creates a channel if it does not exist or updates a channel
+// if it does and a different channelConfig is used
+func CreateOrUpdateChannel(client api.FabricClient, ordererUser api.User, orgUser api.User, channel api.Channel, channelConfig string) error {
+	logger.Debugf("***** Creating or updating channel: %s *****\n", channel.GetName())
+
+	currentUser := client.GetUserContext()
+	defer client.SetUserContext(currentUser)
+
 	client.SetUserContext(orgUser)
-	response, err := client.QueryChannels(primaryPeer)
-	if err != nil {
-		return fmt.Errorf("Error querying channels for primary peer: %s", err)
-	}
-	for _, responseChannel := range response.Channels {
-		if responseChannel.ChannelId == channel.GetName() {
-			foundChannel = true
-		}
-	}
-
-	if foundChannel {
-		// There's no need to create a channel, initialize the channel from the orderer and return
-		if err = channel.Initialize(nil); err != nil {
-			return fmt.Errorf("Error initializing channel: %v", err)
-		}
-		return nil
-	}
-
-	logger.Debugf("***** Creating channel: %s *****\n", channel.GetName())
 
 	configTx, err := ioutil.ReadFile(channelConfig)
 	if err != nil {
@@ -144,32 +128,18 @@ func CreateChannel(client api.FabricClient, ordererUser api.User, orgUser api.Us
 	client.SetUserContext(ordererUser)
 	err = client.CreateChannel(&request)
 	if err != nil {
-		return fmt.Errorf("CreateChannel returned error")
+		return fmt.Errorf("CreateChannel returned error: %v", err)
 	}
 
 	return nil
 }
 
-// JoinChannel ...
+// JoinChannel joins a channel that has already been created
 func JoinChannel(client api.FabricClient, orgUser api.User, channel api.Channel) error {
-	// Check if primary peer has joined this channel
-	var foundChannel bool
-	primaryPeer := channel.GetPrimaryPeer()
-	client.SetUserContext(orgUser)
-	response, err := client.QueryChannels(primaryPeer)
-	if err != nil {
-		return fmt.Errorf("Error querying channels for primary peer: %s", err)
-	}
-	for _, responseChannel := range response.Channels {
-		if responseChannel.ChannelId == channel.GetName() {
-			foundChannel = true
-		}
-	}
+	currentUser := client.GetUserContext()
+	defer client.SetUserContext(currentUser)
 
-	if foundChannel {
-		// no need to join channel
-		return nil
-	}
+	client.SetUserContext(orgUser)
 
 	creator, err := client.GetIdentity()
 	if err != nil {

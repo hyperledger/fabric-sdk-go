@@ -89,13 +89,27 @@ func (setup *BaseSetupImpl) Initialize() error {
 		return fmt.Errorf("Error getting orderer admin user: %v", err)
 	}
 
-	// Create and join channel
-	if err = admin.CreateChannel(client, ordererAdmin, org1Admin, channel, setup.ChannelConfig); err != nil {
-		return fmt.Errorf("CreateChannel returned error: %v", err)
+	// Check if primary peer has joined channel
+	alreadyJoined, err := HasPrimaryPeerJoinedChannel(client, org1Admin, channel)
+	if err != nil {
+		return fmt.Errorf("Error while checking if primary peer has already joined channel: %v", err)
 	}
-	time.Sleep(time.Second * 3)
-	if err = admin.JoinChannel(client, org1Admin, channel); err != nil {
-		return fmt.Errorf("JoinChannel returned error: %v", err)
+
+	if !alreadyJoined {
+		// Create, initialize and join channel
+		if err = admin.CreateOrUpdateChannel(client, ordererAdmin, org1Admin, channel, setup.ChannelConfig); err != nil {
+			return fmt.Errorf("CreateChannel returned error: %v", err)
+		}
+		time.Sleep(time.Second * 3)
+
+		client.SetUserContext(org1Admin)
+		if err = channel.Initialize(nil); err != nil {
+			return fmt.Errorf("Error initializing channel: %v", err)
+		}
+
+		if err = admin.JoinChannel(client, org1Admin, channel); err != nil {
+			return fmt.Errorf("JoinChannel returned error: %v", err)
+		}
 	}
 
 	//by default client's user context should use regular user, for admin actions, UserContext must be set to AdminUser

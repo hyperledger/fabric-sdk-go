@@ -101,3 +101,27 @@ func getFirstPathFromDir(dir string) (string, error) {
 
 	return "", fmt.Errorf("No paths found in directory: %s", dir)
 }
+
+// HasPrimaryPeerJoinedChannel checks whether the primary peer of a channel
+// has already joined the channel. It returns true if it has, false otherwise,
+// or an error
+func HasPrimaryPeerJoinedChannel(client api.FabricClient, orgUser api.User, channel api.Channel) (bool, error) {
+	foundChannel := false
+	primaryPeer := channel.GetPrimaryPeer()
+
+	currentUser := client.GetUserContext()
+	defer client.SetUserContext(currentUser)
+
+	client.SetUserContext(orgUser)
+	response, err := client.QueryChannels(primaryPeer)
+	if err != nil {
+		return false, fmt.Errorf("Error querying channel for primary peer: %s", err)
+	}
+	for _, responseChannel := range response.Channels {
+		if responseChannel.ChannelId == channel.GetName() {
+			foundChannel = true
+		}
+	}
+
+	return foundChannel, nil
+}

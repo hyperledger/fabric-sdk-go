@@ -516,8 +516,8 @@ func (c *channel) getChannelConfig() (*common.ConfigEnvelope, error) {
 	logger.Debugf("GetChannelConfig - Last config index: %d\n", lastConfig.Index)
 
 	// Get the last config block
-	//block, err = c.getBlock(NewSpecificSeekPosition(lastConfig.Index))
-	block, err = c.getBlock(fc.NewSpecificSeekPosition(0)) //FIXME: temporary hack to workaround https://jira.hyperledger.org/browse/FAB-3493
+	block, err = c.getBlock(fc.NewSpecificSeekPosition(lastConfig.Index))
+
 	if err != nil {
 		return nil, fmt.Errorf("Unable to retrieve block at index %d: %v", lastConfig.Index, err)
 	}
