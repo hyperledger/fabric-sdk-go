@@ -57,6 +57,7 @@ func InvokeChaincode(client api.FabricClient, channel api.Channel, targets []api
 		if err != nil {
 			return fmt.Errorf("Error connecting to eventhub: %v", err)
 		}
+		defer eventHub.Disconnect()
 	}
 
 	transactionProposalResponses, txID, err := internal.CreateAndSendTransactionProposal(channel,
