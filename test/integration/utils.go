@@ -14,7 +14,7 @@ import (
 	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-	defaultImpl "github.com/hyperledger/fabric-sdk-go/fabric-txn/defaultImpl"
+	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 )
 
 // GetOrdererAdmin returns a pre-enrolled orderer admin user
@@ -70,7 +70,7 @@ func getDefaultImplPreEnrolledUser(client api.FabricClient, keyDir string, certD
 		return nil, fmt.Errorf("Error finding the enrollment cert path: %v", err)
 	}
 
-	return defaultImpl.NewPreEnrolledUser(client, privateKeyPath, enrollmentCertPath, username, orgName)
+	return fabapi.NewPreEnrolledUser(client, privateKeyPath, enrollmentCertPath, username, orgName)
 }
 
 // Gets the first path from the dir directory

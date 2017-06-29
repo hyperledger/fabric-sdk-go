@@ -17,9 +17,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-	fabricTxn "github.com/hyperledger/fabric-sdk-go/fabric-txn"
-	admin "github.com/hyperledger/fabric-sdk-go/fabric-txn/admin"
-	defaultImpl "github.com/hyperledger/fabric-sdk-go/fabric-txn/defaultImpl"
+	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	fabricTxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
+	admin "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -53,12 +53,12 @@ func (setup *BaseSetupImpl) Initialize() error {
 		return fmt.Errorf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
 
-	mspClient, err := defaultImpl.NewCAClient(configImpl, setup.OrgID)
+	mspClient, err := fabapi.NewCAClient(configImpl, setup.OrgID)
 	if err != nil {
 		return fmt.Errorf("Failed to get default msp client: %v", err)
 	}
 
-	client, err := defaultImpl.NewClientWithUser("admin", "adminpw", setup.OrgID, "/tmp/enroll_user", configImpl, mspClient)
+	client, err := fabapi.NewClientWithUser("admin", "adminpw", setup.OrgID, "/tmp/enroll_user", configImpl, mspClient)
 	if err != nil {
 		return fmt.Errorf("Create client failed: %v", err)
 	}
@@ -253,7 +253,7 @@ func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string
 			return nil, fmt.Errorf("Error reading peer config: %v", err)
 		}
 		for _, p := range peerConfig {
-			endorser, err := defaultImpl.NewPeer(fmt.Sprintf("%s:%d", p.Host, p.Port),
+			endorser, err := fabapi.NewPeer(fmt.Sprintf("%s:%d", p.Host, p.Port),
 				p.TLS.Certificate, p.TLS.ServerHostOverride, client.GetConfig())
 			if err != nil {
 				return nil, fmt.Errorf("NewPeer return error: %v", err)

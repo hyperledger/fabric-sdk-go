@@ -13,7 +13,7 @@ import (
 	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-	internal "github.com/hyperledger/fabric-sdk-go/fabric-txn/internal"
+	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 	"github.com/hyperledger/fabric/protos/common"
 	"github.com/op/go-logging"
 )

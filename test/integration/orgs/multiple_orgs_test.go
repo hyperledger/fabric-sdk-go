@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api"
-	fabrictxn "github.com/hyperledger/fabric-sdk-go/fabric-txn"
+	fabrictxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
 )
 
 // TestOrgsEndToEnd creates a channel with two organisations, installs chaincode

@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api"
-	"github.com/hyperledger/fabric-sdk-go/fabric-txn/admin"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric/bccsp/factory"
 )
