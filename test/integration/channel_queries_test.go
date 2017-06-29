@@ -169,7 +169,7 @@ func testQueryBlock(t *testing.T, channel api.Channel) {
 func testQueryChannels(t *testing.T, channel api.Channel, client api.FabricClient) {
 
 	// Our target will be primary peer on this channel
-	target := channel.GetPrimaryPeer()
+	target := channel.PrimaryPeer()
 	fmt.Printf("****QueryChannels for %s\n", target.URL())
 	channelQueryResponse, err := client.QueryChannels(target)
 	if err != nil {
@@ -185,7 +185,7 @@ func testQueryChannels(t *testing.T, channel api.Channel, client api.FabricClien
 func testInstalledChaincodes(t *testing.T, channel api.Channel, client api.FabricClient, testSetup *BaseSetupImpl) {
 
 	// Our target will be primary peer on this channel
-	target := channel.GetPrimaryPeer()
+	target := channel.PrimaryPeer()
 	fmt.Printf("****QueryInstalledChaincodes for %s\n", target.URL())
 	// Test Query Installed chaincodes for target (primary)
 	// set Client User Context to Admin first
@@ -206,7 +206,7 @@ func testInstalledChaincodes(t *testing.T, channel api.Channel, client api.Fabri
 func testInstantiatedChaincodes(t *testing.T, channel api.Channel) {
 
 	// Our target will indirectly be primary peer on this channel
-	target := channel.GetPrimaryPeer()
+	target := channel.PrimaryPeer()
 
 	fmt.Printf("QueryInstantiatedChaincodes for primary %s\n", target.URL())
 
@@ -225,7 +225,7 @@ func testInstantiatedChaincodes(t *testing.T, channel api.Channel) {
 func testQueryByChaincode(t *testing.T, channel api.Channel, config api.Config, testSetup *BaseSetupImpl) {
 
 	// Test valid targets
-	targets := channel.GetPeers()
+	targets := channel.Peers()
 
 	// set Client User Context to Admin before calling QueryByChaincode
 	testSetup.Client.SetUserContext(testSetup.AdminUser)
@@ -240,7 +240,7 @@ func testQueryByChaincode(t *testing.T, channel api.Channel, config api.Config, 
 	}
 
 	// Configured cert for cert pool
-	cert, err := config.GetCAClientCertFile(org1Name)
+	cert, err := config.CAClientCertFile(org1Name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -300,7 +300,7 @@ func moveFundsAndGetTxID(setup *BaseSetupImpl) (string, error) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, setup.ChannelID, args, []api.Peer{setup.Channel.GetPrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, setup.ChannelID, args, []api.Peer{setup.Channel.PrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}

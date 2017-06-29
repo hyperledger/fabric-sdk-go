@@ -48,7 +48,7 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 
 	// Initialize bccsp factories before calling get client
-	err = bccspFactory.InitFactories(configImpl.GetCSPConfig())
+	err = bccspFactory.InitFactories(configImpl.CSPConfig())
 	if err != nil {
 		return fmt.Errorf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
@@ -157,7 +157,7 @@ func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, channelID string, 
 	// must reset client user context to normal user once done with Admin privilieges
 	defer setup.Client.SetUserContext(setup.NormalUser)
 
-	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, channelID, args, chainCodePath, chainCodeVersion, []api.Peer{setup.Channel.GetPrimaryPeer()}, setup.EventHub); err != nil {
+	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, channelID, args, chainCodePath, chainCodeVersion, []api.Peer{setup.Channel.PrimaryPeer()}, setup.EventHub); err != nil {
 		return err
 	}
 	return nil
@@ -171,7 +171,7 @@ func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, 
 	// must reset client user context to normal user once done with Admin privilieges
 	defer setup.Client.SetUserContext(setup.NormalUser)
 
-	if err := admin.SendInstallCC(setup.Client, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, setup.Channel.GetPeers(), setup.GetDeployPath()); err != nil {
+	if err := admin.SendInstallCC(setup.Client, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, setup.Channel.Peers(), setup.GetDeployPath()); err != nil {
 		return fmt.Errorf("SendInstallProposal return error: %v", err)
 	}
 
@@ -231,7 +231,7 @@ func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string
 		return nil, fmt.Errorf("NewChannel return error: %v", err)
 	}
 
-	ordererConfig, err := client.GetConfig().GetRandomOrdererConfig()
+	ordererConfig, err := client.GetConfig().RandomOrdererConfig()
 	if err != nil {
 		return nil, fmt.Errorf("GetRandomOrdererConfig() return error: %s", err)
 	}
@@ -248,7 +248,7 @@ func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string
 	}
 
 	for _, org := range orgs {
-		peerConfig, err := client.GetConfig().GetPeersConfig(org)
+		peerConfig, err := client.GetConfig().PeersConfig(org)
 		if err != nil {
 			return nil, fmt.Errorf("Error reading peer config: %v", err)
 		}
@@ -344,7 +344,7 @@ func (setup *BaseSetupImpl) getEventHub(client api.FabricClient) (api.EventHub, 
 		return nil, fmt.Errorf("Error creating new event hub: %v", err)
 	}
 	foundEventHub := false
-	peerConfig, err := client.GetConfig().GetPeersConfig(setup.OrgID)
+	peerConfig, err := client.GetConfig().PeersConfig(setup.OrgID)
 	if err != nil {
 		return nil, fmt.Errorf("Error reading peer config: %v", err)
 	}

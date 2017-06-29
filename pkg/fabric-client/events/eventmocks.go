@@ -112,7 +112,7 @@ func (mec *mockEventClient) Stop() error {
 
 func createMockedEventHub(t *testing.T) (*eventHub, *mockEventClientFactory) {
 	// Initialize bccsp factories before calling get client
-	err := bccspFactory.InitFactories(mocks.NewMockConfig().GetCSPConfig())
+	err := bccspFactory.InitFactories(mocks.NewMockConfig().CSPConfig())
 	if err != nil {
 		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}

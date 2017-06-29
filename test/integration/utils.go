@@ -58,13 +58,13 @@ func randomString(strlen int) string {
 
 // GetDefaultImplPreEnrolledUser ...
 func getDefaultImplPreEnrolledUser(client api.FabricClient, keyDir string, certDir string, username string, orgName string) (api.User, error) {
-	privateKeyDir := filepath.Join(client.GetConfig().GetCryptoConfigPath(), keyDir)
+	privateKeyDir := filepath.Join(client.GetConfig().CryptoConfigPath(), keyDir)
 	privateKeyPath, err := getFirstPathFromDir(privateKeyDir)
 	if err != nil {
 		return nil, fmt.Errorf("Error finding the private key path: %v", err)
 	}
 
-	enrollmentCertDir := filepath.Join(client.GetConfig().GetCryptoConfigPath(), certDir)
+	enrollmentCertDir := filepath.Join(client.GetConfig().CryptoConfigPath(), certDir)
 	enrollmentCertPath, err := getFirstPathFromDir(enrollmentCertDir)
 	if err != nil {
 		return nil, fmt.Errorf("Error finding the enrollment cert path: %v", err)
@@ -107,7 +107,7 @@ func getFirstPathFromDir(dir string) (string, error) {
 // or an error
 func HasPrimaryPeerJoinedChannel(client api.FabricClient, orgUser api.User, channel api.Channel) (bool, error) {
 	foundChannel := false
-	primaryPeer := channel.GetPrimaryPeer()
+	primaryPeer := channel.PrimaryPeer()
 
 	currentUser := client.GetUserContext()
 	defer client.SetUserContext(currentUser)
@@ -118,7 +118,7 @@ func HasPrimaryPeerJoinedChannel(client api.FabricClient, orgUser api.User, chan
 		return false, fmt.Errorf("Error querying channel for primary peer: %s", err)
 	}
 	for _, responseChannel := range response.Channels {
-		if responseChannel.ChannelId == channel.GetName() {
+		if responseChannel.ChannelId == channel.Name() {
 			foundChannel = true
 		}
 	}

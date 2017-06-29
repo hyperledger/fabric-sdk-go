@@ -24,34 +24,34 @@ func NewMockConfig() api.Config {
 	return &MockConfig{}
 }
 
-// GetCAConfig not implemented
-func (c *MockConfig) GetCAConfig(org string) (*api.CAConfig, error) {
+// CAConfig not implemented
+func (c *MockConfig) CAConfig(org string) (*api.CAConfig, error) {
 	return nil, nil
 }
 
-//GetCAServerCertFiles Read configuration option for the server certificate files
-func (c *MockConfig) GetCAServerCertFiles(org string) ([]string, error) {
+//CAServerCertFiles Read configuration option for the server certificate files
+func (c *MockConfig) CAServerCertFiles(org string) ([]string, error) {
 	return nil, nil
 }
 
-//GetCAClientKeyFile Read configuration option for the fabric CA client key file
-func (c *MockConfig) GetCAClientKeyFile(org string) (string, error) {
+//CAClientKeyFile Read configuration option for the fabric CA client key file
+func (c *MockConfig) CAClientKeyFile(org string) (string, error) {
 	return "", nil
 }
 
-//GetCAClientCertFile Read configuration option for the fabric CA client cert file
-func (c *MockConfig) GetCAClientCertFile(org string) (string, error) {
+//CAClientCertFile Read configuration option for the fabric CA client cert file
+func (c *MockConfig) CAClientCertFile(org string) (string, error) {
 	return "", nil
 }
 
-// GetFabricClientViper returns the internal viper instance used by the
+// FabricClientViper returns the internal viper instance used by the
 // SDK to read configuration options
-func (c *MockConfig) GetFabricClientViper() *viper.Viper {
+func (c *MockConfig) FabricClientViper() *viper.Viper {
 	return nil
 }
 
-// GetPeersConfig Retrieves the fabric peers from the config file provided
-func (c *MockConfig) GetPeersConfig(org string) ([]api.PeerConfig, error) {
+// PeersConfig Retrieves the fabric peers from the config file provided
+func (c *MockConfig) PeersConfig(org string) ([]api.PeerConfig, error) {
 	return nil, nil
 }
 
@@ -60,13 +60,13 @@ func (c *MockConfig) IsTLSEnabled() bool {
 	return false
 }
 
-// GetTLSCACertPool ...
-func (c *MockConfig) GetTLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
+// TLSCACertPool ...
+func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 	return nil, nil
 }
 
-// GetTLSCACertPoolFromRoots ...
-func (c *MockConfig) GetTLSCACertPoolFromRoots(ordererRootCAs [][]byte) (*x509.CertPool, error) {
+// TLSCACertPoolFromRoots ...
+func (c *MockConfig) TLSCACertPoolFromRoots(ordererRootCAs [][]byte) (*x509.CertPool, error) {
 	return nil, nil
 }
 
@@ -80,53 +80,53 @@ func (c *MockConfig) TcertBatchSize() int {
 	return 0
 }
 
-// GetSecurityAlgorithm ...
-func (c *MockConfig) GetSecurityAlgorithm() string {
+// SecurityAlgorithm ...
+func (c *MockConfig) SecurityAlgorithm() string {
 	return ""
 }
 
-// GetSecurityLevel ...
-func (c *MockConfig) GetSecurityLevel() int {
+// SecurityLevel ...
+func (c *MockConfig) SecurityLevel() int {
 	return 0
 
 }
 
-// GetRandomOrdererConfig not implemented
-func (c *MockConfig) GetRandomOrdererConfig() (*api.OrdererConfig, error) {
+// RandomOrdererConfig not implemented
+func (c *MockConfig) RandomOrdererConfig() (*api.OrdererConfig, error) {
 	return nil, nil
 }
 
-// GetOrdererConfig not implemented
-func (c *MockConfig) GetOrdererConfig(name string) (*api.OrdererConfig, error) {
+// OrdererConfig not implemented
+func (c *MockConfig) OrdererConfig(name string) (*api.OrdererConfig, error) {
 	return nil, nil
 }
 
-// GetMspID ...
-func (c *MockConfig) GetMspID(org string) (string, error) {
+// MspID ...
+func (c *MockConfig) MspID(org string) (string, error) {
 	return "", nil
 }
 
-// GetKeyStorePath ...
-func (c *MockConfig) GetKeyStorePath() string {
+// KeyStorePath ...
+func (c *MockConfig) KeyStorePath() string {
 	return ""
 }
 
-// GetCAKeyStorePath not implemented
-func (c *MockConfig) GetCAKeyStorePath() string {
+// CAKeyStorePath not implemented
+func (c *MockConfig) CAKeyStorePath() string {
 	return ""
 }
 
-// GetCryptoConfigPath ...
-func (c *MockConfig) GetCryptoConfigPath() string {
+// CryptoConfigPath ...
+func (c *MockConfig) CryptoConfigPath() string {
 	return ""
 }
 
-// GetCSPConfig ...
-func (c *MockConfig) GetCSPConfig() *bccspFactory.FactoryOpts {
+// CSPConfig ...
+func (c *MockConfig) CSPConfig() *bccspFactory.FactoryOpts {
 	return nil
 }
 
-// GetNetworkConfig not implemented
-func (c *MockConfig) GetNetworkConfig() (*api.NetworkConfig, error) {
+// NetworkConfig not implemented
+func (c *MockConfig) NetworkConfig() (*api.NetworkConfig, error) {
 	return nil, nil
 }

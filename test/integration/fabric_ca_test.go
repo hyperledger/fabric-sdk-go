@@ -50,19 +50,19 @@ func TestMain(m *testing.M) {
 // This test loads/enrols an admin user
 // Using the admin, it registers, enrols, and revokes a test user
 func TestRegisterEnrollRevoke(t *testing.T) {
-	mspID, err := testFabricCAConfig.GetMspID(org1Name)
+	mspID, err := testFabricCAConfig.MspID(org1Name)
 	if err != nil {
 		t.Fatalf("GetMspId() returned error: %v", err)
 	}
 
-	caConfig, err := testFabricCAConfig.GetCAConfig(org1Name)
+	caConfig, err := testFabricCAConfig.CAConfig(org1Name)
 	if err != nil {
 		t.Fatalf("GetCAConfig returned error: %s", err)
 	}
 
 	client := client.NewClient(testFabricCAConfig)
 
-	err = bccspFactory.InitFactories(testFabricCAConfig.GetCSPConfig())
+	err = bccspFactory.InitFactories(testFabricCAConfig.CSPConfig())
 	if err != nil {
 		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}

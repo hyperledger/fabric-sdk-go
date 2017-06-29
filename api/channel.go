@@ -23,24 +23,24 @@ import (
  * primary orderer to retrieve the configuration settings for this channel.
  */
 type Channel interface {
-	GetName() string
+	Name() string
 	Initialize(data []byte) error
 	IsInitialized() bool
 	IsSecurityEnabled() bool
-	GetTCertBatchSize() int
+	TCertBatchSize() int
 	SetTCertBatchSize(batchSize int)
 	AddPeer(peer Peer) error
 	RemovePeer(peer Peer)
-	GetPeers() []Peer
-	GetAnchorPeers() []OrgAnchorPeer
+	Peers() []Peer
+	AnchorPeers() []OrgAnchorPeer
 	SetPrimaryPeer(peer Peer) error
-	GetPrimaryPeer() Peer
+	PrimaryPeer() Peer
 	AddOrderer(orderer Orderer) error
 	RemoveOrderer(orderer Orderer)
-	GetOrderers() []Orderer
+	Orderers() []Orderer
 	SetMSPManager(mspManager msp.MSPManager)
-	GetMSPManager() msp.MSPManager
-	GetGenesisBlock(request *GenesisBlockRequest) (*common.Block, error)
+	MSPManager() msp.MSPManager
+	GenesisBlock(request *GenesisBlockRequest) (*common.Block, error)
 	JoinChannel(request *JoinChannelRequest) error
 	UpdateChannel() bool
 	IsReadonly() bool
@@ -55,20 +55,20 @@ type Channel interface {
 	CreateTransaction(resps []*TransactionProposalResponse) (*Transaction, error)
 	SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
 	SendInstantiateProposal(chaincodeName string, channelID string, args []string, chaincodePath string, chaincodeVersion string, targets []Peer) ([]*TransactionProposalResponse, string, error)
-	GetOrganizationUnits() ([]string, error)
+	OrganizationUnits() ([]string, error)
 	QueryExtensionInterface() ChannelExtension
 	LoadConfigUpdateEnvelope(data []byte) error
 }
 
 // The ChannelExtension interface allows extensions of the SDK to add functionality to Channel overloads.
 type ChannelExtension interface {
-	GetClientContext() FabricClient
+	ClientContext() FabricClient
 
 	SignPayload(payload []byte) (*SignedEnvelope, error)
 	BroadcastEnvelope(envelope *SignedEnvelope) ([]*TransactionResponse, error)
 
 	// TODO: This should go somewhere else - see TransactionProposal.GetBytes(). - deprecated
-	GetProposalBytes(tp *TransactionProposal) ([]byte, error)
+	ProposalBytes(tp *TransactionProposal) ([]byte, error)
 }
 
 // OrgAnchorPeer contains information about an anchor peer on this channel

@@ -78,7 +78,7 @@ func SendInstantiateCC(channel api.Channel, chainCodeID string, channelID string
 // CreateOrUpdateChannel creates a channel if it does not exist or updates a channel
 // if it does and a different channelConfig is used
 func CreateOrUpdateChannel(client api.FabricClient, ordererUser api.User, orgUser api.User, channel api.Channel, channelConfig string) error {
-	logger.Debugf("***** Creating or updating channel: %s *****\n", channel.GetName())
+	logger.Debugf("***** Creating or updating channel: %s *****\n", channel.Name())
 
 	currentUser := client.GetUserContext()
 	defer client.SetUserContext(currentUser)
@@ -117,8 +117,8 @@ func CreateOrUpdateChannel(client api.FabricClient, ordererUser api.User, orgUse
 	}
 
 	request := api.CreateChannelRequest{
-		Name:       channel.GetName(),
-		Orderer:    channel.GetOrderers()[0],
+		Name:       channel.Name(),
+		Orderer:    channel.Orderers()[0],
 		Config:     config,
 		Signatures: configSignatures,
 		TxID:       txID,
@@ -159,7 +159,7 @@ func JoinChannel(client api.FabricClient, orgUser api.User, channel api.Channel)
 		TxID:  txID,
 		Nonce: nonce,
 	}
-	genesisBlock, err := channel.GetGenesisBlock(genesisBlockRequest)
+	genesisBlock, err := channel.GenesisBlock(genesisBlockRequest)
 	if err != nil {
 		return fmt.Errorf("Error getting genesis block: %v", err)
 	}
@@ -173,7 +173,7 @@ func JoinChannel(client api.FabricClient, orgUser api.User, channel api.Channel)
 		return fmt.Errorf("Could not compute TxID: %s", err)
 	}
 	joinChannelRequest := &api.JoinChannelRequest{
-		Targets:      channel.GetPeers(),
+		Targets:      channel.Peers(),
 		GenesisBlock: genesisBlock,
 		TxID:         txID,
 		Nonce:        nonce,

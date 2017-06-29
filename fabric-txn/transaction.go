@@ -26,7 +26,7 @@ func QueryChaincode(client api.FabricClient, channel api.Channel, chaincodeID st
 	}
 
 	transactionProposalResponses, _, err := internal.CreateAndSendTransactionProposal(channel,
-		chaincodeID, channel.GetName(), args, []api.Peer{channel.GetPrimaryPeer()}, nil)
+		chaincodeID, channel.Name(), args, []api.Peer{channel.PrimaryPeer()}, nil)
 
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal returned error: %v", err)
@@ -60,7 +60,7 @@ func InvokeChaincode(client api.FabricClient, channel api.Channel, targets []api
 	}
 
 	transactionProposalResponses, txID, err := internal.CreateAndSendTransactionProposal(channel,
-		chaincodeID, channel.GetName(), args, targets, transientData)
+		chaincodeID, channel.Name(), args, targets, transientData)
 
 	if err != nil {
 		return fmt.Errorf("CreateAndSendTransactionProposal returned error: %v", err)

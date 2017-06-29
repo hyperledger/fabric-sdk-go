@@ -81,9 +81,11 @@ func (p *MockPeer) URL() string {
 
 // SendProposal does not send anything anywhere but returns an empty mock ProposalResponse
 func (p *MockPeer) SendProposal(tp *api.TransactionProposal) (*api.TransactionProposalResponse, error) {
+
 	return &api.TransactionProposalResponse{
 		Endorser:         p.MockURL,
 		Proposal:         tp,
-		ProposalResponse: &pb.ProposalResponse{},
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}, nil
+
 }

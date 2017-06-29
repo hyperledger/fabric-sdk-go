@@ -46,7 +46,7 @@ func TestNewPeerTLSFromCert(t *testing.T) {
 
 	certPool := x509.NewCertPool()
 	config.EXPECT().IsTLSEnabled().Return(true)
-	config.EXPECT().GetTLSCACertPool("cert").Return(certPool, nil)
+	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
 
 	url := "0.0.0.0:1234"
 	// TODO - test actual parameters and test server name override

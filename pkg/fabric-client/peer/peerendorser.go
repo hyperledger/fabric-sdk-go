@@ -40,7 +40,7 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 			return peerEndorser{}, fmt.Errorf("Certificate is required")
 		}
 
-		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
+		tlsCaCertPool, err := config.TLSCACertPool(certificate)
 		if err != nil {
 			return peerEndorser{}, err
 		}

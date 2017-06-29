@@ -59,7 +59,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupIm
 	// set Client User Context to Admin
 	testSetup.Client.SetUserContext(testSetup.AdminUser)
 	defer testSetup.Client.SetUserContext(testSetup.NormalUser)
-	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(testSetup.Channel.GetPrimaryPeer())
+	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(testSetup.Channel.PrimaryPeer())
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
