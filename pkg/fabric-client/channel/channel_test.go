@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
@@ -149,7 +150,7 @@ func TestConcurrentPeers(t *testing.T) {
 		t.Fatalf("Failed to create massive channel: %s", err)
 	}
 
-	result, err := channel.SendTransactionProposal(&api.TransactionProposal{
+	result, err := channel.SendTransactionProposal(&txnapi.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
 	}, 1, nil)
 	if err != nil {
@@ -169,7 +170,7 @@ func TestConcurrentOrderers(t *testing.T) {
 	}
 
 	txn := api.Transaction{
-		Proposal: &api.TransactionProposal{
+		Proposal: &txnapi.TransactionProposal{
 			Proposal: &pb.Proposal{},
 		},
 		Transaction: &pb.Transaction{},

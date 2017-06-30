@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
 	"github.com/hyperledger/fabric/common/crypto"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric/protos/utils"
@@ -20,7 +21,7 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
 
 // CreateAndSendTransactionProposal ...
 func CreateAndSendTransactionProposal(channel api.Channel, chainCodeID string, channelID string,
-	args []string, targets []api.Peer, transientData map[string][]byte) ([]*api.TransactionProposalResponse, string, error) {
+	args []string, targets []api.Peer, transientData map[string][]byte) ([]*txnapi.TransactionProposalResponse, string, error) {
 
 	signedProposal, err := channel.CreateTransactionProposal(chainCodeID, channelID, args, true, transientData)
 	if err != nil {
@@ -43,7 +44,7 @@ func CreateAndSendTransactionProposal(channel api.Channel, chainCodeID string, c
 }
 
 // CreateAndSendTransaction ...
-func CreateAndSendTransaction(channel api.Channel, resps []*api.TransactionProposalResponse) ([]*api.TransactionResponse, error) {
+func CreateAndSendTransaction(channel api.Channel, resps []*txnapi.TransactionProposalResponse) ([]*api.TransactionResponse, error) {
 
 	tx, err := channel.CreateTransaction(resps)
 	if err != nil {

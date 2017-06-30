@@ -28,11 +28,15 @@ type User interface {
 	GetName() string
 	GetRoles() []string
 	SetRoles([]string)
+	SetMspID(mspID string)
+	GetMspID() string
+
+	// ECerts
 	GetEnrollmentCertificate() []byte
 	SetEnrollmentCertificate(cert []byte)
 	SetPrivateKey(privateKey bccsp.Key)
 	GetPrivateKey() bccsp.Key
-	SetMspID(mspID string)
-	GetMspID() string
+
+	// TCerts
 	GenerateTcerts(count int, attributes []string)
 }

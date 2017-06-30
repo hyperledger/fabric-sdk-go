@@ -14,9 +14,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api"
 	"github.com/hyperledger/fabric-sdk-go/api/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer/mocks"
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi/mocks"
 )
 
 // TestNewPeerWithCertNoTLS tests that a peer can be constructed without using a cert
@@ -170,17 +170,17 @@ func TestNames(t *testing.T) {
 func TestProposalProcessorSendProposal(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	proc := mock_peer.NewMockProposalProcessor(mockCtrl)
+	proc := mock_txnapi.NewMockTxnProposalProcessor(mockCtrl)
 
 	tp := mockTransactionProposal()
-	tpr := api.TransactionProposalResponse{Endorser: "example.com", Err: nil, Status: 99, Proposal: tp, ProposalResponse: nil}
+	tpr := txnapi.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
 
-	proc.EXPECT().ProcessProposal(tp).Return(&tpr, nil)
+	proc.EXPECT().ProcessTransactionProposal(tp).Return(tpr, nil)
 
 	p := peer{processor: proc, name: "", roles: nil}
-	tpr1, err := p.SendProposal(tp)
+	tpr1, err := p.ProcessTransactionProposal(tp)
 
-	if err != nil || &tpr != tpr1 {
+	if err != nil || !reflect.DeepEqual(tpr, tpr1) {
 		t.Fatalf("Peer didn't proxy proposal processing")
 	}
 }

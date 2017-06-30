@@ -12,6 +12,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
@@ -273,7 +274,7 @@ func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string
 
 // CreateAndSendTransactionProposal ...
 func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel api.Channel, chainCodeID string, channelID string,
-	args []string, targets []api.Peer, transientData map[string][]byte) ([]*api.TransactionProposalResponse, string, error) {
+	args []string, targets []api.Peer, transientData map[string][]byte) ([]*txnapi.TransactionProposalResponse, string, error) {
 
 	signedProposal, err := channel.CreateTransactionProposal(chainCodeID, channelID, args, true, transientData)
 	if err != nil {
@@ -296,7 +297,7 @@ func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel api.Channel
 }
 
 // CreateAndSendTransaction ...
-func (setup *BaseSetupImpl) CreateAndSendTransaction(channel api.Channel, resps []*api.TransactionProposalResponse) ([]*api.TransactionResponse, error) {
+func (setup *BaseSetupImpl) CreateAndSendTransaction(channel api.Channel, resps []*txnapi.TransactionProposalResponse) ([]*api.TransactionResponse, error) {
 
 	tx, err := channel.CreateTransaction(resps)
 	if err != nil {

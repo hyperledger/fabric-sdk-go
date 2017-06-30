@@ -17,8 +17,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api"
 	"github.com/hyperledger/fabric-sdk-go/api/mocks"
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -213,7 +213,7 @@ func TestProcessProposalGoodDial(t *testing.T) {
 	}
 }
 
-func testProcessProposal(t *testing.T, to time.Duration) (*api.TransactionProposalResponse, error) {
+func testProcessProposal(t *testing.T, to time.Duration) (txnapi.TransactionProposalResult, error) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_api.NewMockConfig(mockCtrl)
@@ -226,11 +226,11 @@ func testProcessProposal(t *testing.T, to time.Duration) (*api.TransactionPropos
 		t.Fatalf("Peer conn construction error (%v)", err)
 	}
 
-	return conn.ProcessProposal(mockTransactionProposal())
+	return conn.ProcessTransactionProposal(mockTransactionProposal())
 }
 
-func mockTransactionProposal() *api.TransactionProposal {
-	return &api.TransactionProposal{
+func mockTransactionProposal() txnapi.TransactionProposal {
+	return txnapi.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
 	}
 }
@@ -248,4 +248,22 @@ func startEndorserServer(t *testing.T) *mocks.MockEndorserServer {
 	fmt.Printf("Starting test server\n")
 	go grpcServer.Serve(lis)
 	return endorserServer
+}
+
+func TestTransactionProposalError(t *testing.T) {
+	var mockError error
+
+	proposal := mockTransactionProposal()
+	mockError = TransactionProposalError{
+		Endorser: "1.2.3.4:1000",
+		Proposal: mockTransactionProposal(),
+		Err:      fmt.Errorf("error"),
+	}
+
+	errText := mockError.Error()
+	mockText := fmt.Sprintf("Transaction processor (1.2.3.4:1000) returned error 'error' for proposal: %v", proposal)
+
+	if errText != mockText {
+		t.Fatalf("Unexpected error")
+	}
 }

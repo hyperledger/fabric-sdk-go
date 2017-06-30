@@ -11,7 +11,11 @@ import (
 	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	"github.com/op/go-logging"
 )
+
+var logger = logging.MustGetLogger("fabric_sdk_go")
 
 const (
 	connTimeout  = time.Second * 10 // TODO: should be configurable
@@ -19,17 +23,18 @@ const (
 )
 
 type peer struct {
-	processor             ProposalProcessor
+	processor             txnapi.TxnProposalProcessor
 	name                  string
 	roles                 []string
 	enrollmentCertificate *pem.Block
 	url                   string
 }
 
+/*
 // ProposalProcessor simulates transaction proposal, so that a client can submit the result for ordering
 type ProposalProcessor interface {
 	ProcessProposal(proposal *api.TransactionProposal) (*api.TransactionProposalResponse, error)
-}
+}*/
 
 // Name gets the Peer name.
 func (p *peer) Name() string {
@@ -74,8 +79,8 @@ func (p *peer) URL() string {
 }
 
 // SendProposal sends the created proposal to peer for endorsement.
-func (p *peer) SendProposal(proposal *api.TransactionProposal) (*api.TransactionProposalResponse, error) {
-	return p.processor.ProcessProposal(proposal)
+func (p *peer) ProcessTransactionProposal(proposal txnapi.TransactionProposal) (txnapi.TransactionProposalResult, error) {
+	return p.processor.ProcessTransactionProposal(proposal)
 }
 
 // NewPeerTLSFromCert constructs a Peer given its endpoint configuration settings.
@@ -104,7 +109,7 @@ func NewPeer(url string, config api.Config) (api.Peer, error) {
 }
 
 // NewPeerFromProcessor constructs a Peer with a ProposalProcessor to simulate transactions.
-func NewPeerFromProcessor(url string, processor ProposalProcessor, config api.Config) (api.Peer, error) {
+func NewPeerFromProcessor(url string, processor txnapi.TxnProposalProcessor, config api.Config) (api.Peer, error) {
 	return &peer{url: url, processor: processor}, nil
 }
 

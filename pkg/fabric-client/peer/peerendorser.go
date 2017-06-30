@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -21,6 +22,13 @@ import (
 type peerEndorser struct {
 	grpcDialOption []grpc.DialOption
 	target         string
+}
+
+// TransactionProposalError represents an error condition that prevented proposal processing.
+type TransactionProposalError struct {
+	Endorser string
+	Proposal txnapi.TransactionProposal
+	Err      error
 }
 
 func newPeerEndorser(target string, certificate string, serverHostOverride string, dialTimeout time.Duration, dialBlocking bool, config api.Config) (peerEndorser, error) {
@@ -55,14 +63,21 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 	return pc, nil
 }
 
-// ProcessProposal sends the transaction proposal to a peer and returns the response.
-func (p *peerEndorser) ProcessProposal(proposal *api.TransactionProposal) (*api.TransactionProposalResponse, error) {
+// ProcessTransactionProposal sends the transaction proposal to a peer and returns the response.
+func (p *peerEndorser) ProcessTransactionProposal(proposal txnapi.TransactionProposal) (txnapi.TransactionProposalResult, error) {
+	logger.Debugf("Processing proposal using endorser :%s", p.target)
+
 	proposalResponse, err := p.sendProposal(proposal)
 	if err != nil {
-		return nil, err
+		tpe := TransactionProposalError{
+			Endorser: p.target,
+			Proposal: proposal,
+			Err:      err,
+		}
+		return txnapi.TransactionProposalResult{}, &tpe
 	}
 
-	return &api.TransactionProposalResponse{
+	return txnapi.TransactionProposalResult{
 		Proposal:         proposal,
 		ProposalResponse: proposalResponse,
 		Endorser:         p.target, // TODO: what format is expected for Endorser? Just target? URL?
@@ -78,7 +93,7 @@ func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {
 	conn.Close()
 }
 
-func (p *peerEndorser) sendProposal(proposal *api.TransactionProposal) (*pb.ProposalResponse, error) {
+func (p *peerEndorser) sendProposal(proposal txnapi.TransactionProposal) (*pb.ProposalResponse, error) {
 	conn, err := p.conn()
 	if err != nil {
 		return nil, err
@@ -87,4 +102,8 @@ func (p *peerEndorser) sendProposal(proposal *api.TransactionProposal) (*pb.Prop
 
 	endorserClient := pb.NewEndorserClient(conn)
 	return endorserClient.ProcessProposal(context.Background(), proposal.SignedProposal)
+}
+
+func (tpe TransactionProposalError) Error() string {
+	return fmt.Sprintf("Transaction processor (%s) returned error '%s' for proposal: %v", tpe.Endorser, tpe.Err.Error(), tpe.Proposal)
 }

@@ -8,6 +8,8 @@ package api
 
 import (
 	"encoding/pem"
+
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
 )
 
 // The Peer class represents a peer in the target blockchain network to which
@@ -24,16 +26,22 @@ import (
 // It should be noted that Peer event streams function at the Peer level and not at the
 // channel and chaincode levels.
 type Peer interface {
+	txnapi.TxnProposalProcessor
+
+	// Events (need verb)
 	ConnectEventSource()
 	IsEventListened(event string, channel Channel) (bool, error)
 	AddListener(eventType string, eventTypeData interface{}, eventCallback interface{}) (string, error)
 	RemoveListener(eventListenerRef string) (bool, error)
+
+	// ECert Client (need verb)
+	EnrollmentCertificate() *pem.Block
+	SetEnrollmentCertificate(pem *pem.Block)
+
+	// Peer Properties
 	Name() string
 	SetName(name string)
 	Roles() []string
 	SetRoles(roles []string)
-	EnrollmentCertificate() *pem.Block
-	SetEnrollmentCertificate(pem *pem.Block)
 	URL() string
-	SendProposal(proposal *TransactionProposal) (*TransactionProposalResponse, error)
 }

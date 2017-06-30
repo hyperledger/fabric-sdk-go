@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package api
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
 	"github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -50,14 +51,16 @@ type Channel interface {
 	QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error)
 	QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error)
 	QueryByChaincode(chaincodeName string, args []string, targets []Peer) ([][]byte, error)
-	CreateTransactionProposal(chaincodeName string, channelID string, args []string, sign bool, transientData map[string][]byte) (*TransactionProposal, error)
-	SendTransactionProposal(proposal *TransactionProposal, retry int, targets []Peer) ([]*TransactionProposalResponse, error)
-	CreateTransaction(resps []*TransactionProposalResponse) (*Transaction, error)
-	SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
-	SendInstantiateProposal(chaincodeName string, channelID string, args []string, chaincodePath string, chaincodeVersion string, targets []Peer) ([]*TransactionProposalResponse, string, error)
+	SendInstantiateProposal(chaincodeName string, channelID string, args []string, chaincodePath string, chaincodeVersion string, targets []Peer) ([]*txnapi.TransactionProposalResponse, string, error)
 	OrganizationUnits() ([]string, error)
 	QueryExtensionInterface() ChannelExtension
 	LoadConfigUpdateEnvelope(data []byte) error
+
+	// Transaction Proposal
+	CreateTransactionProposal(chaincodeName string, channelID string, args []string, sign bool, transientData map[string][]byte) (*txnapi.TransactionProposal, error)
+	SendTransactionProposal(proposal *txnapi.TransactionProposal, retry int, targets []Peer) ([]*txnapi.TransactionProposalResponse, error)
+	CreateTransaction(resps []*txnapi.TransactionProposalResponse) (*Transaction, error)
+	SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
 }
 
 // The ChannelExtension interface allows extensions of the SDK to add functionality to Channel overloads.
@@ -68,7 +71,7 @@ type ChannelExtension interface {
 	BroadcastEnvelope(envelope *SignedEnvelope) ([]*TransactionResponse, error)
 
 	// TODO: This should go somewhere else - see TransactionProposal.GetBytes(). - deprecated
-	ProposalBytes(tp *TransactionProposal) ([]byte, error)
+	ProposalBytes(tp *txnapi.TransactionProposal) ([]byte, error)
 }
 
 // OrgAnchorPeer contains information about an anchor peer on this channel
@@ -84,27 +87,6 @@ type GenesisBlockRequest struct {
 	Nonce []byte
 }
 
-// The TransactionProposal object to be send to the endorsers
-type TransactionProposal struct {
-	TransactionID string
-
-	SignedProposal *pb.SignedProposal
-	Proposal       *pb.Proposal
-}
-
-// TransactionProposalResponse ...
-/**
- * The TransactionProposalResponse result object returned from endorsers.
- */
-type TransactionProposalResponse struct {
-	Endorser string
-	Err      error
-	Status   int32
-
-	Proposal         *TransactionProposal
-	ProposalResponse *pb.ProposalResponse
-}
-
 // JoinChannelRequest allows a set of peers to transact on a channel on the network
 type JoinChannelRequest struct {
 	Targets      []Peer
@@ -115,7 +97,7 @@ type JoinChannelRequest struct {
 
 // The Transaction object created from an endorsed proposal
 type Transaction struct {
-	Proposal    *TransactionProposal
+	Proposal    *txnapi.TransactionProposal
 	Transaction *pb.Transaction
 }
 

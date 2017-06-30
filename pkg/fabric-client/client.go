@@ -14,6 +14,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
 	channel "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
@@ -489,7 +490,7 @@ func (c *client) QueryInstalledChaincodes(peer api.Peer) (*pb.ChaincodeQueryResp
 * @param {[]string} chaincodeVersion: optional - Array of byte the chaincodePackage
  */
 func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
-	chaincodePackage []byte, targets []api.Peer) ([]*api.TransactionProposalResponse, string, error) {
+	chaincodePackage []byte, targets []api.Peer) ([]*txnapi.TransactionProposalResponse, string, error) {
 
 	if chaincodeName == "" {
 		return nil, "", fmt.Errorf("Missing 'chaincodeName' parameter")
@@ -542,7 +543,7 @@ func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 		return nil, "", err
 	}
 
-	transactionProposalResponse, err := channel.SendTransactionProposal(&api.TransactionProposal{
+	transactionProposalResponse, err := channel.SendTransactionProposal(&txnapi.TransactionProposal{
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
 		TransactionID:  txID,

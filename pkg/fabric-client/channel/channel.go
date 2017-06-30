@@ -16,6 +16,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
 	"github.com/hyperledger/fabric/bccsp"
 
 	"github.com/hyperledger/fabric/msp"
@@ -97,7 +98,7 @@ func (c *channel) ClientContext() api.FabricClient {
 }
 
 // ProposalBytes returns the serialized transaction.
-func (c *channel) ProposalBytes(tp *api.TransactionProposal) ([]byte, error) {
+func (c *channel) ProposalBytes(tp *txnapi.TransactionProposal) ([]byte, error) {
 	return proto.Marshal(tp.SignedProposal)
 }
 
@@ -459,7 +460,7 @@ func (c *channel) JoinChannel(request *api.JoinChannelRequest) error {
 	if err != nil {
 		return fmt.Errorf("Error signing proposal: %v", err)
 	}
-	transactionProposal := &api.TransactionProposal{
+	transactionProposal := &txnapi.TransactionProposal{
 		TransactionID:  txID,
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
@@ -944,13 +945,13 @@ func (c *channel) QueryByChaincode(chaincodeName string, args []string, targets 
 * ECert to sign.
  */
 func (c *channel) CreateTransactionProposal(chaincodeName string, channelID string,
-	args []string, sign bool, transientData map[string][]byte) (*api.TransactionProposal, error) {
+	args []string, sign bool, transientData map[string][]byte) (*txnapi.TransactionProposal, error) {
 	return CreateTransactionProposal(chaincodeName, channelID, args, sign, transientData, c.clientContext)
 }
 
 //CreateTransactionProposal  ...
 func CreateTransactionProposal(chaincodeName string, channelID string,
-	args []string, sign bool, transientData map[string][]byte, clientContext api.FabricClient) (*api.TransactionProposal, error) {
+	args []string, sign bool, transientData map[string][]byte, clientContext api.FabricClient) (*txnapi.TransactionProposal, error) {
 
 	argsArray := make([][]byte, len(args))
 	for i, arg := range args {
@@ -987,7 +988,7 @@ func CreateTransactionProposal(chaincodeName string, channelID string,
 		return nil, err
 	}
 	signedProposal := &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}
-	return &api.TransactionProposal{
+	return &txnapi.TransactionProposal{
 		TransactionID:  txID,
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
@@ -997,7 +998,7 @@ func CreateTransactionProposal(chaincodeName string, channelID string,
 
 // SendTransactionProposal ...
 // Send  the created proposal to peer for endorsement.
-func (c *channel) SendTransactionProposal(proposal *api.TransactionProposal, retry int, targets []api.Peer) ([]*api.TransactionProposalResponse, error) {
+func (c *channel) SendTransactionProposal(proposal *txnapi.TransactionProposal, retry int, targets []api.Peer) ([]*txnapi.TransactionProposalResponse, error) {
 	if proposal == nil || proposal.SignedProposal == nil {
 		return nil, fmt.Errorf("signedProposal is nil")
 	}
@@ -1014,40 +1015,36 @@ func (c *channel) SendTransactionProposal(proposal *api.TransactionProposal, ret
 }
 
 //SendTransactionProposal ...
-func SendTransactionProposal(proposal *api.TransactionProposal, retry int, targetPeers []api.Peer) ([]*api.TransactionProposalResponse, error) {
+func SendTransactionProposal(proposal *txnapi.TransactionProposal, retry int, targets []api.Peer) ([]*txnapi.TransactionProposalResponse, error) {
 
 	if proposal == nil || proposal.SignedProposal == nil {
 		return nil, fmt.Errorf("signedProposal is nil")
 	}
 
-	if len(targetPeers) < 1 {
+	if len(targets) < 1 {
 		return nil, fmt.Errorf("Missing peer objects for sending transaction proposal")
 	}
 
 	var responseMtx sync.Mutex
-	var transactionProposalResponses []*api.TransactionProposalResponse
+	var transactionProposalResponses []*txnapi.TransactionProposalResponse
 	var wg sync.WaitGroup
 
-	for _, p := range targetPeers {
+	for _, p := range targets {
 		wg.Add(1)
-		go func(peer api.Peer) {
+		go func(processor txnapi.TxnProposalProcessor) {
 			defer wg.Done()
-			var err error
-			var proposalResponse *api.TransactionProposalResponse
-			logger.Debugf("Send ProposalRequest to peer :%s", peer.URL())
-			if proposalResponse, err = peer.SendProposal(proposal); err != nil {
-				logger.Debugf("Receive Error Response :%v", proposalResponse)
-				proposalResponse = &api.TransactionProposalResponse{
-					Endorser: peer.URL(),
-					Err:      fmt.Errorf("Error calling endorser '%s':  %s", peer.URL(), err),
-					Proposal: proposal,
-				}
-			} else {
-				logger.Debugf("Receive Proposal ChaincodeActionResponse :%v\n", proposalResponse)
+
+			r, err := processor.ProcessTransactionProposal(*proposal)
+			if err != nil {
+				logger.Debugf("Received error response from txn proposal processing: %v", err)
+				// Error is handled downstream.
 			}
 
+			tpr := txnapi.TransactionProposalResponse{
+				TransactionProposalResult: r, Err: err}
+
 			responseMtx.Lock()
-			transactionProposalResponses = append(transactionProposalResponses, proposalResponse)
+			transactionProposalResponses = append(transactionProposalResponses, &tpr)
 			responseMtx.Unlock()
 		}(p)
 	}
@@ -1059,12 +1056,12 @@ func SendTransactionProposal(proposal *api.TransactionProposal, retry int, targe
 /**
 * Create a transaction with proposal response, following the endorsement policy.
  */
-func (c *channel) CreateTransaction(resps []*api.TransactionProposalResponse) (*api.Transaction, error) {
+func (c *channel) CreateTransaction(resps []*txnapi.TransactionProposalResponse) (*api.Transaction, error) {
 	if len(resps) == 0 {
 		return nil, fmt.Errorf("At least one proposal response is necessary")
 	}
 
-	proposal := resps[0].Proposal
+	proposal := &resps[0].Proposal
 
 	// the original header
 	hdr, err := protos_utils.GetHeader(proposal.Proposal.Header)
@@ -1206,7 +1203,7 @@ func (c *channel) SendTransaction(tx *api.Transaction) ([]*api.TransactionRespon
 * @param {[]string} chaincodeVersion: required - string of the version of the chaincode
  */
 func (c *channel) SendInstantiateProposal(chaincodeName string, channelID string,
-	args []string, chaincodePath string, chaincodeVersion string, targets []api.Peer) ([]*api.TransactionProposalResponse, string, error) {
+	args []string, chaincodePath string, chaincodeVersion string, targets []api.Peer) ([]*txnapi.TransactionProposalResponse, string, error) {
 
 	if chaincodeName == "" {
 		return nil, "", fmt.Errorf("Missing 'chaincodeName' parameter")
@@ -1258,7 +1255,7 @@ func (c *channel) SendInstantiateProposal(chaincodeName string, channelID string
 		return nil, "", err
 	}
 
-	transactionProposalResponse, err := c.SendTransactionProposal(&api.TransactionProposal{
+	transactionProposalResponse, err := c.SendTransactionProposal(&txnapi.TransactionProposal{
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
 		TransactionID:  txID,
