@@ -120,7 +120,6 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	//Tamper 'client.network' value and use a new config to avoid conflicting with other tests
 	sampleConfig, err := InitConfig("../../test/fixtures/config/config_test.yaml")
-	myViper := sampleConfig.FabricClientViper()
 	clientNetworks := myViper.Get("client.network")
 	myViper.Set("client.network", "INVALID")
 	//...
@@ -314,8 +313,6 @@ func TestInitConfig(t *testing.T) {
 	}
 
 	//Test if Viper is initialized after calling init config
-	myViper := configImpl.FabricClientViper()
-
 	if myViper.GetString("client.security.hashAlgorithm") != configImpl.SecurityAlgorithm() {
 		t.Fatal("Config initialized with incorrect viper configuration")
 	}
@@ -323,7 +320,6 @@ func TestInitConfig(t *testing.T) {
 }
 
 func TestInitConfigPanic(t *testing.T) {
-	myViper := configImpl.FabricClientViper()
 	existingLogLevel := myViper.Get("client.logging.level")
 	myViper.Set("client.logging.level", "INVALID")
 
