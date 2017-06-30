@@ -20,6 +20,7 @@ import (
 	ordererImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	userImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/user"
+	bccsp "github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 )
 
@@ -31,11 +32,13 @@ func NewClient(user api.User, skipUserPersistence bool, stateStorePath string, c
 	cryptoSuite := bccspFactory.GetDefault()
 
 	client.SetCryptoSuite(cryptoSuite)
-	stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
-	if err != nil {
-		return nil, fmt.Errorf("CreateNewFileKeyValueStore returned error[%s]", err)
+	if stateStorePath != "" {
+		stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
+		if err != nil {
+			return nil, fmt.Errorf("CreateNewFileKeyValueStore returned error[%s]", err)
+		}
+		client.SetStateStore(stateStore)
 	}
-	client.SetStateStore(stateStore)
 	client.SaveUserToStateStore(user, skipUserPersistence)
 
 	return client, nil
@@ -55,11 +58,20 @@ func NewClientWithUser(name string, pwd string, orgName string,
 		return nil, fmt.Errorf("CreateNewFileKeyValueStore returned error[%s]", err)
 	}
 	client.SetStateStore(stateStore)
+	mspID, err := client.GetConfig().MspID(orgName)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
+	}
 
-	user, err := NewUser(client, msp, name, pwd, orgName)
+	user, err := NewUser(client.GetConfig(), msp, name, pwd, mspID)
 	if err != nil {
 		return nil, fmt.Errorf("NewUser returned error: %v", err)
 	}
+	err = client.SaveUserToStateStore(user, false)
+	if err != nil {
+		return nil, fmt.Errorf("client.SaveUserToStateStore returned error: %v", err)
+	}
+
 	client.SetUserContext(user)
 
 	return client, nil
@@ -83,7 +95,11 @@ func NewClientWithPreEnrolledUser(config api.Config, stateStorePath string,
 		}
 		client.SetStateStore(stateStore)
 	}
-	user, err := NewPreEnrolledUser(client, keyDir, certDir, username, orgName)
+	mspID, err := client.GetConfig().MspID(orgName)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
+	}
+	user, err := NewPreEnrolledUser(client.GetConfig(), keyDir, certDir, username, mspID, client.GetCryptoSuite())
 	if err != nil {
 		return nil, fmt.Errorf("NewPreEnrolledUser returned error: %v", err)
 	}
@@ -94,44 +110,25 @@ func NewClientWithPreEnrolledUser(config api.Config, stateStorePath string,
 }
 
 // NewUser returns a new default implementation of a User.
-func NewUser(client api.FabricClient, msp api.FabricCAClient, name string, pwd string,
-	orgName string) (api.User, error) {
-	user, err := client.LoadUserFromStateStore(name)
+func NewUser(config api.Config, msp api.FabricCAClient, name string, pwd string,
+	mspID string) (api.User, error) {
+
+	key, cert, err := msp.Enroll(name, pwd)
 	if err != nil {
-		return nil, fmt.Errorf("client.LoadUserFromStateStore returned error: %v", err)
+		return nil, fmt.Errorf("Enroll returned error: %v", err)
 	}
-
-	if user == nil {
-		mspID, err := client.GetConfig().MspID(orgName)
-		if err != nil {
-			return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
-		}
-
-		key, cert, err := msp.Enroll(name, pwd)
-		if err != nil {
-			return nil, fmt.Errorf("Enroll returned error: %v", err)
-		}
-		user = userImpl.NewUser(name, mspID)
-		user.SetPrivateKey(key)
-		user.SetEnrollmentCertificate(cert)
-		err = client.SaveUserToStateStore(user, false)
-		if err != nil {
-			return nil, fmt.Errorf("client.SaveUserToStateStore returned error: %v", err)
-		}
-	}
+	user := userImpl.NewUser(name, mspID)
+	user.SetPrivateKey(key)
+	user.SetEnrollmentCertificate(cert)
 
 	return user, nil
 }
 
 // NewPreEnrolledUser returns a new default implementation of User.
 // The user should already be pre-enrolled.
-func NewPreEnrolledUser(client api.FabricClient, privateKeyPath string,
-	enrollmentCertPath string, username string, orgName string) (api.User, error) {
-	mspID, err := client.GetConfig().MspID(orgName)
-	if err != nil {
-		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
-	}
-	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEM(privateKeyPath, client.GetCryptoSuite(), true)
+func NewPreEnrolledUser(config api.Config, privateKeyPath string,
+	enrollmentCertPath string, username string, mspID string, cryptoSuite bccsp.BCCSP) (api.User, error) {
+	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEM(privateKeyPath, cryptoSuite, true)
 	if err != nil {
 		return nil, fmt.Errorf("Error importing private key: %v", err)
 	}

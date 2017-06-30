@@ -69,8 +69,11 @@ func getDefaultImplPreEnrolledUser(client api.FabricClient, keyDir string, certD
 	if err != nil {
 		return nil, fmt.Errorf("Error finding the enrollment cert path: %v", err)
 	}
-
-	return fabapi.NewPreEnrolledUser(client, privateKeyPath, enrollmentCertPath, username, orgName)
+	mspID, err := client.GetConfig().MspID(orgName)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
+	}
+	return fabapi.NewPreEnrolledUser(client.GetConfig(), privateKeyPath, enrollmentCertPath, username, mspID, client.GetCryptoSuite())
 }
 
 // Gets the first path from the dir directory
