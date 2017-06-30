@@ -9,6 +9,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -232,6 +233,15 @@ func TestOrdererConfig(t *testing.T) {
 
 	if oConfig == nil || err != nil {
 		t.Fatal("Testing get OrdererConfig failed")
+	}
+
+	orderers, err := configImpl.OrderersConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !filepath.IsAbs(orderers[0].TLS.Certificate) {
+		t.Fatal("Expected GOPATH relative path to be replaced")
 	}
 }
 
