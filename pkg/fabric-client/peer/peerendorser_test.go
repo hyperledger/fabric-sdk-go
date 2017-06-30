@@ -17,8 +17,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/api/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -213,7 +213,7 @@ func TestProcessProposalGoodDial(t *testing.T) {
 	}
 }
 
-func testProcessProposal(t *testing.T, to time.Duration) (txnapi.TransactionProposalResult, error) {
+func testProcessProposal(t *testing.T, to time.Duration) (apitxn.TransactionProposalResult, error) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_api.NewMockConfig(mockCtrl)
@@ -229,8 +229,8 @@ func testProcessProposal(t *testing.T, to time.Duration) (txnapi.TransactionProp
 	return conn.ProcessTransactionProposal(mockTransactionProposal())
 }
 
-func mockTransactionProposal() txnapi.TransactionProposal {
-	return txnapi.TransactionProposal{
+func mockTransactionProposal() apitxn.TransactionProposal {
+	return apitxn.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
@@ -128,7 +129,7 @@ func installAndInstantiate(t *testing.T) {
 	failTestIfError(err, t)
 
 	err = admin.SendInstantiateCC(orgTestChannel, "exampleCC", orgTestChannel.Name(),
-		generateInitArgs(), "github.com/example_cc", "0", []api.Peer{orgTestPeer1}, peer1EventHub)
+		generateInitArgs(), "github.com/example_cc", "0", []apitxn.ProposalProcessor{orgTestPeer1}, peer1EventHub)
 	failTestIfError(err, t)
 }
 

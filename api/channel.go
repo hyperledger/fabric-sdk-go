@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package api
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -24,12 +24,22 @@ import (
  * primary orderer to retrieve the configuration settings for this channel.
  */
 type Channel interface {
+	txn.Sender
+	txn.ProposalSender
+
 	Name() string
 	Initialize(data []byte) error
 	IsInitialized() bool
 	IsSecurityEnabled() bool
+	QueryExtensionInterface() ChannelExtension
+	LoadConfigUpdateEnvelope(data []byte) error
+	SendInstantiateProposal(chaincodeName string, channelID string, args []string, chaincodePath string, chaincodeVersion string, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, string, error)
+
+	// TCerts
 	TCertBatchSize() int
 	SetTCertBatchSize(batchSize int)
+
+	// Network
 	AddPeer(peer Peer) error
 	RemovePeer(peer Peer)
 	Peers() []Peer
@@ -41,26 +51,21 @@ type Channel interface {
 	Orderers() []Orderer
 	SetMSPManager(mspManager msp.MSPManager)
 	MSPManager() msp.MSPManager
+	OrganizationUnits() ([]string, error)
+
+	// Channel Info
 	GenesisBlock(request *GenesisBlockRequest) (*common.Block, error)
 	JoinChannel(request *JoinChannelRequest) error
 	UpdateChannel() bool
 	IsReadonly() bool
+
+	// Query
 	QueryInfo() (*common.BlockchainInfo, error)
 	QueryBlock(blockNumber int) (*common.Block, error)
 	QueryBlockByHash(blockHash []byte) (*common.Block, error)
 	QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error)
 	QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error)
-	QueryByChaincode(chaincodeName string, args []string, targets []Peer) ([][]byte, error)
-	SendInstantiateProposal(chaincodeName string, channelID string, args []string, chaincodePath string, chaincodeVersion string, targets []Peer) ([]*txnapi.TransactionProposalResponse, string, error)
-	OrganizationUnits() ([]string, error)
-	QueryExtensionInterface() ChannelExtension
-	LoadConfigUpdateEnvelope(data []byte) error
-
-	// Transaction Proposal
-	CreateTransactionProposal(chaincodeName string, channelID string, args []string, sign bool, transientData map[string][]byte) (*txnapi.TransactionProposal, error)
-	SendTransactionProposal(proposal *txnapi.TransactionProposal, retry int, targets []Peer) ([]*txnapi.TransactionProposalResponse, error)
-	CreateTransaction(resps []*txnapi.TransactionProposalResponse) (*Transaction, error)
-	SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
+	QueryByChaincode(chaincodeName string, args []string, targets []txn.ProposalProcessor) ([][]byte, error)
 }
 
 // The ChannelExtension interface allows extensions of the SDK to add functionality to Channel overloads.
@@ -68,10 +73,10 @@ type ChannelExtension interface {
 	ClientContext() FabricClient
 
 	SignPayload(payload []byte) (*SignedEnvelope, error)
-	BroadcastEnvelope(envelope *SignedEnvelope) ([]*TransactionResponse, error)
+	BroadcastEnvelope(envelope *SignedEnvelope) ([]*txn.TransactionResponse, error)
 
 	// TODO: This should go somewhere else - see TransactionProposal.GetBytes(). - deprecated
-	ProposalBytes(tp *txnapi.TransactionProposal) ([]byte, error)
+	ProposalBytes(tp *txn.TransactionProposal) ([]byte, error)
 }
 
 // OrgAnchorPeer contains information about an anchor peer on this channel
@@ -93,19 +98,4 @@ type JoinChannelRequest struct {
 	GenesisBlock *common.Block
 	TxID         string
 	Nonce        []byte
-}
-
-// The Transaction object created from an endorsed proposal
-type Transaction struct {
-	Proposal    *txnapi.TransactionProposal
-	Transaction *pb.Transaction
-}
-
-// TransactionResponse ...
-/**
- * The TransactionProposalResponse result object returned from orderers.
- */
-type TransactionResponse struct {
-	Orderer string
-	Err     error
 }

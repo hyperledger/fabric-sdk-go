@@ -9,7 +9,7 @@ package integration
 import (
 	"testing"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 )
 
 // TestTransient ...
@@ -42,7 +42,7 @@ func TestTransient(t *testing.T) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte(transientData)
 
-	transactionProposalResponse, _, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.PrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, _, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestTransient(t *testing.T) {
 	}
 	//transient data null
 	transientDataMap["result"] = []byte{}
-	transactionProposalResponse, _, err = testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.PrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, _, err = testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal with empty transient data return an error: %v", err)
 	}

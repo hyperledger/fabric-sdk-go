@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	fabricTxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
 )
 
@@ -88,5 +88,5 @@ func moveFunds(setup *BaseSetupImpl) error {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	return fabricTxn.InvokeChaincode(setup.Client, setup.Channel, []api.Peer{setup.Channel.PrimaryPeer()}, setup.EventHub, setup.ChainCodeID, args, transientDataMap)
+	return fabricTxn.InvokeChaincode(setup.Client, setup.Channel, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub, setup.ChainCodeID, args, transientDataMap)
 }

@@ -12,7 +12,7 @@ import (
 	"errors"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -81,8 +81,8 @@ func (p *MockPeer) URL() string {
 }
 
 // ProcessTransactionProposal does not send anything anywhere but returns an empty mock ProposalResponse
-func (p *MockPeer) ProcessTransactionProposal(tp txnapi.TransactionProposal) (txnapi.TransactionProposalResult, error) {
-	return txnapi.TransactionProposalResult{
+func (p *MockPeer) ProcessTransactionProposal(tp apitxn.TransactionProposal) (apitxn.TransactionProposalResult, error) {
+	return apitxn.TransactionProposalResult{
 		Endorser:         p.MockURL,
 		Proposal:         tp,
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},

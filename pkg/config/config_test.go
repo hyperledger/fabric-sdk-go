@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api"
 	"github.com/spf13/viper"
 )
 

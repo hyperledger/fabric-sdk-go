@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric/common/crypto"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric/protos/utils"
@@ -20,15 +20,15 @@ import (
 var logger = logging.MustGetLogger("fabric_sdk_go")
 
 // CreateAndSendTransactionProposal ...
-func CreateAndSendTransactionProposal(channel api.Channel, chainCodeID string, channelID string,
-	args []string, targets []api.Peer, transientData map[string][]byte) ([]*txnapi.TransactionProposalResponse, string, error) {
+func CreateAndSendTransactionProposal(sender apitxn.ProposalSender, chainCodeID string, channelID string,
+	args []string, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, string, error) {
 
-	signedProposal, err := channel.CreateTransactionProposal(chainCodeID, channelID, args, true, transientData)
+	signedProposal, err := sender.CreateTransactionProposal(chainCodeID, channelID, args, true, transientData)
 	if err != nil {
 		return nil, "", fmt.Errorf("SendTransactionProposal returned error: %v", err)
 	}
 
-	transactionProposalResponses, err := channel.SendTransactionProposal(signedProposal, 0, targets)
+	transactionProposalResponses, err := sender.SendTransactionProposal(signedProposal, 0, targets)
 	if err != nil {
 		return nil, "", fmt.Errorf("SendTransactionProposal returned error: %v", err)
 	}
@@ -44,14 +44,14 @@ func CreateAndSendTransactionProposal(channel api.Channel, chainCodeID string, c
 }
 
 // CreateAndSendTransaction ...
-func CreateAndSendTransaction(channel api.Channel, resps []*txnapi.TransactionProposalResponse) ([]*api.TransactionResponse, error) {
+func CreateAndSendTransaction(sender apitxn.Sender, resps []*apitxn.TransactionProposalResponse) ([]*apitxn.TransactionResponse, error) {
 
-	tx, err := channel.CreateTransaction(resps)
+	tx, err := sender.CreateTransaction(resps)
 	if err != nil {
 		return nil, fmt.Errorf("CreateTransaction returned error: %v", err)
 	}
 
-	transactionResponses, err := channel.SendTransaction(tx)
+	transactionResponses, err := sender.SendTransaction(tx)
 	if err != nil {
 		return nil, fmt.Errorf("SendTransaction returned error: %v", err)
 

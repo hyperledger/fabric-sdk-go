@@ -13,6 +13,7 @@ import (
 	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 	"github.com/hyperledger/fabric/protos/common"
 	"github.com/op/go-logging"
@@ -43,7 +44,7 @@ func SendInstallCC(client api.FabricClient, chainCodeID string, chainCodePath st
 
 // SendInstantiateCC Sends instantiate CC proposal to one or more endorsing peers
 func SendInstantiateCC(channel api.Channel, chainCodeID string, channelID string, args []string,
-	chaincodePath string, chaincodeVersion string, targets []api.Peer, eventHub api.EventHub) error {
+	chaincodePath string, chaincodeVersion string, targets []apitxn.ProposalProcessor, eventHub api.EventHub) error {
 
 	transactionProposalResponse, txID, err := channel.SendInstantiateProposal(chainCodeID,
 		channelID, args, chaincodePath, chaincodeVersion, targets)

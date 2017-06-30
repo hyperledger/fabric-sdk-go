@@ -9,7 +9,7 @@ package api
 import (
 	"encoding/pem"
 
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 )
 
 // The Peer class represents a peer in the target blockchain network to which
@@ -26,7 +26,7 @@ import (
 // It should be noted that Peer event streams function at the Peer level and not at the
 // channel and chaincode levels.
 type Peer interface {
-	txnapi.TxnProposalProcessor
+	txn.ProposalProcessor
 
 	// Events (need verb)
 	ConnectEventSource()
@@ -44,4 +44,14 @@ type Peer interface {
 	Roles() []string
 	SetRoles(roles []string)
 	URL() string
+}
+
+// PeersToTxnProcessors converts a slice of Peers to a slice of TxnProposalProcessors
+func PeersToTxnProcessors(peers []Peer) []txn.ProposalProcessor {
+	tpp := make([]txn.ProposalProcessor, len(peers))
+
+	for i := range peers {
+		tpp[i] = peers[i]
+	}
+	return tpp
 }

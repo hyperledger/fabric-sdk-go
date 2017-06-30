@@ -13,6 +13,7 @@ import (
 	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 )
 
@@ -225,7 +226,7 @@ func testInstantiatedChaincodes(t *testing.T, channel api.Channel) {
 func testQueryByChaincode(t *testing.T, channel api.Channel, config api.Config, testSetup *BaseSetupImpl) {
 
 	// Test valid targets
-	targets := channel.Peers()
+	targets := api.PeersToTxnProcessors(channel.Peers())
 
 	// set Client User Context to Admin before calling QueryByChaincode
 	testSetup.Client.SetUserContext(testSetup.AdminUser)
@@ -300,7 +301,7 @@ func moveFundsAndGetTxID(setup *BaseSetupImpl) (string, error) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, setup.ChannelID, args, []api.Peer{setup.Channel.PrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, setup.ChannelID, args, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}

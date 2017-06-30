@@ -11,7 +11,7 @@ import (
 	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/op/go-logging"
 )
 
@@ -23,7 +23,7 @@ const (
 )
 
 type peer struct {
-	processor             txnapi.TxnProposalProcessor
+	processor             apitxn.ProposalProcessor
 	name                  string
 	roles                 []string
 	enrollmentCertificate *pem.Block
@@ -79,7 +79,7 @@ func (p *peer) URL() string {
 }
 
 // SendProposal sends the created proposal to peer for endorsement.
-func (p *peer) ProcessTransactionProposal(proposal txnapi.TransactionProposal) (txnapi.TransactionProposalResult, error) {
+func (p *peer) ProcessTransactionProposal(proposal apitxn.TransactionProposal) (apitxn.TransactionProposalResult, error) {
 	return p.processor.ProcessTransactionProposal(proposal)
 }
 
@@ -109,7 +109,7 @@ func NewPeer(url string, config api.Config) (api.Peer, error) {
 }
 
 // NewPeerFromProcessor constructs a Peer with a ProposalProcessor to simulate transactions.
-func NewPeerFromProcessor(url string, processor txnapi.TxnProposalProcessor, config api.Config) (api.Peer, error) {
+func NewPeerFromProcessor(url string, processor apitxn.ProposalProcessor, config api.Config) (api.Peer, error) {
 	return &peer{url: url, processor: processor}, nil
 }
 
