@@ -9,6 +9,7 @@
 # depend: installs test dependencies
 # unit-test: runs all the unit tests
 # integration-test: runs all the integration tests
+# race-test: runs tests with race detector 
 # checks: runs all check conditions (license, spelling, linting)
 # clean: stops docker conatainers used for integration testing
 # mock-gen: generate mocks needed for testing (using mockgen)
@@ -43,6 +44,9 @@ integration-test: clean depend
 	@test/scripts/integration.sh
 
 integration-tests: integration-test
+
+race-test:
+	@test/scripts/racedetector.sh
 
 mock-gen:
 	go get -u github.com/golang/mock/gomock

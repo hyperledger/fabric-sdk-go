@@ -9,6 +9,8 @@ package channel
 import (
 	"fmt"
 	"net"
+	"os"
+	"strconv"
 	"testing"
 
 	"google.golang.org/grpc"
@@ -163,7 +165,14 @@ func TestConcurrentPeers(t *testing.T) {
 }
 
 func TestConcurrentOrderers(t *testing.T) {
-	const numOrderers = 10000
+	// Determine number of orderers to use - environment can override
+	const numOrderersDefault = 10000
+	numOrderersEnv := os.Getenv("TEST_MASSIVE_ORDERER_COUNT")
+	numOrderers, err := strconv.Atoi(numOrderersEnv)
+	if err != nil {
+		numOrderers = numOrderersDefault
+	}
+
 	channel, err := setupMassiveTestChannel(0, numOrderers)
 	if err != nil {
 		t.Fatalf("Failed to create massive channel: %s", err)
