@@ -13,7 +13,7 @@ import (
 // Orderer The Orderer class represents a peer in the target blockchain network to which
 // HFC sends a block of transactions of endorsed proposals requiring ordering.
 type Orderer interface {
-	GetURL() string
+	URL() string
 	SendBroadcast(envelope *SignedEnvelope) (*common.Status, error)
 	SendDeliver(envelope *SignedEnvelope) (chan *common.Block, chan error)
 }

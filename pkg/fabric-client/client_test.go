@@ -114,7 +114,7 @@ func TestClientMethods(t *testing.T) {
 	}
 	client.SetStateStore(stateStore)
 	client.GetStateStore().SetValue("testvalue", []byte("data"))
-	value, err := client.GetStateStore().GetValue("testvalue")
+	value, err := client.GetStateStore().Value("testvalue")
 	if err != nil {
 		t.Fatalf("client.GetStateStore().GetValue() return error[%s]", err)
 	}

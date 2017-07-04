@@ -56,9 +56,9 @@ func createNewOrdererWithCertPool(url string, tlsCaCertPool *x509.CertPool, serv
 	return &orderer{url: url, grpcDialOption: opts}
 }
 
-// GetURL Get the Orderer url. Required property for the instance objects.
+// URL Get the Orderer url. Required property for the instance objects.
 // @returns {string} The address of the Orderer
-func (o *orderer) GetURL() string {
+func (o *orderer) URL() string {
 	return o.url
 }
 

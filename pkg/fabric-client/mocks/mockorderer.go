@@ -26,7 +26,7 @@ type MockOrderer interface {
 	EnqueueForSendDeliver(value interface{})
 }
 type mockOrderer struct {
-	URL               string
+	OrdererURL        string
 	BroadcastListener chan *fab.SignedEnvelope
 	BroadcastErrors   chan error
 	Deliveries        chan *common.Block
@@ -39,7 +39,7 @@ type mockOrderer struct {
 // NewMockOrderer ...
 func NewMockOrderer(url string, broadcastListener chan *fab.SignedEnvelope) fab.Orderer {
 	o := &mockOrderer{
-		URL:               url,
+		OrdererURL:        url,
 		BroadcastListener: broadcastListener,
 		BroadcastErrors:   make(chan error, 100),
 		Deliveries:        make(chan *common.Block, 1),
@@ -74,9 +74,9 @@ func delivery(o *mockOrderer) {
 	}
 }
 
-// GetURL returns the URL of the mock Orderer
-func (o *mockOrderer) GetURL() string {
-	return o.URL
+// URL returns the URL of the mock Orderer
+func (o *mockOrderer) URL() string {
+	return o.OrdererURL
 }
 
 // SendBroadcast accepts client broadcast calls and reports them to the listener channel

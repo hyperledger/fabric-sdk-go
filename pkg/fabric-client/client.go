@@ -198,7 +198,7 @@ func (c *client) LoadUserFromStateStore(name string) (fab.User, error) {
 	if c.cryptoSuite == nil {
 		return nil, fmt.Errorf("cryptoSuite is nil")
 	}
-	value, err := c.stateStore.GetValue(name)
+	value, err := c.stateStore.Value(name)
 	if err != nil {
 		return nil, nil
 	}
@@ -423,7 +423,7 @@ func (c *client) CreateOrUpdateChannel(request *fab.CreateChannelRequest, haveEn
 		Payload:   payloadBytes,
 	})
 	if err != nil {
-		return fmt.Errorf("Could not broadcast to orderer %s: %s", request.Orderer.GetURL(), err.Error())
+		return fmt.Errorf("Could not broadcast to orderer %s: %s", request.Orderer.URL(), err.Error())
 	}
 
 	return nil

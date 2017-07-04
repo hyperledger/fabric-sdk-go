@@ -33,13 +33,13 @@ func CreateNewFileKeyValueStore(path string) (*FileKeyValueStore, error) {
 	return &FileKeyValueStore{path: path}, nil
 }
 
-// GetValue ...
+// Value ...
 /**
  * Get the value associated with name.
  * @param {string} name
  * @returns []byte for the value
  */
-func (fkvs *FileKeyValueStore) GetValue(key string) ([]byte, error) {
+func (fkvs *FileKeyValueStore) Value(key string) ([]byte, error) {
 	file := path.Join(fkvs.path, key+".json")
 	value, err := ioutil.ReadFile(file)
 	if err != nil {

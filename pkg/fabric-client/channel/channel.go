@@ -250,12 +250,13 @@ func (c *channel) PrimaryPeer() fab.Peer {
 * @param {Orderer} orderer An instance of the Orderer class.
 * @throws {Error} if the orderer with that url already exists.
  */
+
 func (c *channel) AddOrderer(orderer fab.Orderer) error {
-	url := orderer.GetURL()
+	url := orderer.URL()
 	if c.orderers[url] != nil {
 		return fmt.Errorf("Orderer with URL %s already exists", url)
 	}
-	c.orderers[orderer.GetURL()] = orderer
+	c.orderers[orderer.URL()] = orderer
 	return nil
 }
 
@@ -264,8 +265,9 @@ func (c *channel) AddOrderer(orderer fab.Orderer) error {
 * Remove orderer endpoint from a channel object, this is a local-only operation.
 * @param {Orderer} orderer An instance of the Orderer class.
  */
+
 func (c *channel) RemoveOrderer(orderer fab.Orderer) {
-	url := orderer.GetURL()
+	url := orderer.URL()
 	if c.orderers[url] != nil {
 		delete(c.orderers, url)
 		logger.Debugf("Removed orderer with URL %s", url)
@@ -1297,14 +1299,14 @@ func (c *channel) BroadcastEnvelope(envelope *fab.SignedEnvelope) ([]*apitxn.Tra
 			defer wg.Done()
 			var transactionResponse *apitxn.TransactionResponse
 
-			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.GetURL())
+			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
 			if _, err := orderer.SendBroadcast(envelope); err != nil {
 				logger.Debugf("Receive Error Response from orderer :%v\n", err)
-				transactionResponse = &apitxn.TransactionResponse{Orderer: orderer.GetURL(),
-					Err: fmt.Errorf("Error calling orderer '%s':  %s", orderer.GetURL(), err)}
+				transactionResponse = &apitxn.TransactionResponse{Orderer: orderer.URL(),
+					Err: fmt.Errorf("Error calling orderer '%s':  %s", orderer.URL(), err)}
 			} else {
 				logger.Debugf("Receive Success Response from orderer\n")
-				transactionResponse = &apitxn.TransactionResponse{Orderer: orderer.GetURL(), Err: nil}
+				transactionResponse = &apitxn.TransactionResponse{Orderer: orderer.URL(), Err: nil}
 			}
 
 			responseMtx.Lock()
@@ -1331,8 +1333,10 @@ func (c *channel) SendEnvelope(envelope *fab.SignedEnvelope) (*common.Block, err
 
 	// Send the request to all orderers and return as soon as one responds with a block.
 	for _, o := range c.orderers {
+
 		go func(orderer fab.Orderer) {
-			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.GetURL())
+			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
+
 			blocks, errors := orderer.SendDeliver(envelope)
 			select {
 			case block := <-blocks:

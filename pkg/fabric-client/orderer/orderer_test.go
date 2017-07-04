@@ -42,7 +42,7 @@ func TestOrdererViaChain(t *testing.T) {
 	}
 
 	orderers := chain.Orderers()
-	if orderers == nil || len(orderers) != 1 || orderers[0].GetURL() != "localhost:7050" {
+	if orderers == nil || len(orderers) != 1 || orderers[0].URL() != "localhost:7050" {
 		t.Fatalf("Failed to retieve the new orderer URL from the chain")
 	}
 	chain.RemoveOrderer(orderer)
@@ -56,7 +56,7 @@ func TestOrdererViaChain(t *testing.T) {
 	}
 	orderers = chain.Orderers()
 
-	if orderers == nil || len(orderers) != 1 || orderers[0].GetURL() != "localhost:7054" {
+	if orderers == nil || len(orderers) != 1 || orderers[0].URL() != "localhost:7054" {
 		t.Fatalf("Failed to retieve the new orderer URL from the chain")
 	}
 
