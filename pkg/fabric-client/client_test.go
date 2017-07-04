@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-	fcUser "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/user"
+	msp "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/msp"
 
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
@@ -66,7 +66,7 @@ func TestClientMethods(t *testing.T) {
 	}
 
 	//Client tests: successfully SaveUserToStateStore with skipPersistence true
-	user = fcUser.NewUser("someUser", testMsp)
+	user = msp.NewUser("someUser", testMsp)
 	err = client.SaveUserToStateStore(user, true)
 	if err != nil {
 		t.Fatalf("client.SaveUserToStateStore return error[%s]", err)
@@ -133,11 +133,11 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Setup mock orderer
-	verifyBroadcast := make(chan *api.SignedEnvelope)
+	verifyBroadcast := make(chan *fab.SignedEnvelope)
 	orderer := mocks.NewMockOrderer(fmt.Sprintf("0.0.0.0:1234"), verifyBroadcast)
 
 	// Create channel without envelope
-	err = client.CreateChannel(&api.CreateChannelRequest{
+	err = client.CreateChannel(&fab.CreateChannelRequest{
 		Orderer: orderer,
 		Name:    "mychannel",
 	})
@@ -146,7 +146,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without orderer
-	err = client.CreateChannel(&api.CreateChannelRequest{
+	err = client.CreateChannel(&fab.CreateChannelRequest{
 		Envelope: configTx,
 		Name:     "mychannel",
 	})
@@ -155,7 +155,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without name
-	err = client.CreateChannel(&api.CreateChannelRequest{
+	err = client.CreateChannel(&fab.CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 	})
@@ -164,7 +164,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Test with valid cofiguration
-	request := &api.CreateChannelRequest{
+	request := &fab.CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 		Name:     "mychannel",

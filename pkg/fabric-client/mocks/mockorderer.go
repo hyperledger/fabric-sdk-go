@@ -9,7 +9,7 @@ package mocks
 import (
 	"fmt"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
 	"github.com/hyperledger/fabric/protos/common"
 )
@@ -19,7 +19,7 @@ import (
 // that the broadcast side and the deliver side are totally
 // independent from the mocking point of view.
 type MockOrderer interface {
-	api.Orderer
+	fab.Orderer
 	// Enqueues a mock error to be returned to the client calling SendBroadcast
 	EnqueueSendBroadcastError(err error)
 	// Enqueues a mock value (block or error) for delivery
@@ -27,24 +27,24 @@ type MockOrderer interface {
 }
 type mockOrderer struct {
 	URL               string
-	BroadcastListener chan *api.SignedEnvelope
+	BroadcastListener chan *fab.SignedEnvelope
 	BroadcastErrors   chan error
 	Deliveries        chan *common.Block
 	DeliveryErrors    chan error
 	// These queues are used to detach the client, to avoid deadlocks
-	BroadcastQueue chan *api.SignedEnvelope
+	BroadcastQueue chan *fab.SignedEnvelope
 	DeliveryQueue  chan interface{}
 }
 
 // NewMockOrderer ...
-func NewMockOrderer(url string, broadcastListener chan *api.SignedEnvelope) api.Orderer {
+func NewMockOrderer(url string, broadcastListener chan *fab.SignedEnvelope) fab.Orderer {
 	o := &mockOrderer{
 		URL:               url,
 		BroadcastListener: broadcastListener,
 		BroadcastErrors:   make(chan error, 100),
 		Deliveries:        make(chan *common.Block, 1),
 		DeliveryErrors:    make(chan error, 1),
-		BroadcastQueue:    make(chan *api.SignedEnvelope, 100),
+		BroadcastQueue:    make(chan *fab.SignedEnvelope, 100),
 		DeliveryQueue:     make(chan interface{}, 100),
 	}
 
@@ -81,7 +81,7 @@ func (o *mockOrderer) GetURL() string {
 
 // SendBroadcast accepts client broadcast calls and reports them to the listener channel
 // Returns the first enqueued error, or nil if there are no enqueued errors
-func (o *mockOrderer) SendBroadcast(envelope *api.SignedEnvelope) (*common.Status, error) {
+func (o *mockOrderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, error) {
 	// Report this call to the listener
 	if o.BroadcastListener != nil {
 		o.BroadcastQueue <- envelope
@@ -95,7 +95,7 @@ func (o *mockOrderer) SendBroadcast(envelope *api.SignedEnvelope) (*common.Statu
 }
 
 // SendDeliver returns the channels for delivery of prepared mock values and errors (if any)
-func (o *mockOrderer) SendDeliver(envelope *api.SignedEnvelope) (chan *common.Block,
+func (o *mockOrderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
 	chan error) {
 	return o.Deliveries, o.DeliveryErrors
 }

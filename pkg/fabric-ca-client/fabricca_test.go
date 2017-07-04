@@ -12,12 +12,13 @@ import (
 	"os"
 	"testing"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client/mocks"
 )
 
-var configImp api.Config
+var configImp config.Config
 var org1 = "peerorg1"
 
 // Load testing config
@@ -66,32 +67,32 @@ func TestRegister(t *testing.T) {
 		t.Fatalf("Expected error with nil request")
 	}
 	//Register with nil user
-	_, err = fabricCAClient.Register(nil, &api.RegistrationRequest{})
+	_, err = fabricCAClient.Register(nil, &ca.RegistrationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error with nil user")
 	}
 	// Register with nil user cert and key
-	_, err = fabricCAClient.Register(user, &api.RegistrationRequest{})
+	_, err = fabricCAClient.Register(user, &ca.RegistrationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error without user enrolment information")
 	}
 	user.SetEnrollmentCertificate(readCert(t))
 	user.SetPrivateKey(mockKey)
 	// Register without registration name parameter
-	_, err = fabricCAClient.Register(user, &api.RegistrationRequest{})
+	_, err = fabricCAClient.Register(user, &ca.RegistrationRequest{})
 	if err.Error() != "Error Registering User: Register was called without a Name set" {
 		t.Fatalf("Expected error without registration information. Got: %s", err.Error())
 	}
 	// Register without registration affiliation parameter
-	_, err = fabricCAClient.Register(user, &api.RegistrationRequest{Name: "test"})
+	_, err = fabricCAClient.Register(user, &ca.RegistrationRequest{Name: "test"})
 	if err.Error() != "Error Registering User: Registration request does not have an affiliation" {
 		t.Fatalf("Expected error without registration information. Got: %s", err.Error())
 	}
 	// Register with valid request
-	var attributes []api.Attribute
-	attributes = append(attributes, api.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, api.Attribute{Key: "test2", Value: "test3"})
-	_, err = fabricCAClient.Register(user, &api.RegistrationRequest{Name: "test",
+	var attributes []ca.Attribute
+	attributes = append(attributes, ca.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, ca.Attribute{Key: "test2", Value: "test3"})
+	_, err = fabricCAClient.Register(user, &ca.RegistrationRequest{Name: "test",
 		Affiliation: "test", Attributes: attributes})
 	if err == nil {
 		t.Fatalf("Expected PEM decoding error with test cert")
@@ -112,13 +113,13 @@ func TestRevoke(t *testing.T) {
 		t.Fatalf("Expected error with nil request")
 	}
 	//Revoke with nil user
-	err = fabricCAClient.Revoke(nil, &api.RevocationRequest{})
+	err = fabricCAClient.Revoke(nil, &ca.RevocationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error with nil user")
 	}
 	user.SetEnrollmentCertificate(readCert(t))
 	user.SetPrivateKey(mockKey)
-	err = fabricCAClient.Revoke(user, &api.RevocationRequest{})
+	err = fabricCAClient.Revoke(user, &ca.RevocationRequest{})
 	if err == nil {
 		t.Fatalf("Expected decoding error with test cert")
 	}

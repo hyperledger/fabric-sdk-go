@@ -11,7 +11,8 @@ import (
 	"fmt"
 	"time"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/hyperledger/fabric/protos/common"
@@ -29,7 +30,7 @@ type orderer struct {
 }
 
 // CreateNewOrdererWithRootCAs Returns a new Orderer instance using the passed in orderer root CAs
-func CreateNewOrdererWithRootCAs(url string, ordererRootCAs [][]byte, serverHostOverride string, config api.Config) (api.Orderer, error) {
+func CreateNewOrdererWithRootCAs(url string, ordererRootCAs [][]byte, serverHostOverride string, config config.Config) (fab.Orderer, error) {
 	if config.IsTLSEnabled() {
 		tlsCaCertPool, err := config.TLSCACertPoolFromRoots(ordererRootCAs)
 		if err != nil {
@@ -40,14 +41,14 @@ func CreateNewOrdererWithRootCAs(url string, ordererRootCAs [][]byte, serverHost
 	return createNewOrdererWithoutTLS(url), nil
 }
 
-func createNewOrdererWithoutTLS(url string) api.Orderer {
+func createNewOrdererWithoutTLS(url string) fab.Orderer {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(time.Second*3))
 	opts = append(opts, grpc.WithInsecure())
 	return &orderer{url: url, grpcDialOption: opts}
 }
 
-func createNewOrdererWithCertPool(url string, tlsCaCertPool *x509.CertPool, serverHostOverride string) api.Orderer {
+func createNewOrdererWithCertPool(url string, tlsCaCertPool *x509.CertPool, serverHostOverride string) fab.Orderer {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(time.Second*3))
 	creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
@@ -62,7 +63,7 @@ func (o *orderer) GetURL() string {
 }
 
 // SendBroadcast Send the created transaction to Orderer.
-func (o *orderer) SendBroadcast(envelope *api.SignedEnvelope) (*common.Status, error) {
+func (o *orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, error) {
 	conn, err := grpc.Dial(o.url, o.grpcDialOption...)
 	if err != nil {
 		return nil, err
@@ -114,7 +115,7 @@ func (o *orderer) SendBroadcast(envelope *api.SignedEnvelope) (*common.Status, e
 // @param {*SignedEnvelope} envelope that contains the seek request for blocks
 // @return {chan *common.Block} channel with the requested blocks
 // @return {chan error} a buffered channel that can contain a single error
-func (o *orderer) SendDeliver(envelope *api.SignedEnvelope) (chan *common.Block,
+func (o *orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
 	chan error) {
 	responses := make(chan *common.Block)
 	errors := make(chan error, 1)
@@ -184,7 +185,7 @@ func (o *orderer) SendDeliver(envelope *api.SignedEnvelope) (chan *common.Block,
 }
 
 // NewOrderer Returns a Orderer instance
-func NewOrderer(url string, certificate string, serverHostOverride string, config api.Config) (api.Orderer, error) {
+func NewOrderer(url string, certificate string, serverHostOverride string, config config.Config) (fab.Orderer, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(time.Second*3))
 	if config.IsTLSEnabled() {

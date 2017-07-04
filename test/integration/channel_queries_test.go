@@ -12,7 +12,8 @@ import (
 	"testing"
 	"time"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 )
@@ -105,7 +106,7 @@ func changeBlockState(testSetup *BaseSetupImpl) (string, error) {
 	return txID, nil
 }
 
-func testQueryTransaction(t *testing.T, channel api.Channel, txID string) {
+func testQueryTransaction(t *testing.T, channel fab.Channel, txID string) {
 
 	// Test Query Transaction -- verify that valid transaction has been processed
 	processedTransaction, err := channel.QueryTransaction(txID)
@@ -125,7 +126,7 @@ func testQueryTransaction(t *testing.T, channel api.Channel, txID string) {
 
 }
 
-func testQueryBlock(t *testing.T, channel api.Channel) {
+func testQueryBlock(t *testing.T, channel fab.Channel) {
 
 	// Retrieve current blockchain info
 	bci, err := channel.QueryInfo()
@@ -167,7 +168,7 @@ func testQueryBlock(t *testing.T, channel api.Channel) {
 
 }
 
-func testQueryChannels(t *testing.T, channel api.Channel, client api.FabricClient) {
+func testQueryChannels(t *testing.T, channel fab.Channel, client fab.FabricClient) {
 
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()
@@ -183,7 +184,7 @@ func testQueryChannels(t *testing.T, channel api.Channel, client api.FabricClien
 
 }
 
-func testInstalledChaincodes(t *testing.T, channel api.Channel, client api.FabricClient, testSetup *BaseSetupImpl) {
+func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.FabricClient, testSetup *BaseSetupImpl) {
 
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()
@@ -204,7 +205,7 @@ func testInstalledChaincodes(t *testing.T, channel api.Channel, client api.Fabri
 
 }
 
-func testInstantiatedChaincodes(t *testing.T, channel api.Channel) {
+func testInstantiatedChaincodes(t *testing.T, channel fab.Channel) {
 
 	// Our target will indirectly be primary peer on this channel
 	target := channel.PrimaryPeer()
@@ -223,10 +224,10 @@ func testInstantiatedChaincodes(t *testing.T, channel api.Channel) {
 
 }
 
-func testQueryByChaincode(t *testing.T, channel api.Channel, config api.Config, testSetup *BaseSetupImpl) {
+func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Config, testSetup *BaseSetupImpl) {
 
 	// Test valid targets
-	targets := api.PeersToTxnProcessors(channel.Peers())
+	targets := fab.PeersToTxnProcessors(channel.Peers())
 
 	// set Client User Context to Admin before calling QueryByChaincode
 	testSetup.Client.SetUserContext(testSetup.AdminUser)

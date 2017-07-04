@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"
@@ -33,19 +33,19 @@ var format = logging.MustStringFormatter(
 const cmdRoot = "fabric_sdk"
 
 type config struct {
-	networkConfig       *api.NetworkConfig
+	networkConfig       *apiconfig.NetworkConfig
 	networkConfigCached bool
 }
 
 // InitConfig ...
 // initConfig reads in config file
-func InitConfig(configFile string) (api.Config, error) {
+func InitConfig(configFile string) (apiconfig.Config, error) {
 	return InitConfigWithCmdRoot(configFile, cmdRoot)
 }
 
 // InitConfigWithCmdRoot reads in a config file and allows the
 // environment variable prefixed to be specified
-func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (api.Config, error) {
+func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (apiconfig.Config, error) {
 	myViper.SetEnvPrefix(cmdRootPrefix)
 	myViper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
@@ -83,7 +83,7 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (api.Config,
 
 }
 
-func (c *config) CAConfig(org string) (*api.CAConfig, error) {
+func (c *config) CAConfig(org string) (*apiconfig.CAConfig, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -162,8 +162,8 @@ func (c *config) cacheNetworkConfiguration() error {
 }
 
 // GetOrderersConfig returns a list of defined orderers
-func (c *config) OrderersConfig() ([]api.OrdererConfig, error) {
-	orderers := []api.OrdererConfig{}
+func (c *config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
+	orderers := []apiconfig.OrdererConfig{}
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (c *config) OrderersConfig() ([]api.OrdererConfig, error) {
 }
 
 // RandomOrdererConfig returns a pseudo-random orderer from the network config
-func (c *config) RandomOrdererConfig() (*api.OrdererConfig, error) {
+func (c *config) RandomOrdererConfig() (*apiconfig.OrdererConfig, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -203,7 +203,7 @@ func (c *config) RandomOrdererConfig() (*api.OrdererConfig, error) {
 }
 
 // OrdererConfig returns the requested orderer
-func (c *config) OrdererConfig(name string) (*api.OrdererConfig, error) {
+func (c *config) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -218,14 +218,14 @@ func (c *config) OrdererConfig(name string) (*api.OrdererConfig, error) {
 
 // PeersConfig Retrieves the fabric peers for the specified org from the
 // config file provided
-func (c *config) PeersConfig(org string) ([]api.PeerConfig, error) {
+func (c *config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	peersConfig := config.Organizations[org].Peers
-	peers := []api.PeerConfig{}
+	peers := []apiconfig.PeerConfig{}
 
 	for key, p := range peersConfig {
 		if p.Host == "" {
@@ -245,7 +245,7 @@ func (c *config) PeersConfig(org string) ([]api.PeerConfig, error) {
 }
 
 // NetworkConfig returns the network configuration defined in the config file
-func (c *config) NetworkConfig() (*api.NetworkConfig, error) {
+func (c *config) NetworkConfig() (*apiconfig.NetworkConfig, error) {
 	if c.networkConfigCached {
 		return c.networkConfig, nil
 	}

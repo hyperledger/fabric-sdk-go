@@ -11,22 +11,24 @@ import (
 	"io/ioutil"
 
 	fabricCaUtil "github.com/hyperledger/fabric-ca/util"
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	eventsImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
+	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/msp"
 	ordererImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	userImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/user"
 	bccsp "github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // NewClient returns a new default implementation of the Client interface using the config provided.
 // It will save the provided user if requested into the state store.
-func NewClient(user api.User, skipUserPersistence bool, stateStorePath string, config api.Config) (api.FabricClient, error) {
+func NewClient(user fabca.User, skipUserPersistence bool, stateStorePath string, config config.Config) (fab.FabricClient, error) {
 	client := clientImpl.NewClient(config)
 
 	cryptoSuite := bccspFactory.GetDefault()
@@ -47,7 +49,7 @@ func NewClient(user api.User, skipUserPersistence bool, stateStorePath string, c
 // NewClientWithUser returns a new default implementation of the Client interface.
 // It creates a default implementation of User, enrolls the user, and saves it to the state store.
 func NewClientWithUser(name string, pwd string, orgName string,
-	stateStorePath string, config api.Config, msp api.FabricCAClient) (api.FabricClient, error) {
+	stateStorePath string, config config.Config, msp fabca.FabricCAClient) (fab.FabricClient, error) {
 	client := clientImpl.NewClient(config)
 
 	cryptoSuite := bccspFactory.GetDefault()
@@ -79,9 +81,9 @@ func NewClientWithUser(name string, pwd string, orgName string,
 
 // NewClientWithPreEnrolledUser returns a new default Client implementation
 // by using a the default implementation of a pre-enrolled user.
-func NewClientWithPreEnrolledUser(config api.Config, stateStorePath string,
+func NewClientWithPreEnrolledUser(config config.Config, stateStorePath string,
 	skipUserPersistence bool, username string, keyDir string, certDir string,
-	orgName string) (api.FabricClient, error) {
+	orgName string) (fab.FabricClient, error) {
 
 	client := clientImpl.NewClient(config)
 
@@ -110,14 +112,14 @@ func NewClientWithPreEnrolledUser(config api.Config, stateStorePath string,
 }
 
 // NewUser returns a new default implementation of a User.
-func NewUser(config api.Config, msp api.FabricCAClient, name string, pwd string,
-	mspID string) (api.User, error) {
+func NewUser(config config.Config, msp fabca.FabricCAClient, name string, pwd string,
+	mspID string) (fabca.User, error) {
 
 	key, cert, err := msp.Enroll(name, pwd)
 	if err != nil {
 		return nil, fmt.Errorf("Enroll returned error: %v", err)
 	}
-	user := userImpl.NewUser(name, mspID)
+	user := mspImpl.NewUser(name, mspID)
 	user.SetPrivateKey(key)
 	user.SetEnrollmentCertificate(cert)
 
@@ -126,8 +128,8 @@ func NewUser(config api.Config, msp api.FabricCAClient, name string, pwd string,
 
 // NewPreEnrolledUser returns a new default implementation of User.
 // The user should already be pre-enrolled.
-func NewPreEnrolledUser(config api.Config, privateKeyPath string,
-	enrollmentCertPath string, username string, mspID string, cryptoSuite bccsp.BCCSP) (api.User, error) {
+func NewPreEnrolledUser(config config.Config, privateKeyPath string,
+	enrollmentCertPath string, username string, mspID string, cryptoSuite bccsp.BCCSP) (fabca.User, error) {
 	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEM(privateKeyPath, cryptoSuite, true)
 	if err != nil {
 		return nil, fmt.Errorf("Error importing private key: %v", err)
@@ -137,7 +139,7 @@ func NewPreEnrolledUser(config api.Config, privateKeyPath string,
 		return nil, fmt.Errorf("Error reading from the enrollment cert path: %v", err)
 	}
 
-	user := userImpl.NewUser(username, mspID)
+	user := mspImpl.NewUser(username, mspID)
 	user.SetEnrollmentCertificate(enrollmentCert)
 	user.SetPrivateKey(privateKey)
 
@@ -145,7 +147,7 @@ func NewPreEnrolledUser(config api.Config, privateKeyPath string,
 }
 
 // NewChannel returns a new default implementation of Channel
-func NewChannel(client api.FabricClient, orderer api.Orderer, peers []api.Peer, channelID string) (api.Channel, error) {
+func NewChannel(client fab.FabricClient, orderer fab.Orderer, peers []fab.Peer, channelID string) (fab.Channel, error) {
 
 	channel, err := client.NewChannel(channelID)
 	if err != nil {
@@ -168,27 +170,27 @@ func NewChannel(client api.FabricClient, orderer api.Orderer, peers []api.Peer, 
 }
 
 // NewEventHub returns a new default implementation of Event Hub
-func NewEventHub(client api.FabricClient) (api.EventHub, error) {
+func NewEventHub(client fab.FabricClient) (fab.EventHub, error) {
 	return eventsImpl.NewEventHub(client)
 }
 
 // NewOrderer returns a new default implementation of Orderer
-func NewOrderer(url string, certificate string, serverHostOverride string, config api.Config) (api.Orderer, error) {
+func NewOrderer(url string, certificate string, serverHostOverride string, config config.Config) (fab.Orderer, error) {
 	return ordererImpl.NewOrderer(url, certificate, serverHostOverride, config)
 }
 
 // NewPeer returns a new default implementation of Peer
-func NewPeer(url string, certificate string, serverHostOverride string, config api.Config) (api.Peer, error) {
+func NewPeer(url string, certificate string, serverHostOverride string, config config.Config) (fab.Peer, error) {
 	return peerImpl.NewPeerTLSFromCert(url, certificate, serverHostOverride, config)
 }
 
 // NewConfig returns a new default implementation of the Config interface
-func NewConfig(configFile string) (api.Config, error) {
+func NewConfig(configFile string) (config.Config, error) {
 	return configImpl.InitConfig(configFile)
 }
 
 // NewCAClient returns a new default implmentation of the MSP client
-func NewCAClient(config api.Config, orgName string) (api.FabricCAClient, error) {
+func NewCAClient(config config.Config, orgName string) (fabca.FabricCAClient, error) {
 	mspClient, err := fabricCAClient.NewFabricCAClient(config, orgName)
 	if err != nil {
 		return nil, fmt.Errorf("NewFabricCAClient returned error: %v", err)

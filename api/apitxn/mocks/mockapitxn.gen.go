@@ -5,7 +5,7 @@ package mock_apitxn
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	apitxn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 )
 
 // MockProposalProcessor is a mock of ProposalProcessor interface

@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/api"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric/bccsp"
 
@@ -40,20 +40,20 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
 type channel struct {
 	name            string // Name of the channel is only meaningful to the client
 	securityEnabled bool   // Security enabled flag
-	peers           map[string]api.Peer
+	peers           map[string]fab.Peer
 	tcertBatchSize  int // The number of tcerts to get in each batch
-	orderers        map[string]api.Orderer
-	clientContext   api.FabricClient
-	primaryPeer     api.Peer
+	orderers        map[string]fab.Orderer
+	clientContext   fab.FabricClient
+	primaryPeer     fab.Peer
 	mspManager      msp.MSPManager
-	anchorPeers     []*api.OrgAnchorPeer
+	anchorPeers     []*fab.OrgAnchorPeer
 	initialized     bool
 }
 
 // configItems contains the configuration values retrieved from the Orderer Service
 type configItems struct {
 	msps        []*mb.MSPConfig
-	anchorPeers []*api.OrgAnchorPeer
+	anchorPeers []*fab.OrgAnchorPeer
 	orderers    []string
 	versions    *versions
 }
@@ -72,15 +72,15 @@ type versions struct {
 * @param {FabricClient} clientContext An instance of {@link FabricClient} that provides operational context
 * such as submitting User etc.
  */
-func NewChannel(name string, client api.FabricClient) (api.Channel, error) {
+func NewChannel(name string, client fab.FabricClient) (fab.Channel, error) {
 	if name == "" {
 		return nil, fmt.Errorf("failed to create Channel. Missing required 'name' parameter")
 	}
 	if client == nil {
 		return nil, fmt.Errorf("failed to create Channel. Missing required 'clientContext' parameter")
 	}
-	p := make(map[string]api.Peer)
-	o := make(map[string]api.Orderer)
+	p := make(map[string]fab.Peer)
+	o := make(map[string]fab.Orderer)
 	c := &channel{name: name, securityEnabled: client.GetConfig().IsSecurityEnabled(), peers: p,
 		tcertBatchSize: client.GetConfig().TcertBatchSize(), orderers: o, clientContext: client, mspManager: msp.NewMSPManager()}
 	logger.Infof("Constructed channel instance: %v", c)
@@ -88,12 +88,12 @@ func NewChannel(name string, client api.FabricClient) (api.Channel, error) {
 	return c, nil
 }
 
-func (c *channel) QueryExtensionInterface() api.ChannelExtension {
+func (c *channel) QueryExtensionInterface() fab.ChannelExtension {
 	return c
 }
 
 // ClientContext returns the Client that was passed in to NewChannel
-func (c *channel) ClientContext() api.FabricClient {
+func (c *channel) ClientContext() fab.FabricClient {
 	return c.clientContext
 }
 
@@ -142,7 +142,7 @@ func (c *channel) SetTCertBatchSize(batchSize int) {
 * TLC certificate, and enrollment certificate.
 * @throws {Error} if the peer with that url already exists.
  */
-func (c *channel) AddPeer(peer api.Peer) error {
+func (c *channel) AddPeer(peer fab.Peer) error {
 	url := peer.URL()
 	if c.peers[url] != nil {
 		return fmt.Errorf("Peer with URL %s already exists", url)
@@ -156,7 +156,7 @@ func (c *channel) AddPeer(peer api.Peer) error {
 * Remove peer endpoint from channel.
 * @param {Peer} peer An instance of the Peer.
  */
-func (c *channel) RemovePeer(peer api.Peer) {
+func (c *channel) RemovePeer(peer fab.Peer) {
 	url := peer.URL()
 	if c.peers[url] != nil {
 		delete(c.peers, url)
@@ -169,8 +169,8 @@ func (c *channel) RemovePeer(peer api.Peer) {
 * Get peers of a channel from local information.
 * @returns {[]Peer} The peer list on the channel.
  */
-func (c *channel) Peers() []api.Peer {
-	var peersArray []api.Peer
+func (c *channel) Peers() []fab.Peer {
+	var peersArray []fab.Peer
 	for _, v := range c.peers {
 		peersArray = append(peersArray, v)
 	}
@@ -179,8 +179,8 @@ func (c *channel) Peers() []api.Peer {
 
 // AnchorPeers returns the anchor peers for this channel.
 // Note: channel.Initialize() must be called first to retrieve anchor peers
-func (c *channel) AnchorPeers() []api.OrgAnchorPeer {
-	anchors := []api.OrgAnchorPeer{}
+func (c *channel) AnchorPeers() []fab.OrgAnchorPeer {
+	anchors := []fab.OrgAnchorPeer{}
 	for _, anchor := range c.anchorPeers {
 		anchors = append(anchors, *anchor)
 	}
@@ -192,7 +192,7 @@ func (c *channel) AnchorPeers() []api.OrgAnchorPeer {
 * Utility function to ensure that a peer exists on this channel
 * @returns {bool} true if peer exists on this channel
  */
-func (c *channel) isValidPeer(peer api.Peer) bool {
+func (c *channel) isValidPeer(peer fab.Peer) bool {
 	return peer != nil && c.peers[peer.URL()] != nil
 }
 
@@ -206,7 +206,7 @@ func (c *channel) isValidPeer(peer api.Peer) bool {
 * @param {Peer} peer An instance of the Peer class.
 * @returns error when peer is not on the existing peer list
  */
-func (c *channel) SetPrimaryPeer(peer api.Peer) error {
+func (c *channel) SetPrimaryPeer(peer fab.Peer) error {
 
 	if !c.isValidPeer(peer) {
 		return fmt.Errorf("The primary peer must be on this channel peer list")
@@ -224,7 +224,7 @@ func (c *channel) SetPrimaryPeer(peer api.Peer) error {
 * from map range will be used.
 * @returns {Peer} peer An instance of the Peer class.
  */
-func (c *channel) PrimaryPeer() api.Peer {
+func (c *channel) PrimaryPeer() fab.Peer {
 
 	if c.primaryPeer != nil {
 		return c.primaryPeer
@@ -250,7 +250,7 @@ func (c *channel) PrimaryPeer() api.Peer {
 * @param {Orderer} orderer An instance of the Orderer class.
 * @throws {Error} if the orderer with that url already exists.
  */
-func (c *channel) AddOrderer(orderer api.Orderer) error {
+func (c *channel) AddOrderer(orderer fab.Orderer) error {
 	url := orderer.GetURL()
 	if c.orderers[url] != nil {
 		return fmt.Errorf("Orderer with URL %s already exists", url)
@@ -264,7 +264,7 @@ func (c *channel) AddOrderer(orderer api.Orderer) error {
 * Remove orderer endpoint from a channel object, this is a local-only operation.
 * @param {Orderer} orderer An instance of the Orderer class.
  */
-func (c *channel) RemoveOrderer(orderer api.Orderer) {
+func (c *channel) RemoveOrderer(orderer fab.Orderer) {
 	url := orderer.GetURL()
 	if c.orderers[url] != nil {
 		delete(c.orderers, url)
@@ -276,8 +276,8 @@ func (c *channel) RemoveOrderer(orderer api.Orderer) {
 /**
 * Get orderers of a channel.
  */
-func (c *channel) Orderers() []api.Orderer {
-	var orderersArray []api.Orderer
+func (c *channel) Orderers() []fab.Orderer {
+	var orderersArray []fab.Orderer
 	for _, v := range c.orderers {
 		orderersArray = append(orderersArray, v)
 	}
@@ -328,7 +328,7 @@ func (c *channel) OrganizationUnits() ([]string, error) {
 * @returns A Genesis block
 * @see /protos/peer/proposal_response.proto
  */
-func (c *channel) GenesisBlock(request *api.GenesisBlockRequest) (*common.Block, error) {
+func (c *channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block, error) {
 	logger.Debug("GenesisBlock - start")
 
 	// verify that we have an orderer configured
@@ -400,7 +400,7 @@ func (c *channel) GenesisBlock(request *api.GenesisBlockRequest) (*common.Block,
 * @returns {Promise} A Promise for a `ProposalResponse`
 * @see /protos/peer/proposal_response.proto
  */
-func (c *channel) JoinChannel(request *api.JoinChannelRequest) error {
+func (c *channel) JoinChannel(request *fab.JoinChannelRequest) error {
 	logger.Debug("joinChannel - start")
 
 	// verify that we have targets (Peers) to join this channel
@@ -467,7 +467,7 @@ func (c *channel) JoinChannel(request *api.JoinChannelRequest) error {
 	}
 
 	// Send join proposal
-	proposalResponses, err := c.SendTransactionProposal(transactionProposal, 0, api.PeersToTxnProcessors(request.Targets))
+	proposalResponses, err := c.SendTransactionProposal(transactionProposal, 0, fab.PeersToTxnProcessors(request.Targets))
 	if err != nil {
 		return fmt.Errorf("Error sending join transaction proposal: %s", err)
 	}
@@ -607,7 +607,7 @@ func (c *channel) loadConfigUpdate(configUpdateBytes []byte) (*configItems, erro
 
 	configItems := &configItems{
 		msps:        []*mb.MSPConfig{},
-		anchorPeers: []*api.OrgAnchorPeer{},
+		anchorPeers: []*fab.OrgAnchorPeer{},
 		orderers:    []string{},
 		versions:    versions,
 	}
@@ -640,7 +640,7 @@ func (c *channel) loadConfigEnvelope(configEnvelope *common.ConfigEnvelope) (*co
 
 	configItems := &configItems{
 		msps:        []*mb.MSPConfig{},
-		anchorPeers: []*api.OrgAnchorPeer{},
+		anchorPeers: []*fab.OrgAnchorPeer{},
 		orderers:    []string{},
 		versions:    versions,
 	}
@@ -892,7 +892,7 @@ func (c *channel) queryByChaincodeByTarget(chaincodeName string, args []string, 
 * @param {FabricClient} fabric client
 * @returns {[][]byte} an array of payloads
  */
-func QueryByChaincode(chaincodeName string, args []string, targets []apitxn.ProposalProcessor, clientContext api.FabricClient) ([][]byte, error) {
+func QueryByChaincode(chaincodeName string, args []string, targets []apitxn.ProposalProcessor, clientContext fab.FabricClient) ([][]byte, error) {
 	if chaincodeName == "" {
 		return nil, fmt.Errorf("Missing chaincode name")
 	}
@@ -951,7 +951,7 @@ func (c *channel) CreateTransactionProposal(chaincodeName string, channelID stri
 
 //CreateTransactionProposal  ...
 func CreateTransactionProposal(chaincodeName string, channelID string,
-	args []string, sign bool, transientData map[string][]byte, clientContext api.FabricClient) (*apitxn.TransactionProposal, error) {
+	args []string, sign bool, transientData map[string][]byte, clientContext fab.FabricClient) (*apitxn.TransactionProposal, error) {
 
 	argsArray := make([][]byte, len(args))
 	for i, arg := range args {
@@ -1008,7 +1008,7 @@ func (c *channel) SendTransactionProposal(proposal *apitxn.TransactionProposal, 
 			return nil, fmt.Errorf("peers and target peers is nil or empty")
 		}
 
-		return SendTransactionProposal(proposal, retry, api.PeersToTxnProcessors(c.Peers()))
+		return SendTransactionProposal(proposal, retry, fab.PeersToTxnProcessors(c.Peers()))
 	}
 
 	return SendTransactionProposal(proposal, retry, targets)
@@ -1264,7 +1264,7 @@ func (c *channel) SendInstantiateProposal(chaincodeName string, channelID string
 	return transactionProposalResponse, txID, err
 }
 
-func (c *channel) SignPayload(payload []byte) (*api.SignedEnvelope, error) {
+func (c *channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
 	//Get user info
 	user, err := c.clientContext.LoadUserFromStateStore("")
 	if err != nil {
@@ -1277,11 +1277,11 @@ func (c *channel) SignPayload(payload []byte) (*api.SignedEnvelope, error) {
 		return nil, err
 	}
 	// here's the envelope
-	return &api.SignedEnvelope{Payload: payload, Signature: signature}, nil
+	return &fab.SignedEnvelope{Payload: payload, Signature: signature}, nil
 }
 
 //broadcastEnvelope will send the given envelope to each orderer
-func (c *channel) BroadcastEnvelope(envelope *api.SignedEnvelope) ([]*apitxn.TransactionResponse, error) {
+func (c *channel) BroadcastEnvelope(envelope *fab.SignedEnvelope) ([]*apitxn.TransactionResponse, error) {
 	// Check if orderers are defined
 	if c.orderers == nil || len(c.orderers) == 0 {
 		return nil, fmt.Errorf("orderers not set")
@@ -1293,7 +1293,7 @@ func (c *channel) BroadcastEnvelope(envelope *api.SignedEnvelope) ([]*apitxn.Tra
 
 	for _, o := range c.orderers {
 		wg.Add(1)
-		go func(orderer api.Orderer) {
+		go func(orderer fab.Orderer) {
 			defer wg.Done()
 			var transactionResponse *apitxn.TransactionResponse
 
@@ -1318,7 +1318,7 @@ func (c *channel) BroadcastEnvelope(envelope *api.SignedEnvelope) ([]*apitxn.Tra
 }
 
 // SendEnvelope sends the given envelope to each orderer and returns a block response
-func (c *channel) SendEnvelope(envelope *api.SignedEnvelope) (*common.Block, error) {
+func (c *channel) SendEnvelope(envelope *fab.SignedEnvelope) (*common.Block, error) {
 	if c.orderers == nil || len(c.orderers) == 0 {
 		return nil, fmt.Errorf("orderers not set")
 	}
@@ -1331,7 +1331,7 @@ func (c *channel) SendEnvelope(envelope *api.SignedEnvelope) (*common.Block, err
 
 	// Send the request to all orderers and return as soon as one responds with a block.
 	for _, o := range c.orderers {
-		go func(orderer api.Orderer) {
+		go func(orderer fab.Orderer) {
 			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.GetURL())
 			blocks, errors := orderer.SendDeliver(envelope)
 			select {
@@ -1502,7 +1502,7 @@ func loadConfigValue(configItems *configItems, key string, versionsValue *common
 
 		if len(anchorPeers.AnchorPeers) > 0 {
 			for _, anchorPeer := range anchorPeers.AnchorPeers {
-				oap := &api.OrgAnchorPeer{Org: org, Host: anchorPeer.Host, Port: anchorPeer.Port}
+				oap := &fab.OrgAnchorPeer{Org: org, Host: anchorPeer.Host, Port: anchorPeer.Port}
 				configItems.anchorPeers = append(configItems.anchorPeers, oap)
 				logger.Debugf("loadConfigValue - %s   - AnchorPeer :: %s:%d:%s", groupName, oap.Host, oap.Port, oap.Org)
 			}

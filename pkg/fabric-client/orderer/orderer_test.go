@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 
@@ -120,7 +120,7 @@ func TestSendDeliver(t *testing.T) {
 	mockServer := startMockServer(t)
 	orderer, _ := NewOrderer(testOrdererURL, "", "", mocks.NewMockConfig())
 	// Test deliver happy path
-	blocks, errors := orderer.SendDeliver(&api.SignedEnvelope{})
+	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		if string(block.Data.Data[0]) != "test" {
@@ -148,7 +148,7 @@ func TestSendDeliver(t *testing.T) {
 	// Test deliver with deliver error from OS
 	testError := fmt.Errorf("test error")
 	mockServer.DeliverError = testError
-	blocks, errors = orderer.SendDeliver(&api.SignedEnvelope{})
+	blocks, errors = orderer.SendDeliver(&fab.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		t.Fatalf("Expected error got block: %#v", block)

@@ -17,8 +17,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/api/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -36,7 +36,7 @@ const (
 func TestNewPeerEndorserTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	url := "0.0.0.0:1234"
 	certPool := x509.NewCertPool()
@@ -64,7 +64,7 @@ func TestNewPeerEndorserTLS(t *testing.T) {
 func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	url := "0.0.0.0:1234"
 	certPool := x509.NewCertPool()
@@ -83,7 +83,7 @@ func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 func TestNewPeerEndorserNoTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	url := "0.0.0.0:1234"
 	config.EXPECT().IsTLSEnabled().Return(false)
@@ -113,7 +113,7 @@ func TestNewPeerEndorserNoTLS(t *testing.T) {
 func TestNewPeerEndorserBlocking(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	url := "0.0.0.0:1234"
 	config.EXPECT().IsTLSEnabled().Return(false)
@@ -143,7 +143,7 @@ func TestNewPeerEndorserBlocking(t *testing.T) {
 func TestNewPeerEndorserNonBlocking(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	url := "0.0.0.0:1234"
 	config.EXPECT().IsTLSEnabled().Return(false)
@@ -168,7 +168,7 @@ func TestNewPeerEndorserNonBlocking(t *testing.T) {
 func TestNewPeerEndorserBadParams(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	url := ""
 	_, err := newPeerEndorser(url, "", "", connTimeout, true, config)
@@ -182,7 +182,7 @@ func TestNewPeerEndorserBadParams(t *testing.T) {
 func TestNewPeerEndorserTLSBad(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	url := "0.0.0.0:1234"
 	config.EXPECT().IsTLSEnabled().Return(true)
@@ -216,7 +216,7 @@ func TestProcessProposalGoodDial(t *testing.T) {
 func testProcessProposal(t *testing.T, to time.Duration) (apitxn.TransactionProposalResult, error) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	url := testAddress
 	config.EXPECT().IsTLSEnabled().Return(false)

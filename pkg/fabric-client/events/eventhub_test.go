@@ -17,7 +17,7 @@ import (
 
 	"reflect"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -77,7 +77,7 @@ func TestDeadlock(t *testing.T) {
 	go flood(eventsPerThread, threads, func() {
 		eventName := generateTxID()
 		received := newCompletionHandler(timeout)
-		registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *api.ChaincodeEvent) {
+		registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *fab.ChaincodeEvent) {
 			ccCompletion.done()
 			received.done()
 		})
@@ -127,10 +127,10 @@ func TestChaincodeEvent(t *testing.T) {
 		t.Fatalf("No client")
 	}
 
-	eventReceived := make(chan *api.ChaincodeEvent)
+	eventReceived := make(chan *fab.ChaincodeEvent)
 
 	// Register for CC event
-	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *api.ChaincodeEvent) {
+	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *fab.ChaincodeEvent) {
 		eventReceived <- event
 	})
 
@@ -143,7 +143,7 @@ func TestChaincodeEvent(t *testing.T) {
 	})
 
 	// Wait for the CC event
-	var event *api.ChaincodeEvent
+	var event *fab.ChaincodeEvent
 	select {
 	case event = <-eventReceived:
 		eventHub.UnregisterChaincodeEvent(registration)
@@ -176,10 +176,10 @@ func TestChaincodeBlockEvent(t *testing.T) {
 		t.Fatalf("No client")
 	}
 
-	eventReceived := make(chan *api.ChaincodeEvent)
+	eventReceived := make(chan *fab.ChaincodeEvent)
 
 	// Register for CC event
-	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *api.ChaincodeEvent) {
+	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *fab.ChaincodeEvent) {
 		eventReceived <- event
 	})
 
@@ -194,7 +194,7 @@ func TestChaincodeBlockEvent(t *testing.T) {
 	})
 
 	// Wait for CC event
-	var event *api.ChaincodeEvent
+	var event *fab.ChaincodeEvent
 	select {
 	case event = <-eventReceived:
 		eventHub.UnregisterChaincodeEvent(registration)
@@ -379,7 +379,7 @@ func TestRegisterChaincodeEvent(t *testing.T) {
 }
 
 // private test callback to be executed on chaincode event
-func testChaincodeCallback(ce *api.ChaincodeEvent) {
+func testChaincodeCallback(ce *fab.ChaincodeEvent) {
 	fmt.Printf("Received CC event: %v\n", ce)
 }
 

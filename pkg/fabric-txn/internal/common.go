@@ -9,7 +9,7 @@ package internal
 import (
 	"fmt"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric/common/crypto"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -68,7 +68,7 @@ func CreateAndSendTransaction(sender apitxn.Sender, resps []*apitxn.TransactionP
 // RegisterTxEvent registers on the given eventhub for the given transaction id
 // returns a boolean channel which receives true when the event is complete and
 // an error channel for errors
-func RegisterTxEvent(txID string, eventHub api.EventHub) (chan bool, chan error) {
+func RegisterTxEvent(txID string, eventHub fab.EventHub) (chan bool, chan error) {
 	done := make(chan bool)
 	fail := make(chan error)
 

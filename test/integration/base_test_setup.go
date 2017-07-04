@@ -17,8 +17,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	fabricTxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
 	admin "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
@@ -27,9 +29,9 @@ import (
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
-	Client          api.FabricClient
-	Channel         api.Channel
-	EventHub        api.EventHub
+	Client          fab.FabricClient
+	Channel         fab.Channel
+	EventHub        fab.EventHub
 	ConnectEventHub bool
 	ConfigFile      string
 	OrgID           string
@@ -37,8 +39,8 @@ type BaseSetupImpl struct {
 	ChainCodeID     string
 	Initialized     bool
 	ChannelConfig   string
-	AdminUser       api.User
-	NormalUser      api.User
+	AdminUser       ca.User
+	NormalUser      ca.User
 }
 
 // Initialize reads configuration from file and sets up client, channel and event hub
@@ -54,12 +56,12 @@ func (setup *BaseSetupImpl) Initialize() error {
 		return fmt.Errorf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
 
-	mspClient, err := fabapi.NewCAClient(configImpl, setup.OrgID)
+	mspClient, err := deffab.NewCAClient(configImpl, setup.OrgID)
 	if err != nil {
 		return fmt.Errorf("Failed to get default msp client: %v", err)
 	}
 
-	client, err := fabapi.NewClientWithUser("admin", "adminpw", setup.OrgID, "/tmp/enroll_user", configImpl, mspClient)
+	client, err := deffab.NewClientWithUser("admin", "adminpw", setup.OrgID, "/tmp/enroll_user", configImpl, mspClient)
 	if err != nil {
 		return fmt.Errorf("Create client failed: %v", err)
 	}
@@ -125,7 +127,7 @@ func (setup *BaseSetupImpl) Initialize() error {
 	return nil
 }
 
-func (setup *BaseSetupImpl) setupEventHub(client api.FabricClient) error {
+func (setup *BaseSetupImpl) setupEventHub(client fab.FabricClient) error {
 	eventHub, err := setup.getEventHub(client)
 	if err != nil {
 		return err
@@ -142,7 +144,7 @@ func (setup *BaseSetupImpl) setupEventHub(client api.FabricClient) error {
 }
 
 // InitConfig ...
-func (setup *BaseSetupImpl) InitConfig() (api.Config, error) {
+func (setup *BaseSetupImpl) InitConfig() (apiconfig.Config, error) {
 	configImpl, err := config.InitConfig(setup.ConfigFile)
 	if err != nil {
 		return nil, err
@@ -225,7 +227,7 @@ func (setup *BaseSetupImpl) QueryAsset() (string, error) {
 }
 
 // GetChannel initializes and returns a channel based on config
-func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string, orgs []string) (api.Channel, error) {
+func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string, orgs []string) (fab.Channel, error) {
 
 	channel, err := client.NewChannel(channelID)
 	if err != nil {
@@ -254,7 +256,7 @@ func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string
 			return nil, fmt.Errorf("Error reading peer config: %v", err)
 		}
 		for _, p := range peerConfig {
-			endorser, err := fabapi.NewPeer(fmt.Sprintf("%s:%d", p.Host, p.Port),
+			endorser, err := deffab.NewPeer(fmt.Sprintf("%s:%d", p.Host, p.Port),
 				p.TLS.Certificate, p.TLS.ServerHostOverride, client.GetConfig())
 			if err != nil {
 				return nil, fmt.Errorf("NewPeer return error: %v", err)
@@ -273,7 +275,7 @@ func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string
 }
 
 // CreateAndSendTransactionProposal ...
-func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel api.Channel, chainCodeID string, channelID string,
+func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel, chainCodeID string, channelID string,
 	args []string, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, string, error) {
 
 	signedProposal, err := channel.CreateTransactionProposal(chainCodeID, channelID, args, true, transientData)
@@ -297,7 +299,7 @@ func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel api.Channel
 }
 
 // CreateAndSendTransaction ...
-func (setup *BaseSetupImpl) CreateAndSendTransaction(channel api.Channel, resps []*apitxn.TransactionProposalResponse) ([]*apitxn.TransactionResponse, error) {
+func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps []*apitxn.TransactionProposalResponse) ([]*apitxn.TransactionResponse, error) {
 
 	tx, err := channel.CreateTransaction(resps)
 	if err != nil {
@@ -321,7 +323,7 @@ func (setup *BaseSetupImpl) CreateAndSendTransaction(channel api.Channel, resps 
 // RegisterTxEvent registers on the given eventhub for the give transaction
 // returns a boolean channel which receives true when the event is complete
 // and an error channel for errors
-func (setup *BaseSetupImpl) RegisterTxEvent(txID string, eventHub api.EventHub) (chan bool, chan error) {
+func (setup *BaseSetupImpl) RegisterTxEvent(txID string, eventHub fab.EventHub) (chan bool, chan error) {
 	done := make(chan bool)
 	fail := make(chan error)
 
@@ -339,7 +341,7 @@ func (setup *BaseSetupImpl) RegisterTxEvent(txID string, eventHub api.EventHub) 
 }
 
 // getEventHub initilizes the event hub
-func (setup *BaseSetupImpl) getEventHub(client api.FabricClient) (api.EventHub, error) {
+func (setup *BaseSetupImpl) getEventHub(client fab.FabricClient) (fab.EventHub, error) {
 	eventHub, err := events.NewEventHub(client)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating new event hub: %v", err)

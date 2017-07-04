@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 
@@ -20,7 +20,7 @@ import (
 var logger = logging.MustGetLogger("fabric_sdk_go")
 
 //QueryChaincode ...
-func QueryChaincode(client api.FabricClient, channel api.Channel, chaincodeID string, args []string) (string, error) {
+func QueryChaincode(client fab.FabricClient, channel fab.Channel, chaincodeID string, args []string) (string, error) {
 	err := checkCommonArgs(client, channel, chaincodeID)
 	if err != nil {
 		return "", err
@@ -37,8 +37,8 @@ func QueryChaincode(client api.FabricClient, channel api.Channel, chaincodeID st
 }
 
 // InvokeChaincode ...
-func InvokeChaincode(client api.FabricClient, channel api.Channel, targets []apitxn.ProposalProcessor,
-	eventHub api.EventHub, chaincodeID string, args []string, transientData map[string][]byte) error {
+func InvokeChaincode(client fab.FabricClient, channel fab.Channel, targets []apitxn.ProposalProcessor,
+	eventHub fab.EventHub, chaincodeID string, args []string, transientData map[string][]byte) error {
 
 	err := checkCommonArgs(client, channel, chaincodeID)
 	if err != nil {
@@ -87,7 +87,7 @@ func InvokeChaincode(client api.FabricClient, channel api.Channel, targets []api
 }
 
 // checkCommonArgs ...
-func checkCommonArgs(client api.FabricClient, channel api.Channel, chaincodeID string) error {
+func checkCommonArgs(client fab.FabricClient, channel fab.Channel, chaincodeID string) error {
 	if client == nil {
 		return fmt.Errorf("Client is nil")
 	}
@@ -106,11 +106,11 @@ func checkCommonArgs(client api.FabricClient, channel api.Channel, chaincodeID s
 // RegisterCCEvent registers chain code event on the given eventhub
 // @returns {chan bool} channel which receives true when the event is complete
 // @returns {object} ChainCodeCBE object handle that should be used to unregister
-func RegisterCCEvent(chainCodeID string, eventID string, eventHub api.EventHub) (chan bool, *api.ChainCodeCBE) {
+func RegisterCCEvent(chainCodeID string, eventID string, eventHub fab.EventHub) (chan bool, *fab.ChainCodeCBE) {
 	done := make(chan bool)
 
 	// Register callback for CE
-	rce := eventHub.RegisterChaincodeEvent(chainCodeID, eventID, func(ce *api.ChaincodeEvent) {
+	rce := eventHub.RegisterChaincodeEvent(chainCodeID, eventID, func(ce *fab.ChaincodeEvent) {
 		logger.Debugf("Received CC event: %v\n", ce)
 		done <- true
 	})

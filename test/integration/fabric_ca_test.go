@@ -17,11 +17,13 @@ import (
 	"testing"
 	"time"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+
+	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
-	sdkUser "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/user"
+	msp "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/msp"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
@@ -29,7 +31,7 @@ import (
 
 var org1Name = "peerorg1"
 var org2Name = "peerorg2"
-var testFabricCAConfig api.Config
+var testFabricCAConfig config.Config
 
 func TestMain(m *testing.M) {
 	var err error
@@ -111,10 +113,10 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		if cert509.Subject.CommonName != "admin" {
 			t.Fatalf("CommonName in x509 cert is not the enrollmentID")
 		}
-		adminUser = sdkUser.NewUser("admin", mspID)
-		adminUser.SetPrivateKey(key)
-		adminUser.SetEnrollmentCertificate(cert)
-		err = client.SaveUserToStateStore(adminUser, false)
+		adminUser2 := msp.NewUser("admin", mspID)
+		adminUser2.SetPrivateKey(key)
+		adminUser2.SetEnrollmentCertificate(cert)
+		err = client.SaveUserToStateStore(adminUser2, false)
 		if err != nil {
 			t.Fatalf("client.SaveUserToStateStore return error: %v", err)
 		}
@@ -129,7 +131,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 	// Register a random user
 	userName := createRandomName()
-	registerRequest := api.RegistrationRequest{
+	registerRequest := ca.RegistrationRequest{
 		Name:        userName,
 		Type:        "user",
 		Affiliation: "org1.department1",
@@ -148,7 +150,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	//re-enroll
 	fmt.Printf("** Attempt to re-enrolled user:  '%s'\n", userName)
 	//create new user object and set certificate and private key of the previously enrolled user
-	enrolleduser := sdkUser.NewUser(userName, mspID)
+	enrolleduser := msp.NewUser(userName, mspID)
 	enrolleduser.SetEnrollmentCertificate(ecert)
 	enrolleduser.SetPrivateKey(ekey)
 	//reenroll
@@ -161,7 +163,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		t.Fatalf("Error Reenroling user. Enrollmet and Reenrollment certificates are the same.")
 	}
 
-	revokeRequest := api.RevocationRequest{Name: userName, CAName: "ca-org1"}
+	revokeRequest := ca.RevocationRequest{Name: userName, CAName: "ca-org1"}
 	err = caClient.Revoke(adminUser, &revokeRequest)
 	if err != nil {
 		t.Fatalf("Error from Revoke: %s", err)

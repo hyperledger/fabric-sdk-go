@@ -12,7 +12,8 @@ import (
 	"os"
 	"time"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 	"github.com/hyperledger/fabric/protos/common"
@@ -23,8 +24,8 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
 var origGoPath = os.Getenv("GOPATH")
 
 // SendInstallCC  Sends an install proposal to one or more endorsing peers.
-func SendInstallCC(client api.FabricClient, chainCodeID string, chainCodePath string,
-	chainCodeVersion string, chaincodePackage []byte, targets []api.Peer, deployPath string) error {
+func SendInstallCC(client fab.FabricClient, chainCodeID string, chainCodePath string,
+	chainCodeVersion string, chaincodePackage []byte, targets []fab.Peer, deployPath string) error {
 
 	changeGOPATHToDeploy(deployPath)
 	transactionProposalResponse, _, err := client.InstallChaincode(chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, targets)
@@ -43,8 +44,8 @@ func SendInstallCC(client api.FabricClient, chainCodeID string, chainCodePath st
 }
 
 // SendInstantiateCC Sends instantiate CC proposal to one or more endorsing peers
-func SendInstantiateCC(channel api.Channel, chainCodeID string, channelID string, args []string,
-	chaincodePath string, chaincodeVersion string, targets []apitxn.ProposalProcessor, eventHub api.EventHub) error {
+func SendInstantiateCC(channel fab.Channel, chainCodeID string, channelID string, args []string,
+	chaincodePath string, chaincodeVersion string, targets []apitxn.ProposalProcessor, eventHub fab.EventHub) error {
 
 	transactionProposalResponse, txID, err := channel.SendInstantiateProposal(chainCodeID,
 		channelID, args, chaincodePath, chaincodeVersion, targets)
@@ -78,7 +79,7 @@ func SendInstantiateCC(channel api.Channel, chainCodeID string, channelID string
 
 // CreateOrUpdateChannel creates a channel if it does not exist or updates a channel
 // if it does and a different channelConfig is used
-func CreateOrUpdateChannel(client api.FabricClient, ordererUser api.User, orgUser api.User, channel api.Channel, channelConfig string) error {
+func CreateOrUpdateChannel(client fab.FabricClient, ordererUser ca.User, orgUser ca.User, channel fab.Channel, channelConfig string) error {
 	logger.Debugf("***** Creating or updating channel: %s *****\n", channel.Name())
 
 	currentUser := client.GetUserContext()
@@ -117,7 +118,7 @@ func CreateOrUpdateChannel(client api.FabricClient, ordererUser api.User, orgUse
 		return fmt.Errorf("Could not compute TxID: %s", err)
 	}
 
-	request := api.CreateChannelRequest{
+	request := fab.CreateChannelRequest{
 		Name:       channel.Name(),
 		Orderer:    channel.Orderers()[0],
 		Config:     config,
@@ -136,7 +137,7 @@ func CreateOrUpdateChannel(client api.FabricClient, ordererUser api.User, orgUse
 }
 
 // JoinChannel joins a channel that has already been created
-func JoinChannel(client api.FabricClient, orgUser api.User, channel api.Channel) error {
+func JoinChannel(client fab.FabricClient, orgUser ca.User, channel fab.Channel) error {
 	currentUser := client.GetUserContext()
 	defer client.SetUserContext(currentUser)
 
@@ -156,7 +157,7 @@ func JoinChannel(client api.FabricClient, orgUser api.User, channel api.Channel)
 		return fmt.Errorf("Could not compute TxID: %s", err)
 	}
 
-	genesisBlockRequest := &api.GenesisBlockRequest{
+	genesisBlockRequest := &fab.GenesisBlockRequest{
 		TxID:  txID,
 		Nonce: nonce,
 	}
@@ -173,7 +174,7 @@ func JoinChannel(client api.FabricClient, orgUser api.User, channel api.Channel)
 	if err != nil {
 		return fmt.Errorf("Could not compute TxID: %s", err)
 	}
-	joinChannelRequest := &api.JoinChannelRequest{
+	joinChannelRequest := &fab.JoinChannelRequest{
 		Targets:      channel.Peers(),
 		GenesisBlock: genesisBlock,
 		TxID:         txID,

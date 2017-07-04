@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	api "github.com/hyperledger/fabric-sdk-go/api"
 	"github.com/hyperledger/fabric/bccsp"
 )
 
@@ -26,7 +25,7 @@ type MockUser struct {
  *
  * @param {string} name - The user name
  */
-func NewMockUser(name string) api.User {
+func NewMockUser(name string) *MockUser {
 	return &MockUser{name: name}
 }
 

@@ -14,16 +14,16 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/mocks"
 )
 
 // TestNewPeerWithCertNoTLS tests that a peer can be constructed without using a cert
 func TestNewPeerWithCertNoTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 	config.EXPECT().IsTLSEnabled().Return(false)
 
 	url := "http://example.com"
@@ -42,7 +42,7 @@ func TestNewPeerWithCertNoTLS(t *testing.T) {
 func TestNewPeerTLSFromCert(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	certPool := x509.NewCertPool()
 	config.EXPECT().IsTLSEnabled().Return(true)
@@ -61,7 +61,7 @@ func TestNewPeerTLSFromCert(t *testing.T) {
 func TestNewPeerWithCertBadParams(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	_, err := NewPeer("", config)
 
@@ -74,7 +74,7 @@ func TestNewPeerWithCertBadParams(t *testing.T) {
 func TestNewPeerTLSFromCertBad(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	config.EXPECT().IsTLSEnabled().Return(true)
 
@@ -90,7 +90,7 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 func TestEnrollmentCert(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 	config.EXPECT().IsTLSEnabled().Return(false)
 
 	peer, err := NewPeer(peer1URL, config)
@@ -120,7 +120,7 @@ func TestEnrollmentCert(t *testing.T) {
 func TestRoles(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 	config.EXPECT().IsTLSEnabled().Return(false)
 
 	peer, err := NewPeer(peer1URL, config)
@@ -146,7 +146,7 @@ func TestRoles(t *testing.T) {
 func TestNames(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 	config.EXPECT().IsTLSEnabled().Return(false)
 
 	peer, err := NewPeer(peer1URL, config)
@@ -189,7 +189,7 @@ func TestProposalProcessorSendProposal(t *testing.T) {
 func TestPlaceholders(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_api.NewMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 	config.EXPECT().IsTLSEnabled().Return(false)
 
 	peer, err := NewPeer(peer1URL, config)

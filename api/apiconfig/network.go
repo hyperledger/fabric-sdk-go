@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package api
+package apiconfig
 
 // NetworkConfig provides a static definition of a Hyperledger Fabric network
 type NetworkConfig struct {

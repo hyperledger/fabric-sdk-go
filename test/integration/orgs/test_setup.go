@@ -11,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api"
+	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
@@ -28,28 +29,28 @@ var org1 = "peerorg1"
 var org2 = "peerorg2"
 
 // Client
-var orgTestClient api.FabricClient
+var orgTestClient fab.FabricClient
 
 // Channel
-var orgTestChannel api.Channel
+var orgTestChannel fab.Channel
 
 // Orderers
-var orgTestOrderer api.Orderer
+var orgTestOrderer fab.Orderer
 
 // Peers
-var orgTestPeer0 api.Peer
-var orgTestPeer1 api.Peer
+var orgTestPeer0 fab.Peer
+var orgTestPeer1 fab.Peer
 
 // EventHubs
-var peer0EventHub api.EventHub
-var peer1EventHub api.EventHub
+var peer0EventHub fab.EventHub
+var peer1EventHub fab.EventHub
 
 // Users
-var org1AdminUser api.User
-var org2AdminUser api.User
-var ordererAdminUser api.User
-var org1User api.User
-var org2User api.User
+var org1AdminUser ca.User
+var org2AdminUser ca.User
+var ordererAdminUser ca.User
+var org1User ca.User
+var org2User ca.User
 
 // Flag to indicate if test has run before (to skip certain steps)
 var foundChannel bool
@@ -121,11 +122,11 @@ func installAndInstantiate(t *testing.T) {
 
 	orgTestClient.SetUserContext(org1AdminUser)
 	admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []api.Peer{orgTestPeer0}, "../../fixtures")
+		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer0}, "../../fixtures")
 
 	orgTestClient.SetUserContext(org2AdminUser)
 	err := admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []api.Peer{orgTestPeer1}, "../../fixtures")
+		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer1}, "../../fixtures")
 	failTestIfError(err, t)
 
 	err = admin.SendInstantiateCC(orgTestChannel, "exampleCC", orgTestChannel.Name(),

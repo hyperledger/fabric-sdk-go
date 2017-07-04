@@ -9,7 +9,7 @@ package mocks
 import (
 	"crypto/x509"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/spf13/viper"
@@ -20,13 +20,13 @@ type MockConfig struct {
 }
 
 // NewMockConfig ...
-func NewMockConfig() api.Config {
+func NewMockConfig() apiconfig.Config {
 	return &MockConfig{}
 }
 
 // CAConfig not implemented
-func (c *MockConfig) CAConfig(org string) (*api.CAConfig, error) {
-	return &api.CAConfig{}, nil
+func (c *MockConfig) CAConfig(org string) (*apiconfig.CAConfig, error) {
+	return &apiconfig.CAConfig{}, nil
 }
 
 // CAServerCertFiles Read configuration option for the server certificate files
@@ -51,7 +51,7 @@ func (c *MockConfig) FabricClientViper() *viper.Viper {
 }
 
 // PeersConfig Retrieves the fabric peers from the config file provided
-func (c *MockConfig) PeersConfig(org string) ([]api.PeerConfig, error) {
+func (c *MockConfig) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 	return nil, nil
 }
 
@@ -92,17 +92,17 @@ func (c *MockConfig) SecurityLevel() int {
 }
 
 // OrderersConfig returns a list of defined orderers
-func (c *MockConfig) OrderersConfig() ([]api.OrdererConfig, error) {
+func (c *MockConfig) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
 	return nil, nil
 }
 
 // RandomOrdererConfig not implemented
-func (c *MockConfig) RandomOrdererConfig() (*api.OrdererConfig, error) {
+func (c *MockConfig) RandomOrdererConfig() (*apiconfig.OrdererConfig, error) {
 	return nil, nil
 }
 
 // OrdererConfig not implemented
-func (c *MockConfig) OrdererConfig(name string) (*api.OrdererConfig, error) {
+func (c *MockConfig) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
 	return nil, nil
 }
 
@@ -132,6 +132,6 @@ func (c *MockConfig) CSPConfig() *bccspFactory.FactoryOpts {
 }
 
 // NetworkConfig not implemented
-func (c *MockConfig) NetworkConfig() (*api.NetworkConfig, error) {
+func (c *MockConfig) NetworkConfig() (*apiconfig.NetworkConfig, error) {
 	return nil, nil
 }

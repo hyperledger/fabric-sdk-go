@@ -10,7 +10,8 @@ import (
 	"encoding/pem"
 	"time"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/op/go-logging"
 )
@@ -33,7 +34,7 @@ type peer struct {
 /*
 // ProposalProcessor simulates transaction proposal, so that a client can submit the result for ordering
 type ProposalProcessor interface {
-	ProcessProposal(proposal *api.TransactionProposal) (*api.TransactionProposalResponse, error)
+	ProcessProposal(proposal *apitxn.TransactionProposal) (*apitxn.TransactionProposalResponse, error)
 }*/
 
 // Name gets the Peer name.
@@ -87,7 +88,7 @@ func (p *peer) ProcessTransactionProposal(proposal apitxn.TransactionProposal) (
 // url is the URL with format of "host:port".
 // certificate is ...
 // serverNameOverride is passed to NewClientTLSFromCert in grpc/credentials.
-func NewPeerTLSFromCert(url string, certificate string, serverHostOverride string, config api.Config) (api.Peer, error) {
+func NewPeerTLSFromCert(url string, certificate string, serverHostOverride string, config apiconfig.Config) (fab.Peer, error) {
 	// TODO: config is declaring TLS but cert & serverHostOverride is being passed-in...
 	conn, err := newPeerEndorser(url, certificate, serverHostOverride, connTimeout, connBlocking, config)
 	if err != nil {
@@ -99,7 +100,7 @@ func NewPeerTLSFromCert(url string, certificate string, serverHostOverride strin
 
 // NewPeer constructs a Peer given its endpoint configuration settings.
 // url is the URL with format of "host:port".
-func NewPeer(url string, config api.Config) (api.Peer, error) {
+func NewPeer(url string, config apiconfig.Config) (fab.Peer, error) {
 	conn, err := newPeerEndorser(url, "", "", connTimeout, connBlocking, config)
 	if err != nil {
 		return nil, err
@@ -109,7 +110,7 @@ func NewPeer(url string, config api.Config) (api.Peer, error) {
 }
 
 // NewPeerFromProcessor constructs a Peer with a ProposalProcessor to simulate transactions.
-func NewPeerFromProcessor(url string, processor apitxn.ProposalProcessor, config api.Config) (api.Peer, error) {
+func NewPeerFromProcessor(url string, processor apitxn.ProposalProcessor, config apiconfig.Config) (fab.Peer, error) {
 	return &peer{url: url, processor: processor}, nil
 }
 
@@ -142,7 +143,7 @@ func (p *peer) ConnectEventSource() {
  * @param {Channel} channel optional
  * @result {bool} Whether the said event has been listened on by some application instance on that chain.
  */
-func (p *peer) IsEventListened(event string, channel api.Channel) (bool, error) {
+func (p *peer) IsEventListened(event string, channel fab.Channel) (bool, error) {
 	//to do
 	return false, nil
 }

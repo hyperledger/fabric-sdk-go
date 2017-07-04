@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
 	cnsmr "github.com/hyperledger/fabric/events/consumer"
 
@@ -33,7 +33,7 @@ type eventHub struct {
 	// Protects chaincodeRegistrants, blockRegistrants and txRegistrants
 	mtx sync.RWMutex
 	// Map of clients registered for chaincode events
-	chaincodeRegistrants map[string][]*api.ChainCodeCBE
+	chaincodeRegistrants map[string][]*fab.ChainCodeCBE
 	// Map of clients registered for block events
 	blockRegistrants []func(*common.Block)
 	// Map of clients registered for transactional events
@@ -45,7 +45,7 @@ type eventHub struct {
 	// peer tls server host override
 	peerTLSServerHostOverride string
 	// grpc event client interface
-	grpcClient api.EventsClient
+	grpcClient fab.EventsClient
 	// fabric connection state of this eventhub
 	connected bool
 	// List of events client is interested in
@@ -53,28 +53,28 @@ type eventHub struct {
 	// Factory that creates EventsClient
 	eventsClientFactory eventClientFactory
 	// FabricClient
-	client api.FabricClient
+	client fab.FabricClient
 }
 
 // eventClientFactory creates an EventsClient instance
 type eventClientFactory interface {
-	newEventsClient(client api.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (api.EventsClient, error)
+	newEventsClient(client fab.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error)
 }
 
 // consumerClientFactory is the default implementation oif the eventClientFactory
 type consumerClientFactory struct{}
 
-func (ccf *consumerClientFactory) newEventsClient(client api.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (api.EventsClient, error) {
+func (ccf *consumerClientFactory) newEventsClient(client fab.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error) {
 	return consumer.NewEventsClient(client, peerAddress, certificate, serverHostOverride, regTimeout, adapter)
 }
 
 // NewEventHub ...
-func NewEventHub(client api.FabricClient) (api.EventHub, error) {
+func NewEventHub(client fab.FabricClient) (fab.EventHub, error) {
 
 	if client == nil {
 		return nil, fmt.Errorf("Client is nil")
 	}
-	chaincodeRegistrants := make(map[string][]*api.ChainCodeCBE)
+	chaincodeRegistrants := make(map[string][]*fab.ChainCodeCBE)
 	txRegistrants := make(map[string]func(string, pb.TxValidationCode, error))
 
 	eventHub := &eventHub{
@@ -329,16 +329,16 @@ func (eventHub *eventHub) Disconnected(err error) {
  * @returns {object} ChainCodeCBE object that should be treated as an opaque
  * handle used to unregister (see unregisterChaincodeEvent)
  */
-func (eventHub *eventHub) RegisterChaincodeEvent(ccid string, eventname string, callback func(*api.ChaincodeEvent)) *api.ChainCodeCBE {
+func (eventHub *eventHub) RegisterChaincodeEvent(ccid string, eventname string, callback func(*fab.ChaincodeEvent)) *fab.ChainCodeCBE {
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
 
 	eventHub.addChaincodeInterest(ccid, eventname)
 
-	cbe := api.ChainCodeCBE{CCID: ccid, EventNameFilter: eventname, CallbackFunc: callback}
+	cbe := fab.ChainCodeCBE{CCID: ccid, EventNameFilter: eventname, CallbackFunc: callback}
 	cbeArray := eventHub.chaincodeRegistrants[ccid]
 	if cbeArray == nil && len(cbeArray) <= 0 {
-		cbeArray = make([]*api.ChainCodeCBE, 0)
+		cbeArray = make([]*fab.ChainCodeCBE, 0)
 		cbeArray = append(cbeArray, &cbe)
 		eventHub.chaincodeRegistrants[ccid] = cbeArray
 	} else {
@@ -354,7 +354,7 @@ func (eventHub *eventHub) RegisterChaincodeEvent(ccid string, eventname string, 
  * @param {object} ChainCodeCBE handle returned from call to
  * registerChaincodeEvent.
  */
-func (eventHub *eventHub) UnregisterChaincodeEvent(cbe *api.ChainCodeCBE) {
+func (eventHub *eventHub) UnregisterChaincodeEvent(cbe *fab.ChainCodeCBE) {
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
 
@@ -464,7 +464,7 @@ func (eventHub *eventHub) getBlockRegistrants() []func(*common.Block) {
 	return clone
 }
 
-func (eventHub *eventHub) getChaincodeRegistrants(chaincodeID string) []*api.ChainCodeCBE {
+func (eventHub *eventHub) getChaincodeRegistrants(chaincodeID string) []*fab.ChainCodeCBE {
 	eventHub.mtx.RLock()
 	defer eventHub.mtx.RUnlock()
 
@@ -474,7 +474,7 @@ func (eventHub *eventHub) getChaincodeRegistrants(chaincodeID string) []*api.Cha
 	}
 
 	// Return a clone of the array to avoid race conditions
-	clone := make([]*api.ChainCodeCBE, len(registrants))
+	clone := make([]*fab.ChainCodeCBE, len(registrants))
 	for i, registrants := range registrants {
 		clone[i] = registrants
 	}
@@ -556,7 +556,7 @@ func (eventHub *eventHub) notifyChaincodeRegistrants(channelID string, ccEvent *
 		if match {
 			callback := v.CallbackFunc
 			if callback != nil {
-				callback(&api.ChaincodeEvent{
+				callback(&fab.ChaincodeEvent{
 					ChaincodeID: ccEvent.ChaincodeId,
 					TxID:        ccEvent.TxId,
 					EventName:   ccEvent.EventName,

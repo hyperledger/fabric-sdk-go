@@ -13,19 +13,20 @@ import (
 	"path/filepath"
 	"time"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
 )
 
 // GetOrdererAdmin returns a pre-enrolled orderer admin user
-func GetOrdererAdmin(c api.FabricClient, orgName string) (api.User, error) {
+func GetOrdererAdmin(c fab.FabricClient, orgName string) (ca.User, error) {
 	keyDir := "ordererOrganizations/example.com/users/Admin@example.com/keystore"
 	certDir := "ordererOrganizations/example.com/users/Admin@example.com/signcerts"
 	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, "ordererAdmin", orgName)
 }
 
 // GetAdmin returns a pre-enrolled org admin user
-func GetAdmin(c api.FabricClient, orgPath string, orgName string) (api.User, error) {
+func GetAdmin(c fab.FabricClient, orgPath string, orgName string) (ca.User, error) {
 	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/keystore", orgPath, orgPath)
 	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/signcerts", orgPath, orgPath)
 	username := fmt.Sprintf("peer%sAdmin", orgPath)
@@ -33,7 +34,7 @@ func GetAdmin(c api.FabricClient, orgPath string, orgName string) (api.User, err
 }
 
 // GetUser returns a pre-enrolled org user
-func GetUser(c api.FabricClient, orgPath string, orgName string) (api.User, error) {
+func GetUser(c fab.FabricClient, orgPath string, orgName string) (ca.User, error) {
 	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/keystore", orgPath, orgPath)
 	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/signcerts", orgPath, orgPath)
 	username := fmt.Sprintf("peer%sUser1", orgPath)
@@ -57,7 +58,7 @@ func randomString(strlen int) string {
 }
 
 // GetDefaultImplPreEnrolledUser ...
-func getDefaultImplPreEnrolledUser(client api.FabricClient, keyDir string, certDir string, username string, orgName string) (api.User, error) {
+func getDefaultImplPreEnrolledUser(client fab.FabricClient, keyDir string, certDir string, username string, orgName string) (ca.User, error) {
 	privateKeyDir := filepath.Join(client.GetConfig().CryptoConfigPath(), keyDir)
 	privateKeyPath, err := getFirstPathFromDir(privateKeyDir)
 	if err != nil {
@@ -73,7 +74,7 @@ func getDefaultImplPreEnrolledUser(client api.FabricClient, keyDir string, certD
 	if err != nil {
 		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
 	}
-	return fabapi.NewPreEnrolledUser(client.GetConfig(), privateKeyPath, enrollmentCertPath, username, mspID, client.GetCryptoSuite())
+	return deffab.NewPreEnrolledUser(client.GetConfig(), privateKeyPath, enrollmentCertPath, username, mspID, client.GetCryptoSuite())
 }
 
 // Gets the first path from the dir directory
@@ -108,7 +109,7 @@ func getFirstPathFromDir(dir string) (string, error) {
 // HasPrimaryPeerJoinedChannel checks whether the primary peer of a channel
 // has already joined the channel. It returns true if it has, false otherwise,
 // or an error
-func HasPrimaryPeerJoinedChannel(client api.FabricClient, orgUser api.User, channel api.Channel) (bool, error) {
+func HasPrimaryPeerJoinedChannel(client fab.FabricClient, orgUser ca.User, channel fab.Channel) (bool, error) {
 	foundChannel := false
 	primaryPeer := channel.PrimaryPeer()
 

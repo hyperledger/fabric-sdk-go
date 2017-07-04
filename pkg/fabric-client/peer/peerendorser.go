@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"google.golang.org/grpc"
@@ -31,7 +31,7 @@ type TransactionProposalError struct {
 	Err      error
 }
 
-func newPeerEndorser(target string, certificate string, serverHostOverride string, dialTimeout time.Duration, dialBlocking bool, config api.Config) (peerEndorser, error) {
+func newPeerEndorser(target string, certificate string, serverHostOverride string, dialTimeout time.Duration, dialBlocking bool, config apiconfig.Config) (peerEndorser, error) {
 	if len(target) == 0 {
 		return peerEndorser{}, fmt.Errorf("Target is required")
 	}

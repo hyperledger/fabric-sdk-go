@@ -11,7 +11,7 @@ import (
 	"encoding/pem"
 	"errors"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -31,7 +31,7 @@ func (p *MockPeer) ConnectEventSource() {
 }
 
 // IsEventListened always returns true
-func (p *MockPeer) IsEventListened(event string, chain api.Channel) (bool, error) {
+func (p *MockPeer) IsEventListened(event string, chain fab.Channel) (bool, error) {
 	return true, nil
 }
 

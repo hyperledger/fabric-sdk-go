@@ -13,19 +13,20 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	channel "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/msp"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
-	fcUser "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/user"
 
 	"github.com/op/go-logging"
 
 	"github.com/hyperledger/fabric/bccsp"
 	fcutils "github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/protos/common"
-	"github.com/hyperledger/fabric/protos/msp"
+	pb_msp "github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric/protos/utils"
 )
@@ -33,19 +34,19 @@ import (
 var logger = logging.MustGetLogger("fabric_sdk_go")
 
 type client struct {
-	channels    map[string]api.Channel
+	channels    map[string]fab.Channel
 	cryptoSuite bccsp.BCCSP
-	stateStore  api.KeyValueStore
-	userContext api.User
-	config      api.Config
+	stateStore  fab.KeyValueStore
+	userContext fab.User
+	config      config.Config
 }
 
 // NewClient ...
 /*
  * Returns a Client instance
  */
-func NewClient(config api.Config) api.FabricClient {
-	channels := make(map[string]api.Channel)
+func NewClient(config config.Config) fab.FabricClient {
+	channels := make(map[string]fab.Channel)
 	c := &client{channels: channels, cryptoSuite: nil, stateStore: nil, userContext: nil, config: config}
 	return c
 }
@@ -59,7 +60,7 @@ func NewClient(config api.Config) api.FabricClient {
  * @returns {Channel} The uninitialized channel instance.
  * @returns {Error} if the channel by that name already exists in the application's state store
  */
-func (c *client) NewChannel(name string) (api.Channel, error) {
+func (c *client) NewChannel(name string) (fab.Channel, error) {
 	if _, ok := c.channels[name]; ok {
 		return nil, fmt.Errorf("Channel %s already exists", name)
 	}
@@ -72,7 +73,7 @@ func (c *client) NewChannel(name string) (api.Channel, error) {
 }
 
 // GetConfig ...
-func (c *client) GetConfig() api.Config {
+func (c *client) GetConfig() config.Config {
 	return c.config
 }
 
@@ -86,7 +87,7 @@ func (c *client) GetConfig() api.Config {
  * @param {string} name The name of the channel.
  * @returns {Channel} The channel instance
  */
-func (c *client) GetChannel(name string) api.Channel {
+func (c *client) GetChannel(name string) fab.Channel {
 	return c.channels[name]
 }
 
@@ -99,7 +100,7 @@ func (c *client) GetChannel(name string) api.Channel {
  * @returns {Channel} The channel instance for the name or error if the target Peer(s) does not know
  * anything about the channel.
  */
-func (c *client) QueryChannelInfo(name string, peers []api.Peer) (api.Channel, error) {
+func (c *client) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, error) {
 	return nil, fmt.Errorf("Not implemented yet")
 }
 
@@ -110,7 +111,7 @@ func (c *client) QueryChannelInfo(name string, peers []api.Peer) (api.Channel, e
  * so that multiple app instances can share app state via the database (note that this doesn’t necessarily make the app stateful).
  * This API makes this pluggable so that different store implementations can be selected by the application.
  */
-func (c *client) SetStateStore(stateStore api.KeyValueStore) {
+func (c *client) SetStateStore(stateStore fab.KeyValueStore) {
 	c.stateStore = stateStore
 }
 
@@ -118,7 +119,7 @@ func (c *client) SetStateStore(stateStore api.KeyValueStore) {
 /*
  * A convenience method for obtaining the state store object in use for this client.
  */
-func (c *client) GetStateStore() api.KeyValueStore {
+func (c *client) GetStateStore() fab.KeyValueStore {
 	return c.stateStore
 }
 
@@ -146,7 +147,7 @@ func (c *client) GetCryptoSuite() bccsp.BCCSP {
  * this cache will not be established and the application is responsible for setting the user context again when the application
  * crashed and is recovered.
  */
-func (c *client) SaveUserToStateStore(user api.User, skipPersistence bool) error {
+func (c *client) SaveUserToStateStore(user fab.User, skipPersistence bool) error {
 	if user == nil {
 		return fmt.Errorf("user is nil")
 	}
@@ -159,7 +160,7 @@ func (c *client) SaveUserToStateStore(user api.User, skipPersistence bool) error
 		if c.stateStore == nil {
 			return fmt.Errorf("stateStore is nil")
 		}
-		userJSON := &fcUser.JSON{
+		userJSON := &msp.JSON{
 			MspID:                 user.MspID(),
 			Roles:                 user.Roles(),
 			PrivateKeySKI:         user.PrivateKey().SKI(),
@@ -184,7 +185,7 @@ func (c *client) SaveUserToStateStore(user api.User, skipPersistence bool) error
  * @returns {Promise} A Promise for a {User} object upon successful restore, or if the user by the name
  * does not exist in the state store, returns null without rejecting the promise
  */
-func (c *client) LoadUserFromStateStore(name string) (api.User, error) {
+func (c *client) LoadUserFromStateStore(name string) (fab.User, error) {
 	if c.userContext != nil {
 		return c.userContext, nil
 	}
@@ -201,12 +202,12 @@ func (c *client) LoadUserFromStateStore(name string) (api.User, error) {
 	if err != nil {
 		return nil, nil
 	}
-	var userJSON fcUser.JSON
+	var userJSON msp.JSON
 	err = json.Unmarshal(value, &userJSON)
 	if err != nil {
 		return nil, fmt.Errorf("stateStore GetValue return error: %v", err)
 	}
-	user := fcUser.NewUser(name, userJSON.MspID)
+	user := msp.NewUser(name, userJSON.MspID)
 	user.SetRoles(userJSON.Roles)
 	user.SetEnrollmentCertificate(userJSON.EnrollmentCertificate)
 	key, err := c.cryptoSuite.GetKey(userJSON.PrivateKeySKI)
@@ -325,7 +326,7 @@ func (c *client) SignChannelConfig(config []byte) (*common.ConfigSignature, erro
  *                         required by the channel create policy when using the `config` parameter.
  * @returns {Result} Result Object with status on the create process.
  */
-func (c *client) CreateChannel(request *api.CreateChannelRequest) error {
+func (c *client) CreateChannel(request *fab.CreateChannelRequest) error {
 	haveEnvelope := false
 	if request != nil && request.Envelope != nil {
 		logger.Debug("createChannel - have envelope")
@@ -334,7 +335,7 @@ func (c *client) CreateChannel(request *api.CreateChannelRequest) error {
 	return c.CreateOrUpdateChannel(request, haveEnvelope)
 }
 
-func (c *client) CreateOrUpdateChannel(request *api.CreateChannelRequest, haveEnvelope bool) error {
+func (c *client) CreateOrUpdateChannel(request *fab.CreateChannelRequest, haveEnvelope bool) error {
 	// Validate request
 	if request == nil {
 		return fmt.Errorf("Missing all required input request parameters for initialize channel")
@@ -417,7 +418,7 @@ func (c *client) CreateOrUpdateChannel(request *api.CreateChannelRequest, haveEn
 	}
 
 	// Send request
-	_, err := request.Orderer.SendBroadcast(&api.SignedEnvelope{
+	_, err := request.Orderer.SendBroadcast(&fab.SignedEnvelope{
 		Signature: signature,
 		Payload:   payloadBytes,
 	})
@@ -435,7 +436,7 @@ func (c *client) CreateOrUpdateChannel(request *api.CreateChannelRequest, haveEn
  * @param {Peer} peer
  * @returns {object} ChannelQueryResponse proto
  */
-func (c *client) QueryChannels(peer api.Peer) (*pb.ChannelQueryResponse, error) {
+func (c *client) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) {
 
 	if peer == nil {
 		return nil, fmt.Errorf("QueryChannels requires peer")
@@ -462,7 +463,7 @@ func (c *client) QueryChannels(peer api.Peer) (*pb.ChannelQueryResponse, error) 
  * @param {Peer} peer
  * @returns {object} ChaincodeQueryResponse proto
  */
-func (c *client) QueryInstalledChaincodes(peer api.Peer) (*pb.ChaincodeQueryResponse, error) {
+func (c *client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResponse, error) {
 
 	if peer == nil {
 		return nil, fmt.Errorf("To query installed chaincdes you need to pass peer")
@@ -490,7 +491,7 @@ func (c *client) QueryInstalledChaincodes(peer api.Peer) (*pb.ChaincodeQueryResp
 * @param {[]string} chaincodeVersion: optional - Array of byte the chaincodePackage
  */
 func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
-	chaincodePackage []byte, targets []api.Peer) ([]*apitxn.TransactionProposalResponse, string, error) {
+	chaincodePackage []byte, targets []fab.Peer) ([]*apitxn.TransactionProposalResponse, string, error) {
 
 	if chaincodeName == "" {
 		return nil, "", fmt.Errorf("Missing 'chaincodeName' parameter")
@@ -544,7 +545,7 @@ func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
 		TransactionID:  txID,
-	}, 0, api.PeersToTxnProcessors(targets))
+	}, 0, fab.PeersToTxnProcessors(targets))
 
 	return transactionProposalResponse, txID, err
 }
@@ -555,7 +556,7 @@ func (c *client) GetIdentity() ([]byte, error) {
 	if c.userContext == nil {
 		return nil, fmt.Errorf("User is nil")
 	}
-	serializedIdentity := &msp.SerializedIdentity{Mspid: c.userContext.MspID(),
+	serializedIdentity := &pb_msp.SerializedIdentity{Mspid: c.userContext.MspID(),
 		IdBytes: c.userContext.EnrollmentCertificate()}
 	identity, err := proto.Marshal(serializedIdentity)
 	if err != nil {
@@ -565,11 +566,11 @@ func (c *client) GetIdentity() ([]byte, error) {
 }
 
 // GetUserContext ...
-func (c *client) GetUserContext() api.User {
+func (c *client) GetUserContext() fab.User {
 	return c.userContext
 }
 
 // SetUserContext ...
-func (c *client) SetUserContext(user api.User) {
+func (c *client) SetUserContext(user fab.User) {
 	c.userContext = user
 }

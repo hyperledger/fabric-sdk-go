@@ -11,7 +11,8 @@ import (
 
 	api "github.com/hyperledger/fabric-ca/api"
 	fabric_ca "github.com/hyperledger/fabric-ca/lib"
-	sdkApi "github.com/hyperledger/fabric-sdk-go/api"
+	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	sdkApi "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/op/go-logging"
@@ -28,7 +29,7 @@ type fabricCA struct {
 // @param {string} organization for this CA
 // @returns {api.FabricCAClient} FabricCAClient implementation
 // @returns {error} error, if any
-func NewFabricCAClient(config sdkApi.Config, org string) (sdkApi.FabricCAClient,
+func NewFabricCAClient(config config.Config, org string) (sdkApi.FabricCAClient,
 	error) {
 	if org == "" || config == nil {
 		return nil, fmt.Errorf("Organization and config are required to load CA config")

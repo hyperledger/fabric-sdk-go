@@ -4,9 +4,10 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package api
+package apifabclient
 
 import (
+	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig" // TODO: Think about package hierarchy
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/protos/common"
@@ -49,7 +50,7 @@ type FabricClient interface {
 	GetIdentity() ([]byte, error)
 	GetUserContext() User
 	SetUserContext(user User)
-	GetConfig() Config
+	GetConfig() config.Config // TODO: refactor to a fab client config interface
 }
 
 // CreateChannelRequest requests channel creation on the network

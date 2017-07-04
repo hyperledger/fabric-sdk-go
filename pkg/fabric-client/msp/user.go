@@ -4,14 +4,14 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package user
+package msp
 
 import (
-	api "github.com/hyperledger/fabric-sdk-go/api"
 	"github.com/hyperledger/fabric/bccsp"
 )
 
-type user struct {
+// User represents a Fabric user registered at an MSP
+type User struct {
 	name                  string
 	mspID                 string
 	roles                 []string
@@ -30,57 +30,57 @@ type JSON struct {
 // NewUser Constructor for a user.
 // @param {string} name - The user name
 // @param {string} mspID - The mspID for this user
-// @returns {api.User} new user
-func NewUser(name string, mspID string) api.User {
-	return &user{name: name, mspID: mspID}
+// @returns {ca.User} new user
+func NewUser(name string, mspID string) *User {
+	return &User{name: name, mspID: mspID}
 }
 
 // Name Get the user name.
 // @returns {string} The user name.
-func (u *user) Name() string {
+func (u *User) Name() string {
 	return u.name
 }
 
 // Roles Get the roles.
 // @returns {[]string} The roles.
-func (u *user) Roles() []string {
+func (u *User) Roles() []string {
 	return u.roles
 }
 
 // SetRoles Set the roles.
 // @param roles {[]string} The roles.
-func (u *user) SetRoles(roles []string) {
+func (u *User) SetRoles(roles []string) {
 	u.roles = roles
 }
 
 // EnrollmentCertificate Returns the underlying ECert representing this user’s identity.
-func (u *user) EnrollmentCertificate() []byte {
+func (u *User) EnrollmentCertificate() []byte {
 	return u.enrollmentCertificate
 }
 
 // SetEnrollmentCertificate Set the user’s Enrollment Certificate.
-func (u *user) SetEnrollmentCertificate(cert []byte) {
+func (u *User) SetEnrollmentCertificate(cert []byte) {
 	u.enrollmentCertificate = cert
 }
 
 // SetPrivateKey sets the crypto suite representation of the private key
 // for this user
-func (u *user) SetPrivateKey(privateKey bccsp.Key) {
+func (u *User) SetPrivateKey(privateKey bccsp.Key) {
 	u.privateKey = privateKey
 }
 
 // PrivateKey returns the crypto suite representation of the private key
-func (u *user) PrivateKey() bccsp.Key {
+func (u *User) PrivateKey() bccsp.Key {
 	return u.privateKey
 }
 
 // SetMspID sets the MSP for this user
-func (u *user) SetMspID(mspID string) {
+func (u *User) SetMspID(mspID string) {
 	u.mspID = mspID
 }
 
 // MspID returns the MSP for this user
-func (u *user) MspID() string {
+func (u *User) MspID() string {
 	return u.mspID
 }
 
@@ -89,6 +89,6 @@ func (u *user) MspID() string {
 // @param {int} count how many in the batch to obtain
 // @param {[]string} attributes  list of attributes to include in the TCert
 // @return {[]tcert} An array of TCerts
-func (u *user) GenerateTcerts(count int, attributes []string) {
+func (u *User) GenerateTcerts(count int, attributes []string) {
 	// not yet implemented
 }
