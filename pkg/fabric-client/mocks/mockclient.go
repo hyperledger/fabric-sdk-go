@@ -19,11 +19,12 @@ import (
 
 // MockClient ...
 type MockClient struct {
-	channels    map[string]api.Channel
-	cryptoSuite bccsp.BCCSP
-	stateStore  api.KeyValueStore
-	userContext api.User
-	config      api.Config
+	channels      map[string]api.Channel
+	cryptoSuite   bccsp.BCCSP
+	stateStore    api.KeyValueStore
+	userContext   api.User
+	config        api.Config
+	errorScenario bool
 }
 
 // NewMockClient ...
@@ -33,6 +34,13 @@ type MockClient struct {
 func NewMockClient() api.FabricClient {
 	channels := make(map[string]api.Channel)
 	c := &MockClient{channels: channels, cryptoSuite: nil, stateStore: nil, userContext: nil, config: NewMockConfig()}
+	return c
+}
+
+//NewMockInvalidClient : Returns new Mock FabricClient with error flag on used to test invalid scenarios
+func NewMockInvalidClient() api.FabricClient {
+	channels := make(map[string]api.Channel)
+	c := &MockClient{channels: channels, cryptoSuite: nil, stateStore: nil, userContext: nil, config: NewMockConfig(), errorScenario: true}
 	return c
 }
 
@@ -84,6 +92,9 @@ func (c *MockClient) SaveUserToStateStore(user api.User, skipPersistence bool) e
 
 // LoadUserFromStateStore ...
 func (c *MockClient) LoadUserFromStateStore(name string) (api.User, error) {
+	if c.errorScenario {
+		return nil, fmt.Errorf("just to test error scenario")
+	}
 	return NewMockUser("test"), nil
 }
 

@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/proto"
 	fabric_config "github.com/hyperledger/fabric/common/config"
 	ledger_util "github.com/hyperledger/fabric/core/ledger/util"
@@ -22,7 +24,20 @@ func NewSimpleMockBlock() *common.Block {
 		Data: &common.BlockData{
 			Data: [][]byte{[]byte("test")},
 		},
+		Header: &common.BlockHeader{
+			DataHash:     []byte(""),
+			PreviousHash: []byte(""),
+			Number:       1,
+		},
+		Metadata: &common.BlockMetadata{
+			Metadata: [][]byte{[]byte("test")},
+		},
 	}
+}
+
+// NewSimpleMockError returns a error
+func NewSimpleMockError() error {
+	return fmt.Errorf("Test Error")
 }
 
 // MockConfigGroupBuilder is used to build a mock ConfigGroup
@@ -32,6 +47,7 @@ type MockConfigGroupBuilder struct {
 	OrdererAddress string
 	MSPNames       []string
 	RootCA         string
+	Groups         map[string]*common.ConfigGroup
 }
 
 // MockConfigBlockBuilder is used to build a mock Chain configuration block
@@ -184,8 +200,13 @@ func (b *MockConfigGroupBuilder) buildOrdererGroup() *common.ConfigGroup {
 			"Admins":          b.buildBasicConfigPolicy(),
 		},
 		Values: map[string]*common.ConfigValue{
-			fabric_config.BatchSizeKey: b.buildBatchSizeConfigValue(),
-			// TODO: More
+			fabric_config.BatchSizeKey:                 b.buildBatchSizeConfigValue(),
+			fabric_config.AnchorPeersKey:               b.buildAnchorPeerConfigValue(),
+			fabric_config.ConsensusTypeKey:             b.buildConsensusTypeConfigValue(),
+			fabric_config.BatchTimeoutKey:              b.buildBatchTimeoutConfigValue(),
+			fabric_config.ChannelRestrictionsKey:       b.buildChannelRestrictionsConfigValue(),
+			fabric_config.HashingAlgorithmKey:          b.buildHashingAlgorithmConfigValue(),
+			fabric_config.BlockDataHashingStructureKey: b.buildBlockDataHashingStructureConfigValue(),
 		},
 		Version:   b.Version,
 		ModPolicy: b.ModPolicy,
@@ -223,11 +244,90 @@ func (b *MockConfigGroupBuilder) buildBatchSizeConfigValue() *common.ConfigValue
 		Value:     marshalOrPanic(b.buildBatchSize())}
 }
 
+func (b *MockConfigGroupBuilder) buildAnchorPeerConfigValue() *common.ConfigValue {
+	return &common.ConfigValue{
+		Version:   b.Version,
+		ModPolicy: b.ModPolicy,
+		Value:     marshalOrPanic(b.buildAnchorPeer())}
+}
+
+func (b *MockConfigGroupBuilder) buildConsensusTypeConfigValue() *common.ConfigValue {
+	return &common.ConfigValue{
+		Version:   b.Version,
+		ModPolicy: b.ModPolicy,
+		Value:     marshalOrPanic(b.buildConsensusType())}
+}
+
+func (b *MockConfigGroupBuilder) buildBatchTimeoutConfigValue() *common.ConfigValue {
+	return &common.ConfigValue{
+		Version:   b.Version,
+		ModPolicy: b.ModPolicy,
+		Value:     marshalOrPanic(b.buildBatchTimeout())}
+}
+
+func (b *MockConfigGroupBuilder) buildChannelRestrictionsConfigValue() *common.ConfigValue {
+	return &common.ConfigValue{
+		Version:   b.Version,
+		ModPolicy: b.ModPolicy,
+		Value:     marshalOrPanic(b.buildChannelRestrictions())}
+}
+
+func (b *MockConfigGroupBuilder) buildHashingAlgorithmConfigValue() *common.ConfigValue {
+	return &common.ConfigValue{
+		Version:   b.Version,
+		ModPolicy: b.ModPolicy,
+		Value:     marshalOrPanic(b.buildHashingAlgorithm())}
+}
+
+func (b *MockConfigGroupBuilder) buildBlockDataHashingStructureConfigValue() *common.ConfigValue {
+	return &common.ConfigValue{
+		Version:   b.Version,
+		ModPolicy: b.ModPolicy,
+		Value:     marshalOrPanic(b.buildBlockDataHashingStructure())}
+}
+
 func (b *MockConfigGroupBuilder) buildBatchSize() *ab.BatchSize {
 	return &ab.BatchSize{
 		MaxMessageCount:   10,
 		AbsoluteMaxBytes:  103809024,
 		PreferredMaxBytes: 524288,
+	}
+}
+
+func (b *MockConfigGroupBuilder) buildAnchorPeer() *pp.AnchorPeers {
+	ap := pp.AnchorPeer{Host: "sample-host", Port: 22}
+	return &pp.AnchorPeers{
+		AnchorPeers: []*pp.AnchorPeer{&ap},
+	}
+}
+
+func (b *MockConfigGroupBuilder) buildConsensusType() *ab.ConsensusType {
+	return &ab.ConsensusType{
+		Type: "sample-Consensus-Type",
+	}
+}
+
+func (b *MockConfigGroupBuilder) buildBatchTimeout() *ab.BatchTimeout {
+	return &ab.BatchTimeout{
+		Timeout: "123",
+	}
+}
+
+func (b *MockConfigGroupBuilder) buildChannelRestrictions() *ab.ChannelRestrictions {
+	return &ab.ChannelRestrictions{
+		MaxCount: 200,
+	}
+}
+
+func (b *MockConfigGroupBuilder) buildHashingAlgorithm() *common.HashingAlgorithm {
+	return &common.HashingAlgorithm{
+		Name: "SHA2",
+	}
+}
+
+func (b *MockConfigGroupBuilder) buildBlockDataHashingStructure() *common.BlockDataHashingStructure {
+	return &common.BlockDataHashingStructure{
+		Width: 64,
 	}
 }
 
