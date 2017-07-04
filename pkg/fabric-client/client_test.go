@@ -78,11 +78,11 @@ func TestClientMethods(t *testing.T) {
 	if user == nil {
 		t.Fatalf("client.LoadUserFromStateStore return nil user")
 	}
-	if user.GetName() != "someUser" {
+	if user.Name() != "someUser" {
 		t.Fatalf("client.LoadUserFromStateStore didn't return the right user")
 	}
 
-	if user.GetMspID() != testMsp {
+	if user.MspID() != testMsp {
 		t.Fatalf("client.LoadUserFromStateStore didn't return the right msp")
 	}
 

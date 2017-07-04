@@ -122,7 +122,7 @@ func (fabricCAServices *fabricCA) Reenroll(user sdkApi.User) (bccsp.Key, []byte,
 	if user == nil {
 		return nil, nil, fmt.Errorf("User does not exist")
 	}
-	if user.GetName() == "" {
+	if user.Name() == "" {
 		logger.Infof("Invalid re-enroll request, missing argument user")
 		return nil, nil, fmt.Errorf("User is empty")
 	}
@@ -132,12 +132,12 @@ func (fabricCAServices *fabricCA) Reenroll(user sdkApi.User) (bccsp.Key, []byte,
 	// Create signing identity
 	identity, err := fabricCAServices.createSigningIdentity(user)
 	if err != nil {
-		logger.Infof("Invalid re-enroll request, %s is not a valid user  %s\n", user.GetName(), err)
+		logger.Infof("Invalid re-enroll request, %s is not a valid user  %s\n", user.Name(), err)
 		return nil, nil, fmt.Errorf("Reenroll has failed; Cannot create user identity: %s", err)
 	}
 
 	if identity.GetECert() == nil {
-		logger.Infof("Invalid re-enroll request for user '%s'. Enrollment cert does not exist %s\n", user.GetName(), err)
+		logger.Infof("Invalid re-enroll request for user '%s'. Enrollment cert does not exist %s\n", user.Name(), err)
 		return nil, nil, fmt.Errorf("Reenroll has failed; enrollment cert does not exist: %s", err)
 	}
 
@@ -220,8 +220,8 @@ func (fabricCAServices *fabricCA) createSigningIdentity(user sdkApi.
 		return nil, fmt.Errorf("Valid user required to create signing identity")
 	}
 	// Validate enrolment information
-	cert := user.GetEnrollmentCertificate()
-	key := user.GetPrivateKey()
+	cert := user.EnrollmentCertificate()
+	key := user.PrivateKey()
 	if key == nil || cert == nil {
 		return nil, fmt.Errorf(
 			"Unable to read user enrolment information to create signing identity")

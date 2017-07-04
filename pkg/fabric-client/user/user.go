@@ -15,7 +15,7 @@ type user struct {
 	name                  string
 	mspID                 string
 	roles                 []string
-	PrivateKey            bccsp.Key
+	privateKey            bccsp.Key
 	enrollmentCertificate []byte
 }
 
@@ -35,15 +35,15 @@ func NewUser(name string, mspID string) api.User {
 	return &user{name: name, mspID: mspID}
 }
 
-// GetName Get the user name.
+// Name Get the user name.
 // @returns {string} The user name.
-func (u *user) GetName() string {
+func (u *user) Name() string {
 	return u.name
 }
 
-// GetRoles Get the roles.
+// Roles Get the roles.
 // @returns {[]string} The roles.
-func (u *user) GetRoles() []string {
+func (u *user) Roles() []string {
 	return u.roles
 }
 
@@ -53,8 +53,8 @@ func (u *user) SetRoles(roles []string) {
 	u.roles = roles
 }
 
-// GetEnrollmentCertificate Returns the underlying ECert representing this user’s identity.
-func (u *user) GetEnrollmentCertificate() []byte {
+// EnrollmentCertificate Returns the underlying ECert representing this user’s identity.
+func (u *user) EnrollmentCertificate() []byte {
 	return u.enrollmentCertificate
 }
 
@@ -66,12 +66,12 @@ func (u *user) SetEnrollmentCertificate(cert []byte) {
 // SetPrivateKey sets the crypto suite representation of the private key
 // for this user
 func (u *user) SetPrivateKey(privateKey bccsp.Key) {
-	u.PrivateKey = privateKey
+	u.privateKey = privateKey
 }
 
-// GetPrivateKey returns the crypto suite representation of the private key
-func (u *user) GetPrivateKey() bccsp.Key {
-	return u.PrivateKey
+// PrivateKey returns the crypto suite representation of the private key
+func (u *user) PrivateKey() bccsp.Key {
+	return u.privateKey
 }
 
 // SetMspID sets the MSP for this user
@@ -79,8 +79,8 @@ func (u *user) SetMspID(mspID string) {
 	u.mspID = mspID
 }
 
-// GetMspID returns the MSP for this user
-func (u *user) GetMspID() string {
+// MspID returns the MSP for this user
+func (u *user) MspID() string {
 	return u.mspID
 }
 

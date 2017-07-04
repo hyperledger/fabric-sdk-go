@@ -16,7 +16,7 @@ type MockUser struct {
 	name                  string
 	mspID                 string
 	roles                 []string
-	PrivateKey            bccsp.Key // ****This key is temporary We use it to sign transaction until we have tcerts
+	privateKey            bccsp.Key // ****This key is temporary We use it to sign transaction until we have tcerts
 	enrollmentCertificate []byte
 }
 
@@ -35,21 +35,21 @@ func NewMockUserWithMSPID(name string, mspid string) api.User {
 	return &MockUser{name: name, mspID: mspid}
 }
 
-// GetName ...
+// Name ...
 /**
  * Get the user name.
  * @returns {string} The user name.
  */
-func (u *MockUser) GetName() string {
+func (u *MockUser) Name() string {
 	return u.name
 }
 
-// GetRoles ...
+// Roles ...
 /**
  * Get the roles.
  * @returns {[]string} The roles.
  */
-func (u *MockUser) GetRoles() []string {
+func (u *MockUser) Roles() []string {
 	return u.roles
 }
 
@@ -62,11 +62,11 @@ func (u *MockUser) SetRoles(roles []string) {
 	u.roles = roles
 }
 
-// GetEnrollmentCertificate ...
+// EnrollmentCertificate ...
 /**
  * Returns the underlying ECert representing this user’s identity.
  */
-func (u *MockUser) GetEnrollmentCertificate() []byte {
+func (u *MockUser) EnrollmentCertificate() []byte {
 	return u.enrollmentCertificate
 }
 
@@ -83,15 +83,15 @@ func (u *MockUser) SetEnrollmentCertificate(cert []byte) {
  * deprecated.
  */
 func (u *MockUser) SetPrivateKey(privateKey bccsp.Key) {
-	u.PrivateKey = privateKey
+	u.privateKey = privateKey
 }
 
-// GetPrivateKey ...
+// PrivateKey ...
 /**
  * deprecated.
  */
-func (u *MockUser) GetPrivateKey() bccsp.Key {
-	return u.PrivateKey
+func (u *MockUser) PrivateKey() bccsp.Key {
+	return u.privateKey
 }
 
 // SetMspID sets the MSP for this user
@@ -99,8 +99,8 @@ func (u *MockUser) SetMspID(mspID string) {
 	u.mspID = mspID
 }
 
-// GetMspID returns the MSP for this user
-func (u *MockUser) GetMspID() string {
+// MspID returns the MSP for this user
+func (u *MockUser) MspID() string {
 	return u.mspID
 }
 

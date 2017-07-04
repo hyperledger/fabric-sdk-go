@@ -88,7 +88,7 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 	if err != nil {
 		return fmt.Errorf("Error marshaling message: %s", err)
 	}
-	signature, err := fc.SignObjectWithKey(payload, user.GetPrivateKey(),
+	signature, err := fc.SignObjectWithKey(payload, user.PrivateKey(),
 		&bccsp.SHAOpts{}, nil, ec.client.GetCryptoSuite())
 	if err != nil {
 		return fmt.Errorf("Error signing message: %s", err)

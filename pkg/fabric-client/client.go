@@ -151,7 +151,7 @@ func (c *client) SaveUserToStateStore(user api.User, skipPersistence bool) error
 		return fmt.Errorf("user is nil")
 	}
 
-	if user.GetName() == "" {
+	if user.Name() == "" {
 		return fmt.Errorf("user name is empty")
 	}
 	c.userContext = user
@@ -160,16 +160,16 @@ func (c *client) SaveUserToStateStore(user api.User, skipPersistence bool) error
 			return fmt.Errorf("stateStore is nil")
 		}
 		userJSON := &fcUser.JSON{
-			MspID:                 user.GetMspID(),
-			Roles:                 user.GetRoles(),
-			PrivateKeySKI:         user.GetPrivateKey().SKI(),
-			EnrollmentCertificate: user.GetEnrollmentCertificate(),
+			MspID:                 user.MspID(),
+			Roles:                 user.Roles(),
+			PrivateKeySKI:         user.PrivateKey().SKI(),
+			EnrollmentCertificate: user.EnrollmentCertificate(),
 		}
 		data, err := json.Marshal(userJSON)
 		if err != nil {
 			return fmt.Errorf("Marshal json return error: %v", err)
 		}
-		err = c.stateStore.SetValue(user.GetName(), data)
+		err = c.stateStore.SetValue(user.Name(), data)
 		if err != nil {
 			return fmt.Errorf("stateStore SaveUserToStateStore return error: %v", err)
 		}
@@ -291,7 +291,7 @@ func (c *client) SignChannelConfig(config []byte) (*common.ConfigSignature, erro
 
 	// get all the bytes to be signed together, then sign
 	signingBytes := fcutils.ConcatenateBytes(signatureHeaderBytes, config)
-	signature, err := fc.SignObjectWithKey(signingBytes, user.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
+	signature, err := fc.SignObjectWithKey(signingBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
 	if err != nil {
 		return nil, fmt.Errorf("error singing config: %v", err)
 	}
@@ -410,7 +410,7 @@ func (c *client) CreateOrUpdateChannel(request *api.CreateChannelRequest, haveEn
 			return fmt.Errorf("error marshaling payload: %v", err)
 		}
 
-		signature, err = fc.SignObjectWithKey(payloadBytes, c.userContext.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
+		signature, err = fc.SignObjectWithKey(payloadBytes, c.userContext.PrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
 		if err != nil {
 			return fmt.Errorf("error singing payload: %v", err)
 		}
@@ -533,15 +533,12 @@ func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	if err != nil {
 		return nil, "", fmt.Errorf("Error loading user from store: %s", err)
 	}
-	signature, err := fc.SignObjectWithKey(proposalBytes, user.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
+	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
 	if err != nil {
 		return nil, "", err
 	}
 
-	signedProposal, err := &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}, nil
-	if err != nil {
-		return nil, "", err
-	}
+	signedProposal := &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}
 
 	transactionProposalResponse, err := channel.SendTransactionProposal(&apitxn.TransactionProposal{
 		SignedProposal: signedProposal,
@@ -558,8 +555,8 @@ func (c *client) GetIdentity() ([]byte, error) {
 	if c.userContext == nil {
 		return nil, fmt.Errorf("User is nil")
 	}
-	serializedIdentity := &msp.SerializedIdentity{Mspid: c.userContext.GetMspID(),
-		IdBytes: c.userContext.GetEnrollmentCertificate()}
+	serializedIdentity := &msp.SerializedIdentity{Mspid: c.userContext.MspID(),
+		IdBytes: c.userContext.EnrollmentCertificate()}
 	identity, err := proto.Marshal(serializedIdentity)
 	if err != nil {
 		return nil, fmt.Errorf("Could not Marshal serializedIdentity, err %s", err)
