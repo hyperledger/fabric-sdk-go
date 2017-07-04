@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api"
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -27,7 +27,7 @@ type peerEndorser struct {
 // TransactionProposalError represents an error condition that prevented proposal processing.
 type TransactionProposalError struct {
 	Endorser string
-	Proposal txnapi.TransactionProposal
+	Proposal apitxn.TransactionProposal
 	Err      error
 }
 
@@ -64,7 +64,7 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 }
 
 // ProcessTransactionProposal sends the transaction proposal to a peer and returns the response.
-func (p *peerEndorser) ProcessTransactionProposal(proposal txnapi.TransactionProposal) (txnapi.TransactionProposalResult, error) {
+func (p *peerEndorser) ProcessTransactionProposal(proposal apitxn.TransactionProposal) (apitxn.TransactionProposalResult, error) {
 	logger.Debugf("Processing proposal using endorser :%s", p.target)
 
 	proposalResponse, err := p.sendProposal(proposal)
@@ -74,10 +74,10 @@ func (p *peerEndorser) ProcessTransactionProposal(proposal txnapi.TransactionPro
 			Proposal: proposal,
 			Err:      err,
 		}
-		return txnapi.TransactionProposalResult{}, &tpe
+		return apitxn.TransactionProposalResult{}, &tpe
 	}
 
-	return txnapi.TransactionProposalResult{
+	return apitxn.TransactionProposalResult{
 		Proposal:         proposal,
 		ProposalResponse: proposalResponse,
 		Endorser:         p.target, // TODO: what format is expected for Endorser? Just target? URL?
@@ -93,7 +93,7 @@ func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {
 	conn.Close()
 }
 
-func (p *peerEndorser) sendProposal(proposal txnapi.TransactionProposal) (*pb.ProposalResponse, error) {
+func (p *peerEndorser) sendProposal(proposal apitxn.TransactionProposal) (*pb.ProposalResponse, error) {
 	conn, err := p.conn()
 	if err != nil {
 		return nil, err

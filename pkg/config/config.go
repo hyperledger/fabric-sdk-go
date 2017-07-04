@@ -18,8 +18,7 @@ import (
 	"strings"
 	"time"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
-
+	"github.com/hyperledger/fabric-sdk-go/api"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"

@@ -47,7 +47,7 @@ integration-tests: integration-test
 mock-gen:
 	go get -u github.com/golang/mock/gomock
 	go get -u github.com/golang/mock/mockgen
-	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/txnapi TxnProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/txnapi/mocks/mocktxnapi.gen.go
+	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apitxn/mocks/mockapitxn.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/mocks/mockconfig.gen.go
 
 clean:

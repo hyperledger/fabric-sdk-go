@@ -11,6 +11,7 @@ import (
 	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 
 	"github.com/op/go-logging"
@@ -26,7 +27,7 @@ func QueryChaincode(client api.FabricClient, channel api.Channel, chaincodeID st
 	}
 
 	transactionProposalResponses, _, err := internal.CreateAndSendTransactionProposal(channel,
-		chaincodeID, channel.Name(), args, []api.Peer{channel.PrimaryPeer()}, nil)
+		chaincodeID, channel.Name(), args, []apitxn.ProposalProcessor{channel.PrimaryPeer()}, nil)
 
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal returned error: %v", err)
@@ -36,7 +37,7 @@ func QueryChaincode(client api.FabricClient, channel api.Channel, chaincodeID st
 }
 
 // InvokeChaincode ...
-func InvokeChaincode(client api.FabricClient, channel api.Channel, targets []api.Peer,
+func InvokeChaincode(client api.FabricClient, channel api.Channel, targets []apitxn.ProposalProcessor,
 	eventHub api.EventHub, chaincodeID string, args []string, transientData map[string][]byte) error {
 
 	err := checkCommonArgs(client, channel, chaincodeID)

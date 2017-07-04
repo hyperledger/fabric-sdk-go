@@ -4,15 +4,15 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package txnapi allows SDK users to plugin their own implementations of transaction processing.
-package txnapi
+// Package apitxn allows SDK users to plugin their own implementations of transaction processing.
+package apitxn
 
 import (
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
-// TxnProposalProcessor simulates transaction proposal, so that a client can submit the result for ordering.
-type TxnProposalProcessor interface {
+// ProposalProcessor simulates transaction proposal, so that a client can submit the result for ordering.
+type ProposalProcessor interface {
 	ProcessTransactionProposal(proposal TransactionProposal) (TransactionProposalResult, error)
 }
 

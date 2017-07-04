@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	fabrictxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
 )
 
@@ -42,7 +42,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	// Change value on org2 peer
 	orgTestClient.SetUserContext(org2User)
 	orgTestChannel.SetPrimaryPeer(orgTestPeer1)
-	err = fabrictxn.InvokeChaincode(orgTestClient, orgTestChannel, []api.Peer{orgTestPeer1},
+	err = fabrictxn.InvokeChaincode(orgTestClient, orgTestChannel, []apitxn.ProposalProcessor{orgTestPeer1},
 		peer0EventHub, "exampleCC", generateInvokeArgs(), nil)
 	failTestIfError(err, t)
 

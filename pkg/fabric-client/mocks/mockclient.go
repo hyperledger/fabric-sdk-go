@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/protos/common"
@@ -123,7 +123,7 @@ func (c *MockClient) QueryInstalledChaincodes(peer api.Peer) (*pb.ChaincodeQuery
 
 // InstallChaincode ...
 func (c *MockClient) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
-	chaincodePackage []byte, targets []api.Peer) ([]*txnapi.TransactionProposalResponse, string, error) {
+	chaincodePackage []byte, targets []api.Peer) ([]*apitxn.TransactionProposalResponse, string, error) {
 	return nil, "", fmt.Errorf("Not implemented yet")
 
 }
