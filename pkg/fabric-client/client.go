@@ -442,12 +442,11 @@ func (c *client) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) 
 		return nil, fmt.Errorf("QueryChannels requires peer")
 	}
 
-	responses, err := channel.QueryByChaincode("cscc", []string{"GetChannels"}, []apitxn.ProposalProcessor{peer}, c)
+	payload, err := channel.QueryChaincodeByTarget("cscc", []string{"GetChannels"}, peer, c)
 	if err != nil {
 		return nil, fmt.Errorf("QueryByChaincode return error: %v", err)
 	}
 
-	payload := responses[0]
 	response := new(pb.ChannelQueryResponse)
 	err = proto.Unmarshal(payload, response)
 	if err != nil {
@@ -468,11 +467,10 @@ func (c *client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 	if peer == nil {
 		return nil, fmt.Errorf("To query installed chaincdes you need to pass peer")
 	}
-	responses, err := channel.QueryByChaincode("lscc", []string{"getinstalledchaincodes"}, []apitxn.ProposalProcessor{peer}, c)
+	payload, err := channel.QueryChaincodeByTarget("lscc", []string{"getinstalledchaincodes"}, peer, c)
 	if err != nil {
 		return nil, fmt.Errorf("Invoke lscc getinstalledchaincodes return error: %v", err)
 	}
-	payload := responses[0]
 	response := new(pb.ChaincodeQueryResponse)
 	err = proto.Unmarshal(payload, response)
 	if err != nil {

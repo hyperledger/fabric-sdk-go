@@ -19,7 +19,7 @@ type Sender interface {
 
 // ProposalSender provides the ability for a transaction proposal to be created and sent.
 type ProposalSender interface {
-	CreateTransactionProposal(chaincodeName string, channelID string, args []string, sign bool, transientData map[string][]byte) (*TransactionProposal, error)
+	CreateTransactionProposal(chaincodeName string, args []string, sign bool, transientData map[string][]byte) (*TransactionProposal, error)
 	SendTransactionProposal(proposal *TransactionProposal, retry int, targets []ProposalProcessor) ([]*TransactionProposalResponse, error)
 }
 

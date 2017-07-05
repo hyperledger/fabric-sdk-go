@@ -20,10 +20,10 @@ import (
 var logger = logging.MustGetLogger("fabric_sdk_go")
 
 // CreateAndSendTransactionProposal ...
-func CreateAndSendTransactionProposal(sender apitxn.ProposalSender, chainCodeID string, channelID string,
+func CreateAndSendTransactionProposal(sender apitxn.ProposalSender, chainCodeID string,
 	args []string, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, string, error) {
 
-	signedProposal, err := sender.CreateTransactionProposal(chainCodeID, channelID, args, true, transientData)
+	signedProposal, err := sender.CreateTransactionProposal(chainCodeID, args, true, transientData)
 	if err != nil {
 		return nil, "", fmt.Errorf("SendTransactionProposal returned error: %v", err)
 	}

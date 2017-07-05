@@ -153,14 +153,14 @@ func (setup *BaseSetupImpl) InitConfig() (apiconfig.Config, error) {
 }
 
 // InstantiateCC ...
-func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, channelID string, chainCodePath string, chainCodeVersion string, args []string) error {
+func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args []string) error {
 	// InstantiateCC requires AdminUser privileges so setting user context with Admin User
 	setup.Client.SetUserContext(setup.AdminUser)
 
 	// must reset client user context to normal user once done with Admin privilieges
 	defer setup.Client.SetUserContext(setup.NormalUser)
 
-	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, channelID, args, chainCodePath, chainCodeVersion, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub); err != nil {
+	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub); err != nil {
 		return err
 	}
 	return nil
@@ -208,7 +208,7 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 	args = append(args, "b")
 	args = append(args, "200")
 
-	return setup.InstantiateCC(setup.ChainCodeID, setup.ChannelID, chainCodePath, chainCodeVersion, args)
+	return setup.InstantiateCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, args)
 }
 
 // Query ...
@@ -275,10 +275,10 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 }
 
 // CreateAndSendTransactionProposal ...
-func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel, chainCodeID string, channelID string,
+func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel, chainCodeID string,
 	args []string, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, string, error) {
 
-	signedProposal, err := channel.CreateTransactionProposal(chainCodeID, channelID, args, true, transientData)
+	signedProposal, err := channel.CreateTransactionProposal(chainCodeID, args, true, transientData)
 	if err != nil {
 		return nil, "", fmt.Errorf("SendTransactionProposal returned error: %v", err)
 	}

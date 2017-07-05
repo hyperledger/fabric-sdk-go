@@ -23,7 +23,9 @@ const (
 	connBlocking = true
 )
 
-type peer struct {
+// Peer represents a node in the target blockchain network to which
+// HFC sends endorsement proposals, transaction ordering or query requests.
+type Peer struct {
 	processor             apitxn.ProposalProcessor
 	name                  string
 	roles                 []string
@@ -31,64 +33,11 @@ type peer struct {
 	url                   string
 }
 
-/*
-// ProposalProcessor simulates transaction proposal, so that a client can submit the result for ordering
-type ProposalProcessor interface {
-	ProcessProposal(proposal *apitxn.TransactionProposal) (*apitxn.TransactionProposalResponse, error)
-}*/
-
-// Name gets the Peer name.
-func (p *peer) Name() string {
-	return p.name
-}
-
-// SetName sets the Peer name / id.
-func (p *peer) SetName(name string) {
-	p.name = name
-}
-
-// Roles gets the user’s roles the Peer participates in. It’s an array of possible values
-// in “client”, and “auditor”. The member service defines two more roles reserved
-// for peer membership: “peer” and “validator”, which are not exposed to the applications.
-// It returns the roles for this user.
-func (p *peer) Roles() []string {
-	return p.roles
-}
-
-// SetRoles sets the user’s roles the Peer participates in. See getRoles() for legitimate values.
-// roles is the list of roles for the user.
-func (p *peer) SetRoles(roles []string) {
-	p.roles = roles
-}
-
-// EnrollmentCertificate returns the Peer's enrollment certificate.
-// It returns the certificate in PEM format signed by the trusted CA.
-func (p *peer) EnrollmentCertificate() *pem.Block {
-	return p.enrollmentCertificate
-}
-
-// SetEnrollmentCertificate set the Peer’s enrollment certificate.
-// pem is the enrollment Certificate in PEM format signed by the trusted CA.
-func (p *peer) SetEnrollmentCertificate(pem *pem.Block) {
-	p.enrollmentCertificate = pem
-}
-
-// URL gets the Peer URL. Required property for the instance objects.
-// It returns the address of the Peer.
-func (p *peer) URL() string {
-	return p.url
-}
-
-// SendProposal sends the created proposal to peer for endorsement.
-func (p *peer) ProcessTransactionProposal(proposal apitxn.TransactionProposal) (apitxn.TransactionProposalResult, error) {
-	return p.processor.ProcessTransactionProposal(proposal)
-}
-
 // NewPeerTLSFromCert constructs a Peer given its endpoint configuration settings.
 // url is the URL with format of "host:port".
 // certificate is ...
 // serverNameOverride is passed to NewClientTLSFromCert in grpc/credentials.
-func NewPeerTLSFromCert(url string, certificate string, serverHostOverride string, config apiconfig.Config) (fab.Peer, error) {
+func NewPeerTLSFromCert(url string, certificate string, serverHostOverride string, config apiconfig.Config) (*Peer, error) {
 	// TODO: config is declaring TLS but cert & serverHostOverride is being passed-in...
 	conn, err := newPeerEndorser(url, certificate, serverHostOverride, connTimeout, connBlocking, config)
 	if err != nil {
@@ -100,7 +49,7 @@ func NewPeerTLSFromCert(url string, certificate string, serverHostOverride strin
 
 // NewPeer constructs a Peer given its endpoint configuration settings.
 // url is the URL with format of "host:port".
-func NewPeer(url string, config apiconfig.Config) (fab.Peer, error) {
+func NewPeer(url string, config apiconfig.Config) (*Peer, error) {
 	conn, err := newPeerEndorser(url, "", "", connTimeout, connBlocking, config)
 	if err != nil {
 		return nil, err
@@ -110,8 +59,55 @@ func NewPeer(url string, config apiconfig.Config) (fab.Peer, error) {
 }
 
 // NewPeerFromProcessor constructs a Peer with a ProposalProcessor to simulate transactions.
-func NewPeerFromProcessor(url string, processor apitxn.ProposalProcessor, config apiconfig.Config) (fab.Peer, error) {
-	return &peer{url: url, processor: processor}, nil
+func NewPeerFromProcessor(url string, processor apitxn.ProposalProcessor, config apiconfig.Config) (*Peer, error) {
+	return &Peer{url: url, processor: processor}, nil
+}
+
+// Name gets the Peer name.
+func (p *Peer) Name() string {
+	return p.name
+}
+
+// SetName sets the Peer name / id.
+func (p *Peer) SetName(name string) {
+	p.name = name
+}
+
+// Roles gets the user’s roles the Peer participates in. It’s an array of possible values
+// in “client”, and “auditor”. The member service defines two more roles reserved
+// for peer membership: “peer” and “validator”, which are not exposed to the applications.
+// It returns the roles for this user.
+func (p *Peer) Roles() []string {
+	return p.roles
+}
+
+// SetRoles sets the user’s roles the Peer participates in. See getRoles() for legitimate values.
+// roles is the list of roles for the user.
+func (p *Peer) SetRoles(roles []string) {
+	p.roles = roles
+}
+
+// EnrollmentCertificate returns the Peer's enrollment certificate.
+// It returns the certificate in PEM format signed by the trusted CA.
+func (p *Peer) EnrollmentCertificate() *pem.Block {
+	return p.enrollmentCertificate
+}
+
+// SetEnrollmentCertificate set the Peer’s enrollment certificate.
+// pem is the enrollment Certificate in PEM format signed by the trusted CA.
+func (p *Peer) SetEnrollmentCertificate(pem *pem.Block) {
+	p.enrollmentCertificate = pem
+}
+
+// URL gets the Peer URL. Required property for the instance objects.
+// It returns the address of the Peer.
+func (p *Peer) URL() string {
+	return p.url
+}
+
+// ProcessTransactionProposal sends the created proposal to peer for endorsement.
+func (p *Peer) ProcessTransactionProposal(proposal apitxn.TransactionProposal) (apitxn.TransactionProposalResult, error) {
+	return p.processor.ProcessTransactionProposal(proposal)
 }
 
 //
@@ -130,7 +126,7 @@ func NewPeerFromProcessor(url string, processor apitxn.ProposalProcessor, config
  * types it wants to receive and the call back functions to use.
  * @returns {Future} This gives the app a handle to attach “success” and “error” listeners
  */
-func (p *peer) ConnectEventSource() {
+func (p *Peer) ConnectEventSource() {
 	//to do
 }
 
@@ -143,7 +139,7 @@ func (p *peer) ConnectEventSource() {
  * @param {Channel} channel optional
  * @result {bool} Whether the said event has been listened on by some application instance on that chain.
  */
-func (p *peer) IsEventListened(event string, channel fab.Channel) (bool, error) {
+func (p *Peer) IsEventListened(event string, channel fab.Channel) (bool, error) {
 	//to do
 	return false, nil
 }
@@ -163,7 +159,7 @@ func (p *peer) IsEventListened(event string, channel fab.Channel) (bool, error) 
  * @param {struct} eventCallback Client Application class registering for the callback.
  * @returns {string} An ID reference to the event listener.
  */
-func (p *peer) AddListener(eventType string, eventTypeData interface{}, eventCallback interface{}) (string, error) {
+func (p *Peer) AddListener(eventType string, eventTypeData interface{}, eventCallback interface{}) (string, error) {
 	//to do
 	return "", nil
 }
@@ -174,7 +170,7 @@ func (p *peer) AddListener(eventType string, eventTypeData interface{}, eventCal
  * @param {string} eventListenerRef Reference returned by SDK for event listener.
  * @return {bool} Success / Failure status
  */
-func (p *peer) RemoveListener(eventListenerRef string) (bool, error) {
+func (p *Peer) RemoveListener(eventListenerRef string) (bool, error) {
 	return false, nil
 	//to do
 }

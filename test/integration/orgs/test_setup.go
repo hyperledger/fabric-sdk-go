@@ -129,7 +129,7 @@ func installAndInstantiate(t *testing.T) {
 		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer1}, "../../fixtures")
 	failTestIfError(err, t)
 
-	err = admin.SendInstantiateCC(orgTestChannel, "exampleCC", orgTestChannel.Name(),
+	err = admin.SendInstantiateCC(orgTestChannel, "exampleCC",
 		generateInitArgs(), "github.com/example_cc", "0", []apitxn.ProposalProcessor{orgTestPeer1}, peer1EventHub)
 	failTestIfError(err, t)
 }

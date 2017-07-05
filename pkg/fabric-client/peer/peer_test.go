@@ -15,6 +15,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/mocks"
 )
@@ -177,7 +178,7 @@ func TestProposalProcessorSendProposal(t *testing.T) {
 
 	proc.EXPECT().ProcessTransactionProposal(tp).Return(tpr, nil)
 
-	p := peer{processor: proc, name: "", roles: nil}
+	p := Peer{processor: proc, name: "", roles: nil}
 	tpr1, err := p.ProcessTransactionProposal(tp)
 
 	if err != nil || !reflect.DeepEqual(tpr, tpr1) {
@@ -210,5 +211,15 @@ func TestPlaceholders(t *testing.T) {
 	_, err = peer.IsEventListened("", nil)
 	if err != nil {
 		t.Fatalf("Placeholder function has been implemented - update tests")
+	}
+}
+
+func TestInterfaces(t *testing.T) {
+	var apiPeer fab.Peer
+	var peer Peer
+
+	apiPeer = &peer
+	if apiPeer == nil {
+		t.Fatalf("this shouldn't happen.")
 	}
 }

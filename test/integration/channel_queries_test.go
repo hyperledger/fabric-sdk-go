@@ -302,7 +302,7 @@ func moveFundsAndGetTxID(setup *BaseSetupImpl) (string, error) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, setup.ChannelID, args, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, args, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}

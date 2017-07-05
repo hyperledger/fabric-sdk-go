@@ -44,11 +44,11 @@ func SendInstallCC(client fab.FabricClient, chainCodeID string, chainCodePath st
 }
 
 // SendInstantiateCC Sends instantiate CC proposal to one or more endorsing peers
-func SendInstantiateCC(channel fab.Channel, chainCodeID string, channelID string, args []string,
+func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
 	chaincodePath string, chaincodeVersion string, targets []apitxn.ProposalProcessor, eventHub fab.EventHub) error {
 
 	transactionProposalResponse, txID, err := channel.SendInstantiateProposal(chainCodeID,
-		channelID, args, chaincodePath, chaincodeVersion, targets)
+		args, chaincodePath, chaincodeVersion, targets)
 	if err != nil {
 		return fmt.Errorf("SendInstantiateProposal returned error: %v", err)
 	}

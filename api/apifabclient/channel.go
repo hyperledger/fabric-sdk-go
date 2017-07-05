@@ -33,13 +33,14 @@ type Channel interface {
 	IsSecurityEnabled() bool
 	QueryExtensionInterface() ChannelExtension
 	LoadConfigUpdateEnvelope(data []byte) error
-	SendInstantiateProposal(chaincodeName string, channelID string, args []string, chaincodePath string, chaincodeVersion string, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, string, error)
+	SendInstantiateProposal(chaincodeName string, args []string, chaincodePath string, chaincodeVersion string, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, string, error)
 
 	// TCerts
 	TCertBatchSize() int
 	SetTCertBatchSize(batchSize int)
 
 	// Network
+	// TODO: Use PeerEndorser
 	AddPeer(peer Peer) error
 	RemovePeer(peer Peer)
 	Peers() []Peer
