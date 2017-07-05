@@ -11,17 +11,26 @@ import (
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
+	"fmt"
+
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/spf13/viper"
 )
 
 // MockConfig ...
 type MockConfig struct {
+	tlsEnabled bool
+	errorCase  bool
 }
 
 // NewMockConfig ...
 func NewMockConfig() config.Config {
 	return &MockConfig{}
+}
+
+// NewMockConfigCustomized ...
+func NewMockConfigCustomized(tlsEnabled bool, errorCase bool) config.Config {
+	return &MockConfig{tlsEnabled: tlsEnabled, errorCase: errorCase}
 }
 
 // CAConfig not implemented
@@ -57,16 +66,22 @@ func (c *MockConfig) PeersConfig(org string) ([]config.PeerConfig, error) {
 
 // IsTLSEnabled ...
 func (c *MockConfig) IsTLSEnabled() bool {
-	return false
+	return c.tlsEnabled
 }
 
 // TLSCACertPool ...
 func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
+	if c.errorCase {
+		return nil, fmt.Errorf("just to test error scenario")
+	}
 	return nil, nil
 }
 
 // TLSCACertPoolFromRoots ...
 func (c *MockConfig) TLSCACertPoolFromRoots(ordererRootCAs [][]byte) (*x509.CertPool, error) {
+	if c.errorCase {
+		return nil, fmt.Errorf("just to test error scenario")
+	}
 	return nil, nil
 }
 

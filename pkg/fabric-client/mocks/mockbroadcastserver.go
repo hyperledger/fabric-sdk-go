@@ -29,10 +29,17 @@ var broadcastResponseError = &po.BroadcastResponse{Status: common.Status_INTERNA
 type MockBroadcastServer struct {
 	DeliverError                 error
 	BroadcastInternalServerError bool
+	DeliverResponse              *po.DeliverResponse
+	BroadcastError               error
 }
 
 // Broadcast mock broadcast
 func (m *MockBroadcastServer) Broadcast(server po.AtomicBroadcast_BroadcastServer) error {
+
+	if m.BroadcastError != nil {
+		return m.BroadcastError
+	}
+
 	if m.BroadcastInternalServerError {
 		server.Send(broadcastResponseError)
 		return nil
@@ -45,6 +52,12 @@ func (m *MockBroadcastServer) Broadcast(server po.AtomicBroadcast_BroadcastServe
 func (m *MockBroadcastServer) Deliver(server po.AtomicBroadcast_DeliverServer) error {
 	if m.DeliverError != nil {
 		return m.DeliverError
+	}
+
+	if m.DeliverResponse != nil {
+		server.Recv()
+		server.SendMsg(m.DeliverResponse)
+		return nil
 	}
 
 	server.Recv()
