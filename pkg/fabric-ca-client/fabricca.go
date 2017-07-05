@@ -82,7 +82,7 @@ func NewFabricCAClient(config config.Config, org string) (sdkApi.FabricCAClient,
 	return fabricCAClient, nil
 }
 
-func (fabricCAServices *fabricCA) GetCAName() string {
+func (fabricCAServices *fabricCA) CAName() string {
 	return fabricCAServices.fabricCAClient.Config.CAName
 }
 
@@ -135,11 +135,6 @@ func (fabricCAServices *fabricCA) Reenroll(user sdkApi.User) (bccsp.Key, []byte,
 	if err != nil {
 		logger.Infof("Invalid re-enroll request, %s is not a valid user  %s\n", user.Name(), err)
 		return nil, nil, fmt.Errorf("Reenroll has failed; Cannot create user identity: %s", err)
-	}
-
-	if identity.GetECert() == nil {
-		logger.Infof("Invalid re-enroll request for user '%s'. Enrollment cert does not exist %s\n", user.Name(), err)
-		return nil, nil, fmt.Errorf("Reenroll has failed; enrollment cert does not exist: %s", err)
 	}
 
 	reenrollmentResponse, err := identity.Reenroll(req)

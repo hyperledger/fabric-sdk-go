@@ -17,16 +17,17 @@ import (
 
 // MockConfig ...
 type MockConfig struct {
+	CAServerURL string
 }
 
 // NewMockConfig ...
-func NewMockConfig() apiconfig.Config {
-	return &MockConfig{}
+func NewMockConfig(CAServerURL string) apiconfig.Config {
+	return &MockConfig{CAServerURL: CAServerURL}
 }
 
-// CAConfig not implemented
+// CAConfig return ca configuration
 func (c *MockConfig) CAConfig(org string) (*apiconfig.CAConfig, error) {
-	return &apiconfig.CAConfig{}, nil
+	return &apiconfig.CAConfig{TLSEnabled: false, ServerURL: c.CAServerURL, Name: "test", TLS: apiconfig.MutualTLSConfig{}}, nil
 }
 
 // CAServerCertFiles Read configuration option for the server certificate files

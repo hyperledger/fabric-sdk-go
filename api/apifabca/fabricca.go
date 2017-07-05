@@ -12,7 +12,7 @@ import (
 
 // FabricCAClient is the client interface for fabric-ca
 type FabricCAClient interface {
-	GetCAName() string
+	CAName() string
 	Enroll(enrollmentID string, enrollmentSecret string) (bccsp.Key, []byte, error)
 	// Reenroll to renew user's enrollment certificate
 	Reenroll(user User) (bccsp.Key, []byte, error)
