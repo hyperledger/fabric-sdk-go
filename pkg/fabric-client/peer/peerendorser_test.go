@@ -28,7 +28,7 @@ const (
 	peer1URL    = "localhost:7050"
 	peer2URL    = "localhost:7054"
 	peerURLBad  = "localhost:9999"
-	testAddress = "0.0.0.0:5244"
+	testAddress = "0.0.0.0:0"
 )
 
 // TestNewPeerEndorserTLS validates that a client configured with TLS
@@ -196,7 +196,7 @@ func TestNewPeerEndorserTLSBad(t *testing.T) {
 // TestProcessProposalBadDial validates that a down
 // endorser fails gracefully.
 func TestProcessProposalBadDial(t *testing.T) {
-	_, err := testProcessProposal(t, time.Millisecond*10)
+	_, err := testProcessProposal(t, testAddress, time.Millisecond*10)
 	if err == nil {
 		t.Fatalf("Process proposal should have failed")
 	}
@@ -205,20 +205,21 @@ func TestProcessProposalBadDial(t *testing.T) {
 // TestProcessProposalGoodDial validates that an up
 // endorser connects.
 func TestProcessProposalGoodDial(t *testing.T) {
-	startEndorserServer(t)
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	_, addr := startEndorserServer(t, grpcServer)
 
-	_, err := testProcessProposal(t, connTimeout)
+	_, err := testProcessProposal(t, addr, connTimeout)
 	if err != nil {
 		t.Fatalf("Process proposal failed (%v)", err)
 	}
 }
 
-func testProcessProposal(t *testing.T, to time.Duration) (apitxn.TransactionProposalResult, error) {
+func testProcessProposal(t *testing.T, url string, to time.Duration) (apitxn.TransactionProposalResult, error) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	url := testAddress
 	config.EXPECT().IsTLSEnabled().Return(false)
 
 	conn, err := newPeerEndorser(url, "", "", to, true, config)
@@ -235,19 +236,19 @@ func mockTransactionProposal() apitxn.TransactionProposal {
 	}
 }
 
-// TODO: this function is duplicated.
-func startEndorserServer(t *testing.T) *mocks.MockEndorserServer {
-	grpcServer := grpc.NewServer()
+func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockEndorserServer, string) {
 	lis, err := net.Listen("tcp", testAddress)
+	addr := lis.Addr().String()
+
 	endorserServer := &mocks.MockEndorserServer{}
 	pb.RegisterEndorserServer(grpcServer, endorserServer)
 	if err != nil {
 		fmt.Printf("Error starting test server %s", err)
 		t.FailNow()
 	}
-	fmt.Printf("Starting test server\n")
+	fmt.Printf("Starting test server on %s\n", addr)
 	go grpcServer.Serve(lis)
-	return endorserServer
+	return endorserServer, addr
 }
 
 func TestTransactionProposalError(t *testing.T) {

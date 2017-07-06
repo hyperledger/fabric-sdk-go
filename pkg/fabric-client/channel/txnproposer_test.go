@@ -43,9 +43,13 @@ func TestCreateTransactionProposal(t *testing.T) {
 
 func TestJoinChannel(t *testing.T) {
 	var peers []fab.Peer
-	endorserServer := startEndorserServer(t)
+
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+
+	endorserServer, addr := startEndorserServer(t, grpcServer)
 	channel, _ := setupTestChannel()
-	peer, _ := peer.NewPeer(testAddress, mocks.NewMockConfig())
+	peer, _ := peer.NewPeer(addr, mocks.NewMockConfig())
 	peers = append(peers, peer)
 	orderer := mocks.NewMockOrderer("", nil)
 	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
@@ -244,16 +248,17 @@ func TestConcurrentPeers(t *testing.T) {
 
 }
 
-func startEndorserServer(t *testing.T) *mocks.MockEndorserServer {
-	grpcServer := grpc.NewServer()
+func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockEndorserServer, string) {
 	lis, err := net.Listen("tcp", testAddress)
+	addr := lis.Addr().String()
+
 	endorserServer := &mocks.MockEndorserServer{}
 	pb.RegisterEndorserServer(grpcServer, endorserServer)
 	if err != nil {
 		fmt.Printf("Error starting test server %s", err)
 		t.FailNow()
 	}
-	fmt.Printf("Starting test server\n")
+	fmt.Printf("Starting test server on %s\n", addr)
 	go grpcServer.Serve(lis)
-	return endorserServer
+	return endorserServer, addr
 }

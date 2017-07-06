@@ -13,7 +13,7 @@ import (
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
-var testAddress = "0.0.0.0:5244"
+var testAddress = "0.0.0.0:0"
 
 var validRootCA = `-----BEGIN CERTIFICATE-----
 MIICYjCCAgmgAwIBAgIUB3CTDOU47sUC5K4kn/Caqnh114YwCgYIKoZIzj0EAwIw

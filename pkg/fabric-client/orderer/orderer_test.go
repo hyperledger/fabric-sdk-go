@@ -23,12 +23,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var testOrdererURL = "0.0.0.0:4584"
-var testOrdererURL2 = "0.0.0.0:4585"
-var testOrdererURL3 = "0.0.0.0:4586"
-var testOrdererURL4 = "0.0.0.0:4587"
-var testOrdererURL5 = "0.0.0.0:4588"
-var testOrdererURL6 = "0.0.0.0:4590"
+var testOrdererURL = "0.0.0.0:0"
 
 var validRootCA = `-----BEGIN CERTIFICATE-----
 MIICYjCCAgmgAwIBAgIUB3CTDOU47sUC5K4kn/Caqnh114YwCgYIKoZIzj0EAwIw
@@ -141,8 +136,11 @@ func TestOrdererViaChainNilData(t *testing.T) {
 }
 
 func TestSendDeliver(t *testing.T) {
-	mockServer := startMockServer(t)
-	orderer, _ := NewOrderer(testOrdererURL, "", "", mocks.NewMockConfig())
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	mockServer, addr := startMockServer(t, grpcServer)
+
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 	// Test deliver happy path
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 	select {
@@ -198,33 +196,35 @@ func TestSendDeliver(t *testing.T) {
 
 }
 
-func startMockServer(t *testing.T) *mocks.MockBroadcastServer {
-	grpcServer := grpc.NewServer()
+func startMockServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockBroadcastServer, string) {
 	lis, err := net.Listen("tcp", testOrdererURL)
+	addr := lis.Addr().String()
+
 	broadcastServer := new(mocks.MockBroadcastServer)
 	ab.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
 	if err != nil {
 		fmt.Printf("Error starting test server %s", err)
 		t.FailNow()
 	}
-	fmt.Printf("Starting test server\n")
+	fmt.Printf("Starting test server on %s\n", addr)
 	go grpcServer.Serve(lis)
 
-	return broadcastServer
+	return broadcastServer, addr
 }
 
-func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.Server, broadcastServer *mocks.MockBroadcastServer) *mocks.MockBroadcastServer {
-
+func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.Server, broadcastServer *mocks.MockBroadcastServer) string {
 	lis, err := net.Listen("tcp", serverURL)
+	addr := lis.Addr().String()
+
 	ab.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
 	if err != nil {
 		fmt.Printf("Error starting test server %s", err)
 		t.FailNow()
 	}
-	fmt.Printf("Starting test customized server\n")
+	fmt.Printf("Starting test customized server on %s\n", addr)
 	go grpcServer.Serve(lis)
 
-	return broadcastServer
+	return addr
 }
 
 func TestCreateNewOrdererWithRootCAs(t *testing.T) {
@@ -269,10 +269,11 @@ func TestNewOrdererWithTLS(t *testing.T) {
 }
 
 func TestSendBroadcast(t *testing.T) {
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	_, addr := startMockServer(t, grpcServer)
 
-	//startMockServer(t)
-
-	orderer, _ := NewOrderer(testOrdererURL, "", "", mocks.NewMockConfig())
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
 	if err != nil {
@@ -290,7 +291,6 @@ func TestSendBroadcast(t *testing.T) {
 
 func TestSendDeliverServerBadResponse(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
 	broadcastServer := mocks.MockBroadcastServer{
 		DeliverResponse: &ab.DeliverResponse{
 			Type: &ab.DeliverResponse_Status{
@@ -299,8 +299,10 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 		},
 	}
 
-	startCustomizedMockServer(t, testOrdererURL2, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(testOrdererURL2, "", "", mocks.NewMockConfig())
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -318,7 +320,6 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 
 func TestSendDeliverServerSuccessResponse(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
 	broadcastServer := mocks.MockBroadcastServer{
 		DeliverResponse: &ab.DeliverResponse{
 			Type: &ab.DeliverResponse_Status{
@@ -327,8 +328,11 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 		},
 	}
 
-	startCustomizedMockServer(t, testOrdererURL3, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(testOrdererURL3, "", "", mocks.NewMockConfig())
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
+
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -346,13 +350,14 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 
 func TestSendDeliverFailure(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
 	broadcastServer := mocks.MockBroadcastServer{
 		DeliverResponse: &ab.DeliverResponse{},
 	}
 
-	startCustomizedMockServer(t, testOrdererURL6, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(testOrdererURL6, "", "", mocks.NewMockConfig())
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -370,34 +375,35 @@ func TestSendDeliverFailure(t *testing.T) {
 
 func TestSendBroadcastServerBadResponse(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
 	broadcastServer := mocks.MockBroadcastServer{
 		BroadcastInternalServerError: true,
 	}
 
-	startCustomizedMockServer(t, testOrdererURL4, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(testOrdererURL4, "", "", mocks.NewMockConfig())
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 
 	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
-	if status.String() != "INTERNAL_SERVER_ERROR" {
-		t.Fatalf("Expected internal server error, but got %v", status)
-	}
 	if err == nil || err.Error() != "broadcast response is not success : INTERNAL_SERVER_ERROR" {
 		t.Fatalf("Expected internal server error, but got %s", err)
 	}
-
+	if status.String() != "INTERNAL_SERVER_ERROR" {
+		t.Fatalf("Expected internal server error, but got %v", status)
+	}
 }
 
 func TestSendBroadcastError(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
 	broadcastServer := mocks.MockBroadcastServer{
 		BroadcastError: fmt.Errorf("just to test error scenario"),
 	}
 
-	startCustomizedMockServer(t, testOrdererURL5, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(testOrdererURL5, "", "", mocks.NewMockConfig())
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 
 	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
