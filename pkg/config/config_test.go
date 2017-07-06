@@ -445,3 +445,13 @@ func crossCheckWithViperConfig(expected string, actual string, message string, t
 		t.Fatalf(message)
 	}
 }
+
+func TestInterfaces(t *testing.T) {
+	var apiConfig api.Config
+	var config Config
+
+	apiConfig = &config
+	if apiConfig == nil {
+		t.Fatalf("this shouldn't happen.")
+	}
+}

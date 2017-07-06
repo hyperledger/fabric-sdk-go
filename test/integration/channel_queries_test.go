@@ -227,7 +227,7 @@ func testInstantiatedChaincodes(t *testing.T, channel fab.Channel) {
 func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Config, testSetup *BaseSetupImpl) {
 
 	// Test valid targets
-	targets := fab.PeersToTxnProcessors(channel.Peers())
+	targets := peer.PeersToTxnProcessors(channel.Peers())
 
 	// set Client User Context to Admin before calling QueryByChaincode
 	testSetup.Client.SetUserContext(testSetup.AdminUser)

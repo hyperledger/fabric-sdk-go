@@ -174,3 +174,13 @@ func (p *Peer) RemoveListener(eventListenerRef string) (bool, error) {
 	return false, nil
 	//to do
 }
+
+// PeersToTxnProcessors converts a slice of Peers to a slice of TxnProposalProcessors
+func PeersToTxnProcessors(peers []fab.Peer) []apitxn.ProposalProcessor {
+	tpp := make([]apitxn.ProposalProcessor, len(peers))
+
+	for i := range peers {
+		tpp[i] = peers[i]
+	}
+	return tpp
+}

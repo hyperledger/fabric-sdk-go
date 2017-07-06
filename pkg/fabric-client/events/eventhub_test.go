@@ -423,7 +423,7 @@ func TestDiconnectedWhenDisconnected(t *testing.T) {
 
 }
 
-func verifyDisconnectedEventHub(eventHub *eventHub, t *testing.T) {
+func verifyDisconnectedEventHub(eventHub *EventHub, t *testing.T) {
 	if eventHub.connected == true {
 		t.Fatalf("EventHub is not disconnected after Disconnect call")
 	}
@@ -497,4 +497,14 @@ func TestConnectWithInterestsFalseAndGetInterests(t *testing.T) {
 		t.Fatalf("GetInterests must be empty. Received: %s", err)
 	}
 
+}
+
+func TestInterfaces(t *testing.T) {
+	var apiEventHub fab.EventHub
+	var eventHub EventHub
+
+	apiEventHub = &eventHub
+	if apiEventHub == nil {
+		t.Fatalf("this shouldn't happen.")
+	}
 }

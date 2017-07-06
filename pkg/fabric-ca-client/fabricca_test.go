@@ -311,3 +311,13 @@ func readCert(t *testing.T) []byte {
 	}
 	return cert
 }
+
+func TestInterfaces(t *testing.T) {
+	var apiCA ca.FabricCAClient
+	var ca FabricCA
+
+	apiCA = &ca
+	if apiCA == nil {
+		t.Fatalf("this shouldn't happen.")
+	}
+}

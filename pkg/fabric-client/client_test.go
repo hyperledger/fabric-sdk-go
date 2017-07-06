@@ -195,3 +195,13 @@ func TestQueryMethodsOnClient(t *testing.T) {
 	}
 
 }
+
+func TestInterfaces(t *testing.T) {
+	var apiClient fab.FabricClient
+	var client Client
+
+	apiClient = &client
+	if apiClient == nil {
+		t.Fatalf("this shouldn't happen.")
+	}
+}

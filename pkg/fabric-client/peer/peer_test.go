@@ -214,6 +214,33 @@ func TestPlaceholders(t *testing.T) {
 	}
 }
 
+func TestPeersToTxnProcessors(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config.EXPECT().IsTLSEnabled().Return(false)
+
+	peer1, err := NewPeer(peer1URL, config)
+	if err != nil {
+		t.Fatalf("Failed to create NewPeer error(%v)", err)
+	}
+
+	config.EXPECT().IsTLSEnabled().Return(false)
+	peer2, err := NewPeer(peer2URL, config)
+	if err != nil {
+		t.Fatalf("Failed to create NewPeer error(%v)", err)
+	}
+
+	peers := []fab.Peer{peer1, peer2}
+	processors := PeersToTxnProcessors(peers)
+
+	for i := range peers {
+		if !reflect.DeepEqual(peers[i], processors[i]) {
+			t.Fatalf("Peer to Processors mismatch")
+		}
+	}
+}
+
 func TestInterfaces(t *testing.T) {
 	var apiPeer fab.Peer
 	var peer Peer

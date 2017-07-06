@@ -32,6 +32,18 @@ func (_m *MockFabricCAClient) EXPECT() *MockFabricCAClientMockRecorder {
 	return _m.recorder
 }
 
+// CAName mocks base method
+func (_m *MockFabricCAClient) CAName() string {
+	ret := _m.ctrl.Call(_m, "CAName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// CAName indicates an expected call of CAName
+func (_mr *MockFabricCAClientMockRecorder) CAName() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "CAName")
+}
+
 // Enroll mocks base method
 func (_m *MockFabricCAClient) Enroll(_param0 string, _param1 string) (bccsp.Key, []byte, error) {
 	ret := _m.ctrl.Call(_m, "Enroll", _param0, _param1)
@@ -44,18 +56,6 @@ func (_m *MockFabricCAClient) Enroll(_param0 string, _param1 string) (bccsp.Key,
 // Enroll indicates an expected call of Enroll
 func (_mr *MockFabricCAClientMockRecorder) Enroll(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Enroll", arg0, arg1)
-}
-
-// GetCAName mocks base method
-func (_m *MockFabricCAClient) GetCAName() string {
-	ret := _m.ctrl.Call(_m, "GetCAName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetCAName indicates an expected call of GetCAName
-func (_mr *MockFabricCAClientMockRecorder) GetCAName() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetCAName")
 }
 
 // Reenroll mocks base method

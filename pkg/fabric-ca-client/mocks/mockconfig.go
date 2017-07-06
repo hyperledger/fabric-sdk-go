@@ -114,12 +114,12 @@ func (c *MockConfig) MspID(org string) (string, error) {
 
 // KeyStorePath ...
 func (c *MockConfig) KeyStorePath() string {
-	return ""
+	return "/tmp/msp"
 }
 
-// CAKeyStorePath not implemented
+// CAKeyStorePath ...
 func (c *MockConfig) CAKeyStorePath() string {
-	return ""
+	return "/tmp/msp"
 }
 
 // CryptoConfigPath ...

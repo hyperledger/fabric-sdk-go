@@ -412,3 +412,13 @@ func TestSendBroadcastError(t *testing.T) {
 	}
 
 }
+
+func TestInterfaces(t *testing.T) {
+	var apiOrderer fab.Orderer
+	var orderer Orderer
+
+	apiOrderer = &orderer
+	if apiOrderer == nil {
+		t.Fatalf("this shouldn't happen.")
+	}
+}

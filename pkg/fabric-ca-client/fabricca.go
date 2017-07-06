@@ -20,7 +20,8 @@ import (
 
 var logger = logging.MustGetLogger("fabric_sdk_go")
 
-type fabricCA struct {
+// FabricCA represents a client to Fabric CA.
+type FabricCA struct {
 	fabricCAClient *fabric_ca.Client
 }
 
@@ -29,8 +30,7 @@ type fabricCA struct {
 // @param {string} organization for this CA
 // @returns {api.FabricCAClient} FabricCAClient implementation
 // @returns {error} error, if any
-func NewFabricCAClient(config config.Config, org string) (sdkApi.FabricCAClient,
-	error) {
+func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
 	if org == "" || config == nil {
 		return nil, fmt.Errorf("Organization and config are required to load CA config")
 	}
@@ -71,7 +71,7 @@ func NewFabricCAClient(config config.Config, org string) (sdkApi.FabricCAClient,
 	c.Config.MSPDir = config.CAKeyStorePath()
 	c.Config.CSP = config.CSPConfig()
 
-	fabricCAClient := &fabricCA{fabricCAClient: c}
+	fabricCAClient := FabricCA{fabricCAClient: c}
 	logger.Infof("Constructed fabricCAClient instance: %v", fabricCAClient)
 
 	err = c.Init()
@@ -79,22 +79,19 @@ func NewFabricCAClient(config config.Config, org string) (sdkApi.FabricCAClient,
 		return nil, fmt.Errorf("New fabricCAClient failed: %s", err)
 	}
 
-	return fabricCAClient, nil
+	return &fabricCAClient, nil
 }
 
-func (fabricCAServices *fabricCA) CAName() string {
+// CAName returns the CA name.
+func (fabricCAServices *FabricCA) CAName() string {
 	return fabricCAServices.fabricCAClient.Config.CAName
 }
 
-// Enroll ...
-/**
- * Enroll a registered user in order to receive a signed X509 certificate
- * @param {string} enrollmentID The registered ID to use for enrollment
- * @param {string} enrollmentSecret The secret associated with the enrollment ID
- * @returns {[]byte} X509 certificate
- * @returns {[]byte} private key
- */
-func (fabricCAServices *fabricCA) Enroll(enrollmentID string, enrollmentSecret string) (bccsp.Key, []byte, error) {
+// Enroll a registered user in order to receive a signed X509 certificate.
+// enrollmentID The registered ID to use for enrollment
+// enrollmentSecret The secret associated with the enrollment ID
+// Returns X509 certificate
+func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret string) (bccsp.Key, []byte, error) {
 	if enrollmentID == "" {
 		return nil, nil, fmt.Errorf("enrollmentID is empty")
 	}
@@ -113,13 +110,9 @@ func (fabricCAServices *fabricCA) Enroll(enrollmentID string, enrollmentSecret s
 	return enrollmentResponse.Identity.GetECert().Key(), enrollmentResponse.Identity.GetECert().Cert(), nil
 }
 
-/**
- * ReEnroll an enrolled user in order to receive a signed X509 certificate
- * @param {user} User to be reenrolled
- * @returns {[]byte} X509 certificate
- * @returns {[]byte} private key
- */
-func (fabricCAServices *fabricCA) Reenroll(user sdkApi.User) (bccsp.Key, []byte, error) {
+// Reenroll an enrolled user in order to receive a signed X509 certificate
+// Returns X509 certificate
+func (fabricCAServices *FabricCA) Reenroll(user sdkApi.User) (bccsp.Key, []byte, error) {
 	if user == nil {
 		return nil, nil, fmt.Errorf("User does not exist")
 	}
@@ -145,11 +138,10 @@ func (fabricCAServices *fabricCA) Reenroll(user sdkApi.User) (bccsp.Key, []byte,
 }
 
 // Register a User with the Fabric CA
-// @param {User} registrar The User that is initiating the registration
-// @param {RegistrationRequest} request Registration Request
-// @returns {string} Enrolment Secret
-// @returns {error} Error
-func (fabricCAServices *fabricCA) Register(registrar sdkApi.User,
+// registrar: The User that is initiating the registration
+// request: Registration Request
+// Returns Enrolment Secret
+func (fabricCAServices *FabricCA) Register(registrar sdkApi.User,
 	request *sdkApi.RegistrationRequest) (string, error) {
 	// Validate registration request
 	if request == nil {
@@ -184,10 +176,9 @@ func (fabricCAServices *fabricCA) Register(registrar sdkApi.User,
 }
 
 // Revoke a User with the Fabric CA
-// @param {User} registrar The User that is initiating the revocation
-// @param {RevocationRequest} request Revocation Request
-// @returns {error} Error
-func (fabricCAServices *fabricCA) Revoke(registrar sdkApi.User,
+// registrar: The User that is initiating the revocation
+// request: Revocation Request
+func (fabricCAServices *FabricCA) Revoke(registrar sdkApi.User,
 	request *sdkApi.RevocationRequest) error {
 	// Validate revocation request
 	if request == nil {
@@ -209,7 +200,7 @@ func (fabricCAServices *fabricCA) Revoke(registrar sdkApi.User,
 }
 
 // createSigningIdentity creates an identity to sign Fabric CA requests with
-func (fabricCAServices *fabricCA) createSigningIdentity(user sdkApi.
+func (fabricCAServices *FabricCA) createSigningIdentity(user sdkApi.
 	User) (*fabric_ca.Identity, error) {
 	// Validate user
 	if user == nil {
