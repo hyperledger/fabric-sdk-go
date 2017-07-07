@@ -105,30 +105,15 @@ func CreateOrUpdateChannel(client fab.FabricClient, ordererUser ca.User, orgUser
 	var configSignatures []*common.ConfigSignature
 	configSignatures = append(configSignatures, configSignature)
 
-	creator, err := client.GetIdentity()
-	if err != nil {
-		return fmt.Errorf("Error getting creator: %v", err)
-	}
-	nonce, err := internal.GenerateRandomNonce()
-	if err != nil {
-		return fmt.Errorf("Could not compute nonce: %s", err)
-	}
-	txID, err := internal.ComputeTxID(nonce, creator)
-	if err != nil {
-		return fmt.Errorf("Could not compute TxID: %s", err)
-	}
-
 	request := fab.CreateChannelRequest{
 		Name:       channel.Name(),
 		Orderer:    channel.Orderers()[0],
 		Config:     config,
 		Signatures: configSignatures,
-		TxID:       txID,
-		Nonce:      nonce,
 	}
 
 	client.SetUserContext(ordererUser)
-	err = client.CreateChannel(&request)
+	_, err = client.CreateChannel(request)
 	if err != nil {
 		return fmt.Errorf("CreateChannel returned error: %v", err)
 	}

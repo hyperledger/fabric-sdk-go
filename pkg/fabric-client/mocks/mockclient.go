@@ -112,14 +112,8 @@ func (c *MockClient) SignChannelConfig(config []byte) (*common.ConfigSignature, 
 }
 
 // CreateChannel ...
-func (c *MockClient) CreateChannel(request *fab.CreateChannelRequest) error {
-	return fmt.Errorf("Not implemented yet")
-
-}
-
-// CreateOrUpdateChannel ...
-func (c *MockClient) CreateOrUpdateChannel(request *fab.CreateChannelRequest, haveEnvelope bool) error {
-	return fmt.Errorf("Not implemented yet")
+func (c *MockClient) CreateChannel(request fab.CreateChannelRequest) (apitxn.TransactionID, error) {
+	return apitxn.TransactionID{}, fmt.Errorf("Not implemented yet")
 
 }
 

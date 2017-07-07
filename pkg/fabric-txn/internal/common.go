@@ -11,9 +11,7 @@ import (
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric/common/crypto"
 	pb "github.com/hyperledger/fabric/protos/peer"
-	protos_utils "github.com/hyperledger/fabric/protos/utils"
 	"github.com/op/go-logging"
 )
 
@@ -85,14 +83,4 @@ func RegisterTxEvent(txID apitxn.TransactionID, eventHub fab.EventHub) (chan boo
 	})
 
 	return done, fail
-}
-
-// GenerateRandomNonce generates a random nonce
-func GenerateRandomNonce() ([]byte, error) {
-	return crypto.GetRandomNonce()
-}
-
-// ComputeTxID computes a transaction ID from a given nonce and creator ID
-func ComputeTxID(nonce []byte, creator []byte) (string, error) {
-	return protos_utils.ComputeProposalTxID(nonce, creator)
 }

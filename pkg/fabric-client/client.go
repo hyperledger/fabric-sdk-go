@@ -319,22 +319,27 @@ func (c *Client) SignChannelConfig(config []byte) (*common.ConfigSignature, erro
  *                         required by the channel create policy when using the `config` parameter.
  * @returns {Result} Result Object with status on the create process.
  */
-func (c *Client) CreateChannel(request *fab.CreateChannelRequest) error {
+func (c *Client) CreateChannel(request fab.CreateChannelRequest) (apitxn.TransactionID, error) {
 	haveEnvelope := false
-	if request != nil && request.Envelope != nil {
+	if request.Envelope != nil {
 		logger.Debug("createChannel - have envelope")
 		haveEnvelope = true
 	}
-	return c.CreateOrUpdateChannel(request, haveEnvelope)
-}
 
-// CreateOrUpdateChannel creates a new channel or updates an existing channel.
-func (c *Client) CreateOrUpdateChannel(request *fab.CreateChannelRequest, haveEnvelope bool) error {
-	// Validate request
-	if request == nil {
-		return fmt.Errorf("Missing all required input request parameters for initialize channel")
+	if !haveEnvelope && request.TxnID.ID == "" {
+		txnID, err := c.NewTxnID()
+		if err != nil {
+			return txnID, err
+		}
+		request.TxnID = txnID
 	}
 
+	return request.TxnID, c.createOrUpdateChannel(request, haveEnvelope)
+}
+
+// createOrUpdateChannel creates a new channel or updates an existing channel.
+func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnvelope bool) error {
+	// Validate request
 	if request.Config == nil && !haveEnvelope {
 		return fmt.Errorf("Missing envelope request parameter containing the configuration of the new channel")
 	}
@@ -343,11 +348,11 @@ func (c *Client) CreateOrUpdateChannel(request *fab.CreateChannelRequest, haveEn
 		return fmt.Errorf("Missing signatures request parameter for the new channel")
 	}
 
-	if request.TxID == "" && !haveEnvelope {
+	if request.TxnID.ID == "" && !haveEnvelope {
 		return fmt.Errorf("Missing txId request parameter")
 	}
 
-	if request.Nonce == nil && !haveEnvelope {
+	if request.TxnID.Nonce == nil && !haveEnvelope {
 		return fmt.Errorf("Missing nonce request parameter")
 	}
 
@@ -380,7 +385,7 @@ func (c *Client) CreateOrUpdateChannel(request *fab.CreateChannelRequest, haveEn
 		}
 
 		// TODO: Move
-		channelHeader, err := channel.BuildChannelHeader(common.HeaderType_CONFIG_UPDATE, request.Name, request.TxID, 0, "", time.Now())
+		channelHeader, err := channel.BuildChannelHeader(common.HeaderType_CONFIG_UPDATE, request.Name, request.TxnID.ID, 0, "", time.Now())
 		if err != nil {
 			return fmt.Errorf("error when building channel header: %v", err)
 		}
@@ -389,7 +394,7 @@ func (c *Client) CreateOrUpdateChannel(request *fab.CreateChannelRequest, haveEn
 			return fmt.Errorf("Error getting creator: %v", err)
 		}
 
-		header, err := fc.BuildHeader(creator, channelHeader, request.Nonce)
+		header, err := fc.BuildHeader(creator, channelHeader, request.TxnID.Nonce)
 		if err != nil {
 			return fmt.Errorf("error when building header: %v", err)
 		}

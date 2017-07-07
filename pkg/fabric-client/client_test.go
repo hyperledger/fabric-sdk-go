@@ -137,7 +137,7 @@ func TestCreateChannel(t *testing.T) {
 	orderer := mocks.NewMockOrderer(fmt.Sprintf("0.0.0.0:1234"), verifyBroadcast)
 
 	// Create channel without envelope
-	err = client.CreateChannel(&fab.CreateChannelRequest{
+	_, err = client.CreateChannel(fab.CreateChannelRequest{
 		Orderer: orderer,
 		Name:    "mychannel",
 	})
@@ -146,7 +146,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without orderer
-	err = client.CreateChannel(&fab.CreateChannelRequest{
+	_, err = client.CreateChannel(fab.CreateChannelRequest{
 		Envelope: configTx,
 		Name:     "mychannel",
 	})
@@ -155,7 +155,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without name
-	err = client.CreateChannel(&fab.CreateChannelRequest{
+	_, err = client.CreateChannel(fab.CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 	})
@@ -164,12 +164,12 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Test with valid cofiguration
-	request := &fab.CreateChannelRequest{
+	request := fab.CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 		Name:     "mychannel",
 	}
-	err = client.CreateChannel(request)
+	_, err = client.CreateChannel(request)
 	if err != nil {
 		t.Fatalf("Did not expect error from create channel. Got error: %v", err)
 	}

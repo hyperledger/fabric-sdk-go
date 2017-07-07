@@ -36,7 +36,7 @@ type FabricClient interface {
 	GetChannel(name string) Channel
 	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
 	SignChannelConfig(config []byte) (*common.ConfigSignature, error)
-	CreateChannel(request *CreateChannelRequest) error
+	CreateChannel(request CreateChannelRequest) (txn.TransactionID, error)
 	QueryChannelInfo(name string, peers []Peer) (Channel, error)
 	SetStateStore(stateStore KeyValueStore)
 	GetStateStore() KeyValueStore
@@ -72,10 +72,8 @@ type CreateChannelRequest struct {
 	// required by the channel create policy when using the `config` parameter.
 	// see signChannelConfig() method of this package
 	Signatures []*common.ConfigSignature
-	// optional - transaction ID
-	// required when using the `config` parameter
-	TxID string
-	// optional - nonce
-	// required when using the `config` parameter
-	Nonce []byte
+
+	// TODO: InvokeChannelRequest allows the TransactionID to be passed in.
+	// This request struct also has the field for consistency but perhaps it should be removed.
+	TxnID txn.TransactionID
 }
