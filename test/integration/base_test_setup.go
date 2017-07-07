@@ -22,7 +22,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	fabricTxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
 	admin "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
-	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -44,35 +43,39 @@ type BaseSetupImpl struct {
 
 // Initialize reads configuration from file and sets up client, channel and event hub
 func (setup *BaseSetupImpl) Initialize() error {
-	configImpl, err := setup.InitConfig()
-	if err != nil {
-		return fmt.Errorf("Init from config failed: %v", err)
+	// Create SDK setup for the integration tests
+	sdkOptions := deffab.Options{
+		ConfigFile: setup.ConfigFile,
+		OrgID:      setup.OrgID,
+		StateStoreOpts: deffab.StateStoreOpts{
+			Path: "/tmp/enroll_user",
+		},
 	}
 
-	// Initialize bccsp factories before calling get client
-	err = bccspFactory.InitFactories(configImpl.CSPConfig())
+	sdk, err := deffab.NewSDK(sdkOptions)
 	if err != nil {
-		return fmt.Errorf("Failed getting ephemeral software-based BCCSP [%s]", err)
+		return fmt.Errorf("Error initializing SDK: %s", err)
 	}
 
-	mspClient, err := deffab.NewCAClient(configImpl, setup.OrgID)
+	user, err := deffab.NewUser(sdk.ConfigManager, sdk.MSPClient, "admin", "adminpw", setup.OrgID)
 	if err != nil {
-		return fmt.Errorf("Failed to get default msp client: %v", err)
+		return fmt.Errorf("NewUser returned error: %v", err)
+	}
+	err = sdk.SystemClient.SaveUserToStateStore(user, false)
+	if err != nil {
+		return fmt.Errorf("client.SaveUserToStateStore returned error: %v", err)
 	}
 
-	client, err := deffab.NewClientWithUser("admin", "adminpw", setup.OrgID, "/tmp/enroll_user", configImpl, mspClient)
-	if err != nil {
-		return fmt.Errorf("Create client failed: %v", err)
-	}
+	sdk.SystemClient.SetUserContext(user)
 
-	setup.Client = client
+	setup.Client = sdk.SystemClient
 
-	org1Admin, err := GetAdmin(client, "org1", setup.OrgID)
+	org1Admin, err := GetAdmin(sdk.SystemClient, "org1", setup.OrgID)
 	if err != nil {
 		return fmt.Errorf("Error getting org admin user: %v", err)
 	}
 
-	org1User, err := GetUser(client, "org1", setup.OrgID)
+	org1User, err := GetUser(sdk.SystemClient, "org1", setup.OrgID)
 	if err != nil {
 		return fmt.Errorf("Error getting org user: %v", err)
 	}
@@ -86,38 +89,38 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 	setup.Channel = channel
 
-	ordererAdmin, err := GetOrdererAdmin(client, setup.OrgID)
+	ordererAdmin, err := GetOrdererAdmin(sdk.SystemClient, setup.OrgID)
 	if err != nil {
 		return fmt.Errorf("Error getting orderer admin user: %v", err)
 	}
 
 	// Check if primary peer has joined channel
-	alreadyJoined, err := HasPrimaryPeerJoinedChannel(client, org1Admin, channel)
+	alreadyJoined, err := HasPrimaryPeerJoinedChannel(sdk.SystemClient, org1Admin, channel)
 	if err != nil {
 		return fmt.Errorf("Error while checking if primary peer has already joined channel: %v", err)
 	}
 
 	if !alreadyJoined {
 		// Create, initialize and join channel
-		if err = admin.CreateOrUpdateChannel(client, ordererAdmin, org1Admin, channel, setup.ChannelConfig); err != nil {
+		if err = admin.CreateOrUpdateChannel(sdk.SystemClient, ordererAdmin, org1Admin, channel, setup.ChannelConfig); err != nil {
 			return fmt.Errorf("CreateChannel returned error: %v", err)
 		}
 		time.Sleep(time.Second * 3)
 
-		client.SetUserContext(org1Admin)
+		sdk.SystemClient.SetUserContext(org1Admin)
 		if err = channel.Initialize(nil); err != nil {
 			return fmt.Errorf("Error initializing channel: %v", err)
 		}
 
-		if err = admin.JoinChannel(client, org1Admin, channel); err != nil {
+		if err = admin.JoinChannel(sdk.SystemClient, org1Admin, channel); err != nil {
 			return fmt.Errorf("JoinChannel returned error: %v", err)
 		}
 	}
 
 	//by default client's user context should use regular user, for admin actions, UserContext must be set to AdminUser
-	client.SetUserContext(org1User)
+	sdk.SystemClient.SetUserContext(org1User)
 
-	if err := setup.setupEventHub(client); err != nil {
+	if err := setup.setupEventHub(sdk.SystemClient); err != nil {
 		return err
 	}
 
