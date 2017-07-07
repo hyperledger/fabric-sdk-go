@@ -30,4 +30,5 @@ type User interface {
 	EnrollmentCertificate() []byte
 	PrivateKey() bccsp.Key
 	Roles() []string
+	Identity() ([]byte, error)
 }

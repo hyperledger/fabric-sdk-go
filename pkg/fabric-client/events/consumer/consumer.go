@@ -101,7 +101,10 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 
 // RegisterAsync - registers interest in a event and doesn't wait for a response
 func (ec *eventsClient) RegisterAsync(ies []*ehpb.Interest) error {
-	creator, err := ec.client.GetIdentity()
+	if ec.client.GetUserContext() == nil {
+		return fmt.Errorf("User context needs to be set")
+	}
+	creator, err := ec.client.GetUserContext().Identity()
 	if err != nil {
 		return fmt.Errorf("Error getting creator: %v", err)
 	}

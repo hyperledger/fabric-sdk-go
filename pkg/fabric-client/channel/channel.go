@@ -35,7 +35,6 @@ type Channel struct {
 // ClientContext ...
 type ClientContext interface {
 	GetUserContext() fab.User
-	GetIdentity() ([]byte, error)
 	GetCryptoSuite() bccsp.BCCSP
 	NewTxnID() (apitxn.TransactionID, error)
 	// TODO: ClientContext.IsSecurityEnabled()

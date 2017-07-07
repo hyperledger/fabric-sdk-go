@@ -17,9 +17,9 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	channel "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/msp"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
 	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 
@@ -29,7 +29,6 @@ import (
 	"github.com/hyperledger/fabric/common/crypto"
 	fcutils "github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/protos/common"
-	pb_msp "github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric/protos/utils"
 )
@@ -153,7 +152,7 @@ func (c *Client) SaveUserToStateStore(user fab.User, skipPersistence bool) error
 		if c.stateStore == nil {
 			return fmt.Errorf("stateStore is nil")
 		}
-		userJSON := &msp.JSON{
+		userJSON := &identity.JSON{
 			MspID:                 user.MspID(),
 			Roles:                 user.Roles(),
 			PrivateKeySKI:         user.PrivateKey().SKI(),
@@ -195,12 +194,12 @@ func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
 	if err != nil {
 		return nil, nil
 	}
-	var userJSON msp.JSON
+	var userJSON identity.JSON
 	err = json.Unmarshal(value, &userJSON)
 	if err != nil {
 		return nil, fmt.Errorf("stateStore GetValue return error: %v", err)
 	}
-	user := msp.NewUser(name, userJSON.MspID)
+	user := identity.NewUser(name, userJSON.MspID)
 	user.SetRoles(userJSON.Roles)
 	user.SetEnrollmentCertificate(userJSON.EnrollmentCertificate)
 	key, err := c.cryptoSuite.GetKey(userJSON.PrivateKeySKI)
@@ -259,7 +258,10 @@ func (c *Client) SignChannelConfig(config []byte) (*common.ConfigSignature, erro
 		return nil, fmt.Errorf("Channel configuration parameter is required")
 	}
 
-	creator, err := c.GetIdentity()
+	if c.userContext == nil {
+		return nil, fmt.Errorf("User context needs to be set")
+	}
+	creator, err := c.userContext.Identity()
 	if err != nil {
 		return nil, fmt.Errorf("Error getting creator: %v", err)
 	}
@@ -389,7 +391,10 @@ func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnv
 		if err != nil {
 			return fmt.Errorf("error when building channel header: %v", err)
 		}
-		creator, err := c.GetIdentity()
+		if c.userContext == nil {
+			return fmt.Errorf("User context needs to be set")
+		}
+		creator, err := c.userContext.Identity()
 		if err != nil {
 			return fmt.Errorf("Error getting creator: %v", err)
 		}
@@ -496,7 +501,10 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion}},
 		CodePackage: chaincodePackage, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
 
-	creator, err := c.GetIdentity()
+	if c.userContext == nil {
+		return nil, "", fmt.Errorf("User context needs to be set")
+	}
+	creator, err := c.userContext.Identity()
 	if err != nil {
 		return nil, "", fmt.Errorf("Error getting creator: %v", err)
 	}
@@ -532,21 +540,6 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	return transactionProposalResponse, txID, err
 }
 
-// GetIdentity returns client's serialized identity
-func (c *Client) GetIdentity() ([]byte, error) {
-
-	if c.userContext == nil {
-		return nil, fmt.Errorf("User is nil")
-	}
-	serializedIdentity := &pb_msp.SerializedIdentity{Mspid: c.userContext.MspID(),
-		IdBytes: c.userContext.EnrollmentCertificate()}
-	identity, err := proto.Marshal(serializedIdentity)
-	if err != nil {
-		return nil, fmt.Errorf("Could not Marshal serializedIdentity, err %s", err)
-	}
-	return identity, nil
-}
-
 // GetUserContext ...
 func (c *Client) GetUserContext() fab.User {
 	return c.userContext
@@ -565,7 +558,10 @@ func (c *Client) NewTxnID() (apitxn.TransactionID, error) {
 		return apitxn.TransactionID{}, err
 	}
 
-	creator, err := c.GetIdentity()
+	if c.userContext == nil {
+		return apitxn.TransactionID{}, fmt.Errorf("User context needs to be set")
+	}
+	creator, err := c.userContext.Identity()
 	if err != nil {
 		return apitxn.TransactionID{}, err
 	}

@@ -33,6 +33,8 @@ type User interface {
 	EnrollmentCertificate() []byte
 	PrivateKey() bccsp.Key
 
+	Identity() ([]byte, error)
+
 	// TODO: TCerts
 	//GenerateTcerts(count int, attributes []string)
 }

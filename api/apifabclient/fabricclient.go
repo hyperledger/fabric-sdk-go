@@ -47,7 +47,6 @@ type FabricClient interface {
 	InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string, chaincodePackage []byte, targets []Peer) ([]*txn.TransactionProposalResponse, string, error)
 	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
 	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
-	GetIdentity() ([]byte, error)
 	GetUserContext() User
 	SetUserContext(user User)
 	GetConfig() config.Config // TODO: refactor to a fab client config interface

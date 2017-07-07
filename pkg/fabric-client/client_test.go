@@ -13,8 +13,8 @@ import (
 	"time"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-	msp "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/msp"
 
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
@@ -66,7 +66,7 @@ func TestClientMethods(t *testing.T) {
 	}
 
 	//Client tests: successfully SaveUserToStateStore with skipPersistence true
-	user = msp.NewUser("someUser", testMsp)
+	user = identity.NewUser("someUser", testMsp)
 	err = client.SaveUserToStateStore(user, true)
 	if err != nil {
 		t.Fatalf("client.SaveUserToStateStore return error[%s]", err)

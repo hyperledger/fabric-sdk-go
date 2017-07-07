@@ -4,10 +4,14 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package msp
+package identity
 
 import (
+	"fmt"
+
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/bccsp"
+	pb_msp "github.com/hyperledger/fabric/protos/msp"
 )
 
 // User represents a Fabric user registered at an MSP
@@ -82,6 +86,17 @@ func (u *User) SetMspID(mspID string) {
 // MspID returns the MSP for this user
 func (u *User) MspID() string {
 	return u.mspID
+}
+
+// Identity returns client's serialized identity
+func (u *User) Identity() ([]byte, error) {
+	serializedIdentity := &pb_msp.SerializedIdentity{Mspid: u.MspID(),
+		IdBytes: u.EnrollmentCertificate()}
+	identity, err := proto.Marshal(serializedIdentity)
+	if err != nil {
+		return nil, fmt.Errorf("Could not Marshal serializedIdentity, err %s", err)
+	}
+	return identity, nil
 }
 
 // GenerateTcerts Gets a batch of TCerts to use for transaction. there is a 1-to-1 relationship between

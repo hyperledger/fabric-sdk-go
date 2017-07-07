@@ -104,6 +104,11 @@ func (u *MockUser) MspID() string {
 	return u.mspID
 }
 
+// Identity returns MockUser's serialized identity
+func (u *MockUser) Identity() ([]byte, error) {
+	return []byte("test"), nil
+}
+
 // GenerateTcerts ...
 /**
  * Gets a batch of TCerts to use for transaction. there is a 1-to-1 relationship between

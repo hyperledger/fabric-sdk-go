@@ -42,7 +42,10 @@ func (c *Channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block,
 		return nil, fmt.Errorf("GenesisBlock - error: Missing nonce input parameter with the required single use number")
 	}
 
-	creator, err := c.clientContext.GetIdentity()
+	if c.clientContext.GetUserContext() == nil {
+		return nil, fmt.Errorf("User context needs to be set")
+	}
+	creator, err := c.clientContext.GetUserContext().Identity()
 	if err != nil {
 		return nil, fmt.Errorf("Error getting creator: %v", err)
 	}
@@ -90,7 +93,10 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 		return nil, fmt.Errorf("error when generating nonce: %v", err)
 	}
 
-	creator, err := c.clientContext.GetIdentity()
+	if c.clientContext.GetUserContext() == nil {
+		return nil, fmt.Errorf("User context needs to be set")
+	}
+	creator, err := c.clientContext.GetUserContext().Identity()
 	if err != nil {
 		return nil, fmt.Errorf("error when serializing identity: %v", err)
 	}

@@ -185,7 +185,10 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion},
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
-	creator, err := c.clientContext.GetIdentity()
+	if c.clientContext.GetUserContext() == nil {
+		return nil, apitxn.TransactionID{}, fmt.Errorf("User context needs to be set")
+	}
+	creator, err := c.clientContext.GetUserContext().Identity()
 	if err != nil {
 		return nil, apitxn.TransactionID{}, fmt.Errorf("Error getting creator: %v", err)
 	}

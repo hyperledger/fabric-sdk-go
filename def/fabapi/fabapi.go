@@ -18,8 +18,8 @@ import (
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	eventsImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
+	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
-	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/msp"
 	ordererImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	bccsp "github.com/hyperledger/fabric/bccsp"
@@ -119,7 +119,7 @@ func NewUser(config config.Config, msp fabca.FabricCAClient, name string, pwd st
 	if err != nil {
 		return nil, fmt.Errorf("Enroll returned error: %v", err)
 	}
-	user := mspImpl.NewUser(name, mspID)
+	user := identityImpl.NewUser(name, mspID)
 	user.SetPrivateKey(key)
 	user.SetEnrollmentCertificate(cert)
 
@@ -139,7 +139,7 @@ func NewPreEnrolledUser(config config.Config, privateKeyPath string,
 		return nil, fmt.Errorf("Error reading from the enrollment cert path: %v", err)
 	}
 
-	user := mspImpl.NewUser(username, mspID)
+	user := identityImpl.NewUser(username, mspID)
 	user.SetEnrollmentCertificate(enrollmentCert)
 	user.SetPrivateKey(privateKey)
 

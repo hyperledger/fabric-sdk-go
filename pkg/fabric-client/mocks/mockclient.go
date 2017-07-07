@@ -134,12 +134,6 @@ func (c *MockClient) InstallChaincode(chaincodeName string, chaincodePath string
 
 }
 
-// GetIdentity returns MockClient's serialized identity
-func (c *MockClient) GetIdentity() ([]byte, error) {
-	return []byte("test"), nil
-
-}
-
 // GetUserContext ...
 func (c *MockClient) GetUserContext() fab.User {
 	return c.userContext

@@ -22,8 +22,8 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
-	msp "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/msp"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
@@ -113,7 +113,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		if cert509.Subject.CommonName != "admin" {
 			t.Fatalf("CommonName in x509 cert is not the enrollmentID")
 		}
-		adminUser2 := msp.NewUser("admin", mspID)
+		adminUser2 := identity.NewUser("admin", mspID)
 		adminUser2.SetPrivateKey(key)
 		adminUser2.SetEnrollmentCertificate(cert)
 		err = client.SaveUserToStateStore(adminUser2, false)
@@ -150,7 +150,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	//re-enroll
 	fmt.Printf("** Attempt to re-enrolled user:  '%s'\n", userName)
 	//create new user object and set certificate and private key of the previously enrolled user
-	enrolleduser := msp.NewUser(userName, mspID)
+	enrolleduser := identity.NewUser(userName, mspID)
 	enrolleduser.SetEnrollmentCertificate(ecert)
 	enrolleduser.SetPrivateKey(ekey)
 	//reenroll

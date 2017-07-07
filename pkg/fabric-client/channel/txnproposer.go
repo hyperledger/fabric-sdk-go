@@ -113,7 +113,10 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
 	// create a proposal from a ChaincodeInvocationSpec
-	creator, err := clientContext.GetIdentity()
+	if clientContext.GetUserContext() == nil {
+		return nil, fmt.Errorf("User context needs to be set")
+	}
+	creator, err := clientContext.GetUserContext().Identity()
 	if err != nil {
 		return nil, fmt.Errorf("Error getting creator: %v", err)
 	}
@@ -229,7 +232,10 @@ func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
 		return fmt.Errorf("JoinChannel - error: Missing block input parameter with the required genesis block")
 	}
 
-	creator, err := c.clientContext.GetIdentity()
+	if c.clientContext.GetUserContext() == nil {
+		return fmt.Errorf("User context needs to be set")
+	}
+	creator, err := c.clientContext.GetUserContext().Identity()
 	if err != nil {
 		return fmt.Errorf("Error getting creator ID: %v", err)
 	}
