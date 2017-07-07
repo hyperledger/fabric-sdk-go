@@ -17,6 +17,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
 	cnsmr "github.com/hyperledger/fabric/events/consumer"
 
@@ -364,19 +365,19 @@ func (eventHub *EventHub) UnregisterChaincodeEvent(cbe *fab.ChainCodeCBE) {
 // txid: transaction id
 // callback: Function that takes a single parameter which
 // is a json object representation of type "message Transaction"
-func (eventHub *EventHub) RegisterTxEvent(txID string, callback func(string, pb.TxValidationCode, error)) {
-	logger.Debugf("reg txid %s\n", txID)
+func (eventHub *EventHub) RegisterTxEvent(txnID apitxn.TransactionID, callback func(string, pb.TxValidationCode, error)) {
+	logger.Debugf("reg txid %s\n", txnID.ID)
 
 	eventHub.mtx.Lock()
-	eventHub.txRegistrants[txID] = callback
+	eventHub.txRegistrants[txnID.ID] = callback
 	eventHub.mtx.Unlock()
 }
 
 // UnregisterTxEvent unregister transactional event registration.
 // txid: transaction id
-func (eventHub *EventHub) UnregisterTxEvent(txID string) {
+func (eventHub *EventHub) UnregisterTxEvent(txnID apitxn.TransactionID) {
 	eventHub.mtx.Lock()
-	delete(eventHub.txRegistrants, txID)
+	delete(eventHub.txRegistrants, txnID.ID)
 	eventHub.mtx.Unlock()
 }
 

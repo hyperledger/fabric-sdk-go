@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package apifabclient
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	common "github.com/hyperledger/fabric/protos/common"
 	ehpb "github.com/hyperledger/fabric/protos/peer"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -20,8 +21,8 @@ type EventHub interface {
 	Disconnect()
 	RegisterChaincodeEvent(ccid string, eventname string, callback func(*ChaincodeEvent)) *ChainCodeCBE
 	UnregisterChaincodeEvent(cbe *ChainCodeCBE)
-	RegisterTxEvent(txID string, callback func(string, pb.TxValidationCode, error))
-	UnregisterTxEvent(txID string)
+	RegisterTxEvent(txnID apitxn.TransactionID, callback func(string, pb.TxValidationCode, error))
+	UnregisterTxEvent(txnID apitxn.TransactionID)
 	RegisterBlockEvent(callback func(*common.Block))
 	UnregisterBlockEvent(callback func(*common.Block))
 }

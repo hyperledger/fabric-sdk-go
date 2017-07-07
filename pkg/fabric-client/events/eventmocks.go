@@ -13,6 +13,7 @@ import (
 	"time"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 
@@ -318,7 +319,7 @@ func (b *MockCCBlockEventBuilder) buildChaincodeEvent() *pb.ChaincodeEvent {
 	}
 }
 
-func generateTxID() string {
+func generateTxID() apitxn.TransactionID {
 	nonce, err := internal.GenerateRandomNonce()
 	if err != nil {
 		panic(fmt.Errorf("error generating nonce: %v", err))
@@ -329,5 +330,11 @@ func generateTxID() string {
 	if err != nil {
 		panic(fmt.Errorf("error hashing nonce: %v", err))
 	}
-	return hex.EncodeToString(digest)
+
+	txnid := apitxn.TransactionID{
+		ID:    hex.EncodeToString(digest),
+		Nonce: nonce,
+	}
+
+	return txnid
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	channel "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/msp"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
 	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
@@ -25,6 +26,7 @@ import (
 	"github.com/op/go-logging"
 
 	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/common/crypto"
 	fcutils "github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/protos/common"
 	pb_msp "github.com/hyperledger/fabric/protos/msp"
@@ -276,9 +278,9 @@ func (c *Client) SignChannelConfig(config []byte) (*common.ConfigSignature, erro
 		return nil, fmt.Errorf("Error marshalling signatureHeader: %v", err)
 	}
 
-	user, err := c.LoadUserFromStateStore("")
-	if err != nil {
-		return nil, fmt.Errorf("Error getting user from store: %s", err)
+	user := c.GetUserContext()
+	if user == nil {
+		return nil, fmt.Errorf("User is nil")
 	}
 
 	// get all the bytes to be signed together, then sign
@@ -377,6 +379,7 @@ func (c *Client) CreateOrUpdateChannel(request *fab.CreateChannelRequest, haveEn
 			Signatures:   request.Signatures,
 		}
 
+		// TODO: Move
 		channelHeader, err := channel.BuildChannelHeader(common.HeaderType_CONFIG_UPDATE, request.Name, request.TxID, 0, "", time.Now())
 		if err != nil {
 			return fmt.Errorf("error when building channel header: %v", err)
@@ -428,9 +431,9 @@ func (c *Client) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) 
 		return nil, fmt.Errorf("QueryChannels requires peer")
 	}
 
-	payload, err := channel.QueryChaincodeByTarget("cscc", []string{"GetChannels"}, peer, c)
+	payload, err := c.queryBySystemChaincodeByTarget("cscc", "GetChannels", []string{}, peer)
 	if err != nil {
-		return nil, fmt.Errorf("QueryByChaincode return error: %v", err)
+		return nil, fmt.Errorf("QueryBySystemChaincodeByTarget return error: %v", err)
 	}
 
 	response := new(pb.ChannelQueryResponse)
@@ -448,7 +451,7 @@ func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 	if peer == nil {
 		return nil, fmt.Errorf("To query installed chaincdes you need to pass peer")
 	}
-	payload, err := channel.QueryChaincodeByTarget("lscc", []string{"getinstalledchaincodes"}, peer, c)
+	payload, err := c.queryBySystemChaincodeByTarget("lscc", "getinstalledchaincodes", []string{}, peer)
 	if err != nil {
 		return nil, fmt.Errorf("Invoke lscc getinstalledchaincodes return error: %v", err)
 	}
@@ -502,9 +505,9 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	if err != nil {
 		return nil, "", err
 	}
-	user, err := c.LoadUserFromStateStore("")
-	if err != nil {
-		return nil, "", fmt.Errorf("Error loading user from store: %s", err)
+	user := c.GetUserContext()
+	if user == nil {
+		return nil, "", fmt.Errorf("User is nil")
 	}
 	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
 	if err != nil {
@@ -513,11 +516,13 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 
 	signedProposal := &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}
 
-	transactionProposalResponse, err := channel.SendTransactionProposal(&apitxn.TransactionProposal{
+	txnID := apitxn.TransactionID{ID: txID} // Nonce is missing
+
+	transactionProposalResponse, err := txnproc.SendTransactionProposalToProcessors(&apitxn.TransactionProposal{
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
-		TransactionID:  txID,
-	}, 0, peer.PeersToTxnProcessors(targets))
+		TxnID:          txnID,
+	}, peer.PeersToTxnProcessors(targets))
 
 	return transactionProposalResponse, txID, err
 }
@@ -545,4 +550,49 @@ func (c *Client) GetUserContext() fab.User {
 // SetUserContext ...
 func (c *Client) SetUserContext(user fab.User) {
 	c.userContext = user
+}
+
+// NewTxnID computes a TransactionID for the current user context
+func (c *Client) NewTxnID() (apitxn.TransactionID, error) {
+	// generate a random nonce
+	nonce, err := crypto.GetRandomNonce()
+	if err != nil {
+		return apitxn.TransactionID{}, err
+	}
+
+	creator, err := c.GetIdentity()
+	if err != nil {
+		return apitxn.TransactionID{}, err
+	}
+
+	id, err := protos_utils.ComputeProposalTxID(nonce, creator)
+	if err != nil {
+		return apitxn.TransactionID{}, err
+	}
+
+	txnID := apitxn.TransactionID{
+		ID:    id,
+		Nonce: nonce,
+	}
+
+	return txnID, nil
+}
+
+func (c *Client) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args []string, target apitxn.ProposalProcessor) ([]byte, error) {
+	targets := []apitxn.ProposalProcessor{target}
+	request := apitxn.ChaincodeInvokeRequest{
+		ChaincodeID: chaincodeID,
+		Fcn:         fcn,
+		Args:        args,
+		Targets:     targets,
+	}
+	responses, err := channel.QueryBySystemChaincode(request, c)
+
+	// we are only querying one peer hence one result
+	if err != nil || len(responses) != 1 {
+		return nil, fmt.Errorf("QueryBySystemChaincode should have one result only - result number: %d", len(responses))
+	}
+
+	return responses[0], nil
+
 }

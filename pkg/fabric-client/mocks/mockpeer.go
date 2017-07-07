@@ -23,6 +23,7 @@ type MockPeer struct {
 	MockURL   string
 	MockRoles []string
 	MockCert  *pem.Block
+	Payload   []byte
 }
 
 // ConnectEventSource does not connect anywhere
@@ -85,7 +86,7 @@ func (p *MockPeer) ProcessTransactionProposal(tp apitxn.TransactionProposal) (ap
 	return apitxn.TransactionProposalResult{
 		Endorser:         p.MockURL,
 		Proposal:         tp,
-		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: p.Payload}},
 	}, nil
 
 }

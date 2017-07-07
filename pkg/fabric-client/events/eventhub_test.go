@@ -62,7 +62,7 @@ func TestDeadlock(t *testing.T) {
 
 		go client.MockEvent(&pb.Event{
 			Event: (&MockTxEventBuilder{
-				TxID:      transactionID,
+				TxID:      transactionID.ID,
 				ChannelID: channelID,
 			}).Build(),
 		})
@@ -77,7 +77,7 @@ func TestDeadlock(t *testing.T) {
 	go flood(eventsPerThread, threads, func() {
 		eventName := generateTxID()
 		received := newCompletionHandler(timeout)
-		registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *fab.ChaincodeEvent) {
+		registration := eventHub.RegisterChaincodeEvent(ccID, eventName.ID, func(event *fab.ChaincodeEvent) {
 			ccCompletion.done()
 			received.done()
 		})
@@ -85,7 +85,7 @@ func TestDeadlock(t *testing.T) {
 		go client.MockEvent(&pb.Event{
 			Event: (&MockCCEventBuilder{
 				CCID:      ccID,
-				EventName: eventName,
+				EventName: eventName.ID,
 			}).Build(),
 		})
 
@@ -189,7 +189,7 @@ func TestChaincodeBlockEvent(t *testing.T) {
 			CCID:      ccID,
 			EventName: eventName,
 			ChannelID: channelID,
-			TxID:      txID,
+			TxID:      txID.ID,
 		}).Build(),
 	})
 

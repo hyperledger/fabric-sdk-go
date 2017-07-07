@@ -212,18 +212,17 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 }
 
 // Query ...
-func (setup *BaseSetupImpl) Query(channelID string, chainCodeID string, args []string) (string, error) {
-	return fabricTxn.QueryChaincode(setup.Client, setup.Channel, chainCodeID, args)
+func (setup *BaseSetupImpl) Query(channelID string, chainCodeID string, fcn string, args []string) (string, error) {
+	return fabricTxn.QueryChaincode(setup.Client, setup.Channel, chainCodeID, fcn, args)
 }
 
 // QueryAsset ...
 func (setup *BaseSetupImpl) QueryAsset() (string, error) {
-
+	fcn := "invoke"
 	var args []string
-	args = append(args, "invoke")
 	args = append(args, "query")
 	args = append(args, "b")
-	return setup.Query(setup.ChannelID, setup.ChainCodeID, args)
+	return setup.Query(setup.ChannelID, setup.ChainCodeID, fcn, args)
 }
 
 // GetChannel initializes and returns a channel based on config
@@ -274,28 +273,29 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 	return channel, nil
 }
 
-// CreateAndSendTransactionProposal ...
+// CreateAndSendTransactionProposal ... TODO duplicate
 func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel, chainCodeID string,
-	args []string, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, string, error) {
+	fcn string, args []string, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
-	signedProposal, err := channel.CreateTransactionProposal(chainCodeID, args, true, transientData)
-	if err != nil {
-		return nil, "", fmt.Errorf("SendTransactionProposal returned error: %v", err)
+	request := apitxn.ChaincodeInvokeRequest{
+		Targets:      targets,
+		Fcn:          fcn,
+		Args:         args,
+		TransientMap: transientData,
+		ChaincodeID:  chainCodeID,
 	}
-
-	transactionProposalResponses, err := channel.SendTransactionProposal(signedProposal, 0, targets)
+	transactionProposalResponses, txnID, err := channel.SendTransactionProposal(request)
 	if err != nil {
-		return nil, "", fmt.Errorf("SendTransactionProposal returned error: %v", err)
+		return nil, txnID, err
 	}
 
 	for _, v := range transactionProposalResponses {
 		if v.Err != nil {
-			return nil, signedProposal.TransactionID, fmt.Errorf("invoke Endorser %s returned error: %v", v.Endorser, v.Err)
+			return nil, txnID, fmt.Errorf("invoke Endorser %s returned error: %v", v.Endorser, v.Err)
 		}
-		fmt.Printf("invoke Endorser '%s' returned ProposalResponse status:%v\n", v.Endorser, v.Status)
 	}
 
-	return transactionProposalResponses, signedProposal.TransactionID, nil
+	return transactionProposalResponses, txnID, nil
 }
 
 // CreateAndSendTransaction ...
@@ -323,7 +323,8 @@ func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps 
 // RegisterTxEvent registers on the given eventhub for the give transaction
 // returns a boolean channel which receives true when the event is complete
 // and an error channel for errors
-func (setup *BaseSetupImpl) RegisterTxEvent(txID string, eventHub fab.EventHub) (chan bool, chan error) {
+// TODO - Duplicate
+func (setup *BaseSetupImpl) RegisterTxEvent(txID apitxn.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
 	done := make(chan bool)
 	fail := make(chan error)
 

@@ -9,6 +9,7 @@ package fabricclient
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 )
@@ -71,17 +72,28 @@ func TestPeerViaChannel(t *testing.T) {
 // before the peer was set. Verify that an error is reported when tying
 // to send the request.
 //
-func TestOrdererViaChannelMissingOrderer(t *testing.T) {
+func TestSendTransactionProposalMissingPeer(t *testing.T) {
 	config := mocks.NewMockConfig()
 
 	client := NewClient(config)
+
 	channel, err := client.NewChannel("testChannel-peer")
 	if err != nil {
 		t.Fatalf("error from NewChannel %v", err)
 	}
-	_, err = channel.SendTransactionProposal(nil, 0, nil)
+	_, _, err = channel.SendTransactionProposal(mockChaincodeInvokeRequest())
 	if err == nil {
 		t.Fatalf("SendTransactionProposal didn't return error")
+	}
+	if err.Error() != "targets were not specified and no peers have been configured" {
+		t.Fatalf("SendTransactionProposal didn't return right error: %v", err)
+	}
+}
+
+func mockChaincodeInvokeRequest() apitxn.ChaincodeInvokeRequest {
+	return apitxn.ChaincodeInvokeRequest{
+		ChaincodeID: "helloworld",
+		Fcn:         "hello",
 	}
 }
 
@@ -96,6 +108,10 @@ func TestPeerViaChannelNilData(t *testing.T) {
 	config := mocks.NewMockConfig()
 
 	client := NewClient(config)
+
+	user := mocks.NewMockUser("joe")
+	client.SetUserContext(user)
+
 	channel, err := client.NewChannel("testChannel-peer")
 	if err != nil {
 		t.Fatalf("error from NewChannel %v", err)
@@ -108,11 +124,11 @@ func TestPeerViaChannelNilData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error adding peer: %v", err)
 	}
-	_, err = channel.SendTransactionProposal(nil, 0, nil)
+	_, _, err = channel.SendTransactionProposal(apitxn.ChaincodeInvokeRequest{})
 	if err == nil {
 		t.Fatalf("SendTransaction didn't return error")
 	}
-	if err.Error() != "signedProposal is nil" {
-		t.Fatalf("SendTransactionProposal didn't return right error")
+	if err.Error() != "Required parameters are empty" {
+		t.Fatalf("SendTransactionProposal didn't return right error: %v", err)
 	}
 }

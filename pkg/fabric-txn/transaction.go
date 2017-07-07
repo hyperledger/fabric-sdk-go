@@ -20,14 +20,14 @@ import (
 var logger = logging.MustGetLogger("fabric_sdk_go")
 
 //QueryChaincode ...
-func QueryChaincode(client fab.FabricClient, channel fab.Channel, chaincodeID string, args []string) (string, error) {
+func QueryChaincode(client fab.FabricClient, channel fab.Channel, chaincodeID string, fcn string, args []string) (string, error) {
 	err := checkCommonArgs(client, channel, chaincodeID)
 	if err != nil {
 		return "", err
 	}
 
 	transactionProposalResponses, _, err := internal.CreateAndSendTransactionProposal(channel,
-		chaincodeID, args, []apitxn.ProposalProcessor{channel.PrimaryPeer()}, nil)
+		chaincodeID, fcn, args, []apitxn.ProposalProcessor{channel.PrimaryPeer()}, nil)
 
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal returned error: %v", err)
@@ -38,7 +38,7 @@ func QueryChaincode(client fab.FabricClient, channel fab.Channel, chaincodeID st
 
 // InvokeChaincode ...
 func InvokeChaincode(client fab.FabricClient, channel fab.Channel, targets []apitxn.ProposalProcessor,
-	eventHub fab.EventHub, chaincodeID string, args []string, transientData map[string][]byte) error {
+	eventHub fab.EventHub, chaincodeID string, fcn string, args []string, transientData map[string][]byte) error {
 
 	err := checkCommonArgs(client, channel, chaincodeID)
 	if err != nil {
@@ -62,7 +62,7 @@ func InvokeChaincode(client fab.FabricClient, channel fab.Channel, targets []api
 	}
 
 	transactionProposalResponses, txID, err := internal.CreateAndSendTransactionProposal(channel,
-		chaincodeID, args, targets, transientData)
+		chaincodeID, fcn, args, targets, transientData)
 
 	if err != nil {
 		return fmt.Errorf("CreateAndSendTransactionProposal returned error: %v", err)

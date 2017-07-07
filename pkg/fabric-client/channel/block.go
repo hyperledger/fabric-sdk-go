@@ -34,11 +34,11 @@ func (c *Channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block,
 		return nil, fmt.Errorf("GenesisBlock - error: Missing orderer assigned to this channel for the GenesisBlock request")
 	}
 	// verify that we have transaction id
-	if request.TxID == "" {
+	if request.TxnID.ID == "" {
 		return nil, fmt.Errorf("GenesisBlock - error: Missing txId input parameter with the required transaction identifier")
 	}
 	// verify that we have the nonce
-	if request.Nonce == nil {
+	if request.TxnID.Nonce == nil {
 		return nil, fmt.Errorf("GenesisBlock - error: Missing nonce input parameter with the required single use number")
 	}
 
@@ -57,11 +57,11 @@ func (c *Channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block,
 		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
 	}
 	protos_utils.MakeChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, 1, c.Name(), 0)
-	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), request.TxID, 0, "", time.Now())
+	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), request.TxnID.ID, 0, "", time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("Error building channel header: %v", err)
 	}
-	seekHeader, err := fc.BuildHeader(creator, seekInfoHeader, request.Nonce)
+	seekHeader, err := fc.BuildHeader(creator, seekInfoHeader, request.TxnID.Nonce)
 	if err != nil {
 		return nil, fmt.Errorf("Error building header: %v", err)
 	}

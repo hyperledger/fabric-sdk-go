@@ -298,11 +298,12 @@ func setupTestChannel() (*Channel, error) {
 	user := mocks.NewMockUser("test")
 	cryptoSuite := &mocks.MockCryptoSuite{}
 	client.SaveUserToStateStore(user, true)
+	client.SetUserContext(user)
 	client.SetCryptoSuite(cryptoSuite)
 	return NewChannel("testChannel", client)
 }
 
-func setupMassiveTestChannel(numberOfPeers int, numberOfOrderers int) (fab.Channel, error) {
+func setupMassiveTestChannel(numberOfPeers int, numberOfOrderers int) (*Channel, error) {
 	channel, error := setupTestChannel()
 	if error != nil {
 		return channel, error

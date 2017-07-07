@@ -30,14 +30,8 @@ type Channel interface {
 	Name() string
 	Initialize(data []byte) error
 	IsInitialized() bool
-	IsSecurityEnabled() bool
-	QueryExtensionInterface() ChannelExtension
 	LoadConfigUpdateEnvelope(data []byte) error
-	SendInstantiateProposal(chaincodeName string, args []string, chaincodePath string, chaincodeVersion string, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, string, error)
-
-	// TCerts
-	TCertBatchSize() int
-	SetTCertBatchSize(batchSize int)
+	SendInstantiateProposal(chaincodeName string, args []string, chaincodePath string, chaincodeVersion string, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, txn.TransactionID, error)
 
 	// Network
 	// TODO: Use PeerEndorser
@@ -66,18 +60,8 @@ type Channel interface {
 	QueryBlockByHash(blockHash []byte) (*common.Block, error)
 	QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error)
 	QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error)
-	QueryByChaincode(chaincodeName string, args []string, targets []txn.ProposalProcessor) ([][]byte, error)
-}
-
-// The ChannelExtension interface allows extensions of the SDK to add functionality to Channel overloads.
-type ChannelExtension interface {
-	ClientContext() FabricClient
-
-	SignPayload(payload []byte) (*SignedEnvelope, error)
-	BroadcastEnvelope(envelope *SignedEnvelope) ([]*txn.TransactionResponse, error)
-
-	// TODO: This should go somewhere else - see TransactionProposal.GetBytes(). - deprecated
-	ProposalBytes(tp *txn.TransactionProposal) ([]byte, error)
+	QueryByChaincode(txn.ChaincodeInvokeRequest) ([][]byte, error)
+	QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error)
 }
 
 // OrgAnchorPeer contains information about an anchor peer on this channel
@@ -89,14 +73,12 @@ type OrgAnchorPeer struct {
 
 // GenesisBlockRequest ...
 type GenesisBlockRequest struct {
-	TxID  string
-	Nonce []byte
+	TxnID txn.TransactionID
 }
 
 // JoinChannelRequest allows a set of peers to transact on a channel on the network
 type JoinChannelRequest struct {
 	Targets      []Peer
 	GenesisBlock *common.Block
-	TxID         string
-	Nonce        []byte
+	TxnID        txn.TransactionID
 }

@@ -33,8 +33,9 @@ func TestOrgsEndToEnd(t *testing.T) {
 	// Query initial value on org1 peer
 	orgTestClient.SetUserContext(org1User)
 	orgTestChannel.SetPrimaryPeer(orgTestPeer0)
+	fcn := "invoke"
 	result, err := fabrictxn.QueryChaincode(orgTestClient, orgTestChannel,
-		"exampleCC", generateQueryArgs())
+		"exampleCC", fcn, generateQueryArgs())
 	failTestIfError(err, t)
 	initialValue, err := strconv.Atoi(result)
 	failTestIfError(err, t)
@@ -43,14 +44,14 @@ func TestOrgsEndToEnd(t *testing.T) {
 	orgTestClient.SetUserContext(org2User)
 	orgTestChannel.SetPrimaryPeer(orgTestPeer1)
 	err = fabrictxn.InvokeChaincode(orgTestClient, orgTestChannel, []apitxn.ProposalProcessor{orgTestPeer1},
-		peer0EventHub, "exampleCC", generateInvokeArgs(), nil)
+		peer0EventHub, "exampleCC", fcn, generateInvokeArgs(), nil)
 	failTestIfError(err, t)
 
 	// Assert changed value on org1 peer
 	orgTestClient.SetUserContext(org1User)
 	orgTestChannel.SetPrimaryPeer(orgTestPeer0)
 	result, err = fabrictxn.QueryChaincode(orgTestClient, orgTestChannel,
-		"exampleCC", generateQueryArgs())
+		"exampleCC", fcn, generateQueryArgs())
 	failTestIfError(err, t)
 	finalValue, err := strconv.Atoi(result)
 	failTestIfError(err, t)
@@ -63,7 +64,6 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 func generateQueryArgs() []string {
 	var args []string
-	args = append(args, "invoke")
 	args = append(args, "query")
 	args = append(args, "b")
 
@@ -72,7 +72,6 @@ func generateQueryArgs() []string {
 
 func generateInvokeArgs() []string {
 	var args []string
-	args = append(args, "invoke")
 	args = append(args, "move")
 	args = append(args, "a")
 	args = append(args, "b")

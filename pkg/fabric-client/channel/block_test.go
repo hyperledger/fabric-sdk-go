@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 )
@@ -22,12 +22,13 @@ func TestGenesisBlock(t *testing.T) {
 	peers = append(peers, peer)
 	orderer := mocks.NewMockOrderer("", nil)
 	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockError())
-	nonce, _ := fc.GenerateRandomNonce()
-	txID, _ := fc.ComputeTxID(nonce, []byte("testID"))
+	txid, _ := channel.ClientContext().NewTxnID()
+	badtxid := apitxn.TransactionID{
+		ID: txid.ID,
+	}
 
 	genesisBlockReq := &fab.GenesisBlockRequest{
-		TxID:  txID,
-		Nonce: nonce,
+		TxnID: txid,
 	}
 
 	channel.AddOrderer(orderer)
@@ -65,7 +66,7 @@ func TestGenesisBlock(t *testing.T) {
 	}
 
 	genesisBlockReq = &fab.GenesisBlockRequest{
-		TxID: txID,
+		TxnID: badtxid,
 	}
 	_, err = channel.GenesisBlock(genesisBlockReq)
 
@@ -76,8 +77,7 @@ func TestGenesisBlock(t *testing.T) {
 	channel.RemoveOrderer(orderer)
 
 	genesisBlockReq = &fab.GenesisBlockRequest{
-		TxID:  txID,
-		Nonce: nonce,
+		TxnID: txid,
 	}
 
 	_, err = channel.GenesisBlock(genesisBlockReq)

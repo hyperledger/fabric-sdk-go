@@ -10,6 +10,8 @@ import (
 	"fmt"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/msp"
 	"github.com/op/go-logging"
 )
@@ -22,14 +24,21 @@ type Channel struct {
 	name            string // aka channel ID
 	securityEnabled bool   // Security enabled flag
 	peers           map[string]fab.Peer
-	// TODO proposalProcessors map[string]txn.ProposalProcessor
-	tcertBatchSize int // The number of tcerts to get in each batch
-	orderers       map[string]fab.Orderer
-	clientContext  fab.FabricClient
-	primaryPeer    fab.Peer
-	mspManager     msp.MSPManager
-	anchorPeers    []*fab.OrgAnchorPeer
-	initialized    bool
+	orderers        map[string]fab.Orderer
+	clientContext   ClientContext
+	primaryPeer     fab.Peer
+	mspManager      msp.MSPManager
+	anchorPeers     []*fab.OrgAnchorPeer
+	initialized     bool
+}
+
+// ClientContext ...
+type ClientContext interface {
+	GetUserContext() fab.User
+	GetIdentity() ([]byte, error)
+	GetCryptoSuite() bccsp.BCCSP
+	NewTxnID() (apitxn.TransactionID, error)
+	// TODO: ClientContext.IsSecurityEnabled()
 }
 
 // NewChannel represents a channel in a Fabric network.
@@ -46,40 +55,20 @@ func NewChannel(name string, client fab.FabricClient) (*Channel, error) {
 	p := make(map[string]fab.Peer)
 	o := make(map[string]fab.Orderer)
 	c := Channel{name: name, securityEnabled: client.GetConfig().IsSecurityEnabled(), peers: p,
-		tcertBatchSize: client.GetConfig().TcertBatchSize(), orderers: o, clientContext: client, mspManager: msp.NewMSPManager()}
+		orderers: o, clientContext: client, mspManager: msp.NewMSPManager()}
 	logger.Infof("Constructed channel instance: %v", c)
 
 	return &c, nil
 }
 
-// QueryExtensionInterface ... TODO.
-func (c *Channel) QueryExtensionInterface() fab.ChannelExtension {
-	return c
-}
-
 // ClientContext returns the Client that was passed in to NewChannel
-func (c *Channel) ClientContext() fab.FabricClient {
+func (c *Channel) ClientContext() ClientContext {
 	return c.clientContext
 }
 
 // Name returns the channel name.
 func (c *Channel) Name() string {
 	return c.name
-}
-
-// IsSecurityEnabled determine if security is enabled.
-func (c *Channel) IsSecurityEnabled() bool {
-	return c.securityEnabled
-}
-
-// TCertBatchSize gets the tcert batch size.
-func (c *Channel) TCertBatchSize() int {
-	return c.tcertBatchSize
-}
-
-// SetTCertBatchSize sets the tcert batch size.
-func (c *Channel) SetTCertBatchSize(batchSize int) {
-	c.tcertBatchSize = batchSize
 }
 
 // AddPeer adds a peer endpoint to channel.

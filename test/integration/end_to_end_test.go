@@ -77,9 +77,9 @@ func TestChainCodeInvoke(t *testing.T) {
 
 // moveFunds ...
 func moveFunds(setup *BaseSetupImpl) error {
+	fcn := "invoke"
 
 	var args []string
-	args = append(args, "invoke")
 	args = append(args, "move")
 	args = append(args, "a")
 	args = append(args, "b")
@@ -88,5 +88,5 @@ func moveFunds(setup *BaseSetupImpl) error {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	return fabricTxn.InvokeChaincode(setup.Client, setup.Channel, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub, setup.ChainCodeID, args, transientDataMap)
+	return fabricTxn.InvokeChaincode(setup.Client, setup.Channel, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub, setup.ChainCodeID, fcn, args, transientDataMap)
 }

@@ -17,12 +17,6 @@ type Sender interface {
 	SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
 }
 
-// ProposalSender provides the ability for a transaction proposal to be created and sent.
-type ProposalSender interface {
-	CreateTransactionProposal(chaincodeName string, args []string, sign bool, transientData map[string][]byte) (*TransactionProposal, error)
-	SendTransactionProposal(proposal *TransactionProposal, retry int, targets []ProposalProcessor) ([]*TransactionProposalResponse, error)
-}
-
 // The Transaction object created from an endorsed proposal.
 type Transaction struct {
 	Proposal    *TransactionProposal

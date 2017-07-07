@@ -231,7 +231,13 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Confi
 
 	// set Client User Context to Admin before calling QueryByChaincode
 	testSetup.Client.SetUserContext(testSetup.AdminUser)
-	queryResponses, err := channel.QueryByChaincode("lscc", []string{"getinstalledchaincodes"}, targets)
+
+	request := apitxn.ChaincodeInvokeRequest{
+		Targets:     targets,
+		ChaincodeID: "lscc",
+		Fcn:         "getinstalledchaincodes",
+	}
+	queryResponses, err := channel.QueryBySystemChaincode(request)
 	if err != nil {
 		t.Fatalf("QueryByChaincode failed %s", err)
 	}
@@ -274,7 +280,12 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Confi
 	}
 
 	// Test valid + invalid targets
-	queryResponses, err = channel.QueryByChaincode("lscc", []string{"getinstalledchaincodes"}, invalidTargets)
+	request = apitxn.ChaincodeInvokeRequest{
+		ChaincodeID: "lscc",
+		Fcn:         "getinstalledchaincodes",
+		Targets:     invalidTargets,
+	}
+	queryResponses, err = channel.QueryBySystemChaincode(request)
 	if err == nil {
 		t.Fatalf("QueryByChaincode failed to return error for non-existing target")
 	}
@@ -292,8 +303,9 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Confi
 // MoveFundsAndGetTxID ...
 func moveFundsAndGetTxID(setup *BaseSetupImpl) (string, error) {
 
+	fcn := "invoke"
+
 	var args []string
-	args = append(args, "invoke")
 	args = append(args, "move")
 	args = append(args, "a")
 	args = append(args, "b")
@@ -302,7 +314,7 @@ func moveFundsAndGetTxID(setup *BaseSetupImpl) (string, error) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, args, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, fcn, args, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
@@ -321,5 +333,5 @@ func moveFundsAndGetTxID(setup *BaseSetupImpl) (string, error) {
 	case <-time.After(time.Second * 30):
 		return "", fmt.Errorf("invoke Didn't receive block event for txid(%s)", txID)
 	}
-	return txID, nil
+	return txID.ID, nil
 }

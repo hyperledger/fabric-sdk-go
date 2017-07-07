@@ -21,26 +21,28 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
 
 // CreateAndSendTransactionProposal ...
 func CreateAndSendTransactionProposal(sender apitxn.ProposalSender, chainCodeID string,
-	args []string, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, string, error) {
+	fcn string, args []string, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
-	signedProposal, err := sender.CreateTransactionProposal(chainCodeID, args, true, transientData)
-	if err != nil {
-		return nil, "", fmt.Errorf("SendTransactionProposal returned error: %v", err)
+	request := apitxn.ChaincodeInvokeRequest{
+		Targets:      targets,
+		Fcn:          fcn,
+		Args:         args,
+		TransientMap: transientData,
+		ChaincodeID:  chainCodeID,
 	}
-
-	transactionProposalResponses, err := sender.SendTransactionProposal(signedProposal, 0, targets)
+	transactionProposalResponses, txnID, err := sender.SendTransactionProposal(request)
 	if err != nil {
-		return nil, "", fmt.Errorf("SendTransactionProposal returned error: %v", err)
+		return nil, txnID, err
 	}
 
 	for _, v := range transactionProposalResponses {
 		if v.Err != nil {
-			return nil, signedProposal.TransactionID, fmt.Errorf("invoke Endorser %s returned error: %v", v.Endorser, v.Err)
+			return nil, request.TxnID, fmt.Errorf("invoke Endorser %s returned error: %v", v.Endorser, v.Err)
 		}
 		logger.Debugf("invoke Endorser '%s' returned ProposalResponse status:%v\n", v.Endorser, v.Status)
 	}
 
-	return transactionProposalResponses, signedProposal.TransactionID, nil
+	return transactionProposalResponses, txnID, nil
 }
 
 // CreateAndSendTransaction ...
@@ -68,7 +70,7 @@ func CreateAndSendTransaction(sender apitxn.Sender, resps []*apitxn.TransactionP
 // RegisterTxEvent registers on the given eventhub for the given transaction id
 // returns a boolean channel which receives true when the event is complete and
 // an error channel for errors
-func RegisterTxEvent(txID string, eventHub fab.EventHub) (chan bool, chan error) {
+func RegisterTxEvent(txID apitxn.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
 	done := make(chan bool)
 	fail := make(chan error)
 

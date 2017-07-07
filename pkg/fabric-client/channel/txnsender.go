@@ -23,6 +23,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
 )
 
 // CreateTransaction create a transaction with proposal response, following the endorsement policy.
@@ -157,22 +158,22 @@ func (c *Channel) SendTransaction(tx *apitxn.Transaction) ([]*apitxn.Transaction
 // chaincodePath: required - string of the path to the location of the source code of the chaincode
 // chaincodeVersion: required - string of the version of the chaincode
 func (c *Channel) SendInstantiateProposal(chaincodeName string,
-	args []string, chaincodePath string, chaincodeVersion string, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, string, error) {
+	args []string, chaincodePath string, chaincodeVersion string, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
 	if chaincodeName == "" {
-		return nil, "", fmt.Errorf("Missing 'chaincodeName' parameter")
+		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodeName' parameter")
 	}
 	if chaincodePath == "" {
-		return nil, "", fmt.Errorf("Missing 'chaincodePath' parameter")
+		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodePath' parameter")
 	}
 	if chaincodeVersion == "" {
 
-		return nil, "", fmt.Errorf("Missing 'chaincodeVersion' parameter")
+		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodeVersion' parameter")
 	}
 
 	// TODO: We should validate that targets are added to the channel.
 	if targets == nil || len(targets) < 1 {
-		return nil, "", fmt.Errorf("Missing peer objects for instantiate CC proposal")
+		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing peer objects for instantiate CC proposal")
 	}
 
 	argsArray := make([][]byte, len(args))
@@ -186,42 +187,44 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 
 	creator, err := c.clientContext.GetIdentity()
 	if err != nil {
-		return nil, "", fmt.Errorf("Error getting creator: %v", err)
+		return nil, apitxn.TransactionID{}, fmt.Errorf("Error getting creator: %v", err)
 	}
 	chaincodePolicy, err := buildChaincodePolicy(c.clientContext.GetUserContext().MspID())
 	if err != nil {
-		return nil, "", err
+		return nil, apitxn.TransactionID{}, err
 	}
 	chaincodePolicyBytes, err := protos_utils.Marshal(chaincodePolicy)
 	if err != nil {
-		return nil, "", err
+		return nil, apitxn.TransactionID{}, err
 	}
 	// create a proposal from a chaincodeDeploymentSpec
 	proposal, txID, err := protos_utils.CreateDeployProposalFromCDS(c.Name(), ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
 	if err != nil {
-		return nil, "", fmt.Errorf("Could not create chaincode Deploy proposal, err %s", err)
+		return nil, apitxn.TransactionID{}, fmt.Errorf("Could not create chaincode Deploy proposal, err %s", err)
 	}
 
 	signedProposal, err := c.signProposal(proposal)
 	if err != nil {
-		return nil, "", err
+		return nil, apitxn.TransactionID{}, err
 	}
 
-	transactionProposalResponse, err := c.SendTransactionProposal(&apitxn.TransactionProposal{
+	txnID := apitxn.TransactionID{ID: txID} // Nonce is missing
+
+	transactionProposalResponse, err := txnproc.SendTransactionProposalToProcessors(&apitxn.TransactionProposal{
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
-		TransactionID:  txID,
-	}, 0, targets)
+		TxnID:          txnID,
+	}, targets)
 
-	return transactionProposalResponse, txID, err
+	return transactionProposalResponse, txnID, err
 }
 
 // SignPayload ... TODO.
 func (c *Channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
 	//Get user info
-	user, err := c.clientContext.LoadUserFromStateStore("")
-	if err != nil {
-		return nil, fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
+	user := c.clientContext.GetUserContext()
+	if user == nil {
+		return nil, fmt.Errorf("User is nil")
 	}
 
 	signature, err := fc.SignObjectWithKey(payload, user.PrivateKey(),

@@ -51,6 +51,7 @@ type FabricClient interface {
 	GetUserContext() User
 	SetUserContext(user User)
 	GetConfig() config.Config // TODO: refactor to a fab client config interface
+	NewTxnID() (txn.TransactionID, error)
 }
 
 // CreateChannelRequest requests channel creation on the network

@@ -155,3 +155,11 @@ func (c *MockClient) GetUserContext() fab.User {
 func (c *MockClient) SetUserContext(user fab.User) {
 	c.userContext = user
 }
+
+// NewTxnID computes a TransactionID for the current user context
+func (c *MockClient) NewTxnID() (apitxn.TransactionID, error) {
+	return apitxn.TransactionID{
+		ID:    "1234",
+		Nonce: []byte{1, 2, 3, 4, 5},
+	}, nil
+}

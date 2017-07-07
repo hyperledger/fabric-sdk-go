@@ -36,11 +36,15 @@ func TestCreateTransaction(t *testing.T) {
 
 	//Test invalid proposal header scenario
 
+	txid := apitxn.TransactionID{
+		ID: "1234",
+	}
+
 	test := &apitxn.TransactionProposalResponse{
 		TransactionProposalResult: apitxn.TransactionProposalResult{
 			Endorser: "http://peer1.com",
 			Proposal: apitxn.TransactionProposal{
-				TransactionID:  "1234",
+				TxnID:          txid,
 				Proposal:       &pb.Proposal{Header: []byte("TEST"), Extension: []byte(""), Payload: []byte("")},
 				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")},
 			},
@@ -61,7 +65,7 @@ func TestCreateTransaction(t *testing.T) {
 		TransactionProposalResult: apitxn.TransactionProposalResult{
 			Endorser: "http://peer1.com",
 			Proposal: apitxn.TransactionProposal{
-				TransactionID:  "1234",
+				TxnID:          txid,
 				Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("TEST")},
 				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")},
 			},
@@ -82,7 +86,7 @@ func TestCreateTransaction(t *testing.T) {
 			Endorser: "http://peer1.com",
 			Proposal: apitxn.TransactionProposal{
 				Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
-				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TransactionID: "1234",
+				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TxnID: txid,
 			},
 			ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 		},
@@ -102,7 +106,7 @@ func TestCreateTransaction(t *testing.T) {
 			Endorser: "http://peer1.com",
 			Proposal: apitxn.TransactionProposal{
 				Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
-				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TransactionID: "1234",
+				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TxnID: txid,
 			},
 			ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 200, Payload: []byte("")}},
 		},
@@ -141,38 +145,38 @@ func TestSendInstantiateProposal(t *testing.T) {
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
 	channel.AddPeer(&peer)
 
-	tresponse, str, err := channel.SendInstantiateProposal("", nil, "",
+	tresponse, txnid, err := channel.SendInstantiateProposal("", nil, "",
 		"", targets)
 
 	if err == nil || err.Error() != "Missing 'chaincodeName' parameter" {
 		t.Fatal("Validation for chain code name parameter for send Instantiate Proposal failed")
 	}
 
-	tresponse, str, err = channel.SendInstantiateProposal("qscc", nil, "",
+	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "",
 		"", targets)
 
-	tresponse, str, err = channel.SendInstantiateProposal("qscc", nil, "",
+	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "",
 		"", targets)
 
 	if err == nil || err.Error() != "Missing 'chaincodePath' parameter" {
 		t.Fatal("Validation for chain code path for send Instantiate Proposal failed")
 	}
 
-	tresponse, str, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"", targets)
 
 	if err == nil || err.Error() != "Missing 'chaincodeVersion' parameter" {
 		t.Fatal("Validation for chain code version for send Instantiate Proposal failed")
 	}
 
-	tresponse, str, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", targets)
 
-	if err != nil || len(tresponse) == 0 || str == "" {
+	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
 		t.Fatal("Send Instantiate Proposal Test failed")
 	}
 
-	tresponse, str, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", nil)
 	if err == nil || err.Error() != "Missing peer objects for instantiate CC proposal" {
 		t.Fatal("Missing peer objects validation is not working as expected")
@@ -198,14 +202,14 @@ func TestBroadcastEnvelope(t *testing.T) {
 		Signature: []byte(""),
 		Payload:   []byte(""),
 	}
-	res, err := channel.QueryExtensionInterface().BroadcastEnvelope(sigEnvelope)
+	res, err := channel.BroadcastEnvelope(sigEnvelope)
 
 	if err != nil || res == nil {
 		t.Fatalf("Test Broadcast Envelope Failed, cause %s", err.Error())
 	}
 
 	channel.RemoveOrderer(orderer)
-	_, err = channel.QueryExtensionInterface().BroadcastEnvelope(sigEnvelope)
+	_, err = channel.BroadcastEnvelope(sigEnvelope)
 
 	if err == nil || err.Error() != "orderers not set" {
 		t.Fatal("orderers not set validation on broadcast envelope is not working as expected")
@@ -304,14 +308,14 @@ func TestSignPayload(t *testing.T) {
 	client.SetCryptoSuite(cryptoSuite)
 	channel, _ := NewChannel("testChannel", client)
 
-	signedEnv, err := channel.QueryExtensionInterface().SignPayload([]byte(""))
+	signedEnv, err := channel.SignPayload([]byte(""))
 
 	if err == nil {
 		t.Fatal("Test Sign Payload was supposed to fail")
 	}
 
 	channel, _ = setupTestChannel()
-	signedEnv, err = channel.QueryExtensionInterface().SignPayload([]byte(""))
+	signedEnv, err = channel.SignPayload([]byte(""))
 
 	if err != nil || signedEnv == nil {
 		t.Fatal("Test Sign Payload Failed")

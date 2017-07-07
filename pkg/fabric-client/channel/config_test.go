@@ -22,20 +22,6 @@ func TestChannelConfigs(t *testing.T) {
 
 	channel, _ := NewChannel("testChannel", client)
 
-	if client.GetConfig().IsSecurityEnabled() != channel.IsSecurityEnabled() {
-		t.Fatal("Is Security Enabled flag is incorrect in channel")
-	}
-
-	if client.GetConfig().TcertBatchSize() != channel.TCertBatchSize() {
-		t.Fatal("Tcert batch size is incorrect")
-	}
-
-	channel.SetTCertBatchSize(22)
-
-	if channel.TCertBatchSize() != 22 {
-		t.Fatal("TCert batch size update on channel is not working")
-	}
-
 	if channel.IsReadonly() {
 		//TODO: Rightnow it is returning false always, need to revisit test once actual implementation is provided
 		t.Fatal("Is Readonly test failed")
@@ -44,10 +30,6 @@ func TestChannelConfigs(t *testing.T) {
 	if channel.UpdateChannel() {
 		//TODO: Rightnow it is returning false always, need to revisit test once actual implementation is provided
 		t.Fatal("UpdateChannel test failed")
-	}
-
-	if channel.QueryExtensionInterface().ClientContext() != client {
-		t.Fatal("Client context not matching with client")
 	}
 
 	channel.SetMSPManager(nil)

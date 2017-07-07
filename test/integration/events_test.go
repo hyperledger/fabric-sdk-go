@@ -60,18 +60,19 @@ func initializeTests(t *testing.T) BaseSetupImpl {
 }
 
 func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
+	fcn := "invoke"
+
 	// Arguments for events CC
 	var args []string
 	args = append(args, "invoke")
-	args = append(args, "invoke")
 	args = append(args, "SEVERE")
 
-	tpResponses1, tx1, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses1, tx1, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
-	tpResponses2, tx2, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses2, tx2, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
@@ -133,19 +134,20 @@ Loop:
 }
 
 func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
+	fcn := "invoke"
+
 	// Arguments for events CC
 	var args []string
 	args = append(args, "invoke")
-	args = append(args, "invoke")
 	args = append(args, "SEVERE")
 
-	tpResponses1, tx1, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses1, tx1, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
-	tpResponses2, tx2, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses2, tx2, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
@@ -242,9 +244,10 @@ func testReconnectEventHub(t *testing.T, testSetup BaseSetupImpl) {
 }
 
 func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
+	fcn := "invoke"
+
 	// Arguments for events CC
 	var args []string
-	args = append(args, "invoke")
 	args = append(args, "invoke")
 	args = append(args, "SEVERE")
 
@@ -255,7 +258,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 		test <- true
 	})
 
-	tpResponses, tx, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses, tx, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, args, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal returned error: %v", err)
 	}

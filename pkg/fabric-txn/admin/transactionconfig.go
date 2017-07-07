@@ -143,42 +143,28 @@ func JoinChannel(client fab.FabricClient, orgUser ca.User, channel fab.Channel) 
 
 	client.SetUserContext(orgUser)
 
-	creator, err := client.GetIdentity()
+	txnid, err := client.NewTxnID()
 	if err != nil {
-		return fmt.Errorf("Error getting creator: %v", err)
-	}
-
-	nonce, err := internal.GenerateRandomNonce()
-	if err != nil {
-		return fmt.Errorf("Could not compute nonce: %s", err)
-	}
-	txID, err := internal.ComputeTxID(nonce, creator)
-	if err != nil {
-		return fmt.Errorf("Could not compute TxID: %s", err)
+		return fmt.Errorf("Could not create a transaction ID: %s", err)
 	}
 
 	genesisBlockRequest := &fab.GenesisBlockRequest{
-		TxID:  txID,
-		Nonce: nonce,
+		TxnID: txnid,
 	}
 	genesisBlock, err := channel.GenesisBlock(genesisBlockRequest)
 	if err != nil {
 		return fmt.Errorf("Error getting genesis block: %v", err)
 	}
 
-	nonce, err = internal.GenerateRandomNonce()
+	txnid2, err := client.NewTxnID()
 	if err != nil {
-		return fmt.Errorf("Could not compute nonce: %s", err)
+		return fmt.Errorf("Could not create a transaction ID: %s", err)
 	}
-	txID, err = internal.ComputeTxID(nonce, creator)
-	if err != nil {
-		return fmt.Errorf("Could not compute TxID: %s", err)
-	}
+
 	joinChannelRequest := &fab.JoinChannelRequest{
 		Targets:      channel.Peers(),
 		GenesisBlock: genesisBlock,
-		TxID:         txID,
-		Nonce:        nonce,
+		TxnID:        txnid2,
 	}
 
 	err = channel.JoinChannel(joinChannelRequest)
