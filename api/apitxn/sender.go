@@ -14,7 +14,7 @@ import (
 // Sender provides the ability for a transaction to be created and sent.
 type Sender interface {
 	CreateTransaction(resps []*TransactionProposalResponse) (*Transaction, error)
-	SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
+	SendTransaction(tx *Transaction) (*TransactionResponse, error)
 }
 
 // The Transaction object created from an endorsed proposal.

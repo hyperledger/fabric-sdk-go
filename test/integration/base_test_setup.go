@@ -12,15 +12,14 @@ import (
 	"path"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	fabricTxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
 	admin "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
@@ -299,7 +298,7 @@ func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel
 }
 
 // CreateAndSendTransaction ...
-func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps []*apitxn.TransactionProposalResponse) ([]*apitxn.TransactionResponse, error) {
+func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps []*apitxn.TransactionProposalResponse) (*apitxn.TransactionResponse, error) {
 
 	tx, err := channel.CreateTransaction(resps)
 	if err != nil {
@@ -311,10 +310,9 @@ func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps 
 		return nil, fmt.Errorf("SendTransaction return error: %v", err)
 
 	}
-	for _, v := range transactionResponse {
-		if v.Err != nil {
-			return nil, fmt.Errorf("Orderer %s return error: %v", v.Orderer, v.Err)
-		}
+
+	if transactionResponse.Err != nil {
+		return nil, fmt.Errorf("Orderer %s return error: %v", transactionResponse.Orderer, transactionResponse.Err)
 	}
 
 	return transactionResponse, nil

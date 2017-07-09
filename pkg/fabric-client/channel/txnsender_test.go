@@ -7,8 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"crypto/rand"
+	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -181,19 +184,33 @@ func TestSendInstantiateProposal(t *testing.T) {
 	if err == nil || err.Error() != "Missing peer objects for instantiate CC proposal" {
 		t.Fatal("Missing peer objects validation is not working as expected")
 	}
+}
 
+type mockReader struct {
+	err error
+}
+
+func (r *mockReader) Read(p []byte) (int, error) {
+	if r.err != nil {
+		return 0, r.err
+	}
+	n, _ := rand.Read(p)
+	return n, nil
 }
 
 func TestBroadcastEnvelope(t *testing.T) {
-
 	//Setup channel
 	channel, _ := setupTestChannel()
 
-	//Create mock orderer
-	orderer := mocks.NewMockOrderer("", nil)
+	lsnr1 := make(chan *fab.SignedEnvelope)
+	lsnr2 := make(chan *fab.SignedEnvelope)
+	//Create mock orderers
+	orderer1 := mocks.NewMockOrderer("1", lsnr1)
+	orderer2 := mocks.NewMockOrderer("2", lsnr2)
 
-	//Add an orderer
-	channel.AddOrderer(orderer)
+	//Add the orderers
+	channel.AddOrderer(orderer1)
+	channel.AddOrderer(orderer2)
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
 	channel.AddPeer(&peer)
@@ -204,17 +221,65 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 	res, err := channel.BroadcastEnvelope(sigEnvelope)
 
-	if err != nil || res == nil {
-		t.Fatalf("Test Broadcast Envelope Failed, cause %s", err.Error())
+	if err != nil || res.Err != nil {
+		t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
 	}
 
-	channel.RemoveOrderer(orderer)
+	// Ensure only 1 orderer was selected for broadcast
+	firstSelected := 0
+	secondSelected := 0
+	for i := 0; i < 2; i++ {
+		select {
+		case <-lsnr1:
+			firstSelected = 1
+		case <-lsnr2:
+			secondSelected = 1
+		case <-time.After(time.Second):
+		}
+	}
+
+	if firstSelected+secondSelected != 1 {
+		t.Fatal("Both or none orderers were selected for broadcast:", firstSelected+secondSelected)
+	}
+
+	// Now make 1 of them fail and repeatedly broadcast
+	broadcastCount := 50
+	for i := 0; i < broadcastCount; i++ {
+		orderer1.(mocks.MockOrderer).EnqueueSendBroadcastError(fmt.Errorf("Service Unavailable"))
+	}
+	// It should always succeed even though one of them has failed
+	for i := 0; i < broadcastCount; i++ {
+		if res, err := channel.BroadcastEnvelope(sigEnvelope); err != nil || res.Err != nil {
+			t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
+		}
+	}
+
+	// Now, fail both and ensure any attempt fails
+	for i := 0; i < broadcastCount; i++ {
+		orderer1.(mocks.MockOrderer).EnqueueSendBroadcastError(fmt.Errorf("Service Unavailable"))
+		orderer2.(mocks.MockOrderer).EnqueueSendBroadcastError(fmt.Errorf("Service Unavailable"))
+	}
+
+	for i := 0; i < broadcastCount; i++ {
+		res, err := channel.BroadcastEnvelope(sigEnvelope)
+		if err != nil {
+			t.Fatalf("Test Broadcast sending failed, cause %v", err)
+		}
+		if res.Err == nil {
+			t.Fatal("Test Broadcast succeeded, but it should have failed")
+		}
+		if !strings.Contains(res.Err.Error(), "Service Unavailable") {
+			t.Fatal("Test Broadcast failed but didn't return the correct reason(should contain 'Service Unavailable')")
+		}
+	}
+
+	channel.RemoveOrderer(orderer1)
+	channel.RemoveOrderer(orderer2)
 	_, err = channel.BroadcastEnvelope(sigEnvelope)
 
 	if err == nil || err.Error() != "orderers not set" {
 		t.Fatal("orderers not set validation on broadcast envelope is not working as expected")
 	}
-
 }
 
 func TestSendTransaction(t *testing.T) {

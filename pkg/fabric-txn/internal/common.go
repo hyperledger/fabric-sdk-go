@@ -44,25 +44,23 @@ func CreateAndSendTransactionProposal(sender apitxn.ProposalSender, chainCodeID 
 }
 
 // CreateAndSendTransaction ...
-func CreateAndSendTransaction(sender apitxn.Sender, resps []*apitxn.TransactionProposalResponse) ([]*apitxn.TransactionResponse, error) {
+func CreateAndSendTransaction(sender apitxn.Sender, resps []*apitxn.TransactionProposalResponse) (*apitxn.TransactionResponse, error) {
 
 	tx, err := sender.CreateTransaction(resps)
 	if err != nil {
 		return nil, fmt.Errorf("CreateTransaction returned error: %v", err)
 	}
 
-	transactionResponses, err := sender.SendTransaction(tx)
+	transactionResponse, err := sender.SendTransaction(tx)
 	if err != nil {
 		return nil, fmt.Errorf("SendTransaction returned error: %v", err)
 
 	}
-	for _, v := range transactionResponses {
-		if v.Err != nil {
-			return nil, fmt.Errorf("Orderer %s returned error: %v", v.Orderer, v.Err)
-		}
+	if transactionResponse.Err != nil {
+		return nil, fmt.Errorf("Orderer %s returned error: %v", transactionResponse.Orderer, transactionResponse.Err)
 	}
 
-	return transactionResponses, nil
+	return transactionResponse, nil
 }
 
 // RegisterTxEvent registers on the given eventhub for the given transaction id
