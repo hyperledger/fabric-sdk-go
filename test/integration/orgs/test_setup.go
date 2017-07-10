@@ -135,30 +135,30 @@ func installAndInstantiate(t *testing.T) {
 }
 
 func loadOrderer(t *testing.T) {
-	ordererConfig, err := orgTestClient.GetConfig().RandomOrdererConfig()
+	ordererConfig, err := orgTestClient.Config().RandomOrdererConfig()
 	failTestIfError(err, t)
 
 	orgTestOrderer, err = orderer.NewOrderer(fmt.Sprintf("%s:%d", ordererConfig.Host,
 		ordererConfig.Port), ordererConfig.TLS.Certificate,
-		ordererConfig.TLS.ServerHostOverride, orgTestClient.GetConfig())
+		ordererConfig.TLS.ServerHostOverride, orgTestClient.Config())
 	failTestIfError(err, t)
 }
 
 func loadOrgPeers(t *testing.T) {
-	org1Peers, err := orgTestClient.GetConfig().PeersConfig(org1)
+	org1Peers, err := orgTestClient.Config().PeersConfig(org1)
 	failTestIfError(err, t)
 
-	org2Peers, err := orgTestClient.GetConfig().PeersConfig(org2)
+	org2Peers, err := orgTestClient.Config().PeersConfig(org2)
 	failTestIfError(err, t)
 
 	orgTestPeer0, err = peer.NewPeerTLSFromCert(fmt.Sprintf("%s:%d", org1Peers[0].Host,
 		org1Peers[0].Port), org1Peers[0].TLS.Certificate,
-		org1Peers[0].TLS.ServerHostOverride, orgTestClient.GetConfig())
+		org1Peers[0].TLS.ServerHostOverride, orgTestClient.Config())
 	failTestIfError(err, t)
 
 	orgTestPeer1, err = peer.NewPeerTLSFromCert(fmt.Sprintf("%s:%d", org2Peers[0].Host,
 		org2Peers[0].Port), org2Peers[0].TLS.Certificate,
-		org2Peers[0].TLS.ServerHostOverride, orgTestClient.GetConfig())
+		org2Peers[0].TLS.ServerHostOverride, orgTestClient.Config())
 	failTestIfError(err, t)
 
 	peer0EventHub, err = events.NewEventHub(orgTestClient)

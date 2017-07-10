@@ -50,13 +50,13 @@ func (c *MockClient) NewChannel(name string) (fab.Channel, error) {
 	return nil, nil
 }
 
-// GetChannel ...
-func (c *MockClient) GetChannel(name string) fab.Channel {
-	return c.channels[name]
+// Channel ...
+func (c *MockClient) Channel(id string) fab.Channel {
+	return c.channels[id]
 }
 
-// GetConfig ...
-func (c *MockClient) GetConfig() config.Config {
+// Config ...
+func (c *MockClient) Config() config.Config {
 	return c.config
 }
 
@@ -70,8 +70,8 @@ func (c *MockClient) SetStateStore(stateStore fab.KeyValueStore) {
 	c.stateStore = stateStore
 }
 
-// GetStateStore ...
-func (c *MockClient) GetStateStore() fab.KeyValueStore {
+// StateStore ...
+func (c *MockClient) StateStore() fab.KeyValueStore {
 	return c.stateStore
 }
 
@@ -80,8 +80,8 @@ func (c *MockClient) SetCryptoSuite(cryptoSuite bccsp.BCCSP) {
 	c.cryptoSuite = cryptoSuite
 }
 
-// GetCryptoSuite ...
-func (c *MockClient) GetCryptoSuite() bccsp.BCCSP {
+// CryptoSuite ...
+func (c *MockClient) CryptoSuite() bccsp.BCCSP {
 	return c.cryptoSuite
 }
 
@@ -134,8 +134,8 @@ func (c *MockClient) InstallChaincode(chaincodeName string, chaincodePath string
 
 }
 
-// GetUserContext ...
-func (c *MockClient) GetUserContext() fab.User {
+// UserContext ...
+func (c *MockClient) UserContext() fab.User {
 	return c.userContext
 }
 

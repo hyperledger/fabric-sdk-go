@@ -33,23 +33,23 @@ import (
  */
 type FabricClient interface {
 	NewChannel(name string) (Channel, error)
-	GetChannel(name string) Channel
+	Channel(name string) Channel
 	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
 	SignChannelConfig(config []byte) (*common.ConfigSignature, error)
 	CreateChannel(request CreateChannelRequest) (txn.TransactionID, error)
 	QueryChannelInfo(name string, peers []Peer) (Channel, error)
 	SetStateStore(stateStore KeyValueStore)
-	GetStateStore() KeyValueStore
+	StateStore() KeyValueStore
 	SetCryptoSuite(cryptoSuite bccsp.BCCSP)
-	GetCryptoSuite() bccsp.BCCSP
+	CryptoSuite() bccsp.BCCSP
 	SaveUserToStateStore(user User, skipPersistence bool) error
 	LoadUserFromStateStore(name string) (User, error)
 	InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string, chaincodePackage []byte, targets []Peer) ([]*txn.TransactionProposalResponse, string, error)
 	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
 	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
-	GetUserContext() User
+	UserContext() User
 	SetUserContext(user User)
-	GetConfig() config.Config // TODO: refactor to a fab client config interface
+	Config() config.Config // TODO: refactor to a fab client config interface
 	NewTxnID() (txn.TransactionID, error)
 }
 

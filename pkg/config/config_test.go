@@ -268,7 +268,7 @@ func TestCSPConfig(t *testing.T) {
 	}
 }
 
-func TestGetPeersConfig(t *testing.T) {
+func TestPeersConfig(t *testing.T) {
 	pc, err := configImpl.PeersConfig(org1)
 	if err != nil {
 		t.Fatalf(err.Error())

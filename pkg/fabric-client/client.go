@@ -64,23 +64,14 @@ func (c *Client) NewChannel(name string) (fab.Channel, error) {
 	return c.channels[name], nil
 }
 
-// GetConfig ...
-func (c *Client) GetConfig() config.Config {
+// Config returns the configuration of the client.
+func (c *Client) Config() config.Config {
 	return c.config
 }
 
-// GetChannel ...
-/*
- * Get a {@link Channel} instance from the state storage. This allows existing channel instances to be saved
- * for retrieval later and to be shared among instances of the application. Note that it’s the
- * application/SDK’s responsibility to record the channel information. If an application is not able
- * to look up the channel information from storage, it may call another API that queries one or more
- * Peers for that information.
- * @param {string} name The name of the channel.
- * @returns {Channel} The channel instance
- */
-func (c *Client) GetChannel(name string) fab.Channel {
-	return c.channels[name]
+// Channel returns the channel by ID
+func (c *Client) Channel(id string) fab.Channel {
+	return c.channels[id]
 }
 
 // QueryChannelInfo ...
@@ -107,27 +98,18 @@ func (c *Client) SetStateStore(stateStore fab.KeyValueStore) {
 	c.stateStore = stateStore
 }
 
-// GetStateStore ...
-/*
- * A convenience method for obtaining the state store object in use for this client.
- */
-func (c *Client) GetStateStore() fab.KeyValueStore {
+// StateStore is a convenience method for obtaining the state store object in use for this client.
+func (c *Client) StateStore() fab.KeyValueStore {
 	return c.stateStore
 }
 
-// SetCryptoSuite ...
-/*
- * A convenience method for obtaining the state store object in use for this client.
- */
+// SetCryptoSuite is a convenience method for obtaining the state store object in use for this client.
 func (c *Client) SetCryptoSuite(cryptoSuite bccsp.BCCSP) {
 	c.cryptoSuite = cryptoSuite
 }
 
-// GetCryptoSuite ...
-/*
- * A convenience method for obtaining the CryptoSuite object in use for this client.
- */
-func (c *Client) GetCryptoSuite() bccsp.BCCSP {
+// CryptoSuite is a convenience method for obtaining the CryptoSuite object in use for this client.
+func (c *Client) CryptoSuite() bccsp.BCCSP {
 	return c.cryptoSuite
 }
 
@@ -280,14 +262,14 @@ func (c *Client) SignChannelConfig(config []byte) (*common.ConfigSignature, erro
 		return nil, fmt.Errorf("Error marshalling signatureHeader: %v", err)
 	}
 
-	user := c.GetUserContext()
+	user := c.UserContext()
 	if user == nil {
 		return nil, fmt.Errorf("User is nil")
 	}
 
 	// get all the bytes to be signed together, then sign
 	signingBytes := fcutils.ConcatenateBytes(signatureHeaderBytes, config)
-	signature, err := fc.SignObjectWithKey(signingBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
+	signature, err := fc.SignObjectWithKey(signingBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.CryptoSuite())
 	if err != nil {
 		return nil, fmt.Errorf("error singing config: %v", err)
 	}
@@ -416,7 +398,7 @@ func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnv
 			return fmt.Errorf("error marshaling payload: %v", err)
 		}
 
-		signature, err = fc.SignObjectWithKey(payloadBytes, c.userContext.PrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
+		signature, err = fc.SignObjectWithKey(payloadBytes, c.userContext.PrivateKey(), &bccsp.SHAOpts{}, nil, c.CryptoSuite())
 		if err != nil {
 			return fmt.Errorf("error singing payload: %v", err)
 		}
@@ -518,11 +500,11 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	if err != nil {
 		return nil, "", err
 	}
-	user := c.GetUserContext()
+	user := c.UserContext()
 	if user == nil {
 		return nil, "", fmt.Errorf("User is nil")
 	}
-	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.GetCryptoSuite())
+	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.CryptoSuite())
 	if err != nil {
 		return nil, "", err
 	}
@@ -540,8 +522,8 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	return transactionProposalResponse, txID, err
 }
 
-// GetUserContext ...
-func (c *Client) GetUserContext() fab.User {
+// UserContext returns the current User.
+func (c *Client) UserContext() fab.User {
 	return c.userContext
 }
 

@@ -24,8 +24,8 @@ var testMsp = "testMsp"
 
 func TestClientMethods(t *testing.T) {
 	client := NewClient(mocks.NewMockConfig())
-	if client.GetCryptoSuite() != nil {
-		t.Fatalf("Client getCryptoSuite should initially be nil")
+	if client.CryptoSuite() != nil {
+		t.Fatalf("Client CryptoSuite should initially be nil")
 	}
 	err := bccspFactory.InitFactories(nil)
 	if err != nil {
@@ -34,8 +34,8 @@ func TestClientMethods(t *testing.T) {
 	cryptoSuite := bccspFactory.GetDefault()
 
 	client.SetCryptoSuite(cryptoSuite)
-	if client.GetCryptoSuite() == nil {
-		t.Fatalf("Client getCryptoSuite should not be nil after setCryptoSuite")
+	if client.CryptoSuite() == nil {
+		t.Fatalf("Client CryptoSuite should not be nil after setCryptoSuite")
 	}
 
 	//Client tests: LoadUserFromStateStore successful nill user
@@ -103,7 +103,7 @@ func TestClientMethods(t *testing.T) {
 	if chain.Name() != "someChain" {
 		t.Fatalf("client.NewChain create wrong chain")
 	}
-	chain1 := client.GetChannel("someChain")
+	chain1 := client.Channel("someChain")
 	if chain1.Name() != "someChain" {
 		t.Fatalf("client.NewChain create wrong chain")
 	}
@@ -113,13 +113,13 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
 	client.SetStateStore(stateStore)
-	client.GetStateStore().SetValue("testvalue", []byte("data"))
-	value, err := client.GetStateStore().Value("testvalue")
+	client.StateStore().SetValue("testvalue", []byte("data"))
+	value, err := client.StateStore().Value("testvalue")
 	if err != nil {
-		t.Fatalf("client.GetStateStore().GetValue() return error[%s]", err)
+		t.Fatalf("client.StateStore().GetValue() return error[%s]", err)
 	}
 	if string(value) != "data" {
-		t.Fatalf("client.GetStateStore().GetValue() didn't return the right value")
+		t.Fatalf("client.StateStore().GetValue() didn't return the right value")
 	}
 
 }

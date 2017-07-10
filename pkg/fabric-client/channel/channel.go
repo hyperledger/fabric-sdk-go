@@ -34,8 +34,8 @@ type Channel struct {
 
 // ClientContext ...
 type ClientContext interface {
-	GetUserContext() fab.User
-	GetCryptoSuite() bccsp.BCCSP
+	UserContext() fab.User
+	CryptoSuite() bccsp.BCCSP
 	NewTxnID() (apitxn.TransactionID, error)
 	// TODO: ClientContext.IsSecurityEnabled()
 }
@@ -53,7 +53,7 @@ func NewChannel(name string, client fab.FabricClient) (*Channel, error) {
 	}
 	p := make(map[string]fab.Peer)
 	o := make(map[string]fab.Orderer)
-	c := Channel{name: name, securityEnabled: client.GetConfig().IsSecurityEnabled(), peers: p,
+	c := Channel{name: name, securityEnabled: client.Config().IsSecurityEnabled(), peers: p,
 		orderers: o, clientContext: client, mspManager: msp.NewMSPManager()}
 	logger.Infof("Constructed channel instance: %v", c)
 
