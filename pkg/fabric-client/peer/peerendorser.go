@@ -44,7 +44,8 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 	}
 
 	if config.IsTLSEnabled() {
-		if len(certificate) == 0 {
+		certPool, _ := config.TLSCACertPool("")
+		if len(certificate) == 0 && len(certPool.Subjects()) == 0 {
 			return peerEndorser{}, fmt.Errorf("Certificate is required")
 		}
 

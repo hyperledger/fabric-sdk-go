@@ -259,6 +259,16 @@ func (_mr *MockConfigMockRecorder) SecurityLevel() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityLevel")
 }
 
+// SetTLSCACertPool mocks base method
+func (_m *MockConfig) SetTLSCACertPool(_param0 *x509.CertPool) {
+	_m.ctrl.Call(_m, "SetTLSCACertPool", _param0)
+}
+
+// SetTLSCACertPool indicates an expected call of SetTLSCACertPool
+func (_mr *MockConfigMockRecorder) SetTLSCACertPool(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetTLSCACertPool", arg0)
+}
+
 // TLSCACertPool mocks base method
 func (_m *MockConfig) TLSCACertPool(_param0 string) (*x509.CertPool, error) {
 	ret := _m.ctrl.Call(_m, "TLSCACertPool", _param0)
@@ -270,19 +280,6 @@ func (_m *MockConfig) TLSCACertPool(_param0 string) (*x509.CertPool, error) {
 // TLSCACertPool indicates an expected call of TLSCACertPool
 func (_mr *MockConfigMockRecorder) TLSCACertPool(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TLSCACertPool", arg0)
-}
-
-// TLSCACertPoolFromRoots mocks base method
-func (_m *MockConfig) TLSCACertPoolFromRoots(_param0 [][]byte) (*x509.CertPool, error) {
-	ret := _m.ctrl.Call(_m, "TLSCACertPoolFromRoots", _param0)
-	ret0, _ := ret[0].(*x509.CertPool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// TLSCACertPoolFromRoots indicates an expected call of TLSCACertPoolFromRoots
-func (_mr *MockConfigMockRecorder) TLSCACertPoolFromRoots(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "TLSCACertPoolFromRoots", arg0)
 }
 
 // TcertBatchSize mocks base method

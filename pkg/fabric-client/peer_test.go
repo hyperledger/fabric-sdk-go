@@ -128,7 +128,7 @@ func TestPeerViaChannelNilData(t *testing.T) {
 	if err == nil {
 		t.Fatalf("SendTransaction didn't return error")
 	}
-	if err.Error() != "Required parameters are empty" {
+	if err.Error() != "Required parameters are empty: Missing chaincode name" {
 		t.Fatalf("SendTransactionProposal didn't return right error: %v", err)
 	}
 }

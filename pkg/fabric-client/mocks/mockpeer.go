@@ -56,6 +56,15 @@ func (p *MockPeer) SetName(name string) {
 	p.MockName = name
 }
 
+// MSPID gets the Peer mspID.
+func (p *MockPeer) MSPID() string {
+	return ""
+}
+
+// SetMSPID sets the Peer mspID.
+func (p *MockPeer) SetMSPID(mspID string) {
+}
+
 // Roles returns the mock peer's mock roles
 func (p *MockPeer) Roles() []string {
 	return p.MockRoles

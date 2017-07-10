@@ -25,8 +25,8 @@ type Config interface {
 	PeersConfig(org string) ([]PeerConfig, error)
 	NetworkConfig() (*NetworkConfig, error)
 	IsTLSEnabled() bool
+	SetTLSCACertPool(*x509.CertPool)
 	TLSCACertPool(tlsCertificate string) (*x509.CertPool, error)
-	TLSCACertPoolFromRoots(ordererRootCAs [][]byte) (*x509.CertPool, error)
 	IsSecurityEnabled() bool
 	TcertBatchSize() int
 	SecurityAlgorithm() string

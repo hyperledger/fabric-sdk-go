@@ -227,32 +227,6 @@ func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.
 	return addr
 }
 
-func TestCreateNewOrdererWithRootCAs(t *testing.T) {
-
-	rootCA := [][]byte{
-		[]byte(validRootCA),
-	}
-
-	//Without TLS
-	ordr, err := CreateNewOrdererWithRootCAs("", rootCA, "", mocks.NewMockConfig())
-	if ordr == nil || err != nil {
-		t.Fatalf("TestCreateNewOrdererWithRootCAs Failed, cause : [ %s ]", err)
-	}
-
-	//With TLS
-	ordr, err = CreateNewOrdererWithRootCAs("", rootCA, "", mocks.NewMockConfigCustomized(true, false))
-	if ordr == nil || err != nil {
-		t.Fatalf("TestCreateNewOrdererWithRootCAs Failed, cause : [ %s ]", err)
-	}
-
-	//With TLS, With invalid rootCA
-	ordr, err = CreateNewOrdererWithRootCAs("", [][]byte{}, "", mocks.NewMockConfigCustomized(true, true))
-	if ordr != nil || err == nil {
-		t.Fatal("TestCreateNewOrdererWithRootCAs Failed, was expecting error")
-	}
-
-}
-
 func TestNewOrdererWithTLS(t *testing.T) {
 
 	//Positive Test case

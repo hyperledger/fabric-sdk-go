@@ -34,6 +34,7 @@ const cmdRoot = "fabric_sdk"
 
 // Config represents the configuration for the client
 type Config struct {
+	tlsCertPool         *x509.CertPool
 	networkConfig       *apiconfig.NetworkConfig
 	networkConfigCached bool
 }
@@ -80,7 +81,7 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 	}
 	logging.SetBackend(backendFormatter).SetLevel(logging.Level(logLevel), "fabric_sdk_go")
 
-	return &Config{}, nil
+	return &Config{tlsCertPool: x509.NewCertPool()}, nil
 }
 
 // CAConfig returns the CA configuration.
@@ -148,7 +149,7 @@ func (c *Config) MspID(org string) (string, error) {
 
 // FabricClientViper returns the internal viper instance used by the
 // SDK to read configuration options
-func (c *Config) FabricClientViper() *viper.Viper {
+func FabricClientViper() *viper.Viper {
 	return myViper
 }
 
@@ -262,10 +263,18 @@ func (c *Config) IsTLSEnabled() bool {
 	return myViper.GetBool("client.tls.enabled")
 }
 
-// TLSCACertPool ...
-// TODO: Should be related to configuration.
+// SetTLSCACertPool allows a user to set a global cert pool with a set of
+// root TLS CAs that will be used for all outgoing connections
+func (c *Config) SetTLSCACertPool(certPool *x509.CertPool) {
+	if certPool == nil {
+		certPool = x509.NewCertPool()
+	}
+	c.tlsCertPool = certPool
+}
+
+// TLSCACertPool returns the configured cert pool. If a tlsCertificate path
+// is provided, the certficate is added to the pool
 func (c *Config) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
-	certPool := x509.NewCertPool()
 	if tlsCertificate != "" {
 		rawData, err := ioutil.ReadFile(tlsCertificate)
 		if err != nil {
@@ -277,26 +286,10 @@ func (c *Config) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 			return nil, err
 		}
 
-		certPool.AddCert(cert)
+		c.tlsCertPool.AddCert(cert)
 	}
 
-	return certPool, nil
-}
-
-// TLSCACertPoolFromRoots ...
-func (c *Config) TLSCACertPoolFromRoots(ordererRootCAs [][]byte) (*x509.CertPool, error) {
-	certPool := x509.NewCertPool()
-
-	for _, root := range ordererRootCAs {
-		cert, err := loadCAKey(root)
-		if err != nil {
-			return nil, err
-		}
-
-		certPool.AddCert(cert)
-	}
-
-	return certPool, nil
+	return c.tlsCertPool, nil
 }
 
 // IsSecurityEnabled ...

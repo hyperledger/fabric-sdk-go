@@ -28,6 +28,7 @@ const (
 type Peer struct {
 	processor             apitxn.ProposalProcessor
 	name                  string
+	mspID                 string
 	roles                 []string
 	enrollmentCertificate *pem.Block
 	url                   string
@@ -71,6 +72,16 @@ func (p *Peer) Name() string {
 // SetName sets the Peer name / id.
 func (p *Peer) SetName(name string) {
 	p.name = name
+}
+
+// MSPID gets the Peer mspID.
+func (p *Peer) MSPID() string {
+	return p.mspID
+}
+
+// SetMSPID sets the Peer mspID.
+func (p *Peer) SetMSPID(mspID string) {
+	p.mspID = mspID
 }
 
 // Roles gets the user’s roles the Peer participates in. It’s an array of possible values

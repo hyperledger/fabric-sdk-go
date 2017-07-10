@@ -48,6 +48,7 @@ func TestNewPeerTLSFromCert(t *testing.T) {
 	certPool := x509.NewCertPool()
 	config.EXPECT().IsTLSEnabled().Return(true)
 	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
+	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
 
 	url := "0.0.0.0:1234"
 	// TODO - test actual parameters and test server name override
@@ -78,6 +79,7 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	config.EXPECT().IsTLSEnabled().Return(true)
+	config.EXPECT().TLSCACertPool("").Return(x509.NewCertPool(), nil)
 
 	url := "0.0.0.0:1234"
 	_, err := NewPeerTLSFromCert(url, "", "", config)
@@ -164,6 +166,24 @@ func TestNames(t *testing.T) {
 
 	if peer.Name() != peerName {
 		t.Fatalf("Unexpected peer name")
+	}
+}
+
+func TestMSPIDs(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config.EXPECT().IsTLSEnabled().Return(false)
+
+	peer, err := NewPeer(peer1URL, config)
+	if err != nil {
+		t.Fatalf("Failed to create NewPeer error(%v)", err)
+	}
+	testMSP := "orgN"
+	peer.SetMSPID(testMSP)
+
+	if peer.MSPID() != testMSP {
+		t.Fatalf("Unexpected peer msp id")
 	}
 }
 

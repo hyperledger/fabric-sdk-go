@@ -29,8 +29,7 @@ func TestCreateTransactionProposal(t *testing.T) {
 		ChaincodeID: "qscc",
 	}
 
-	tProposal, err := newTransactionProposal("", request, channel.ClientContext())
-
+	tProposal, err := newTransactionProposal(channel.Name(), request, channel.clientContext)
 	if err != nil {
 		t.Fatal("Create Transaction Proposal Failed", err)
 	}

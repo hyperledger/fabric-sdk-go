@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
-	"crypto/x509"
 	"fmt"
 	"time"
 
@@ -30,31 +29,21 @@ type Orderer struct {
 	grpcDialOption []grpc.DialOption
 }
 
-// CreateNewOrdererWithRootCAs Returns a new Orderer instance using the passed in orderer root CAs
-func CreateNewOrdererWithRootCAs(url string, ordererRootCAs [][]byte, serverHostOverride string, config config.Config) (*Orderer, error) {
+// NewOrderer Returns a Orderer instance
+func NewOrderer(url string, certificate string, serverHostOverride string, config config.Config) (*Orderer, error) {
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithTimeout(time.Second*3))
 	if config.IsTLSEnabled() {
-		tlsCaCertPool, err := config.TLSCACertPoolFromRoots(ordererRootCAs)
+		tlsCaCertPool, err := config.TLSCACertPool(certificate)
 		if err != nil {
 			return nil, err
 		}
-		return createNewOrdererWithCertPool(url, tlsCaCertPool, serverHostOverride), nil
+		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else {
+		opts = append(opts, grpc.WithInsecure())
 	}
-	return createNewOrdererWithoutTLS(url), nil
-}
-
-func createNewOrdererWithoutTLS(url string) *Orderer {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(time.Second*3))
-	opts = append(opts, grpc.WithInsecure())
-	return &Orderer{url: url, grpcDialOption: opts}
-}
-
-func createNewOrdererWithCertPool(url string, tlsCaCertPool *x509.CertPool, serverHostOverride string) *Orderer {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(time.Second*3))
-	creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
-	opts = append(opts, grpc.WithTransportCredentials(creds))
-	return &Orderer{url: url, grpcDialOption: opts}
+	return &Orderer{url: url, grpcDialOption: opts}, nil
 }
 
 // URL Get the Orderer url. Required property for the instance objects.
@@ -181,21 +170,4 @@ func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
 	}()
 
 	return responses, errors
-}
-
-// NewOrderer Returns a Orderer instance
-func NewOrderer(url string, certificate string, serverHostOverride string, config config.Config) (*Orderer, error) {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(time.Second*3))
-	if config.IsTLSEnabled() {
-		tlsCaCertPool, err := config.TLSCACertPool(certificate)
-		if err != nil {
-			return nil, err
-		}
-		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-	}
-	return &Orderer{url: url, grpcDialOption: opts}, nil
 }

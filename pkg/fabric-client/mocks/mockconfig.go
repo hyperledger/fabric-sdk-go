@@ -77,12 +77,8 @@ func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error
 	return nil, nil
 }
 
-// TLSCACertPoolFromRoots ...
-func (c *MockConfig) TLSCACertPoolFromRoots(ordererRootCAs [][]byte) (*x509.CertPool, error) {
-	if c.errorCase {
-		return nil, fmt.Errorf("just to test error scenario")
-	}
-	return nil, nil
+// SetTLSCACertPool ...
+func (c *MockConfig) SetTLSCACertPool(pool *x509.CertPool) {
 }
 
 // IsSecurityEnabled ...

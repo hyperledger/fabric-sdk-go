@@ -200,25 +200,6 @@ func TestTLSACAConfig(t *testing.T) {
 	if err == nil {
 		t.Fatalf("TLS CA cert pool was supposed to fail when provided with wrong cert file")
 	}
-
-	//Test TLSCA Cert Pool from roots(Negative test case)
-	samplebytes := [][]byte{
-		[]byte(validRootCA),
-	}
-	_, err = configImpl.TLSCACertPoolFromRoots(samplebytes)
-	if err != nil {
-		t.Fatalf("TLS CA cert pool fetch failed, reason %v", err)
-	}
-
-	//Test TLSCA Cert Pool from roots(Negative test case)
-	samplebytes = [][]byte{
-		[]byte("sample invalid string"),
-	}
-	_, err = configImpl.TLSCACertPoolFromRoots(samplebytes)
-	if err == nil {
-		t.Fatalf("TLS CA cert pool was supposed to fail")
-	}
-
 }
 
 func TestOrdererConfig(t *testing.T) {

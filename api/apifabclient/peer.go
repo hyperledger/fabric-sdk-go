@@ -41,6 +41,10 @@ type Peer interface {
 	// Peer Properties
 	Name() string
 	SetName(name string)
+	// MSPID gets the Peer mspID.
+	MSPID() string
+	// SetMSPID sets the Peer mspID.
+	SetMSPID(mspID string)
 	Roles() []string
 	SetRoles(roles []string)
 	URL() string

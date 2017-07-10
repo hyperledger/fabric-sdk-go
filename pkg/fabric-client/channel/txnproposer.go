@@ -38,7 +38,7 @@ func (c *Channel) SendTransactionProposal(request apitxn.ChaincodeInvokeRequest)
 // TODO: return the entire request or just the txn ID?
 func sendTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext ClientContext) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 	if err := validateChaincodeInvokeRequest(request); err != nil {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Required parameters are empty")
+		return nil, apitxn.TransactionID{}, fmt.Errorf("Required parameters are empty: %s", err)
 	}
 
 	request, err := chaincodeInvokeRequestAddTxnID(request, clientContext)
