@@ -232,14 +232,14 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 		return nil, fmt.Errorf("NewChannel return error: %v", err)
 	}
 
-	ordererConfig, err := client.GetConfig().RandomOrdererConfig()
+	ordererConfig, err := client.Config().RandomOrdererConfig()
 	if err != nil {
-		return nil, fmt.Errorf("GetRandomOrdererConfig() return error: %s", err)
+		return nil, fmt.Errorf("RandomOrdererConfig() return error: %s", err)
 	}
 
 	orderer, err := orderer.NewOrderer(fmt.Sprintf("%s:%d", ordererConfig.Host,
 		ordererConfig.Port), ordererConfig.TLS.Certificate,
-		ordererConfig.TLS.ServerHostOverride, client.GetConfig())
+		ordererConfig.TLS.ServerHostOverride, client.Config())
 	if err != nil {
 		return nil, fmt.Errorf("NewOrderer return error: %v", err)
 	}
@@ -249,13 +249,13 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 	}
 
 	for _, org := range orgs {
-		peerConfig, err := client.GetConfig().PeersConfig(org)
+		peerConfig, err := client.Config().PeersConfig(org)
 		if err != nil {
 			return nil, fmt.Errorf("Error reading peer config: %v", err)
 		}
 		for _, p := range peerConfig {
 			endorser, err := deffab.NewPeer(fmt.Sprintf("%s:%d", p.Host, p.Port),
-				p.TLS.Certificate, p.TLS.ServerHostOverride, client.GetConfig())
+				p.TLS.Certificate, p.TLS.ServerHostOverride, client.Config())
 			if err != nil {
 				return nil, fmt.Errorf("NewPeer return error: %v", err)
 			}
@@ -346,7 +346,7 @@ func (setup *BaseSetupImpl) getEventHub(client fab.FabricClient) (fab.EventHub, 
 		return nil, fmt.Errorf("Error creating new event hub: %v", err)
 	}
 	foundEventHub := false
-	peerConfig, err := client.GetConfig().PeersConfig(setup.OrgID)
+	peerConfig, err := client.Config().PeersConfig(setup.OrgID)
 	if err != nil {
 		return nil, fmt.Errorf("Error reading peer config: %v", err)
 	}

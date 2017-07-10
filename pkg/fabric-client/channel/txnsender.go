@@ -188,14 +188,14 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion},
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
-	if c.clientContext.GetUserContext() == nil {
+	if c.clientContext.UserContext() == nil {
 		return nil, apitxn.TransactionID{}, fmt.Errorf("User context needs to be set")
 	}
-	creator, err := c.clientContext.GetUserContext().Identity()
+	creator, err := c.clientContext.UserContext().Identity()
 	if err != nil {
 		return nil, apitxn.TransactionID{}, fmt.Errorf("Error getting creator: %v", err)
 	}
-	chaincodePolicy, err := buildChaincodePolicy(c.clientContext.GetUserContext().MspID())
+	chaincodePolicy, err := buildChaincodePolicy(c.clientContext.UserContext().MspID())
 	if err != nil {
 		return nil, apitxn.TransactionID{}, err
 	}
@@ -228,13 +228,13 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 // SignPayload ... TODO.
 func (c *Channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
 	//Get user info
-	user := c.clientContext.GetUserContext()
+	user := c.clientContext.UserContext()
 	if user == nil {
 		return nil, fmt.Errorf("User is nil")
 	}
 
 	signature, err := fc.SignObjectWithKey(payload, user.PrivateKey(),
-		&bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
+		&bccsp.SHAOpts{}, nil, c.clientContext.CryptoSuite())
 	if err != nil {
 		return nil, err
 	}

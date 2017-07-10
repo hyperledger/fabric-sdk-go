@@ -90,7 +90,7 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 		return fmt.Errorf("Error marshaling message: %s", err)
 	}
 	signature, err := fc.SignObjectWithKey(payload, user.PrivateKey(),
-		&bccsp.SHAOpts{}, nil, ec.client.GetCryptoSuite())
+		&bccsp.SHAOpts{}, nil, ec.client.CryptoSuite())
 	if err != nil {
 		return fmt.Errorf("Error signing message: %s", err)
 	}
@@ -101,10 +101,10 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 
 // RegisterAsync - registers interest in a event and doesn't wait for a response
 func (ec *eventsClient) RegisterAsync(ies []*ehpb.Interest) error {
-	if ec.client.GetUserContext() == nil {
+	if ec.client.UserContext() == nil {
 		return fmt.Errorf("User context needs to be set")
 	}
-	creator, err := ec.client.GetUserContext().Identity()
+	creator, err := ec.client.UserContext().Identity()
 	if err != nil {
 		return fmt.Errorf("Error getting creator: %v", err)
 	}
@@ -237,7 +237,7 @@ func (ec *eventsClient) processEvents() error {
 
 //Start establishes connection with Event hub and registers interested events with it
 func (ec *eventsClient) Start() error {
-	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress, ec.TLSCertificate, ec.TLSServerHostOverride, ec.client.GetConfig())
+	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress, ec.TLSCertificate, ec.TLSServerHostOverride, ec.client.Config())
 	if err != nil {
 		return fmt.Errorf("Could not create client conn to %s (%v)", ec.peerAddress, err)
 	}

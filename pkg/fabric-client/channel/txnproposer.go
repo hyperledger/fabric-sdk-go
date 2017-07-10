@@ -113,10 +113,10 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
 	// create a proposal from a ChaincodeInvocationSpec
-	if clientContext.GetUserContext() == nil {
+	if clientContext.UserContext() == nil {
 		return nil, fmt.Errorf("User context needs to be set")
 	}
-	creator, err := clientContext.GetUserContext().Identity()
+	creator, err := clientContext.UserContext().Identity()
 	if err != nil {
 		return nil, fmt.Errorf("Error getting creator: %v", err)
 	}
@@ -132,13 +132,13 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 		return nil, fmt.Errorf("Error marshalling proposal: %v", err)
 	}
 
-	user := clientContext.GetUserContext()
+	user := clientContext.UserContext()
 	if user == nil {
 		return nil, fmt.Errorf("Error getting user context: %s", err)
 	}
 
 	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(),
-		&bccsp.SHAOpts{}, nil, clientContext.GetCryptoSuite())
+		&bccsp.SHAOpts{}, nil, clientContext.CryptoSuite())
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (c *Channel) ProposalBytes(tp *apitxn.TransactionProposal) ([]byte, error) 
 }
 
 func (c *Channel) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error) {
-	user := c.clientContext.GetUserContext()
+	user := c.clientContext.UserContext()
 	if user == nil {
 		return nil, fmt.Errorf("User is nil")
 	}
@@ -185,7 +185,7 @@ func (c *Channel) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error
 		return nil, fmt.Errorf("Error mashalling proposal: %s", err)
 	}
 
-	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
+	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.clientContext.CryptoSuite())
 	if err != nil {
 		return nil, fmt.Errorf("Error signing proposal: %s", err)
 	}
@@ -232,10 +232,10 @@ func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
 		return fmt.Errorf("JoinChannel - error: Missing block input parameter with the required genesis block")
 	}
 
-	if c.clientContext.GetUserContext() == nil {
+	if c.clientContext.UserContext() == nil {
 		return fmt.Errorf("User context needs to be set")
 	}
-	creator, err := c.clientContext.GetUserContext().Identity()
+	creator, err := c.clientContext.UserContext().Identity()
 	if err != nil {
 		return fmt.Errorf("Error getting creator ID: %v", err)
 	}

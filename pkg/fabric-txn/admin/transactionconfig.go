@@ -82,7 +82,7 @@ func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
 func CreateOrUpdateChannel(client fab.FabricClient, ordererUser ca.User, orgUser ca.User, channel fab.Channel, channelConfig string) error {
 	logger.Debugf("***** Creating or updating channel: %s *****\n", channel.Name())
 
-	currentUser := client.GetUserContext()
+	currentUser := client.UserContext()
 	defer client.SetUserContext(currentUser)
 
 	client.SetUserContext(orgUser)
@@ -123,7 +123,7 @@ func CreateOrUpdateChannel(client fab.FabricClient, ordererUser ca.User, orgUser
 
 // JoinChannel joins a channel that has already been created
 func JoinChannel(client fab.FabricClient, orgUser ca.User, channel fab.Channel) error {
-	currentUser := client.GetUserContext()
+	currentUser := client.UserContext()
 	defer client.SetUserContext(currentUser)
 
 	client.SetUserContext(orgUser)

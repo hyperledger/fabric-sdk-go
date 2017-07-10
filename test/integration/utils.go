@@ -59,22 +59,22 @@ func randomString(strlen int) string {
 
 // GetDefaultImplPreEnrolledUser ...
 func getDefaultImplPreEnrolledUser(client fab.FabricClient, keyDir string, certDir string, username string, orgName string) (ca.User, error) {
-	privateKeyDir := filepath.Join(client.GetConfig().CryptoConfigPath(), keyDir)
+	privateKeyDir := filepath.Join(client.Config().CryptoConfigPath(), keyDir)
 	privateKeyPath, err := getFirstPathFromDir(privateKeyDir)
 	if err != nil {
 		return nil, fmt.Errorf("Error finding the private key path: %v", err)
 	}
 
-	enrollmentCertDir := filepath.Join(client.GetConfig().CryptoConfigPath(), certDir)
+	enrollmentCertDir := filepath.Join(client.Config().CryptoConfigPath(), certDir)
 	enrollmentCertPath, err := getFirstPathFromDir(enrollmentCertDir)
 	if err != nil {
 		return nil, fmt.Errorf("Error finding the enrollment cert path: %v", err)
 	}
-	mspID, err := client.GetConfig().MspID(orgName)
+	mspID, err := client.Config().MspID(orgName)
 	if err != nil {
 		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
 	}
-	return deffab.NewPreEnrolledUser(client.GetConfig(), privateKeyPath, enrollmentCertPath, username, mspID, client.GetCryptoSuite())
+	return deffab.NewPreEnrolledUser(client.Config(), privateKeyPath, enrollmentCertPath, username, mspID, client.CryptoSuite())
 }
 
 // Gets the first path from the dir directory
@@ -113,7 +113,7 @@ func HasPrimaryPeerJoinedChannel(client fab.FabricClient, orgUser ca.User, chann
 	foundChannel := false
 	primaryPeer := channel.PrimaryPeer()
 
-	currentUser := client.GetUserContext()
+	currentUser := client.UserContext()
 	defer client.SetUserContext(currentUser)
 
 	client.SetUserContext(orgUser)

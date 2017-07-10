@@ -60,12 +60,12 @@ func NewClientWithUser(name string, pwd string, orgName string,
 		return nil, fmt.Errorf("CreateNewFileKeyValueStore returned error[%s]", err)
 	}
 	client.SetStateStore(stateStore)
-	mspID, err := client.GetConfig().MspID(orgName)
+	mspID, err := client.Config().MspID(orgName)
 	if err != nil {
 		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
 	}
 
-	user, err := NewUser(client.GetConfig(), msp, name, pwd, mspID)
+	user, err := NewUser(client.Config(), msp, name, pwd, mspID)
 	if err != nil {
 		return nil, fmt.Errorf("NewUser returned error: %v", err)
 	}
@@ -97,11 +97,11 @@ func NewClientWithPreEnrolledUser(config config.Config, stateStorePath string,
 		}
 		client.SetStateStore(stateStore)
 	}
-	mspID, err := client.GetConfig().MspID(orgName)
+	mspID, err := client.Config().MspID(orgName)
 	if err != nil {
 		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
 	}
-	user, err := NewPreEnrolledUser(client.GetConfig(), keyDir, certDir, username, mspID, client.GetCryptoSuite())
+	user, err := NewPreEnrolledUser(client.Config(), keyDir, certDir, username, mspID, client.CryptoSuite())
 	if err != nil {
 		return nil, fmt.Errorf("NewPreEnrolledUser returned error: %v", err)
 	}
