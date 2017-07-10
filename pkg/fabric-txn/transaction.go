@@ -38,25 +38,25 @@ func QueryChaincode(client fab.FabricClient, channel fab.Channel, chaincodeID st
 
 // InvokeChaincode ...
 func InvokeChaincode(client fab.FabricClient, channel fab.Channel, targets []apitxn.ProposalProcessor,
-	eventHub fab.EventHub, chaincodeID string, fcn string, args []string, transientData map[string][]byte) error {
+	eventHub fab.EventHub, chaincodeID string, fcn string, args []string, transientData map[string][]byte) (apitxn.TransactionID, error) {
 
 	err := checkCommonArgs(client, channel, chaincodeID)
 	if err != nil {
-		return err
+		return apitxn.TransactionID{}, err
 	}
 
 	if eventHub == nil {
-		return fmt.Errorf("Eventhub is nil")
+		return apitxn.TransactionID{}, fmt.Errorf("Eventhub is nil")
 	}
 
 	if targets == nil || len(targets) == 0 {
-		return fmt.Errorf("No target peers")
+		return apitxn.TransactionID{}, fmt.Errorf("No target peers")
 	}
 
 	if eventHub.IsConnected() == false {
 		err = eventHub.Connect()
 		if err != nil {
-			return fmt.Errorf("Error connecting to eventhub: %v", err)
+			return apitxn.TransactionID{}, fmt.Errorf("Error connecting to eventhub: %v", err)
 		}
 		defer eventHub.Disconnect()
 	}
@@ -65,25 +65,25 @@ func InvokeChaincode(client fab.FabricClient, channel fab.Channel, targets []api
 		chaincodeID, fcn, args, targets, transientData)
 
 	if err != nil {
-		return fmt.Errorf("CreateAndSendTransactionProposal returned error: %v", err)
+		return apitxn.TransactionID{}, fmt.Errorf("CreateAndSendTransactionProposal returned error: %v", err)
 	}
 
 	done, fail := internal.RegisterTxEvent(txID, eventHub)
 
 	_, err = internal.CreateAndSendTransaction(channel, transactionProposalResponses)
 	if err != nil {
-		return fmt.Errorf("CreateAndSendTransaction returned error: %v", err)
+		return txID, fmt.Errorf("CreateAndSendTransaction returned error: %v", err)
 	}
 
 	select {
 	case <-done:
 	case err := <-fail:
-		return fmt.Errorf("invoke Error received from eventhub for txid(%s), error(%v)", txID, err)
+		return txID, fmt.Errorf("invoke Error received from eventhub for txid(%s), error(%v)", txID, err)
 	case <-time.After(time.Second * 30):
-		return fmt.Errorf("invoke Didn't receive block event for txid(%s)", txID)
+		return txID, fmt.Errorf("invoke Didn't receive block event for txid(%s)", txID)
 	}
 
-	return nil
+	return txID, nil
 }
 
 // checkCommonArgs ...

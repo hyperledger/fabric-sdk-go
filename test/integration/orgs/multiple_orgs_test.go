@@ -43,7 +43,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	// Change value on org2 peer
 	orgTestClient.SetUserContext(org2User)
 	orgTestChannel.SetPrimaryPeer(orgTestPeer1)
-	err = fabrictxn.InvokeChaincode(orgTestClient, orgTestChannel, []apitxn.ProposalProcessor{orgTestPeer1},
+	_, err = fabrictxn.InvokeChaincode(orgTestClient, orgTestChannel, []apitxn.ProposalProcessor{orgTestPeer1},
 		peer0EventHub, "exampleCC", fcn, generateInvokeArgs(), nil)
 	failTestIfError(err, t)
 

@@ -275,10 +275,10 @@ func (c *Channel) sendBroadcast(envelope *fab.SignedEnvelope, orderer fab.Ordere
 		logger.Debugf("Receive Error Response from orderer :%v\n", err)
 		return &apitxn.TransactionResponse{Orderer: orderer.URL(),
 			Err: fmt.Errorf("Error calling orderer '%s':  %s", orderer.URL(), err)}
-	} else {
-		logger.Debugf("Receive Success Response from orderer\n")
-		return &apitxn.TransactionResponse{Orderer: orderer.URL(), Err: nil}
 	}
+
+	logger.Debugf("Receive Success Response from orderer\n")
+	return &apitxn.TransactionResponse{Orderer: orderer.URL(), Err: nil}
 }
 
 // SendEnvelope sends the given envelope to each orderer and returns a block response
