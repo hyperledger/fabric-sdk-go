@@ -9,11 +9,20 @@
 # depend: installs test dependencies
 # unit-test: runs all the unit tests
 # integration-test: runs all the integration tests
-# race-test: runs tests with race detector 
+# race-test: runs tests with race detector
 # checks: runs all check conditions (license, spelling, linting)
 # clean: stops docker conatainers used for integration testing
 # mock-gen: generate mocks needed for testing (using mockgen)
 #
+#
+# Instructions to generate .tx files used for creating channels:
+# Download the configtxgen binary for your OS from (it is located in the .tar.gz file):
+# https://nexus.hyperledger.org/content/repositories/releases/org/hyperledger/fabric/hyperledger-fabric
+# Sample command: $ path/to/configtxgen -profile TwoOrgsChannel -outputCreateChannelTx testchannel.tx -channelID testchannel
+# More Docs: http://hyperledger-fabric.readthedocs.io/en/latest/configtxgen.html
+#
+
+
 
 export ARCH=$(shell uname -m)
 export LDFLAGS=-ldflags=-s

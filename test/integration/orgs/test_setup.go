@@ -91,7 +91,7 @@ func createTestChannel(t *testing.T) {
 	}
 
 	err = admin.CreateOrUpdateChannel(orgTestClient, ordererAdminUser, org1AdminUser,
-		orgTestChannel, "../../fixtures/channel/mychannel.tx")
+		orgTestChannel, "../../fixtures/channel/orgchannel.tx")
 	failTestIfError(err, t)
 	// Allow orderer to process channel creation
 	time.Sleep(time.Millisecond * 500)

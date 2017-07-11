@@ -25,6 +25,7 @@ import (
 	"github.com/cloudflare/cfssl/log"
 	"github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-ca/lib/spi"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/kisielk/sqlstruct"
@@ -70,7 +71,7 @@ SELECT name, prekey FROM affiliations
 // UserRecord defines the properties of a user
 type UserRecord struct {
 	Name           string `db:"id"`
-	Pass           string `db:"token"`
+	Pass           []byte `db:"token"`
 	Type           string `db:"type"`
 	Affiliation    string `db:"affiliation"`
 	Attributes     string `db:"attributes"`
@@ -114,9 +115,17 @@ func (d *Accessor) InsertUser(user spi.UserInfo) error {
 		return err
 	}
 
+	// Hash the password before storing it
+	pwd := []byte(user.Pass)
+	pwd, err = bcrypt.GenerateFromPassword(pwd, bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("Failed to hash password: %s", err)
+	}
+
+	// Store the user record in the DB
 	res, err := d.db.NamedExec(insertUser, &UserRecord{
 		Name:           user.Name,
-		Pass:           user.Pass,
+		Pass:           pwd,
 		Type:           user.Type,
 		Affiliation:    user.Affiliation,
 		Attributes:     string(attrBytes),
@@ -142,7 +151,7 @@ func (d *Accessor) InsertUser(user spi.UserInfo) error {
 		return fmt.Errorf("Expected to add one record to the database, but %d records were added", numRowsAffected)
 	}
 
-	log.Debugf("Successfully added Identity %s to the database", user.Name)
+	log.Debugf("Successfully added identity %s to the database", user.Name)
 
 	return nil
 
@@ -177,9 +186,17 @@ func (d *Accessor) UpdateUser(user spi.UserInfo) error {
 		return err
 	}
 
+	// Hash the password before storing it
+	pwd := []byte(user.Pass)
+	pwd, err = bcrypt.GenerateFromPassword(pwd, bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("Failed to hash password: %s", err)
+	}
+
+	// Store the updated user entry
 	res, err := d.db.NamedExec(updateUser, &UserRecord{
 		Name:           user.Name,
-		Pass:           user.Pass,
+		Pass:           pwd,
 		Type:           user.Type,
 		Affiliation:    user.Affiliation,
 		Attributes:     string(attributes),
@@ -245,7 +262,6 @@ func (d *Accessor) GetUserInfo(id string) (spi.UserInfo, error) {
 	json.Unmarshal([]byte(userRec.Attributes), &attributes)
 
 	userInfo.Name = userRec.Name
-	userInfo.Pass = userRec.Pass
 	userInfo.Type = userRec.Type
 	userInfo.Affiliation = userRec.Affiliation
 	userInfo.State = userRec.State
@@ -308,7 +324,7 @@ func (d *Accessor) GetAffiliation(name string) (spi.Affiliation, error) {
 func (d *Accessor) newDBUser(userRec *UserRecord) *DBUser {
 	var user = new(DBUser)
 	user.Name = userRec.Name
-	user.Pass = userRec.Pass
+	user.pass = userRec.Pass
 	user.State = userRec.State
 	user.MaxEnrollments = userRec.MaxEnrollments
 	user.Affiliation = userRec.Affiliation
@@ -330,6 +346,7 @@ func (d *Accessor) newDBUser(userRec *UserRecord) *DBUser {
 // DBUser is the databases representation of a user
 type DBUser struct {
 	spi.UserInfo
+	pass  []byte
 	attrs map[string]string
 	db    *sqlx.DB
 }
@@ -346,9 +363,10 @@ func (u *DBUser) Login(pass string, caMaxEnrollments int) error {
 
 	log.Debugf("DB: Login user %s with max enrollments of %d and state of %d", u.Name, u.MaxEnrollments, u.State)
 
-	// Check the password
-	if u.Pass != pass {
-		return errors.New("Incorrect password")
+	// Check the password by comparing to stored hash
+	err := bcrypt.CompareHashAndPassword(u.pass, []byte(pass))
+	if err != nil {
+		return fmt.Errorf("Password mismatch: %s", err)
 	}
 
 	if u.MaxEnrollments == 0 {
