@@ -8,11 +8,17 @@ package orgs
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	fabrictxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
+)
+
+const (
+	pollRetries = 5
 )
 
 // TestOrgsEndToEnd creates a channel with two organisations, installs chaincode
@@ -48,18 +54,35 @@ func TestOrgsEndToEnd(t *testing.T) {
 	failTestIfError(err, t)
 
 	// Assert changed value on org1 peer
+	var finalValue int
+	for i := 0; i < pollRetries; i++ {
+		finalValue = queryOrg1Peer(t)
+		// If value has not propogated sleep with exponential backoff
+		if initialValue+1 != finalValue {
+			backoffFactor := math.Pow(2, float64(i))
+			time.Sleep(time.Millisecond * 50 * time.Duration(backoffFactor))
+		} else {
+			break
+		}
+	}
+	if initialValue+1 != finalValue {
+		t.Fatalf("Org1 invoke result was not propagated to org2. Expected %d, got: %d",
+			(initialValue + 1), finalValue)
+	}
+}
+
+func queryOrg1Peer(t *testing.T) int {
+	fcn := "invoke"
+
 	orgTestClient.SetUserContext(org1User)
 	orgTestChannel.SetPrimaryPeer(orgTestPeer0)
-	result, err = fabrictxn.QueryChaincode(orgTestClient, orgTestChannel,
+	result, err := fabrictxn.QueryChaincode(orgTestClient, orgTestChannel,
 		"exampleCC", fcn, generateQueryArgs())
 	failTestIfError(err, t)
 	finalValue, err := strconv.Atoi(result)
 	failTestIfError(err, t)
 
-	if initialValue+1 != finalValue {
-		t.Fatalf("Org1 invoke result was not propagated to org2. Expected %d, got: %d",
-			(initialValue + 1), finalValue)
-	}
+	return finalValue
 }
 
 func generateQueryArgs() []string {
