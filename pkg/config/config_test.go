@@ -172,9 +172,15 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	}
 
 	//Testing PeersConfig failure scenario
-	pConfig, err := sampleConfig.PeersConfig("peerorg1")
-	if pConfig != nil || err == nil {
+	pConfigs, err := sampleConfig.PeersConfig("peerorg1")
+	if pConfigs != nil || err == nil {
 		t.Fatal("Testing PeersConfig supposed to fail")
+	}
+
+	//Testing PeersConfig failure scenario
+	pConfig, err := sampleConfig.PeerConfig("peerorg1", "peer1")
+	if pConfig != nil || err == nil {
+		t.Fatal("Testing PeerConfig supposed to fail")
 	}
 
 	//Set it back to valid one, otherwise other tests may fail
@@ -271,6 +277,21 @@ func TestPeersConfig(t *testing.T) {
 
 	}
 
+}
+
+func TestPeerConfig(t *testing.T) {
+	pc, err := configImpl.PeerConfig(org1, "peer0")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if pc.Host == "" {
+		t.Fatalf("Host value is empty")
+	}
+
+	if !filepath.IsAbs(pc.TLS.Certificate) {
+		t.Fatalf("Expected cert path to be absolute")
+	}
 }
 
 func TestInitConfig(t *testing.T) {

@@ -23,6 +23,7 @@ type Config interface {
 	RandomOrdererConfig() (*OrdererConfig, error)
 	OrdererConfig(name string) (*OrdererConfig, error)
 	PeersConfig(org string) ([]PeerConfig, error)
+	PeerConfig(org string, name string) (*PeerConfig, error)
 	NetworkConfig() (*NetworkConfig, error)
 	IsTLSEnabled() bool
 	SetTLSCACertPool(*x509.CertPool)

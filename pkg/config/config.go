@@ -246,6 +246,21 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 	return peers, nil
 }
 
+// PeerConfig Retrieves a specific peer from the configuration by org and name
+func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, error) {
+	config, err := c.NetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	peersConfig := config.Organizations[org].Peers
+	peerConfig := peersConfig[name]
+	peerConfig.TLS.Certificate = strings.Replace(peerConfig.TLS.Certificate, "$GOPATH",
+		os.Getenv("GOPATH"), -1)
+
+	return &peerConfig, nil
+}
+
 // NetworkConfig returns the network configuration defined in the config file
 func (c *Config) NetworkConfig() (*apiconfig.NetworkConfig, error) {
 	if c.networkConfigCached {

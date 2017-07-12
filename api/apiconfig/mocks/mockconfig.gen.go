@@ -209,6 +209,19 @@ func (_mr *MockConfigMockRecorder) OrderersConfig() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "OrderersConfig")
 }
 
+// PeerConfig mocks base method
+func (_m *MockConfig) PeerConfig(_param0 string, _param1 string) (*apiconfig.PeerConfig, error) {
+	ret := _m.ctrl.Call(_m, "PeerConfig", _param0, _param1)
+	ret0, _ := ret[0].(*apiconfig.PeerConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PeerConfig indicates an expected call of PeerConfig
+func (_mr *MockConfigMockRecorder) PeerConfig(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "PeerConfig", arg0, arg1)
+}
+
 // PeersConfig mocks base method
 func (_m *MockConfig) PeersConfig(_param0 string) ([]apiconfig.PeerConfig, error) {
 	ret := _m.ctrl.Call(_m, "PeersConfig", _param0)

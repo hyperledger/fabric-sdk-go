@@ -137,7 +137,7 @@ func (c *Channel) PrimaryPeer() fab.Peer {
 	// When no primary peer has been set default to the first peer
 	// from map range - order is not guaranteed
 	for _, peer := range c.peers {
-		logger.Infof("Primary peer was not set, using %s", peer.URL())
+		logger.Debugf("Primary peer was not set, using %s", peer.URL())
 		return peer
 	}
 

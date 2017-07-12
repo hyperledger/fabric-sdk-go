@@ -571,8 +571,11 @@ func (c *Client) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, 
 	}
 	responses, err := channel.QueryBySystemChaincode(request, c)
 
+	if err != nil {
+		return nil, fmt.Errorf("Error from QueryBySystemChaincode: %s", err)
+	}
 	// we are only querying one peer hence one result
-	if err != nil || len(responses) != 1 {
+	if len(responses) != 1 {
 		return nil, fmt.Errorf("QueryBySystemChaincode should have one result only - result number: %d", len(responses))
 	}
 

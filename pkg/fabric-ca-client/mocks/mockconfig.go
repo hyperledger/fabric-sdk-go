@@ -56,6 +56,11 @@ func (c *MockConfig) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 	return nil, nil
 }
 
+// PeerConfig Retrieves a specific peer from the configuration by org and name
+func (c *MockConfig) PeerConfig(org string, name string) (*apiconfig.PeerConfig, error) {
+	return nil, nil
+}
+
 // IsTLSEnabled ...
 func (c *MockConfig) IsTLSEnabled() bool {
 	return false
