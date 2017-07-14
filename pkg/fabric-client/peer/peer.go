@@ -8,7 +8,6 @@ package peer
 
 import (
 	"encoding/pem"
-	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -19,7 +18,6 @@ import (
 var logger = logging.MustGetLogger("fabric_sdk_go")
 
 const (
-	connTimeout  = time.Second * 10 // TODO: should be configurable
 	connBlocking = true
 )
 
@@ -40,7 +38,7 @@ type Peer struct {
 // serverNameOverride is passed to NewClientTLSFromCert in grpc/credentials.
 func NewPeerTLSFromCert(url string, certificate string, serverHostOverride string, config apiconfig.Config) (*Peer, error) {
 	// TODO: config is declaring TLS but cert & serverHostOverride is being passed-in...
-	conn, err := newPeerEndorser(url, certificate, serverHostOverride, connTimeout, connBlocking, config)
+	conn, err := newPeerEndorser(url, certificate, serverHostOverride, connBlocking, config)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +49,7 @@ func NewPeerTLSFromCert(url string, certificate string, serverHostOverride strin
 // NewPeer constructs a Peer given its endpoint configuration settings.
 // url is the URL with format of "host:port".
 func NewPeer(url string, config apiconfig.Config) (*Peer, error) {
-	conn, err := newPeerEndorser(url, "", "", connTimeout, connBlocking, config)
+	conn, err := newPeerEndorser(url, "", "", connBlocking, config)
 	if err != nil {
 		return nil, err
 	}

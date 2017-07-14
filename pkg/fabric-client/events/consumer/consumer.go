@@ -58,7 +58,7 @@ func NewEventsClient(client fab.FabricClient, peerAddress string, certificate st
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
 func newEventsClientConnectionWithAddress(peerAddress string, certificate string, serverhostoverride string, config apiconfig.Config) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(time.Second*3))
+	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.EventHub)))
 	if config.IsTLSEnabled() {
 		tlsCaCertPool, err := config.TLSCACertPool(certificate)
 		if err != nil {

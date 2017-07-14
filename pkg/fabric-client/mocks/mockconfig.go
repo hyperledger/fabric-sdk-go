@@ -8,6 +8,7 @@ package mocks
 
 import (
 	"crypto/x509"
+	"time"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
@@ -51,6 +52,11 @@ func (c *MockConfig) CAClientKeyFile(org string) (string, error) {
 //CAClientCertFile Read configuration option for the fabric CA client cert file
 func (c *MockConfig) CAClientCertFile(org string) (string, error) {
 	return "", nil
+}
+
+//TimeoutOrDefault not implemented
+func (c *MockConfig) TimeoutOrDefault(config.ConnectionType) time.Duration {
+	return 0
 }
 
 // FabricClientViper returns the internal viper instance used by the

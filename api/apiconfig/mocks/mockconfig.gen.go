@@ -8,6 +8,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	factory "github.com/hyperledger/fabric/bccsp/factory"
+	time "time"
 )
 
 // MockConfig is a mock of Config interface
@@ -305,4 +306,16 @@ func (_m *MockConfig) TcertBatchSize() int {
 // TcertBatchSize indicates an expected call of TcertBatchSize
 func (_mr *MockConfigMockRecorder) TcertBatchSize() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TcertBatchSize")
+}
+
+// TimeoutOrDefault mocks base method
+func (_m *MockConfig) TimeoutOrDefault(_param0 apiconfig.ConnectionType) time.Duration {
+	ret := _m.ctrl.Call(_m, "TimeoutOrDefault", _param0)
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// TimeoutOrDefault indicates an expected call of TimeoutOrDefault
+func (_mr *MockConfigMockRecorder) TimeoutOrDefault(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "TimeoutOrDefault", arg0)
 }

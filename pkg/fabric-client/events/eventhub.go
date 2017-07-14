@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
@@ -245,7 +246,9 @@ func (eventHub *EventHub) Connect() error {
 	}
 
 	if eventHub.grpcClient == nil {
-		eventsClient, _ := eventHub.eventsClientFactory.newEventsClient(eventHub.client, eventHub.peerAddr, eventHub.peerTLSCertificate, eventHub.peerTLSServerHostOverride, 5, eventHub)
+		eventsClient, _ := eventHub.eventsClientFactory.newEventsClient(eventHub.client,
+			eventHub.peerAddr, eventHub.peerTLSCertificate, eventHub.peerTLSServerHostOverride,
+			eventHub.client.Config().TimeoutOrDefault(apiconfig.EventReg), eventHub)
 		eventHub.grpcClient = eventsClient
 	}
 

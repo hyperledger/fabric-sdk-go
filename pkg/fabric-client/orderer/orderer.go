@@ -8,9 +8,8 @@ package orderer
 
 import (
 	"fmt"
-	"time"
 
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"google.golang.org/grpc/credentials"
 
@@ -30,9 +29,9 @@ type Orderer struct {
 }
 
 // NewOrderer Returns a Orderer instance
-func NewOrderer(url string, certificate string, serverHostOverride string, config config.Config) (*Orderer, error) {
+func NewOrderer(url string, certificate string, serverHostOverride string, config apiconfig.Config) (*Orderer, error) {
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(time.Second*3))
+	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.Orderer)))
 	if config.IsTLSEnabled() {
 		tlsCaCertPool, err := config.TLSCACertPool(certificate)
 		if err != nil {

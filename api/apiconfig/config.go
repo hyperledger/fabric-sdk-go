@@ -8,6 +8,7 @@ package apiconfig
 
 import (
 	"crypto/x509"
+	"time"
 
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 )
@@ -18,6 +19,7 @@ type Config interface {
 	CAServerCertFiles(org string) ([]string, error)
 	CAClientKeyFile(org string) (string, error)
 	CAClientCertFile(org string) (string, error)
+	TimeoutOrDefault(ConnectionType) time.Duration
 	MspID(org string) (string, error)
 	OrderersConfig() ([]OrdererConfig, error)
 	RandomOrdererConfig() (*OrdererConfig, error)
@@ -37,3 +39,17 @@ type Config interface {
 	CryptoConfigPath() string
 	CSPConfig() *bccspFactory.FactoryOpts
 }
+
+// ConnectionType enumerates the different types of outgoing connections
+type ConnectionType int
+
+const (
+	// Endorser connection
+	Endorser ConnectionType = iota
+	// EventHub connection
+	EventHub
+	// EventReg connection
+	EventReg
+	// Orderer connection
+	Orderer
+)

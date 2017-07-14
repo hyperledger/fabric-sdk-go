@@ -25,6 +25,14 @@ client:
  cryptoconfig:
   path: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config"
 
+ connection:
+   timeout:
+    peer:
+     endorser: 3s
+     eventHub: 3s
+     eventReg: 3s
+    orderer: 3s
+
 # network provides a static definition of a Hyperledger Fabric network
  network:
   # list of ordering service nodes

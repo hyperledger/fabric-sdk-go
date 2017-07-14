@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/spf13/viper"
@@ -205,6 +206,36 @@ func TestTLSACAConfig(t *testing.T) {
 	_, err = configImpl.TLSCACertPool(keyFile)
 	if err == nil {
 		t.Fatalf("TLS CA cert pool was supposed to fail when provided with wrong cert file")
+	}
+}
+
+func TestTimeouts(t *testing.T) {
+	myViper.Set("connection.timeout.peer.endorser", "2s")
+	myViper.Set("connection.timeout.peer.eventhub", "2m")
+	myViper.Set("connection.timeout.peer.eventreg", "2h")
+	myViper.Set("connection.timeout.orderer", "2ms")
+
+	t1 := configImpl.TimeoutOrDefault(api.Endorser)
+	if t1 != time.Second*2 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	}
+	t2 := configImpl.TimeoutOrDefault(api.EventHub)
+	if t2 != time.Minute*2 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t2)
+	}
+	t3 := configImpl.TimeoutOrDefault(api.EventReg)
+	if t3 != time.Hour*2 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t3)
+	}
+	t4 := configImpl.TimeoutOrDefault(api.Orderer)
+	if t4 != time.Millisecond*2 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t4)
+	}
+	// Test default
+	myViper.Set("connection.timeout.orderer", "")
+	t5 := configImpl.TimeoutOrDefault(api.Orderer)
+	if t5 != time.Second*5 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t5)
 	}
 }
 

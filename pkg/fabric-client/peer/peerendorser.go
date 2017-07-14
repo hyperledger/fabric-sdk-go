@@ -9,7 +9,6 @@ package peer
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
@@ -31,15 +30,17 @@ type TransactionProposalError struct {
 	Err      error
 }
 
-func newPeerEndorser(target string, certificate string, serverHostOverride string, dialTimeout time.Duration, dialBlocking bool, config apiconfig.Config) (peerEndorser, error) {
+func newPeerEndorser(target string, certificate string, serverHostOverride string,
+	dialBlocking bool, config apiconfig.Config) (
+	peerEndorser, error) {
 	if len(target) == 0 {
 		return peerEndorser{}, fmt.Errorf("Target is required")
 	}
 
 	// Construct dialer options for the connection
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(dialTimeout)) // TODO: should be configurable
-	if dialBlocking {                                  // TODO: configurable?
+	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.Endorser)))
+	if dialBlocking { // TODO: configurable?
 		opts = append(opts, grpc.WithBlock())
 	}
 

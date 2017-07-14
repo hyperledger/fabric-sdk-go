@@ -30,7 +30,10 @@ var format = logging.MustStringFormatter(
 	`%{color}%{time:15:04:05.000} [%{module}] %{level:.4s} : %{color:reset} %{message}`,
 )
 
-const cmdRoot = "fabric_sdk"
+const (
+	cmdRoot        = "fabric_sdk"
+	defaultTimeout = time.Second * 5
+)
 
 // Config represents the configuration for the client
 type Config struct {
@@ -131,6 +134,26 @@ func (c *Config) CAClientCertFile(org string) (string, error) {
 
 	return strings.Replace(config.Organizations[org].CA.TLS.Client.Certfile,
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
+}
+
+// TimeoutOrDefault reads connection timeouts for the given connection type
+func (c *Config) TimeoutOrDefault(conn apiconfig.ConnectionType) time.Duration {
+	var timeout time.Duration
+	switch conn {
+	case apiconfig.Endorser:
+		timeout = myViper.GetDuration("connection.timeout.peer.endorser")
+	case apiconfig.EventHub:
+		timeout = myViper.GetDuration("connection.timeout.peer.eventhub")
+	case apiconfig.EventReg:
+		timeout = myViper.GetDuration("connection.timeout.peer.eventreg")
+	case apiconfig.Orderer:
+		timeout = myViper.GetDuration("connection.timeout.orderer")
+	}
+	if timeout == 0 {
+		timeout = defaultTimeout
+	}
+
+	return timeout
 }
 
 // MspID returns the MSP ID for the requested organization

@@ -8,6 +8,7 @@ package mocks
 
 import (
 	"crypto/x509"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
@@ -49,6 +50,11 @@ func (c *MockConfig) CAClientCertFile(org string) (string, error) {
 // SDK to read configuration options
 func (c *MockConfig) FabricClientViper() *viper.Viper {
 	return nil
+}
+
+//TimeoutOrDefault not implemented
+func (c *MockConfig) TimeoutOrDefault(apiconfig.ConnectionType) time.Duration {
+	return 0
 }
 
 // PeersConfig Retrieves the fabric peers from the config file provided
