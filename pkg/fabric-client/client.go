@@ -57,10 +57,11 @@ func (c *Client) NewChannel(name string) (fab.Channel, error) {
 		return nil, fmt.Errorf("Channel %s already exists", name)
 	}
 	var err error
-	c.channels[name], err = channel.NewChannel(name, c)
+	channel, err := channel.NewChannel(name, c)
 	if err != nil {
 		return nil, err
 	}
+	c.channels[name] = channel
 	return c.channels[name], nil
 }
 
