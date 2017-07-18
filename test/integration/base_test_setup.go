@@ -17,6 +17,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
@@ -47,8 +48,8 @@ func (setup *BaseSetupImpl) Initialize() error {
 	// Create SDK setup for the integration tests
 	sdkOptions := deffab.Options{
 		ConfigFile: setup.ConfigFile,
-		OrgID:      setup.OrgID,
-		StateStoreOpts: deffab.StateStoreOpts{
+		//		OrgID:      setup.OrgID,
+		StateStoreOpts: opt.StateStoreOpts{
 			Path: "/tmp/enroll_user",
 		},
 	}
@@ -58,25 +59,37 @@ func (setup *BaseSetupImpl) Initialize() error {
 		return fmt.Errorf("Error initializing SDK: %s", err)
 	}
 
-	user, err := deffab.NewUser(sdk.ConfigManager, sdk.MSPClient, "admin", "adminpw", setup.OrgID)
+	context, err := sdk.NewContext(setup.OrgID)
+	if err != nil {
+		return fmt.Errorf("Error getting a context for org: %s", err)
+	}
+
+	user, err := deffab.NewUser(sdk.ConfigProvider(), context.MSPClient(), "admin", "adminpw", setup.OrgID)
 	if err != nil {
 		return fmt.Errorf("NewUser returned error: %v", err)
 	}
-	err = sdk.SystemClient.SaveUserToStateStore(user, false)
+
+	session1, err := sdk.NewSession(context, user)
+	if err != nil {
+		return fmt.Errorf("NewSession returned error: %v", err)
+	}
+	sc, err := sdk.NewSystemClient(session1)
+	if err != nil {
+		return fmt.Errorf("NewSystemClient returned error: %v", err)
+	}
+
+	err = sc.SaveUserToStateStore(user, false)
 	if err != nil {
 		return fmt.Errorf("client.SaveUserToStateStore returned error: %v", err)
 	}
+	setup.Client = sc
 
-	sdk.SystemClient.SetUserContext(user)
-
-	setup.Client = sdk.SystemClient
-
-	org1Admin, err := GetAdmin(sdk.SystemClient, "org1", setup.OrgID)
+	org1Admin, err := GetAdmin(sc, "org1", setup.OrgID)
 	if err != nil {
 		return fmt.Errorf("Error getting org admin user: %v", err)
 	}
 
-	org1User, err := GetUser(sdk.SystemClient, "org1", setup.OrgID)
+	org1User, err := GetUser(sc, "org1", setup.OrgID)
 	if err != nil {
 		return fmt.Errorf("Error getting org user: %v", err)
 	}
@@ -90,38 +103,38 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 	setup.Channel = channel
 
-	ordererAdmin, err := GetOrdererAdmin(sdk.SystemClient, setup.OrgID)
+	ordererAdmin, err := GetOrdererAdmin(sc, setup.OrgID)
 	if err != nil {
 		return fmt.Errorf("Error getting orderer admin user: %v", err)
 	}
 
 	// Check if primary peer has joined channel
-	alreadyJoined, err := HasPrimaryPeerJoinedChannel(sdk.SystemClient, org1Admin, channel)
+	alreadyJoined, err := HasPrimaryPeerJoinedChannel(sc, org1Admin, channel)
 	if err != nil {
 		return fmt.Errorf("Error while checking if primary peer has already joined channel: %v", err)
 	}
 
 	if !alreadyJoined {
 		// Create, initialize and join channel
-		if err = admin.CreateOrUpdateChannel(sdk.SystemClient, ordererAdmin, org1Admin, channel, setup.ChannelConfig); err != nil {
+		if err = admin.CreateOrUpdateChannel(sc, ordererAdmin, org1Admin, channel, setup.ChannelConfig); err != nil {
 			return fmt.Errorf("CreateChannel returned error: %v", err)
 		}
 		time.Sleep(time.Second * 3)
 
-		sdk.SystemClient.SetUserContext(org1Admin)
+		sc.SetUserContext(org1Admin)
 		if err = channel.Initialize(nil); err != nil {
 			return fmt.Errorf("Error initializing channel: %v", err)
 		}
 
-		if err = admin.JoinChannel(sdk.SystemClient, org1Admin, channel); err != nil {
+		if err = admin.JoinChannel(sc, org1Admin, channel); err != nil {
 			return fmt.Errorf("JoinChannel returned error: %v", err)
 		}
 	}
 
 	//by default client's user context should use regular user, for admin actions, UserContext must be set to AdminUser
-	sdk.SystemClient.SetUserContext(org1User)
+	sc.SetUserContext(org1User)
 
-	if err := setup.setupEventHub(sdk.SystemClient); err != nil {
+	if err := setup.setupEventHub(sc); err != nil {
 		return err
 	}
 

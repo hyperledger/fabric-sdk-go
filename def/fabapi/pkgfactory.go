@@ -208,7 +208,7 @@ func NewPeer(url string, certificate string, serverHostOverride string, config c
 	return peerImpl.NewPeerTLSFromCert(url, certificate, serverHostOverride, config)
 }
 
-// NewConfig returns a new default implementation of the Config interface
+// NewConfigManager returns a new default implementation of the Config interface
 func NewConfigManager(configFile string) (config.Config, error) {
 	return configImpl.InitConfig(configFile)
 }
