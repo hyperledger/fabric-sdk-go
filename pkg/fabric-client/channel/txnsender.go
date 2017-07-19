@@ -20,7 +20,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/protos/common"
-	mspprotos "github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric/protos/utils"
 )
@@ -161,7 +160,8 @@ func (c *Channel) SendTransaction(tx *apitxn.Transaction) (*apitxn.TransactionRe
 // chaincodePath: required - string of the path to the location of the source code of the chaincode
 // chaincodeVersion: required - string of the version of the chaincode
 func (c *Channel) SendInstantiateProposal(chaincodeName string,
-	args []string, chaincodePath string, chaincodeVersion string, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+	args []string, chaincodePath string, chaincodeVersion string,
+	chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
 	if chaincodeName == "" {
 		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodeName' parameter")
@@ -170,8 +170,10 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodePath' parameter")
 	}
 	if chaincodeVersion == "" {
-
 		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodeVersion' parameter")
+	}
+	if chaincodePolicy == nil {
+		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodePolicy' parameter")
 	}
 
 	// TODO: We should validate that targets are added to the channel.
@@ -194,10 +196,6 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 	creator, err := c.clientContext.UserContext().Identity()
 	if err != nil {
 		return nil, apitxn.TransactionID{}, fmt.Errorf("Error getting creator: %v", err)
-	}
-	chaincodePolicy, err := buildChaincodePolicy(c.clientContext.UserContext().MspID())
-	if err != nil {
-		return nil, apitxn.TransactionID{}, err
 	}
 	chaincodePolicyBytes, err := protos_utils.Marshal(chaincodePolicy)
 	if err != nil {
@@ -379,33 +377,4 @@ func BuildChannelHeader(headerType common.HeaderType, channelID string, txID str
 		channelHeader.Extension = headerExtBytes
 	}
 	return channelHeader, nil
-}
-
-// internal utility method to build chaincode policy
-// FIXME: for now always construct a 'Signed By any member of an organization by mspid' policy
-func buildChaincodePolicy(mspid string) (*common.SignaturePolicyEnvelope, error) {
-	// Define MSPRole
-	memberRole, err := proto.Marshal(&mspprotos.MSPRole{Role: mspprotos.MSPRole_MEMBER, MspIdentifier: mspid})
-	if err != nil {
-		return nil, fmt.Errorf("Error marshal MSPRole: %s", err)
-	}
-
-	// construct a list of msp principals to select from using the 'n out of' operator
-	onePrn := &mspprotos.MSPPrincipal{
-		PrincipalClassification: mspprotos.MSPPrincipal_ROLE,
-		Principal:               memberRole}
-
-	// construct 'signed by msp principal at index 0'
-	signedBy := &common.SignaturePolicy{Type: &common.SignaturePolicy_SignedBy{SignedBy: 0}}
-
-	// construct 'one of one' policy
-	oneOfone := &common.SignaturePolicy{Type: &common.SignaturePolicy_NOutOf_{NOutOf: &common.SignaturePolicy_NOutOf{
-		N: 1, Rules: []*common.SignaturePolicy{signedBy}}}}
-
-	p := &common.SignaturePolicyEnvelope{
-		Version:    0,
-		Rule:       oneOfone,
-		Identities: []*mspprotos.MSPPrincipal{onePrn},
-	}
-	return p, nil
 }

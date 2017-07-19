@@ -22,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	fabricTxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
 	admin "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
+	"github.com/hyperledger/fabric/common/cauthdsl"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -162,7 +163,9 @@ func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath stri
 	// must reset client user context to normal user once done with Admin privilieges
 	defer setup.Client.SetUserContext(setup.NormalUser)
 
-	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub); err != nil {
+	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
+
+	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub); err != nil {
 		return err
 	}
 	return nil
