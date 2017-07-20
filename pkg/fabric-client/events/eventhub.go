@@ -119,7 +119,7 @@ func (eventHub *EventHub) Disconnect() {
 	}
 
 	// Unregister interests with server and stop the stream
-	eventHub.grpcClient.Unregister(eventHub.interestedEvents)
+	eventHub.grpcClient.UnregisterAsync(eventHub.interestedEvents)
 	eventHub.grpcClient.Stop()
 
 	eventHub.connected = false
