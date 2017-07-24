@@ -95,7 +95,7 @@ func createTestChannel(t *testing.T) {
 		orgTestChannel, "../../fixtures/channel/orgchannel.tx")
 	failTestIfError(err, t)
 	// Allow orderer to process channel creation
-	time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Second * 3)
 }
 
 func joinTestChannel(t *testing.T) {
