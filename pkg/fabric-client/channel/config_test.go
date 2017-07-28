@@ -41,8 +41,11 @@ func TestLoadConfigUpdateEnvelope(t *testing.T) {
 	channel, _ := setupTestChannel()
 
 	//Read config file from test directory
-	fileLoc := "../../../test/fixtures/channel/mychanneltx.tx"
+	fileLoc := "../../../test/fixtures/channel/mychannel.tx"
 	res, err := ioutil.ReadFile(fileLoc)
+	if err != nil {
+		t.Fatalf("Could not load config tx file: %s", err)
+	}
 
 	//Pass config to LoadConfigUpdateEnvelope and test
 	err = channel.LoadConfigUpdateEnvelope(res)
@@ -53,7 +56,7 @@ func TestLoadConfigUpdateEnvelope(t *testing.T) {
 
 	err = channel.Initialize(res)
 
-	if err == nil {
+	if err != nil {
 		t.Fatalf("Initialize Negative Test Failed with, Cause '%s'", err.Error())
 	}
 

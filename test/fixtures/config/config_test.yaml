@@ -43,7 +43,7 @@ client:
     port: 7050
     tls:
      # Certificate location absolute path
-     certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/cacerts/example.com-cert.pem"
+     certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem"
      # For testing only: overrides the virtual host name of the authority
      serverHostOverride: "orderer.example.com"
   # ap of member organizations forming the network
@@ -78,7 +78,7 @@ client:
         primary: true
         tls:
          # Certificate location absolute path
-         certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/cacerts/org1.example.com-cert.pem"
+         certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"
          serverHostOverride: "peer0.org1.example.com"
     # Org2
     peerorg2:
@@ -102,5 +102,5 @@ client:
         primary: true
         tls:
          # Certificate location absolute path
-         certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/cacerts/org2.example.com-cert.pem"
+         certificate: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem"
          serverHostOverride: "peer0.org2.example.com"

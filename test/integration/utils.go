@@ -20,23 +20,23 @@ import (
 
 // GetOrdererAdmin returns a pre-enrolled orderer admin user
 func GetOrdererAdmin(c fab.FabricClient, orgName string) (ca.User, error) {
-	keyDir := "ordererOrganizations/example.com/users/Admin@example.com/keystore"
-	certDir := "ordererOrganizations/example.com/users/Admin@example.com/signcerts"
+	keyDir := "ordererOrganizations/example.com/users/Admin@example.com/msp/keystore"
+	certDir := "ordererOrganizations/example.com/users/Admin@example.com/msp/signcerts"
 	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, "ordererAdmin", orgName)
 }
 
 // GetAdmin returns a pre-enrolled org admin user
 func GetAdmin(c fab.FabricClient, orgPath string, orgName string) (ca.User, error) {
-	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/keystore", orgPath, orgPath)
-	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/signcerts", orgPath, orgPath)
+	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/msp/keystore", orgPath, orgPath)
+	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/msp/signcerts", orgPath, orgPath)
 	username := fmt.Sprintf("peer%sAdmin", orgPath)
 	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, username, orgName)
 }
 
 // GetUser returns a pre-enrolled org user
 func GetUser(c fab.FabricClient, orgPath string, orgName string) (ca.User, error) {
-	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/keystore", orgPath, orgPath)
-	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/signcerts", orgPath, orgPath)
+	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/msp/keystore", orgPath, orgPath)
+	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/msp/signcerts", orgPath, orgPath)
 	username := fmt.Sprintf("peer%sUser1", orgPath)
 	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, username, orgName)
 }
