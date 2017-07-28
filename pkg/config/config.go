@@ -141,13 +141,13 @@ func (c *Config) TimeoutOrDefault(conn apiconfig.ConnectionType) time.Duration {
 	var timeout time.Duration
 	switch conn {
 	case apiconfig.Endorser:
-		timeout = myViper.GetDuration("connection.timeout.peer.endorser")
+		timeout = myViper.GetDuration("client.connection.timeout.peer.endorser")
 	case apiconfig.EventHub:
-		timeout = myViper.GetDuration("connection.timeout.peer.eventhub")
+		timeout = myViper.GetDuration("client.connection.timeout.peer.eventhub")
 	case apiconfig.EventReg:
-		timeout = myViper.GetDuration("connection.timeout.peer.eventreg")
+		timeout = myViper.GetDuration("client.connection.timeout.peer.eventreg")
 	case apiconfig.Orderer:
-		timeout = myViper.GetDuration("connection.timeout.orderer")
+		timeout = myViper.GetDuration("client.connection.timeout.orderer")
 	}
 	if timeout == 0 {
 		timeout = defaultTimeout
