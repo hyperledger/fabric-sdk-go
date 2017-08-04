@@ -103,7 +103,7 @@ func (sdk *FabricSDK) CryptoSuiteProvider() bccsp.BCCSP {
 	return sdk.cryptoSuite
 }
 
-// StateStoreProvider returns the BCCSP provider of sdk.
+// StateStoreProvider returns state store
 func (sdk *FabricSDK) StateStoreProvider() apifabclient.KeyValueStore {
 	return sdk.stateStore
 }

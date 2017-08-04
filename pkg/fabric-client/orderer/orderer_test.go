@@ -23,7 +23,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var testOrdererURL = "0.0.0.0:0"
+var testOrdererURL = "127.0.0.1:0"
 
 var validRootCA = `-----BEGIN CERTIFICATE-----
 MIICYjCCAgmgAwIBAgIUB3CTDOU47sUC5K4kn/Caqnh114YwCgYIKoZIzj0EAwIw

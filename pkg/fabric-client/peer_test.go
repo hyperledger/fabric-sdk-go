@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	ecertPath  = "../../../test/fixtures/tls/fabricca/client/client_client1.pem"
+	ecertPath  = "../../../test/fixtures/tls/fabricca/certs/client/client_client1.pem"
 	peer1URL   = "localhost:7050"
 	peer2URL   = "localhost:7054"
 	peerURLBad = "localhost:9999"

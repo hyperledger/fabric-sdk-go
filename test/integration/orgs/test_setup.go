@@ -60,14 +60,18 @@ var foundChannel bool
 func initializeFabricClient(t *testing.T) {
 	// Initialize configuration
 	configImpl, err := config.InitConfig("../../fixtures/config/config_test.yaml")
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Instantiate client
 	orgTestClient = client.NewClient(configImpl)
 
 	// Initialize crypto suite
 	err = factory.InitFactories(configImpl.CSPConfig())
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 	cryptoSuite := factory.GetDefault()
 	orgTestClient.SetCryptoSuite(cryptoSuite)
 }
@@ -76,7 +80,9 @@ func createTestChannel(t *testing.T) {
 	var err error
 
 	orgTestChannel, err = channel.NewChannel("orgchannel", orgTestClient)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	orgTestChannel.AddPeer(orgTestPeer0)
 	orgTestChannel.AddPeer(orgTestPeer1)
@@ -85,7 +91,9 @@ func createTestChannel(t *testing.T) {
 	orgTestChannel.AddOrderer(orgTestOrderer)
 
 	foundChannel, err = integration.HasPrimaryPeerJoinedChannel(orgTestClient, org1User, orgTestChannel)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if foundChannel {
 		return
@@ -93,7 +101,9 @@ func createTestChannel(t *testing.T) {
 
 	err = admin.CreateOrUpdateChannel(orgTestClient, ordererAdminUser, org1AdminUser,
 		orgTestChannel, "../../fixtures/channel/orgchannel.tx")
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Allow orderer to process channel creation
 	time.Sleep(time.Second * 3)
 }
@@ -106,14 +116,18 @@ func joinTestChannel(t *testing.T) {
 	// Get peer0 to join channel
 	orgTestChannel.RemovePeer(orgTestPeer1)
 	err := admin.JoinChannel(orgTestClient, org1AdminUser, orgTestChannel)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Get peer1 to join channel
 	orgTestChannel.RemovePeer(orgTestPeer0)
 	orgTestChannel.AddPeer(orgTestPeer1)
 	orgTestChannel.SetPrimaryPeer(orgTestPeer1)
 	err = admin.JoinChannel(orgTestClient, org2AdminUser, orgTestChannel)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func installAndInstantiate(t *testing.T) {
@@ -128,45 +142,63 @@ func installAndInstantiate(t *testing.T) {
 	orgTestClient.SetUserContext(org2AdminUser)
 	err := admin.SendInstallCC(orgTestClient, "exampleCC",
 		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer1}, "../../fixtures")
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	chaincodePolicy := cauthdsl.SignedByAnyMember([]string{
 		org1AdminUser.MspID(), org2AdminUser.MspID()})
 
 	err = admin.SendInstantiateCC(orgTestChannel, "exampleCC",
 		generateInitArgs(), "github.com/example_cc", "0", chaincodePolicy, []apitxn.ProposalProcessor{orgTestPeer1}, peer1EventHub)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func loadOrderer(t *testing.T) {
 	ordererConfig, err := orgTestClient.Config().RandomOrdererConfig()
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	orgTestOrderer, err = orderer.NewOrderer(fmt.Sprintf("%s:%d", ordererConfig.Host,
 		ordererConfig.Port), ordererConfig.TLS.Certificate,
 		ordererConfig.TLS.ServerHostOverride, orgTestClient.Config())
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func loadOrgPeers(t *testing.T) {
 	org1Peers, err := orgTestClient.Config().PeersConfig(org1)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	org2Peers, err := orgTestClient.Config().PeersConfig(org2)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	orgTestPeer0, err = peer.NewPeerTLSFromCert(fmt.Sprintf("%s:%d", org1Peers[0].Host,
 		org1Peers[0].Port), org1Peers[0].TLS.Certificate,
 		org1Peers[0].TLS.ServerHostOverride, orgTestClient.Config())
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	orgTestPeer1, err = peer.NewPeerTLSFromCert(fmt.Sprintf("%s:%d", org2Peers[0].Host,
 		org2Peers[0].Port), org2Peers[0].TLS.Certificate,
 		org2Peers[0].TLS.ServerHostOverride, orgTestClient.Config())
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	peer0EventHub, err = events.NewEventHub(orgTestClient)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	peer0EventHub.SetPeerAddr(fmt.Sprintf("%s:%d", org1Peers[0].EventHost,
 		org1Peers[0].EventPort), org1Peers[0].TLS.Certificate,
@@ -174,10 +206,14 @@ func loadOrgPeers(t *testing.T) {
 
 	orgTestClient.SetUserContext(org1User)
 	err = peer0EventHub.Connect()
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	peer1EventHub, err = events.NewEventHub(orgTestClient)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	peer1EventHub.SetPeerAddr(fmt.Sprintf("%s:%d", org2Peers[0].EventHost,
 		org2Peers[0].EventPort), org2Peers[0].TLS.Certificate,
@@ -185,7 +221,9 @@ func loadOrgPeers(t *testing.T) {
 
 	orgTestClient.SetUserContext(org2User)
 	err = peer1EventHub.Connect()
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 // loadOrgUsers Loads all the users required to perform this test
@@ -193,15 +231,25 @@ func loadOrgUsers(t *testing.T) {
 	var err error
 
 	ordererAdminUser, err = integration.GetOrdererAdmin(orgTestClient, org1)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 	org1AdminUser, err = integration.GetAdmin(orgTestClient, "org1", org1)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 	org2AdminUser, err = integration.GetAdmin(orgTestClient, "org2", org2)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 	org1User, err = integration.GetUser(orgTestClient, "org1", org1)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 	org2User, err = integration.GetUser(orgTestClient, "org2", org2)
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func generateInitArgs() []string {
@@ -212,10 +260,4 @@ func generateInitArgs() []string {
 	args = append(args, "b")
 	args = append(args, "200")
 	return args
-}
-
-func failTestIfError(err error, t *testing.T) {
-	if err != nil {
-		t.Fatal(err)
-	}
 }

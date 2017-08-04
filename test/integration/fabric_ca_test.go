@@ -171,7 +171,8 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 }
 
-func TestEnrolOrg2(t *testing.T) {
+func TestEnrollOrg2(t *testing.T) {
+
 	caClient, err := fabricCAClient.NewFabricCAClient(testFabricCAConfig, org2Name)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
