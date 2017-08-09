@@ -31,12 +31,12 @@ func (c *Channel) SendTransactionProposal(request apitxn.ChaincodeInvokeRequest)
 		return nil, apitxn.TransactionID{}, err
 	}
 
-	return sendTransactionProposal(c.name, request, c.clientContext)
+	return SendTransactionProposalWithChannelID(c.name, request, c.clientContext)
 }
 
-// sendTransactionProposal sends the created proposal to peer for endorsement.
+// SendTransactionProposalWithChannelID sends the created proposal to peer for endorsement.
 // TODO: return the entire request or just the txn ID?
-func sendTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext ClientContext) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+func SendTransactionProposalWithChannelID(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext ClientContext) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 	if err := validateChaincodeInvokeRequest(request); err != nil {
 		return nil, apitxn.TransactionID{}, fmt.Errorf("Required parameters are empty: %s", err)
 	}
