@@ -102,8 +102,8 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		}
 
 		certPem, _ := pem.Decode(cert)
-		if err != nil {
-			t.Fatalf("pem Decode return error: %v", err)
+		if certPem == nil {
+			t.Fatal("Fail to decode pem block")
 		}
 
 		cert509, err := x509.ParseCertificate(certPem.Bytes)
