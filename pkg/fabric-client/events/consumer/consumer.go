@@ -32,14 +32,15 @@ const defaultTimeout = time.Second * 3
 
 type eventsClient struct {
 	sync.RWMutex
-	peerAddress           string
-	regTimeout            time.Duration
-	stream                ehpb.Events_ChatClient
-	adapter               consumer.EventAdapter
-	TLSCertificate        string
-	TLSServerHostOverride string
-	clientConn            *grpc.ClientConn
-	client                fab.FabricClient
+	peerAddress            string
+	regTimeout             time.Duration
+	stream                 ehpb.Events_ChatClient
+	adapter                consumer.EventAdapter
+	TLSCertificate         string
+	TLSServerHostOverride  string
+	clientConn             *grpc.ClientConn
+	client                 fab.FabricClient
+	processEventsCompleted chan struct{}
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
@@ -52,7 +53,8 @@ func NewEventsClient(client fab.FabricClient, peerAddress string, certificate st
 		regTimeout = 60 * time.Second
 		err = fmt.Errorf("regTimeout > 60, setting to 60 sec")
 	}
-	return &eventsClient{sync.RWMutex{}, peerAddress, regTimeout, nil, adapter, certificate, serverhostoverride, nil, client}, err
+	return &eventsClient{sync.RWMutex{}, peerAddress, regTimeout, nil, adapter,
+		certificate, serverhostoverride, nil, client, nil}, err
 }
 
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
@@ -151,8 +153,19 @@ func (ec *eventsClient) register(ies []*ehpb.Interest) error {
 
 // UnregisterAsync - Unregisters interest in a event and doesn't wait for a response
 func (ec *eventsClient) UnregisterAsync(ies []*ehpb.Interest) error {
-	emsg := &ehpb.Event{Event: &ehpb.Event_Unregister{Unregister: &ehpb.Unregister{Events: ies}}}
-	var err error
+	if ec.client.UserContext() == nil {
+		return fmt.Errorf("User context needs to be set")
+	}
+	creator, err := ec.client.UserContext().Identity()
+	if err != nil {
+		return fmt.Errorf("Error getting creator: %v", err)
+	}
+
+	emsg := &ehpb.Event{
+		Event:   &ehpb.Event_Unregister{Unregister: &ehpb.Unregister{Events: ies}},
+		Creator: creator,
+	}
+
 	if err = ec.send(emsg); err != nil {
 		err = fmt.Errorf("error on unregister send %s", err)
 	}
@@ -211,6 +224,8 @@ func (ec *eventsClient) Recv() (*ehpb.Event, error) {
 }
 func (ec *eventsClient) processEvents() error {
 	defer ec.stream.CloseSend()
+	defer close(ec.processEventsCompleted)
+
 	for {
 		in, err := ec.stream.Recv()
 		if err == io.EOF {
@@ -262,6 +277,7 @@ func (ec *eventsClient) Start() error {
 		return err
 	}
 
+	ec.processEventsCompleted = make(chan struct{})
 	go ec.processEvents()
 
 	return nil
@@ -269,6 +285,8 @@ func (ec *eventsClient) Start() error {
 
 //Stop terminates connection with event hub
 func (ec *eventsClient) Stop() error {
+	var timeoutErr error
+
 	if ec.stream == nil {
 		// in case the stream/chat server has not been established earlier, we assume that it's closed, successfully
 		return nil
@@ -279,6 +297,15 @@ func (ec *eventsClient) Stop() error {
 	if err != nil {
 		return err
 	}
+
+	select {
+	// Server ended its send stream in response to CloseSend()
+	case <-ec.processEventsCompleted:
+		// Timeout waiting for server to end stream
+	case <-time.After(ec.client.Config().TimeoutOrDefault(apiconfig.EventHub)):
+		timeoutErr = fmt.Errorf("Timed out waiting for server to close event stream")
+	}
+
 	//close  client connection
 	if ec.clientConn != nil {
 		err := ec.clientConn.Close()
@@ -286,5 +313,10 @@ func (ec *eventsClient) Stop() error {
 			return err
 		}
 	}
+
+	if timeoutErr != nil {
+		return timeoutErr
+	}
+
 	return nil
 }

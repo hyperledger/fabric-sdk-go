@@ -402,27 +402,6 @@ func TestDisconnectWhenDisconnected(t *testing.T) {
 	verifyDisconnectedEventHub(eventHub, t)
 }
 
-func TestDiconnected(t *testing.T) {
-	eventHub, _ := createMockedEventHub(t)
-	if t.Failed() {
-		return
-	}
-
-	eventHub.Disconnected(nil)
-	verifyDisconnectedEventHub(eventHub, t)
-
-}
-func TestDiconnectedWhenDisconnected(t *testing.T) {
-	eventHub, _ := createMockedEventHub(t)
-	if t.Failed() {
-		return
-	}
-	eventHub.connected = false
-	eventHub.Disconnected(nil)
-	verifyDisconnectedEventHub(eventHub, t)
-
-}
-
 func verifyDisconnectedEventHub(eventHub *EventHub, t *testing.T) {
 	if eventHub.connected == true {
 		t.Fatalf("EventHub is not disconnected after Disconnect call")

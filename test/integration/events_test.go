@@ -24,12 +24,10 @@ const (
 func TestEvents(t *testing.T) {
 	testSetup := initializeTests(t)
 
+	testReconnectEventHub(t, testSetup)
 	testFailedTx(t, testSetup)
 	testFailedTxErrorCode(t, testSetup)
 	testMultipleBlockEventCallbacks(t, testSetup)
-
-	// TODO: The ordering of the reconnect test can affect the result - needs investigation.
-	testReconnectEventHub(t, testSetup)
 }
 
 func initializeTests(t *testing.T) BaseSetupImpl {
@@ -232,11 +230,13 @@ Loop:
 
 func testReconnectEventHub(t *testing.T, testSetup BaseSetupImpl) {
 	// Test disconnect event hub
-	testSetup.EventHub.Disconnect()
+	err := testSetup.EventHub.Disconnect()
+	if err != nil {
+		t.Fatalf("Error disconnecting event hub: %s", err)
+	}
 	if testSetup.EventHub.IsConnected() {
 		t.Fatalf("Failed to disconnect event hub")
 	}
-
 	// Reconnect event hub
 	if err := testSetup.EventHub.Connect(); err != nil {
 		t.Fatalf("Failed to connect event hub")

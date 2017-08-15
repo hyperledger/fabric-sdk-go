@@ -110,19 +110,26 @@ func (eventHub *EventHub) SetInterests(block bool) {
 }
 
 // Disconnect disconnects from peer event source
-func (eventHub *EventHub) Disconnect() {
+func (eventHub *EventHub) Disconnect() error {
 	eventHub.mtx.Lock()
 	defer eventHub.mtx.Unlock()
 
 	if !eventHub.connected {
-		return
+		return nil
 	}
 
 	// Unregister interests with server and stop the stream
-	eventHub.grpcClient.UnregisterAsync(eventHub.interestedEvents)
-	eventHub.grpcClient.Stop()
+	err := eventHub.grpcClient.UnregisterAsync(eventHub.interestedEvents)
+	if err != nil {
+		return fmt.Errorf("Error unregistering events: %s", err)
+	}
+	err = eventHub.grpcClient.Stop()
+	if err != nil {
+		return fmt.Errorf("Error stopping event client: %s", err)
+	}
 
 	eventHub.connected = false
+	return nil
 }
 
 // RegisterBlockEvent - register callback function for block events
@@ -258,7 +265,6 @@ func (eventHub *EventHub) Connect() error {
 	}
 
 	eventHub.connected = true
-
 	return nil
 }
 
@@ -269,46 +275,43 @@ func (eventHub *EventHub) GetInterestedEvents() ([]*pb.Interest, error) {
 
 //Recv implements consumer.EventAdapter interface for receiving events
 func (eventHub *EventHub) Recv(msg *pb.Event) (bool, error) {
-	switch msg.Event.(type) {
-	case *pb.Event_Block:
-		blockEvent := msg.Event.(*pb.Event_Block)
-		logger.Debugf("Recv blockEvent:%v\n", blockEvent)
-		for _, v := range eventHub.getBlockRegistrants() {
-			v(blockEvent.Block)
-		}
-
-		for _, tdata := range blockEvent.Block.Data.Data {
-			if ccEvent, channelID, err := getChainCodeEvent(tdata); err != nil {
-				logger.Warningf("getChainCodeEvent return error: %v\n", err)
-			} else if ccEvent != nil {
-				eventHub.notifyChaincodeRegistrants(channelID, ccEvent, true)
+	// Deliver events asynchronously so that we can continue receiving events
+	go func() {
+		switch msg.Event.(type) {
+		case *pb.Event_Block:
+			blockEvent := msg.Event.(*pb.Event_Block)
+			logger.Debugf("Recv blockEvent:%v\n", blockEvent)
+			for _, v := range eventHub.getBlockRegistrants() {
+				v(blockEvent.Block)
 			}
+			for _, tdata := range blockEvent.Block.Data.Data {
+				if ccEvent, channelID, err := getChainCodeEvent(tdata); err != nil {
+					logger.Warningf("getChainCodeEvent return error: %v\n", err)
+				} else if ccEvent != nil {
+					eventHub.notifyChaincodeRegistrants(channelID, ccEvent, true)
+				}
+			}
+			return
+		case *pb.Event_ChaincodeEvent:
+			ccEvent := msg.Event.(*pb.Event_ChaincodeEvent)
+			logger.Debugf("Recv ccEvent:%v\n", ccEvent)
+			if ccEvent != nil {
+				eventHub.notifyChaincodeRegistrants("", ccEvent.ChaincodeEvent, false)
+			}
+			return
+		default:
+			return
 		}
-		return true, nil
-	case *pb.Event_ChaincodeEvent:
-		ccEvent := msg.Event.(*pb.Event_ChaincodeEvent)
-		logger.Debugf("Recv ccEvent:%v\n", ccEvent)
+	}()
 
-		if ccEvent != nil {
-			eventHub.notifyChaincodeRegistrants("", ccEvent.ChaincodeEvent, false)
-		}
-		return true, nil
-	default:
-		return true, nil
-	}
+	return true, nil
 }
 
 // Disconnected implements consumer.EventAdapter interface for receiving events
 func (eventHub *EventHub) Disconnected(err error) {
-	eventHub.mtx.Lock()
-	defer eventHub.mtx.Unlock()
-
-	if !eventHub.connected {
-		return
+	if err != nil {
+		logger.Warningf("EventHub was disconnected unexpectedly: %s", err)
 	}
-
-	eventHub.grpcClient.Stop()
-	eventHub.connected = false
 }
 
 // RegisterChaincodeEvent registers a callback function to receive chaincode events.
@@ -518,12 +521,10 @@ func getChainCodeEvent(tdata []byte) (event *pb.ChaincodeEvent, channelID string
 
 // Utility function to fire callbacks for chaincode registrants
 func (eventHub *EventHub) notifyChaincodeRegistrants(channelID string, ccEvent *pb.ChaincodeEvent, patternMatch bool) {
-
 	cbeArray := eventHub.getChaincodeRegistrants(ccEvent.ChaincodeId)
 	if len(cbeArray) <= 0 {
 		logger.Debugf("No event registration for ccid %s \n", ccEvent.ChaincodeId)
 	}
-
 	for _, v := range cbeArray {
 		match := v.EventNameFilter == ccEvent.EventName
 		if !match && patternMatch {

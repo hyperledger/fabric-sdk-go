@@ -18,7 +18,7 @@ type EventHub interface {
 	SetPeerAddr(peerURL string, certificate string, serverHostOverride string)
 	IsConnected() bool
 	Connect() error
-	Disconnect()
+	Disconnect() error
 	RegisterChaincodeEvent(ccid string, eventname string, callback func(*ChaincodeEvent)) *ChainCodeCBE
 	UnregisterChaincodeEvent(cbe *ChainCodeCBE)
 	RegisterTxEvent(txnID apitxn.TransactionID, callback func(string, pb.TxValidationCode, error))
