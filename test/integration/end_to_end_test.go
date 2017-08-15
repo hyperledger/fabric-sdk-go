@@ -18,7 +18,7 @@ import (
 
 func TestChainCodeInvoke(t *testing.T) {
 
-	testSetup := BaseSetupImpl{
+	testSetup := &BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
 		ChannelID:       "mychannel",
 		OrgID:           "peerorg1",
@@ -46,7 +46,7 @@ func TestChainCodeInvoke(t *testing.T) {
 	// Register callback for chaincode event
 	done, rce := fabricTxn.RegisterCCEvent(testSetup.ChainCodeID, eventID, testSetup.EventHub)
 
-	err = moveFunds(&testSetup)
+	err = moveFunds(testSetup)
 	if err != nil {
 		t.Fatalf("Move funds return error: %v", err)
 	}
