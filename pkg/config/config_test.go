@@ -15,11 +15,21 @@ import (
 	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	pkcsFactory "github.com/hyperledger/fabric/bccsp/factory"
+	pkcs11 "github.com/hyperledger/fabric/bccsp/pkcs11"
 	"github.com/spf13/viper"
 )
 
 var configImpl api.Config
 var org1 = "peerorg1"
+var bccspProviderType string
+
+var securityLevel = 256
+
+const (
+	providerTypeSW     = "SW"
+	providerTypePKCS11 = "PKCS11"
+)
 
 var validRootCA = `-----BEGIN CERTIFICATE-----
 MIICYjCCAgmgAwIBAgIUB3CTDOU47sUC5K4kn/Caqnh114YwCgYIKoZIzj0EAwIw
@@ -50,7 +60,7 @@ func TestCAConfig(t *testing.T) {
 	}
 
 	//Test Security enabled
-	if vConfig.GetBool("client.security.enabled") != configImpl.IsSecurityEnabled() {
+	if vConfig.GetBool("client.BCCSP.security.enabled") != configImpl.IsSecurityEnabled() {
 		t.Fatalf("Incorrect Security config flag")
 	}
 
@@ -60,12 +70,12 @@ func TestCAConfig(t *testing.T) {
 	}
 
 	//Test Security Algorithm
-	if vConfig.GetString("client.security.hashAlgorithm") != configImpl.SecurityAlgorithm() {
+	if vConfig.GetString("client.BCCSP.security.hashAlgorithm") != configImpl.SecurityAlgorithm() {
 		t.Fatalf("Incorrect security hash algorithm")
 	}
 
 	//Test Security level
-	if vConfig.GetInt("client.security.level") != configImpl.SecurityLevel() {
+	if vConfig.GetInt("client.BCCSP.security.level") != configImpl.SecurityLevel() {
 		t.Fatalf("Incorrect Security Level")
 	}
 
@@ -265,24 +275,22 @@ func TestOrdererConfig(t *testing.T) {
 func TestCSPConfig(t *testing.T) {
 	cspconfig := configImpl.CSPConfig()
 
-	if cspconfig.ProviderName != "SW" {
-		t.Fatalf("In correct provider name found for cspconfig")
-	}
+	if cspconfig != nil && cspconfig.ProviderName == "SW" {
+		if cspconfig.SwOpts.HashFamily != configImpl.SecurityAlgorithm() {
+			t.Fatalf("In correct hashfamily found for cspconfig")
+		}
 
-	if cspconfig.SwOpts.HashFamily != configImpl.SecurityAlgorithm() {
-		t.Fatalf("In correct hashfamily found for cspconfig")
-	}
+		if cspconfig.SwOpts.SecLevel != configImpl.SecurityLevel() {
+			t.Fatalf("In correct security level found for cspconfig")
+		}
 
-	if cspconfig.SwOpts.SecLevel != configImpl.SecurityLevel() {
-		t.Fatalf("In correct security level found for cspconfig")
-	}
+		if cspconfig.SwOpts.Ephemeral {
+			t.Fatalf("In correct Ephemeral found for cspconfig")
+		}
 
-	if cspconfig.SwOpts.Ephemeral {
-		t.Fatalf("In correct Ephemeral found for cspconfig")
-	}
-
-	if cspconfig.SwOpts.FileKeystore.KeyStorePath != configImpl.KeyStorePath() {
-		t.Fatalf("In correct keystore path found for cspconfig")
+		if cspconfig.SwOpts.FileKeystore.KeyStorePath != configImpl.KeyStorePath() {
+			t.Fatalf("In correct keystore path found for cspconfig")
+		}
 	}
 }
 
@@ -346,7 +354,7 @@ func TestInitConfig(t *testing.T) {
 	}
 
 	//Test if Viper is initialized after calling init config
-	if myViper.GetString("client.security.hashAlgorithm") != configImpl.SecurityAlgorithm() {
+	if myViper.GetString("client.BCCSP.security.hashAlgorithm") != configImpl.SecurityAlgorithm() {
 		t.Fatal("Config initialized with incorrect viper configuration")
 	}
 
@@ -393,7 +401,7 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testvalue after config initialization")
 	}
 	// Make sure Go SDK config is unaffected
-	testValue3 := myViper.GetBool("client.security.enabled")
+	testValue3 := myViper.GetBool("client.BCCSP.security.enabled")
 	if testValue3 != true {
 		t.Fatalf("Expected existing config value to remain unchanged")
 	}
@@ -463,12 +471,86 @@ func TestNetworkConfig(t *testing.T) {
 	}
 }
 
+func TestPKCS11CSPConfigWithValidOptions(t *testing.T) {
+	opts := configurePKCS11Options("SHA2", securityLevel)
+	f := &pkcsFactory.PKCS11Factory{}
+	//
+	csp, err := f.Get(opts)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if csp == nil {
+		t.Fatalf("BCCSP PKCS11 was not configured")
+	}
+	fmt.Println("TestPKCS11CSPConfigWithValidOptions passed. BCCSP PKCS11 provider was configured\n", csp)
+
+}
+
+func TestPKCS11CSPConfigWithEmptyHashFamily(t *testing.T) {
+
+	opts := configurePKCS11Options("", securityLevel)
+
+	f := &pkcsFactory.PKCS11Factory{}
+	fmt.Println(f.Name())
+	_, err := f.Get(opts)
+	if err == nil {
+		t.Fatalf("Expected error 'Hash Family not supported'")
+	}
+	fmt.Println("TestPKCS11CSPConfigWithEmptyHashFamily passed. ")
+
+}
+
+func TestPKCS11CSPConfigWithIncorrectLevel(t *testing.T) {
+
+	opts := configurePKCS11Options("SHA2", 100)
+
+	f := &pkcsFactory.PKCS11Factory{}
+	fmt.Println(f.Name())
+	_, err := f.Get(opts)
+	if err == nil {
+		t.Fatalf("Expected error 'Failed initializing configuration'")
+	}
+
+}
+
+func TestPKCS11CSPConfigWithEmptyProviderName(t *testing.T) {
+	f := &pkcsFactory.PKCS11Factory{}
+	if f.Name() != providerTypePKCS11 {
+		t.Fatalf("Expected default name for PKCS11. Got %s", f.Name())
+	}
+}
+
+func configurePKCS11Options(hashFamily string, securityLevel int) *pkcsFactory.FactoryOpts {
+	providerLib, softHSMPin, softHSMTokenLabel := pkcs11.FindPKCS11Lib()
+
+	pkks := pkcs11.FileKeystoreOpts{KeyStorePath: os.TempDir()}
+	//PKCS11 options
+	pkcsOpt := pkcs11.PKCS11Opts{
+		SecLevel:     securityLevel,
+		HashFamily:   hashFamily,
+		FileKeystore: &pkks,
+		Library:      providerLib,
+		Pin:          softHSMPin,
+		Label:        softHSMTokenLabel,
+		Ephemeral:    false,
+	}
+
+	opts := &pkcsFactory.FactoryOpts{
+		ProviderName: providerTypePKCS11,
+		Pkcs11Opts:   &pkcsOpt,
+	}
+	pkcsFactory.InitFactories(opts)
+	return opts
+
+}
+
 func TestMain(m *testing.M) {
 	var err error
 	configImpl, err = InitConfig("../../test/fixtures/config/config_test.yaml")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+
 	os.Exit(m.Run())
 }
 

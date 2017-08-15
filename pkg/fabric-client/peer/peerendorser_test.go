@@ -25,11 +25,11 @@ import (
 )
 
 const (
-	ecertPath   = "../../../test/fixtures/tls/fabricca/client/client_client1.pem"
+	ecertPath   = "../../../test/fixtures/tls/fabricca/certs/client/client_client1.pem"
 	peer1URL    = "localhost:7050"
 	peer2URL    = "localhost:7054"
 	peerURLBad  = "localhost:9999"
-	testAddress = "0.0.0.0:0"
+	testAddress = "127.0.0.1:0"
 )
 
 // TestNewPeerEndorserTLS validates that a client configured with TLS
@@ -257,7 +257,7 @@ func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockEndo
 		fmt.Printf("Error starting test server %s", err)
 		t.FailNow()
 	}
-	fmt.Printf("Starting test server on %s\n", addr)
+	fmt.Printf("Starting test server (endorser server in peerendorser_test) on %s\n", addr)
 	go grpcServer.Serve(lis)
 	return endorserServer, addr
 }

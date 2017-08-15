@@ -290,17 +290,56 @@ func TestCreateNewFabricCAClient(t *testing.T) {
 		t.Fatalf("Expected error from CAClientKeyFile. Got: %s", err.Error())
 	}
 
+	bccspSW := createBCCSPProviderFactoryOptions("SW", "SHA2", 100)
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
-	mockConfig.EXPECT().CAKeyStorePath().Return("/\\wq")
-	mockConfig.EXPECT().CSPConfig().Return(nil)
-	_, err = NewFabricCAClient(mockConfig, org1)
+	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
+	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
+	client, err := NewFabricCAClient(mockConfig, org1)
 	if !strings.Contains(err.Error(), "New fabricCAClient failed") {
-		t.Fatalf("Expected error from client init. Got: %s", err.Error())
+		t.Fatalf("Expected error from client %v init. Got: %s", client, err.Error())
 	}
 
+	bccspSW = createBCCSPProviderFactoryOptions("SW", "ABC", 256)
+	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
+	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
+	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
+	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
+	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
+	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
+	client, err = NewFabricCAClient(mockConfig, org1)
+	if !strings.Contains(err.Error(), "New fabricCAClient failed") {
+		t.Fatalf("Expected error from client %v init. Got: %s", client, err.Error())
+	}
+
+	bccspSW = createBCCSPProviderFactoryOptions("SW", "SHA2", 256)
+	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
+	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
+	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
+	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
+	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
+	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
+	_, err = NewFabricCAClient(mockConfig, org1)
+	if err != nil {
+		t.Fatalf("Expected fabric client to be created with SW BCCS provider, but got %v", err.Error())
+	}
+
+}
+
+func createBCCSPProviderFactoryOptions(providerName string, hashFamily string, securityLevel int) *bccspFactory.FactoryOpts {
+	return &bccspFactory.FactoryOpts{
+		ProviderName: providerName,
+		SwOpts: &bccspFactory.SwOpts{
+			HashFamily: hashFamily,
+			SecLevel:   securityLevel,
+			FileKeystore: &bccspFactory.FileKeystoreOpts{
+				KeyStorePath: os.TempDir(),
+			},
+			Ephemeral: false,
+		},
+	}
 }
 
 // Reads a random cert for testing

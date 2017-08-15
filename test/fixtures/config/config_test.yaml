@@ -7,11 +7,6 @@ client:
  tls:
   enabled: true
 
- security:
-  enabled: true
-  hashAlgorithm: "SHA2"
-  level: 256
-
  tcert:
   batch:
     size: 200
@@ -33,13 +28,29 @@ client:
      eventReg: 3s
     orderer: 3s
 
+
+ BCCSP:
+  security:
+   enabled: true
+   default:
+    provider: "PKCS11"
+   hashAlgorithm: "SHA2"
+   softVerify: true
+   ephemeral: false
+   level: 256
+   pin: "98765432"
+   label: "ForFabric"
+   library: "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/softhsm/libsofthsm2.so , /usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so"
+   
+   
+
 # network provides a static definition of a Hyperledger Fabric network
  network:
   # list of ordering service nodes
   orderers:
    # orderer name
    orderer0:
-    host: "localhost"
+    host: "orderer.example.com"
     port: 7050
     tls:
      # Certificate location absolute path
@@ -59,21 +70,22 @@ client:
        # CA name
        name: "ca-org1"
        # CA URL. Note: https prefix required for TLS
-       serverURL: "https://localhost:7054"
+       serverURL: "https://ca_peerOrg1:7054"
        # Configuration for mutual TLS with the CA
        tls:
         # Comma-Separated list of paths
-        certfiles : "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/ca/ca_root.pem"
+        certfiles : "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/ca_root.pem"
         client:
-         keyfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1-key.pem"
-         certfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1.pem"
+         keyfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/client/client_fabric_client-key.pem"
+         certfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/client/client_fabric_client.pem"
+      
       # Peers that are part of this organization
       peers:
-       # Peer name
+       # Peer namecertfiles
        peer0:
-        host: "localhost"
+        host: "peer0.org1.example.com"
         port: 7051
-        eventHost: "localhost"
+        eventHost: "peer0.org1.example.com"
         eventPort: 7053
         primary: true
         tls:
@@ -86,19 +98,19 @@ client:
       ca:
        tlsEnabled: true
        name: "ca-org2"
-       serverURL: "https://localhost:8054"
+       serverURL: "https://ca_peerOrg2:7054"
        tls:
         # Comma-Separated list of paths
-        certfiles : "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/ca/ca_root.pem"
+        certfiles : "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/ca_root.pem"
         client:
-         keyfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1-key.pem"
-         certfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/client/client_client1.pem"
+         keyfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/client/client_fabric_client-key.pem"
+         certfile: "$GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/client/client_fabric_client.pem"      
       peers:
        peer0:
-        host: "localhost"
-        port: 8051
-        eventHost: "localhost"
-        eventPort: 8053
+        host: "peer0.org2.example.com"
+        port: 7051
+        eventHost: "peer0.org2.example.com"
+        eventPort: 7053
         primary: true
         tls:
          # Certificate location absolute path

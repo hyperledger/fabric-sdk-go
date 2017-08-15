@@ -42,17 +42,21 @@ func TestOrgsEndToEnd(t *testing.T) {
 	fcn := "invoke"
 	result, err := fabrictxn.QueryChaincode(orgTestClient, orgTestChannel,
 		"exampleCC", fcn, generateQueryArgs())
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 	initialValue, err := strconv.Atoi(result)
-	failTestIfError(err, t)
-
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Change value on org2 peer
 	orgTestClient.SetUserContext(org2User)
 	orgTestChannel.SetPrimaryPeer(orgTestPeer1)
 	_, err = fabrictxn.InvokeChaincode(orgTestClient, orgTestChannel, []apitxn.ProposalProcessor{orgTestPeer1},
 		peer0EventHub, "exampleCC", fcn, generateInvokeArgs(), nil)
-	failTestIfError(err, t)
-
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Assert changed value on org1 peer
 	var finalValue int
 	for i := 0; i < pollRetries; i++ {
@@ -78,10 +82,13 @@ func queryOrg1Peer(t *testing.T) int {
 	orgTestChannel.SetPrimaryPeer(orgTestPeer0)
 	result, err := fabrictxn.QueryChaincode(orgTestClient, orgTestChannel,
 		"exampleCC", fcn, generateQueryArgs())
-	failTestIfError(err, t)
+	if err != nil {
+		t.Fatal(err)
+	}
 	finalValue, err := strconv.Atoi(result)
-	failTestIfError(err, t)
-
+	if err != nil {
+		t.Fatal(err)
+	}
 	return finalValue
 }
 

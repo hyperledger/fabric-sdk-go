@@ -20,6 +20,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric/bccsp/pkcs11"
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"
 )
@@ -234,7 +235,6 @@ func (c *Config) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
 		return nil, err
 	}
 	orderer := config.Orderers[name]
-
 	orderer.TLS.Certificate = strings.Replace(orderer.TLS.Certificate, "$GOPATH",
 		os.Getenv("GOPATH"), -1)
 
@@ -332,7 +332,7 @@ func (c *Config) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 
 // IsSecurityEnabled ...
 func (c *Config) IsSecurityEnabled() bool {
-	return myViper.GetBool("client.security.enabled")
+	return myViper.GetBool("client.BCCSP.security.enabled")
 }
 
 // TcertBatchSize ...
@@ -342,13 +342,57 @@ func (c *Config) TcertBatchSize() int {
 
 // SecurityAlgorithm ...
 func (c *Config) SecurityAlgorithm() string {
-	return myViper.GetString("client.security.hashAlgorithm")
+	return myViper.GetString("client.BCCSP.security.hashAlgorithm")
 }
 
 // SecurityLevel ...
 func (c *Config) SecurityLevel() int {
-	return myViper.GetInt("client.security.level")
+	return myViper.GetInt("client.BCCSP.security.level")
+}
 
+//SecurityProvider provider SW or PKCS11
+func (c *Config) SecurityProvider() string {
+	return myViper.GetString("client.BCCSP.security.default.provider")
+}
+
+//Ephemeral flag
+func (c *Config) Ephemeral() bool {
+	return myViper.GetBool("client.BCCSP.security.ephemeral")
+}
+
+//SoftVerify flag
+func (c *Config) SoftVerify() bool {
+	return myViper.GetBool("client.BCCSP.security.softVerify")
+}
+
+//SecurityProviderLibPath will be set only if provider is PKCS11
+func (c *Config) SecurityProviderLibPath() string {
+	configuredLibs := myViper.GetString("client.BCCSP.security.library")
+	libPaths := strings.Split(configuredLibs, ",")
+	log.Debug("Configured BCCSP Lib Paths %v", libPaths)
+	var lib string
+	for _, path := range libPaths {
+		if _, err := os.Stat(strings.TrimSpace(path)); !os.IsNotExist(err) {
+			lib = strings.TrimSpace(path)
+			break
+		}
+	}
+	if lib != "" {
+		log.Debug("Found softhsm library: %s", lib)
+	} else {
+		log.Debug("Softhsm library was not found")
+	}
+	return lib
+}
+
+//SecurityProviderPin will be set only if provider is PKCS11
+func (c *Config) SecurityProviderPin() string {
+	return myViper.GetString("client.BCCSP.security.pin")
+}
+
+//SecurityProviderLabel will be set only if provider is PKCS11
+func (c *Config) SecurityProviderLabel() string {
+	return myViper.GetString("client.BCCSP.security.label")
 }
 
 // KeyStorePath returns the keystore path used by BCCSP
@@ -389,15 +433,44 @@ func loadCAKey(rawData []byte) (*x509.Certificate, error) {
 
 // CSPConfig ...
 func (c *Config) CSPConfig() *bccspFactory.FactoryOpts {
-	return &bccspFactory.FactoryOpts{
-		ProviderName: "SW",
-		SwOpts: &bccspFactory.SwOpts{
-			HashFamily: c.SecurityAlgorithm(),
-			SecLevel:   c.SecurityLevel(),
-			FileKeystore: &bccspFactory.FileKeystoreOpts{
-				KeyStorePath: c.KeyStorePath(),
+	switch c.SecurityProvider() {
+	case "SW":
+		opts := &bccspFactory.FactoryOpts{
+			ProviderName: "SW",
+			SwOpts: &bccspFactory.SwOpts{
+				HashFamily: c.SecurityAlgorithm(),
+				SecLevel:   c.SecurityLevel(),
+				FileKeystore: &bccspFactory.FileKeystoreOpts{
+					KeyStorePath: c.KeyStorePath(),
+				},
+				Ephemeral: c.Ephemeral(),
 			},
-			Ephemeral: false,
-		},
+		}
+		log.Debug("Initialized PKCS11 ")
+		bccspFactory.InitFactories(opts)
+		return opts
+
+	case "PKCS11":
+
+		pkks := pkcs11.FileKeystoreOpts{KeyStorePath: c.KeyStorePath()}
+
+		opts := &bccspFactory.FactoryOpts{
+			ProviderName: "PKCS11",
+			Pkcs11Opts: &pkcs11.PKCS11Opts{
+				SecLevel:     c.SecurityLevel(),
+				HashFamily:   c.SecurityAlgorithm(),
+				Ephemeral:    c.Ephemeral(),
+				FileKeystore: &pkks,
+				Library:      c.SecurityProviderLibPath(),
+				Pin:          c.SecurityProviderPin(),
+				Label:        c.SecurityProviderLabel(),
+				SoftVerify:   c.SoftVerify(),
+			},
+		}
+		log.Debug("Initialized PKCS11 ")
+		bccspFactory.InitFactories(opts)
+		return opts
+
 	}
+	return nil
 }
