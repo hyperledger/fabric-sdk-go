@@ -19,4 +19,4 @@ PKGS=`go list $REPO... 2> /dev/null | \
       grep -v ^$REPO/vendor/ | grep -v ^$REPO/test/`
 echo "Running tests..."
 
-go test -cover  $GOTESTFLAGS $LDFLAGS $PKGS -p 1 -timeout=40m
+go test -race -cover  $GOTESTFLAGS $LDFLAGS $PKGS -p 1 -timeout=40m

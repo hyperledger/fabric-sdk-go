@@ -397,7 +397,7 @@ func TestSignPayload(t *testing.T) {
 
 func TestConcurrentOrderers(t *testing.T) {
 	// Determine number of orderers to use - environment can override
-	const numOrderersDefault = 10000
+	const numOrderersDefault = 2000
 	numOrderersEnv := os.Getenv("TEST_MASSIVE_ORDERER_COUNT")
 	numOrderers, err := strconv.Atoi(numOrderersEnv)
 	if err != nil {

@@ -9,7 +9,6 @@
 # depend: installs test dependencies
 # unit-test: runs all the unit tests
 # integration-test: runs all the integration tests
-# race-test: runs tests with race detector
 # checks: runs all check conditions (license, spelling, linting)
 # clean: stops docker conatainers used for integration testing
 # mock-gen: generate mocks needed for testing (using mockgen)
@@ -51,7 +50,7 @@ edit-docker:
 	&& sed -i.bak -e 's/_TAG_/$(DOCKER_TAG)/g'  Dockerfile\
 	&& rm -rf Dockerfile.bak
 
-build-softhsm2-image: 
+build-softhsm2-image:
 	 @cd ./test/fixtures && docker build --no-cache -q  -t "softhsm2-image" . \
 
 restore-docker-file:
@@ -71,9 +70,6 @@ integration-test: clean depend edit-docker build-softhsm2-image restore-docker-f
 	@test/scripts/check_status.sh "./test/fixtures/docker-compose.yaml"
 
 integration-tests: integration-test
-
-race-test:
-	@test/scripts/racedetector.sh
 
 mock-gen:
 	go get -u github.com/golang/mock/gomock

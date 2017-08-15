@@ -10,5 +10,4 @@ PKGS=`go list github.com/hyperledger/fabric-sdk-go/test/integration/... 2> /dev/
                                                   grep -v /vendor/`
 
 echo "***Running integration tests..."
-go test -cover $GOTESTFLAGS $LDFLAGS $PKGS -p 1 -timeout=40m
-
+go test -race -cover $GOTESTFLAGS $LDFLAGS $PKGS -p 1 -timeout=40m
