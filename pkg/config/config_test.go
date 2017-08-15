@@ -17,6 +17,7 @@ import (
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	pkcsFactory "github.com/hyperledger/fabric/bccsp/factory"
 	pkcs11 "github.com/hyperledger/fabric/bccsp/pkcs11"
+	logging "github.com/op/go-logging"
 	"github.com/spf13/viper"
 )
 
@@ -568,5 +569,20 @@ func TestInterfaces(t *testing.T) {
 	apiConfig = &config
 	if apiConfig == nil {
 		t.Fatalf("this shouldn't happen.")
+	}
+}
+
+// Test go-logging concurrency fix: If this test fails, the concurrency fix
+// must be applied to go-logging. See: https://gerrit.hyperledger.org/r/12491
+// for fix details.
+func TestGoLoggingConcurrencyFix(t *testing.T) {
+	logger := logging.MustGetLogger("concurrencytest")
+	go func() {
+		for i := 0; i < 100; i++ {
+			logging.SetLevel(logging.Level(logging.DEBUG), "concurrencytest")
+		}
+	}()
+	for i := 0; i < 100; i++ {
+		logger.Info("testing")
 	}
 }

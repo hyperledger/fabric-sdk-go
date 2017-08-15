@@ -137,6 +137,9 @@ func Reset() {
 
 // IsEnabledFor returns true if the logger is enabled for the given level.
 func (l *Logger) IsEnabledFor(level Level) bool {
+	defaultBackendLock.RLock()
+	defer defaultBackendLock.RUnlock()
+
 	return defaultBackend.IsEnabledFor(level, l.Module)
 }
 

@@ -4,8 +4,11 @@
 
 package logging
 
+import "sync"
+
 // defaultBackend is the backend used for all logging calls.
 var defaultBackend LeveledBackend
+var defaultBackendLock sync.RWMutex
 
 // Backend is the interface which a log backend need to implement to be able to
 // be used as a logging backend.
@@ -16,6 +19,9 @@ type Backend interface {
 // SetBackend replaces the backend currently set with the given new logging
 // backend.
 func SetBackend(backends ...Backend) LeveledBackend {
+	defaultBackendLock.Lock()
+	defer defaultBackendLock.Unlock()
+
 	var backend Backend
 	if len(backends) == 1 {
 		backend = backends[0]
