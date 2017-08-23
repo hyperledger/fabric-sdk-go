@@ -53,4 +53,6 @@ type ServerConfig struct {
 	// The number of non-default CAs, which is useful for a dev environment to
 	// quickly start any number of CAs in a single server
 	CAcount int `def:"0" help:"Number of non-default CA instances"`
+	// Size limit of an acceptable CRL in bytes
+	CRLSizeLimit int `def:"512000" help:"Size limit of an acceptable CRL in bytes"`
 }

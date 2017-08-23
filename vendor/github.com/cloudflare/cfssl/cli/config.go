@@ -67,6 +67,7 @@ type Config struct {
 	CNOverride        string
 	AKI               string
 	DBConfigFile      string
+	CRLExpiration     time.Duration
 }
 
 // registerFlags defines all cfssl command flags and associates their values with variables.
@@ -74,8 +75,8 @@ func registerFlags(c *Config, f *flag.FlagSet) {
 	f.StringVar(&c.Hostname, "hostname", "", "Hostname for the cert, could be a comma-separated hostname list")
 	f.StringVar(&c.CertFile, "cert", "", "Client certificate that contains the public key")
 	f.StringVar(&c.CSRFile, "csr", "", "Certificate signature request file for new public key")
-	f.StringVar(&c.CAFile, "ca", "", "CA used to sign the new certificate")
-	f.StringVar(&c.CAKeyFile, "ca-key", "", "CA private key")
+	f.StringVar(&c.CAFile, "ca", "", "CA used to sign the new certificate -- accepts '[file:]fname' or 'env:varname'")
+	f.StringVar(&c.CAKeyFile, "ca-key", "", "CA private key -- accepts '[file:]fname' or 'env:varname'")
 	f.StringVar(&c.TLSCertFile, "tls-cert", "", "Other endpoint CA to set up TLS protocol")
 	f.StringVar(&c.TLSKeyFile, "tls-key", "", "Other endpoint CA private key")
 	f.StringVar(&c.MutualTLSCAFile, "mutual-tls-ca", "", "Mutual TLS - require clients be signed by this CA ")
@@ -125,6 +126,7 @@ func registerFlags(c *Config, f *flag.FlagSet) {
 	f.StringVar(&c.CNOverride, "cn", "", "certificate common name (CN)")
 	f.StringVar(&c.AKI, "aki", "", "certificate issuer (authority) key identifier")
 	f.StringVar(&c.DBConfigFile, "db-config", "", "certificate db configuration file")
+	f.DurationVar(&c.CRLExpiration, "expiry", 7*helpers.OneDay, "time from now after which the CRL will expire (default: one week)")
 	f.IntVar(&log.Level, "loglevel", log.LevelInfo, "Log level (0 = DEBUG, 5 = FATAL)")
 }
 

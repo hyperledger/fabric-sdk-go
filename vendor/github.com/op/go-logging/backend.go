@@ -21,7 +21,6 @@ type Backend interface {
 func SetBackend(backends ...Backend) LeveledBackend {
 	defaultBackendLock.Lock()
 	defer defaultBackendLock.Unlock()
-
 	var backend Backend
 	if len(backends) == 1 {
 		backend = backends[0]

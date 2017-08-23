@@ -176,7 +176,7 @@ func GetCertificate(certificate []byte) (*x509.Certificate, error) {
 	} else {
 		certificates, err = x509.ParseCertificates(block.Bytes)
 		if err != nil {
-			log.Fatal("PEM Certificatre Parse failed")
+			log.Error("PEM Certificatre Parse failed")
 			return nil, errors.New("PEM  Certificate Parse failed")
 		} //else {
 		isvalidCert = ValidateCert(certificates[0])

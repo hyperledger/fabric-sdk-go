@@ -11,9 +11,11 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	neturl "net/url"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/ocsp"
@@ -30,6 +32,7 @@ var HardFail = false
 // CRLSet associates a PKIX certificate list with the URL the CRL is
 // fetched from.
 var CRLSet = map[string]*pkix.CertificateList{}
+var crlLock = new(sync.Mutex)
 
 // We can't handle LDAP certificates, so this checks to see if the
 // URL string points to an LDAP resource so that we can ignore it.
@@ -77,17 +80,17 @@ func revCheck(cert *x509.Certificate) (revoked, ok bool) {
 			log.Info("certificate is revoked via CRL")
 			return true, true
 		}
+	}
 
-		if revoked, ok := certIsRevokedOCSP(cert, HardFail); !ok {
-			log.Warning("error checking revocation via OCSP")
-			if HardFail {
-				return true, false
-			}
-			return false, false
-		} else if revoked {
-			log.Info("certificate is revoked via OCSP")
-			return true, true
+	if revoked, ok := certIsRevokedOCSP(cert, HardFail); !ok {
+		log.Warning("error checking revocation via OCSP")
+		if HardFail {
+			return true, false
 		}
+		return false, false
+	} else if revoked {
+		log.Info("certificate is revoked via OCSP")
+		return true, true
 	}
 
 	return false, true
@@ -102,7 +105,7 @@ func fetchCRL(url string) (*pkix.CertificateList, error) {
 		return nil, errors.New("failed to retrieve CRL")
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := crlRead(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +135,9 @@ func certIsRevokedCRL(cert *x509.Certificate, url string) (revoked, ok bool) {
 	crl, ok := CRLSet[url]
 	if ok && crl == nil {
 		ok = false
+		crlLock.Lock()
 		delete(CRLSet, url)
+		crlLock.Unlock()
 	}
 
 	var shouldFetchCRL = true
@@ -161,7 +166,9 @@ func certIsRevokedCRL(cert *x509.Certificate, url string) (revoked, ok bool) {
 			}
 		}
 
+		crlLock.Lock()
 		CRLSet[url] = crl
+		crlLock.Unlock()
 	}
 
 	for _, revoked := range crl.TBSCertList.RevokedCertificates {
@@ -194,7 +201,7 @@ func fetchRemote(url string) (*x509.Certificate, error) {
 		return nil, err
 	}
 
-	in, err := ioutil.ReadAll(resp.Body)
+	in, err := remoteRead(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -233,15 +240,12 @@ func certIsRevokedOCSP(leaf *x509.Certificate, strict bool) (revoked, ok bool) {
 	}
 
 	for _, server := range ocspURLs {
-		resp, err := sendOCSPRequest(server, ocspRequest, issuer)
+		resp, err := sendOCSPRequest(server, ocspRequest, leaf, issuer)
 		if err != nil {
 			if strict {
 				return
 			}
 			continue
-		}
-		if err = resp.CheckSignatureFrom(issuer); err != nil {
-			return false, false
 		}
 
 		// There wasn't an error fetching the OCSP status.
@@ -260,7 +264,7 @@ func certIsRevokedOCSP(leaf *x509.Certificate, strict bool) (revoked, ok bool) {
 // sendOCSPRequest attempts to request an OCSP response from the
 // server. The error only indicates a failure to *fetch* the
 // certificate, and *does not* mean the certificate is valid.
-func sendOCSPRequest(server string, req []byte, issuer *x509.Certificate) (*ocsp.Response, error) {
+func sendOCSPRequest(server string, req []byte, leaf, issuer *x509.Certificate) (*ocsp.Response, error) {
 	var resp *http.Response
 	var err error
 	if len(req) > 256 {
@@ -279,7 +283,7 @@ func sendOCSPRequest(server string, req []byte, issuer *x509.Certificate) (*ocsp
 		return nil, errors.New("failed to retrieve OSCP")
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := ocspRead(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -298,5 +302,26 @@ func sendOCSPRequest(server string, req []byte, issuer *x509.Certificate) (*ocsp
 		return nil, errors.New("OSCP signature required")
 	}
 
-	return ocsp.ParseResponse(body, issuer)
+	return ocsp.ParseResponseForCert(body, leaf, issuer)
+}
+
+var crlRead = ioutil.ReadAll
+
+// SetCRLFetcher sets the function to use to read from the http response body
+func SetCRLFetcher(fn func(io.Reader) ([]byte, error)) {
+	crlRead = fn
+}
+
+var remoteRead = ioutil.ReadAll
+
+// SetRemoteFetcher sets the function to use to read from the http response body
+func SetRemoteFetcher(fn func(io.Reader) ([]byte, error)) {
+	remoteRead = fn
+}
+
+var ocspRead = ioutil.ReadAll
+
+// SetOCSPFetcher sets the function to use to read from the http response body
+func SetOCSPFetcher(fn func(io.Reader) ([]byte, error)) {
+	ocspRead = fn
 }

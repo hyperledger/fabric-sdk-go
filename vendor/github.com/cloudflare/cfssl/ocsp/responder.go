@@ -10,6 +10,8 @@ package ocsp
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -17,6 +19,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/cloudflare/cfssl/certdb"
 	"github.com/cloudflare/cfssl/log"
 	"github.com/jmhodges/clock"
 	"golang.org/x/crypto/ocsp"
@@ -28,14 +31,25 @@ var (
 	tryLaterErrorResponse         = []byte{0x30, 0x03, 0x0A, 0x01, 0x03}
 	sigRequredErrorResponse       = []byte{0x30, 0x03, 0x0A, 0x01, 0x05}
 	unauthorizedErrorResponse     = []byte{0x30, 0x03, 0x0A, 0x01, 0x06}
+
+	// ErrNotFound indicates the request OCSP response was not found. It is used to
+	// indicate that the responder should reply with unauthorizedErrorResponse.
+	ErrNotFound = errors.New("Request OCSP Response not found")
 )
 
 // Source represents the logical source of OCSP responses, i.e.,
 // the logic that actually chooses a response based on a request.  In
 // order to create an actual responder, wrap one of these in a Responder
-// object and pass it to http.Handle.
+// object and pass it to http.Handle. By default the Responder will set
+// the headers Cache-Control to "max-age=(response.NextUpdate-now), public, no-transform, must-revalidate",
+// Last-Modified to response.ThisUpdate, Expires to response.NextUpdate,
+// ETag to the SHA256 hash of the response, and Content-Type to
+// application/ocsp-response. If you want to override these headers,
+// or set extra headers, your source should return a http.Header
+// with the headers you wish to set. If you don't want to set any
+// extra headers you may return nil instead.
 type Source interface {
-	Response(*ocsp.Request) ([]byte, bool)
+	Response(*ocsp.Request) ([]byte, http.Header, error)
 }
 
 // An InMemorySource is a map from serialNumber -> der(response)
@@ -44,9 +58,67 @@ type InMemorySource map[string][]byte
 // Response looks up an OCSP response to provide for a given request.
 // InMemorySource looks up a response purely based on serial number,
 // without regard to what issuer the request is asking for.
-func (src InMemorySource) Response(request *ocsp.Request) (response []byte, present bool) {
-	response, present = src[request.SerialNumber.String()]
-	return
+func (src InMemorySource) Response(request *ocsp.Request) ([]byte, http.Header, error) {
+	response, present := src[request.SerialNumber.String()]
+	if !present {
+		return nil, nil, ErrNotFound
+	}
+	return response, nil, nil
+}
+
+// DBSource represnts a source of OCSP responses backed by the certdb package.
+type DBSource struct {
+	Accessor certdb.Accessor
+}
+
+// NewDBSource creates a new DBSource type with an associated dbAccessor.
+func NewDBSource(dbAccessor certdb.Accessor) Source {
+	return DBSource{
+		Accessor: dbAccessor,
+	}
+}
+
+// Response implements cfssl.ocsp.responder.Source, which returns the
+// OCSP response in the Database for the given request with the expiration
+// date furthest in the future.
+func (src DBSource) Response(req *ocsp.Request) ([]byte, http.Header, error) {
+	if req == nil {
+		return nil, nil, errors.New("called with nil request")
+	}
+
+	aki := hex.EncodeToString(req.IssuerKeyHash)
+	sn := req.SerialNumber
+
+	if sn == nil {
+		return nil, nil, errors.New("request contains no serial")
+	}
+	strSN := sn.String()
+
+	if src.Accessor == nil {
+		log.Errorf("No DB Accessor")
+		return nil, nil, errors.New("called with nil DB accessor")
+	}
+	records, err := src.Accessor.GetOCSP(strSN, aki)
+
+	// Response() logs when there are errors obtaining the OCSP response
+	// and returns nil, false.
+	if err != nil {
+		log.Errorf("Error obtaining OCSP response: %s", err)
+		return nil, nil, fmt.Errorf("failed to obtain OCSP response: %s", err)
+	}
+
+	if len(records) == 0 {
+		return nil, nil, ErrNotFound
+	}
+
+	// Response() finds the OCSPRecord with the expiration date furthest in the future.
+	cur := records[0]
+	for _, rec := range records {
+		if rec.Expiry.After(cur.Expiry) {
+			cur = rec
+		}
+	}
+	return []byte(cur.Body), nil, nil
 }
 
 // NewSourceFromFile reads the named file into an InMemorySource.
@@ -101,6 +173,19 @@ func NewResponder(source Source) *Responder {
 	}
 }
 
+func overrideHeaders(response http.ResponseWriter, headers http.Header) {
+	for k, v := range headers {
+		if len(v) == 1 {
+			response.Header().Set(k, v[0])
+		} else if len(v) > 1 {
+			response.Header().Del(k)
+			for _, e := range v {
+				response.Header().Add(k, e)
+			}
+		}
+	}
+}
+
 // A Responder can process both GET and POST requests.  The mapping
 // from an OCSP request to an OCSP response is done by the Source;
 // the Responder simply decodes the request, and passes back whatever
@@ -138,9 +223,16 @@ func (rs Responder) ServeHTTP(response http.ResponseWriter, request *http.Reques
 				base64RequestBytes[i] = '+'
 			}
 		}
+		// In certain situations a UA may construct a request that has a double
+		// slash between the host name and the base64 request body due to naively
+		// constructing the request URL. In that case strip the leading slash
+		// so that we can still decode the request.
+		if len(base64RequestBytes) > 0 && base64RequestBytes[0] == '/' {
+			base64RequestBytes = base64RequestBytes[1:]
+		}
 		requestBody, err = base64.StdEncoding.DecodeString(string(base64RequestBytes))
 		if err != nil {
-			log.Infof("Error decoding base64 from URL: %s", base64Request)
+			log.Infof("Error decoding base64 from URL: %s", string(base64RequestBytes))
 			response.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -176,12 +268,18 @@ func (rs Responder) ServeHTTP(response http.ResponseWriter, request *http.Reques
 	}
 
 	// Look up OCSP response from source
-	ocspResponse, found := rs.Source.Response(ocspRequest)
-	if !found {
-		log.Infof("No response found for request: serial %x, request body %s",
-			ocspRequest.SerialNumber, b64Body)
-		response.Write(unauthorizedErrorResponse)
-		return
+	ocspResponse, headers, err := rs.Source.Response(ocspRequest)
+	if err != nil {
+		if err == ErrNotFound {
+			log.Infof("No response found for request: serial %x, request body %s",
+				ocspRequest.SerialNumber, b64Body)
+			response.Write(unauthorizedErrorResponse)
+			return
+		}
+		log.Infof("Error retrieving response for request: serial %x, request body %s, error: %s",
+			ocspRequest.SerialNumber, b64Body, err)
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write(internalErrorErrorResponse)
 	}
 
 	parsedResponse, err := ocsp.ParseResponse(ocspResponse, nil)
@@ -213,6 +311,10 @@ func (rs Responder) ServeHTTP(response http.ResponseWriter, request *http.Reques
 	)
 	responseHash := sha256.Sum256(ocspResponse)
 	response.Header().Add("ETag", fmt.Sprintf("\"%X\"", responseHash))
+
+	if headers != nil {
+		overrideHeaders(response, headers)
+	}
 
 	// RFC 7232 says that a 304 response must contain the above
 	// headers if they would also be sent for a 200 for the same

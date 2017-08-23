@@ -34,12 +34,8 @@ func (f HandlerFunc) Handle(w http.ResponseWriter, r *http.Request) error {
 	return f(w, r)
 }
 
+// HandleError is the centralised error handling and reporting.
 func HandleError(w http.ResponseWriter, err error) (code int) {
-   return handleError(w,err)
-}
-
-// handleError is the centralised error handling and reporting.
-func handleError(w http.ResponseWriter, err error) (code int) {
 	if err == nil {
 		return http.StatusOK
 	}
@@ -86,7 +82,7 @@ func (h HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = errors.NewMethodNotAllowed(r.Method)
 	}
-	status := handleError(w, err)
+	status := HandleError(w, err)
 	log.Infof("%s - \"%s %s\" %d", r.RemoteAddr, r.Method, r.URL, status)
 }
 

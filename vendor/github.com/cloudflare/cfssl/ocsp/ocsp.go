@@ -54,6 +54,10 @@ type SignRequest struct {
 	Reason      int
 	RevokedAt   time.Time
 	Extensions  []pkix.Extension
+	// IssuerHash is the hashing function used to hash the issuer subject and public key
+	// in the OCSP response. Valid values are crypto.SHA1, crypto.SHA256, crypto.SHA384,
+	// and crypto.SHA512. If zero, the default is crypto.SHA1.
+	IssuerHash crypto.Hash
 }
 
 // Signer represents a general signer of OCSP responses.  It is
@@ -100,7 +104,7 @@ func ReasonStringToCode(reason string) (reasonCode int, err error) {
 // from PEM files, and takes an interval in seconds
 func NewSignerFromFile(issuerFile, responderFile, keyFile string, interval time.Duration) (Signer, error) {
 	log.Debug("Loading issuer cert: ", issuerFile)
-	issuerBytes, err := ioutil.ReadFile(issuerFile)
+	issuerBytes, err := helpers.ReadBytes(issuerFile)
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +188,7 @@ func (s StandardSigner) Sign(req SignRequest) ([]byte, error) {
 		NextUpdate:      nextUpdate,
 		Certificate:     certificate,
 		ExtraExtensions: req.Extensions,
+		IssuerHash:      req.IssuerHash,
 	}
 
 	if status == ocsp.Revoked {

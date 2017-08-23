@@ -127,13 +127,10 @@ type Client struct {
 // for the requested attribute names
 func (lc *Client) GetUser(username string, attrNames []string) (spi.User, error) {
 
-	log.Debugf("Getting user '%s'", username)
+	var sresp *ldap.SearchResult
+	var err error
 
-	// Connect to the LDAP server as admin if not already connected
-	err := lc.adminConnect()
-	if err != nil {
-		return nil, err
-	}
+	log.Debugf("Getting user '%s'", username)
 
 	// Search for the given username
 	sreq := ldap.NewSearchRequest(
@@ -143,10 +140,37 @@ func (lc *Client) GetUser(username string, attrNames []string) (spi.User, error)
 		attrNames,
 		nil,
 	)
-	sresp, err := lc.AdminConn.Search(sreq)
-	if err != nil {
-		return nil, fmt.Errorf("LDAP search failure: %s; search request: %+v", err, sreq)
+
+	// Try to search using the cached connection, if there is one
+	conn := lc.AdminConn
+	if conn != nil {
+		log.Debugf("Searching for user '%s' using cached connection", username)
+		sresp, err = conn.Search(sreq)
+		if err != nil {
+			log.Debugf("LDAP search failed but will close connection and try again; error was: %s", err)
+			conn.Close()
+			lc.AdminConn = nil
+		}
 	}
+
+	// If there was no cached connection or the search failed for any reason
+	// (including because the server may have closed the cached connection),
+	// try with a new connection.
+	if sresp == nil {
+		log.Debugf("Searching for user '%s' using new connection", username)
+		conn, err = lc.newConnection()
+		if err != nil {
+			return nil, err
+		}
+		sresp, err = conn.Search(sreq)
+		if err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("LDAP search failure: %s; search request: %+v", err, sreq)
+		}
+		// Cache the connection
+		lc.AdminConn = conn
+	}
+
 	// Make sure there was exactly one match found
 	if len(sresp.Entries) < 1 {
 		return nil, fmt.Errorf("User '%s' does not exist in LDAP directory", username)
@@ -219,18 +243,6 @@ func (lc *Client) InsertAffiliation(name string, prekey string) error {
 // DeleteAffiliation deletes an affiliation group
 func (lc *Client) DeleteAffiliation(name string) error {
 	return errNotSupported
-}
-
-// Create an admin connection to the LDAP server and cache it in the client
-func (lc *Client) adminConnect() error {
-	if lc.AdminConn == nil {
-		conn, err := lc.newConnection()
-		if err != nil {
-			return err
-		}
-		lc.AdminConn = conn
-	}
-	return nil
 }
 
 // Connect to the LDAP server and bind as user as admin user as specified in LDAP URL

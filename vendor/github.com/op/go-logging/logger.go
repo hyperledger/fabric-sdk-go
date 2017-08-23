@@ -139,7 +139,6 @@ func Reset() {
 func (l *Logger) IsEnabledFor(level Level) bool {
 	defaultBackendLock.RLock()
 	defer defaultBackendLock.RUnlock()
-
 	return defaultBackend.IsEnabledFor(level, l.Module)
 }
 

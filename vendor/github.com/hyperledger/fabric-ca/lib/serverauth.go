@@ -144,22 +144,15 @@ func (ah *fcaAuthHandler) serveHTTP(w http.ResponseWriter, r *http.Request) erro
 	case token:
 
 		ca := ah.server.caMap[req.CAName]
-
 		// verify token
 		cert, err2 := util.VerifyToken(ca.csp, authHdr, body)
 		if err2 != nil {
 			log.Debugf("Failed to verify token: %s", err2)
 			return authError
 		}
-		// Make sure the caller's cert was issued by this CA
-		err2 = ca.VerifyCertificate(cert)
-		if err2 != nil {
-			log.Debugf("Failed to verify certificate: %s", err2)
-			return authError
-		}
+
 		id := util.GetEnrollmentIDFromX509Certificate(cert)
 		log.Debugf("Checking for revocation/expiration of certificate owned by '%s'", id)
-
 		// VerifyCertificate ensures that the certificate passed in hasn't
 		// expired and checks the CRL for the server.
 		revokedOrExpired, checked := revoke.VerifyCertificate(cert)
@@ -169,6 +162,13 @@ func (ah *fcaAuthHandler) serveHTTP(w http.ResponseWriter, r *http.Request) erro
 		}
 		if !checked {
 			log.Debug("A failure occurred while checking for revocation and expiration")
+			return authError
+		}
+
+		// Make sure the caller's cert was issued by this CA
+		err2 = ca.VerifyCertificate(cert)
+		if err2 != nil {
+			log.Debugf("Failed to verify certificate: %s", err2)
 			return authError
 		}
 

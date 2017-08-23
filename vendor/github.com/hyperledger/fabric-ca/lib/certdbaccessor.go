@@ -189,6 +189,24 @@ func (d *CertDBAccessor) GetUnexpiredCertificates() (crs []certdb.CertificateRec
 	return crs, err
 }
 
+// GetRevokedAndUnexpiredCertificates returns all revoked and unexpired certificates
+func (d *CertDBAccessor) GetRevokedAndUnexpiredCertificates() ([]certdb.CertificateRecord, error) {
+	crs, err := d.accessor.GetRevokedAndUnexpiredCertificates()
+	if err != nil {
+		return nil, err
+	}
+	return crs, err
+}
+
+// GetRevokedAndUnexpiredCertificatesByLabel returns revoked and unexpired certificates matching the label
+func (d *CertDBAccessor) GetRevokedAndUnexpiredCertificatesByLabel(label string) ([]certdb.CertificateRecord, error) {
+	crs, err := d.accessor.GetRevokedAndUnexpiredCertificatesByLabel(label)
+	if err != nil {
+		return nil, err
+	}
+	return crs, err
+}
+
 // RevokeCertificatesByID updates all certificates for a given ID and marks them revoked.
 func (d *CertDBAccessor) RevokeCertificatesByID(id string, reasonCode int) (crs []CertRecord, err error) {
 	log.Debugf("DB: Revoke certificate by ID (%s)", id)
