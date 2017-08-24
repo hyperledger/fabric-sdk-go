@@ -6,12 +6,15 @@
 
 # Supported Targets:
 # all : runs unit and integration tests
-# depend: installs test dependencies
+# depend: checks that test dependencies are installed
+# depend-install: installs test dependencies
 # unit-test: runs all the unit tests
 # integration-test: runs all the integration tests
 # checks: runs all check conditions (license, spelling, linting)
 # clean: stops docker conatainers used for integration testing
 # mock-gen: generate mocks needed for testing (using mockgen)
+# populate: populates generated files (not included in git) - currently only vendor
+# populate-vendor: populate the vendor directory based on the lock 
 #
 #
 # Instructions to generate .tx files used for creating channels:
@@ -26,12 +29,20 @@ export ARCH=$(shell uname -m)
 export LDFLAGS=-ldflags=-s
 export DOCKER_NS=hyperledger
 export DOCKER_TAG=$(ARCH)-0.3.1
+export GO_DEP_COMMIT=v0.3.0 # the version of dep that will be installed by depend-install (or in the CI)
 
+# Detect CI
+ifdef JENKINS_URL
+export FABRIC_SDKGO_DEPEND_INSTALL=true
+endif
 
 all: checks unit-test integration-test
 
 depend:
 	@test/scripts/dependencies.sh
+
+depend-install:
+	@FABRIC_SDKGO_DEPEND_INSTALL="true" test/scripts/dependencies.sh
 
 checks: depend license lint spelling
 
@@ -58,28 +69,33 @@ restore-docker-file:
 	&& sed -i.bak -e 's/$(DOCKER_TAG)/_TAG_/g'  Dockerfile\
 	&& rm -rf Dockerfile.bak
 
-unit-test: clean edit-docker build-softhsm2-image restore-docker-file
+unit-test: clean depend populate edit-docker build-softhsm2-image restore-docker-file
 	@cd ./test/fixtures && docker-compose -f docker-compose-unit.yaml up --abort-on-container-exit
 	@test/scripts/check_status.sh "./test/fixtures/docker-compose-unit.yaml"
 
 
 unit-tests: unit-test
 
-integration-test: clean depend edit-docker build-softhsm2-image restore-docker-file
+integration-test: clean depend populate edit-docker build-softhsm2-image restore-docker-file
 	@cd ./test/fixtures && docker-compose up --force-recreate --abort-on-container-exit
 	@test/scripts/check_status.sh "./test/fixtures/docker-compose.yaml"
 
 integration-tests: integration-test
 
 mock-gen:
-	go get -u github.com/golang/mock/gomock
-	go get -u github.com/golang/mock/mockgen
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apitxn/mocks/mockapitxn.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apiconfig Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apiconfig/mocks/mockconfig.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apifabca FabricCAClient | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apifabca/mocks/mockfabriccaclient.gen.go
+
+populate: populate-vendor
+
+populate-vendor:
+	@echo "Populating vendor ..."
+	@dep ensure -vendor-only
 
 clean:
 	rm -Rf /tmp/enroll_user /tmp/msp /tmp/keyvaluestore
 	rm -f integration-report.xml report.xml
 	cd test/fixtures && docker-compose down
 	cd test/fixtures && docker-compose -f docker-compose-unit.yaml down
+	rm -Rf vendor

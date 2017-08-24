@@ -38,14 +38,17 @@ repository.
 ### Compatibility
 
 This client SDK was last tested and found to be compatible with the following Hyperledger Fabric commit levels:
-- fabric: v1.0.0
-- fabric-ca: v1.0.0
+- fabric: v1.0.1
+- fabric-ca: v1.0.1
 
 ### Running the test suite
 
 ```
 # In the Fabric SDK Go directory
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/
+
+# Optional - Automatically install Go tools used by test suite
+# make depend-install
 
 # Running test suite
 make
@@ -60,6 +63,7 @@ If you want to contribute to the Go SDK, please run the test suite and submit pa
 
 You need:
 - Go
+- [Dep](https://github.com/golang/dep) 
 - Make
 - Docker
 - Docker Compose
