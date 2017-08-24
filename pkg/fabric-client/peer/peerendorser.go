@@ -107,5 +107,6 @@ func (p *peerEndorser) sendProposal(proposal apitxn.TransactionProposal) (*pb.Pr
 }
 
 func (tpe TransactionProposalError) Error() string {
-	return fmt.Sprintf("Transaction processor (%s) returned error '%s' for proposal: %v", tpe.Endorser, tpe.Err.Error(), tpe.Proposal)
+	return fmt.Sprintf("Transaction processor (%s) returned error '%s' for txID '%s'",
+		tpe.Endorser, tpe.Err.Error(), tpe.Proposal.TxnID.ID)
 }
