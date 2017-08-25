@@ -1,0 +1,77 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+[[constraint]]
+  name = "github.com/hyperledger/fabric"
+  version = "~1.0.0"
+
+[[constraint]]
+  name = "github.com/hyperledger/fabric-ca"
+  version = "~1.0.0"
+
+[[constraint]]
+  name = "github.com/golang/mock"
+  version = "^1.0.0"
+
+[[constraint]]
+  name = "github.com/spf13/viper"
+  version = "^1.0.0"
+
+[[constraint]]
+  name = "google.golang.org/grpc"
+  version = "^1.0.0"
+
+[[constraint]]
+  name = "github.com/golang/protobuf"
+  branch = "master"
+
+[[constraint]]
+  name = "golang.org/x/net"
+  branch = "master"
+
+################
+# Downstream overrides to enable testing
+# (https://github.com/golang/dep/blob/master/docs/FAQ.md#how-do-i-constrain-a-transitive-dependencys-version)
+
+# Mainly downstreams that have a direct reference
+[[override]]
+  name = "github.com/op/go-logging"
+  # TODO: source isn't picked up by parent projects - need better solution
+  source = "github.com/troyronda/go-logging"   # TODO: Better home for this fork
+  branch = "datarace"
+  # note: go-logging is mainly a downstream package but is also in tests to ensure the fork is applied
+
+[[override]]
+  name = "github.com/cloudflare/cfssl"
+  branch = "master"
+  # note: cfssl is mainly a downstream package but is also used in the SDK mocks
+
+# Downstream overrides due to inconsistent semver
+[[override]]
+name = "github.com/docker/libnetwork"
+branch = "master"
+
+[[override]]
+name = "github.com/docker/go-connections"
+branch = "master"
+
+[[override]]
+name = "github.com/docker/go-units"
+branch = "master"
+
+[[override]]
+name = "github.com/docker/libkv"
+branch = "master"
+
+# Temporary downstream overrides due to sirupsen/logrus case sensitivity
+[[override]]
+name = "github.com/docker/docker"
+source = "github.com/moby/moby"
+branch = "master"
+
+[[override]]
+name = "github.com/opencontainers/runc"
+branch = "master"
