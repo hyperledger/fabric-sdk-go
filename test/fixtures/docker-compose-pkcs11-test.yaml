@@ -1,0 +1,20 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '2'
+
+services:
+      
+  fabric-sdk-pkcs11-tests:
+    container_name: fabric-sdk-pkcs11-test
+    image: softhsm2-image
+    environment:
+      - FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER=PKCS11
+    volumes:
+      - ../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
+    command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration.sh
+    depends_on:
+      - orderer.example.com
+      - builder

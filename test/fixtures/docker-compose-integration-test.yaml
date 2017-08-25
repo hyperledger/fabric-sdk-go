@@ -1,0 +1,18 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '2'
+
+services:
+      
+  fabric-sdk-integration-tests:
+    container_name: fabric-sdk-integration-test
+    image: softhsm2-image
+    volumes:
+      - ../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
+    command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration.sh
+    depends_on:
+      - orderer.example.com
+      - builder

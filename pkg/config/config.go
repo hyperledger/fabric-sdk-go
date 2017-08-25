@@ -446,7 +446,7 @@ func (c *Config) CSPConfig() *bccspFactory.FactoryOpts {
 				Ephemeral: c.Ephemeral(),
 			},
 		}
-		log.Debug("Initialized PKCS11 ")
+		log.Debug("Initialized SW ")
 		bccspFactory.InitFactories(opts)
 		return opts
 
@@ -471,6 +471,8 @@ func (c *Config) CSPConfig() *bccspFactory.FactoryOpts {
 		bccspFactory.InitFactories(opts)
 		return opts
 
+	default:
+		panic(fmt.Sprintf("Unsupported BCCSP Provider: %s", c.SecurityProvider()))
+
 	}
-	return nil
 }

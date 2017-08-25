@@ -1,5 +1,5 @@
 #
-# Copyright IBM Corp, SecureKey Technologies Inc. All Rights Reserved.
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -140,16 +140,6 @@ services:
         - /var/run/:/host/var/run/
         - ./channel/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp:/etc/hyperledger/msp/peer
         - ./channel/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls:/etc/hyperledger/tls/peer
-    depends_on:
-      - orderer.example.com
-      - builder
-      
-  fabric-sdk-int-tests:
-    container_name: fabric-sdk-integration-softhsm2
-    image: softhsm2-image
-    volumes:
-      - ../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
-    command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration-container.sh
     depends_on:
       - orderer.example.com
       - builder

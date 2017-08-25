@@ -38,8 +38,8 @@ repository.
 ### Compatibility
 
 This client SDK was last tested and found to be compatible with the following Hyperledger Fabric commit levels:
-- fabric: v1.0.1
-- fabric-ca: v1.0.1
+- fabric v1.0.1 & fabric-ca v1.0.1
+- fabric v1.0.0 & fabric-ca v1.0.0
 
 ### Running the test suite
 
@@ -139,14 +139,14 @@ Alternatively you can build and run Fabric on your own box using the following c
 cd $GOPATH/src/github.com/hyperledger/
 git clone https://github.com/hyperledger/fabric
 cd $GOPATH/src/github.com/hyperledger/fabric/
-git checkout v1.0.0
+git checkout v1.0.1
 make docker
 
 # Build fabric-ca:
 cd $GOPATH/src/github.com/hyperledger/
 git clone https://github.com/hyperledger/fabric-ca
 cd $GOPATH/src/github.com/hyperledger/fabric-ca/
-git checkout v1.0.0
+git checkout v1.0.1
 make docker
 
 # Start fabric - latest-env.sh overrides the default docker tags in .env

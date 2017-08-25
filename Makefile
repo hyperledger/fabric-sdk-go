@@ -70,18 +70,20 @@ restore-docker-file:
 	&& sed -i.bak -e 's/$(DOCKER_TAG)/_TAG_/g'  Dockerfile\
 	&& rm -rf Dockerfile.bak
 
-unit-test: clean depend populate edit-docker build-softhsm2-image restore-docker-file
-	@cd ./test/fixtures && docker-compose -f docker-compose-unit.yaml up --abort-on-container-exit
-	@test/scripts/check_status.sh "./test/fixtures/docker-compose-unit.yaml"
-
+unit-test: checks depend populate
+	@test/scripts/unit.sh
 
 unit-tests: unit-test
 
-integration-test: clean depend populate edit-docker build-softhsm2-image restore-docker-file
-	@cd ./test/fixtures && docker-compose up --force-recreate --abort-on-container-exit
-	@test/scripts/check_status.sh "./test/fixtures/docker-compose.yaml"
+integration-tests: clean depend populate edit-docker build-softhsm2-image restore-docker-file
+	@cd ./test/fixtures && docker-compose -f docker-compose.yaml -f docker-compose-integration-test.yaml up --force-recreate --abort-on-container-exit
+	@test/scripts/check_status.sh "-f ./test/fixtures/docker-compose.yaml -f ./test/fixtures/docker-compose-integration-test.yaml"
 
-integration-tests: integration-test
+integration-tests-pkcs11: clean depend populate edit-docker build-softhsm2-image restore-docker-file
+	@cd ./test/fixtures && docker-compose -f docker-compose.yaml -f docker-compose-pkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@test/scripts/check_status.sh "-f ./test/fixtures/docker-compose.yaml -f ./test/fixtures/docker-compose-pkcs11-test.yaml"
+
+integration-test: integration-tests integration-tests-pkcs11
 
 mock-gen:
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apitxn/mocks/mockapitxn.gen.go
@@ -100,5 +102,4 @@ populate-clean:
 clean:
 	rm -Rf /tmp/enroll_user /tmp/msp /tmp/keyvaluestore
 	rm -f integration-report.xml report.xml
-	cd test/fixtures && docker-compose down
-	cd test/fixtures && docker-compose -f docker-compose-unit.yaml down
+	cd test/fixtures && docker-compose -f docker-compose.yaml -f docker-compose-integration-test.yaml -f docker-compose-pkcs11-test.yaml down

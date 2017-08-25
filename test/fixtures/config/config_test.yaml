@@ -33,7 +33,7 @@ client:
   security:
    enabled: true
    default:
-    provider: "PKCS11"
+    provider: "SW"
    hashAlgorithm: "SHA2"
    softVerify: true
    ephemeral: false
@@ -42,8 +42,6 @@ client:
    label: "ForFabric"
    library: "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/softhsm/libsofthsm2.so , /usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so"
    
-   
-
 # network provides a static definition of a Hyperledger Fabric network
  network:
   # list of ordering service nodes
