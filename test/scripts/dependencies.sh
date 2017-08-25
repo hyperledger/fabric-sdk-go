@@ -17,7 +17,7 @@ if [ "$FABRIC_SDKGO_DEPEND_INSTALL" = "true" ]; then
     go get -u github.com/client9/misspell/cmd/misspell
     go get -u github.com/golang/lint/golint
     go get -u golang.org/x/tools/cmd/goimports
-	go get -u github.com/golang/mock/mockgen
+    go get -u github.com/golang/mock/mockgen
 fi
 
 # Install specific version of go dep (particularly for CI)
