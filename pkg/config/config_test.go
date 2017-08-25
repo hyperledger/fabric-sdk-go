@@ -49,7 +49,6 @@ oG5kQQIgQAe4OOKYhJdh3f7URaKfGTf492/nmRmtK+ySKjpHSrU=
 -----END CERTIFICATE-----`
 
 func TestCAConfig(t *testing.T) {
-
 	//Test config
 	vConfig := viper.New()
 	vConfig.SetConfigFile("../../test/fixtures/config/config_test.yaml")

@@ -4,18 +4,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+set -e
 file_path=$1
-exit_code=0
+
 docker-compose --file=$file_path ps -q | xargs docker inspect -f '{{ .Name }},{{ .State.ExitCode }}' | \
+
 while read name ; do
 if echo "$name" | grep -q "softhsm2" 
 then
-    code="$(cut -d',' -f2 <<<"$name")"
-    if (test "$code" -ne "$exit_code")
+    statusCode="${name: -1}"
+    echo $statusCode
+    if  [ "$statusCode" != "0" ] 
     then
-        exit_code=1
+        exit $statusCode
+    else
+        exit 0
     fi
 fi
 done
-exit $exit_code
 
