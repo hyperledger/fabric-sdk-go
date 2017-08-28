@@ -37,9 +37,10 @@ repository.
 
 ### Compatibility
 
-This client SDK was last tested and found to be compatible with the following Hyperledger Fabric commit levels:
 - fabric v1.0.1 & fabric-ca v1.0.1
+  - fabric-sdk-go: master:HEAD
 - fabric v1.0.0 & fabric-ca v1.0.0
+  - fabric-sdk-go: master:110bf21bf3ab0a9a084f46d9698e1daeeda68a59
 
 ### Running the test suite
 
