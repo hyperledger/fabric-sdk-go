@@ -21,6 +21,11 @@ if [[ -z "$CHECK" ]]; then
     filterExcludedFiles
 fi
 
+if [[ -z "$CHECK" ]]; then
+   echo "All files are excluded from having SPDX-License-Identifier headers"
+   exit 0
+fi
+
 echo "Checking committed files for SPDX-License-Identifier headers ..."
 missing=`echo "$CHECK" | xargs ls -d 2>/dev/null | xargs grep -L "SPDX-License-Identifier"`
 if [[ -z "$missing" ]]; then
