@@ -48,7 +48,7 @@ func TestDeadlock(t *testing.T) {
 
 	// The test should be done in milliseconds but if there's
 	// a deadlock then we don't want it to hang
-	timeout := 5 * time.Second
+	timeout := 30 * time.Second
 
 	// create a flood of TX events
 	txCompletion := newMultiCompletionHandler(eventsSent, timeout)
@@ -272,7 +272,7 @@ func (c *multiCompletionHandler) done() {
 
 // numDone returns the nmber of tasks that have completed
 func (c *multiCompletionHandler) numDone() int {
-	return int(c.numCompleted)
+	return int(atomic.LoadInt32(&c.numCompleted))
 }
 
 // flood invokes the given function in the given number of threads,
