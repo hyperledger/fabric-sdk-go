@@ -56,7 +56,6 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 	myViper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
 	myViper.SetEnvKeyReplacer(replacer)
-
 	if configFile != "" {
 		// create new viper
 		myViper.SetConfigFile(configFile)
@@ -69,22 +68,20 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 			return nil, fmt.Errorf("Fatal error config file: %v", err)
 		}
 	}
-	log.Debug(myViper.GetString("client.fabricCA.serverURL"))
-	backend := logging.NewLogBackend(os.Stderr, "", 0)
-	backendFormatter := logging.NewBackendFormatter(backend, format)
 
 	loggingLevelString := myViper.GetString("client.logging.level")
 	logLevel := logging.INFO
 	if loggingLevelString != "" {
-		log.Infof("fabric_sdk_go Logging level: %v", loggingLevelString)
+		log.Infof("fabric_sdk_go Logging level from the config: %v", loggingLevelString)
 		var err error
 		logLevel, err = logging.LogLevel(loggingLevelString)
 		if err != nil {
 			panic(err)
 		}
 	}
-	logging.SetBackend(backendFormatter).SetLevel(logging.Level(logLevel), "fabric_sdk_go")
+	logging.SetLevel(logging.Level(logLevel), "fabric_sdk_go")
 
+	log.Infof("fabric_sdk_go Logging level is finally set to: %s", logging.GetLevel("fabric_sdk_go"))
 	return &Config{tlsCertPool: x509.NewCertPool()}, nil
 }
 
