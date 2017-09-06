@@ -8,74 +8,110 @@ package apiconfig
 
 // NetworkConfig provides a static definition of a Hyperledger Fabric network
 type NetworkConfig struct {
+	Name                   string
+	Xtype                  string
+	Description            string
+	Version                string
+	Client                 ClientConfig
+	Channels               map[string]ChannelConfig
+	Organizations          map[string]OrganizationConfig
+	Orderers               map[string]OrdererConfig
+	Peers                  map[string]PeerConfig
+	CertificateAuthorities map[string]CAConfig
+}
+
+type ClientConfig struct {
+	Organization string
+	Logging      LoggingType
+	CryptoConfig CCType
+	Tls          TlsType
+	// currently not used by GO-SDK
+	CredentialStore CredentialStoreType
+}
+
+type LoggingType struct {
+	Level string
+}
+
+type CCType struct {
+	Path string
+}
+type TlsType struct {
+	Enabled bool
+}
+
+type CredentialStoreType struct {
+	Path        string
+	CryptoStore struct {
+		Path string
+	}
+	Wallet string
+}
+
+type ChannelConfig struct {
 	// Orderers list of ordering service nodes
-	Orderers map[string]OrdererConfig
-	// Organizations map of member organizations forming the network
-	Organizations map[string]OrganizationConfig
+	Orderers []string
+	// Peers a list of peer-channels that are part of this organization
+	// to get the real Peer config object, use the Name field and fetch NetworkConfig.Peers[Name]
+	Peers map[string]PeerChannelConfig
+	// Chaincodes list of services
+	Chaincodes []string
 }
 
-// OrganizationConfig defines a member organization in the fabric network
+type PeerChannelConfig struct {
+	EndorsingPeer  bool
+	ChaincodeQuery bool
+	LedgerQuery    bool
+	EventSource    bool
+}
+
 type OrganizationConfig struct {
-	// MspID Membership Service Provider ID for this organization
-	MspID string
-	// CA config defines the fabric-ca instance that issues identities for this org
-	CA CAConfig
-	// Peers a list of peers that are part of this organization
-	Peers map[string]PeerConfig
+	MspID                  string
+	Peers                  []string
+	CertificateAuthorities []string
+	AdminPrivateKey        TLSConfig
+	SignedCert             TLSConfig
 }
 
-// PeerConfig A set of configurations required to connect to a Fabric peer
-type PeerConfig struct {
-	// Host peer host
-	Host string
-	// Port peer port
-	Port int
-	// EventHost peer event host
-	EventHost string
-	// EventPort peer event port
-	EventPort int
-	// Primary is the the primary peer for the organization
-	Primary bool
-	// TLS configurations
-	TLS TLSConfig
-}
-
-// OrdererConfig A set of configurations required to connect to an
-// Ordering Service node
 type OrdererConfig struct {
-	// Host orderer host
-	Host string
-	// Port orderer port
-	Port int
-	// TLS configurations
-	TLS TLSConfig
+	URL         string
+	GrpcOptions map[string]interface{}
+	TlsCACerts  TLSConfig
 }
 
-// CAConfig A set of configurations required to connect to fabric-ca
+type PeerConfig struct {
+	Url         string
+	EventUrl    string
+	GrpcOptions map[string]interface{}
+	TlsCACerts  TLSConfig
+}
+
 type CAConfig struct {
-	// TLSEnabled flag
-	TLSEnabled bool
-	// Name CA name
-	Name string
-	// ServerURL server URL
-	ServerURL string
-	// TLS configurations
-	TLS MutualTLSConfig
+	Url         string
+	HttpOptions map[string]interface{}
+	TlsCACerts  MutualTLSConfig
+	Registrar   struct {
+		EnrollId     string
+		EnrollSecret string
+	}
+	CaName string
 }
 
 // TLSConfig TLS configurations
 type TLSConfig struct {
+	// the following two fields are interchangeable.
+	// If Path is available, then it will be used to load the cert
+	// if Pem is available, then it has the raw data of the cert it will be used as-is
 	// Certificate root certificate path
-	Certificate string
-	// ServerHostOverride override host name for certificate validation.
-	// For testing only.
-	ServerHostOverride string
+	Path string
+	// Certificate actual content
+	Pem string
 }
 
 // MutualTLSConfig Mutual TLS configurations
 type MutualTLSConfig struct {
 	// Certfiles root certificates for TLS validation (Comma serparated path list)
-	Certfiles string
+	Path string
 	// Client client TLS information
 	Client struct {
 		// Keyfile client key path

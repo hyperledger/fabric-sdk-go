@@ -240,17 +240,14 @@ func TestGetCAName(t *testing.T) {
 }
 
 func TestCreateNewFabricCAClient(t *testing.T) {
-
 	_, err := NewFabricCAClient(configImp, "")
 	if err.Error() != "Organization and config are required to load CA config" {
 		t.Fatalf("Expected error without oganization information. Got: %s", err.Error())
 	}
-
 	_, err = NewFabricCAClient(nil, org1)
 	if err.Error() != "Organization and config are required to load CA config" {
 		t.Fatalf("Expected error without config information. Got: %s", err.Error())
 	}
-
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
@@ -285,6 +282,13 @@ func TestCreateNewFabricCAClient(t *testing.T) {
 	if err.Error() != "CAClientKeyFile error" {
 		t.Fatalf("Expected error from CAClientKeyFile. Got: %s", err.Error())
 	}
+}
+
+func TestCreateInvalidBCCSPSecurityLevelForNewFabricClient(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	clientMockObject := &config.ClientConfig{Organization: "org1", Logging: config.LoggingType{Level: "info"}, CryptoConfig: config.CCType{Path: "test/path"}}
 
 	bccspSW := createBCCSPProviderFactoryOptions("SW", "SHA2", 100)
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
@@ -293,35 +297,54 @@ func TestCreateNewFabricCAClient(t *testing.T) {
 	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
 	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
+	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
+	mockConfig.EXPECT().IsTLSEnabled().Return(true)
 	client, err := NewFabricCAClient(mockConfig, org1)
 	if !strings.Contains(err.Error(), "New fabricCAClient failed") {
 		t.Fatalf("Expected error from client %v init. Got: %s", client, err.Error())
 	}
+}
 
-	bccspSW = createBCCSPProviderFactoryOptions("SW", "ABC", 256)
+func TestCreateInvalidBCCSPHashFamilyForNewFabricClient(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	clientMockObject := &config.ClientConfig{Organization: "org1", Logging: config.LoggingType{Level: "info"}, CryptoConfig: config.CCType{Path: "test/path"}}
+
+	bccspSW := createBCCSPProviderFactoryOptions("SW", "ABC", 256)
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
+	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
+	mockConfig.EXPECT().IsTLSEnabled().Return(true)
 	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
-	client, err = NewFabricCAClient(mockConfig, org1)
+	client, err := NewFabricCAClient(mockConfig, org1)
 	if !strings.Contains(err.Error(), "New fabricCAClient failed") {
 		t.Fatalf("Expected error from client %v init. Got: %s", client, err.Error())
 	}
+}
 
-	bccspSW = createBCCSPProviderFactoryOptions("SW", "SHA2", 256)
+func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	clientMockObject := &config.ClientConfig{Organization: "org1", Logging: config.LoggingType{Level: "info"}, CryptoConfig: config.CCType{Path: "test/path"}}
+
+	bccspSW := createBCCSPProviderFactoryOptions("SW", "SHA2", 256)
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
+	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
+	mockConfig.EXPECT().IsTLSEnabled().Return(true)
 	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
-	_, err = NewFabricCAClient(mockConfig, org1)
+	_, err := NewFabricCAClient(mockConfig, org1)
 	if err != nil {
 		t.Fatalf("Expected fabric client to be created with SW BCCS provider, but got %v", err.Error())
 	}
-
 }
 
 func createBCCSPProviderFactoryOptions(providerName string, hashFamily string, securityLevel int) *bccspFactory.FactoryOpts {

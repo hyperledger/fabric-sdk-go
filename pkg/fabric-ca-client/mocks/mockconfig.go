@@ -26,9 +26,14 @@ func NewMockConfig(CAServerURL string) apiconfig.Config {
 	return &MockConfig{CAServerURL: CAServerURL}
 }
 
+// Client returns the Client config
+func (c *MockConfig) Client() (*apiconfig.ClientConfig, error) {
+	return nil, nil
+}
+
 // CAConfig return ca configuration
 func (c *MockConfig) CAConfig(org string) (*apiconfig.CAConfig, error) {
-	return &apiconfig.CAConfig{TLSEnabled: false, ServerURL: c.CAServerURL, Name: "test", TLS: apiconfig.MutualTLSConfig{}}, nil
+	return &apiconfig.CAConfig{Url: c.CAServerURL, CaName: "test", TlsCACerts: apiconfig.MutualTLSConfig{}}, nil
 }
 
 // CAServerCertFiles Read configuration option for the server certificate files
@@ -170,4 +175,9 @@ func (c *MockConfig) SecurityProviderPin() string {
 //SecurityProviderLabel will be set only if provider is PKCS11
 func (c *MockConfig) SecurityProviderLabel() string {
 	return ""
+}
+
+// IsSecurityEnabled ...
+func (c *MockConfig) IsSecurityEnabled() bool {
+	return false
 }

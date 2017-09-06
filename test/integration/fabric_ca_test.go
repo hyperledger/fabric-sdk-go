@@ -29,8 +29,8 @@ import (
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 )
 
-var org1Name = "peerorg1"
-var org2Name = "peerorg2"
+var org1Name = "org1"
+var org2Name = "org2"
 var testFabricCAConfig config.Config
 
 func TestMain(m *testing.M) {
@@ -83,7 +83,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
 
-	// Admin user is used to register, enrol and revoke a test user
+	// Admin user is used to register, enroll and revoke a test user
 	adminUser, err := client.LoadUserFromStateStore("admin")
 
 	if err != nil {
@@ -135,7 +135,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		Name:        userName,
 		Type:        "user",
 		Affiliation: "org1.department1",
-		CAName:      caConfig.Name,
+		CAName:      caConfig.CaName,
 	}
 	enrolmentSecret, err := caClient.Register(adminUser, &registerRequest)
 	if err != nil {

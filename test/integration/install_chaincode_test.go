@@ -30,7 +30,7 @@ func TestChaincodeInstal(t *testing.T) {
 	testSetup := &BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
 		ChannelID:       "mychannel",
-		OrgID:           "peerorg1",
+		OrgID:           org1Name,
 		ChannelConfig:   "../fixtures/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}

@@ -9,6 +9,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,7 +21,8 @@ import (
 )
 
 var configImpl api.Config
-var org1 = "peerorg1"
+var org0 = "org0"
+var org1 = "org1"
 var bccspProviderType string
 
 var securityLevel = 256
@@ -50,81 +52,154 @@ func TestCAConfig(t *testing.T) {
 	vConfig := viper.New()
 	vConfig.SetConfigFile("../../test/fixtures/config/config_test.yaml")
 	vConfig.ReadInConfig()
+	vc := vConfig.ConfigFileUsed()
 
-	//Test TLS config
-	if vConfig.GetBool("client.tls.enabled") != configImpl.IsTLSEnabled() {
-		t.Fatalf("Incorrect TLS config flag")
+	if vc == "" {
+		t.Fatalf("Failed to load config file")
 	}
 
-	//Test Tcert batch size
-	if vConfig.GetInt("client.tcert.batch.size") != configImpl.TcertBatchSize() {
-		t.Fatalf("Incorrect Tcert batch size")
+	//Test network name
+	if vConfig.GetString("name") != "global-trade-network" {
+		t.Fatalf("Incorrect Network name")
 	}
 
-	//Test Security Algorithm
-	if vConfig.GetString("client.BCCSP.security.hashAlgorithm") != configImpl.SecurityAlgorithm() {
-		t.Fatalf("Incorrect security hash algorithm")
+	//Test client app specific variable x-type
+	if vConfig.GetString("x-type") != "hlfv1" {
+		t.Fatalf("Incorrect Netwok x-type")
 	}
 
-	//Test Security level
-	if vConfig.GetInt("client.BCCSP.security.level") != configImpl.SecurityLevel() {
-		t.Fatalf("Incorrect Security Level")
+	//Test network description
+	if vConfig.GetString("description") != "The network to be in if you want to stay in the global trade business" {
+		t.Fatalf("Incorrect Network description")
+	}
+
+	//Test network config version
+	if vConfig.GetString("version") != "1.0.0" {
+		t.Fatalf("Incorrect network version")
+	}
+
+	//Test client organization
+	if vConfig.GetString("client.organization") != "Org1" {
+		t.Fatalf("Incorrect Client organization")
 	}
 
 	//Test Crypto config path
 	crossCheckWithViperConfig(myViper.GetString("client.cryptoconfig.path"), configImpl.CryptoConfigPath(), "Incorrect crypto config path", t)
 
 	//Testing CA Client File Location
-	certfile, err := configImpl.CAClientCertFile("peerorg1")
+	certfile, err := configImpl.CAClientCertFile("org1")
 
 	if certfile == "" || err != nil {
-		t.Fatal("CA Cert file location read failed")
+		t.Fatalf("CA Cert file location read failed %s", err)
 	}
 
 	//Testing CA Key File Location
-	keyFile, err := configImpl.CAClientKeyFile("peerorg1")
+	keyFile, err := configImpl.CAClientKeyFile("org1")
 
 	if keyFile == "" || err != nil {
 		t.Fatal("CA Key file location read failed")
 	}
 
 	//Testing CA Server Cert Files
-	sCertFiles, err := configImpl.CAServerCertFiles("peerorg1")
+	sCertFiles, err := configImpl.CAServerCertFiles("org1")
 
 	if sCertFiles == nil || len(sCertFiles) == 0 || err != nil {
 		t.Fatal("Getting CA server cert files failed")
 	}
 
 	//Testing MSPID
-	mspID, err := configImpl.MspID("peerorg1")
-	if mspID == "" || mspID != "Org1MSP" || err != nil {
+	mspID, err := configImpl.MspID("org1")
+	if mspID != "Org1MSP" || err != nil {
 		t.Fatal("Get MSP ID failed")
 	}
 
 	//Testing CAConfig
-	caConfig, err := configImpl.CAConfig("peerorg1")
+	caConfig, err := configImpl.CAConfig("org1")
 	if caConfig == nil || err != nil {
 		t.Fatal("Get CA Config failed")
 	}
 
 	// Test CA KeyStore Path
-	if vConfig.GetString("client.keystore.path") != configImpl.CAKeyStorePath() {
+	if vConfig.GetString("client.credentialStore.cryptoStore.path") != configImpl.CAKeyStorePath() {
 		t.Fatalf("Incorrect CA keystore path")
 	}
 
 	// Test KeyStore Path
-	if vConfig.GetString("client.keystore.path")+"/keystore" != configImpl.KeyStorePath() {
+	if path.Join(vConfig.GetString("client.credentialStore.cryptoStore.path"), "keystore") != configImpl.KeyStorePath() {
 		t.Fatalf("Incorrect keystore path ")
 	}
 
+	// Test BCCSP security is enabled
+	if vConfig.GetBool("client.BCCSP.security.enabled") != configImpl.IsSecurityEnabled() {
+		t.Fatalf("Incorrect BCCSP Security enabled flag")
+	}
+
+	// Test SecurityAlgorithm
+	if vConfig.GetString("client.BCCSP.security.hashAlgorithm") != configImpl.SecurityAlgorithm() {
+		t.Fatalf("Incorrect BCCSP Security Hash algorithm")
+	}
+
+	// Test Security Level
+	if vConfig.GetInt("client.BCCSP.security.level") != configImpl.SecurityLevel() {
+		t.Fatalf("Incorrect BCCSP Security Level")
+	}
+
+	// Test SecurityProvider provider
+	if vConfig.GetString("client.BCCSP.security.default.provider") != configImpl.SecurityProvider() {
+		t.Fatalf("Incorrect BCCSP SecurityProvider provider")
+	}
+
+	// Test Ephemeral flag
+	if vConfig.GetBool("client.BCCSP.security.ephemeral") != configImpl.Ephemeral() {
+		t.Fatalf("Incorrect BCCSP Ephemeral flag")
+	}
+
+	// Test SoftVerify flag
+	if vConfig.GetBool("client.BCCSP.security.softVerify") != configImpl.SoftVerify() {
+		t.Fatalf("Incorrect BCCSP Ephemeral flag")
+	}
+
+	// Test SecurityProviderPin
+	if vConfig.GetString("client.BCCSP.security.pin") != configImpl.SecurityProviderPin() {
+		t.Fatalf("Incorrect BCCSP SecurityProviderPin flag")
+	}
+
+	// Test SecurityProviderPin
+	if vConfig.GetString("client.BCCSP.security.label") != configImpl.SecurityProviderLabel() {
+		t.Fatalf("Incorrect BCCSP SecurityProviderPin flag")
+	}
+
+	// test Client
+	c, err := configImpl.Client()
+	if err != nil {
+		t.Fatalf("Received error when fetching Client info, error is %s", err)
+	}
+	if c == nil {
+		t.Fatal("Received empty client when fetching Client info")
+	}
+
+	// testing empty OrgMSP
+	mspID, err = configImpl.MspID("dummyorg1")
+	if err == nil {
+		t.Fatal("Get MSP ID did not fail for dummyorg1")
+	}
 }
 
 func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	//Tamper 'client.network' value and use a new config to avoid conflicting with other tests
 	sampleConfig, err := InitConfig("../../test/fixtures/config/config_test.yaml")
-	clientNetworks := myViper.Get("client.network")
-	myViper.Set("client.network", "INVALID")
+	clientNetworkName := myViper.Get("client")
+	peers := myViper.Get("peers")
+	organizations := myViper.Get("organizations")
+	orderers := myViper.Get("orderers")
+	channels := myViper.Get("channels")
+	bccspSwProvider := myViper.GetString("client.BCCSP.security.default.provider")
+	myViper.Set("client", "INVALID")
+	myViper.Set("peers", "INVALID")
+	myViper.Set("organizations", "INVALID")
+	myViper.Set("orderers", "INVALID")
+	myViper.Set("channels", "INVALID")
 	//...
 
 	_, err = sampleConfig.NetworkConfig()
@@ -186,13 +261,36 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 		t.Fatal("Testing PeerConfig supposed to fail")
 	}
 
+	// Testing empty BCCSP Software provider
+	myViper.Set("client.BCCSP.security.default.provider", "")
+	func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("BCCSP default provider set as empty should panic!")
+			}
+		}()
+		sampleConfig.CSPConfig()
+	}()
+
+	// test empty network objects
+	myViper.Set("organizations", nil)
+	_, err = sampleConfig.NetworkConfig()
+	if err == nil {
+		t.Fatalf("Organizations were empty, it should return an error")
+	}
+
 	//Set it back to valid one, otherwise other tests may fail
-	myViper.Set("client.network", clientNetworks)
+	myViper.Set("client.network", clientNetworkName)
+	myViper.Set("peers", peers)
+	myViper.Set("organizations", organizations)
+	myViper.Set("orderers", orderers)
+	myViper.Set("channels", channels)
+	myViper.Set("client.BCCSP.security.default.provider", bccspSwProvider)
 }
 
 func TestTLSACAConfig(t *testing.T) {
 	//Test TLSCA Cert Pool (Positive test case)
-	certFile, _ := configImpl.CAClientCertFile("peerorg1")
+	certFile, _ := configImpl.CAClientCertFile("org1")
 	_, err := configImpl.TLSCACertPool(certFile)
 	if err != nil {
 		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
@@ -204,7 +302,7 @@ func TestTLSACAConfig(t *testing.T) {
 		t.Fatalf("TLS CA cert pool was supposed to fail")
 	}
 
-	keyFile, _ := configImpl.CAClientKeyFile("peerorg1")
+	keyFile, _ := configImpl.CAClientKeyFile("org1")
 	_, err = configImpl.TLSCACertPool(keyFile)
 	if err == nil {
 		t.Fatalf("TLS CA cert pool was supposed to fail when provided with wrong cert file")
@@ -259,8 +357,12 @@ func TestOrdererConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !filepath.IsAbs(orderers[0].TLS.Certificate) {
-		t.Fatal("Expected GOPATH relative path to be replaced")
+	if orderers[0].TlsCACerts.Path != "" {
+		if !filepath.IsAbs(orderers[0].TlsCACerts.Path) {
+			t.Fatal("Expected GOPATH relative path to be replaced")
+		}
+	} else if orderers[0].TlsCACerts.Pem == "" {
+		t.Fatalf("Orderer %s must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
 	}
 }
 
@@ -287,41 +389,61 @@ func TestCSPConfig(t *testing.T) {
 }
 
 func TestPeersConfig(t *testing.T) {
-	pc, err := configImpl.PeersConfig(org1)
+	pc, err := configImpl.PeersConfig(org0)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
 	for _, value := range pc {
-		if value.Host == "" {
-			t.Fatalf("Host value is empty")
+		if value.Url == "" {
+			t.Fatalf("Url value for the host is empty")
 		}
-		if value.Port == 0 {
-			t.Fatalf("Port value is empty")
+		if value.EventUrl == "" {
+			t.Fatalf("EventUrl value is empty")
 		}
-		if value.EventHost == "" {
-			t.Fatalf("EventHost value is empty")
-		}
-		if value.EventPort == 0 {
-			t.Fatalf("EventPort value is empty")
-		}
-
 	}
 
-}
-
-func TestPeerConfig(t *testing.T) {
-	pc, err := configImpl.PeerConfig(org1, "peer0")
+	pc, err = configImpl.PeersConfig(org1)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	if pc.Host == "" {
-		t.Fatalf("Host value is empty")
+	for _, value := range pc {
+		if value.Url == "" {
+			t.Fatalf("Url value for the host is empty")
+		}
+		if value.EventUrl == "" {
+			t.Fatalf("EventUrl value is empty")
+		}
+	}
+}
+
+func TestPeerConfig(t *testing.T) {
+	pc, err := configImpl.PeerConfig(org1, "peer0.org1.example.com")
+	if err != nil {
+		t.Fatalf(err.Error())
 	}
 
-	if !filepath.IsAbs(pc.TLS.Certificate) {
-		t.Fatalf("Expected cert path to be absolute")
+	if pc.Url == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+
+	if pc.TlsCACerts.Path != "" {
+		if !filepath.IsAbs(pc.TlsCACerts.Path) {
+			t.Fatalf("Expected cert path to be absolute")
+		}
+	} else if pc.TlsCACerts.Pem == "" {
+		t.Fatalf("Peer %s must have at least a TlsCACerts.Path or TlsCACerts.Pem set", "peer0")
+	}
+	if len(pc.GrpcOptions) == 0 || pc.GrpcOptions["ssl-target-name-override"] != "peer0.org1.example.com" {
+		t.Fatalf("Peer %s must have grpcOptions set in config_test.yaml", "peer0")
+	}
+}
+
+func TestPeerNotInOrgConfig(t *testing.T) {
+	_, err := configImpl.PeerConfig(org1, "peer1.org0.example.com")
+	if err == nil {
+		t.Fatalf("Fetching peer config not for an unassigned org should fail")
 	}
 }
 
@@ -486,7 +608,7 @@ func TestInterfaces(t *testing.T) {
 
 	apiConfig = &config
 	if apiConfig == nil {
-		t.Fatalf("this shouldn't happen.")
+		t.Fatalf("this shouldn't happen. apiConfig should not be nil.")
 	}
 }
 
@@ -503,4 +625,9 @@ func TestGoLoggingConcurrencyFix(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		logger.Info("testing")
 	}
+}
+
+func TestSetTLSCACertPool(t *testing.T) {
+	configImpl.SetTLSCACertPool(nil)
+	t.Log("TLSCACertRoot must be created. Nothing additional to verify..")
 }
