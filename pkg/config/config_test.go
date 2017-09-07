@@ -381,7 +381,7 @@ func TestMultipleVipers(t *testing.T) {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	testValue1 := viper.GetString("test.testKey")
+	testValue1 := viper.GetString("test.testkey")
 	// Read initial value from test.yaml
 	if testValue1 != "testvalue" {
 		t.Fatalf("Expected testValue before config initialization got: %s", testValue1)
@@ -393,7 +393,7 @@ func TestMultipleVipers(t *testing.T) {
 	}
 
 	// Make sure initial value is unaffected
-	testValue2 := viper.GetString("test.testKey")
+	testValue2 := viper.GetString("test.testkey")
 	if testValue2 != "testvalue" {
 		t.Fatalf("Expected testvalue after config initialization")
 	}

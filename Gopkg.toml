@@ -6,7 +6,7 @@
 
 [[constraint]]
   name = "github.com/hyperledger/fabric"
-  version = "~1.0.0"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/hyperledger/fabric-ca"

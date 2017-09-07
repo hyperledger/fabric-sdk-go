@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	fabric_config "github.com/hyperledger/fabric/common/config"
+	channelConfig "github.com/hyperledger/fabric/common/channelconfig"
 	ledger_util "github.com/hyperledger/fabric/core/ledger/util"
 	"github.com/hyperledger/fabric/protos/common"
 	mb "github.com/hyperledger/fabric/protos/msp"
@@ -168,7 +168,7 @@ func (b *MockConfigGroupBuilder) buildConfigGroup() *common.ConfigGroup {
 			"Admins":          b.buildBasicConfigPolicy(),
 		},
 		Values: map[string]*common.ConfigValue{
-			fabric_config.OrdererAddressesKey: b.buildOrdererAddressesConfigValue(),
+			channelConfig.OrdererAddressesKey: b.buildOrdererAddressesConfigValue(),
 		},
 		Version:   b.Version,
 		ModPolicy: b.ModPolicy,
@@ -200,13 +200,13 @@ func (b *MockConfigGroupBuilder) buildOrdererGroup() *common.ConfigGroup {
 			"Admins":          b.buildBasicConfigPolicy(),
 		},
 		Values: map[string]*common.ConfigValue{
-			fabric_config.BatchSizeKey:                 b.buildBatchSizeConfigValue(),
-			fabric_config.AnchorPeersKey:               b.buildAnchorPeerConfigValue(),
-			fabric_config.ConsensusTypeKey:             b.buildConsensusTypeConfigValue(),
-			fabric_config.BatchTimeoutKey:              b.buildBatchTimeoutConfigValue(),
-			fabric_config.ChannelRestrictionsKey:       b.buildChannelRestrictionsConfigValue(),
-			fabric_config.HashingAlgorithmKey:          b.buildHashingAlgorithmConfigValue(),
-			fabric_config.BlockDataHashingStructureKey: b.buildBlockDataHashingStructureConfigValue(),
+			channelConfig.BatchSizeKey:                 b.buildBatchSizeConfigValue(),
+			channelConfig.AnchorPeersKey:               b.buildAnchorPeerConfigValue(),
+			channelConfig.ConsensusTypeKey:             b.buildConsensusTypeConfigValue(),
+			channelConfig.BatchTimeoutKey:              b.buildBatchTimeoutConfigValue(),
+			channelConfig.ChannelRestrictionsKey:       b.buildChannelRestrictionsConfigValue(),
+			channelConfig.HashingAlgorithmKey:          b.buildHashingAlgorithmConfigValue(),
+			channelConfig.BlockDataHashingStructureKey: b.buildBlockDataHashingStructureConfigValue(),
 		},
 		Version:   b.Version,
 		ModPolicy: b.ModPolicy,
@@ -222,7 +222,7 @@ func (b *MockConfigGroupBuilder) buildMSPGroup(mspName string) *common.ConfigGro
 			"Readers": b.buildSignatureConfigPolicy(),
 		},
 		Values: map[string]*common.ConfigValue{
-			fabric_config.MSPKey: b.buildMSPConfigValue(mspName),
+			channelConfig.MSPKey: b.buildMSPConfigValue(mspName),
 			// TODO: More
 		},
 		Version:   b.Version,
@@ -395,7 +395,7 @@ func (b *MockConfigGroupBuilder) buildApplicationGroup() *common.ConfigGroup {
 			"Readers": b.buildSignatureConfigPolicy(),
 		},
 		Values: map[string]*common.ConfigValue{
-			fabric_config.BatchSizeKey: b.buildBatchSizeConfigValue(),
+			channelConfig.BatchSizeKey: b.buildBatchSizeConfigValue(),
 			// TODO: More
 		},
 		Version:   b.Version,

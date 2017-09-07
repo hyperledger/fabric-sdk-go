@@ -122,11 +122,7 @@ func TestRegister(t *testing.T) {
 	if err.Error() != "Error Registering User: Register was called without a Name set" {
 		t.Fatalf("Expected error without registration information. Got: %s", err.Error())
 	}
-	// Register without registration affiliation parameter
-	_, err = fabricCAClient.Register(user, &ca.RegistrationRequest{Name: "test"})
-	if err.Error() != "Error Registering User: Registration request does not have an affiliation" {
-		t.Fatalf("Expected error without registration information. Got: %s", err.Error())
-	}
+
 	// Register with valid request
 	var attributes []ca.Attribute
 	attributes = append(attributes, ca.Attribute{Key: "test1", Value: "test2"})
