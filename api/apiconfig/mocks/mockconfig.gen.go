@@ -5,10 +5,11 @@ package mock_apiconfig
 
 import (
 	x509 "crypto/x509"
+	time "time"
+
 	gomock "github.com/golang/mock/gomock"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	factory "github.com/hyperledger/fabric/bccsp/factory"
-	time "time"
 )
 
 // MockConfig is a mock of Config interface
@@ -318,4 +319,64 @@ func (_m *MockConfig) TimeoutOrDefault(_param0 apiconfig.ConnectionType) time.Du
 // TimeoutOrDefault indicates an expected call of TimeoutOrDefault
 func (_mr *MockConfigMockRecorder) TimeoutOrDefault(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TimeoutOrDefault", arg0)
+}
+
+func (_m *MockConfig) Ephemeral() bool {
+	ret := _m.ctrl.Call(_m, "Ephemeral")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+func (_mr *MockConfigMockRecorder) Ephemeral() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Ephemeral")
+}
+
+func (_m *MockConfig) SecurityProviderLibPath() string {
+	ret := _m.ctrl.Call(_m, "SecurityProviderLibPath")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *MockConfigMockRecorder) SecurityProviderLibPath() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityProviderLibPath")
+}
+
+func (_m *MockConfig) SecurityProviderPin() string {
+	ret := _m.ctrl.Call(_m, "SecurityProviderPin")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *MockConfigMockRecorder) SecurityProviderPin() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityProviderPin")
+}
+
+func (_m *MockConfig) SecurityProviderLabel() string {
+	ret := _m.ctrl.Call(_m, "SecurityProviderLabel")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *MockConfigMockRecorder) SecurityProviderLabel() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityProviderLabel")
+}
+
+func (_m *MockConfig) SoftVerify() bool {
+	ret := _m.ctrl.Call(_m, "SoftVerify")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+func (_mr *MockConfigMockRecorder) SoftVerify() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SoftVerify")
+}
+
+func (_m *MockConfig) SecurityProvider() string {
+	ret := _m.ctrl.Call(_m, "SecurityProvider")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *MockConfigMockRecorder) SecurityProvider() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityProvider")
 }

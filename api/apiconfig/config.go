@@ -34,6 +34,12 @@ type Config interface {
 	TcertBatchSize() int
 	SecurityAlgorithm() string
 	SecurityLevel() int
+	SecurityProvider() string
+	Ephemeral() bool
+	SecurityProviderLibPath() string
+	SecurityProviderPin() string
+	SecurityProviderLabel() string
+	SoftVerify() bool
 	KeyStorePath() string
 	CAKeyStorePath() string
 	CryptoConfigPath() string

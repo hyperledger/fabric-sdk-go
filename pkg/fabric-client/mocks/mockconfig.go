@@ -113,6 +113,36 @@ func (c *MockConfig) SecurityLevel() int {
 
 }
 
+//SecurityProvider provider SW or PKCS11
+func (c *MockConfig) SecurityProvider() string {
+	return "SW"
+}
+
+//Ephemeral flag
+func (c *MockConfig) Ephemeral() bool {
+	return false
+}
+
+//SoftVerify flag
+func (c *MockConfig) SoftVerify() bool {
+	return true
+}
+
+//SecurityProviderLibPath will be set only if provider is PKCS11
+func (c *MockConfig) SecurityProviderLibPath() string {
+	return ""
+}
+
+//SecurityProviderPin will be set only if provider is PKCS11
+func (c *MockConfig) SecurityProviderPin() string {
+	return ""
+}
+
+//SecurityProviderLabel will be set only if provider is PKCS11
+func (c *MockConfig) SecurityProviderLabel() string {
+	return ""
+}
+
 // OrderersConfig returns a list of defined orderers
 func (c *MockConfig) OrderersConfig() ([]config.OrdererConfig, error) {
 	return nil, nil
