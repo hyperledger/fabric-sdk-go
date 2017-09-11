@@ -42,13 +42,13 @@ func TestDeadlock(t *testing.T) {
 		t.Fatalf("No client")
 	}
 
-	threads := 20
-	eventsPerThread := 100
+	threads := 10
+	eventsPerThread := 200
 	eventsSent := eventsPerThread * threads
 
 	// The test should be done in milliseconds but if there's
 	// a deadlock then we don't want it to hang
-	timeout := 30 * time.Second
+	timeout := 50 * time.Second
 
 	// create a flood of TX events
 	txCompletion := newMultiCompletionHandler(eventsSent, timeout)
