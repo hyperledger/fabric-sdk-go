@@ -31,7 +31,6 @@ client:
 
  BCCSP:
   security:
-   enabled: true
    default:
     provider: "SW"
    hashAlgorithm: "SHA2"

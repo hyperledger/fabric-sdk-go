@@ -21,15 +21,14 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
 // Channel  captures settings for a channel, which is created by
 // the orderers to isolate transactions delivery to peers participating on channel.
 type Channel struct {
-	name            string // aka channel ID
-	securityEnabled bool   // Security enabled flag
-	peers           map[string]fab.Peer
-	orderers        map[string]fab.Orderer
-	clientContext   ClientContext
-	primaryPeer     fab.Peer
-	mspManager      msp.MSPManager
-	anchorPeers     []*fab.OrgAnchorPeer
-	initialized     bool
+	name          string // aka channel ID
+	peers         map[string]fab.Peer
+	orderers      map[string]fab.Orderer
+	clientContext ClientContext
+	primaryPeer   fab.Peer
+	mspManager    msp.MSPManager
+	anchorPeers   []*fab.OrgAnchorPeer
+	initialized   bool
 }
 
 // ClientContext ...
@@ -37,7 +36,6 @@ type ClientContext interface {
 	UserContext() fab.User
 	CryptoSuite() bccsp.BCCSP
 	NewTxnID() (apitxn.TransactionID, error)
-	// TODO: ClientContext.IsSecurityEnabled()
 }
 
 // NewChannel represents a channel in a Fabric network.
@@ -53,7 +51,7 @@ func NewChannel(name string, client fab.FabricClient) (*Channel, error) {
 	}
 	p := make(map[string]fab.Peer)
 	o := make(map[string]fab.Orderer)
-	c := Channel{name: name, securityEnabled: client.Config().IsSecurityEnabled(), peers: p,
+	c := Channel{name: name, peers: p,
 		orderers: o, clientContext: client, mspManager: msp.NewMSPManager()}
 	logger.Infof("Constructed channel instance: %v", c)
 

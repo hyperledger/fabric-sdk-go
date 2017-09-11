@@ -81,11 +81,6 @@ func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error
 func (c *MockConfig) SetTLSCACertPool(pool *x509.CertPool) {
 }
 
-// IsSecurityEnabled ...
-func (c *MockConfig) IsSecurityEnabled() bool {
-	return false
-}
-
 // TcertBatchSize ...
 func (c *MockConfig) TcertBatchSize() int {
 	return 0

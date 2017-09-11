@@ -56,11 +56,6 @@ func TestCAConfig(t *testing.T) {
 		t.Fatalf("Incorrect TLS config flag")
 	}
 
-	//Test Security enabled
-	if vConfig.GetBool("client.BCCSP.security.enabled") != configImpl.IsSecurityEnabled() {
-		t.Fatalf("Incorrect Security config flag")
-	}
-
 	//Test Tcert batch size
 	if vConfig.GetInt("client.tcert.batch.size") != configImpl.TcertBatchSize() {
 		t.Fatalf("Incorrect Tcert batch size")
@@ -398,7 +393,7 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testvalue after config initialization")
 	}
 	// Make sure Go SDK config is unaffected
-	testValue3 := myViper.GetBool("client.BCCSP.security.enabled")
+	testValue3 := myViper.GetBool("client.BCCSP.security.softVerify")
 	if testValue3 != true {
 		t.Fatalf("Expected existing config value to remain unchanged")
 	}

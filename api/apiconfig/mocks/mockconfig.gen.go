@@ -123,18 +123,6 @@ func (_mr *MockConfigMockRecorder) CryptoConfigPath() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CryptoConfigPath")
 }
 
-// IsSecurityEnabled mocks base method
-func (_m *MockConfig) IsSecurityEnabled() bool {
-	ret := _m.ctrl.Call(_m, "IsSecurityEnabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsSecurityEnabled indicates an expected call of IsSecurityEnabled
-func (_mr *MockConfigMockRecorder) IsSecurityEnabled() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsSecurityEnabled")
-}
-
 // IsTLSEnabled mocks base method
 func (_m *MockConfig) IsTLSEnabled() bool {
 	ret := _m.ctrl.Call(_m, "IsTLSEnabled")

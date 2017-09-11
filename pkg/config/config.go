@@ -327,11 +327,6 @@ func (c *Config) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 	return c.tlsCertPool, nil
 }
 
-// IsSecurityEnabled ...
-func (c *Config) IsSecurityEnabled() bool {
-	return myViper.GetBool("client.BCCSP.security.enabled")
-}
-
 // TcertBatchSize ...
 func (c *Config) TcertBatchSize() int {
 	return myViper.GetInt("client.tcert.batch.size")
