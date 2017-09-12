@@ -16,10 +16,9 @@ import (
 	proto_ts "github.com/golang/protobuf/ptypes/timestamp"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+
 	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
-	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -300,8 +299,12 @@ func (c *Channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
 		return nil, fmt.Errorf("User is nil")
 	}
 
-	signature, err := fc.SignObjectWithKey(payload, user.PrivateKey(),
-		&bccsp.SHAOpts{}, nil, c.clientContext.CryptoSuite())
+	signingMgr := c.clientContext.SigningManager()
+	if signingMgr == nil {
+		return nil, fmt.Errorf("Signing Manager is nil")
+	}
+
+	signature, err := signingMgr.Sign(payload, user.PrivateKey())
 	if err != nil {
 		return nil, err
 	}

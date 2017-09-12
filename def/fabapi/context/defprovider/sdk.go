@@ -14,6 +14,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
+
+	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
+	discovery "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
@@ -44,4 +47,15 @@ func (f *DefaultProviderFactory) NewStateStoreProvider(o opt.StateStoreOpts, con
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
 func (f *DefaultProviderFactory) NewCryptoSuiteProvider(config *bccspFactory.FactoryOpts) (bccsp.BCCSP, error) {
 	return bccspFactory.GetBCCSPFromOpts(config)
+}
+
+// NewSigningManager returns a new default implementation of signing manager
+func (f *DefaultProviderFactory) NewSigningManager(cryptoProvider bccsp.BCCSP, config apiconfig.Config) (fab.SigningManager, error) {
+	return signingMgr.NewSigningManager(cryptoProvider, config)
+}
+
+// NewDiscoveryProvider returns a new default implementation of discovery provider
+func (f *DefaultProviderFactory) NewDiscoveryProvider(config apiconfig.Config) (fab.DiscoveryProvider, error) {
+	return discovery.NewDiscoveryProvider(config)
+
 }

@@ -65,8 +65,14 @@ type PeerChannelConfig struct {
 	EventSource    bool
 }
 
+type ChannelPeer struct {
+	PeerChannelConfig
+	PeerConfig
+}
+
 type OrganizationConfig struct {
 	MspID                  string
+	CryptoPath             string
 	Peers                  []string
 	CertificateAuthorities []string
 	AdminPrivateKey        TLSConfig

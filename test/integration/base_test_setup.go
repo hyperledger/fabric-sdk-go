@@ -40,7 +40,6 @@ type BaseSetupImpl struct {
 	Initialized     bool
 	ChannelConfig   string
 	AdminUser       ca.User
-	NormalUser      ca.User
 }
 
 // Initialize reads configuration from file and sets up client, channel and event hub
@@ -59,43 +58,18 @@ func (setup *BaseSetupImpl) Initialize() error {
 		return fmt.Errorf("Error initializing SDK: %s", err)
 	}
 
-	context, err := sdk.NewContext(setup.OrgID)
+	session, err := sdk.NewPreEnrolledUserSession(setup.OrgID, "Admin")
 	if err != nil {
-		return fmt.Errorf("Error getting a context for org: %s", err)
+		return fmt.Errorf("Error getting admin user session for org: %s", err)
 	}
 
-	user, err := deffab.NewUser(sdk.ConfigProvider(), context.MSPClient(), "admin", "adminpw", setup.OrgID)
-	if err != nil {
-		return fmt.Errorf("NewUser returned error: %v", err)
-	}
-
-	session1, err := sdk.NewSession(context, user)
-	if err != nil {
-		return fmt.Errorf("NewSession returned error: %v", err)
-	}
-	sc, err := sdk.NewSystemClient(session1)
+	sc, err := sdk.NewSystemClient(session)
 	if err != nil {
 		return fmt.Errorf("NewSystemClient returned error: %v", err)
 	}
 
-	err = sc.SaveUserToStateStore(user, false)
-	if err != nil {
-		return fmt.Errorf("client.SaveUserToStateStore returned error: %v", err)
-	}
 	setup.Client = sc
-
-	org1Admin, err := GetAdmin(sc, "org1", setup.OrgID)
-	if err != nil {
-		return fmt.Errorf("Error getting org admin user: %v", err)
-	}
-
-	org1User, err := GetUser(sc, "org1", setup.OrgID)
-	if err != nil {
-		return fmt.Errorf("Error getting org user: %v", err)
-	}
-
-	setup.AdminUser = org1Admin
-	setup.NormalUser = org1User
+	setup.AdminUser = session.Identity()
 
 	channel, err := setup.GetChannel(setup.Client, setup.ChannelID, []string{setup.OrgID})
 	if err != nil {
@@ -103,36 +77,32 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 	setup.Channel = channel
 
-	ordererAdmin, err := GetOrdererAdmin(sc, setup.OrgID)
+	ordererAdmin, err := sdk.NewPreEnrolledUser("ordererorg", "Admin")
 	if err != nil {
 		return fmt.Errorf("Error getting orderer admin user: %v", err)
 	}
 
 	// Check if primary peer has joined channel
-	alreadyJoined, err := HasPrimaryPeerJoinedChannel(sc, org1Admin, channel)
+	alreadyJoined, err := HasPrimaryPeerJoinedChannel(sc, channel)
 	if err != nil {
 		return fmt.Errorf("Error while checking if primary peer has already joined channel: %v", err)
 	}
 
 	if !alreadyJoined {
 		// Create, initialize and join channel
-		if err = admin.CreateOrUpdateChannel(sc, ordererAdmin, org1Admin, channel, setup.ChannelConfig); err != nil {
+		if err = admin.CreateOrUpdateChannel(sc, ordererAdmin, setup.AdminUser, channel, setup.ChannelConfig); err != nil {
 			return fmt.Errorf("CreateChannel returned error: %v", err)
 		}
 		time.Sleep(time.Second * 3)
 
-		sc.SetUserContext(org1Admin)
 		if err = channel.Initialize(nil); err != nil {
 			return fmt.Errorf("Error initializing channel: %v", err)
 		}
 
-		if err = admin.JoinChannel(sc, org1Admin, channel); err != nil {
+		if err = admin.JoinChannel(sc, setup.AdminUser, channel); err != nil {
 			return fmt.Errorf("JoinChannel returned error: %v", err)
 		}
 	}
-
-	//by default client's user context should use regular user, for admin actions, UserContext must be set to AdminUser
-	sc.SetUserContext(org1User)
 
 	if err := setup.setupEventHub(sc); err != nil {
 		return err
@@ -170,11 +140,6 @@ func (setup *BaseSetupImpl) InitConfig() (apiconfig.Config, error) {
 
 // InstantiateCC ...
 func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args []string) error {
-	// InstantiateCC requires AdminUser privileges so setting user context with Admin User
-	setup.Client.SetUserContext(setup.AdminUser)
-
-	// must reset client user context to normal user once done with Admin privilieges
-	defer setup.Client.SetUserContext(setup.NormalUser)
 
 	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
 
@@ -183,11 +148,6 @@ func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath stri
 
 // UpgradeCC ...
 func (setup *BaseSetupImpl) UpgradeCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args []string) error {
-	// InstantiateCC requires AdminUser privileges so setting user context with Admin User
-	setup.Client.SetUserContext(setup.AdminUser)
-
-	// must reset client user context to normal user once done with Admin privilieges
-	defer setup.Client.SetUserContext(setup.NormalUser)
 
 	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
 
@@ -196,11 +156,6 @@ func (setup *BaseSetupImpl) UpgradeCC(chainCodeID string, chainCodePath string, 
 
 // InstallCC ...
 func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte) error {
-	// installCC requires AdminUser privileges so setting user context with Admin User
-	setup.Client.SetUserContext(setup.AdminUser)
-
-	// must reset client user context to normal user once done with Admin privilieges
-	defer setup.Client.SetUserContext(setup.NormalUser)
 
 	if err := admin.SendInstallCC(setup.Client, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, setup.Channel.Peers(), setup.GetDeployPath()); err != nil {
 		return fmt.Errorf("SendInstallProposal return error: %v", err)

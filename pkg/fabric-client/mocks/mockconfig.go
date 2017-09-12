@@ -163,6 +163,16 @@ func (c *MockConfig) NetworkConfig() (*config.NetworkConfig, error) {
 	return nil, nil
 }
 
+// ChannelConfig returns the channel configuration
+func (c *MockConfig) ChannelConfig(name string) (*config.ChannelConfig, error) {
+	return nil, nil
+}
+
+// ChannelPeers returns the channel peers configuration
+func (c *MockConfig) ChannelPeers(name string) ([]config.ChannelPeer, error) {
+	return nil, nil
+}
+
 // Ephemeral flag
 func (c *MockConfig) Ephemeral() bool {
 	return false

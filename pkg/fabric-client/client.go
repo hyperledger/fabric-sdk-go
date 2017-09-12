@@ -37,11 +37,12 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
 
 // Client enables access to a Fabric network.
 type Client struct {
-	channels    map[string]fab.Channel
-	cryptoSuite bccsp.BCCSP
-	stateStore  fab.KeyValueStore
-	userContext fab.User
-	config      config.Config
+	channels       map[string]fab.Channel
+	cryptoSuite    bccsp.BCCSP
+	stateStore     fab.KeyValueStore
+	userContext    fab.User
+	config         config.Config
+	signingManager fab.SigningManager
 }
 
 // NewClient returns a Client instance.
@@ -112,6 +113,16 @@ func (c *Client) SetCryptoSuite(cryptoSuite bccsp.BCCSP) {
 // CryptoSuite is a convenience method for obtaining the CryptoSuite object in use for this client.
 func (c *Client) CryptoSuite() bccsp.BCCSP {
 	return c.cryptoSuite
+}
+
+// SigningManager returns the signing manager
+func (c *Client) SigningManager() fab.SigningManager {
+	return c.signingManager
+}
+
+// SetSigningManager is a convenience method to set signing manager
+func (c *Client) SetSigningManager(signingMgr fab.SigningManager) {
+	c.signingManager = signingMgr
 }
 
 // SaveUserToStateStore ...
@@ -268,11 +279,16 @@ func (c *Client) SignChannelConfig(config []byte) (*common.ConfigSignature, erro
 		return nil, fmt.Errorf("User is nil")
 	}
 
+	signingMgr := c.SigningManager()
+	if signingMgr == nil {
+		return nil, fmt.Errorf("Signing Manager is nil")
+	}
+
 	// get all the bytes to be signed together, then sign
 	signingBytes := fcutils.ConcatenateBytes(signatureHeaderBytes, config)
-	signature, err := fc.SignObjectWithKey(signingBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.CryptoSuite())
+	signature, err := signingMgr.Sign(signingBytes, user.PrivateKey())
 	if err != nil {
-		return nil, fmt.Errorf("error singing config: %v", err)
+		return nil, fmt.Errorf("error signing config: %v", err)
 	}
 
 	// build the return object
@@ -399,9 +415,14 @@ func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnv
 			return fmt.Errorf("error marshaling payload: %v", err)
 		}
 
-		signature, err = fc.SignObjectWithKey(payloadBytes, c.userContext.PrivateKey(), &bccsp.SHAOpts{}, nil, c.CryptoSuite())
+		signingMgr := c.SigningManager()
+		if signingMgr == nil {
+			return fmt.Errorf("Signing Manager is nil")
+		}
+
+		signature, err = signingMgr.Sign(payloadBytes, c.UserContext().PrivateKey())
 		if err != nil {
-			return fmt.Errorf("error singing payload: %v", err)
+			return fmt.Errorf("error signing payload: %v", err)
 		}
 	}
 
@@ -505,7 +526,13 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	if user == nil {
 		return nil, "", fmt.Errorf("User is nil")
 	}
-	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.CryptoSuite())
+
+	signingMgr := c.SigningManager()
+	if signingMgr == nil {
+		return nil, "", fmt.Errorf("Signing Manager is nil")
+	}
+
+	signature, err := signingMgr.Sign(proposalBytes, user.PrivateKey())
 	if err != nil {
 		return nil, "", err
 	}

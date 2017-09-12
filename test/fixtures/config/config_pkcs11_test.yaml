@@ -126,11 +126,6 @@ channels:
         # Default: true
         eventSource: true
 
-      peer0.org2.example.com:
-        endorsingPeer: true
-        chaincodeQuery: true
-        ledgerQuery: true
-        eventSource: true
 
     # [Optional]. what chaincodes are expected to exist on this channel? The application can use
     # this information to validate that the target peers are in the expected state by comparing
@@ -146,6 +141,9 @@ channels:
 organizations:
   Org1:
     mspid: Org1MSP
+
+    # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+    cryptoPath:  peerOrganizations/org1.example.com/users/{userName}@org1.example.com/msp
 
     peers:
       - peer0.org1.example.com
@@ -177,11 +175,23 @@ organizations:
   # fabric-ca registrar enroll ID and secret, etc.
   Org2:
     mspid: Org2MSP
+
+    # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+    cryptoPath:  peerOrganizations/org2.example.com/users/{userName}@org2.example.com/msp
+    
     peers:
       - peer0.org2.example.com
 
     certificateAuthorities:
       - ca-org2
+
+  # Orderer Org name
+  ordererorg:
+      # Membership Service Provider ID for this organization
+      mspID: "OrdererOrg"
+
+      # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+      cryptoPath: ordererOrganizations/example.com/users/{userName}@example.com/msp
 
 #
 # List of orderers to send transaction and channel create/update requests to. For the time

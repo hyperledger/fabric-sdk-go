@@ -38,9 +38,8 @@ type FabricClient interface {
 	SignChannelConfig(config []byte) (*common.ConfigSignature, error)
 	CreateChannel(request CreateChannelRequest) (txn.TransactionID, error)
 	QueryChannelInfo(name string, peers []Peer) (Channel, error)
-	SetStateStore(stateStore KeyValueStore)
 	StateStore() KeyValueStore
-	SetCryptoSuite(cryptoSuite bccsp.BCCSP)
+	SigningManager() SigningManager
 	CryptoSuite() bccsp.BCCSP
 	SaveUserToStateStore(user User, skipPersistence bool) error
 	LoadUserFromStateStore(name string) (User, error)

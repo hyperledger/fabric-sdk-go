@@ -12,8 +12,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
-	"github.com/op/go-logging"
+	logging "github.com/op/go-logging"
 )
 
 var logger = logging.MustGetLogger("fabric_sdk_go")
@@ -34,7 +33,7 @@ type Channel struct {
 // ClientContext ...
 type ClientContext interface {
 	UserContext() fab.User
-	CryptoSuite() bccsp.BCCSP
+	SigningManager() fab.SigningManager
 	NewTxnID() (apitxn.TransactionID, error)
 }
 

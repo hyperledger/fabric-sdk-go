@@ -147,6 +147,16 @@ func (c *MockConfig) NetworkConfig() (*apiconfig.NetworkConfig, error) {
 	return nil, nil
 }
 
+// ChannelConfig returns the channel configuration
+func (c *MockConfig) ChannelConfig(name string) (*apiconfig.ChannelConfig, error) {
+	return nil, nil
+}
+
+// ChannelPeers returns the channel peers configuration
+func (c *MockConfig) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
+	return nil, nil
+}
+
 //SecurityProvider provider SW or PKCS11
 func (c *MockConfig) SecurityProvider() string {
 	return "SW"

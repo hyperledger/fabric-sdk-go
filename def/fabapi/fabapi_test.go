@@ -16,15 +16,19 @@ func TestNewDefaultSDK(t *testing.T) {
 
 	setup := Options{
 		ConfigFile: "../../test/fixtures/config/config_test.yaml",
-		//		OrgID:      "org1",
 		StateStoreOpts: opt.StateStoreOpts{
 			Path: "/tmp/state",
 		},
 	}
 
-	_, err := NewSDK(setup)
+	sdk, err := NewSDK(setup)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	_, err = sdk.NewChannelClient("mychannel", "User1")
+	if err != nil {
+		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
 }

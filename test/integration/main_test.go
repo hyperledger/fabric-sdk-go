@@ -27,7 +27,7 @@ func setup() {
 	var err error
 
 	testSetup := BaseSetupImpl{
-		ConfigFile: "../fixtures/config/config_test.yaml",
+		ConfigFile: ConfigTestFile,
 	}
 
 	testFabricConfig, err = testSetup.InitConfig()

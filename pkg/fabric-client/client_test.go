@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fabricclient
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -120,6 +121,19 @@ func TestClientMethods(t *testing.T) {
 	}
 	if string(value) != "data" {
 		t.Fatalf("client.StateStore().GetValue() didn't return the right value")
+	}
+
+	// Set and use siging manager
+	client.SetSigningManager(mocks.NewMockSigningManager())
+
+	greeting := []byte("Hello")
+	signedObj, err := client.SigningManager().Sign(greeting, user.PrivateKey())
+	if err != nil {
+		t.Fatalf("Failed to sign object.")
+	}
+
+	if !bytes.Equal(signedObj, greeting) {
+		t.Fatalf("Expecting Hello, got %s", signedObj)
 	}
 
 }

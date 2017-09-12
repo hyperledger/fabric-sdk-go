@@ -26,8 +26,8 @@ import (
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 )
 
-var org1Name = "org1"
-var org2Name = "org2"
+var org1Name = "Org1"
+var org2Name = "Org2"
 
 // This test loads/enrols an admin user
 // Using the admin, it registers, enrols, and revokes a test user

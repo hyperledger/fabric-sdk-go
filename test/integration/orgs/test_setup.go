@@ -7,12 +7,18 @@ SPDX-License-Identifier: Apache-2.0
 package orgs
 
 import (
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+
+	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
@@ -25,8 +31,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
-var org1 = "org1"
-var org2 = "org2"
+var org1 = "Org1"
+var org2 = "Org2"
 
 // Client
 var orgTestClient fab.FabricClient
@@ -64,7 +70,7 @@ func initializeFabricClient(t *testing.T) {
 	}
 
 	// Instantiate client
-	orgTestClient = client.NewClient(configImpl)
+	fcClient := client.NewClient(configImpl)
 
 	// Initialize crypto suite
 	err = factory.InitFactories(configImpl.CSPConfig())
@@ -72,7 +78,17 @@ func initializeFabricClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	cryptoSuite := factory.GetDefault()
-	orgTestClient.SetCryptoSuite(cryptoSuite)
+	fcClient.SetCryptoSuite(cryptoSuite)
+
+	signingMgr, err := signingmgr.NewSigningManager(cryptoSuite, configImpl)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fcClient.SetSigningManager(signingMgr)
+
+	// From now on use interface only
+	orgTestClient = fcClient
 }
 
 func createTestChannel(t *testing.T) {
@@ -89,7 +105,9 @@ func createTestChannel(t *testing.T) {
 
 	orgTestChannel.AddOrderer(orgTestOrderer)
 
-	foundChannel, err = integration.HasPrimaryPeerJoinedChannel(orgTestClient, org1User, orgTestChannel)
+	orgTestClient.SetUserContext(org1User)
+
+	foundChannel, err = integration.HasPrimaryPeerJoinedChannel(orgTestClient, orgTestChannel)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,26 +246,38 @@ func loadOrgPeers(t *testing.T) {
 func loadOrgUsers(t *testing.T) {
 	var err error
 
-	ordererAdminUser, err = integration.GetOrdererAdmin(orgTestClient, org1)
+	// Create SDK setup for the integration tests
+	sdkOptions := deffab.Options{
+		ConfigFile: "../" + integration.ConfigTestFile,
+		StateStoreOpts: opt.StateStoreOpts{
+			Path: "/tmp/enroll_user",
+		},
+	}
+
+	sdk, err := deffab.NewSDK(sdkOptions)
 	if err != nil {
 		t.Fatal(err)
 	}
-	org1AdminUser, err = integration.GetAdmin(orgTestClient, "org1", org1)
+
+	ordererAdminUser = loadOrgUser(t, sdk, "ordererorg", "Admin")
+
+	org1AdminUser = loadOrgUser(t, sdk, org1, "Admin")
+	org2AdminUser = loadOrgUser(t, sdk, org2, "Admin")
+
+	org1User = loadOrgUser(t, sdk, org1, "User1")
+	org2User = loadOrgUser(t, sdk, org2, "User1")
+
+}
+
+func loadOrgUser(t *testing.T, sdk *deffab.FabricSDK, orgName string, userName string) fab.User {
+
+	user, err := sdk.NewPreEnrolledUser(orgName, userName)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal(fmt.Errorf("Error getting pre-enrolled user(%s,%s): %v", orgName, userName, err))
 	}
-	org2AdminUser, err = integration.GetAdmin(orgTestClient, "org2", org2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	org1User, err = integration.GetUser(orgTestClient, "org1", org1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	org2User, err = integration.GetUser(orgTestClient, "org2", org2)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	return user
+
 }
 
 func generateInitArgs() []string {

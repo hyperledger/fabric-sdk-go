@@ -13,13 +13,11 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
 )
 
@@ -137,8 +135,12 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 		return nil, fmt.Errorf("Error getting user context: %s", err)
 	}
 
-	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(),
-		&bccsp.SHAOpts{}, nil, clientContext.CryptoSuite())
+	signingMgr := clientContext.SigningManager()
+	if signingMgr == nil {
+		return nil, fmt.Errorf("Signing Manager is nil")
+	}
+
+	signature, err := signingMgr.Sign(proposalBytes, user.PrivateKey())
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +187,12 @@ func (c *Channel) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error
 		return nil, fmt.Errorf("Error mashalling proposal: %s", err)
 	}
 
-	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.clientContext.CryptoSuite())
+	signingMgr := c.clientContext.SigningManager()
+	if signingMgr == nil {
+		return nil, fmt.Errorf("Signing Manager is nil")
+	}
+
+	signature, err := signingMgr.Sign(proposalBytes, user.PrivateKey())
 	if err != nil {
 		return nil, fmt.Errorf("Error signing proposal: %s", err)
 	}

@@ -129,7 +129,7 @@ func (c *Config) CAConfig(org string) (*apiconfig.CAConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	caConfig := config.CertificateAuthorities[caName]
+	caConfig := config.CertificateAuthorities[strings.ToLower(caName)]
 
 	return &caConfig, nil
 }
@@ -144,7 +144,7 @@ func (c *Config) CAServerCertFiles(org string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, ok := config.CertificateAuthorities[caName]; !ok {
+	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return nil, fmt.Errorf("CA Server Name '%s' not found", caName)
 	}
 	certFiles := strings.Split(config.CertificateAuthorities[caName].TlsCACerts.Path, ",")
@@ -164,11 +164,11 @@ func (c *Config) getCAName(org string) (string, error) {
 
 	logger.Debug("Getting cert authority for org: %s.", org)
 
-	if len(config.Organizations[org].CertificateAuthorities) == 0 {
+	if len(config.Organizations[strings.ToLower(org)].CertificateAuthorities) == 0 {
 		return "", fmt.Errorf("organization %s has no Certificate Authorities setup. Make sure each org has at least 1 configured", org)
 	}
 	//for now, we're only loading the first Cert Authority by default. TODO add logic to support passing the Cert Authority ID needed by the client.
-	certAuthorityName := config.Organizations[org].CertificateAuthorities[0]
+	certAuthorityName := config.Organizations[strings.ToLower(org)].CertificateAuthorities[0]
 	logger.Debugf("Cert authority for org: %s is %s", org, certAuthorityName)
 
 	if certAuthorityName == "" {
@@ -188,10 +188,10 @@ func (c *Config) CAClientKeyFile(org string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, ok := config.CertificateAuthorities[caName]; !ok {
+	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", fmt.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return strings.Replace(config.CertificateAuthorities[caName].TlsCACerts.Client.Keyfile,
+	return strings.Replace(config.CertificateAuthorities[strings.ToLower(caName)].TlsCACerts.Client.Keyfile,
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
 }
 
@@ -206,10 +206,10 @@ func (c *Config) CAClientCertFile(org string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, ok := config.CertificateAuthorities[caName]; !ok {
+	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", fmt.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return strings.Replace(config.CertificateAuthorities[caName].TlsCACerts.Client.Certfile,
+	return strings.Replace(config.CertificateAuthorities[strings.ToLower(caName)].TlsCACerts.Client.Certfile,
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
 }
 
@@ -240,7 +240,7 @@ func (c *Config) MspID(org string) (string, error) {
 		return "", err
 	}
 	// viper lowercases all key maps, org is lower case
-	mspID := config.Organizations[org].MspID
+	mspID := config.Organizations[strings.ToLower(org)].MspID
 	if mspID == "" {
 		return "", fmt.Errorf("MSP ID is empty for org: %s", org)
 	}
@@ -348,7 +348,7 @@ func (c *Config) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	orderer := config.Orderers[name]
+	orderer := config.Orderers[strings.ToLower(name)]
 	if orderer.TlsCACerts.Path != "" {
 		orderer.TlsCACerts.Path = strings.Replace(orderer.TlsCACerts.Path, "$GOPATH",
 			os.Getenv("GOPATH"), -1)
@@ -365,19 +365,13 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 		return nil, err
 	}
 
-	peersConfig := config.Organizations[org].Peers
+	peersConfig := config.Organizations[strings.ToLower(org)].Peers
 	peers := []apiconfig.PeerConfig{}
 
 	for _, peerName := range peersConfig {
-		p := config.Peers[peerName]
-		if p.Url == "" {
-			return nil, fmt.Errorf("URL does not exist or empty for peer %s", peerName)
-		}
-		if p.EventUrl == "" {
-			return nil, fmt.Errorf("Event URL does not exist or empty for peer %s", peerName)
-		}
-		if c.IsTLSEnabled() && p.TlsCACerts.Pem == "" && p.TlsCACerts.Path == "" {
-			return nil, fmt.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
+		p := config.Peers[strings.ToLower(peerName)]
+		if err = verifyPeerConfig(p, peerName, c.IsTLSEnabled()); err != nil {
+			return nil, err
 		}
 		if p.TlsCACerts.Path != "" {
 			p.TlsCACerts.Path = strings.Replace(p.TlsCACerts.Path, "$GOPATH",
@@ -396,7 +390,7 @@ func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, err
 		return nil, err
 	}
 
-	peersConfig := config.Organizations[org].Peers
+	peersConfig := config.Organizations[strings.ToLower(org)].Peers
 	peerInOrg := false
 	for _, p := range peersConfig {
 		if p == name {
@@ -406,7 +400,7 @@ func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, err
 	if !peerInOrg {
 		return nil, fmt.Errorf("Peer %s is not part of orgianzation %s", name, org)
 	}
-	peerConfig := config.Peers[name]
+	peerConfig := config.Peers[strings.ToLower(name)]
 	if peerConfig.TlsCACerts.Path != "" {
 		peerConfig.TlsCACerts.Path = strings.Replace(peerConfig.TlsCACerts.Path, "$GOPATH",
 			os.Getenv("GOPATH"), -1)
@@ -424,6 +418,75 @@ func (c *Config) NetworkConfig() (*apiconfig.NetworkConfig, error) {
 		return nil, fmt.Errorf("Error reading network configuration: %s", err)
 	}
 	return c.networkConfig, nil
+}
+
+// ChannelConfig returns the channel configuration
+func (c *Config) ChannelConfig(name string) (*apiconfig.ChannelConfig, error) {
+	config, err := c.NetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// viper lowercases all key maps
+	ch, ok := config.Channels[strings.ToLower(name)]
+	if !ok {
+		return nil, fmt.Errorf("Channel config not found for %s", name)
+	}
+
+	return &ch, nil
+}
+
+// ChannelPeers returns the channel peers configuration
+func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
+	netConfig, err := c.NetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// viper lowercases all key maps
+	chConfig, ok := netConfig.Channels[strings.ToLower(name)]
+	if !ok {
+		return nil, fmt.Errorf("Channel config not found for %s", name)
+	}
+
+	peers := []apiconfig.ChannelPeer{}
+
+	for peerName, chPeerConfig := range chConfig.Peers {
+
+		// Get generic peer configuration
+		p, ok := netConfig.Peers[strings.ToLower(peerName)]
+		if !ok {
+			return nil, fmt.Errorf("Peer config not found for %s", peerName)
+		}
+
+		if err = verifyPeerConfig(p, peerName, c.IsTLSEnabled()); err != nil {
+			return nil, err
+		}
+
+		if p.TlsCACerts.Path != "" {
+			p.TlsCACerts.Path = strings.Replace(p.TlsCACerts.Path, "$GOPATH", os.Getenv("GOPATH"), -1)
+		}
+
+		peer := apiconfig.ChannelPeer{PeerChannelConfig: chPeerConfig, PeerConfig: p}
+
+		peers = append(peers, peer)
+	}
+
+	return peers, nil
+
+}
+
+func verifyPeerConfig(p apiconfig.PeerConfig, peerName string, tlsEnabled bool) error {
+	if p.Url == "" {
+		return fmt.Errorf("URL does not exist or empty for peer %s", peerName)
+	}
+	if p.EventUrl == "" {
+		return fmt.Errorf("Event URL does not exist or empty for peer %s", peerName)
+	}
+	if tlsEnabled && p.TlsCACerts.Pem == "" && p.TlsCACerts.Path == "" {
+		return fmt.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
+	}
+	return nil
 }
 
 // IsTLSEnabled is TLS enabled?

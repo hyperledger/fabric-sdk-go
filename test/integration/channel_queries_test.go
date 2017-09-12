@@ -189,10 +189,6 @@ func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.Fabri
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()
 	fmt.Printf("****QueryInstalledChaincodes for %s\n", target.URL())
-	// Test Query Installed chaincodes for target (primary)
-	// set Client User Context to Admin first
-	testSetup.Client.SetUserContext(testSetup.AdminUser)
-	defer testSetup.Client.SetUserContext(testSetup.NormalUser)
 
 	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(target)
 	if err != nil {
@@ -295,7 +291,6 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Confi
 		t.Fatalf("QueryByChaincode number of results mismatch. Expected: %d Got: %d", len(targets), len(queryResponses))
 	}
 
-	testSetup.Client.SetUserContext(testSetup.NormalUser)
 	channel.RemovePeer(firstInvalidTarget)
 	channel.RemovePeer(secondInvalidTarget)
 }

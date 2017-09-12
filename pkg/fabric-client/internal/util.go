@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
@@ -92,21 +91,6 @@ func BuildHeader(creator []byte, channelHeader *common.ChannelHeader, nonce []by
 		ChannelHeader:   ch,
 	}
 	return header, nil
-}
-
-// SignObjectWithKey will sign the given object with the given key,
-// hashOpts and signerOpts
-func SignObjectWithKey(object []byte, key bccsp.Key,
-	hashOpts bccsp.HashOpts, signerOpts bccsp.SignerOpts, cryptoSuite bccsp.BCCSP) ([]byte, error) {
-	digest, err := cryptoSuite.Hash(object, hashOpts)
-	if err != nil {
-		return nil, err
-	}
-	signature, err := cryptoSuite.Sign(key, digest, signerOpts)
-	if err != nil {
-		return nil, err
-	}
-	return signature, nil
 }
 
 // MarshalOrPanic serializes a protobuf message and panics if this operation fails.

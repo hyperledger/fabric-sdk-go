@@ -56,9 +56,6 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupIm
 		t.Fatalf("installCC return error: %v", err)
 	}
 
-	// set Client User Context to Admin
-	testSetup.Client.SetUserContext(testSetup.AdminUser)
-	defer testSetup.Client.SetUserContext(testSetup.NormalUser)
 	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(testSetup.Channel.PrimaryPeer())
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)

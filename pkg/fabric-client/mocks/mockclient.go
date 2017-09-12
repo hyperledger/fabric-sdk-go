@@ -20,26 +20,27 @@ import (
 
 // MockClient ...
 type MockClient struct {
-	channels      map[string]fab.Channel
-	cryptoSuite   bccsp.BCCSP
-	stateStore    fab.KeyValueStore
-	userContext   fab.User
-	config        config.Config
-	errorScenario bool
+	channels       map[string]fab.Channel
+	cryptoSuite    bccsp.BCCSP
+	stateStore     fab.KeyValueStore
+	userContext    fab.User
+	config         config.Config
+	errorScenario  bool
+	signingManager fab.SigningManager
 }
 
 // NewMockClient ...
 /*
  * Returns a FabricClient instance
  */
-func NewMockClient() fab.FabricClient {
+func NewMockClient() *MockClient {
 	channels := make(map[string]fab.Channel)
-	c := &MockClient{channels: channels, cryptoSuite: nil, stateStore: nil, userContext: nil, config: NewMockConfig()}
+	c := &MockClient{channels: channels, cryptoSuite: nil, stateStore: nil, userContext: nil, config: NewMockConfig(), signingManager: NewMockSigningManager()}
 	return c
 }
 
 //NewMockInvalidClient : Returns new Mock FabricClient with error flag on used to test invalid scenarios
-func NewMockInvalidClient() fab.FabricClient {
+func NewMockInvalidClient() *MockClient {
 	channels := make(map[string]fab.Channel)
 	c := &MockClient{channels: channels, cryptoSuite: nil, stateStore: nil, userContext: nil, config: NewMockConfig(), errorScenario: true}
 	return c
@@ -83,6 +84,16 @@ func (c *MockClient) SetCryptoSuite(cryptoSuite bccsp.BCCSP) {
 // CryptoSuite ...
 func (c *MockClient) CryptoSuite() bccsp.BCCSP {
 	return c.cryptoSuite
+}
+
+// SigningManager returns the signing manager
+func (c *MockClient) SigningManager() fab.SigningManager {
+	return c.signingManager
+}
+
+// SetSigningManager mocks setting signing manager
+func (c *MockClient) SetSigningManager(signingMgr fab.SigningManager) {
+	c.signingManager = signingMgr
 }
 
 // SaveUserToStateStore ...

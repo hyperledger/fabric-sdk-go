@@ -17,6 +17,8 @@ type SDK interface {
 	CryptoSuiteProvider() bccsp.BCCSP
 	StateStoreProvider() fab.KeyValueStore
 	ConfigProvider() apiconfig.Config
+	DiscoveryProvider() fab.DiscoveryProvider
+	SigningManager() fab.SigningManager
 }
 
 // Org represents the organization context
