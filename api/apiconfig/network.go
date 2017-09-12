@@ -20,26 +20,32 @@ type NetworkConfig struct {
 	CertificateAuthorities map[string]CAConfig
 }
 
+// ClientConfig provides the definition of the client configuration
 type ClientConfig struct {
 	Organization string
 	Logging      LoggingType
 	CryptoConfig CCType
-	Tls          TlsType
+	TLS          TLSType
 	// currently not used by GO-SDK
 	CredentialStore CredentialStoreType
 }
 
+// LoggingType defines the level of logging
 type LoggingType struct {
 	Level string
 }
 
+// CCType defines the path to crypto keys and certs
 type CCType struct {
 	Path string
 }
-type TlsType struct {
+
+// TLSType defines whether or not TLS is enabled
+type TLSType struct {
 	Enabled bool
 }
 
+// CredentialStoreType defines pluggable KV store properties
 type CredentialStoreType struct {
 	Path        string
 	CryptoStore struct {
@@ -48,6 +54,7 @@ type CredentialStoreType struct {
 	Wallet string
 }
 
+// ChannelConfig provides the definition of channels for the network
 type ChannelConfig struct {
 	// Orderers list of ordering service nodes
 	Orderers []string
@@ -58,6 +65,7 @@ type ChannelConfig struct {
 	Chaincodes []string
 }
 
+// PeerChannelConfig defines the peer capabilities
 type PeerChannelConfig struct {
 	EndorsingPeer  bool
 	ChaincodeQuery bool
@@ -65,11 +73,13 @@ type PeerChannelConfig struct {
 	EventSource    bool
 }
 
+// ChannelPeer combines channel peer info with raw peerConfig info
 type ChannelPeer struct {
 	PeerChannelConfig
 	PeerConfig
 }
 
+// OrganizationConfig provides the definition of an organization in the network
 type OrganizationConfig struct {
 	MspID                  string
 	CryptoPath             string
@@ -79,28 +89,31 @@ type OrganizationConfig struct {
 	SignedCert             TLSConfig
 }
 
+// OrdererConfig defines an orderer configuration
 type OrdererConfig struct {
 	URL         string
-	GrpcOptions map[string]interface{}
-	TlsCACerts  TLSConfig
+	GRPCOptions map[string]interface{}
+	TLSCACerts  TLSConfig
 }
 
+// PeerConfig defines a peer configuration
 type PeerConfig struct {
-	Url         string
-	EventUrl    string
-	GrpcOptions map[string]interface{}
-	TlsCACerts  TLSConfig
+	URL         string
+	EventURL    string
+	GRPCOptions map[string]interface{}
+	TLSCACerts  TLSConfig
 }
 
+// CAConfig defines a CA configuration
 type CAConfig struct {
-	Url         string
-	HttpOptions map[string]interface{}
-	TlsCACerts  MutualTLSConfig
+	URL         string
+	HTTPOptions map[string]interface{}
+	TLSCACerts  MutualTLSConfig
 	Registrar   struct {
-		EnrollId     string
+		EnrollID     string
 		EnrollSecret string
 	}
-	CaName string
+	CAName string
 }
 
 // TLSConfig TLS configurations

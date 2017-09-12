@@ -179,10 +179,10 @@ func loadOrderer(t *testing.T) {
 		t.Fatal(err)
 	}
 	serverHostOverride := ""
-	if str, ok := ordererConfig.GrpcOptions["ssl-target-name-override"].(string); ok {
+	if str, ok := ordererConfig.GRPCOptions["ssl-target-name-override"].(string); ok {
 		serverHostOverride = str
 	}
-	orgTestOrderer, err = orderer.NewOrderer(ordererConfig.URL, ordererConfig.TlsCACerts.Path, serverHostOverride, orgTestClient.Config())
+	orgTestOrderer, err = orderer.NewOrderer(ordererConfig.URL, ordererConfig.TLSCACerts.Path, serverHostOverride, orgTestClient.Config())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,18 +199,18 @@ func loadOrgPeers(t *testing.T) {
 		t.Fatal(err)
 	}
 	serverHostOverrideOrg1 := ""
-	if str, ok := org1Peers[0].GrpcOptions["ssl-target-name-override"].(string); ok {
+	if str, ok := org1Peers[0].GRPCOptions["ssl-target-name-override"].(string); ok {
 		serverHostOverrideOrg1 = str
 	}
-	orgTestPeer0, err = peer.NewPeerTLSFromCert(org1Peers[0].Url, org1Peers[0].TlsCACerts.Path, serverHostOverrideOrg1, orgTestClient.Config())
+	orgTestPeer0, err = peer.NewPeerTLSFromCert(org1Peers[0].URL, org1Peers[0].TLSCACerts.Path, serverHostOverrideOrg1, orgTestClient.Config())
 	if err != nil {
 		t.Fatal(err)
 	}
 	serverHostOverrideOrg2 := ""
-	if str, ok := org2Peers[0].GrpcOptions["ssl-target-name-override"].(string); ok {
+	if str, ok := org2Peers[0].GRPCOptions["ssl-target-name-override"].(string); ok {
 		serverHostOverrideOrg2 = str
 	}
-	orgTestPeer1, err = peer.NewPeerTLSFromCert(org2Peers[0].Url, org2Peers[0].TlsCACerts.Path, serverHostOverrideOrg2, orgTestClient.Config())
+	orgTestPeer1, err = peer.NewPeerTLSFromCert(org2Peers[0].URL, org2Peers[0].TLSCACerts.Path, serverHostOverrideOrg2, orgTestClient.Config())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -220,7 +220,7 @@ func loadOrgPeers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	peer0EventHub.SetPeerAddr(org1Peers[0].EventUrl, org1Peers[0].TlsCACerts.Path, serverHostOverrideOrg1)
+	peer0EventHub.SetPeerAddr(org1Peers[0].EventURL, org1Peers[0].TLSCACerts.Path, serverHostOverrideOrg1)
 
 	orgTestClient.SetUserContext(org1User)
 	err = peer0EventHub.Connect()
@@ -233,7 +233,7 @@ func loadOrgPeers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	peer1EventHub.SetPeerAddr(org2Peers[0].EventUrl, org2Peers[0].TlsCACerts.Path, serverHostOverrideOrg2)
+	peer1EventHub.SetPeerAddr(org2Peers[0].EventURL, org2Peers[0].TLSCACerts.Path, serverHostOverrideOrg2)
 
 	orgTestClient.SetUserContext(org2User)
 	err = peer1EventHub.Connect()

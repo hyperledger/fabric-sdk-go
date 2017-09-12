@@ -147,7 +147,7 @@ func (c *Config) CAServerCertFiles(org string) ([]string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return nil, fmt.Errorf("CA Server Name '%s' not found", caName)
 	}
-	certFiles := strings.Split(config.CertificateAuthorities[caName].TlsCACerts.Path, ",")
+	certFiles := strings.Split(config.CertificateAuthorities[caName].TLSCACerts.Path, ",")
 
 	certFileModPath := make([]string, len(certFiles))
 	for i, v := range certFiles {
@@ -191,7 +191,7 @@ func (c *Config) CAClientKeyFile(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", fmt.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return strings.Replace(config.CertificateAuthorities[strings.ToLower(caName)].TlsCACerts.Client.Keyfile,
+	return strings.Replace(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Keyfile,
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
 }
 
@@ -209,7 +209,7 @@ func (c *Config) CAClientCertFile(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", fmt.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return strings.Replace(config.CertificateAuthorities[strings.ToLower(caName)].TlsCACerts.Client.Certfile,
+	return strings.Replace(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Certfile,
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
 }
 
@@ -305,8 +305,8 @@ func (c *Config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
 	}
 
 	for _, orderer := range config.Orderers {
-		if orderer.TlsCACerts.Path != "" {
-			orderer.TlsCACerts.Path = strings.Replace(orderer.TlsCACerts.Path, "$GOPATH",
+		if orderer.TLSCACerts.Path != "" {
+			orderer.TLSCACerts.Path = strings.Replace(orderer.TLSCACerts.Path, "$GOPATH",
 				os.Getenv("GOPATH"), -1)
 		}
 
@@ -329,8 +329,8 @@ func (c *Config) RandomOrdererConfig() (*apiconfig.OrdererConfig, error) {
 
 	var i int
 	for _, value := range config.Orderers {
-		if value.TlsCACerts.Path != "" {
-			value.TlsCACerts.Path = strings.Replace(value.TlsCACerts.Path, "$GOPATH",
+		if value.TLSCACerts.Path != "" {
+			value.TLSCACerts.Path = strings.Replace(value.TLSCACerts.Path, "$GOPATH",
 				os.Getenv("GOPATH"), -1)
 		}
 		if i == randomNumber {
@@ -349,8 +349,8 @@ func (c *Config) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
 		return nil, err
 	}
 	orderer := config.Orderers[strings.ToLower(name)]
-	if orderer.TlsCACerts.Path != "" {
-		orderer.TlsCACerts.Path = strings.Replace(orderer.TlsCACerts.Path, "$GOPATH",
+	if orderer.TLSCACerts.Path != "" {
+		orderer.TLSCACerts.Path = strings.Replace(orderer.TLSCACerts.Path, "$GOPATH",
 			os.Getenv("GOPATH"), -1)
 	}
 
@@ -373,8 +373,8 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 		if err = verifyPeerConfig(p, peerName, c.IsTLSEnabled()); err != nil {
 			return nil, err
 		}
-		if p.TlsCACerts.Path != "" {
-			p.TlsCACerts.Path = strings.Replace(p.TlsCACerts.Path, "$GOPATH",
+		if p.TLSCACerts.Path != "" {
+			p.TLSCACerts.Path = strings.Replace(p.TLSCACerts.Path, "$GOPATH",
 				os.Getenv("GOPATH"), -1)
 		}
 
@@ -401,8 +401,8 @@ func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, err
 		return nil, fmt.Errorf("Peer %s is not part of orgianzation %s", name, org)
 	}
 	peerConfig := config.Peers[strings.ToLower(name)]
-	if peerConfig.TlsCACerts.Path != "" {
-		peerConfig.TlsCACerts.Path = strings.Replace(peerConfig.TlsCACerts.Path, "$GOPATH",
+	if peerConfig.TLSCACerts.Path != "" {
+		peerConfig.TLSCACerts.Path = strings.Replace(peerConfig.TLSCACerts.Path, "$GOPATH",
 			os.Getenv("GOPATH"), -1)
 	}
 	return &peerConfig, nil
@@ -463,8 +463,8 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 			return nil, err
 		}
 
-		if p.TlsCACerts.Path != "" {
-			p.TlsCACerts.Path = strings.Replace(p.TlsCACerts.Path, "$GOPATH", os.Getenv("GOPATH"), -1)
+		if p.TLSCACerts.Path != "" {
+			p.TLSCACerts.Path = strings.Replace(p.TLSCACerts.Path, "$GOPATH", os.Getenv("GOPATH"), -1)
 		}
 
 		peer := apiconfig.ChannelPeer{PeerChannelConfig: chPeerConfig, PeerConfig: p}
@@ -477,13 +477,13 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 }
 
 func verifyPeerConfig(p apiconfig.PeerConfig, peerName string, tlsEnabled bool) error {
-	if p.Url == "" {
+	if p.URL == "" {
 		return fmt.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
-	if p.EventUrl == "" {
+	if p.EventURL == "" {
 		return fmt.Errorf("Event URL does not exist or empty for peer %s", peerName)
 	}
-	if tlsEnabled && p.TlsCACerts.Pem == "" && p.TlsCACerts.Path == "" {
+	if tlsEnabled && p.TLSCACerts.Pem == "" && p.TLSCACerts.Path == "" {
 		return fmt.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil

@@ -33,7 +33,7 @@ func (c *MockConfig) Client() (*apiconfig.ClientConfig, error) {
 
 // CAConfig return ca configuration
 func (c *MockConfig) CAConfig(org string) (*apiconfig.CAConfig, error) {
-	return &apiconfig.CAConfig{Url: c.CAServerURL, CaName: "test", TlsCACerts: apiconfig.MutualTLSConfig{}}, nil
+	return &apiconfig.CAConfig{URL: c.CAServerURL, CAName: "test", TLSCACerts: apiconfig.MutualTLSConfig{}}, nil
 }
 
 // CAServerCertFiles Read configuration option for the server certificate files

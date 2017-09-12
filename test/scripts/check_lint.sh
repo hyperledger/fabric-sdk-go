@@ -16,9 +16,9 @@ GOIMPORTS_CMD=goimports
 PROJECT_PATH=$GOPATH/src/github.com/hyperledger/fabric-sdk-go
 
 declare -a arr=(
-"./pkg/config"
-"./pkg/fabric-ca-client"
-"./pkg/fabric-client"
+"./api"
+"./def"
+"./pkg"
 "./test"
 )
 

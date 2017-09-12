@@ -347,11 +347,11 @@ func TestOrdererConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if orderers[0].TlsCACerts.Path != "" {
-		if !filepath.IsAbs(orderers[0].TlsCACerts.Path) {
+	if orderers[0].TLSCACerts.Path != "" {
+		if !filepath.IsAbs(orderers[0].TLSCACerts.Path) {
 			t.Fatal("Expected GOPATH relative path to be replaced")
 		}
-	} else if orderers[0].TlsCACerts.Pem == "" {
+	} else if orderers[0].TLSCACerts.Pem == "" {
 		t.Fatalf("Orderer %v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
 	}
 }
@@ -385,10 +385,10 @@ func TestPeersConfig(t *testing.T) {
 	}
 
 	for _, value := range pc {
-		if value.Url == "" {
+		if value.URL == "" {
 			t.Fatalf("Url value for the host is empty")
 		}
-		if value.EventUrl == "" {
+		if value.EventURL == "" {
 			t.Fatalf("EventUrl value is empty")
 		}
 	}
@@ -399,10 +399,10 @@ func TestPeersConfig(t *testing.T) {
 	}
 
 	for _, value := range pc {
-		if value.Url == "" {
+		if value.URL == "" {
 			t.Fatalf("Url value for the host is empty")
 		}
-		if value.EventUrl == "" {
+		if value.EventURL == "" {
 			t.Fatalf("EventUrl value is empty")
 		}
 	}
@@ -414,18 +414,18 @@ func TestPeerConfig(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	if pc.Url == "" {
+	if pc.URL == "" {
 		t.Fatalf("Url value for the host is empty")
 	}
 
-	if pc.TlsCACerts.Path != "" {
-		if !filepath.IsAbs(pc.TlsCACerts.Path) {
+	if pc.TLSCACerts.Path != "" {
+		if !filepath.IsAbs(pc.TLSCACerts.Path) {
 			t.Fatalf("Expected cert path to be absolute")
 		}
-	} else if pc.TlsCACerts.Pem == "" {
+	} else if pc.TLSCACerts.Pem == "" {
 		t.Fatalf("Peer %s must have at least a TlsCACerts.Path or TlsCACerts.Pem set", "peer0")
 	}
-	if len(pc.GrpcOptions) == 0 || pc.GrpcOptions["ssl-target-name-override"] != "peer0.org1.example.com" {
+	if len(pc.GRPCOptions) == 0 || pc.GRPCOptions["ssl-target-name-override"] != "peer0.org1.example.com" {
 		t.Fatalf("Peer %s must have grpcOptions set in config_test.yaml", "peer0")
 	}
 }

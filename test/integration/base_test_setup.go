@@ -245,10 +245,10 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 		return nil, fmt.Errorf("RandomOrdererConfig() return error: %s", err)
 	}
 	serverHostOverride := ""
-	if str, ok := ordererConfig.GrpcOptions["ssl-target-name-override"].(string); ok {
+	if str, ok := ordererConfig.GRPCOptions["ssl-target-name-override"].(string); ok {
 		serverHostOverride = str
 	}
-	orderer, err := orderer.NewOrderer(ordererConfig.URL, ordererConfig.TlsCACerts.Path, serverHostOverride, client.Config())
+	orderer, err := orderer.NewOrderer(ordererConfig.URL, ordererConfig.TLSCACerts.Path, serverHostOverride, client.Config())
 	if err != nil {
 		return nil, fmt.Errorf("NewOrderer return error: %v", err)
 	}
@@ -264,10 +264,10 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 		}
 		for _, p := range peerConfig {
 			serverHostOverride = ""
-			if str, ok := p.GrpcOptions["ssl-target-name-override"].(string); ok {
+			if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
 				serverHostOverride = str
 			}
-			endorser, err := deffab.NewPeer(p.Url, p.TlsCACerts.Path, serverHostOverride, client.Config())
+			endorser, err := deffab.NewPeer(p.URL, p.TLSCACerts.Path, serverHostOverride, client.Config())
 			if err != nil {
 				return nil, fmt.Errorf("NewPeer return error: %v", err)
 			}
@@ -360,13 +360,13 @@ func (setup *BaseSetupImpl) getEventHub(client fab.FabricClient) (fab.EventHub, 
 		return nil, fmt.Errorf("Error reading peer config: %v", err)
 	}
 	for _, p := range peerConfig {
-		if p.Url != "" {
-			fmt.Printf("******* EventHub connect to peer (%s) *******\n", p.Url)
+		if p.URL != "" {
+			fmt.Printf("******* EventHub connect to peer (%s) *******\n", p.URL)
 			serverHostOverride := ""
-			if str, ok := p.GrpcOptions["ssl-target-name-override"].(string); ok {
+			if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
 				serverHostOverride = str
 			}
-			eventHub.SetPeerAddr(p.EventUrl, p.TlsCACerts.Path, serverHostOverride)
+			eventHub.SetPeerAddr(p.EventURL, p.TLSCACerts.Path, serverHostOverride)
 			foundEventHub = true
 			break
 		}

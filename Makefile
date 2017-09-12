@@ -117,9 +117,9 @@ integration-tests-pkcs11: clean depend populate build-softhsm2-image
 integration-test: integration-tests-nopkcs11 integration-tests-pkcs11
 
 mock-gen:
-	mockgen -build_flags '$(GO_LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apitxn/mocks/mockapitxn.gen.go
-	mockgen -build_flags '$(GO_LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apiconfig Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apiconfig/mocks/mockconfig.gen.go
-	mockgen -build_flags '$(GO_LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apifabca FabricCAClient | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apifabca/mocks/mockfabriccaclient.gen.go
+	mockgen -build_flags '$(GO_LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > api/apitxn/mocks/mockapitxn.gen.go
+	mockgen -build_flags '$(GO_LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apiconfig Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > api/apiconfig/mocks/mockconfig.gen.go
+	mockgen -build_flags '$(GO_LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apifabca FabricCAClient | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > api/apifabca/mocks/mockfabriccaclient.gen.go
 
 channel-config-gen:
 	@echo "Generating test channel configuration transactions and blocks ..."

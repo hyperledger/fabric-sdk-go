@@ -115,7 +115,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		Name:        userName,
 		Type:        "user",
 		Affiliation: "org1.department1",
-		CAName:      caConfig.CaName,
+		CAName:      caConfig.CAName,
 	}
 	enrolmentSecret, err := caClient.Register(adminUser, &registerRequest)
 	if err != nil {

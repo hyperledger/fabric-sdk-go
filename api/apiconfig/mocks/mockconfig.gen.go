@@ -6,11 +6,12 @@ package mock_apiconfig
 
 import (
 	x509 "crypto/x509"
+	reflect "reflect"
+	time "time"
+
 	gomock "github.com/golang/mock/gomock"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	factory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
-	reflect "reflect"
-	time "time"
 )
 
 // MockConfig is a mock of Config interface

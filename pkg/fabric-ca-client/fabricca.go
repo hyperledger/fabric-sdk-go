@@ -46,9 +46,9 @@ func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
 	}
 
 	//set server CAName
-	c.Config.CAName = conf.CaName
+	c.Config.CAName = conf.CAName
 	//set server URL
-	c.Config.URL = conf.Url
+	c.Config.URL = conf.URL
 	//certs file list
 	c.Config.TLS.CertFiles, err = config.CAServerCertFiles(org)
 	if err != nil {
