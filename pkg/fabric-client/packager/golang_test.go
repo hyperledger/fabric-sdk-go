@@ -22,7 +22,7 @@ func TestPackageGoLangCC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from os.Getwd %v", err)
 	}
-	os.Setenv("GOPATH", path.Join(pwd, "../../../test/fixtures"))
+	os.Setenv("GOPATH", path.Join(pwd, "../../../test/fixtures/testdata"))
 
 	ccPackage, err := PackageGoLangCC("github.com")
 	if err != nil {

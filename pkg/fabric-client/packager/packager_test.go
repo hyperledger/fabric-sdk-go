@@ -1,3 +1,8 @@
+/*
+Copyright SecureKey Technologies Inc. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
 package packager
 
 import (
@@ -16,7 +21,7 @@ func TestPackageCC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from os.Getwd %v", err)
 	}
-	os.Setenv("GOPATH", path.Join(pwd, "../../../test/fixtures"))
+	os.Setenv("GOPATH", path.Join(pwd, "../../../test/fixtures/testdata"))
 
 	ccPackage, err := PackageCC("github.com", "")
 	if err != nil {
@@ -69,7 +74,7 @@ func TestUndefinedPackageCC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from os.Getwd %v", err)
 	}
-	os.Setenv("GOPATH", path.Join(pwd, "../../../test/fixtures"))
+	os.Setenv("GOPATH", path.Join(pwd, "../../../test/fixtures/testdata"))
 
 	_, err = PackageCC("github.com", "UndefinedCCType")
 	if err == nil {

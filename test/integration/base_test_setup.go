@@ -202,7 +202,7 @@ func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, 
 // GetDeployPath ..
 func (setup *BaseSetupImpl) GetDeployPath() string {
 	pwd, _ := os.Getwd()
-	return path.Join(pwd, "../fixtures")
+	return path.Join(pwd, "../fixtures/testdata")
 }
 
 // InstallAndInstantiateExampleCC ..

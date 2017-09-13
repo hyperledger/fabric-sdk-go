@@ -137,11 +137,11 @@ func installAndInstantiate(t *testing.T) {
 
 	orgTestClient.SetUserContext(org1AdminUser)
 	admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer0}, "../../fixtures")
+		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer0}, "../../fixtures/testdata")
 
 	orgTestClient.SetUserContext(org2AdminUser)
 	err := admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer1}, "../../fixtures")
+		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer1}, "../../fixtures/testdata")
 	if err != nil {
 		t.Fatal(err)
 	}

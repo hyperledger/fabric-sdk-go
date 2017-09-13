@@ -22,11 +22,10 @@ if [[ -z "$CHECK" ]]; then
 fi
 
 if [[ -z "$CHECK" ]]; then
-   echo "All files are excluded from having SPDX-License-Identifier headers"
+   echo "All files are excluded from having license headers"
    exit 0
 fi
 
-echo "Checking committed files for SPDX-License-Identifier headers ..."
 missing=`echo "$CHECK" | xargs ls -d 2>/dev/null | xargs grep -L "SPDX-License-Identifier"`
 if [[ -z "$missing" ]]; then
    echo "All files have SPDX-License-Identifier headers"
@@ -37,4 +36,15 @@ echo "$missing"
 echo
 echo "Please replace the Apache license header comment text with:"
 echo "SPDX-License-Identifier: Apache-2.0"
+
+echo
+echo "Checking committed files for traditional Apache License headers ..."
+missing=`echo "$missing" | xargs ls -d 2>/dev/null | xargs grep -L "http://www.apache.org/licenses/LICENSE-2.0"`
+if [[ -z "$missing" ]]; then
+   echo "All remaining files have Apache 2.0 headers"
+   exit 0
+fi
+echo "The following files are missing traditional Apache 2.0 headers:"
+echo "$missing"
+echo "Fatal Error - All files must have a license header"
 exit 1
