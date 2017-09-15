@@ -16,6 +16,7 @@
 # populate: populates generated files (not included in git) - currently only vendor
 # populate-vendor: populate the vendor directory based on the lock
 # populate-clean: cleans up populated files (might become part of clean eventually) 
+# thirdparty-pin: pulls (and patches) pinned dependencies into the project under internal
 #
 #
 # Instructions to generate .tx files used for creating channels:
@@ -31,6 +32,8 @@ export LDFLAGS=-ldflags=-s
 export DOCKER_NS=hyperledger
 export DOCKER_TAG=$(ARCH)-0.3.1
 export GO_DEP_COMMIT=v0.3.0 # the version of dep that will be installed by depend-install (or in the CI)
+
+export FABRIC_CA_COMMIT=v1.0.1
 
 # Detect CI
 ifdef JENKINS_URL
@@ -89,6 +92,9 @@ mock-gen:
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apitxn/mocks/mockapitxn.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apiconfig Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apiconfig/mocks/mockconfig.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apifabca FabricCAClient | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apifabca/mocks/mockfabriccaclient.gen.go
+
+thirdparty-pin:
+	UPSTREAM_COMMIT=$(FABRIC_CA_COMMIT) scripts/third_party_pins/fabric-ca/apply_fabric_ca.sh
 
 populate: populate-vendor
 

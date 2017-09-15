@@ -16,6 +16,7 @@ REPO="github.com/hyperledger/fabric-sdk-go"
 PKGS=`go list $REPO... 2> /dev/null | \
       grep -v ^$REPO/api/ | \
       grep -v ^$REPO/pkg/fabric-ca-client/mocks | grep -v ^$REPO/pkg/fabric-client/mocks | \
+      grep -v ^$REPO/internal/github.com/ | \
       grep -v ^$REPO/vendor/ | grep -v ^$REPO/test/`
 echo "Running unit tests..."
 
