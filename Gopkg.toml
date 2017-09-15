@@ -9,10 +9,6 @@
   branch = "master"
 
 [[constraint]]
-  name = "github.com/hyperledger/fabric-ca"
-  version = "~1.0.0"
-
-[[constraint]]
   name = "github.com/golang/mock"
   version = "^1.0.0"
 

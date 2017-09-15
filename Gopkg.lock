@@ -34,7 +34,7 @@
 [[projects]]
   branch = "master"
   name = "github.com/cloudflare/cfssl"
-  packages = ["api","api/client","auth","certdb","certdb/sql","cli","config","crypto/pkcs7","csr","errors","helpers","helpers/derhelpers","info","initca","log","ocsp","ocsp/config","revoke","signer","signer/local","signer/remote","signer/universal"]
+  packages = ["api","api/client","auth","certdb","cli","config","crypto/pkcs7","csr","errors","helpers","helpers/derhelpers","info","initca","log","ocsp","ocsp/config","signer","signer/local","signer/remote","signer/universal"]
   revision = "fb16c3479c6ecbd2211751586b206f71387349e6"
 
 [[projects]]
@@ -99,12 +99,6 @@
   revision = "75772940379e725b5aae213e570f9dcd751951cb"
 
 [[projects]]
-  name = "github.com/go-sql-driver/mysql"
-  packages = ["."]
-  revision = "a0583e0143b1624142adab07e0e97fe106d99561"
-  version = "v1.3"
-
-[[projects]]
   name = "github.com/gogo/protobuf"
   packages = ["gogoproto","proto","protoc-gen-gogo/descriptor","sortkeys","types"]
   revision = "100ba4e885062801d56799d78530b73b178a78f3"
@@ -167,14 +161,8 @@
 [[projects]]
   branch = "master"
   name = "github.com/hyperledger/fabric"
-  packages = ["bccsp","bccsp/factory","bccsp/pkcs11","bccsp/signer","bccsp/sw","bccsp/utils","common/cauthdsl","common/channelconfig","common/configtx","common/configtx/api","common/crypto","common/flogging","common/ledger","common/ledger/util","common/metadata","common/policies","common/util","core/chaincode/platforms","core/chaincode/platforms/car","core/chaincode/platforms/golang","core/chaincode/platforms/java","core/chaincode/platforms/node","core/chaincode/platforms/util","core/chaincode/shim","core/comm","core/config","core/container/util","core/ledger","core/ledger/kvledger/txmgmt/rwsetutil","core/ledger/kvledger/txmgmt/version","core/ledger/util","events/consumer","msp","msp/cache","msp/mgmt","protos/common","protos/ledger/queryresult","protos/ledger/rwset","protos/ledger/rwset/kvrwset","protos/msp","protos/orderer","protos/peer","protos/utils"]
+  packages = ["bccsp","bccsp/factory","bccsp/pkcs11","bccsp/signer","bccsp/sw","bccsp/utils","common/cauthdsl","common/channelconfig","common/configtx","common/configtx/api","common/crypto","common/flogging","common/ledger","common/ledger/util","common/metadata","common/policies","common/util","core/chaincode/platforms","core/chaincode/platforms/car","core/chaincode/platforms/golang","core/chaincode/platforms/java","core/chaincode/platforms/node","core/chaincode/platforms/util","core/comm","core/config","core/container/util","core/ledger","core/ledger/kvledger/txmgmt/rwsetutil","core/ledger/kvledger/txmgmt/version","core/ledger/util","events/consumer","msp","msp/cache","msp/mgmt","protos/common","protos/ledger/rwset","protos/ledger/rwset/kvrwset","protos/msp","protos/orderer","protos/peer","protos/utils"]
   revision = "a657db28a0ff53ed512bd6f4ac4786a0f4ca709c"
-
-[[projects]]
-  name = "github.com/hyperledger/fabric-ca"
-  packages = ["api","lib","lib/dbutil","lib/ldap","lib/spi","lib/tcert","lib/tls","util"]
-  revision = "0262ccbeeb09a8ec85e47a7c051e9b7ddd6856b8"
-  version = "v1.0.1"
 
 [[projects]]
   name = "github.com/jmhodges/clock"
@@ -183,40 +171,10 @@
   version = "v1.1"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/jmoiron/sqlx"
-  packages = [".","reflectx"]
-  revision = "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/kisielk/sqlstruct"
-  packages = ["."]
-  revision = "648daed35d49dac24a4bff253b190a80da3ab6a5"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/lib/pq"
-  packages = [".","oid"]
-  revision = "e42267488fe361b9dc034be7a6bffef5b195bceb"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/looplab/fsm"
-  packages = ["."]
-  revision = "bcc3636384ce80a109a6039432b30ff5b82476ee"
-
-[[projects]]
   name = "github.com/magiconair/properties"
   packages = ["."]
   revision = "be5ece7dd465ab0765a9682137865547526d1dfb"
   version = "v1.7.3"
-
-[[projects]]
-  name = "github.com/mattn/go-sqlite3"
-  packages = ["."]
-  revision = "ca5e3819723d8eeaf170ad510e7da1d6d2e94a08"
-  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/matttproud/golang_protobuf_extensions"
@@ -342,7 +300,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["bcrypt","blowfish","ocsp","pkcs12","pkcs12/internal/rc2","sha3","ssh/terminal"]
+  packages = ["ocsp","pkcs12","pkcs12/internal/rc2","sha3","ssh/terminal"]
   revision = "eb71ad9bd329b5ac0fd0148dd99bd62e8be8e035"
 
 [[projects]]
@@ -382,18 +340,6 @@
   version = "v1.5.2"
 
 [[projects]]
-  name = "gopkg.in/asn1-ber.v1"
-  packages = ["."]
-  revision = "379148ca0225df7a432012b8df0355c2a2063ac0"
-  version = "v1.2"
-
-[[projects]]
-  name = "gopkg.in/ldap.v2"
-  packages = ["."]
-  revision = "8168ee085ee43257585e50c6441aadf54ecb2c9f"
-  version = "v2.5.0"
-
-[[projects]]
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
@@ -402,6 +348,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6d5dc49c0186edb6b06aa171e68709aade340b57cc3e6cae330c6eebbad81c2a"
+  inputs-digest = "fe7a9899d1cbbb9cbd256ee66db7421b5207e34241681202cc78e740ff33547a"
   solver-name = "gps-cdcl"
   solver-version = 1

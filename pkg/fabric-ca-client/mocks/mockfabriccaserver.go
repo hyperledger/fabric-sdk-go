@@ -12,8 +12,8 @@ import (
 
 	cfapi "github.com/cloudflare/cfssl/api"
 	cfsslapi "github.com/cloudflare/cfssl/api"
-	"github.com/hyperledger/fabric-ca/api"
-	"github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 )
 
 var ecert = `-----BEGIN CERTIFICATE-----

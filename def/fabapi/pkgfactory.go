@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	fabricCaUtil "github.com/hyperledger/fabric-ca/util"
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
