@@ -1,0 +1,53 @@
+From 633f30063144e50c5f5c6205c60f7faa87a0f8ea Mon Sep 17 00:00:00 2001
+From: Troy Ronda <<t.....@securekey.com>
+Date: Mon, 18 Sep 2017 14:57:13 -0400
+Subject: [PATCH] Remove platform reference from protos
+
+Copyright SecureKey Technologies Inc. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+
+Signed-off-by: Troy Ronda <t.....@securekey.com>
+---
+ protos/utils/proputils.go | 19 -------------------
+ 1 file changed, 19 deletions(-)
+
+diff --git a/protos/utils/proputils.go b/protos/utils/proputils.go
+index c2b9f330..a1b7eee2 100644
+--- a/protos/utils/proputils.go
++++ b/protos/utils/proputils.go
+@@ -29,7 +29,6 @@ import (
+ 	"github.com/hyperledger/fabric/bccsp/factory"
+ 	"github.com/hyperledger/fabric/common/crypto"
+ 	"github.com/hyperledger/fabric/common/util"
+-	"github.com/hyperledger/fabric/core/chaincode/platforms"
+ 	"github.com/hyperledger/fabric/protos/common"
+ 	"github.com/hyperledger/fabric/protos/peer"
+ )
+@@ -157,24 +156,6 @@ func GetProposalResponse(prBytes []byte) (*peer.ProposalResponse, error) {
+ 	return proposalResponse, err
+ }
+ 
+-// GetChaincodeDeploymentSpec returns a ChaincodeDeploymentSpec given args
+-func GetChaincodeDeploymentSpec(code []byte) (*peer.ChaincodeDeploymentSpec, error) {
+-	cds := &peer.ChaincodeDeploymentSpec{}
+-	err := proto.Unmarshal(code, cds)
+-	if err != nil {
+-		return nil, err
+-	}
+-
+-	// FAB-2122: Validate the CDS according to platform specific requirements
+-	platform, err := platforms.Find(cds.ChaincodeSpec.Type)
+-	if err != nil {
+-		return nil, err
+-	}
+-
+-	err = platform.ValidateDeploymentSpec(cds)
+-	return cds, err
+-}
+-
+ // GetChaincodeAction gets the ChaincodeAction given chaicnode action bytes
+ func GetChaincodeAction(caBytes []byte) (*peer.ChaincodeAction, error) {
+ 	chaincodeAction := &peer.ChaincodeAction{}
+-- 
+2.14.1
+

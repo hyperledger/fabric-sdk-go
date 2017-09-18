@@ -33,7 +33,11 @@ export DOCKER_NS=hyperledger
 export DOCKER_TAG=$(ARCH)-0.3.1
 export GO_DEP_COMMIT=v0.3.0 # the version of dep that will be installed by depend-install (or in the CI)
 
-export FABRIC_CA_COMMIT=v1.0.1
+# Upstream fabric patching
+THIRDPARTY_FABRIC_CA_BRANCH=release
+THIRDPARTY_FABRIC_CA_COMMIT=v1.0.1
+THIRDPARTY_FABRIC_BRANCH=master
+THIRDPARTY_FABRIC_COMMIT=a657db28a0ff53ed512bd6f4ac4786a0f4ca709c
 
 # Detect CI
 ifdef JENKINS_URL
@@ -94,7 +98,8 @@ mock-gen:
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apifabca FabricCAClient | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apifabca/mocks/mockfabriccaclient.gen.go
 
 thirdparty-pin:
-	UPSTREAM_COMMIT=$(FABRIC_CA_COMMIT) scripts/third_party_pins/fabric-ca/apply_fabric_ca.sh
+	UPSTREAM_COMMIT=$(THIRDPARTY_FABRIC_COMMIT) UPSTREAM_BRANCH=$(THIRDPARTY_FABRIC_BRANCH) scripts/third_party_pins/fabric/apply_upstream.sh
+	UPSTREAM_COMMIT=$(THIRDPARTY_FABRIC_CA_COMMIT) UPSTREAM_BRANCH=$(THIRDPARTY_FABRIC_CA_BRANCH) scripts/third_party_pins/fabric-ca/apply_upstream.sh
 
 populate: populate-vendor
 
