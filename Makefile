@@ -56,7 +56,7 @@ PACKAGE_NAME := github.com/hyperledger/fabric-sdk-go
 ARCH         := $(shell uname -m)
 
 # The version of dep that will be installed by depend-install (or in the CI)
-GO_DEP_COMMIT := v0.3.0
+GO_DEP_COMMIT := v0.3.1
 
 # Setup Go Tags
 GO_TAGS := $(FABRIC_SDK_EXTRA_GO_TAGS)
