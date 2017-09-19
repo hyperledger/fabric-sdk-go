@@ -1,0 +1,28 @@
+From 81c8693fad42fa98ab38c8946fbb79d355e08392 Mon Sep 17 00:00:00 2001
+From: Troy Ronda <t.....@securekey.com>
+Date: Tue, 19 Sep 2017 11:29:58 -0400
+Subject: [PATCH] Update package flogging for vendoring
+
+Copyright SecureKey Technologies Inc. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+
+Signed-off-by: Troy Ronda <t.....@securekey.com>
+---
+ common/flogging/logging.go | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/common/flogging/logging.go b/common/flogging/logging.go
+index 841aed7a..f4f0b8d7 100644
+--- a/common/flogging/logging.go
++++ b/common/flogging/logging.go
+@@ -47,7 +47,6 @@ var (
+ func init() {
+ 	logger = logging.MustGetLogger(pkgLogID)
+ 	Reset()
+-	initgrpclogger()
+ }
+ 
+ // Reset sets to logging to the defaults defined in this package.
+-- 
+2.14.1
+
