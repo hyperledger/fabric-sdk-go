@@ -13,17 +13,11 @@
 # checks: runs all check conditions (license, spelling, linting)
 # clean: stops docker conatainers used for integration testing
 # mock-gen: generate mocks needed for testing (using mockgen)
+# channel-artifacts: generates the channel configuration transactions and blocks used by tests
 # populate: populates generated files (not included in git) - currently only vendor
 # populate-vendor: populate the vendor directory based on the lock
-# populate-clean: cleans up populated files (might become part of clean eventually) 
+# populate-clean: cleans up populated files (might become part of clean eventually)
 # thirdparty-pin: pulls (and patches) pinned dependencies into the project under internal
-#
-#
-# Instructions to generate .tx files used for creating channels:
-# Download the configtxgen binary for your OS from (it is located in the .tar.gz file):
-# https://nexus.hyperledger.org/content/repositories/releases/org/hyperledger/fabric/hyperledger-fabric
-# Sample command: $ path/to/configtxgen -profile TwoOrgsChannel -outputCreateChannelTx testchannel.tx -channelID testchannel
-# More Docs: http://hyperledger-fabric.readthedocs.io/en/latest/configtxgen.html
 #
 
 
@@ -38,6 +32,10 @@ THIRDPARTY_FABRIC_CA_BRANCH=release
 THIRDPARTY_FABRIC_CA_COMMIT=v1.0.1
 THIRDPARTY_FABRIC_BRANCH=master
 THIRDPARTY_FABRIC_COMMIT=a657db28a0ff53ed512bd6f4ac4786a0f4ca709c
+
+# Local variables used by makefile
+PACKAGE_NAME=github.com/hyperledger/fabric-sdk-go
+FABRIC_TOOLS_RELEASE=1.0.1
 
 # Detect CI
 ifdef JENKINS_URL
@@ -96,6 +94,13 @@ mock-gen:
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apitxn/mocks/mockapitxn.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apiconfig Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apiconfig/mocks/mockconfig.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apifabca FabricCAClient | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apifabca/mocks/mockfabriccaclient.gen.go
+
+channel-artifacts:
+	@echo "Generating test channel configuration transactions and blocks"
+	@docker run -i \
+		-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) \
+		hyperledger/fabric-tools:$(ARCH)-$(FABRIC_TOOLS_RELEASE) \
+		/bin/bash -c "/opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
 
 thirdparty-pin:
 	UPSTREAM_COMMIT=$(THIRDPARTY_FABRIC_COMMIT) UPSTREAM_BRANCH=$(THIRDPARTY_FABRIC_BRANCH) scripts/third_party_pins/fabric/apply_upstream.sh
