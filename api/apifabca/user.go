@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package apifabca
 
 import (
-	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
 // User represents users that have been enrolled and represented by

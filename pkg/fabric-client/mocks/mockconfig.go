@@ -14,7 +14,7 @@ import (
 
 	"fmt"
 
-	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/spf13/viper"
 )
 

@@ -10,7 +10,7 @@ import (
 	"crypto/x509"
 	"time"
 
-	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // Config fabric-sdk-go configuration interface

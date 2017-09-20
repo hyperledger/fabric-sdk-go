@@ -8,7 +8,7 @@ package mocks
 
 import (
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
-	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
 // MockUser ...

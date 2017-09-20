@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package apifabclient
 
 import (
-	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
 // Orderer The Orderer class represents a peer in the target blockchain network to which

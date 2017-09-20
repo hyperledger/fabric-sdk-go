@@ -5,10 +5,6 @@
 #
 
 [[constraint]]
-  name = "github.com/hyperledger/fabric"
-  branch = "master"
-
-[[constraint]]
   name = "github.com/golang/mock"
   version = "^1.0.0"
 
@@ -44,30 +40,3 @@
   name = "github.com/cloudflare/cfssl"
   branch = "master"
   # note: cfssl is mainly a downstream package but is also used in the SDK mocks
-
-# Downstream overrides due to inconsistent semver
-[[override]]
-name = "github.com/docker/libnetwork"
-branch = "master"
-
-[[override]]
-name = "github.com/docker/go-connections"
-branch = "master"
-
-[[override]]
-name = "github.com/docker/go-units"
-branch = "master"
-
-[[override]]
-name = "github.com/docker/libkv"
-branch = "master"
-
-# Temporary downstream overrides due to sirupsen/logrus case sensitivity
-[[override]]
-name = "github.com/docker/docker"
-source = "github.com/moby/moby"
-branch = "master"
-
-[[override]]
-name = "github.com/opencontainers/runc"
-branch = "master"

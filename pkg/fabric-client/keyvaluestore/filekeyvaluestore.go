@@ -14,7 +14,7 @@ import (
 
 	"github.com/op/go-logging"
 
-	utils "github.com/hyperledger/fabric/bccsp/utils"
+	utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/utils"
 )
 
 var logger = logging.MustGetLogger("fabric_sdk_go")

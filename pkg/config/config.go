@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
-	"github.com/hyperledger/fabric/bccsp/pkcs11"
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/pkcs11"
 	"github.com/op/go-logging"
 	"github.com/spf13/viper"
 )

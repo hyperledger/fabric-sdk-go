@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric/protos/common"
-	ab "github.com/hyperledger/fabric/protos/orderer"
-	protos_utils "github.com/hyperledger/fabric/protos/utils"
+	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
