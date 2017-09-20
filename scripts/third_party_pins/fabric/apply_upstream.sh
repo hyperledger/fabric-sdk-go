@@ -9,6 +9,8 @@
 # These files are checked into internal paths.
 # Note: This script must be adjusted as upstream makes adjustments
 
+set -e
+
 UPSTREAM_PROJECT="github.com/hyperledger/fabric"
 UPSTREAM_BRANCH="master"
 SCRIPTS_PATH="scripts/third_party_pins/fabric"
@@ -46,8 +48,10 @@ echo "Pinning and patching fabric client utils..."
 declare -a CLIENT_UTILS_IMPORT_SUBSTS=(
     's/\"github.com\/hyperledger\/fabric\/common\/flogging/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/common\/flogging/g'
     's/\"github.com\/hyperledger\/fabric\/bccsp/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/bccsp/g'
-    's/\"github.com\/hyperledger\/fabric\/protos\/utils/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/protos\/utils/g'
-    's/\"github.com\/hyperledger\/fabric\/protos\//\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\//g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/common/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/common/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/peer/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/peer/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/msp/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/msp/g'
+    's/\"github.com\/hyperledger\/fabric\/protos/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/protos/g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
 )
 eval "INTERNAL_PATH=$THIRDPARTY_INTERNAL_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS=\"${CLIENT_UTILS_IMPORT_SUBSTS[*]}\" $SCRIPTS_PATH/apply_fabric_client_utils.sh"
@@ -70,7 +74,7 @@ declare -a BCCSP_IMPORT_SUBSTS=(
 eval "INTERNAL_PATH=$THIRDPARTY_FABRIC_BCCSP_PKG_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS=\"${BCCSP_IMPORT_SUBSTS[*]}\" $SCRIPTS_PATH/apply_fabric_bccsp.sh"
 
 # protos
-echo "Pinning and patching protos ..."
+echo "Pinning and patching protos (third party) ..."
 declare -a PROTOS_IMPORT_SUBSTS=(
     's/\"github.com\/hyperledger\/fabric\/common\/flogging/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/common\/flogging/g'
     's/\"github.com\/hyperledger\/fabric\/bccsp/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/bccsp/g'
@@ -80,14 +84,17 @@ declare -a PROTOS_IMPORT_SUBSTS=(
 eval "INTERNAL_PATH=$THIRDPARTY_FABRIC_API_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS=\"${PROTOS_IMPORT_SUBSTS[*]}\" $SCRIPTS_PATH/apply_fabric_protos.sh"
 
 # proto utils
-echo "Pinning and patching proto utils..."
-declare -a PROTO_UTILS_IMPORT_SUBSTS=(
+echo "Pinning and patching protos (internal) ..."
+declare -a PROTOS_INTERNAL_IMPORT_SUBSTS=(
     's/\"github.com\/hyperledger\/fabric\/common\/flogging/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/common\/flogging/g'
     's/\"github.com\/hyperledger\/fabric\/bccsp/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/bccsp/g'
-    's/\"github.com\/hyperledger\/fabric\/protos\//\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\//g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/common/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/common/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/peer/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/peer/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/msp/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/msp/g'
+    's/\"github.com\/hyperledger\/fabric\/protos/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/protos/g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
 )
-eval "INTERNAL_PATH=$THIRDPARTY_INTERNAL_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS=\"${PROTO_UTILS_IMPORT_SUBSTS[*]}\" $SCRIPTS_PATH/apply_fabric_proto_utils.sh"
+eval "INTERNAL_PATH=$THIRDPARTY_INTERNAL_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS=\"${PROTOS_INTERNAL_IMPORT_SUBSTS[*]}\" $SCRIPTS_PATH/apply_fabric_protos_internal.sh"
 
 # Cleanup temporary files from patch application
 echo "Removing temporary files ..."

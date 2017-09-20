@@ -13,14 +13,11 @@ IMPORT_SUBSTS=($IMPORT_SUBSTS)
 
 declare -a PKGS=(
     "protos/common"
-    "protos/ledger/rwset"
-    "protos/ledger/rwset/kvrwset"
-    "protos/msp"
-    "protos/orderer"
     "protos/peer"
+
+    "protos/msp"
 )
 
-# TODO: selective removal of files
 declare -a FILES=(
     "protos/common/common.pb.go"
     "protos/common/configtx.pb.go"
@@ -28,30 +25,19 @@ declare -a FILES=(
     "protos/common/ledger.pb.go"
     "protos/common/policies.pb.go"
 
-    "protos/ledger/rwset/rwset.pb.go"
-    "protos/ledger/rwset/kvrwset/kv_rwset.pb.go"
-
-    "protos/msp/identities.pb.go"
-    "protos/msp/msp_config.pb.go"
-    "protos/msp/msp_principal.pb.go"
-
-    "protos/orderer/ab.pb.go"
-    "protos/orderer/configuration.pb.go"
-    "protos/orderer/kafka.pb.go"
-
-    "protos/peer/admin.pb.go"
     "protos/peer/chaincode.pb.go"
     "protos/peer/chaincode_event.pb.go"
-    "protos/peer/chaincode_shim.pb.go"
     "protos/peer/configuration.pb.go"
     "protos/peer/events.pb.go"
     "protos/peer/peer.pb.go"
     "protos/peer/proposal.pb.go"
     "protos/peer/proposal_response.pb.go"
     "protos/peer/query.pb.go"
-    "protos/peer/resources.pb.go"
-    "protos/peer/signed_cc_dep_spec.pb.go"
     "protos/peer/transaction.pb.go"
+
+    "protos/msp/identities.pb.go"
+    "protos/msp/msp_config.pb.go"
+    "protos/msp/msp_principal.pb.go"
 )
 
 echo 'Removing current upstream project from working directory ...'
