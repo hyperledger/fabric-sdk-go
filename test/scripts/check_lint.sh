@@ -8,6 +8,13 @@
 
 set -e
 
+GO_CMD="${GO_CMD:-go}"
+GOLINT_CMD=golint
+GOFMT_CMD=gofmt
+GOIMPORTS_CMD=goimports
+
+PROJECT_PATH=$GOPATH/src/github.com/hyperledger/fabric-sdk-go
+
 declare -a arr=(
 "./pkg/config"
 "./pkg/fabric-ca-client"
@@ -19,28 +26,28 @@ echo "Running linters..."
 for i in "${arr[@]}"
 do
    echo "Checking $i"
-   OUTPUT="$(golint $i/...)"
+   OUTPUT="$($GOLINT_CMD $i/...)"
    if [[ $OUTPUT ]]; then
       echo "You should check the following golint suggestions:"
       printf "$OUTPUT\n"
       echo "end golint suggestions"
    fi
 
-   OUTPUT="$(go vet $i/...)"
+   OUTPUT="$($GO_CMD vet $i/...)"
    if [[ $OUTPUT ]]; then
       echo "You should check the following govet suggestions:"
       printf "$OUTPUT\n"
       echo "end govet suggestions"
    fi
 
-   found=`gofmt -l \`find $i -name "*.go" |grep -v "./vendor"\` 2>&1`
+   found=`$GOFMT_CMD -l \`find $i -name "*.go" |grep -v "./vendor"\` 2>&1`
    if [ $? -ne 0 ]; then
-      echo "The following files need reformatting with 'gofmt -w <file>':"
+      echo "The following files need reformatting with '$GO_FMT -w <file>':"
       printf "$badformat\n"
       exit 1
    fi
 
-   OUTPUT="$(goimports -srcdir $GOPATH/src/github.com/hyperledger/fabric-sdk-go -l $i)"
+   OUTPUT="$($GOIMPORTS_CMD -srcdir $PROJECT_PATH -l $i)"
    if [[ $OUTPUT ]]; then
       echo "YOU MUST FIX THE FOLLOWING GOIMPORTS ERRORS:"
       printf "$OUTPUT\n"

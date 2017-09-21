@@ -5,15 +5,17 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Environment variables that affect this script:
-# GOTESTFLAGS: Flags are added to the go test command.
-# LDFLAGS: Flags are added to the go test command (example: -ldflags=-s).
+# GO_TESTFLAGS: Flags are added to the go test command.
+# GO_LDFLAGS: Flags are added to the go test command (example: -ldflags=-s).
 
 set -e
+
+GO_CMD="${GO_CMD:-go}"
 
 REPO="github.com/hyperledger/fabric-sdk-go"
 
 # Packages to exclude
-PKGS=`go list $REPO... 2> /dev/null | \
+PKGS=`$GO_CMD list $REPO... 2> /dev/null | \
       grep -v ^$REPO/api/ | \
       grep -v ^$REPO/pkg/fabric-ca-client/mocks | grep -v ^$REPO/pkg/fabric-client/mocks | \
       grep -v ^$REPO/internal/github.com/ | grep -v ^$REPO/third_party/ | \
@@ -27,4 +29,4 @@ if [ "$ARCH" == "x86_64" ]
 then
     RACEFLAG="-race"
 fi
-go test $RACEFLAG -cover $GOTESTFLAGS $LDFLAGS $PKGS -p 1 -timeout=40m
+$GO_CMD test $RACEFLAG -cover -tags "$GO_TAGS" $GO_TESTFLAGS $GO_LDFLAGS $PKGS -p 1 -timeout=40m

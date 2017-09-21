@@ -11,6 +11,8 @@
 
 IMPORT_SUBSTS=($IMPORT_SUBSTS)
 
+GOIMPORTS_CMD=goimports
+
 declare -a PKGS=(
     "protos/common"
     "protos/peer"
@@ -58,7 +60,7 @@ do
     do
         sed -i '' -e $subst $TMP_PROJECT_PATH/${i}
     done
-    goimports -w $TMP_PROJECT_PATH/${i}
+    $GOIMPORTS_CMD -w $TMP_PROJECT_PATH/${i}
 done
 
 # Copy patched project into internal paths

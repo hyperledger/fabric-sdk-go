@@ -6,10 +6,10 @@
 version: '2'
 
 services:
-      
+
   fabric-sdk-integration-tests:
     container_name: fabric-sdk-integration-test
-    image: softhsm2-image
+    image: ${FABRIC_BASEOS_FIXTURE_IMAGE}:${ARCH}-${FABRIC_BASEOS_FIXTURE_TAG}
     volumes:
       - ../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
     command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration.sh

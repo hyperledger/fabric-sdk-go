@@ -9,15 +9,18 @@
 # FABRIC_SDKGO_DEPEND_INSTALL: Installs dependencies
 # GO_DEP_COMMIT: Tag or commit level of the go dep tool to install (if FABRIC_SDKGO_DEPEND_INSTALL=true)
 
+GO_CMD="${GO_CMD:-go}"
+GO_DEP_CMD="${GO_DEP_CMD:-dep}"
+
 # Automatically install go tools (particularly for CI)
 if [ "$FABRIC_SDKGO_DEPEND_INSTALL" = "true" ]; then
     echo "Installing dependencies ..."
-    go get -u github.com/axw/gocov/...
-    go get -u github.com/AlekSi/gocov-xml
-    go get -u github.com/client9/misspell/cmd/misspell
-    go get -u github.com/golang/lint/golint
-    go get -u golang.org/x/tools/cmd/goimports
-    go get -u github.com/golang/mock/mockgen
+    $GO_CMD get -u github.com/axw/gocov/...
+    $GO_CMD get -u github.com/AlekSi/gocov-xml
+    $GO_CMD get -u github.com/client9/misspell/cmd/misspell
+    $GO_CMD get -u github.com/golang/lint/golint
+    $GO_CMD get -u golang.org/x/tools/cmd/goimports
+    $GO_CMD get -u github.com/golang/mock/mockgen
 fi
 
 # Install specific version of go dep (particularly for CI)
@@ -41,7 +44,7 @@ type misspell >/dev/null 2>&1 || { echo >& 2 "misspell is not installed (go get 
 type golint >/dev/null 2>&1 || { echo >& 2 "golint is not installed (go get -u github.com/golang/lint/golint)"; ABORT=1; }
 type goimports >/dev/null 2>&1 || { echo >& 2 "goimports is not installed (go get -u golang.org/x/tools/cmd/goimports)"; ABORT=1; }
 type mockgen >/dev/null 2>&1 || { echo >& 2 "mockgen is not installed (go get -u github.com/golang/mock/mockgen)"; ABORT=1; }
-type dep >/dev/null 2>&1 || { echo >& 2 "dep is not installed (go get -u github.com/golang/dep/cmd/dep)"; ABORT=1; }
+type $GO_DEP_CMD >/dev/null 2>&1 || { echo >& 2 "dep is not installed (go get -u github.com/golang/dep/cmd/dep)"; ABORT=1; }
 
 if [ -n "$ABORT" ]; then
     echo "Missing dependency. Aborting. You can fix by installing the tool listed above or running make depend-install."

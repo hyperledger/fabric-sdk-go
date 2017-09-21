@@ -21,7 +21,7 @@ import (
 func TestChannelQueries(t *testing.T) {
 
 	testSetup := &BaseSetupImpl{
-		ConfigFile:      "../fixtures/config/config_test.yaml",
+		ConfigFile:      ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
 		ChannelConfig:   "../fixtures/channel/mychannel.tx",

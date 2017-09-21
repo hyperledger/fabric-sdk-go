@@ -6,9 +6,9 @@
 version: '2'
 
 services:
-      
-  fabric-sdk-pkcs11-tests:
-    container_name: fabric-sdk-pkcs11-test
+
+  fabric-sdk-pkcs11-integration-tests:
+    container_name: fabric-sdk-pkcs11-integration-test
     image: softhsm2-image
     environment:
       - FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER=PKCS11
