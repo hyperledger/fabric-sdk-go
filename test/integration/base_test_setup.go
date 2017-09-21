@@ -184,6 +184,22 @@ func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath stri
 	return nil
 }
 
+// UpgradeCC ...
+func (setup *BaseSetupImpl) UpgradeCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args []string) error {
+	// InstantiateCC requires AdminUser privileges so setting user context with Admin User
+	setup.Client.SetUserContext(setup.AdminUser)
+
+	// must reset client user context to normal user once done with Admin privilieges
+	defer setup.Client.SetUserContext(setup.NormalUser)
+
+	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
+
+	if err := admin.SendUpgradeCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub); err != nil {
+		return err
+	}
+	return nil
+}
+
 // InstallCC ...
 func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte) error {
 	// installCC requires AdminUser privileges so setting user context with Admin User
@@ -227,6 +243,30 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 	args = append(args, "200")
 
 	return setup.InstantiateCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, args)
+}
+
+// UpgradeExampleCC ..
+func (setup *BaseSetupImpl) UpgradeExampleCC() error {
+
+	chainCodePath := "github.com/example_cc"
+	chainCodeVersion := "v1"
+
+	if setup.ChainCodeID == "" {
+		setup.ChainCodeID = GenerateRandomID()
+	}
+
+	if err := setup.InstallCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, nil); err != nil {
+		return err
+	}
+
+	var args []string
+	args = append(args, "init")
+	args = append(args, "a")
+	args = append(args, "200")
+	args = append(args, "b")
+	args = append(args, "400")
+
+	return setup.UpgradeCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, args)
 }
 
 // Query ...

@@ -34,12 +34,21 @@ func TestChainCodeInvoke(t *testing.T) {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
+	if err := testSetup.UpgradeExampleCC(); err != nil {
+		t.Fatalf("UpgradeExampleCC return error: %v", err)
+	}
+
 	// Get Query value before invoke
 	value, err := testSetup.QueryAsset()
 	if err != nil {
 		t.Fatalf("getQueryValue return error: %v", err)
 	}
 	fmt.Printf("*** QueryValue before invoke %s\n", value)
+
+	// Check the Query value equals upgrade arguments (400)
+	if value != "400" {
+		t.Fatalf("UpgradeExampleCC was failed, QueryValue doesn't match upgrade arguments")
+	}
 
 	eventID := "test([a-zA-Z]+)"
 
