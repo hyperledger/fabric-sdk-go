@@ -18,6 +18,8 @@ import (
 	"strings"
 	"time"
 
+	"path/filepath"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/pkcs11"
@@ -56,6 +58,10 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 	myViper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
 	myViper.SetEnvKeyReplacer(replacer)
+	err := loadDefaultConfig()
+	if err != nil {
+		return nil, err
+	}
 	if configFile != "" {
 		// create new viper
 		myViper.SetConfigFile(configFile)
@@ -83,6 +89,23 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 
 	logger.Infof("fabric_sdk_go Logging level is finally set to: %s", logging.GetLevel("fabric_sdk_go"))
 	return &Config{tlsCertPool: x509.NewCertPool()}, nil
+}
+
+// load Default confid
+func loadDefaultConfig() error {
+	// get Environment Default Config Path
+	defaultPath := os.Getenv("FABRIC_SDK_CONFIG_PATH")
+	if defaultPath != "" { // if set, use it to load default config
+		myViper.AddConfigPath(strings.Replace(defaultPath, "$GOPATH", os.Getenv("GOPATH"), -1))
+	} else { // else fallback to default DEV path
+		devPath := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "hyperledger", "fabric-sdk-go", "pkg", "config")
+		myViper.AddConfigPath(devPath)
+	}
+	err := myViper.ReadInConfig() // Find and read the config file
+	if err != nil {               // Handle errors reading the config file
+		return fmt.Errorf("fatal error config file: %s", err)
+	}
+	return nil
 }
 
 // Client returns the Client config
