@@ -63,7 +63,7 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 		err := myViper.ReadInConfig()
 
 		if err == nil {
-			logger.Infof("Using config file: %s", myViper.ConfigFileUsed())
+			logger.Debugf("Using config file: %s", myViper.ConfigFileUsed())
 		} else {
 			return nil, fmt.Errorf("Fatal error config file: %v", err)
 		}
