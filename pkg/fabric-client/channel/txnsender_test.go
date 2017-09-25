@@ -125,6 +125,7 @@ func TestCreateTransaction(t *testing.T) {
 	//TODO: Need actual sample payload for success case
 
 }
+
 func TestSendInstantiateProposal(t *testing.T) {
 	//Setup channel
 	client := mocks.NewMockClient()
@@ -189,6 +190,74 @@ func TestSendInstantiateProposal(t *testing.T) {
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", cauthdsl.SignedByMspMember("Org1MSP"), nil)
 	if err == nil || err.Error() != "Missing peer objects for instantiate CC proposal" {
+		t.Fatal("Missing peer objects validation is not working as expected")
+	}
+}
+
+func TestSendUpgradeProposal(t *testing.T) {
+	//Setup channel
+	client := mocks.NewMockClient()
+	user := mocks.NewMockUserWithMSPID("test", "1234")
+	cryptoSuite := &mocks.MockCryptoSuite{}
+	client.SaveUserToStateStore(user, true)
+	client.SetCryptoSuite(cryptoSuite)
+	client.SetUserContext(user)
+	channel, _ := NewChannel("testChannel", client)
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	proc := mock_apitxn.NewMockProposalProcessor(mockCtrl)
+
+	tp := apitxn.TransactionProposal{SignedProposal: &pb.SignedProposal{}}
+	tpr := apitxn.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
+
+	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(tpr, nil)
+	targets := []apitxn.ProposalProcessor{proc}
+
+	//Add a Peer
+	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
+	channel.AddPeer(&peer)
+
+	tresponse, txnid, err := channel.SendUpgradeProposal("", nil, "",
+		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
+
+	if err == nil || err.Error() != "Missing 'chaincodeName' parameter" {
+		t.Fatal("Validation for chain code name parameter for send Upgrade Proposal failed")
+	}
+
+	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "",
+		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
+
+	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "",
+		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
+
+	if err == nil || err.Error() != "Missing 'chaincodePath' parameter" {
+		t.Fatal("Validation for chain code path for send Upgrade Proposal failed")
+	}
+
+	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
+
+	if err == nil || err.Error() != "Missing 'chaincodeVersion' parameter" {
+		t.Fatal("Validation for chain code version for send Upgrade Proposal failed")
+	}
+
+	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+		"2", nil, nil)
+	if err == nil || err.Error() != "Missing 'chaincodePolicy' parameter" {
+		t.Fatal("Validation for chain code policy for send Upgrade Proposal failed")
+	}
+
+	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+		"2", cauthdsl.SignedByMspMember("Org1MSP"), targets)
+
+	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
+		t.Fatal("Send Upgrade Proposal Test failed")
+	}
+
+	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+		"2", cauthdsl.SignedByMspMember("Org1MSP"), nil)
+	if err == nil || err.Error() != "Missing peer objects for upgrade CC proposal" {
 		t.Fatal("Missing peer objects validation is not working as expected")
 	}
 }

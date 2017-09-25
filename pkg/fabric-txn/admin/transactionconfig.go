@@ -77,6 +77,40 @@ func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
 	return nil
 }
 
+// SendUpgradeCC Sends upgrade CC proposal to one or more endorsing peers
+func SendUpgradeCC(channel fab.Channel, chainCodeID string, args []string,
+	chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor, eventHub fab.EventHub) error {
+
+	transactionProposalResponse, txID, err := channel.SendUpgradeProposal(chainCodeID,
+		args, chaincodePath, chaincodeVersion, chaincodePolicy, targets)
+	if err != nil {
+		return fmt.Errorf("SendUpgradeProposal returned error: %v", err)
+	}
+
+	for _, v := range transactionProposalResponse {
+		if v.Err != nil {
+			return fmt.Errorf("SendUpgradeProposal Endorser %s returned error: %v", v.Endorser, v.Err)
+		}
+		logger.Debug("SendUpgradeProposal Endorser '%s' returned ProposalResponse status:%v\n", v.Endorser, v.Status)
+	}
+
+	// Register for commit event
+	done, fail := internal.RegisterTxEvent(txID, eventHub)
+
+	if _, err = internal.CreateAndSendTransaction(channel, transactionProposalResponse); err != nil {
+		return fmt.Errorf("CreateTransaction returned error: %v", err)
+	}
+
+	select {
+	case <-done:
+	case <-fail:
+		return fmt.Errorf("upgradeCC Error received from eventhub for txid(%s) error(%v)", txID, fail)
+	case <-time.After(time.Second * 30):
+		return fmt.Errorf("upgradeCC Didn't receive block event for txid(%s)", txID)
+	}
+	return nil
+}
+
 // CreateOrUpdateChannel creates a channel if it does not exist or updates a channel
 // if it does and a different channelConfig is used
 func CreateOrUpdateChannel(client fab.FabricClient, ordererUser ca.User, orgUser ca.User, channel fab.Channel, channelConfig string) error {
