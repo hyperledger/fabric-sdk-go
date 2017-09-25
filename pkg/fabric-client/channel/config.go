@@ -301,9 +301,9 @@ func loadConfigGroup(configItems *configItems, versionsGroup *common.ConfigGroup
 }
 
 func loadConfigValue(configItems *configItems, key string, versionsValue *common.ConfigValue, configValue *common.ConfigValue, groupName string, org string) error {
-	logger.Infof("loadConfigValue - %s - START value name: %s", groupName, key)
-	logger.Infof("loadConfigValue - %s   - version: %d", groupName, configValue.Version)
-	logger.Infof("loadConfigValue - %s   - modPolicy: %s", groupName, configValue.ModPolicy)
+	logger.Debugf("loadConfigValue - %s - START value name: %s", groupName, key)
+	logger.Debugf("loadConfigValue - %s   - version: %d", groupName, configValue.Version)
+	logger.Debugf("loadConfigValue - %s   - modPolicy: %s", groupName, configValue.ModPolicy)
 
 	versionsValue.Version = configValue.Version
 

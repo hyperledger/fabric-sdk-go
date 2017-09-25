@@ -393,13 +393,13 @@ func (eventHub *EventHub) txCallback(block *common.Block) {
 	for i, v := range block.Data.Data {
 
 		if env, err := utils.GetEnvelopeFromBlock(v); err != nil {
-			logger.Errorf("error extracting Envelope from block: %v\n", err)
+			logger.Debugf("error extracting Envelope from block: %v\n", err)
 			return
 		} else if env != nil {
 			// get the payload from the envelope
 			payload, err := utils.GetPayload(env)
 			if err != nil {
-				logger.Errorf("error extracting Payload from envelope: %v\n", err)
+				logger.Debugf("error extracting Payload from envelope: %v\n", err)
 				return
 			}
 
@@ -407,7 +407,7 @@ func (eventHub *EventHub) txCallback(block *common.Block) {
 			channelHeader := &common.ChannelHeader{}
 			err = proto.Unmarshal(channelHeaderBytes, channelHeader)
 			if err != nil {
-				logger.Errorf("error extracting ChannelHeader from payload: %v\n", err)
+				logger.Debugf("error extracting ChannelHeader from payload: %v\n", err)
 				return
 			}
 			callback := eventHub.getTXRegistrant(channelHeader.TxId)

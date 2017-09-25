@@ -362,7 +362,7 @@ func TestOrdererConfig(t *testing.T) {
 			t.Fatal("Expected GOPATH relative path to be replaced")
 		}
 	} else if orderers[0].TlsCACerts.Pem == "" {
-		t.Fatalf("Orderer %s must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
+		t.Fatalf("Orderer %v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
 	}
 }
 

@@ -131,7 +131,7 @@ func (fabricCAServices *FabricCA) Reenroll(user sdkApi.User) (bccsp.Key, []byte,
 	// Create signing identity
 	identity, err := fabricCAServices.createSigningIdentity(user)
 	if err != nil {
-		logger.Infof("Invalid re-enroll request, %s is not a valid user  %s\n", user.Name(), err)
+		logger.Debugf("Invalid re-enroll request, %s is not a valid user  %s\n", user.Name(), err)
 		return nil, nil, fmt.Errorf("Reenroll has failed; Cannot create user identity: %s", err)
 	}
 
