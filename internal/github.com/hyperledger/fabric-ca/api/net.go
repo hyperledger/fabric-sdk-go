@@ -18,7 +18,6 @@ package api
 
 import (
 	"github.com/cloudflare/cfssl/signer"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/tcert"
 )
 
 /*
@@ -58,20 +57,6 @@ type ReenrollmentRequestNet struct {
 // A RevocationRequest can only be performed by a user with the "hf.Revoker" attribute.
 type RevocationRequestNet struct {
 	RevocationRequest
-}
-
-// GetTCertBatchRequestNet is a network request for a batch of transaction certificates
-type GetTCertBatchRequestNet struct {
-	GetTCertBatchRequest
-	// KeySigs is an optional array of public keys and corresponding signatures.
-	// If not set, the server generates it's own keys based on a key derivation function
-	// which cryptographically relates the TCerts to an ECert.
-	KeySigs []KeySig `json:"key_sigs,omitempty"`
-}
-
-// GetTCertBatchResponseNet is the network response for a batch of transaction certificates
-type GetTCertBatchResponseNet struct {
-	tcert.GetBatchResponse
 }
 
 // KeySig is a public key, signature, and signature algorithm tuple

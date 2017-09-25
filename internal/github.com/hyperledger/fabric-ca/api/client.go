@@ -17,10 +17,7 @@ limitations under the License.
 package api
 
 import (
-	"time"
-
 	"github.com/cloudflare/cfssl/csr"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/tcert"
 )
 
 // RegistrationRequest for a new identity
@@ -101,34 +98,6 @@ type RevocationRequest struct {
 	Reason string `json:"reason,omitempty" opt:"r" help:"Reason for revocation"`
 	// CAName is the name of the CA to connect to
 	CAName string `json:"caname,omitempty" skip:"true"`
-}
-
-// GetTCertBatchRequest is input provided to identity.GetTCertBatch
-type GetTCertBatchRequest struct {
-	// Number of TCerts in the batch.
-	Count int `json:"count"`
-	// The attribute names whose names and values are to be sealed in the issued TCerts.
-	AttrNames []string `json:"attr_names,omitempty"`
-	// EncryptAttrs denotes whether to encrypt attribute values or not.
-	// When set to true, each issued TCert in the batch will contain encrypted attribute values.
-	EncryptAttrs bool `json:"encrypt_attrs,omitempty"`
-	// Certificate Validity Period.  If specified, the value used
-	// is the minimum of this value and the configured validity period
-	// of the TCert manager.
-	ValidityPeriod time.Duration `json:"validity_period,omitempty"`
-	// The pre-key to be used for key derivation.
-	PreKey string `json:"prekey"`
-	// DisableKeyDerivation if true disables key derivation so that a TCert is not
-	// cryptographically related to an ECert.  This may be necessary when using an
-	// HSM which does not support the TCert's key derivation function.
-	DisableKeyDerivation bool `json:"disable_kdf,omitempty"`
-	// CAName is the name of the CA to connect to
-	CAName string `json:"caname,omitempty" skip:"true"`
-}
-
-// GetTCertBatchResponse is the return value of identity.GetTCertBatch
-type GetTCertBatchResponse struct {
-	tcert.GetBatchResponse
 }
 
 // GetCAInfoRequest is request to get generic CA information

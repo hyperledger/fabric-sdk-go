@@ -17,7 +17,6 @@ declare -a PKGS=(
     "api"
     "lib"
     "lib/tls"
-    "lib/tcert"
     "lib/spi"
     "util"
 )
@@ -34,11 +33,6 @@ declare -a FILES=(
     "lib/serverstruct.go"
 
     "lib/tls/tls.go"
-
-    "lib/tcert/api.go"
-    "lib/tcert/util.go"
-    "lib/tcert/tcert.go"
-    "lib/tcert/keytree.go"
 
     "lib/spi/affiliation.go"
     "lib/spi/userregistry.go"
