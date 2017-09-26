@@ -15,19 +15,9 @@ GOIMPORTS_CMD=goimports
 
 declare -a PKGS=(
     "protos/utils"
-
-    "protos/ledger/rwset"
-    "protos/ledger/rwset/kvrwset"
-    "protos/orderer"
 )
 
 declare -a FILES=(
-    "protos/ledger/rwset/rwset.pb.go"
-    "protos/ledger/rwset/kvrwset/kv_rwset.pb.go"
-
-    "protos/orderer/ab.pb.go"
-    "protos/orderer/configuration.pb.go"
-
     "protos/utils/commonutils.go"
     "protos/utils/proputils.go"
     "protos/utils/txutils.go"

@@ -11,7 +11,7 @@ import (
 	"golang.org/x/net/context"
 
 	rwsetutil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
-	kvrwset "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
+	kvrwset "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )

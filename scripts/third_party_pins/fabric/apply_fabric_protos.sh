@@ -18,6 +18,10 @@ declare -a PKGS=(
     "protos/peer"
 
     "protos/msp"
+
+    "protos/ledger/rwset"
+    "protos/ledger/rwset/kvrwset"
+    "protos/orderer"
 )
 
 declare -a FILES=(
@@ -36,10 +40,17 @@ declare -a FILES=(
     "protos/peer/proposal_response.pb.go"
     "protos/peer/query.pb.go"
     "protos/peer/transaction.pb.go"
+    "protos/peer/signed_cc_dep_spec.pb.go"
 
     "protos/msp/identities.pb.go"
     "protos/msp/msp_config.pb.go"
     "protos/msp/msp_principal.pb.go"
+
+    "protos/ledger/rwset/rwset.pb.go"
+    "protos/ledger/rwset/kvrwset/kv_rwset.pb.go"
+
+    "protos/orderer/ab.pb.go"
+    "protos/orderer/configuration.pb.go"
 )
 
 echo 'Removing current upstream project from working directory ...'
