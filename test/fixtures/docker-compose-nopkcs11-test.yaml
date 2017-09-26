@@ -10,6 +10,8 @@ services:
   fabric-sdk-integration-tests:
     container_name: fabric-sdk-integration-test
     image: ${FABRIC_BASEOS_FIXTURE_IMAGE}:${ARCH}-${FABRIC_BASEOS_FIXTURE_TAG}
+    environment:
+      - GO_TAGS
     volumes:
       - ../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
     command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration.sh

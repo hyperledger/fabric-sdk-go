@@ -20,47 +20,47 @@
 # thirdparty-pin: pulls (and patches) pinned dependencies into the project under internal
 #
 
-# Tool commands
+# Tool commands (overridable)
 GO_CMD             ?= go
 GO_DEP_CMD         ?= dep
 DOCKER_CMD         ?= docker
 DOCKER_COMPOSE_CMD ?= docker-compose
 
-# Build flags
-ARCH         := $(shell uname -m)
-GO_LDFLAGS   ?= -ldflags=-s
-EXPERIMENTAL ?= true  # includes experimental features in the tests
-BRANCHFAB    ?= false # requires testing against fabric with cherry picks from gerrit
+# Build flags (overridable)
+GO_LDFLAGS               ?= -ldflags=-s
+FABRIC_SDK_EXPERIMENTAL  ?= true
+FABRIC_SDK_EXTRA_GO_TAGS ?=
 
-ifeq ($(EXPERIMENTAL),true)
-GO_TAGS += experimental
-endif
+# Fabric tool versions (overridable)
+FABRIC_TOOLS_VERSION ?= 1.0.1
+FABRIC_BASE_VERSION  ?= 0.3.1
 
-ifeq ($(BRANCHFAB),true)
-GO_TAGS += branchfab
-endif
+# Fabric base docker image (overridable)
+FABRIC_BASE_IMAGE   ?= hyperledger/fabric-baseimage
+FABRIC_BASE_TAG     ?= $(ARCH)-$(FABRIC_BASE_VERSION)
 
-# Upstream fabric patching
+# Fabric tools docker image (overridable)
+FABRIC_TOOLS_IMAGE  ?= hyperledger/fabric-tools
+FABRIC_TOOLS_TAG    ?= $(ARCH)-$(FABRIC_TOOLS_VERSION)
+
+# Upstream fabric patching (overridable)
 THIRDPARTY_FABRIC_CA_BRANCH ?= release
 THIRDPARTY_FABRIC_CA_COMMIT ?= v1.0.2
 THIRDPARTY_FABRIC_BRANCH    ?= master
 THIRDPARTY_FABRIC_COMMIT    ?= a657db28a0ff53ed512bd6f4ac4786a0f4ca709c
 
-# Tool versions
-GO_DEP_COMMIT        := v0.3.0 # the version of dep that will be installed by depend-install (or in the CI)
-FABRIC_TOOLS_VERSION ?= 1.0.1
-FABRIC_BASE_VERSION  ?= 0.3.1
-
-# Fabric Base Docker Image
-FABRIC_BASE_IMAGE   ?= hyperledger/fabric-baseimage
-FABRIC_BASE_TAG     ?= $(ARCH)-$(FABRIC_BASE_VERSION)
-
-# Fabric Tools Docker Image
-FABRIC_TOOLS_IMAGE  ?= hyperledger/fabric-tools
-FABRIC_TOOLS_TAG    ?= $(ARCH)-$(FABRIC_TOOLS_VERSION)
-
 # Local variables used by makefile
-PACKAGE_NAME=github.com/hyperledger/fabric-sdk-go
+PACKAGE_NAME := github.com/hyperledger/fabric-sdk-go
+ARCH         := $(shell uname -m)
+
+# The version of dep that will be installed by depend-install (or in the CI)
+GO_DEP_COMMIT := v0.3.0
+
+# Setup Go Tags
+GO_TAGS := $(FABRIC_SDK_EXTRA_GO_TAGS)
+ifeq ($(FABRIC_SDK_EXPERIMENTAL),true)
+GO_TAGS += experimental
+endif
 
 # Detect CI
 ifdef JENKINS_URL
