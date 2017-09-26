@@ -25,8 +25,8 @@ import (
 	"math/big"
 	"sync"
 
+	logging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/logbridge"
 	"github.com/miekg/pkcs11"
-	"github.com/op/go-logging"
 )
 
 func loadLib(lib, pin, label string) (*pkcs11.Ctx, uint, *pkcs11.SessionHandle, error) {

@@ -25,8 +25,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/cloudflare/cfssl/log"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
+	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/spf13/viper"
 )

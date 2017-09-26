@@ -14,11 +14,9 @@ IMPORT_SUBSTS=($IMPORT_SUBSTS)
 GOIMPORTS_CMD=goimports
 
 declare -a PKGS=(
-    "common/flogging"
 )
 
 declare -a FILES=(
-    "common/flogging/logging.go"
 )
 
 echo 'Removing current upstream project from working directory ...'

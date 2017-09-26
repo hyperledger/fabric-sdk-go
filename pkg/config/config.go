@@ -21,17 +21,14 @@ import (
 	"path/filepath"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/pkcs11"
-	"github.com/op/go-logging"
 	"github.com/spf13/viper"
 )
 
 var myViper = viper.New()
-var logger = logging.MustGetLogger("fabric_sdk_go")
-var format = logging.MustStringFormatter(
-	`%{color}%{time:15:04:05.000} [%{module}] %{level:.4s} : %{color:reset} %{message}`,
-)
+var logger = logging.NewLogger("fabric_sdk_go")
 
 const (
 	cmdRoot        = "fabric_sdk"

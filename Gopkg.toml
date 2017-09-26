@@ -30,13 +30,6 @@
 
 # Mainly downstreams that have a direct reference
 [[override]]
-  name = "github.com/op/go-logging"
-  # TODO: source isn't picked up by parent projects - need better solution
-  source = "github.com/troyronda/go-logging"   # TODO: Better home for this fork
-  branch = "datarace"
-  # note: go-logging is mainly a downstream package but is also in tests to ensure the fork is applied
-
-[[override]]
   name = "github.com/cloudflare/cfssl"
   branch = "master"
   # note: cfssl is mainly a downstream package but is also used in the SDK mocks

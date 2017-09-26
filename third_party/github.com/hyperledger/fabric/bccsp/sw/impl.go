@@ -22,8 +22,8 @@ import (
 	"hash"
 	"reflect"
 
+	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/flogging"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
 )

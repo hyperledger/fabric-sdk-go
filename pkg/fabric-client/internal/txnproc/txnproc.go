@@ -12,10 +12,10 @@ import (
 	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	logging "github.com/op/go-logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
-var logger = logging.MustGetLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabric_sdk_go")
 
 // SendTransactionProposalToProcessors sends a TransactionProposal to ProposalProcessor.
 func SendTransactionProposalToProcessors(proposal *apitxn.TransactionProposal, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, error) {

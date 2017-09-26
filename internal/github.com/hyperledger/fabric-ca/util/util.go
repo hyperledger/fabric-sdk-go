@@ -41,7 +41,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudflare/cfssl/log"
+	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ocsp"

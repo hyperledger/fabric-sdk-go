@@ -12,11 +12,11 @@ import (
 	"os"
 	"path"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/utils"
-	logging "github.com/op/go-logging"
 )
 
-var logger = logging.MustGetLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabric_sdk_go")
 
 // FileKeyValueStore ...
 type FileKeyValueStore struct {

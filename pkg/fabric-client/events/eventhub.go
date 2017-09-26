@@ -24,13 +24,13 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	"github.com/op/go-logging"
 	syncmap "golang.org/x/sync/syncmap"
 )
 
-var logger = logging.MustGetLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabric_sdk_go")
 
 // EventHub allows a client to listen to event at a peer.
 type EventHub struct {
@@ -280,7 +280,7 @@ func (eventHub *EventHub) Recv(msg *pb.Event) (bool, error) {
 			}
 			for _, tdata := range blockEvent.Block.Data.Data {
 				if ccEvent, channelID, err := getChainCodeEvent(tdata); err != nil {
-					logger.Warningf("getChainCodeEvent return error: %v\n", err)
+					logger.Warnf("getChainCodeEvent return error: %v\n", err)
 				} else if ccEvent != nil {
 					eventHub.notifyChaincodeRegistrants(channelID, ccEvent, true)
 				}
@@ -304,7 +304,7 @@ func (eventHub *EventHub) Recv(msg *pb.Event) (bool, error) {
 // Disconnected implements consumer.EventAdapter interface for receiving events
 func (eventHub *EventHub) Disconnected(err error) {
 	if err != nil {
-		logger.Warningf("EventHub was disconnected unexpectedly: %s", err)
+		logger.Warnf("EventHub was disconnected unexpectedly: %s", err)
 	}
 }
 
