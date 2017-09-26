@@ -63,22 +63,6 @@ func (i *Identity) GetECert() *Signer {
 	return i.ecert
 }
 
-// GetTCertBatch returns a batch of TCerts for this identity
-func (i *Identity) GetTCertBatch(req *api.GetTCertBatchRequest) ([]*Signer, error) {
-	reqBody, err := util.Marshal(req, "GetTCertBatchRequest")
-	if err != nil {
-		return nil, err
-	}
-	err = i.Post("tcert", reqBody, nil)
-	if err != nil {
-		return nil, err
-	}
-	// Ignore the contents of the response for now.  They will be processed in the future when we need to
-	// support the Go SDK.   We currently have Node and Java SDKs which process this and they are the
-	// priority.
-	return nil, nil
-}
-
 // Register registers a new identity
 // @param req The registration request
 func (i *Identity) Register(req *api.RegistrationRequest) (rr *api.RegistrationResponse, err error) {
