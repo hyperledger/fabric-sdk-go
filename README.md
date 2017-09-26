@@ -134,6 +134,17 @@ cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/integration/
 go test
 ```
 
+#### Using default config
+
+Default SDK Go configurations are found in the code under /pkg/config/config.yaml
+
+To override the default in non Dev environment, set the default path in the following environment variable:
+
+**FABRIC_SDK_CONFIG_PATH**=/path/to/default/config yaml(without specifying the yaml file name)
+
+This path value must be a directory. It must contain a default 'config.yaml' file.
+Note that this default config is used only if environment configuration yaml file is missing to ensure all environment variables are created regardless of their values.
+
 #### Testing with Local Build of Fabric (Advanced)
 
 Alternatively you can build and run Fabric on your own box using the following commands:

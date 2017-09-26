@@ -23,29 +23,19 @@ import (
 var configImpl api.Config
 var org0 = "org0"
 var org1 = "org1"
-var bccspProviderType string
 
-var securityLevel = 256
-
-const (
-	providerTypeSW = "SW"
-)
-
-var validRootCA = `-----BEGIN CERTIFICATE-----
-MIICYjCCAgmgAwIBAgIUB3CTDOU47sUC5K4kn/Caqnh114YwCgYIKoZIzj0EAwIw
-fzELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNh
-biBGcmFuY2lzY28xHzAdBgNVBAoTFkludGVybmV0IFdpZGdldHMsIEluYy4xDDAK
-BgNVBAsTA1dXVzEUMBIGA1UEAxMLZXhhbXBsZS5jb20wHhcNMTYxMDEyMTkzMTAw
-WhcNMjExMDExMTkzMTAwWjB/MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZv
-cm5pYTEWMBQGA1UEBxMNU2FuIEZyYW5jaXNjbzEfMB0GA1UEChMWSW50ZXJuZXQg
-V2lkZ2V0cywgSW5jLjEMMAoGA1UECxMDV1dXMRQwEgYDVQQDEwtleGFtcGxlLmNv
-bTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKIH5b2JaSmqiQXHyqC+cmknICcF
-i5AddVjsQizDV6uZ4v6s+PWiJyzfA/rTtMvYAPq/yeEHpBUB1j053mxnpMujYzBh
-MA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBQXZ0I9
-qp6CP8TFHZ9bw5nRtZxIEDAfBgNVHSMEGDAWgBQXZ0I9qp6CP8TFHZ9bw5nRtZxI
-EDAKBggqhkjOPQQDAgNHADBEAiAHp5Rbp9Em1G/UmKn8WsCbqDfWecVbZPQj3RK4
-oG5kQQIgQAe4OOKYhJdh3f7URaKfGTf492/nmRmtK+ySKjpHSrU=
------END CERTIFICATE-----`
+func TestDefaultConfig(t *testing.T) {
+	vConfig := viper.New()
+	vConfig.AddConfigPath(".")
+	err := vConfig.ReadInConfig()
+	if err != nil {
+		t.Fatalf("Failed to load default config file")
+	}
+	//Test network name
+	if vConfig.GetString("name") != "default-network" {
+		t.Fatalf("Incorrect Network name from default config")
+	}
+}
 
 func TestCAConfig(t *testing.T) {
 	//Test config
@@ -79,7 +69,7 @@ func TestCAConfig(t *testing.T) {
 	}
 
 	//Test client organization
-	if vConfig.GetString("client.organization") != "Org1" {
+	if vConfig.GetString("client.organization") != "org1" {
 		t.Fatalf("Incorrect Client organization")
 	}
 
@@ -447,24 +437,26 @@ func TestPeerNotInOrgConfig(t *testing.T) {
 	}
 }
 
-func TestInitConfig(t *testing.T) {
+func TestInitConfigSuccess(t *testing.T) {
 	//Test init config
 	//...Positive case
 	_, err := InitConfig("../../test/fixtures/config/config_test.yaml")
 	if err != nil {
-		t.Fatal("Failed to initialize config")
+		t.Fatalf("Failed to initialize config. Error: %s", err)
 	}
-	//...Negative case
-	_, err = InitConfig("invalid file location")
-	if err == nil {
-		t.Fatal("Config file initialization is supposed to fail")
-	}
+}
 
-	//Test init config with cmd root
+func TestInitConfigWithCmdRoot(t *testing.T) {
+	TestInitConfigSuccess(t)
+	fileLoc := "../../test/fixtures/config/config_test.yaml"
 	cmdRoot := "fabric_sdk"
-	_, err = InitConfigWithCmdRoot("../../test/fixtures/config/config_test.yaml", cmdRoot)
+	var logger = logging.MustGetLogger("config_test")
+	logger.Infof("fileLoc is %s", fileLoc)
+
+	logger.Infof("fileLoc right before calling InitConfigWithCmdRoot is %s", fileLoc)
+	_, err := InitConfigWithCmdRoot(fileLoc, cmdRoot)
 	if err != nil {
-		t.Fatal("Failed to initialize config with cmd root")
+		t.Fatalf("Failed to initialize config with cmd root. Error: %s", err)
 	}
 
 	//Test if Viper is initialized after calling init config
@@ -488,6 +480,14 @@ func TestInitConfigPanic(t *testing.T) {
 
 	}()
 	InitConfigWithCmdRoot("../../test/fixtures/config/config_test.yaml", "fabric-sdk")
+}
+
+func TestInitConfigInvalidLocation(t *testing.T) {
+	//...Negative case
+	_, err := InitConfig("invalid file location")
+	if err == nil {
+		t.Fatalf("Config file initialization is supposed to fail. Error: %s", err)
+	}
 }
 
 // Test case to create a new viper instance to prevent conflict with existing
@@ -586,13 +586,24 @@ func TestNetworkConfig(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
+	setUp(m)
+	r := m.Run()
+	teardown()
+	os.Exit(r)
+}
+
+func setUp(m *testing.M) {
+	// do any test setup here...
 	var err error
 	configImpl, err = InitConfig("../../test/fixtures/config/config_test.yaml")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+}
 
-	os.Exit(m.Run())
+func teardown() {
+	// do any teadown activities here ..
+	configImpl = nil
 }
 
 func crossCheckWithViperConfig(expected string, actual string, message string, t *testing.T) {

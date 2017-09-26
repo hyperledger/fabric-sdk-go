@@ -12,14 +12,11 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/rand"
-	"os"
 	"strconv"
 	"testing"
 	"time"
 
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
-
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
@@ -31,40 +28,23 @@ import (
 
 var org1Name = "org1"
 var org2Name = "org2"
-var testFabricCAConfig config.Config
-
-func TestMain(m *testing.M) {
-	var err error
-
-	testSetup := BaseSetupImpl{
-		ConfigFile: ConfigTestFile,
-	}
-
-	testFabricCAConfig, err = testSetup.InitConfig()
-	if err != nil {
-		fmt.Printf("Failed InitConfig [%s]\n", err)
-		os.Exit(1)
-	}
-
-	os.Exit(m.Run())
-}
 
 // This test loads/enrols an admin user
 // Using the admin, it registers, enrols, and revokes a test user
 func TestRegisterEnrollRevoke(t *testing.T) {
-	mspID, err := testFabricCAConfig.MspID(org1Name)
+	mspID, err := testFabricConfig.MspID(org1Name)
 	if err != nil {
 		t.Fatalf("GetMspId() returned error: %v", err)
 	}
 
-	caConfig, err := testFabricCAConfig.CAConfig(org1Name)
+	caConfig, err := testFabricConfig.CAConfig(org1Name)
 	if err != nil {
 		t.Fatalf("GetCAConfig returned error: %s", err)
 	}
 
-	client := client.NewClient(testFabricCAConfig)
+	client := client.NewClient(testFabricConfig)
 
-	err = bccspFactory.InitFactories(testFabricCAConfig.CSPConfig())
+	err = bccspFactory.InitFactories(testFabricConfig.CSPConfig())
 	if err != nil {
 		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
@@ -78,7 +58,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 	client.SetStateStore(stateStore)
 
-	caClient, err := fabricCAClient.NewFabricCAClient(testFabricCAConfig, org1Name)
+	caClient, err := fabricCAClient.NewFabricCAClient(testFabricConfig, org1Name)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
@@ -173,7 +153,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 func TestEnrollOrg2(t *testing.T) {
 
-	caClient, err := fabricCAClient.NewFabricCAClient(testFabricCAConfig, org2Name)
+	caClient, err := fabricCAClient.NewFabricCAClient(testFabricConfig, org2Name)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
