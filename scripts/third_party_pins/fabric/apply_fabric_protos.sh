@@ -49,7 +49,6 @@ declare -a FILES=(
     "protos/ledger/rwset/rwset.pb.go"
     "protos/ledger/rwset/kvrwset/kv_rwset.pb.go"
 
-    "protos/orderer/ab.pb.go"
     "protos/orderer/configuration.pb.go"
 )
 

@@ -15,12 +15,14 @@ GOIMPORTS_CMD=goimports
 
 declare -a PKGS=(
     "protos/utils"
+    "protos/orderer"
 )
 
 declare -a FILES=(
     "protos/utils/commonutils.go"
     "protos/utils/proputils.go"
     "protos/utils/txutils.go"
+    "protos/orderer/ab.pb.go"
 )
 
 #echo 'Removing current upstream project from working directory ...'
