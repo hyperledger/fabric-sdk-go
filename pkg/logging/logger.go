@@ -58,126 +58,151 @@ func SetCustomLogger(newCustomLogger apilogging.Logger) {
 	mutex.Unlock()
 }
 
+//SetLevel - setting log level for given module
 func SetLevel(level Level, module string) {
 	moduleLevels.SetLevel(level, module)
 }
 
+//GetLevel - getting log level for given module
 func GetLevel(module string) Level {
 	return moduleLevels.GetLevel(module)
 }
 
+//IsEnabledFor - Check if given log level is enabled for given module
 func IsEnabledFor(level Level, module string) bool {
 	return moduleLevels.IsEnabledFor(level, module)
 }
 
+//Fatal calls Fatal function of underlying logger
 func (l *Logger) Fatal(args ...interface{}) {
 	l.getCurrentLogger().Fatal(args...)
 }
 
+//Fatalf calls Fatalf function of underlying logger
 func (l *Logger) Fatalf(format string, args ...interface{}) {
 	l.getCurrentLogger().Fatalf(format, args...)
 }
 
+//Fatalln calls Fatalln function of underlying logger
 func (l *Logger) Fatalln(args ...interface{}) {
 	l.getCurrentLogger().Fatalln(args...)
 }
 
+//Panic calls Panic function of underlying logger
 func (l *Logger) Panic(args ...interface{}) {
 	l.getCurrentLogger().Panic(args...)
 }
 
+//Panicf calls Panicf function of underlying logger
 func (l *Logger) Panicf(format string, args ...interface{}) {
 	l.getCurrentLogger().Panicf(format, args...)
 }
 
+//Panicln calls Panicln function of underlying logger
 func (l *Logger) Panicln(args ...interface{}) {
 	l.getCurrentLogger().Panicln(args...)
 }
 
+//Print calls Print function of underlying logger
 func (l *Logger) Print(args ...interface{}) {
 	l.getCurrentLogger().Print(args...)
 }
 
+//Printf calls Printf function of underlying logger
 func (l *Logger) Printf(format string, args ...interface{}) {
 	l.getCurrentLogger().Printf(format, args...)
 }
 
+//Println calls Println function of underlying logger
 func (l *Logger) Println(args ...interface{}) {
 	l.getCurrentLogger().Println(args...)
 }
 
+//Debug calls Debug function of underlying logger
 func (l *Logger) Debug(args ...interface{}) {
 	if IsEnabledFor(DEBUG, l.module) {
 		l.getCurrentLogger().Debug(args...)
 	}
 }
 
+//Debugf calls Debugf function of underlying logger
 func (l *Logger) Debugf(format string, args ...interface{}) {
 	if IsEnabledFor(DEBUG, l.module) {
 		l.getCurrentLogger().Debugf(format, args...)
 	}
 }
 
+//Debugln calls Debugln function of underlying logger
 func (l *Logger) Debugln(args ...interface{}) {
 	if IsEnabledFor(DEBUG, l.module) {
 		l.getCurrentLogger().Debugln(args...)
 	}
 }
 
+//Info calls Info function of underlying logger
 func (l *Logger) Info(args ...interface{}) {
 	if IsEnabledFor(INFO, l.module) {
 		l.getCurrentLogger().Info(args...)
 	}
 }
 
+//Infof calls Infof function of underlying logger
 func (l *Logger) Infof(format string, args ...interface{}) {
 	if IsEnabledFor(INFO, l.module) {
 		l.getCurrentLogger().Infof(format, args...)
 	}
 }
 
+//Infoln calls Infoln function of underlying logger
 func (l *Logger) Infoln(args ...interface{}) {
 	if IsEnabledFor(INFO, l.module) {
 		l.getCurrentLogger().Infoln(args...)
 	}
 }
 
+//Warn calls Warn function of underlying logger
 func (l *Logger) Warn(args ...interface{}) {
 	if IsEnabledFor(WARNING, l.module) {
 		l.getCurrentLogger().Warn(args...)
 	}
 }
 
+//Warnf calls Warnf function of underlying logger
 func (l *Logger) Warnf(format string, args ...interface{}) {
 	if IsEnabledFor(WARNING, l.module) {
 		l.getCurrentLogger().Warnf(format, args...)
 	}
 }
 
+//Warnln calls Warnln function of underlying logger
 func (l *Logger) Warnln(args ...interface{}) {
 	if IsEnabledFor(WARNING, l.module) {
 		l.getCurrentLogger().Warnln(args...)
 	}
 }
 
+//Error calls Error function of underlying logger
 func (l *Logger) Error(args ...interface{}) {
 	if IsEnabledFor(ERROR, l.module) {
 		l.getCurrentLogger().Error(args...)
 	}
 }
 
+//Errorf calls Errorf function of underlying logger
 func (l *Logger) Errorf(format string, args ...interface{}) {
 	if IsEnabledFor(ERROR, l.module) {
 		l.getCurrentLogger().Errorf(format, args...)
 	}
 }
 
+//Errorln calls Errorln function of underlying logger
 func (l *Logger) Errorln(args ...interface{}) {
 	if IsEnabledFor(ERROR, l.module) {
 		l.getCurrentLogger().Errorln(args...)
 	}
 }
 
+//getCurrentLogger - returns customlogger is set, or default logger
 func (l *Logger) getCurrentLogger() apilogging.Logger {
 	if customLogger != nil {
 		return customLogger
@@ -194,9 +219,7 @@ func getDefaultLogger(module string) apilogging.Logger {
 	return &DefaultLogger{defaultLogger: newLogger}
 }
 
-type formatted func(string, ...interface{}) string
-type simple func(...interface{}) string
-
+//DefaultLogger default underlying logger used by logging.Logger
 type DefaultLogger struct {
 	defaultLogger *log.Logger
 }
@@ -346,17 +369,6 @@ func (l *DefaultLogger) logln(level Level, args ...interface{}) {
 	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCaller(), level)
 	l.defaultLogger.Output(2, customPrefix+fmt.Sprintln(args...))
 }
-
-//func (l *DefaultLogger) log(level Level, formatter simple, formatterf formatted, format string, args ...interface{}) {
-//	//Format prefix to show function name and log level and to indicate that timezone used is UTC
-//	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCaller(), level)
-//	if formatter != nil {
-//		customPrefix = customPrefix + formatter(args...)
-//	} else if formatterf != nil {
-//		customPrefix = customPrefix + formatterf(format, args...)
-//	}
-//	l.defaultLogger.Output(2, customPrefix)
-//}
 
 // getCaller utility to find caller function used to mention in log lines
 func (l *DefaultLogger) getCaller() string {
