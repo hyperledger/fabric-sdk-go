@@ -28,6 +28,7 @@ DOCKER_COMPOSE_CMD ?= docker-compose
 
 # Build flags (overridable)
 GO_LDFLAGS               ?= -ldflags=-s
+GO_TESTFLAGS             ?=
 FABRIC_SDK_EXPERIMENTAL  ?= true
 FABRIC_SDK_EXTRA_GO_TAGS ?=
 
@@ -74,6 +75,7 @@ export ARCH
 export GO_LDFLAGS
 export GO_DEP_COMMIT
 export GO_TAGS
+export GO_TESTFLAGS
 
 all: checks unit-test integration-test
 

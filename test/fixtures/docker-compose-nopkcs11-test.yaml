@@ -12,6 +12,7 @@ services:
     image: ${FABRIC_BASEOS_FIXTURE_IMAGE}:${ARCH}-${FABRIC_BASEOS_FIXTURE_TAG}
     environment:
       - GO_TAGS
+      - GO_TESTFLAGS
     volumes:
       - ../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
     command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration.sh
