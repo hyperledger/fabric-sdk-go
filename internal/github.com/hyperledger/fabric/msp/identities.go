@@ -27,10 +27,10 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/logbridge"
+	logging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
-	"github.com/op/go-logging"
 )
 
 var mspIdentityLogger = flogging.MustGetLogger("msp/identity")

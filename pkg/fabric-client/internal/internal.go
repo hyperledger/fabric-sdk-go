@@ -6,6 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 
 package internal
 
-import logging "github.com/op/go-logging"
+import "github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
-var logger = logging.MustGetLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabric_sdk_go")

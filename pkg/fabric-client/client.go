@@ -23,7 +23,7 @@ import (
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
 	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 
-	"github.com/op/go-logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
@@ -33,7 +33,7 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-var logger = logging.MustGetLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabric_sdk_go")
 
 // Client enables access to a Fabric network.
 type Client struct {

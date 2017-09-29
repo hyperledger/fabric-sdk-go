@@ -17,7 +17,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/op/go-logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
 // Descriptor ...
@@ -31,7 +31,7 @@ type Descriptor struct {
 // of the install payload.
 var keep = []string{".go", ".c", ".h"}
 
-var logger = logging.MustGetLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabric_sdk_go")
 
 // PackageGoLangCC ...
 func PackageGoLangCC(chaincodePath string) ([]byte, error) {

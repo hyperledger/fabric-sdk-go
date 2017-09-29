@@ -68,13 +68,6 @@
   revision = "d0303fe809921458f417bcf828397a65db30a7e4"
 
 [[projects]]
-  branch = "datarace"
-  name = "github.com/op/go-logging"
-  packages = ["."]
-  revision = "1df6e860446321cc5ab45e62e1def171321c92fb"
-  source = "github.com/troyronda/go-logging"
-
-[[projects]]
   name = "github.com/pelletier/go-buffruneio"
   packages = ["."]
   revision = "c37440a7cf42ac63b919c752ca73a85067e05992"
@@ -173,6 +166,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f4ff2e0899d89f53fb50f16c0a7abd8a32f1d64ecb9cc66614c09f8511071832"
+  inputs-digest = "62715962be7c8394bb414d225a8c25303f4699bb05c898e5ab4993a6a11c33a0"
   solver-name = "gps-cdcl"
   solver-version = 1

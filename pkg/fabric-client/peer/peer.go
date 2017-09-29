@@ -12,10 +12,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/op/go-logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
-var logger = logging.MustGetLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabric_sdk_go")
 
 const (
 	connBlocking = true

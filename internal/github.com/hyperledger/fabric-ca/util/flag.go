@@ -22,9 +22,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cloudflare/cfssl/log"
+	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/logbridge"
 	"github.com/mitchellh/mapstructure"
-	"github.com/op/go-logging"
 	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -136,18 +135,6 @@ func (fr *flagRegistrar) getTag(f *Field, tagName string) string {
 		val = f.Tag.Get(tagName)
 	}
 	return val
-}
-
-// CmdRunBegin is called at the beginning of each cobra run function
-func CmdRunBegin() {
-	// If -d or --debug, set debug logging level
-	if viper.GetBool("debug") {
-		log.Level = log.LevelDebug
-
-		logging.SetLevel(logging.INFO, "bccsp")
-		logging.SetLevel(logging.INFO, "bccsp_p11")
-		logging.SetLevel(logging.INFO, "bccsp_sw")
-	}
 }
 
 // FlagString sets up a flag for a string, binding it to its name

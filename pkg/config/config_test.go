@@ -16,7 +16,7 @@ import (
 	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	logging "github.com/op/go-logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/spf13/viper"
 )
 
@@ -450,7 +450,7 @@ func TestInitConfigWithCmdRoot(t *testing.T) {
 	TestInitConfigSuccess(t)
 	fileLoc := "../../test/fixtures/config/config_test.yaml"
 	cmdRoot := "fabric_sdk"
-	var logger = logging.MustGetLogger("config_test")
+	var logger = logging.NewLogger("fabric_sdk_go")
 	logger.Infof("fileLoc is %s", fileLoc)
 
 	logger.Infof("fileLoc right before calling InitConfigWithCmdRoot is %s", fileLoc)
@@ -621,21 +621,6 @@ func TestInterfaces(t *testing.T) {
 	apiConfig = &config
 	if apiConfig == nil {
 		t.Fatalf("this shouldn't happen. apiConfig should not be nil.")
-	}
-}
-
-// Test go-logging concurrency fix: If this test fails, the concurrency fix
-// must be applied to go-logging. See: https://gerrit.hyperledger.org/r/12491
-// for fix details.
-func TestGoLoggingConcurrencyFix(t *testing.T) {
-	logger := logging.MustGetLogger("concurrencytest")
-	go func() {
-		for i := 0; i < 100; i++ {
-			logging.SetLevel(logging.Level(logging.DEBUG), "concurrencytest")
-		}
-	}()
-	for i := 0; i < 100; i++ {
-		logger.Info("testing")
 	}
 }
 

@@ -26,10 +26,10 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
+	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/comm"
 	mspmgmt "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp/mgmt"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/flogging"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 

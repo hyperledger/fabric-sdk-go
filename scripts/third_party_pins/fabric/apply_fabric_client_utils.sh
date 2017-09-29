@@ -22,6 +22,8 @@ declare -a PKGS=(
     "common/cauthdsl"
     "common/ledger/util"
 
+    "common/logbridge"
+
     "core/comm"
     "core/config"
     "core/ledger/kvledger/txmgmt/rwsetutil"
@@ -43,6 +45,8 @@ declare -a FILES=(
     "common/metadata/metadata.go"
     "common/channelconfig/keys.go"
     "common/cauthdsl/cauthdsl_builder.go"
+
+    "common/logbridge/logbridge.go"
 
     "core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
     "core/ledger/kvledger/txmgmt/version/version.go"

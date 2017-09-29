@@ -14,10 +14,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 
-	"github.com/op/go-logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
-var logger = logging.MustGetLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabric_sdk_go")
 
 //QueryChaincode ...
 func QueryChaincode(client fab.FabricClient, channel fab.Channel, chaincodeID string, fcn string, args []string) (string, error) {
