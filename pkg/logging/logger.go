@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"sync"
 
@@ -370,19 +371,34 @@ func (l *DefaultLogger) logln(level Level, args ...interface{}) {
 	l.defaultLogger.Output(2, customPrefix+fmt.Sprintln(args...))
 }
 
-// getCaller utility to find caller function used to mention in log lines
 func (l *DefaultLogger) getCaller() string {
-	fpcs := make([]uintptr, 1)
-	// skip 3 levels to get to the caller of whoever called getCaller()
-	n := runtime.Callers(4, fpcs)
+	const MAXCALLERS = 5                  // search MAXCALLERS frames for the real caller
+	const SKIPCALLERS = 4                 // skip SKIPCALLERS frames when determining the real caller
+	const LOGPREFIX = "logging.(*Logger)" // LOGPREFIX indicates the upcoming frame contains the real caller and skip the frame
+	const LOGBRIDGEPREFIX = "logbridge."  // LOGBRIDGEPREFIX indicates to skip the frame due to being a logbridge
+	const NOTFOUND = "n/a"
+
+	fpcs := make([]uintptr, MAXCALLERS)
+
+	n := runtime.Callers(SKIPCALLERS, fpcs)
 	if n == 0 {
-		return "n/a"
+		return NOTFOUND
 	}
 
-	fun := runtime.FuncForPC(fpcs[0] - 1)
-	if fun == nil {
-		return "n/a"
+	frames := runtime.CallersFrames(fpcs[:n])
+	funcIsNext := false
+	for f, more := frames.Next(); more; f, more = frames.Next() {
+		_, funName := filepath.Split(f.Function)
+		if f.Func == nil || f.Function == "" {
+			funName = NOTFOUND // not a function or unknown
+		}
+
+		if strings.HasPrefix(funName, LOGPREFIX) || strings.HasPrefix(funName, LOGBRIDGEPREFIX) {
+			funcIsNext = true
+		} else if funcIsNext {
+			return funName
+		}
 	}
-	_, funName := filepath.Split(fun.Name())
-	return funName
+
+	return NOTFOUND
 }
