@@ -6,15 +6,15 @@
 
 [[constraint]]
   name = "github.com/golang/mock"
-  version = "^1.0.0"
+  version = "1.0.0"
 
 [[constraint]]
   name = "github.com/spf13/viper"
-  version = "^1.0.0"
+  version = "1.0.0"
 
 [[constraint]]
   name = "google.golang.org/grpc"
-  version = "^1.0.0"
+  version = "1.5.2"
 
 [[constraint]]
   name = "github.com/golang/protobuf"
@@ -24,12 +24,44 @@
   name = "golang.org/x/net"
   branch = "master"
 
-################
-# Downstream overrides to enable testing
-# (https://github.com/golang/dep/blob/master/docs/FAQ.md#how-do-i-constrain-a-transitive-dependencys-version)
-
-# Mainly downstreams that have a direct reference
-[[override]]
+[[constraint]]
   name = "github.com/cloudflare/cfssl"
   branch = "master"
-  # note: cfssl is mainly a downstream package but is also used in the SDK mocks
+
+[[constraint]]
+  name = "github.com/golang/groupcache"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/miekg/pkcs11"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/mitchellh/mapstructure"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/pkg/errors"
+  branch = "master"
+# Note: tagged version is old.
+# version = "0.8.0"
+
+[[constraint]]
+  name = "github.com/spf13/cast"
+  version = "1.1.0"
+
+[[constraint]]
+  name = "github.com/spf13/pflag"
+  version = "1.0.0"
+
+[[constraint]]
+  name = "golang.org/x/crypto"
+  branch = "master"
+
+[[constraint]]
+  name = "golang.org/x/sync"
+  branch = "master"
+
+[[constraint]]
+  name = "gopkg.in/yaml.v2"
+  branch = "v2"
