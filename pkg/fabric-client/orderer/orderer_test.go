@@ -189,7 +189,7 @@ func TestSendDeliver(t *testing.T) {
 	case block := <-blocks:
 		t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
 	case err := <-errors:
-		fmt.Printf("There is an error as expected : %s \n", err)
+		t.Logf("There is an error as expected : %s", err)
 	case <-time.After(time.Second * 5):
 		t.Fatalf("Did not receive error from SendDeliver")
 	}
@@ -203,10 +203,10 @@ func startMockServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockBroadcas
 	broadcastServer := new(mocks.MockBroadcastServer)
 	ab.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
 	if err != nil {
-		fmt.Printf("Error starting test server %s", err)
+		t.Logf("Error starting test server %s", err)
 		t.FailNow()
 	}
-	fmt.Printf("Starting test server on %s\n", addr)
+	t.Logf("Starting test server on %s", addr)
 	go grpcServer.Serve(lis)
 
 	return broadcastServer, addr
@@ -218,10 +218,10 @@ func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.
 
 	ab.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
 	if err != nil {
-		fmt.Printf("Error starting test server %s", err)
+		t.Logf("Error starting test server %s", err)
 		t.FailNow()
 	}
-	fmt.Printf("Starting test customized server on %s\n", addr)
+	t.Logf("Starting test customized server on %s\n", addr)
 	go grpcServer.Serve(lis)
 
 	return addr

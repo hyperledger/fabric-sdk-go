@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -121,14 +120,14 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error from Register: %s", err)
 	}
-	fmt.Printf("Registered User: %s, Secret: %s\n", userName, enrolmentSecret)
+	t.Logf("Registered User: %s, Secret: %s", userName, enrolmentSecret)
 	// Enrol the previously registered user
 	ekey, ecert, err := caClient.Enroll(userName, enrolmentSecret)
 	if err != nil {
 		t.Fatalf("Error enroling user: %s", err.Error())
 	}
 	//re-enroll
-	fmt.Printf("** Attempt to re-enrolled user:  '%s'\n", userName)
+	t.Logf("** Attempt to re-enrolled user:  '%s'", userName)
 	//create new user object and set certificate and private key of the previously enrolled user
 	enrolleduser := identity.NewUser(userName, mspID)
 	enrolleduser.SetEnrollmentCertificate(ecert)
@@ -138,7 +137,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error Reenroling user: %s", err.Error())
 	}
-	fmt.Printf("** User '%s' was re-enrolled \n", userName)
+	t.Logf("** User '%s' was re-enrolled", userName)
 	if bytes.Equal(ecert, reenrollCert) {
 		t.Fatalf("Error Reenroling user. Enrollmet and Reenrollment certificates are the same.")
 	}

@@ -29,7 +29,7 @@ func TestChannelClient(t *testing.T) {
 		ConnectEventHub: true,
 	}
 
-	if err := testSetup.Initialize(); err != nil {
+	if err := testSetup.Initialize(t); err != nil {
 		t.Fatalf(err.Error())
 	}
 
@@ -225,7 +225,7 @@ func testChaincodeEvent(ccID string, chClient apitxn.ChannelClient, t *testing.T
 
 	select {
 	case ccEvent := <-notifier:
-		fmt.Printf("Received cc event: %s\n", ccEvent)
+		t.Logf("Received cc event: %s", ccEvent)
 		if ccEvent.TxID != txID.ID {
 			t.Fatalf("CCEvent(%s) and ExecuteTx(%s) transaction IDs don't match", ccEvent.TxID, txID.ID)
 		}

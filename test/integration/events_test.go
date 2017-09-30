@@ -39,7 +39,7 @@ func initializeTests(t *testing.T) BaseSetupImpl {
 		ConnectEventHub: true,
 	}
 
-	if err := testSetup.Initialize(); err != nil {
+	if err := testSetup.Initialize(t); err != nil {
 		t.Fatalf(err.Error())
 	}
 
@@ -76,10 +76,10 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 	}
 
 	// Register tx1 and tx2 for commit/block event(s)
-	done1, fail1 := testSetup.RegisterTxEvent(tx1, testSetup.EventHub)
+	done1, fail1 := testSetup.RegisterTxEvent(t, tx1, testSetup.EventHub)
 	defer testSetup.EventHub.UnregisterTxEvent(tx1)
 
-	done2, fail2 := testSetup.RegisterTxEvent(tx2, testSetup.EventHub)
+	done2, fail2 := testSetup.RegisterTxEvent(t, tx2, testSetup.EventHub)
 	defer testSetup.EventHub.UnregisterTxEvent(tx2)
 
 	// Setup monitoring of events
@@ -264,7 +264,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 	}
 
 	// Register tx for commit/block event(s)
-	done, fail := testSetup.RegisterTxEvent(tx, testSetup.EventHub)
+	done, fail := testSetup.RegisterTxEvent(t, tx, testSetup.EventHub)
 	defer testSetup.EventHub.UnregisterTxEvent(tx)
 
 	// Setup monitoring of events

@@ -9,7 +9,6 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -28,7 +27,7 @@ const (
 func TestPKCS11CSPConfigWithValidOptions(t *testing.T) {
 	opts := configurePKCS11Options("SHA2", securityLevel)
 	f := &pkcsFactory.PKCS11Factory{}
-	//
+
 	csp, err := f.Get(opts)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -36,7 +35,7 @@ func TestPKCS11CSPConfigWithValidOptions(t *testing.T) {
 	if csp == nil {
 		t.Fatalf("BCCSP PKCS11 was not configured")
 	}
-	fmt.Println("TestPKCS11CSPConfigWithValidOptions passed. BCCSP PKCS11 provider was configured\n", csp)
+	t.Logf("TestPKCS11CSPConfigWithValidOptions passed. BCCSP PKCS11 provider was configured (%v)", csp)
 
 }
 
@@ -45,12 +44,12 @@ func TestPKCS11CSPConfigWithEmptyHashFamily(t *testing.T) {
 	opts := configurePKCS11Options("", securityLevel)
 
 	f := &pkcsFactory.PKCS11Factory{}
-	fmt.Println(f.Name())
+	t.Logf("PKCS11 factory name: %s", f.Name())
 	_, err := f.Get(opts)
 	if err == nil {
 		t.Fatalf("Expected error 'Hash Family not supported'")
 	}
-	fmt.Println("TestPKCS11CSPConfigWithEmptyHashFamily passed. ")
+	t.Log("TestPKCS11CSPConfigWithEmptyHashFamily passed. ")
 
 }
 
@@ -59,7 +58,7 @@ func TestPKCS11CSPConfigWithIncorrectLevel(t *testing.T) {
 	opts := configurePKCS11Options("SHA2", 100)
 
 	f := &pkcsFactory.PKCS11Factory{}
-	fmt.Println(f.Name())
+	t.Logf("PKCS11 factory name: %s", f.Name())
 	_, err := f.Get(opts)
 	if err == nil {
 		t.Fatalf("Expected error 'Failed initializing configuration'")

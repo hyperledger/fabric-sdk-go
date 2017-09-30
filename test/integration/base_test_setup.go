@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"testing"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -43,7 +44,7 @@ type BaseSetupImpl struct {
 }
 
 // Initialize reads configuration from file and sets up client, channel and event hub
-func (setup *BaseSetupImpl) Initialize() error {
+func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	// Create SDK setup for the integration tests
 	sdkOptions := deffab.Options{
 		ConfigFile: setup.ConfigFile,
@@ -104,7 +105,7 @@ func (setup *BaseSetupImpl) Initialize() error {
 		}
 	}
 
-	if err := setup.setupEventHub(sc); err != nil {
+	if err := setup.setupEventHub(t, sc); err != nil {
 		return err
 	}
 
@@ -113,8 +114,8 @@ func (setup *BaseSetupImpl) Initialize() error {
 	return nil
 }
 
-func (setup *BaseSetupImpl) setupEventHub(client fab.FabricClient) error {
-	eventHub, err := setup.getEventHub(client)
+func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client fab.FabricClient) error {
+	eventHub, err := setup.getEventHub(t, client)
 	if err != nil {
 		return err
 	}
@@ -331,16 +332,16 @@ func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps 
 // returns a boolean channel which receives true when the event is complete
 // and an error channel for errors
 // TODO - Duplicate
-func (setup *BaseSetupImpl) RegisterTxEvent(txID apitxn.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
+func (setup *BaseSetupImpl) RegisterTxEvent(t *testing.T, txID apitxn.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
 	done := make(chan bool)
 	fail := make(chan error)
 
 	eventHub.RegisterTxEvent(txID, func(txId string, errorCode pb.TxValidationCode, err error) {
 		if err != nil {
-			fmt.Printf("Received error event for txid(%s)\n", txId)
+			t.Logf("Received error event for txid(%s)", txId)
 			fail <- err
 		} else {
-			fmt.Printf("Received success event for txid(%s)\n", txId)
+			t.Logf("Received success event for txid(%s)", txId)
 			done <- true
 		}
 	})
@@ -349,7 +350,7 @@ func (setup *BaseSetupImpl) RegisterTxEvent(txID apitxn.TransactionID, eventHub 
 }
 
 // getEventHub initilizes the event hub
-func (setup *BaseSetupImpl) getEventHub(client fab.FabricClient) (fab.EventHub, error) {
+func (setup *BaseSetupImpl) getEventHub(t *testing.T, client fab.FabricClient) (fab.EventHub, error) {
 	eventHub, err := events.NewEventHub(client)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating new event hub: %v", err)
@@ -361,7 +362,7 @@ func (setup *BaseSetupImpl) getEventHub(client fab.FabricClient) (fab.EventHub, 
 	}
 	for _, p := range peerConfig {
 		if p.URL != "" {
-			fmt.Printf("******* EventHub connect to peer (%s) *******\n", p.URL)
+			t.Logf("EventHub connect to peer (%s)", p.URL)
 			serverHostOverride := ""
 			if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
 				serverHostOverride = str

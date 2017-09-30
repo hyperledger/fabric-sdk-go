@@ -14,7 +14,10 @@ import (
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
+
+var logger = logging.NewLogger("fabric_sdk_go")
 
 var ecert = `-----BEGIN CERTIFICATE-----
 MIICEjCCAbigAwIBAgIQPjb63mDL4e062MPjtcA1CDAKBggqhkjOPQQDAjBgMQsw
@@ -66,7 +69,7 @@ func StartFabricCAMockServer(address string) error {
 	if err != nil {
 		return fmt.Errorf("HTTP Server: Failed to start %v ", err.Error())
 	}
-	fmt.Println("HTTP Server started on :" + address)
+	logger.Infof("HTTP Server started on %s", address)
 	return nil
 
 }

@@ -28,7 +28,7 @@ func TestChannelQueries(t *testing.T) {
 		ConnectEventHub: true,
 	}
 
-	if err := testSetup.Initialize(); err != nil {
+	if err := testSetup.Initialize(t); err != nil {
 		t.Fatalf(err.Error())
 	}
 
@@ -46,7 +46,7 @@ func TestChannelQueries(t *testing.T) {
 	}
 
 	// Invoke transaction that changes block state
-	txID, err := changeBlockState(testSetup)
+	txID, err := changeBlockState(t, testSetup)
 	if err != nil {
 		t.Fatalf("Failed to change block state (invoke transaction). Return error: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestChannelQueries(t *testing.T) {
 
 }
 
-func changeBlockState(testSetup *BaseSetupImpl) (string, error) {
+func changeBlockState(t *testing.T, testSetup *BaseSetupImpl) (string, error) {
 
 	value, err := testSetup.QueryAsset()
 	if err != nil {
@@ -85,7 +85,7 @@ func changeBlockState(testSetup *BaseSetupImpl) (string, error) {
 	}
 
 	// Start transaction that will change block state
-	txID, err := moveFundsAndGetTxID(testSetup)
+	txID, err := moveFundsAndGetTxID(t, testSetup)
 	if err != nil {
 		return "", fmt.Errorf("Move funds return error: %v", err)
 	}
@@ -172,14 +172,14 @@ func testQueryChannels(t *testing.T, channel fab.Channel, client fab.FabricClien
 
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()
-	fmt.Printf("****QueryChannels for %s\n", target.URL())
+	t.Logf("****QueryChannels for %s", target.URL())
 	channelQueryResponse, err := client.QueryChannels(target)
 	if err != nil {
 		t.Fatalf("QueryChannels return error: %v", err)
 	}
 
 	for _, channel := range channelQueryResponse.Channels {
-		fmt.Printf("**Channel: %s", channel)
+		t.Logf("**Channel: %s", channel)
 	}
 
 }
@@ -188,7 +188,7 @@ func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.Fabri
 
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()
-	fmt.Printf("****QueryInstalledChaincodes for %s\n", target.URL())
+	t.Logf("****QueryInstalledChaincodes for %s", target.URL())
 
 	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(target)
 	if err != nil {
@@ -196,7 +196,7 @@ func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.Fabri
 	}
 
 	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
-		fmt.Printf("**InstalledCC: %s", chaincode)
+		t.Logf("**InstalledCC: %s", chaincode)
 	}
 
 }
@@ -206,7 +206,7 @@ func testInstantiatedChaincodes(t *testing.T, channel fab.Channel) {
 	// Our target will indirectly be primary peer on this channel
 	target := channel.PrimaryPeer()
 
-	fmt.Printf("QueryInstantiatedChaincodes for primary %s\n", target.URL())
+	t.Logf("QueryInstantiatedChaincodes for primary %s", target.URL())
 
 	// Test Query Instantiated chaincodes
 	chaincodeQueryResponse, err := channel.QueryInstantiatedChaincodes()
@@ -215,7 +215,7 @@ func testInstantiatedChaincodes(t *testing.T, channel fab.Channel) {
 	}
 
 	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
-		fmt.Printf("**InstantiatedCC: %s\n", chaincode)
+		t.Logf("**InstantiatedCC: %s", chaincode)
 	}
 
 }
@@ -296,7 +296,7 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Confi
 }
 
 // MoveFundsAndGetTxID ...
-func moveFundsAndGetTxID(setup *BaseSetupImpl) (string, error) {
+func moveFundsAndGetTxID(t *testing.T, setup *BaseSetupImpl) (string, error) {
 
 	fcn := "invoke"
 
@@ -314,13 +314,13 @@ func moveFundsAndGetTxID(setup *BaseSetupImpl) (string, error) {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 	// Register for commit event
-	done, fail := setup.RegisterTxEvent(txID, setup.EventHub)
+	done, fail := setup.RegisterTxEvent(t, txID, setup.EventHub)
 
 	txResponse, err := setup.CreateAndSendTransaction(setup.Channel, transactionProposalResponse)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransaction return error: %v", err)
 	}
-	fmt.Println(txResponse)
+	t.Logf("txResponse: %v", txResponse)
 	select {
 	case <-done:
 	case <-fail:

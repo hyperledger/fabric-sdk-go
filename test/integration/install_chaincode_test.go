@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
-	"fmt"
 	"math/rand"
 	"os"
 	"strconv"
@@ -35,7 +34,7 @@ func TestChaincodeInstal(t *testing.T) {
 		ConnectEventHub: true,
 	}
 
-	if err := testSetup.Initialize(); err != nil {
+	if err := testSetup.Initialize(t); err != nil {
 		t.Fatalf(err.Error())
 	}
 
@@ -63,7 +62,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupIm
 	ccFound := false
 	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
 		if chaincode.Name == chainCodeName && chaincode.Path == chainCodePath && chaincode.Version == chainCodeVersion {
-			fmt.Printf("Found chaincode: %s\n", chaincode)
+			t.Logf("Found chaincode: %s", chaincode)
 			ccFound = true
 		}
 	}

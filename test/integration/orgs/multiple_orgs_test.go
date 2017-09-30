@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package orgs
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"testing"
@@ -34,7 +33,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	joinTestChannel(t)
 	installAndInstantiate(t)
 
-	fmt.Printf("peer0 is %+v, peer1 is %+v\n", orgTestPeer0, orgTestPeer1)
+	t.Logf("peer0 is %+v, peer1 is %+v", orgTestPeer0, orgTestPeer1)
 
 	// Query initial value on org1 peer
 	orgTestClient.SetUserContext(org1User)
