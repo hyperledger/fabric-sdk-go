@@ -17,9 +17,6 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-var queryArgs = [][]byte{[]byte("query"), []byte("b")}
-var txArgs = [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}
-
 func TestChannelClient(t *testing.T) {
 
 	testSetup := BaseSetupImpl{

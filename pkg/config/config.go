@@ -470,7 +470,20 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 			p.TLSCACerts.Path = strings.Replace(p.TLSCACerts.Path, "$GOPATH", os.Getenv("GOPATH"), -1)
 		}
 
-		peer := apiconfig.ChannelPeer{PeerChannelConfig: chPeerConfig, PeerConfig: p}
+		var mspID string
+
+		// Find organisation/msp that peer belongs to
+		for _, org := range netConfig.Organizations {
+			for i := 0; i < len(org.Peers); i++ {
+				if strings.EqualFold(org.Peers[i], peerName) {
+					// peer belongs to this org add org msp
+					mspID = org.MspID
+					break
+				}
+			}
+		}
+
+		peer := apiconfig.ChannelPeer{PeerChannelConfig: chPeerConfig, PeerConfig: p, MspID: mspID}
 
 		peers = append(peers, peer)
 	}

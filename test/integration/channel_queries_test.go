@@ -79,7 +79,12 @@ func TestChannelQueries(t *testing.T) {
 
 func changeBlockState(t *testing.T, testSetup *BaseSetupImpl) (string, error) {
 
-	value, err := testSetup.QueryAsset()
+	tpResponses, _, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, "invoke", queryArgs, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	if err != nil {
+		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
+	}
+
+	value := tpResponses[0].ProposalResponse.GetResponse().Payload
 	if err != nil {
 		return "", fmt.Errorf("getQueryValue return error: %v", err)
 	}
@@ -90,15 +95,17 @@ func changeBlockState(t *testing.T, testSetup *BaseSetupImpl) (string, error) {
 		return "", fmt.Errorf("Move funds return error: %v", err)
 	}
 
-	valueAfterInvoke, err := testSetup.QueryAsset()
+	tpResponses, _, err = testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, "invoke", queryArgs, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
-		return "", fmt.Errorf("getQueryValue return error: %v", err)
+		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
+	valueAfterInvoke := tpResponses[0].ProposalResponse.GetResponse().Payload
+
 	// Verify that transaction changed block state
-	valueInt, _ := strconv.Atoi(value)
+	valueInt, _ := strconv.Atoi(string(value))
 	valueInt = valueInt + 1
-	valueAfterInvokeInt, _ := strconv.Atoi(valueAfterInvoke)
+	valueAfterInvokeInt, _ := strconv.Atoi(string(valueAfterInvoke))
 	if valueInt != valueAfterInvokeInt {
 		return "", fmt.Errorf("SendTransaction didn't change the QueryValue %s", value)
 	}
@@ -298,18 +305,10 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Confi
 // MoveFundsAndGetTxID ...
 func moveFundsAndGetTxID(t *testing.T, setup *BaseSetupImpl) (string, error) {
 
-	fcn := "invoke"
-
-	var args []string
-	args = append(args, "move")
-	args = append(args, "a")
-	args = append(args, "b")
-	args = append(args, "1")
-
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, fcn, args, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, "invoke", txArgs, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	fabricTxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
+	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 )
 
 func TestChainCodeInvoke(t *testing.T) {
@@ -37,65 +37,73 @@ func TestChainCodeInvoke(t *testing.T) {
 		t.Fatalf("UpgradeExampleCC return error: %v", err)
 	}
 
-	// Get Query value before invoke
-	value, err := testSetup.QueryAsset()
-	if err != nil {
-		t.Fatalf("getQueryValue return error: %v", err)
+	// Create SDK setup for the integration tests
+	sdkOptions := fabapi.Options{
+		ConfigFile: testSetup.ConfigFile,
 	}
+
+	sdk, err := fabapi.NewSDK(sdkOptions)
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+
+	chClient, err := sdk.NewChannelClient(testSetup.ChannelID, "User1")
+	if err != nil {
+		t.Fatalf("Failed to create new channel client: %s", err)
+	}
+
+	value, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: queryArgs})
+	if err != nil {
+		t.Fatalf("Failed to query funds: %s", err)
+	}
+
 	t.Logf("*** QueryValue before invoke %s", value)
 
 	// Check the Query value equals upgrade arguments (400)
-	if value != "400" {
-		t.Fatalf("UpgradeExampleCC was failed, QueryValue doesn't match upgrade arguments")
+	if string(value) != "400" {
+		t.Fatalf("UpgradeExampleCC failed, query value doesn't match upgrade arguments")
 	}
 
 	eventID := "test([a-zA-Z]+)"
 
-	// Register callback for chaincode event
-	done, rce := fabricTxn.RegisterCCEvent(testSetup.ChainCodeID, eventID, testSetup.EventHub)
+	// Register chaincode event (pass in channel which receives event details when the event is complete)
+	notifier := make(chan *apitxn.CCEvent)
+	rce := chClient.RegisterChaincodeEvent(notifier, testSetup.ChainCodeID, eventID)
 
-	err = moveFunds(&testSetup)
+	// Move funds
+	_, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: txArgs})
 	if err != nil {
-		t.Fatalf("Move funds return error: %v", err)
+		t.Fatalf("Failed to move funds: %s", err)
 	}
 
 	select {
-	case <-done:
+	case ccEvent := <-notifier:
+		t.Logf("Received CC event: %s\n", ccEvent)
 	case <-time.After(time.Second * 20):
-		t.Fatalf("Did NOT receive CC for eventId(%s)\n", eventID)
+		t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
 	}
 
-	testSetup.EventHub.UnregisterChaincodeEvent(rce)
-
-	valueAfterInvoke, err := testSetup.QueryAsset()
+	// Unregister chain code event using registration handle
+	err = chClient.UnregisterChaincodeEvent(rce)
 	if err != nil {
-		t.Errorf("getQueryValue return error: %v", err)
-		return
+		t.Fatalf("Unregister cc event failed: %s", err)
 	}
+
+	// Verify move funds transaction result
+	valueAfterInvoke, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: queryArgs})
+	if err != nil {
+		t.Fatalf("Failed to query funds after transaction: %s", err)
+	}
+
 	t.Logf("*** QueryValue after invoke %s", valueAfterInvoke)
 
-	valueInt, _ := strconv.Atoi(value)
-	valueInt = valueInt + 1
-	valueAfterInvokeInt, _ := strconv.Atoi(valueAfterInvoke)
-	if valueInt != valueAfterInvokeInt {
-		t.Fatalf("SendTransaction didn't change the QueryValue")
+	valueInt, _ := strconv.Atoi(string(value))
+	valueAfterInvokeInt, _ := strconv.Atoi(string(valueAfterInvoke))
+	if valueInt+1 != valueAfterInvokeInt {
+		t.Fatalf("ExecuteTx failed. Before: %s, after: %s", value, valueAfterInvoke)
 	}
 
-}
+	// Release all channel client resources
+	chClient.Close()
 
-// moveFunds ...
-func moveFunds(setup *BaseSetupImpl) error {
-	fcn := "invoke"
-
-	var args []string
-	args = append(args, "move")
-	args = append(args, "a")
-	args = append(args, "b")
-	args = append(args, "1")
-
-	transientDataMap := make(map[string][]byte)
-	transientDataMap["result"] = []byte("Transient data in move funds...")
-
-	_, err := fabricTxn.InvokeChaincode(setup.Client, setup.Channel, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub, setup.ChainCodeID, fcn, args, transientDataMap)
-	return err
 }

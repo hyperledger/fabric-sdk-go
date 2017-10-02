@@ -61,8 +61,8 @@ const (
 	Query
 	// ExecuteTx timeout
 	ExecuteTx
-	// OrdererConnection Orderer connection timeout
+	// OrdererConnection orderer connection timeout
 	OrdererConnection
-	// OrdererSendDeliver Orderer SendDeliver timeout
+	// OrdererResponse orderer response timeout
 	OrdererResponse
 )

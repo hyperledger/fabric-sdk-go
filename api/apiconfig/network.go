@@ -77,6 +77,7 @@ type PeerChannelConfig struct {
 type ChannelPeer struct {
 	PeerChannelConfig
 	PeerConfig
+	MspID string
 }
 
 // OrganizationConfig provides the definition of an organization in the network

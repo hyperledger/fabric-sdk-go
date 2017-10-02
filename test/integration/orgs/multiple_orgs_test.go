@@ -13,7 +13,8 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	fabrictxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
+	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
 const (
@@ -35,76 +36,62 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 	t.Logf("peer0 is %+v, peer1 is %+v", orgTestPeer0, orgTestPeer1)
 
-	// Query initial value on org1 peer
-	orgTestClient.SetUserContext(org1User)
-	orgTestChannel.SetPrimaryPeer(orgTestPeer0)
-	fcn := "invoke"
-	result, err := fabrictxn.QueryChaincode(orgTestClient, orgTestChannel,
-		"exampleCC", fcn, generateQueryArgs())
-	if err != nil {
-		t.Fatal(err)
+	// Create SDK setup for the integration tests
+	sdkOptions := fabapi.Options{
+		ConfigFile: ConfigTestFile,
 	}
-	initialValue, err := strconv.Atoi(result)
+
+	sdk, err := fabapi.NewSDK(sdkOptions)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to create new SDK: %s", err)
 	}
-	// Change value on org2 peer
-	orgTestClient.SetUserContext(org2User)
-	orgTestChannel.SetPrimaryPeer(orgTestPeer1)
-	_, err = fabrictxn.InvokeChaincode(orgTestClient, orgTestChannel, []apitxn.ProposalProcessor{orgTestPeer1},
-		peer0EventHub, "exampleCC", fcn, generateInvokeArgs(), nil)
+
+	// Org1 user connects to 'orgchannel'
+	chClientOrg1User, err := sdk.NewChannelClientWithOpts("orgchannel", "User1", &fabapi.ChannelClientOpts{OrgName: "Org1"})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
 	}
-	// Assert changed value on org1 peer
-	var finalValue int
+
+	// Org2 user connects to 'orgchannel'
+	chClientOrg2User, err := sdk.NewChannelClientWithOpts("orgchannel", "User1", &fabapi.ChannelClientOpts{OrgName: "Org2"})
+	if err != nil {
+		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
+	}
+
+	// Org1 user queries initial value on both peers
+	initialValue, err := chClientOrg1User.Query(apitxn.QueryRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	if err != nil {
+		t.Fatalf("Failed to query funds: %s", err)
+	}
+
+	// Org2 user moves funds on org2 peer
+	txOpts := apitxn.ExecuteTxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer1}}
+	_, err = chClientOrg2User.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
+	}
+
+	// Assert that funds have changed value on org1 peer
+	initialInt, _ := strconv.Atoi(string(initialValue))
+	var finalInt int
 	for i := 0; i < pollRetries; i++ {
-		finalValue = queryOrg1Peer(t)
+		// Query final value on org1 peer
+		queryOpts := apitxn.QueryOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer0}}
+		finalValue, err := chClientOrg1User.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, queryOpts)
+		if err != nil {
+			t.Fatalf("Failed to query funds after transaction: %s", err)
+		}
 		// If value has not propogated sleep with exponential backoff
-		if initialValue+1 != finalValue {
+		finalInt, _ = strconv.Atoi(string(finalValue))
+		if initialInt+1 != finalInt {
 			backoffFactor := math.Pow(2, float64(i))
 			time.Sleep(time.Millisecond * 50 * time.Duration(backoffFactor))
 		} else {
 			break
 		}
 	}
-	if initialValue+1 != finalValue {
-		t.Fatalf("Org1 invoke result was not propagated to org2. Expected %d, got: %d",
-			(initialValue + 1), finalValue)
+	if initialInt+1 != finalInt {
+		t.Fatalf("Org2 'move funds' transaction result was not propagated to Org1. Expected %d, got: %d",
+			(initialInt + 1), finalInt)
 	}
-}
-
-func queryOrg1Peer(t *testing.T) int {
-	fcn := "invoke"
-
-	orgTestClient.SetUserContext(org1User)
-	orgTestChannel.SetPrimaryPeer(orgTestPeer0)
-	result, err := fabrictxn.QueryChaincode(orgTestClient, orgTestChannel,
-		"exampleCC", fcn, generateQueryArgs())
-	if err != nil {
-		t.Fatal(err)
-	}
-	finalValue, err := strconv.Atoi(result)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return finalValue
-}
-
-func generateQueryArgs() []string {
-	var args []string
-	args = append(args, "query")
-	args = append(args, "b")
-
-	return args
-}
-
-func generateInvokeArgs() []string {
-	var args []string
-	args = append(args, "move")
-	args = append(args, "a")
-	args = append(args, "b")
-	args = append(args, "1")
-
-	return args
 }

@@ -55,12 +55,15 @@ func (cc *ChannelClient) QueryWithOpts(request apitxn.QueryRequest, opts apitxn.
 		notifier = make(chan apitxn.QueryResponse)
 	}
 
-	peers, err := cc.discovery.GetPeers(request.ChaincodeID)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to get peers: %v", err)
+	txProcessors := opts.ProposalProcessors
+	if len(txProcessors) == 0 {
+		// Use discovery service to figure out proposal processors
+		peers, err := cc.discovery.GetPeers(request.ChaincodeID)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to get peers: %v", err)
+		}
+		txProcessors = peer.PeersToTxnProcessors(peers)
 	}
-
-	txProcessors := peer.PeersToTxnProcessors(peers)
 
 	go sendTransactionProposal(request, cc.channel, txProcessors, notifier)
 
@@ -113,15 +116,20 @@ func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts
 		return apitxn.TransactionID{}, fmt.Errorf("Chaincode name and function name must be provided")
 	}
 
-	peers, err := cc.discovery.GetPeers(request.ChaincodeID)
-	if err != nil {
-		return apitxn.TransactionID{}, fmt.Errorf("Unable to get peers: %v", err)
+	txProcessors := opts.ProposalProcessors
+	if len(txProcessors) == 0 {
+		// Use discovery service to figure out proposal processors
+		peers, err := cc.discovery.GetPeers(request.ChaincodeID)
+		if err != nil {
+			return apitxn.TransactionID{}, fmt.Errorf("Unable to get peers: %v", err)
+		}
+		txProcessors = peer.PeersToTxnProcessors(peers)
 	}
 
 	// TODO: Temporary conversion until proposal sender is changed to handle [][]byte arguments
 	ccArgs := toStringArray(request.Args)
 	txProposalResponses, txID, err := internal.CreateAndSendTransactionProposal(cc.channel,
-		request.ChaincodeID, request.Fcn, ccArgs, peer.PeersToTxnProcessors(peers), request.TransientMap)
+		request.ChaincodeID, request.Fcn, ccArgs, txProcessors, request.TransientMap)
 	if err != nil {
 		return apitxn.TransactionID{}, fmt.Errorf("CreateAndSendTransactionProposal returned error: %v", err)
 	}

@@ -61,11 +61,7 @@ func (c *MockConfig) CAClientCertFile(org string) (string, error) {
 
 //TimeoutOrDefault not implemented
 func (c *MockConfig) TimeoutOrDefault(arg config.TimeoutType) time.Duration {
-
-	if arg == config.Query || arg == config.ExecuteTx {
-		return time.Second * 10
-	}
-	return 0
+	return time.Second * 10
 }
 
 // FabricClientViper returns the internal viper instance used by the
