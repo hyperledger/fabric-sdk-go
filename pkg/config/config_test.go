@@ -512,12 +512,12 @@ func TestMultipleVipers(t *testing.T) {
 	// Make sure initial value is unaffected
 	testValue2 := viper.GetString("test.testkey")
 	if testValue2 != "testvalue" {
-		t.Logf("Expected testvalue after config initialization")
+		t.Fatalf("Expected testvalue after config initialization")
 	}
 	// Make sure Go SDK config is unaffected
 	testValue3 := myViper.GetBool("client.BCCSP.security.softVerify")
 	if testValue3 != true {
-		t.Logf("Expected existing config value to remain unchanged")
+		t.Fatalf("Expected existing config value to remain unchanged")
 	}
 }
 
