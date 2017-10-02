@@ -15,8 +15,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
+
+var logger = logging.NewLogger("fabric_sdk_go")
 
 // CredentialManager is used for retriving user's signing identity (ecert + private key)
 type CredentialManager struct {
@@ -109,7 +112,7 @@ func getFirstPathFromDir(dir string) (string, error) {
 		}
 
 		fullName := filepath.Join(dir, string(filepath.Separator), p.Name())
-		fmt.Printf("Reading file %s\n", fullName)
+		logger.Debugf("Reading file %s\n", fullName)
 	}
 
 	for _, f := range files {

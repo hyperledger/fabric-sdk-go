@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package credentialmgr
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
@@ -18,7 +17,7 @@ func TestCredentialManager(t *testing.T) {
 
 	config, err := config.InitConfig("../../../test/fixtures/config/config_test.yaml")
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Log(err.Error())
 	}
 
 	credentialMgr, err := NewCredentialManager("Org1", config, &fcmocks.MockCryptoSuite{})
@@ -47,7 +46,7 @@ func TestInvalidOrgCredentialManager(t *testing.T) {
 
 	config, err := config.InitConfig("../../../test/fixtures/config/config_test.yaml")
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Log(err.Error())
 	}
 
 	// Invalid Org

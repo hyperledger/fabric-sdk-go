@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package discovery
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
@@ -29,7 +28,7 @@ func TestDiscovery(t *testing.T) {
 
 	config, err := config.InitConfig("../../../test/fixtures/config/config_test.yaml")
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Log(err.Error())
 	}
 
 	discoveryProvider, err := NewDiscoveryProvider(config)

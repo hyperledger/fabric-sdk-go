@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -26,7 +25,7 @@ func TestChainCodeInvoke(t *testing.T) {
 		ConnectEventHub: true,
 	}
 
-	if err := testSetup.Initialize(); err != nil {
+	if err := testSetup.Initialize(t); err != nil {
 		t.Fatalf(err.Error())
 	}
 
@@ -43,7 +42,7 @@ func TestChainCodeInvoke(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getQueryValue return error: %v", err)
 	}
-	fmt.Printf("*** QueryValue before invoke %s\n", value)
+	t.Logf("*** QueryValue before invoke %s", value)
 
 	// Check the Query value equals upgrade arguments (400)
 	if value != "400" {
@@ -73,7 +72,7 @@ func TestChainCodeInvoke(t *testing.T) {
 		t.Errorf("getQueryValue return error: %v", err)
 		return
 	}
-	fmt.Printf("*** QueryValue after invoke %s\n", valueAfterInvoke)
+	t.Logf("*** QueryValue after invoke %s", valueAfterInvoke)
 
 	valueInt, _ := strconv.Atoi(value)
 	valueInt = valueInt + 1

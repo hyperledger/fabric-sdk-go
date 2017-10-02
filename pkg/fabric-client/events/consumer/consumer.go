@@ -119,7 +119,7 @@ func (ec *eventsClient) RegisterAsync(ies []*ehpb.Interest) error {
 		Creator: creator,
 	}
 	if err = ec.send(emsg); err != nil {
-		fmt.Printf("error on Register send %s\n", err)
+		logger.Errorf("error on Register send %s\n", err)
 	}
 	return err
 }

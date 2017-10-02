@@ -255,10 +255,10 @@ func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockEndo
 	endorserServer := &mocks.MockEndorserServer{}
 	pb.RegisterEndorserServer(grpcServer, endorserServer)
 	if err != nil {
-		fmt.Printf("Error starting test server %s", err)
+		t.Logf("Error starting test server %s", err)
 		t.FailNow()
 	}
-	fmt.Printf("Starting test server (endorser server in peerendorser_test) on %s\n", addr)
+	t.Logf("Starting test server (endorser server in peerendorser_test) on %s", addr)
 	go grpcServer.Serve(lis)
 	return endorserServer, addr
 }

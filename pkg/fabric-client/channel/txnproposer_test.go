@@ -65,7 +65,7 @@ func TestJoinChannel(t *testing.T) {
 	genesisBlockReqeust := &fab.GenesisBlockRequest{
 		TxnID: txid,
 	}
-	fmt.Printf("TxnID: %v", txid)
+	t.Logf("TxnID: %v", txid)
 
 	genesisBlock, err := channel.GenesisBlock(genesisBlockReqeust)
 	if err == nil {
@@ -266,10 +266,10 @@ func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockEndo
 	endorserServer := &mocks.MockEndorserServer{}
 	pb.RegisterEndorserServer(grpcServer, endorserServer)
 	if err != nil {
-		fmt.Printf("Error starting test server %s", err)
+		t.Logf("Error starting test server %s", err)
 		t.FailNow()
 	}
-	fmt.Printf("Starting test server on %s\n", addr)
+	t.Logf("Starting test server on %s\n", addr)
 	go grpcServer.Serve(lis)
 	return endorserServer, addr
 }

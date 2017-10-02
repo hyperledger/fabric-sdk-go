@@ -253,7 +253,7 @@ func (b *MockCCBlockEventBuilder) buildTransactionsFilterMetaDataBytes() []byte 
 }
 
 func (b *MockCCBlockEventBuilder) buildPayload() *common.Payload {
-	fmt.Printf("MockCCBlockEventBuilder.buildPayload\n")
+	logger.Debug("MockCCBlockEventBuilder.buildPayload")
 	return &common.Payload{
 		Header: &common.Header{
 			ChannelHeader: internal.MarshalOrPanic(b.buildChannelHeader()),

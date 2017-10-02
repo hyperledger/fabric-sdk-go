@@ -11,8 +11,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"fmt"
-
 	"time"
 
 	"reflect"
@@ -35,7 +33,7 @@ func TestDeadlock(t *testing.T) {
 		return
 	}
 
-	fmt.Printf("EventHub Concurrency test\n")
+	t.Log("EventHub Concurrency test")
 
 	client := clientFactory.clients[0]
 	if client == nil {
@@ -101,13 +99,13 @@ func TestDeadlock(t *testing.T) {
 	if txCompletion.numDone() != eventsSent {
 		t.Errorf("Sent %d Tx events but received %d - could indicate a deadlock", eventsSent, txCompletion.numDone())
 	} else {
-		fmt.Printf("Received all %d TX events.\n", txCompletion.numDone())
+		t.Logf("Received all %d TX events", txCompletion.numDone())
 	}
 
 	if ccCompletion.numDone() != eventsSent {
 		t.Errorf("Sent %d CC events but received %d - could indicate a deadlock", eventsSent, ccCompletion.numDone())
 	} else {
-		fmt.Printf("Received all %d CC events.\n", ccCompletion.numDone())
+		t.Logf("Received all %d CC events", ccCompletion.numDone())
 	}
 }
 
@@ -120,7 +118,7 @@ func TestChaincodeEvent(t *testing.T) {
 		return
 	}
 
-	fmt.Printf("EventHub Chaincode event test\n")
+	t.Log("EventHub Chaincode event test")
 
 	client := clientFactory.clients[0]
 	if client == nil {
@@ -305,20 +303,22 @@ func TestRegisterBlockEvent(t *testing.T) {
 		t.Fatalf("Registered callback is not txCallback")
 	}
 
-	eventHub.RegisterBlockEvent(testCallback)
+	w := &callbackWrapper{t}
+
+	eventHub.RegisterBlockEvent(w.testCallback)
 
 	if len(eventHub.blockRegistrants) != 2 {
 		t.Fatalf("Failed to add test callback for block event")
 	}
 
-	f1 = reflect.ValueOf(testCallback)
+	f1 = reflect.ValueOf(w.testCallback)
 	f2 = reflect.ValueOf(eventHub.blockRegistrants[1])
 
 	if f1.Pointer() != f2.Pointer() {
 		t.Fatalf("Registered callback is not testCallback")
 	}
 
-	eventHub.UnregisterBlockEvent(testCallback)
+	eventHub.UnregisterBlockEvent(w.testCallback)
 
 	if len(eventHub.interestedEvents) != 1 || len(eventHub.blockRegistrants) != 1 {
 		t.Fatalf("Failed to unregister testCallback")
@@ -332,9 +332,13 @@ func TestRegisterBlockEvent(t *testing.T) {
 
 }
 
+type callbackWrapper struct {
+	t *testing.T
+}
+
 // private test callback to be executed on block event
-func testCallback(block *common.Block) {
-	fmt.Println("testCallback called on block")
+func (w *callbackWrapper) testCallback(block *common.Block) {
+	w.t.Log("testCallback called on block")
 }
 
 func TestRegisterChaincodeEvent(t *testing.T) {
@@ -348,7 +352,9 @@ func TestRegisterChaincodeEvent(t *testing.T) {
 		t.Fatalf("Transaction callback should be registered by default")
 	}
 
-	cbe := eventHub.RegisterChaincodeEvent("testCC", "eventID", testChaincodeCallback)
+	w := &callbackWrapper{t}
+
+	cbe := eventHub.RegisterChaincodeEvent("testCC", "eventID", w.testChaincodeCallback)
 
 	if len(eventHub.interestedEvents) != 2 {
 		t.Fatalf("Failed to register interest for CC event")
@@ -379,8 +385,8 @@ func TestRegisterChaincodeEvent(t *testing.T) {
 }
 
 // private test callback to be executed on chaincode event
-func testChaincodeCallback(ce *fab.ChaincodeEvent) {
-	fmt.Printf("Received CC event: %v\n", ce)
+func (w *callbackWrapper) testChaincodeCallback(ce *fab.ChaincodeEvent) {
+	w.t.Logf("Received CC event: %v", ce)
 }
 
 func TestDisconnect(t *testing.T) {
