@@ -14,14 +14,16 @@ IMPORT_SUBSTS=($IMPORT_SUBSTS)
 GOIMPORTS_CMD=goimports
 
 declare -a PKGS=(
+        "common/cauthdsl"
 )
 
 declare -a FILES=(
+        "common/cauthdsl/cauthdsl_builder.go"
 )
 
 echo 'Removing current upstream project from working directory ...'
-rm -Rf "${INTERNAL_PATH}/common/flogging"
-mkdir -p "${INTERNAL_PATH}/common/flogging"
+rm -Rf "${INTERNAL_PATH}/common"
+mkdir -p "${INTERNAL_PATH}/common"
 
 # Create directory structure for packages
 for i in "${PKGS[@]}"

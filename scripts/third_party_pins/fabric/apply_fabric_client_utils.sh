@@ -19,7 +19,6 @@ declare -a PKGS=(
     "common/util"
     "common/metadata"
     "common/channelconfig"
-    "common/cauthdsl"
     "common/ledger/util"
 
     "common/logbridge"
@@ -44,7 +43,6 @@ declare -a FILES=(
     "common/util/utils.go"
     "common/metadata/metadata.go"
     "common/channelconfig/keys.go"
-    "common/cauthdsl/cauthdsl_builder.go"
 
     "common/logbridge/logbridge.go"
 
