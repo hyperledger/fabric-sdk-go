@@ -25,6 +25,10 @@ declare -a FILES=(
     "protos/orderer/ab.pb.go"
 )
 
+declare -a PBFILES=(
+    "protos/orderer/ab.pb.go"
+)
+
 #echo 'Removing current upstream project from working directory ...'
 rm -Rf "${INTERNAL_PATH}/protos"
 mkdir -p "${INTERNAL_PATH}/protos"
@@ -35,16 +39,13 @@ do
     mkdir -p $INTERNAL_PATH/${i}
 done
 
-# Apply global import patching
+# Apply patching
 echo "Patching import paths on upstream project ..."
-for i in "${FILES[@]}"
-do
-    for subst in "${IMPORT_SUBSTS[@]}"
-    do
-        sed -i '' -e $subst $TMP_PROJECT_PATH/${i}
-    done
-    $GOIMPORTS_CMD -w $TMP_PROJECT_PATH/${i}
-done
+WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" IMPORT_SUBSTS="${IMPORT_SUBSTS[@]}" scripts/third_party_pins/common/apply_import_patching.sh
+
+echo "Inserting modification notice ..."
+WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" scripts/third_party_pins/common/apply_header_notice.sh
+WORKING_DIR=$TMP_PROJECT_PATH FILES="${PBFILES[@]}" ALLOW_NONE_LICENSE_ID="true" scripts/third_party_pins/common/apply_header_notice.sh
 
 # Copy patched project into internal paths
 echo "Copying patched upstream project into working directory ..."
