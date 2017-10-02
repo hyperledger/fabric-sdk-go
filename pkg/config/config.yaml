@@ -44,14 +44,7 @@ client:
   logging:
     level: info
 
-  # set connection timeouts for the peer and orderer for the client
-  connection:
-     timeout:
-      peer:
-       endorser: 3s
-       eventHub: 3s
-       eventReg: 3s
-      orderer: 3s
+
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:
@@ -93,6 +86,22 @@ client:
      label: "ForFabric"
      #library: "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/softhsm/libsofthsm2.so ,/usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so"
      library: "add BCCSP library here"
+
+  #Timeout configs for various connection and response types
+  endorserConnectionTimeout: 3s
+
+  eventServiceConnectionTimeout: 3s
+
+  ordererConnectionTimeout: 3s
+
+  ordererResponseTimeout: 5s
+
+  eventRegistrationResponseTimeout: 3s
+
+  queryResponseTimeout: 20s
+
+  executeTxResponseTimeout: 30s
+
 
 #
 # [Optional]. But most apps would have this section so that channel objects can be constructed
@@ -233,7 +242,7 @@ certificateAuthorities:
     # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
     # needed to enroll and invoke new users.
 #    registrar:
-#      enrollId: usualy-it-is_admin
+#      enrollId: usually-it-is_admin
 #      enrollSecret: adminpasswd
     # [Optional] The optional name of the CA.
 #    caName: ca-org1

@@ -31,7 +31,7 @@ type Orderer struct {
 // NewOrderer Returns a Orderer instance
 func NewOrderer(url string, certificate string, serverHostOverride string, config apiconfig.Config) (*Orderer, error) {
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.Orderer)))
+	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.OrdererConnection)))
 	if config.IsTLSEnabled() {
 		tlsCaCertPool, err := config.TLSCACertPool(certificate)
 		if err != nil {

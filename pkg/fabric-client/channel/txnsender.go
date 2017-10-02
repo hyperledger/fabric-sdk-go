@@ -17,6 +17,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -390,7 +391,7 @@ func (c *Channel) SendEnvelope(envelope *fab.SignedEnvelope) (*common.Block, err
 				}
 				mutex.Unlock()
 
-			case <-time.After(time.Second * 5):
+			case <-time.After(c.ClientContext().Config().TimeoutOrDefault(apiconfig.OrdererResponse)):
 				mutex.Lock()
 				if errorResponse == nil {
 					errorResponse = fmt.Errorf("Timeout waiting for response from orderer")

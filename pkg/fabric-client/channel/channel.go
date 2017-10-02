@@ -9,6 +9,7 @@ package channel
 import (
 	"fmt"
 
+	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
@@ -35,6 +36,7 @@ type ClientContext interface {
 	UserContext() fab.User
 	SigningManager() fab.SigningManager
 	NewTxnID() (apitxn.TransactionID, error)
+	Config() config.Config
 }
 
 // NewChannel represents a channel in a Fabric network.

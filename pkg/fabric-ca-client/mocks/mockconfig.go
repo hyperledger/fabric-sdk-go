@@ -58,7 +58,7 @@ func (c *MockConfig) FabricClientViper() *viper.Viper {
 }
 
 //TimeoutOrDefault not implemented
-func (c *MockConfig) TimeoutOrDefault(apiconfig.ConnectionType) time.Duration {
+func (c *MockConfig) TimeoutOrDefault(apiconfig.TimeoutType) time.Duration {
 	return 0
 }
 

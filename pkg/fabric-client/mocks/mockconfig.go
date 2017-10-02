@@ -60,7 +60,11 @@ func (c *MockConfig) CAClientCertFile(org string) (string, error) {
 }
 
 //TimeoutOrDefault not implemented
-func (c *MockConfig) TimeoutOrDefault(config.ConnectionType) time.Duration {
+func (c *MockConfig) TimeoutOrDefault(arg config.TimeoutType) time.Duration {
+
+	if arg == config.Query || arg == config.ExecuteTx {
+		return time.Second * 10
+	}
 	return 0
 }
 

@@ -20,7 +20,7 @@ type Config interface {
 	CAServerCertFiles(org string) ([]string, error)
 	CAClientKeyFile(org string) (string, error)
 	CAClientCertFile(org string) (string, error)
-	TimeoutOrDefault(ConnectionType) time.Duration
+	TimeoutOrDefault(TimeoutType) time.Duration
 	MspID(org string) (string, error)
 	OrderersConfig() ([]OrdererConfig, error)
 	RandomOrdererConfig() (*OrdererConfig, error)
@@ -47,16 +47,22 @@ type Config interface {
 	CSPConfig() *bccspFactory.FactoryOpts
 }
 
-// ConnectionType enumerates the different types of outgoing connections
-type ConnectionType int
+// TimeoutType enumerates the different types of outgoing connections
+type TimeoutType int
 
 const (
-	// Endorser connection
-	Endorser ConnectionType = iota
-	// EventHub connection
+	// Endorser connection timeout
+	Endorser TimeoutType = iota
+	// EventHub connection timeout
 	EventHub
-	// EventReg connection
+	// EventReg connection timeout
 	EventReg
-	// Orderer connection
-	Orderer
+	// Query timeout
+	Query
+	// ExecuteTx timeout
+	ExecuteTx
+	// OrdererConnection Orderer connection timeout
+	OrdererConnection
+	// OrdererSendDeliver Orderer SendDeliver timeout
+	OrdererResponse
 )

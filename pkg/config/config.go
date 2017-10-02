@@ -211,17 +211,23 @@ func (c *Config) CAClientCertFile(org string) (string, error) {
 }
 
 // TimeoutOrDefault reads connection timeouts for the given connection type
-func (c *Config) TimeoutOrDefault(conn apiconfig.ConnectionType) time.Duration {
+func (c *Config) TimeoutOrDefault(conn apiconfig.TimeoutType) time.Duration {
 	var timeout time.Duration
 	switch conn {
 	case apiconfig.Endorser:
-		timeout = myViper.GetDuration("client.connection.timeout.peer.endorser")
+		timeout = myViper.GetDuration("client.endorserConnectionTimeout")
 	case apiconfig.EventHub:
-		timeout = myViper.GetDuration("client.connection.timeout.peer.eventhub")
+		timeout = myViper.GetDuration("client.eventServiceConnectionTimeout")
 	case apiconfig.EventReg:
-		timeout = myViper.GetDuration("client.connection.timeout.peer.eventreg")
-	case apiconfig.Orderer:
-		timeout = myViper.GetDuration("client.connection.timeout.orderer")
+		timeout = myViper.GetDuration("client.eventRegistrationResponseTimeout")
+	case apiconfig.OrdererConnection:
+		timeout = myViper.GetDuration("client.ordererConnectionTimeout")
+	case apiconfig.Query:
+		timeout = myViper.GetDuration("client.queryResponseTimeout")
+	case apiconfig.ExecuteTx:
+		timeout = myViper.GetDuration("client.executeTxResponseTimeout")
+	case apiconfig.OrdererResponse:
+		timeout = myViper.GetDuration("client.ordererResponseTimeout")
 	}
 	if timeout == 0 {
 		timeout = defaultTimeout

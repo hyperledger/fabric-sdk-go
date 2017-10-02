@@ -399,7 +399,7 @@ func (mr *MockConfigMockRecorder) TLSCACertPool(arg0 interface{}) *gomock.Call {
 }
 
 // TimeoutOrDefault mocks base method
-func (m *MockConfig) TimeoutOrDefault(arg0 apiconfig.ConnectionType) time.Duration {
+func (m *MockConfig) TimeoutOrDefault(arg0 apiconfig.TimeoutType) time.Duration {
 	ret := m.ctrl.Call(m, "TimeoutOrDefault", arg0)
 	ret0, _ := ret[0].(time.Duration)
 	return ret0
