@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 const (
@@ -170,7 +171,7 @@ func sendTransaction(channel fab.Channel, txID apitxn.TransactionID, txProposalR
 		}
 	}
 
-	done, fail := internal.RegisterTxEvent(txID, eventHub)
+	chcode := internal.RegisterTxEvent(txID, eventHub)
 	_, err := internal.CreateAndSendTransaction(channel, txProposalResponses)
 	if err != nil {
 		notifier <- apitxn.ExecuteTxResponse{Response: apitxn.TransactionID{}, Error: fmt.Errorf("CreateAndSendTransaction returned error: %v", err)}
@@ -178,10 +179,12 @@ func sendTransaction(channel fab.Channel, txID apitxn.TransactionID, txProposalR
 	}
 
 	select {
-	case <-done:
-		notifier <- apitxn.ExecuteTxResponse{Response: txID, Error: nil}
-	case err := <-fail:
-		notifier <- apitxn.ExecuteTxResponse{Response: txID, Error: fmt.Errorf("ExecuteTx received an error from eventhub for txid(%s), error(%v)", txID, err)}
+	case code := <-chcode:
+		if code == pb.TxValidationCode_VALID {
+			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: code}
+		} else {
+			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: code, Error: fmt.Errorf("ExecuteTx received a failed transaction response from eventhub for txid(%s), code(%s)", txID, code)}
+		}
 	case <-time.After(timeout):
 		notifier <- apitxn.ExecuteTxResponse{Response: txID, Error: fmt.Errorf("ExecuteTx didn't receive block event for txid(%s)", txID)}
 	}

@@ -6,7 +6,11 @@ SPDX-License-Identifier: Apache-2.0
 
 package apitxn
 
-import "time"
+import (
+	"time"
+
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+)
 
 // QueryRequest contains the parameters for query
 type QueryRequest struct {
@@ -30,8 +34,9 @@ type QueryResponse struct {
 
 // ExecuteTxResponse contains result of asynchronous call
 type ExecuteTxResponse struct {
-	Response TransactionID
-	Error    error
+	Response         TransactionID
+	Error            error
+	TxValidationCode pb.TxValidationCode
 }
 
 // ExecuteTxRequest contains the parameters to execute transaction

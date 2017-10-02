@@ -18,6 +18,7 @@ import (
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -61,20 +62,21 @@ func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
 	}
 
 	// Register for commit event
-	done, fail := internal.RegisterTxEvent(txID, eventHub)
+	chcode := internal.RegisterTxEvent(txID, eventHub)
 
 	if _, err = internal.CreateAndSendTransaction(channel, transactionProposalResponse); err != nil {
 		return fmt.Errorf("CreateTransaction returned error: %v", err)
 	}
 
 	select {
-	case <-done:
-	case <-fail:
-		return fmt.Errorf("instantiateCC Error received from eventhub for txid(%s) error(%v)", txID, fail)
+	case code := <-chcode:
+		if code == peer.TxValidationCode_VALID {
+			return nil
+		}
+		return fmt.Errorf("instantiateCC Error received from eventhub for txid(%s), code(%s)", txID, code)
 	case <-time.After(time.Second * 30):
 		return fmt.Errorf("instantiateCC Didn't receive block event for txid(%s)", txID)
 	}
-	return nil
 }
 
 // SendUpgradeCC Sends upgrade CC proposal to one or more endorsing peers
@@ -95,20 +97,21 @@ func SendUpgradeCC(channel fab.Channel, chainCodeID string, args []string,
 	}
 
 	// Register for commit event
-	done, fail := internal.RegisterTxEvent(txID, eventHub)
+	chcode := internal.RegisterTxEvent(txID, eventHub)
 
 	if _, err = internal.CreateAndSendTransaction(channel, transactionProposalResponse); err != nil {
 		return fmt.Errorf("CreateTransaction returned error: %v", err)
 	}
 
 	select {
-	case <-done:
-	case <-fail:
-		return fmt.Errorf("upgradeCC Error received from eventhub for txid(%s) error(%v)", txID, fail)
+	case code := <-chcode:
+		if code == peer.TxValidationCode_VALID {
+			return nil
+		}
+		return fmt.Errorf("upgradeCC Error received from eventhub for txid(%s) code(%s)", txID, code)
 	case <-time.After(time.Second * 30):
 		return fmt.Errorf("upgradeCC Didn't receive block event for txid(%s)", txID)
 	}
-	return nil
 }
 
 // CreateOrUpdateChannel creates a channel if it does not exist or updates a channel

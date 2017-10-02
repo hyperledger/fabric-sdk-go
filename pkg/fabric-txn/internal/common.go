@@ -64,21 +64,17 @@ func CreateAndSendTransaction(sender apitxn.Sender, resps []*apitxn.TransactionP
 }
 
 // RegisterTxEvent registers on the given eventhub for the given transaction id
-// returns a boolean channel which receives true when the event is complete and
-// an error channel for errors
-func RegisterTxEvent(txID apitxn.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
-	done := make(chan bool)
-	fail := make(chan error)
+// returns a TxValidationCode channel which receives the validation code when the
+// transaction completes. If the code is TxValidationCode_VALID then
+// the transaction committed successfully, otherwise the code indicates the error
+// that occurred.
+func RegisterTxEvent(txID apitxn.TransactionID, eventHub fab.EventHub) chan pb.TxValidationCode {
+	chcode := make(chan pb.TxValidationCode)
 
-	eventHub.RegisterTxEvent(txID, func(txId string, errorCode pb.TxValidationCode, err error) {
-		if err != nil {
-			logger.Debugf("Received error event for txid(%s)\n", txId)
-			fail <- err
-		} else {
-			logger.Debugf("Received success event for txid(%s)\n", txId)
-			done <- true
-		}
+	eventHub.RegisterTxEvent(txID, func(txId string, code pb.TxValidationCode, err error) {
+		logger.Debugf("Received code(%s) for txid(%s)\n", code, txId)
+		chcode <- code
 	})
 
-	return done, fail
+	return chcode
 }

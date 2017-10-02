@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 var queryArgs = [][]byte{[]byte("query"), []byte("b")}
@@ -148,6 +149,9 @@ func testAsyncTransaction(ccID string, chClient apitxn.ChannelClient, t *testing
 	case response := <-txNotifier:
 		if response.Error != nil {
 			t.Fatalf("ExecuteTx returned error: %s", response.Error)
+		}
+		if response.TxValidationCode != pb.TxValidationCode_VALID {
+			t.Fatalf("Expecting TxValidationCode to be TxValidationCode_VALID but received: %s", response.TxValidationCode)
 		}
 	case <-time.After(time.Second * 20):
 		t.Fatalf("ExecuteTx timed out")
