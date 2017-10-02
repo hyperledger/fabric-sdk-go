@@ -47,6 +47,8 @@ type User interface {
 	GetAffiliationPath() []string
 	// GetAttribute returns the value for an attribute name
 	GetAttribute(name string) string
+	// LoginComplete completes the login process by incrementing the state of the user
+	LoginComplete() error
 }
 
 // UserRegistry is the API for retreiving users and groups

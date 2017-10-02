@@ -25,9 +25,10 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"io/ioutil"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/logbridge"
@@ -62,7 +63,7 @@ func BytesToX509Cert(bytes []byte) (*x509.Certificate, error) {
 	}
 	cert, err := x509.ParseCertificate(bytes)
 	if err != nil {
-		return nil, fmt.Errorf("buffer was neither PEM nor DER encoding: %s", err)
+		return nil, errors.Wrap(err, "Buffer was neither PEM nor DER encoding")
 	}
 	return cert, err
 }
@@ -95,7 +96,7 @@ func UnmarshalConfig(config interface{}, vp *viper.Viper, configFile string, ser
 	vp.SetConfigFile(configFile)
 	err := vp.ReadInConfig()
 	if err != nil {
-		return fmt.Errorf("Failed to read config file: %s", err)
+		return errors.Wrapf(err, "Failed to read config file '%s'", configFile)
 	}
 
 	// Unmarshal the config into 'caConfig'
@@ -112,25 +113,25 @@ func UnmarshalConfig(config interface{}, vp *viper.Viper, configFile string, ser
 		}
 		err = util.ViperUnmarshal(config, sliceFields, vp)
 		if err != nil {
-			return fmt.Errorf("Incorrect format in file '%s': %s", configFile, err)
+			return errors.WithMessage(err, fmt.Sprintf("Incorrect format in file '%s'", configFile))
 		}
 		if server {
 			serverCfg := config.(*ServerConfig)
 			err = util.ViperUnmarshal(&serverCfg.CAcfg, sliceFields, vp)
 			if err != nil {
-				return fmt.Errorf("Incorrect format in file '%s': %s", configFile, err)
+				return errors.WithMessage(err, fmt.Sprintf("Incorrect format in file '%s'", configFile))
 			}
 		}
 	} else {
 		err = vp.Unmarshal(config)
 		if err != nil {
-			return fmt.Errorf("Incorrect format in file '%s': %s", configFile, err)
+			return errors.Wrapf(err, "Incorrect format in file '%s'", configFile)
 		}
 		if server {
 			serverCfg := config.(*ServerConfig)
 			err = vp.Unmarshal(&serverCfg.CAcfg)
 			if err != nil {
-				return fmt.Errorf("Incorrect format in file '%s': %s", configFile, err)
+				return errors.Wrapf(err, "Incorrect format in file '%s'", configFile)
 			}
 		}
 	}
@@ -151,7 +152,7 @@ func GetAttrValue(attrs []api.Attribute, name string) string {
 func getMaxEnrollments(userMaxEnrollments int, caMaxEnrollments int) (int, error) {
 	log.Debugf("Max enrollment value verification - User specified max enrollment: %d, CA max enrollment: %d", userMaxEnrollments, caMaxEnrollments)
 	if userMaxEnrollments < -1 {
-		return 0, fmt.Errorf("Max enrollment in registration request may not be less than -1, but was %d", userMaxEnrollments)
+		return 0, errors.Errorf("Max enrollment in registration request may not be less than -1, but was %d", userMaxEnrollments)
 	}
 	switch caMaxEnrollments {
 	case -1:
@@ -175,7 +176,7 @@ func getMaxEnrollments(userMaxEnrollments int, caMaxEnrollments int) (int, error
 		default:
 			// User is requesting a specific positive value; make sure it doesn't exceed the CA maximum.
 			if userMaxEnrollments > caMaxEnrollments {
-				return 0, fmt.Errorf("Requested enrollments (%d) exceeds maximum allowable enrollments (%d)",
+				return 0, errors.Errorf("Requested enrollments (%d) exceeds maximum allowable enrollments (%d)",
 					userMaxEnrollments, caMaxEnrollments)
 			}
 			// otherwise, use the requested maximum

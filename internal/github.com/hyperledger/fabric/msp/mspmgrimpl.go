@@ -21,12 +21,10 @@ Please review third_party pinning scripts and patches for more details.
 package msp
 
 import (
-	"fmt"
-
-	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/logbridge"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
-
 	"github.com/golang/protobuf/proto"
+	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/logbridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 )
 
 var mspLogger = flogging.MustGetLogger("msp")
@@ -62,7 +60,7 @@ func (mgr *mspManagerImpl) Setup(msps []MSP) error {
 		// add the MSP to the map of active MSPs
 		mspID, err := msp.GetIdentifier()
 		if err != nil {
-			return fmt.Errorf("Could not extract msp identifier, err %s", err)
+			return errors.WithMessage(err, "could not extract msp identifier")
 		}
 		mgr.mspsMap[mspID] = msp
 	}
@@ -85,13 +83,13 @@ func (mgr *mspManagerImpl) DeserializeIdentity(serializedID []byte) (Identity, e
 	sId := &msp.SerializedIdentity{}
 	err := proto.Unmarshal(serializedID, sId)
 	if err != nil {
-		return nil, fmt.Errorf("Could not deserialize a SerializedIdentity, err %s", err)
+		return nil, errors.Wrap(err, "could not deserialize a SerializedIdentity")
 	}
 
 	// we can now attempt to obtain the MSP
 	msp := mgr.mspsMap[sId.Mspid]
 	if msp == nil {
-		return nil, fmt.Errorf("MSP %s is unknown", sId.Mspid)
+		return nil, errors.Errorf("MSP %s is unknown", sId.Mspid)
 	}
 
 	switch t := msp.(type) {

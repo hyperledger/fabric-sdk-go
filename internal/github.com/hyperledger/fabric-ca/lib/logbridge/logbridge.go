@@ -44,6 +44,11 @@ func Infof(format string, args ...interface{}) {
 	logger.Infof(format, args...)
 }
 
+// Warning bridges calls to the Go SDK logger's Warn.
+func Warning(args ...interface{}) {
+	logger.Warn(args...)
+}
+
 // Fatalf bridges calls to the Go SDK logger's Debugf.
 func Fatalf(format string, args ...interface{}) {
 	logger.Fatalf(format, args...)

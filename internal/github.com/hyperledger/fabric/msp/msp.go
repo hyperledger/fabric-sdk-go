@@ -16,10 +16,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 )
 
-// FIXME: we need better comments on the interfaces!!
-// FIXME: we need better comments on the interfaces!!
-// FIXME: we need better comments on the interfaces!!
-
 // IdentityDeserializer is implemented by both MSPManger and MSP
 type IdentityDeserializer interface {
 	// DeserializeIdentity deserializes an identity.
@@ -198,5 +194,6 @@ type ProviderType int
 // The ProviderType of a member relative to the member API
 const (
 	FABRIC ProviderType = iota // MSP is of FABRIC type
+	IDEMIX                     // MSP is of IDEMIX type
 	OTHER                      // MSP is of OTHER TYPE
 )

@@ -23,9 +23,13 @@ package lib
 import (
 	"fmt"
 	"net/url"
+	"path"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
+	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/tls"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
@@ -63,7 +67,7 @@ func (c *ClientConfig) Enroll(rawurl, home string) (*EnrollmentResponse, error) 
 		expecting := fmt.Sprintf(
 			"%s://<enrollmentID>:<secret>@%s",
 			purl.Scheme, purl.Host)
-		return nil, fmt.Errorf(
+		return nil, errors.Errorf(
 			"The URL of the fabric CA server is missing the enrollment ID and secret;"+
 				" found '%s' but expecting '%s'", rawurl, expecting)
 	}
@@ -73,4 +77,33 @@ func (c *ClientConfig) Enroll(rawurl, home string) (*EnrollmentResponse, error) 
 	c.Enrollment.CSR = &c.CSR
 	client := &Client{HomeDir: home, Config: c}
 	return client.Enroll(&c.Enrollment)
+}
+
+// GenCSR generates a certificate signing request and writes the CSR to a file.
+func (c *ClientConfig) GenCSR(home string) error {
+
+	client := &Client{HomeDir: home, Config: c}
+	// Generate the CSR
+
+	err := client.Init()
+	if err != nil {
+		return err
+	}
+
+	if c.CSR.CN == "" {
+		return errors.Errorf("CSR common name not specified; use '--csr.cn' flag")
+	}
+
+	csrPEM, _, err := client.GenCSR(&c.CSR, c.CSR.CN)
+	if err != nil {
+		return err
+	}
+
+	csrFile := path.Join(client.Config.MSPDir, "signcerts", fmt.Sprintf("%s.csr", c.CSR.CN))
+	err = util.WriteFile(csrFile, csrPEM, 0644)
+	if err != nil {
+		return errors.WithMessage(err, "Failed to store the CSR")
+	}
+	log.Infof("Stored CSR at %s", csrFile)
+	return nil
 }

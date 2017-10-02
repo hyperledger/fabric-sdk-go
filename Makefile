@@ -46,10 +46,10 @@ FABRIC_TOOLS_IMAGE  ?= hyperledger/fabric-tools
 FABRIC_TOOLS_TAG    ?= $(ARCH)-$(FABRIC_TOOLS_VERSION)
 
 # Upstream fabric patching (overridable)
-THIRDPARTY_FABRIC_CA_BRANCH ?= release
-THIRDPARTY_FABRIC_CA_COMMIT ?= v1.0.2
+THIRDPARTY_FABRIC_CA_BRANCH ?= master
+THIRDPARTY_FABRIC_CA_COMMIT ?= 2f9617379ec6c253e610ac02b60b3f963f95ad1d
 THIRDPARTY_FABRIC_BRANCH    ?= master
-THIRDPARTY_FABRIC_COMMIT    ?= a657db28a0ff53ed512bd6f4ac4786a0f4ca709c
+THIRDPARTY_FABRIC_COMMIT    ?= 505eb68f64493db86859b649b91e7b7068139e6f
 
 # Local variables used by makefile
 PACKAGE_NAME := github.com/hyperledger/fabric-sdk-go

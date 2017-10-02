@@ -21,11 +21,12 @@ Please review third_party pinning scripts and patches for more details.
 package util
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 // Field is a field of an arbitrary struct

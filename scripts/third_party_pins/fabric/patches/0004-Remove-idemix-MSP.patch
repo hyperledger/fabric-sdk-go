@@ -1,0 +1,29 @@
+From 99bacdaab7e313a47a5dd380c689f25475a4df51 Mon Sep 17 00:00:00 2001
+From: Troy Ronda <t.....@securekey.com>
+Date: Thu, 21 Sep 2017 18:22:55 -0400
+Subject: [PATCH] Remove idemix MSP
+
+Copyright SecureKey Technologies Inc. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+
+Signed-off-by: Troy Ronda <t.....@securekey.com>
+---
+ msp/mspmgrimpl.go | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/msp/mspmgrimpl.go b/msp/mspmgrimpl.go
+index 8767b521..5c9fad34 100644
+--- a/msp/mspmgrimpl.go
++++ b/msp/mspmgrimpl.go
+@@ -92,8 +92,6 @@ func (mgr *mspManagerImpl) DeserializeIdentity(serializedID []byte) (Identity, e
+ 	switch t := msp.(type) {
+ 	case *bccspmsp:
+ 		return t.deserializeIdentityInternal(sId.IdBytes)
+-	case *idemixmsp:
+-		return t.deserializeIdentityInternal(sId.IdBytes)
+ 	default:
+ 		return t.DeserializeIdentity(serializedID)
+ 	}
+-- 
+2.14.1
+
