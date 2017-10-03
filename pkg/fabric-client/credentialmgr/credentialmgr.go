@@ -7,14 +7,15 @@ SPDX-License-Identifier: Apache-2.0
 package credentialmgr
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
@@ -43,11 +44,11 @@ func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvide
 	// viper keys are case insensitive
 	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
 	if !ok {
-		return nil, fmt.Errorf("Unable to retrieve org config for %s", orgName)
+		return nil, errors.New("org config retrieval failed")
 	}
 
 	if orgConfig.CryptoPath == "" {
-		return nil, fmt.Errorf("Must provide crypto config path")
+		return nil, errors.New("CryptoPath is required")
 	}
 
 	orgCryptoPath := orgConfig.CryptoPath
@@ -62,7 +63,7 @@ func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvide
 func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient.SigningIdentity, error) {
 
 	if userName == "" {
-		return nil, fmt.Errorf("Must provide user name")
+		return nil, errors.New("username is required")
 	}
 
 	privateKeyDir := strings.Replace(mgr.keyDir, "{userName}", userName, -1)
@@ -70,26 +71,26 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient
 
 	privateKeyPath, err := getFirstPathFromDir(privateKeyDir)
 	if err != nil {
-		return nil, fmt.Errorf("Error finding the private key path: %v", err)
+		return nil, errors.WithMessage(err, "find private key path failed")
 	}
 
 	enrollmentCertPath, err := getFirstPathFromDir(enrollmentCertDir)
 	if err != nil {
-		return nil, fmt.Errorf("Error finding the enrollment cert path: %v", err)
+		return nil, errors.WithMessage(err, "find enrollment cert path failed")
 	}
 
 	mspID, err := mgr.config.MspID(mgr.orgName)
 	if err != nil {
-		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
+		return nil, errors.WithMessage(err, "MSP ID config read failed")
 	}
 
 	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEM(privateKeyPath, mgr.cryptoProvider, true)
 	if err != nil {
-		return nil, fmt.Errorf("Error importing private key: %v", err)
+		return nil, errors.Wrap(err, "import private key failed")
 	}
 	enrollmentCert, err := ioutil.ReadFile(enrollmentCertPath)
 	if err != nil {
-		return nil, fmt.Errorf("Error reading from the enrollment cert path: %v", err)
+		return nil, errors.Wrap(err, "reading enrollment cert path failed")
 	}
 
 	signingIdentity := &apifabclient.SigningIdentity{MspID: mspID, PrivateKey: privateKey, EnrollmentCert: enrollmentCert}
@@ -103,7 +104,7 @@ func getFirstPathFromDir(dir string) (string, error) {
 
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return "", fmt.Errorf("Could not read directory %s, err %s", err, dir)
+		return "", errors.Wrap(err, "read directory failed")
 	}
 
 	for _, p := range files {
@@ -124,5 +125,5 @@ func getFirstPathFromDir(dir string) (string, error) {
 		return fullName, nil
 	}
 
-	return "", fmt.Errorf("No paths found in directory: %s", dir)
+	return "", errors.New("no paths found")
 }

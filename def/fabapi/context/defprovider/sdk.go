@@ -7,14 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package defprovider
 
 import (
-	"fmt"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
-
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
@@ -49,7 +48,7 @@ func (f *DefaultProviderFactory) NewStateStoreProvider(o opt.StateStoreOpts, con
 
 	stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
 	if err != nil {
-		return nil, fmt.Errorf("CreateNewFileKeyValueStore returned error[%s]", err)
+		return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
 	}
 	return stateStore, nil
 }

@@ -8,16 +8,15 @@ SPDX-License-Identifier: Apache-2.0
 package fabapi
 
 import (
-	"fmt"
-
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
 // Options encapsulates configuration for the SDK
@@ -81,35 +80,35 @@ func NewSDK(options Options) (*FabricSDK, error) {
 	// Initialize config provider
 	config, err := sdk.ProviderFactory.NewConfigProvider(sdk.ConfigOpts, sdkOpts)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize config [%s]", err)
+		return nil, errors.WithMessage(err, "failed to initialize config")
 	}
 	sdk.configProvider = config
 
 	// Initialize crypto provider
 	cryptosuite, err := sdk.ProviderFactory.NewCryptoSuiteProvider(sdk.configProvider.CSPConfig())
 	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize crypto suite [%s]", err)
+		return nil, errors.WithMessage(err, "failed to initialize crypto suite")
 	}
 	sdk.cryptoSuite = cryptosuite
 
 	// Initialize state store
 	store, err := sdk.ProviderFactory.NewStateStoreProvider(sdk.StateStoreOpts, sdk.configProvider)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize state store [%s]", err)
+		return nil, errors.WithMessage(err, "failed to initialize state store")
 	}
 	sdk.stateStore = store
 
 	// Initialize discovery provider
 	discoveryProvider, err := sdk.ProviderFactory.NewDiscoveryProvider(sdk.configProvider)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize discovery provider [%s]", err)
+		return nil, errors.WithMessage(err, "failed to initialize discovery provider")
 	}
 	sdk.discoveryProvider = discoveryProvider
 
 	// Initialize Signing Manager
 	signingMgr, err := sdk.ProviderFactory.NewSigningManager(sdk.CryptoSuiteProvider(), sdk.configProvider)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize signing manager [%s]", err)
+		return nil, errors.WithMessage(err, "failed to initialize signing manager")
 	}
 	sdk.signingManager = signingMgr
 
@@ -171,11 +170,11 @@ func (sdk *FabricSDK) NewChannelClient(channelName string, userName string) (api
 	// Read default org name from configuration
 	client, err := sdk.configProvider.Client()
 	if err != nil {
-		return nil, fmt.Errorf("Unable to retrieve client from network config: %s", err)
+		return nil, errors.WithMessage(err, "unable to retrieve client from network config")
 	}
 
 	if client.Organization == "" {
-		return nil, fmt.Errorf("Must provide default organisation name in configuration")
+		return nil, errors.New("must provide default organisation name in configuration")
 	}
 
 	opt := &ChannelClientOpts{OrgName: client.Organization, ConfigProvider: sdk.configProvider}
@@ -187,12 +186,12 @@ func (sdk *FabricSDK) NewChannelClient(channelName string, userName string) (api
 func (sdk *FabricSDK) NewChannelClientWithOpts(channelName string, userName string, opt *ChannelClientOpts) (apitxn.ChannelClient, error) {
 
 	if opt == nil || opt.OrgName == "" {
-		return nil, fmt.Errorf("Organization name must be provided")
+		return nil, errors.New("organization name must be provided")
 	}
 
 	session, err := sdk.NewPreEnrolledUserSession(opt.OrgName, userName)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting pre-enrolled user session: %v", err)
+		return nil, errors.WithMessage(err, "failed to get pre-enrolled user session")
 	}
 
 	configProvider := sdk.ConfigProvider()
@@ -202,7 +201,7 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelName string, userName stri
 
 	client, err := sdk.SessionFactory.NewChannelClient(sdk, session, configProvider, channelName)
 	if err != nil {
-		return nil, fmt.Errorf("NewChannelClient returned error: %v", err)
+		return nil, errors.WithMessage(err, "failed to created new channel client")
 	}
 
 	return client, nil
@@ -213,17 +212,17 @@ func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (apifabc
 
 	credentialMgr, err := sdk.ContextFactory.NewCredentialManager(orgID, sdk.ConfigProvider(), sdk.CryptoSuiteProvider())
 	if err != nil {
-		return nil, fmt.Errorf("Error getting credential manager: %s ", err)
+		return nil, errors.WithMessage(err, "failed to get credential manager")
 	}
 
 	signingIdentity, err := credentialMgr.GetSigningIdentity(userName)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting signing identity: %s ", err)
+		return nil, errors.WithMessage(err, "failed to get signing identity")
 	}
 
 	user, err := NewPreEnrolledUser(sdk.ConfigProvider(), userName, signingIdentity)
 	if err != nil {
-		return nil, fmt.Errorf("NewUser returned error: %v", err)
+		return nil, errors.WithMessage(err, "NewPreEnrolledUser returned error")
 	}
 
 	return user, nil
@@ -234,17 +233,17 @@ func (sdk *FabricSDK) NewPreEnrolledUserSession(orgID string, userName string) (
 
 	context, err := sdk.NewContext(orgID)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting a context for org: %s", err)
+		return nil, errors.WithMessage(err, "failed to get context for org")
 	}
 
 	user, err := sdk.NewPreEnrolledUser(orgID, userName)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting pre-enrolled user: %v", err)
+		return nil, errors.WithMessage(err, "failed to get pre-enrolled user")
 	}
 
 	session, err := sdk.NewSession(context, user)
 	if err != nil {
-		return nil, fmt.Errorf("NewSession returned error: %v", err)
+		return nil, errors.WithMessage(err, "NewSession returned error")
 	}
 
 	return session, nil

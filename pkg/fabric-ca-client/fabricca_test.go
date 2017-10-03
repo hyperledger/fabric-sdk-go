@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package fabricca
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
@@ -48,14 +48,14 @@ func TestEnroll(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
-	if err.Error() != "enrollmentID is empty" {
+	if err.Error() != "enrollmentID required" {
 		t.Fatalf("Enroll didn't return right error")
 	}
 	_, _, err = fabricCAClient.Enroll("test", "")
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
-	if err.Error() != "enrollmentSecret is empty" {
+	if err.Error() != "enrollmentSecret required" {
 		t.Fatalf("Enroll didn't return right error")
 	}
 	_, _, err = fabricCAClient.Enroll("enrollmentID", "enrollmentSecret")
@@ -72,8 +72,8 @@ func TestEnroll(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
-	if !strings.Contains(err.Error(), "Enroll failed") {
-		t.Fatalf("Expected error when fabric-ca is down. Got: %s", err)
+	if !strings.Contains(err.Error(), "enroll failed") {
+		t.Fatalf("Expected error enroll failed. Got: %s", err)
 	}
 
 }
@@ -90,8 +90,8 @@ func TestRegister(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error with nil request")
 	}
-	if err.Error() != "Registration request cannot be nil" {
-		t.Fatalf("Expected error with nil request. Got: %s", err.Error())
+	if err.Error() != "registration request required" {
+		t.Fatalf("Expected error registration request required. Got: %s", err.Error())
 	}
 
 	//Register with nil user
@@ -99,16 +99,16 @@ func TestRegister(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error with nil user")
 	}
-	if err.Error() != "Error creating signing identity: Valid user required to create signing identity" {
-		t.Fatalf("Expected error with nil user. Got: %s", err.Error())
+	if !strings.Contains(err.Error(), "failed to create request for signing identity") {
+		t.Fatalf("Expected error failed to create request for signing identity. Got: %s", err.Error())
 	}
 	// Register with nil user cert and key
 	_, err = fabricCAClient.Register(user, &ca.RegistrationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error without user enrolment information")
 	}
-	if err.Error() != "Error creating signing identity: Unable to read user enrolment information to create signing identity" {
-		t.Fatalf("Expected error without user enrolment information. Got: %s", err.Error())
+	if !strings.Contains(err.Error(), "failed to create request for signing identity") {
+		t.Fatalf("Expected error failed to create request for signing identity. Got: %s", err.Error())
 	}
 
 	user.SetEnrollmentCertificate(readCert(t))
@@ -119,8 +119,8 @@ func TestRegister(t *testing.T) {
 	user.SetPrivateKey(key)
 	// Register without registration name parameter
 	_, err = fabricCAClient.Register(user, &ca.RegistrationRequest{})
-	if err.Error() != "Error Registering User: Register was called without a Name set" {
-		t.Fatalf("Expected error without registration information. Got: %s", err.Error())
+	if !strings.Contains(err.Error(), "failed to register user") {
+		t.Fatalf("Expected error failed to register user. Got: %s", err.Error())
 	}
 
 	// Register with valid request
@@ -150,16 +150,16 @@ func TestRevoke(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error with nil request")
 	}
-	if err.Error() != "Revocation request cannot be nil" {
-		t.Fatalf("Expected error with nil request. Got: %s", err.Error())
+	if err.Error() != "revocation request required" {
+		t.Fatalf("Expected error revocation request required. Got: %s", err.Error())
 	}
 	//Revoke with nil user
 	err = fabricCAClient.Revoke(nil, &ca.RevocationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error with nil user")
 	}
-	if err.Error() != "Error creating signing identity: Valid user required to create signing identity" {
-		t.Fatalf("Expected error with nil user. Got: %s", err.Error())
+	if !strings.Contains(err.Error(), "failed to create request for signing identity") {
+		t.Fatalf("Expected error failed to create request for signing identity. Got: %s", err.Error())
 	}
 	user.SetEnrollmentCertificate(readCert(t))
 	user.SetPrivateKey(mockKey)
@@ -181,16 +181,16 @@ func TestReenroll(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error with nil user")
 	}
-	if err.Error() != "User does not exist" {
-		t.Fatalf("Expected error with nil user. Got: %s", err.Error())
+	if err.Error() != "user required" {
+		t.Fatalf("Expected error user required. Got: %s", err.Error())
 	}
 	// Reenroll with user.Name is empty
 	_, _, err = fabricCAClient.Reenroll(user)
 	if err == nil {
 		t.Fatalf("Expected error with user.Name is empty")
 	}
-	if err.Error() != "User is empty" {
-		t.Fatalf("Expected error with user.Name is empty. Got: %s", err.Error())
+	if err.Error() != "user name missing" {
+		t.Fatalf("Expected error user name missing. Got: %s", err.Error())
 	}
 	// Reenroll with user.EnrollmentCertificate is empty
 	user = mocks.NewMockUser("testUser")
@@ -198,8 +198,8 @@ func TestReenroll(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error with user.EnrollmentCertificate is empty")
 	}
-	if err.Error() != "Reenroll has failed; Cannot create user identity: Unable to read user enrolment information to create signing identity" {
-		t.Fatalf("Expected error with user.EnrollmentCertificate is empty. Got: %s", err.Error())
+	if !strings.Contains(err.Error(), "createSigningIdentity failed") {
+		t.Fatalf("Expected error createSigningIdentity failed. Got: %s", err.Error())
 	}
 	// Reenroll with appropriate user
 	user.SetEnrollmentCertificate(readCert(t))
@@ -223,7 +223,7 @@ func TestReenroll(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error with wrong fabric-ca server url")
 	}
-	if !strings.Contains(err.Error(), "ReEnroll failed: POST failure") {
+	if !strings.Contains(err.Error(), "reenroll failed") {
 		t.Fatalf("Expected error with wrong fabric-ca server url. Got: %s", err.Error())
 	}
 }
@@ -241,18 +241,18 @@ func TestGetCAName(t *testing.T) {
 
 func TestCreateNewFabricCAClient(t *testing.T) {
 	_, err := NewFabricCAClient(configImp, "")
-	if err.Error() != "Organization and config are required to load CA config" {
+	if err.Error() != "organization and config are required to load CA config" {
 		t.Fatalf("Expected error without oganization information. Got: %s", err.Error())
 	}
 	_, err = NewFabricCAClient(nil, org1)
-	if err.Error() != "Organization and config are required to load CA config" {
+	if err.Error() != "organization and config are required to load CA config" {
 		t.Fatalf("Expected error without config information. Got: %s", err.Error())
 	}
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	mockConfig.EXPECT().CAConfig(org1).Return(nil, fmt.Errorf("CAConfig error"))
+	mockConfig.EXPECT().CAConfig(org1).Return(nil, errors.New("CAConfig error"))
 
 	_, err = NewFabricCAClient(mockConfig, org1)
 	if err.Error() != "CAConfig error" {
@@ -260,7 +260,7 @@ func TestCreateNewFabricCAClient(t *testing.T) {
 	}
 
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
-	mockConfig.EXPECT().CAServerCertFiles(org1).Return(nil, fmt.Errorf("CAServerCertFiles error"))
+	mockConfig.EXPECT().CAServerCertFiles(org1).Return(nil, errors.New("CAServerCertFiles error"))
 	_, err = NewFabricCAClient(mockConfig, org1)
 	if err.Error() != "CAServerCertFiles error" {
 		t.Fatalf("Expected error from CAServerCertFiles. Got: %s", err.Error())
@@ -268,7 +268,7 @@ func TestCreateNewFabricCAClient(t *testing.T) {
 
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
-	mockConfig.EXPECT().CAClientCertFile(org1).Return("", fmt.Errorf("CAClientCertFile error"))
+	mockConfig.EXPECT().CAClientCertFile(org1).Return("", errors.New("CAClientCertFile error"))
 	_, err = NewFabricCAClient(mockConfig, org1)
 	if err.Error() != "CAClientCertFile error" {
 		t.Fatalf("Expected error from CAClientCertFile. Got: %s", err.Error())
@@ -277,7 +277,7 @@ func TestCreateNewFabricCAClient(t *testing.T) {
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
-	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", fmt.Errorf("CAClientKeyFile error"))
+	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", errors.New("CAClientKeyFile error"))
 	_, err = NewFabricCAClient(mockConfig, org1)
 	if err.Error() != "CAClientKeyFile error" {
 		t.Fatalf("Expected error from CAClientKeyFile. Got: %s", err.Error())
@@ -300,7 +300,7 @@ func TestCreateInvalidBCCSPSecurityLevelForNewFabricClient(t *testing.T) {
 	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
 	mockConfig.EXPECT().IsTLSEnabled().Return(true)
 	client, err := NewFabricCAClient(mockConfig, org1)
-	if !strings.Contains(err.Error(), "New fabricCAClient failed") {
+	if !strings.Contains(err.Error(), "init failed") {
 		t.Fatalf("Expected error from client %v init. Got: %s", client, err.Error())
 	}
 }
@@ -321,8 +321,8 @@ func TestCreateInvalidBCCSPHashFamilyForNewFabricClient(t *testing.T) {
 	mockConfig.EXPECT().IsTLSEnabled().Return(true)
 	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
 	client, err := NewFabricCAClient(mockConfig, org1)
-	if !strings.Contains(err.Error(), "New fabricCAClient failed") {
-		t.Fatalf("Expected error from client %v init. Got: %s", client, err.Error())
+	if !strings.Contains(err.Error(), "init failed") {
+		t.Fatalf("Expected error init failed. Got: %s (client %v)", err.Error(), client)
 	}
 }
 

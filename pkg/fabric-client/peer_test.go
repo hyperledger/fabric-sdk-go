@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fabricclient
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
@@ -128,7 +129,7 @@ func TestPeerViaChannelNilData(t *testing.T) {
 	if err == nil {
 		t.Fatalf("SendTransaction didn't return error")
 	}
-	if err.Error() != "Required parameters are empty: Missing chaincode name" {
+	if !strings.Contains(err.Error(), "ChaincodeID is required") {
 		t.Fatalf("SendTransactionProposal didn't return right error: %v", err)
 	}
 }

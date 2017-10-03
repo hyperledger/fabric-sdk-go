@@ -61,7 +61,7 @@ index 00000000..fdeb3a4f
 +}
 +
 +// Warning bridges calls to the Go SDK logger's Warn.
-+func (l *Logger) Warning(format string, args ...interface{}) {
++func (l *Logger) Warning(args ...interface{}) {
 +	l.Warn(args...)
 +}
 +

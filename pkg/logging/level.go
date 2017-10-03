@@ -7,9 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package logging
 
 import (
-	"errors"
 	"strings"
 	"sync"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 // ErrInvalidLogLevel is used when an invalid log level has been used.

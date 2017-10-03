@@ -7,12 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package fabapi
 
 import (
-	"fmt"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 // OrgContext currently represents the clients for an organization that the app is dealing with.
@@ -28,7 +27,7 @@ func NewOrgContext(factory context.OrgClientFactory, orgID string, config apicon
 	// Initialize MSP client
 	client, err := factory.NewMSPClient(orgID, config)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize MSP client [%s]", err)
+		return nil, errors.WithMessage(err, "MSP client init failed")
 	}
 	c.mspClient = client
 

@@ -7,13 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package fabricca
 
 import (
-	"fmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	fabric_ca "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
@@ -32,7 +31,7 @@ type FabricCA struct {
 // @returns {error} error, if any
 func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
 	if org == "" || config == nil {
-		return nil, fmt.Errorf("Organization and config are required to load CA config")
+		return nil, errors.New("organization and config are required to load CA config")
 	}
 
 	// Create new Fabric-ca client without configs
@@ -81,7 +80,7 @@ func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
 
 	err = c.Init()
 	if err != nil {
-		return nil, fmt.Errorf("New fabricCAClient failed: %s", err)
+		return nil, errors.Wrap(err, "init failed")
 	}
 
 	return &fabricCAClient, nil
@@ -98,10 +97,10 @@ func (fabricCAServices *FabricCA) CAName() string {
 // Returns X509 certificate
 func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret string) (bccsp.Key, []byte, error) {
 	if enrollmentID == "" {
-		return nil, nil, fmt.Errorf("enrollmentID is empty")
+		return nil, nil, errors.New("enrollmentID required")
 	}
 	if enrollmentSecret == "" {
-		return nil, nil, fmt.Errorf("enrollmentSecret is empty")
+		return nil, nil, errors.New("enrollmentSecret required")
 	}
 	req := &api.EnrollmentRequest{
 		CAName: fabricCAServices.fabricCAClient.Config.CAName,
@@ -110,7 +109,7 @@ func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret s
 	}
 	enrollmentResponse, err := fabricCAServices.fabricCAClient.Enroll(req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Enroll failed: %s", err)
+		return nil, nil, errors.Wrap(err, "enroll failed")
 	}
 	return enrollmentResponse.Identity.GetECert().Key(), enrollmentResponse.Identity.GetECert().Cert(), nil
 }
@@ -119,11 +118,11 @@ func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret s
 // Returns X509 certificate
 func (fabricCAServices *FabricCA) Reenroll(user sdkApi.User) (bccsp.Key, []byte, error) {
 	if user == nil {
-		return nil, nil, fmt.Errorf("User does not exist")
+		return nil, nil, errors.New("user required")
 	}
 	if user.Name() == "" {
 		logger.Infof("Invalid re-enroll request, missing argument user")
-		return nil, nil, fmt.Errorf("User is empty")
+		return nil, nil, errors.New("user name missing")
 	}
 	req := &api.ReenrollmentRequest{
 		CAName: fabricCAServices.fabricCAClient.Config.CAName,
@@ -132,12 +131,12 @@ func (fabricCAServices *FabricCA) Reenroll(user sdkApi.User) (bccsp.Key, []byte,
 	identity, err := fabricCAServices.createSigningIdentity(user)
 	if err != nil {
 		logger.Debugf("Invalid re-enroll request, %s is not a valid user  %s\n", user.Name(), err)
-		return nil, nil, fmt.Errorf("Reenroll has failed; Cannot create user identity: %s", err)
+		return nil, nil, errors.Wrap(err, "createSigningIdentity failed")
 	}
 
 	reenrollmentResponse, err := identity.Reenroll(req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("ReEnroll failed: %s", err)
+		return nil, nil, errors.Wrap(err, "reenroll failed")
 	}
 	return reenrollmentResponse.Identity.GetECert().Key(), reenrollmentResponse.Identity.GetECert().Cert(), nil
 }
@@ -150,12 +149,12 @@ func (fabricCAServices *FabricCA) Register(registrar sdkApi.User,
 	request *sdkApi.RegistrationRequest) (string, error) {
 	// Validate registration request
 	if request == nil {
-		return "", fmt.Errorf("Registration request cannot be nil")
+		return "", errors.New("registration request required")
 	}
 	// Create request signing identity
 	identity, err := fabricCAServices.createSigningIdentity(registrar)
 	if err != nil {
-		return "", fmt.Errorf("Error creating signing identity: %s", err.Error())
+		return "", errors.Wrap(err, "failed to create request for signing identity")
 	}
 	// Contruct request for Fabric CA client
 	var attributes []api.Attribute
@@ -174,7 +173,7 @@ func (fabricCAServices *FabricCA) Register(registrar sdkApi.User,
 	// Make registration request
 	response, err := identity.Register(&req)
 	if err != nil {
-		return "", fmt.Errorf("Error Registering User: %s", err.Error())
+		return "", errors.Wrap(err, "failed to register user")
 	}
 
 	return response.Secret, nil
@@ -187,12 +186,12 @@ func (fabricCAServices *FabricCA) Revoke(registrar sdkApi.User,
 	request *sdkApi.RevocationRequest) error {
 	// Validate revocation request
 	if request == nil {
-		return fmt.Errorf("Revocation request cannot be nil")
+		return errors.New("revocation request required")
 	}
 	// Create request signing identity
 	identity, err := fabricCAServices.createSigningIdentity(registrar)
 	if err != nil {
-		return fmt.Errorf("Error creating signing identity: %s", err.Error())
+		return errors.Wrap(err, "failed to create request for signing identity")
 	}
 	// Create revocation request
 	var req = api.RevocationRequest{
@@ -209,13 +208,13 @@ func (fabricCAServices *FabricCA) createSigningIdentity(user sdkApi.
 	User) (*fabric_ca.Identity, error) {
 	// Validate user
 	if user == nil {
-		return nil, fmt.Errorf("Valid user required to create signing identity")
+		return nil, errors.New("user required")
 	}
 	// Validate enrolment information
 	cert := user.EnrollmentCertificate()
 	key := user.PrivateKey()
 	if key == nil || cert == nil {
-		return nil, fmt.Errorf(
+		return nil, errors.New(
 			"Unable to read user enrolment information to create signing identity")
 	}
 	return fabricCAServices.fabricCAClient.NewIdentity(key, cert)

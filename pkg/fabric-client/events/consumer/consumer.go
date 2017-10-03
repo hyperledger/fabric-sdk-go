@@ -8,21 +8,22 @@ package consumer
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/golang/protobuf/proto"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	consumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
+	consumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -47,10 +48,10 @@ func NewEventsClient(client fab.FabricClient, peerAddress string, certificate st
 	var err error
 	if regTimeout < 100*time.Millisecond {
 		regTimeout = 100 * time.Millisecond
-		err = fmt.Errorf("regTimeout >= 0, setting to 100 msec")
+		err = errors.New("regTimeout >= 0, setting to 100 msec")
 	} else if regTimeout > 60*time.Second {
 		regTimeout = 60 * time.Second
-		err = fmt.Errorf("regTimeout > 60, setting to 60 sec")
+		err = errors.New("regTimeout > 60, setting to 60 sec")
 	}
 	return &eventsClient{sync.RWMutex{}, peerAddress, regTimeout, nil, adapter,
 		certificate, serverhostoverride, nil, client, nil}, err
@@ -84,21 +85,21 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 
 	user, err := ec.client.LoadUserFromStateStore("")
 	if err != nil {
-		return fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
+		return errors.WithMessage(err, "LoadUserFromStateStore failed")
 	}
 	payload, err := proto.Marshal(emsg)
 	if err != nil {
-		return fmt.Errorf("Error marshaling message: %s", err)
+		return errors.Wrap(err, "marshal event failed")
 	}
 
 	signingMgr := ec.client.SigningManager()
 	if signingMgr == nil {
-		return fmt.Errorf("Signing Manager is nil")
+		return errors.New("signing manager is nil")
 	}
 
 	signature, err := signingMgr.Sign(payload, user.PrivateKey())
 	if err != nil {
-		return fmt.Errorf("Error signing message: %s", err)
+		return errors.WithMessage(err, "sign failed")
 	}
 	signedEvt := &peer.SignedEvent{EventBytes: payload, Signature: signature}
 
@@ -108,11 +109,11 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 // RegisterAsync - registers interest in a event and doesn't wait for a response
 func (ec *eventsClient) RegisterAsync(ies []*ehpb.Interest) error {
 	if ec.client.UserContext() == nil {
-		return fmt.Errorf("User context needs to be set")
+		return errors.New("user context is nil")
 	}
 	creator, err := ec.client.UserContext().Identity()
 	if err != nil {
-		return fmt.Errorf("Error getting creator: %v", err)
+		return errors.WithMessage(err, "user context identity retrieval failed")
 	}
 	emsg := &ehpb.Event{
 		Event:   &ehpb.Event_Register{Register: &ehpb.Register{Events: ies}},
@@ -142,15 +143,15 @@ func (ec *eventsClient) register(ies []*ehpb.Interest) error {
 		switch in.Event.(type) {
 		case *ehpb.Event_Register:
 		case nil:
-			err = fmt.Errorf("invalid nil object for register")
+			err = errors.New("nil object for register")
 		default:
-			err = fmt.Errorf("invalid registration object")
+			err = errors.New("invalid object for register")
 		}
 	}()
 	select {
 	case <-regChan:
 	case <-time.After(ec.regTimeout):
-		err = fmt.Errorf("timeout waiting for registration")
+		err = errors.New("register timeout")
 	}
 	return err
 }
@@ -158,11 +159,11 @@ func (ec *eventsClient) register(ies []*ehpb.Interest) error {
 // UnregisterAsync - Unregisters interest in a event and doesn't wait for a response
 func (ec *eventsClient) UnregisterAsync(ies []*ehpb.Interest) error {
 	if ec.client.UserContext() == nil {
-		return fmt.Errorf("User context needs to be set")
+		return errors.New("user context is required")
 	}
 	creator, err := ec.client.UserContext().Identity()
 	if err != nil {
-		return fmt.Errorf("Error getting creator: %v", err)
+		return errors.WithMessage(err, "user context identity retrieval failed")
 	}
 
 	emsg := &ehpb.Event{
@@ -171,7 +172,7 @@ func (ec *eventsClient) UnregisterAsync(ies []*ehpb.Interest) error {
 	}
 
 	if err = ec.send(emsg); err != nil {
-		err = fmt.Errorf("error on unregister send %s", err)
+		err = errors.Wrap(err, "unregister send failed")
 	}
 
 	return err
@@ -195,15 +196,15 @@ func (ec *eventsClient) Unregister(ies []*ehpb.Interest) error {
 		switch in.Event.(type) {
 		case *ehpb.Event_Unregister:
 		case nil:
-			err = fmt.Errorf("invalid nil object for unregister")
+			err = errors.New("nil object for unregister")
 		default:
-			err = fmt.Errorf("invalid unregistration object")
+			err = errors.New("invalid object for unregister")
 		}
 	}()
 	select {
 	case <-regChan:
 	case <-time.After(ec.regTimeout):
-		err = fmt.Errorf("timeout waiting for unregistration")
+		err = errors.New("unregister timeout")
 	}
 	return err
 }
@@ -258,23 +259,23 @@ func (ec *eventsClient) processEvents() error {
 func (ec *eventsClient) Start() error {
 	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress, ec.TLSCertificate, ec.TLSServerHostOverride, ec.client.Config())
 	if err != nil {
-		return fmt.Errorf("Could not create client conn to %s (%v)", ec.peerAddress, err)
+		return errors.WithMessage(err, "events connection failed")
 	}
 	ec.clientConn = conn
 
 	ies, err := ec.adapter.GetInterestedEvents()
 	if err != nil {
-		return fmt.Errorf("error getting interested events:%s", err)
+		return errors.Wrap(err, "interested events retrieval failed")
 	}
 
 	if len(ies) == 0 {
-		return fmt.Errorf("must supply interested events")
+		return errors.New("interested events is required")
 	}
 
 	serverClient := ehpb.NewEventsClient(conn)
 	ec.stream, err = serverClient.Chat(context.Background())
 	if err != nil {
-		return fmt.Errorf("Could not create client conn to %s (%v)", ec.peerAddress, err)
+		return errors.Wrap(err, "events connection failed")
 	}
 
 	if err = ec.register(ies); err != nil {
@@ -307,7 +308,7 @@ func (ec *eventsClient) Stop() error {
 	case <-ec.processEventsCompleted:
 		// Timeout waiting for server to end stream
 	case <-time.After(ec.client.Config().TimeoutOrDefault(apiconfig.EventHub)):
-		timeoutErr = fmt.Errorf("Timed out waiting for server to close event stream")
+		timeoutErr = errors.New("close event stream timeout")
 	}
 
 	//close  client connection

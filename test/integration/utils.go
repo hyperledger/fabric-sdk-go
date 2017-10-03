@@ -7,11 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 // GenerateRandomID generates random ID
@@ -38,7 +38,7 @@ func HasPrimaryPeerJoinedChannel(client fab.FabricClient, channel fab.Channel) (
 	primaryPeer := channel.PrimaryPeer()
 	response, err := client.QueryChannels(primaryPeer)
 	if err != nil {
-		return false, fmt.Errorf("Error querying channel for primary peer: %s", err)
+		return false, errors.WithMessage(err, "failed to query channel for primary peer")
 	}
 	for _, responseChannel := range response.Channels {
 		if responseChannel.ChannelId == channel.Name() {

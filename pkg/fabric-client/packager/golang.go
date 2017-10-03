@@ -10,13 +10,13 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -39,7 +39,7 @@ func PackageGoLangCC(chaincodePath string) ([]byte, error) {
 	// Determine the user's $GOPATH
 	goPath := os.Getenv("GOPATH")
 	if goPath == "" {
-		return nil, fmt.Errorf("GOPATH environment variable not defined")
+		return nil, errors.New("GOPATH not defined")
 	}
 	logger.Debugf("GOPATH environment variable=%s", goPath)
 
@@ -126,7 +126,7 @@ func generateTarGz(descriptors []*Descriptor) ([]byte, error) {
 		err := packEntry(tw, gw, v)
 		if err != nil {
 			closeStream(tw, gw)
-			return nil, fmt.Errorf("error from packEntry for %s error %s", v.fqp, err.Error())
+			return nil, errors.Wrap(err, "packEntry failed")
 		}
 	}
 	closeStream(tw, gw)

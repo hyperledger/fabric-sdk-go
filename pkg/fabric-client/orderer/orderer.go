@@ -7,17 +7,17 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
-	"fmt"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"google.golang.org/grpc/credentials"
-
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -61,7 +61,7 @@ func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, e
 
 	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Broadcast(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("Error Create NewAtomicBroadcastClient %v", err)
+		return nil, errors.Wrap(err, "NewAtomicBroadcastClient failed")
 	}
 	done := make(chan bool)
 	var broadcastErr error
@@ -72,7 +72,7 @@ func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, e
 			broadcastResponse, err := broadcastStream.Recv()
 			logger.Debugf("Orderer.broadcastStream - response:%v, error:%v\n", broadcastResponse, err)
 			if err != nil {
-				broadcastErr = fmt.Errorf("error broadcast response : %v", err)
+				broadcastErr = errors.Wrap(err, "broadcast recv failed")
 				done <- true
 				return
 			}
@@ -82,7 +82,7 @@ func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, e
 				return
 			}
 			if broadcastResponse.Status != common.Status_SUCCESS {
-				broadcastErr = fmt.Errorf("broadcast response is not success : %v", broadcastResponse.Status)
+				broadcastErr = errors.Errorf("broadcast response is not success %v", broadcastResponse.Status)
 				done <- true
 				return
 			}
@@ -92,7 +92,7 @@ func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, e
 		Payload:   envelope.Payload,
 		Signature: envelope.Signature,
 	}); err != nil {
-		return nil, fmt.Errorf("Failed to send a envelope to orderer: %v", err)
+		return nil, errors.Wrap(err, "failed to send envelope to orderer")
 	}
 	broadcastStream.CloseSend()
 	<-done
@@ -105,24 +105,24 @@ func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, e
 func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
 	chan error) {
 	responses := make(chan *common.Block)
-	errors := make(chan error, 1)
+	errs := make(chan error, 1)
 	// Validate envelope
 	if envelope == nil {
-		errors <- fmt.Errorf("Envelope cannot be nil")
-		return responses, errors
+		errs <- errors.New("envelope is nil")
+		return responses, errs
 	}
 	// Establish connection to Ordering Service
 	conn, err := grpc.Dial(o.url, o.grpcDialOption...)
 	if err != nil {
-		errors <- err
-		return responses, errors
+		errs <- err
+		return responses, errs
 	}
 	// Create atomic broadcast client
 	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).
 		Deliver(context.Background())
 	if err != nil {
-		errors <- fmt.Errorf("Error creating NewAtomicBroadcastClient %s", err)
-		return responses, errors
+		errs <- errors.Wrap(err, "NewAtomicBroadcastClient failed")
+		return responses, errs
 	}
 	// Send block request envolope
 	logger.Debugf("Requesting blocks from ordering service")
@@ -130,8 +130,8 @@ func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
 		Payload:   envelope.Payload,
 		Signature: envelope.Signature,
 	}); err != nil {
-		errors <- fmt.Errorf("Failed to send block request to orderer: %s", err)
-		return responses, errors
+		errs <- errors.Wrap(err, "failed to send block request to orderer")
+		return responses, errs
 	}
 	// Receive blocks from the GRPC stream and put them on the channel
 	go func() {
@@ -139,7 +139,7 @@ func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
 		for {
 			response, err := broadcastStream.Recv()
 			if err != nil {
-				errors <- fmt.Errorf("Got error from ordering service: %s", err)
+				errs <- errors.Wrap(err, "recv from ordering service failed")
 				return
 			}
 			// Assert response type
@@ -151,7 +151,7 @@ func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
 					return
 				}
 				if t.Status != common.Status_SUCCESS {
-					errors <- fmt.Errorf("Got error status from ordering service: %s",
+					errs <- errors.Errorf("error status from ordering service %s",
 						t.Status)
 					return
 				}
@@ -162,11 +162,11 @@ func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
 				responses <- response.GetBlock()
 			// Unknown response
 			default:
-				errors <- fmt.Errorf("Received unknown response from ordering service: %s", t)
+				errs <- errors.Errorf("unknown response from ordering service %s", t)
 				return
 			}
 		}
 	}()
 
-	return responses, errors
+	return responses, errs
 }

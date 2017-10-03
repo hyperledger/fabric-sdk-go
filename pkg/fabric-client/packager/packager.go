@@ -6,9 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package packager
 
-import (
-	"fmt"
-)
+import "github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 // PackageCC ...
 /**
@@ -23,7 +21,7 @@ import (
 func PackageCC(chaincodePath string, chaincodeType string) ([]byte, error) {
 	logger.Debugf("packager: chaincodePath: %s, chaincodeType: %s", chaincodePath, chaincodeType)
 	if chaincodePath == "" {
-		return nil, fmt.Errorf("Missing 'chaincodePath' parameter")
+		return nil, errors.New("chaincodePath is required")
 	}
 	if chaincodeType == "" {
 		chaincodeType = "golang"
@@ -33,5 +31,5 @@ func PackageCC(chaincodePath string, chaincodeType string) ([]byte, error) {
 	case "golang":
 		return PackageGoLangCC(chaincodePath)
 	}
-	return nil, fmt.Errorf("Undefined 'chaincodeType' value")
+	return nil, errors.New("chaincodeType is required")
 }

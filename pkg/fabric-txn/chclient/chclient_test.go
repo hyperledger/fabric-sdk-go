@@ -7,13 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package chclient
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
@@ -52,7 +52,7 @@ func TestQuery(t *testing.T) {
 
 func TestQueryDiscoveryError(t *testing.T) {
 
-	chClient := setupChannelClient(fmt.Errorf("Test Error"), t)
+	chClient := setupChannelClient(errors.New("Test Error"), t)
 
 	_, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
 	if err == nil {
@@ -148,7 +148,7 @@ func TestExecuteTx(t *testing.T) {
 
 func TestExecuteTxDiscoveryError(t *testing.T) {
 
-	chClient := setupChannelClient(fmt.Errorf("Test Error"), t)
+	chClient := setupChannelClient(errors.New("Test Error"), t)
 
 	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
 	if err == nil {
@@ -176,12 +176,12 @@ func setupTestDiscovery(discErr error, peers []apifabclient.Peer) (apifabclient.
 
 	testChannel, err := setupTestChannel()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to setup test channel: %s", err)
+		return nil, errors.WithMessage(err, "setup test channel failed")
 	}
 
 	mockDiscovery, err := txnmocks.NewMockDiscoveryProvider(discErr, peers)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to  setup discovery provider: %s", err)
+		return nil, errors.WithMessage(err, "NewMockDiscoveryProvider failed")
 	}
 
 	return mockDiscovery.NewDiscoveryService(testChannel)

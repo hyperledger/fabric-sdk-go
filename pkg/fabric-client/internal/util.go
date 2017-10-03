@@ -7,14 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package internal
 
 import (
-	"fmt"
+	"github.com/golang/protobuf/proto"
 
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 // CreateSeekGenesisBlockRequest creates a seek request for block 0 on the specified
@@ -60,13 +60,13 @@ func GetLastConfigFromBlock(block *common.Block) (*common.LastConfig, error) {
 	metadata := &common.Metadata{}
 	err := proto.Unmarshal(block.Metadata.Metadata[common.BlockMetadataIndex_LAST_CONFIG], metadata)
 	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshal meta data at index %d: %v", common.BlockMetadataIndex_LAST_CONFIG, err)
+		return nil, errors.Wrap(err, "unmarshal block metadata failed")
 	}
 
 	lastConfig := &common.LastConfig{}
 	err = proto.Unmarshal(metadata.Value, lastConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshal last config from meta data: %v", err)
+		return nil, errors.Wrap(err, "unmarshal last config from metadata failed")
 	}
 
 	return lastConfig, err
@@ -80,11 +80,11 @@ func BuildHeader(creator []byte, channelHeader *common.ChannelHeader, nonce []by
 	}
 	sh, err := proto.Marshal(signatureHeader)
 	if err != nil {
-		return nil, fmt.Errorf("unable to marshal signatureHeader: %v", err)
+		return nil, errors.Wrap(err, "marshal signatureHeader failed")
 	}
 	ch, err := proto.Marshal(channelHeader)
 	if err != nil {
-		return nil, fmt.Errorf("unable to marshal channelHeader: %v", err)
+		return nil, errors.Wrap(err, "marshal channelHeader failed")
 	}
 	header := &common.Header{
 		SignatureHeader: sh,

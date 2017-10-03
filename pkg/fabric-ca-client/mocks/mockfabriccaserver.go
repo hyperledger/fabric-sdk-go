@@ -7,13 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"fmt"
 	"net/http"
 
 	cfapi "github.com/cloudflare/cfssl/api"
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -67,7 +67,7 @@ func StartFabricCAMockServer(address string) error {
 	err := server.ListenAndServe()
 
 	if err != nil {
-		return fmt.Errorf("HTTP Server: Failed to start %v ", err.Error())
+		return errors.Wrap(err, "HTTP Server: Failed to start")
 	}
 	logger.Infof("HTTP Server started on %s", address)
 	return nil

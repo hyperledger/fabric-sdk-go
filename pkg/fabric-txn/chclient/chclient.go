@@ -8,16 +8,17 @@ SPDX-License-Identifier: Apache-2.0
 package chclient
 
 import (
-	"fmt"
 	"reflect"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 // ChannelClient enables access to a Fabric network.
@@ -47,7 +48,7 @@ func (cc *ChannelClient) Query(request apitxn.QueryRequest) ([]byte, error) {
 func (cc *ChannelClient) QueryWithOpts(request apitxn.QueryRequest, opts apitxn.QueryOpts) ([]byte, error) {
 
 	if request.ChaincodeID == "" || request.Fcn == "" {
-		return nil, fmt.Errorf("Chaincode name and function name must be provided")
+		return nil, errors.New("ChaincodeID and Fcn are required")
 	}
 
 	notifier := opts.Notifier
@@ -60,7 +61,7 @@ func (cc *ChannelClient) QueryWithOpts(request apitxn.QueryRequest, opts apitxn.
 		// Use discovery service to figure out proposal processors
 		peers, err := cc.discovery.GetPeers(request.ChaincodeID)
 		if err != nil {
-			return nil, fmt.Errorf("Unable to get peers: %v", err)
+			return nil, errors.WithMessage(err, "GetPeers failed")
 		}
 		txProcessors = peer.PeersToTxnProcessors(peers)
 	}
@@ -80,7 +81,7 @@ func (cc *ChannelClient) QueryWithOpts(request apitxn.QueryRequest, opts apitxn.
 	case response := <-notifier:
 		return response.Response, response.Error
 	case <-time.After(timeout):
-		return nil, fmt.Errorf("Query request timed out")
+		return nil, errors.New("query request timed out")
 	}
 
 }
@@ -113,7 +114,7 @@ func (cc *ChannelClient) ExecuteTx(request apitxn.ExecuteTxRequest) (apitxn.Tran
 func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts apitxn.ExecuteTxOpts) (apitxn.TransactionID, error) {
 
 	if request.ChaincodeID == "" || request.Fcn == "" {
-		return apitxn.TransactionID{}, fmt.Errorf("Chaincode name and function name must be provided")
+		return apitxn.TransactionID{}, errors.New("chaincode name and function name are required")
 	}
 
 	txProcessors := opts.ProposalProcessors
@@ -121,7 +122,7 @@ func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts
 		// Use discovery service to figure out proposal processors
 		peers, err := cc.discovery.GetPeers(request.ChaincodeID)
 		if err != nil {
-			return apitxn.TransactionID{}, fmt.Errorf("Unable to get peers: %v", err)
+			return apitxn.TransactionID{}, errors.WithMessage(err, "GetPeers failed")
 		}
 		txProcessors = peer.PeersToTxnProcessors(peers)
 	}
@@ -131,13 +132,13 @@ func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts
 	txProposalResponses, txID, err := internal.CreateAndSendTransactionProposal(cc.channel,
 		request.ChaincodeID, request.Fcn, ccArgs, txProcessors, request.TransientMap)
 	if err != nil {
-		return apitxn.TransactionID{}, fmt.Errorf("CreateAndSendTransactionProposal returned error: %v", err)
+		return apitxn.TransactionID{}, errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}
 
 	if opts.TxFilter != nil {
 		txProposalResponses, err = opts.TxFilter.ProcessTxProposalResponse(txProposalResponses)
 		if err != nil {
-			return txID, fmt.Errorf("TxFilter returned error: %v", err)
+			return txID, errors.WithMessage(err, "TxFilter failed")
 		}
 	}
 
@@ -161,7 +162,7 @@ func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts
 	case response := <-notifier:
 		return response.Response, response.Error
 	case <-time.After(timeout): // This should never happen since there's timeout in sendTransaction
-		return txID, fmt.Errorf("ExecuteTx request timed out")
+		return txID, errors.New("ExecuteTx request timed out")
 	}
 
 }
@@ -178,7 +179,7 @@ func sendTransaction(channel fab.Channel, txID apitxn.TransactionID, txProposalR
 	chcode := internal.RegisterTxEvent(txID, eventHub)
 	_, err := internal.CreateAndSendTransaction(channel, txProposalResponses)
 	if err != nil {
-		notifier <- apitxn.ExecuteTxResponse{Response: apitxn.TransactionID{}, Error: fmt.Errorf("CreateAndSendTransaction returned error: %v", err)}
+		notifier <- apitxn.ExecuteTxResponse{Response: apitxn.TransactionID{}, Error: errors.Wrap(err, "CreateAndSendTransaction failed")}
 		return
 	}
 
@@ -187,10 +188,10 @@ func sendTransaction(channel fab.Channel, txID apitxn.TransactionID, txProposalR
 		if code == pb.TxValidationCode_VALID {
 			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: code}
 		} else {
-			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: code, Error: fmt.Errorf("ExecuteTx received a failed transaction response from eventhub for txid(%s), code(%s)", txID, code)}
+			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: code, Error: errors.New("ExecuteTx transaction response failed")}
 		}
 	case <-time.After(timeout):
-		notifier <- apitxn.ExecuteTxResponse{Response: txID, Error: fmt.Errorf("ExecuteTx didn't receive block event for txid(%s)", txID)}
+		notifier <- apitxn.ExecuteTxResponse{Response: txID, Error: errors.New("ExecuteTx didn't receive block event")}
 	}
 }
 
@@ -224,7 +225,7 @@ func (cc *ChannelClient) UnregisterChaincodeEvent(registration apitxn.Registrati
 	case *fab.ChainCodeCBE:
 		cc.eventHub.UnregisterChaincodeEvent(regType)
 	default:
-		return fmt.Errorf("Unsupported registration type: %v", reflect.TypeOf(registration))
+		return errors.Errorf("Unsupported registration type: %v", reflect.TypeOf(registration))
 	}
 
 	return nil

@@ -8,24 +8,23 @@ package events
 
 import (
 	"encoding/hex"
-	"fmt"
 	"testing"
 	"time"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
-	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-
-	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	ledger_util "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
 	fcConsumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
+	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 type mockEventClientMockEventRegistration struct {
@@ -322,13 +321,13 @@ func (b *MockCCBlockEventBuilder) buildChaincodeEvent() *pb.ChaincodeEvent {
 func generateTxID() apitxn.TransactionID {
 	nonce, err := internal.GenerateRandomNonce()
 	if err != nil {
-		panic(fmt.Errorf("error generating nonce: %v", err))
+		panic(errors.WithMessage(err, "GenerateRandomNonce failed"))
 	}
 	digest, err := factory.GetDefault().Hash(
 		nonce,
 		&bccsp.SHA256Opts{})
 	if err != nil {
-		panic(fmt.Errorf("error hashing nonce: %v", err))
+		panic(errors.Wrap(err, "hashing nonce failed"))
 	}
 
 	txnid := apitxn.TransactionID{

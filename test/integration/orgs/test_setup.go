@@ -7,11 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package orgs
 
 import (
-	"fmt"
 	"testing"
 	"time"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -19,11 +16,13 @@ import (
 
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
@@ -269,7 +268,7 @@ func loadOrgUser(t *testing.T, sdk *deffab.FabricSDK, orgName string, userName s
 
 	user, err := sdk.NewPreEnrolledUser(orgName, userName)
 	if err != nil {
-		t.Fatal(fmt.Errorf("Error getting pre-enrolled user(%s,%s): %v", orgName, userName, err))
+		t.Fatal(errors.Wrapf(err, "NewPreEnrolledUser failed, %s, %s", orgName, userName))
 	}
 
 	return user

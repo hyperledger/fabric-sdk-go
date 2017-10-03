@@ -8,29 +8,29 @@ package fabricclient
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
+
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
+	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
+	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	channel "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
 	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
-	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
-	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -55,7 +55,7 @@ func NewClient(config config.Config) *Client {
 // NewChannel returns a channel instance with the given name.
 func (c *Client) NewChannel(name string) (fab.Channel, error) {
 	if _, ok := c.channels[name]; ok {
-		return nil, fmt.Errorf("Channel %s already exists", name)
+		return nil, errors.Errorf("channel %s already exists", name)
 	}
 	var err error
 	channel, err := channel.NewChannel(name, c)
@@ -86,7 +86,7 @@ func (c *Client) Channel(id string) fab.Channel {
  * anything about the channel.
  */
 func (c *Client) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, error) {
-	return nil, fmt.Errorf("Not implemented yet")
+	return nil, errors.Errorf("Not implemented yet")
 }
 
 // SetStateStore ...
@@ -135,16 +135,16 @@ func (c *Client) SetSigningManager(signingMgr fab.SigningManager) {
  */
 func (c *Client) SaveUserToStateStore(user fab.User, skipPersistence bool) error {
 	if user == nil {
-		return fmt.Errorf("user is nil")
+		return errors.New("user required")
 	}
 
 	if user.Name() == "" {
-		return fmt.Errorf("user name is empty")
+		return errors.New("user name is empty")
 	}
 	c.userContext = user
 	if !skipPersistence {
 		if c.stateStore == nil {
-			return fmt.Errorf("stateStore is nil")
+			return errors.New("stateStore is nil")
 		}
 		userJSON := &identity.JSON{
 			MspID:                 user.MspID(),
@@ -154,11 +154,11 @@ func (c *Client) SaveUserToStateStore(user fab.User, skipPersistence bool) error
 		}
 		data, err := json.Marshal(userJSON)
 		if err != nil {
-			return fmt.Errorf("Marshal json return error: %v", err)
+			return errors.Wrap(err, "marshal json return error")
 		}
 		err = c.stateStore.SetValue(user.Name(), data)
 		if err != nil {
-			return fmt.Errorf("stateStore SaveUserToStateStore return error: %v", err)
+			return errors.WithMessage(err, "stateStore SetValue failed")
 		}
 	}
 	return nil
@@ -182,7 +182,7 @@ func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
 		return nil, nil
 	}
 	if c.cryptoSuite == nil {
-		return nil, fmt.Errorf("cryptoSuite is nil")
+		return nil, errors.New("cryptoSuite required")
 	}
 	value, err := c.stateStore.Value(name)
 	if err != nil {
@@ -191,14 +191,14 @@ func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
 	var userJSON identity.JSON
 	err = json.Unmarshal(value, &userJSON)
 	if err != nil {
-		return nil, fmt.Errorf("stateStore GetValue return error: %v", err)
+		return nil, errors.Wrap(err, "unmarshal user JSON failed")
 	}
 	user := identity.NewUser(name, userJSON.MspID)
 	user.SetRoles(userJSON.Roles)
 	user.SetEnrollmentCertificate(userJSON.EnrollmentCertificate)
 	key, err := c.cryptoSuite.GetKey(userJSON.PrivateKeySKI)
 	if err != nil {
-		return nil, fmt.Errorf("cryptoSuite GetKey return error: %v", err)
+		return nil, errors.Wrap(err, "cryptoSuite GetKey failed")
 	}
 	user.SetPrivateKey(key)
 	c.userContext = user
@@ -221,19 +221,19 @@ func (c *Client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
 	envelope := &common.Envelope{}
 	err := proto.Unmarshal(configEnvelope, envelope)
 	if err != nil {
-		return nil, fmt.Errorf("Error unmarshalling config envelope: %v", err)
+		return nil, errors.Wrap(err, "unmarshal config envelope failed")
 	}
 
 	payload := &common.Payload{}
 	err = proto.Unmarshal(envelope.Payload, payload)
 	if err != nil {
-		return nil, fmt.Errorf("Error unmarshalling config payload: %v", err)
+		return nil, errors.Wrap(err, "unmarshal envelope payload failed")
 	}
 
 	configUpdateEnvelope := &common.ConfigUpdateEnvelope{}
 	err = proto.Unmarshal(payload.Data, configUpdateEnvelope)
 	if err != nil {
-		return nil, fmt.Errorf("Error unmarshalling config update envelope: %v", err)
+		return nil, errors.Wrap(err, "unmarshal config update envelope")
 	}
 
 	return configUpdateEnvelope.ConfigUpdate, nil
@@ -249,19 +249,19 @@ func (c *Client) SignChannelConfig(config []byte) (*common.ConfigSignature, erro
 	logger.Debug("SignChannelConfig - start")
 
 	if config == nil {
-		return nil, fmt.Errorf("Channel configuration parameter is required")
+		return nil, errors.New("channel configuration required")
 	}
 
 	if c.userContext == nil {
-		return nil, fmt.Errorf("User context needs to be set")
+		return nil, errors.New("user context required")
 	}
 	creator, err := c.userContext.Identity()
 	if err != nil {
-		return nil, fmt.Errorf("Error getting creator: %v", err)
+		return nil, errors.WithMessage(err, "failed to get user context's identity")
 	}
 	nonce, err := fc.GenerateRandomNonce()
 	if err != nil {
-		return nil, fmt.Errorf("Error generating nonce: %v", err)
+		return nil, errors.Wrap(err, "GenerateRandomNonce failed")
 	}
 
 	// signature is across a signature header and the config update
@@ -271,24 +271,24 @@ func (c *Client) SignChannelConfig(config []byte) (*common.ConfigSignature, erro
 	}
 	signatureHeaderBytes, err := proto.Marshal(signatureHeader)
 	if err != nil {
-		return nil, fmt.Errorf("Error marshalling signatureHeader: %v", err)
+		return nil, errors.Wrap(err, "marshal signatureHeader failed")
 	}
 
 	user := c.UserContext()
 	if user == nil {
-		return nil, fmt.Errorf("User is nil")
+		return nil, errors.New("UserContext is nil")
 	}
 
 	signingMgr := c.SigningManager()
 	if signingMgr == nil {
-		return nil, fmt.Errorf("Signing Manager is nil")
+		return nil, errors.New("signing manager is nil")
 	}
 
 	// get all the bytes to be signed together, then sign
 	signingBytes := fcutils.ConcatenateBytes(signatureHeaderBytes, config)
 	signature, err := signingMgr.Sign(signingBytes, user.PrivateKey())
 	if err != nil {
-		return nil, fmt.Errorf("error signing config: %v", err)
+		return nil, errors.WithMessage(err, "signing of channel config failed")
 	}
 
 	// build the return object
@@ -342,27 +342,27 @@ func (c *Client) CreateChannel(request fab.CreateChannelRequest) (apitxn.Transac
 func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnvelope bool) error {
 	// Validate request
 	if request.Config == nil && !haveEnvelope {
-		return fmt.Errorf("Missing envelope request parameter containing the configuration of the new channel")
+		return errors.New("missing envelope request parameter containing the configuration of the new channel")
 	}
 
 	if request.Signatures == nil && !haveEnvelope {
-		return fmt.Errorf("Missing signatures request parameter for the new channel")
+		return errors.New("missing signatures request parameter for the new channel")
 	}
 
 	if request.TxnID.ID == "" && !haveEnvelope {
-		return fmt.Errorf("Missing txId request parameter")
+		return errors.New("txId required")
 	}
 
 	if request.TxnID.Nonce == nil && !haveEnvelope {
-		return fmt.Errorf("Missing nonce request parameter")
+		return errors.New("nonce required")
 	}
 
 	if request.Orderer == nil {
-		return fmt.Errorf("Missing orderer request parameter for the initialize channel")
+		return errors.New("missing orderer request parameter for the initialize channel")
 	}
 
 	if request.Name == "" {
-		return fmt.Errorf("Missing name request parameter for the new channel")
+		return errors.New("missing name request parameter for the new channel")
 	}
 
 	// channel = null;
@@ -374,7 +374,7 @@ func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnv
 		envelope := &common.Envelope{}
 		err := proto.Unmarshal(request.Envelope, envelope)
 		if err != nil {
-			return fmt.Errorf("Error unmarshalling channel configuration data: %s", err.Error())
+			return errors.Wrap(err, "unmarshal request envelope failed")
 		}
 		signature = envelope.Signature
 		payloadBytes = envelope.Payload
@@ -388,23 +388,23 @@ func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnv
 		// TODO: Move
 		channelHeader, err := channel.BuildChannelHeader(common.HeaderType_CONFIG_UPDATE, request.Name, request.TxnID.ID, 0, "", time.Now())
 		if err != nil {
-			return fmt.Errorf("error when building channel header: %v", err)
+			return errors.WithMessage(err, "BuildChannelHeader failed")
 		}
 		if c.userContext == nil {
-			return fmt.Errorf("User context needs to be set")
+			return errors.New("user context is nil")
 		}
 		creator, err := c.userContext.Identity()
 		if err != nil {
-			return fmt.Errorf("Error getting creator: %v", err)
+			return errors.WithMessage(err, "getting creator failed")
 		}
 
 		header, err := fc.BuildHeader(creator, channelHeader, request.TxnID.Nonce)
 		if err != nil {
-			return fmt.Errorf("error when building header: %v", err)
+			return errors.Wrap(err, "BuildHeader failed")
 		}
 		configUpdateEnvelopeBytes, err := proto.Marshal(configUpdateEnvelope)
 		if err != nil {
-			return fmt.Errorf("error marshaling configUpdateEnvelope: %v", err)
+			return errors.Wrap(err, "marshal configUpdateEnvelope failed")
 		}
 		payload := &common.Payload{
 			Header: header,
@@ -412,17 +412,17 @@ func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnv
 		}
 		payloadBytes, err = proto.Marshal(payload)
 		if err != nil {
-			return fmt.Errorf("error marshaling payload: %v", err)
+			return errors.Wrap(err, "marshal payload failed")
 		}
 
 		signingMgr := c.SigningManager()
 		if signingMgr == nil {
-			return fmt.Errorf("Signing Manager is nil")
+			return errors.New("signing manager is nil")
 		}
 
 		signature, err = signingMgr.Sign(payloadBytes, c.UserContext().PrivateKey())
 		if err != nil {
-			return fmt.Errorf("error signing payload: %v", err)
+			return errors.WithMessage(err, "signing payload failed")
 		}
 	}
 
@@ -432,7 +432,7 @@ func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnv
 		Payload:   payloadBytes,
 	})
 	if err != nil {
-		return fmt.Errorf("Could not broadcast to orderer %s: %s", request.Orderer.URL(), err.Error())
+		return errors.WithMessage(err, "failed broadcast to orderer")
 	}
 
 	return nil
@@ -442,18 +442,18 @@ func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnv
 func (c *Client) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) {
 
 	if peer == nil {
-		return nil, fmt.Errorf("QueryChannels requires peer")
+		return nil, errors.New("peer required")
 	}
 
 	payload, err := c.queryBySystemChaincodeByTarget("cscc", "GetChannels", []string{}, peer)
 	if err != nil {
-		return nil, fmt.Errorf("QueryBySystemChaincodeByTarget return error: %v", err)
+		return nil, errors.WithMessage(err, "cscc.GetChannels failed")
 	}
 
 	response := new(pb.ChannelQueryResponse)
 	err = proto.Unmarshal(payload, response)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshal ChannelQueryResponse return error: %v", err)
+		return nil, errors.Wrap(err, "unmarshal ChannelQueryResponse failed")
 	}
 	return response, nil
 }
@@ -463,16 +463,16 @@ func (c *Client) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) 
 func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResponse, error) {
 
 	if peer == nil {
-		return nil, fmt.Errorf("To query installed chaincdes you need to pass peer")
+		return nil, errors.New("peer required")
 	}
 	payload, err := c.queryBySystemChaincodeByTarget("lscc", "getinstalledchaincodes", []string{}, peer)
 	if err != nil {
-		return nil, fmt.Errorf("Invoke lscc getinstalledchaincodes return error: %v", err)
+		return nil, errors.WithMessage(err, "lscc.getinstalledchaincodes failed")
 	}
 	response := new(pb.ChaincodeQueryResponse)
 	err = proto.Unmarshal(payload, response)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshal ChaincodeQueryResponse return error: %v", err)
+		return nil, errors.Wrap(err, "unmarshal ChaincodeQueryResponse failed")
 	}
 
 	return response, nil
@@ -483,20 +483,20 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	chaincodePackage []byte, targets []fab.Peer) ([]*apitxn.TransactionProposalResponse, string, error) {
 
 	if chaincodeName == "" {
-		return nil, "", fmt.Errorf("Missing 'chaincodeName' parameter")
+		return nil, "", errors.New("chaincodeName required")
 	}
 	if chaincodePath == "" {
-		return nil, "", fmt.Errorf("Missing 'chaincodePath' parameter")
+		return nil, "", errors.New("chaincodePath required")
 	}
 	if chaincodeVersion == "" {
-		return nil, "", fmt.Errorf("Missing 'chaincodeVersion' parameter")
+		return nil, "", errors.New("chaincodeVersion required")
 	}
 
 	if chaincodePackage == nil {
 		var err error
 		chaincodePackage, err = packager.PackageCC(chaincodePath, "")
 		if err != nil {
-			return nil, "", fmt.Errorf("PackageCC return error: %s", err)
+			return nil, "", errors.WithMessage(err, "PackageCC failed")
 		}
 	}
 
@@ -506,17 +506,17 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 		CodePackage: chaincodePackage, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
 
 	if c.userContext == nil {
-		return nil, "", fmt.Errorf("User context needs to be set")
+		return nil, "", errors.New("user context required")
 	}
 	creator, err := c.userContext.Identity()
 	if err != nil {
-		return nil, "", fmt.Errorf("Error getting creator: %v", err)
+		return nil, "", errors.Wrap(err, "failed to get creator identity")
 	}
 
 	// create an install from a chaincodeDeploymentSpec
 	proposal, txID, err := protos_utils.CreateInstallProposalFromCDS(cds, creator)
 	if err != nil {
-		return nil, "", fmt.Errorf("Could not create chaincode Deploy proposal, err %s", err)
+		return nil, "", errors.Wrap(err, "failed to create chaincode deploy proposal")
 	}
 	proposalBytes, err := protos_utils.GetBytesProposal(proposal)
 	if err != nil {
@@ -524,12 +524,12 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	}
 	user := c.UserContext()
 	if user == nil {
-		return nil, "", fmt.Errorf("User is nil")
+		return nil, "", errors.New("User context is nil")
 	}
 
 	signingMgr := c.SigningManager()
 	if signingMgr == nil {
-		return nil, "", fmt.Errorf("Signing Manager is nil")
+		return nil, "", errors.Errorf("signing manager is nil")
 	}
 
 	signature, err := signingMgr.Sign(proposalBytes, user.PrivateKey())
@@ -569,7 +569,7 @@ func (c *Client) NewTxnID() (apitxn.TransactionID, error) {
 	}
 
 	if c.userContext == nil {
-		return apitxn.TransactionID{}, fmt.Errorf("User context needs to be set")
+		return apitxn.TransactionID{}, errors.New("user context is nil")
 	}
 	creator, err := c.userContext.Identity()
 	if err != nil {
@@ -600,11 +600,11 @@ func (c *Client) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, 
 	responses, err := channel.QueryBySystemChaincode(request, c)
 
 	if err != nil {
-		return nil, fmt.Errorf("Error from QueryBySystemChaincode: %s", err)
+		return nil, errors.WithMessage(err, "QueryBySystemChaincode failed")
 	}
 	// we are only querying one peer hence one result
 	if len(responses) != 1 {
-		return nil, fmt.Errorf("QueryBySystemChaincode should have one result only - result number: %d", len(responses))
+		return nil, errors.Errorf("QueryBySystemChaincode should have one result only - actual result count: %d", len(responses))
 	}
 
 	return responses[0], nil

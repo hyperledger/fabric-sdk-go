@@ -7,12 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package fabapi
 
 import (
-	"fmt"
-
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	eventsImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
@@ -39,7 +38,7 @@ func NewClient(user fabca.User, skipUserPersistence bool, stateStorePath string,
 	if stateStorePath != "" {
 		stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
 		if err != nil {
-			return nil, fmt.Errorf("CreateNewFileKeyValueStore returned error[%s]", err)
+			return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
 		}
 		client.SetStateStore(stateStore)
 	}
@@ -47,7 +46,7 @@ func NewClient(user fabca.User, skipUserPersistence bool, stateStorePath string,
 
 	signingMgr, err := signingmgr.NewSigningManager(cryptosuite, config)
 	if err != nil {
-		return nil, fmt.Errorf("NewSigningManager returned error[%s]", err)
+		return nil, errors.WithMessage(err, "NewSigningManager failed")
 	}
 
 	client.SetSigningManager(signingMgr)
@@ -67,21 +66,21 @@ func NewClientWithUser(name string, pwd string, orgName string,
 	client.SetCryptoSuite(cryptosuite)
 	stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
 	if err != nil {
-		return nil, fmt.Errorf("CreateNewFileKeyValueStore returned error[%s]", err)
+		return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
 	}
 	client.SetStateStore(stateStore)
 	mspID, err := client.Config().MspID(orgName)
 	if err != nil {
-		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
+		return nil, errors.WithMessage(err, "reading MSP ID config failed")
 	}
 
 	user, err := NewUser(client.Config(), msp, name, pwd, mspID)
 	if err != nil {
-		return nil, fmt.Errorf("NewUser returned error: %v", err)
+		return nil, errors.WithMessage(err, "NewUser failed")
 	}
 	err = client.SaveUserToStateStore(user, false)
 	if err != nil {
-		return nil, fmt.Errorf("client.SaveUserToStateStore returned error: %v", err)
+		return nil, errors.WithMessage(err, "SaveUserToStateStore failed")
 	}
 
 	client.SetUserContext(user)
@@ -95,7 +94,7 @@ func NewUser(config config.Config, msp fabca.FabricCAClient, name string, pwd st
 
 	key, cert, err := msp.Enroll(name, pwd)
 	if err != nil {
-		return nil, fmt.Errorf("Enroll returned error: %v", err)
+		return nil, errors.WithMessage(err, "Enroll failed")
 	}
 	user := identityImpl.NewUser(name, mspID)
 	user.SetPrivateKey(key)
@@ -120,18 +119,18 @@ func NewChannel(client fab.FabricClient, orderer fab.Orderer, peers []fab.Peer, 
 
 	channel, err := client.NewChannel(channelID)
 	if err != nil {
-		return nil, fmt.Errorf("NewChannel returned error: %v", err)
+		return nil, errors.WithMessage(err, "NewChannel failed")
 	}
 
 	err = channel.AddOrderer(orderer)
 	if err != nil {
-		return nil, fmt.Errorf("Error adding orderer: %v", err)
+		return nil, errors.WithMessage(err, "AddOrderer failed")
 	}
 
 	for _, p := range peers {
 		err = channel.AddPeer(p)
 		if err != nil {
-			return nil, fmt.Errorf("Error adding peer: %v", err)
+			return nil, errors.WithMessage(err, "adding peer failed")
 		}
 	}
 
@@ -147,7 +146,7 @@ func NewSystemClient(config config.Config) *clientImpl.Client {
 func NewKVStore(stateStorePath string) (fab.KeyValueStore, error) {
 	stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
 	if err != nil {
-		return nil, fmt.Errorf("CreateNewFileKeyValueStore returned error[%s]", err)
+		return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
 	}
 	return stateStore, nil
 }
@@ -186,7 +185,7 @@ func NewConfigManager(configFile string) (config.Config, error) {
 func NewCAClient(orgName string, config config.Config) (fabca.FabricCAClient, error) {
 	mspClient, err := fabricCAClient.NewFabricCAClient(config, orgName)
 	if err != nil {
-		return nil, fmt.Errorf("NewFabricCAClient returned error: %v", err)
+		return nil, errors.WithMessage(err, "NewFabricCAClient failed")
 	}
 
 	return mspClient, nil

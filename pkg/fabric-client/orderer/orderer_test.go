@@ -7,20 +7,20 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
-	"fmt"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
+	"google.golang.org/grpc"
+
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
-	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-
-	"strings"
-
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	"google.golang.org/grpc"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
+	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
 var testOrdererURL = "127.0.0.1:0"
@@ -130,7 +130,7 @@ func TestOrdererViaChainNilData(t *testing.T) {
 	if err == nil {
 		t.Fatalf("SendTransaction didn't return error")
 	}
-	if err.Error() != "Transaction is nil" {
+	if err.Error() != "transaction is nil" {
 		t.Fatalf("SendTransaction didn't return right error")
 	}
 }
@@ -142,24 +142,24 @@ func TestSendDeliver(t *testing.T) {
 
 	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 	// Test deliver happy path
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs := orderer.SendDeliver(&fab.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		if string(block.Data.Data[0]) != "test" {
 			t.Fatalf("Expected test block got: %#v", block)
 		}
-	case err := <-errors:
+	case err := <-errs:
 		t.Fatalf("Unexpected error from SendDeliver(): %s", err)
 	case <-time.After(time.Second * 5):
 		t.Fatalf("Did not receive block or error from SendDeliver")
 	}
 
 	// Test deliver without valid envelope
-	blocks, errors = orderer.SendDeliver(nil)
+	blocks, errs = orderer.SendDeliver(nil)
 	select {
 	case block := <-blocks:
 		t.Fatalf("Expected error got block: %#v", block)
-	case err := <-errors:
+	case err := <-errs:
 		if err == nil {
 			t.Fatalf("Expected error with nil envelope")
 		}
@@ -168,13 +168,13 @@ func TestSendDeliver(t *testing.T) {
 	}
 
 	// Test deliver with deliver error from OS
-	testError := fmt.Errorf("test error")
+	testError := errors.New("test error")
 	mockServer.DeliverError = testError
-	blocks, errors = orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		t.Fatalf("Expected error got block: %#v", block)
-	case err := <-errors:
+	case err := <-errs:
 		if err == nil {
 			t.Fatalf("Expected test error when OS Recv() fails, got: %s", err)
 		}
@@ -184,11 +184,11 @@ func TestSendDeliver(t *testing.T) {
 
 	orderer, _ = NewOrderer(testOrdererURL+"invalid-test", "", "", mocks.NewMockConfig())
 	// Test deliver happy path
-	blocks, errors = orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
-	case err := <-errors:
+	case err := <-errs:
 		t.Logf("There is an error as expected : %s", err)
 	case <-time.After(time.Second * 5):
 		t.Fatalf("Did not receive error from SendDeliver")
@@ -257,7 +257,7 @@ func TestSendBroadcast(t *testing.T) {
 	orderer, _ = NewOrderer(testOrdererURL+"Test", "", "", mocks.NewMockConfig())
 	_, err = orderer.SendBroadcast(&fab.SignedEnvelope{})
 
-	if err == nil || !strings.HasPrefix(err.Error(), "Error Create NewAtomicBroadcastClient rpc error") {
+	if err == nil || !strings.HasPrefix(err.Error(), "NewAtomicBroadcastClient") {
 		t.Fatalf("Test SendBroadcast was supposed to fail with expected error, instead it fail with [%s] error", err)
 	}
 
@@ -284,7 +284,7 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 	case block := <-blocks:
 		t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
 	case err := <-errors:
-		if err.Error() != "Got error status from ordering service: BAD_REQUEST" {
+		if err.Error() != "error status from ordering service BAD_REQUEST" {
 			t.Fatalf("Ordering service error is not received as expected, %s", err)
 		}
 	case <-time.After(time.Second * 5):
@@ -339,7 +339,7 @@ func TestSendDeliverFailure(t *testing.T) {
 	case block := <-blocks:
 		t.Fatalf("This usecase was not supposed to get valid block %v", block)
 	case err := <-errors:
-		if err == nil || !strings.HasPrefix(err.Error(), "Received unknown response from ordering service") {
+		if err == nil || !strings.HasPrefix(err.Error(), "unknown response from ordering service") {
 			t.Fatalf("Error response is not working as expected : '%s' ", err.Error())
 		}
 	case <-time.After(time.Second * 5):
@@ -360,7 +360,7 @@ func TestSendBroadcastServerBadResponse(t *testing.T) {
 
 	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
-	if err == nil || err.Error() != "broadcast response is not success : INTERNAL_SERVER_ERROR" {
+	if err == nil || err.Error() != "broadcast response is not success INTERNAL_SERVER_ERROR" {
 		t.Fatalf("Expected internal server error, but got %s", err)
 	}
 	if status.String() != "INTERNAL_SERVER_ERROR" {
@@ -371,7 +371,7 @@ func TestSendBroadcastServerBadResponse(t *testing.T) {
 func TestSendBroadcastError(t *testing.T) {
 
 	broadcastServer := mocks.MockBroadcastServer{
-		BroadcastError: fmt.Errorf("just to test error scenario"),
+		BroadcastError: errors.New("just to test error scenario"),
 	}
 
 	grpcServer := grpc.NewServer()

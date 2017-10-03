@@ -53,7 +53,7 @@ func TestGenesisBlock(t *testing.T) {
 	_, err = channel.GenesisBlock(genesisBlockReq)
 
 	//It should fail with timeout
-	if err == nil || !strings.HasSuffix(err.Error(), "Timeout waiting for response from orderer") {
+	if err == nil || !strings.HasSuffix(err.Error(), "timeout waiting for response from orderer") {
 		t.Fatal("GenesisBlock Test supposed to fail with timeout error")
 	}
 
@@ -61,7 +61,7 @@ func TestGenesisBlock(t *testing.T) {
 	genesisBlockReq = &fab.GenesisBlockRequest{}
 	_, err = channel.GenesisBlock(genesisBlockReq)
 
-	if err == nil || err.Error() != "GenesisBlock - error: Missing txId input parameter with the required transaction identifier" {
+	if err == nil || !strings.Contains(err.Error(), "missing txId input parameter with the required transaction identifier") {
 		t.Fatal("validation on missing txID input parameter is not working as expected")
 	}
 
@@ -70,7 +70,7 @@ func TestGenesisBlock(t *testing.T) {
 	}
 	_, err = channel.GenesisBlock(genesisBlockReq)
 
-	if err == nil || err.Error() != "GenesisBlock - error: Missing nonce input parameter with the required single use number" {
+	if err == nil || !strings.Contains(err.Error(), "missing nonce input parameter with the required single use number") {
 		t.Fatal("validation on missing nonce input parameter is not working as expected")
 	}
 
@@ -82,7 +82,7 @@ func TestGenesisBlock(t *testing.T) {
 
 	_, err = channel.GenesisBlock(genesisBlockReq)
 
-	if err == nil || err.Error() != "GenesisBlock - error: Missing orderer assigned to this channel for the GenesisBlock request" {
+	if err == nil || !strings.Contains(err.Error(), "missing orderer assigned to this channel for the GenesisBlock request") {
 		t.Fatal("validation on no ordererds on channel is not working as expected")
 	}
 

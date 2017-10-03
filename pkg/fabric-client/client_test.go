@@ -15,9 +15,8 @@ import (
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
-	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
+	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
@@ -48,12 +47,12 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("client.LoadUserFromStateStore should return nil user")
 	}
 
-	//Client tests: Should return error "user is nil"
+	//Client tests: Should return error "user required"
 	err = client.SaveUserToStateStore(nil, false)
 	if err == nil {
 		t.Fatalf("client.SaveUserToStateStore didn't return error")
 	}
-	if err.Error() != "user is nil" {
+	if err.Error() != "user required" {
 		t.Fatalf("client.SaveUserToStateStore didn't return right error")
 	}
 

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
@@ -46,7 +47,7 @@ func TestChannelMethods(t *testing.T) {
 	if err == nil {
 		t.Fatalf("NewChannel didn't return error")
 	}
-	if err.Error() != "failed to create Channel. Missing required 'name' parameter" {
+	if err.Error() != "name is required" {
 		t.Fatalf("NewChannel didn't return right error")
 	}
 
@@ -54,7 +55,7 @@ func TestChannelMethods(t *testing.T) {
 	if err == nil {
 		t.Fatalf("NewChannel didn't return error")
 	}
-	if err.Error() != "failed to create Channel. Missing required 'clientContext' parameter" {
+	if err.Error() != "client is required" {
 		t.Fatalf("NewChannel didn't return right error")
 	}
 
@@ -314,7 +315,7 @@ func setupMassiveTestChannel(numberOfPeers int, numberOfOrderers int) (*Channel,
 			MockRoles: []string{}, MockCert: nil}
 		err := channel.AddPeer(&peer)
 		if err != nil {
-			return nil, fmt.Errorf("Error adding peer: %v", err)
+			return nil, errors.WithMessage(err, "failed to add peer")
 		}
 	}
 
@@ -322,7 +323,7 @@ func setupMassiveTestChannel(numberOfPeers int, numberOfOrderers int) (*Channel,
 		orderer := mocks.NewMockOrderer(fmt.Sprintf("http://mock%d.orderers.r.us", i), nil)
 		err := channel.AddOrderer(orderer)
 		if err != nil {
-			return nil, fmt.Errorf("Error adding orderer: %v", err)
+			return nil, errors.WithMessage(err, "failed to add orderer")
 		}
 	}
 

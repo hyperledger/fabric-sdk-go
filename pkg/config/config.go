@@ -9,22 +9,23 @@ package config
 import (
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
-	"path/filepath"
+	"github.com/spf13/viper"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/pkcs11"
-	"github.com/spf13/viper"
 )
 
 var myViper = viper.New()
@@ -68,7 +69,7 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 		if err == nil {
 			logger.Debugf("Using config file: %s", myViper.ConfigFileUsed())
 		} else {
-			return nil, fmt.Errorf("Fatal error config file: %v", err)
+			return nil, errors.Wrap(err, "loading config file failed")
 		}
 	}
 
@@ -100,7 +101,7 @@ func loadDefaultConfig() error {
 	}
 	err := myViper.ReadInConfig() // Find and read the config file
 	if err != nil {               // Handle errors reading the config file
-		return fmt.Errorf("fatal error config file: %s", err)
+		return errors.Wrap(err, "loading config file failed")
 	}
 	return nil
 }
@@ -142,7 +143,7 @@ func (c *Config) CAServerCertFiles(org string) ([]string, error) {
 		return nil, err
 	}
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
-		return nil, fmt.Errorf("CA Server Name '%s' not found", caName)
+		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
 	}
 	certFiles := strings.Split(config.CertificateAuthorities[caName].TLSCACerts.Path, ",")
 
@@ -162,14 +163,14 @@ func (c *Config) getCAName(org string) (string, error) {
 	logger.Debug("Getting cert authority for org: %s.", org)
 
 	if len(config.Organizations[strings.ToLower(org)].CertificateAuthorities) == 0 {
-		return "", fmt.Errorf("organization %s has no Certificate Authorities setup. Make sure each org has at least 1 configured", org)
+		return "", errors.Errorf("organization %s has no Certificate Authorities setup. Make sure each org has at least 1 configured", org)
 	}
 	//for now, we're only loading the first Cert Authority by default. TODO add logic to support passing the Cert Authority ID needed by the client.
 	certAuthorityName := config.Organizations[strings.ToLower(org)].CertificateAuthorities[0]
 	logger.Debugf("Cert authority for org: %s is %s", org, certAuthorityName)
 
 	if certAuthorityName == "" {
-		return "", fmt.Errorf("certificate authority empty for %s. Make sure each org has at least 1 non empty certificate authority name", org)
+		return "", errors.Errorf("certificate authority empty for %s. Make sure each org has at least 1 non empty certificate authority name", org)
 	}
 	return certAuthorityName, nil
 }
@@ -186,7 +187,7 @@ func (c *Config) CAClientKeyFile(org string) (string, error) {
 		return "", err
 	}
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
-		return "", fmt.Errorf("CA Server Name '%s' not found", caName)
+		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
 	return strings.Replace(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Keyfile,
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
@@ -204,7 +205,7 @@ func (c *Config) CAClientCertFile(org string) (string, error) {
 		return "", err
 	}
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
-		return "", fmt.Errorf("CA Server Name '%s' not found", caName)
+		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
 	return strings.Replace(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Certfile,
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
@@ -246,7 +247,7 @@ func (c *Config) MspID(org string) (string, error) {
 	// viper lowercases all key maps, org is lower case
 	mspID := config.Organizations[strings.ToLower(org)].MspID
 	if mspID == "" {
-		return "", fmt.Errorf("MSP ID is empty for org: %s", org)
+		return "", errors.Errorf("MSP ID is empty for org: %s", org)
 	}
 
 	return mspID, nil
@@ -402,7 +403,7 @@ func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, err
 		}
 	}
 	if !peerInOrg {
-		return nil, fmt.Errorf("Peer %s is not part of orgianzation %s", name, org)
+		return nil, errors.Errorf("peer %s is not part of orgianzation %s", name, org)
 	}
 	peerConfig := config.Peers[strings.ToLower(name)]
 	if peerConfig.TLSCACerts.Path != "" {
@@ -419,7 +420,7 @@ func (c *Config) NetworkConfig() (*apiconfig.NetworkConfig, error) {
 	}
 
 	if err := c.cacheNetworkConfiguration(); err != nil {
-		return nil, fmt.Errorf("Error reading network configuration: %s", err)
+		return nil, errors.WithMessage(err, "network configuration load failed")
 	}
 	return c.networkConfig, nil
 }
@@ -434,7 +435,7 @@ func (c *Config) ChannelConfig(name string) (*apiconfig.ChannelConfig, error) {
 	// viper lowercases all key maps
 	ch, ok := config.Channels[strings.ToLower(name)]
 	if !ok {
-		return nil, fmt.Errorf("Channel config not found for %s", name)
+		return nil, errors.Errorf("channel config not found for %s", name)
 	}
 
 	return &ch, nil
@@ -450,7 +451,7 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 	// viper lowercases all key maps
 	chConfig, ok := netConfig.Channels[strings.ToLower(name)]
 	if !ok {
-		return nil, fmt.Errorf("Channel config not found for %s", name)
+		return nil, errors.Errorf("channel config not found for %s", name)
 	}
 
 	peers := []apiconfig.ChannelPeer{}
@@ -460,7 +461,7 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 		// Get generic peer configuration
 		p, ok := netConfig.Peers[strings.ToLower(peerName)]
 		if !ok {
-			return nil, fmt.Errorf("Peer config not found for %s", peerName)
+			return nil, errors.Errorf("peer config not found for %s", peerName)
 		}
 
 		if err = verifyPeerConfig(p, peerName, c.IsTLSEnabled()); err != nil {
@@ -495,13 +496,13 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 
 func verifyPeerConfig(p apiconfig.PeerConfig, peerName string, tlsEnabled bool) error {
 	if p.URL == "" {
-		return fmt.Errorf("URL does not exist or empty for peer %s", peerName)
+		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
 	if p.EventURL == "" {
-		return fmt.Errorf("Event URL does not exist or empty for peer %s", peerName)
+		return errors.Errorf("event URL does not exist or empty for peer %s", peerName)
 	}
 	if tlsEnabled && p.TLSCACerts.Pem == "" && p.TLSCACerts.Path == "" {
-		return fmt.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
+		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil
 }
@@ -628,12 +629,12 @@ func loadCAKey(rawData []byte) (*x509.Certificate, error) {
 	if block != nil {
 		pub, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
-			return nil, errors.New("Failed to parse certificate: " + err.Error())
+			return nil, errors.Wrap(err, "certificate parsing failed")
 		}
 
 		return pub, nil
 	}
-	return nil, errors.New("No pem data found")
+	return nil, errors.New("pem data missing")
 }
 
 // CSPConfig ...

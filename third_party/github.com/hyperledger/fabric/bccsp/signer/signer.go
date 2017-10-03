@@ -23,9 +23,9 @@ import (
 	"crypto"
 	"io"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/utils"
-	"github.com/pkg/errors"
 )
 
 // bccspCryptoSigner is the BCCSP-based implementation of a crypto.Signer

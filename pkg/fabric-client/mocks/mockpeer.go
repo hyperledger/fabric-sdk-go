@@ -9,12 +9,12 @@ package mocks
 // TODO: Move protos to this library
 import (
 	"encoding/pem"
-	"errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 // MockPeer is a mock fabricsdk.Peer.

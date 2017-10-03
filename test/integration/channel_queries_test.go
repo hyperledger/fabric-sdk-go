@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -15,6 +14,8 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 )
 
@@ -81,23 +82,20 @@ func changeBlockState(t *testing.T, testSetup *BaseSetupImpl) (string, error) {
 
 	tpResponses, _, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, "invoke", queryArgs, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
-		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
+		return "", errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}
 
 	value := tpResponses[0].ProposalResponse.GetResponse().Payload
-	if err != nil {
-		return "", fmt.Errorf("getQueryValue return error: %v", err)
-	}
 
 	// Start transaction that will change block state
 	txID, err := moveFundsAndGetTxID(t, testSetup)
 	if err != nil {
-		return "", fmt.Errorf("Move funds return error: %v", err)
+		return "", errors.WithMessage(err, "move funds failed")
 	}
 
 	tpResponses, _, err = testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, "invoke", queryArgs, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
-		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
+		return "", errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}
 
 	valueAfterInvoke := tpResponses[0].ProposalResponse.GetResponse().Payload
@@ -107,7 +105,7 @@ func changeBlockState(t *testing.T, testSetup *BaseSetupImpl) (string, error) {
 	valueInt = valueInt + 1
 	valueAfterInvokeInt, _ := strconv.Atoi(string(valueAfterInvoke))
 	if valueInt != valueAfterInvokeInt {
-		return "", fmt.Errorf("SendTransaction didn't change the QueryValue %s", value)
+		return "", errors.Errorf("SendTransaction didn't change the QueryValue %s", value)
 	}
 
 	return txID, nil
@@ -310,22 +308,22 @@ func moveFundsAndGetTxID(t *testing.T, setup *BaseSetupImpl) (string, error) {
 
 	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, "invoke", txArgs, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, transientDataMap)
 	if err != nil {
-		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
+		return "", errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}
 	// Register for commit event
 	done, fail := setup.RegisterTxEvent(t, txID, setup.EventHub)
 
 	txResponse, err := setup.CreateAndSendTransaction(setup.Channel, transactionProposalResponse)
 	if err != nil {
-		return "", fmt.Errorf("CreateAndSendTransaction return error: %v", err)
+		return "", errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 	t.Logf("txResponse: %v", txResponse)
 	select {
 	case <-done:
-	case <-fail:
-		return "", fmt.Errorf("invoke Error received from eventhub for txid(%s) error(%v)", txID, fail)
+	case cerr := <-fail:
+		return "", errors.Wrapf(cerr, "invoke failed for txid %s", txID)
 	case <-time.After(time.Second * 30):
-		return "", fmt.Errorf("invoke Didn't receive block event for txid(%s)", txID)
+		return "", errors.Errorf("invoke didn't receive block event for txid %s", txID)
 	}
 	return txID.ID, nil
 }

@@ -27,10 +27,11 @@ DOCKER_CMD         ?= docker
 DOCKER_COMPOSE_CMD ?= docker-compose
 
 # Build flags (overridable)
-GO_LDFLAGS               ?= -ldflags=-s
-GO_TESTFLAGS             ?=
-FABRIC_SDK_EXPERIMENTAL  ?= true
-FABRIC_SDK_EXTRA_GO_TAGS ?=
+GO_LDFLAGS                 ?= -ldflags=-s
+GO_TESTFLAGS               ?=
+FABRIC_SDK_EXPERIMENTAL    ?= true
+FABRIC_SDK_EXTRA_GO_TAGS   ?=
+FABRIC_SDK_POPULATE_VENDOR ?= true
 
 # Fabric tool versions (overridable)
 FABRIC_TOOLS_VERSION ?= 1.0.1
@@ -138,8 +139,10 @@ thirdparty-pin:
 populate: populate-vendor
 
 populate-vendor:
+ifeq ($(FABRIC_SDK_POPULATE_VENDOR),true)
 	@echo "Populating vendor ..."
 	@$(GO_DEP_CMD) ensure -vendor-only
+endif
 
 populate-clean:
 	rm -Rf vendor

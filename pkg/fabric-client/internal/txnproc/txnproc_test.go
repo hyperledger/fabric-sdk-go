@@ -32,7 +32,7 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 		SignedProposal: &pb.SignedProposal{},
 	}, nil)
 
-	if result != nil || err == nil || err.Error() != "Missing peer objects for sending transaction proposal" {
+	if result != nil || err == nil || err.Error() != "targets is required" {
 		t.Fatalf("Test SendTransactionProposal failed, validation on peer is nil is not working as expected: %v", err)
 	}
 
@@ -40,7 +40,7 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 		SignedProposal: &pb.SignedProposal{},
 	}, []apitxn.ProposalProcessor{})
 
-	if result != nil || err == nil || err.Error() != "Missing peer objects for sending transaction proposal" {
+	if result != nil || err == nil || err.Error() != "targets is required" {
 		t.Fatalf("Test SendTransactionProposal failed, validation on missing peer objects is not working: %v", err)
 	}
 
@@ -48,7 +48,7 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 		SignedProposal: nil,
 	}, nil)
 
-	if result != nil || err == nil || err.Error() != "signedProposal is nil" {
+	if result != nil || err == nil || err.Error() != "signedProposal is required" {
 		t.Fatal("Test SendTransactionProposal failed, validation on signedProposal is nil is not working as expected")
 	}
 

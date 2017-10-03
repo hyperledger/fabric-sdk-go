@@ -8,21 +8,22 @@ package peer
 
 import (
 	"crypto/x509"
-	"fmt"
 	"net"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"google.golang.org/grpc"
 
-	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
 const (
@@ -75,7 +76,7 @@ func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 
 	config.EXPECT().IsTLSEnabled().Return(true)
 	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool("cert").Return(certPool, fmt.Errorf("ohoh"))
+	config.EXPECT().TLSCACertPool("cert").Return(certPool, errors.New("ohoh"))
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	_, err := newPeerEndorser(url, "cert", "", true, config)
@@ -269,7 +270,7 @@ func TestTransactionProposalError(t *testing.T) {
 	mockError = TransactionProposalError{
 		Endorser: "1.2.3.4:1000",
 		Proposal: mockTransactionProposal(),
-		Err:      fmt.Errorf("error"),
+		Err:      errors.New("error"),
 	}
 
 	errText := mockError.Error()

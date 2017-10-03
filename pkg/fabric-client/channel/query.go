@@ -7,15 +7,15 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/golang/protobuf/proto"
 
+	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 const (
@@ -34,13 +34,13 @@ func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
 
 	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetChainInfo", args, c.PrimaryPeer())
 	if err != nil {
-		return nil, fmt.Errorf("Invoke qscc GetChainInfo return error: %v", err)
+		return nil, errors.WithMessage(err, "qscc.GetChainInfo failed")
 	}
 
 	bci := &common.BlockchainInfo{}
 	err = proto.Unmarshal(payload, bci)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshal BlockchainInfo return error: %v", err)
+		return nil, errors.Wrap(err, "unmarshal of BlockchainInfo failed")
 	}
 
 	return bci, nil
@@ -52,23 +52,23 @@ func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
 func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 
 	if blockHash == nil {
-		return nil, fmt.Errorf("Blockhash bytes are required")
+		return nil, errors.New("blockHash is required")
 	}
 
-	// prepare arguments to call qscc GetBlockByNumber function
+	// prepare arguments to call qscc GetBlockByHash function
 	var args []string
 	args = append(args, c.Name())
 	args = append(args, string(blockHash[:len(blockHash)]))
 
 	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetBlockByHash", args, c.PrimaryPeer())
 	if err != nil {
-		return nil, fmt.Errorf("Invoke qscc GetBlockByHash return error: %v", err)
+		return nil, errors.WithMessage(err, "qscc.GetBlockByHash failed")
 	}
 
 	block := &common.Block{}
 	err = proto.Unmarshal(payload, block)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshal Block return error: %v", err)
+		return nil, errors.Wrap(err, "unmarshal of BlockchainInfo failed")
 	}
 
 	return block, nil
@@ -81,7 +81,7 @@ func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
 
 	if blockNumber < 0 {
-		return nil, fmt.Errorf("Block number must be positive integer")
+		return nil, errors.New("blockNumber must be a positive integer")
 	}
 
 	// prepare arguments to call qscc GetBlockByNumber function
@@ -91,13 +91,13 @@ func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
 
 	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetBlockByNumber", args, c.PrimaryPeer())
 	if err != nil {
-		return nil, fmt.Errorf("Invoke qscc GetBlockByNumber return error: %v", err)
+		return nil, errors.WithMessage(err, "qscc.GetBlockByNumber failed")
 	}
 
 	block := &common.Block{}
 	err = proto.Unmarshal(payload, block)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshal Block return error: %v", err)
+		return nil, errors.Wrap(err, "unmarshal of BlockchainInfo failed")
 	}
 
 	return block, nil
@@ -116,13 +116,13 @@ func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransacti
 
 	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetTransactionByID", args, c.PrimaryPeer())
 	if err != nil {
-		return nil, fmt.Errorf("Invoke qscc GetBlockByNumber return error: %v", err)
+		return nil, errors.WithMessage(err, "qscc.GetTransactionByID failed")
 	}
 
 	transaction := new(pb.ProcessedTransaction)
 	err = proto.Unmarshal(payload, transaction)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshal ProcessedTransaction return error: %v", err)
+		return nil, errors.Wrap(err, "unmarshal of ProcessedTransaction failed")
 	}
 
 	return transaction, nil
@@ -136,13 +136,13 @@ func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, err
 
 	payload, err := c.queryBySystemChaincodeByTarget("lscc", "getchaincodes", args, c.PrimaryPeer())
 	if err != nil {
-		return nil, fmt.Errorf("Invoke lscc getchaincodes return error: %v", err)
+		return nil, errors.WithMessage(err, "lscc.getchaincodes failed")
 	}
 
 	response := new(pb.ChaincodeQueryResponse)
 	err = proto.Unmarshal(payload, response)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshal ChaincodeQueryResponse return error: %v", err)
+		return nil, errors.Wrap(err, "unmarshal of ChaincodeQueryResponse failed")
 	}
 
 	return response, nil
@@ -173,7 +173,7 @@ func filterProposalResponses(tpr []*txn.TransactionProposalResponse) ([][]byte, 
 	}
 
 	if len(errMsg) > 0 {
-		return responses, fmt.Errorf(errMsg)
+		return responses, errors.New(errMsg)
 	}
 	return responses, nil
 }
@@ -185,7 +185,7 @@ func queryByChaincode(channelID string, request txn.ChaincodeInvokeRequest, clie
 
 	transactionProposalResponses, _, err := SendTransactionProposalWithChannelID(channelID, request, clientContext)
 	if err != nil {
-		return nil, fmt.Errorf("SendTransactionProposal return error: %v", err)
+		return nil, errors.WithMessage(err, "SendTransactionProposalWithChannelID failed")
 	}
 
 	return filterProposalResponses(transactionProposalResponses)
@@ -206,7 +206,7 @@ func (c *Channel) queryBySystemChaincodeByTarget(chaincodeID string, fcn string,
 
 	// we are only querying one peer hence one result
 	if err != nil || len(responses) != 1 {
-		return nil, fmt.Errorf("QueryBySystemChaincode should have one result only - result number: %d", len(responses))
+		return nil, errors.Errorf("QueryBySystemChaincode should have one result only, actual result is %d", len(responses))
 	}
 
 	return responses[0], nil

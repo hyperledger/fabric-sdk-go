@@ -29,11 +29,11 @@ import (
 	"os"
 
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/logbridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/miekg/pkcs11"
-	"github.com/pkg/errors"
 )
 
 var (

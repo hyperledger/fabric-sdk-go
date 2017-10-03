@@ -7,20 +7,18 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"fmt"
-
 	"github.com/golang/protobuf/proto"
 
-	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	ab "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/orderer"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 )
 
@@ -49,19 +47,19 @@ func (c *Channel) Initialize(configUpdate []byte) error {
 	if len(configUpdate) > 0 {
 		var err error
 		if _, err = c.loadConfigUpdate(configUpdate); err != nil {
-			return fmt.Errorf("Unable to load config update envelope: %v", err)
+			return errors.WithMessage(err, "config update envelope load failed")
 		}
 		return nil
 	}
 
 	configEnvelope, err := c.channelConfig()
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve channel configuration from orderer service: %v", err)
+		return errors.WithMessage(err, "channel configuration retrieval from orderer failed")
 	}
 
 	_, err = c.loadConfigEnvelope(configEnvelope)
 	if err != nil {
-		return fmt.Errorf("Unable to load config envelope: %v", err)
+		return errors.WithMessage(err, "load config envelope failed")
 	}
 	c.initialized = true
 	return nil
@@ -77,26 +75,26 @@ func (c *Channel) LoadConfigUpdateEnvelope(data []byte) error {
 	envelope := &common.Envelope{}
 	err := proto.Unmarshal(data, envelope)
 	if err != nil {
-		return fmt.Errorf("Unable to unmarshal envelope: %v", err)
+		return errors.Wrap(err, "unmarshal envelope failed")
 	}
 
 	payload, err := protos_utils.ExtractPayload(envelope)
 	if err != nil {
-		return fmt.Errorf("Unable to extract payload from config update envelope: %v", err)
+		return errors.Wrap(err, "extract payload from config update envelope failed")
 	}
 
 	channelHeader, err := protos_utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
 	if err != nil {
-		return fmt.Errorf("Unable to extract channel header from config update payload: %v", err)
+		return errors.Wrap(err, "extract channel header from config update payload failed")
 	}
 
 	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG_UPDATE {
-		return fmt.Errorf("Block must be of type 'CONFIG_UPDATE'")
+		return errors.New("block must be of type 'CONFIG_UPDATE'")
 	}
 
 	configUpdateEnvelope := &common.ConfigUpdateEnvelope{}
 	if err := proto.Unmarshal(payload.Data, configUpdateEnvelope); err != nil {
-		return fmt.Errorf("Unable to unmarshal config update envelope: %v", err)
+		return errors.Wrap(err, "unmarshal config update envelope failed")
 	}
 
 	_, err = c.loadConfigUpdate(configUpdateEnvelope.ConfigUpdate)
@@ -108,11 +106,11 @@ func (c *Channel) initializeFromConfig(configItems *configItems) error {
 	if len(configItems.msps) > 0 {
 		msps, err := c.loadMSPs(configItems.msps)
 		if err != nil {
-			return fmt.Errorf("unable to load MSPs from config: %v", err)
+			return errors.WithMessage(err, "load MSPs from config failed")
 		}
 
 		if err := c.mspManager.Setup(msps); err != nil {
-			return fmt.Errorf("error calling Setup on MSPManager: %v", err)
+			return errors.WithMessage(err, "MSPManager Setup failed")
 		}
 	}
 	c.anchorPeers = configItems.anchorPeers
@@ -141,7 +139,7 @@ func (c *Channel) channelConfig() (*common.ConfigEnvelope, error) {
 	// Get the index of the last config block
 	lastConfig, err := fc.GetLastConfigFromBlock(block)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to get last config from block: %v", err)
+		return nil, errors.Wrap(err, "GetLastConfigFromBlock failed")
 	}
 	logger.Debugf("channelConfig - Last config index: %d\n", lastConfig.Index)
 
@@ -149,32 +147,32 @@ func (c *Channel) channelConfig() (*common.ConfigEnvelope, error) {
 	block, err = c.block(fc.NewSpecificSeekPosition(lastConfig.Index))
 
 	if err != nil {
-		return nil, fmt.Errorf("Unable to retrieve block at index %d: %v", lastConfig.Index, err)
+		return nil, errors.WithMessage(err, "retrieve block failed")
 	}
 	logger.Debugf("channelConfig - Last config block number %d, Number of tx: %d", block.Header.Number, len(block.Data.Data))
 
 	if len(block.Data.Data) != 1 {
-		return nil, fmt.Errorf("Config block must only contain one transaction but contains %d", len(block.Data.Data))
+		return nil, errors.New("config block must contain one transaction")
 	}
 
 	envelope := &common.Envelope{}
 	if err = proto.Unmarshal(block.Data.Data[0], envelope); err != nil {
-		return nil, fmt.Errorf("Error extracting envelope from config block: %v", err)
+		return nil, errors.Wrap(err, "unmarshal envelope from config block failed")
 	}
 	payload := &common.Payload{}
 	if err := proto.Unmarshal(envelope.Payload, payload); err != nil {
-		return nil, fmt.Errorf("Error extracting payload from envelope: %s", err)
+		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
 	}
 	channelHeader := &common.ChannelHeader{}
 	if err := proto.Unmarshal(payload.Header.ChannelHeader, channelHeader); err != nil {
-		return nil, fmt.Errorf("Error extracting payload from envelope: %s", err)
+		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
 	}
 	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG {
-		return nil, fmt.Errorf("Block must be of type 'CONFIG'")
+		return nil, errors.New("block must be of type 'CONFIG'")
 	}
 	configEnvelope := &common.ConfigEnvelope{}
 	if err := proto.Unmarshal(payload.Data, configEnvelope); err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal config envelope: %v", err)
+		return nil, errors.Wrap(err, "unmarshal config envelope failed")
 	}
 	return configEnvelope, nil
 }
@@ -186,27 +184,27 @@ func (c *Channel) loadMSPs(mspConfigs []*mb.MSPConfig) ([]msp.MSP, error) {
 	for _, config := range mspConfigs {
 		mspType := msp.ProviderType(config.Type)
 		if mspType != msp.FABRIC {
-			return nil, fmt.Errorf("MSP Configuration object type not supported: %v", mspType)
+			return nil, errors.Errorf("MSP type not supported: %v", mspType)
 		}
 		if len(config.Config) == 0 {
-			return nil, fmt.Errorf("MSP Configuration object missing the payload in the 'Config' property")
+			return nil, errors.Errorf("MSP configuration missing the payload in the 'Config' property")
 		}
 
 		fabricConfig := &mb.FabricMSPConfig{}
 		err := proto.Unmarshal(config.Config, fabricConfig)
 		if err != nil {
-			return nil, fmt.Errorf("Unable to unmarshal FabricMSPConfig from config value: %v", err)
+			return nil, errors.Wrap(err, "unmarshal FabricMSPConfig from config failed")
 		}
 
 		if fabricConfig.Name == "" {
-			return nil, fmt.Errorf("MSP Configuration does not have a name")
+			return nil, errors.New("MSP Configuration missing name")
 		}
 
 		// with this method we are only dealing with verifying MSPs, not local MSPs. Local MSPs are instantiated
 		// from user enrollment materials (see User class). For verifying MSPs the root certificates are always
 		// required
 		if len(fabricConfig.RootCerts) == 0 {
-			return nil, fmt.Errorf("MSP Configuration does not have any root certificates required for validating signing certificates")
+			return nil, errors.New("MSP Configuration missing root certificates required for validating signing certificates")
 		}
 
 		// get the application org names
@@ -221,11 +219,11 @@ func (c *Channel) loadMSPs(mspConfigs []*mb.MSPConfig) ([]msp.MSP, error) {
 
 		newMSP, err := msp.NewBccspMsp()
 		if err != nil {
-			return nil, fmt.Errorf("error creating new MSP: %v", err)
+			return nil, errors.Wrap(err, "instantiate MSP failed")
 		}
 
 		if err := newMSP.Setup(config); err != nil {
-			return nil, fmt.Errorf("error in Setup of new MSP: %v", err)
+			return nil, errors.Wrap(err, "configure MSP failed")
 		}
 
 		mspID, _ := newMSP.GetIdentifier()
@@ -312,7 +310,7 @@ func loadConfigValue(configItems *configItems, key string, versionsValue *common
 		anchorPeers := &pb.AnchorPeers{}
 		err := proto.Unmarshal(configValue.Value, anchorPeers)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal anchor peers from config value: %v", err)
+			return errors.Wrap(err, "unmarshal anchor peers from config failed")
 		}
 
 		logger.Debugf("loadConfigValue - %s   - AnchorPeers :: %s", groupName, anchorPeers)
@@ -330,14 +328,14 @@ func loadConfigValue(configItems *configItems, key string, versionsValue *common
 		mspConfig := &mb.MSPConfig{}
 		err := proto.Unmarshal(configValue.Value, mspConfig)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal MSPConfig from config value: %v", err)
+			return errors.Wrap(err, "unmarshal MSPConfig from config failed")
 		}
 
 		logger.Debugf("loadConfigValue - %s   - MSP found", groupName)
 
 		mspType := msp.ProviderType(mspConfig.Type)
 		if mspType != msp.FABRIC {
-			return fmt.Errorf("unsupported MSP type: %v", mspType)
+			return errors.Errorf("unsupported MSP type (%v)", mspType)
 		}
 
 		configItems.msps = append(configItems.msps, mspConfig)
@@ -347,7 +345,7 @@ func loadConfigValue(configItems *configItems, key string, versionsValue *common
 		consensusType := &ab.ConsensusType{}
 		err := proto.Unmarshal(configValue.Value, consensusType)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal ConsensusType from config value: %v", err)
+			return errors.Wrap(err, "unmarshal ConsensusType from config failed")
 		}
 
 		logger.Debugf("loadConfigValue - %s   - Consensus type value :: %s", groupName, consensusType.Type)
@@ -358,7 +356,7 @@ func loadConfigValue(configItems *configItems, key string, versionsValue *common
 		batchSize := &ab.BatchSize{}
 		err := proto.Unmarshal(configValue.Value, batchSize)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal BatchSize from config value: %v", err)
+			return errors.Wrap(err, "unmarshal batch size from config failed")
 		}
 
 		logger.Debugf("loadConfigValue - %s   - BatchSize  maxMessageCount :: %d", groupName, batchSize.MaxMessageCount)
@@ -371,7 +369,7 @@ func loadConfigValue(configItems *configItems, key string, versionsValue *common
 		batchTimeout := &ab.BatchTimeout{}
 		err := proto.Unmarshal(configValue.Value, batchTimeout)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal BatchTimeout from config value: %v", err)
+			return errors.Wrap(err, "unmarshal batch timeout from config failed")
 		}
 		logger.Debugf("loadConfigValue - %s   - BatchTimeout timeout value :: %s", groupName, batchTimeout.Timeout)
 		// TODO: Do something with this value
@@ -381,7 +379,7 @@ func loadConfigValue(configItems *configItems, key string, versionsValue *common
 		channelRestrictions := &ab.ChannelRestrictions{}
 		err := proto.Unmarshal(configValue.Value, channelRestrictions)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal ChannelRestrictions from config value: %v", err)
+			return errors.Wrap(err, "unmarshal channel restrictions from config failed")
 		}
 		logger.Debugf("loadConfigValue - %s   - ChannelRestrictions max_count value :: %d", groupName, channelRestrictions.MaxCount)
 		// TODO: Do something with this value
@@ -391,7 +389,7 @@ func loadConfigValue(configItems *configItems, key string, versionsValue *common
 		hashingAlgorithm := &common.HashingAlgorithm{}
 		err := proto.Unmarshal(configValue.Value, hashingAlgorithm)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal HashingAlgorithm from config value: %v", err)
+			return errors.Wrap(err, "unmarshal hashing algorithm from config failed")
 		}
 		logger.Debugf("loadConfigValue - %s   - HashingAlgorithm names value :: %s", groupName, hashingAlgorithm.Name)
 		// TODO: Do something with this value
@@ -401,7 +399,7 @@ func loadConfigValue(configItems *configItems, key string, versionsValue *common
 		consortium := &common.Consortium{}
 		err := proto.Unmarshal(configValue.Value, consortium)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal Consortium from config value: %v", err)
+			return errors.Wrap(err, "unmarshal consortium from config failed")
 		}
 		logger.Debugf("loadConfigValue - %s   - Consortium names value :: %s", groupName, consortium.Name)
 		// TODO: Do something with this value
@@ -411,7 +409,7 @@ func loadConfigValue(configItems *configItems, key string, versionsValue *common
 		bdhstruct := &common.BlockDataHashingStructure{}
 		err := proto.Unmarshal(configValue.Value, bdhstruct)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal BlockDataHashingStructure from config value: %v", err)
+			return errors.Wrap(err, "unmarshal block data hashing structure from config failed")
 		}
 		logger.Debugf("loadConfigValue - %s   - BlockDataHashingStructure width value :: %s", groupName, bdhstruct.Width)
 		// TODO: Do something with this value
@@ -421,7 +419,7 @@ func loadConfigValue(configItems *configItems, key string, versionsValue *common
 		ordererAddresses := &common.OrdererAddresses{}
 		err := proto.Unmarshal(configValue.Value, ordererAddresses)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal OrdererAddresses from config value: %v", err)
+			return errors.Wrap(err, "unmarshal orderer addresses from config failed")
 		}
 		logger.Debugf("loadConfigValue - %s   - OrdererAddresses addresses value :: %s", groupName, ordererAddresses.Addresses)
 		if len(ordererAddresses.Addresses) > 0 {
@@ -446,7 +444,7 @@ func loadPolicy(configItems *configItems, versionsPolicy *common.ConfigPolicy, k
 		sigPolicyEnv := &common.SignaturePolicyEnvelope{}
 		err := proto.Unmarshal(policy.Value, sigPolicyEnv)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal SignaturePolicyEnvelope from config policy: %v", err)
+			return errors.Wrap(err, "unmarshal signature policy envelope from config failed")
 		}
 		logger.Debugf("loadConfigPolicy - %s - policy SIGNATURE :: %v", groupName, sigPolicyEnv.Rule)
 		// TODO: Do something with this value
@@ -461,14 +459,14 @@ func loadPolicy(configItems *configItems, versionsPolicy *common.ConfigPolicy, k
 		implicitMetaPolicy := &common.ImplicitMetaPolicy{}
 		err := proto.Unmarshal(policy.Value, implicitMetaPolicy)
 		if err != nil {
-			return fmt.Errorf("Unable to unmarshal ImplicitMetaPolicy from config policy: %v", err)
+			return errors.Wrap(err, "unmarshal implicit meta policy from config failed")
 		}
 		logger.Debugf("loadConfigPolicy - %s - policy IMPLICIT_META :: %v", groupName, implicitMetaPolicy)
 		// TODO: Do something with this value
 		break
 
 	default:
-		return fmt.Errorf("Unknown Policy type: %v", policyType)
+		return errors.Errorf("unknown policy type %v", policyType)
 	}
 	return nil
 }
@@ -477,7 +475,7 @@ func (c *Channel) loadConfigUpdate(configUpdateBytes []byte) (*configItems, erro
 
 	configUpdate := &common.ConfigUpdate{}
 	if err := proto.Unmarshal(configUpdateBytes, configUpdate); err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal config update: %v", err)
+		return nil, errors.Wrap(err, "unmarshal config update failed")
 	}
 	logger.Debugf("loadConfigUpdate - channel ::" + configUpdate.ChannelId)
 
@@ -507,7 +505,7 @@ func (c *Channel) loadConfigUpdate(configUpdateBytes []byte) (*configItems, erro
 	}
 	err = c.initializeFromConfig(configItems)
 	if err != nil {
-		return nil, fmt.Errorf("channel initialization error: %v", err)
+		return nil, errors.WithMessage(err, "channel initialization failed")
 	}
 
 	//TODO should we create orderers and endorsing peers
@@ -531,7 +529,7 @@ func (c *Channel) loadConfigEnvelope(configEnvelope *common.ConfigEnvelope) (*co
 
 	err := loadConfigGroup(configItems, configItems.versions.Channel, group, "base", "", true)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to load config items from channel group: %v", err)
+		return nil, errors.WithMessage(err, "load config items from config group failed")
 	}
 
 	err = c.initializeFromConfig(configItems)

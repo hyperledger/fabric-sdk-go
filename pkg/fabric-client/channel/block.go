@@ -7,15 +7,16 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/proto"
+
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 )
 
@@ -31,23 +32,23 @@ func (c *Channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block,
 
 	// verify that we have an orderer configured
 	if len(c.Orderers()) == 0 {
-		return nil, fmt.Errorf("GenesisBlock - error: Missing orderer assigned to this channel for the GenesisBlock request")
+		return nil, errors.New("GenesisBlock missing orderer assigned to this channel for the GenesisBlock request")
 	}
 	// verify that we have transaction id
 	if request.TxnID.ID == "" {
-		return nil, fmt.Errorf("GenesisBlock - error: Missing txId input parameter with the required transaction identifier")
+		return nil, errors.New("GenesisBlock missing txId input parameter with the required transaction identifier")
 	}
 	// verify that we have the nonce
 	if request.TxnID.Nonce == nil {
-		return nil, fmt.Errorf("GenesisBlock - error: Missing nonce input parameter with the required single use number")
+		return nil, errors.New("GenesisBlock missing nonce input parameter with the required single use number")
 	}
 
 	if c.clientContext.UserContext() == nil {
-		return nil, fmt.Errorf("User context needs to be set")
+		return nil, errors.New("user context required")
 	}
 	creator, err := c.clientContext.UserContext().Identity()
 	if err != nil {
-		return nil, fmt.Errorf("Error getting creator: %v", err)
+		return nil, errors.WithMessage(err, "failed to get creator identity")
 	}
 
 	// now build the seek info , will be used once the channel is created
@@ -62,11 +63,11 @@ func (c *Channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block,
 	protos_utils.MakeChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, 1, c.Name(), 0)
 	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), request.TxnID.ID, 0, "", time.Now())
 	if err != nil {
-		return nil, fmt.Errorf("Error building channel header: %v", err)
+		return nil, errors.Wrap(err, "BuildChannelHeader failed")
 	}
 	seekHeader, err := fc.BuildHeader(creator, seekInfoHeader, request.TxnID.Nonce)
 	if err != nil {
-		return nil, fmt.Errorf("Error building header: %v", err)
+		return nil, errors.Wrap(err, "BuildHeader failed")
 	}
 	seekPayload := &common.Payload{
 		Header: seekHeader,
@@ -76,12 +77,12 @@ func (c *Channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block,
 
 	signedEnvelope, err := c.SignPayload(seekPayloadBytes)
 	if err != nil {
-		return nil, fmt.Errorf("Error signing payload: %v", err)
+		return nil, errors.WithMessage(err, "SignPayload failed")
 	}
 
 	block, err := c.SendEnvelope(signedEnvelope)
 	if err != nil {
-		return nil, fmt.Errorf("Error sending envelope: %v", err)
+		return nil, errors.WithMessage(err, "SendEnvelope failed")
 	}
 	return block, nil
 }
@@ -90,30 +91,30 @@ func (c *Channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block,
 func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 	nonce, err := fc.GenerateRandomNonce()
 	if err != nil {
-		return nil, fmt.Errorf("error when generating nonce: %v", err)
+		return nil, errors.Wrap(err, "GenerateRandomNonce failed")
 	}
 
 	if c.clientContext.UserContext() == nil {
-		return nil, fmt.Errorf("User context needs to be set")
+		return nil, errors.New("User context required")
 	}
 	creator, err := c.clientContext.UserContext().Identity()
 	if err != nil {
-		return nil, fmt.Errorf("error when serializing identity: %v", err)
+		return nil, errors.WithMessage(err, "serializing identity failed")
 	}
 
 	txID, err := protos_utils.ComputeProposalTxID(nonce, creator)
 	if err != nil {
-		return nil, fmt.Errorf("error when generating TX ID: %v", err)
+		return nil, errors.Wrap(err, "generating TX ID failed")
 	}
 
 	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), txID, 0, "", time.Now())
 	if err != nil {
-		return nil, fmt.Errorf("error when building channel header: %v", err)
+		return nil, errors.Wrap(err, "BuildChannelHeader failed")
 	}
 
 	seekInfoHeaderBytes, err := proto.Marshal(seekInfoHeader)
 	if err != nil {
-		return nil, fmt.Errorf("error when marshalling channel header: %v", err)
+		return nil, errors.Wrap(err, "marshal seek info failed")
 	}
 
 	signatureHeader := &common.SignatureHeader{
@@ -123,7 +124,7 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 
 	signatureHeaderBytes, err := proto.Marshal(signatureHeader)
 	if err != nil {
-		return nil, fmt.Errorf("error when marshalling signature header: %v", err)
+		return nil, errors.Wrap(err, "marshal signature header failed")
 	}
 
 	seekHeader := &common.Header{
@@ -139,7 +140,7 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 
 	seekInfoBytes, err := proto.Marshal(seekInfo)
 	if err != nil {
-		return nil, fmt.Errorf("error when marshalling seek info: %v", err)
+		return nil, errors.Wrap(err, "marshal seek info failed")
 	}
 
 	seekPayload := &common.Payload{
@@ -154,7 +155,7 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 
 	signedEnvelope, err := c.SignPayload(seekPayloadBytes)
 	if err != nil {
-		return nil, fmt.Errorf("error when signing payload: %v", err)
+		return nil, errors.WithMessage(err, "SignPayload failed")
 	}
 
 	return c.SendEnvelope(signedEnvelope)

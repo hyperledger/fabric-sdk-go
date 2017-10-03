@@ -8,10 +8,11 @@ SPDX-License-Identifier: Apache-2.0
 package txnproc
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -21,11 +22,11 @@ var logger = logging.NewLogger("fabric_sdk_go")
 func SendTransactionProposalToProcessors(proposal *apitxn.TransactionProposal, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, error) {
 
 	if proposal == nil || proposal.SignedProposal == nil {
-		return nil, fmt.Errorf("signedProposal is nil")
+		return nil, errors.New("signedProposal is required")
 	}
 
 	if len(targets) < 1 {
-		return nil, fmt.Errorf("Missing peer objects for sending transaction proposal")
+		return nil, errors.New("targets is required")
 	}
 
 	var responseMtx sync.Mutex

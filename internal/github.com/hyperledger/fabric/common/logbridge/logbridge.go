@@ -45,7 +45,7 @@ func (l *Logger) Warningf(format string, args ...interface{}) {
 }
 
 // Warning bridges calls to the Go SDK logger's Warn.
-func (l *Logger) Warning(format string, args ...interface{}) {
+func (l *Logger) Warning(args ...interface{}) {
 	l.Warn(args...)
 }
 

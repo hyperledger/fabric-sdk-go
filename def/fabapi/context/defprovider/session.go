@@ -7,12 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package defprovider
 
 import (
-	"fmt"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
@@ -51,17 +51,17 @@ func (f *SessionClientFactory) NewChannelClient(sdk context.SDK, session context
 
 	channel, err := getChannel(client, channelName)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create channel:%v", err)
+		return nil, errors.WithMessage(err, "create channel failed")
 	}
 
 	discovery, err := sdk.DiscoveryProvider().NewDiscoveryService(channel)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create discovery service:%v", err)
+		return nil, errors.WithMessage(err, "create discovery service failed")
 	}
 
 	eventHub, err := getEventHub(client, channelName, session)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessage(err, "getEventHub failed")
 	}
 
 	return chImpl.NewChannelClient(client, channel, discovery, eventHub)
@@ -72,18 +72,18 @@ func getChannel(client fab.FabricClient, channelID string) (fab.Channel, error) 
 
 	channel, err := client.NewChannel(channelID)
 	if err != nil {
-		return nil, fmt.Errorf("NewChannel return error: %v", err)
+		return nil, errors.WithMessage(err, "NewChannel failed")
 	}
 
 	chConfig, err := client.Config().ChannelConfig(channel.Name())
 	if err != nil {
-		return nil, fmt.Errorf("Error reading channel config: %v", err)
+		return nil, errors.WithMessage(err, "reading channel config failed")
 	}
 
 	for _, name := range chConfig.Orderers {
 		ordererConfig, err := client.Config().OrdererConfig(name)
 		if err != nil {
-			return nil, fmt.Errorf("Unable to retrieve configuration for orderer(%s): %s", name, err)
+			return nil, errors.WithMessage(err, "retrieve configuration for orderer failed")
 		}
 
 		serverHostOverride := ""
@@ -92,11 +92,11 @@ func getChannel(client fab.FabricClient, channelID string) (fab.Channel, error) 
 		}
 		orderer, err := orderer.NewOrderer(ordererConfig.URL, ordererConfig.TLSCACerts.Path, serverHostOverride, client.Config())
 		if err != nil {
-			return nil, fmt.Errorf("NewOrderer return error: %v", err)
+			return nil, errors.WithMessage(err, "NewOrderer failed")
 		}
 		err = channel.AddOrderer(orderer)
 		if err != nil {
-			return nil, fmt.Errorf("Error adding orderer: %v", err)
+			return nil, errors.WithMessage(err, "adding orderer failed")
 		}
 	}
 
@@ -107,7 +107,7 @@ func getEventHub(client fab.FabricClient, channelID string, session context.Sess
 
 	peerConfig, err := client.Config().ChannelPeers(channelID)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to read configuration for channel(%s) peers: %s", channelID, err)
+		return nil, errors.WithMessage(err, "read configuration for channel peers failed")
 	}
 
 	serverHostOverride := ""
@@ -126,7 +126,7 @@ func getEventHub(client fab.FabricClient, channelID string, session context.Sess
 	}
 
 	if eventSource == nil {
-		return nil, fmt.Errorf("Unable to find peer event source for channel: %s", channelID)
+		return nil, errors.New("unable to find peer event source for channel")
 	}
 
 	// Event source found create event hub

@@ -7,11 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package signingmgr
 
 import (
-	"fmt"
-
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
 // SigningManager is used for signing objects with private key
@@ -33,11 +32,11 @@ func NewSigningManager(cryptoProvider bccsp.BCCSP, config apiconfig.Config) (*Si
 func (mgr *SigningManager) Sign(object []byte, key bccsp.Key) ([]byte, error) {
 
 	if object == nil || len(object) == 0 {
-		return nil, fmt.Errorf("Must provide object to sign")
+		return nil, errors.New("object (to sign) required")
 	}
 
 	if key == nil {
-		return nil, fmt.Errorf("Must provide key for signing")
+		return nil, errors.New("key (for signing) required")
 	}
 
 	digest, err := mgr.cryptoProvider.Hash(object, mgr.hashOpts)

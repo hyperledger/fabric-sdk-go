@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package identity
 
 import (
-	"fmt"
-
 	"github.com/golang/protobuf/proto"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	pb_msp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 )
@@ -94,7 +94,7 @@ func (u *User) Identity() ([]byte, error) {
 		IdBytes: u.EnrollmentCertificate()}
 	identity, err := proto.Marshal(serializedIdentity)
 	if err != nil {
-		return nil, fmt.Errorf("Could not Marshal serializedIdentity, err %s", err)
+		return nil, errors.Wrap(err, "marshal serializedIdentity failed")
 	}
 	return identity, nil
 }

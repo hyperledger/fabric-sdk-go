@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -16,6 +15,7 @@ import (
 	proto_ts "github.com/golang/protobuf/ptypes/timestamp"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
@@ -31,7 +31,7 @@ func init() {
 // CreateTransaction create a transaction with proposal response, following the endorsement policy.
 func (c *Channel) CreateTransaction(resps []*apitxn.TransactionProposalResponse) (*apitxn.Transaction, error) {
 	if len(resps) == 0 {
-		return nil, fmt.Errorf("At least one proposal response is necessary")
+		return nil, errors.New("at least one proposal response is necessary")
 	}
 
 	proposal := &resps[0].Proposal
@@ -39,13 +39,13 @@ func (c *Channel) CreateTransaction(resps []*apitxn.TransactionProposalResponse)
 	// the original header
 	hdr, err := protos_utils.GetHeader(proposal.Proposal.Header)
 	if err != nil {
-		return nil, fmt.Errorf("Could not unmarshal the proposal header")
+		return nil, errors.Wrap(err, "unmarshal proposal header failed")
 	}
 
 	// the original payload
 	pPayl, err := protos_utils.GetChaincodeProposalPayload(proposal.Proposal.Payload)
 	if err != nil {
-		return nil, fmt.Errorf("Could not unmarshal the proposal payload")
+		return nil, errors.Wrap(err, "unmarshal proposal payload failed")
 	}
 
 	// get header extensions so we have the visibility field
@@ -62,19 +62,19 @@ func (c *Channel) CreateTransaction(resps []*apitxn.TransactionProposalResponse)
 	//                            if n == 0 {
 	//                                            a1 = r.Payload
 	//                                            if r.Response.Status != 200 {
-	//                                                            return nil, fmt.Errorf("Proposal response was not successful, error code %d, msg %s", r.Response.Status, r.Response.Message)
+	//                                                            return nil, errors.Errorf("proposal response was not successful, error code %d, msg %s", r.Response.Status, r.Response.Message)
 	//                                            }
 	//                                            continue
 	//                            }
 
 	//                            if bytes.Compare(a1, r.Payload) != 0 {
-	//                                            return nil, fmt.Errorf("ProposalResponsePayloads do not match")
+	//                                            return nil, errors.New("ProposalResponsePayloads do not match")
 	//                            }
 	//            }
 
 	for _, r := range resps {
 		if r.ProposalResponse.Response.Status != 200 {
-			return nil, fmt.Errorf("Proposal response was not successful, error code %d, msg %s", r.ProposalResponse.Response.Status, r.ProposalResponse.Response.Message)
+			return nil, errors.Errorf("proposal response was not successful, error code %d, msg %s", r.ProposalResponse.Response.Status, r.ProposalResponse.Response.Message)
 		}
 	}
 
@@ -113,19 +113,19 @@ func (c *Channel) CreateTransaction(resps []*apitxn.TransactionProposalResponse)
 // SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
 func (c *Channel) SendTransaction(tx *apitxn.Transaction) (*apitxn.TransactionResponse, error) {
 	if c.orderers == nil || len(c.orderers) == 0 {
-		return nil, fmt.Errorf("orderers is nil")
+		return nil, errors.New("orderers is nil")
 	}
 	if tx == nil {
-		return nil, fmt.Errorf("Transaction is nil")
+		return nil, errors.New("transaction is nil")
 	}
 	if tx.Proposal == nil || tx.Proposal.Proposal == nil {
-		return nil, fmt.Errorf("proposal is nil")
+		return nil, errors.New("proposal is nil")
 	}
 
 	// the original header
 	hdr, err := protos_utils.GetHeader(tx.Proposal.Proposal.Header)
 	if err != nil {
-		return nil, fmt.Errorf("Could not unmarshal the proposal header")
+		return nil, errors.Wrap(err, "unmarshal proposal header failed")
 	}
 	// serialize the tx
 	txBytes, err := protos_utils.GetBytesTransaction(tx.Transaction)
@@ -164,21 +164,21 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 	chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
 	if chaincodeName == "" {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodeName' parameter")
+		return nil, apitxn.TransactionID{}, errors.New("chaincodeName is required")
 	}
 	if chaincodePath == "" {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodePath' parameter")
+		return nil, apitxn.TransactionID{}, errors.New("chaincodePath is required")
 	}
 	if chaincodeVersion == "" {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodeVersion' parameter")
+		return nil, apitxn.TransactionID{}, errors.New("chaincodeVersion is required")
 	}
 	if chaincodePolicy == nil {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodePolicy' parameter")
+		return nil, apitxn.TransactionID{}, errors.New("chaincodePolicy is required")
 	}
 
 	// TODO: We should validate that targets are added to the channel.
 	if targets == nil || len(targets) < 1 {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing peer objects for instantiate CC proposal")
+		return nil, apitxn.TransactionID{}, errors.New("missing peer objects for instantiate chaincode proposal")
 	}
 
 	argsArray := make([][]byte, len(args))
@@ -191,11 +191,11 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
 	if c.clientContext.UserContext() == nil {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("User context needs to be set")
+		return nil, apitxn.TransactionID{}, errors.New("user context is nil")
 	}
 	creator, err := c.clientContext.UserContext().Identity()
 	if err != nil {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Error getting creator: %v", err)
+		return nil, apitxn.TransactionID{}, errors.Wrap(err, "getting user context's identity failed")
 	}
 	chaincodePolicyBytes, err := protos_utils.Marshal(chaincodePolicy)
 	if err != nil {
@@ -204,7 +204,7 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 	// create a proposal from a chaincodeDeploymentSpec
 	proposal, txID, err := protos_utils.CreateDeployProposalFromCDS(c.Name(), ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
 	if err != nil {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Could not create chaincode Deploy proposal, err %s", err)
+		return nil, apitxn.TransactionID{}, errors.Wrap(err, "create chaincode deploy proposal failed")
 	}
 
 	signedProposal, err := c.signProposal(proposal)
@@ -233,21 +233,21 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 	chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
 	if chaincodeName == "" {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodeName' parameter")
+		return nil, apitxn.TransactionID{}, errors.New("chaincodeName is required")
 	}
 	if chaincodePath == "" {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodePath' parameter")
+		return nil, apitxn.TransactionID{}, errors.New("chaincodePath is required")
 	}
 	if chaincodeVersion == "" {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodeVersion' parameter")
+		return nil, apitxn.TransactionID{}, errors.New("chaincodeVersion is required")
 	}
 	if chaincodePolicy == nil {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodePolicy' parameter")
+		return nil, apitxn.TransactionID{}, errors.New("chaincodePolicy is required")
 	}
 
 	// TODO: We should validate that targets are added to the channel.
 	if targets == nil || len(targets) < 1 {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing peer objects for upgrade CC proposal")
+		return nil, apitxn.TransactionID{}, errors.New("missing peer objects for upgrade chaincode proposal")
 	}
 
 	argsArray := make([][]byte, len(args))
@@ -260,11 +260,11 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
 	if c.clientContext.UserContext() == nil {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("User context needs to be set")
+		return nil, apitxn.TransactionID{}, errors.New("user context is nil")
 	}
 	creator, err := c.clientContext.UserContext().Identity()
 	if err != nil {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Error getting creator: %v", err)
+		return nil, apitxn.TransactionID{}, errors.Wrap(err, "getting user context's identity failed")
 	}
 	chaincodePolicyBytes, err := protos_utils.Marshal(chaincodePolicy)
 	if err != nil {
@@ -273,7 +273,7 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 	// create a proposal from a chaincodeDeploymentSpec
 	proposal, txID, err := protos_utils.CreateUpgradeProposalFromCDS(c.Name(), ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
 	if err != nil {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Could not create chaincode Upgrade proposal, err %s", err)
+		return nil, apitxn.TransactionID{}, errors.Wrap(err, "create chaincode upgrade proposal failed")
 	}
 
 	signedProposal, err := c.signProposal(proposal)
@@ -297,12 +297,12 @@ func (c *Channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
 	//Get user info
 	user := c.clientContext.UserContext()
 	if user == nil {
-		return nil, fmt.Errorf("User is nil")
+		return nil, errors.New("user is nil")
 	}
 
 	signingMgr := c.clientContext.SigningManager()
 	if signingMgr == nil {
-		return nil, fmt.Errorf("Signing Manager is nil")
+		return nil, errors.New("signing manager is nil")
 	}
 
 	signature, err := signingMgr.Sign(payload, user.PrivateKey())
@@ -318,7 +318,7 @@ func (c *Channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
 func (c *Channel) BroadcastEnvelope(envelope *fab.SignedEnvelope) (*apitxn.TransactionResponse, error) {
 	// Check if orderers are defined
 	if len(c.orderers) == 0 {
-		return nil, fmt.Errorf("orderers not set")
+		return nil, errors.New("orderers not set")
 	}
 
 	// Copy aside the ordering service endpoints
@@ -345,7 +345,7 @@ func (c *Channel) sendBroadcast(envelope *fab.SignedEnvelope, orderer fab.Ordere
 	if _, err := orderer.SendBroadcast(envelope); err != nil {
 		logger.Debugf("Receive Error Response from orderer :%v\n", err)
 		return &apitxn.TransactionResponse{Orderer: orderer.URL(),
-			Err: fmt.Errorf("Error calling orderer '%s':  %s", orderer.URL(), err)}
+			Err: errors.Wrapf(err, "calling orderer '%s' failed", orderer.URL())}
 	}
 
 	logger.Debugf("Receive Success Response from orderer\n")
@@ -355,7 +355,7 @@ func (c *Channel) sendBroadcast(envelope *fab.SignedEnvelope, orderer fab.Ordere
 // SendEnvelope sends the given envelope to each orderer and returns a block response
 func (c *Channel) SendEnvelope(envelope *fab.SignedEnvelope) (*common.Block, error) {
 	if c.orderers == nil || len(c.orderers) == 0 {
-		return nil, fmt.Errorf("orderers not set")
+		return nil, errors.New("orderers not set")
 	}
 
 	var blockResponse *common.Block
@@ -370,7 +370,7 @@ func (c *Channel) SendEnvelope(envelope *fab.SignedEnvelope) (*common.Block, err
 		go func(orderer fab.Orderer) {
 			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
 
-			blocks, errors := orderer.SendDeliver(envelope)
+			blocks, errs := orderer.SendDeliver(envelope)
 			select {
 			case block := <-blocks:
 				mutex.Lock()
@@ -380,7 +380,7 @@ func (c *Channel) SendEnvelope(envelope *fab.SignedEnvelope) (*common.Block, err
 				}
 				mutex.Unlock()
 
-			case err := <-errors:
+			case err := <-errs:
 				mutex.Lock()
 				if errorResponse == nil {
 					errorResponse = err
@@ -394,7 +394,7 @@ func (c *Channel) SendEnvelope(envelope *fab.SignedEnvelope) (*common.Block, err
 			case <-time.After(c.ClientContext().Config().TimeoutOrDefault(apiconfig.OrdererResponse)):
 				mutex.Lock()
 				if errorResponse == nil {
-					errorResponse = fmt.Errorf("Timeout waiting for response from orderer")
+					errorResponse = errors.New("timeout waiting for response from orderer")
 				}
 				outstandingRequests--
 				if outstandingRequests == 0 {
@@ -413,10 +413,10 @@ func (c *Channel) SendEnvelope(envelope *fab.SignedEnvelope) (*common.Block, err
 
 	// There must be an error
 	if errorResponse != nil {
-		return nil, fmt.Errorf("error returned from orderer service: %v", errorResponse)
+		return nil, errors.Wrap(errorResponse, "error returned from orderer service")
 	}
 
-	return nil, fmt.Errorf("unexpected: didn't receive a block from any of the orderer servces and didn't receive any error")
+	return nil, errors.New("unexpected: didn't receive a block from any of the orderer servces and didn't receive any error")
 }
 
 // BuildChannelHeader is a utility method to build a common chain header (TODO refactor)
@@ -445,7 +445,7 @@ func BuildChannelHeader(headerType common.HeaderType, channelID string, txID str
 		}
 		headerExtBytes, err := proto.Marshal(headerExt)
 		if err != nil {
-			return nil, fmt.Errorf("Error marshaling header extension: %v", err)
+			return nil, errors.Wrap(err, "marshal header extension failed")
 		}
 		channelHeader.Extension = headerExtBytes
 	}

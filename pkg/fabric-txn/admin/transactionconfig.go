@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package admin
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
@@ -15,10 +14,12 @@ import (
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -32,13 +33,14 @@ func SendInstallCC(client fab.FabricClient, chainCodeID string, chainCodePath st
 	transactionProposalResponse, _, err := client.InstallChaincode(chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, targets)
 	resetGOPATH()
 	if err != nil {
-		return fmt.Errorf("InstallChaincode returned error: %v", err)
+		return errors.WithMessage(err, "InstallChaincode failed")
 	}
 	for _, v := range transactionProposalResponse {
 		if v.Err != nil {
-			return fmt.Errorf("InstallChaincode Endorser %s returned error: %v", v.Endorser, v.Err)
+			logger.Debugf("InstallChaincode endorser %s returned error", v.Endorser)
+			return errors.WithMessage(v.Err, "InstallChaincode endorser failed")
 		}
-		logger.Debugf("InstallChaincode Endorser '%s' returned ProposalResponse status:%v\n", v.Endorser, v.Status)
+		logger.Debugf("InstallChaincode endorser '%s' returned ProposalResponse status:%v", v.Endorser, v.Status)
 	}
 
 	return nil
@@ -51,21 +53,22 @@ func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
 	transactionProposalResponse, txID, err := channel.SendInstantiateProposal(chainCodeID,
 		args, chaincodePath, chaincodeVersion, chaincodePolicy, targets)
 	if err != nil {
-		return fmt.Errorf("SendInstantiateProposal returned error: %v", err)
+		return errors.WithMessage(err, "SendInstantiateProposal failed")
 	}
 
 	for _, v := range transactionProposalResponse {
 		if v.Err != nil {
-			return fmt.Errorf("SendInstantiateProposal Endorser %s returned error: %v", v.Endorser, v.Err)
+			logger.Debugf("SendInstantiateProposal endorser %s returned error", v.Endorser)
+			return errors.WithMessage(v.Err, "SendInstantiateProposal endorser failed")
 		}
-		logger.Debug("SendInstantiateProposal Endorser '%s' returned ProposalResponse status:%v\n", v.Endorser, v.Status)
+		logger.Debug("SendInstantiateProposal endorser '%s' returned ProposalResponse status:%v", v.Endorser, v.Status)
 	}
 
 	// Register for commit event
 	chcode := internal.RegisterTxEvent(txID, eventHub)
 
 	if _, err = internal.CreateAndSendTransaction(channel, transactionProposalResponse); err != nil {
-		return fmt.Errorf("CreateTransaction returned error: %v", err)
+		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
 	select {
@@ -73,9 +76,11 @@ func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
 		if code == peer.TxValidationCode_VALID {
 			return nil
 		}
-		return fmt.Errorf("instantiateCC Error received from eventhub for txid(%s), code(%s)", txID, code)
+		logger.Debugf("instantiateCC error received from eventhub for txid(%s), code(%s)", txID, code)
+		return errors.Errorf("instantiateCC with code %s", code)
 	case <-time.After(time.Second * 30):
-		return fmt.Errorf("instantiateCC Didn't receive block event for txid(%s)", txID)
+		logger.Debugf("instantiateCC didn't receive block event for txid(%s)", txID)
+		return errors.New("instantiateCC timeout")
 	}
 }
 
@@ -86,12 +91,13 @@ func SendUpgradeCC(channel fab.Channel, chainCodeID string, args []string,
 	transactionProposalResponse, txID, err := channel.SendUpgradeProposal(chainCodeID,
 		args, chaincodePath, chaincodeVersion, chaincodePolicy, targets)
 	if err != nil {
-		return fmt.Errorf("SendUpgradeProposal returned error: %v", err)
+		return errors.WithMessage(err, "SendUpgradeProposal failed")
 	}
 
 	for _, v := range transactionProposalResponse {
 		if v.Err != nil {
-			return fmt.Errorf("SendUpgradeProposal Endorser %s returned error: %v", v.Endorser, v.Err)
+			logger.Debugf("SendUpgradeProposal endorser %s failed", v.Endorser)
+			return errors.WithMessage(v.Err, "SendUpgradeProposal endorser failed")
 		}
 		logger.Debug("SendUpgradeProposal Endorser '%s' returned ProposalResponse status:%v\n", v.Endorser, v.Status)
 	}
@@ -100,7 +106,7 @@ func SendUpgradeCC(channel fab.Channel, chainCodeID string, args []string,
 	chcode := internal.RegisterTxEvent(txID, eventHub)
 
 	if _, err = internal.CreateAndSendTransaction(channel, transactionProposalResponse); err != nil {
-		return fmt.Errorf("CreateTransaction returned error: %v", err)
+		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
 	select {
@@ -108,9 +114,11 @@ func SendUpgradeCC(channel fab.Channel, chainCodeID string, args []string,
 		if code == peer.TxValidationCode_VALID {
 			return nil
 		}
-		return fmt.Errorf("upgradeCC Error received from eventhub for txid(%s) code(%s)", txID, code)
+		logger.Debugf("upgradeCC Error received from eventhub for txid(%s) code(%s)", txID, code)
+		return errors.Errorf("upgradeCC failed with code %s", code)
 	case <-time.After(time.Second * 30):
-		return fmt.Errorf("upgradeCC Didn't receive block event for txid(%s)", txID)
+		logger.Debugf("instantiateCC didn't receive block event for txid(%s)", txID)
+		return errors.New("upgradeCC timeout")
 	}
 }
 
@@ -126,17 +134,17 @@ func CreateOrUpdateChannel(client fab.FabricClient, ordererUser ca.User, orgUser
 
 	configTx, err := ioutil.ReadFile(channelConfig)
 	if err != nil {
-		return fmt.Errorf("Error reading config file: %v", err)
+		return errors.Wrap(err, "reading config file failed")
 	}
 
 	config, err := client.ExtractChannelConfig(configTx)
 	if err != nil {
-		return fmt.Errorf("Error extracting channel config: %v", err)
+		return errors.WithMessage(err, "extracting channel config failed")
 	}
 
 	configSignature, err := client.SignChannelConfig(config)
 	if err != nil {
-		return fmt.Errorf("Error signing configuration: %v", err)
+		return errors.WithMessage(err, "signing configuration failed")
 	}
 
 	var configSignatures []*common.ConfigSignature
@@ -152,7 +160,7 @@ func CreateOrUpdateChannel(client fab.FabricClient, ordererUser ca.User, orgUser
 	client.SetUserContext(ordererUser)
 	_, err = client.CreateChannel(request)
 	if err != nil {
-		return fmt.Errorf("CreateChannel returned error: %v", err)
+		return errors.WithMessage(err, "CreateChannel failed")
 	}
 
 	return nil
@@ -167,7 +175,7 @@ func JoinChannel(client fab.FabricClient, orgUser ca.User, channel fab.Channel) 
 
 	txnid, err := client.NewTxnID()
 	if err != nil {
-		return fmt.Errorf("Could not create a transaction ID: %s", err)
+		return errors.WithMessage(err, "NewTxnID failed")
 	}
 
 	genesisBlockRequest := &fab.GenesisBlockRequest{
@@ -175,12 +183,12 @@ func JoinChannel(client fab.FabricClient, orgUser ca.User, channel fab.Channel) 
 	}
 	genesisBlock, err := channel.GenesisBlock(genesisBlockRequest)
 	if err != nil {
-		return fmt.Errorf("Error getting genesis block: %v", err)
+		return errors.WithMessage(err, "genesis block retrieval failed")
 	}
 
 	txnid2, err := client.NewTxnID()
 	if err != nil {
-		return fmt.Errorf("Could not create a transaction ID: %s", err)
+		return errors.WithMessage(err, "NewTxnID failed")
 	}
 
 	joinChannelRequest := &fab.JoinChannelRequest{
@@ -191,7 +199,7 @@ func JoinChannel(client fab.FabricClient, orgUser ca.User, channel fab.Channel) 
 
 	err = channel.JoinChannel(joinChannelRequest)
 	if err != nil {
-		return fmt.Errorf("Error joining channel: %s", err)
+		return errors.WithMessage(err, "join channel failed")
 	}
 
 	return nil

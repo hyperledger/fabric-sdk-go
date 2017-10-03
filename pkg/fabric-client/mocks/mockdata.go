@@ -7,15 +7,16 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"fmt"
-
 	"github.com/golang/protobuf/proto"
-	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
-	ledger_util "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
+
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	ab "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/orderer"
 	pp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
+	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
+	ledger_util "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 // NewSimpleMockBlock returns a simple mock block
@@ -37,7 +38,7 @@ func NewSimpleMockBlock() *common.Block {
 
 // NewSimpleMockError returns a error
 func NewSimpleMockError() error {
-	return fmt.Errorf("Test Error")
+	return errors.New("Test Error")
 }
 
 // MockConfigGroupBuilder is used to build a mock ConfigGroup

@@ -8,7 +8,6 @@ package channel
 
 import (
 	"crypto/rand"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -16,13 +15,16 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
 
 func TestCreateTransaction(t *testing.T) {
@@ -34,7 +36,7 @@ func TestCreateTransaction(t *testing.T) {
 	//Test Empty proposal response scenario
 	_, err := channel.CreateTransaction([]*apitxn.TransactionProposalResponse{})
 
-	if err == nil || err.Error() != "At least one proposal response is necessary" {
+	if err == nil || err.Error() != "at least one proposal response is necessary" {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction, for empty proposal response scenario")
 	}
 
@@ -60,7 +62,7 @@ func TestCreateTransaction(t *testing.T) {
 
 	_, err = channel.CreateTransaction(input)
 
-	if err == nil || err.Error() != "Could not unmarshal the proposal header" {
+	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction, invalid proposal header scenario")
 	}
 
@@ -80,7 +82,7 @@ func TestCreateTransaction(t *testing.T) {
 	input = []*apitxn.TransactionProposalResponse{test}
 
 	_, err = channel.CreateTransaction(input)
-	if err == nil || err.Error() != "Could not unmarshal the proposal payload" {
+	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction, invalid proposal payload scenario")
 	}
 
@@ -99,7 +101,7 @@ func TestCreateTransaction(t *testing.T) {
 	input = []*apitxn.TransactionProposalResponse{test}
 	_, err = channel.CreateTransaction(input)
 
-	if err == nil || err.Error() != "Proposal response was not successful, error code 99, msg success" {
+	if err == nil || err.Error() != "proposal response was not successful, error code 99, msg success" {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction")
 	}
 
@@ -153,7 +155,7 @@ func TestSendInstantiateProposal(t *testing.T) {
 	tresponse, txnid, err := channel.SendInstantiateProposal("", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
-	if err == nil || err.Error() != "Missing 'chaincodeName' parameter" {
+	if err == nil || err.Error() != "chaincodeName is required" {
 		t.Fatal("Validation for chain code name parameter for send Instantiate Proposal failed")
 	}
 
@@ -163,20 +165,20 @@ func TestSendInstantiateProposal(t *testing.T) {
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
-	if err == nil || err.Error() != "Missing 'chaincodePath' parameter" {
+	if err == nil || err.Error() != "chaincodePath is required" {
 		t.Fatal("Validation for chain code path for send Instantiate Proposal failed")
 	}
 
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
-	if err == nil || err.Error() != "Missing 'chaincodeVersion' parameter" {
+	if err == nil || err.Error() != "chaincodeVersion is required" {
 		t.Fatal("Validation for chain code version for send Instantiate Proposal failed")
 	}
 
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", nil, nil)
-	if err == nil || err.Error() != "Missing 'chaincodePolicy' parameter" {
+	if err == nil || err.Error() != "chaincodePolicy is required" {
 		t.Fatal("Validation for chain code policy for send Instantiate Proposal failed")
 	}
 
@@ -189,7 +191,7 @@ func TestSendInstantiateProposal(t *testing.T) {
 
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", cauthdsl.SignedByMspMember("Org1MSP"), nil)
-	if err == nil || err.Error() != "Missing peer objects for instantiate CC proposal" {
+	if err == nil || err.Error() != "missing peer objects for instantiate chaincode proposal" {
 		t.Fatal("Missing peer objects validation is not working as expected")
 	}
 }
@@ -221,7 +223,7 @@ func TestSendUpgradeProposal(t *testing.T) {
 	tresponse, txnid, err := channel.SendUpgradeProposal("", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
-	if err == nil || err.Error() != "Missing 'chaincodeName' parameter" {
+	if err == nil || err.Error() != "chaincodeName is required" {
 		t.Fatal("Validation for chain code name parameter for send Upgrade Proposal failed")
 	}
 
@@ -231,20 +233,20 @@ func TestSendUpgradeProposal(t *testing.T) {
 	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
-	if err == nil || err.Error() != "Missing 'chaincodePath' parameter" {
+	if err == nil || err.Error() != "chaincodePath is required" {
 		t.Fatal("Validation for chain code path for send Upgrade Proposal failed")
 	}
 
 	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
-	if err == nil || err.Error() != "Missing 'chaincodeVersion' parameter" {
+	if err == nil || err.Error() != "chaincodeVersion is required" {
 		t.Fatal("Validation for chain code version for send Upgrade Proposal failed")
 	}
 
 	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
 		"2", nil, nil)
-	if err == nil || err.Error() != "Missing 'chaincodePolicy' parameter" {
+	if err == nil || err.Error() != "chaincodePolicy is required" {
 		t.Fatal("Validation for chain code policy for send Upgrade Proposal failed")
 	}
 
@@ -257,7 +259,7 @@ func TestSendUpgradeProposal(t *testing.T) {
 
 	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
 		"2", cauthdsl.SignedByMspMember("Org1MSP"), nil)
-	if err == nil || err.Error() != "Missing peer objects for upgrade CC proposal" {
+	if err == nil || err.Error() != "missing peer objects for upgrade chaincode proposal" {
 		t.Fatal("Missing peer objects validation is not working as expected")
 	}
 }
@@ -321,7 +323,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	// Now make 1 of them fail and repeatedly broadcast
 	broadcastCount := 50
 	for i := 0; i < broadcastCount; i++ {
-		orderer1.(mocks.MockOrderer).EnqueueSendBroadcastError(fmt.Errorf("Service Unavailable"))
+		orderer1.(mocks.MockOrderer).EnqueueSendBroadcastError(errors.New("Service Unavailable"))
 	}
 	// It should always succeed even though one of them has failed
 	for i := 0; i < broadcastCount; i++ {
@@ -332,8 +334,8 @@ func TestBroadcastEnvelope(t *testing.T) {
 
 	// Now, fail both and ensure any attempt fails
 	for i := 0; i < broadcastCount; i++ {
-		orderer1.(mocks.MockOrderer).EnqueueSendBroadcastError(fmt.Errorf("Service Unavailable"))
-		orderer2.(mocks.MockOrderer).EnqueueSendBroadcastError(fmt.Errorf("Service Unavailable"))
+		orderer1.(mocks.MockOrderer).EnqueueSendBroadcastError(errors.New("Service Unavailable"))
+		orderer2.(mocks.MockOrderer).EnqueueSendBroadcastError(errors.New("Service Unavailable"))
 	}
 
 	for i := 0; i < broadcastCount; i++ {
@@ -379,8 +381,8 @@ func TestSendTransaction(t *testing.T) {
 	response, err = channel.SendTransaction(nil)
 
 	//Expect tx is nil error
-	if response != nil || err == nil || err.Error() != "Transaction is nil" {
-		t.Fatal("Test SendTransaction failed, it was supposed to fail with 'Transaction is nil' error")
+	if response != nil || err == nil || err.Error() != "transaction is nil" {
+		t.Fatal("Test SendTransaction failed, it was supposed to fail with 'transaction is nil' error")
 	}
 
 	//Create tx with nil proposal
@@ -410,8 +412,8 @@ func TestSendTransaction(t *testing.T) {
 	response, err = channel.SendTransaction(&txn)
 
 	//Expect header unmarshal error
-	if response != nil || err == nil || err.Error() != "Could not unmarshal the proposal header" {
-		t.Fatal("Test SendTransaction failed, it was supposed to fail with 'Could not unmarshal the proposal header' error")
+	if response != nil || err == nil || !strings.Contains(err.Error(), "unmarshal") {
+		t.Fatal("Test SendTransaction failed, it was supposed to fail with '...unmarshal...' error")
 	}
 
 	//Create tx with proper proposal header

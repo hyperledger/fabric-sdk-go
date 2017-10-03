@@ -7,12 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"fmt"
-
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -45,10 +45,10 @@ type ClientContext interface {
 // client: Provides operational context such as submitting User etc.
 func NewChannel(name string, client fab.FabricClient) (*Channel, error) {
 	if name == "" {
-		return nil, fmt.Errorf("failed to create Channel. Missing required 'name' parameter")
+		return nil, errors.Errorf("name is required")
 	}
 	if client == nil {
-		return nil, fmt.Errorf("failed to create Channel. Missing required 'clientContext' parameter")
+		return nil, errors.Errorf("client is required")
 	}
 	p := make(map[string]fab.Peer)
 	o := make(map[string]fab.Orderer)
@@ -75,7 +75,7 @@ func (c *Channel) Name() string {
 func (c *Channel) AddPeer(peer fab.Peer) error {
 	url := peer.URL()
 	if c.peers[url] != nil {
-		return fmt.Errorf("Peer with URL %s already exists", url)
+		return errors.Errorf("peer with URL %s already exists", url)
 	}
 	c.peers[url] = peer
 	return nil
@@ -118,7 +118,7 @@ func (c *Channel) AnchorPeers() []fab.OrgAnchorPeer {
 func (c *Channel) SetPrimaryPeer(peer fab.Peer) error {
 
 	if !c.isValidPeer(peer) {
-		return fmt.Errorf("The primary peer must be on this channel peer list")
+		return errors.New("primary peer must be on this channel peer list")
 	}
 
 	c.primaryPeer = c.peers[peer.URL()]
@@ -154,7 +154,7 @@ func (c *Channel) PrimaryPeer() fab.Peer {
 func (c *Channel) AddOrderer(orderer fab.Orderer) error {
 	url := orderer.URL()
 	if c.orderers[url] != nil {
-		return fmt.Errorf("Orderer with URL %s already exists", url)
+		return errors.Errorf("orderer with URL %s already exists", url)
 	}
 	c.orderers[orderer.URL()] = orderer
 	return nil
@@ -199,7 +199,7 @@ func (c *Channel) OrganizationUnits() ([]string, error) {
 	msps, err := channelMSPManager.GetMSPs()
 	if err != nil {
 		logger.Info("Cannot get channel manager")
-		return nil, fmt.Errorf("Organization uits were not set: %v", err)
+		return nil, errors.WithMessage(err, "organization units were not set")
 	}
 	var orgIdentifiers []string
 	for _, v := range msps {

@@ -7,27 +7,26 @@ SPDX-License-Identifier: Apache-2.0
 package events
 
 import (
-	"errors"
-	"fmt"
 	"reflect"
 	"regexp"
 	"sync"
-
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	syncmap "golang.org/x/sync/syncmap"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	cnsmr "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
-	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
-
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	syncmap "golang.org/x/sync/syncmap"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
+	cnsmr "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -76,7 +75,7 @@ func (ccf *consumerClientFactory) newEventsClient(client fab.FabricClient, peerA
 func NewEventHub(client fab.FabricClient) (*EventHub, error) {
 
 	if client == nil {
-		return nil, fmt.Errorf("Client is nil")
+		return nil, errors.New("Client is required")
 	}
 	eventHub := EventHub{
 		blockRegistrants:    nil,
@@ -115,11 +114,11 @@ func (eventHub *EventHub) Disconnect() error {
 	// Unregister interests with server and stop the stream
 	err := eventHub.grpcClient.UnregisterAsync(eventHub.interestedEvents)
 	if err != nil {
-		return fmt.Errorf("Error unregistering events: %s", err)
+		return errors.WithMessage(err, "event client UnregisterAsync failed")
 	}
 	err = eventHub.grpcClient.Stop()
 	if err != nil {
-		return fmt.Errorf("Error stopping event client: %s", err)
+		return errors.WithMessage(err, "event client stop failed")
 	}
 
 	eventHub.connected = false
@@ -239,11 +238,11 @@ func (eventHub *EventHub) Connect() error {
 	}
 
 	if eventHub.peerAddr == "" {
-		return fmt.Errorf("eventHub.peerAddr is empty")
+		return errors.New("peerAddr is required")
 	}
 
 	if eventHub.interestedEvents == nil || len(eventHub.interestedEvents) == 0 {
-		return fmt.Errorf("You must register for at least one event before connecting")
+		return errors.New("at least one event must be registered")
 	}
 
 	if eventHub.grpcClient == nil {
@@ -255,7 +254,7 @@ func (eventHub *EventHub) Connect() error {
 
 	if err := eventHub.grpcClient.Start(); err != nil {
 		eventHub.grpcClient.Stop()
-		return fmt.Errorf("Error from eventsClient.Start (%s)", err.Error())
+		return errors.WithMessage(err, "event client start failed")
 	}
 
 	eventHub.connected = true
@@ -413,7 +412,7 @@ func (eventHub *EventHub) txCallback(block *common.Block) {
 			callback := eventHub.getTXRegistrant(channelHeader.TxId)
 			if callback != nil {
 				if txFilter.IsInvalid(i) {
-					callback(channelHeader.TxId, txFilter.Flag(i), fmt.Errorf("Received invalid transaction from channel %s", channelHeader.ChannelId))
+					callback(channelHeader.TxId, txFilter.Flag(i), errors.New("received invalid transaction"))
 				} else {
 					callback(channelHeader.TxId, txFilter.Flag(i), nil)
 				}
@@ -464,19 +463,19 @@ func getChainCodeEvent(tdata []byte) (event *pb.ChaincodeEvent, channelID string
 	}
 
 	if env, err := utils.GetEnvelopeFromBlock(tdata); err != nil {
-		return nil, "", fmt.Errorf("Error getting tx from block(%s)", err)
+		return nil, "", errors.Wrap(err, "tx from block failed")
 	} else if env != nil {
 		// get the payload from the envelope
 		payload, err := utils.GetPayload(env)
 		if err != nil {
-			return nil, "", fmt.Errorf("Could not extract payload from envelope, err %s", err)
+			return nil, "", errors.Wrap(err, "extract payload from envelope failed")
 		}
 
 		channelHeaderBytes := payload.Header.ChannelHeader
 		channelHeader := &common.ChannelHeader{}
 		err = proto.Unmarshal(channelHeaderBytes, channelHeader)
 		if err != nil {
-			return nil, "", fmt.Errorf("Could not extract channel header from envelope, err %s", err)
+			return nil, "", errors.Wrap(err, "unmarshal channel header failed")
 		}
 
 		channelID := channelHeader.ChannelId
@@ -485,19 +484,19 @@ func getChainCodeEvent(tdata []byte) (event *pb.ChaincodeEvent, channelID string
 		if common.HeaderType(channelHeader.Type) == common.HeaderType_ENDORSER_TRANSACTION {
 			tx, err := utils.GetTransaction(payload.Data)
 			if err != nil {
-				return nil, "", fmt.Errorf("Error unmarshalling transaction payload for block event: %s", err)
+				return nil, "", errors.Wrap(err, "unmarshal transaction payload")
 			}
 			chaincodeActionPayload, err := utils.GetChaincodeActionPayload(tx.Actions[0].Payload)
 			if err != nil {
-				return nil, "", fmt.Errorf("Error unmarshalling transaction action payload for block event: %s", err)
+				return nil, "", errors.Wrap(err, "chaincode action payload retrieval failed")
 			}
 			propRespPayload, err := utils.GetProposalResponsePayload(chaincodeActionPayload.Action.ProposalResponsePayload)
 			if err != nil {
-				return nil, "", fmt.Errorf("Error unmarshalling proposal response payload for block event: %s", err)
+				return nil, "", errors.Wrap(err, "proposal response payload retrieval failed")
 			}
 			caPayload, err := utils.GetChaincodeAction(propRespPayload.Extension)
 			if err != nil {
-				return nil, "", fmt.Errorf("Error unmarshalling chaincode action for block event: %s", err)
+				return nil, "", errors.Wrap(err, "chaincode action retrieval failed")
 			}
 			ccEvent, err := utils.GetChaincodeEvents(caPayload.Events)
 

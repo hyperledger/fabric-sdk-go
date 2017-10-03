@@ -7,15 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"fmt"
-
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
 // MockClient ...
@@ -63,7 +62,7 @@ func (c *MockClient) Config() config.Config {
 
 // QueryChannelInfo ...
 func (c *MockClient) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, error) {
-	return nil, fmt.Errorf("Not implemented yet")
+	return nil, errors.New("Not implemented yet")
 }
 
 // SetStateStore ...
@@ -98,50 +97,50 @@ func (c *MockClient) SetSigningManager(signingMgr fab.SigningManager) {
 
 // SaveUserToStateStore ...
 func (c *MockClient) SaveUserToStateStore(user fab.User, skipPersistence bool) error {
-	return fmt.Errorf("Not implemented yet")
+	return errors.New("Not implemented yet")
 
 }
 
 // LoadUserFromStateStore ...
 func (c *MockClient) LoadUserFromStateStore(name string) (fab.User, error) {
 	if c.errorScenario {
-		return nil, fmt.Errorf("just to test error scenario")
+		return nil, errors.New("just to test error scenario")
 	}
 	return NewMockUser("test"), nil
 }
 
 // ExtractChannelConfig ...
 func (c *MockClient) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
-	return nil, fmt.Errorf("Not implemented yet")
+	return nil, errors.New("Not implemented yet")
 
 }
 
 // SignChannelConfig ...
 func (c *MockClient) SignChannelConfig(config []byte) (*common.ConfigSignature, error) {
-	return nil, fmt.Errorf("Not implemented yet")
+	return nil, errors.New("Not implemented yet")
 
 }
 
 // CreateChannel ...
 func (c *MockClient) CreateChannel(request fab.CreateChannelRequest) (apitxn.TransactionID, error) {
-	return apitxn.TransactionID{}, fmt.Errorf("Not implemented yet")
+	return apitxn.TransactionID{}, errors.New("Not implemented yet")
 
 }
 
 //QueryChannels ...
 func (c *MockClient) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) {
-	return nil, fmt.Errorf("Not implemented yet")
+	return nil, errors.New("Not implemented yet")
 }
 
 //QueryInstalledChaincodes ...
 func (c *MockClient) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResponse, error) {
-	return nil, fmt.Errorf("Not implemented yet")
+	return nil, errors.New("Not implemented yet")
 }
 
 // InstallChaincode ...
 func (c *MockClient) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
 	chaincodePackage []byte, targets []fab.Peer) ([]*apitxn.TransactionProposalResponse, string, error) {
-	return nil, "", fmt.Errorf("Not implemented yet")
+	return nil, "", errors.New("Not implemented yet")
 
 }
 
