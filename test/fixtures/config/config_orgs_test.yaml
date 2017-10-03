@@ -44,6 +44,22 @@ client:
     level: info
 
 
+# Global configuration for peer, event service and orderer timeouts
+  peer:
+    timeout:
+      connection: 3s
+      queryResponse: 20s
+      executeTxResponse: 30s
+  eventService:
+    timeout:
+      connection: 3s
+      registrationResponse: 3s
+  orderer:
+    timeout:
+      connection: 3s
+      response: 5s
+
+
   # Needed to load users crypto keys and certs.
   cryptoconfig:
     path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config
@@ -78,22 +94,6 @@ client:
      softVerify: true
      ephemeral: false
      level: 256
-
-  #Timeout configs for various connection and response types
-  endorserConnectionTimeout: 3s
-
-  eventServiceConnectionTimeout: 3s
-
-  ordererConnectionTimeout: 3s
-
-  ordererResponseTimeout: 5s
-
-  eventRegistrationResponseTimeout: 3s
-
-  queryResponseTimeout: 20s
-
-  executeTxResponseTimeout: 30s
-
 
 #
 # [Optional]. But most apps would have this section so that channel objects can be constructed

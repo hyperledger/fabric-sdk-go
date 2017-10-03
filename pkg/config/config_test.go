@@ -300,13 +300,13 @@ func TestTLSACAConfig(t *testing.T) {
 }
 
 func TestTimeouts(t *testing.T) {
-	myViper.Set("client.endorserConnectionTimeout", "2s")
-	myViper.Set("client.eventServiceConnectionTimeout", "2m")
-	myViper.Set("client.eventRegistrationResponseTimeout", "2h")
-	myViper.Set("client.ordererConnectionTimeout", "2ms")
-	myViper.Set("client.queryResponseTimeout", "7h")
-	myViper.Set("client.executeTxResponseTimeout", "8h")
-	myViper.Set("client.ordererResponseTimeout", "6s")
+	myViper.Set("client.peer.timeout.connection", "2s")
+	myViper.Set("client.eventService.timeout.connection", "2m")
+	myViper.Set("client.eventService.timeout.registrationResponse", "2h")
+	myViper.Set("client.orderer.timeout.connection", "2ms")
+	myViper.Set("client.peer.timeout.queryResponse", "7h")
+	myViper.Set("client.peer.timeout.executeTxResponse", "8h")
+	myViper.Set("client.orderer.timeout.response", "6s")
 
 	t1 := configImpl.TimeoutOrDefault(api.Endorser)
 	if t1 != time.Second*2 {
@@ -338,7 +338,7 @@ func TestTimeouts(t *testing.T) {
 	}
 
 	// Test default
-	myViper.Set("client.ordererConnectionTimeout", "")
+	myViper.Set("client.orderer.timeout.connection", "")
 	t1 = configImpl.TimeoutOrDefault(api.OrdererConnection)
 	if t1 != time.Second*5 {
 		t.Fatalf("Timeout not read correctly. Got: %s", t1)

@@ -44,7 +44,20 @@ client:
   logging:
     level: info
 
-
+# Global configuration for peer, event service and orderer timeouts
+  peer:
+    timeout:
+      connection: 3s
+      queryResponse: 20s
+      executeTxResponse: 30s
+  eventService:
+    timeout:
+      connection: 3s
+      registrationResponse: 3s
+  orderer:
+    timeout:
+      connection: 3s
+      response: 5s
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:
@@ -86,21 +99,6 @@ client:
      label: "ForFabric"
      #library: "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/softhsm/libsofthsm2.so ,/usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so"
      library: "add BCCSP library here"
-
-  #Timeout configs for various connection and response types
-  endorserConnectionTimeout: 3s
-
-  eventServiceConnectionTimeout: 3s
-
-  ordererConnectionTimeout: 3s
-
-  ordererResponseTimeout: 5s
-
-  eventRegistrationResponseTimeout: 3s
-
-  queryResponseTimeout: 20s
-
-  executeTxResponseTimeout: 30s
 
 
 #
