@@ -22,6 +22,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
@@ -375,7 +376,7 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 
 	for _, peerName := range peersConfig {
 		p := config.Peers[strings.ToLower(peerName)]
-		if err = verifyPeerConfig(p, peerName, c.IsTLSEnabled()); err != nil {
+		if err = verifyPeerConfig(p, peerName, urlutil.IsTLSEnabled(p.URL)); err != nil {
 			return nil, err
 		}
 		if p.TLSCACerts.Path != "" {
@@ -464,7 +465,7 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 			return nil, errors.Errorf("peer config not found for %s", peerName)
 		}
 
-		if err = verifyPeerConfig(p, peerName, c.IsTLSEnabled()); err != nil {
+		if err = verifyPeerConfig(p, peerName, urlutil.IsTLSEnabled(p.URL)); err != nil {
 			return nil, err
 		}
 
@@ -505,11 +506,6 @@ func verifyPeerConfig(p apiconfig.PeerConfig, peerName string, tlsEnabled bool) 
 		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil
-}
-
-// IsTLSEnabled is TLS enabled?
-func (c *Config) IsTLSEnabled() bool {
-	return myViper.GetBool("client.tls.enabled")
 }
 
 // SetTLSCACertPool allows a user to set a global cert pool with a set of

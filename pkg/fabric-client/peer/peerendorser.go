@@ -15,6 +15,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -47,7 +48,7 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 		opts = append(opts, grpc.WithBlock())
 	}
 
-	if config.IsTLSEnabled() {
+	if urlutil.IsTLSEnabled(target) {
 		certPool, _ := config.TLSCACertPool("")
 		if len(certificate) == 0 && len(certPool.Subjects()) == 0 {
 			return peerEndorser{}, errors.New("certificate is required")
@@ -63,7 +64,7 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 		opts = append(opts, grpc.WithInsecure())
 	}
 
-	pc := peerEndorser{grpcDialOption: opts, target: target}
+	pc := peerEndorser{grpcDialOption: opts, target: urlutil.ToAddress(target)}
 
 	return pc, nil
 }

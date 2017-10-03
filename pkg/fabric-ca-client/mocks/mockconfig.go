@@ -72,11 +72,6 @@ func (c *MockConfig) PeerConfig(org string, name string) (*apiconfig.PeerConfig,
 	return nil, nil
 }
 
-// IsTLSEnabled ...
-func (c *MockConfig) IsTLSEnabled() bool {
-	return false
-}
-
 // TLSCACertPool ...
 func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 	return nil, nil

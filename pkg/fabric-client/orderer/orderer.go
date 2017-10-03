@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -32,7 +33,7 @@ type Orderer struct {
 func NewOrderer(url string, certificate string, serverHostOverride string, config apiconfig.Config) (*Orderer, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.OrdererConnection)))
-	if config.IsTLSEnabled() {
+	if urlutil.IsTLSEnabled(url) {
 		tlsCaCertPool, err := config.TLSCACertPool(certificate)
 		if err != nil {
 			return nil, err
@@ -42,7 +43,7 @@ func NewOrderer(url string, certificate string, serverHostOverride string, confi
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}
-	return &Orderer{url: url, grpcDialOption: opts}, nil
+	return &Orderer{url: urlutil.ToAddress(url), grpcDialOption: opts}, nil
 }
 
 // URL Get the Orderer url. Required property for the instance objects.

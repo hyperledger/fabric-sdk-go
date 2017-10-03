@@ -30,7 +30,6 @@ type Config interface {
 	NetworkConfig() (*NetworkConfig, error)
 	ChannelConfig(name string) (*ChannelConfig, error)
 	ChannelPeers(name string) ([]ChannelPeer, error)
-	IsTLSEnabled() bool
 	SetTLSCACertPool(*x509.CertPool)
 	TLSCACertPool(tlsCertificate string) (*x509.CertPool, error)
 	IsSecurityEnabled() bool

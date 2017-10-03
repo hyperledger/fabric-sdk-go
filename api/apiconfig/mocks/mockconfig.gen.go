@@ -188,18 +188,6 @@ func (mr *MockConfigMockRecorder) IsSecurityEnabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSecurityEnabled", reflect.TypeOf((*MockConfig)(nil).IsSecurityEnabled))
 }
 
-// IsTLSEnabled mocks base method
-func (m *MockConfig) IsTLSEnabled() bool {
-	ret := m.ctrl.Call(m, "IsTLSEnabled")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsTLSEnabled indicates an expected call of IsTLSEnabled
-func (mr *MockConfigMockRecorder) IsTLSEnabled() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsTLSEnabled", reflect.TypeOf((*MockConfig)(nil).IsTLSEnabled))
-}
-
 // KeyStorePath mocks base method
 func (m *MockConfig) KeyStorePath() string {
 	ret := m.ctrl.Call(m, "KeyStorePath")

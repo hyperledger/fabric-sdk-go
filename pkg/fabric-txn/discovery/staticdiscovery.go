@@ -51,11 +51,13 @@ func (dp *StaticDiscoveryProvider) NewDiscoveryService(channel apifabclient.Chan
 		if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
 			serverHostOverride = str
 		}
-		peer, err := peer.NewPeerTLSFromCert(p.URL, p.TLSCACerts.Path, serverHostOverride, dp.config)
-		if err != nil {
+
+		newPeer, err := peer.NewPeerTLSFromCert(p.URL, p.TLSCACerts.Path, serverHostOverride, dp.config)
+
+		if err != nil || newPeer == nil {
 			return nil, errors.WithMessage(err, "NewPeer failed")
 		}
-		peers = append(peers, peer)
+		peers = append(peers, newPeer)
 	}
 
 	return &StaticDiscoveryService{channel: channel, config: dp.config, peers: peers}, nil

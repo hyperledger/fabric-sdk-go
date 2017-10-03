@@ -18,6 +18,7 @@ import (
 
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -61,7 +62,7 @@ func NewEventsClient(client fab.FabricClient, peerAddress string, certificate st
 func newEventsClientConnectionWithAddress(peerAddress string, certificate string, serverhostoverride string, config apiconfig.Config) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.EventHub)))
-	if config.IsTLSEnabled() {
+	if urlutil.IsTLSEnabled(peerAddress) {
 		tlsCaCertPool, err := config.TLSCACertPool(certificate)
 		if err != nil {
 			return nil, err
@@ -71,7 +72,7 @@ func newEventsClientConnectionWithAddress(peerAddress string, certificate string
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}
-	conn, err := grpc.Dial(peerAddress, opts...)
+	conn, err := grpc.Dial(urlutil.ToAddress(peerAddress), opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -63,10 +63,6 @@ client:
   cryptoconfig:
     path: path/to/cryptoconfig
 
-  # enable/disable tls for the client
-  tls:
-    enabled: true
-
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"
   # are implementation specific
   credentialStore:
@@ -185,7 +181,7 @@ organizations:
 #
 orderers:
 #  orderer.example.com:
-#    url: orderer.example.com:7050
+#    url: grpcs://orderer.example.com:7050
 
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
@@ -204,10 +200,10 @@ orderers:
 peers:
 #  peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
-#    url: peer0.org1.example.com:7051
+#    url: grpcs://peer0.org1.example.com:7051
 
     # this URL is used to connect the EventHub and registering event listeners
-#    eventUrl: peer0.org1.example.com:7053
+#    eventUrl: grpcs://peer0.org1.example.com:7053
 
 #    grpcOptions:
 #      ssl-target-name-override: peer0.org1.example.com

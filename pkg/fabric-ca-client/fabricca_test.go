@@ -27,17 +27,20 @@ import (
 
 var configImp config.Config
 var org1 = "peerorg1"
+var caServerURL = "http://localhost:8090"
+var wrongCAServerURL = "http://localhost:8091"
 
-// Load testing config
+// TestMain Load testing config
 func TestMain(m *testing.M) {
-	configImp = mocks.NewMockConfig("http://localhost:8090")
+	configImp = mocks.NewMockConfig(caServerURL)
 	// Start Http Server
-	go mocks.StartFabricCAMockServer("localhost:8090")
+	go mocks.StartFabricCAMockServer(strings.TrimPrefix(caServerURL, "http://"))
 	// Allow HTTP server to start
 	time.Sleep(1 * time.Second)
 	os.Exit(m.Run())
 }
 
+// TestEnroll will test multiple enrol scenarios
 func TestEnroll(t *testing.T) {
 
 	fabricCAClient, err := NewFabricCAClient(configImp, org1)
@@ -63,7 +66,7 @@ func TestEnroll(t *testing.T) {
 		t.Fatalf("fabricCAClient Enroll return error %v", err)
 	}
 
-	wrongConfigImp := mocks.NewMockConfig("http://localhost:8091")
+	wrongConfigImp := mocks.NewMockConfig(wrongCAServerURL)
 	fabricCAClient, err = NewFabricCAClient(wrongConfigImp, org1)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
@@ -78,6 +81,7 @@ func TestEnroll(t *testing.T) {
 
 }
 
+// TestRegister tests multiple scenarios of registering a test (mocked or nil user) and their certs
 func TestRegister(t *testing.T) {
 
 	fabricCAClient, err := NewFabricCAClient(configImp, org1)
@@ -137,6 +141,7 @@ func TestRegister(t *testing.T) {
 	}
 }
 
+// TestRevoke will test multiple revoking a user with a nil request or a nil user
 func TestRevoke(t *testing.T) {
 
 	fabricCAClient, err := NewFabricCAClient(configImp, org1)
@@ -169,6 +174,7 @@ func TestRevoke(t *testing.T) {
 	}
 }
 
+// TestReenroll will test multiple scenarios of re enrolling a user
 func TestReenroll(t *testing.T) {
 
 	fabricCAClient, err := NewFabricCAClient(configImp, org1)
@@ -214,7 +220,7 @@ func TestReenroll(t *testing.T) {
 	}
 
 	// Reenroll with wrong fabric-ca server url
-	wrongConfigImp := mocks.NewMockConfig("http://localhost:8091")
+	wrongConfigImp := mocks.NewMockConfig(wrongCAServerURL)
 	fabricCAClient, err = NewFabricCAClient(wrongConfigImp, org1)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
@@ -228,8 +234,8 @@ func TestReenroll(t *testing.T) {
 	}
 }
 
+// TestGetCAName will test the CAName is properly created once a new FabricCAClient is created
 func TestGetCAName(t *testing.T) {
-
 	fabricCAClient, err := NewFabricCAClient(configImp, org1)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
@@ -239,7 +245,8 @@ func TestGetCAName(t *testing.T) {
 	}
 }
 
-func TestCreateNewFabricCAClient(t *testing.T) {
+// TestCreateNewFabricCAClientOrgAndConfigMissingFailure tests for newFabricCA Client creation with a missing Config and Org
+func TestCreateNewFabricCAClientOrgAndConfigMissingFailure(t *testing.T) {
 	_, err := NewFabricCAClient(configImp, "")
 	if err.Error() != "organization and config are required to load CA config" {
 		t.Fatalf("Expected error without oganization information. Got: %s", err.Error())
@@ -248,49 +255,72 @@ func TestCreateNewFabricCAClient(t *testing.T) {
 	if err.Error() != "organization and config are required to load CA config" {
 		t.Fatalf("Expected error without config information. Got: %s", err.Error())
 	}
+}
+
+// TestCreateNewFabricCAClientCAConfigMissingFailure will test newFabricCA Client creation with with CAConfig
+func TestCreateNewFabricCAClientCAConfigMissingFailure(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	mockConfig.EXPECT().CAConfig(org1).Return(nil, errors.New("CAConfig error"))
 
-	_, err = NewFabricCAClient(mockConfig, org1)
+	_, err := NewFabricCAClient(mockConfig, org1)
 	if err.Error() != "CAConfig error" {
 		t.Fatalf("Expected error from CAConfig. Got: %s", err.Error())
 	}
+}
 
-	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
+// TestCreateNewFabricCAClientCertFilesMissingFailure will test newFabricCA Client creation with missing CA Cert files
+func TestCreateNewFabricCAClientCertFilesMissingFailure(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return(nil, errors.New("CAServerCertFiles error"))
-	_, err = NewFabricCAClient(mockConfig, org1)
+	_, err := NewFabricCAClient(mockConfig, org1)
 	if err.Error() != "CAServerCertFiles error" {
 		t.Fatalf("Expected error from CAServerCertFiles. Got: %s", err.Error())
 	}
+}
 
-	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
+// TestCreateNewFabricCAClientCertFileErrorFailure will test newFabricCA Client creation with missing CA Cert files, additional scenario
+func TestCreateNewFabricCAClientCertFileErrorFailure(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", errors.New("CAClientCertFile error"))
-	_, err = NewFabricCAClient(mockConfig, org1)
+	_, err := NewFabricCAClient(mockConfig, org1)
 	if err.Error() != "CAClientCertFile error" {
 		t.Fatalf("Expected error from CAClientCertFile. Got: %s", err.Error())
 	}
+}
 
-	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
+// TestCreateNewFabricCAClientKeyFileErrorFailure will test newFabricCA Client creation with missing CA Cert files and missing key
+func TestCreateNewFabricCAClientKeyFileErrorFailure(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", errors.New("CAClientKeyFile error"))
-	_, err = NewFabricCAClient(mockConfig, org1)
+	_, err := NewFabricCAClient(mockConfig, org1)
 	if err.Error() != "CAClientKeyFile error" {
 		t.Fatalf("Expected error from CAClientKeyFile. Got: %s", err.Error())
 	}
 }
 
+// TestCreateInvalidBCCSPSecurityLevelForNewFabricClient will test newFabricCA Client creation with invalid BCCSP options
 func TestCreateInvalidBCCSPSecurityLevelForNewFabricClient(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 	clientMockObject := &config.ClientConfig{Organization: "org1", Logging: config.LoggingType{Level: "info"}, CryptoConfig: config.CCType{Path: "test/path"}}
 
-	bccspSW := createBCCSPProviderFactoryOptions("SW", "SHA2", 100)
+	bccspSW := createBCCSPProviderFactoryOptions("SW", "SHA2", 100) // invalid BCCSP options
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
@@ -298,13 +328,13 @@ func TestCreateInvalidBCCSPSecurityLevelForNewFabricClient(t *testing.T) {
 	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
 	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
 	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
-	mockConfig.EXPECT().IsTLSEnabled().Return(true)
 	client, err := NewFabricCAClient(mockConfig, org1)
 	if !strings.Contains(err.Error(), "init failed") {
 		t.Fatalf("Expected error from client %v init. Got: %s", client, err.Error())
 	}
 }
 
+// TestCreateInvalidBCCSPHashFamilyForNewFabricClient will test newFabricCA Client creation with bad HashFamily
 func TestCreateInvalidBCCSPHashFamilyForNewFabricClient(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -318,7 +348,6 @@ func TestCreateInvalidBCCSPHashFamilyForNewFabricClient(t *testing.T) {
 	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
 	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
-	mockConfig.EXPECT().IsTLSEnabled().Return(true)
 	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
 	client, err := NewFabricCAClient(mockConfig, org1)
 	if !strings.Contains(err.Error(), "init failed") {
@@ -326,6 +355,7 @@ func TestCreateInvalidBCCSPHashFamilyForNewFabricClient(t *testing.T) {
 	}
 }
 
+// TestCreateValidBCCSPOptsForNewFabricClient test newFabricCA Client creation with valid inputs, successful scenario
 func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -339,7 +369,6 @@ func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
 	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
-	mockConfig.EXPECT().IsTLSEnabled().Return(true)
 	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
 	_, err := NewFabricCAClient(mockConfig, org1)
 	if err != nil {
@@ -347,6 +376,7 @@ func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 	}
 }
 
+// createBCCSPProviderFactoryOptions is a helper function to return BCCSP Factory Options object
 func createBCCSPProviderFactoryOptions(providerName string, hashFamily string, securityLevel int) *bccspFactory.FactoryOpts {
 	return &bccspFactory.FactoryOpts{
 		ProviderName: providerName,
@@ -361,7 +391,7 @@ func createBCCSPProviderFactoryOptions(providerName string, hashFamily string, s
 	}
 }
 
-// Reads a random cert for testing
+// readCert Reads a random cert for testing
 func readCert(t *testing.T) []byte {
 	cert, err := ioutil.ReadFile("../../test/fixtures/root.pem")
 	if err != nil {
@@ -370,6 +400,7 @@ func readCert(t *testing.T) []byte {
 	return cert
 }
 
+// TestInterfaces will test if the interface instantiation happens properly, ie no nil returned
 func TestInterfaces(t *testing.T) {
 	var apiCA ca.FabricCAClient
 	var ca FabricCA
