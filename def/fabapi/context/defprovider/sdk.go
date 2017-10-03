@@ -37,7 +37,17 @@ func (f *DefaultProviderFactory) NewConfigProvider(o opt.ConfigOpts, a opt.SDKOp
 
 // NewStateStoreProvider creates a KeyValueStore using the SDK's default implementation
 func (f *DefaultProviderFactory) NewStateStoreProvider(o opt.StateStoreOpts, config apiconfig.Config) (fab.KeyValueStore, error) {
-	stateStore, err := kvs.CreateNewFileKeyValueStore(o.Path)
+
+	var stateStorePath = o.Path
+	if stateStorePath == "" {
+		clientCofig, err := config.Client()
+		if err != nil {
+			return nil, err
+		}
+		stateStorePath = clientCofig.CredentialStore.Path
+	}
+
+	stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
 	if err != nil {
 		return nil, fmt.Errorf("CreateNewFileKeyValueStore returned error[%s]", err)
 	}

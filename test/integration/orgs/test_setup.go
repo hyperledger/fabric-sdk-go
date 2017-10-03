@@ -18,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
@@ -248,10 +247,7 @@ func loadOrgUsers(t *testing.T) {
 
 	// Create SDK setup for the integration tests
 	sdkOptions := deffab.Options{
-		ConfigFile: "../" + integration.ConfigTestFile,
-		StateStoreOpts: opt.StateStoreOpts{
-			Path: "/tmp/enroll_user",
-		},
+		ConfigFile: ConfigTestFile,
 	}
 
 	sdk, err := deffab.NewSDK(sdkOptions)

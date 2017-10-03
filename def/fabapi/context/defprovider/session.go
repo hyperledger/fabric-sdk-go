@@ -59,7 +59,7 @@ func (f *SessionClientFactory) NewChannelClient(sdk context.SDK, session context
 		return nil, fmt.Errorf("Unable to create discovery service:%v", err)
 	}
 
-	eventHub, err := getEventHub(client, channelName)
+	eventHub, err := getEventHub(client, channelName, session)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func getChannel(client fab.FabricClient, channelID string) (fab.Channel, error) 
 	return channel, nil
 }
 
-func getEventHub(client fab.FabricClient, channelID string) (*events.EventHub, error) {
+func getEventHub(client fab.FabricClient, channelID string, session context.Session) (*events.EventHub, error) {
 
 	peerConfig, err := client.Config().ChannelPeers(channelID)
 	if err != nil {
@@ -115,7 +115,7 @@ func getEventHub(client fab.FabricClient, channelID string) (*events.EventHub, e
 
 	for _, p := range peerConfig {
 
-		if p.EventSource {
+		if p.EventSource && p.MspID == session.Identity().MspID() {
 			serverHostOverride = ""
 			if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
 				serverHostOverride = str

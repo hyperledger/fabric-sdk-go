@@ -18,11 +18,9 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
-	fabricTxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
 	admin "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -43,15 +41,25 @@ type BaseSetupImpl struct {
 	AdminUser       ca.User
 }
 
+// ExampleCC query and transaction arguments
+var queryArgs = [][]byte{[]byte("query"), []byte("b")}
+var txArgs = [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}
+
+// ExampleCCQueryArgs returns example cc query args
+func ExampleCCQueryArgs() [][]byte {
+	return queryArgs
+}
+
+// ExampleCCTxArgs returns example cc move funds args
+func ExampleCCTxArgs() [][]byte {
+	return txArgs
+}
+
 // Initialize reads configuration from file and sets up client, channel and event hub
 func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	// Create SDK setup for the integration tests
 	sdkOptions := deffab.Options{
 		ConfigFile: setup.ConfigFile,
-		//		OrgID:      setup.OrgID,
-		StateStoreOpts: opt.StateStoreOpts{
-			Path: "/tmp/enroll_user",
-		},
 	}
 
 	sdk, err := deffab.NewSDK(sdkOptions)
@@ -219,20 +227,6 @@ func (setup *BaseSetupImpl) UpgradeExampleCC() error {
 	return setup.UpgradeCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, args)
 }
 
-// Query ...
-func (setup *BaseSetupImpl) Query(channelID string, chainCodeID string, fcn string, args []string) (string, error) {
-	return fabricTxn.QueryChaincode(setup.Client, setup.Channel, chainCodeID, fcn, args)
-}
-
-// QueryAsset ...
-func (setup *BaseSetupImpl) QueryAsset() (string, error) {
-	fcn := "invoke"
-	var args []string
-	args = append(args, "query")
-	args = append(args, "b")
-	return setup.Query(setup.ChannelID, setup.ChainCodeID, fcn, args)
-}
-
 // GetChannel initializes and returns a channel based on config
 func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string, orgs []string) (fab.Channel, error) {
 
@@ -284,12 +278,15 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 
 // CreateAndSendTransactionProposal ... TODO duplicate
 func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel, chainCodeID string,
-	fcn string, args []string, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+	fcn string, args [][]byte, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+
+	// TODO: Remove after args conversion from []string to [][]byte
+	ccArgs := toStringArray(args)
 
 	request := apitxn.ChaincodeInvokeRequest{
 		Targets:      targets,
 		Fcn:          fcn,
-		Args:         args,
+		Args:         ccArgs,
 		TransientMap: transientData,
 		ChaincodeID:  chainCodeID,
 	}
@@ -378,4 +375,13 @@ func (setup *BaseSetupImpl) getEventHub(t *testing.T, client fab.FabricClient) (
 	}
 
 	return eventHub, nil
+}
+
+// TODO: Remove after args conversion from []string to [][]byte
+func toStringArray(byteArray [][]byte) []string {
+	strArray := make([]string, len(byteArray))
+	for i := 0; i < len(byteArray); i++ {
+		strArray[i] = string(byteArray[i])
+	}
+	return strArray
 }

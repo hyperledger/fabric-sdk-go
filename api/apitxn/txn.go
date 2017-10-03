@@ -49,9 +49,10 @@ type ExecuteTxRequest struct {
 
 // ExecuteTxOpts allows the user to specify more advanced options
 type ExecuteTxOpts struct {
-	Notifier chan ExecuteTxResponse // async
-	TxFilter ExecuteTxFilter
-	Timeout  time.Duration
+	Notifier           chan ExecuteTxResponse // async
+	TxFilter           ExecuteTxFilter
+	ProposalProcessors []ProposalProcessor // targets
+	Timeout            time.Duration
 }
 
 // ExecuteTxFilter allows the user to inspect/modify response before commit
