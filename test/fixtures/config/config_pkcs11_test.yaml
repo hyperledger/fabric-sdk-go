@@ -46,7 +46,7 @@ client:
   peer:
     timeout:
       connection: 3s
-      queryResponse: 20s
+      queryResponse: 30s
       executeTxResponse: 30s
   eventService:
     timeout:
@@ -198,7 +198,7 @@ organizations:
 
     # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
     cryptoPath:  peerOrganizations/org2.example.com/users/{userName}@org2.example.com/msp
-    
+
     peers:
       - peer0.org2.example.com
 

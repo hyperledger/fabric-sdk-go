@@ -47,7 +47,7 @@ client:
   peer:
     timeout:
       connection: 3s
-      queryResponse: 20s
+      queryResponse: 30s
       executeTxResponse: 30s
   eventService:
     timeout:
@@ -153,7 +153,7 @@ channels:
         chaincodeQuery: true
         ledgerQuery: true
         eventSource: true
-      
+
 
 #
 # list of participating organizations in this network
