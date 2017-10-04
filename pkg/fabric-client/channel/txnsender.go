@@ -160,7 +160,7 @@ func (c *Channel) SendTransaction(tx *apitxn.Transaction) (*apitxn.TransactionRe
 // chaincodePath: required - string of the path to the location of the source code of the chaincode
 // chaincodeVersion: required - string of the version of the chaincode
 func (c *Channel) SendInstantiateProposal(chaincodeName string,
-	args []string, chaincodePath string, chaincodeVersion string,
+	args [][]byte, chaincodePath string, chaincodeVersion string,
 	chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
 	if chaincodeName == "" {
@@ -181,14 +181,9 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 		return nil, apitxn.TransactionID{}, errors.New("missing peer objects for instantiate chaincode proposal")
 	}
 
-	argsArray := make([][]byte, len(args))
-	for i, arg := range args {
-		argsArray[i] = []byte(arg)
-	}
-
 	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion},
-		Input: &pb.ChaincodeInput{Args: argsArray}}}
+		Input: &pb.ChaincodeInput{Args: args}}}
 
 	if c.clientContext.UserContext() == nil {
 		return nil, apitxn.TransactionID{}, errors.New("user context is nil")
@@ -229,7 +224,7 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 // chaincodePath: required - string of the path to the location of the source code of the chaincode
 // chaincodeVersion: required - string of the version of the chaincode
 func (c *Channel) SendUpgradeProposal(chaincodeName string,
-	args []string, chaincodePath string, chaincodeVersion string,
+	args [][]byte, chaincodePath string, chaincodeVersion string,
 	chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
 	if chaincodeName == "" {
@@ -250,14 +245,9 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 		return nil, apitxn.TransactionID{}, errors.New("missing peer objects for upgrade chaincode proposal")
 	}
 
-	argsArray := make([][]byte, len(args))
-	for i, arg := range args {
-		argsArray[i] = []byte(arg)
-	}
-
 	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion},
-		Input: &pb.ChaincodeInput{Args: argsArray}}}
+		Input: &pb.ChaincodeInput{Args: args}}}
 
 	if c.clientContext.UserContext() == nil {
 		return nil, apitxn.TransactionID{}, errors.New("user context is nil")

@@ -88,10 +88,8 @@ func (cc *ChannelClient) QueryWithOpts(request apitxn.QueryRequest, opts apitxn.
 
 func sendTransactionProposal(request apitxn.QueryRequest, channel fab.Channel, proposalProcessors []apitxn.ProposalProcessor, notifier chan apitxn.QueryResponse) {
 
-	// TODO: Temporary conversion until proposal sender is changed to handle [][]byte arguments
-	ccArgs := toStringArray(request.Args)
 	transactionProposalResponses, _, err := internal.CreateAndSendTransactionProposal(channel,
-		request.ChaincodeID, request.Fcn, ccArgs, proposalProcessors, nil)
+		request.ChaincodeID, request.Fcn, request.Args, proposalProcessors, nil)
 
 	if err != nil {
 		notifier <- apitxn.QueryResponse{Response: nil, Error: err}
@@ -127,10 +125,8 @@ func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts
 		txProcessors = peer.PeersToTxnProcessors(peers)
 	}
 
-	// TODO: Temporary conversion until proposal sender is changed to handle [][]byte arguments
-	ccArgs := toStringArray(request.Args)
 	txProposalResponses, txID, err := internal.CreateAndSendTransactionProposal(cc.channel,
-		request.ChaincodeID, request.Fcn, ccArgs, txProcessors, request.TransientMap)
+		request.ChaincodeID, request.Fcn, request.Args, txProcessors, request.TransientMap)
 	if err != nil {
 		return apitxn.TransactionID{}, errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}
@@ -230,12 +226,4 @@ func (cc *ChannelClient) UnregisterChaincodeEvent(registration apitxn.Registrati
 
 	return nil
 
-}
-
-func toStringArray(byteArray [][]byte) []string {
-	strArray := make([]string, len(byteArray))
-	for i := 0; i < len(byteArray); i++ {
-		strArray[i] = string(byteArray[i])
-	}
-	return strArray
 }

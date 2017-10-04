@@ -29,8 +29,8 @@ func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
 	logger.Debug("queryInfo - start")
 
 	// prepare arguments to call qscc GetChainInfo function
-	var args []string
-	args = append(args, c.Name())
+	var args [][]byte
+	args = append(args, []byte(c.Name()))
 
 	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetChainInfo", args, c.PrimaryPeer())
 	if err != nil {
@@ -55,10 +55,10 @@ func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 		return nil, errors.New("blockHash is required")
 	}
 
-	// prepare arguments to call qscc GetBlockByHash function
-	var args []string
-	args = append(args, c.Name())
-	args = append(args, string(blockHash[:len(blockHash)]))
+	// prepare arguments to call qscc GetBlockByNumber function
+	var args [][]byte
+	args = append(args, []byte(c.Name()))
+	args = append(args, blockHash[:len(blockHash)])
 
 	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetBlockByHash", args, c.PrimaryPeer())
 	if err != nil {
@@ -85,9 +85,9 @@ func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
 	}
 
 	// prepare arguments to call qscc GetBlockByNumber function
-	var args []string
-	args = append(args, c.Name())
-	args = append(args, strconv.Itoa(blockNumber))
+	var args [][]byte
+	args = append(args, []byte(c.Name()))
+	args = append(args, []byte(strconv.Itoa(blockNumber)))
 
 	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetBlockByNumber", args, c.PrimaryPeer())
 	if err != nil {
@@ -110,9 +110,9 @@ func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
 func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error) {
 
 	// prepare arguments to call qscc GetTransactionByID function
-	var args []string
-	args = append(args, c.Name())
-	args = append(args, transactionID)
+	var args [][]byte
+	args = append(args, []byte(c.Name()))
+	args = append(args, []byte(transactionID))
 
 	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetTransactionByID", args, c.PrimaryPeer())
 	if err != nil {
@@ -132,9 +132,7 @@ func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransacti
 // This query will be made to the primary peer.
 func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
 
-	var args []string
-
-	payload, err := c.queryBySystemChaincodeByTarget("lscc", "getchaincodes", args, c.PrimaryPeer())
+	payload, err := c.queryBySystemChaincodeByTarget("lscc", "getchaincodes", nil, c.PrimaryPeer())
 	if err != nil {
 		return nil, errors.WithMessage(err, "lscc.getchaincodes failed")
 	}
@@ -194,7 +192,7 @@ func queryByChaincode(channelID string, request txn.ChaincodeInvokeRequest, clie
 // queryBySystemChaincodeByTarget is an internal helper function that queries system chaincode.
 // This function is not exported to keep the external interface of this package to only expose
 // request structs.
-func (c *Channel) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args []string, target txn.ProposalProcessor) ([]byte, error) {
+func (c *Channel) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args [][]byte, target txn.ProposalProcessor) ([]byte, error) {
 	targets := []txn.ProposalProcessor{target}
 	request := txn.ChaincodeInvokeRequest{
 		ChaincodeID: chaincodeID,

@@ -19,7 +19,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // CreateAndSendTransactionProposal ...
 func CreateAndSendTransactionProposal(sender apitxn.ProposalSender, chainCodeID string,
-	fcn string, args []string, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+	fcn string, args [][]byte, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
 	request := apitxn.ChaincodeInvokeRequest{
 		Targets:      targets,

@@ -31,8 +31,8 @@ type Channel interface {
 	Initialize(data []byte) error
 	IsInitialized() bool
 	LoadConfigUpdateEnvelope(data []byte) error
-	SendInstantiateProposal(chaincodeName string, args []string, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, txn.TransactionID, error)
-	SendUpgradeProposal(chaincodeName string, args []string, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, txn.TransactionID, error)
+	SendInstantiateProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, txn.TransactionID, error)
+	SendUpgradeProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, txn.TransactionID, error)
 
 	// Network
 	// TODO: Use PeerEndorser

@@ -38,7 +38,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 	// Create SDK setup for the integration tests
 	sdkOptions := fabapi.Options{
-		ConfigFile: ConfigTestFile,
+		ConfigFile: "../" + integration.ConfigTestFile,
 	}
 
 	sdk, err := fabapi.NewSDK(sdkOptions)

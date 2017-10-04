@@ -47,7 +47,7 @@ func SendInstallCC(client fab.FabricClient, chainCodeID string, chainCodePath st
 }
 
 // SendInstantiateCC Sends instantiate CC proposal to one or more endorsing peers
-func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
+func SendInstantiateCC(channel fab.Channel, chainCodeID string, args [][]byte,
 	chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor, eventHub fab.EventHub) error {
 
 	transactionProposalResponse, txID, err := channel.SendInstantiateProposal(chainCodeID,
@@ -85,7 +85,7 @@ func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
 }
 
 // SendUpgradeCC Sends upgrade CC proposal to one or more endorsing peers
-func SendUpgradeCC(channel fab.Channel, chainCodeID string, args []string,
+func SendUpgradeCC(channel fab.Channel, chainCodeID string, args [][]byte,
 	chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor, eventHub fab.EventHub) error {
 
 	transactionProposalResponse, txID, err := channel.SendUpgradeProposal(chainCodeID,

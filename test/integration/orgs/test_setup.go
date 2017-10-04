@@ -165,7 +165,7 @@ func installAndInstantiate(t *testing.T) {
 		org1AdminUser.MspID(), org2AdminUser.MspID()})
 
 	err = admin.SendInstantiateCC(orgTestChannel, "exampleCC",
-		generateInitArgs(), "github.com/example_cc", "0", chaincodePolicy, []apitxn.ProposalProcessor{orgTestPeer1}, peer1EventHub)
+		integration.ExampleCCInitArgs(), "github.com/example_cc", "0", chaincodePolicy, []apitxn.ProposalProcessor{orgTestPeer1}, peer1EventHub)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -246,7 +246,7 @@ func loadOrgUsers(t *testing.T) {
 
 	// Create SDK setup for the integration tests
 	sdkOptions := deffab.Options{
-		ConfigFile: ConfigTestFile,
+		ConfigFile: "../" + integration.ConfigTestFile,
 	}
 
 	sdk, err := deffab.NewSDK(sdkOptions)
@@ -273,14 +273,4 @@ func loadOrgUser(t *testing.T, sdk *deffab.FabricSDK, orgName string, userName s
 
 	return user
 
-}
-
-func generateInitArgs() []string {
-	var args []string
-	args = append(args, "init")
-	args = append(args, "a")
-	args = append(args, "100")
-	args = append(args, "b")
-	args = append(args, "200")
-	return args
 }

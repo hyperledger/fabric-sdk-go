@@ -34,7 +34,7 @@ type ChaincodeInvokeRequest struct {
 	TxnID        TransactionID // TODO: does it make sense to include the TxnID in the request?
 	TransientMap map[string][]byte
 	Fcn          string
-	Args         []string
+	Args         [][]byte
 }
 
 // TransactionProposal requests simulation of a proposed transaction from transaction processors.

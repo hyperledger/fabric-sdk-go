@@ -46,6 +46,10 @@ type BaseSetupImpl struct {
 var queryArgs = [][]byte{[]byte("query"), []byte("b")}
 var txArgs = [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}
 
+// ExampleCC init and upgrade args
+var initArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte("200")}
+var upgradeArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte("400")}
+
 // ExampleCCQueryArgs returns example cc query args
 func ExampleCCQueryArgs() [][]byte {
 	return queryArgs
@@ -54,6 +58,11 @@ func ExampleCCQueryArgs() [][]byte {
 // ExampleCCTxArgs returns example cc move funds args
 func ExampleCCTxArgs() [][]byte {
 	return txArgs
+}
+
+//ExampleCCInitArgs returns example cc initialization args
+func ExampleCCInitArgs() [][]byte {
+	return initArgs
 }
 
 // Initialize reads configuration from file and sets up client, channel and event hub
@@ -149,7 +158,7 @@ func (setup *BaseSetupImpl) InitConfig() (apiconfig.Config, error) {
 }
 
 // InstantiateCC ...
-func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args []string) error {
+func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args [][]byte) error {
 
 	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
 
@@ -157,7 +166,7 @@ func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath stri
 }
 
 // UpgradeCC ...
-func (setup *BaseSetupImpl) UpgradeCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args []string) error {
+func (setup *BaseSetupImpl) UpgradeCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args [][]byte) error {
 
 	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
 
@@ -194,14 +203,7 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 		return err
 	}
 
-	var args []string
-	args = append(args, "init")
-	args = append(args, "a")
-	args = append(args, "100")
-	args = append(args, "b")
-	args = append(args, "200")
-
-	return setup.InstantiateCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, args)
+	return setup.InstantiateCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, initArgs)
 }
 
 // UpgradeExampleCC ..
@@ -218,14 +220,7 @@ func (setup *BaseSetupImpl) UpgradeExampleCC() error {
 		return err
 	}
 
-	var args []string
-	args = append(args, "init")
-	args = append(args, "a")
-	args = append(args, "200")
-	args = append(args, "b")
-	args = append(args, "400")
-
-	return setup.UpgradeCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, args)
+	return setup.UpgradeCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, upgradeArgs)
 }
 
 // GetChannel initializes and returns a channel based on config
@@ -281,13 +276,10 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel, chainCodeID string,
 	fcn string, args [][]byte, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
-	// TODO: Remove after args conversion from []string to [][]byte
-	ccArgs := toStringArray(args)
-
 	request := apitxn.ChaincodeInvokeRequest{
 		Targets:      targets,
 		Fcn:          fcn,
-		Args:         ccArgs,
+		Args:         args,
 		TransientMap: transientData,
 		ChaincodeID:  chainCodeID,
 	}
@@ -376,13 +368,4 @@ func (setup *BaseSetupImpl) getEventHub(t *testing.T, client fab.FabricClient) (
 	}
 
 	return eventHub, nil
-}
-
-// TODO: Remove after args conversion from []string to [][]byte
-func toStringArray(byteArray [][]byte) []string {
-	strArray := make([]string, len(byteArray))
-	for i := 0; i < len(byteArray); i++ {
-		strArray[i] = string(byteArray[i])
-	}
-	return strArray
 }

@@ -131,8 +131,6 @@ channels:
         # Default: true
         eventSource: true
 
-
-
     # [Optional]. what chaincodes are expected to exist on this channel? The application can use
     # this information to validate that the target peers are in the expected state by comparing
     # this list with the query results of getInstalledChaincodes() and getInstantiatedChaincodes()
@@ -140,6 +138,26 @@ channels:
       # the format follows the "canonical name" of chaincodes by fabric code
       - example02:v1
       - marbles:1.0
+
+  # multi-org test channel
+  orgchannel:
+
+    orderers:
+      - orderer.example.com
+
+    peers:
+      peer0.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      
 
 #
 # list of participating organizations in this network

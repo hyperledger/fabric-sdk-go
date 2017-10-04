@@ -28,7 +28,7 @@ func TestQueryMethods(t *testing.T) {
 
 	badRequest1 := apitxn.ChaincodeInvokeRequest{
 		Fcn:  "method",
-		Args: []string{"arg"},
+		Args: [][]byte{[]byte("arg")},
 	}
 	_, err = channel.QueryByChaincode(badRequest1)
 	if err == nil {
@@ -46,7 +46,7 @@ func TestQueryMethods(t *testing.T) {
 	badRequest3 := apitxn.ChaincodeInvokeRequest{
 		ChaincodeID: "qscc",
 		Fcn:         "method",
-		Args:        []string{"arg"},
+		Args:        [][]byte{[]byte("arg")},
 	}
 	_, err = channel.QueryByChaincode(badRequest3)
 	if err == nil {

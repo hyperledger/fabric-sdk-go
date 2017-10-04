@@ -103,7 +103,7 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 	argsArray := make([][]byte, len(request.Args)+1)
 	argsArray[0] = []byte(request.Fcn)
 	for i, arg := range request.Args {
-		argsArray[i+1] = []byte(arg)
+		argsArray[i+1] = arg
 	}
 
 	// create invocation spec to target a chaincode with arguments
