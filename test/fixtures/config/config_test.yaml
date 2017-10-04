@@ -154,7 +154,6 @@ channels:
         ledgerQuery: true
         eventSource: true
 
-
 #
 # list of participating organizations in this network
 #

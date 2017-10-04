@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var configImpl api.Config
+var configImpl *Config
 var org0 = "org0"
 var org1 = "Org1"
 
@@ -74,7 +74,7 @@ func TestCAConfig(t *testing.T) {
 	}
 
 	//Test Crypto config path
-	crossCheckWithViperConfig(myViper.GetString("client.cryptoconfig.path"), configImpl.CryptoConfigPath(), "Incorrect crypto config path", t)
+	crossCheckWithViperConfig(configImpl.configViper.GetString("client.cryptoconfig.path"), configImpl.CryptoConfigPath(), "Incorrect crypto config path", t)
 
 	//Testing CA Client File Location
 	certfile, err := configImpl.CAClientCertFile(org1)
@@ -179,18 +179,11 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	//Tamper 'client.network' value and use a new config to avoid conflicting with other tests
 	sampleConfig, err := InitConfig("../../test/fixtures/config/config_test.yaml")
-	clientNetworkName := myViper.Get("client")
-	peers := myViper.Get("peers")
-	organizations := myViper.Get("organizations")
-	orderers := myViper.Get("orderers")
-	channels := myViper.Get("channels")
-	bccspSwProvider := myViper.GetString("client.BCCSP.security.default.provider")
-	myViper.Set("client", "INVALID")
-	myViper.Set("peers", "INVALID")
-	myViper.Set("organizations", "INVALID")
-	myViper.Set("orderers", "INVALID")
-	myViper.Set("channels", "INVALID")
-	//...
+	sampleConfig.configViper.Set("client", "INVALID")
+	sampleConfig.configViper.Set("peers", "INVALID")
+	sampleConfig.configViper.Set("organizations", "INVALID")
+	sampleConfig.configViper.Set("orderers", "INVALID")
+	sampleConfig.configViper.Set("channels", "INVALID")
 
 	_, err = sampleConfig.NetworkConfig()
 	if err == nil {
@@ -252,7 +245,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	}
 
 	// Testing empty BCCSP Software provider
-	myViper.Set("client.BCCSP.security.default.provider", "")
+	sampleConfig.configViper.Set("client.BCCSP.security.default.provider", "")
 	func() {
 		defer func() {
 			if r := recover(); r == nil {
@@ -263,19 +256,11 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	}()
 
 	// test empty network objects
-	myViper.Set("organizations", nil)
+	sampleConfig.configViper.Set("organizations", nil)
 	_, err = sampleConfig.NetworkConfig()
 	if err == nil {
 		t.Fatalf("Organizations were empty, it should return an error")
 	}
-
-	//Set it back to valid one, otherwise other tests may fail
-	myViper.Set("client.network", clientNetworkName)
-	myViper.Set("peers", peers)
-	myViper.Set("organizations", organizations)
-	myViper.Set("orderers", orderers)
-	myViper.Set("channels", channels)
-	myViper.Set("client.BCCSP.security.default.provider", bccspSwProvider)
 }
 
 func TestTLSACAConfig(t *testing.T) {
@@ -300,13 +285,13 @@ func TestTLSACAConfig(t *testing.T) {
 }
 
 func TestTimeouts(t *testing.T) {
-	myViper.Set("client.peer.timeout.connection", "2s")
-	myViper.Set("client.eventService.timeout.connection", "2m")
-	myViper.Set("client.eventService.timeout.registrationResponse", "2h")
-	myViper.Set("client.orderer.timeout.connection", "2ms")
-	myViper.Set("client.peer.timeout.queryResponse", "7h")
-	myViper.Set("client.peer.timeout.executeTxResponse", "8h")
-	myViper.Set("client.orderer.timeout.response", "6s")
+	configImpl.configViper.Set("client.peer.timeout.connection", "2s")
+	configImpl.configViper.Set("client.eventService.timeout.connection", "2m")
+	configImpl.configViper.Set("client.eventService.timeout.registrationResponse", "2h")
+	configImpl.configViper.Set("client.orderer.timeout.connection", "2ms")
+	configImpl.configViper.Set("client.peer.timeout.queryResponse", "7h")
+	configImpl.configViper.Set("client.peer.timeout.executeTxResponse", "8h")
+	configImpl.configViper.Set("client.orderer.timeout.response", "6s")
 
 	t1 := configImpl.TimeoutOrDefault(api.Endorser)
 	if t1 != time.Second*2 {
@@ -338,7 +323,7 @@ func TestTimeouts(t *testing.T) {
 	}
 
 	// Test default
-	myViper.Set("client.orderer.timeout.connection", "")
+	configImpl.configViper.Set("client.orderer.timeout.connection", "")
 	t1 = configImpl.TimeoutOrDefault(api.OrdererConnection)
 	if t1 != time.Second*5 {
 		t.Fatalf("Timeout not read correctly. Got: %s", t1)
@@ -471,32 +456,32 @@ func TestInitConfigWithCmdRoot(t *testing.T) {
 	logger.Infof("fileLoc is %s", fileLoc)
 
 	logger.Infof("fileLoc right before calling InitConfigWithCmdRoot is %s", fileLoc)
-	_, err := InitConfigWithCmdRoot(fileLoc, cmdRoot)
+	config, err := InitConfigWithCmdRoot(fileLoc, cmdRoot)
 	if err != nil {
 		t.Fatalf("Failed to initialize config with cmd root. Error: %s", err)
 	}
 
 	//Test if Viper is initialized after calling init config
-	if myViper.GetString("client.BCCSP.security.hashAlgorithm") != configImpl.SecurityAlgorithm() {
+	if config.configViper.GetString("client.BCCSP.security.hashAlgorithm") != configImpl.SecurityAlgorithm() {
 		t.Fatal("Config initialized with incorrect viper configuration")
 	}
 
 }
 
 func TestInitConfigPanic(t *testing.T) {
-	existingLogLevel := myViper.Get("client.logging.level")
-	myViper.Set("client.logging.level", "INVALID")
+
+	os.Setenv("FABRIC_SDK_CLIENT_LOGGING_LEVEL", "INVALID")
 
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("Init config with cmdroot was supposed to panic")
 		} else {
 			//Setting it back during panic so as not to fail other tests
-			myViper.Set("client.logging.level", existingLogLevel)
+			os.Unsetenv("FABRIC_SDK_CLIENT_LOGGING_LEVEL")
 		}
-
 	}()
-	InitConfigWithCmdRoot("../../test/fixtures/config/config_test.yaml", "fabric-sdk")
+
+	InitConfig("../../test/fixtures/config/config_test.yaml")
 }
 
 func TestInitConfigInvalidLocation(t *testing.T) {
@@ -521,7 +506,7 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testValue before config initialization got: %s", testValue1)
 	}
 	// initialize go sdk
-	_, err = InitConfig("../../test/fixtures/config/config_test.yaml")
+	config, err := InitConfig("../../test/fixtures/config/config_test.yaml")
 	if err != nil {
 		t.Log(err.Error())
 	}
@@ -532,14 +517,14 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testvalue after config initialization")
 	}
 	// Make sure Go SDK config is unaffected
-	testValue3 := myViper.GetBool("client.BCCSP.security.softVerify")
+	testValue3 := config.configViper.GetBool("client.BCCSP.security.softVerify")
 	if testValue3 != true {
 		t.Fatalf("Expected existing config value to remain unchanged")
 	}
 }
 
 func TestEnvironmentVariablesDefaultCmdRoot(t *testing.T) {
-	testValue := myViper.GetString("env.test")
+	testValue := configImpl.configViper.GetString("env.test")
 	if testValue != "" {
 		t.Fatalf("Expected environment variable value to be empty but got: %s", testValue)
 	}
@@ -551,19 +536,14 @@ func TestEnvironmentVariablesDefaultCmdRoot(t *testing.T) {
 		t.Log(err.Error())
 	}
 
-	_, err = InitConfig("../../test/fixtures/config/config_test.yaml")
-	if err != nil {
-		t.Log(err.Error())
-	}
-
-	testValue = myViper.GetString("env.test")
+	testValue = configImpl.configViper.GetString("env.test")
 	if testValue != "123" {
 		t.Fatalf("Expected environment variable value but got: %s", testValue)
 	}
 }
 
 func TestEnvironmentVariablesSpecificCmdRoot(t *testing.T) {
-	testValue := myViper.GetString("env.test")
+	testValue := configImpl.configViper.GetString("env.test")
 	if testValue != "" {
 		t.Fatalf("Expected environment variable value to be empty but got: %s", testValue)
 	}
@@ -575,12 +555,12 @@ func TestEnvironmentVariablesSpecificCmdRoot(t *testing.T) {
 		t.Log(err.Error())
 	}
 
-	_, err = InitConfigWithCmdRoot("../../test/fixtures/config/config_test.yaml", "test_root")
+	config, err := InitConfigWithCmdRoot("../../test/fixtures/config/config_test.yaml", "test_root")
 	if err != nil {
 		t.Log(err.Error())
 	}
 
-	testValue = myViper.GetString("env.test")
+	testValue = config.configViper.GetString("env.test")
 	if testValue != "456" {
 		t.Fatalf("Expected environment variable value but got: %s", testValue)
 	}

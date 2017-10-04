@@ -10,8 +10,6 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/spf13/viper"
-
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -62,12 +60,6 @@ func (c *MockConfig) CAClientCertFile(org string) (string, error) {
 //TimeoutOrDefault not implemented
 func (c *MockConfig) TimeoutOrDefault(arg config.TimeoutType) time.Duration {
 	return time.Second * 10
-}
-
-// FabricClientViper returns the internal viper instance used by the
-// SDK to read configuration options
-func (c *MockConfig) FabricClientViper() *viper.Viper {
-	return nil
 }
 
 // PeersConfig Retrieves the fabric peers from the config file provided

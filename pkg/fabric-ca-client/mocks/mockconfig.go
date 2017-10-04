@@ -13,7 +13,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
-	"github.com/spf13/viper"
 )
 
 // MockConfig ...
@@ -49,12 +48,6 @@ func (c *MockConfig) CAClientKeyFile(org string) (string, error) {
 // CAClientCertFile Read configuration option for the fabric CA client cert file
 func (c *MockConfig) CAClientCertFile(org string) (string, error) {
 	return "", nil
-}
-
-// FabricClientViper returns the internal viper instance used by the
-// SDK to read configuration options
-func (c *MockConfig) FabricClientViper() *viper.Viper {
-	return nil
 }
 
 //TimeoutOrDefault not implemented

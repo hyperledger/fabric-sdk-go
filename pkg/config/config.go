@@ -29,7 +29,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/pkcs11"
 )
 
-var myViper = viper.New()
 var logger = logging.NewLogger("fabric_sdk_go")
 
 const (
@@ -42,22 +41,24 @@ type Config struct {
 	tlsCertPool         *x509.CertPool
 	networkConfig       *apiconfig.NetworkConfig
 	networkConfigCached bool
+	configViper         *viper.Viper
 }
 
 // InitConfig ...
 // initConfig reads in config file
-func InitConfig(configFile string) (apiconfig.Config, error) {
+func InitConfig(configFile string) (*Config, error) {
 	return InitConfigWithCmdRoot(configFile, cmdRoot)
 }
 
 // InitConfigWithCmdRoot reads in a config file and allows the
 // environment variable prefixed to be specified
 func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, error) {
+	myViper := viper.New()
 	myViper.SetEnvPrefix(cmdRootPrefix)
 	myViper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
 	myViper.SetEnvKeyReplacer(replacer)
-	err := loadDefaultConfig()
+	err := loadDefaultConfig(myViper)
 	if err != nil {
 		return nil, err
 	}
@@ -87,11 +88,11 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 	logging.SetLevel(logging.Level(logLevel), "fabric_sdk_go")
 
 	logger.Infof("fabric_sdk_go Logging level is finally set to: %s", logging.GetLevel("fabric_sdk_go"))
-	return &Config{tlsCertPool: x509.NewCertPool()}, nil
+	return &Config{tlsCertPool: x509.NewCertPool(), configViper: myViper}, nil
 }
 
 // load Default confid
-func loadDefaultConfig() error {
+func loadDefaultConfig(myViper *viper.Viper) error {
 	// get Environment Default Config Path
 	defaultPath := os.Getenv("FABRIC_SDK_CONFIG_PATH")
 	if defaultPath != "" { // if set, use it to load default config
@@ -217,19 +218,19 @@ func (c *Config) TimeoutOrDefault(conn apiconfig.TimeoutType) time.Duration {
 	var timeout time.Duration
 	switch conn {
 	case apiconfig.Endorser:
-		timeout = myViper.GetDuration("client.peer.timeout.connection")
+		timeout = c.configViper.GetDuration("client.peer.timeout.connection")
 	case apiconfig.Query:
-		timeout = myViper.GetDuration("client.peer.timeout.queryResponse")
+		timeout = c.configViper.GetDuration("client.peer.timeout.queryResponse")
 	case apiconfig.ExecuteTx:
-		timeout = myViper.GetDuration("client.peer.timeout.executeTxResponse")
+		timeout = c.configViper.GetDuration("client.peer.timeout.executeTxResponse")
 	case apiconfig.EventHub:
-		timeout = myViper.GetDuration("client.eventService.timeout.connection")
+		timeout = c.configViper.GetDuration("client.eventService.timeout.connection")
 	case apiconfig.EventReg:
-		timeout = myViper.GetDuration("client.eventService.timeout.registrationResponse")
+		timeout = c.configViper.GetDuration("client.eventService.timeout.registrationResponse")
 	case apiconfig.OrdererConnection:
-		timeout = myViper.GetDuration("client.orderer.timeout.connection")
+		timeout = c.configViper.GetDuration("client.orderer.timeout.connection")
 	case apiconfig.OrdererResponse:
-		timeout = myViper.GetDuration("client.orderer.timeout.response")
+		timeout = c.configViper.GetDuration("client.orderer.timeout.response")
 
 	}
 	if timeout == 0 {
@@ -254,45 +255,39 @@ func (c *Config) MspID(org string) (string, error) {
 	return mspID, nil
 }
 
-// FabricClientViper returns the internal viper instance used by the
-// SDK to read configuration options
-func FabricClientViper() *viper.Viper {
-	return myViper
-}
-
 func (c *Config) cacheNetworkConfiguration() error {
 	c.networkConfig = new(apiconfig.NetworkConfig)
-	c.networkConfig.Name = myViper.GetString("name")
-	c.networkConfig.Xtype = myViper.GetString("x-type")
-	c.networkConfig.Description = myViper.GetString("description")
-	c.networkConfig.Version = myViper.GetString("version")
+	c.networkConfig.Name = c.configViper.GetString("name")
+	c.networkConfig.Xtype = c.configViper.GetString("x-type")
+	c.networkConfig.Description = c.configViper.GetString("description")
+	c.networkConfig.Version = c.configViper.GetString("version")
 
-	err := myViper.UnmarshalKey("client", &c.networkConfig.Client)
+	err := c.configViper.UnmarshalKey("client", &c.networkConfig.Client)
 	logger.Debugf("Client is: %+v", c.networkConfig.Client)
 	if err != nil {
 		return err
 	}
-	err = myViper.UnmarshalKey("channels", &c.networkConfig.Channels)
+	err = c.configViper.UnmarshalKey("channels", &c.networkConfig.Channels)
 	logger.Debugf("channels are: %+v", c.networkConfig.Channels)
 	if err != nil {
 		return err
 	}
-	err = myViper.UnmarshalKey("organizations", &c.networkConfig.Organizations)
+	err = c.configViper.UnmarshalKey("organizations", &c.networkConfig.Organizations)
 	logger.Debugf("organizations are: %+v", c.networkConfig.Organizations)
 	if err != nil {
 		return err
 	}
-	err = myViper.UnmarshalKey("orderers", &c.networkConfig.Orderers)
+	err = c.configViper.UnmarshalKey("orderers", &c.networkConfig.Orderers)
 	logger.Debugf("orderers are: %+v", c.networkConfig.Orderers)
 	if err != nil {
 		return err
 	}
-	err = myViper.UnmarshalKey("peers", &c.networkConfig.Peers)
+	err = c.configViper.UnmarshalKey("peers", &c.networkConfig.Peers)
 	logger.Debugf("peers are: %+v", c.networkConfig.Peers)
 	if err != nil {
 		return err
 	}
-	err = myViper.UnmarshalKey("certificateAuthorities", &c.networkConfig.CertificateAuthorities)
+	err = c.configViper.UnmarshalKey("certificateAuthorities", &c.networkConfig.CertificateAuthorities)
 	logger.Debugf("certificateAuthorities are: %+v", c.networkConfig.CertificateAuthorities)
 	if err != nil {
 		return err
@@ -539,37 +534,37 @@ func (c *Config) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 
 // IsSecurityEnabled ...
 func (c *Config) IsSecurityEnabled() bool {
-	return myViper.GetBool("client.BCCSP.security.enabled")
+	return c.configViper.GetBool("client.BCCSP.security.enabled")
 }
 
 // SecurityAlgorithm ...
 func (c *Config) SecurityAlgorithm() string {
-	return myViper.GetString("client.BCCSP.security.hashAlgorithm")
+	return c.configViper.GetString("client.BCCSP.security.hashAlgorithm")
 }
 
 // SecurityLevel ...
 func (c *Config) SecurityLevel() int {
-	return myViper.GetInt("client.BCCSP.security.level")
+	return c.configViper.GetInt("client.BCCSP.security.level")
 }
 
 //SecurityProvider provider SW or PKCS11
 func (c *Config) SecurityProvider() string {
-	return myViper.GetString("client.BCCSP.security.default.provider")
+	return c.configViper.GetString("client.BCCSP.security.default.provider")
 }
 
 //Ephemeral flag
 func (c *Config) Ephemeral() bool {
-	return myViper.GetBool("client.BCCSP.security.ephemeral")
+	return c.configViper.GetBool("client.BCCSP.security.ephemeral")
 }
 
 //SoftVerify flag
 func (c *Config) SoftVerify() bool {
-	return myViper.GetBool("client.BCCSP.security.softVerify")
+	return c.configViper.GetBool("client.BCCSP.security.softVerify")
 }
 
 //SecurityProviderLibPath will be set only if provider is PKCS11
 func (c *Config) SecurityProviderLibPath() string {
-	configuredLibs := myViper.GetString("client.BCCSP.security.library")
+	configuredLibs := c.configViper.GetString("client.BCCSP.security.library")
 	libPaths := strings.Split(configuredLibs, ",")
 	logger.Debug("Configured BCCSP Lib Paths %v", libPaths)
 	var lib string
@@ -589,17 +584,17 @@ func (c *Config) SecurityProviderLibPath() string {
 
 //SecurityProviderPin will be set only if provider is PKCS11
 func (c *Config) SecurityProviderPin() string {
-	return myViper.GetString("client.BCCSP.security.pin")
+	return c.configViper.GetString("client.BCCSP.security.pin")
 }
 
 //SecurityProviderLabel will be set only if provider is PKCS11
 func (c *Config) SecurityProviderLabel() string {
-	return myViper.GetString("client.BCCSP.security.label")
+	return c.configViper.GetString("client.BCCSP.security.label")
 }
 
 // KeyStorePath returns the keystore path used by BCCSP
 func (c *Config) KeyStorePath() string {
-	keystorePath := strings.Replace(myViper.GetString("client.credentialStore.cryptoStore.path"),
+	keystorePath := strings.Replace(c.configViper.GetString("client.credentialStore.cryptoStore.path"),
 		"$GOPATH", os.Getenv("GOPATH"), -1)
 	return path.Join(keystorePath, "keystore")
 }
@@ -608,13 +603,13 @@ func (c *Config) KeyStorePath() string {
 // 'keystore' directory added. This is done because the fabric-ca-client
 // adds this to the path
 func (c *Config) CAKeyStorePath() string {
-	return strings.Replace(myViper.GetString("client.credentialStore.cryptoStore.path"),
+	return strings.Replace(c.configViper.GetString("client.credentialStore.cryptoStore.path"),
 		"$GOPATH", os.Getenv("GOPATH"), -1)
 }
 
 // CryptoConfigPath ...
 func (c *Config) CryptoConfigPath() string {
-	return strings.Replace(myViper.GetString("client.cryptoconfig.path"),
+	return strings.Replace(c.configViper.GetString("client.cryptoconfig.path"),
 		"$GOPATH", os.Getenv("GOPATH"), -1)
 }
 
