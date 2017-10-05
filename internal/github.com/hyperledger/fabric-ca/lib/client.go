@@ -140,33 +140,6 @@ type GetServerInfoResponse struct {
 	CAChain []byte
 }
 
-// GetCAInfo returns generic CA information
-func (c *Client) GetCAInfo(req *api.GetCAInfoRequest) (*GetServerInfoResponse, error) {
-	err := c.Init()
-	if err != nil {
-		return nil, err
-	}
-	body, err := util.Marshal(req, "GetCAInfo")
-	if err != nil {
-		return nil, err
-	}
-	cainforeq, err := c.newPost("cainfo", body)
-	if err != nil {
-		return nil, err
-	}
-	netSI := &serverInfoResponseNet{}
-	err = c.SendReq(cainforeq, netSI)
-	if err != nil {
-		return nil, err
-	}
-	localSI := &GetServerInfoResponse{}
-	err = c.net2LocalServerInfo(netSI, localSI)
-	if err != nil {
-		return nil, err
-	}
-	return localSI, nil
-}
-
 // Convert from network to local server information
 func (c *Client) net2LocalServerInfo(net *serverInfoResponseNet, local *GetServerInfoResponse) error {
 	caChain, err := util.B64Decode(net.CAChain)
@@ -311,53 +284,6 @@ func (c *Client) newCertificateRequest(req *api.CSRInfo) *csr.CertificateRequest
 	return &cr
 }
 
-// LoadMyIdentity loads the client's identity from disk
-func (c *Client) LoadMyIdentity() (*Identity, error) {
-	err := c.Init()
-	if err != nil {
-		return nil, err
-	}
-	return c.LoadIdentity(c.keyFile, c.certFile)
-}
-
-// StoreMyIdentity stores my identity to disk
-func (c *Client) StoreMyIdentity(cert []byte) error {
-	err := c.Init()
-	if err != nil {
-		return err
-	}
-	err = util.WriteFile(c.certFile, cert, 0644)
-	if err != nil {
-		return errors.WithMessage(err, "Failed to store my certificate")
-	}
-	log.Infof("Stored client certificate at %s", c.certFile)
-	return nil
-}
-
-// LoadIdentity loads an identity from disk
-func (c *Client) LoadIdentity(keyFile, certFile string) (*Identity, error) {
-	log.Debug("Loading identity: keyFile=%s, certFile=%s", keyFile, certFile)
-	err := c.Init()
-	if err != nil {
-		return nil, err
-	}
-	cert, err := util.ReadFile(certFile)
-	if err != nil {
-		log.Debugf("No cert found at %s", certFile)
-		return nil, err
-	}
-	key, _, _, err := util.GetSignerFromCertFile(certFile, c.csp)
-	if err != nil {
-		// Fallback: attempt to read out of keyFile and import
-		log.Debugf("No key found in BCCSP keystore, attempting fallback")
-		key, err = util.ImportBCCSPKeyFromPEM(keyFile, c.csp, true)
-		if err != nil {
-			return nil, errors.WithMessage(err, fmt.Sprintf("Could not find the private key in BCCSP keystore nor in keyfile %s", keyFile))
-		}
-	}
-	return c.NewIdentity(key, cert)
-}
-
 // NewIdentity creates a new identity
 func (c *Client) NewIdentity(key bccsp.Key, cert []byte) (*Identity, error) {
 	name, err := util.GetEnrollmentIDFromPEM(cert)
@@ -365,39 +291,6 @@ func (c *Client) NewIdentity(key bccsp.Key, cert []byte) (*Identity, error) {
 		return nil, err
 	}
 	return newIdentity(c, name, key, cert), nil
-}
-
-// LoadCSRInfo reads CSR (Certificate Signing Request) from a file
-// @parameter path The path to the file contains CSR info in JSON format
-func (c *Client) LoadCSRInfo(path string) (*api.CSRInfo, error) {
-	csrJSON, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var csrInfo api.CSRInfo
-	err = util.Unmarshal(csrJSON, &csrInfo, "LoadCSRInfo")
-	if err != nil {
-		return nil, err
-	}
-	return &csrInfo, nil
-}
-
-// GetCertFilePath returns the path to the certificate file for this client
-func (c *Client) GetCertFilePath() string {
-	return c.certFile
-}
-
-// NewGet create a new GET request
-func (c *Client) newGet(endpoint string) (*http.Request, error) {
-	curl, err := c.getURL(endpoint)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest("GET", curl, bytes.NewReader([]byte{}))
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed creating GET request for %s", curl)
-	}
-	return req, nil
 }
 
 // NewPost create a new post request
@@ -480,29 +373,6 @@ func (c *Client) getURL(endpoint string) (string, error) {
 	return rtn, nil
 }
 
-// CheckEnrollment returns an error if this client is not enrolled
-func (c *Client) CheckEnrollment() error {
-	err := c.Init()
-	if err != nil {
-		return err
-	}
-	keyFileExists := util.FileExists(c.keyFile)
-	certFileExists := util.FileExists(c.certFile)
-	if keyFileExists && certFileExists {
-		return nil
-	}
-	// If key file does not exist, but certFile does, key file is probably
-	// stored by bccsp, so check to see if this is the case
-	if certFileExists {
-		_, _, _, err := util.GetSignerFromCertFile(c.certFile, c.csp)
-		if err == nil {
-			// Yes, the key is stored by BCCSP
-			return nil
-		}
-	}
-	return errors.New("Enrollment information does not exist. Please execute enroll command first. Example: fabric-ca-client enroll -u http://user:userpw@serverAddr:serverPort")
-}
-
 // NormalizeURL normalizes a URL (from cfssl)
 func NormalizeURL(addr string) (*url.URL, error) {
 	addr = strings.TrimSpace(addr)
@@ -514,7 +384,7 @@ func NormalizeURL(addr string) (*url.URL, error) {
 		u.Host = net.JoinHostPort(u.Scheme, u.Opaque)
 		u.Opaque = ""
 	} else if u.Path != "" && !strings.Contains(u.Path, ":") {
-		u.Host = net.JoinHostPort(u.Path, util.GetServerPort())
+		u.Host = net.JoinHostPort(u.Path, "")
 		u.Path = ""
 	} else if u.Scheme == "" {
 		u.Host = u.Path
@@ -525,7 +395,7 @@ func NormalizeURL(addr string) (*url.URL, error) {
 	}
 	_, port, err := net.SplitHostPort(u.Host)
 	if err != nil {
-		_, port, err = net.SplitHostPort(u.Host + ":" + util.GetServerPort())
+		_, port, err = net.SplitHostPort(u.Host + ":" + "")
 		if err != nil {
 			return nil, err
 		}

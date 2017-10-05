@@ -4,7 +4,7 @@
 [[projects]]
   branch = "master"
   name = "github.com/cloudflare/cfssl"
-  packages = ["api","api/client","auth","certdb","cli","config","crypto/pkcs7","csr","errors","helpers","helpers/derhelpers","info","log","ocsp","ocsp/config","signer","signer/local","signer/remote","signer/universal"]
+  packages = ["api","auth","certdb","config","crypto/pkcs7","csr","errors","helpers","helpers/derhelpers","info","log","ocsp/config","signer"]
   revision = "7d88da830aad9d533c2fb8532da23f6a75331b52"
 
 [[projects]]
@@ -12,12 +12,6 @@
   packages = ["."]
   revision = "629574ca2a5df945712d3079857300b5e4da0236"
   version = "v1.4.2"
-
-[[projects]]
-  name = "github.com/gogo/protobuf"
-  packages = ["proto"]
-  revision = "100ba4e885062801d56799d78530b73b178a78f3"
-  version = "v0.4"
 
 [[projects]]
   branch = "master"
@@ -34,13 +28,13 @@
 [[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
-  packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/timestamp"]
+  packages = ["proto","ptypes/any","ptypes/timestamp"]
   revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
 
 [[projects]]
   branch = "master"
   name = "github.com/google/certificate-transparency-go"
-  packages = [".","asn1","client","client/configpb","jsonclient","tls","x509","x509/pkix"]
+  packages = [".","asn1","tls","x509","x509/pkix"]
   revision = "5881f1bec20ea85ed0ae1fea1d3bb48e3708f61c"
 
 [[projects]]
@@ -48,12 +42,6 @@
   name = "github.com/hashicorp/hcl"
   packages = [".","hcl/ast","hcl/parser","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
   revision = "68e816d1c783414e79bc65b3994d9ab6b0a722ab"
-
-[[projects]]
-  name = "github.com/jmhodges/clock"
-  packages = ["."]
-  revision = "880ee4c335489bc78d01e4d0a254ae880734bc15"
-  version = "v1.1"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -130,7 +118,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
+  packages = ["context","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
   revision = "0a9397675ba34b2845f758fe3cd68828369c6517"
 
 [[projects]]
@@ -172,6 +160,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c747f53cce2f120311c0438d5ee796315c75ad050e8610b17b0e32cb193a7619"
+  inputs-digest = "19b2c4ee33556ba8f253ac818ce97ab91043c046ea8463ade7b64a4d888796e2"
   solver-name = "gps-cdcl"
   solver-version = 1

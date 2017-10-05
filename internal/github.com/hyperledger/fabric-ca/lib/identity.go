@@ -21,7 +21,6 @@ Please review third_party pinning scripts and patches for more details.
 package lib
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -40,7 +39,7 @@ func newIdentity(client *Client, name string, key bccsp.Key, cert []byte) *Ident
 	if client != nil {
 		id.CSP = client.csp
 	} else {
-		id.CSP = util.GetDefaultBCCSP()
+		id.CSP = nil
 	}
 	return id
 }
@@ -56,11 +55,6 @@ type Identity struct {
 // GetName returns the identity name
 func (i *Identity) GetName() string {
 	return i.name
-}
-
-// GetClient returns the client associated with this identity
-func (i *Identity) GetClient() *Client {
-	return i.client
 }
 
 // GetECert returns the enrollment certificate signer for this identity
@@ -90,25 +84,6 @@ func (i *Identity) Register(req *api.RegistrationRequest) (rr *api.RegistrationR
 
 	log.Debug("The register request completely successfully")
 	return resp, nil
-}
-
-// RegisterAndEnroll registers and enrolls an identity and returns the identity
-func (i *Identity) RegisterAndEnroll(req *api.RegistrationRequest) (*Identity, error) {
-	if i.client == nil {
-		return nil, errors.New("No client is associated with this identity")
-	}
-	rresp, err := i.Register(req)
-	if err != nil {
-		return nil, errors.WithMessage(err, fmt.Sprintf("Failed to register %s", req.Name))
-	}
-	eresp, err := i.client.Enroll(&api.EnrollmentRequest{
-		Name:   req.Name,
-		Secret: rresp.Secret,
-	})
-	if err != nil {
-		return nil, errors.WithMessage(err, fmt.Sprintf("Failed to enroll %s", req.Name))
-	}
-	return eresp.Identity, nil
 }
 
 // Reenroll reenrolls an existing Identity and returns a new Identity
@@ -159,24 +134,6 @@ func (i *Identity) Revoke(req *api.RevocationRequest) error {
 	}
 	log.Debugf("Successfully revoked %+v", req)
 	return nil
-}
-
-// RevokeSelf revokes the current identity and all certificates
-func (i *Identity) RevokeSelf() error {
-	name := i.GetName()
-	log.Debugf("RevokeSelf %s", name)
-	req := &api.RevocationRequest{
-		Name: name,
-	}
-	return i.Revoke(req)
-}
-
-// Store writes my identity info to disk
-func (i *Identity) Store() error {
-	if i.client == nil {
-		return errors.New("An identity with no client may not be stored")
-	}
-	return i.client.StoreMyIdentity(i.ecert.cert)
 }
 
 // Post sends arbtrary request body (reqBody) to an endpoint.
