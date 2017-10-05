@@ -20,6 +20,7 @@ declare -a PKGS=(
     "common/metadata"
     "common/channelconfig"
     "common/ledger/util"
+    "common/attrmgr"
 
     "common/logbridge"
 
@@ -43,7 +44,8 @@ declare -a FILES=(
     "common/util/utils.go"
     "common/metadata/metadata.go"
     "common/channelconfig/keys.go"
-
+    "common/attrmgr/attrmgr.go"
+    
     "common/logbridge/logbridge.go"
 
     "core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
@@ -65,6 +67,7 @@ declare -a FILES=(
 
     "core/comm/config.go"
     "core/comm/connection.go"
+    "core/comm/util.go"
 
     "core/config/config.go"
 

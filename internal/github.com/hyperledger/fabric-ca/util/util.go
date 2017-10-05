@@ -29,7 +29,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -44,6 +43,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
@@ -144,7 +145,7 @@ func FileExists(name string) bool {
 func Marshal(from interface{}, what string) ([]byte, error) {
 	buf, err := json.Marshal(from)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal %s: %s", what, err)
+		return nil, errors.Wrapf(err, "Failed to marshal %s", what)
 	}
 	return buf, nil
 }
@@ -153,7 +154,7 @@ func Marshal(from interface{}, what string) ([]byte, error) {
 func Unmarshal(from []byte, to interface{}, what string) error {
 	err := json.Unmarshal(from, to)
 	if err != nil {
-		return fmt.Errorf("Failed to unmarshal %s: %s", what, err)
+		return errors.Wrapf(err, "Failed to unmarshal %s", what)
 	}
 	return nil
 }
@@ -214,7 +215,7 @@ func GenRSAToken(csp bccsp.BCCSP, cert []byte, key []byte, body []byte) (string,
 	h := hash.Sum(nil)
 	RSAsignature, err := rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA384, h[:])
 	if err != nil {
-		return "", fmt.Errorf("Error from rsa.SignPKCS1v15: %s", err)
+		return "", errors.Wrap(err, "Failed to rsa.SignPKCS1v15")
 	}
 	b64sig := B64Encode(RSAsignature)
 	token := b64cert + "." + b64sig
@@ -231,12 +232,12 @@ func GenECDSAToken(csp bccsp.BCCSP, cert []byte, key bccsp.Key, body []byte) (st
 
 	digest, digestError := csp.Hash([]byte(bodyAndcert), &bccsp.SHAOpts{})
 	if digestError != nil {
-		return "", fmt.Errorf("Hash operation on %s\t failed with error : %s", bodyAndcert, digestError)
+		return "", errors.WithMessage(digestError, fmt.Sprintf("Hash failed on '%s'", bodyAndcert))
 	}
 
 	ecSignature, err := csp.Sign(key, digest, nil)
 	if err != nil {
-		return "", fmt.Errorf("BCCSP signature generation failed with error :%s", err)
+		return "", errors.WithMessage(err, "BCCSP signature generation failure")
 	}
 	if len(ecSignature) == 0 {
 		return "", errors.New("BCCSP signature creation failed. Signature must be different than nil")
@@ -262,14 +263,14 @@ func VerifyToken(csp bccsp.BCCSP, token string, body []byte) (*x509.Certificate,
 	}
 	sig, err := B64Decode(b64Sig)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid base64 encoded signature in token: %s", err)
+		return nil, errors.WithMessage(err, "Invalid base64 encoded signature in token")
 	}
 	b64Body := B64Encode(body)
 	sigString := b64Body + "." + b64Cert
 
 	pk2, err := csp.KeyImport(x509Cert, &bccsp.X509PublicKeyImportOpts{Temporary: true})
 	if err != nil {
-		return nil, fmt.Errorf("Public Key import into BCCSP failed with error : %s", err)
+		return nil, errors.WithMessage(err, "Public Key import into BCCSP failed with error")
 	}
 	if pk2 == nil {
 		return nil, errors.New("Public Key Cannot be imported into BCCSP")
@@ -278,16 +279,16 @@ func VerifyToken(csp bccsp.BCCSP, token string, body []byte) (*x509.Certificate,
 	//Using default hash algo
 	digest, digestError := csp.Hash([]byte(sigString), &bccsp.SHAOpts{})
 	if digestError != nil {
-		return nil, fmt.Errorf("Message digest failed with error : %s", digestError)
+		return nil, errors.WithMessage(digestError, "Message digest failed")
 	}
 
 	valid, validErr := csp.Verify(pk2, sig, digest, nil)
 
 	if validErr != nil {
-		return nil, fmt.Errorf("Token Signature validation failed with error : %s ", validErr)
+		return nil, errors.WithMessage(validErr, "Token signature validation failure")
 	}
 	if !valid {
-		return nil, errors.New("Token Signature Validation failed")
+		return nil, errors.New("Token signature validation failed")
 	}
 
 	return x509Cert, nil
@@ -305,11 +306,11 @@ func DecodeToken(token string) (*x509.Certificate, string, string, error) {
 	b64cert := parts[0]
 	certDecoded, err := B64Decode(b64cert)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("Failed to decode base64 encoded x509 cert: %s", err)
+		return nil, "", "", errors.WithMessage(err, "Failed to decode base64 encoded x509 cert")
 	}
 	x509Cert, err := GetX509CertificateFromPEM(certDecoded)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("Error in parsing x509 cert given Block Bytes: %s", err)
+		return nil, "", "", errors.WithMessage(err, "Error in parsing x509 certificate given block bytes")
 	}
 	return x509Cert, b64cert, parts[1], nil
 }
@@ -335,7 +336,7 @@ func GetECPrivateKey(raw []byte) (*ecdsa.PrivateKey, error) {
 			return nil, errors.New("Invalid private key type in PKCS#8 wrapping")
 		}
 	}
-	return nil, fmt.Errorf("Failed parsing EC private key: %s", err)
+	return nil, errors.Wrap(err2, "Failed parsing EC private key")
 }
 
 //GetRSAPrivateKey get *rsa.PrivateKey from key pem
@@ -359,7 +360,7 @@ func GetRSAPrivateKey(raw []byte) (*rsa.PrivateKey, error) {
 			return nil, errors.New("Invalid private key type in PKCS#8 wrapping")
 		}
 	}
-	return nil, fmt.Errorf("Failed parsing RSA private key: %s", err)
+	return nil, errors.Wrap(err, "Failed parsing RSA private key")
 }
 
 // B64Encode base64 encodes bytes
@@ -393,7 +394,7 @@ func IsSubsetOf(small, big string) error {
 	smallSet := strings.Split(small, ",")
 	for _, s := range smallSet {
 		if s != "" && !StrContained(s, bigSet) {
-			return fmt.Errorf("'%s' is not a member of '%s'", s, big)
+			return errors.Errorf("'%s' is not a member of '%s'", s, big)
 		}
 	}
 	return nil
@@ -471,7 +472,7 @@ func GetX509CertificateFromPEMFile(file string) (*x509.Certificate, error) {
 	}
 	x509Cert, err := GetX509CertificateFromPEM(pemBytes)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid certificate in %s: %s", file, err)
+		return nil, errors.Wrapf(err, "Invalid certificate in '%s'", file)
 	}
 	return x509Cert, nil
 }
@@ -484,7 +485,7 @@ func GetX509CertificateFromPEM(cert []byte) (*x509.Certificate, error) {
 	}
 	x509Cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing certificate: %s", err)
+		return nil, errors.Wrap(err, "Error parsing certificate")
 	}
 	return x509Cert, nil
 }
@@ -528,7 +529,7 @@ func MakeFileAbs(file, dir string) (string, error) {
 	}
 	path, err := filepath.Abs(filepath.Join(dir, file))
 	if err != nil {
-		return "", fmt.Errorf("Failed making '%s' absolute based on '%s'", file, dir)
+		return "", errors.Wrapf(err, "Failed making '%s' absolute based on '%s'", file, dir)
 	}
 	return path, nil
 }
@@ -552,8 +553,9 @@ func Fatal(format string, v ...interface{}) {
 }
 
 // GetUser returns username and password from CLI input
-func GetUser() (string, string, error) {
-	fabricCAServerURL := viper.GetString("url")
+func GetUser(v *viper.Viper) (string, string, error) {
+	var fabricCAServerURL string
+	fabricCAServerURL = v.GetString("url")
 
 	URL, err := url.Parse(fabricCAServerURL)
 	if err != nil {
@@ -647,19 +649,19 @@ func CheckHostsInCert(certFile string, host string) error {
 	containsHost := false
 	certBytes, err := ioutil.ReadFile(certFile)
 	if err != nil {
-		return fmt.Errorf("Failed to read file: %s", err)
+		return errors.Wrapf(err, "Failed to read certificate file at '%s'", certFile)
 	}
 
 	cert, err := GetX509CertificateFromPEM(certBytes)
 	if err != nil {
-		return fmt.Errorf("Failed to get certificate: %s", err)
+		return errors.Wrap(err, "Failed to get certificate")
 	}
 	// Run through the extensions for the certificates
 	for _, ext := range cert.Extensions {
 		// asn1 identifier for 'Subject Alternative Name'
 		if ext.Id.Equal(asn1.ObjectIdentifier{2, 5, 29, 17}) {
 			if !strings.Contains(string(ext.Value), host) {
-				return fmt.Errorf("Host '%s' was not found in the certificate in file '%s'", host, certFile)
+				return errors.Errorf("Host '%s' was not found in the certificate in file '%s'", host, certFile)
 			}
 			containsHost = true
 		}
@@ -682,7 +684,7 @@ func Read(r io.Reader, data []byte) ([]byte, error) {
 			if err == io.EOF {
 				break
 			}
-			return nil, fmt.Errorf("Read failure: %s", err)
+			return nil, errors.Wrapf(err, "Read failure")
 		}
 
 		if (n == 0 && j == len(data)) || j > len(data) {
@@ -691,4 +693,58 @@ func Read(r io.Reader, data []byte) ([]byte, error) {
 	}
 
 	return data[:j], nil
+}
+
+// Hostname name returns the hostname of the machine
+func Hostname() string {
+	hostname, _ := os.Hostname()
+	if hostname == "" {
+		hostname = "localhost"
+	}
+	return hostname
+}
+
+// ValidateAndReturnAbsConf checks to see that there are no conflicts between the
+// configuration file path and home directory. If no conflicts, returns back the absolute
+// path for the configuration file and home directory.
+func ValidateAndReturnAbsConf(configFilePath, homeDir, cmdName string) (string, string, error) {
+	var err error
+	var homeDirSet bool
+	var configFileSet bool
+
+	defaultConfig := GetDefaultConfigFile(cmdName) // Get the default configuration
+
+	if configFilePath == "" {
+		configFilePath = defaultConfig // If no config file path specified, use the default configuration file
+	} else {
+		configFileSet = true
+	}
+
+	if homeDir == "" {
+		homeDir = filepath.Dir(defaultConfig) // If no home directory specified, use the default directory
+	} else {
+		homeDirSet = true
+	}
+
+	// Make the home directory absolute
+	homeDir, err = filepath.Abs(homeDir)
+	if err != nil {
+		return "", "", errors.Wrap(err, "Failed to get full path of config file")
+	}
+	homeDir = strings.TrimRight(homeDir, "/")
+
+	if configFileSet && homeDirSet {
+		log.Warning("Using both --config and --home CLI flags; --config will take precedence")
+	}
+
+	if configFileSet {
+		configFilePath, err = filepath.Abs(configFilePath)
+		if err != nil {
+			return "", "", errors.Wrap(err, "Failed to get full path of configuration file")
+		}
+		return configFilePath, filepath.Dir(configFilePath), nil
+	}
+
+	configFile := filepath.Join(homeDir, filepath.Base(defaultConfig)) // Join specified home directory with default config file name
+	return configFile, homeDir, nil
 }

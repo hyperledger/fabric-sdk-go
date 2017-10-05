@@ -1,17 +1,7 @@
 /*
-Copyright IBM Corp. 2017 All Rights Reserved.
+Copyright IBM Corp. All Rights Reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-		 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+SPDX-License-Identifier: Apache-2.0
 */
 /*
 Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
@@ -21,16 +11,14 @@ Please review third_party pinning scripts and patches for more details.
 package msp
 
 import (
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
-
-	"github.com/golang/protobuf/proto"
-
-	"encoding/pem"
+	"os"
 	"path/filepath"
 
-	"os"
-
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
@@ -49,7 +37,7 @@ type Configuration struct {
 func readFile(file string) ([]byte, error) {
 	fileCont, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("Could not read file %s, err %s", file, err)
+		return nil, errors.Wrapf(err, "could not read file %s", file)
 	}
 
 	return fileCont, nil
@@ -58,12 +46,12 @@ func readFile(file string) ([]byte, error) {
 func readPemFile(file string) ([]byte, error) {
 	bytes, err := readFile(file)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "reading from file %s failed", file)
 	}
 
 	b, _ := pem.Decode(bytes)
 	if b == nil { // TODO: also check that the type is what we expect (cert vs key..)
-		return nil, fmt.Errorf("No pem content for file %s", file)
+		return nil, errors.Errorf("no pem content for file %s", file)
 	}
 
 	return bytes, nil
@@ -80,7 +68,7 @@ func getPemMaterialFromDir(dir string) ([][]byte, error) {
 	content := make([][]byte, 0)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return nil, fmt.Errorf("Could not read directory %s, err %s", err, dir)
+		return nil, errors.Wrapf(err, "could not read directory %s", err)
 	}
 
 	for _, f := range files {
@@ -93,7 +81,7 @@ func getPemMaterialFromDir(dir string) ([][]byte, error) {
 
 		item, err := readPemFile(fullName)
 		if err != nil {
-			mspLogger.Warningf("Failed readgin file %s: %s", fullName, err)
+			mspLogger.Warningf("Failed reading file %s: %s", fullName, err)
 			continue
 		}
 
@@ -143,12 +131,12 @@ func GetLocalMspConfig(dir string, bccspConfig *factory.FactoryOpts, ID string) 
 
 	err := factory.InitFactories(bccspConfig)
 	if err != nil {
-		return nil, fmt.Errorf("Could not initialize BCCSP Factories [%s]", err)
+		return nil, errors.WithMessage(err, "could not initialize BCCSP Factories")
 	}
 
 	signcert, err := getPemMaterialFromDir(signcertDir)
 	if err != nil || len(signcert) == 0 {
-		return nil, fmt.Errorf("Could not load a valid signer certificate from directory %s, err %s", signcertDir, err)
+		return nil, errors.Wrapf(err, "could not load a valid signer certificate from directory %s", signcertDir)
 	}
 
 	/* FIXME: for now we're making the following assumptions
@@ -177,19 +165,19 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 
 	cacerts, err := getPemMaterialFromDir(cacertDir)
 	if err != nil || len(cacerts) == 0 {
-		return nil, fmt.Errorf("Could not load a valid ca certificate from directory %s, err %s", cacertDir, err)
+		return nil, errors.WithMessage(err, fmt.Sprintf("could not load a valid ca certificate from directory %s", cacertDir))
 	}
 
 	admincert, err := getPemMaterialFromDir(admincertDir)
 	if err != nil || len(admincert) == 0 {
-		return nil, fmt.Errorf("Could not load a valid admin certificate from directory %s, err %s", admincertDir, err)
+		return nil, errors.WithMessage(err, fmt.Sprintf("could not load a valid admin certificate from directory %s", admincertDir))
 	}
 
 	intermediatecerts, err := getPemMaterialFromDir(intermediatecertsDir)
 	if os.IsNotExist(err) {
 		mspLogger.Debugf("Intermediate certs folder not found at [%s]. Skipping. [%s]", intermediatecertsDir, err)
 	} else if err != nil {
-		return nil, fmt.Errorf("Failed loading intermediate ca certs at [%s]: [%s]", intermediatecertsDir, err)
+		return nil, errors.WithMessage(err, fmt.Sprintf("failed loading intermediate ca certs at [%s]", intermediatecertsDir))
 	}
 
 	tlsCACerts, err := getPemMaterialFromDir(tlscacertDir)
@@ -197,13 +185,13 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 	if os.IsNotExist(err) {
 		mspLogger.Debugf("TLS CA certs folder not found at [%s]. Skipping and ignoring TLS intermediate CA folder. [%s]", tlsintermediatecertsDir, err)
 	} else if err != nil {
-		return nil, fmt.Errorf("Failed loading TLS ca certs at [%s]: [%s]", tlsintermediatecertsDir, err)
+		return nil, errors.WithMessage(err, fmt.Sprintf("failed loading TLS ca certs at [%s]", tlsintermediatecertsDir))
 	} else if len(tlsCACerts) != 0 {
 		tlsIntermediateCerts, err = getPemMaterialFromDir(tlsintermediatecertsDir)
 		if os.IsNotExist(err) {
 			mspLogger.Debugf("TLS intermediate certs folder not found at [%s]. Skipping. [%s]", tlsintermediatecertsDir, err)
 		} else if err != nil {
-			return nil, fmt.Errorf("Failed loading TLS intermediate ca certs at [%s]: [%s]", tlsintermediatecertsDir, err)
+			return nil, errors.WithMessage(err, fmt.Sprintf("failed loading TLS intermediate ca certs at [%s]", tlsintermediatecertsDir))
 		}
 	} else {
 		mspLogger.Debugf("TLS CA certs folder at [%s] is empty. Skipping.", tlsintermediatecertsDir)
@@ -213,7 +201,7 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 	if os.IsNotExist(err) {
 		mspLogger.Debugf("crls folder not found at [%s]. Skipping. [%s]", crlsDir, err)
 	} else if err != nil {
-		return nil, fmt.Errorf("Failed loading crls at [%s]: [%s]", crlsDir, err)
+		return nil, errors.WithMessage(err, fmt.Sprintf("failed loading crls at [%s]", crlsDir))
 	}
 
 	// Load configuration file
@@ -226,13 +214,13 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 		// return an error
 		raw, err := ioutil.ReadFile(configFile)
 		if err != nil {
-			return nil, fmt.Errorf("Failed loading configuration file at [%s]: [%s]", configFile, err)
+			return nil, errors.Wrapf(err, "failed loading configuration file at [%s]", configFile)
 		}
 
 		configuration := Configuration{}
 		err = yaml.Unmarshal(raw, &configuration)
 		if err != nil {
-			return nil, fmt.Errorf("Failed unmarshalling configuration file at [%s]: [%s]", configFile, err)
+			return nil, errors.Wrapf(err, "failed unmarshalling configuration file at [%s]", configFile)
 		}
 
 		// Prepare OrganizationalUnitIdentifiers
@@ -241,7 +229,7 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 				f := filepath.Join(dir, ouID.Certificate)
 				raw, err = ioutil.ReadFile(f)
 				if err != nil {
-					return nil, fmt.Errorf("Failed loading OrganizationalUnit certificate at [%s]: [%s]", f, err)
+					return nil, errors.Wrapf(err, "failed loading OrganizationalUnit certificate at [%s]", f)
 				}
 				oui := &msp.FabricOUIdentifier{
 					Certificate:                  raw,
@@ -279,4 +267,26 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 	mspconf := &msp.MSPConfig{Config: fmpsjs, Type: int32(FABRIC)}
 
 	return mspconf, nil
+}
+
+// IdemixConfig is the filename of the idemix msp config file
+const IdemixConfig = "idemixmspconfig"
+
+// GetIdemixMspConfig returns the configuration for the Idemix MSP
+func GetIdemixMspConfig(dir string) (*msp.MSPConfig, error) {
+	confStringBytes, err := readFile(filepath.Join(dir, IdemixConfig))
+	if err != nil {
+		return nil, errors.Wrapf(err, "error reading idemix config file")
+	}
+	config := &msp.IdemixMSPConfig{}
+	err = proto.UnmarshalText(string(confStringBytes), config)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error unmarshalling idemix config")
+	}
+	confBytes, err := proto.Marshal(config)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error creating idemix config")
+	}
+
+	return &msp.MSPConfig{Config: confBytes, Type: int32(IDEMIX)}, nil
 }

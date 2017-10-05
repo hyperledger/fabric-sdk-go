@@ -23,10 +23,10 @@ package tls
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
-	"fmt"
 	"io/ioutil"
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
@@ -37,8 +37,8 @@ import (
 // ServerTLSConfig defines key material for a TLS server
 type ServerTLSConfig struct {
 	Enabled    bool   `help:"Enable TLS on the listening port"`
-	CertFile   string `def:"ca-cert.pem" help:"PEM-encoded TLS certificate file for server's listening port"`
-	KeyFile    string `def:"ca-key.pem" help:"PEM-encoded TLS key for server's listening port"`
+	CertFile   string `def:"tls-cert.pem" help:"PEM-encoded TLS certificate file for server's listening port"`
+	KeyFile    string `help:"PEM-encoded TLS key for server's listening port"`
 	ClientAuth ClientAuth
 }
 
@@ -96,11 +96,11 @@ func GetClientTLSConfig(cfg *ClientTLSConfig, csp bccsp.BCCSP) (*tls.Config, err
 	for _, cacert := range cfg.CertFiles {
 		caCert, err := ioutil.ReadFile(cacert)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to read '%s': %s", cacert, err)
+			return nil, errors.Wrapf(err, "Failed to read '%s'", cacert)
 		}
 		ok := rootCAPool.AppendCertsFromPEM(caCert)
 		if !ok {
-			return nil, fmt.Errorf("Failed to process certificate from file %s", cacert)
+			return nil, errors.Errorf("Failed to process certificate from file %s", cacert)
 		}
 	}
 
@@ -166,7 +166,7 @@ func checkCertDates(certFile string) error {
 	log.Debug("Check client TLS certificate for valid dates")
 	certPEM, err := ioutil.ReadFile(certFile)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to read file '%s'", certFile)
 	}
 
 	cert, err := util.GetX509CertificateFromPEM(certPEM)

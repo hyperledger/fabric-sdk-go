@@ -21,9 +21,10 @@ Please review third_party pinning scripts and patches for more details.
 package lib
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/logbridge"
@@ -74,9 +75,6 @@ func (i *Identity) Register(req *api.RegistrationRequest) (rr *api.RegistrationR
 	if req.Name == "" {
 		return nil, errors.New("Register was called without a Name set")
 	}
-	if req.Affiliation == "" {
-		return nil, errors.New("Registration request does not have an affiliation")
-	}
 
 	reqBody, err := util.Marshal(req, "RegistrationRequest")
 	if err != nil {
@@ -101,14 +99,14 @@ func (i *Identity) RegisterAndEnroll(req *api.RegistrationRequest) (*Identity, e
 	}
 	rresp, err := i.Register(req)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to register %s: %s", req.Name, err)
+		return nil, errors.WithMessage(err, fmt.Sprintf("Failed to register %s", req.Name))
 	}
 	eresp, err := i.client.Enroll(&api.EnrollmentRequest{
 		Name:   req.Name,
 		Secret: rresp.Secret,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Failed to enroll %s: %s", req.Name, err)
+		return nil, errors.WithMessage(err, fmt.Sprintf("Failed to enroll %s", req.Name))
 	}
 	return eresp.Identity, nil
 }
@@ -116,7 +114,7 @@ func (i *Identity) RegisterAndEnroll(req *api.RegistrationRequest) (*Identity, e
 // Reenroll reenrolls an existing Identity and returns a new Identity
 // @param req The reenrollment request
 func (i *Identity) Reenroll(req *api.ReenrollmentRequest) (*EnrollmentResponse, error) {
-	log.Debugf("Reenrolling %s", req)
+	log.Debugf("Reenrolling %s", util.StructToString(req))
 
 	csrPEM, key, err := i.client.GenCSR(req.CSR, i.GetName())
 	if err != nil {
@@ -124,7 +122,8 @@ func (i *Identity) Reenroll(req *api.ReenrollmentRequest) (*EnrollmentResponse, 
 	}
 
 	reqNet := &api.ReenrollmentRequestNet{
-		CAName: req.CAName,
+		CAName:   req.CAName,
+		AttrReqs: req.AttrReqs,
 	}
 
 	// Get the body of the request
@@ -175,7 +174,7 @@ func (i *Identity) RevokeSelf() error {
 // Store writes my identity info to disk
 func (i *Identity) Store() error {
 	if i.client == nil {
-		return fmt.Errorf("An identity with no client may not be stored")
+		return errors.New("An identity with no client may not be stored")
 	}
 	return i.client.StoreMyIdentity(i.ecert.cert)
 }
@@ -202,7 +201,7 @@ func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
 	key := i.ecert.key
 	token, err := util.CreateToken(i.CSP, cert, key, body)
 	if err != nil {
-		return fmt.Errorf("Failed to add token authorization header: %s", err)
+		return errors.WithMessage(err, "Failed to add token authorization header")
 	}
 	req.Header.Set("authorization", token)
 	return nil

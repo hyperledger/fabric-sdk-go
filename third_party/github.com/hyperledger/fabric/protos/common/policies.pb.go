@@ -42,7 +42,7 @@ var Policy_PolicyType_value = map[string]int32{
 func (x Policy_PolicyType) String() string {
 	return proto.EnumName(Policy_PolicyType_name, int32(x))
 }
-func (Policy_PolicyType) EnumDescriptor() ([]byte, []int) { return fileDescriptor4, []int{0, 0} }
+func (Policy_PolicyType) EnumDescriptor() ([]byte, []int) { return fileDescriptor5, []int{0, 0} }
 
 type ImplicitMetaPolicy_Rule int32
 
@@ -66,7 +66,7 @@ var ImplicitMetaPolicy_Rule_value = map[string]int32{
 func (x ImplicitMetaPolicy_Rule) String() string {
 	return proto.EnumName(ImplicitMetaPolicy_Rule_name, int32(x))
 }
-func (ImplicitMetaPolicy_Rule) EnumDescriptor() ([]byte, []int) { return fileDescriptor4, []int{3, 0} }
+func (ImplicitMetaPolicy_Rule) EnumDescriptor() ([]byte, []int) { return fileDescriptor5, []int{3, 0} }
 
 // Policy expresses a policy which the orderer can evaluate, because there has been some desire expressed to support
 // multiple policy engines, this is typed as a oneof for now
@@ -78,7 +78,7 @@ type Policy struct {
 func (m *Policy) Reset()                    { *m = Policy{} }
 func (m *Policy) String() string            { return proto.CompactTextString(m) }
 func (*Policy) ProtoMessage()               {}
-func (*Policy) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{0} }
+func (*Policy) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{0} }
 
 func (m *Policy) GetType() int32 {
 	if m != nil {
@@ -104,7 +104,7 @@ type SignaturePolicyEnvelope struct {
 func (m *SignaturePolicyEnvelope) Reset()                    { *m = SignaturePolicyEnvelope{} }
 func (m *SignaturePolicyEnvelope) String() string            { return proto.CompactTextString(m) }
 func (*SignaturePolicyEnvelope) ProtoMessage()               {}
-func (*SignaturePolicyEnvelope) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{1} }
+func (*SignaturePolicyEnvelope) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{1} }
 
 func (m *SignaturePolicyEnvelope) GetVersion() int32 {
 	if m != nil {
@@ -143,7 +143,7 @@ type SignaturePolicy struct {
 func (m *SignaturePolicy) Reset()                    { *m = SignaturePolicy{} }
 func (m *SignaturePolicy) String() string            { return proto.CompactTextString(m) }
 func (*SignaturePolicy) ProtoMessage()               {}
-func (*SignaturePolicy) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{2} }
+func (*SignaturePolicy) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{2} }
 
 type isSignaturePolicy_Type interface {
 	isSignaturePolicy_Type()
@@ -257,7 +257,7 @@ type SignaturePolicy_NOutOf struct {
 func (m *SignaturePolicy_NOutOf) Reset()                    { *m = SignaturePolicy_NOutOf{} }
 func (m *SignaturePolicy_NOutOf) String() string            { return proto.CompactTextString(m) }
 func (*SignaturePolicy_NOutOf) ProtoMessage()               {}
-func (*SignaturePolicy_NOutOf) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{2, 0} }
+func (*SignaturePolicy_NOutOf) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{2, 0} }
 
 func (m *SignaturePolicy_NOutOf) GetN() int32 {
 	if m != nil {
@@ -289,7 +289,7 @@ type ImplicitMetaPolicy struct {
 func (m *ImplicitMetaPolicy) Reset()                    { *m = ImplicitMetaPolicy{} }
 func (m *ImplicitMetaPolicy) String() string            { return proto.CompactTextString(m) }
 func (*ImplicitMetaPolicy) ProtoMessage()               {}
-func (*ImplicitMetaPolicy) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{3} }
+func (*ImplicitMetaPolicy) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{3} }
 
 func (m *ImplicitMetaPolicy) GetSubPolicy() string {
 	if m != nil {
@@ -315,11 +315,11 @@ func init() {
 	proto.RegisterEnum("common.ImplicitMetaPolicy_Rule", ImplicitMetaPolicy_Rule_name, ImplicitMetaPolicy_Rule_value)
 }
 
-func init() { proto.RegisterFile("common/policies.proto", fileDescriptor4) }
+func init() { proto.RegisterFile("common/policies.proto", fileDescriptor5) }
 
-var fileDescriptor4 = []byte{
+var fileDescriptor5 = []byte{
 	// 480 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x74, 0x52, 0xdf, 0x8b, 0xda, 0x40,
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x52, 0xdf, 0x8b, 0xda, 0x40,
 	0x10, 0x76, 0xfd, 0x11, 0x75, 0xf4, 0xda, 0x74, 0xb9, 0xa2, 0x1c, 0xb4, 0x95, 0x50, 0x8a, 0x70,
 	0x34, 0x01, 0xaf, 0x4f, 0x7d, 0xd3, 0x56, 0x7a, 0x69, 0x4d, 0x94, 0xd5, 0xa3, 0x5c, 0x5f, 0x82,
 	0xd1, 0xd5, 0x5b, 0x88, 0xbb, 0x4b, 0x76, 0x23, 0xf5, 0xbf, 0xe8, 0x53, 0xff, 0x99, 0xfe, 0x73,

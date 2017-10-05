@@ -37,7 +37,7 @@ var ConfigType_value = map[string]int32{
 func (x ConfigType) String() string {
 	return proto.EnumName(ConfigType_name, int32(x))
 }
-func (ConfigType) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (ConfigType) EnumDescriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
 // ConfigEnvelope is designed to contain _all_ configuration for a chain with no dependency
 // on previous configuration transactions.
@@ -68,7 +68,7 @@ type ConfigEnvelope struct {
 func (m *ConfigEnvelope) Reset()                    { *m = ConfigEnvelope{} }
 func (m *ConfigEnvelope) String() string            { return proto.CompactTextString(m) }
 func (*ConfigEnvelope) ProtoMessage()               {}
-func (*ConfigEnvelope) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (*ConfigEnvelope) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
 func (m *ConfigEnvelope) GetConfig() *Config {
 	if m != nil {
@@ -93,7 +93,7 @@ type ConfigGroupSchema struct {
 func (m *ConfigGroupSchema) Reset()                    { *m = ConfigGroupSchema{} }
 func (m *ConfigGroupSchema) String() string            { return proto.CompactTextString(m) }
 func (*ConfigGroupSchema) ProtoMessage()               {}
-func (*ConfigGroupSchema) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
+func (*ConfigGroupSchema) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
 
 func (m *ConfigGroupSchema) GetGroups() map[string]*ConfigGroupSchema {
 	if m != nil {
@@ -122,7 +122,7 @@ type ConfigValueSchema struct {
 func (m *ConfigValueSchema) Reset()                    { *m = ConfigValueSchema{} }
 func (m *ConfigValueSchema) String() string            { return proto.CompactTextString(m) }
 func (*ConfigValueSchema) ProtoMessage()               {}
-func (*ConfigValueSchema) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{2} }
+func (*ConfigValueSchema) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{2} }
 
 type ConfigPolicySchema struct {
 }
@@ -130,7 +130,7 @@ type ConfigPolicySchema struct {
 func (m *ConfigPolicySchema) Reset()                    { *m = ConfigPolicySchema{} }
 func (m *ConfigPolicySchema) String() string            { return proto.CompactTextString(m) }
 func (*ConfigPolicySchema) ProtoMessage()               {}
-func (*ConfigPolicySchema) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{3} }
+func (*ConfigPolicySchema) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{3} }
 
 // Config represents the config for a particular channel
 type Config struct {
@@ -142,7 +142,7 @@ type Config struct {
 func (m *Config) Reset()                    { *m = Config{} }
 func (m *Config) String() string            { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{4} }
+func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{4} }
 
 func (m *Config) GetSequence() uint64 {
 	if m != nil {
@@ -173,7 +173,7 @@ type ConfigUpdateEnvelope struct {
 func (m *ConfigUpdateEnvelope) Reset()                    { *m = ConfigUpdateEnvelope{} }
 func (m *ConfigUpdateEnvelope) String() string            { return proto.CompactTextString(m) }
 func (*ConfigUpdateEnvelope) ProtoMessage()               {}
-func (*ConfigUpdateEnvelope) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{5} }
+func (*ConfigUpdateEnvelope) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{5} }
 
 func (m *ConfigUpdateEnvelope) GetConfigUpdate() []byte {
 	if m != nil {
@@ -209,7 +209,7 @@ type ConfigUpdate struct {
 func (m *ConfigUpdate) Reset()                    { *m = ConfigUpdate{} }
 func (m *ConfigUpdate) String() string            { return proto.CompactTextString(m) }
 func (*ConfigUpdate) ProtoMessage()               {}
-func (*ConfigUpdate) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{6} }
+func (*ConfigUpdate) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{6} }
 
 func (m *ConfigUpdate) GetChannelId() string {
 	if m != nil {
@@ -258,7 +258,7 @@ type ConfigGroup struct {
 func (m *ConfigGroup) Reset()                    { *m = ConfigGroup{} }
 func (m *ConfigGroup) String() string            { return proto.CompactTextString(m) }
 func (*ConfigGroup) ProtoMessage()               {}
-func (*ConfigGroup) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{7} }
+func (*ConfigGroup) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{7} }
 
 func (m *ConfigGroup) GetVersion() uint64 {
 	if m != nil {
@@ -305,7 +305,7 @@ type ConfigValue struct {
 func (m *ConfigValue) Reset()                    { *m = ConfigValue{} }
 func (m *ConfigValue) String() string            { return proto.CompactTextString(m) }
 func (*ConfigValue) ProtoMessage()               {}
-func (*ConfigValue) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{8} }
+func (*ConfigValue) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{8} }
 
 func (m *ConfigValue) GetVersion() uint64 {
 	if m != nil {
@@ -337,7 +337,7 @@ type ConfigPolicy struct {
 func (m *ConfigPolicy) Reset()                    { *m = ConfigPolicy{} }
 func (m *ConfigPolicy) String() string            { return proto.CompactTextString(m) }
 func (*ConfigPolicy) ProtoMessage()               {}
-func (*ConfigPolicy) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{9} }
+func (*ConfigPolicy) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{9} }
 
 func (m *ConfigPolicy) GetVersion() uint64 {
 	if m != nil {
@@ -368,7 +368,7 @@ type ConfigSignature struct {
 func (m *ConfigSignature) Reset()                    { *m = ConfigSignature{} }
 func (m *ConfigSignature) String() string            { return proto.CompactTextString(m) }
 func (*ConfigSignature) ProtoMessage()               {}
-func (*ConfigSignature) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{10} }
+func (*ConfigSignature) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{10} }
 
 func (m *ConfigSignature) GetSignatureHeader() []byte {
 	if m != nil {
@@ -399,11 +399,11 @@ func init() {
 	proto.RegisterEnum("common.ConfigType", ConfigType_name, ConfigType_value)
 }
 
-func init() { proto.RegisterFile("common/configtx.proto", fileDescriptor1) }
+func init() { proto.RegisterFile("common/configtx.proto", fileDescriptor2) }
 
-var fileDescriptor1 = []byte{
+var fileDescriptor2 = []byte{
 	// 776 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x94, 0x56, 0xff, 0x6e, 0x12, 0x4b,
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x56, 0xff, 0x6e, 0x12, 0x4b,
 	0x14, 0xbe, 0xb0, 0x40, 0xe1, 0x00, 0x2d, 0x9d, 0x72, 0x73, 0xf7, 0x12, 0x8d, 0x75, 0xd5, 0xfe,
 	0x32, 0x81, 0x5a, 0xff, 0x68, 0x63, 0xd2, 0x18, 0x45, 0x62, 0x1b, 0x0d, 0xea, 0xd2, 0x6a, 0xd2,
 	0x98, 0x90, 0xe9, 0xee, 0x14, 0x36, 0x85, 0x9d, 0x75, 0x77, 0xa8, 0xf2, 0x58, 0x3e, 0x8f, 0x6f,

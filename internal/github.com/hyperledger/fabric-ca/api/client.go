@@ -29,11 +29,11 @@ type RegistrationRequest struct {
 	// Name is the unique name of the identity
 	Name string `json:"id" help:"Unique name of the identity"`
 	// Type of identity being registered (e.g. "peer, app, user")
-	Type string `json:"type" help:"Type of identity being registered (e.g. 'peer, app, user')"`
+	Type string `json:"type" def:"user" help:"Type of identity being registered (e.g. 'peer, app, user')"`
 	// Secret is an optional password.  If not specified,
 	// a random secret is generated.  In both cases, the secret
 	// is returned in the RegistrationResponse.
-	Secret string `json:"secret,omitempty" help:"The enrollment secret for the identity being registered"`
+	Secret string `json:"secret,omitempty" secret:"password" help:"The enrollment secret for the identity being registered"`
 	// MaxEnrollments is the maximum number of times the secret can
 	// be reused to enroll.
 	MaxEnrollments int `json:"max_enrollments,omitempty" def:"-1" help:"The maximum number of times the secret can be reused to enroll."`
@@ -67,6 +67,9 @@ type EnrollmentRequest struct {
 	CSR *CSRInfo `json:"csr,omitempty" help:"Certificate Signing Request info"`
 	// CAName is the name of the CA to connect to
 	CAName string `json:"caname,omitempty" skip:"true"`
+	// AttrReqs are requests for attributes to add to the certificate.
+	// Each attribute is added only if the requestor owns the attribute.
+	AttrReqs []*AttributeRequest `json:"attr_reqs,omitempty"`
 }
 
 // ReenrollmentRequest is a request to reenroll an identity.
@@ -80,6 +83,9 @@ type ReenrollmentRequest struct {
 	CSR *CSRInfo `json:"csr,omitempty"`
 	// CAName is the name of the CA to connect to
 	CAName string `json:"caname,omitempty" skip:"true"`
+	// AttrReqs are requests for attributes to add to the certificate.
+	// Each attribute is added only if the requestor owns the attribute.
+	AttrReqs []*AttributeRequest `json:"attr_reqs,omitempty"`
 }
 
 // RevocationRequest is a revocation request for a single certificate or all certificates
@@ -109,7 +115,7 @@ type GetCAInfoRequest struct {
 	CAName string `json:"caname,omitempty" skip:"true"`
 }
 
-// CSRInfo is Certificate Signing Request information
+// CSRInfo is Certificate Signing Request (CSR) Information
 type CSRInfo struct {
 	CN           string               `json:"CN"`
 	Names        []csr.Name           `json:"names,omitempty"`
@@ -123,4 +129,32 @@ type CSRInfo struct {
 type Attribute struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+	ECert bool   `json:"ecert,omitempty"`
+}
+
+// GetName returns the name of the attribute
+func (a *Attribute) GetName() string {
+	return a.Name
+}
+
+// GetValue returns the value of the attribute
+func (a *Attribute) GetValue() string {
+	return a.Value
+}
+
+// AttributeRequest is a request for an attribute.
+// This implements the certmgr/AttributeRequest interface.
+type AttributeRequest struct {
+	Name    string `json:"name"`
+	Require bool   `json:"require,omitempty"`
+}
+
+// GetName returns the name of an attribute being requested
+func (ar *AttributeRequest) GetName() string {
+	return ar.Name
+}
+
+// IsRequired returns true if the attribute being requested is required
+func (ar *AttributeRequest) IsRequired() bool {
+	return ar.Require
 }
