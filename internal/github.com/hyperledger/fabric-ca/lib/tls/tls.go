@@ -137,31 +137,6 @@ func AbsTLSClient(cfg *ClientTLSConfig, configDir string) error {
 	return nil
 }
 
-// AbsTLSServer makes TLS client files absolute
-func AbsTLSServer(cfg *ServerTLSConfig, configDir string) error {
-	var err error
-
-	for i := 0; i < len(cfg.ClientAuth.CertFiles); i++ {
-		cfg.ClientAuth.CertFiles[i], err = util.MakeFileAbs(cfg.ClientAuth.CertFiles[i], configDir)
-		if err != nil {
-			return err
-		}
-
-	}
-
-	cfg.CertFile, err = util.MakeFileAbs(cfg.CertFile, configDir)
-	if err != nil {
-		return err
-	}
-
-	cfg.KeyFile, err = util.MakeFileAbs(cfg.KeyFile, configDir)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func checkCertDates(certFile string) error {
 	log.Debug("Check client TLS certificate for valid dates")
 	certPEM, err := ioutil.ReadFile(certFile)
