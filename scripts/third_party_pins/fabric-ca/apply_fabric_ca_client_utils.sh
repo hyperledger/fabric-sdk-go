@@ -18,7 +18,7 @@ declare -a PKGS=(
     "api"
     "lib"
     "lib/tls"
-    "lib/logbridge"
+    "sdkpatch/logbridge"
     "util"
 )
 
@@ -31,12 +31,12 @@ declare -a FILES=(
     "lib/signer.go"
     "lib/clientconfig.go"
     "lib/util.go"
-    "lib/serverstruct.go"
+    "lib/sdkpatch_serverstruct.go"
 
     "lib/tls/tls.go"
 
-    "lib/logbridge/logbridge.go"
-    "lib/logbridge/syslogwriter.go"
+    "sdkpatch/logbridge/logbridge.go"
+    "sdkpatch/logbridge/syslogwriter.go"
 
     "util/util.go"
     "util/csp.go"
@@ -57,11 +57,14 @@ gofilter() {
     echo "Filtering: ${FILTER_FILENAME}"
     cp ${TMP_PROJECT_PATH}/${FILTER_FILENAME} ${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak
     $GOFILTER_CMD -filename "${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak" \
-        -filters allowfn -fn "$FILTER_FN" \
+        -filters "$FILTERS_ENABLED" -fn "$FILTER_FN" -gen "$FILTER_GEN" -mode "$FILTER_MODE" \
         > "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 } 
 
 echo "Filtering Go sources for allowed functions ..."
+FILTER_MODE="allow"
+FILTERS_ENABLED="fn"
+
 FILTER_FILENAME="lib/client.go"
 FILTER_FN="Enroll,GenCSR,SendReq,Init,newPost,newEnrollmentResponse,newCertificateRequest"
 FILTER_FN+=",getURL,NormalizeURL,initHTTPClient,net2LocalServerInfo,NewIdentity"
@@ -104,6 +107,7 @@ FILTER_FN+=",GetX509CertificateFromPEM,GetSerialAsHex,GetEnrollmentIDFromPEM"
 FILTER_FN+=",MakeFileAbs,Marshal,StructToString,LoadX509KeyPair,CreateToken"
 FILTER_FN+=",GenECDSAToken,GetEnrollmentIDFromX509Certificate,B64Encode,B64Decode"
 gofilter
+
 
 # Apply patching
 echo "Patching import paths on upstream project ..."

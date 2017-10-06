@@ -8,15 +8,15 @@ SPDX-License-Identifier: Apache-2.0
 
 Signed-off-by: Troy Ronda <t.....@securekey.com>
 ---
- lib/serverstruct.go | 30 ++++++++++++++++++++++++++++++
+ lib/sdkpatch_serverstruct.go | 30 ++++++++++++++++++++++++++++++
  1 file changed, 30 insertions(+)
- create mode 100644 lib/serverstruct.go
+ create mode 100644 lib/sdkpatch_serverstruct.go
 
-diff --git a/lib/serverstruct.go b/lib/serverstruct.go
+diff --git a/lib/sdkpatch_serverstruct.go b/lib/sdkpatch_serverstruct.go
 new file mode 100644
 index 0000000..3bc2be5
 --- /dev/null
-+++ b/lib/serverstruct.go
++++ b/lib/sdkpatch_serverstruct.go
 @@ -0,0 +1,30 @@
 +/*
 +Copyright SecureKey Technologies Inc. All Rights Reserved.

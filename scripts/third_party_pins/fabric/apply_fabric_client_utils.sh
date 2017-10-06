@@ -23,7 +23,7 @@ declare -a PKGS=(
     "common/ledger/util"
     "common/attrmgr"
 
-    "common/logbridge"
+    "sdkpatch/logbridge"
 
     "core/comm"
     "core/config"
@@ -44,10 +44,14 @@ declare -a FILES=(
 
     "common/util/utils.go"
     "common/metadata/metadata.go"
-    "common/channelconfig/keys.go"
     "common/attrmgr/attrmgr.go"
+
+    "common/channelconfig/applicationorg.go"
+    "common/channelconfig/channel.go"
+    "common/channelconfig/msp_util.go"
+    "common/channelconfig/orderer.go"
     
-    "common/logbridge/logbridge.go"
+    "sdkpatch/logbridge/logbridge.go"
 
     "core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
     "core/ledger/kvledger/txmgmt/version/version.go"
@@ -89,11 +93,13 @@ gofilter() {
     echo "Filtering: ${FILTER_FILENAME}"
     cp ${TMP_PROJECT_PATH}/${FILTER_FILENAME} ${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak
     $GOFILTER_CMD -filename "${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak" \
-        -filters allowfn -fn "$FILTER_FN" \
+        -filters "$FILTERS_ENABLED" -fn "$FILTER_FN" -gen "$FILTER_GEN" -type "$FILTER_TYPE" \
         > "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 } 
 
 echo "Filtering Go sources for allowed functions ..."
+FILTERS_ENABLED="fn"
+
 FILTER_FILENAME="common/crypto/random.go"
 FILTER_FN="GetRandomNonce,GetRandomBytes"
 gofilter
@@ -110,11 +116,23 @@ FILTER_FILENAME="common/metadata/metadata.go"
 FILTER_FN=
 gofilter
 
-FILTER_FILENAME="common/channelconfig/keys.go"
+FILTER_FILENAME="common/attrmgr/attrmgr.go"
 FILTER_FN=
 gofilter
 
-FILTER_FILENAME="common/attrmgr/attrmgr.go"
+FILTER_FILENAME="common/channelconfig/applicationorg.go"
+FILTER_FN=
+gofilter
+
+FILTER_FILENAME="common/channelconfig/channel.go"
+FILTER_FN=
+gofilter
+
+FILTER_FILENAME="common/channelconfig/msp_util.go"
+FILTER_FN=
+gofilter
+
+FILTER_FILENAME="common/channelconfig/orderer.go"
 FILTER_FN=
 gofilter
 
@@ -198,6 +216,24 @@ gofilter
 
 FILTER_FILENAME="common/ledger/util/util.go"
 FILTER_FN="DecodeOrderPreservingVarUint64,EncodeOrderPreservingVarUint64"
+gofilter
+
+echo "Filtering Go sources for allowed declarations ..."
+FILTERS_ENABLED="gen,type"
+FILTER_TYPE="IMPORT,CONST"
+# Allow no declarations
+FILTER_GEN=
+
+FILTER_FILENAME="common/channelconfig/applicationorg.go"
+gofilter
+
+FILTER_FILENAME="common/channelconfig/channel.go"
+gofilter
+
+FILTER_FILENAME="common/channelconfig/msp_util.go"
+gofilter
+
+FILTER_FILENAME="common/channelconfig/orderer.go"
 gofilter
 
 # Apply patching

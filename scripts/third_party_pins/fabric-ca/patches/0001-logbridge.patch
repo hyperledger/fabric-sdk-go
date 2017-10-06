@@ -8,18 +8,18 @@ SPDX-License-Identifier: Apache-2.0
 
 Signed-off-by: Troy Ronda <t.....@securekey.com>
 ---
- lib/logbridge/logbridge.go    | 51 +++++++++++++++++++++++++++++++++++++++++++
- lib/logbridge/syslogwriter.go | 41 ++++++++++++++++++++++++++++++++++++++
+ sdkpatch/logbridge/logbridge.go    | 51 +++++++++++++++++++++++++++++++++++++++++++
+ sdkpatch/logbridge/syslogwriter.go | 41 ++++++++++++++++++++++++++++++++++++++
  util/flag.go                  | 13 ------------
  3 files changed, 92 insertions(+), 13 deletions(-)
- create mode 100644 lib/logbridge/logbridge.go
- create mode 100644 lib/logbridge/syslogwriter.go
+ create mode 100644 sdkpatch/logbridge/logbridge.go
+ create mode 100644 sdkpatch/logbridge/syslogwriter.go
 
-diff --git a/lib/logbridge/logbridge.go b/lib/logbridge/logbridge.go
+diff --git a/sdkpatch/logbridge/logbridge.go b/sdkpatch/logbridge/logbridge.go
 new file mode 100644
 index 0000000..eca57b3
 --- /dev/null
-+++ b/lib/logbridge/logbridge.go
++++ b/sdkpatch/logbridge/logbridge.go
 @@ -0,0 +1,51 @@
 +/*
 +Copyright SecureKey Technologies Inc. All Rights Reserved.
@@ -72,11 +72,11 @@ index 0000000..eca57b3
 +func Fatalf(format string, args ...interface{}) {
 +	logger.Fatalf(format, args...)
 +}
-diff --git a/lib/logbridge/syslogwriter.go b/lib/logbridge/syslogwriter.go
+diff --git a/sdkpatch/logbridge/syslogwriter.go b/sdkpatch/logbridge/syslogwriter.go
 new file mode 100644
 index 0000000..c391e91
 --- /dev/null
-+++ b/lib/logbridge/syslogwriter.go
++++ b/sdkpatch/logbridge/syslogwriter.go
 @@ -0,0 +1,41 @@
 +/*
 +Copyright SecureKey Technologies Inc. All Rights Reserved.

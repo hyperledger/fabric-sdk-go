@@ -8,15 +8,15 @@ SPDX-License-Identifier: Apache-2.0
 
 Signed-off-by: Troy Ronda <t.....@securekey.com>
 ---
- common/logbridge/logbridge.go | 51 +++++++++++++++++++++++++++++++++++++++++++
+ sdkpatch/logbridge/logbridge.go | 51 +++++++++++++++++++++++++++++++++++++++++++
  1 file changed, 51 insertions(+)
- create mode 100644 common/logbridge/logbridge.go
+ create mode 100644 sdkpatch/logbridge/logbridge.go
 
-diff --git a/common/logbridge/logbridge.go b/common/logbridge/logbridge.go
+diff --git a/sdkpatch/logbridge/logbridge.go b/sdkpatch/logbridge/logbridge.go
 new file mode 100644
 index 00000000..fdeb3a4f
 --- /dev/null
-+++ b/common/logbridge/logbridge.go
++++ b/sdkpatch/logbridge/logbridge.go
 @@ -0,0 +1,51 @@
 +/*
 +Copyright SecureKey Technologies Inc. All Rights Reserved.
