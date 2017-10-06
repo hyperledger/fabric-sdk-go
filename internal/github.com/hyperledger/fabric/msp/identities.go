@@ -132,21 +132,6 @@ func (id *identity) GetOrganizationalUnits() []*OUIdentifier {
 	return res
 }
 
-// NewSerializedIdentity returns a serialized identity
-// having as content the passed mspID and x509 certificate in PEM format.
-// This method does not check the validity of certificate nor
-// any consistency of the mspID with it.
-func NewSerializedIdentity(mspID string, certPEM []byte) ([]byte, error) {
-	// We serialize identities by prepending the MSPID
-	// and appending the x509 cert in PEM format
-	sId := &msp.SerializedIdentity{Mspid: mspID, IdBytes: certPEM}
-	raw, err := proto.Marshal(sId)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed serializing identity [%s][%X]", mspID, certPEM)
-	}
-	return raw, nil
-}
-
 // Verify checks against a signature and a message
 // to determine whether this identity produced the
 // signature; it returns nil if so or an error otherwise
