@@ -19,10 +19,16 @@ import (
 	"strings"
 )
 
+// ALLOW is the mode that allows a token in the program
+const ALLOW = "allow"
+
 func main() {
 	filename := flag.String("filename", "", "Go source file to filter")
-	filtersFlag := flag.String("filters", "", "filters to run [allowfn]")
-	allowedFuncsFlag := flag.String("fn", "", "func names to allow - comma separated")
+	filtersFlag := flag.String("filters", "", "filters to run [allowfn,allowgen,allowtype]")
+	allowedFuncsFlag := flag.String("fn", "", "func names - comma separated")
+	allowedGenFlag := flag.String("gen", "", "general decl names - comma separated")
+	allowedTypeFlag := flag.String("type", "", "general decl types - comma separated")
+	modeFlag := flag.String("mode", "allow", "allow or disallow")
 	flag.Parse()
 
 	if len(*filename) == 0 || len(*filtersFlag) == 0 {
@@ -31,10 +37,8 @@ func main() {
 		return
 	}
 
-	allowedFuncs := strings.Split(*allowedFuncsFlag, ",")
-	filterStrings := strings.Split(*filtersFlag, ",")
-
 	// enabled filters
+	filterStrings := strings.Split(*filtersFlag, ",")
 	filters := make(map[string]bool)
 	for _, fs := range filterStrings {
 		filters[fs] = true
@@ -42,17 +46,48 @@ func main() {
 
 	// load filter table as an allow list
 	ft := filterTbl{
-		fn: make(map[string]bool),
+		mode: *modeFlag,
+		fn:   make(map[string]bool),
+		gen:  make(map[string]bool),
+		typ:  make(map[int]bool),
 	}
-	for _, af := range allowedFuncs {
-		ft.fn[af] = true
+
+	if filters["fn"] && len(*allowedFuncsFlag) != 0 {
+		allowedFuncs := strings.Split(*allowedFuncsFlag, ",")
+		for _, af := range allowedFuncs {
+			ft.fn[af] = true
+		}
+	}
+
+	if filters["gen"] && len(*allowedGenFlag) != 0 {
+		allowedGens := strings.Split(*allowedGenFlag, ",")
+		for _, ag := range allowedGens {
+			ft.gen[ag] = true
+		}
+	}
+
+	if filters["type"] && len(*allowedTypeFlag) != 0 {
+		allowedTypes := strings.Split(*allowedTypeFlag, ",")
+
+		typeDict := make(map[string]int)
+		typeDict["IMPORT"] = int(token.IMPORT)
+		typeDict["CONST"] = int(token.CONST)
+
+		for _, ats := range allowedTypes {
+			if t, ok := typeDict[ats]; ok {
+				ft.typ[t] = true
+			} else {
+				fmt.Fprintf(os.Stderr, "type is unknown: %s\n", ats)
+				os.Exit(1)
+			}
+		}
 	}
 
 	// load the AST
 	fileset := token.NewFileSet()
 	astFile, err := parser.ParseFile(fileset, *filename, nil, parser.ParseComments)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error paring file: %v", err)
+		fmt.Fprintf(os.Stderr, "Error paring file: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -62,10 +97,14 @@ func main() {
 	// filter the AST by func name
 	tDecls := make([]ast.Decl, 0, len(astFile.Decls))
 	for _, d := range astFile.Decls {
-		if _, ok := d.(*ast.FuncDecl); ok {
-			if filters["allowfn"] {
-				tDecls = ft.applyFilterAllowFn(tDecls, d)
+		if _, ok := d.(*ast.FuncDecl); ok && filters["fn"] {
+			tDecls = ft.applyFilterAllowFn(tDecls, d)
+		} else if g, ok := d.(*ast.GenDecl); ok && filters["type"] && ft.typ[int(g.Tok)] {
+			if ft.mode == ALLOW {
+				tDecls = append(tDecls, d)
 			}
+		} else if _, ok := d.(*ast.GenDecl); ok && filters["gen"] {
+			tDecls = ft.applyFilterAllowGen(tDecls, d)
 		} else {
 			tDecls = append(tDecls, d)
 		}
@@ -85,7 +124,10 @@ func main() {
 }
 
 type filterTbl struct {
-	fn map[string]bool
+	mode string
+	fn   map[string]bool
+	gen  map[string]bool
+	typ  map[int]bool
 }
 
 func (t *filterTbl) applyFilterAllowFn(decls []ast.Decl, d ast.Decl) []ast.Decl {
@@ -95,6 +137,17 @@ func (t *filterTbl) applyFilterAllowFn(decls []ast.Decl, d ast.Decl) []ast.Decl 
 	return decls
 }
 
+func (t *filterTbl) applyFilterAllowGen(decls []ast.Decl, d ast.Decl) []ast.Decl {
+	if ast.FilterDecl(d, t.filterGen) {
+		decls = append(decls, d)
+	}
+	return decls
+}
+
 func (t *filterTbl) filterFn(name string) bool {
-	return t.fn[name]
+	return t.fn[name] == (t.mode == ALLOW)
+}
+
+func (t *filterTbl) filterGen(name string) bool {
+	return t.gen[name] == (t.mode == ALLOW)
 }

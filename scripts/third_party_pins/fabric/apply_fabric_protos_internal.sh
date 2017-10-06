@@ -51,7 +51,7 @@ gofilter() {
     echo "Filtering: ${FILTER_FILENAME}"
     cp ${TMP_PROJECT_PATH}/${FILTER_FILENAME} ${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak
     $GOFILTER_CMD -filename "${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak" \
-        -filters allowfn -fn "$FILTER_FN" \
+        -filters fn -fn "$FILTER_FN" \
         > "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 } 
 
