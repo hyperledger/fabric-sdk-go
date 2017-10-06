@@ -9,7 +9,6 @@
 # If set to false, CI will build images from scratch for the commit levels specified below
 export USE_PREBUILT_IMAGES=true
 
-#file used for automatic integration build test
-#This should always match the compatibility specified in the README.md
-export FABRIC_COMMIT=v1.0.1
-export FABRIC_CA_COMMIT=v1.0.1
+# versions of fabric to build (if USE_PREBUILT_IMAGES=false)
+export FABRIC_COMMIT=
+export FABRIC_CA_COMMIT=
