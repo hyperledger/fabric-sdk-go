@@ -399,7 +399,7 @@ func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, err
 		}
 	}
 	if !peerInOrg {
-		return nil, errors.Errorf("peer %s is not part of orgianzation %s", name, org)
+		return nil, errors.Errorf("peer %s is not part of organization %s", name, org)
 	}
 	peerConfig := config.Peers[strings.ToLower(name)]
 	if peerConfig.TLSCACerts.Path != "" {
