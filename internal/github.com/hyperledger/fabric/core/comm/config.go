@@ -11,11 +11,7 @@ Please review third_party pinning scripts and patches for more details.
 package comm
 
 import (
-	"time"
-
 	"github.com/spf13/viper"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
 )
 
 var (
@@ -76,56 +72,8 @@ func MaxRecvMsgSize() int {
 	return maxRecvMsgSize
 }
 
-// SetMaxRecvMsgSize sets the maximum message size in bytes that gRPC clients
-// and servers can receive
-func SetMaxRecvMsgSize(size int) {
-	maxRecvMsgSize = size
-}
-
 // MaxSendMsgSize returns the maximum message size in bytes that gRPC clients
 // and servers can send
 func MaxSendMsgSize() int {
 	return maxSendMsgSize
-}
-
-// SetMaxSendMsgSize sets the maximum message size in bytes that gRPC clients
-// and servers can send
-func SetMaxSendMsgSize(size int) {
-	maxSendMsgSize = size
-}
-
-// SetKeepaliveOptions sets the gRPC keepalive options for both clients and
-// servers
-func SetKeepaliveOptions(ka KeepaliveOptions) {
-	keepaliveOptions = ka
-}
-
-// ServerKeepaliveOptions returns the gRPC keepalive options for servers
-func ServerKeepaliveOptions() []grpc.ServerOption {
-	var serverOpts []grpc.ServerOption
-	kap := keepalive.ServerParameters{
-		Time:    time.Duration(keepaliveOptions.ServerKeepaliveTime) * time.Second,
-		Timeout: time.Duration(keepaliveOptions.ServerKeepaliveTimeout) * time.Second,
-	}
-	serverOpts = append(serverOpts, grpc.KeepaliveParams(kap))
-	kep := keepalive.EnforcementPolicy{
-		// needs to match clientKeepalive
-		MinTime: time.Duration(keepaliveOptions.ClientKeepaliveTime) * time.Second,
-		// allow keepalive w/o rpc
-		PermitWithoutStream: true,
-	}
-	serverOpts = append(serverOpts, grpc.KeepaliveEnforcementPolicy(kep))
-	return serverOpts
-}
-
-// ClientKeepaliveOptions returns the gRPC keepalive options for clients
-func ClientKeepaliveOptions() []grpc.DialOption {
-	var dialOpts []grpc.DialOption
-	kap := keepalive.ClientParameters{
-		Time:                time.Duration(keepaliveOptions.ClientKeepaliveTime) * time.Second,
-		Timeout:             time.Duration(keepaliveOptions.ClientKeepaliveTimeout) * time.Second,
-		PermitWithoutStream: true,
-	}
-	dialOpts = append(dialOpts, grpc.WithKeepaliveParams(kap))
-	return dialOpts
 }

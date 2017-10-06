@@ -26,13 +26,7 @@ Please review third_party pinning scripts and patches for more details.
 package attrmgr
 
 import (
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/asn1"
-	"encoding/json"
-	"fmt"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 var (
@@ -59,156 +53,10 @@ type AttributeRequest interface {
 	IsRequired() bool
 }
 
-// New constructs an attribute manager
-func New() *Mgr { return &Mgr{} }
-
 // Mgr is the attribute manager and is the main object for this package
 type Mgr struct{}
-
-// ProcessAttributeRequestsForCert add attributes to an X509 certificate, given
-// attribute requests and attributes.
-func (mgr *Mgr) ProcessAttributeRequestsForCert(requests []AttributeRequest, attributes []Attribute, cert *x509.Certificate) error {
-	attrs, err := mgr.ProcessAttributeRequests(requests, attributes)
-	if err != nil {
-		return err
-	}
-	return mgr.AddAttributesToCert(attrs, cert)
-}
-
-// ProcessAttributeRequests takes an array of attribute requests and an identity's attributes
-// and returns an Attributes object containing the requested attributes.
-func (mgr *Mgr) ProcessAttributeRequests(requests []AttributeRequest, attributes []Attribute) (*Attributes, error) {
-	attrsMap := map[string]string{}
-	attrs := &Attributes{Attrs: attrsMap}
-	missingRequiredAttrs := []string{}
-	// For each of the attribute requests
-	for _, req := range requests {
-		// Get the attribute
-		name := req.GetName()
-		attr := getAttrByName(name, attributes)
-		if attr == nil {
-			if req.IsRequired() {
-				// Didn't find attribute and it was required; return error below
-				missingRequiredAttrs = append(missingRequiredAttrs, name)
-			}
-			// Skip attribute requests which aren't required
-			continue
-		}
-		attrsMap[name] = attr.GetValue()
-	}
-	if len(missingRequiredAttrs) > 0 {
-		return nil, errors.Errorf("The following required attributes are missing: %+v",
-			missingRequiredAttrs)
-	}
-	return attrs, nil
-}
-
-// AddAttributesToCert adds public attribute info to an X509 certificate.
-func (mgr *Mgr) AddAttributesToCert(attrs *Attributes, cert *x509.Certificate) error {
-	buf, err := json.Marshal(attrs)
-	if err != nil {
-		return errors.Wrap(err, "Failed to marshal attributes")
-	}
-	ext := pkix.Extension{
-		Id:       AttrOID,
-		Critical: false,
-		Value:    buf,
-	}
-	cert.Extensions = append(cert.Extensions, ext)
-	return nil
-}
-
-// GetAttributesFromCert gets the attributes from a certificate.
-func (mgr *Mgr) GetAttributesFromCert(cert *x509.Certificate) (*Attributes, error) {
-	// Get certificate attributes from the certificate if it exists
-	buf, err := getAttributesFromCert(cert)
-	if err != nil {
-		return nil, err
-	}
-	// Unmarshal into attributes object
-	attrs := &Attributes{}
-	if buf != nil {
-		err := json.Unmarshal(buf, attrs)
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to unmarshal attributes from certificate")
-		}
-	}
-	return attrs, nil
-}
 
 // Attributes contains attribute names and values
 type Attributes struct {
 	Attrs map[string]string `json:"attrs"`
-}
-
-// Names returns the names of the attributes
-func (a *Attributes) Names() []string {
-	i := 0
-	names := make([]string, len(a.Attrs))
-	for name := range a.Attrs {
-		names[i] = name
-		i++
-	}
-	return names
-}
-
-// Contains returns true if the named attribute is found
-func (a *Attributes) Contains(name string) bool {
-	_, ok := a.Attrs[name]
-	return ok
-}
-
-// Value returns an attribute's value
-func (a *Attributes) Value(name string) (string, bool, error) {
-	attr, ok := a.Attrs[name]
-	return attr, ok, nil
-}
-
-// True returns nil if the value of attribute 'name' is true;
-// otherwise, an appropriate error is returned.
-func (a *Attributes) True(name string) error {
-	val, ok, err := a.Value(name)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return fmt.Errorf("Attribute '%s' was not found", name)
-	}
-	if val != "true" {
-		return fmt.Errorf("Attribute '%s' is not true", name)
-	}
-	return nil
-}
-
-// Get the attribute info from a certificate extension, or return nil if not found
-func getAttributesFromCert(cert *x509.Certificate) ([]byte, error) {
-	for _, ext := range cert.Extensions {
-		if isAttrOID(ext.Id) {
-			return ext.Value, nil
-		}
-	}
-	return nil, nil
-}
-
-// Is the object ID equal to the attribute info object ID?
-func isAttrOID(oid asn1.ObjectIdentifier) bool {
-	if len(oid) != len(AttrOID) {
-		return false
-	}
-	for idx, val := range oid {
-		if val != AttrOID[idx] {
-			return false
-		}
-	}
-	return true
-}
-
-// Get an attribute from 'attrs' by its name, or nil if not found
-func getAttrByName(name string, attrs []Attribute) Attribute {
-	for _, attr := range attrs {
-		if attr.GetName() == name {
-			return attr
-		}
-	}
-	return nil
 }

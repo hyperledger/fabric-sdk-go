@@ -21,67 +21,10 @@ Please review third_party pinning scripts and patches for more details.
 package config
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/spf13/viper"
 )
-
-func dirExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
-
-func addConfigPath(v *viper.Viper, p string) {
-	if v != nil {
-		v.AddConfigPath(p)
-	} else {
-		viper.AddConfigPath(p)
-	}
-}
-
-//----------------------------------------------------------------------------------
-// GetDevConfigDir()
-//----------------------------------------------------------------------------------
-// Returns the path to the default configuration that is maintained with the source
-// tree.  Only valid to call from a test/development context.
-//----------------------------------------------------------------------------------
-func GetDevConfigDir() (string, error) {
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		return "", fmt.Errorf("GOPATH not set")
-	}
-
-	for _, p := range filepath.SplitList(gopath) {
-		devPath := filepath.Join(p, "src/github.com/hyperledger/fabric/sampleconfig")
-		if !dirExists(devPath) {
-			continue
-		}
-
-		return devPath, nil
-	}
-
-	return "", fmt.Errorf("DevConfigDir not found in %s", gopath)
-}
-
-//----------------------------------------------------------------------------------
-// GetDevMspDir()
-//----------------------------------------------------------------------------------
-// Builds upon GetDevConfigDir to return the path to our sampleconfig/msp that is
-// maintained with the source tree.  Only valid to call from a test/development
-// context.  Runtime environment should use configuration elements such as
-//
-//   GetPath("peer.mspConfigDir")
-//----------------------------------------------------------------------------------
-func GetDevMspDir() (string, error) {
-	devDir, err := GetDevConfigDir()
-	if err != nil {
-		return "", fmt.Errorf("Error obtaining DevConfigDir: %s", devDir)
-	}
-
-	return filepath.Join(devDir, "msp"), nil
-}
 
 //----------------------------------------------------------------------------------
 // TranslatePath()
@@ -95,17 +38,6 @@ func TranslatePath(base, p string) string {
 	}
 
 	return filepath.Join(base, p)
-}
-
-//----------------------------------------------------------------------------------
-// TranslatePathInPlace()
-//----------------------------------------------------------------------------------
-// Translates a relative path into a fully qualified path in-place (updating the
-// pointer) relative to the config file that specified it.  Absolute paths are
-// passed unscathed.
-//----------------------------------------------------------------------------------
-func TranslatePathInPlace(base string, p *string) {
-	*p = TranslatePath(base, *p)
 }
 
 //----------------------------------------------------------------------------------
@@ -130,66 +62,3 @@ func GetPath(key string) string {
 }
 
 const OfficialPath = "/etc/hyperledger/fabric"
-
-//----------------------------------------------------------------------------------
-// InitViper()
-//----------------------------------------------------------------------------------
-// Performs basic initialization of our viper-based configuration layer.
-// Primary thrust is to establish the paths that should be consulted to find
-// the configuration we need.  If v == nil, we will initialize the global
-// Viper instance
-//----------------------------------------------------------------------------------
-func InitViper(v *viper.Viper, configName string) error {
-	var altPath = os.Getenv("FABRIC_CFG_PATH")
-	if altPath != "" {
-		// If the user has overridden the path with an envvar, its the only path
-		// we will consider
-		addConfigPath(v, altPath)
-	} else {
-		// If we get here, we should use the default paths in priority order:
-		//
-		// *) CWD
-		// *) The $GOPATH based development tree
-		// *) /etc/hyperledger/fabric
-		//
-
-		// CWD
-		addConfigPath(v, "./")
-
-		// DevConfigPath
-		err := AddDevConfigPath(v)
-		if err != nil {
-			return err
-		}
-
-		// And finally, the official path
-		if dirExists(OfficialPath) {
-			addConfigPath(v, OfficialPath)
-		}
-	}
-
-	// Now set the configuration file.
-	if v != nil {
-		v.SetConfigName(configName)
-	} else {
-		viper.SetConfigName(configName)
-	}
-
-	return nil
-}
-
-//----------------------------------------------------------------------------------
-// AddDevConfigPath()
-//----------------------------------------------------------------------------------
-// Helper utility that automatically adds our DevConfigDir to the viper path
-//----------------------------------------------------------------------------------
-func AddDevConfigPath(v *viper.Viper) error {
-	devPath, err := GetDevConfigDir()
-	if err != nil {
-		return err
-	}
-
-	addConfigPath(v, devPath)
-
-	return nil
-}

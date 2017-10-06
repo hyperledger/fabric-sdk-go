@@ -12,6 +12,7 @@
 IMPORT_SUBSTS=($IMPORT_SUBSTS)
 
 GOIMPORTS_CMD=goimports
+GOFILTER_CMD="go run scripts/_go/cmd/gofilter/gofilter.go"
 
 declare -a PKGS=(
     "protos/utils"
@@ -23,6 +24,12 @@ declare -a FILES=(
     "protos/utils/proputils.go"
     "protos/utils/txutils.go"
     "protos/orderer/ab.pb.go"
+)
+
+declare -a NPBFILES=(
+    "protos/utils/commonutils.go"
+    "protos/utils/proputils.go"
+    "protos/utils/txutils.go"
 )
 
 declare -a PBFILES=(
@@ -39,12 +46,40 @@ do
     mkdir -p $INTERNAL_PATH/${i}
 done
 
+# Apply fine-grained patching
+gofilter() {
+    echo "Filtering: ${FILTER_FILENAME}"
+    cp ${TMP_PROJECT_PATH}/${FILTER_FILENAME} ${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak
+    $GOFILTER_CMD -filename "${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak" \
+        -filters allowfn -fn "$FILTER_FN" \
+        > "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+} 
+
+echo "Filtering Go sources for allowed functions ..."
+FILTER_FILENAME="protos/utils/commonutils.go"
+FILTER_FN="UnmarshalChannelHeader,MarshalOrPanic,UnmarshalChannelHeader,MakeChannelHeader,MakePayloadHeader,ExtractPayload"
+FILTER_FN+=",Marshal"
+gofilter
+
+FILTER_FILENAME="protos/utils/proputils.go"
+FILTER_FN="GetHeader,GetChaincodeProposalPayload,GetSignatureHeader,GetChaincodeHeaderExtension,GetBytesChaincodeActionPayload"
+FILTER_FN+=",GetBytesTransaction,GetBytesPayload,GetHeader,GetBytesProposalResponsePayload,GetBytesProposal,CreateChaincodeProposal"
+FILTER_FN+=",GetBytesChaincodeProposalPayload,CreateChaincodeProposalWithTransient,ComputeProposalTxID"
+FILTER_FN+=",CreateChaincodeProposalWithTxIDNonceAndTransient,CreateDeployProposalFromCDS,CreateUpgradeProposalFromCDS"
+FILTER_FN+=",createProposalFromCDS,CreateProposalFromCIS,CreateInstallProposalFromCDS,GetTransaction,GetPayload"
+FILTER_FN+=",GetChaincodeActionPayload,GetProposalResponsePayload,GetChaincodeAction,GetChaincodeEvents"
+gofilter
+
+FILTER_FILENAME="protos/utils/txutils.go"
+FILTER_FN="GetBytesProposalPayloadForTx,GetEnvelopeFromBlock"
+gofilter
+
 # Apply patching
 echo "Patching import paths on upstream project ..."
 WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" IMPORT_SUBSTS="${IMPORT_SUBSTS[@]}" scripts/third_party_pins/common/apply_import_patching.sh
 
 echo "Inserting modification notice ..."
-WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" scripts/third_party_pins/common/apply_header_notice.sh
+WORKING_DIR=$TMP_PROJECT_PATH FILES="${NPBFILES[@]}" scripts/third_party_pins/common/apply_header_notice.sh
 WORKING_DIR=$TMP_PROJECT_PATH FILES="${PBFILES[@]}" ALLOW_NONE_LICENSE_ID="true" scripts/third_party_pins/common/apply_header_notice.sh
 
 # Copy patched project into internal paths
