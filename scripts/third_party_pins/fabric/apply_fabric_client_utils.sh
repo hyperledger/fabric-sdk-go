@@ -65,6 +65,7 @@ declare -a FILES=(
     "events/consumer/adapter.go"
     "events/consumer/consumer.go"
 
+    "msp/factory.go"
     "msp/cert.go"
     "msp/configbuilder.go"
     "msp/identities.go"
@@ -162,6 +163,10 @@ FILTER_FILENAME="events/consumer/consumer.go"
 FILTER_FN=
 gofilter
 
+FILTER_FILENAME="msp/factory.go"
+FILTER_FN=
+gofilter
+
 FILTER_FILENAME="msp/cert.go"
 FILTER_FN="certToPEM,isECDSASignedCert,sanitizeECDSASignedCert,certFromX509Cert,String"
 gofilter
@@ -188,20 +193,22 @@ FILTER_FN+=",getCertificationChainForBCCSPIdentity,validateIdentityAgainstChain,
 FILTER_FN+=",getValidationChain,GetSigningIdentity"
 FILTER_FN+=",GetTLSIntermediateCerts,GetTLSRootCerts,GetType,Setup"
 FILTER_FN+=",getCertFromPem,getIdentityFromConf,getSigningIdentityFromConf"
-FILTER_FN+=",newBccspMsp,IsWellFormed"
+FILTER_FN+=",newBccspMsp,IsWellFormed,GetVersion"
 gofilter
 # TODO - adapt to msp/factory.go rather than changing newBccspMsp
 sed -i'' -e 's/newBccspMsp/NewBccspMsp/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/mspimplsetup.go"
 FILTER_FN="setupCrypto,setupCAs,setupAdmins,setupCRLs,finalizeSetupCAs,setupSigningIdentity"
-FILTER_FN+=",setupOUs,setupTLSCAs"
+FILTER_FN+=",setupOUs,setupTLSCAs,setupV1,setupV11,getCertifiersIdentifier"
+FILTER_FN+=",preSetupV1,postSetupV1,setupNodeOUs"
 gofilter
 
 FILTER_FILENAME="msp/mspimplvalidate.go"
 FILTER_FN="validateTLSCAIdentity,validateCAIdentity,validateIdentity,validateIdentityAgainstChain"
 FILTER_FN+=",validateCertAgainstChain,validateIdentityOUs,getValidityOptsForCert,isCACert"
 FILTER_FN+=",getSubjectKeyIdentifierFromCert,getAuthorityKeyIdentifierFromCrl"
+FILTER_FN+=",validateIdentityOUsV1,validateIdentityOUsV11"
 gofilter
 
 FILTER_FILENAME="msp/mspmgrimpl.go"

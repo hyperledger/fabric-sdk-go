@@ -24,6 +24,7 @@ It has these top-level messages:
 	SigningIdentityInfo
 	KeyInfo
 	FabricOUIdentifier
+	FabricNodeOUs
 	MSPPrincipal
 	OrganizationUnit
 	MSPRole

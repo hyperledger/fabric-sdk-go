@@ -47,9 +47,9 @@ FABRIC_TOOLS_TAG    ?= $(ARCH)-$(FABRIC_TOOLS_VERSION)
 
 # Upstream fabric patching (overridable)
 THIRDPARTY_FABRIC_CA_BRANCH ?= master
-THIRDPARTY_FABRIC_CA_COMMIT ?= 2886abda6792cf3b5e708ed18dbde07106597071
+THIRDPARTY_FABRIC_CA_COMMIT ?= v1.1.0-preview
 THIRDPARTY_FABRIC_BRANCH    ?= master
-THIRDPARTY_FABRIC_COMMIT    ?= f754f40d3165571cecf5fce43c8a034559983311
+THIRDPARTY_FABRIC_COMMIT    ?= v1.1.0-preview
 
 # Local variables used by makefile
 PACKAGE_NAME := github.com/hyperledger/fabric-sdk-go

@@ -69,6 +69,9 @@ type MSP interface {
 	// Setup the MSP instance according to configuration information
 	Setup(config *msp.MSPConfig) error
 
+	// GetVersion returns the version of this MSP
+	GetVersion() MSPVersion
+
 	// GetType returns the provider type
 	GetType() ProviderType
 
@@ -199,4 +202,9 @@ const (
 	FABRIC ProviderType = iota // MSP is of FABRIC type
 	IDEMIX                     // MSP is of IDEMIX type
 	OTHER                      // MSP is of OTHER TYPE
+
+	// NOTE: as new types are added to this set,
+	// the mspTypes array below must be extended
 )
+
+var mspTypeStrings []string = []string{"bccsp", "idemix"}

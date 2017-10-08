@@ -50,7 +50,7 @@ func GetChaincodeAction(caBytes []byte) (*peer.ChaincodeAction, error) {
 	return chaincodeAction, err
 }
 
-// GetChaincodeEvents gets the ChaincodeEvents given chaicnode event bytes
+// GetChaincodeEvents gets the ChaincodeEvents given chaincode event bytes
 func GetChaincodeEvents(eBytes []byte) (*peer.ChaincodeEvent, error) {
 	chaincodeEvent := &peer.ChaincodeEvent{}
 	err := proto.Unmarshal(eBytes, chaincodeEvent)

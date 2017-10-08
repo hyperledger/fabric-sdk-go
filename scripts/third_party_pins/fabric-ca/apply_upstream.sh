@@ -12,7 +12,7 @@
 set -e
 
 UPSTREAM_PROJECT="github.com/hyperledger/fabric-ca"
-UPSTREAM_BRANCH="release"
+UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-release}"
 SCRIPTS_PATH="scripts/third_party_pins/fabric-ca"
 PATCHES_PATH="scripts/third_party_pins/fabric-ca/patches"
 
