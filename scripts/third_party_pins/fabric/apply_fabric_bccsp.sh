@@ -37,6 +37,8 @@ declare -a FILES=(
     "bccsp/factory/pkcs11.go"
     "bccsp/factory/pkcs11factory.go"
     "bccsp/factory/swfactory.go"
+    "bccsp/factory/pluginfactory.go"
+    "bccsp/factory/sdkpatch_pluginfactory_noplugin.go"
 
     "bccsp/pkcs11/conf.go"
     "bccsp/pkcs11/ecdsa.go"

@@ -106,6 +106,7 @@ FILTER_FN="ReadFile,HTTPRequestToString,HTTPResponseToString"
 FILTER_FN+=",GetX509CertificateFromPEM,GetSerialAsHex,GetEnrollmentIDFromPEM"
 FILTER_FN+=",MakeFileAbs,Marshal,StructToString,LoadX509KeyPair,CreateToken"
 FILTER_FN+=",GenECDSAToken,GetEnrollmentIDFromX509Certificate,B64Encode,B64Decode"
+FILTER_FN+=",GetMaskedURL"
 gofilter
 
 

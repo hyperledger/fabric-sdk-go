@@ -35,6 +35,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -71,10 +72,10 @@ var RevocationReasonCodes = map[string]int{
 }
 
 // SecretTag to tag a field as secret as in password, token
-const SecretTag = "secret"
+const SecretTag = "mask"
 
-// PassExpr is the regular expression to check if a tag has 'password'
-var PassExpr = regexp.MustCompile(`[,]?password[,]?`)
+// URLRegex is the regular expression to check if a value is an URL
+var URLRegex = regexp.MustCompile("(ldap|http)s*://(\\S+):(\\S+)@")
 
 //ECDSASignature forms the structure for R and S value for ECDSA
 type ECDSASignature struct {
@@ -200,8 +201,8 @@ func B64Decode(str string) (buf []byte, err error) {
 func HTTPRequestToString(req *http.Request) string {
 	body, _ := ioutil.ReadAll(req.Body)
 	req.Body = ioutil.NopCloser(bytes.NewReader(body))
-	return fmt.Sprintf("%s %s\nAuthorization: %s\n%s",
-		req.Method, req.URL, req.Header.Get("authorization"), string(body))
+	return fmt.Sprintf("%s %s\n%s",
+		req.Method, req.URL, string(body))
 }
 
 // HTTPResponseToString returns a string for an HTTP response for debuggging
@@ -274,8 +275,16 @@ func StructToString(si interface{}) string {
 		}
 		var fStr string
 		tagv := tf.Tag.Get(SecretTag)
-		if PassExpr.MatchString(tagv) {
+		if tagv == "password" || tagv == "username" {
 			fStr = fmt.Sprintf("%s:**** ", tf.Name)
+		} else if tagv == "url" {
+			val, ok := rval.Field(i).Interface().(string)
+			if ok {
+				val = GetMaskedURL(val)
+				fStr = fmt.Sprintf("%s:%v ", tf.Name, val)
+			} else {
+				fStr = fmt.Sprintf("%s:%v ", tf.Name, rval.Field(i).Interface())
+			}
 		} else {
 			fStr = fmt.Sprintf("%s:%v ", tf.Name, rval.Field(i).Interface())
 		}
@@ -283,4 +292,24 @@ func StructToString(si interface{}) string {
 	}
 	buffer.WriteString(" }")
 	return buffer.String()
+}
+
+// GetMaskedURL returns masked URL. It masks username and password from the URL
+// if present
+func GetMaskedURL(url string) string {
+	matches := URLRegex.FindStringSubmatch(url)
+
+	// If there is a match, there should be four entries: 1 for
+	// the match and 3 for submatches
+	if len(matches) == 4 {
+		matchIdxs := URLRegex.FindStringSubmatchIndex(url)
+		matchStr := url[matchIdxs[0]:matchIdxs[1]]
+		for idx := 2; idx < len(matches); idx++ {
+			if matches[idx] != "" {
+				matchStr = strings.Replace(matchStr, matches[idx], "****", 1)
+			}
+		}
+		url = url[:matchIdxs[0]] + matchStr + url[matchIdxs[1]:len(url)]
+	}
+	return url
 }

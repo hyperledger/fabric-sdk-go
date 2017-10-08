@@ -26,9 +26,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
+// FactoryOpts holds configuration information used to initialize factory implementations
 type FactoryOpts struct {
-	ProviderName string  `mapstructure:"default" json:"default" yaml:"Default"`
-	SwOpts       *SwOpts `mapstructure:"SW,omitempty" json:"SW,omitempty" yaml:"SwOpts"`
+	ProviderName string      `mapstructure:"default" json:"default" yaml:"Default"`
+	SwOpts       *SwOpts     `mapstructure:"SW,omitempty" json:"SW,omitempty" yaml:"SwOpts"`
+	PluginOpts   *PluginOpts `mapstructure:"PLUGIN,omitempty" json:"PLUGIN,omitempty" yaml:"PluginOpts"`
 }
 
 // InitFactories must be called before using factory interfaces
@@ -62,6 +64,15 @@ func InitFactories(config *FactoryOpts) error {
 			}
 		}
 
+		// BCCSP Plugin
+		if config.PluginOpts != nil {
+			f := &PluginFactory{}
+			err := initBCCSP(f, config)
+			if err != nil {
+				factoriesInitError = errors.Wrapf(err, "Failed initializing PKCS11.BCCSP %s", factoriesInitError)
+			}
+		}
+
 		var ok bool
 		defaultBCCSP, ok = bccspMap[config.ProviderName]
 		if !ok {
@@ -78,6 +89,8 @@ func GetBCCSPFromOpts(config *FactoryOpts) (bccsp.BCCSP, error) {
 	switch config.ProviderName {
 	case "SW":
 		f = &SWFactory{}
+	case "PLUGIN":
+		f = &PluginFactory{}
 	default:
 		return nil, errors.Errorf("Could not find BCCSP, no '%s' provider", config.ProviderName)
 	}

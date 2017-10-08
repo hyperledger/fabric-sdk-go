@@ -43,8 +43,9 @@ declare -a FILES=(
 
     "common/channelconfig/applicationorg.go"
     "common/channelconfig/channel.go"
-    "common/channelconfig/msp_util.go"
+    "common/channelconfig/util.go"
     "common/channelconfig/orderer.go"
+    "common/channelconfig/organization.go"
     
     "sdkpatch/logbridge/logbridge.go"
 
@@ -61,6 +62,8 @@ declare -a FILES=(
     "msp/msp.go"
     "msp/mspimpl.go"
     "msp/mspmgrimpl.go"
+    "msp/mspimplsetup.go"
+    "msp/mspimplvalidate.go"
     "msp/cache/cache.go"
     "msp/mgmt/mgmt.go"
 )
@@ -111,11 +114,15 @@ FILTER_FILENAME="common/channelconfig/channel.go"
 FILTER_FN=
 gofilter
 
-FILTER_FILENAME="common/channelconfig/msp_util.go"
+FILTER_FILENAME="common/channelconfig/util.go"
 FILTER_FN=
 gofilter
 
 FILTER_FILENAME="common/channelconfig/orderer.go"
+FILTER_FN=
+gofilter
+
+FILTER_FILENAME="common/channelconfig/organization.go"
 FILTER_FN=
 gofilter
 
@@ -159,24 +166,36 @@ gofilter
 
 FILTER_FILENAME="msp/mspimpl.go"
 FILTER_FN="sanitizeCert,SatisfiesPrincipal,Validate,getCertificationChainIdentifier,DeserializeIdentity,deserializeIdentityInternal"
-FILTER_FN+=",validateIdentity,getCertificationChain,getCertificationChainIdentifierFromChain,getUniqueValidationChain"
-FILTER_FN+=",getValidityOptsForCert,getUniqueValidationChain,getValidityOptsForCert,GetDefaultSigningIdentity"
-FILTER_FN+=",getCertificationChainForBCCSPIdentity,validateIdentityAgainstChain,validateIdentityOUs,GetIdentifier"
-FILTER_FN+=",getValidationChain,validateCertAgainstChain,GetSigningIdentity,getSubjectKeyIdentifierFromCert"
-FILTER_FN+=",getAuthorityKeyIdentifierFromCrl,GetTLSIntermediateCerts,GetTLSRootCerts,GetType,Setup,setupCrypto"
-FILTER_FN+=",setupCAs,setupAdmins,setupCRLs,finalizeSetupCAs,setupSigningIdentity,setupOUs,setupTLSCAs"
-FILTER_FN+=",getCertFromPem,getIdentityFromConf,isCACert,validateCAIdentity,getSigningIdentityFromConf"
-FILTER_FN+=",validateTLSCAIdentity,NewBccspMsp"
+FILTER_FN+=",getCertificationChain,getCertificationChainIdentifierFromChain,getUniqueValidationChain"
+FILTER_FN+=",getUniqueValidationChain,GetDefaultSigningIdentity"
+FILTER_FN+=",getCertificationChainForBCCSPIdentity,validateIdentityAgainstChain,GetIdentifier"
+FILTER_FN+=",getValidationChain,GetSigningIdentity"
+FILTER_FN+=",GetTLSIntermediateCerts,GetTLSRootCerts,GetType,Setup"
+FILTER_FN+=",getCertFromPem,getIdentityFromConf,getSigningIdentityFromConf"
+FILTER_FN+=",newBccspMsp,IsWellFormed"
+gofilter
+# TODO - adapt to msp/factory.go rather than changing newBccspMsp
+sed -i'' -e 's/newBccspMsp/NewBccspMsp/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+FILTER_FILENAME="msp/mspimplsetup.go"
+FILTER_FN="setupCrypto,setupCAs,setupAdmins,setupCRLs,finalizeSetupCAs,setupSigningIdentity"
+FILTER_FN+=",setupOUs,setupTLSCAs"
+gofilter
+
+FILTER_FILENAME="msp/mspimplvalidate.go"
+FILTER_FN="validateTLSCAIdentity,validateCAIdentity,validateIdentity,validateIdentityAgainstChain"
+FILTER_FN+=",validateCertAgainstChain,validateIdentityOUs,getValidityOptsForCert,isCACert"
+FILTER_FN+=",getSubjectKeyIdentifierFromCert,getAuthorityKeyIdentifierFromCrl"
 gofilter
 
 FILTER_FILENAME="msp/mspmgrimpl.go"
-FILTER_FN="NewMSPManager,DeserializeIdentity,GetMSPs,Setup"
+FILTER_FN="NewMSPManager,DeserializeIdentity,GetMSPs,Setup,IsWellFormed"
 gofilter
 
 FILTER_FILENAME="msp/cache/cache.go"
 FILTER_FN="New"
 gofilter
-    
+
 FILTER_FILENAME="msp/mgmt/mgmt.go"
 FILTER_FN="GetLocalMSP"
 gofilter
@@ -193,10 +212,13 @@ gofilter
 FILTER_FILENAME="common/channelconfig/channel.go"
 gofilter
 
-FILTER_FILENAME="common/channelconfig/msp_util.go"
+FILTER_FILENAME="common/channelconfig/util.go"
 gofilter
 
 FILTER_FILENAME="common/channelconfig/orderer.go"
+gofilter
+
+FILTER_FILENAME="common/channelconfig/organization.go"
 gofilter
 
 # Apply patching

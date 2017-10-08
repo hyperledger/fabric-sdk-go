@@ -10,6 +10,12 @@ Please review third_party pinning scripts and patches for more details.
 
 package channelconfig
 
+import (
+	"math"
+
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
+)
+
 const (
 	// ReadersPolicyKey is the key used for the read policy
 	ReadersPolicyKey = "Readers"
@@ -20,6 +26,7 @@ const (
 	// AdminsPolicyKey is the key used for the read policy
 	AdminsPolicyKey = "Admins"
 
-	// MSPKey is the org key used for MSP configuration
-	MSPKey = "MSP"
+	defaultHashingAlgorithm = bccsp.SHA256
+
+	defaultBlockDataHashingStructureWidth = math.MaxUint32
 )

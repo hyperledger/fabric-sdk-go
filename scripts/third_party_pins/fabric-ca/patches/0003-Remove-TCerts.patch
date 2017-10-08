@@ -8,27 +8,24 @@ SPDX-License-Identifier: Apache-2.0
 
 Signed-off-by: Troy Ronda <t.....@securekey.com>
 ---
- api/client.go   | 31 -------------------------------
+ api/client.go   | 29 -----------------------------
  api/net.go      | 15 ---------------
  lib/identity.go | 16 ----------------
- 3 files changed, 62 deletions(-)
+ 3 files changed, 60 deletions(-)
 
 diff --git a/api/client.go b/api/client.go
-index af415b7..d6a4513 100644
+index 4694388..42ece5b 100644
 --- a/api/client.go
 +++ b/api/client.go
-@@ -17,10 +17,7 @@ limitations under the License.
- package api
+@@ -20,7 +20,6 @@ import (
+ 	"time"
  
- import (
--	"time"
--
  	"github.com/cloudflare/cfssl/csr"
 -	"github.com/hyperledger/fabric-ca/lib/tcert"
+ 	"github.com/hyperledger/fabric-ca/util"
  )
  
- // RegistrationRequest for a new identity
-@@ -103,34 +100,6 @@ type RevocationRequest struct {
+@@ -118,34 +117,6 @@ type RevocationRequest struct {
  	CAName string `json:"caname,omitempty" skip:"true"`
  }
  
