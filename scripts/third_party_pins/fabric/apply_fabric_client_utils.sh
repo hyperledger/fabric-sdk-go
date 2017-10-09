@@ -20,13 +20,10 @@ declare -a PKGS=(
     "common/util"
     "common/metadata"
     "common/channelconfig"
-    "common/ledger/util"
     "common/attrmgr"
 
     "sdkpatch/logbridge"
 
-    "core/comm"
-    "core/config"
     "core/ledger/kvledger/txmgmt/rwsetutil"
     "core/ledger/kvledger/txmgmt/version"
     "core/ledger/util"
@@ -56,7 +53,6 @@ declare -a FILES=(
     "core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
     "core/ledger/kvledger/txmgmt/version/version.go"
     "core/ledger/util/txvalidationflags.go"
-    "core/ledger/util/util.go"
 
     "events/consumer/adapter.go"
     "events/consumer/consumer.go"
@@ -69,13 +65,6 @@ declare -a FILES=(
     "msp/mspmgrimpl.go"
     "msp/cache/cache.go"
     "msp/mgmt/mgmt.go"
-
-    "core/comm/config.go"
-    "core/comm/connection.go"
-
-    "core/config/config.go"
-
-    "common/ledger/util/util.go"
 )
 
 echo 'Removing current upstream project from working directory ...'
@@ -148,10 +137,6 @@ FILTER_FILENAME="core/ledger/util/txvalidationflags.go"
 FILTER_FN="IsValid,IsInvalid,Flag,IsSetTo"
 gofilter
 
-FILTER_FILENAME="core/ledger/util/util.go"
-FILTER_FN="ComputeStringHash,ComputeHash"
-gofilter
-
 FILTER_FILENAME="events/consumer/adapter.go"
 FILTER_FN=
 gofilter
@@ -200,22 +185,6 @@ gofilter
     
 FILTER_FILENAME="msp/mgmt/mgmt.go"
 FILTER_FN="GetLocalMSP"
-gofilter
-
-FILTER_FILENAME="core/comm/config.go"
-FILTER_FN="MaxRecvMsgSize,MaxSendMsgSize,TLSEnabled,cacheConfiguration"
-gofilter
-
-FILTER_FILENAME="core/comm/connection.go"
-FILTER_FN="InitTLSForPeer,NewClientConnectionWithAddress"
-gofilter
-
-FILTER_FILENAME="core/config/config.go"
-FILTER_FN="GetPath,TranslatePath"
-gofilter
-
-FILTER_FILENAME="common/ledger/util/util.go"
-FILTER_FN="DecodeOrderPreservingVarUint64,EncodeOrderPreservingVarUint64"
 gofilter
 
 echo "Filtering Go sources for allowed declarations ..."
