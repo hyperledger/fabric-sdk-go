@@ -36,7 +36,7 @@ if [ "$LICENSEID" != "::NONE::" ]; then
         exit 1
     fi
 else
-    licIDLineNum=0
+    licIDLineNum=1
 fi
 
 # find linecount

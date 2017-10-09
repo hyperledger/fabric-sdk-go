@@ -18,7 +18,6 @@ declare -a PKGS=(
     "common/crypto"
     "common/errors"
     "common/util"
-    "common/metadata"
     "common/channelconfig"
     "common/attrmgr"
 
@@ -40,7 +39,6 @@ declare -a FILES=(
     "common/crypto/signer.go"
 
     "common/util/utils.go"
-    "common/metadata/metadata.go"
     "common/attrmgr/attrmgr.go"
 
     "common/channelconfig/applicationorg.go"
@@ -99,10 +97,6 @@ gofilter
 
 FILTER_FILENAME="common/util/utils.go"
 FILTER_FN="GenerateIDfromTxSHAHash,ComputeSHA256,CreateUtcTimestamp,ConcatenateBytes"
-gofilter
-
-FILTER_FILENAME="common/metadata/metadata.go"
-FILTER_FN=
 gofilter
 
 FILTER_FILENAME="common/attrmgr/attrmgr.go"
