@@ -17,7 +17,7 @@ for i in "${FILES[@]}"
 do
     for subst in "${IMPORT_SUBSTS[@]}"
     do
-        sed -i '' -e $subst $WORKING_DIR/${i}
+        sed -i'' -e $subst $WORKING_DIR/${i}
     done
     $GOIMPORTS_CMD -w $WORKING_DIR/${i}
 done
