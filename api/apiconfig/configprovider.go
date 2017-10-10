@@ -38,6 +38,7 @@ type Config interface {
 	SecurityProvider() string
 	Ephemeral() bool
 	SoftVerify() bool
+	SecurityProviderLibPath() string
 	SecurityProviderPin() string
 	SecurityProviderLabel() string
 	KeyStorePath() string

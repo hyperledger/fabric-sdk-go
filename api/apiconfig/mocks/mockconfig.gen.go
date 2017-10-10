@@ -339,6 +339,18 @@ func (mr *MockConfigMockRecorder) SecurityProviderLabel() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecurityProviderLabel", reflect.TypeOf((*MockConfig)(nil).SecurityProviderLabel))
 }
 
+// SecurityProviderLibPath mocks base method
+func (m *MockConfig) SecurityProviderLibPath() string {
+	ret := m.ctrl.Call(m, "SecurityProviderLibPath")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SecurityProviderLibPath indicates an expected call of SecurityProviderLibPath
+func (mr *MockConfigMockRecorder) SecurityProviderLibPath() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecurityProviderLibPath", reflect.TypeOf((*MockConfig)(nil).SecurityProviderLibPath))
+}
+
 // SecurityProviderPin mocks base method
 func (m *MockConfig) SecurityProviderPin() string {
 	ret := m.ctrl.Call(m, "SecurityProviderPin")
