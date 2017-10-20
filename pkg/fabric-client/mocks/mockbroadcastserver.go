@@ -9,8 +9,12 @@ package mocks
 import (
 	"io"
 
+	"fmt"
+	"net"
+
 	po "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	"google.golang.org/grpc"
 )
 
 // TestBlock is a test block
@@ -70,4 +74,19 @@ func (m *MockBroadcastServer) Deliver(server po.AtomicBroadcast_DeliverServer) e
 	server.Send(TestBlock)
 
 	return nil
+}
+
+//StartMockBroadcastServer starts mock server for unit testing purpose
+func StartMockBroadcastServer(broadcastTestURL string) *MockBroadcastServer {
+	grpcServer := grpc.NewServer()
+	lis, err := net.Listen("tcp", broadcastTestURL)
+	if err != nil {
+		panic(fmt.Sprintf("Error starting BroadcastServer %s", err))
+	}
+	broadcastServer := new(MockBroadcastServer)
+	po.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
+	fmt.Printf("Test broadcast server started\n")
+	go grpcServer.Serve(lis)
+
+	return broadcastServer
 }

@@ -14,7 +14,6 @@ import (
 	"math/rand"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -91,16 +90,15 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 	return &Config{tlsCertPool: x509.NewCertPool(), configViper: myViper}, nil
 }
 
-// load Default confid
+// load Default config
 func loadDefaultConfig(myViper *viper.Viper) error {
 	// get Environment Default Config Path
 	defaultPath := os.Getenv("FABRIC_SDK_CONFIG_PATH")
-	if defaultPath != "" { // if set, use it to load default config
-		myViper.AddConfigPath(strings.Replace(defaultPath, "$GOPATH", os.Getenv("GOPATH"), -1))
-	} else { // else fallback to default DEV path
-		devPath := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "hyperledger", "fabric-sdk-go", "pkg", "config")
-		myViper.AddConfigPath(devPath)
+	if defaultPath == "" {
+		return nil
 	}
+	// if set, use it to load default config
+	myViper.AddConfigPath(strings.Replace(defaultPath, "$GOPATH", os.Getenv("GOPATH"), -1))
 	err := myViper.ReadInConfig() // Find and read the config file
 	if err != nil {               // Handle errors reading the config file
 		return errors.Wrap(err, "loading config file failed")

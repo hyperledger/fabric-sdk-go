@@ -135,7 +135,7 @@ FILTER_FN=
 gofilter
 
 FILTER_FILENAME="core/ledger/util/txvalidationflags.go"
-FILTER_FN="IsValid,IsInvalid,Flag,IsSetTo"
+FILTER_FN="IsValid,IsInvalid,Flag,IsSetTo,NewTxValidationFlags"
 gofilter
 
 FILTER_FILENAME="events/consumer/adapter.go"

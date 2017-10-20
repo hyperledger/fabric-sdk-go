@@ -184,6 +184,12 @@ func GetBytesChaincodeProposalPayload(cpp *peer.ChaincodeProposalPayload) ([]byt
 	return cppBytes, err
 }
 
+// GetBytesChaincodeEvent gets the bytes of ChaincodeEvent
+func GetBytesChaincodeEvent(event *peer.ChaincodeEvent) ([]byte, error) {
+	eventBytes, err := proto.Marshal(event)
+	return eventBytes, err
+}
+
 // GetBytesChaincodeActionPayload get the bytes of ChaincodeActionPayload from the message
 func GetBytesChaincodeActionPayload(cap *peer.ChaincodeActionPayload) ([]byte, error) {
 	capBytes, err := proto.Marshal(cap)
@@ -205,6 +211,12 @@ func GetBytesTransaction(tx *peer.Transaction) ([]byte, error) {
 // GetBytesPayload get the bytes of Payload from the message
 func GetBytesPayload(payl *common.Payload) ([]byte, error) {
 	bytes, err := proto.Marshal(payl)
+	return bytes, err
+}
+
+// GetBytesEnvelope get the bytes of Envelope from the message
+func GetBytesEnvelope(env *common.Envelope) ([]byte, error) {
+	bytes, err := proto.Marshal(env)
 	return bytes, err
 }
 

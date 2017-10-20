@@ -27,6 +27,12 @@ import (
 // TxValidationFlags is array of transaction validation codes. It is used when committer validates block.
 type TxValidationFlags []uint8
 
+// NewTxValidationFlags Create new object-array of validation codes with target size. Default values: valid.
+func NewTxValidationFlags(size int) TxValidationFlags {
+	inst := make(TxValidationFlags, size)
+	return inst
+}
+
 // Flag returns validation code at specified transaction
 func (obj TxValidationFlags) Flag(txIndex int) peer.TxValidationCode {
 	return peer.TxValidationCode(obj[txIndex])

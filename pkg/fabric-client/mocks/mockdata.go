@@ -8,11 +8,16 @@ package mocks
 
 import (
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
 
+	cutil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	ab "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/orderer"
 	pp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
+	"time"
 
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 	ledger_util "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
@@ -458,4 +463,84 @@ func marshalOrPanic(pb proto.Message) []byte {
 		panic(err)
 	}
 	return data
+}
+
+// CreateBlockWithCCEvent creates a mock block
+func CreateBlockWithCCEvent(events *pp.ChaincodeEvent, txID string,
+	channelID string) (*common.Block, error) {
+	chdr := &common.ChannelHeader{
+		Type:    int32(common.HeaderType_ENDORSER_TRANSACTION),
+		Version: 1,
+		Timestamp: &timestamp.Timestamp{
+			Seconds: time.Now().Unix(),
+			Nanos:   0,
+		},
+		ChannelId: channelID,
+		TxId:      txID}
+	hdr := &common.Header{ChannelHeader: utils.MarshalOrPanic(chdr)}
+	payload := &common.Payload{Header: hdr}
+	cea := &pp.ChaincodeEndorsedAction{}
+	ccaPayload := &pp.ChaincodeActionPayload{Action: cea}
+	env := &common.Envelope{}
+	taa := &pp.TransactionAction{}
+	taas := make([]*pp.TransactionAction, 1)
+	taas[0] = taa
+	tx := &pp.Transaction{Actions: taas}
+
+	pHashBytes := []byte("proposal_hash")
+	pResponse := &pp.Response{Status: 200}
+	results := []byte("results")
+	eventBytes, err := utils.GetBytesChaincodeEvent(events)
+	if err != nil {
+		return nil, err
+	}
+	ccaPayload.Action.ProposalResponsePayload, err = utils.GetBytesProposalResponsePayload(pHashBytes, pResponse, results, eventBytes, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx.Actions[0].Payload, err = utils.GetBytesChaincodeActionPayload(ccaPayload)
+	if err != nil {
+		return nil, err
+	}
+	payload.Data, err = utils.GetBytesTransaction(tx)
+	if err != nil {
+		return nil, err
+	}
+	env.Payload, err = utils.GetBytesPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+	ebytes, err := utils.GetBytesEnvelope(env)
+	if err != nil {
+		return nil, err
+	}
+
+	block := newBlock(1, []byte{})
+	block.Data.Data = append(block.Data.Data, ebytes)
+
+	blockbytes := cutil.ConcatenateBytes(block.Data.Data...)
+	block.Header.DataHash = cutil.ComputeSHA256(blockbytes)
+
+	txsfltr := ledger_util.NewTxValidationFlags(len(block.Data.Data))
+
+	block.Metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER] = txsfltr
+
+	return block, nil
+}
+
+// NewBlock construct a block with no data and no metadata.
+func newBlock(seqNum uint64, previousHash []byte) *common.Block {
+	block := &common.Block{}
+	block.Header = &common.BlockHeader{}
+	block.Header.Number = seqNum
+	block.Header.PreviousHash = previousHash
+	block.Data = &common.BlockData{}
+
+	var metadataContents [][]byte
+	for i := 0; i < len(common.BlockMetadataIndex_name); i++ {
+		metadataContents = append(metadataContents, []byte{})
+	}
+	block.Metadata = &common.BlockMetadata{Metadata: metadataContents}
+
+	return block
 }
