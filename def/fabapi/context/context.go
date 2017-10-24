@@ -18,6 +18,7 @@ type SDK interface {
 	StateStoreProvider() fab.KeyValueStore
 	ConfigProvider() apiconfig.Config
 	DiscoveryProvider() fab.DiscoveryProvider
+	SelectionProvider() fab.SelectionProvider
 	SigningManager() fab.SigningManager
 }
 

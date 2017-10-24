@@ -10,11 +10,8 @@ package mocks
 import (
 	"encoding/pem"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 // MockPeer is a mock fabricsdk.Peer.
@@ -24,26 +21,13 @@ type MockPeer struct {
 	MockRoles []string
 	MockCert  *pem.Block
 	Payload   []byte
+	MockMSP   string
 }
 
-// ConnectEventSource does not connect anywhere
-func (p *MockPeer) ConnectEventSource() {
-	// done.
-}
-
-// IsEventListened always returns true
-func (p *MockPeer) IsEventListened(event string, chain fab.Channel) (bool, error) {
-	return true, nil
-}
-
-// AddListener is not implemented
-func (p *MockPeer) AddListener(eventType string, eventTypeData interface{}, eventCallback interface{}) (string, error) {
-	return "", errors.New("Not implemented")
-}
-
-// RemoveListener is not implemented
-func (p *MockPeer) RemoveListener(eventListenerRef string) (bool, error) {
-	return false, errors.New("Not implemented")
+// NewMockPeer creates basic mock peer
+func NewMockPeer(name string, url string) *MockPeer {
+	mp := &MockPeer{MockName: name, MockURL: url}
+	return mp
 }
 
 // Name returns the mock peer's mock name
@@ -58,11 +42,12 @@ func (p *MockPeer) SetName(name string) {
 
 // MSPID gets the Peer mspID.
 func (p *MockPeer) MSPID() string {
-	return ""
+	return p.MockMSP
 }
 
 // SetMSPID sets the Peer mspID.
 func (p *MockPeer) SetMSPID(mspID string) {
+	p.MockMSP = mspID
 }
 
 // Roles returns the mock peer's mock roles

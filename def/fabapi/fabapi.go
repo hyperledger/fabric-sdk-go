@@ -46,6 +46,7 @@ type FabricSDK struct {
 	stateStore        apifabclient.KeyValueStore
 	cryptoSuite       bccsp.BCCSP // TODO - maybe copy this interface into the API package
 	discoveryProvider apifabclient.DiscoveryProvider
+	selectionProvider apifabclient.SelectionProvider
 	signingManager    apifabclient.SigningManager
 }
 
@@ -53,6 +54,11 @@ type FabricSDK struct {
 type ChannelClientOpts struct {
 	OrgName        string
 	ConfigProvider apiconfig.Config
+}
+
+// ProviderInit interface allows for initializing providers
+type ProviderInit interface {
+	Initialize(sdk *FabricSDK) error
 }
 
 // NewSDK initializes default clients
@@ -98,19 +104,32 @@ func NewSDK(options Options) (*FabricSDK, error) {
 	}
 	sdk.stateStore = store
 
-	// Initialize discovery provider
-	discoveryProvider, err := sdk.ProviderFactory.NewDiscoveryProvider(sdk.configProvider)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to initialize discovery provider")
-	}
-	sdk.discoveryProvider = discoveryProvider
-
 	// Initialize Signing Manager
 	signingMgr, err := sdk.ProviderFactory.NewSigningManager(sdk.CryptoSuiteProvider(), sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize signing manager")
 	}
 	sdk.signingManager = signingMgr
+
+	// Initialize discovery provider
+	discoveryProvider, err := sdk.ProviderFactory.NewDiscoveryProvider(sdk.configProvider)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to initialize discovery provider")
+	}
+	if pi, ok := discoveryProvider.(ProviderInit); ok {
+		pi.Initialize(&sdk)
+	}
+	sdk.discoveryProvider = discoveryProvider
+
+	// Initialize selection provider (for selecting endorsing peers)
+	selectionProvider, err := sdk.ProviderFactory.NewSelectionProvider(sdk.configProvider)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to initialize selection provider")
+	}
+	if pi, ok := selectionProvider.(ProviderInit); ok {
+		pi.Initialize(&sdk)
+	}
+	sdk.selectionProvider = selectionProvider
 
 	return &sdk, nil
 }
@@ -133,6 +152,11 @@ func (sdk *FabricSDK) StateStoreProvider() apifabclient.KeyValueStore {
 // DiscoveryProvider returns discovery provider
 func (sdk *FabricSDK) DiscoveryProvider() apifabclient.DiscoveryProvider {
 	return sdk.discoveryProvider
+}
+
+// SelectionProvider returns selection provider
+func (sdk *FabricSDK) SelectionProvider() apifabclient.SelectionProvider {
+	return sdk.selectionProvider
 }
 
 // SigningManager returns signing manager
@@ -165,7 +189,7 @@ func (sdk *FabricSDK) NewSystemClient(s context.Session) (apifabclient.FabricCli
 }
 
 // NewChannelClient returns a new client for a channel
-func (sdk *FabricSDK) NewChannelClient(channelName string, userName string) (apitxn.ChannelClient, error) {
+func (sdk *FabricSDK) NewChannelClient(channelID string, userName string) (apitxn.ChannelClient, error) {
 
 	// Read default org name from configuration
 	client, err := sdk.configProvider.Client()
@@ -179,11 +203,11 @@ func (sdk *FabricSDK) NewChannelClient(channelName string, userName string) (api
 
 	opt := &ChannelClientOpts{OrgName: client.Organization, ConfigProvider: sdk.configProvider}
 
-	return sdk.NewChannelClientWithOpts(channelName, userName, opt)
+	return sdk.NewChannelClientWithOpts(channelID, userName, opt)
 }
 
 // NewChannelClientWithOpts returns a new client for a channel (user has to be pre-enrolled)
-func (sdk *FabricSDK) NewChannelClientWithOpts(channelName string, userName string, opt *ChannelClientOpts) (apitxn.ChannelClient, error) {
+func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string, opt *ChannelClientOpts) (apitxn.ChannelClient, error) {
 
 	if opt == nil || opt.OrgName == "" {
 		return nil, errors.New("organization name must be provided")
@@ -199,7 +223,7 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelName string, userName stri
 		configProvider = opt.ConfigProvider
 	}
 
-	client, err := sdk.SessionFactory.NewChannelClient(sdk, session, configProvider, channelName)
+	client, err := sdk.SessionFactory.NewChannelClient(sdk, session, configProvider, channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to created new channel client")
 	}

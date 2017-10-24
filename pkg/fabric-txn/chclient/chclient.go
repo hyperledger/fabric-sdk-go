@@ -26,13 +26,14 @@ type ChannelClient struct {
 	client    fab.FabricClient
 	channel   fab.Channel
 	discovery fab.DiscoveryService
+	selection fab.SelectionService
 	eventHub  fab.EventHub
 }
 
 // NewChannelClient returns a ChannelClient instance.
-func NewChannelClient(client fab.FabricClient, channel fab.Channel, discovery fab.DiscoveryService, eventHub fab.EventHub) (*ChannelClient, error) {
+func NewChannelClient(client fab.FabricClient, channel fab.Channel, discovery fab.DiscoveryService, selection fab.SelectionService, eventHub fab.EventHub) (*ChannelClient, error) {
 
-	channelClient := ChannelClient{client: client, channel: channel, discovery: discovery, eventHub: eventHub}
+	channelClient := ChannelClient{client: client, channel: channel, discovery: discovery, selection: selection, eventHub: eventHub}
 
 	return &channelClient, nil
 }
@@ -59,11 +60,18 @@ func (cc *ChannelClient) QueryWithOpts(request apitxn.QueryRequest, opts apitxn.
 	txProcessors := opts.ProposalProcessors
 	if len(txProcessors) == 0 {
 		// Use discovery service to figure out proposal processors
-		peers, err := cc.discovery.GetPeers(request.ChaincodeID)
+		peers, err := cc.discovery.GetPeers()
 		if err != nil {
 			return nil, errors.WithMessage(err, "GetPeers failed")
 		}
-		txProcessors = peer.PeersToTxnProcessors(peers)
+		endorsers := peers
+		if cc.selection != nil {
+			endorsers, err = cc.selection.GetEndorsersForChaincode(peers, request.ChaincodeID)
+			if err != nil {
+				return nil, errors.WithMessage(err, "Failed to get endorsing peers")
+			}
+		}
+		txProcessors = peer.PeersToTxnProcessors(endorsers)
 	}
 
 	go sendTransactionProposal(request, cc.channel, txProcessors, notifier)
@@ -118,11 +126,18 @@ func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts
 	txProcessors := opts.ProposalProcessors
 	if len(txProcessors) == 0 {
 		// Use discovery service to figure out proposal processors
-		peers, err := cc.discovery.GetPeers(request.ChaincodeID)
+		peers, err := cc.discovery.GetPeers()
 		if err != nil {
 			return apitxn.TransactionID{}, errors.WithMessage(err, "GetPeers failed")
 		}
-		txProcessors = peer.PeersToTxnProcessors(peers)
+		endorsers := peers
+		if cc.selection != nil {
+			endorsers, err = cc.selection.GetEndorsersForChaincode(peers, request.ChaincodeID)
+			if err != nil {
+				return apitxn.TransactionID{}, errors.WithMessage(err, "Failed to get endorsing peers for ExecuteTx")
+			}
+		}
+		txProcessors = peer.PeersToTxnProcessors(endorsers)
 	}
 
 	txProposalResponses, txID, err := internal.CreateAndSendTransactionProposal(cc.channel,

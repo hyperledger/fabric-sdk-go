@@ -23,6 +23,7 @@ type SDKProviderFactory interface {
 	NewCryptoSuiteProvider(config *bccspFactory.FactoryOpts) (bccsp.BCCSP, error)
 	NewSigningManager(cryptoProvider bccsp.BCCSP, config apiconfig.Config) (fab.SigningManager, error)
 	NewDiscoveryProvider(config apiconfig.Config) (fab.DiscoveryProvider, error)
+	NewSelectionProvider(config apiconfig.Config) (fab.SelectionProvider, error)
 }
 
 // OrgClientFactory allows overriding default clients and providers of an organization
@@ -35,5 +36,5 @@ type OrgClientFactory interface {
 // SessionClientFactory allows overriding default clients and providers of a session
 type SessionClientFactory interface {
 	NewSystemClient(context SDK, session Session, config apiconfig.Config) (fab.FabricClient, error)
-	NewChannelClient(context SDK, session Session, config apiconfig.Config, channelName string) (txn.ChannelClient, error)
+	NewChannelClient(context SDK, session Session, config apiconfig.Config, channelID string) (txn.ChannelClient, error)
 }

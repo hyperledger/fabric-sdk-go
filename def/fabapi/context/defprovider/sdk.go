@@ -15,7 +15,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
-	discovery "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery"
+	discovery "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery/staticdiscovery"
+	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/staticselection"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
@@ -66,5 +67,9 @@ func (f *DefaultProviderFactory) NewSigningManager(cryptoProvider bccsp.BCCSP, c
 // NewDiscoveryProvider returns a new default implementation of discovery provider
 func (f *DefaultProviderFactory) NewDiscoveryProvider(config apiconfig.Config) (fab.DiscoveryProvider, error) {
 	return discovery.NewDiscoveryProvider(config)
+}
 
+// NewSelectionProvider returns a new default implementation of selection service
+func (f *DefaultProviderFactory) NewSelectionProvider(config apiconfig.Config) (fab.SelectionProvider, error) {
+	return selection.NewSelectionProvider(config)
 }

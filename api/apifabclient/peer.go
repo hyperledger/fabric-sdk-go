@@ -28,12 +28,6 @@ import (
 type Peer interface {
 	txn.ProposalProcessor
 
-	// Events (need verb)
-	ConnectEventSource()
-	IsEventListened(event string, channel Channel) (bool, error)
-	AddListener(eventType string, eventTypeData interface{}, eventCallback interface{}) (string, error)
-	RemoveListener(eventListenerRef string) (bool, error)
-
 	// ECert Client (need verb)
 	EnrollmentCertificate() *pem.Block
 	SetEnrollmentCertificate(pem *pem.Block)

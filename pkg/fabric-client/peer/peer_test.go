@@ -209,34 +209,6 @@ func TestProposalProcessorSendProposal(t *testing.T) {
 	}
 }
 
-// TODO: Placeholder functions
-func TestPlaceholders(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
-
-	peer, err := NewPeer(peer1URL, config)
-	if err != nil {
-		t.Fatalf("Failed to create NewPeer error(%v)", err)
-	}
-
-	_, err = peer.AddListener("", nil, nil)
-	if err != nil {
-		t.Fatalf("Placeholder function has been implemented - update tests")
-	}
-
-	_, err = peer.RemoveListener("")
-	if err != nil {
-		t.Fatalf("Placeholder function has been implemented - update tests")
-	}
-
-	_, err = peer.IsEventListened("", nil)
-	if err != nil {
-		t.Fatalf("Placeholder function has been implemented - update tests")
-	}
-}
-
 func TestPeersToTxnProcessors(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()

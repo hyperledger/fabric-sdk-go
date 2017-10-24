@@ -22,7 +22,7 @@ import (
 
 func TestQuery(t *testing.T) {
 
-	chClient := setupChannelClient(nil, t)
+	chClient := setupChannelClient(t)
 
 	result, err := chClient.Query(apitxn.QueryRequest{})
 	if err == nil {
@@ -52,7 +52,7 @@ func TestQuery(t *testing.T) {
 
 func TestQueryDiscoveryError(t *testing.T) {
 
-	chClient := setupChannelClient(errors.New("Test Error"), t)
+	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, t)
 
 	_, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
 	if err == nil {
@@ -61,9 +61,20 @@ func TestQueryDiscoveryError(t *testing.T) {
 
 }
 
+func TestQuerySelectionError(t *testing.T) {
+
+	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), t)
+
+	_, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
+		t.Fatalf("Should have failed to query with error in selection.GetEndorsersFor ...")
+	}
+
+}
+
 func TestQueryWithOptSync(t *testing.T) {
 
-	chClient := setupChannelClient(nil, t)
+	chClient := setupChannelClient(t)
 
 	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}, apitxn.QueryOpts{})
 	if err != nil {
@@ -77,7 +88,7 @@ func TestQueryWithOptSync(t *testing.T) {
 
 func TestQueryWithOptAsync(t *testing.T) {
 
-	chClient := setupChannelClient(nil, t)
+	chClient := setupChannelClient(t)
 
 	notifier := make(chan apitxn.QueryResponse)
 
@@ -106,7 +117,7 @@ func TestQueryWithOptAsync(t *testing.T) {
 
 func TestQueryWithOptTarget(t *testing.T) {
 
-	chClient := setupChannelClient(nil, t)
+	chClient := setupChannelClient(t)
 
 	testPeer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
 
@@ -126,7 +137,7 @@ func TestQueryWithOptTarget(t *testing.T) {
 
 func TestExecuteTx(t *testing.T) {
 
-	chClient := setupChannelClient(nil, t)
+	chClient := setupChannelClient(t)
 
 	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{})
 	if err == nil {
@@ -148,11 +159,22 @@ func TestExecuteTx(t *testing.T) {
 
 func TestExecuteTxDiscoveryError(t *testing.T) {
 
-	chClient := setupChannelClient(errors.New("Test Error"), t)
+	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, t)
 
 	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
 	if err == nil {
 		t.Fatalf("Should have failed to execute tx with error in discovery.GetPeers()")
+	}
+
+}
+
+func TestExecuteTxSelectionError(t *testing.T) {
+
+	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), t)
+
+	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
+	if err == nil {
+		t.Fatalf("Should have failed to execute tx with error in selection.GetEndorserrsFor ...")
 	}
 
 }
@@ -174,20 +196,30 @@ func setupTestClient() *fcmocks.MockClient {
 
 func setupTestDiscovery(discErr error, peers []apifabclient.Peer) (apifabclient.DiscoveryService, error) {
 
-	testChannel, err := setupTestChannel()
-	if err != nil {
-		return nil, errors.WithMessage(err, "setup test channel failed")
-	}
-
 	mockDiscovery, err := txnmocks.NewMockDiscoveryProvider(discErr, peers)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewMockDiscoveryProvider failed")
 	}
 
-	return mockDiscovery.NewDiscoveryService(testChannel)
+	return mockDiscovery.NewDiscoveryService("mychannel")
 }
 
-func setupChannelClient(discErr error, t *testing.T) *ChannelClient {
+func setupTestSelection(discErr error, peers []apifabclient.Peer) (apifabclient.SelectionService, error) {
+
+	mockSelection, err := txnmocks.NewMockSelectionProvider(discErr, peers)
+	if err != nil {
+		return nil, errors.WithMessage(err, "NewMockSelectinProvider failed")
+	}
+
+	return mockSelection.NewSelectionService("mychannel")
+}
+
+func setupChannelClient(t *testing.T) *ChannelClient {
+
+	return setupChannelClientWithError(nil, nil, t)
+}
+
+func setupChannelClientWithError(discErr error, selectionErr error, t *testing.T) *ChannelClient {
 
 	fcClient := setupTestClient()
 
@@ -204,7 +236,12 @@ func setupChannelClient(discErr error, t *testing.T) *ChannelClient {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	ch, err := NewChannelClient(fcClient, testChannel, discoveryService, nil)
+	selectionService, err := setupTestSelection(selectionErr, nil)
+	if err != nil {
+		t.Fatalf("Failed to setup discovery service: %s", err)
+	}
+
+	ch, err := NewChannelClient(fcClient, testChannel, discoveryService, selectionService, nil)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}

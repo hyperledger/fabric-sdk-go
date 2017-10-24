@@ -41,7 +41,9 @@ func (f *SessionClientFactory) NewSystemClient(sdk context.SDK, session context.
 }
 
 // NewChannelClient returns a client that can execute transactions on specified channel
-func (f *SessionClientFactory) NewChannelClient(sdk context.SDK, session context.Session, config apiconfig.Config, channelName string) (apitxn.ChannelClient, error) {
+func (f *SessionClientFactory) NewChannelClient(sdk context.SDK, session context.Session, config apiconfig.Config, channelID string) (apitxn.ChannelClient, error) {
+
+	// TODO: Add capablity to override sdk's selection and discovery provider
 
 	client := clientImpl.NewClient(sdk.ConfigProvider())
 	client.SetCryptoSuite(sdk.CryptoSuiteProvider())
@@ -49,22 +51,27 @@ func (f *SessionClientFactory) NewChannelClient(sdk context.SDK, session context
 	client.SetUserContext(session.Identity())
 	client.SetSigningManager(sdk.SigningManager())
 
-	channel, err := getChannel(client, channelName)
+	channel, err := getChannel(client, channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "create channel failed")
 	}
 
-	discovery, err := sdk.DiscoveryProvider().NewDiscoveryService(channel)
+	discovery, err := sdk.DiscoveryProvider().NewDiscoveryService(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "create discovery service failed")
 	}
 
-	eventHub, err := getEventHub(client, channelName, session)
+	selection, err := sdk.SelectionProvider().NewSelectionService(channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "create selection service failed")
+	}
+
+	eventHub, err := getEventHub(client, channelID, session)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getEventHub failed")
 	}
 
-	return chImpl.NewChannelClient(client, channel, discovery, eventHub)
+	return chImpl.NewChannelClient(client, channel, discovery, selection, eventHub)
 }
 
 // getChannel is helper method to initializes and returns a channel based on config

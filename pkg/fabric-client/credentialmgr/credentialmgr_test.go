@@ -17,7 +17,7 @@ func TestCredentialManager(t *testing.T) {
 
 	config, err := config.InitConfig("../../../test/fixtures/config/config_test.yaml")
 	if err != nil {
-		t.Log(err.Error())
+		t.Fatalf(err.Error())
 	}
 
 	credentialMgr, err := NewCredentialManager("Org1", config, &fcmocks.MockCryptoSuite{})
@@ -46,7 +46,7 @@ func TestInvalidOrgCredentialManager(t *testing.T) {
 
 	config, err := config.InitConfig("../../../test/fixtures/config/config_test.yaml")
 	if err != nil {
-		t.Log(err.Error())
+		t.Fatalf(err.Error())
 	}
 
 	// Invalid Org
