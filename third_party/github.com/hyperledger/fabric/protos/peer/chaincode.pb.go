@@ -280,14 +280,14 @@ func (m *ChaincodeInvocationSpec) GetIdGenerationAlg() string {
 }
 
 func init() {
-	proto.RegisterType((*ChaincodeID)(nil), "protos.ChaincodeID")
-	proto.RegisterType((*ChaincodeInput)(nil), "protos.ChaincodeInput")
-	proto.RegisterType((*ChaincodeSpec)(nil), "protos.ChaincodeSpec")
-	proto.RegisterType((*ChaincodeDeploymentSpec)(nil), "protos.ChaincodeDeploymentSpec")
-	proto.RegisterType((*ChaincodeInvocationSpec)(nil), "protos.ChaincodeInvocationSpec")
-	proto.RegisterEnum("protos.ConfidentialityLevel", ConfidentialityLevel_name, ConfidentialityLevel_value)
-	proto.RegisterEnum("protos.ChaincodeSpec_Type", ChaincodeSpec_Type_name, ChaincodeSpec_Type_value)
-	proto.RegisterEnum("protos.ChaincodeDeploymentSpec_ExecutionEnvironment", ChaincodeDeploymentSpec_ExecutionEnvironment_name, ChaincodeDeploymentSpec_ExecutionEnvironment_value)
+	proto.RegisterType((*ChaincodeID)(nil), "sdk.protos.ChaincodeID")
+	proto.RegisterType((*ChaincodeInput)(nil), "sdk.protos.ChaincodeInput")
+	proto.RegisterType((*ChaincodeSpec)(nil), "sdk.protos.ChaincodeSpec")
+	proto.RegisterType((*ChaincodeDeploymentSpec)(nil), "sdk.protos.ChaincodeDeploymentSpec")
+	proto.RegisterType((*ChaincodeInvocationSpec)(nil), "sdk.protos.ChaincodeInvocationSpec")
+	proto.RegisterEnum("sdk.protos.ConfidentialityLevel", ConfidentialityLevel_name, ConfidentialityLevel_value)
+	proto.RegisterEnum("sdk.protos.ChaincodeSpec_Type", ChaincodeSpec_Type_name, ChaincodeSpec_Type_value)
+	proto.RegisterEnum("sdk.protos.ChaincodeDeploymentSpec_ExecutionEnvironment", ChaincodeDeploymentSpec_ExecutionEnvironment_name, ChaincodeDeploymentSpec_ExecutionEnvironment_value)
 }
 
 func init() { proto.RegisterFile("peer/chaincode.proto", fileDescriptor1) }

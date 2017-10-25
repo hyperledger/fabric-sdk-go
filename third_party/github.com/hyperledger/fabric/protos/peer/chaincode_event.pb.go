@@ -59,7 +59,7 @@ func (m *ChaincodeEvent) GetPayload() []byte {
 }
 
 func init() {
-	proto.RegisterType((*ChaincodeEvent)(nil), "protos.ChaincodeEvent")
+	proto.RegisterType((*ChaincodeEvent)(nil), "sdk.protos.ChaincodeEvent")
 }
 
 func init() { proto.RegisterFile("peer/chaincode_event.proto", fileDescriptor2) }

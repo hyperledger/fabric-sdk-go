@@ -443,14 +443,14 @@ func _DeliverResponse_OneofSizer(msg proto.Message) (n int) {
 }
 
 func init() {
-	proto.RegisterType((*BroadcastResponse)(nil), "orderer.BroadcastResponse")
-	proto.RegisterType((*SeekNewest)(nil), "orderer.SeekNewest")
-	proto.RegisterType((*SeekOldest)(nil), "orderer.SeekOldest")
-	proto.RegisterType((*SeekSpecified)(nil), "orderer.SeekSpecified")
-	proto.RegisterType((*SeekPosition)(nil), "orderer.SeekPosition")
-	proto.RegisterType((*SeekInfo)(nil), "orderer.SeekInfo")
-	proto.RegisterType((*DeliverResponse)(nil), "orderer.DeliverResponse")
-	proto.RegisterEnum("orderer.SeekInfo_SeekBehavior", SeekInfo_SeekBehavior_name, SeekInfo_SeekBehavior_value)
+	proto.RegisterType((*BroadcastResponse)(nil), "sdk.orderer.BroadcastResponse")
+	proto.RegisterType((*SeekNewest)(nil), "sdk.orderer.SeekNewest")
+	proto.RegisterType((*SeekOldest)(nil), "sdk.orderer.SeekOldest")
+	proto.RegisterType((*SeekSpecified)(nil), "sdk.orderer.SeekSpecified")
+	proto.RegisterType((*SeekPosition)(nil), "sdk.orderer.SeekPosition")
+	proto.RegisterType((*SeekInfo)(nil), "sdk.orderer.SeekInfo")
+	proto.RegisterType((*DeliverResponse)(nil), "sdk.orderer.DeliverResponse")
+	proto.RegisterEnum("sdk.orderer.SeekInfo_SeekBehavior", SeekInfo_SeekBehavior_name, SeekInfo_SeekBehavior_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.

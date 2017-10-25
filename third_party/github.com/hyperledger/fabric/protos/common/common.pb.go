@@ -478,21 +478,21 @@ func (m *BlockMetadata) GetMetadata() [][]byte {
 }
 
 func init() {
-	proto.RegisterType((*LastConfig)(nil), "common.LastConfig")
-	proto.RegisterType((*Metadata)(nil), "common.Metadata")
-	proto.RegisterType((*MetadataSignature)(nil), "common.MetadataSignature")
-	proto.RegisterType((*Header)(nil), "common.Header")
-	proto.RegisterType((*ChannelHeader)(nil), "common.ChannelHeader")
-	proto.RegisterType((*SignatureHeader)(nil), "common.SignatureHeader")
-	proto.RegisterType((*Payload)(nil), "common.Payload")
-	proto.RegisterType((*Envelope)(nil), "common.Envelope")
-	proto.RegisterType((*Block)(nil), "common.Block")
-	proto.RegisterType((*BlockHeader)(nil), "common.BlockHeader")
-	proto.RegisterType((*BlockData)(nil), "common.BlockData")
-	proto.RegisterType((*BlockMetadata)(nil), "common.BlockMetadata")
-	proto.RegisterEnum("common.Status", Status_name, Status_value)
-	proto.RegisterEnum("common.HeaderType", HeaderType_name, HeaderType_value)
-	proto.RegisterEnum("common.BlockMetadataIndex", BlockMetadataIndex_name, BlockMetadataIndex_value)
+	proto.RegisterType((*LastConfig)(nil), "sdk.common.LastConfig")
+	proto.RegisterType((*Metadata)(nil), "sdk.common.Metadata")
+	proto.RegisterType((*MetadataSignature)(nil), "sdk.common.MetadataSignature")
+	proto.RegisterType((*Header)(nil), "sdk.common.Header")
+	proto.RegisterType((*ChannelHeader)(nil), "sdk.common.ChannelHeader")
+	proto.RegisterType((*SignatureHeader)(nil), "sdk.common.SignatureHeader")
+	proto.RegisterType((*Payload)(nil), "sdk.common.Payload")
+	proto.RegisterType((*Envelope)(nil), "sdk.common.Envelope")
+	proto.RegisterType((*Block)(nil), "sdk.common.Block")
+	proto.RegisterType((*BlockHeader)(nil), "sdk.common.BlockHeader")
+	proto.RegisterType((*BlockData)(nil), "sdk.common.BlockData")
+	proto.RegisterType((*BlockMetadata)(nil), "sdk.common.BlockMetadata")
+	proto.RegisterEnum("sdk.common.Status", Status_name, Status_value)
+	proto.RegisterEnum("sdk.common.HeaderType", HeaderType_name, HeaderType_value)
+	proto.RegisterEnum("sdk.common.BlockMetadataIndex", BlockMetadataIndex_name, BlockMetadataIndex_value)
 }
 
 func init() { proto.RegisterFile("common/common.proto", fileDescriptor1) }

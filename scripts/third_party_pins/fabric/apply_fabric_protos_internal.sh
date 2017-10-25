@@ -13,6 +13,7 @@ IMPORT_SUBSTS=($IMPORT_SUBSTS)
 
 GOIMPORTS_CMD=goimports
 GOFILTER_CMD="go run scripts/_go/cmd/gofilter/gofilter.go"
+NAMESPACE_PREFIX="sdk."
 
 declare -a PKGS=(
     "protos/utils"
@@ -53,7 +54,7 @@ gofilter() {
     $GOFILTER_CMD -filename "${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak" \
         -filters fn -fn "$FILTER_FN" \
         > "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-} 
+}
 
 echo "Filtering Go sources for allowed functions ..."
 FILTER_FILENAME="protos/utils/commonutils.go"
@@ -81,6 +82,15 @@ WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" IMPORT_SUBSTS="${IMPORT_SUBSTS
 echo "Inserting modification notice ..."
 WORKING_DIR=$TMP_PROJECT_PATH FILES="${NPBFILES[@]}" scripts/third_party_pins/common/apply_header_notice.sh
 WORKING_DIR=$TMP_PROJECT_PATH FILES="${PBFILES[@]}" ALLOW_NONE_LICENSE_ID="true" scripts/third_party_pins/common/apply_header_notice.sh
+
+echo "Changing proto registration paths to be unique"
+for i in "${FILES[@]}"
+do
+  if [[ ${i} == "protos/orderer"* ]]; then
+    sed -i'' -e "/proto.RegisterType/s/orderer/${NAMESPACE_PREFIX}orderer/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterEnum/s/orderer/${NAMESPACE_PREFIX}orderer/g" "${TMP_PROJECT_PATH}/${i}"
+  fi
+done
 
 # Copy patched project into internal paths
 echo "Copying patched upstream project into working directory ..."

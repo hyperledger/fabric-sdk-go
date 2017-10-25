@@ -12,6 +12,7 @@
 IMPORT_SUBSTS=($IMPORT_SUBSTS)
 
 GOIMPORTS_CMD=goimports
+NAMESPACE_PREFIX="sdk."
 
 declare -a PKGS=(
     "protos/common"
@@ -68,6 +69,39 @@ WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" IMPORT_SUBSTS="${IMPORT_SUBSTS
 
 echo "Inserting modification notice ..."
 WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" ALLOW_NONE_LICENSE_ID="true" scripts/third_party_pins/common/apply_header_notice.sh
+
+echo "Changing proto registration paths to be unique"
+for i in "${FILES[@]}"
+do
+  if [[ ${i} == "protos/common"* ]]; then
+    sed -i'' -e "/proto.RegisterType/s/common/${NAMESPACE_PREFIX}common/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterEnum/s/common/${NAMESPACE_PREFIX}common/g" "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/ledger/rwset/rwset.pb.go" ]]; then
+    sed -i'' -e "/proto.RegisterType/s/rwset/${NAMESPACE_PREFIX}rwset/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterEnum/s/rwset/${NAMESPACE_PREFIX}rwset/g" "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/ledger/rwset/kvrwset/kv_rwset.pb.go" ]]; then
+    sed -i'' -e "/proto.RegisterType/s/kvrwset/${NAMESPACE_PREFIX}kvrwset/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterEnum/s/kvrwset/${NAMESPACE_PREFIX}kvrwset/g" "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/msp"* ]]; then
+    sed -i'' -e "/proto.RegisterType/s/msp/${NAMESPACE_PREFIX}msp/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterEnum/s/msp/${NAMESPACE_PREFIX}msp/g" "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/msp/msp_principal.pb.go" ]]; then
+    sed -i'' -e "/proto.RegisterType/s/common/${NAMESPACE_PREFIX}common/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterEnum/s/common/${NAMESPACE_PREFIX}common/g" "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/orderer"* ]]; then
+    sed -i'' -e "/proto.RegisterType/s/orderer/${NAMESPACE_PREFIX}orderer/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterEnum/s/orderer/${NAMESPACE_PREFIX}orderer/g" "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/peer"* ]]; then
+    sed -i'' -e "/proto.RegisterType/s/protos/${NAMESPACE_PREFIX}protos/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterEnum/s/protos/${NAMESPACE_PREFIX}protos/g" "${TMP_PROJECT_PATH}/${i}"
+  fi
+done
 
 # Copy patched project into internal paths
 echo "Copying patched upstream project into working directory ..."

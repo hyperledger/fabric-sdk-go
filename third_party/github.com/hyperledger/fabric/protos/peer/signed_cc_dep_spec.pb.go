@@ -58,7 +58,7 @@ func (m *SignedChaincodeDeploymentSpec) GetOwnerEndorsements() []*Endorsement {
 }
 
 func init() {
-	proto.RegisterType((*SignedChaincodeDeploymentSpec)(nil), "protos.SignedChaincodeDeploymentSpec")
+	proto.RegisterType((*SignedChaincodeDeploymentSpec)(nil), "sdk.protos.SignedChaincodeDeploymentSpec")
 }
 
 func init() { proto.RegisterFile("peer/signed_cc_dep_spec.proto", fileDescriptor11) }

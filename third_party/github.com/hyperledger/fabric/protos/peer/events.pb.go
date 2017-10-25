@@ -604,16 +604,16 @@ func _Event_OneofSizer(msg proto.Message) (n int) {
 }
 
 func init() {
-	proto.RegisterType((*ChaincodeReg)(nil), "protos.ChaincodeReg")
-	proto.RegisterType((*Interest)(nil), "protos.Interest")
-	proto.RegisterType((*Register)(nil), "protos.Register")
-	proto.RegisterType((*Rejection)(nil), "protos.Rejection")
-	proto.RegisterType((*Unregister)(nil), "protos.Unregister")
-	proto.RegisterType((*FilteredBlock)(nil), "protos.FilteredBlock")
-	proto.RegisterType((*FilteredTransaction)(nil), "protos.FilteredTransaction")
-	proto.RegisterType((*SignedEvent)(nil), "protos.SignedEvent")
-	proto.RegisterType((*Event)(nil), "protos.Event")
-	proto.RegisterEnum("protos.EventType", EventType_name, EventType_value)
+	proto.RegisterType((*ChaincodeReg)(nil), "sdk.protos.ChaincodeReg")
+	proto.RegisterType((*Interest)(nil), "sdk.protos.Interest")
+	proto.RegisterType((*Register)(nil), "sdk.protos.Register")
+	proto.RegisterType((*Rejection)(nil), "sdk.protos.Rejection")
+	proto.RegisterType((*Unregister)(nil), "sdk.protos.Unregister")
+	proto.RegisterType((*FilteredBlock)(nil), "sdk.protos.FilteredBlock")
+	proto.RegisterType((*FilteredTransaction)(nil), "sdk.protos.FilteredTransaction")
+	proto.RegisterType((*SignedEvent)(nil), "sdk.protos.SignedEvent")
+	proto.RegisterType((*Event)(nil), "sdk.protos.Event")
+	proto.RegisterEnum("sdk.protos.EventType", EventType_name, EventType_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
