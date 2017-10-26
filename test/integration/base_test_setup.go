@@ -8,7 +8,7 @@ package integration
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -186,7 +186,7 @@ func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, 
 // GetDeployPath ..
 func (setup *BaseSetupImpl) GetDeployPath() string {
 	pwd, _ := os.Getwd()
-	return path.Join(pwd, "../fixtures/testdata")
+	return filepath.Join(pwd, "../fixtures/testdata")
 }
 
 // InstallAndInstantiateExampleCC ..
