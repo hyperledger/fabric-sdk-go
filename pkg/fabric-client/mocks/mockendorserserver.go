@@ -13,7 +13,11 @@ import (
 	rwsetutil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
 	kvrwset "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
 
+	"fmt"
+	"net"
+
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"google.golang.org/grpc"
 )
 
 // MockEndorserServer mock endoreser server to process endorsement proposals
@@ -67,4 +71,18 @@ func (m *MockEndorserServer) createProposalResponsePayload() []byte {
 		return nil
 	}
 	return prpBytes
+}
+
+//StartEndorserServer starts mock server for unit testing purpose
+func StartEndorserServer(endorserTestURL string) *MockEndorserServer {
+	grpcServer := grpc.NewServer()
+	lis, err := net.Listen("tcp", endorserTestURL)
+	if err != nil {
+		panic(fmt.Sprintf("Error starting endorser server: %s", err))
+	}
+	endorserServer := &MockEndorserServer{}
+	pb.RegisterEndorserServer(grpcServer, endorserServer)
+	fmt.Printf("Test endorser server started\n")
+	go grpcServer.Serve(lis)
+	return endorserServer
 }
