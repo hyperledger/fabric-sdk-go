@@ -20,8 +20,11 @@ declare -a PKGS=(
     "common/util"
     "common/channelconfig"
     "common/attrmgr"
+    "common/ledger"
 
     "sdkpatch/logbridge"
+
+    "core/common/ccprovider"
 
     "core/ledger/kvledger/txmgmt/rwsetutil"
     "core/ledger/kvledger/txmgmt/version"
@@ -45,13 +48,19 @@ declare -a FILES=(
     "common/channelconfig/channel.go"
     "common/channelconfig/util.go"
     "common/channelconfig/orderer.go"
+
     "common/channelconfig/organization.go"
+
+    "common/ledger/ledger_interface.go"
+    "core/common/ccprovider/ccprovider.go"
     
     "sdkpatch/logbridge/logbridge.go"
 
+    "core/ledger/ledger_interface.go"
     "core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
     "core/ledger/kvledger/txmgmt/version/version.go"
     "core/ledger/util/txvalidationflags.go"
+
 
     "events/consumer/adapter.go"
     "events/consumer/consumer.go"
@@ -66,6 +75,7 @@ declare -a FILES=(
     "msp/mspimplvalidate.go"
     "msp/cache/cache.go"
     "msp/mgmt/mgmt.go"
+
 )
 
 echo 'Removing current upstream project from working directory ...'
@@ -137,6 +147,12 @@ gofilter
 FILTER_FILENAME="core/ledger/util/txvalidationflags.go"
 FILTER_FN="IsValid,IsInvalid,Flag,IsSetTo,NewTxValidationFlags"
 gofilter
+
+
+FILTER_FILENAME="core/common/ccprovider/ccprovider.go"
+FILTER_FN=Reset,String,ProtoMessage
+gofilter
+sed -i'' -e 's/var ccInfoCache = NewCCInfoCache(ccInfoFSProvider)//g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="events/consumer/adapter.go"
 FILTER_FN=
