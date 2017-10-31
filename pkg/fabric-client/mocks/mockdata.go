@@ -468,6 +468,12 @@ func marshalOrPanic(pb proto.Message) []byte {
 // CreateBlockWithCCEvent creates a mock block
 func CreateBlockWithCCEvent(events *pp.ChaincodeEvent, txID string,
 	channelID string) (*common.Block, error) {
+	return CreateBlockWithCCEventAndTxStatus(events, txID, channelID, pp.TxValidationCode_VALID)
+}
+
+// CreateBlockWithCCEventAndTxStatus creates a mock block with the given CC event and TX validation code
+func CreateBlockWithCCEventAndTxStatus(events *pp.ChaincodeEvent, txID string,
+	channelID string, txValidationCode pp.TxValidationCode) (*common.Block, error) {
 	chdr := &common.ChannelHeader{
 		Type:    int32(common.HeaderType_ENDORSER_TRANSACTION),
 		Version: 1,
@@ -522,6 +528,9 @@ func CreateBlockWithCCEvent(events *pp.ChaincodeEvent, txID string,
 	block.Header.DataHash = cutil.ComputeSHA256(blockbytes)
 
 	txsfltr := ledger_util.NewTxValidationFlags(len(block.Data.Data))
+	for i := 0; i < len(block.Data.Data); i++ {
+		txsfltr[i] = uint8(txValidationCode)
+	}
 
 	block.Metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER] = txsfltr
 
