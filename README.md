@@ -23,6 +23,7 @@ You're good to go, happy coding! Check out the examples for usage demonstrations
 ### Examples
 
 - [E2E Test](test/integration/end_to_end_test.go) and [Base Test](test/integration/base_test_setup.go): Part of the E2E tests included with the Go SDK.
+- [Dynamic Endorser Selection] (test/integration/sdk_provider_test.go) : An example that uses dynamic endorser selection (based on chaincode policy) 
 - [CLI](https://github.com/securekey/fabric-examples/tree/master/fabric-cli/): An example CLI for Fabric built with the Go SDK.
 - More examples needed!
 
