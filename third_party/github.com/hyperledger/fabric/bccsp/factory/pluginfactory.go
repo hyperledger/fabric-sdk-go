@@ -1,4 +1,4 @@
-// +build linux
+// +build linux,!nobccspplugin
 
 /*
 Copyright IBM Corp. All Rights Reserved.

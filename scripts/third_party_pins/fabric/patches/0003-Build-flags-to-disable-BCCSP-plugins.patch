@@ -1,9 +1,11 @@
-From 28c289a68765f342698f4e94adc536c265ba149b Mon Sep 17 00:00:00 2001
-From: Troy Ronda <troy@troyronda.com>
+From b4e3609ad67eae03109cd80957793e0ec33eac1e Mon Sep 17 00:00:00 2001
+From: Troy Ronda <t.....@securekey.com>
 Date: Thu, 19 Oct 2017 11:59:49 -0400
-Subject: [PATCH] Fix darwin warnings
+Subject: [PATCH] Build flags to disable BCCSP plugins
 
-Signed-off-by: Troy Ronda <troy@troyronda.com>
+Change-Id: Id00605ebfb1a75cfcd5ae9ecd950d3fdd215a588
+Signed-off-by: Troy Ronda <t.....@securekey.com>
+Signed-off-by: Divyank Katira <Divyank.Katira@securekey.com>
 ---
  bccsp/factory/pluginfactory.go                   |  4 ++-
  bccsp/factory/sdkpatch_pluginfactory_noplugin.go | 40 ++++++++++++++++++++++++
@@ -11,11 +13,11 @@ Signed-off-by: Troy Ronda <troy@troyronda.com>
  create mode 100644 bccsp/factory/sdkpatch_pluginfactory_noplugin.go
 
 diff --git a/bccsp/factory/pluginfactory.go b/bccsp/factory/pluginfactory.go
-index 3870bbcd..fe584d67 100644
+index 3870bbcd..fd95e9f3 100644
 --- a/bccsp/factory/pluginfactory.go
 +++ b/bccsp/factory/pluginfactory.go
 @@ -1,3 +1,5 @@
-+// +build linux
++// +build linux,!nobccspplugin
 +
  /*
  Copyright IBM Corp. All Rights Reserved.
@@ -31,11 +33,11 @@ index 3870bbcd..fe584d67 100644
  const (
 diff --git a/bccsp/factory/sdkpatch_pluginfactory_noplugin.go b/bccsp/factory/sdkpatch_pluginfactory_noplugin.go
 new file mode 100644
-index 00000000..6d68d601
+index 00000000..4011a1e0
 --- /dev/null
 +++ b/bccsp/factory/sdkpatch_pluginfactory_noplugin.go
 @@ -0,0 +1,40 @@
-+// +build !linux
++// +build !linux,!nobccspplugin nobccspplugin
 +
 +/*
 +Copyright IBM Corp., SecureKey Technologies Inc. All Rights Reserved.
@@ -76,5 +78,5 @@ index 00000000..6d68d601
 +	return nil, errors.New("not supported")
 +}
 -- 
-2.14.2
+2.14.1
 
