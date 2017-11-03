@@ -65,8 +65,16 @@ func TestDefaultLogging(t *testing.T) {
 
 	verifyEmpty(t, buf.String(), "debug log isn't supposed to show up for info level")
 
+	//Should be false
+	verifyFalse(t, IsEnabledForLogger(DEBUG, logger), "logging.IsEnabled for is not working as expected, expected false but got true")
+	verifyFalse(t, IsEnabledFor(DEBUG, moduleName), "logging.IsEnabled for is not working as expected, expected false but got true")
+
 	//Now change the log level to DEBUG
 	SetLevel(DEBUG, moduleName)
+
+	//Should be false
+	verifyTrue(t, IsEnabledForLogger(DEBUG, logger), "logging.IsEnabled for is not working as expected, expected true but got false")
+	verifyTrue(t, IsEnabledFor(DEBUG, moduleName), "logging.IsEnabled for is not working as expected, expected true but got false")
 
 	//Test logger.debug outputs
 	verifyBasicLogging(t, DEBUG, logger.Debug, nil, &buf, false)

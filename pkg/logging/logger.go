@@ -74,6 +74,11 @@ func IsEnabledFor(level Level, module string) bool {
 	return moduleLevels.IsEnabledFor(level, module)
 }
 
+// IsEnabledFor will return true if given logging level is enabled for the given logger.
+func IsEnabledForLogger(level Level, logger *Logger) bool {
+	return moduleLevels.IsEnabledFor(level, logger.module)
+}
+
 //Fatal calls Fatal function of underlying logger
 func (l *Logger) Fatal(args ...interface{}) {
 	l.getCurrentLogger().Fatal(args...)
