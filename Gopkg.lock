@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/Knetic/govaluate"
+  packages = ["."]
+  revision = "d216395917cc49052c7c7094cf57f09657ca08a8"
+  version = "v3.0.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/cloudflare/cfssl"
   packages = ["api","auth","certdb","config","crypto/pkcs7","csr","errors","helpers","helpers/derhelpers","info","log","ocsp/config","signer"]
@@ -160,6 +166,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3f72400efcfbb4c513a7425f54f94c18262bbb8391060805a8b2ca599def22b5"
+  inputs-digest = "1fae988dfd6ae2881b1b61575c77373c4075358e8b97ddf627de75e502039000"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -19,6 +19,7 @@ declare -a PKGS=(
 
 declare -a FILES=(
         "common/cauthdsl/cauthdsl_builder.go"
+        "common/cauthdsl/policyparser.go"
 )
 
 echo 'Removing current upstream project from working directory ...'
