@@ -21,6 +21,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -84,7 +85,7 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 			panic(err)
 		}
 	}
-	logging.SetLevel(logging.Level(logLevel), "fabric_sdk_go")
+	logging.SetLevel(apilogging.Level(logLevel), "fabric_sdk_go")
 
 	logger.Infof("fabric_sdk_go Logging level is finally set to: %s", logging.GetLevel("fabric_sdk_go"))
 	return &Config{tlsCertPool: x509.NewCertPool(), configViper: myViper}, nil
