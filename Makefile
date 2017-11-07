@@ -51,9 +51,13 @@ THIRDPARTY_FABRIC_CA_COMMIT ?= v1.1.0-preview
 THIRDPARTY_FABRIC_BRANCH    ?= master
 THIRDPARTY_FABRIC_COMMIT    ?= v1.1.0-preview
 
+# Force removal of images in cleanup
+FIXTURE_DOCKER_REMOVE_FORCE ?= false
+
 # Local variables used by makefile
-PACKAGE_NAME := github.com/hyperledger/fabric-sdk-go
-ARCH         := $(shell uname -m)
+PACKAGE_NAME         := github.com/hyperledger/fabric-sdk-go
+ARCH                 := $(shell uname -m)
+FIXTURE_PROJECT_NAME := fabsdkgo
 
 # The version of dep that will be installed by depend-install (or in the CI)
 GO_DEP_COMMIT := v0.3.1
@@ -77,6 +81,8 @@ export GO_LDFLAGS
 export GO_DEP_COMMIT
 export GO_TAGS
 export GO_TESTFLAGS
+export DOCKER_CMD
+export DOCKER_COMPOSE_CMD
 
 all: checks unit-test integration-test
 
@@ -148,8 +154,7 @@ populate-clean:
 	rm -Rf vendor
 
 clean:
-	$(GO_CMD) clean
-	rm -Rf /tmp/enroll_user /tmp/msp /tmp/keyvaluestore /tmp/hfc-kvs
-	rm -f integration-report.xml report.xml
-	rm -f test/fixtures/tls/fabricca/certs/server/ca.org*.example.com-cert.pem
-	cd test/fixtures && $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml -f docker-compose-pkcs11-test.yaml down
+	-$(GO_CMD) clean
+	-rm -Rf /tmp/enroll_user /tmp/msp /tmp/keyvaluestore /tmp/hfc-kvs
+	-rm -f integration-report.xml report.xml
+	-FIXTURE_PROJECT_NAME=$(FIXTURE_PROJECT_NAME) DOCKER_REMOVE_FORCE=$(FIXTURE_DOCKER_REMOVE_FORCE) test/scripts/clean_integration.sh

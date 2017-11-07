@@ -6,7 +6,7 @@
 version: '2'
 
 services:
-  ca0:
+  org1ca1:
     image: ${FABRIC_CA_FIXTURE_IMAGE}:${ARCH}-${FABRIC_CA_FIXTURE_TAG}
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
@@ -25,9 +25,12 @@ services:
     volumes:
       - ./channel/crypto-config/peerOrganizations/org1.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
       - ./tls/fabricca/certs/server:/etc/hyperledger/fabric-ca-server-config
-    container_name: ca_peerOrg1
+    networks:
+      default:
+        aliases:
+          - ca_peerOrg1
 
-  ca1:
+  org2ca1:
     image: ${FABRIC_CA_FIXTURE_IMAGE}:${ARCH}-${FABRIC_CA_FIXTURE_TAG}
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
@@ -46,10 +49,12 @@ services:
     volumes:
       - ./channel/crypto-config/peerOrganizations/org2.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
       - ./tls/fabricca/certs/server:/etc/hyperledger/fabric-ca-server-config
-    container_name: ca_peerOrg2
+    networks:
+      default:
+        aliases:
+          - ca_peerOrg2
 
-  orderer.example.com:
-    container_name: orderer.example.com
+  orderer1:
     image: ${FABRIC_ORDERER_FIXTURE_IMAGE}:${ARCH}-${FABRIC_ORDERER_FIXTURE_TAG}
     environment:
       - ORDERER_GENERAL_LOGLEVEL=debug
@@ -73,19 +78,30 @@ services:
         - ./channel:/etc/hyperledger/configtx
         - ./channel/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp:/etc/hyperledger/msp/orderer
         - ./channel/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls:/etc/hyperledger/tls/orderer
+    networks:
+      default:
+        aliases:
+          - orderer.example.com
 
-  peer0.org1.example.com:
-    container_name: peer0.org1.example.com
+  org1peer1:
     image: ${FABRIC_PEER_FIXTURE_IMAGE}:${ARCH}-${FABRIC_PEER_FIXTURE_TAG}
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - CORE_PEER_ID=peer0.org1.example.com
       - CORE_LOGGING_PEER=debug
+      - CORE_CHAINCODE_STARTUPTIMEOUT=30s
+      - CORE_CHAINCODE_LOGGING_SHIM=debug
+      - CORE_CHAINCODE_LOGGING_LEVEL=debug
+      - CORE_CHAINCODE_BUILDER=${FABRIC_BUILDER_FIXTURE_IMAGE}:${ARCH}-${FABRIC_BUILDER_FIXTURE_TAG}
+      - CORE_CHAINCODE_GOLANG_RUNTIME=${FABRIC_BASEOS_FIXTURE_IMAGE}:${ARCH}-${FABRIC_BASEOS_FIXTURE_TAG}      
       ## the following setting redirects chaincode container logs to the peer container logs
       - CORE_VM_DOCKER_ATTACHSTDOUT=true
       - CORE_PEER_LOCALMSPID=Org1MSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
-      - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
+      - CORE_PEER_ADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODELISTENADDRESS=peer0.org1.example.com:7052
+      - CORE_PEER_ADDRESSAUTODETECT=true
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.example.com:7051
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
@@ -93,33 +109,51 @@ services:
       # # the following setting starts chaincode containers on the same
       # # bridge network as the peers
       # # https://docs.docker.com/compose/networking/
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fixtures_default
+      - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default      
     #comment out logging.driver in order to render the debug logs 
     logging:
       driver: none 
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: peer node start
     ports:
-      - 7051:7051
-      - 7053:7053
+      - "7051:7051"
+      - "7053:7053"
+    expose:
+      - "7051"
+      - "7052"
+      - "7053"
     volumes:
         - /var/run/:/host/var/run/
         - ./channel/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp:/etc/hyperledger/msp/peer
         - ./channel/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls:/etc/hyperledger/tls/peer
+    networks:
+      default:
+        aliases:
+          - peer0.org1.example.com
     depends_on:
-      - orderer.example.com
+      - orderer1
       - builder
 
-  peer0.org2.example.com:
-    container_name: peer0.org2.example.com
+  org2peer1:
     image: ${FABRIC_PEER_FIXTURE_IMAGE}:${ARCH}-${FABRIC_PEER_FIXTURE_TAG}
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - CORE_PEER_ID=peer0.org2.example.com
       - CORE_LOGGING_PEER=debug
+      - CORE_CHAINCODE_STARTUPTIMEOUT=30s
+      - CORE_CHAINCODE_LOGGING_SHIM=debug
+      - CORE_CHAINCODE_LOGGING_LEVEL=debug
+      - CORE_CHAINCODE_BUILDER=${FABRIC_BUILDER_FIXTURE_IMAGE}:${ARCH}-${FABRIC_BUILDER_FIXTURE_TAG}
+      - CORE_CHAINCODE_GOLANG_RUNTIME=${FABRIC_BASEOS_FIXTURE_IMAGE}:${ARCH}-${FABRIC_BASEOS_FIXTURE_TAG}
+      ## the following setting redirects chaincode container logs to the peer container logs
+      - CORE_VM_DOCKER_ATTACHSTDOUT=true      
       - CORE_PEER_LOCALMSPID=Org2MSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
-      - CORE_PEER_ADDRESS=peer0.org2.example.com:7051
+      - CORE_PEER_ADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODELISTENADDRESS=peer0.org2.example.com:7052
+      - CORE_PEER_ADDRESSAUTODETECT=true
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org2.example.com:7051
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
@@ -127,25 +161,36 @@ services:
       # # the following setting starts chaincode containers on the same
       # # bridge network as the peers
       # # https://docs.docker.com/compose/networking/
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fixtures_default
+      - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default     
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none  
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: peer node start
     ports:
-      - 8051:7051
-      - 8053:7053
+      - "8051:7051"
+      - "8053:7053"
+    expose:
+      - "7051"
+      - "7052"
+      - "7053"
     volumes:
         - /var/run/:/host/var/run/
         - ./channel/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp:/etc/hyperledger/msp/peer
-        - ./channel/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls:/etc/hyperledger/tls/peer
+        - ./channel/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls:/etc/hyperledger/tls/peer 
+    networks:
+      default:
+        aliases:
+          - peer0.org2.example.com
     depends_on:
-      - orderer.example.com
+      - orderer1
       - builder
-
 
  # builder is only here to create a dependency on the image (not used as part of compose)
   builder:
     image: ${FABRIC_BUILDER_FIXTURE_IMAGE}:${ARCH}-${FABRIC_BUILDER_FIXTURE_TAG}
     command: tail -F anything
+
+networks:
+    default:

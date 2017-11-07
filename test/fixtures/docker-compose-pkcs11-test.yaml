@@ -7,8 +7,7 @@ version: '2'
 
 services:
 
-  fabric-sdk-pkcs11-integration-tests:
-    container_name: fabric-sdk-pkcs11-integration-test
+  pkcs11-integration-tests:
     image: softhsm2-image
     environment:
       - FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER=PKCS11
@@ -18,5 +17,9 @@ services:
       - ../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
     command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration.sh
     depends_on:
-      - orderer.example.com
+      - org1ca1
+      - org2ca1
+      - org1peer1
+      - org2peer1
+      - orderer1
       - builder
