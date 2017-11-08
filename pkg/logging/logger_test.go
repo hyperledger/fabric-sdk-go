@@ -11,77 +11,20 @@ import (
 	"log"
 	"regexp"
 	"testing"
+
+	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 )
 
 const (
-	basicLevelOutputExpectedRegex  = "\\[%s\\] .* UTC - logging.* -> %s brown fox jumps over the lazy dog"
-	printLevelOutputExpectedRegex  = "\\[%s\\] .* brown fox jumps over the lazy dog"
-	customLevelOutputExpectedRegex = "\\[%s\\] .* CUSTOM LOG OUTPUT"
-	moduleName                     = "module-xyz"
+	basicLevelOutputWithCallerInfoExpectedRegex = "\\[%s\\] .* UTC - logging.* -> %s brown fox jumps over the lazy dog"
+	basicLevelOutputExpectedRegex               = "\\[%s\\] .* UTC .*-> %s brown fox jumps over the lazy dog"
+	printLevelOutputExpectedRegex               = "\\[%s\\] .* brown fox jumps over the lazy dog"
+	customLevelOutputExpectedRegex              = "\\[%s\\] .* CUSTOM LOG OUTPUT"
+	moduleName                                  = "module-xyz"
 )
 
 type fn func(...interface{})
 type fnf func(string, ...interface{})
-
-func TestDefaultLogging(t *testing.T) {
-
-	SetCustomLogger(nil)
-	logger := NewLogger(moduleName)
-
-	//change the output to buffer
-	var buf bytes.Buffer
-	logger.logger.(*DefaultLogger).defaultLogger.SetOutput(&buf)
-
-	//No level set for this module so log level should be info
-	verifyTrue(t, INFO == GetLevel(moduleName), " default log level is INFO")
-
-	//Test logger.print outputs
-	verifyBasicLogging(t, -1, logger.Print, nil, &buf, false)
-	verifyBasicLogging(t, -1, logger.Println, nil, &buf, false)
-	verifyBasicLogging(t, -1, nil, logger.Printf, &buf, false)
-
-	//Test logger.info outputs
-	verifyBasicLogging(t, INFO, logger.Info, nil, &buf, false)
-	verifyBasicLogging(t, INFO, logger.Infoln, nil, &buf, false)
-	verifyBasicLogging(t, INFO, nil, logger.Infof, &buf, false)
-
-	//Test logger.warn outputs
-	verifyBasicLogging(t, WARNING, logger.Warn, nil, &buf, false)
-	verifyBasicLogging(t, WARNING, logger.Warnln, nil, &buf, false)
-	verifyBasicLogging(t, WARNING, nil, logger.Warnf, &buf, false)
-
-	//Test logger.error outputs
-	verifyBasicLogging(t, ERROR, logger.Error, nil, &buf, false)
-	verifyBasicLogging(t, ERROR, logger.Errorln, nil, &buf, false)
-	verifyBasicLogging(t, ERROR, nil, logger.Errorf, &buf, false)
-
-	/*
-		SINCE DEBUG LOG IS NOT YET ENABLED, LOG OUTPUT SHOULD BE EMPTY
-	*/
-	//Test logger.debug outputs when DEBUG level is not enabled
-	logger.Debug("brown fox jumps over the lazy dog")
-	logger.Debugln("brown fox jumps over the lazy dog")
-	logger.Debugf("brown %s jumps over the lazy %s", "fox", "dog")
-
-	verifyEmpty(t, buf.String(), "debug log isn't supposed to show up for info level")
-
-	//Should be false
-	verifyFalse(t, IsEnabledForLogger(DEBUG, logger), "logging.IsEnabled for is not working as expected, expected false but got true")
-	verifyFalse(t, IsEnabledFor(DEBUG, moduleName), "logging.IsEnabled for is not working as expected, expected false but got true")
-
-	//Now change the log level to DEBUG
-	SetLevel(DEBUG, moduleName)
-
-	//Should be false
-	verifyTrue(t, IsEnabledForLogger(DEBUG, logger), "logging.IsEnabled for is not working as expected, expected true but got false")
-	verifyTrue(t, IsEnabledFor(DEBUG, moduleName), "logging.IsEnabled for is not working as expected, expected true but got false")
-
-	//Test logger.debug outputs
-	verifyBasicLogging(t, DEBUG, logger.Debug, nil, &buf, false)
-	verifyBasicLogging(t, DEBUG, logger.Debugln, nil, &buf, false)
-	verifyBasicLogging(t, DEBUG, nil, logger.Debugf, &buf, false)
-
-}
 
 func TestLevelledLoggingForCustomLogger(t *testing.T) {
 
@@ -117,6 +60,27 @@ func TestLevelledLoggingForCustomLogger(t *testing.T) {
 	verifyBasicLogging(t, ERROR, logger.Errorln, nil, &buf, true)
 	verifyBasicLogging(t, ERROR, nil, logger.Errorf, &buf, true)
 
+	/*
+		SINCE DEBUG LOG IS NOT YET ENABLED, LOG OUTPUT SHOULD BE EMPTY
+	*/
+	//Test logger.debug outputs when DEBUG level is not enabled
+	logger.Debug("brown fox jumps over the lazy dog")
+	logger.Debugln("brown fox jumps over the lazy dog")
+	logger.Debugf("brown %s jumps over the lazy %s", "fox", "dog")
+
+	verifyEmpty(t, buf.String(), "debug log isn't supposed to show up for info level")
+
+	//Should be false
+	verifyFalse(t, IsEnabledForLogger(DEBUG, logger), "logging.IsEnabled for is not working as expected, expected false but got true")
+	verifyFalse(t, IsEnabledFor(DEBUG, moduleName), "logging.IsEnabled for is not working as expected, expected false but got true")
+
+	//Now change the log level to DEBUG
+	SetLevel(DEBUG, moduleName)
+
+	//Should be false
+	verifyTrue(t, IsEnabledForLogger(DEBUG, logger), "logging.IsEnabled for is not working as expected, expected true but got false")
+	verifyTrue(t, IsEnabledFor(DEBUG, moduleName), "logging.IsEnabled for is not working as expected, expected true but got false")
+
 	//Test logger.debug outputs
 	verifyBasicLogging(t, DEBUG, logger.Debug, nil, &buf, true)
 	verifyBasicLogging(t, DEBUG, logger.Debugln, nil, &buf, true)
@@ -131,23 +95,13 @@ func TestLevelledLoggingForCustomLogger(t *testing.T) {
 	verifyBasicLogging(t, CRITICAL, logger.Panic, nil, &buf, true)
 	verifyBasicLogging(t, CRITICAL, logger.Panicln, nil, &buf, true)
 	verifyBasicLogging(t, CRITICAL, nil, logger.Panicf, &buf, true)
-}
 
-func TestDefaultLoggingPanic(t *testing.T) {
-
-	//Reset custom logger, need default one
-	SetCustomLogger(nil)
-	logger := NewLogger(moduleName)
-
-	verifyCriticalLoggings(t, CRITICAL, logger.Panic, nil, logger)
-	verifyCriticalLoggings(t, CRITICAL, logger.Panicln, nil, logger)
-	verifyCriticalLoggings(t, CRITICAL, nil, logger.Panicf, logger)
-
+	//Reset module levels for next test
+	SetModuleLevels(&moduleLeveled{})
 }
 
 //verifyCriticalLoggings utility func which does job calling and verifying CRITICAL log level functions - PANIC
-func verifyCriticalLoggings(t *testing.T, level Level, loggerFunc fn, loggerFuncf fnf, logger *Logger) {
-
+func verifyCriticalLoggings(t *testing.T, level apilogging.Level, loggerFunc fn, loggerFuncf fnf, logger *Logger) {
 	//change the output to buffer
 	var buf bytes.Buffer
 	logger.logger.(*DefaultLogger).defaultLogger.SetOutput(&buf)
@@ -157,7 +111,14 @@ func verifyCriticalLoggings(t *testing.T, level Level, loggerFunc fn, loggerFunc
 		if r := recover(); r == nil {
 			t.Errorf("%v was supposed to panic", loggerFunc)
 		}
-		regex := fmt.Sprintf(basicLevelOutputExpectedRegex, moduleName, levelNames[level])
+		var regex string
+		if IsCallerInfoEnabled(moduleName) {
+			//with caller info
+			regex = fmt.Sprintf(basicLevelOutputWithCallerInfoExpectedRegex, moduleName, levelNames[level])
+		} else {
+			//without caller info
+			regex = fmt.Sprintf(basicLevelOutputExpectedRegex, moduleName, levelNames[level])
+		}
 		match, err := regexp.MatchString(regex, buf.String())
 		verifyEmpty(t, err, "error while matching regex with logoutput wasnt expected")
 		verifyTrue(t, match, "CRITICAL logger isn't producing output as expected, \n logoutput:%s\n regex: %s", buf.String(), regex)
@@ -173,7 +134,7 @@ func verifyCriticalLoggings(t *testing.T, level Level, loggerFunc fn, loggerFunc
 }
 
 //verifyBasicLogging utility func which does job calling and verifying basic log level functions - DEBUG, INFO, ERROR, WARNING
-func verifyBasicLogging(t *testing.T, level Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer, verifyCustom bool) {
+func verifyBasicLogging(t *testing.T, level apilogging.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer, verifyCustom bool) {
 
 	//Call logger func
 	if loggerFunc != nil {
@@ -191,11 +152,16 @@ func verifyBasicLogging(t *testing.T, level Level, loggerFunc fn, loggerFuncf fn
 		regex = fmt.Sprintf(customLevelOutputExpectedRegex, moduleName)
 	} else if level > 0 && !verifyCustom {
 		levelName = levelNames[level]
-		regex = fmt.Sprintf(basicLevelOutputExpectedRegex, moduleName, levelName)
+		if IsCallerInfoEnabled(moduleName) {
+			//with caller info
+			regex = fmt.Sprintf(basicLevelOutputWithCallerInfoExpectedRegex, moduleName, levelName)
+		} else {
+			//without caller info
+			regex = fmt.Sprintf(basicLevelOutputExpectedRegex, moduleName, levelName)
+		}
 	} else {
 		regex = fmt.Sprintf(printLevelOutputExpectedRegex, moduleName)
 	}
-
 	match, err := regexp.MatchString(regex, buf.String())
 
 	verifyEmpty(t, err, "error while matching regex with logoutput wasnt expected")
@@ -203,6 +169,16 @@ func verifyBasicLogging(t *testing.T, level Level, loggerFunc fn, loggerFuncf fn
 
 	//Reset output buffer, for next use
 	buf.Reset()
+}
+
+func TestCustomModuleLevels(t *testing.T) {
+	SetLevel(DEBUG, moduleName)
+	verifyTrue(t, IsEnabledFor(DEBUG, moduleName), "expected level '%s' but got '%s' ", DEBUG, GetLevel(moduleName))
+
+	//Now set new module levels for customization
+	SetModuleLevels(&moduleLeveled{})
+	//Old module infos should have been reset
+	verifyFalse(t, IsEnabledFor(DEBUG, moduleName), "level '%s' was supposed to be disabled' ", DEBUG)
 }
 
 func verifyTrue(t *testing.T, input bool, msgAndArgs ...interface{}) {

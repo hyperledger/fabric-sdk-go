@@ -11,12 +11,13 @@ Please review third_party pinning scripts and patches for more details.
 package logbridge
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
 // Log levels (from fabric-sdk-go/pkg/logging/level.go).
 const (
-	CRITICAL logging.Level = iota
+	CRITICAL apilogging.Level = iota
 	ERROR
 	WARNING
 	INFO
@@ -50,6 +51,6 @@ func (l *Logger) Warning(args ...interface{}) {
 }
 
 // IsEnabledFor bridges calls to the Go SDK logger's IsEnabledFor.
-func (l *Logger) IsEnabledFor(level logging.Level) bool {
+func (l *Logger) IsEnabledFor(level apilogging.Level) bool {
 	return logging.IsEnabledFor(level, l.module)
 }

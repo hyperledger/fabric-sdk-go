@@ -7,6 +7,8 @@ package logging
 
 import (
 	"testing"
+
+	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 )
 
 func TestLogLevels(t *testing.T) {
@@ -83,7 +85,7 @@ func TestGetLogLevels(t *testing.T) {
 	verifyLogLevel(t, -1, level, err, false)
 }
 
-func verifyLogLevel(t *testing.T, expectedLevel Level, currentlevel Level, err error, success bool) {
+func verifyLogLevel(t *testing.T, expectedLevel apilogging.Level, currentlevel apilogging.Level, err error, success bool) {
 	if success {
 		verifyEmpty(t, err, "not supposed to get error for this scenario")
 	} else {
