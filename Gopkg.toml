@@ -33,6 +33,10 @@
   branch = "master"
 
 [[constraint]]
+  name = "github.com/Knetic/govaluate"
+  version = "3.0.0"
+
+[[constraint]]
   name = "github.com/miekg/pkcs11"
   branch = "master"
 
