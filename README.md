@@ -23,7 +23,7 @@ You're good to go, happy coding! Check out the examples for usage demonstrations
 ### Examples
 
 - [E2E Test](test/integration/end_to_end_test.go) and [Base Test](test/integration/base_test_setup.go): Part of the E2E tests included with the Go SDK.
-- [Dynamic Endorser Selection] (test/integration/sdk_provider_test.go) : An example that uses dynamic endorser selection (based on chaincode policy) 
+- [Dynamic Endorser Selection](test/integration/sdk_provider_test.go): An example that uses dynamic endorser selection (based on chaincode policy) 
 - [CLI](https://github.com/securekey/fabric-examples/tree/master/fabric-cli/): An example CLI for Fabric built with the Go SDK.
 - More examples needed!
 
@@ -37,7 +37,7 @@ You're good to go, happy coding! Check out the examples for usage demonstrations
 
 ### Compatibility
 
-- fabric v1.0.1 & fabric-ca v1.0.1
+- fabric v1.0.4 & fabric-ca v1.0.4
   - fabric-sdk-go: master:HEAD
 - fabric v1.0.0 & fabric-ca v1.0.0
   - fabric-sdk-go: master:110bf21bf3ab0a9a084f46d9698e1daeeda68a59
@@ -64,7 +64,7 @@ If you want to contribute to the Go SDK, please run the test suite and submit pa
 
 You need:
 
-- Go
+- Go 1.9
 - [Dep](https://github.com/golang/dep)
 - Make
 - Docker
@@ -155,14 +155,14 @@ Alternatively you can build and run Fabric on your own box using the following c
 cd $GOPATH/src/github.com/hyperledger/
 git clone https://github.com/hyperledger/fabric
 cd $GOPATH/src/github.com/hyperledger/fabric/
-git checkout v1.0.1
+git checkout v1.0.4
 make docker
 
 # Build fabric-ca:
 cd $GOPATH/src/github.com/hyperledger/
 git clone https://github.com/hyperledger/fabric-ca
 cd $GOPATH/src/github.com/hyperledger/fabric-ca/
-git checkout v1.0.1
+git checkout v1.0.4
 make docker
 
 # Start fabric - latest-env.sh overrides the default docker tags in .env
