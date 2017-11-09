@@ -126,6 +126,19 @@ func (mr *MockConfigMockRecorder) ChannelConfig(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChannelConfig", reflect.TypeOf((*MockConfig)(nil).ChannelConfig), arg0)
 }
 
+// ChannelOrderers mocks base method
+func (m *MockConfig) ChannelOrderers(arg0 string) ([]apiconfig.OrdererConfig, error) {
+	ret := m.ctrl.Call(m, "ChannelOrderers", arg0)
+	ret0, _ := ret[0].([]apiconfig.OrdererConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ChannelOrderers indicates an expected call of ChannelOrderers
+func (mr *MockConfigMockRecorder) ChannelOrderers(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChannelOrderers", reflect.TypeOf((*MockConfig)(nil).ChannelOrderers), arg0)
+}
+
 // ChannelPeers mocks base method
 func (m *MockConfig) ChannelPeers(arg0 string) ([]apiconfig.ChannelPeer, error) {
 	ret := m.ctrl.Call(m, "ChannelPeers", arg0)

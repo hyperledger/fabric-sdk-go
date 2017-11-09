@@ -244,6 +244,24 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 		t.Fatal("Testing PeerConfig supposed to fail")
 	}
 
+	//Testing ChannelConfig failure scenario
+	chConfig, err := sampleConfig.ChannelConfig("invalid")
+	if chConfig != nil || err == nil {
+		t.Fatal("Testing ChannelConfig supposed to fail")
+	}
+
+	//Testing ChannelPeers failure scenario
+	cpConfigs, err := sampleConfig.ChannelPeers("invalid")
+	if cpConfigs != nil || err == nil {
+		t.Fatal("Testing ChannelPeeers supposed to fail")
+	}
+
+	//Testing ChannelOrderers failure scenario
+	coConfigs, err := sampleConfig.ChannelOrderers("invalid")
+	if coConfigs != nil || err == nil {
+		t.Fatal("Testing ChannelOrderers supposed to fail")
+	}
+
 	// Testing empty BCCSP Software provider
 	sampleConfig.configViper.Set("client.BCCSP.security.default.provider", "")
 	func() {
@@ -347,6 +365,25 @@ func TestOrdererConfig(t *testing.T) {
 	orderers, err := configImpl.OrderersConfig()
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if orderers[0].TLSCACerts.Path != "" {
+		if !filepath.IsAbs(orderers[0].TLSCACerts.Path) {
+			t.Fatal("Expected GOPATH relative path to be replaced")
+		}
+	} else if orderers[0].TLSCACerts.Pem == "" {
+		t.Fatalf("Orderer %v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
+	}
+}
+
+func TestChannelOrderers(t *testing.T) {
+	orderers, err := configImpl.ChannelOrderers("mychannel")
+	if orderers == nil || err != nil {
+		t.Fatal("Testing ChannelOrderers failed")
+	}
+
+	if len(orderers) != 1 {
+		t.Fatalf("Expecting one channel orderer got %d", len(orderers))
 	}
 
 	if orderers[0].TLSCACerts.Path != "" {

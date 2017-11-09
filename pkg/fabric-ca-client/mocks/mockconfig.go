@@ -65,6 +65,11 @@ func (c *MockConfig) PeerConfig(org string, name string) (*apiconfig.PeerConfig,
 	return nil, nil
 }
 
+// ChannelOrderers returns a list of channel orderers
+func (c *MockConfig) ChannelOrderers(name string) ([]apiconfig.OrdererConfig, error) {
+	return nil, nil
+}
+
 // TLSCACertPool ...
 func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 	return nil, nil

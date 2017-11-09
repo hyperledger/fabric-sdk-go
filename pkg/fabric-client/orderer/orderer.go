@@ -46,6 +46,17 @@ func NewOrderer(url string, certificate string, serverHostOverride string, confi
 	return &Orderer{url: urlutil.ToAddress(url), grpcDialOption: opts}, nil
 }
 
+// NewOrdererFromConfig returns an Orderer instance constructed from orderer config
+func NewOrdererFromConfig(ordererCfg *apiconfig.OrdererConfig, config apiconfig.Config) (*Orderer, error) {
+
+	serverHostOverride := ""
+	if str, ok := ordererCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
+		serverHostOverride = str
+	}
+
+	return NewOrderer(ordererCfg.URL, ordererCfg.TLSCACerts.Path, serverHostOverride, config)
+}
+
 // URL Get the Orderer url. Required property for the instance objects.
 // Returns the address of the Orderer.
 func (o *Orderer) URL() string {

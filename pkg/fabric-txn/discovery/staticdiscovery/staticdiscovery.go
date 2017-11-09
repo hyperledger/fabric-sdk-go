@@ -46,12 +46,7 @@ func (dp *DiscoveryProvider) NewDiscoveryService(channelID string) (apifabclient
 
 	for _, p := range peerConfig {
 
-		serverHostOverride := ""
-		if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
-			serverHostOverride = str
-		}
-
-		newPeer, err := peer.NewPeerTLSFromCert(p.URL, p.TLSCACerts.Path, serverHostOverride, dp.config)
+		newPeer, err := peer.NewPeerFromConfig(&p.PeerConfig, dp.config)
 		if err != nil || newPeer == nil {
 			return nil, errors.WithMessage(err, "NewPeer failed")
 		}

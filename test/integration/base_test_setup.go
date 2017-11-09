@@ -23,6 +23,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	admin "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
@@ -176,7 +177,7 @@ func (setup *BaseSetupImpl) UpgradeCC(chainCodeID string, chainCodePath string, 
 // InstallCC ...
 func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte) error {
 
-	if err := admin.SendInstallCC(setup.Client, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, setup.Channel.Peers(), setup.GetDeployPath()); err != nil {
+	if err := admin.SendInstallCC(setup.Client, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, peer.PeersToTxnProcessors(setup.Channel.Peers()), setup.GetDeployPath()); err != nil {
 		return errors.WithMessage(err, "SendInstallProposal failed")
 	}
 
@@ -235,11 +236,8 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 	if err != nil {
 		return nil, errors.WithMessage(err, "RandomOrdererConfig failed")
 	}
-	serverHostOverride := ""
-	if str, ok := ordererConfig.GRPCOptions["ssl-target-name-override"].(string); ok {
-		serverHostOverride = str
-	}
-	orderer, err := orderer.NewOrderer(ordererConfig.URL, ordererConfig.TLSCACerts.Path, serverHostOverride, client.Config())
+
+	orderer, err := orderer.NewOrdererFromConfig(ordererConfig, client.Config())
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewOrderer failed")
 	}
@@ -254,7 +252,7 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 			return nil, errors.WithMessage(err, "reading peer config failed")
 		}
 		for _, p := range peerConfig {
-			serverHostOverride = ""
+			serverHostOverride := ""
 			if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
 				serverHostOverride = str
 			}

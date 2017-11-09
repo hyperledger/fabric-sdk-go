@@ -318,28 +318,22 @@ func (c *Config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
 
 // RandomOrdererConfig returns a pseudo-random orderer from the network config
 func (c *Config) RandomOrdererConfig() (*apiconfig.OrdererConfig, error) {
-	config, err := c.NetworkConfig()
+	orderers, err := c.OrderersConfig()
 	if err != nil {
 		return nil, err
 	}
 
+	return randomOrdererConfig(orderers)
+}
+
+// randomOrdererConfig returns a pseudo-random orderer from the list of orderers
+func randomOrdererConfig(orderers []apiconfig.OrdererConfig) (*apiconfig.OrdererConfig, error) {
+
 	rs := rand.NewSource(time.Now().Unix())
 	r := rand.New(rs)
-	randomNumber := r.Intn(len(config.Orderers))
+	randomNumber := r.Intn(len(orderers))
 
-	var i int
-	for _, value := range config.Orderers {
-		if value.TLSCACerts.Path != "" {
-			value.TLSCACerts.Path = strings.Replace(value.TLSCACerts.Path, "$GOPATH",
-				os.Getenv("GOPATH"), -1)
-		}
-		if i == randomNumber {
-			return &value, nil
-		}
-		i++
-	}
-
-	return nil, nil
+	return &orderers[randomNumber], nil
 }
 
 // OrdererConfig returns the requested orderer
@@ -434,6 +428,25 @@ func (c *Config) ChannelConfig(name string) (*apiconfig.ChannelConfig, error) {
 	}
 
 	return &ch, nil
+}
+
+// ChannelOrderers returns a list of channel orderers
+func (c *Config) ChannelOrderers(name string) ([]apiconfig.OrdererConfig, error) {
+	orderers := []apiconfig.OrdererConfig{}
+	channel, err := c.ChannelConfig(name)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, chOrderer := range channel.Orderers {
+		orderer, err := c.OrdererConfig(chOrderer)
+		if err != nil {
+			return nil, errors.Errorf("orderer config not found for channel orderer: %s", chOrderer)
+		}
+		orderers = append(orderers, *orderer)
+	}
+
+	return orderers, nil
 }
 
 // ChannelPeers returns the channel peers configuration

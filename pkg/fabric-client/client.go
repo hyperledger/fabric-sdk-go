@@ -28,7 +28,6 @@ import (
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
-	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
@@ -480,7 +479,7 @@ func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
 func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
-	chaincodePackage []byte, targets []fab.Peer) ([]*apitxn.TransactionProposalResponse, string, error) {
+	chaincodePackage []byte, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, string, error) {
 
 	if chaincodeName == "" {
 		return nil, "", errors.New("chaincodeName required")
@@ -545,7 +544,7 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
 		TxnID:          txnID,
-	}, peer.PeersToTxnProcessors(targets))
+	}, targets)
 
 	return transactionProposalResponse, txID, err
 }

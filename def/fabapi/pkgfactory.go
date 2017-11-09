@@ -171,9 +171,19 @@ func NewOrderer(url string, certificate string, serverHostOverride string, confi
 	return ordererImpl.NewOrderer(url, certificate, serverHostOverride, config)
 }
 
+// NewOrdererFromConfig returns a new default implementation of Orderer based on config
+func NewOrdererFromConfig(ordererCfg config.OrdererConfig, config config.Config) (fab.Orderer, error) {
+	return ordererImpl.NewOrdererFromConfig(&ordererCfg, config)
+}
+
 // NewPeer returns a new default implementation of Peer
 func NewPeer(url string, certificate string, serverHostOverride string, config config.Config) (fab.Peer, error) {
 	return peerImpl.NewPeerTLSFromCert(url, certificate, serverHostOverride, config)
+}
+
+// NewPeerFromConfig returns a new default implementation of Peer based configuration
+func NewPeerFromConfig(peerCfg *config.PeerConfig, config config.Config) (fab.Peer, error) {
+	return peerImpl.NewPeerFromConfig(peerCfg, config)
 }
 
 // NewConfigManager returns a new default implementation of the Config interface

@@ -27,7 +27,7 @@ var origGoPath = os.Getenv("GOPATH")
 
 // SendInstallCC  Sends an install proposal to one or more endorsing peers.
 func SendInstallCC(client fab.FabricClient, chainCodeID string, chainCodePath string,
-	chainCodeVersion string, chaincodePackage []byte, targets []fab.Peer, deployPath string) error {
+	chainCodeVersion string, chaincodePackage []byte, targets []apitxn.ProposalProcessor, deployPath string) error {
 
 	changeGOPATHToDeploy(deployPath)
 	transactionProposalResponse, _, err := client.InstallChaincode(chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, targets)

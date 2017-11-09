@@ -160,6 +160,11 @@ func (c *MockConfig) ChannelPeers(name string) ([]config.ChannelPeer, error) {
 	return nil, nil
 }
 
+// ChannelOrderers returns a list of channel orderers
+func (c *MockConfig) ChannelOrderers(name string) ([]config.OrdererConfig, error) {
+	return nil, nil
+}
+
 // Ephemeral flag
 func (c *MockConfig) Ephemeral() bool {
 	return false

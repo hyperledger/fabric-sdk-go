@@ -82,22 +82,19 @@ func getChannel(client fab.FabricClient, channelID string) (fab.Channel, error) 
 		return nil, errors.WithMessage(err, "NewChannel failed")
 	}
 
-	chConfig, err := client.Config().ChannelConfig(channel.Name())
+	_, err = client.Config().ChannelConfig(channel.Name())
 	if err != nil {
 		return nil, errors.WithMessage(err, "reading channel config failed")
 	}
 
-	for _, name := range chConfig.Orderers {
-		ordererConfig, err := client.Config().OrdererConfig(name)
-		if err != nil {
-			return nil, errors.WithMessage(err, "retrieve configuration for orderer failed")
-		}
+	chOrderers, err := client.Config().ChannelOrderers(channel.Name())
+	if err != nil {
+		return nil, errors.WithMessage(err, "reading channel orderers failed")
+	}
 
-		serverHostOverride := ""
-		if str, ok := ordererConfig.GRPCOptions["ssl-target-name-override"].(string); ok {
-			serverHostOverride = str
-		}
-		orderer, err := orderer.NewOrderer(ordererConfig.URL, ordererConfig.TLSCACerts.Path, serverHostOverride, client.Config())
+	for _, ordererCfg := range chOrderers {
+
+		orderer, err := orderer.NewOrdererFromConfig(&ordererCfg, client.Config())
 		if err != nil {
 			return nil, errors.WithMessage(err, "NewOrderer failed")
 		}

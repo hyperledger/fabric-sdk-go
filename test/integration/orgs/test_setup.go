@@ -152,11 +152,11 @@ func installAndInstantiate(t *testing.T) {
 
 	orgTestClient.SetUserContext(org1AdminUser)
 	admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer0}, "../../fixtures/testdata")
+		"github.com/example_cc", "0", nil, []apitxn.ProposalProcessor{orgTestPeer0}, "../../fixtures/testdata")
 
 	orgTestClient.SetUserContext(org2AdminUser)
 	err := admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer1}, "../../fixtures/testdata")
+		"github.com/example_cc", "0", nil, []apitxn.ProposalProcessor{orgTestPeer1}, "../../fixtures/testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,11 +176,8 @@ func loadOrderer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	serverHostOverride := ""
-	if str, ok := ordererConfig.GRPCOptions["ssl-target-name-override"].(string); ok {
-		serverHostOverride = str
-	}
-	orgTestOrderer, err = orderer.NewOrderer(ordererConfig.URL, ordererConfig.TLSCACerts.Path, serverHostOverride, orgTestClient.Config())
+
+	orgTestOrderer, err = orderer.NewOrdererFromConfig(ordererConfig, orgTestClient.Config())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,19 +193,13 @@ func loadOrgPeers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	serverHostOverrideOrg1 := ""
-	if str, ok := org1Peers[0].GRPCOptions["ssl-target-name-override"].(string); ok {
-		serverHostOverrideOrg1 = str
-	}
-	orgTestPeer0, err = peer.NewPeerTLSFromCert(org1Peers[0].URL, org1Peers[0].TLSCACerts.Path, serverHostOverrideOrg1, orgTestClient.Config())
+
+	orgTestPeer0, err = peer.NewPeerFromConfig(&org1Peers[0], orgTestClient.Config())
 	if err != nil {
 		t.Fatal(err)
 	}
-	serverHostOverrideOrg2 := ""
-	if str, ok := org2Peers[0].GRPCOptions["ssl-target-name-override"].(string); ok {
-		serverHostOverrideOrg2 = str
-	}
-	orgTestPeer1, err = peer.NewPeerTLSFromCert(org2Peers[0].URL, org2Peers[0].TLSCACerts.Path, serverHostOverrideOrg2, orgTestClient.Config())
+
+	orgTestPeer1, err = peer.NewPeerFromConfig(&org2Peers[0], orgTestClient.Config())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,6 +209,11 @@ func loadOrgPeers(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// TODO: See if required after events merge
+	serverHostOverrideOrg1 := ""
+	if str, ok := org1Peers[0].GRPCOptions["ssl-target-name-override"].(string); ok {
+		serverHostOverrideOrg1 = str
+	}
 	peer0EventHub.SetPeerAddr(org1Peers[0].EventURL, org1Peers[0].TLSCACerts.Path, serverHostOverrideOrg1)
 
 	orgTestClient.SetUserContext(org1User)
@@ -231,6 +227,11 @@ func loadOrgPeers(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// TODO: See if required after events merge
+	serverHostOverrideOrg2 := ""
+	if str, ok := org2Peers[0].GRPCOptions["ssl-target-name-override"].(string); ok {
+		serverHostOverrideOrg2 = str
+	}
 	peer1EventHub.SetPeerAddr(org2Peers[0].EventURL, org2Peers[0].TLSCACerts.Path, serverHostOverrideOrg2)
 
 	orgTestClient.SetUserContext(org2User)

@@ -138,12 +138,7 @@ func (dp *ccPolicyProvider) queryChaincode(channelID string, ccID string, ccFcn 
 	var response *apitxn.TransactionProposalResponse
 	for _, p := range dp.targetPeers {
 
-		serverHostOverride := ""
-		if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
-			serverHostOverride = str
-		}
-
-		peer, err := peerImpl.NewPeerTLSFromCert(p.URL, p.TLSCACerts.Path, serverHostOverride, dp.config)
+		peer, err := peerImpl.NewPeerFromConfig(&p.PeerConfig, dp.config)
 		if err != nil {
 			queryErrors = append(queryErrors, err.Error())
 			continue

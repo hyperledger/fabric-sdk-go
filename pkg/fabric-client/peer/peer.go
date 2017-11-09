@@ -46,6 +46,22 @@ func NewPeerTLSFromCert(url string, certificate string, serverHostOverride strin
 	return NewPeerFromProcessor(url, &conn, config)
 }
 
+// NewPeerFromConfig constructs a Peer from given peer configuration and global configuration setting.
+func NewPeerFromConfig(peerCfg *apiconfig.PeerConfig, config apiconfig.Config) (*Peer, error) {
+
+	serverHostOverride := ""
+	if str, ok := peerCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
+		serverHostOverride = str
+	}
+
+	conn, err := newPeerEndorser(peerCfg.URL, peerCfg.TLSCACerts.Path, serverHostOverride, connBlocking, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewPeerFromProcessor(peerCfg.URL, &conn, config)
+}
+
 // NewPeer constructs a Peer given its endpoint configuration settings.
 // url is the URL with format of "host:port".
 func NewPeer(url string, config apiconfig.Config) (*Peer, error) {

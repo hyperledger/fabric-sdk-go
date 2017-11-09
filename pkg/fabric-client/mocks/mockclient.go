@@ -139,7 +139,7 @@ func (c *MockClient) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQuery
 
 // InstallChaincode ...
 func (c *MockClient) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
-	chaincodePackage []byte, targets []fab.Peer) ([]*apitxn.TransactionProposalResponse, string, error) {
+	chaincodePackage []byte, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, string, error) {
 	return nil, "", errors.New("Not implemented yet")
 
 }
