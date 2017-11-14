@@ -47,7 +47,7 @@ client:
   peer:
     timeout:
       connection: 3s
-      queryResponse: 30s
+      queryResponse: 45s
       executeTxResponse: 30s
   eventService:
     timeout:
