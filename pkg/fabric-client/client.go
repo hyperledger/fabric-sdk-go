@@ -244,17 +244,24 @@ func (c *Client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
  * @param {byte[]} config - The Configuration Update in byte form
  * @return {ConfigSignature} - The signature of the current user on the config bytes
  */
-func (c *Client) SignChannelConfig(config []byte) (*common.ConfigSignature, error) {
+func (c *Client) SignChannelConfig(config []byte, signer fab.User) (*common.ConfigSignature, error) {
 	logger.Debug("SignChannelConfig - start")
 
 	if config == nil {
 		return nil, errors.New("channel configuration required")
 	}
 
-	if c.userContext == nil {
+	signingUser := signer
+	// If signing user is not provided default to client's user context
+	if signingUser == nil {
+		signingUser = c.userContext
+	}
+
+	if signingUser == nil {
 		return nil, errors.New("user context required")
 	}
-	creator, err := c.userContext.Identity()
+
+	creator, err := signingUser.Identity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get user context's identity")
 	}
@@ -273,11 +280,6 @@ func (c *Client) SignChannelConfig(config []byte) (*common.ConfigSignature, erro
 		return nil, errors.Wrap(err, "marshal signatureHeader failed")
 	}
 
-	user := c.UserContext()
-	if user == nil {
-		return nil, errors.New("UserContext is nil")
-	}
-
 	signingMgr := c.SigningManager()
 	if signingMgr == nil {
 		return nil, errors.New("signing manager is nil")
@@ -285,7 +287,7 @@ func (c *Client) SignChannelConfig(config []byte) (*common.ConfigSignature, erro
 
 	// get all the bytes to be signed together, then sign
 	signingBytes := fcutils.ConcatenateBytes(signatureHeaderBytes, config)
-	signature, err := signingMgr.Sign(signingBytes, user.PrivateKey())
+	signature, err := signingMgr.Sign(signingBytes, signingUser.PrivateKey())
 	if err != nil {
 		return nil, errors.WithMessage(err, "signing of channel config failed")
 	}

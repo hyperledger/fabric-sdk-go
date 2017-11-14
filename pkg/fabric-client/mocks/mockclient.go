@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"bytes"
+
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
@@ -111,20 +113,28 @@ func (c *MockClient) LoadUserFromStateStore(name string) (fab.User, error) {
 
 // ExtractChannelConfig ...
 func (c *MockClient) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
-	return nil, errors.New("Not implemented yet")
+	if bytes.Compare(configEnvelope, []byte("ExtractChannelConfigError")) == 0 {
+		return nil, errors.New("Mock extract channel config error")
+	}
 
+	return configEnvelope, nil
 }
 
 // SignChannelConfig ...
-func (c *MockClient) SignChannelConfig(config []byte) (*common.ConfigSignature, error) {
-	return nil, errors.New("Not implemented yet")
-
+func (c *MockClient) SignChannelConfig(config []byte, signer fab.User) (*common.ConfigSignature, error) {
+	if bytes.Compare(config, []byte("SignChannelConfigError")) == 0 {
+		return nil, errors.New("Mock sign channel config error")
+	}
+	return nil, nil
 }
 
 // CreateChannel ...
 func (c *MockClient) CreateChannel(request fab.CreateChannelRequest) (apitxn.TransactionID, error) {
-	return apitxn.TransactionID{}, errors.New("Not implemented yet")
+	if c.errorScenario {
+		return apitxn.TransactionID{}, errors.New("Create Channel Error")
+	}
 
+	return apitxn.TransactionID{}, nil
 }
 
 //QueryChannels ...

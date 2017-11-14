@@ -356,10 +356,10 @@ func TestOrdererConfig(t *testing.T) {
 		t.Fatal("Testing get RandomOrdererConfig failed")
 	}
 
-	oConfig, err = configImpl.OrdererConfig("peerorg1")
+	oConfig, err = configImpl.OrdererConfig("invalid")
 
-	if oConfig == nil || err != nil {
-		t.Fatal("Testing get OrdererConfig failed")
+	if oConfig != nil || err != nil {
+		t.Fatal("Testing non-existing OrdererConfig failed")
 	}
 
 	orderers, err := configImpl.OrderersConfig()

@@ -19,6 +19,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
+
+	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 )
 
 // Options encapsulates configuration for the SDK
@@ -54,6 +56,12 @@ type FabricSDK struct {
 
 // ChannelClientOpts provides options for creating channel client
 type ChannelClientOpts struct {
+	OrgName        string
+	ConfigProvider apiconfig.Config
+}
+
+// ChannelMgmtClientOpts provides options for creating channel management client
+type ChannelMgmtClientOpts struct {
 	OrgName        string
 	ConfigProvider apiconfig.Config
 }
@@ -191,6 +199,49 @@ func (sdk *FabricSDK) NewSystemClient(s context.Session) (apifabclient.FabricCli
 	client.SetStateStore(sdk.stateStore)
 	client.SetUserContext(s.Identity())
 	client.SetSigningManager(sdk.signingManager)
+
+	return client, nil
+}
+
+// NewChannelMgmtClient returns a new client for managing channels
+func (sdk *FabricSDK) NewChannelMgmtClient(userName string) (chmgmt.ChannelMgmtClient, error) {
+
+	// Read default org name from configuration
+	client, err := sdk.configProvider.Client()
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to retrieve client from network config")
+	}
+
+	if client.Organization == "" {
+		return nil, errors.New("must provide default organisation name in configuration")
+	}
+
+	opt := &ChannelMgmtClientOpts{OrgName: client.Organization, ConfigProvider: sdk.configProvider}
+
+	return sdk.NewChannelMgmtClientWithOpts(userName, opt)
+}
+
+// NewChannelMgmtClientWithOpts returns a new client for managing channels with options
+func (sdk *FabricSDK) NewChannelMgmtClientWithOpts(userName string, opt *ChannelMgmtClientOpts) (chmgmt.ChannelMgmtClient, error) {
+
+	if opt == nil || opt.OrgName == "" {
+		return nil, errors.New("organization name must be provided")
+	}
+
+	session, err := sdk.NewPreEnrolledUserSession(opt.OrgName, userName)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get pre-enrolled user session")
+	}
+
+	configProvider := sdk.ConfigProvider()
+	if opt.ConfigProvider != nil {
+		configProvider = opt.ConfigProvider
+	}
+
+	client, err := sdk.SessionFactory.NewChannelMgmtClient(sdk, session, configProvider)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to create new channel management client")
+	}
 
 	return client, nil
 }

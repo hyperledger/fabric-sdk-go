@@ -342,7 +342,11 @@ func (c *Config) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	orderer := config.Orderers[strings.ToLower(name)]
+	orderer, ok := config.Orderers[strings.ToLower(name)]
+	if !ok {
+		return nil, nil
+	}
+
 	if orderer.TLSCACerts.Path != "" {
 		orderer.TLSCACerts.Path = strings.Replace(orderer.TLSCACerts.Path, "$GOPATH",
 			os.Getenv("GOPATH"), -1)
@@ -394,7 +398,12 @@ func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, err
 	if !peerInOrg {
 		return nil, errors.Errorf("peer %s is not part of organization %s", name, org)
 	}
-	peerConfig := config.Peers[strings.ToLower(name)]
+
+	peerConfig, ok := config.Peers[strings.ToLower(name)]
+	if !ok {
+		return nil, nil
+	}
+
 	if peerConfig.TLSCACerts.Path != "" {
 		peerConfig.TLSCACerts.Path = strings.Replace(peerConfig.TLSCACerts.Path, "$GOPATH",
 			os.Getenv("GOPATH"), -1)
@@ -424,7 +433,7 @@ func (c *Config) ChannelConfig(name string) (*apiconfig.ChannelConfig, error) {
 	// viper lowercases all key maps
 	ch, ok := config.Channels[strings.ToLower(name)]
 	if !ok {
-		return nil, errors.Errorf("channel config not found for %s", name)
+		return nil, nil
 	}
 
 	return &ch, nil
@@ -434,15 +443,16 @@ func (c *Config) ChannelConfig(name string) (*apiconfig.ChannelConfig, error) {
 func (c *Config) ChannelOrderers(name string) ([]apiconfig.OrdererConfig, error) {
 	orderers := []apiconfig.OrdererConfig{}
 	channel, err := c.ChannelConfig(name)
-	if err != nil {
-		return nil, err
+	if err != nil || channel == nil {
+		return nil, errors.Errorf("Unable to retrieve channel config: %s", err)
 	}
 
 	for _, chOrderer := range channel.Orderers {
 		orderer, err := c.OrdererConfig(chOrderer)
-		if err != nil {
-			return nil, errors.Errorf("orderer config not found for channel orderer: %s", chOrderer)
+		if err != nil || orderer == nil {
+			return nil, errors.Errorf("unable to retrieve orderer config: %s", err)
 		}
+
 		orderers = append(orderers, *orderer)
 	}
 

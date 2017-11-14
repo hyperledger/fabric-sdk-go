@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package admin
 
 import (
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -120,50 +119,6 @@ func SendUpgradeCC(channel fab.Channel, chainCodeID string, args [][]byte,
 		logger.Debugf("instantiateCC didn't receive block event for txid(%s)", txID)
 		return errors.New("upgradeCC timeout")
 	}
-}
-
-// CreateOrUpdateChannel creates a channel if it does not exist or updates a channel
-// if it does and a different channelConfig is used
-func CreateOrUpdateChannel(client fab.FabricClient, ordererUser ca.User, orgUser ca.User, channel fab.Channel, channelConfig string) error {
-	logger.Debugf("***** Creating or updating channel: %s *****\n", channel.Name())
-
-	currentUser := client.UserContext()
-	defer client.SetUserContext(currentUser)
-
-	client.SetUserContext(orgUser)
-
-	configTx, err := ioutil.ReadFile(channelConfig)
-	if err != nil {
-		return errors.Wrap(err, "reading config file failed")
-	}
-
-	config, err := client.ExtractChannelConfig(configTx)
-	if err != nil {
-		return errors.WithMessage(err, "extracting channel config failed")
-	}
-
-	configSignature, err := client.SignChannelConfig(config)
-	if err != nil {
-		return errors.WithMessage(err, "signing configuration failed")
-	}
-
-	var configSignatures []*common.ConfigSignature
-	configSignatures = append(configSignatures, configSignature)
-
-	request := fab.CreateChannelRequest{
-		Name:       channel.Name(),
-		Orderer:    channel.Orderers()[0],
-		Config:     config,
-		Signatures: configSignatures,
-	}
-
-	client.SetUserContext(ordererUser)
-	_, err = client.CreateChannel(request)
-	if err != nil {
-		return errors.WithMessage(err, "CreateChannel failed")
-	}
-
-	return nil
 }
 
 // JoinChannel joins a channel that has already been created

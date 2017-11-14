@@ -16,6 +16,7 @@ import (
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
@@ -97,9 +98,10 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	}
 	setup.Channel = channel
 
-	ordererAdmin, err := sdk.NewPreEnrolledUser("ordererorg", "Admin")
+	// Channel management client is responsible for managing channels (create/update)
+	chMgmtClient, err := sdk.NewChannelMgmtClientWithOpts("Admin", &deffab.ChannelMgmtClientOpts{OrgName: "ordererorg"})
 	if err != nil {
-		return errors.WithMessage(err, "failed getting orderer admin user")
+		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
 
 	// Check if primary peer has joined channel
@@ -109,10 +111,20 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	}
 
 	if !alreadyJoined {
-		// Create, initialize and join channel
-		if err = admin.CreateOrUpdateChannel(sc, ordererAdmin, setup.AdminUser, channel, setup.ChannelConfig); err != nil {
-			return errors.WithMessage(err, "CreateChannel failed")
+
+		// Channel config signing user (has to belong to one of channel orgs)
+		org1Admin, err := sdk.NewPreEnrolledUser("Org1", "Admin")
+		if err != nil {
+			return errors.WithMessage(err, "failed getting Org1 admin user")
 		}
+
+		// Create channel (or update if it already exists)
+		req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningUser: org1Admin}
+
+		if err = chMgmtClient.SaveChannel(req); err != nil {
+			return errors.WithMessage(err, "SaveChannel failed")
+		}
+
 		time.Sleep(time.Second * 3)
 
 		if err = channel.Initialize(nil); err != nil {
@@ -252,11 +264,7 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 			return nil, errors.WithMessage(err, "reading peer config failed")
 		}
 		for _, p := range peerConfig {
-			serverHostOverride := ""
-			if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
-				serverHostOverride = str
-			}
-			endorser, err := deffab.NewPeer(p.URL, p.TLSCACerts.Path, serverHostOverride, client.Config())
+			endorser, err := deffab.NewPeerFromConfig(&p, client.Config())
 			if err != nil {
 				return nil, errors.WithMessage(err, "NewPeer failed")
 			}

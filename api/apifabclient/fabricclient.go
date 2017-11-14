@@ -35,7 +35,7 @@ type FabricClient interface {
 	NewChannel(name string) (Channel, error)
 	Channel(name string) Channel
 	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
-	SignChannelConfig(config []byte) (*common.ConfigSignature, error)
+	SignChannelConfig(config []byte, signer User) (*common.ConfigSignature, error)
 	CreateChannel(request CreateChannelRequest) (txn.TransactionID, error)
 	QueryChannelInfo(name string, peers []Peer) (Channel, error)
 	StateStore() KeyValueStore

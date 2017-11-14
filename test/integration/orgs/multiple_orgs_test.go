@@ -25,16 +25,6 @@ const (
 // on each of them, and finally invokes a transaction on an org2 peer and queries
 // the result from an org1 peer
 func TestOrgsEndToEnd(t *testing.T) {
-	// Bootstrap network
-	initializeFabricClient(t)
-	loadOrgUsers(t)
-	loadOrgPeers(t)
-	loadOrderer(t)
-	createTestChannel(t)
-	joinTestChannel(t)
-	installAndInstantiate(t)
-
-	t.Logf("peer0 is %+v, peer1 is %+v", orgTestPeer0, orgTestPeer1)
 
 	// Create SDK setup for the integration tests
 	sdkOptions := fabapi.Options{
@@ -45,6 +35,17 @@ func TestOrgsEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+
+	// Bootstrap network
+	initializeFabricClient(t)
+	loadOrgUsers(t)
+	loadOrgPeers(t)
+	loadOrderer(t)
+	createTestChannel(t, sdk)
+	joinTestChannel(t)
+	installAndInstantiate(t)
+
+	t.Logf("peer0 is %+v, peer1 is %+v", orgTestPeer0, orgTestPeer1)
 
 	// Org1 user connects to 'orgchannel'
 	chClientOrg1User, err := sdk.NewChannelClientWithOpts("orgchannel", "User1", &fabapi.ChannelClientOpts{OrgName: "Org1"})

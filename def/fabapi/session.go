@@ -11,7 +11,6 @@ import (
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 // OrgContext currently represents the clients for an organization that the app is dealing with.
@@ -24,12 +23,16 @@ type OrgContext struct {
 func NewOrgContext(factory context.OrgClientFactory, orgID string, config apiconfig.Config) (*OrgContext, error) {
 	c := OrgContext{}
 
-	// Initialize MSP client
-	client, err := factory.NewMSPClient(orgID, config)
-	if err != nil {
-		return nil, errors.WithMessage(err, "MSP client init failed")
-	}
-	c.mspClient = client
+	// TODO: Evaluate context contents during credential client design
+
+	/*
+		// Initialize MSP client
+		client, err := factory.NewMSPClient(orgID, config)
+		if err != nil {
+			return nil, errors.WithMessage(err, "MSP client init failed")
+		}
+		c.mspClient = client
+	*/
 
 	return &c, nil
 }

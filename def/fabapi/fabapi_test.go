@@ -52,6 +52,30 @@ func TestNewDefaultSDK(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
+	// Test configuration failure for channel management client (invalid user/default organisation)
+	_, err = sdk.NewChannelMgmtClient("Invalid")
+	if err == nil {
+		t.Fatalf("Should have failed to create channel client due to invalid user")
+	}
+
+	// Test valid configuration for channel management client
+	_, err = sdk.NewChannelMgmtClient("Admin")
+	if err != nil {
+		t.Fatalf("Failed to create new channel client: %s", err)
+	}
+
+	// Test configuration failure for new channel management client with options (invalid org)
+	_, err = sdk.NewChannelMgmtClientWithOpts("Admin", &ChannelMgmtClientOpts{OrgName: "Invalid"})
+	if err == nil {
+		t.Fatalf("Should have failed to create channel client due to invalid organisation")
+	}
+
+	// Test new channel management client with options (orderer admin configuration)
+	_, err = sdk.NewChannelMgmtClientWithOpts("Admin", &ChannelMgmtClientOpts{OrgName: "ordererorg"})
+	if err != nil {
+		t.Fatalf("Failed to create new channel client with opts: %s", err)
+	}
+
 }
 
 func TestNewDefaultTwoValidSDK(t *testing.T) {

@@ -27,6 +27,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+
+	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 )
 
 var org1 = "Org1"
@@ -89,7 +91,7 @@ func initializeFabricClient(t *testing.T) {
 	orgTestClient = fcClient
 }
 
-func createTestChannel(t *testing.T) {
+func createTestChannel(t *testing.T, sdk *deffab.FabricSDK) {
 	var err error
 
 	orgTestChannel, err = channel.NewChannel("orgchannel", orgTestClient)
@@ -114,11 +116,18 @@ func createTestChannel(t *testing.T) {
 		return
 	}
 
-	err = admin.CreateOrUpdateChannel(orgTestClient, ordererAdminUser, org1AdminUser,
-		orgTestChannel, "../../fixtures/channel/orgchannel.tx")
+	// Channel management client is responsible for managing channels (create/update channel)
+	chMgmtClient, err := sdk.NewChannelMgmtClientWithOpts("Admin", &deffab.ChannelMgmtClientOpts{OrgName: "ordererorg"})
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// Create channel (or update if it already exists)
+	req := chmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: "../../fixtures/channel/orgchannel.tx", SigningUser: org1AdminUser}
+	if err = chMgmtClient.SaveChannel(req); err != nil {
+		t.Fatal(err)
+	}
+
 	// Allow orderer to process channel creation
 	time.Sleep(time.Second * 3)
 }
