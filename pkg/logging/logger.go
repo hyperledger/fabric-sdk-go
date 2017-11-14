@@ -9,25 +9,42 @@ package logging
 import (
 	"sync"
 
+	"fmt"
+
+	"sync/atomic"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
 var mutex = &sync.Mutex{}
 
 //Logger basic implementation of api.Logger interface
 type Logger struct {
-	logger apilogging.Logger
-	module string
+	logger      apilogging.Logger
+	module      string
+	initialized int32
 }
 
-var moduleLevels apilogging.Leveled = &moduleLeveled{}
-var callerInfos = callerInfo{}
+var loggingProvider apilogging.LoggingProvider
 
-var customLogger apilogging.Logger
+const (
+	//loggerNotInitializedMsg is used when a logger is not initialized before logging
+	loggerNotInitializedMsg = "logger not initialized, please make sure logging.InitLogger is called."
+)
 
 // GetLogger creates and returns a Logger object based on the module name.
 func GetLogger(module string) (*Logger, error) {
-	return &Logger{logger: getDefaultLogger(module), module: module}, nil
+	mutex.Lock()
+	defer mutex.Unlock()
+	var logger apilogging.Logger
+	var initialized int32
+	if loggingProvider != nil {
+		logger = loggingProvider.GetLogger(module)
+		initialized = 1
+	}
+	return &Logger{logger: logger, module: module, initialized: initialized}, nil
 }
 
 // NewLogger is like GetLogger but panics if the logger can't be created.
@@ -39,188 +56,208 @@ func NewLogger(module string) *Logger {
 	return logger
 }
 
-//SetCustomLogger sets new custom logger which takes over logging operations already created and
-//new logger which are going to be created. Care should be taken while using this method.
-//It is recommended to add Custom loggers before making any loggings.
-func SetCustomLogger(newCustomLogger apilogging.Logger) {
+//InitLogger sets new logger which takes over logging operations.
+//It is recommended to call this function before making any loggings.
+func InitLogger(newLoggingProvider apilogging.LoggingProvider) {
 	mutex.Lock()
-	customLogger = newCustomLogger
-	mutex.Unlock()
+	defer mutex.Unlock()
+	loggingProvider = newLoggingProvider
 }
 
-//SetModuleLevels replaces existing levelled logging modules
-func SetModuleLevels(customModuleLevels apilogging.Leveled) {
-	moduleLevels = customModuleLevels
+//IsLoggerInitialized returns true logging provider is set already
+func IsLoggerInitialized() bool {
+	mutex.Lock()
+	defer mutex.Unlock()
+	return loggingProvider != nil
 }
 
 //SetLevel - setting log level for given module
-func SetLevel(level apilogging.Level, module string) {
-	moduleLevels.SetLevel(level, module)
+func SetLevel(module string, level apilogging.Level) {
+	deflogger.SetLevel(module, level)
 }
 
 //GetLevel - getting log level for given module
 func GetLevel(module string) apilogging.Level {
-	return moduleLevels.GetLevel(module)
+	return deflogger.GetLevel(module)
 }
 
 //IsEnabledFor - Check if given log level is enabled for given module
-func IsEnabledFor(level apilogging.Level, module string) bool {
-	return moduleLevels.IsEnabledFor(level, module)
+func IsEnabledFor(module string, level apilogging.Level) bool {
+	return deflogger.IsEnabledFor(module, level)
 }
 
-// IsEnabledForLogger will return true if given logging level is enabled for the given logger.
-func IsEnabledForLogger(level apilogging.Level, logger *Logger) bool {
-	return moduleLevels.IsEnabledFor(level, logger.module)
-}
-
-//ShowCallerInfo - Show caller info in log lines
-func ShowCallerInfo(module string) {
-	callerInfos.ShowCallerInfo(module)
-}
-
-//HideCallerInfo - Do not show caller info in log lines
-func HideCallerInfo(module string) {
-	callerInfos.HideCallerInfo(module)
-}
-
-//IsCallerInfoEnabled - Check if caller info is enabled for given module
-func IsCallerInfoEnabled(module string) bool {
-	return callerInfos.IsCallerInfoEnabled(module)
+// LogLevel returns the log level from a string representation.
+func LogLevel(level string) (apilogging.Level, error) {
+	return utils.LogLevel(level)
 }
 
 //Fatal calls Fatal function of underlying logger
 func (l *Logger) Fatal(args ...interface{}) {
-	l.getCurrentLogger().Fatal(args...)
+	if l.checkLogger() {
+		l.logger.Fatal(args...)
+	}
 }
 
 //Fatalf calls Fatalf function of underlying logger
 func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.getCurrentLogger().Fatalf(format, args...)
+	if l.checkLogger() {
+		l.logger.Fatalf(format, args...)
+	}
 }
 
 //Fatalln calls Fatalln function of underlying logger
 func (l *Logger) Fatalln(args ...interface{}) {
-	l.getCurrentLogger().Fatalln(args...)
+	if l.checkLogger() {
+		l.logger.Fatalln(args...)
+	}
 }
 
 //Panic calls Panic function of underlying logger
 func (l *Logger) Panic(args ...interface{}) {
-	l.getCurrentLogger().Panic(args...)
+	if l.checkLogger() {
+		l.logger.Panic(args...)
+	}
 }
 
 //Panicf calls Panicf function of underlying logger
 func (l *Logger) Panicf(format string, args ...interface{}) {
-	l.getCurrentLogger().Panicf(format, args...)
+	if l.checkLogger() {
+		l.logger.Panicf(format, args...)
+	}
 }
 
 //Panicln calls Panicln function of underlying logger
 func (l *Logger) Panicln(args ...interface{}) {
-	l.getCurrentLogger().Panicln(args...)
+	if l.checkLogger() {
+		l.logger.Panicln(args...)
+	}
 }
 
 //Print calls Print function of underlying logger
 func (l *Logger) Print(args ...interface{}) {
-	l.getCurrentLogger().Print(args...)
+	if l.checkLogger() {
+		l.logger.Print(args...)
+	}
 }
 
 //Printf calls Printf function of underlying logger
 func (l *Logger) Printf(format string, args ...interface{}) {
-	l.getCurrentLogger().Printf(format, args...)
+	if l.checkLogger() {
+		l.logger.Printf(format, args...)
+	}
 }
 
 //Println calls Println function of underlying logger
 func (l *Logger) Println(args ...interface{}) {
-	l.getCurrentLogger().Println(args...)
+	if l.checkLogger() {
+		l.logger.Println(args...)
+	}
 }
 
 //Debug calls Debug function of underlying logger
 func (l *Logger) Debug(args ...interface{}) {
-	if IsEnabledFor(DEBUG, l.module) {
-		l.getCurrentLogger().Debug(args...)
+	if l.checkLogger() {
+		l.logger.Debug(args...)
 	}
 }
 
 //Debugf calls Debugf function of underlying logger
 func (l *Logger) Debugf(format string, args ...interface{}) {
-	if IsEnabledFor(DEBUG, l.module) {
-		l.getCurrentLogger().Debugf(format, args...)
+	if l.checkLogger() {
+		l.logger.Debugf(format, args...)
 	}
 }
 
 //Debugln calls Debugln function of underlying logger
 func (l *Logger) Debugln(args ...interface{}) {
-	if IsEnabledFor(DEBUG, l.module) {
-		l.getCurrentLogger().Debugln(args...)
+	if l.checkLogger() {
+		l.logger.Debugln(args...)
 	}
 }
 
 //Info calls Info function of underlying logger
 func (l *Logger) Info(args ...interface{}) {
-	if IsEnabledFor(INFO, l.module) {
-		l.getCurrentLogger().Info(args...)
+	if l.checkLogger() {
+		l.logger.Info(args...)
 	}
 }
 
 //Infof calls Infof function of underlying logger
 func (l *Logger) Infof(format string, args ...interface{}) {
-	if IsEnabledFor(INFO, l.module) {
-		l.getCurrentLogger().Infof(format, args...)
+	if l.checkLogger() {
+		l.logger.Infof(format, args...)
 	}
 }
 
 //Infoln calls Infoln function of underlying logger
 func (l *Logger) Infoln(args ...interface{}) {
-	if IsEnabledFor(INFO, l.module) {
-		l.getCurrentLogger().Infoln(args...)
+	if l.checkLogger() {
+		l.logger.Infoln(args...)
 	}
 }
 
 //Warn calls Warn function of underlying logger
 func (l *Logger) Warn(args ...interface{}) {
-	if IsEnabledFor(WARNING, l.module) {
-		l.getCurrentLogger().Warn(args...)
+	if l.checkLogger() {
+		l.logger.Warn(args...)
 	}
 }
 
 //Warnf calls Warnf function of underlying logger
 func (l *Logger) Warnf(format string, args ...interface{}) {
-	if IsEnabledFor(WARNING, l.module) {
-		l.getCurrentLogger().Warnf(format, args...)
+	if l.checkLogger() {
+		l.logger.Warnf(format, args...)
 	}
 }
 
 //Warnln calls Warnln function of underlying logger
 func (l *Logger) Warnln(args ...interface{}) {
-	if IsEnabledFor(WARNING, l.module) {
-		l.getCurrentLogger().Warnln(args...)
+	if l.checkLogger() {
+		l.logger.Warnln(args...)
 	}
 }
 
 //Error calls Error function of underlying logger
 func (l *Logger) Error(args ...interface{}) {
-	if IsEnabledFor(ERROR, l.module) {
-		l.getCurrentLogger().Error(args...)
+	if l.checkLogger() {
+		l.logger.Error(args...)
 	}
 }
 
 //Errorf calls Errorf function of underlying logger
 func (l *Logger) Errorf(format string, args ...interface{}) {
-	if IsEnabledFor(ERROR, l.module) {
-		l.getCurrentLogger().Errorf(format, args...)
+	if l.checkLogger() {
+		l.logger.Errorf(format, args...)
 	}
 }
 
 //Errorln calls Errorln function of underlying logger
 func (l *Logger) Errorln(args ...interface{}) {
-	if IsEnabledFor(ERROR, l.module) {
-		l.getCurrentLogger().Errorln(args...)
+	if l.checkLogger() {
+		l.logger.Errorln(args...)
 	}
 }
 
-//getCurrentLogger - returns customlogger is set, or default logger
-func (l *Logger) getCurrentLogger() apilogging.Logger {
-	if customLogger != nil {
-		return customLogger
+func (l *Logger) checkLogger() bool {
+
+	if atomic.LoadInt32(&l.initialized) > 0 {
+		return true
 	}
-	return l.logger
+
+	return l.loadLoggerFromFactory()
+}
+
+func (l *Logger) loadLoggerFromFactory() bool {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if loggingProvider == nil {
+		fmt.Println(loggerNotInitializedMsg)
+		return false
+	}
+
+	l.logger = loggingProvider.GetLogger(l.module)
+	atomic.StoreInt32(&l.initialized, 1)
+
+	return true
 }

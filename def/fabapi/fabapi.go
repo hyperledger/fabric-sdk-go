@@ -16,6 +16,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
@@ -70,6 +72,11 @@ func NewSDK(options Options) (*FabricSDK, error) {
 
 	sdk := FabricSDK{
 		Options: options,
+	}
+
+	//Initialize logging provider with default logging provider if not yet initialized
+	if !logging.IsLoggerInitialized() {
+		logging.InitLogger(deflogger.GetLoggingProvider())
 	}
 
 	// Initialize default factories (if needed)
