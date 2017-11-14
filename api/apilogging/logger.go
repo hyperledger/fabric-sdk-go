@@ -54,9 +54,16 @@ type Logger interface {
 // Level defines all available log levels for log messages.
 type Level int
 
-// Leveled interface is the interface required to be able to add leveled logging.
-type Leveled interface {
-	GetLevel(string) Level
-	SetLevel(Level, string)
-	IsEnabledFor(Level, string) bool
+// Log levels.
+const (
+	CRITICAL Level = iota
+	ERROR
+	WARNING
+	INFO
+	DEBUG
+)
+
+//LoggingProvider - logging provider factory
+type LoggingProvider interface {
+	GetLogger(module string) Logger
 }

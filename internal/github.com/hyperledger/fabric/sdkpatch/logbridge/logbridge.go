@@ -52,5 +52,5 @@ func (l *Logger) Warning(args ...interface{}) {
 
 // IsEnabledFor bridges calls to the Go SDK logger's IsEnabledFor.
 func (l *Logger) IsEnabledFor(level apilogging.Level) bool {
-	return logging.IsEnabledFor(level, l.module)
+	return logging.IsEnabledFor(l.module, level)
 }

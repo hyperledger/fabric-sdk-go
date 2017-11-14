@@ -76,7 +76,7 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 	}
 
 	loggingLevelString := myViper.GetString("client.logging.level")
-	logLevel := logging.INFO
+	logLevel := apilogging.INFO
 	if loggingLevelString != "" {
 		logger.Infof("fabric_sdk_go Logging level from the config: %v", loggingLevelString)
 		var err error
@@ -85,7 +85,7 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 			panic(err)
 		}
 	}
-	logging.SetLevel(apilogging.Level(logLevel), "fabric_sdk_go")
+	logging.SetLevel("fabric_sdk_go", logLevel)
 
 	logger.Infof("fabric_sdk_go Logging level is finally set to: %s", logging.GetLevel("fabric_sdk_go"))
 	return &Config{tlsCertPool: x509.NewCertPool(), configViper: myViper}, nil
