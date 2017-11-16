@@ -273,7 +273,7 @@ func (eventHub *EventHub) Recv(msg *pb.Event) (bool, error) {
 		switch msg.Event.(type) {
 		case *pb.Event_Block:
 			blockEvent := msg.Event.(*pb.Event_Block)
-			logger.Debugf("Recv blockEvent:%v\n", blockEvent)
+			logger.Debugf("Recv blockEvent for block number [%d]", blockEvent.Block.Header.Number)
 			for _, v := range eventHub.getBlockRegistrants() {
 				v(blockEvent.Block)
 			}
@@ -287,7 +287,7 @@ func (eventHub *EventHub) Recv(msg *pb.Event) (bool, error) {
 			return
 		case *pb.Event_ChaincodeEvent:
 			ccEvent := msg.Event.(*pb.Event_ChaincodeEvent)
-			logger.Debugf("Recv ccEvent:%v\n", ccEvent)
+			logger.Debugf("Recv ccEvent for txID [%s]", ccEvent.ChaincodeEvent.TxId)
 			if ccEvent != nil {
 				eventHub.notifyChaincodeRegistrants("", ccEvent.ChaincodeEvent, false)
 			}
@@ -387,7 +387,6 @@ func (eventHub *EventHub) UnregisterTxEvent(txnID apitxn.TransactionID) {
  * from the fabric
  */
 func (eventHub *EventHub) txCallback(block *common.Block) {
-	logger.Debugf("txCallback block=%v\n", block)
 	txFilter := util.TxValidationFlags(block.Metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER])
 	for i, v := range block.Data.Data {
 
