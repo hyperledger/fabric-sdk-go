@@ -23,15 +23,15 @@ package lib
 import (
 	"net/http"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
-func newIdentity(client *Client, name string, key bccsp.Key, cert []byte) *Identity {
+func newIdentity(client *Client, name string, key apicryptosuite.Key, cert []byte) *Identity {
 	id := new(Identity)
 	id.name = name
 	id.ecert = newSigner(key, cert, id)
@@ -49,7 +49,7 @@ type Identity struct {
 	name   string
 	ecert  *Signer
 	client *Client
-	CSP    bccsp.BCCSP
+	CSP    apicryptosuite.CryptoSuite
 }
 
 // GetName returns the identity name

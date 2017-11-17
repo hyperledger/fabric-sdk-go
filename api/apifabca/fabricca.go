@@ -7,15 +7,15 @@ SPDX-License-Identifier: Apache-2.0
 package apifabca
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 )
 
 // FabricCAClient is the client interface for fabric-ca
 type FabricCAClient interface {
 	CAName() string
-	Enroll(enrollmentID string, enrollmentSecret string) (bccsp.Key, []byte, error)
+	Enroll(enrollmentID string, enrollmentSecret string) (apicryptosuite.Key, []byte, error)
 	// Reenroll to renew user's enrollment certificate
-	Reenroll(user User) (bccsp.Key, []byte, error)
+	Reenroll(user User) (apicryptosuite.Key, []byte, error)
 	Register(registrar User, request *RegistrationRequest) (string, error)
 	Revoke(registrar User, request *RevocationRequest) error
 }

@@ -14,10 +14,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -28,13 +28,13 @@ type CredentialManager struct {
 	keyDir         string
 	certDir        string
 	config         apiconfig.Config
-	cryptoProvider bccsp.BCCSP
+	cryptoProvider apicryptosuite.CryptoSuite
 }
 
 // NewCredentialManager Constructor for a credential manager.
 // @param {string} orgName - organisation id
 // @returns {CredentialManager} new credential manager
-func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider bccsp.BCCSP) (apifabclient.CredentialManager, error) {
+func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (apifabclient.CredentialManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {

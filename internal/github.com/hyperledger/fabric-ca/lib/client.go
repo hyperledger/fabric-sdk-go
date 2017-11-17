@@ -33,6 +33,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	cfsslapi "github.com/cloudflare/cfssl/api"
@@ -41,7 +42,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/tls"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -56,7 +56,7 @@ type Client struct {
 	// File and directory paths
 	keyFile, certFile, caCertsDir string
 	// The crypto service provider (BCCSP)
-	csp bccsp.BCCSP
+	csp apicryptosuite.CryptoSuite
 	// HTTP client associated with this Fabric CA client
 	httpClient *http.Client
 }
@@ -210,7 +210,7 @@ func (c *Client) Enroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error)
 // @param result The result from server
 // @param id Name of identity being enrolled or reenrolled
 // @param key The private key which was used to sign the request
-func (c *Client) newEnrollmentResponse(result *enrollmentResponseNet, id string, key bccsp.Key) (*EnrollmentResponse, error) {
+func (c *Client) newEnrollmentResponse(result *enrollmentResponseNet, id string, key apicryptosuite.Key) (*EnrollmentResponse, error) {
 	log.Debugf("newEnrollmentResponse %s", id)
 	certByte, err := util.B64Decode(result.Cert)
 	if err != nil {
@@ -227,7 +227,7 @@ func (c *Client) newEnrollmentResponse(result *enrollmentResponseNet, id string,
 }
 
 // GenCSR generates a CSR (Certificate Signing Request)
-func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, bccsp.Key, error) {
+func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, apicryptosuite.Key, error) {
 	log.Debugf("GenCSR %+v", req)
 
 	err := c.Init()
@@ -285,7 +285,7 @@ func (c *Client) newCertificateRequest(req *api.CSRInfo) *csr.CertificateRequest
 }
 
 // NewIdentity creates a new identity
-func (c *Client) NewIdentity(key bccsp.Key, cert []byte) (*Identity, error) {
+func (c *Client) NewIdentity(key apicryptosuite.Key, cert []byte) (*Identity, error) {
 	name, err := util.GetEnrollmentIDFromPEM(cert)
 	if err != nil {
 		return nil, err

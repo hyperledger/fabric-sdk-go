@@ -8,6 +8,7 @@ package signingmgr
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
@@ -15,21 +16,21 @@ import (
 
 // SigningManager is used for signing objects with private key
 type SigningManager struct {
-	cryptoProvider bccsp.BCCSP
-	hashOpts       bccsp.HashOpts
-	signerOpts     bccsp.SignerOpts
+	cryptoProvider apicryptosuite.CryptoSuite
+	hashOpts       apicryptosuite.HashOpts
+	signerOpts     apicryptosuite.SignerOpts
 }
 
 // NewSigningManager Constructor for a signing manager.
 // @param {BCCSP} cryptoProvider - crypto provider
 // @param {Config} config - configuration provider
 // @returns {SigningManager} new signing manager
-func NewSigningManager(cryptoProvider bccsp.BCCSP, config apiconfig.Config) (*SigningManager, error) {
+func NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (*SigningManager, error) {
 	return &SigningManager{cryptoProvider: cryptoProvider, hashOpts: &bccsp.SHAOpts{}}, nil
 }
 
 // Sign will sign the given object using provided key
-func (mgr *SigningManager) Sign(object []byte, key bccsp.Key) ([]byte, error) {
+func (mgr *SigningManager) Sign(object []byte, key apicryptosuite.Key) ([]byte, error) {
 
 	if object == nil || len(object) == 0 {
 		return nil, errors.New("object (to sign) required")

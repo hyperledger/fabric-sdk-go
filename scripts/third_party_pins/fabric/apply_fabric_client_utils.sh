@@ -15,6 +15,8 @@ GOIMPORTS_CMD=goimports
 GOFILTER_CMD="go run scripts/_go/cmd/gofilter/gofilter.go"
 
 declare -a PKGS=(
+    "bccsp/signer"
+
     "common/crypto"
     "common/errors"
     "common/util"
@@ -38,6 +40,8 @@ declare -a PKGS=(
 )
 
 declare -a FILES=(
+    "bccsp/signer/signer.go"
+
     "common/crypto/random.go"
     "common/crypto/signer.go"
 
@@ -100,6 +104,13 @@ gofilter() {
 
 echo "Filtering Go sources for allowed functions ..."
 FILTERS_ENABLED="fn"
+
+FILTER_FILENAME="bccsp/signer/signer.go"
+FILTER_FN=New,Public,Sign
+gofilter
+sed -i '/"github.com\// a "github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="common/crypto/random.go"
 FILTER_FN="GetRandomNonce,GetRandomBytes"
@@ -197,6 +208,8 @@ FILTER_FN+=",newBccspMsp,IsWellFormed,GetVersion"
 gofilter
 # TODO - adapt to msp/factory.go rather than changing newBccspMsp
 sed -i'' -e 's/newBccspMsp/NewBccspMsp/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i '/m "github.com\// a cryptosuite "github.com\/hyperledger\/fabric-sdk-go\/pkg\/cryptosuite\/bccsp"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/signer.New(msp.bccsp, privKey)/signer.New(cryptosuite.GetSuite(msp.bccsp), cryptosuite.GetKey(privKey))/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/mspimplsetup.go"
 FILTER_FN="setupCrypto,setupCAs,setupAdmins,setupCRLs,finalizeSetupCAs,setupSigningIdentity"

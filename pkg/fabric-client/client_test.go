@@ -14,6 +14,7 @@ import (
 	"time"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -31,9 +32,9 @@ func TestClientMethods(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
-	cryptoSuite := bccspFactory.GetDefault()
+	cryptoSuiteProvider := bccspFactory.GetDefault()
 
-	client.SetCryptoSuite(cryptoSuite)
+	client.SetCryptoSuite(cryptosuite.GetSuite(cryptoSuiteProvider))
 	if client.CryptoSuite() == nil {
 		t.Fatalf("Client CryptoSuite should not be nil after setCryptoSuite")
 	}

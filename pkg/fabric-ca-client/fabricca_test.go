@@ -16,13 +16,16 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
 var configImp config.Config
@@ -32,6 +35,9 @@ var wrongCAServerURL = "http://localhost:8091"
 
 // TestMain Load testing config
 func TestMain(m *testing.M) {
+	if !logging.IsLoggerInitialized() {
+		logging.InitLogger(deflogger.GetLoggingProvider())
+	}
 	configImp = mocks.NewMockConfig(caServerURL)
 	// Start Http Server
 	go mocks.StartFabricCAMockServer(strings.TrimPrefix(caServerURL, "http://"))
@@ -116,7 +122,7 @@ func TestRegister(t *testing.T) {
 	}
 
 	user.SetEnrollmentCertificate(readCert(t))
-	key, err := bccspFactory.GetDefault().KeyGen(&bccsp.ECDSAP256KeyGenOpts{})
+	key, err := cryptosuite.GetSuite(bccspFactory.GetDefault()).KeyGen(&bccsp.ECDSAP256KeyGenOpts{})
 	if err != nil {
 		t.Fatalf("KeyGen return error %v", err)
 	}
@@ -148,7 +154,7 @@ func TestRevoke(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
 	}
-	mockKey := &mocks.MockKey{}
+	mockKey := cryptosuite.GetKey(&mocks.MockKey{})
 	user := mocks.NewMockUser("test")
 	// Revoke with nil request
 	err = fabricCAClient.Revoke(user, nil)
@@ -209,7 +215,7 @@ func TestReenroll(t *testing.T) {
 	}
 	// Reenroll with appropriate user
 	user.SetEnrollmentCertificate(readCert(t))
-	key, err := bccspFactory.GetDefault().KeyGen(&bccsp.ECDSAP256KeyGenOpts{})
+	key, err := cryptosuite.GetSuite(bccspFactory.GetDefault()).KeyGen(&bccsp.ECDSAP256KeyGenOpts{})
 	if err != nil {
 		t.Fatalf("KeyGen return error %v", err)
 	}

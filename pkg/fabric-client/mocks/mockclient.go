@@ -15,14 +15,14 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
 // MockClient ...
 type MockClient struct {
 	channels       map[string]fab.Channel
-	cryptoSuite    bccsp.BCCSP
+	cryptoSuite    apicryptosuite.CryptoSuite
 	stateStore     fab.KeyValueStore
 	userContext    fab.User
 	config         config.Config
@@ -78,12 +78,12 @@ func (c *MockClient) StateStore() fab.KeyValueStore {
 }
 
 // SetCryptoSuite ...
-func (c *MockClient) SetCryptoSuite(cryptoSuite bccsp.BCCSP) {
+func (c *MockClient) SetCryptoSuite(cryptoSuite apicryptosuite.CryptoSuite) {
 	c.cryptoSuite = cryptoSuite
 }
 
 // CryptoSuite ...
-func (c *MockClient) CryptoSuite() bccsp.BCCSP {
+func (c *MockClient) CryptoSuite() apicryptosuite.CryptoSuite {
 	return c.cryptoSuite
 }
 

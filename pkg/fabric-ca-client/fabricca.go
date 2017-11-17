@@ -15,7 +15,8 @@ import (
 	fabric_ca "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
+
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -100,7 +101,7 @@ func (fabricCAServices *FabricCA) CAName() string {
 // enrollmentID The registered ID to use for enrollment
 // enrollmentSecret The secret associated with the enrollment ID
 // Returns X509 certificate
-func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret string) (bccsp.Key, []byte, error) {
+func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret string) (apicryptosuite.Key, []byte, error) {
 	if enrollmentID == "" {
 		return nil, nil, errors.New("enrollmentID required")
 	}
@@ -121,7 +122,7 @@ func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret s
 
 // Reenroll an enrolled user in order to receive a signed X509 certificate
 // Returns X509 certificate
-func (fabricCAServices *FabricCA) Reenroll(user sdkApi.User) (bccsp.Key, []byte, error) {
+func (fabricCAServices *FabricCA) Reenroll(user sdkApi.User) (apicryptosuite.Key, []byte, error) {
 	if user == nil {
 		return nil, nil, errors.New("user required")
 	}

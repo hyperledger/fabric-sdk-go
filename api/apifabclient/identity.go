@@ -6,9 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package apifabclient
 
-import (
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
-)
+import "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 
 // User represents users that have been enrolled and represented by
 // an enrollment certificate (ECert) and a signing key. The ECert must have
@@ -28,7 +26,7 @@ type User interface {
 	Name() string
 	MspID() string
 	EnrollmentCertificate() []byte
-	PrivateKey() bccsp.Key
+	PrivateKey() apicryptosuite.Key
 	Roles() []string
 	Identity() ([]byte, error)
 }

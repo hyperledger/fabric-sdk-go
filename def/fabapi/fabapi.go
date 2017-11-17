@@ -12,13 +12,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 )
@@ -48,7 +48,7 @@ type FabricSDK struct {
 	// Implementations of client functionality (defaults are used if not specified)
 	configProvider    apiconfig.Config
 	stateStore        apifabclient.KeyValueStore
-	cryptoSuite       bccsp.BCCSP // TODO - maybe copy this interface into the API package
+	cryptoSuite       apicryptosuite.CryptoSuite
 	discoveryProvider apifabclient.DiscoveryProvider
 	selectionProvider apifabclient.SelectionProvider
 	signingManager    apifabclient.SigningManager
@@ -106,7 +106,7 @@ func NewSDK(options Options) (*FabricSDK, error) {
 	sdk.configProvider = config
 
 	// Initialize crypto provider
-	cryptosuite, err := sdk.ProviderFactory.NewCryptoSuiteProvider(sdk.configProvider.CSPConfig())
+	cryptosuite, err := sdk.ProviderFactory.NewCryptoSuiteProvider(sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize crypto suite")
 	}
@@ -155,7 +155,7 @@ func (sdk *FabricSDK) ConfigProvider() apiconfig.Config {
 }
 
 // CryptoSuiteProvider returns the BCCSP provider of sdk.
-func (sdk *FabricSDK) CryptoSuiteProvider() bccsp.BCCSP {
+func (sdk *FabricSDK) CryptoSuiteProvider() apicryptosuite.CryptoSuite {
 	return sdk.cryptoSuite
 }
 

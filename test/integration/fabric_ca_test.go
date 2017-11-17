@@ -22,6 +22,7 @@ import (
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 )
 
@@ -48,9 +49,9 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
 
-	cryptoSuite := bccspFactory.GetDefault()
+	cryptoSuiteProvider := cryptosuite.GetSuite(bccspFactory.GetDefault())
 
-	client.SetCryptoSuite(cryptoSuite)
+	client.SetCryptoSuite(cryptoSuiteProvider)
 	stateStore, err := kvs.CreateNewFileKeyValueStore("/tmp/enroll_user")
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package cryptosuite
+package bccsp
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"

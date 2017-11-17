@@ -26,11 +26,13 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
@@ -62,11 +64,11 @@ type KeyCertFiles struct {
 }
 
 // GetClientTLSConfig creates a tls.Config object from certs and roots
-func GetClientTLSConfig(cfg *ClientTLSConfig, csp bccsp.BCCSP) (*tls.Config, error) {
+func GetClientTLSConfig(cfg *ClientTLSConfig, csp apicryptosuite.CryptoSuite) (*tls.Config, error) {
 	var certs []tls.Certificate
 
 	if csp == nil {
-		csp = factory.GetDefault()
+		csp = cryptosuite.GetSuite(factory.GetDefault())
 	}
 
 	log.Debugf("CA Files: %+v\n", cfg.CertFiles)

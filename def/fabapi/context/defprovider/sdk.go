@@ -10,14 +10,15 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery/staticdiscovery"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/staticselection"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
@@ -55,12 +56,16 @@ func (f *DefaultProviderFactory) NewStateStoreProvider(o opt.StateStoreOpts, con
 }
 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
-func (f *DefaultProviderFactory) NewCryptoSuiteProvider(config *bccspFactory.FactoryOpts) (bccsp.BCCSP, error) {
-	return bccspFactory.GetBCCSPFromOpts(config)
+func (f *DefaultProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
+	bccspProvider, err := bccspFactory.GetBCCSPFromOpts(config.CSPConfig())
+	if err != nil {
+		return nil, err
+	}
+	return cryptosuite.GetSuite(bccspProvider), nil
 }
 
 // NewSigningManager returns a new default implementation of signing manager
-func (f *DefaultProviderFactory) NewSigningManager(cryptoProvider bccsp.BCCSP, config apiconfig.Config) (fab.SigningManager, error) {
+func (f *DefaultProviderFactory) NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error) {
 	return signingMgr.NewSigningManager(cryptoProvider, config)
 }
 

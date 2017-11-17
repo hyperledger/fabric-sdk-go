@@ -8,13 +8,13 @@ package context
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
 // SDK represents the configuration context
 type SDK interface {
-	CryptoSuiteProvider() bccsp.BCCSP
+	CryptoSuiteProvider() apicryptosuite.CryptoSuite
 	StateStoreProvider() fab.KeyValueStore
 	ConfigProvider() apiconfig.Config
 	DiscoveryProvider() fab.DiscoveryProvider

@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
@@ -29,7 +30,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -37,7 +37,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 // Client enables access to a Fabric network.
 type Client struct {
 	channels       map[string]fab.Channel
-	cryptoSuite    bccsp.BCCSP
+	cryptoSuite    apicryptosuite.CryptoSuite
 	stateStore     fab.KeyValueStore
 	userContext    fab.User
 	config         config.Config
@@ -105,12 +105,12 @@ func (c *Client) StateStore() fab.KeyValueStore {
 }
 
 // SetCryptoSuite is a convenience method for obtaining the state store object in use for this client.
-func (c *Client) SetCryptoSuite(cryptoSuite bccsp.BCCSP) {
+func (c *Client) SetCryptoSuite(cryptoSuite apicryptosuite.CryptoSuite) {
 	c.cryptoSuite = cryptoSuite
 }
 
 // CryptoSuite is a convenience method for obtaining the CryptoSuite object in use for this client.
-func (c *Client) CryptoSuite() bccsp.BCCSP {
+func (c *Client) CryptoSuite() apicryptosuite.CryptoSuite {
 	return c.cryptoSuite
 }
 

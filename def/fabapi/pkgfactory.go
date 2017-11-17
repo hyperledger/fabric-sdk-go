@@ -8,9 +8,11 @@ package fabapi
 
 import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
@@ -20,7 +22,6 @@ import (
 	ordererImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
-	bccsp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
@@ -28,13 +29,10 @@ import (
 
 // NewClient returns a new default implementation of the Client interface using the config provided.
 // It will save the provided user if requested into the state store.
-func NewClient(user fabca.User, skipUserPersistence bool, stateStorePath string, cryptosuite bccsp.BCCSP, config config.Config) (fab.FabricClient, error) {
+func NewClient(user fabca.User, skipUserPersistence bool, stateStorePath string, cryptosuiteprovider apicryptosuite.CryptoSuite, config config.Config) (fab.FabricClient, error) {
 	client := clientImpl.NewClient(config)
 
-	if cryptosuite == nil {
-		cryptosuite = bccspFactory.GetDefault()
-	}
-	client.SetCryptoSuite(cryptosuite)
+	client.SetCryptoSuite(cryptosuiteprovider)
 	if stateStorePath != "" {
 		stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
 		if err != nil {
@@ -44,7 +42,7 @@ func NewClient(user fabca.User, skipUserPersistence bool, stateStorePath string,
 	}
 	client.SaveUserToStateStore(user, skipUserPersistence)
 
-	signingMgr, err := signingmgr.NewSigningManager(cryptosuite, config)
+	signingMgr, err := signingmgr.NewSigningManager(cryptosuiteprovider, config)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewSigningManager failed")
 	}
@@ -57,13 +55,10 @@ func NewClient(user fabca.User, skipUserPersistence bool, stateStorePath string,
 // NewClientWithUser returns a new default implementation of the Client interface.
 // It creates a default implementation of User, enrolls the user, and saves it to the state store.
 func NewClientWithUser(name string, pwd string, orgName string,
-	stateStorePath string, cryptosuite bccsp.BCCSP, config config.Config, msp fabca.FabricCAClient) (fab.FabricClient, error) {
+	stateStorePath string, cryptosuiteprovider apicryptosuite.CryptoSuite, config config.Config, msp fabca.FabricCAClient) (fab.FabricClient, error) {
 	client := clientImpl.NewClient(config)
 
-	if cryptosuite == nil {
-		cryptosuite = bccspFactory.GetDefault()
-	}
-	client.SetCryptoSuite(cryptosuite)
+	client.SetCryptoSuite(cryptosuiteprovider)
 	stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
 	if err != nil {
 		return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
@@ -151,13 +146,17 @@ func NewKVStore(stateStorePath string) (fab.KeyValueStore, error) {
 	return stateStore, nil
 }
 
-// NewCryptoSuite returns a new default implementation of BCCSP
-func NewCryptoSuite(config *bccspFactory.FactoryOpts) (bccsp.BCCSP, error) {
-	return bccspFactory.GetBCCSPFromOpts(config)
+// NewCryptoSuite returns a new default implementation of CryptoSuite
+func NewCryptoSuite(config config.Config) (apicryptosuite.CryptoSuite, error) {
+	bccsp, err := bccspFactory.GetBCCSPFromOpts(config.CSPConfig())
+	if err != nil {
+		return nil, err
+	}
+	return cryptosuite.GetSuite(bccsp), nil
 }
 
 // NewSigningManager returns a new default implementation of signing manager
-func NewSigningManager(cryptoProvider bccsp.BCCSP, config config.Config) (fab.SigningManager, error) {
+func NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config config.Config) (fab.SigningManager, error) {
 	return signingmgr.NewSigningManager(cryptoProvider, config)
 }
 

@@ -8,21 +8,20 @@ package context
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // SDKProviderFactory allows overriding default providers of an SDK
 type SDKProviderFactory interface {
 	NewConfigProvider(o opt.ConfigOpts, a opt.SDKOpts) (apiconfig.Config, error)
 	NewStateStoreProvider(o opt.StateStoreOpts, config apiconfig.Config) (fab.KeyValueStore, error)
-	NewCryptoSuiteProvider(config *bccspFactory.FactoryOpts) (bccsp.BCCSP, error)
-	NewSigningManager(cryptoProvider bccsp.BCCSP, config apiconfig.Config) (fab.SigningManager, error)
+	NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error)
+	NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error)
 	NewDiscoveryProvider(config apiconfig.Config) (fab.DiscoveryProvider, error)
 	NewSelectionProvider(config apiconfig.Config) (fab.SelectionProvider, error)
 }
@@ -31,7 +30,7 @@ type SDKProviderFactory interface {
 // Currently, a context is created for each organization that the client app needs.
 type OrgClientFactory interface {
 	NewMSPClient(orgName string, config apiconfig.Config) (fabca.FabricCAClient, error)
-	NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider bccsp.BCCSP) (fab.CredentialManager, error)
+	NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fab.CredentialManager, error)
 }
 
 // SessionClientFactory allows overriding default clients and providers of a session

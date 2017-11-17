@@ -11,6 +11,7 @@ import (
 
 	"io/ioutil"
 
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client/mocks"
 )
 
@@ -36,7 +37,7 @@ func TestUserMethods(t *testing.T) {
 	}
 
 	// test PrivateKey
-	privateKey := &mocks.MockKey{}
+	privateKey := cryptosuite.GetKey(&mocks.MockKey{})
 
 	user.SetPrivateKey(privateKey)
 

@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"testing"
 
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client/mocks"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
@@ -36,7 +37,7 @@ func TestSigningManager(t *testing.T) {
 		t.Fatalf("Should have failed to sign object with nil key")
 	}
 
-	signedObj, err := signingMgr.Sign([]byte("Hello"), &mocks.MockKey{})
+	signedObj, err := signingMgr.Sign([]byte("Hello"), cryptosuite.GetKey(&mocks.MockKey{}))
 	if err != nil {
 		t.Fatalf("Failed to sign object: %s", err)
 	}

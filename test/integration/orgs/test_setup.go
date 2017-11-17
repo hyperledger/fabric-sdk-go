@@ -16,6 +16,7 @@ import (
 
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
@@ -77,10 +78,10 @@ func initializeFabricClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cryptoSuite := factory.GetDefault()
-	fcClient.SetCryptoSuite(cryptoSuite)
+	cryptoSuiteprovider := cryptosuite.GetSuite(factory.GetDefault())
+	fcClient.SetCryptoSuite(cryptoSuiteprovider)
 
-	signingMgr, err := signingmgr.NewSigningManager(cryptoSuite, configImpl)
+	signingMgr, err := signingmgr.NewSigningManager(cryptoSuiteprovider, configImpl)
 	if err != nil {
 		t.Fatal(err)
 	}

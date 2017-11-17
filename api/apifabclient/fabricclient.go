@@ -8,8 +8,8 @@ package apifabclient
 
 import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig" // TODO: Think about package hierarchy
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -40,7 +40,7 @@ type FabricClient interface {
 	QueryChannelInfo(name string, peers []Peer) (Channel, error)
 	StateStore() KeyValueStore
 	SigningManager() SigningManager
-	CryptoSuite() bccsp.BCCSP
+	CryptoSuite() apicryptosuite.CryptoSuite
 	SaveUserToStateStore(user User, skipPersistence bool) error
 	LoadUserFromStateStore(name string) (User, error)
 	InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string, chaincodePackage []byte, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, string, error)
