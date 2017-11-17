@@ -76,6 +76,11 @@ type PeerChannelConfig struct {
 // ChannelPeer combines channel peer info with raw peerConfig info
 type ChannelPeer struct {
 	PeerChannelConfig
+	NetworkPeer
+}
+
+// NetworkPeer combines peer info with MSP info
+type NetworkPeer struct {
 	PeerConfig
 	MspID string
 }

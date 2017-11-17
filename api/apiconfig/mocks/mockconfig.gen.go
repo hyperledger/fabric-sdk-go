@@ -226,6 +226,19 @@ func (mr *MockConfigMockRecorder) NetworkConfig() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NetworkConfig", reflect.TypeOf((*MockConfig)(nil).NetworkConfig))
 }
 
+// NetworkPeers mocks base method
+func (m *MockConfig) NetworkPeers() ([]apiconfig.NetworkPeer, error) {
+	ret := m.ctrl.Call(m, "NetworkPeers")
+	ret0, _ := ret[0].([]apiconfig.NetworkPeer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NetworkPeers indicates an expected call of NetworkPeers
+func (mr *MockConfigMockRecorder) NetworkPeers() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NetworkPeers", reflect.TypeOf((*MockConfig)(nil).NetworkPeers))
+}
+
 // OrdererConfig mocks base method
 func (m *MockConfig) OrdererConfig(arg0 string) (*apiconfig.OrdererConfig, error) {
 	ret := m.ctrl.Call(m, "OrdererConfig", arg0)
@@ -263,6 +276,19 @@ func (m *MockConfig) PeerConfig(arg0, arg1 string) (*apiconfig.PeerConfig, error
 // PeerConfig indicates an expected call of PeerConfig
 func (mr *MockConfigMockRecorder) PeerConfig(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerConfig", reflect.TypeOf((*MockConfig)(nil).PeerConfig), arg0, arg1)
+}
+
+// PeerMspID mocks base method
+func (m *MockConfig) PeerMspID(arg0 string) (string, error) {
+	ret := m.ctrl.Call(m, "PeerMspID", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PeerMspID indicates an expected call of PeerMspID
+func (mr *MockConfigMockRecorder) PeerMspID(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerMspID", reflect.TypeOf((*MockConfig)(nil).PeerMspID), arg0)
 }
 
 // PeersConfig mocks base method

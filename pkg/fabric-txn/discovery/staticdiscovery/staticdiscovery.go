@@ -37,29 +37,47 @@ func NewDiscoveryProvider(config apiconfig.Config) (*DiscoveryProvider, error) {
 // NewDiscoveryService return discovery service for specific channel
 func (dp *DiscoveryProvider) NewDiscoveryService(channelID string) (apifabclient.DiscoveryService, error) {
 
-	peerConfig, err := dp.config.ChannelPeers(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to read configuration for channel peers")
-	}
-
 	peers := []apifabclient.Peer{}
 
-	for _, p := range peerConfig {
+	if channelID != "" {
 
-		newPeer, err := peer.NewPeerFromConfig(&p.PeerConfig, dp.config)
-		if err != nil || newPeer == nil {
-			return nil, errors.WithMessage(err, "NewPeer failed")
+		// Use configured channel peers
+		chPeers, err := dp.config.ChannelPeers(channelID)
+		if err != nil {
+			return nil, errors.WithMessage(err, "unable to read configuration for channel peers")
 		}
 
-		newPeer.SetMSPID(p.MspID)
+		for _, p := range chPeers {
 
-		peers = append(peers, newPeer)
+			newPeer, err := peer.NewPeerFromConfig(&p.NetworkPeer, dp.config)
+			if err != nil || newPeer == nil {
+				return nil, errors.WithMessage(err, "NewPeer failed")
+			}
+
+			peers = append(peers, newPeer)
+		}
+
+	} else { // channel id is empty, return all configured peers
+
+		netPeers, err := dp.config.NetworkPeers()
+		if err != nil {
+			return nil, errors.WithMessage(err, "unable to read configuration for network peers")
+		}
+
+		for _, p := range netPeers {
+			newPeer, err := peer.NewPeerFromConfig(&p, dp.config)
+			if err != nil || newPeer == nil {
+				return nil, errors.WithMessage(err, "NewPeer failed")
+			}
+
+			peers = append(peers, newPeer)
+		}
 	}
 
 	return &discoveryService{config: dp.config, peers: peers}, nil
 }
 
-// GetPeers is used to get peers (discovery service is channel based)
+// GetPeers is used to get peers
 func (ds *discoveryService) GetPeers() ([]apifabclient.Peer, error) {
 
 	return ds.peers, nil

@@ -10,7 +10,6 @@ import (
 	"os"
 	"time"
 
-	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -119,45 +118,6 @@ func SendUpgradeCC(channel fab.Channel, chainCodeID string, args [][]byte,
 		logger.Debugf("instantiateCC didn't receive block event for txid(%s)", txID)
 		return errors.New("upgradeCC timeout")
 	}
-}
-
-// JoinChannel joins a channel that has already been created
-func JoinChannel(client fab.FabricClient, orgUser ca.User, channel fab.Channel) error {
-	currentUser := client.UserContext()
-	defer client.SetUserContext(currentUser)
-
-	client.SetUserContext(orgUser)
-
-	txnid, err := client.NewTxnID()
-	if err != nil {
-		return errors.WithMessage(err, "NewTxnID failed")
-	}
-
-	genesisBlockRequest := &fab.GenesisBlockRequest{
-		TxnID: txnid,
-	}
-	genesisBlock, err := channel.GenesisBlock(genesisBlockRequest)
-	if err != nil {
-		return errors.WithMessage(err, "genesis block retrieval failed")
-	}
-
-	txnid2, err := client.NewTxnID()
-	if err != nil {
-		return errors.WithMessage(err, "NewTxnID failed")
-	}
-
-	joinChannelRequest := &fab.JoinChannelRequest{
-		Targets:      channel.Peers(),
-		GenesisBlock: genesisBlock,
-		TxnID:        txnid2,
-	}
-
-	err = channel.JoinChannel(joinChannelRequest)
-	if err != nil {
-		return errors.WithMessage(err, "join channel failed")
-	}
-
-	return nil
 }
 
 // ChangeGOPATHToDeploy changes go path to fixtures folder

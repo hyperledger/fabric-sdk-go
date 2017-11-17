@@ -49,7 +49,15 @@ func NewMockInvalidClient() *MockClient {
 
 // NewChannel ...
 func (c *MockClient) NewChannel(name string) (fab.Channel, error) {
+	if name == "error" {
+		return nil, errors.New("Genererate error in new channel")
+	}
 	return nil, nil
+}
+
+// SetChannel convenience method to set channel
+func (c *MockClient) SetChannel(id string, channel fab.Channel) {
+	c.channels[id] = channel
 }
 
 // Channel ...

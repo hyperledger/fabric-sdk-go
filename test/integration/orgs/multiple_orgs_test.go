@@ -42,7 +42,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	loadOrgPeers(t)
 	loadOrderer(t)
 	createTestChannel(t, sdk)
-	joinTestChannel(t)
+	joinTestChannel(t, sdk)
 	installAndInstantiate(t)
 
 	t.Logf("peer0 is %+v, peer1 is %+v", orgTestPeer0, orgTestPeer1)

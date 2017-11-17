@@ -176,7 +176,7 @@ func NewPeer(url string, certificate string, serverHostOverride string, config c
 }
 
 // NewPeerFromConfig returns a new default implementation of Peer based configuration
-func NewPeerFromConfig(peerCfg *config.PeerConfig, config config.Config) (fab.Peer, error) {
+func NewPeerFromConfig(peerCfg *config.NetworkPeer, config config.Config) (fab.Peer, error) {
 	return peerImpl.NewPeerFromConfig(peerCfg, config)
 }
 

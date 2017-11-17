@@ -47,7 +47,7 @@ func NewPeerTLSFromCert(url string, certificate string, serverHostOverride strin
 }
 
 // NewPeerFromConfig constructs a Peer from given peer configuration and global configuration setting.
-func NewPeerFromConfig(peerCfg *apiconfig.PeerConfig, config apiconfig.Config) (*Peer, error) {
+func NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer, config apiconfig.Config) (*Peer, error) {
 
 	serverHostOverride := ""
 	if str, ok := peerCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
@@ -59,7 +59,15 @@ func NewPeerFromConfig(peerCfg *apiconfig.PeerConfig, config apiconfig.Config) (
 		return nil, err
 	}
 
-	return NewPeerFromProcessor(peerCfg.URL, &conn, config)
+	newPeer, err := NewPeerFromProcessor(peerCfg.URL, &conn, config)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Remove upon making peer interface immutable
+	newPeer.SetMSPID(peerCfg.MspID)
+
+	return newPeer, nil
 }
 
 // NewPeer constructs a Peer given its endpoint configuration settings.

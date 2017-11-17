@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 )
 
 // Options encapsulates configuration for the SDK
@@ -63,6 +64,13 @@ type ChannelClientOpts struct {
 // ChannelMgmtClientOpts provides options for creating channel management client
 type ChannelMgmtClientOpts struct {
 	OrgName        string
+	ConfigProvider apiconfig.Config
+}
+
+// ResourceMgmtClientOpts provides options for creating resource management client
+type ResourceMgmtClientOpts struct {
+	OrgName        string
+	TargetFilter   resmgmt.TargetFilter
 	ConfigProvider apiconfig.Config
 }
 
@@ -241,6 +249,49 @@ func (sdk *FabricSDK) NewChannelMgmtClientWithOpts(userName string, opt *Channel
 	client, err := sdk.SessionFactory.NewChannelMgmtClient(sdk, session, configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create new channel management client")
+	}
+
+	return client, nil
+}
+
+// NewResourceMgmtClient returns a new client for managing system resources
+func (sdk *FabricSDK) NewResourceMgmtClient(userName string) (resmgmt.ResourceMgmtClient, error) {
+
+	// Read default org name from configuration
+	client, err := sdk.configProvider.Client()
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to retrieve client from network config")
+	}
+
+	if client.Organization == "" {
+		return nil, errors.New("must provide default organisation name in configuration")
+	}
+
+	opt := &ResourceMgmtClientOpts{OrgName: client.Organization, ConfigProvider: sdk.configProvider}
+
+	return sdk.NewResourceMgmtClientWithOpts(userName, opt)
+}
+
+// NewResourceMgmtClientWithOpts returns a new resource management client (user has to be pre-enrolled)
+func (sdk *FabricSDK) NewResourceMgmtClientWithOpts(userName string, opt *ResourceMgmtClientOpts) (resmgmt.ResourceMgmtClient, error) {
+
+	if opt == nil || opt.OrgName == "" {
+		return nil, errors.New("organization name must be provided")
+	}
+
+	session, err := sdk.NewPreEnrolledUserSession(opt.OrgName, userName)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get pre-enrolled user session")
+	}
+
+	configProvider := sdk.ConfigProvider()
+	if opt.ConfigProvider != nil {
+		configProvider = opt.ConfigProvider
+	}
+
+	client, err := sdk.SessionFactory.NewResourceMgmtClient(sdk, session, configProvider, opt.TargetFilter)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to created new resource management client")
 	}
 
 	return client, nil

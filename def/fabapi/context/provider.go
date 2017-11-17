@@ -13,6 +13,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 )
 
@@ -37,5 +38,6 @@ type OrgClientFactory interface {
 type SessionClientFactory interface {
 	NewSystemClient(context SDK, session Session, config apiconfig.Config) (fab.FabricClient, error)
 	NewChannelMgmtClient(context SDK, session Session, config apiconfig.Config) (chmgmt.ChannelMgmtClient, error)
+	NewResourceMgmtClient(context SDK, session Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error)
 	NewChannelClient(context SDK, session Session, config apiconfig.Config, channelID string) (txn.ChannelClient, error)
 }

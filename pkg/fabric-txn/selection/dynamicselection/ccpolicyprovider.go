@@ -138,7 +138,7 @@ func (dp *ccPolicyProvider) queryChaincode(channelID string, ccID string, ccFcn 
 	var response *apitxn.TransactionProposalResponse
 	for _, p := range dp.targetPeers {
 
-		peer, err := peerImpl.NewPeerFromConfig(&p.PeerConfig, dp.config)
+		peer, err := peerImpl.NewPeerFromConfig(&p.NetworkPeer, dp.config)
 		if err != nil {
 			queryErrors = append(queryErrors, err.Error())
 			continue

@@ -487,25 +487,74 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 			p.TLSCACerts.Path = strings.Replace(p.TLSCACerts.Path, "$GOPATH", os.Getenv("GOPATH"), -1)
 		}
 
-		var mspID string
-
-		// Find organisation/msp that peer belongs to
-		for _, org := range netConfig.Organizations {
-			for i := 0; i < len(org.Peers); i++ {
-				if strings.EqualFold(org.Peers[i], peerName) {
-					// peer belongs to this org add org msp
-					mspID = org.MspID
-					break
-				}
-			}
+		mspID, err := c.PeerMspID(peerName)
+		if err != nil {
+			return nil, errors.Errorf("failed to retrieve msp id for peer %s", peerName)
 		}
 
-		peer := apiconfig.ChannelPeer{PeerChannelConfig: chPeerConfig, PeerConfig: p, MspID: mspID}
+		networkPeer := apiconfig.NetworkPeer{PeerConfig: p, MspID: mspID}
+
+		peer := apiconfig.ChannelPeer{PeerChannelConfig: chPeerConfig, NetworkPeer: networkPeer}
 
 		peers = append(peers, peer)
 	}
 
 	return peers, nil
+
+}
+
+// NetworkPeers returns the network peers configuration
+func (c *Config) NetworkPeers() ([]apiconfig.NetworkPeer, error) {
+	netConfig, err := c.NetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	netPeers := []apiconfig.NetworkPeer{}
+
+	for name, p := range netConfig.Peers {
+
+		if err = verifyPeerConfig(p, name, urlutil.IsTLSEnabled(p.URL)); err != nil {
+			return nil, err
+		}
+
+		if p.TLSCACerts.Path != "" {
+			p.TLSCACerts.Path = strings.Replace(p.TLSCACerts.Path, "$GOPATH", os.Getenv("GOPATH"), -1)
+		}
+
+		mspID, err := c.PeerMspID(name)
+		if err != nil {
+			return nil, errors.Errorf("failed to retrieve msp id for peer %s", name)
+		}
+
+		netPeer := apiconfig.NetworkPeer{PeerConfig: p, MspID: mspID}
+		netPeers = append(netPeers, netPeer)
+	}
+
+	return netPeers, nil
+}
+
+// PeerMspID returns msp that peer belongs to
+func (c *Config) PeerMspID(name string) (string, error) {
+	netConfig, err := c.NetworkConfig()
+	if err != nil {
+		return "", err
+	}
+
+	var mspID string
+
+	// Find organisation/msp that peer belongs to
+	for _, org := range netConfig.Organizations {
+		for i := 0; i < len(org.Peers); i++ {
+			if strings.EqualFold(org.Peers[i], name) {
+				// peer belongs to this org add org msp
+				mspID = org.MspID
+				break
+			}
+		}
+	}
+
+	return mspID, nil
 
 }
 

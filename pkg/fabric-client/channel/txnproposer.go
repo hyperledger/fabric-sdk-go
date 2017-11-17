@@ -297,8 +297,7 @@ func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
 					response.Err.Error())
 		} else if response.Status != http.StatusOK {
 			joinError = joinError +
-				fmt.Sprintf("join channel proposal HTTP response error: %s \n",
-					response.Err.Error())
+				fmt.Sprintf("join channel proposal HTTP response status: %d \n", response.Status)
 		}
 	}
 

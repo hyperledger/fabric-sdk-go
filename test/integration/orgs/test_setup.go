@@ -10,10 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
+	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
@@ -27,8 +30,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-
-	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 )
 
 var org1 = "Org1"
@@ -60,6 +61,10 @@ var org2User ca.User
 
 // Flag to indicate if test has run before (to skip certain steps)
 var foundChannel bool
+
+// Org1 and Org2 resource management clients
+var org1ResMgmt resmgmt.ResourceMgmtClient
+var org2ResMgmt resmgmt.ResourceMgmtClient
 
 // initializeFabricClient initializes fabric-sdk-go
 func initializeFabricClient(t *testing.T) {
@@ -132,26 +137,35 @@ func createTestChannel(t *testing.T, sdk *deffab.FabricSDK) {
 	time.Sleep(time.Second * 3)
 }
 
-func joinTestChannel(t *testing.T) {
+func joinTestChannel(t *testing.T, sdk *deffab.FabricSDK) {
 	if foundChannel {
 		return
 	}
 
-	// Get peer0 to join channel
-	orgTestChannel.RemovePeer(orgTestPeer1)
-	err := admin.JoinChannel(orgTestClient, org1AdminUser, orgTestChannel)
+	var err error
+
+	// Org1 resource management client (Org1 is default org)
+	org1ResMgmt, err = sdk.NewResourceMgmtClient("Admin")
+	if err != nil {
+		t.Fatalf("Failed to create new resource management client: %s", err)
+	}
+
+	// Org1 peers join channel
+	if err = org1ResMgmt.JoinChannel("orgchannel"); err != nil {
+		t.Fatalf("Org1 peers failed to JoinChannel: %s", err)
+	}
+
+	// Org2 resource management client
+	org2ResMgmt, err = sdk.NewResourceMgmtClientWithOpts("Admin", &deffab.ResourceMgmtClientOpts{OrgName: "Org2"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Get peer1 to join channel
-	orgTestChannel.RemovePeer(orgTestPeer0)
-	orgTestChannel.AddPeer(orgTestPeer1)
-	orgTestChannel.SetPrimaryPeer(orgTestPeer1)
-	err = admin.JoinChannel(orgTestClient, org2AdminUser, orgTestChannel)
-	if err != nil {
-		t.Fatal(err)
+	// Org2 peers join channel
+	if err = org2ResMgmt.JoinChannel("orgchannel"); err != nil {
+		t.Fatalf("Org2 peers failed to JoinChannel: %s", err)
 	}
+
 }
 
 func installAndInstantiate(t *testing.T) {
@@ -203,12 +217,12 @@ func loadOrgPeers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	orgTestPeer0, err = peer.NewPeerFromConfig(&org1Peers[0], orgTestClient.Config())
+	orgTestPeer0, err = peer.NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: org1Peers[0]}, orgTestClient.Config())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	orgTestPeer1, err = peer.NewPeerFromConfig(&org2Peers[0], orgTestClient.Config())
+	orgTestPeer1, err = peer.NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: org2Peers[0]}, orgTestClient.Config())
 	if err != nil {
 		t.Fatal(err)
 	}

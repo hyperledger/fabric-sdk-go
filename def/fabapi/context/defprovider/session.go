@@ -10,7 +10,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -19,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 	chmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
+	resmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
 )
 
 // SessionClientFactory represents the default implementation of a session client.
@@ -50,6 +53,23 @@ func (f *SessionClientFactory) NewChannelMgmtClient(sdk context.SDK, session con
 		return nil, err
 	}
 	return chmgmtImpl.NewChannelMgmtClient(client, config)
+}
+
+// NewResourceMgmtClient returns a client that manager resources
+func (f *SessionClientFactory) NewResourceMgmtClient(sdk context.SDK, session context.Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error) {
+
+	// For now settings are the same as for system client
+	client, err := f.NewSystemClient(sdk, session, config)
+	if err != nil {
+		return nil, err
+	}
+
+	discovery, err := sdk.DiscoveryProvider().NewDiscoveryService("")
+	if err != nil {
+		return nil, errors.WithMessage(err, "create discovery service failed")
+	}
+
+	return resmgmtImpl.NewResourceMgmtClient(client, discovery, filter, config)
 }
 
 // NewChannelClient returns a client that can execute transactions on specified channel

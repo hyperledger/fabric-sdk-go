@@ -52,6 +52,20 @@ func TestNewDefaultSDK(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
+}
+
+func TestNewChannelMgmtClient(t *testing.T) {
+
+	setup := Options{
+		ConfigFile:     "../../test/fixtures/config/config_test.yaml",
+		StateStoreOpts: opt.StateStoreOpts{Path: "/tmp/state"},
+	}
+
+	sdk, err := NewSDK(setup)
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
 	// Test configuration failure for channel management client (invalid user/default organisation)
 	_, err = sdk.NewChannelMgmtClient("Invalid")
 	if err == nil {
@@ -76,6 +90,43 @@ func TestNewDefaultSDK(t *testing.T) {
 		t.Fatalf("Failed to create new channel client with opts: %s", err)
 	}
 
+}
+
+func TestNewResourceMgmtClient(t *testing.T) {
+
+	setup := Options{
+		ConfigFile:     "../../test/fixtures/config/config_test.yaml",
+		StateStoreOpts: opt.StateStoreOpts{Path: "/tmp/state"},
+	}
+
+	sdk, err := NewSDK(setup)
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	// Test configuration failure for resource management client (invalid user/default organisation)
+	_, err = sdk.NewResourceMgmtClient("Invalid")
+	if err == nil {
+		t.Fatalf("Should have failed to create resource management client due to invalid user")
+	}
+
+	// Test valid configuration for resource management client
+	_, err = sdk.NewResourceMgmtClient("Admin")
+	if err != nil {
+		t.Fatalf("Failed to create new resource management client: %s", err)
+	}
+
+	// Test configuration failure for new resource management client with options (invalid org)
+	_, err = sdk.NewResourceMgmtClientWithOpts("Admin", &ResourceMgmtClientOpts{OrgName: "Invalid"})
+	if err == nil {
+		t.Fatalf("Should have failed to create resource management client due to invalid organization")
+	}
+
+	// Test new resource management client with options (Org2 configuration)
+	_, err = sdk.NewResourceMgmtClientWithOpts("Admin", &ResourceMgmtClientOpts{OrgName: "Org2"})
+	if err != nil {
+		t.Fatalf("Failed to create new resource management client with opts: %s", err)
+	}
 }
 
 func TestNewDefaultTwoValidSDK(t *testing.T) {

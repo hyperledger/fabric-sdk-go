@@ -53,6 +53,11 @@ func (c *MockConfig) TimeoutOrDefault(apiconfig.TimeoutType) time.Duration {
 	return 0
 }
 
+// NetworkPeers returns the mock network peers configuration
+func (c *MockConfig) NetworkPeers() ([]apiconfig.NetworkPeer, error) {
+	return nil, nil
+}
+
 // PeersConfig Retrieves the fabric peers from the config file provided
 func (c *MockConfig) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 	return nil, nil
@@ -109,6 +114,11 @@ func (c *MockConfig) OrdererConfig(name string) (*apiconfig.OrdererConfig, error
 
 // MspID ...
 func (c *MockConfig) MspID(org string) (string, error) {
+	return "", nil
+}
+
+// PeerMspID not implemented
+func (c *MockConfig) PeerMspID(name string) (string, error) {
 	return "", nil
 }
 

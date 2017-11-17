@@ -17,6 +17,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
@@ -51,6 +52,8 @@ var txArgs = [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}
 // ExampleCC init and upgrade args
 var initArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte("200")}
 var upgradeArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte("400")}
+
+var resMgmtClient resmgmt.ResourceMgmtClient
 
 // ExampleCCQueryArgs returns example cc query args
 func ExampleCCQueryArgs() [][]byte {
@@ -104,6 +107,12 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
 
+	// Resource management client is responsible for managing resources (joining channels, install/instantiate/upgrade chaincodes)
+	resMgmtClient, err = sdk.NewResourceMgmtClient("Admin")
+	if err != nil {
+		t.Fatalf("Failed to create new resource management client: %s", err)
+	}
+
 	// Check if primary peer has joined channel
 	alreadyJoined, err := HasPrimaryPeerJoinedChannel(sc, channel)
 	if err != nil {
@@ -131,7 +140,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 			return errors.WithMessage(err, "channel init failed")
 		}
 
-		if err = admin.JoinChannel(sc, setup.AdminUser, channel); err != nil {
+		if err = resMgmtClient.JoinChannel(setup.ChannelID); err != nil {
 			return errors.WithMessage(err, "JoinChannel failed")
 		}
 	}
@@ -264,7 +273,7 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 			return nil, errors.WithMessage(err, "reading peer config failed")
 		}
 		for _, p := range peerConfig {
-			endorser, err := deffab.NewPeerFromConfig(&p, client.Config())
+			endorser, err := deffab.NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: p}, client.Config())
 			if err != nil {
 				return nil, errors.WithMessage(err, "NewPeer failed")
 			}

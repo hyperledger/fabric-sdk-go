@@ -119,8 +119,13 @@ func (c *MockConfig) OrdererConfig(name string) (*config.OrdererConfig, error) {
 	return nil, nil
 }
 
-// MspID ...
+// MspID not implemented
 func (c *MockConfig) MspID(org string) (string, error) {
+	return "", nil
+}
+
+// PeerMspID not implemented
+func (c *MockConfig) PeerMspID(name string) (string, error) {
 	return "", nil
 }
 
@@ -156,6 +161,11 @@ func (c *MockConfig) ChannelPeers(name string) ([]config.ChannelPeer, error) {
 
 // ChannelOrderers returns a list of channel orderers
 func (c *MockConfig) ChannelOrderers(name string) ([]config.OrdererConfig, error) {
+	return nil, nil
+}
+
+// NetworkPeers returns the mock network peers configuration
+func (c *MockConfig) NetworkPeers() ([]config.NetworkPeer, error) {
 	return nil, nil
 }
 
