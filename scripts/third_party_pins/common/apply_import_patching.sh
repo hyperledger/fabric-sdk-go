@@ -5,6 +5,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+set -e
+
 FILES=($FILES)
 IMPORT_SUBSTS=($IMPORT_SUBSTS)
 GOIMPORTS_CMD=goimports

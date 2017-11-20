@@ -9,6 +9,8 @@
 # These files are checked into internal paths.
 # Note: This script must be adjusted as upstream makes adjustments
 
+set -e
+
 IMPORT_SUBSTS=($IMPORT_SUBSTS)
 
 GOIMPORTS_CMD=goimports

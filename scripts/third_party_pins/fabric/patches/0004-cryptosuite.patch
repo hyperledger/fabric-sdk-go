@@ -8,8 +8,8 @@ SPDX-License-Identifier: Apache-2.0
 
 Signed-off-by: Sudesh Shetty <sudesh.shetty@securekey.com>
 ---
- .../cryptosuitebridge/cryptosuitebridge.go         | 121 +++++++++++++++++++++
- 1 file changed, 121 insertions(+)
+ .../cryptosuitebridge/cryptosuitebridge.go         | 122 +++++++++++++++++++++
+ 1 file changed, 122 insertions(+)
  create mode 100644 sdkpatch/cryptosuitebridge/cryptosuitebridge.go
 
 diff --git a/sdkpatch/cryptosuitebridge/cryptosuitebridge.go b/sdkpatch/cryptosuitebridge/cryptosuitebridge.go
@@ -17,7 +17,7 @@ new file mode 100644
 index 0000000..a260c06
 --- /dev/null
 +++ b/sdkpatch/cryptosuitebridge/cryptosuitebridge.go
-@@ -0,0 +1,121 @@
+@@ -0,0 +1,122 @@
 +/*
 +Copyright SecureKey Technologies Inc. All Rights Reserved.
 +
@@ -35,6 +35,7 @@ index 0000000..a260c06
 +	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 +	cspsigner "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/signer"
 +	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
++   "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 +	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 +)
 +
@@ -74,14 +75,14 @@ index 0000000..a260c06
 +	return cspsigner.New(csp, key)
 +}
 +
-+//GetFactoryDefaultCryptoSuite creates new cryptosuite from bccsp factory default
++//GetDefault creates new cryptosuite from bccsp factory default
 +func GetDefault() apicryptosuite.CryptoSuite {
 +	return cryptosuite.GetDefault()
 +}
 +
-+//SignatureToLowS is a bridge for bccsp sw.SignatureToLowS()
++//SignatureToLowS is a bridge for bccsp utils.SignatureToLowS()
 +func SignatureToLowS(k *ecdsa.PublicKey, signature []byte) ([]byte, error) {
-+	return sw.SignatureToLowS(k, signature)
++	return utils.SignatureToLowS(k, signature)
 +}
 +
 +//GetHashOpt is a bridge for bccsp util GetHashOpt

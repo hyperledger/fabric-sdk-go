@@ -9,6 +9,8 @@
 # These files are checked into internal paths.
 # Note: This script must be adjusted as upstream makes adjustments
 
+set -e
+
 IMPORT_SUBSTS=($IMPORT_SUBSTS)
 
 GOIMPORTS_CMD=goimports
@@ -78,7 +80,11 @@ sed -i'' -e '/log "github.com\// a\
 sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/\/\/ Initialize BCCSP (the crypto layer)/c.csp = cfg.CSP/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/c.csp, err = util.InitBCCSP(&cfg.CSP, mspDir, c.HomeDir)/,+3 d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "c.csp, err = util.InitBCCSP(&cfg.CSP, mspDir, c.HomeDir)" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..4}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
 
 FILTER_FILENAME="lib/identity.go"
 FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,GetName"

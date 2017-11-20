@@ -5,6 +5,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+set -e
+
 FILENAME=$1
 NOTICE=$2
 LICENSEID=$3

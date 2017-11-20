@@ -12,7 +12,7 @@ function filterExcludedFiles {
   | grep -v .md$ | grep -v ^vendor/ | grep -v ^build/ | grep -v .pb.go$ | sort -u`
 }
 
-CHECK=$(git diff --name-only HEAD --diff-filter=ACMRTUXB --cached)
+CHECK=$(git diff --name-only --diff-filter=ACMRTUXB HEAD)
 filterExcludedFiles
 if [[ -z "$CHECK" ]]; then
   LAST_COMMITS=($(git log -2 --pretty=format:"%h"))

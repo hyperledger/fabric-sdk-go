@@ -5,6 +5,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+set -e
+
 FILES=($FILES)
 NOTICE=$'Notice: This file has been modified for Hyperledger Fabric SDK Go usage.\nPlease review third_party pinning scripts and patches for more details.'
 SPDX_LICENSE_ID="SPDX-License-Identifier: Apache-2.0"
