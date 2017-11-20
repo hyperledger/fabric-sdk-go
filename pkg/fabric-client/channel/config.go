@@ -52,7 +52,7 @@ func (c *Channel) Initialize(configUpdate []byte) error {
 		return nil
 	}
 
-	configEnvelope, err := c.channelConfig()
+	configEnvelope, err := c.ChannelConfig()
 	if err != nil {
 		return errors.WithMessage(err, "channel configuration retrieval from orderer failed")
 	}
@@ -119,14 +119,12 @@ func (c *Channel) initializeFromConfig(configItems *configItems) error {
 	return nil
 }
 
-/**
-* Queries for the current config block for this channel.
-* This transaction will be made to the orderer.
-* @returns {ConfigEnvelope} Object containing the configuration items.
-* @see /protos/orderer/ab.proto
-* @see /protos/common/configtx.proto
- */
-func (c *Channel) channelConfig() (*common.ConfigEnvelope, error) {
+// ChannelConfig queries for the current config block for this channel.
+// This transaction will be made to the orderer.
+// @returns {ConfigEnvelope} Object containing the configuration items.
+// @see /protos/orderer/ab.proto
+// @see /protos/common/configtx.proto
+func (c *Channel) ChannelConfig() (*common.ConfigEnvelope, error) {
 	logger.Debugf("channelConfig - start for channel %s", c.name)
 
 	// Get the newest block
