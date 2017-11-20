@@ -17,20 +17,24 @@ limitations under the License.
 Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
 Please review third_party pinning scripts and patches for more details.
 */
-package pkcs11
+package sw
 
 import (
 	"crypto/ecdsa"
 	"crypto/x509"
-	"errors"
 	"fmt"
 
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
+	"crypto/sha256"
+
+	"errors"
+
+	"crypto/elliptic"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 )
 
 type ecdsaPrivateKey struct {
-	ski []byte
-	pub ecdsaPublicKey
+	privKey *ecdsa.PrivateKey
 }
 
 // Bytes converts this key to its byte representation,
@@ -41,7 +45,17 @@ func (k *ecdsaPrivateKey) Bytes() (raw []byte, err error) {
 
 // SKI returns the subject key identifier of this key.
 func (k *ecdsaPrivateKey) SKI() (ski []byte) {
-	return k.ski
+	if k.privKey == nil {
+		return nil
+	}
+
+	// Marshall the public key
+	raw := elliptic.Marshal(k.privKey.Curve, k.privKey.PublicKey.X, k.privKey.PublicKey.Y)
+
+	// Hash it
+	hash := sha256.New()
+	hash.Write(raw)
+	return hash.Sum(nil)
 }
 
 // Symmetric returns true if this key is a symmetric key,
@@ -59,18 +73,17 @@ func (k *ecdsaPrivateKey) Private() bool {
 // PublicKey returns the corresponding public key part of an asymmetric public/private key pair.
 // This method returns an error in symmetric key schemes.
 func (k *ecdsaPrivateKey) PublicKey() (bccsp.Key, error) {
-	return &k.pub, nil
+	return &ecdsaPublicKey{&k.privKey.PublicKey}, nil
 }
 
 type ecdsaPublicKey struct {
-	ski []byte
-	pub *ecdsa.PublicKey
+	pubKey *ecdsa.PublicKey
 }
 
 // Bytes converts this key to its byte representation,
 // if this operation is allowed.
 func (k *ecdsaPublicKey) Bytes() (raw []byte, err error) {
-	raw, err = x509.MarshalPKIXPublicKey(k.pub)
+	raw, err = x509.MarshalPKIXPublicKey(k.pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("Failed marshalling key [%s]", err)
 	}
@@ -79,7 +92,17 @@ func (k *ecdsaPublicKey) Bytes() (raw []byte, err error) {
 
 // SKI returns the subject key identifier of this key.
 func (k *ecdsaPublicKey) SKI() (ski []byte) {
-	return k.ski
+	if k.pubKey == nil {
+		return nil
+	}
+
+	// Marshall the public key
+	raw := elliptic.Marshal(k.pubKey.Curve, k.pubKey.X, k.pubKey.Y)
+
+	// Hash it
+	hash := sha256.New()
+	hash.Write(raw)
+	return hash.Sum(nil)
 }
 
 // Symmetric returns true if this key is a symmetric key,

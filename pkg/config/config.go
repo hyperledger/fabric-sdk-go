@@ -9,7 +9,6 @@ package config
 import (
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -25,8 +24,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/pkcs11"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -648,48 +645,4 @@ func loadCAKey(rawData []byte) (*x509.Certificate, error) {
 		return pub, nil
 	}
 	return nil, errors.New("pem data missing")
-}
-
-// CSPConfig ...
-func (c *Config) CSPConfig() *bccspFactory.FactoryOpts {
-	switch c.SecurityProvider() {
-	case "SW":
-		opts := &bccspFactory.FactoryOpts{
-			ProviderName: "SW",
-			SwOpts: &bccspFactory.SwOpts{
-				HashFamily: c.SecurityAlgorithm(),
-				SecLevel:   c.SecurityLevel(),
-				FileKeystore: &bccspFactory.FileKeystoreOpts{
-					KeyStorePath: c.KeyStorePath(),
-				},
-				Ephemeral: c.Ephemeral(),
-			},
-		}
-		logger.Debug("Initialized SW ")
-		bccspFactory.InitFactories(opts)
-		return opts
-
-	case "PKCS11":
-		pkks := pkcs11.FileKeystoreOpts{KeyStorePath: c.KeyStorePath()}
-		opts := &bccspFactory.FactoryOpts{
-			ProviderName: "PKCS11",
-			Pkcs11Opts: &pkcs11.PKCS11Opts{
-				SecLevel:     c.SecurityLevel(),
-				HashFamily:   c.SecurityAlgorithm(),
-				Ephemeral:    c.Ephemeral(),
-				FileKeystore: &pkks,
-				Library:      c.SecurityProviderLibPath(),
-				Pin:          c.SecurityProviderPin(),
-				Label:        c.SecurityProviderLabel(),
-				SoftVerify:   c.SoftVerify(),
-			},
-		}
-		logger.Debug("Initialized PKCS11 ")
-		bccspFactory.InitFactories(opts)
-		return opts
-
-	default:
-		panic(fmt.Sprintf("Unsupported BCCSP Provider: %s", c.SecurityProvider()))
-
-	}
 }

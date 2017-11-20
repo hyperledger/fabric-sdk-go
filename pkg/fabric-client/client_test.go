@@ -14,11 +14,11 @@ import (
 	"time"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
 var testMsp = "testMsp"

@@ -16,7 +16,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
+	"encoding/json"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -80,7 +84,18 @@ func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
 	//TLS flag enabled/disabled
 	c.Config.TLS.Enabled = urlutil.IsTLSEnabled(conf.URL)
 	c.Config.MSPDir = config.CAKeyStorePath()
-	c.Config.CSP = config.CSPConfig()
+
+	//Factory opts
+	//TODO below logic needs to be moved to internal/cryptosuite bridge
+	c.Config.CSP = &bccspFactory.FactoryOpts{}
+	optsbytes, err := cryptosuite.GetCryptoOptsJSON(config)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(optsbytes, c.Config.CSP)
+	if err != nil {
+		return nil, err
+	}
 
 	fabricCAClient := FabricCA{fabricCAClient: c}
 

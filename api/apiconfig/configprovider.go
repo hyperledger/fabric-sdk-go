@@ -9,8 +9,6 @@ package apiconfig
 import (
 	"crypto/x509"
 	"time"
-
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // Config fabric-sdk-go configuration interface
@@ -45,7 +43,6 @@ type Config interface {
 	KeyStorePath() string
 	CAKeyStorePath() string
 	CryptoConfigPath() string
-	CSPConfig() *bccspFactory.FactoryOpts
 }
 
 // TimeoutType enumerates the different types of outgoing connections

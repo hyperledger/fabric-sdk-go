@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // MockConfig ...
@@ -86,13 +84,12 @@ func (c *MockConfig) TcertBatchSize() int {
 
 // SecurityAlgorithm ...
 func (c *MockConfig) SecurityAlgorithm() string {
-	return ""
+	return "SHA2"
 }
 
 // SecurityLevel ...
 func (c *MockConfig) SecurityLevel() int {
-	return 0
-
+	return 256
 }
 
 // OrderersConfig returns a list of defined orderers
@@ -128,11 +125,6 @@ func (c *MockConfig) CAKeyStorePath() string {
 // CryptoConfigPath ...
 func (c *MockConfig) CryptoConfigPath() string {
 	return ""
-}
-
-// CSPConfig ...
-func (c *MockConfig) CSPConfig() *bccspFactory.FactoryOpts {
-	return nil
 }
 
 // NetworkConfig not implemented

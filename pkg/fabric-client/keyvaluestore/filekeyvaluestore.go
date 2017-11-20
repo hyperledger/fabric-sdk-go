@@ -11,9 +11,10 @@ import (
 	"os"
 	"path"
 
+	"io"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/utils"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -64,8 +65,24 @@ func (fkvs *FileKeyValueStore) SetValue(key string, value []byte) error {
 
 // createDirIfNotExists
 func createDirIfNotExists(path string) error {
-	missing, err := utils.DirMissingOrEmpty(path)
-	logger.Debugf("KeyStore path [%s] missing [%t]: [%s]", path, missing, err)
+
+	missing := false
+	_, err := os.Stat(path)
+
+	if err != nil && os.IsNotExist(err) {
+		missing = true
+	}
+
+	if !missing {
+		f, err := os.Open(path)
+		defer f.Close()
+
+		_, err = f.Readdir(1)
+		if err != nil && err == io.EOF {
+			missing = true
+		}
+
+	}
 
 	if missing {
 		os.MkdirAll(path, 0755)

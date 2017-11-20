@@ -26,7 +26,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
@@ -74,11 +73,11 @@ func initializeFabricClient(t *testing.T) {
 	fcClient := client.NewClient(configImpl)
 
 	// Initialize crypto suite
-	err = factory.InitFactories(configImpl.CSPConfig())
+	cryptoSuiteprovider, err := cryptosuite.GetSuiteByConfig(configImpl)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cryptoSuiteprovider := cryptosuite.GetSuite(factory.GetDefault())
+
 	fcClient.SetCryptoSuite(cryptoSuiteprovider)
 
 	signingMgr, err := signingmgr.NewSigningManager(cryptoSuiteprovider, configImpl)

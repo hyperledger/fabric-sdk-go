@@ -19,7 +19,6 @@ import (
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery/staticdiscovery"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/staticselection"
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // DefaultProviderFactory represents the default SDK provider factory.
@@ -57,11 +56,7 @@ func (f *DefaultProviderFactory) NewStateStoreProvider(o opt.StateStoreOpts, con
 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
 func (f *DefaultProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
-	bccspProvider, err := bccspFactory.GetBCCSPFromOpts(config.CSPConfig())
-	if err != nil {
-		return nil, err
-	}
-	return cryptosuite.GetSuite(bccspProvider), nil
+	return cryptosuite.GetSuiteByConfig(config)
 }
 
 // NewSigningManager returns a new default implementation of signing manager

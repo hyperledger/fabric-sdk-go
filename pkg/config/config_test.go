@@ -262,17 +262,6 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 		t.Fatal("Testing ChannelOrderers supposed to fail")
 	}
 
-	// Testing empty BCCSP Software provider
-	sampleConfig.configViper.Set("client.BCCSP.security.default.provider", "")
-	func() {
-		defer func() {
-			if r := recover(); r == nil {
-				t.Errorf("BCCSP default provider set as empty should panic!")
-			}
-		}()
-		sampleConfig.CSPConfig()
-	}()
-
 	// test empty network objects
 	sampleConfig.configViper.Set("organizations", nil)
 	_, err = sampleConfig.NetworkConfig()
@@ -392,28 +381,6 @@ func TestChannelOrderers(t *testing.T) {
 		}
 	} else if orderers[0].TLSCACerts.Pem == "" {
 		t.Fatalf("Orderer %v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
-	}
-}
-
-func TestCSPConfig(t *testing.T) {
-	cspconfig := configImpl.CSPConfig()
-
-	if cspconfig != nil && cspconfig.ProviderName == "SW" {
-		if cspconfig.SwOpts.HashFamily != configImpl.SecurityAlgorithm() {
-			t.Fatalf("Incorrect hashfamily found for cspconfig")
-		}
-
-		if cspconfig.SwOpts.SecLevel != configImpl.SecurityLevel() {
-			t.Fatalf("Incorrect security level found for cspconfig")
-		}
-
-		if cspconfig.SwOpts.Ephemeral {
-			t.Fatalf("Incorrect Ephemeral found for cspconfig")
-		}
-
-		if cspconfig.SwOpts.FileKeystore.KeyStorePath != configImpl.KeyStorePath() {
-			t.Fatalf("Incorrect keystore path found for cspconfig")
-		}
 	}
 }
 

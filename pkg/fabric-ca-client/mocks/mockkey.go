@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package mocks
 
-import "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
+import "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 
 // MockKey mocks BCCSP key
 type MockKey struct {

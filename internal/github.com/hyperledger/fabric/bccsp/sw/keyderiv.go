@@ -29,7 +29,7 @@ import (
 
 	"crypto/hmac"
 
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 )
 
 type ecdsaPublicKeyKeyDeriver struct{}

@@ -16,15 +16,16 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 	ledger_util "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
 	fcConsumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
-	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
 type mockEventClientMockEventRegistration struct {
@@ -111,11 +112,6 @@ func (mec *mockEventClient) Stop() error {
 }
 
 func createMockedEventHub(t *testing.T) (*EventHub, *mockEventClientFactory) {
-	// Initialize bccsp factories before calling get client
-	err := bccspFactory.InitFactories(mocks.NewMockConfig().CSPConfig())
-	if err != nil {
-		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
-	}
 	eventHub, err := NewEventHub(client.NewClient(mocks.NewMockConfig()))
 	if err != nil {
 		t.Fatalf("Error creating event hub: %v", err)
@@ -323,7 +319,7 @@ func generateTxID() apitxn.TransactionID {
 	if err != nil {
 		panic(errors.WithMessage(err, "GenerateRandomNonce failed"))
 	}
-	digest, err := factory.GetDefault().Hash(
+	digest, err := getDefaultBCCSPSuite().Hash(
 		nonce,
 		&bccsp.SHA256Opts{})
 	if err != nil {
@@ -336,4 +332,8 @@ func generateTxID() apitxn.TransactionID {
 	}
 
 	return txnid
+}
+
+func getDefaultBCCSPSuite() apicryptosuite.CryptoSuite {
+	return cryptosuite.GetSuite(factory.GetDefault())
 }

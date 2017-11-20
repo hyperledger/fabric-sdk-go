@@ -13,7 +13,6 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // MockConfig ...
@@ -91,12 +90,12 @@ func (c *MockConfig) TcertBatchSize() int {
 
 // SecurityAlgorithm ...
 func (c *MockConfig) SecurityAlgorithm() string {
-	return ""
+	return "SHA2"
 }
 
 // SecurityLevel ...
 func (c *MockConfig) SecurityLevel() int {
-	return 0
+	return 256
 
 }
 
@@ -140,11 +139,6 @@ func (c *MockConfig) CryptoConfigPath() string {
 	return ""
 }
 
-// CSPConfig ...
-func (c *MockConfig) CSPConfig() *bccspFactory.FactoryOpts {
-	return nil
-}
-
 // NetworkConfig not implemented
 func (c *MockConfig) NetworkConfig() (*config.NetworkConfig, error) {
 	return nil, nil
@@ -172,7 +166,7 @@ func (c *MockConfig) Ephemeral() bool {
 
 // SecurityProvider ...
 func (c *MockConfig) SecurityProvider() string {
-	return ""
+	return "SW"
 }
 
 // SecurityProviderLabel ...

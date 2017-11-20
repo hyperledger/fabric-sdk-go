@@ -27,7 +27,7 @@ index 3870bbcd..fd95e9f3 100644
  	"plugin"
  
 -	"github.com/hyperledger/fabric/bccsp"
-+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
++	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
  )
  
  const (
@@ -49,7 +49,7 @@ index 00000000..4011a1e0
 +import (
 +	"github.com/pkg/errors"
 +
-+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
++	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 +)
 +
 +const (

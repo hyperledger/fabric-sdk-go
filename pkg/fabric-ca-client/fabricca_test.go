@@ -15,12 +15,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client/mocks"
@@ -326,13 +326,16 @@ func TestCreateInvalidBCCSPSecurityLevelForNewFabricClient(t *testing.T) {
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 	clientMockObject := &config.ClientConfig{Organization: "org1", Logging: config.LoggingType{Level: "info"}, CryptoConfig: config.CCType{Path: "test/path"}}
 
-	bccspSW := createBCCSPProviderFactoryOptions("SW", "SHA2", 100) // invalid BCCSP options
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
-	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
+	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+	mockConfig.EXPECT().SecurityLevel().Return(100)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+	mockConfig.EXPECT().Ephemeral().Return(false)
 	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
 	client, err := NewFabricCAClient(mockConfig, org1)
 	if !strings.Contains(err.Error(), "init failed") {
@@ -347,14 +350,17 @@ func TestCreateInvalidBCCSPHashFamilyForNewFabricClient(t *testing.T) {
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 	clientMockObject := &config.ClientConfig{Organization: "org1", Logging: config.LoggingType{Level: "info"}, CryptoConfig: config.CCType{Path: "test/path"}}
 
-	bccspSW := createBCCSPProviderFactoryOptions("SW", "ABC", 256)
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
 	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
-	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
+	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("ABC")
+	mockConfig.EXPECT().SecurityLevel().Return(256)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+	mockConfig.EXPECT().Ephemeral().Return(false)
 	client, err := NewFabricCAClient(mockConfig, org1)
 	if !strings.Contains(err.Error(), "init failed") {
 		t.Fatalf("Expected error init failed. Got: %s (client %v)", err.Error(), client)
@@ -368,14 +374,17 @@ func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 	clientMockObject := &config.ClientConfig{Organization: "org1", Logging: config.LoggingType{Level: "info"}, CryptoConfig: config.CCType{Path: "test/path"}}
 
-	bccspSW := createBCCSPProviderFactoryOptions("SW", "SHA2", 256)
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
 	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
-	mockConfig.EXPECT().CSPConfig().Return(bccspSW)
+	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+	mockConfig.EXPECT().SecurityLevel().Return(256)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+	mockConfig.EXPECT().Ephemeral().Return(false)
 	_, err := NewFabricCAClient(mockConfig, org1)
 	if err != nil {
 		t.Fatalf("Expected fabric client to be created with SW BCCS provider, but got %v", err.Error())

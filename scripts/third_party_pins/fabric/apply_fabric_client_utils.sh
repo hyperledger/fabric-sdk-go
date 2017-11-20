@@ -15,7 +15,13 @@ GOIMPORTS_CMD=goimports
 GOFILTER_CMD="go run scripts/_go/cmd/gofilter/gofilter.go"
 
 declare -a PKGS=(
+
+    "bccsp"
+    "bccsp/factory"
+    "bccsp/pkcs11"
     "bccsp/signer"
+    "bccsp/sw"
+    "bccsp/utils"
 
     "common/crypto"
     "common/errors"
@@ -40,8 +46,53 @@ declare -a PKGS=(
 )
 
 declare -a FILES=(
+
+    "bccsp/aesopts.go"
+    "bccsp/bccsp.go"
+    "bccsp/ecdsaopts.go"
+    "bccsp/hashopts.go"
+    "bccsp/keystore.go"
+    "bccsp/opts.go"
+    "bccsp/rsaopts.go"
+
+    "bccsp/factory/factory.go"
+    "bccsp/factory/nopkcs11.go"
+    "bccsp/factory/opts.go"
+    "bccsp/factory/pkcs11.go"
+    "bccsp/factory/pkcs11factory.go"
+    "bccsp/factory/swfactory.go"
+    "bccsp/factory/pluginfactory.go"
+    "bccsp/factory/sdkpatch_pluginfactory_noplugin.go"
+
+    "bccsp/pkcs11/conf.go"
+    "bccsp/pkcs11/ecdsa.go"
+    "bccsp/pkcs11/ecdsakey.go"
+    "bccsp/pkcs11/impl.go"
+    "bccsp/pkcs11/pkcs11.go"
+
     "bccsp/signer/signer.go"
 
+    "bccsp/sw/aes.go"
+    "bccsp/sw/aeskey.go"
+    "bccsp/sw/conf.go"
+    "bccsp/sw/dummyks.go"
+    "bccsp/sw/ecdsa.go"
+    "bccsp/sw/ecdsakey.go"
+    "bccsp/sw/fileks.go"
+    "bccsp/sw/hash.go"
+    "bccsp/sw/impl.go"
+    "bccsp/sw/internals.go"
+    "bccsp/sw/keyderiv.go"
+    "bccsp/sw/keygen.go"
+    "bccsp/sw/keyimport.go"
+    "bccsp/sw/rsa.go"
+    "bccsp/sw/rsakey.go"
+
+    "bccsp/utils/errs.go"
+    "bccsp/utils/io.go"
+    "bccsp/utils/keys.go"
+    "bccsp/utils/slice.go"
+    "bccsp/utils/x509.go"
     "common/crypto/random.go"
     "common/crypto/signer.go"
 

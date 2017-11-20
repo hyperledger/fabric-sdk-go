@@ -11,7 +11,6 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	factory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // MockConfig is a mock of Config interface
@@ -99,18 +98,6 @@ func (m *MockConfig) CAServerCertFiles(arg0 string) ([]string, error) {
 // CAServerCertFiles indicates an expected call of CAServerCertFiles
 func (mr *MockConfigMockRecorder) CAServerCertFiles(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAServerCertFiles", reflect.TypeOf((*MockConfig)(nil).CAServerCertFiles), arg0)
-}
-
-// CSPConfig mocks base method
-func (m *MockConfig) CSPConfig() *factory.FactoryOpts {
-	ret := m.ctrl.Call(m, "CSPConfig")
-	ret0, _ := ret[0].(*factory.FactoryOpts)
-	return ret0
-}
-
-// CSPConfig indicates an expected call of CSPConfig
-func (mr *MockConfigMockRecorder) CSPConfig() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CSPConfig", reflect.TypeOf((*MockConfig)(nil).CSPConfig))
 }
 
 // ChannelConfig mocks base method

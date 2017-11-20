@@ -22,7 +22,6 @@ import (
 	ordererImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // TODO: Some (or most) of these functions should no longer be exported, as usage should occur via NewSDK
@@ -148,11 +147,7 @@ func NewKVStore(stateStorePath string) (fab.KeyValueStore, error) {
 
 // NewCryptoSuite returns a new default implementation of CryptoSuite
 func NewCryptoSuite(config config.Config) (apicryptosuite.CryptoSuite, error) {
-	bccsp, err := bccspFactory.GetBCCSPFromOpts(config.CSPConfig())
-	if err != nil {
-		return nil, err
-	}
-	return cryptosuite.GetSuite(bccsp), nil
+	return cryptosuite.GetSuiteByConfig(config)
 }
 
 // NewSigningManager returns a new default implementation of signing manager

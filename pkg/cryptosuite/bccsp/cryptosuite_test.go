@@ -11,20 +11,39 @@ import (
 	"hash"
 	"testing"
 
+	"strings"
+
+	"os"
+
+	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
 const (
-	mockIdentifier   = "mock-test"
-	signedIdentifier = "-signed"
-	signingKey       = "signing-key"
-	hashMessage      = "-msg-bytes"
-	sampleKey        = "sample-key"
-	getKey           = "-getkey"
-	keyImport        = "-keyimport"
-	keyGen           = "-keygent"
+	mockIdentifier       = "mock-test"
+	signedIdentifier     = "-signed"
+	signingKey           = "signing-key"
+	hashMessage          = "-msg-bytes"
+	sampleKey            = "sample-key"
+	getKey               = "-getkey"
+	keyImport            = "-keyimport"
+	keyGen               = "-keygent"
+	shaHashOptsAlgorithm = "SHA"
 )
+
+// TestMain Load testing config
+func TestMain(m *testing.M) {
+	if !logging.IsLoggerInitialized() {
+		logging.InitLogger(deflogger.GetLoggingProvider())
+	}
+
+	os.Exit(m.Run())
+}
 
 func TestCryptoSuite(t *testing.T) {
 
@@ -34,9 +53,118 @@ func TestCryptoSuite(t *testing.T) {
 	//Get cryptosuite
 	samplecryptoSuite := GetSuite(samplebccsp)
 
+	//Verify CryptSuite
+	verifyCryptoSuite(t, samplecryptoSuite)
+
+}
+
+func TestCryptoSuiteByConfig(t *testing.T) {
+
+	//Prepare Config
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+	mockConfig.EXPECT().SecurityLevel().Return(256)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+	mockConfig.EXPECT().Ephemeral().Return(false)
+
+	//Get cryptosuite using config
+	samplecryptoSuite, err := GetSuiteByConfig(mockConfig)
+	utils.VerifyEmpty(t, err, "Not supposed to get error on GetSuiteByConfig call : %s", err)
+	utils.VerifyNotEmpty(t, samplecryptoSuite, "Supposed to get valid cryptosuite")
+
+	hashbytes, err := samplecryptoSuite.Hash([]byte(hashMessage), &bccsp.SHAOpts{})
+	utils.VerifyEmpty(t, err, "Not supposed to get error on GetSuiteByConfig call : %s", err)
+	utils.VerifyNotEmpty(t, hashbytes, "Supposed to get valid hash from sample cryptosuite")
+
+}
+
+func TestCryptoSuiteByConfigPKCS11Failure(t *testing.T) {
+
+	//Prepare Config
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	//Prepare Config
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+	mockConfig.EXPECT().SecurityLevel().Return(256)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+	mockConfig.EXPECT().Ephemeral().Return(false)
+	mockConfig.EXPECT().SecurityProviderLibPath().Return("")
+	mockConfig.EXPECT().SecurityProviderLabel().Return("")
+	mockConfig.EXPECT().SecurityProviderPin().Return("")
+	mockConfig.EXPECT().SoftVerify().Return(true)
+
+	//Get cryptosuite using config
+	samplecryptoSuite, err := GetSuiteByConfig(mockConfig)
+	utils.VerifyNotEmpty(t, err, "Supposed to get error on GetSuiteByConfig call : %s", err)
+	utils.VerifyEmpty(t, samplecryptoSuite, "Not supposed to get valid cryptosuite")
+
+}
+
+func TestCryptoSuiteByConfigFailures(t *testing.T) {
+
+	//Prepare Config
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+	mockConfig.EXPECT().SecurityLevel().Return(100)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+	mockConfig.EXPECT().Ephemeral().Return(false)
+
+	//Get cryptosuite using config
+	samplecryptoSuite, err := GetSuiteByConfig(mockConfig)
+	utils.VerifyNotEmpty(t, err, "Supposed to get error on GetSuiteByConfig call : %s", err)
+	utils.VerifyEmpty(t, samplecryptoSuite, "Not supposed to get valid cryptosuite")
+
+	if !strings.HasPrefix(err.Error(), "Could not initialize BCCSP SW") {
+		t.Fatalf("Didn't get expected failure, got %s instead", err)
+	}
+
+}
+
+func TestGetCryptoOptsJSON(t *testing.T) {
+
+	expectedJSON := "{\"default\":\"SW\",\"SW\":{\"security\":256,\"hash\":\"SHA2\",\"filekeystore\":{\"KeyStorePath\":\"/tmp/msp\"}}}"
+
+	//Prepare Config
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+	mockConfig.EXPECT().SecurityLevel().Return(256)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+	mockConfig.EXPECT().Ephemeral().Return(false)
+
+	//Get cryptosuite using config
+	cryptOptsJSON, err := GetCryptoOptsJSON(mockConfig)
+	utils.VerifyEmpty(t, err, "Not supposed to get error on GetCryptoOptsJSON call : %s", err)
+	utils.VerifyNotEmpty(t, cryptOptsJSON, "Supposed to get valid crypto opts")
+
+	if string(cryptOptsJSON) != expectedJSON {
+		t.Fatalf("Found unexpected crypto opts JSON, \n expected: %s, \n received: %s", expectedJSON, string(cryptOptsJSON))
+	}
+
+}
+
+func TestCryptoSuiteHashOpts(t *testing.T) {
+	//Get CryptoSuite SHA Opts
+	shaHashOpts := GetSHAOpts()
+	utils.VerifyNotEmpty(t, shaHashOpts, "Not supposed to be empty shaHashOpts")
+	utils.VerifyTrue(t, shaHashOpts.Algorithm() == shaHashOptsAlgorithm, "Unexpected SHA hash opts, expected [%s], got [%s]", shaHashOptsAlgorithm, shaHashOpts.Algorithm())
+
+}
+
+func verifyCryptoSuite(t *testing.T, samplecryptoSuite apicryptosuite.CryptoSuite) {
 	//Test cryptosuite.Sign
 	signedBytes, err := samplecryptoSuite.Sign(GetKey(getMockKey(signingKey)), nil, nil)
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey")
+	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey : %s", err)
 	utils.VerifyTrue(t, string(signedBytes) == mockIdentifier+signedIdentifier, "Got unexpected result from samplecryptoSuite.Sign")
 
 	//Test cryptosuite.Hash

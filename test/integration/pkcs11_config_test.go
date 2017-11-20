@@ -13,8 +13,8 @@ import (
 	"testing"
 
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	pkcsFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
-	pkcs11 "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/pkcs11"
+	pkcsFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
+	pkcs11 "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
 )
 
 var configImpl api.Config

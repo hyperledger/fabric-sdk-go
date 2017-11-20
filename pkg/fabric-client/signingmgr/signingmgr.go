@@ -9,9 +9,9 @@ package signingmgr
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
 
 // SigningManager is used for signing objects with private key
@@ -26,7 +26,7 @@ type SigningManager struct {
 // @param {Config} config - configuration provider
 // @returns {SigningManager} new signing manager
 func NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (*SigningManager, error) {
-	return &SigningManager{cryptoProvider: cryptoProvider, hashOpts: &bccsp.SHAOpts{}}, nil
+	return &SigningManager{cryptoProvider: cryptoProvider, hashOpts: cryptosuite.GetSHAOpts()}, nil
 }
 
 // Sign will sign the given object using provided key
