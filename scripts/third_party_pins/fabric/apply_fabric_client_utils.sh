@@ -108,7 +108,9 @@ FILTERS_ENABLED="fn"
 FILTER_FILENAME="bccsp/signer/signer.go"
 FILTER_FN=New,Public,Sign
 gofilter
-sed -i '/"github.com\// a "github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/"github.com\// a \
+"github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
@@ -208,7 +210,9 @@ FILTER_FN+=",newBccspMsp,IsWellFormed,GetVersion"
 gofilter
 # TODO - adapt to msp/factory.go rather than changing newBccspMsp
 sed -i'' -e 's/newBccspMsp/NewBccspMsp/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i '/m "github.com\// a cryptosuite "github.com\/hyperledger\/fabric-sdk-go\/pkg\/cryptosuite\/bccsp"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/m "github.com\// a \
+cryptosuite "github.com\/hyperledger\/fabric-sdk-go\/pkg\/cryptosuite\/bccsp"\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/signer.New(msp.bccsp, privKey)/signer.New(cryptosuite.GetSuite(msp.bccsp), cryptosuite.GetKey(privKey))/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/mspimplsetup.go"
