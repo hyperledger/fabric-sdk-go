@@ -16,10 +16,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
-	"encoding/json"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 )
 
@@ -86,16 +84,8 @@ func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
 	c.Config.MSPDir = config.CAKeyStorePath()
 
 	//Factory opts
-	//TODO below logic needs to be moved to internal/cryptosuite bridge
-	c.Config.CSP = &bccspFactory.FactoryOpts{}
-	optsbytes, err := cryptosuite.GetCryptoOptsJSON(config)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(optsbytes, c.Config.CSP)
-	if err != nil {
-		return nil, err
-	}
+	opts := cryptosuite.GetOptsByConfig(config)
+	c.Config.CSP = &factory.FactoryOpts{opts}
 
 	fabricCAClient := FabricCA{fabricCAClient: c}
 

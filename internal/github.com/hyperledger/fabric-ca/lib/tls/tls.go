@@ -27,13 +27,11 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // ServerTLSConfig defines key material for a TLS server
@@ -68,7 +66,7 @@ func GetClientTLSConfig(cfg *ClientTLSConfig, csp apicryptosuite.CryptoSuite) (*
 	var certs []tls.Certificate
 
 	if csp == nil {
-		csp = cryptosuite.GetSuite(factory.GetDefault())
+		csp = factory.GetDefault()
 	}
 
 	log.Debugf("CA Files: %+v\n", cfg.CertFiles)

@@ -25,11 +25,14 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/hex"
+
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+
 	"encoding/pem"
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	bccsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
 	logging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -46,13 +49,13 @@ type identity struct {
 	cert *x509.Certificate
 
 	// this is the public key of this instance
-	pk bccsp.Key
+	pk apicryptosuite.Key
 
 	// reference to the MSP that "owns" this identity
 	msp *bccspmsp
 }
 
-func newIdentity(cert *x509.Certificate, pk bccsp.Key, msp *bccspmsp) (Identity, error) {
+func newIdentity(cert *x509.Certificate, pk apicryptosuite.Key, msp *bccspmsp) (Identity, error) {
 	if mspIdentityLogger.IsEnabledFor(logging.DEBUG) {
 		mspIdentityLogger.Debugf("Creating identity instance for cert %s", certToPEM(cert))
 	}
@@ -184,7 +187,7 @@ func (id *identity) Serialize() ([]byte, error) {
 	return idBytes, nil
 }
 
-func (id *identity) getHashOpt(hashFamily string) (bccsp.HashOpts, error) {
+func (id *identity) getHashOpt(hashFamily string) (apicryptosuite.HashOpts, error) {
 	switch hashFamily {
 	case bccsp.SHA2:
 		return bccsp.GetHashOpt(bccsp.SHA256)
@@ -202,7 +205,7 @@ type signingidentity struct {
 	signer crypto.Signer
 }
 
-func newSigningIdentity(cert *x509.Certificate, pk bccsp.Key, signer crypto.Signer, msp *bccspmsp) (SigningIdentity, error) {
+func newSigningIdentity(cert *x509.Certificate, pk apicryptosuite.Key, signer crypto.Signer, msp *bccspmsp) (SigningIdentity, error) {
 	//mspIdentityLogger.Infof("Creating signing identity instance for ID %s", id)
 	mspId, err := newIdentity(cert, pk, msp)
 	if err != nil {

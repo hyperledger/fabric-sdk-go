@@ -25,15 +25,14 @@ import (
 )
 
 const (
-	mockIdentifier       = "mock-test"
-	signedIdentifier     = "-signed"
-	signingKey           = "signing-key"
-	hashMessage          = "-msg-bytes"
-	sampleKey            = "sample-key"
-	getKey               = "-getkey"
-	keyImport            = "-keyimport"
-	keyGen               = "-keygent"
-	shaHashOptsAlgorithm = "SHA"
+	mockIdentifier   = "mock-test"
+	signedIdentifier = "-signed"
+	signingKey       = "signing-key"
+	hashMessage      = "-msg-bytes"
+	sampleKey        = "sample-key"
+	getKey           = "-getkey"
+	keyImport        = "-keyimport"
+	keyGen           = "-keygent"
 )
 
 // TestMain Load testing config
@@ -128,39 +127,6 @@ func TestCryptoSuiteByConfigFailures(t *testing.T) {
 
 }
 
-func TestGetCryptoOptsJSON(t *testing.T) {
-
-	expectedJSON := "{\"default\":\"SW\",\"SW\":{\"security\":256,\"hash\":\"SHA2\",\"filekeystore\":{\"KeyStorePath\":\"/tmp/msp\"}}}"
-
-	//Prepare Config
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
-	mockConfig.EXPECT().SecurityProvider().Return("SW")
-	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
-	mockConfig.EXPECT().SecurityLevel().Return(256)
-	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
-	mockConfig.EXPECT().Ephemeral().Return(false)
-
-	//Get cryptosuite using config
-	cryptOptsJSON, err := GetCryptoOptsJSON(mockConfig)
-	utils.VerifyEmpty(t, err, "Not supposed to get error on GetCryptoOptsJSON call : %s", err)
-	utils.VerifyNotEmpty(t, cryptOptsJSON, "Supposed to get valid crypto opts")
-
-	if string(cryptOptsJSON) != expectedJSON {
-		t.Fatalf("Found unexpected crypto opts JSON, \n expected: %s, \n received: %s", expectedJSON, string(cryptOptsJSON))
-	}
-
-}
-
-func TestCryptoSuiteHashOpts(t *testing.T) {
-	//Get CryptoSuite SHA Opts
-	shaHashOpts := GetSHAOpts()
-	utils.VerifyNotEmpty(t, shaHashOpts, "Not supposed to be empty shaHashOpts")
-	utils.VerifyTrue(t, shaHashOpts.Algorithm() == shaHashOptsAlgorithm, "Unexpected SHA hash opts, expected [%s], got [%s]", shaHashOptsAlgorithm, shaHashOpts.Algorithm())
-
-}
-
 func verifyCryptoSuite(t *testing.T, samplecryptoSuite apicryptosuite.CryptoSuite) {
 	//Test cryptosuite.Sign
 	signedBytes, err := samplecryptoSuite.Sign(GetKey(getMockKey(signingKey)), nil, nil)
@@ -228,6 +194,16 @@ func verifyCryptoSuite(t *testing.T, samplecryptoSuite apicryptosuite.CryptoSuit
 	publikey, err = key.PublicKey()
 	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyGen().PublicKey()")
 	utils.VerifyNotEmpty(t, publikey, "Not supposed to get empty key for samplecryptoSuite.KeyGen().PublicKey()")
+
+	//Test cryptosuite.GetHash
+	hash, err := samplecryptoSuite.GetHash(&bccsp.SHA256Opts{})
+	utils.VerifyNotEmpty(t, err, "Supposed to get error for samplecryptoSuite.GetHash")
+	utils.VerifyEmpty(t, hash, "Supposed to get empty hash for samplecryptoSuite.GetHash")
+
+	//Test cryptosuite.GetHash
+	valid, err := samplecryptoSuite.Verify(GetKey(getMockKey(signingKey)), nil, nil, nil)
+	utils.VerifyEmpty(t, err, "Not supposed to get error for samplecryptoSuite.Verify")
+	utils.VerifyTrue(t, valid, "Supposed to get true for samplecryptoSuite.Verify")
 }
 
 /*
@@ -275,7 +251,7 @@ func (mock *mockBCCSP) Sign(k bccsp.Key, digest []byte, opts bccsp.SignerOpts) (
 }
 
 func (mock *mockBCCSP) Verify(k bccsp.Key, signature, digest []byte, opts bccsp.SignerOpts) (valid bool, err error) {
-	return false, nil
+	return true, nil
 }
 
 func (mock *mockBCCSP) Encrypt(k bccsp.Key, plaintext []byte, opts bccsp.EncrypterOpts) (ciphertext []byte, err error) {

@@ -70,6 +70,8 @@ FILTER_FN+=",CreateChaincodeProposalWithTxIDNonceAndTransient,CreateDeployPropos
 FILTER_FN+=",createProposalFromCDS,CreateProposalFromCIS,CreateInstallProposalFromCDS,GetTransaction,GetPayload"
 FILTER_FN+=",GetChaincodeActionPayload,GetProposalResponsePayload,GetChaincodeAction,GetChaincodeEvents,GetBytesChaincodeEvent,GetBytesEnvelope"
 gofilter
+sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/factory"/factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/&bccsp.SHA256Opts{}/factory.GetSHA256Opts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="protos/utils/txutils.go"
 FILTER_FN="GetBytesProposalPayloadForTx,GetEnvelopeFromBlock"

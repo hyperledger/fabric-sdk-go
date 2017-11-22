@@ -37,12 +37,8 @@ import (
 
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/cloudflare/cfssl/helpers"
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
-	cspsigner "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/signer"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 )
 
 // InitBCCSP initializes BCCSP
@@ -73,7 +69,7 @@ func ConfigureBCCSP(optsPtr **factory.FactoryOpts, mspDir, homeDir string) error
 	}
 	if strings.ToUpper(opts.ProviderName) == "SW" {
 		if opts.SwOpts == nil {
-			opts.SwOpts = &factory.SwOpts{}
+			opts.SwOpts = factory.NewSwOpts()
 		}
 		if opts.SwOpts.HashFamily == "" {
 			opts.SwOpts.HashFamily = "SHA2"
@@ -82,7 +78,7 @@ func ConfigureBCCSP(optsPtr **factory.FactoryOpts, mspDir, homeDir string) error
 			opts.SwOpts.SecLevel = 256
 		}
 		if opts.SwOpts.FileKeystore == nil {
-			opts.SwOpts.FileKeystore = &factory.FileKeystoreOpts{}
+			opts.SwOpts.FileKeystore = factory.NewFileKeystoreOpts()
 		}
 		// The mspDir overrides the KeyStorePath; otherwise, if not set, set default
 		if mspDir != "" {
@@ -119,7 +115,7 @@ func GetBCCSP(opts *factory.FactoryOpts, homeDir string) (apicryptosuite.CryptoS
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to get BCCSP with opts")
 	}
-	return cryptosuite.GetSuite(csp), nil
+	return csp, nil
 }
 
 // makeFileNamesAbsolute makes all relative file names associated with CSP absolute,
@@ -137,18 +133,18 @@ func makeFileNamesAbsolute(opts *factory.FactoryOpts, homeDir string) error {
 // This supports ECDSA and RSA.
 func getBCCSPKeyOpts(kr csr.KeyRequest, ephemeral bool) (opts apicryptosuite.KeyGenOpts, err error) {
 	if kr == nil {
-		return &bccsp.ECDSAKeyGenOpts{Temporary: ephemeral}, nil
+		return factory.GetECDSAKeyGenOpts(ephemeral), nil
 	}
 	log.Debugf("generate key from request: algo=%s, size=%d", kr.Algo(), kr.Size())
 	switch kr.Algo() {
 	case "rsa":
 		switch kr.Size() {
 		case 2048:
-			return &bccsp.RSA2048KeyGenOpts{Temporary: ephemeral}, nil
+			return factory.GetRSA2048KeyGenOpts(ephemeral), nil
 		case 3072:
-			return &bccsp.RSA3072KeyGenOpts{Temporary: ephemeral}, nil
+			return factory.GetRSA3072KeyGenOpts(ephemeral), nil
 		case 4096:
-			return &bccsp.RSA4096KeyGenOpts{Temporary: ephemeral}, nil
+			return factory.GetRSA4096KeyGenOpts(ephemeral), nil
 		default:
 			// Need to add a way to specify arbitrary RSA key size to bccsp
 			return nil, errors.Errorf("Invalid RSA key size: %d", kr.Size())
@@ -156,9 +152,9 @@ func getBCCSPKeyOpts(kr csr.KeyRequest, ephemeral bool) (opts apicryptosuite.Key
 	case "ecdsa":
 		switch kr.Size() {
 		case 256:
-			return &bccsp.ECDSAP256KeyGenOpts{Temporary: ephemeral}, nil
+			return factory.GetECDSAP256KeyGenOpts(ephemeral), nil
 		case 384:
-			return &bccsp.ECDSAP384KeyGenOpts{Temporary: ephemeral}, nil
+			return factory.GetECDSAP384KeyGenOpts(ephemeral), nil
 		case 521:
 			// Need to add curve P521 to bccsp
 			// return &bccsp.ECDSAP512KeyGenOpts{Temporary: false}, nil
@@ -177,7 +173,7 @@ func GetSignerFromCert(cert *x509.Certificate, csp apicryptosuite.CryptoSuite) (
 		return nil, nil, errors.New("CSP was not initialized")
 	}
 	// get the public key in the right format
-	certPubK, err := csp.KeyImport(cert, &bccsp.X509PublicKeyImportOpts{Temporary: true})
+	certPubK, err := csp.KeyImport(cert, factory.GetX509PublicKeyImportOpts(true))
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "Failed to import certificate's public key")
 	}
@@ -187,7 +183,7 @@ func GetSignerFromCert(cert *x509.Certificate, csp apicryptosuite.CryptoSuite) (
 		return nil, nil, errors.WithMessage(err, "Could not find matching private key for SKI")
 	}
 	// Construct and initialize the signer
-	signer, err := cspsigner.New(csp, privateKey)
+	signer, err := factory.NewCspsigner(csp, privateKey)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "Failed to load ski from bccsp")
 	}
@@ -224,7 +220,7 @@ func BCCSPKeyRequestGenerate(req *csr.CertificateRequest, myCSP apicryptosuite.C
 		return nil, nil, err
 	}
 
-	cspSigner, err := cspsigner.New(myCSP, key)
+	cspSigner, err := factory.NewCspsigner(myCSP, key)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "Failed initializing CryptoSigner")
 	}
@@ -237,17 +233,17 @@ func ImportBCCSPKeyFromPEM(keyFile string, myCSP apicryptosuite.CryptoSuite, tem
 	if err != nil {
 		return nil, err
 	}
-	key, err := utils.PEMtoPrivateKey(keyBuff, nil)
+	key, err := factory.PEMtoPrivateKey(keyBuff, nil)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("Failed parsing private key from %s", keyFile))
 	}
 	switch key.(type) {
 	case *ecdsa.PrivateKey:
-		priv, err := utils.PrivateKeyToDER(key.(*ecdsa.PrivateKey))
+		priv, err := factory.PrivateKeyToDER(key.(*ecdsa.PrivateKey))
 		if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("Failed to convert ECDSA private key for '%s'", keyFile))
 		}
-		sk, err := myCSP.KeyImport(priv, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: temporary})
+		sk, err := myCSP.KeyImport(priv, factory.GetECDSAPrivateKeyImportOpts(temporary))
 		if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("Failed to import ECDSA private key for '%s'", keyFile))
 		}

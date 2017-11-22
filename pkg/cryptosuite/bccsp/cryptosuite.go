@@ -9,7 +9,7 @@ package bccsp
 import (
 	"fmt"
 
-	"encoding/json"
+	"hash"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
@@ -28,7 +28,7 @@ func GetSuite(bccsp bccsp.BCCSP) apicryptosuite.CryptoSuite {
 
 //GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
 func GetSuiteByConfig(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
-	opts := getOptsByConfig(config)
+	opts := GetOptsByConfig(config)
 	bccsp, err := bccspFactory.GetBCCSPFromOpts(opts)
 
 	if err != nil {
@@ -37,22 +37,8 @@ func GetSuiteByConfig(config apiconfig.Config) (apicryptosuite.CryptoSuite, erro
 	return &cryptoSuite{bccsp}, nil
 }
 
-//GetCryptoOptsJSON returns factory opts in json format
-func GetCryptoOptsJSON(config apiconfig.Config) ([]byte, error) {
-	opts := getOptsByConfig(config)
-	jsonBytes, err := json.Marshal(opts)
-	if err != nil {
-		return nil, err
-	}
-	return jsonBytes, nil
-}
-
-//GetSHAOpts returns bccsp SHA hashing opts
-func GetSHAOpts() apicryptosuite.HashOpts {
-	return &bccsp.SHAOpts{}
-}
-
-func getOptsByConfig(c apiconfig.Config) *bccspFactory.FactoryOpts {
+//GetOptsByConfig Returns Factory opts for given SDK config
+func GetOptsByConfig(c apiconfig.Config) *bccspFactory.FactoryOpts {
 	var opts *bccspFactory.FactoryOpts
 
 	switch c.SecurityProvider() {
@@ -124,8 +110,16 @@ func (c *cryptoSuite) Hash(msg []byte, opts apicryptosuite.HashOpts) (hash []byt
 	return c.bccsp.Hash(msg, opts)
 }
 
+func (c *cryptoSuite) GetHash(opts apicryptosuite.HashOpts) (h hash.Hash, err error) {
+	return c.bccsp.GetHash(opts)
+}
+
 func (c *cryptoSuite) Sign(k apicryptosuite.Key, digest []byte, opts apicryptosuite.SignerOpts) (signature []byte, err error) {
 	return c.bccsp.Sign(k.(*key).key, digest, opts)
+}
+
+func (c *cryptoSuite) Verify(k apicryptosuite.Key, signature, digest []byte, opts apicryptosuite.SignerOpts) (valid bool, err error) {
+	return c.bccsp.Verify(k.(*key).key, signature, digest, opts)
 }
 
 type key struct {

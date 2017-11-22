@@ -23,7 +23,10 @@ CryptoSuite interface defined in this file acts as a wrapper for
 
 package apicryptosuite
 
-import "crypto"
+import (
+	"crypto"
+	"hash"
+)
 
 //CryptoSuite adaptor for all bccsp functionalities used by SDK
 type CryptoSuite interface {
@@ -43,6 +46,10 @@ type CryptoSuite interface {
 	// If opts is nil, the default hash function will be used.
 	Hash(msg []byte, opts HashOpts) (hash []byte, err error)
 
+	// GetHash returns and instance of hash.Hash using options opts.
+	// If opts is nil, the default hash function will be returned.
+	GetHash(opts HashOpts) (h hash.Hash, err error)
+
 	// Sign signs digest using key k.
 	// The opts argument should be appropriate for the algorithm used.
 	//
@@ -50,6 +57,10 @@ type CryptoSuite interface {
 	// the caller is responsible for hashing the larger message and passing
 	// the hash (as digest).
 	Sign(k Key, digest []byte, opts SignerOpts) (signature []byte, err error)
+
+	// Verify verifies signature against key k and digest
+	// The opts argument should be appropriate for the algorithm used.
+	Verify(k Key, signature, digest []byte, opts SignerOpts) (valid bool, err error)
 }
 
 // Key represents a cryptographic key

@@ -15,13 +15,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -122,7 +121,7 @@ func TestRegister(t *testing.T) {
 	}
 
 	user.SetEnrollmentCertificate(readCert(t))
-	key, err := cryptosuite.GetSuite(bccspFactory.GetDefault()).KeyGen(&bccsp.ECDSAP256KeyGenOpts{})
+	key, err := factory.GetDefault().KeyGen(factory.GetECDSAP256KeyGenOpts(true))
 	if err != nil {
 		t.Fatalf("KeyGen return error %v", err)
 	}
@@ -215,7 +214,7 @@ func TestReenroll(t *testing.T) {
 	}
 	// Reenroll with appropriate user
 	user.SetEnrollmentCertificate(readCert(t))
-	key, err := cryptosuite.GetSuite(bccspFactory.GetDefault()).KeyGen(&bccsp.ECDSAP256KeyGenOpts{})
+	key, err := factory.GetDefault().KeyGen(factory.GetECDSAP256KeyGenOpts(true))
 	if err != nil {
 		t.Fatalf("KeyGen return error %v", err)
 	}
@@ -388,21 +387,6 @@ func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 	_, err := NewFabricCAClient(mockConfig, org1)
 	if err != nil {
 		t.Fatalf("Expected fabric client to be created with SW BCCS provider, but got %v", err.Error())
-	}
-}
-
-// createBCCSPProviderFactoryOptions is a helper function to return BCCSP Factory Options object
-func createBCCSPProviderFactoryOptions(providerName string, hashFamily string, securityLevel int) *bccspFactory.FactoryOpts {
-	return &bccspFactory.FactoryOpts{
-		ProviderName: providerName,
-		SwOpts: &bccspFactory.SwOpts{
-			HashFamily: hashFamily,
-			SecLevel:   securityLevel,
-			FileKeystore: &bccspFactory.FileKeystoreOpts{
-				KeyStorePath: os.TempDir(),
-			},
-			Ephemeral: false,
-		},
 	}
 }
 
