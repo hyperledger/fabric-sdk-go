@@ -97,9 +97,9 @@ func TestChannelClient(t *testing.T) {
 
 func testQuery(expected string, ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
-	result, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: ccID, Fcn: "invoke", Args: queryArgs})
+	result, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: ccID, Fcn: "query", Args: queryArgs})
 	if err != nil {
-		t.Fatalf("Failed to invoke example cc: %s", err)
+		t.Fatalf("Failed to query example cc: %s", err)
 	}
 
 	if string(result) != expected {
@@ -110,9 +110,9 @@ func testQuery(expected string, ccID string, chClient apitxn.ChannelClient, t *t
 func testQueryWithOpts(expected string, ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
 	notifier := make(chan apitxn.QueryResponse)
-	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: ccID, Fcn: "invoke", Args: queryArgs}, apitxn.QueryOpts{Notifier: notifier})
+	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: ccID, Fcn: "query", Args: queryArgs}, apitxn.QueryOpts{Notifier: notifier})
 	if err != nil {
-		t.Fatalf("Failed to invoke example cc asynchronously: %s", err)
+		t.Fatalf("Failed to query example cc asynchronously: %s", err)
 	}
 	if result != nil {
 		t.Fatalf("Expecting empty, got %s", result)
