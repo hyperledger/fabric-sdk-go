@@ -150,16 +150,31 @@ func (c *MockClient) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, err
 	return nil, errors.New("Not implemented yet")
 }
 
-//QueryInstalledChaincodes ...
+//QueryInstalledChaincodes mocks query installed chaincodes
 func (c *MockClient) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResponse, error) {
-	return nil, errors.New("Not implemented yet")
+	if peer == nil {
+		return nil, errors.New("Generate Error")
+	}
+	ci := &pb.ChaincodeInfo{Name: "name", Version: "version", Path: "path"}
+	response := &pb.ChaincodeQueryResponse{Chaincodes: []*pb.ChaincodeInfo{ci}}
+	return response, nil
 }
 
-// InstallChaincode ...
-func (c *MockClient) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
-	chaincodePackage []byte, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, string, error) {
-	return nil, "", errors.New("Not implemented yet")
+// InstallChaincode mocks install chaincode
+func (c *MockClient) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.TransactionProposalResponse, string, error) {
+	if req.Name == "error" {
+		return nil, "", errors.New("Generate Error")
+	}
 
+	if req.Name == "errorInResponse" {
+		result := apitxn.TransactionProposalResult{Endorser: "http://peer1.com", Status: 10}
+		response := &apitxn.TransactionProposalResponse{TransactionProposalResult: result, Err: errors.New("Generate Response Error")}
+		return []*apitxn.TransactionProposalResponse{response}, "1234", nil
+	}
+
+	result := apitxn.TransactionProposalResult{Endorser: "http://peer1.com", Status: 0}
+	response := &apitxn.TransactionProposalResponse{TransactionProposalResult: result}
+	return []*apitxn.TransactionProposalResponse{response}, "1234", nil
 }
 
 // UserContext ...

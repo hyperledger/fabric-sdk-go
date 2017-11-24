@@ -155,6 +155,6 @@ populate-clean:
 
 clean:
 	-$(GO_CMD) clean
-	-rm -Rf /tmp/enroll_user /tmp/msp /tmp/keyvaluestore /tmp/hfc-kvs
+	-rm -Rf /tmp/enroll_user /tmp/msp /tmp/keyvaluestore /tmp/hfc-kvs /tmp/state
 	-rm -f integration-report.xml report.xml
 	-FIXTURE_PROJECT_NAME=$(FIXTURE_PROJECT_NAME) DOCKER_REMOVE_FORCE=$(FIXTURE_DOCKER_REMOVE_FORCE) test/scripts/clean_integration.sh

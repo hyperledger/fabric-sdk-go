@@ -55,7 +55,7 @@ func (f *SessionClientFactory) NewChannelMgmtClient(sdk context.SDK, session con
 	return chmgmtImpl.NewChannelMgmtClient(client, config)
 }
 
-// NewResourceMgmtClient returns a client that manager resources
+// NewResourceMgmtClient returns a client that manages resources
 func (f *SessionClientFactory) NewResourceMgmtClient(sdk context.SDK, session context.Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error) {
 
 	// For now settings are the same as for system client

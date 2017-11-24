@@ -15,6 +15,8 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
+	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
+
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
@@ -173,13 +175,21 @@ func installAndInstantiate(t *testing.T) {
 		return
 	}
 
-	orgTestClient.SetUserContext(org1AdminUser)
-	admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []apitxn.ProposalProcessor{orgTestPeer0}, "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	orgTestClient.SetUserContext(org2AdminUser)
-	err := admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []apitxn.ProposalProcessor{orgTestPeer1}, "../../fixtures/testdata")
+	req := resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Package: ccPkg}
+
+	// Install example cc for Org1
+	_, err = org1ResMgmt.InstallCC(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Install example cc for Org2
+	_, err = org2ResMgmt.InstallCC(req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,6 +197,7 @@ func installAndInstantiate(t *testing.T) {
 	chaincodePolicy := cauthdsl.SignedByAnyMember([]string{
 		org1AdminUser.MspID(), org2AdminUser.MspID()})
 
+	orgTestClient.SetUserContext(org2AdminUser)
 	err = admin.SendInstantiateCC(orgTestChannel, "exampleCC",
 		integration.ExampleCCInitArgs(), "github.com/example_cc", "0", chaincodePolicy, []apitxn.ProposalProcessor{orgTestPeer1}, peer1EventHub)
 	if err != nil {

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package packager
+package gopackager
 
 import (
 	"archive/tar"
@@ -18,6 +18,9 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 // Descriptor ...
@@ -33,18 +36,25 @@ var keep = []string{".go", ".c", ".h"}
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
-// PackageGoLangCC ...
-func PackageGoLangCC(chaincodePath string) ([]byte, error) {
+// NewCCPackage creates new go lang chaincode package
+func NewCCPackage(chaincodePath string, goPath string) (*fab.CCPackage, error) {
 
-	// Determine the user's $GOPATH
-	goPath := os.Getenv("GOPATH")
-	if goPath == "" {
-		return nil, errors.New("GOPATH not defined")
+	if chaincodePath == "" {
+		return nil, errors.New("chaincode path must be provided")
 	}
-	logger.Debugf("GOPATH environment variable=%s", goPath)
 
-	// Compose the path to the chaincode project directory
-	projDir := path.Join(goPath, "src", chaincodePath)
+	var projDir string
+	gp := goPath
+	if gp == "" {
+		// TODO: for now use env variable
+		gp = os.Getenv("GOPATH")
+		if gp == "" {
+			return nil, errors.New("GOPATH not defined")
+		}
+		logger.Debugf("Default GOPATH=%s", gp)
+	}
+
+	projDir = path.Join(gp, "src", chaincodePath)
 
 	logger.Debugf("projDir variable=%s", projDir)
 
@@ -52,7 +62,7 @@ func PackageGoLangCC(chaincodePath string) ([]byte, error) {
 	// and then pack them into an archive.  While the two phases aren't
 	// strictly necessary yet, they pave the way for the future where we
 	// will need to assemble sources from multiple packages
-	descriptors, err := findSource(goPath, projDir)
+	descriptors, err := findSource(gp, projDir)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +70,10 @@ func PackageGoLangCC(chaincodePath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return tarBytes, nil
+
+	ccPkg := &fab.CCPackage{Type: pb.ChaincodeSpec_GOLANG, Code: tarBytes}
+
+	return ccPkg, nil
 }
 
 // -------------------------------------------------------------------------

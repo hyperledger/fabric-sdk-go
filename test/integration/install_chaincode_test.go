@@ -8,21 +8,18 @@ package integration
 
 import (
 	"math/rand"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
+	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 )
 
 const (
 	chainCodeName = "install"
 	chainCodePath = "github.com/example_cc"
 )
-
-var origGoPath = os.Getenv("GOPATH")
 
 func TestChaincodeInstal(t *testing.T) {
 
@@ -51,7 +48,12 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupIm
 	// Retrieve installed chaincodes
 	client := testSetup.Client
 
-	if err := testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, nil); err != nil {
+	ccPkg, err := packager.NewCCPackage(chainCodePath, testSetup.GetDeployPath())
+	if err != nil {
+		t.Fatalf("Failed to package chaincode")
+	}
+
+	if err := testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, ccPkg); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
@@ -71,7 +73,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupIm
 		t.Fatalf("Failed to retrieve installed chaincode.")
 	}
 	//Install same chaincode again, should fail
-	err = testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, nil)
+	err = testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, ccPkg)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
@@ -84,19 +86,19 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupIm
 func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *BaseSetupImpl) {
 
 	chainCodeVersion := getRandomCCVersion()
-	changeGOPATHToDeploy(testSetup.GetDeployPath())
-	chaincodePackage, err := packager.PackageCC(chainCodePath, "")
-	resetGOPATH()
+
+	ccPkg, err := packager.NewCCPackage(chainCodePath, testSetup.GetDeployPath())
 	if err != nil {
 		t.Fatalf("PackageCC return error: %s", err)
 	}
 
-	err = testSetup.InstallCC("install", "github.com/example_cc_pkg", chainCodeVersion, chaincodePackage)
+	err = testSetup.InstallCC("install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
+
 	//Install same chaincode again, should fail
-	err = testSetup.InstallCC("install", chainCodePath, chainCodeVersion, chaincodePackage)
+	err = testSetup.InstallCC("install", chainCodePath, chainCodeVersion, ccPkg)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
@@ -108,14 +110,4 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *BaseSetu
 func getRandomCCVersion() string {
 	rand.Seed(time.Now().UnixNano())
 	return "v0" + strconv.Itoa(rand.Intn(10000000))
-}
-
-// ChangeGOPATHToDeploy changes go path to fixtures folder
-func changeGOPATHToDeploy(deployPath string) {
-	os.Setenv("GOPATH", deployPath)
-}
-
-// ResetGOPATH resets go path to original
-func resetGOPATH() {
-	os.Setenv("GOPATH", origGoPath)
 }

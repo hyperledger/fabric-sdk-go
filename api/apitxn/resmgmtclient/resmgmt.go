@@ -20,8 +20,36 @@ type JoinChannelOpts struct {
 	TargetFilter TargetFilter // peer filter
 }
 
+// InstallCCRequest contains install chaincode request parameters
+type InstallCCRequest struct {
+	Name    string
+	Path    string
+	Version string
+	Package *fab.CCPackage
+}
+
+// InstallCCResponse contains install chaincode response status
+type InstallCCResponse struct {
+	Target string
+	Status int32
+	Info   string
+	Err    error
+}
+
+// InstallCCOpts contains options for installing chaincode
+type InstallCCOpts struct {
+	Targets      []fab.Peer   // target peers
+	TargetFilter TargetFilter // target filter
+}
+
 // ResourceMgmtClient is responsible for managing resources: peers joining channels, and installing and instantiating chaincodes(TODO).
 type ResourceMgmtClient interface {
+
+	// InstallCC - install chaincode
+	InstallCC(req InstallCCRequest) ([]InstallCCResponse, error)
+
+	// InstallCCWithOpts installs chaincode with custom options (specific peers, filtered peers)
+	InstallCCWithOpts(req InstallCCRequest, opts InstallCCOpts) ([]InstallCCResponse, error)
 
 	// JoinChannel allows for peers to join existing channel
 	JoinChannel(channelID string) error

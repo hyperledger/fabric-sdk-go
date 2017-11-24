@@ -43,7 +43,7 @@ type FabricClient interface {
 	CryptoSuite() apicryptosuite.CryptoSuite
 	SaveUserToStateStore(user User, skipPersistence bool) error
 	LoadUserFromStateStore(name string) (User, error)
-	InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string, chaincodePackage []byte, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, string, error)
+	InstallChaincode(request InstallChaincodeRequest) ([]*txn.TransactionProposalResponse, string, error)
 	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
 	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
 	UserContext() User
@@ -74,4 +74,24 @@ type CreateChannelRequest struct {
 	// TODO: InvokeChannelRequest allows the TransactionID to be passed in.
 	// This request struct also has the field for consistency but perhaps it should be removed.
 	TxnID txn.TransactionID
+}
+
+// InstallChaincodeRequest requests chaincode installation on the network
+type InstallChaincodeRequest struct {
+	// required - name of the chaincode
+	Name string
+	// required - path to the location of chaincode sources (path from GOPATH/src folder)
+	Path string
+	// chaincodeVersion: required - version of the chaincode
+	Version string
+	// required - package (chaincode package type and bytes)
+	Package *CCPackage
+	// required - proposal processor list
+	Targets []txn.ProposalProcessor
+}
+
+// CCPackage contains package type and bytes required to create CDS
+type CCPackage struct {
+	Type pb.ChaincodeSpec_Type
+	Code []byte
 }

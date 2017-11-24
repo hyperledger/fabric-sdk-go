@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
@@ -195,11 +196,20 @@ func (setup *BaseSetupImpl) UpgradeCC(chainCodeID string, chainCodePath string, 
 	return admin.SendUpgradeCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub)
 }
 
-// InstallCC ...
-func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte) error {
+// InstallCC use low level client to install chaincode
+func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, ccPackage *fab.CCPackage) error {
 
-	if err := admin.SendInstallCC(setup.Client, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, peer.PeersToTxnProcessors(setup.Channel.Peers()), setup.GetDeployPath()); err != nil {
-		return errors.WithMessage(err, "SendInstallProposal failed")
+	icr := fab.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: peer.PeersToTxnProcessors(setup.Channel.Peers())}
+
+	transactionProposalResponse, _, err := setup.Client.InstallChaincode(icr)
+
+	if err != nil {
+		return errors.WithMessage(err, "InstallChaincode failed")
+	}
+	for _, v := range transactionProposalResponse {
+		if v.Err != nil {
+			return errors.WithMessage(v.Err, "InstallChaincode endorser failed")
+		}
 	}
 
 	return nil
@@ -211,7 +221,7 @@ func (setup *BaseSetupImpl) GetDeployPath() string {
 	return path.Join(pwd, "../fixtures/testdata")
 }
 
-// InstallAndInstantiateExampleCC ..
+// InstallAndInstantiateExampleCC install and instantiate using resource management client
 func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 
 	chainCodePath := "github.com/example_cc"
@@ -221,14 +231,20 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 		setup.ChainCodeID = GenerateRandomID()
 	}
 
-	if err := setup.InstallCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, nil); err != nil {
+	ccPkg, err := packager.NewCCPackage(chainCodePath, setup.GetDeployPath())
+	if err != nil {
+		return err
+	}
+
+	_, err = resMgmtClient.InstallCC(resmgmt.InstallCCRequest{Name: setup.ChainCodeID, Path: chainCodePath, Version: chainCodeVersion, Package: ccPkg})
+	if err != nil {
 		return err
 	}
 
 	return setup.InstantiateCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, initArgs)
 }
 
-// UpgradeExampleCC ..
+// UpgradeExampleCC upgrade example CC
 func (setup *BaseSetupImpl) UpgradeExampleCC() error {
 
 	chainCodePath := "github.com/example_cc"
@@ -238,7 +254,13 @@ func (setup *BaseSetupImpl) UpgradeExampleCC() error {
 		setup.ChainCodeID = GenerateRandomID()
 	}
 
-	if err := setup.InstallCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, nil); err != nil {
+	ccPkg, err := packager.NewCCPackage(chainCodePath, setup.GetDeployPath())
+	if err != nil {
+		return err
+	}
+
+	_, err = resMgmtClient.InstallCC(resmgmt.InstallCCRequest{Name: setup.ChainCodeID, Path: chainCodePath, Version: chainCodeVersion, Package: ccPkg})
+	if err != nil {
 		return err
 	}
 

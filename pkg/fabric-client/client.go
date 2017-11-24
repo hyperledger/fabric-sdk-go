@@ -28,7 +28,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
-	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -480,31 +479,25 @@ func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
-func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
-	chaincodePackage []byte, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, string, error) {
+func (c *Client) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.TransactionProposalResponse, string, error) {
 
-	if chaincodeName == "" {
-		return nil, "", errors.New("chaincodeName required")
+	if req.Name == "" {
+		return nil, "", errors.New("chaincode name required")
 	}
-	if chaincodePath == "" {
-		return nil, "", errors.New("chaincodePath required")
+	if req.Path == "" {
+		return nil, "", errors.New("chaincode path required")
 	}
-	if chaincodeVersion == "" {
-		return nil, "", errors.New("chaincodeVersion required")
+	if req.Version == "" {
+		return nil, "", errors.New("chaincode version required")
 	}
-
-	if chaincodePackage == nil {
-		var err error
-		chaincodePackage, err = packager.PackageCC(chaincodePath, "")
-		if err != nil {
-			return nil, "", errors.WithMessage(err, "PackageCC failed")
-		}
+	if req.Package == nil {
+		return nil, "", errors.New("chaincode package is required")
 	}
 
 	now := time.Now()
 	cds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
-		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion}},
-		CodePackage: chaincodePackage, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
+		Type: req.Package.Type, ChaincodeId: &pb.ChaincodeID{Name: req.Name, Path: req.Path, Version: req.Version}},
+		CodePackage: req.Package.Code, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
 
 	if c.userContext == nil {
 		return nil, "", errors.New("user context required")
@@ -546,7 +539,7 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
 		TxnID:          txnID,
-	}, targets)
+	}, req.Targets)
 
 	return transactionProposalResponse, txID, err
 }

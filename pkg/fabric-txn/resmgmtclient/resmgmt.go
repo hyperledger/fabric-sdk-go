@@ -14,6 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -47,6 +48,10 @@ func NewResourceMgmtClient(client fab.FabricClient, discovery fab.DiscoveryServi
 	rcFilter := filter
 	if rcFilter == nil {
 		// Default target filter is based on user msp
+		if client.UserContext().MspID() == "" {
+			return nil, errors.New("mspID not available in user context")
+		}
+
 		rcFilter = &MSPFilter{mspID: client.UserContext().MspID()}
 	}
 
@@ -66,6 +71,10 @@ func (rc *ResourceMgmtClient) JoinChannel(channelID string) error {
 		return errors.WithMessage(err, "failed to get default targets for JoinChannel")
 	}
 
+	if len(targets) == 0 {
+		return errors.New("No default targets available")
+	}
+
 	return rc.JoinChannelWithOpts(channelID, resmgmt.JoinChannelOpts{Targets: targets})
 }
 
@@ -79,6 +88,10 @@ func (rc *ResourceMgmtClient) JoinChannelWithOpts(channelID string, opts resmgmt
 	targets, err := rc.calculateTargets(opts.Targets, opts.TargetFilter)
 	if err != nil {
 		return errors.WithMessage(err, "failed to determine target peers for JoinChannel")
+	}
+
+	if len(targets) == 0 {
+		return errors.New("No targets available")
 	}
 
 	txnid, err := rc.client.NewTxnID()
@@ -178,7 +191,116 @@ func (rc *ResourceMgmtClient) calculateTargets(peers []fab.Peer, filter resmgmt.
 	return targets, nil
 }
 
-// getChannel is helper method for creating channel. If channel is not configured it will use random orderer from global orderer configuration
+// IsChaincodeInstalled verify if chaincode is installed on peer
+func (rc *ResourceMgmtClient) IsChaincodeInstalled(req resmgmt.InstallCCRequest, peer fab.Peer) (bool, error) {
+	chaincodeQueryResponse, err := rc.client.QueryInstalledChaincodes(peer)
+	if err != nil {
+		return false, err
+	}
+
+	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+		if chaincode.Name == req.Name && chaincode.Version == req.Version && chaincode.Path == req.Path {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// InstallCC - install chaincode
+func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest) ([]resmgmt.InstallCCResponse, error) {
+
+	if err := checkRequiredInstallCCParams(req); err != nil {
+		return nil, err
+	}
+
+	targets, err := rc.getDefaultTargets()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get default targets for InstallCC")
+	}
+
+	if len(targets) == 0 {
+		return nil, errors.New("No default targets available for install cc")
+	}
+
+	return rc.InstallCCWithOpts(req, resmgmt.InstallCCOpts{Targets: targets})
+}
+
+// InstallCCWithOpts installs chaincode with custom options
+func (rc *ResourceMgmtClient) InstallCCWithOpts(req resmgmt.InstallCCRequest, opts resmgmt.InstallCCOpts) ([]resmgmt.InstallCCResponse, error) {
+
+	// For each peer query if chaincode installed. If cc is installed treat as success with message 'already installed'.
+	// If cc is not installed try to install, and if that fails add to the list with error and peer name.
+
+	err := checkRequiredInstallCCParams(req)
+	if err != nil {
+		return nil, err
+	}
+
+	targets, err := rc.calculateTargets(opts.Targets, opts.TargetFilter)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to determine target peers for install cc")
+	}
+
+	if len(targets) == 0 {
+		return nil, errors.New("No targets available for install cc")
+	}
+
+	responses := make([]resmgmt.InstallCCResponse, 0)
+
+	// Targets will be adjusted if cc has already been installed
+	newTargets := make([]fab.Peer, 0)
+
+	for _, target := range targets {
+		installed, err := rc.IsChaincodeInstalled(req, target)
+		if err != nil {
+			// Add to responses with unable to verify error message
+			response := resmgmt.InstallCCResponse{Target: target.URL(), Err: errors.Errorf("unable to verify if cc is installed on %s", target.URL())}
+			responses = append(responses, response)
+			continue
+		}
+		if installed {
+			// Nothing to do - add info message to response
+			response := resmgmt.InstallCCResponse{Target: target.URL(), Info: "already installed"}
+			responses = append(responses, response)
+		} else {
+			// Not installed - add for processing
+			newTargets = append(newTargets, target)
+		}
+	}
+
+	if len(newTargets) == 0 {
+		// CC is already installed on all targets and/or
+		// we are unable to verify if cc is installed on target(s)
+		return responses, nil
+	}
+
+	icr := fab.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package, Targets: peer.PeersToTxnProcessors(newTargets)}
+	transactionProposalResponse, _, err := rc.client.InstallChaincode(icr)
+	if err != nil {
+		return nil, errors.WithMessage(err, "InstallChaincode failed")
+	}
+
+	for _, v := range transactionProposalResponse {
+
+		logger.Infof("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v, error:'%s'", req.Name, v.Endorser, v.Status, v.Err)
+
+		response := resmgmt.InstallCCResponse{Target: v.Endorser, Status: v.Status, Err: v.Err}
+		responses = append(responses, response)
+	}
+
+	return responses, nil
+
+}
+
+func checkRequiredInstallCCParams(req resmgmt.InstallCCRequest) error {
+	if req.Name == "" || req.Version == "" || req.Path == "" || req.Package == nil {
+		return errors.New("Chaincode name(ID), version, path and chaincode package are required")
+	}
+	return nil
+}
+
+// getChannel is helper method for instantiating channel. If channel is not configured it will use random orderer from global orderer configuration
 func (rc *ResourceMgmtClient) getChannel(channelID string) (fab.Channel, error) {
 
 	channel := rc.client.Channel(channelID)
