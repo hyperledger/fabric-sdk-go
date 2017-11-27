@@ -31,6 +31,10 @@ import (
 	"io/ioutil"
 	"math/big"
 	mrand "math/rand"
+
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
+
 	"net/http"
 	"path/filepath"
 	"reflect"
@@ -38,10 +42,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"golang.org/x/crypto/ocsp"
 )
 
@@ -168,7 +170,7 @@ func GenECDSAToken(csp apicryptosuite.CryptoSuite, cert []byte, key apicryptosui
 	b64cert := B64Encode(cert)
 	bodyAndcert := b64body + "." + b64cert
 
-	digest, digestError := csp.Hash([]byte(bodyAndcert), &bccsp.SHAOpts{})
+	digest, digestError := csp.Hash([]byte(bodyAndcert), factory.GetSHAOpts())
 	if digestError != nil {
 		return "", errors.WithMessage(digestError, fmt.Sprintf("Hash failed on '%s'", bodyAndcert))
 	}

@@ -45,7 +45,8 @@ echo "Pinning and patching fabric-ca client utils..."
 declare -a CLIENT_UTILS_IMPORT_SUBSTS=(
     's/\"github.com\/pkg\/errors/\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/errors/g'
     's/\"github.com\/hyperledger\/fabric-ca/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca/g'
-    's/\"github.com\/hyperledger\/fabric\/bccsp/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/bccsp/g'
+    's/\"github.com\/hyperledger\/fabric\/bccsp\/factory/factory\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca\/sdkpatch\/cryptosuitebridge/g'
+    's/\"github.com\/hyperledger\/fabric\/bccsp/\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/cryptosuite\/bccsp/g'
     '/clog.\"github.com\/cloudflare\/cfssl\/log/!s/\"github.com\/cloudflare\/cfssl\/log/log\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca\/sdkpatch\/logbridge/g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
 )

@@ -1,0 +1,191 @@
+From 162c758b47c8f90c1967b7e5979c18739d83913a Mon Sep 17 00:00:00 2001
+From: Sudesh Shetty <sudesh.shetty@securekey.com>
+Date: Wed, 22 Nov 2017 15:40:22 -0500
+Subject: [PATCH] cryptosuite
+
+Copyright SecureKey Technologies Inc. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+
+Signed-off-by: Sudesh Shetty <sudesh.shetty@securekey.com>
+---
+ .../cryptosuitebridge/cryptosuitebridge.go         | 168 +++++++++++++++++++++
+ 1 file changed, 168 insertions(+)
+ create mode 100644 sdkpatch/cryptosuitebridge/cryptosuitebridge.go
+
+diff --git a/sdkpatch/cryptosuitebridge/cryptosuitebridge.go b/sdkpatch/cryptosuitebridge/cryptosuitebridge.go
+new file mode 100644
+index 0000000..31d17ca
+--- /dev/null
++++ b/sdkpatch/cryptosuitebridge/cryptosuitebridge.go
+@@ -0,0 +1,168 @@
++/*
++Copyright SecureKey Technologies Inc. All Rights Reserved.
++
++SPDX-License-Identifier: Apache-2.0
++*/
++
++package cryptosuitebridge
++
++import (
++	"crypto"
++	"crypto/ecdsa"
++
++	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
++	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
++	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
++	cspsigner "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/signer"
++	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
++	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
++	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
++)
++
++const (
++	ECDSA            = bccsp.ECDSA
++	ECDSAP256        = bccsp.ECDSAP256
++	ECDSAP384        = bccsp.ECDSAP384
++	ECDSAReRand      = bccsp.ECDSAReRand
++	RSA              = bccsp.RSA
++	RSA1024          = bccsp.RSA1024
++	RSA2048          = bccsp.RSA2048
++	RSA3072          = bccsp.RSA3072
++	RSA4096          = bccsp.RSA4096
++	AES              = bccsp.AES
++	AES128           = bccsp.AES128
++	AES192           = bccsp.AES192
++	AES256           = bccsp.AES256
++	HMAC             = bccsp.HMAC
++	HMACTruncated256 = bccsp.HMACTruncated256
++	SHA              = bccsp.SHA
++	SHA2             = bccsp.SHA2
++	SHA3             = bccsp.SHA3
++	SHA256           = bccsp.SHA256
++	SHA384           = bccsp.SHA384
++	SHA3_256         = bccsp.SHA3_256
++	SHA3_384         = bccsp.SHA3_384
++	X509Certificate  = bccsp.X509Certificate
++)
++
++// FactoryOpts holds configuration information used to initialize bccsp factory implementations
++type FactoryOpts struct {
++	*factory.FactoryOpts
++}
++
++//GetBCCSPFromOpts is a bridge for factory.GetBCCSPFromOpts(config)
++func GetBCCSPFromOpts(config *FactoryOpts) (apicryptosuite.CryptoSuite, error) {
++	bccsp, err := factory.GetBCCSPFromOpts(getFactoryOpts(config))
++	if err != nil {
++		return nil, err
++	}
++	return cryptosuite.GetSuite(bccsp), nil
++}
++
++//InitFactories is a bridge for bccsp factory.InitFactories(config)
++func InitFactories(config *FactoryOpts) error {
++	return factory.InitFactories(getFactoryOpts(config))
++}
++
++// PEMtoPrivateKey is a bridge for bccsp utils.PEMtoPrivateKey()
++func PEMtoPrivateKey(raw []byte, pwd []byte) (interface{}, error) {
++	return utils.PEMtoPrivateKey(raw, pwd)
++}
++
++// PrivateKeyToDER marshals is bridge for utils.PrivateKeyToDER
++func PrivateKeyToDER(privateKey *ecdsa.PrivateKey) ([]byte, error) {
++	return utils.PrivateKeyToDER(privateKey)
++}
++
++// NewCspsigner is a bridge for bccsp signer.New call
++func NewCspsigner(csp apicryptosuite.CryptoSuite, key apicryptosuite.Key) (crypto.Signer, error) {
++	return cspsigner.New(csp, key)
++}
++
++//NewEmptySwOpts creates new empty bccsp factory.SwOpts
++func NewSwOpts() *factory.SwOpts {
++	return &factory.SwOpts{}
++}
++
++//NewEmptyFileKeystoreOpts creates new empty bccsp factory.FileKeystoreOpts
++func NewFileKeystoreOpts() *factory.FileKeystoreOpts {
++	return &factory.FileKeystoreOpts{}
++}
++
++//GetFactoryDefaultCryptoSuite creates new cryptosuite from bccsp factory default
++func GetDefault() apicryptosuite.CryptoSuite {
++	return cryptosuite.GetSuite(factory.GetDefault())
++}
++
++//SignatureToLowS is a bridge for bccsp sw.SignatureToLowS()
++func SignatureToLowS(k *ecdsa.PublicKey, signature []byte) ([]byte, error) {
++	return sw.SignatureToLowS(k, signature)
++}
++
++//GetHashOpt is a bridge for bccsp util GetHashOpt
++func GetHashOpt(hashFunction string) (apicryptosuite.HashOpts, error) {
++	return bccsp.GetHashOpt(hashFunction)
++}
++
++func getFactoryOpts(config *FactoryOpts) *factory.FactoryOpts {
++	if config == nil {
++		return nil
++	}
++	return &factory.FactoryOpts{
++		SwOpts:       config.SwOpts,
++		ProviderName: config.ProviderName,
++		Pkcs11Opts:   config.Pkcs11Opts,
++		PluginOpts:   config.PluginOpts,
++	}
++}
++
++//GetSHAOpts returns options for computing SHA.
++func GetSHAOpts() apicryptosuite.HashOpts {
++	return &bccsp.SHAOpts{}
++}
++
++//GetSHA256Opts returns options relating to SHA-256.
++func GetSHA256Opts() apicryptosuite.HashOpts {
++	return &bccsp.SHA256Opts{}
++}
++
++//GetRSA2048KeyGenOpts returns options for RSA key generation at 2048 security.
++func GetRSA2048KeyGenOpts(ephemeral bool) apicryptosuite.KeyGenOpts {
++	return &bccsp.RSA2048KeyGenOpts{Temporary: ephemeral}
++}
++
++//GetRSA3072KeyGenOpts returns options for RSA key generation at 3072 security.
++func GetRSA3072KeyGenOpts(ephemeral bool) apicryptosuite.KeyGenOpts {
++	return &bccsp.RSA3072KeyGenOpts{Temporary: ephemeral}
++}
++
++//GetRSA4096KeyGenOpts returns options for RSA key generation at 4096 security.
++func GetRSA4096KeyGenOpts(ephemeral bool) apicryptosuite.KeyGenOpts {
++	return &bccsp.RSA4096KeyGenOpts{Temporary: ephemeral}
++}
++
++// GetECDSAKeyGenOpts returns options for ECDSA key generation.
++func GetECDSAKeyGenOpts(ephemeral bool) apicryptosuite.KeyGenOpts {
++	return &bccsp.ECDSAKeyGenOpts{Temporary: ephemeral}
++}
++
++//GetECDSAP256KeyGenOpts returns options for ECDSA key generation with curve P-256.
++func GetECDSAP256KeyGenOpts(ephemeral bool) apicryptosuite.KeyGenOpts {
++	return &bccsp.ECDSAP256KeyGenOpts{Temporary: ephemeral}
++}
++
++//GetECDSAP384KeyGenOpts options for ECDSA key generation with curve P-384.
++func GetECDSAP384KeyGenOpts(ephemeral bool) apicryptosuite.KeyGenOpts {
++	return &bccsp.ECDSAP384KeyGenOpts{Temporary: ephemeral}
++}
++
++//GetX509PublicKeyImportOpts options for importing public keys from an x509 certificate
++func GetX509PublicKeyImportOpts(ephemeral bool) apicryptosuite.KeyImportOpts {
++	return &bccsp.X509PublicKeyImportOpts{Temporary: ephemeral}
++}
++
++//GetECDSAPrivateKeyImportOpts options for ECDSA secret key importation in DER format
++// or PKCS#8 format.
++func GetECDSAPrivateKeyImportOpts(ephemeral bool) apicryptosuite.KeyImportOpts {
++	return &bccsp.ECDSAPrivateKeyImportOpts{Temporary: ephemeral}
++}
+-- 
+2.7.4
+

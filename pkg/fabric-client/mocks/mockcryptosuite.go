@@ -47,3 +47,8 @@ func (m *MockCryptoSuite) Sign(k apicryptosuite.Key, digest []byte,
 	opts apicryptosuite.SignerOpts) (signature []byte, err error) {
 	return []byte("testSignature"), nil
 }
+
+//Verify mock verify implementation
+func (m *MockCryptoSuite) Verify(k apicryptosuite.Key, signature, digest []byte, opts apicryptosuite.SignerOpts) (valid bool, err error) {
+	return true, nil
+}

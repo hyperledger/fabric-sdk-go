@@ -31,6 +31,7 @@ declare -a PKGS=(
     "common/ledger"
 
     "sdkpatch/logbridge"
+    "sdkpatch/cryptosuitebridge"
 
     "core/common/ccprovider"
 
@@ -110,6 +111,7 @@ declare -a FILES=(
     "core/common/ccprovider/ccprovider.go"
     
     "sdkpatch/logbridge/logbridge.go"
+    "sdkpatch/cryptosuitebridge/cryptosuitebridge.go"
 
     "core/ledger/ledger_interface.go"
     "core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
@@ -159,7 +161,7 @@ FILTERS_ENABLED="fn"
 FILTER_FILENAME="bccsp/signer/signer.go"
 FILTER_FN=New,Public,Sign
 gofilter
-sed -i'' -e '/"github.com\// a \
+sed -i'' -e '/"crypto"/ a \
 "github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
@@ -176,6 +178,8 @@ gofilter
 FILTER_FILENAME="common/util/utils.go"
 FILTER_FN="GenerateIDfromTxSHAHash,ComputeSHA256,CreateUtcTimestamp,ConcatenateBytes"
 gofilter
+sed -i'' -e 's/&bccsp.SHA256Opts{}/factory.GetSHA256Opts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/factory"/factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="common/attrmgr/attrmgr.go"
 FILTER_FN=
@@ -192,6 +196,7 @@ gofilter
 FILTER_FILENAME="common/channelconfig/util.go"
 FILTER_FN=
 gofilter
+sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp"/bccsp "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="common/channelconfig/orderer.go"
 FILTER_FN=
@@ -234,6 +239,7 @@ gofilter
 FILTER_FILENAME="msp/cert.go"
 FILTER_FN="certToPEM,isECDSASignedCert,sanitizeECDSASignedCert,certFromX509Cert,String"
 gofilter
+sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/sw"/sw "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/configbuilder.go"
 FILTER_FN=
@@ -244,6 +250,12 @@ FILTER_FN="newIdentity,newSigningIdentity,ExpiresAt,GetIdentifier,GetMSPIdentifi
 FILTER_FN+=",GetOrganizationalUnits,SatisfiesPrincipal,Serialize,Validate,Verify"
 FILTER_FN+=",getHashOpt,GetPublicVersion,Sign"
 gofilter
+sed -i'' -e '/"encoding\/hex/ a\
+"github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp"/bccsp "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.HashOpts/apicryptosuite.HashOpts/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/msp.go"
 FILTER_FN=
@@ -261,16 +273,22 @@ FILTER_FN+=",newBccspMsp,IsWellFormed,GetVersion"
 gofilter
 # TODO - adapt to msp/factory.go rather than changing newBccspMsp
 sed -i'' -e 's/newBccspMsp/NewBccspMsp/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/m "github.com\// a \
-cryptosuite "github.com\/hyperledger\/fabric-sdk-go\/pkg\/cryptosuite\/bccsp"\
-' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/signer.New(msp.bccsp, privKey)/signer.New(cryptosuite.GetSuite(msp.bccsp), cryptosuite.GetKey(privKey))/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/factory"/factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.Key,/apicryptosuite.Key,/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.GetHashOpt/factory.GetHashOpt/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/signer.New(/factory.NewCspsigner(/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/&bccsp.ECDSAPrivateKeyImportOpts{Temporary: true}/factory.GetECDSAPrivateKeyImportOpts(true)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/&bccsp.X509PublicKeyImportOpts{Temporary: true}/factory.GetX509PublicKeyImportOpts(true)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+#sed -i'' -e 's/signer.New(msp.bccsp, privKey)/signer.New(cryptosuite.GetSuite(msp.bccsp), cryptosuite.GetKey(privKey))/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/mspimplsetup.go"
 FILTER_FN="setupCrypto,setupCAs,setupAdmins,setupCRLs,finalizeSetupCAs,setupSigningIdentity"
 FILTER_FN+=",setupOUs,setupTLSCAs,setupV1,setupV11,getCertifiersIdentifier"
 FILTER_FN+=",preSetupV1,postSetupV1,setupNodeOUs"
 gofilter
+sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp"/bccsp "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/mspimplvalidate.go"
 FILTER_FN="validateTLSCAIdentity,validateCAIdentity,validateIdentity,validateIdentityAgainstChain"

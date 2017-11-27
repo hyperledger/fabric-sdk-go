@@ -16,12 +16,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 	ledger_util "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
 	fcConsumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
@@ -319,9 +316,9 @@ func generateTxID() apitxn.TransactionID {
 	if err != nil {
 		panic(errors.WithMessage(err, "GenerateRandomNonce failed"))
 	}
-	digest, err := getDefaultBCCSPSuite().Hash(
+	digest, err := factory.GetDefault().Hash(
 		nonce,
-		&bccsp.SHA256Opts{})
+		factory.GetSHA256Opts())
 	if err != nil {
 		panic(errors.Wrap(err, "hashing nonce failed"))
 	}
@@ -332,8 +329,4 @@ func generateTxID() apitxn.TransactionID {
 	}
 
 	return txnid
-}
-
-func getDefaultBCCSPSuite() apicryptosuite.CryptoSuite {
-	return cryptosuite.GetSuite(factory.GetDefault())
 }
