@@ -35,8 +35,8 @@ func (p *loggingProvider) GetLogger(module string) apilogging.Logger {
 	return &Logger{logger: newLogger, module: module}
 }
 
-//GetLoggingProvider returns logging provider for SDK logger
-func GetLoggingProvider() apilogging.LoggingProvider {
+//LoggerProvider returns logging provider for SDK logger
+func LoggerProvider() apilogging.LoggerProvider {
 	return &loggingProvider{}
 }
 

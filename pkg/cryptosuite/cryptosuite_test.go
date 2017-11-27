@@ -7,13 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package cryptosuite
 
 import (
-	"os"
 	"testing"
 
 	"sync/atomic"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
@@ -27,15 +24,6 @@ const (
 	setDefAlreadySetErrorMsg   = "default crypto suite is already set"
 	InvalidDefSuiteSetErrorMsg = "attempting to set invalid default suite"
 )
-
-// TestMain Load testing config
-func TestMain(m *testing.M) {
-	if !logging.IsLoggerInitialized() {
-		logging.InitLogger(deflogger.GetLoggingProvider())
-	}
-
-	os.Exit(m.Run())
-}
 
 func TestGetDefault(t *testing.T) {
 

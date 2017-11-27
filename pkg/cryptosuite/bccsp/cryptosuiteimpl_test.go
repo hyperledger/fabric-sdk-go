@@ -13,14 +13,10 @@ import (
 
 	"strings"
 
-	"os"
-
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
@@ -34,15 +30,6 @@ const (
 	keyImport        = "-keyimport"
 	keyGen           = "-keygent"
 )
-
-// TestMain Load testing config
-func TestMain(m *testing.M) {
-	if !logging.IsLoggerInitialized() {
-		logging.InitLogger(deflogger.GetLoggingProvider())
-	}
-
-	os.Exit(m.Run())
-}
 
 func TestCryptoSuite(t *testing.T) {
 

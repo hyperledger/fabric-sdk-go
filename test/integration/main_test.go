@@ -11,8 +11,6 @@ import (
 	"testing"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
 var testFabricConfig config.Config
@@ -25,12 +23,6 @@ func TestMain(m *testing.M) {
 }
 
 func setup() {
-
-	//Setup logging provider in advance for tests to make sure none of the test logs are being skipped
-	if !logging.IsLoggerInitialized() {
-		logging.InitLogger(deflogger.GetLoggingProvider())
-	}
-
 	// do any test setup for all tests here...
 	var err error
 

@@ -10,6 +10,7 @@ package fabapi
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
@@ -28,18 +29,19 @@ import (
 type Options struct {
 	// Quick access options
 	ConfigFile string
-	//OrgID      string // TODO: separate into context options
 
 	// Options for default providers
 	ConfigOpts     opt.ConfigOpts
 	StateStoreOpts opt.StateStoreOpts
 
-	// Factory methods to create clients and providers
+	// Factories to create clients and providers
 	ProviderFactory context.SDKProviderFactory
 	ContextFactory  context.OrgClientFactory
 	SessionFactory  context.SessionClientFactory
 
-	// TODO extract hard-coded logger
+	// Factories for creating package-level utilities (keep this to a minimum)
+	// TODO: Should the logger actually be in ProviderFactory
+	LoggerFactory apilogging.LoggerProvider
 }
 
 // FabricSDK provides access (and context) to clients being managed by the SDK
@@ -90,10 +92,11 @@ func NewSDK(options Options) (*FabricSDK, error) {
 		Options: options,
 	}
 
-	//Initialize logging provider with default logging provider if not yet initialized
-	if !logging.IsLoggerInitialized() {
-		logging.InitLogger(deflogger.GetLoggingProvider())
+	// Initialize logging provider with default logging provider (if needed)
+	if sdk.LoggerFactory == nil {
+		sdk.LoggerFactory = deflogger.LoggerProvider()
 	}
+	logging.InitLogger(sdk.LoggerFactory)
 
 	// Initialize default factories (if needed)
 	if sdk.ProviderFactory == nil {

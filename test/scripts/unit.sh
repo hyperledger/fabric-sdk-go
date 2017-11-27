@@ -29,4 +29,4 @@ if [ "$ARCH" == "x86_64" ]
 then
     RACEFLAG="-race"
 fi
-$GO_CMD test $RACEFLAG -cover -tags "$GO_TAGS" $GO_TESTFLAGS $GO_LDFLAGS $PKGS -p 1 -timeout=40m
+$GO_CMD test $RACEFLAG -cover -tags "testing $GO_TAGS" $GO_TESTFLAGS $GO_LDFLAGS $PKGS -p 1 -timeout=40m
