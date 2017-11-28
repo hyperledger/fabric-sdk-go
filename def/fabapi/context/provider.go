@@ -30,7 +30,7 @@ type SDKProviderFactory interface {
 // OrgClientFactory allows overriding default clients and providers of an organization
 // Currently, a context is created for each organization that the client app needs.
 type OrgClientFactory interface {
-	NewMSPClient(orgName string, config apiconfig.Config) (fabca.FabricCAClient, error)
+	NewMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error)
 	NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fab.CredentialManager, error)
 }
 

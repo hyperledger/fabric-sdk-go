@@ -215,7 +215,7 @@ func (c *Channel) loadMSPs(mspConfigs []*mb.MSPConfig) ([]msp.MSP, error) {
 
 		// TODO: Do something with orgs
 		// TODO: Configure MSP version (rather than MSP 1.0)
-		newMSP, err := msp.NewBccspMsp(msp.MSPv1_0)
+		newMSP, err := msp.NewBccspMsp(msp.MSPv1_0, c.clientContext.CryptoSuite())
 		if err != nil {
 			return nil, errors.Wrap(err, "instantiate MSP failed")
 		}

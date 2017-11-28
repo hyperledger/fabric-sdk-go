@@ -18,7 +18,7 @@ import (
 
 	ledger_util "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
 	fcConsumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
-	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
@@ -316,9 +316,9 @@ func generateTxID() apitxn.TransactionID {
 	if err != nil {
 		panic(errors.WithMessage(err, "GenerateRandomNonce failed"))
 	}
-	digest, err := factory.GetDefault().Hash(
+	digest, err := cryptosuite.GetDefault().Hash(
 		nonce,
-		factory.GetSHA256Opts())
+		cryptosuite.GetSHA256Opts())
 	if err != nil {
 		panic(errors.Wrap(err, "hashing nonce failed"))
 	}

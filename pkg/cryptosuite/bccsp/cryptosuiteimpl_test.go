@@ -127,6 +127,63 @@ func TestCryptoSuiteByConfigFailures(t *testing.T) {
 
 }
 
+// TestCreateInvalidBCCSPSecurityLevel will test cryptsuite creation with invalid BCCSP options
+func TestCreateInvalidBCCSPSecurityLevel(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+	mockConfig.EXPECT().SecurityLevel().Return(100)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+	mockConfig.EXPECT().Ephemeral().Return(false)
+
+	_, err := GetSuiteByConfig(mockConfig)
+	if !strings.Contains(err.Error(), "Security level not supported [100]") {
+		t.Fatalf("Expected invalid security level error, but got %v", err.Error())
+	}
+
+}
+
+// TestCreateInvalidBCCSPHashFamily will test cryptsuite creation with bad HashFamily
+func TestCreateInvalidBCCSPHashFamily(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("ABC")
+	mockConfig.EXPECT().SecurityLevel().Return(256)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+	mockConfig.EXPECT().Ephemeral().Return(false)
+
+	_, err := GetSuiteByConfig(mockConfig)
+	if !strings.Contains(err.Error(), "Hash Family not supported [ABC]") {
+		t.Fatalf("Expected invalid hash family error, but got %v", err.Error())
+	}
+}
+
+// TestCreateInvalidSecurityProviderPanic will test cryptsuite creation with bad HashFamily
+func TestCreateInvalidSecurityProviderPanic(t *testing.T) {
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("was supposed to panic")
+		}
+	}()
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	mockConfig.EXPECT().SecurityProvider().Return("XYZ")
+	mockConfig.EXPECT().SecurityProvider().Return("XYZ")
+
+	GetSuiteByConfig(mockConfig)
+	t.Fatalf("Getting cryptosuite with invalid security provider supposed to panic")
+}
+
 func verifyCryptoSuite(t *testing.T, samplecryptoSuite apicryptosuite.CryptoSuite) {
 	//Test cryptosuite.Sign
 	signedBytes, err := samplecryptoSuite.Sign(GetKey(getMockKey(signingKey)), nil, nil)

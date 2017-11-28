@@ -29,105 +29,15 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
-	"path"
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	"github.com/cloudflare/cfssl/csr"
-	"github.com/cloudflare/cfssl/helpers"
 	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
 )
-
-// InitBCCSP initializes BCCSP
-func InitBCCSP(optsPtr **factory.FactoryOpts, mspDir, homeDir string) (apicryptosuite.CryptoSuite, error) {
-	err := ConfigureBCCSP(optsPtr, mspDir, homeDir)
-	if err != nil {
-		return nil, err
-	}
-	csp, err := GetBCCSP(*optsPtr, homeDir)
-	if err != nil {
-		return nil, err
-	}
-	return csp, nil
-}
-
-// ConfigureBCCSP configures BCCSP, using
-func ConfigureBCCSP(optsPtr **factory.FactoryOpts, mspDir, homeDir string) error {
-	var err error
-	if optsPtr == nil {
-		return errors.New("nil argument not allowed")
-	}
-	opts := *optsPtr
-	if opts == nil {
-		opts = &factory.FactoryOpts{}
-	}
-	if opts.ProviderName == "" {
-		opts.ProviderName = "SW"
-	}
-	if strings.ToUpper(opts.ProviderName) == "SW" {
-		if opts.SwOpts == nil {
-			opts.SwOpts = factory.NewSwOpts()
-		}
-		if opts.SwOpts.HashFamily == "" {
-			opts.SwOpts.HashFamily = "SHA2"
-		}
-		if opts.SwOpts.SecLevel == 0 {
-			opts.SwOpts.SecLevel = 256
-		}
-		if opts.SwOpts.FileKeystore == nil {
-			opts.SwOpts.FileKeystore = factory.NewFileKeystoreOpts()
-		}
-		// The mspDir overrides the KeyStorePath; otherwise, if not set, set default
-		if mspDir != "" {
-			opts.SwOpts.FileKeystore.KeyStorePath = path.Join(mspDir, "keystore")
-		} else if opts.SwOpts.FileKeystore.KeyStorePath == "" {
-			opts.SwOpts.FileKeystore.KeyStorePath = path.Join("msp", "keystore")
-		}
-	}
-	err = makeFileNamesAbsolute(opts, homeDir)
-	if err != nil {
-		return errors.WithMessage(err, "Failed to make BCCSP files absolute")
-	}
-	log.Debugf("Initializing BCCSP: %+v", opts)
-	if opts.SwOpts != nil {
-		log.Debugf("Initializing BCCSP with software options %+v", opts.SwOpts)
-	}
-	if opts.Pkcs11Opts != nil {
-		log.Debugf("Initializing BCCSP with PKCS11 options %+v", opts.Pkcs11Opts)
-	}
-	// Init the BCCSP factories
-	err = factory.InitFactories(opts)
-	if err != nil {
-		return errors.WithMessage(err, "Failed to initialize BCCSP Factories")
-	}
-	*optsPtr = opts
-	return nil
-}
-
-// GetBCCSP returns BCCSP
-func GetBCCSP(opts *factory.FactoryOpts, homeDir string) (apicryptosuite.CryptoSuite, error) {
-
-	// Get BCCSP from the opts
-	csp, err := factory.GetBCCSPFromOpts(opts)
-	if err != nil {
-		return nil, errors.WithMessage(err, "Failed to get BCCSP with opts")
-	}
-	return csp, nil
-}
-
-// makeFileNamesAbsolute makes all relative file names associated with CSP absolute,
-// relative to 'homeDir'.
-func makeFileNamesAbsolute(opts *factory.FactoryOpts, homeDir string) error {
-	var err error
-	if opts != nil && opts.SwOpts != nil && opts.SwOpts.FileKeystore != nil {
-		fks := opts.SwOpts.FileKeystore
-		fks.KeyStorePath, err = MakeFileAbs(fks.KeyStorePath, homeDir)
-	}
-	return err
-}
 
 // getBCCSPKeyOpts generates a key as specified in the request.
 // This supports ECDSA and RSA.
@@ -183,28 +93,11 @@ func GetSignerFromCert(cert *x509.Certificate, csp apicryptosuite.CryptoSuite) (
 		return nil, nil, errors.WithMessage(err, "Could not find matching private key for SKI")
 	}
 	// Construct and initialize the signer
-	signer, err := factory.NewCspsigner(csp, privateKey)
+	signer, err := factory.NewCspSigner(csp, privateKey)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "Failed to load ski from bccsp")
 	}
 	return privateKey, signer, nil
-}
-
-// GetSignerFromCertFile load skiFile and load private key represented by ski and return bccsp signer that conforms to crypto.Signer
-func GetSignerFromCertFile(certFile string, csp apicryptosuite.CryptoSuite) (apicryptosuite.Key, crypto.Signer, *x509.Certificate, error) {
-	// Load cert file
-	certBytes, err := ioutil.ReadFile(certFile)
-	if err != nil {
-		return nil, nil, nil, errors.Wrapf(err, "Could not read certFile '%s'", certFile)
-	}
-	// Parse certificate
-	parsedCa, err := helpers.ParseCertificatePEM(certBytes)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	// Get the signer from the cert
-	key, cspSigner, err := GetSignerFromCert(parsedCa, csp)
-	return key, cspSigner, parsedCa, err
 }
 
 // BCCSPKeyRequestGenerate generates keys through BCCSP
@@ -220,7 +113,7 @@ func BCCSPKeyRequestGenerate(req *csr.CertificateRequest, myCSP apicryptosuite.C
 		return nil, nil, err
 	}
 
-	cspSigner, err := factory.NewCspsigner(myCSP, key)
+	cspSigner, err := factory.NewCspSigner(myCSP, key)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "Failed initializing CryptoSigner")
 	}
