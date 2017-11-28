@@ -10,6 +10,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"go/build"
 	"io"
 	"os"
 	"path"
@@ -46,8 +47,7 @@ func NewCCPackage(chaincodePath string, goPath string) (*fab.CCPackage, error) {
 	var projDir string
 	gp := goPath
 	if gp == "" {
-		// TODO: for now use env variable
-		gp = os.Getenv("GOPATH")
+		gp = defaultGoPath()
 		if gp == "" {
 			return nil, errors.New("GOPATH not defined")
 		}
@@ -184,4 +184,13 @@ func packEntry(tw *tar.Writer, gw *gzip.Writer, descriptor *Descriptor) error {
 
 	}
 	return nil
+}
+
+// defaultGoPath returns the system's default GOPATH. If the system
+// has multiple GOPATHs then the first is used.
+func defaultGoPath() string {
+	gpDefault := build.Default.GOPATH
+	gps := filepath.SplitList(gpDefault)
+
+	return gps[0]
 }
