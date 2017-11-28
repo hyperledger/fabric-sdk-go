@@ -17,8 +17,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -29,13 +27,13 @@ type FabricCA struct {
 }
 
 // NewFabricCAClient creates a new fabric-ca client
-// @param {api.Config} client config for fabric-ca services
 // @param {string} organization for this CA
+// @param {api.Config} client config for fabric-ca services
 // @returns {api.FabricCAClient} FabricCAClient implementation
 // @returns {error} error, if any
-func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
-	if org == "" || config == nil {
-		return nil, errors.New("organization and config are required to load CA config")
+func NewFabricCAClient(org string, config config.Config, cryptoSuite apicryptosuite.CryptoSuite) (*FabricCA, error) {
+	if org == "" || config == nil || cryptoSuite == nil {
+		return nil, errors.New("organization, config and cryptoSuite are required to load CA config")
 	}
 
 	// Create new Fabric-ca client without configs
@@ -84,8 +82,7 @@ func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
 	c.Config.MSPDir = config.CAKeyStorePath()
 
 	//Factory opts
-	opts := cryptosuite.GetOptsByConfig(config)
-	c.Config.CSP = &factory.FactoryOpts{opts}
+	c.Config.CSP = cryptoSuite
 
 	fabricCAClient := FabricCA{fabricCAClient: c}
 

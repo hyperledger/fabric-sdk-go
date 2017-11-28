@@ -94,11 +94,7 @@ func (c *Client) Init() error {
 		if err != nil {
 			return errors.Wrap(err, "Failed to create cacerts directory")
 		}
-		// Initialize BCCSP (the crypto layer)
-		c.csp, err = util.InitBCCSP(&cfg.CSP, mspDir, c.HomeDir)
-		if err != nil {
-			return err
-		}
+		c.csp = cfg.CSP
 		// Create http.Client object and associate it with this client
 		err = c.initHTTPClient()
 		if err != nil {

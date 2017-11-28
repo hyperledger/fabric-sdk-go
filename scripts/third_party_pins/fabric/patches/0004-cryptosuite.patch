@@ -1,6 +1,6 @@
-From 162c758b47c8f90c1967b7e5979c18739d83913a Mon Sep 17 00:00:00 2001
+From 4f46791ad0248604a813ec6583c2a868404082b0 Mon Sep 17 00:00:00 2001
 From: Sudesh Shetty <sudesh.shetty@securekey.com>
-Date: Wed, 22 Nov 2017 15:40:22 -0500
+Date: Mon, 27 Nov 2017 11:34:49 -0500
 Subject: [PATCH] cryptosuite
 
 Copyright SecureKey Technologies Inc. All Rights Reserved.
@@ -8,16 +8,16 @@ SPDX-License-Identifier: Apache-2.0
 
 Signed-off-by: Sudesh Shetty <sudesh.shetty@securekey.com>
 ---
- .../cryptosuitebridge/cryptosuitebridge.go         | 168 +++++++++++++++++++++
- 1 file changed, 168 insertions(+)
+ .../cryptosuitebridge/cryptosuitebridge.go         | 121 +++++++++++++++++++++
+ 1 file changed, 121 insertions(+)
  create mode 100644 sdkpatch/cryptosuitebridge/cryptosuitebridge.go
 
 diff --git a/sdkpatch/cryptosuitebridge/cryptosuitebridge.go b/sdkpatch/cryptosuitebridge/cryptosuitebridge.go
 new file mode 100644
-index 0000000..31d17ca
+index 0000000..a260c06
 --- /dev/null
 +++ b/sdkpatch/cryptosuitebridge/cryptosuitebridge.go
-@@ -0,0 +1,168 @@
+@@ -0,0 +1,121 @@
 +/*
 +Copyright SecureKey Technologies Inc. All Rights Reserved.
 +
@@ -35,8 +35,7 @@ index 0000000..31d17ca
 +	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 +	cspsigner "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/signer"
 +	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
-+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
-+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
++	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 +)
 +
 +const (
@@ -70,48 +69,14 @@ index 0000000..31d17ca
 +	*factory.FactoryOpts
 +}
 +
-+//GetBCCSPFromOpts is a bridge for factory.GetBCCSPFromOpts(config)
-+func GetBCCSPFromOpts(config *FactoryOpts) (apicryptosuite.CryptoSuite, error) {
-+	bccsp, err := factory.GetBCCSPFromOpts(getFactoryOpts(config))
-+	if err != nil {
-+		return nil, err
-+	}
-+	return cryptosuite.GetSuite(bccsp), nil
-+}
-+
-+//InitFactories is a bridge for bccsp factory.InitFactories(config)
-+func InitFactories(config *FactoryOpts) error {
-+	return factory.InitFactories(getFactoryOpts(config))
-+}
-+
-+// PEMtoPrivateKey is a bridge for bccsp utils.PEMtoPrivateKey()
-+func PEMtoPrivateKey(raw []byte, pwd []byte) (interface{}, error) {
-+	return utils.PEMtoPrivateKey(raw, pwd)
-+}
-+
-+// PrivateKeyToDER marshals is bridge for utils.PrivateKeyToDER
-+func PrivateKeyToDER(privateKey *ecdsa.PrivateKey) ([]byte, error) {
-+	return utils.PrivateKeyToDER(privateKey)
-+}
-+
-+// NewCspsigner is a bridge for bccsp signer.New call
-+func NewCspsigner(csp apicryptosuite.CryptoSuite, key apicryptosuite.Key) (crypto.Signer, error) {
++// NewCspSigner is a bridge for bccsp signer.New call
++func NewCspSigner(csp apicryptosuite.CryptoSuite, key apicryptosuite.Key) (crypto.Signer, error) {
 +	return cspsigner.New(csp, key)
-+}
-+
-+//NewEmptySwOpts creates new empty bccsp factory.SwOpts
-+func NewSwOpts() *factory.SwOpts {
-+	return &factory.SwOpts{}
-+}
-+
-+//NewEmptyFileKeystoreOpts creates new empty bccsp factory.FileKeystoreOpts
-+func NewFileKeystoreOpts() *factory.FileKeystoreOpts {
-+	return &factory.FileKeystoreOpts{}
 +}
 +
 +//GetFactoryDefaultCryptoSuite creates new cryptosuite from bccsp factory default
 +func GetDefault() apicryptosuite.CryptoSuite {
-+	return cryptosuite.GetSuite(factory.GetDefault())
++	return cryptosuite.GetDefault()
 +}
 +
 +//SignatureToLowS is a bridge for bccsp sw.SignatureToLowS()
@@ -122,18 +87,6 @@ index 0000000..31d17ca
 +//GetHashOpt is a bridge for bccsp util GetHashOpt
 +func GetHashOpt(hashFunction string) (apicryptosuite.HashOpts, error) {
 +	return bccsp.GetHashOpt(hashFunction)
-+}
-+
-+func getFactoryOpts(config *FactoryOpts) *factory.FactoryOpts {
-+	if config == nil {
-+		return nil
-+	}
-+	return &factory.FactoryOpts{
-+		SwOpts:       config.SwOpts,
-+		ProviderName: config.ProviderName,
-+		Pkcs11Opts:   config.Pkcs11Opts,
-+		PluginOpts:   config.PluginOpts,
-+	}
 +}
 +
 +//GetSHAOpts returns options for computing SHA.

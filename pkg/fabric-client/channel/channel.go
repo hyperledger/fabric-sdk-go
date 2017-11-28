@@ -11,6 +11,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -37,6 +38,7 @@ type ClientContext interface {
 	SigningManager() fab.SigningManager
 	NewTxnID() (apitxn.TransactionID, error)
 	Config() config.Config
+	CryptoSuite() apicryptosuite.CryptoSuite
 }
 
 // NewChannel represents a channel in a Fabric network.

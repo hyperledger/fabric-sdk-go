@@ -55,7 +55,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 	client.SetStateStore(stateStore)
 
-	caClient, err := fabricCAClient.NewFabricCAClient(testFabricConfig, org1Name)
+	caClient, err := fabricCAClient.NewFabricCAClient(org1Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
@@ -150,7 +150,12 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 func TestEnrollOrg2(t *testing.T) {
 
-	caClient, err := fabricCAClient.NewFabricCAClient(testFabricConfig, org2Name)
+	cryptoSuiteProvider, err := cryptosuite.GetSuiteByConfig(testFabricConfig)
+	if err != nil {
+		t.Fatalf("Failed getting cryptosuite from config : %s", err)
+	}
+
+	caClient, err := fabricCAClient.NewFabricCAClient(org2Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}

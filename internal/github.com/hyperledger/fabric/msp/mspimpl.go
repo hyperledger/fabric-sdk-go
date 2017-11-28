@@ -97,13 +97,12 @@ type bccspmsp struct {
 // crypto provider. It handles x.509 certificates and can
 // generate identities and signing identities backed by
 // certificates and keypairs
-func NewBccspMsp(version MSPVersion) (MSP, error) {
+func NewBccspMsp(version MSPVersion, cryptoSuite apicryptosuite.CryptoSuite) (MSP, error) {
 	mspLogger.Debugf("Creating BCCSP-based MSP instance")
 
-	bccsp := factory.GetDefault()
 	theMsp := &bccspmsp{}
 	theMsp.version = version
-	theMsp.bccsp = bccsp
+	theMsp.bccsp = cryptoSuite
 	switch version {
 	case MSPv1_0:
 		theMsp.internalSetupFunc = theMsp.setupV1
@@ -185,7 +184,7 @@ func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) 
 	}
 
 	// get the peer signer
-	peerSigner, err := factory.NewCspsigner(msp.bccsp, privKey)
+	peerSigner, err := factory.NewCspSigner(msp.bccsp, privKey)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getIdentityFromBytes error: Failed initializing bccspCryptoSigner")
 	}

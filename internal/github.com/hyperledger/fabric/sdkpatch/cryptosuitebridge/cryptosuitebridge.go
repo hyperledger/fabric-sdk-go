@@ -19,8 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 	cspsigner "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/signer"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 )
 
 const (
@@ -54,48 +53,14 @@ type FactoryOpts struct {
 	*factory.FactoryOpts
 }
 
-//GetBCCSPFromOpts is a bridge for factory.GetBCCSPFromOpts(config)
-func GetBCCSPFromOpts(config *FactoryOpts) (apicryptosuite.CryptoSuite, error) {
-	bccsp, err := factory.GetBCCSPFromOpts(getFactoryOpts(config))
-	if err != nil {
-		return nil, err
-	}
-	return cryptosuite.GetSuite(bccsp), nil
-}
-
-//InitFactories is a bridge for bccsp factory.InitFactories(config)
-func InitFactories(config *FactoryOpts) error {
-	return factory.InitFactories(getFactoryOpts(config))
-}
-
-// PEMtoPrivateKey is a bridge for bccsp utils.PEMtoPrivateKey()
-func PEMtoPrivateKey(raw []byte, pwd []byte) (interface{}, error) {
-	return utils.PEMtoPrivateKey(raw, pwd)
-}
-
-// PrivateKeyToDER marshals is bridge for utils.PrivateKeyToDER
-func PrivateKeyToDER(privateKey *ecdsa.PrivateKey) ([]byte, error) {
-	return utils.PrivateKeyToDER(privateKey)
-}
-
-// NewCspsigner is a bridge for bccsp signer.New call
-func NewCspsigner(csp apicryptosuite.CryptoSuite, key apicryptosuite.Key) (crypto.Signer, error) {
+// NewCspSigner is a bridge for bccsp signer.New call
+func NewCspSigner(csp apicryptosuite.CryptoSuite, key apicryptosuite.Key) (crypto.Signer, error) {
 	return cspsigner.New(csp, key)
-}
-
-//NewEmptySwOpts creates new empty bccsp factory.SwOpts
-func NewSwOpts() *factory.SwOpts {
-	return &factory.SwOpts{}
-}
-
-//NewEmptyFileKeystoreOpts creates new empty bccsp factory.FileKeystoreOpts
-func NewFileKeystoreOpts() *factory.FileKeystoreOpts {
-	return &factory.FileKeystoreOpts{}
 }
 
 //GetFactoryDefaultCryptoSuite creates new cryptosuite from bccsp factory default
 func GetDefault() apicryptosuite.CryptoSuite {
-	return cryptosuite.GetSuite(factory.GetDefault())
+	return cryptosuite.GetDefault()
 }
 
 //SignatureToLowS is a bridge for bccsp sw.SignatureToLowS()
@@ -106,18 +71,6 @@ func SignatureToLowS(k *ecdsa.PublicKey, signature []byte) ([]byte, error) {
 //GetHashOpt is a bridge for bccsp util GetHashOpt
 func GetHashOpt(hashFunction string) (apicryptosuite.HashOpts, error) {
 	return bccsp.GetHashOpt(hashFunction)
-}
-
-func getFactoryOpts(config *FactoryOpts) *factory.FactoryOpts {
-	if config == nil {
-		return nil
-	}
-	return &factory.FactoryOpts{
-		SwOpts:       config.SwOpts,
-		ProviderName: config.ProviderName,
-		Pkcs11Opts:   config.Pkcs11Opts,
-		PluginOpts:   config.PluginOpts,
-	}
 }
 
 //GetSHAOpts returns options for computing SHA.

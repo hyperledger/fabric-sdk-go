@@ -20,14 +20,16 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 
-	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
+	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
 var configImp config.Config
+var cryptoSuiteProvider apicryptosuite.CryptoSuite
 var org1 = "peerorg1"
 var caServerURL = "http://localhost:8090"
 var wrongCAServerURL = "http://localhost:8091"
@@ -38,6 +40,10 @@ func TestMain(m *testing.M) {
 		logging.InitLogger(deflogger.GetLoggingProvider())
 	}
 	configImp = mocks.NewMockConfig(caServerURL)
+	cryptoSuiteProvider, _ = cryptosuiteimpl.GetSuiteByConfig(configImp)
+	if cryptoSuiteProvider == nil {
+		panic("Failed initialize cryptoSuiteProvider")
+	}
 	// Start Http Server
 	go mocks.StartFabricCAMockServer(strings.TrimPrefix(caServerURL, "http://"))
 	// Allow HTTP server to start
@@ -48,7 +54,7 @@ func TestMain(m *testing.M) {
 // TestEnroll will test multiple enrol scenarios
 func TestEnroll(t *testing.T) {
 
-	fabricCAClient, err := NewFabricCAClient(configImp, org1)
+	fabricCAClient, err := NewFabricCAClient(org1, configImp, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
@@ -72,7 +78,7 @@ func TestEnroll(t *testing.T) {
 	}
 
 	wrongConfigImp := mocks.NewMockConfig(wrongCAServerURL)
-	fabricCAClient, err = NewFabricCAClient(wrongConfigImp, org1)
+	fabricCAClient, err = NewFabricCAClient(org1, wrongConfigImp, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
@@ -89,7 +95,7 @@ func TestEnroll(t *testing.T) {
 // TestRegister tests multiple scenarios of registering a test (mocked or nil user) and their certs
 func TestRegister(t *testing.T) {
 
-	fabricCAClient, err := NewFabricCAClient(configImp, org1)
+	fabricCAClient, err := NewFabricCAClient(org1, configImp, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
 	}
@@ -121,7 +127,7 @@ func TestRegister(t *testing.T) {
 	}
 
 	user.SetEnrollmentCertificate(readCert(t))
-	key, err := factory.GetDefault().KeyGen(factory.GetECDSAP256KeyGenOpts(true))
+	key, err := cryptosuite.GetDefault().KeyGen(cryptosuite.GetECDSAP256KeyGenOpts(true))
 	if err != nil {
 		t.Fatalf("KeyGen return error %v", err)
 	}
@@ -149,11 +155,16 @@ func TestRegister(t *testing.T) {
 // TestRevoke will test multiple revoking a user with a nil request or a nil user
 func TestRevoke(t *testing.T) {
 
-	fabricCAClient, err := NewFabricCAClient(configImp, org1)
+	cryptoSuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(configImp)
+	if err != nil {
+		t.Fatalf("cryptosuite.GetSuiteByConfig returned error: %v", err)
+	}
+
+	fabricCAClient, err := NewFabricCAClient(org1, configImp, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
 	}
-	mockKey := cryptosuite.GetKey(&mocks.MockKey{})
+	mockKey := cryptosuiteimpl.GetKey(&mocks.MockKey{})
 	user := mocks.NewMockUser("test")
 	// Revoke with nil request
 	err = fabricCAClient.Revoke(user, nil)
@@ -182,7 +193,7 @@ func TestRevoke(t *testing.T) {
 // TestReenroll will test multiple scenarios of re enrolling a user
 func TestReenroll(t *testing.T) {
 
-	fabricCAClient, err := NewFabricCAClient(configImp, org1)
+	fabricCAClient, err := NewFabricCAClient(org1, configImp, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
 	}
@@ -214,7 +225,7 @@ func TestReenroll(t *testing.T) {
 	}
 	// Reenroll with appropriate user
 	user.SetEnrollmentCertificate(readCert(t))
-	key, err := factory.GetDefault().KeyGen(factory.GetECDSAP256KeyGenOpts(true))
+	key, err := cryptosuite.GetDefault().KeyGen(cryptosuite.GetECDSAP256KeyGenOpts(true))
 	if err != nil {
 		t.Fatalf("KeyGen return error %v", err)
 	}
@@ -226,7 +237,7 @@ func TestReenroll(t *testing.T) {
 
 	// Reenroll with wrong fabric-ca server url
 	wrongConfigImp := mocks.NewMockConfig(wrongCAServerURL)
-	fabricCAClient, err = NewFabricCAClient(wrongConfigImp, org1)
+	fabricCAClient, err = NewFabricCAClient(org1, wrongConfigImp, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
@@ -241,7 +252,7 @@ func TestReenroll(t *testing.T) {
 
 // TestGetCAName will test the CAName is properly created once a new FabricCAClient is created
 func TestGetCAName(t *testing.T) {
-	fabricCAClient, err := NewFabricCAClient(configImp, org1)
+	fabricCAClient, err := NewFabricCAClient(org1, configImp, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
 	}
@@ -252,13 +263,18 @@ func TestGetCAName(t *testing.T) {
 
 // TestCreateNewFabricCAClientOrgAndConfigMissingFailure tests for newFabricCA Client creation with a missing Config and Org
 func TestCreateNewFabricCAClientOrgAndConfigMissingFailure(t *testing.T) {
-	_, err := NewFabricCAClient(configImp, "")
-	if err.Error() != "organization and config are required to load CA config" {
+	_, err := NewFabricCAClient("", configImp, cryptoSuiteProvider)
+	if err.Error() != "organization, config and cryptoSuite are required to load CA config" {
 		t.Fatalf("Expected error without oganization information. Got: %s", err.Error())
 	}
-	_, err = NewFabricCAClient(nil, org1)
-	if err.Error() != "organization and config are required to load CA config" {
+	_, err = NewFabricCAClient(org1, nil, cryptoSuiteProvider)
+	if err.Error() != "organization, config and cryptoSuite are required to load CA config" {
 		t.Fatalf("Expected error without config information. Got: %s", err.Error())
+	}
+
+	_, err = NewFabricCAClient(org1, configImp, nil)
+	if err.Error() != "organization, config and cryptoSuite are required to load CA config" {
+		t.Fatalf("Expected error without cryptosuite information. Got: %s", err.Error())
 	}
 }
 
@@ -270,7 +286,7 @@ func TestCreateNewFabricCAClientCAConfigMissingFailure(t *testing.T) {
 
 	mockConfig.EXPECT().CAConfig(org1).Return(nil, errors.New("CAConfig error"))
 
-	_, err := NewFabricCAClient(mockConfig, org1)
+	_, err := NewFabricCAClient(org1, mockConfig, cryptoSuiteProvider)
 	if err.Error() != "CAConfig error" {
 		t.Fatalf("Expected error from CAConfig. Got: %s", err.Error())
 	}
@@ -283,7 +299,7 @@ func TestCreateNewFabricCAClientCertFilesMissingFailure(t *testing.T) {
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return(nil, errors.New("CAServerCertFiles error"))
-	_, err := NewFabricCAClient(mockConfig, org1)
+	_, err := NewFabricCAClient(org1, mockConfig, cryptoSuiteProvider)
 	if err.Error() != "CAServerCertFiles error" {
 		t.Fatalf("Expected error from CAServerCertFiles. Got: %s", err.Error())
 	}
@@ -297,7 +313,7 @@ func TestCreateNewFabricCAClientCertFileErrorFailure(t *testing.T) {
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil)
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", errors.New("CAClientCertFile error"))
-	_, err := NewFabricCAClient(mockConfig, org1)
+	_, err := NewFabricCAClient(org1, mockConfig, cryptoSuiteProvider)
 	if err.Error() != "CAClientCertFile error" {
 		t.Fatalf("Expected error from CAClientCertFile. Got: %s", err.Error())
 	}
@@ -312,57 +328,9 @@ func TestCreateNewFabricCAClientKeyFileErrorFailure(t *testing.T) {
 	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", errors.New("CAClientKeyFile error"))
-	_, err := NewFabricCAClient(mockConfig, org1)
+	_, err := NewFabricCAClient(org1, mockConfig, cryptoSuiteProvider)
 	if err.Error() != "CAClientKeyFile error" {
 		t.Fatalf("Expected error from CAClientKeyFile. Got: %s", err.Error())
-	}
-}
-
-// TestCreateInvalidBCCSPSecurityLevelForNewFabricClient will test newFabricCA Client creation with invalid BCCSP options
-func TestCreateInvalidBCCSPSecurityLevelForNewFabricClient(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
-	clientMockObject := &config.ClientConfig{Organization: "org1", Logging: config.LoggingType{Level: "info"}, CryptoConfig: config.CCType{Path: "test/path"}}
-
-	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
-	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
-	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
-	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
-	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
-	mockConfig.EXPECT().SecurityProvider().Return("SW")
-	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
-	mockConfig.EXPECT().SecurityLevel().Return(100)
-	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
-	mockConfig.EXPECT().Ephemeral().Return(false)
-	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
-	client, err := NewFabricCAClient(mockConfig, org1)
-	if !strings.Contains(err.Error(), "init failed") {
-		t.Fatalf("Expected error from client %v init. Got: %s", client, err.Error())
-	}
-}
-
-// TestCreateInvalidBCCSPHashFamilyForNewFabricClient will test newFabricCA Client creation with bad HashFamily
-func TestCreateInvalidBCCSPHashFamilyForNewFabricClient(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
-	clientMockObject := &config.ClientConfig{Organization: "org1", Logging: config.LoggingType{Level: "info"}, CryptoConfig: config.CCType{Path: "test/path"}}
-
-	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
-	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
-	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
-	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
-	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
-	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
-	mockConfig.EXPECT().SecurityProvider().Return("SW")
-	mockConfig.EXPECT().SecurityAlgorithm().Return("ABC")
-	mockConfig.EXPECT().SecurityLevel().Return(256)
-	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
-	mockConfig.EXPECT().Ephemeral().Return(false)
-	client, err := NewFabricCAClient(mockConfig, org1)
-	if !strings.Contains(err.Error(), "init failed") {
-		t.Fatalf("Expected error init failed. Got: %s (client %v)", err.Error(), client)
 	}
 }
 
@@ -384,7 +352,14 @@ func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 	mockConfig.EXPECT().SecurityLevel().Return(256)
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
 	mockConfig.EXPECT().Ephemeral().Return(false)
-	_, err := NewFabricCAClient(mockConfig, org1)
+
+	newCryptosuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(mockConfig)
+
+	if err != nil {
+		t.Fatalf("Expected fabric client ryptosuite to be created with SW BCCS provider, but got %v", err.Error())
+	}
+
+	_, err = NewFabricCAClient(org1, mockConfig, newCryptosuiteProvider)
 	if err != nil {
 		t.Fatalf("Expected fabric client to be created with SW BCCS provider, but got %v", err.Error())
 	}

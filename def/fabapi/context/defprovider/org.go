@@ -26,8 +26,8 @@ func NewOrgClientFactory() *OrgClientFactory {
 }
 
 // NewMSPClient returns a new default implmentation of the MSP client
-func (f *OrgClientFactory) NewMSPClient(orgName string, config apiconfig.Config) (fabca.FabricCAClient, error) {
-	mspClient, err := fabricCAClient.NewFabricCAClient(config, orgName)
+func (f *OrgClientFactory) NewMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error) {
+	mspClient, err := fabricCAClient.NewFabricCAClient(orgName, config, cryptoProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewFabricCAClient failed")
 	}

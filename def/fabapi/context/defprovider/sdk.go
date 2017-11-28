@@ -13,7 +13,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
+	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
@@ -56,7 +57,12 @@ func (f *DefaultProviderFactory) NewStateStoreProvider(o opt.StateStoreOpts, con
 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
 func (f *DefaultProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
-	return cryptosuite.GetSuiteByConfig(config)
+	cryptoSuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(config)
+	//Setting this cryptosuite as a factory default too
+	if cryptoSuiteProvider != nil {
+		cryptosuite.SetDefault(cryptoSuiteProvider)
+	}
+	return cryptoSuiteProvider, err
 }
 
 // NewSigningManager returns a new default implementation of signing manager

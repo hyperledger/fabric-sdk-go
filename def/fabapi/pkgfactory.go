@@ -186,8 +186,8 @@ func NewConfigManager(configFile string) (config.Config, error) {
 }
 
 // NewCAClient returns a new default implmentation of the MSP client
-func NewCAClient(orgName string, config config.Config) (fabca.FabricCAClient, error) {
-	mspClient, err := fabricCAClient.NewFabricCAClient(config, orgName)
+func NewCAClient(orgName string, config config.Config, cryptoSuite apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error) {
+	mspClient, err := fabricCAClient.NewFabricCAClient(orgName, config, cryptoSuite)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewFabricCAClient failed")
 	}

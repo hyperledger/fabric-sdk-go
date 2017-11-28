@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 /*
-Notice: This file is a modified version of ‘third_party/github.com/hyperledger/fabric/bccsp/bccsp.go’
+Notice: This file is a modified version of ‘internal/github.com/hyperledger/fabric/bccsp/bccsp.go’
 where interfaces and functions are removed to minimize for Hyperledger Fabric SDK Go usage.
 
 CryptoSuite interface defined in this file acts as a wrapper for
