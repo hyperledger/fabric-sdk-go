@@ -242,7 +242,7 @@ gofilter
 FILTER_FILENAME="msp/cert.go"
 FILTER_FN="certToPEM,isECDSASignedCert,sanitizeECDSASignedCert,certFromX509Cert,String"
 gofilter
-sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/sw"/sw "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/utils"/utils "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/configbuilder.go"
 FILTER_FN=
@@ -342,11 +342,7 @@ echo "Patching import paths on upstream project ..."
 WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" IMPORT_SUBSTS="${IMPORT_SUBSTS[@]}" scripts/third_party_pins/common/apply_import_patching.sh
 
 echo "Inserting modification notice ..."
-# Temporary missing license
-MISSING_LICENSE_FILES=("bccsp/utils/ecdsa.go")
-NOTICE_FILES=( "${FILES[@]/$MISSING_LICENSE_FILES}" )
-WORKING_DIR=$TMP_PROJECT_PATH FILES="${NOTICE_FILES[@]}" scripts/third_party_pins/common/apply_header_notice.sh
-WORKING_DIR=$TMP_PROJECT_PATH ALLOW_NONE_LICENSE_ID=true FILES="${MISSING_LICENSE_FILES[@]}" scripts/third_party_pins/common/apply_header_notice.sh
+WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" scripts/third_party_pins/common/apply_header_notice.sh
 
 # Copy patched project into internal paths
 echo "Copying patched upstream project into working directory ..."
