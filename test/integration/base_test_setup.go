@@ -27,7 +27,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	admin "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
 
@@ -180,22 +179,6 @@ func (setup *BaseSetupImpl) InitConfig() (apiconfig.Config, error) {
 	return configImpl, nil
 }
 
-// InstantiateCC ...
-func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args [][]byte) error {
-
-	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
-
-	return admin.SendInstantiateCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub)
-}
-
-// UpgradeCC ...
-func (setup *BaseSetupImpl) UpgradeCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args [][]byte) error {
-
-	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
-
-	return admin.SendUpgradeCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub)
-}
-
 // InstallCC use low level client to install chaincode
 func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, ccPackage *fab.CCPackage) error {
 
@@ -224,24 +207,28 @@ func (setup *BaseSetupImpl) GetDeployPath() string {
 // InstallAndInstantiateExampleCC install and instantiate using resource management client
 func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 
-	chainCodePath := "github.com/example_cc"
-	chainCodeVersion := "v0"
-
 	if setup.ChainCodeID == "" {
 		setup.ChainCodeID = GenerateRandomID()
 	}
 
-	ccPkg, err := packager.NewCCPackage(chainCodePath, setup.GetDeployPath())
+	return setup.InstallAndInstantiateCC(setup.ChainCodeID, "github.com/example_cc", "v0", setup.GetDeployPath(), initArgs)
+}
+
+// InstallAndInstantiateCC install and instantiate using resource management client
+func (setup *BaseSetupImpl) InstallAndInstantiateCC(ccName, ccPath, ccVersion, goPath string, ccArgs [][]byte) error {
+
+	ccPkg, err := packager.NewCCPackage(ccPath, goPath)
 	if err != nil {
 		return err
 	}
 
-	_, err = resMgmtClient.InstallCC(resmgmt.InstallCCRequest{Name: setup.ChainCodeID, Path: chainCodePath, Version: chainCodeVersion, Package: ccPkg})
+	_, err = resMgmtClient.InstallCC(resmgmt.InstallCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Package: ccPkg})
 	if err != nil {
 		return err
 	}
 
-	return setup.InstantiateCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, initArgs)
+	ccPolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
+	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy})
 }
 
 // UpgradeExampleCC upgrade example CC
@@ -264,7 +251,9 @@ func (setup *BaseSetupImpl) UpgradeExampleCC() error {
 		return err
 	}
 
-	return setup.UpgradeCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, upgradeArgs)
+	ccPolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
+	return resMgmtClient.UpgradeCC("mychannel", resmgmt.UpgradeCCRequest{Name: setup.ChainCodeID, Path: chainCodePath, Version: chainCodeVersion, Args: upgradeArgs, Policy: ccPolicy})
+
 }
 
 // GetChannel initializes and returns a channel based on config

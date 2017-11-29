@@ -88,6 +88,26 @@ func NewEventHub(client fab.FabricClient) (*EventHub, error) {
 	return &eventHub, nil
 }
 
+// NewEventHubFromConfig creates new event hub from client and peer config
+func NewEventHubFromConfig(client fab.FabricClient, peerCfg *apiconfig.PeerConfig) (*EventHub, error) {
+
+	eventHub, err := NewEventHub(client)
+	if err != nil {
+		return nil, err
+	}
+
+	serverHostOverride := ""
+	if str, ok := peerCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
+		serverHostOverride = str
+	}
+
+	eventHub.peerAddr = peerCfg.EventURL
+	eventHub.peerTLSCertificate = peerCfg.TLSCACerts.Path
+	eventHub.peerTLSServerHostOverride = serverHostOverride
+
+	return eventHub, nil
+}
+
 // SetInterests clears all interests and sets the interests for BLOCK type of events.
 func (eventHub *EventHub) SetInterests(block bool) {
 	eventHub.mtx.Lock()

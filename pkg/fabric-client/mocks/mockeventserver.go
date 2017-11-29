@@ -32,7 +32,7 @@ func StartMockEventServer(testAddress string) (*MockEventServer, error) {
 	}
 	eventServer := &MockEventServer{grpcServer: grpcServer}
 	pb.RegisterEventsServer(grpcServer, eventServer)
-	fmt.Printf("Starting test server\n")
+	fmt.Printf("Starting mock event server\n")
 	go grpcServer.Serve(lis)
 
 	return eventServer, nil

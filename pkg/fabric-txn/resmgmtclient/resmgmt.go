@@ -8,14 +8,20 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmtclient
 
 import (
+	"time"
+
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -25,8 +31,18 @@ type ResourceMgmtClient struct {
 	client    fab.FabricClient
 	config    config.Config
 	filter    resmgmt.TargetFilter
-	discovery fab.DiscoveryService
+	discovery fab.DiscoveryService  // global discovery service (detects all peers on the network)
+	provider  fab.DiscoveryProvider // used to get per channel discovery service(s)
 }
+
+// CCProposalType reflects transitions in the chaincode lifecycle
+type CCProposalType int
+
+// Define chaincode proposal types
+const (
+	Instantiate CCProposalType = iota
+	Upgrade
+)
 
 // MSPFilter is default filter
 type MSPFilter struct {
@@ -39,7 +55,7 @@ func (f *MSPFilter) Accept(peer fab.Peer) bool {
 }
 
 // NewResourceMgmtClient returns a ResourceMgmtClient instance
-func NewResourceMgmtClient(client fab.FabricClient, discovery fab.DiscoveryService, filter resmgmt.TargetFilter, config config.Config) (*ResourceMgmtClient, error) {
+func NewResourceMgmtClient(client fab.FabricClient, provider fab.DiscoveryProvider, filter resmgmt.TargetFilter, config config.Config) (*ResourceMgmtClient, error) {
 
 	if client.UserContext() == nil {
 		return nil, errors.New("must provide client identity")
@@ -55,7 +71,13 @@ func NewResourceMgmtClient(client fab.FabricClient, discovery fab.DiscoveryServi
 		rcFilter = &MSPFilter{mspID: client.UserContext().MspID()}
 	}
 
-	resourceClient := &ResourceMgmtClient{client: client, discovery: discovery, filter: rcFilter, config: config}
+	// setup global discovery service
+	discovery, err := provider.NewDiscoveryService("")
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to create global discovery service")
+	}
+
+	resourceClient := &ResourceMgmtClient{client: client, discovery: discovery, provider: provider, filter: rcFilter, config: config}
 	return resourceClient, nil
 }
 
@@ -66,7 +88,7 @@ func (rc *ResourceMgmtClient) JoinChannel(channelID string) error {
 		return errors.New("must provide channel ID")
 	}
 
-	targets, err := rc.getDefaultTargets()
+	targets, err := rc.getDefaultTargets(rc.discovery)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get default targets for JoinChannel")
 	}
@@ -85,7 +107,7 @@ func (rc *ResourceMgmtClient) JoinChannelWithOpts(channelID string, opts resmgmt
 		return errors.New("must provide channel ID")
 	}
 
-	targets, err := rc.calculateTargets(opts.Targets, opts.TargetFilter)
+	targets, err := rc.calculateTargets(rc.discovery, opts.Targets, opts.TargetFilter)
 	if err != nil {
 		return errors.WithMessage(err, "failed to determine target peers for JoinChannel")
 	}
@@ -146,10 +168,10 @@ func filterTargets(peers []fab.Peer, filter resmgmt.TargetFilter) []fab.Peer {
 }
 
 // helper method for calculating default targets
-func (rc *ResourceMgmtClient) getDefaultTargets() ([]fab.Peer, error) {
+func (rc *ResourceMgmtClient) getDefaultTargets(discovery fab.DiscoveryService) ([]fab.Peer, error) {
 
 	// Default targets are discovery peers
-	peers, err := rc.discovery.GetPeers()
+	peers, err := discovery.GetPeers()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to discover peers")
 	}
@@ -162,7 +184,7 @@ func (rc *ResourceMgmtClient) getDefaultTargets() ([]fab.Peer, error) {
 }
 
 // calculateTargets calculates targets based on targets and filter
-func (rc *ResourceMgmtClient) calculateTargets(peers []fab.Peer, filter resmgmt.TargetFilter) ([]fab.Peer, error) {
+func (rc *ResourceMgmtClient) calculateTargets(discovery fab.DiscoveryService, peers []fab.Peer, filter resmgmt.TargetFilter) ([]fab.Peer, error) {
 
 	if peers != nil && filter != nil {
 		return nil, errors.New("If targets are provided, filter cannot be provided")
@@ -174,7 +196,7 @@ func (rc *ResourceMgmtClient) calculateTargets(peers []fab.Peer, filter resmgmt.
 	var err error
 	if targets == nil {
 		// Retrieve targets from discovery
-		targets, err = rc.discovery.GetPeers()
+		targets, err = discovery.GetPeers()
 		if err != nil {
 			return nil, err
 		}
@@ -214,7 +236,7 @@ func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest) ([]resmgmt
 		return nil, err
 	}
 
-	targets, err := rc.getDefaultTargets()
+	targets, err := rc.getDefaultTargets(rc.discovery)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get default targets for InstallCC")
 	}
@@ -237,7 +259,7 @@ func (rc *ResourceMgmtClient) InstallCCWithOpts(req resmgmt.InstallCCRequest, op
 		return nil, err
 	}
 
-	targets, err := rc.calculateTargets(opts.Targets, opts.TargetFilter)
+	targets, err := rc.calculateTargets(rc.discovery, opts.Targets, opts.TargetFilter)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to determine target peers for install cc")
 	}
@@ -295,7 +317,174 @@ func (rc *ResourceMgmtClient) InstallCCWithOpts(req resmgmt.InstallCCRequest, op
 
 func checkRequiredInstallCCParams(req resmgmt.InstallCCRequest) error {
 	if req.Name == "" || req.Version == "" || req.Path == "" || req.Package == nil {
-		return errors.New("Chaincode name(ID), version, path and chaincode package are required")
+		return errors.New("Chaincode name, version, path and chaincode package are required")
+	}
+	return nil
+}
+
+// InstantiateCC instantiates chaincode using default settings
+func (rc *ResourceMgmtClient) InstantiateCC(channelID string, req resmgmt.InstantiateCCRequest) error {
+
+	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
+		return err
+	}
+
+	// per channel discovery service
+	discovery, err := rc.provider.NewDiscoveryService(channelID)
+	if err != nil {
+		return errors.WithMessage(err, "failed to create channel discovery service")
+	}
+
+	targets, err := rc.getDefaultTargets(discovery)
+	if err != nil {
+		return errors.WithMessage(err, "failed to get default targets for InstantiateCC")
+	}
+
+	if len(targets) == 0 {
+		return errors.New("No default targets available for instantiate cc")
+	}
+
+	return rc.InstantiateCCWithOpts(channelID, req, resmgmt.InstantiateCCOpts{Targets: targets})
+}
+
+// InstantiateCCWithOpts instantiates chaincode with custom options
+func (rc *ResourceMgmtClient) InstantiateCCWithOpts(channelID string, req resmgmt.InstantiateCCRequest, opts resmgmt.InstantiateCCOpts) error {
+
+	return rc.sendCCProposalWithOpts(Instantiate, channelID, req, opts)
+
+}
+
+// UpgradeCC upgrades chaincode using default settings
+func (rc *ResourceMgmtClient) UpgradeCC(channelID string, req resmgmt.UpgradeCCRequest) error {
+
+	if err := checkRequiredCCProposalParams(channelID, resmgmt.InstantiateCCRequest(req)); err != nil {
+		return err
+	}
+
+	// per channel discovery service
+	discovery, err := rc.provider.NewDiscoveryService(channelID)
+	if err != nil {
+		return errors.WithMessage(err, "failed to create channel discovery service")
+	}
+
+	targets, err := rc.getDefaultTargets(discovery)
+	if err != nil {
+		return errors.WithMessage(err, "failed to get default targets for UpgradeCC")
+	}
+
+	if len(targets) == 0 {
+		return errors.New("No default targets available for upgrade cc")
+	}
+
+	return rc.UpgradeCCWithOpts(channelID, req, resmgmt.UpgradeCCOpts{Targets: targets})
+}
+
+// UpgradeCCWithOpts upgrades chaincode with custom options
+func (rc *ResourceMgmtClient) UpgradeCCWithOpts(channelID string, req resmgmt.UpgradeCCRequest, opts resmgmt.UpgradeCCOpts) error {
+
+	return rc.sendCCProposalWithOpts(Upgrade, channelID, resmgmt.InstantiateCCRequest(req), resmgmt.InstantiateCCOpts(opts))
+
+}
+
+// InstantiateCCWithOpts instantiates chaincode with custom options
+func (rc *ResourceMgmtClient) sendCCProposalWithOpts(ccProposalType CCProposalType, channelID string, req resmgmt.InstantiateCCRequest, opts resmgmt.InstantiateCCOpts) error {
+
+	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
+		return err
+	}
+
+	// per channel discovery service
+	discovery, err := rc.provider.NewDiscoveryService(channelID)
+	if err != nil {
+		return errors.WithMessage(err, "failed to create channel discovery service")
+	}
+
+	targets, err := rc.calculateTargets(discovery, opts.Targets, opts.TargetFilter)
+	if err != nil {
+		return errors.WithMessage(err, "failed to determine target peers for cc proposal")
+	}
+
+	if len(targets) == 0 {
+		return errors.New("No targets available for cc proposal")
+	}
+
+	channel, err := rc.getChannel(channelID)
+	if err != nil {
+		return errors.WithMessage(err, "get channel failed")
+	}
+
+	var txProposalResponse []*apitxn.TransactionProposalResponse
+	var txID apitxn.TransactionID
+
+	switch ccProposalType {
+
+	case Instantiate:
+		txProposalResponse, txID, err = channel.SendInstantiateProposal(req.Name,
+			req.Args, req.Path, req.Version, req.Policy, peer.PeersToTxnProcessors(targets))
+		if err != nil {
+			return errors.Wrap(err, "send instantiate chaincode proposal failed")
+		}
+	case Upgrade:
+		txProposalResponse, txID, err = channel.SendUpgradeProposal(req.Name,
+			req.Args, req.Path, req.Version, req.Policy, peer.PeersToTxnProcessors(targets))
+		if err != nil {
+			return errors.Wrap(err, "send upgrade chaincode proposal failed")
+		}
+	default:
+		return errors.Errorf("chaincode proposal type %d not supported", ccProposalType)
+	}
+
+	for _, v := range txProposalResponse {
+		if v.Err != nil {
+			return errors.WithMessage(v.Err, "cc proposal failed")
+		}
+	}
+
+	eventHub, err := rc.getEventHub(channelID)
+	if err != nil {
+		return errors.WithMessage(err, "get event hub failed")
+	}
+
+	if eventHub.IsConnected() == false {
+		err := eventHub.Connect()
+		if err != nil {
+			return err
+		}
+		defer eventHub.Disconnect()
+	}
+
+	// Register for commit event
+	chcode := internal.RegisterTxEvent(txID, eventHub)
+
+	if _, err = internal.CreateAndSendTransaction(channel, txProposalResponse); err != nil {
+		return errors.WithMessage(err, "CreateAndSendTransaction failed")
+	}
+
+	timeout := rc.config.TimeoutOrDefault(config.ExecuteTx)
+	if opts.Timeout != 0 {
+		timeout = opts.Timeout
+	}
+
+	select {
+	case code := <-chcode:
+		if code == pb.TxValidationCode_VALID {
+			return nil
+		}
+		return errors.Errorf("instantiateOrUpgradeCC received tx validation code %s", code)
+	case <-time.After(timeout):
+		return errors.New("instantiateOrUpgradeCC timeout")
+	}
+
+}
+
+func checkRequiredCCProposalParams(channelID string, req resmgmt.InstantiateCCRequest) error {
+
+	if channelID == "" {
+		return errors.New("must provide channel ID")
+	}
+
+	if req.Name == "" || req.Version == "" || req.Path == "" || req.Policy == nil {
+		return errors.New("Chaincode name, version, path and policy are required")
 	}
 	return nil
 }
@@ -347,4 +536,28 @@ func (rc *ResourceMgmtClient) getChannel(channelID string) (fab.Channel, error) 
 	}
 
 	return channel, nil
+}
+
+func (rc *ResourceMgmtClient) getEventHub(channelID string) (*events.EventHub, error) {
+
+	peerConfig, err := rc.config.ChannelPeers(channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "read configuration for channel peers failed")
+	}
+
+	var eventSource *config.ChannelPeer
+	for _, p := range peerConfig {
+		if p.EventSource && p.MspID == rc.client.UserContext().MspID() {
+			eventSource = &p
+			break
+		}
+	}
+
+	if eventSource == nil {
+		return nil, errors.New("unable to find event source for channel")
+	}
+
+	// Event source found, create event hub
+	return events.NewEventHubFromConfig(rc.client, &eventSource.PeerConfig)
+
 }

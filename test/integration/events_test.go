@@ -13,7 +13,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
-	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -49,18 +48,8 @@ func initializeTests(t *testing.T) BaseSetupImpl {
 
 	testSetup.ChainCodeID = GenerateRandomID()
 
-	ccPkg, err := packager.NewCCPackage("github.com/events_cc", testSetup.GetDeployPath())
-	if err != nil {
-		t.Fatalf("Failed to package chaincode")
-	}
-
-	// Install and Instantiate Events CC
-	if err := testSetup.InstallCC(testSetup.ChainCodeID, "github.com/events_cc", "v0", ccPkg); err != nil {
-		t.Fatalf("installCC return error: %v", err)
-	}
-
-	if err := testSetup.InstantiateCC(testSetup.ChainCodeID, "github.com/events_cc", "v0", nil); err != nil {
-		t.Fatalf("instantiateCC return error: %v", err)
+	if err := testSetup.InstallAndInstantiateCC(testSetup.ChainCodeID, "github.com/events_cc", "v0", testSetup.GetDeployPath(), nil); err != nil {
+		t.Fatalf("InstallAndInstantiateCC return error: %v", err)
 	}
 
 	return testSetup

@@ -64,12 +64,12 @@ func (f *SessionClientFactory) NewResourceMgmtClient(sdk context.SDK, session co
 		return nil, err
 	}
 
-	discovery, err := sdk.DiscoveryProvider().NewDiscoveryService("")
+	provider := sdk.DiscoveryProvider()
 	if err != nil {
-		return nil, errors.WithMessage(err, "create discovery service failed")
+		return nil, errors.WithMessage(err, "create discovery provider failed")
 	}
 
-	return resmgmtImpl.NewResourceMgmtClient(client, discovery, filter, config)
+	return resmgmtImpl.NewResourceMgmtClient(client, provider, filter, config)
 }
 
 // NewChannelClient returns a client that can execute transactions on specified channel
@@ -146,16 +146,10 @@ func getEventHub(client fab.FabricClient, channelID string, session context.Sess
 		return nil, errors.WithMessage(err, "read configuration for channel peers failed")
 	}
 
-	serverHostOverride := ""
 	var eventSource *apiconfig.PeerConfig
 
 	for _, p := range peerConfig {
-
 		if p.EventSource && p.MspID == session.Identity().MspID() {
-			serverHostOverride = ""
-			if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
-				serverHostOverride = str
-			}
 			eventSource = &p.PeerConfig
 			break
 		}
@@ -165,13 +159,6 @@ func getEventHub(client fab.FabricClient, channelID string, session context.Sess
 		return nil, errors.New("unable to find peer event source for channel")
 	}
 
-	// Event source found create event hub
-	eventHub, err := events.NewEventHub(client)
-	if err != nil {
-		return nil, err
-	}
+	return events.NewEventHubFromConfig(client, eventSource)
 
-	eventHub.SetPeerAddr(eventSource.EventURL, eventSource.TLSCACerts.Path, serverHostOverride)
-
-	return eventHub, nil
 }

@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
@@ -34,6 +36,9 @@ func NewMockDiscoveryProvider(err error, peers []apifabclient.Peer) (*MockStatic
 
 // NewDiscoveryService return discovery service for specific channel
 func (dp *MockStaticDiscoveryProvider) NewDiscoveryService(channelID string) (apifabclient.DiscoveryService, error) {
+	if channelID == "error" {
+		return nil, errors.New("Generate error when creating new discovery service")
+	}
 	return &MockStaticDiscoveryService{Error: dp.Error, Peers: dp.Peers}, nil
 }
 

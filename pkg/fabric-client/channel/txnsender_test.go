@@ -191,7 +191,8 @@ func TestSendInstantiateProposal(t *testing.T) {
 
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", cauthdsl.SignedByMspMember("Org1MSP"), nil)
-	if err == nil || err.Error() != "missing peer objects for instantiate chaincode proposal" {
+
+	if err == nil || err.Error() != "missing peer objects for chaincode proposal" {
 		t.Fatal("Missing peer objects validation is not working as expected")
 	}
 }
@@ -259,7 +260,7 @@ func TestSendUpgradeProposal(t *testing.T) {
 
 	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
 		"2", cauthdsl.SignedByMspMember("Org1MSP"), nil)
-	if err == nil || err.Error() != "missing peer objects for upgrade chaincode proposal" {
+	if err == nil || err.Error() != "missing peer objects for chaincode proposal" {
 		t.Fatal("Missing peer objects validation is not working as expected")
 	}
 }
