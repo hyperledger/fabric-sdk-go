@@ -26,12 +26,14 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	lu "github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger(logModule)
 
 const (
 	cmdRoot        = "fabric_sdk"
+	logModule      = "fabric_sdk_go"
 	defaultTimeout = time.Second * 5
 )
 
@@ -77,16 +79,16 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 	loggingLevelString := myViper.GetString("client.logging.level")
 	logLevel := apilogging.INFO
 	if loggingLevelString != "" {
-		logger.Infof("fabric_sdk_go Logging level from the config: %v", loggingLevelString)
+		logger.Debugf("%s logging level from the config: %v", logModule, loggingLevelString)
 		var err error
 		logLevel, err = logging.LogLevel(loggingLevelString)
 		if err != nil {
 			panic(err)
 		}
 	}
-	logging.SetLevel("fabric_sdk_go", logLevel)
+	logging.SetLevel(logModule, logLevel)
 
-	logger.Infof("fabric_sdk_go Logging level is finally set to: %s", logging.GetLevel("fabric_sdk_go"))
+	logger.Infof("%s logging level is set to: %s", logModule, lu.LogLevelString(logging.GetLevel(logModule)))
 	return &Config{tlsCertPool: x509.NewCertPool(), configViper: myViper}, nil
 }
 

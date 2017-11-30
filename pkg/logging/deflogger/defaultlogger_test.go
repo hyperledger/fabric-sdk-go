@@ -26,7 +26,7 @@ func TestDefaultLoggingWithCallerInfo(t *testing.T) {
 
 func testDefaultLogging(t *testing.T) {
 
-	logger := GetLoggingProvider().GetLogger(moduleName)
+	logger := LoggerProvider().GetLogger(moduleName)
 
 	//change the output to buffer
 	var buf bytes.Buffer
@@ -86,7 +86,7 @@ func testDefaultLogging(t *testing.T) {
 func TestDefaultLoggingPanic(t *testing.T) {
 
 	//Reset custom logger, need default one
-	logger := GetLoggingProvider().GetLogger(moduleName)
+	logger := LoggerProvider().GetLogger(moduleName)
 	//change the output to buffer
 	var buf bytes.Buffer
 	logger.(*Logger).ChangeOutput(&buf)

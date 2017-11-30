@@ -24,8 +24,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
 var configImp config.Config
@@ -36,9 +34,6 @@ var wrongCAServerURL = "http://localhost:8091"
 
 // TestMain Load testing config
 func TestMain(m *testing.M) {
-	if !logging.IsLoggerInitialized() {
-		logging.InitLogger(deflogger.GetLoggingProvider())
-	}
 	configImp = mocks.NewMockConfig(caServerURL)
 	cryptoSuiteProvider, _ = cryptosuiteimpl.GetSuiteByConfig(configImp)
 	if cryptoSuiteProvider == nil {

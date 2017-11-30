@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"sync"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
@@ -22,11 +23,8 @@ var buf bytes.Buffer
 
 func TestLevelledLoggingForCustomLogger(t *testing.T) {
 
-	//prepare custom logger for which output is bytes buffer
-	//
-	//customLogger := log.New(&buf, fmt.Sprintf(logPrefixFormatter, moduleName), log.Ldate|log.Ltime|log.LUTC)
-
 	//Now add sample logger
+	resetLoggerInstance()
 	InitLogger(&sampleLoggingProvider{})
 	//Create new logger
 	logger := NewLogger(moduleName)
@@ -143,11 +141,14 @@ func (l *SampleLogger) Errorln(args ...interface{}) { l.customLogger.Print("CUST
 func TestDefaultBehavior(t *testing.T) {
 
 	//Init logger with default logger
-	InitLogger(deflogger.GetLoggingProvider())
+	resetLoggerInstance()
+	InitLogger(deflogger.LoggerProvider())
 	//Get new logger
 	dlogger := NewLogger(moduleName)
+	// force initialization
+	dlogger.logger()
 	//Change output
-	dlogger.logger.(*deflogger.Logger).ChangeOutput(&buf)
+	dlogger.instance.(*deflogger.Logger).ChangeOutput(&buf)
 
 	//No level set for this module so log level should be info
 	utils.VerifyTrue(t, apilogging.INFO == deflogger.GetLevel(moduleName), " default log level is INFO")
@@ -199,10 +200,17 @@ func TestDefaultBehavior(t *testing.T) {
 }
 
 func TestLoggerSetting(t *testing.T) {
-	loggingProvider = nil
-	utils.VerifyFalse(t, IsLoggerInitialized(), "Logger is not supposed to be initialized now")
+	resetLoggerInstance()
 	logger := NewLogger(moduleName)
+	utils.VerifyTrue(t, loggerProviderInstance == nil, "Logger is not supposed to be initialized now")
 	logger.Info("brown fox jumps over the lazy dog")
-	InitLogger(deflogger.GetLoggingProvider())
-	utils.VerifyTrue(t, IsLoggerInitialized(), "Logger is supposed to be initialized now")
+	utils.VerifyTrue(t, loggerProviderInstance != nil, "Logger is supposed to be initialized now")
+	resetLoggerInstance()
+	InitLogger(deflogger.LoggerProvider())
+	utils.VerifyTrue(t, loggerProviderInstance != nil, "Logger is supposed to be initialized now")
+}
+
+func resetLoggerInstance() {
+	loggerProviderInstance = nil
+	loggerProviderOnce = sync.Once{}
 }

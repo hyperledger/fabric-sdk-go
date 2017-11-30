@@ -51,6 +51,14 @@ type Logger interface {
 	Errorln(args ...interface{})
 }
 
+// TODO: Leveler allows log levels to be enabled or disabled
+//type Leveler interface {
+//	SetLevel(module string, level Level)
+//	GetLevel(module string) Level
+//	IsEnabledFor(module string, level Level) bool
+//	LogLevel(level string) (Level, error)
+//}
+
 // Level defines all available log levels for log messages.
 type Level int
 
@@ -63,7 +71,8 @@ const (
 	DEBUG
 )
 
-//LoggingProvider - logging provider factory
-type LoggingProvider interface {
+// LoggerProvider is a factory for module loggers
+// TODO: should this be renamed to LoggerFactory?
+type LoggerProvider interface {
 	GetLogger(module string) Logger
 }
