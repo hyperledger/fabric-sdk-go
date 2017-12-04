@@ -14,17 +14,17 @@ services:
       - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org1.example.com-cert.pem
       - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/8791d1363e89515f9afa042b0693a2c704bb8dd95d28f97d3549a2b9e3c4352d_sk
       - FABRIC_CA_SERVER_TLS_ENABLED=true
-      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/server_wild_org1or2.example.com.pem
-      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/server_wild_org1or2.example.com-key.pem
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls/server_wild_org1or2.example.com.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls/server_wild_org1or2.example.com-key.pem
     #comment out logging.driver in order to render the debug logs
     logging:
-      driver: none  
+      driver: none
     ports:
       - "7054:7054"
     command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
     volumes:
-      - ./channel/crypto-config/peerOrganizations/org1.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
-      - ./tls/fabricca/certs/server:/etc/hyperledger/fabric-ca-server-config
+      - ./channel/crypto-config/peerOrganizations/org1.example.com/ca/:/etc/hyperledger/fabric-ca-server-config/
+      - ./tls/fabricca/certs/server/:/etc/hyperledger/fabric-ca-server-config/tls
     networks:
       default:
         aliases:
@@ -38,17 +38,17 @@ services:
       - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org2.example.com-cert.pem
       - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/a259204dbd6adb14c05a6e02de94567b2a9f7dbe9e6a063ba767d42bf0b544c1_sk
       - FABRIC_CA_SERVER_TLS_ENABLED=true
-      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/server_wild_org1or2.example.com.pem
-      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/server_wild_org1or2.example.com-key.pem
-    #comment out logging.driver in order to render the debug logs 
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls/server_wild_org1or2.example.com.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls/server_wild_org1or2.example.com-key.pem
+    #comment out logging.driver in order to render the debug logs
     logging:
-      driver: none 
+      driver: none
     ports:
       - "8054:7054"
     command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
     volumes:
-      - ./channel/crypto-config/peerOrganizations/org2.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
-      - ./tls/fabricca/certs/server:/etc/hyperledger/fabric-ca-server-config
+      - ./channel/crypto-config/peerOrganizations/org2.example.com/ca/:/etc/hyperledger/fabric-ca-server-config/
+      - ./tls/fabricca/certs/server:/etc/hyperledger/fabric-ca-server-config/tls
     networks:
       default:
         aliases:

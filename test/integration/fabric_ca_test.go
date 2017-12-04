@@ -15,11 +15,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
@@ -169,6 +172,54 @@ func TestEnrollOrg2(t *testing.T) {
 	}
 	if cert == nil {
 		t.Fatalf("Expected enrol to return an enrolment cert")
+	}
+}
+
+func TestEnrollAndTransact(t *testing.T) {
+	mspID, err := testFabricConfig.MspID(org1Name)
+	if err != nil {
+		t.Fatalf("GetMspId() returned error: %v", err)
+	}
+	peers, err := testFabricConfig.PeersConfig(org1Name)
+	if err != nil {
+		t.Fatalf("Failed to get peer config : %s", err)
+	}
+	networkPeer := &apiconfig.NetworkPeer{PeerConfig: peers[0], MspID: mspID}
+	testPeer, err := peer.NewPeerFromConfig(networkPeer, testFabricConfig)
+	if err != nil {
+		t.Fatalf("Failed to create peer from config : %s", err)
+	}
+
+	cryptoSuiteProvider, err := cryptosuite.GetSuiteByConfig(testFabricConfig)
+	if err != nil {
+		t.Fatalf("Failed getting cryptosuite from config : %s", err)
+	}
+	signingManager, err := signingmgr.NewSigningManager(cryptoSuiteProvider, testFabricConfig)
+	if err != nil {
+		t.Fatalf("Could not create signing manager: %s", err)
+	}
+
+	caClient, err := fabricCAClient.NewFabricCAClient(org1Name, testFabricConfig, cryptoSuiteProvider)
+	if err != nil {
+		t.Fatalf("NewFabricCAClient returned error: %v", err)
+	}
+
+	key, cert, err := caClient.Enroll("admin", "adminpw")
+	if err != nil {
+		t.Fatalf("Enroll returned error: %v", err)
+	}
+
+	myUser := identity.NewUser("myUser", mspID)
+	myUser.SetEnrollmentCertificate(cert)
+	myUser.SetPrivateKey(key)
+
+	testClient := client.NewClient(testFabricConfig)
+	testClient.SetUserContext(myUser)
+	testClient.SetSigningManager(signingManager)
+
+	_, err = testClient.QueryChannels(testPeer)
+	if err != nil {
+		t.Fatalf("Failed to query with enrolled user : %s", err)
 	}
 }
 
