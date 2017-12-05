@@ -23,6 +23,9 @@ import (
 var configImpl *Config
 var org0 = "org0"
 var org1 = "Org1"
+var configTestFilePath = "../../test/fixtures/config/config_test.yaml"
+var configPemTestFilePath = "testdata/config_test_pem.yaml"
+var configType = "yaml"
 
 func TestDefaultConfig(t *testing.T) {
 	vConfig := viper.New()
@@ -40,7 +43,7 @@ func TestDefaultConfig(t *testing.T) {
 func TestCAConfig(t *testing.T) {
 	//Test config
 	vConfig := viper.New()
-	vConfig.SetConfigFile("../../test/fixtures/config/config_test.yaml")
+	vConfig.SetConfigFile(configTestFilePath)
 	vConfig.ReadInConfig()
 	vc := vConfig.ConfigFileUsed()
 
@@ -178,7 +181,7 @@ func TestCAConfig(t *testing.T) {
 func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	//Tamper 'client.network' value and use a new config to avoid conflicting with other tests
-	sampleConfig, err := InitConfig("../../test/fixtures/config/config_test.yaml")
+	sampleConfig, err := InitConfig(configTestFilePath)
 	sampleConfig.configViper.Set("client", "INVALID")
 	sampleConfig.configViper.Set("peers", "INVALID")
 	sampleConfig.configViper.Set("organizations", "INVALID")
@@ -360,7 +363,7 @@ func TestOrdererConfig(t *testing.T) {
 		if !filepath.IsAbs(orderers[0].TLSCACerts.Path) {
 			t.Fatal("Expected GOPATH relative path to be replaced")
 		}
-	} else if orderers[0].TLSCACerts.Pem == "" {
+	} else if len(orderers[0].TLSCACerts.Pem) == 0 {
 		t.Fatalf("Orderer %v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
 	}
 }
@@ -379,7 +382,7 @@ func TestChannelOrderers(t *testing.T) {
 		if !filepath.IsAbs(orderers[0].TLSCACerts.Path) {
 			t.Fatal("Expected GOPATH relative path to be replaced")
 		}
-	} else if orderers[0].TLSCACerts.Pem == "" {
+	} else if len(orderers[0].TLSCACerts.Pem) == 0 {
 		t.Fatalf("Orderer %v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
 	}
 }
@@ -428,7 +431,7 @@ func TestPeerConfig(t *testing.T) {
 		if !filepath.IsAbs(pc.TLSCACerts.Path) {
 			t.Fatalf("Expected cert path to be absolute")
 		}
-	} else if pc.TLSCACerts.Pem == "" {
+	} else if len(pc.TLSCACerts.Pem) == 0 {
 		t.Fatalf("Peer %s must have at least a TlsCACerts.Path or TlsCACerts.Pem set", "peer0")
 	}
 	if len(pc.GRPCOptions) == 0 || pc.GRPCOptions["ssl-target-name-override"] != "peer0.org1.example.com" {
@@ -443,10 +446,57 @@ func TestPeerNotInOrgConfig(t *testing.T) {
 	}
 }
 
+func TestInitConfigFromBytesSuccess(t *testing.T) {
+	// get a config byte for testing
+	cBytes, err := loadConfigBytesFromFile(t, configTestFilePath)
+
+	// test init config from bytes
+	_, err = InitConfigFromBytes(cBytes, configType)
+	if err != nil {
+		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
+	}
+}
+
+func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
+	// read test config file into bytes array
+	f, err := os.Open(filePath)
+	if err != nil {
+		t.Fatalf("Failed to read config file. Error: %s", err)
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		t.Fatalf("Failed to read config file stat. Error: %s", err)
+	}
+	s := fi.Size()
+	cBytes := make([]byte, s, s)
+	n, err := f.Read(cBytes)
+	if err != nil {
+		t.Fatalf("Failed to read test config for bytes array testing. Error: %s", err)
+	}
+	if n == 0 {
+		t.Fatalf("Failed to read test config for bytes array testing. Mock bytes array is empty")
+	}
+	return cBytes, err
+}
+
+func TestInitConfigFromBytesEmpty(t *testing.T) {
+	// test init config from an empty bytes
+	_, err := InitConfigFromBytes([]byte{}, configType)
+	if err == nil {
+		t.Fatalf("Expected to fail initialize config with empty bytes array.")
+	}
+	// test init config with an empty configType
+	_, err = InitConfigFromBytes([]byte("test config"), "")
+	if err == nil {
+		t.Fatalf("Expected to fail initialize config with empty config type.")
+	}
+}
+
 func TestInitConfigSuccess(t *testing.T) {
 	//Test init config
 	//...Positive case
-	_, err := InitConfig("../../test/fixtures/config/config_test.yaml")
+	_, err := InitConfig(configTestFilePath)
 	if err != nil {
 		t.Fatalf("Failed to initialize config. Error: %s", err)
 	}
@@ -454,13 +504,13 @@ func TestInitConfigSuccess(t *testing.T) {
 
 func TestInitConfigWithCmdRoot(t *testing.T) {
 	TestInitConfigSuccess(t)
-	fileLoc := "../../test/fixtures/config/config_test.yaml"
+	fileLoc := configTestFilePath
 	cmdRoot := "fabric_sdk"
 	var logger = logging.NewLogger("fabric_sdk_go")
 	logger.Infof("fileLoc is %s", fileLoc)
 
 	logger.Infof("fileLoc right before calling InitConfigWithCmdRoot is %s", fileLoc)
-	config, err := InitConfigWithCmdRoot(fileLoc, cmdRoot)
+	config, err := initConfigWithCmdRoot(fileLoc, cmdRoot)
 	if err != nil {
 		t.Fatalf("Failed to initialize config with cmd root. Error: %s", err)
 	}
@@ -485,7 +535,7 @@ func TestInitConfigPanic(t *testing.T) {
 		}
 	}()
 
-	InitConfig("../../test/fixtures/config/config_test.yaml")
+	InitConfig(configTestFilePath)
 }
 
 func TestInitConfigInvalidLocation(t *testing.T) {
@@ -510,7 +560,7 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testValue before config initialization got: %s", testValue1)
 	}
 	// initialize go sdk
-	config, err := InitConfig("../../test/fixtures/config/config_test.yaml")
+	config, err := InitConfig(configTestFilePath)
 	if err != nil {
 		t.Log(err.Error())
 	}
@@ -559,7 +609,7 @@ func TestEnvironmentVariablesSpecificCmdRoot(t *testing.T) {
 		t.Log(err.Error())
 	}
 
-	config, err := InitConfigWithCmdRoot("../../test/fixtures/config/config_test.yaml", "test_root")
+	config, err := initConfigWithCmdRoot(configTestFilePath, "test_root")
 	if err != nil {
 		t.Log(err.Error())
 	}
@@ -597,7 +647,7 @@ func TestMain(m *testing.M) {
 func setUp(m *testing.M) {
 	// do any test setup here...
 	var err error
-	configImpl, err = InitConfig("../../test/fixtures/config/config_test.yaml")
+	configImpl, err = InitConfig(configTestFilePath)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -628,4 +678,137 @@ func TestInterfaces(t *testing.T) {
 func TestSetTLSCACertPool(t *testing.T) {
 	configImpl.SetTLSCACertPool(nil)
 	t.Log("TLSCACertRoot must be created. Nothing additional to verify..")
+}
+
+func TestInitConfigFromBytesWithPem(t *testing.T) {
+	// get a config byte for testing
+	cBytes, err := loadConfigBytesFromFile(t, configPemTestFilePath)
+	if err != nil {
+		t.Fatalf("Failed to load sample bytes from File. Error: %s", err)
+	}
+
+	// test init config from bytes
+	c, err := InitConfigFromBytes(cBytes, configType)
+	if err != nil {
+		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
+	}
+
+	o, err := c.OrderersConfig()
+	if err != nil {
+		t.Fatalf("Failed to load orderers from config. Error: %s", err)
+	}
+
+	if o == nil || len(o) == 0 {
+		t.Fatalf("orderer cannot be nil or empty")
+	}
+
+	oPem := `-----BEGIN CERTIFICATE-----
+MIICNjCCAdygAwIBAgIRAILSPmMB3BzoLIQGsFxwZr8wCgYIKoZIzj0EAwIwbDEL
+MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
+cmFuY2lzY28xFDASBgNVBAoTC2V4YW1wbGUuY29tMRowGAYDVQQDExF0bHNjYS5l
+eGFtcGxlLmNvbTAeFw0xNzA3MjgxNDI3MjBaFw0yNzA3MjYxNDI3MjBaMGwxCzAJ
+BgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJh
+bmNpc2NvMRQwEgYDVQQKEwtleGFtcGxlLmNvbTEaMBgGA1UEAxMRdGxzY2EuZXhh
+bXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQfgKb4db53odNzdMXn
+P5FZTZTFztOO1yLvCHDofSNfTPq/guw+YYk7ZNmhlhj8JHFG6dTybc9Qb/HOh9hh
+gYpXo18wXTAOBgNVHQ8BAf8EBAMCAaYwDwYDVR0lBAgwBgYEVR0lADAPBgNVHRMB
+Af8EBTADAQH/MCkGA1UdDgQiBCBxaEP3nVHQx4r7tC+WO//vrPRM1t86SKN0s6XB
+8LWbHTAKBggqhkjOPQQDAgNIADBFAiEA96HXwCsuMr7tti8lpcv1oVnXg0FlTxR/
+SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
+-----END CERTIFICATE-----`
+	loadedOPem := strings.TrimSpace(o[0].TLSCACerts.Pem) // viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
+	if loadedOPem != oPem {
+		t.Fatalf("Orderer Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", oPem, loadedOPem)
+	}
+
+	pc, err := configImpl.PeersConfig(org1)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if pc == nil || len(pc) == 0 {
+		t.Fatalf("peers list of %s cannot be nil or empty", org1)
+	}
+	peer0 := "peer0.org1.example.com"
+	p0, err := c.PeerConfig(org1, peer0)
+	if err != nil {
+		t.Fatalf("Failed to load %s of %s from the config. Error: %s", peer0, org1, err)
+	}
+	if p0 == nil {
+		t.Fatalf("%s of %s cannot be nil", peer0, org1)
+	}
+	pPem := `-----BEGIN CERTIFICATE-----
+MIICSTCCAfCgAwIBAgIRAPQIzfkrCZjcpGwVhMSKd0AwCgYIKoZIzj0EAwIwdjEL
+MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
+cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHzAdBgNVBAMTFnRs
+c2NhLm9yZzEuZXhhbXBsZS5jb20wHhcNMTcwNzI4MTQyNzIwWhcNMjcwNzI2MTQy
+NzIwWjB2MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UE
+BxMNU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEfMB0G
+A1UEAxMWdGxzY2Eub3JnMS5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49
+AwEHA0IABMOiG8UplWTs898zZ99+PhDHPbKjZIDHVG+zQXopw8SqNdX3NAmZUKUU
+sJ8JZ3M49Jq4Ms8EHSEwQf0Ifx3ICHujXzBdMA4GA1UdDwEB/wQEAwIBpjAPBgNV
+HSUECDAGBgRVHSUAMA8GA1UdEwEB/wQFMAMBAf8wKQYDVR0OBCIEID9qJz7xhZko
+V842OVjxCYYQwCjPIY+5e9ORR+8pxVzcMAoGCCqGSM49BAMCA0cAMEQCIGZ+KTfS
+eezqv0ml1VeQEmnAEt5sJ2RJA58+LegUYMd6AiAfEe6BKqdY03qFUgEYmtKG+3Dr
+O94CDp7l2k7hMQI0zQ==
+-----END CERTIFICATE-----`
+
+	loadedPPem := strings.TrimSpace(p0.TLSCACerts.Pem) // viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
+	if loadedPPem != pPem {
+		t.Fatalf("%s Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", peer0, pPem, loadedPPem)
+	}
+
+	// get CAServerCertPems for org1
+	certs, err := c.CAServerCertPems("org1")
+	if err != nil {
+		t.Fatalf("Failed to load CAServerCertPems from config. Error: %s", err)
+	}
+	if len(certs) == 0 {
+		t.Fatalf("Got empty PEM certs for CAServerCertPems")
+	}
+
+	c.CAClientCertPem("org1")
+	if err != nil {
+		t.Fatalf("Failed to load CAClientCertPem from config. Error: %s", err)
+	}
+	if len(certs) == 0 {
+		t.Fatalf("Got empty PEM certs for CAClientCertPem")
+	}
+
+	c.CAClientKeyPem("org1")
+	if err != nil {
+		t.Fatalf("Failed to load CAClientKeyPem from config. Error: %s", err)
+	}
+	if len(certs) == 0 {
+		t.Fatalf("Got empty PEM certs for CAClientKeyPem")
+	}
+}
+
+func TestInitConfigFromBytesWrongType(t *testing.T) {
+	// get a config byte for testing
+	cBytes, err := loadConfigBytesFromFile(t, configPemTestFilePath)
+	if err != nil {
+		t.Fatalf("Failed to load sample bytes from File. Error: %s", err)
+	}
+
+	// test init config with empty type
+	c, err := InitConfigFromBytes(cBytes, "")
+	if err == nil {
+		t.Fatalf("Expected error when initializing config with wrong config type but got no error.")
+	}
+
+	// test init config with wrong type
+	c, err = InitConfigFromBytes(cBytes, "json")
+	if err != nil {
+		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
+	}
+
+	o, err := c.OrderersConfig()
+	if len(o) > 0 {
+		t.Fatalf("Expected to get an empty list of orderers for wrong config type")
+	}
+
+	np, err := c.NetworkPeers()
+	if len(np) > 0 {
+		t.Fatalf("Expected to get an empty list of peers for wrong config type")
+	}
 }

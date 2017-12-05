@@ -49,6 +49,19 @@ func (mr *MockConfigMockRecorder) CAClientCertFile(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAClientCertFile", reflect.TypeOf((*MockConfig)(nil).CAClientCertFile), arg0)
 }
 
+// CAClientCertPem mocks base method
+func (m *MockConfig) CAClientCertPem(arg0 string) (string, error) {
+	ret := m.ctrl.Call(m, "CAClientCertPem", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CAClientCertPem indicates an expected call of CAClientCertPem
+func (mr *MockConfigMockRecorder) CAClientCertPem(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAClientCertPem", reflect.TypeOf((*MockConfig)(nil).CAClientCertPem), arg0)
+}
+
 // CAClientKeyFile mocks base method
 func (m *MockConfig) CAClientKeyFile(arg0 string) (string, error) {
 	ret := m.ctrl.Call(m, "CAClientKeyFile", arg0)
@@ -60,6 +73,19 @@ func (m *MockConfig) CAClientKeyFile(arg0 string) (string, error) {
 // CAClientKeyFile indicates an expected call of CAClientKeyFile
 func (mr *MockConfigMockRecorder) CAClientKeyFile(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAClientKeyFile", reflect.TypeOf((*MockConfig)(nil).CAClientKeyFile), arg0)
+}
+
+// CAClientKeyPem mocks base method
+func (m *MockConfig) CAClientKeyPem(arg0 string) (string, error) {
+	ret := m.ctrl.Call(m, "CAClientKeyPem", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CAClientKeyPem indicates an expected call of CAClientKeyPem
+func (mr *MockConfigMockRecorder) CAClientKeyPem(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAClientKeyPem", reflect.TypeOf((*MockConfig)(nil).CAClientKeyPem), arg0)
 }
 
 // CAConfig mocks base method
@@ -98,6 +124,19 @@ func (m *MockConfig) CAServerCertFiles(arg0 string) ([]string, error) {
 // CAServerCertFiles indicates an expected call of CAServerCertFiles
 func (mr *MockConfigMockRecorder) CAServerCertFiles(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAServerCertFiles", reflect.TypeOf((*MockConfig)(nil).CAServerCertFiles), arg0)
+}
+
+// CAServerCertPems mocks base method
+func (m *MockConfig) CAServerCertPems(arg0 string) ([]string, error) {
+	ret := m.ctrl.Call(m, "CAServerCertPems", arg0)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CAServerCertPems indicates an expected call of CAServerCertPems
+func (mr *MockConfigMockRecorder) CAServerCertPems(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAServerCertPems", reflect.TypeOf((*MockConfig)(nil).CAServerCertPems), arg0)
 }
 
 // ChannelConfig mocks base method

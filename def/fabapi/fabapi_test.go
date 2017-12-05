@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fabapi
 
 import (
+	"os"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
@@ -189,4 +190,68 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new 'orgchannel' channel client: %s", err)
 	}
+}
+
+func TestNewDefaultSDKFromByte(t *testing.T) {
+	cBytes, err := loadConfigBytesFromFile(t, "../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Failed to load sample bytes from File. Error: %s", err)
+	}
+	setup := Options{
+		ConfigByte: cBytes,
+		ConfigType: "yaml",
+		StateStoreOpts: opt.StateStoreOpts{
+			Path: "/tmp/state",
+		},
+	}
+
+	sdk, err := NewSDK(setup)
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	if sdk == nil {
+		t.Fatalf("SDK should not be empty when initialized")
+	}
+
+	setup = Options{
+		ConfigByte: cBytes,
+		ConfigType: "json",
+		StateStoreOpts: opt.StateStoreOpts{
+			Path: "/tmp/state",
+		},
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
+	// new SDK expected to panic due to wrong config type which didn't load the configs
+	NewSDK(setup)
+
+}
+
+func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
+	// read test config file into bytes array
+	f, err := os.Open(filePath)
+	if err != nil {
+		t.Fatalf("Failed to read config file. Error: %s", err)
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		t.Fatalf("Failed to read config file stat. Error: %s", err)
+	}
+	s := fi.Size()
+	cBytes := make([]byte, s, s)
+	n, err := f.Read(cBytes)
+	if err != nil {
+		t.Fatalf("Failed to read test config for bytes array testing. Error: %s", err)
+	}
+	if n == 0 {
+		t.Fatalf("Failed to read test config for bytes array testing. Mock bytes array is empty")
+	}
+	return cBytes, err
 }

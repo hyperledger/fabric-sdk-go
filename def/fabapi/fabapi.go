@@ -29,6 +29,8 @@ import (
 type Options struct {
 	// Quick access options
 	ConfigFile string
+	ConfigByte []byte
+	ConfigType string
 
 	// Options for default providers
 	ConfigOpts     opt.ConfigOpts
@@ -85,7 +87,9 @@ type ProviderInit interface {
 func NewSDK(options Options) (*FabricSDK, error) {
 	// Construct SDK opts from the quick access options in setup
 	sdkOpts := opt.SDKOpts{
-		ConfigFile: options.ConfigFile,
+		ConfigFile:  options.ConfigFile,
+		ConfigBytes: options.ConfigByte,
+		ConfigType:  options.ConfigType,
 	}
 
 	sdk := FabricSDK{

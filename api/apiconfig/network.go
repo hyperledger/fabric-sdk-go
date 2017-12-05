@@ -135,12 +135,15 @@ type TLSConfig struct {
 
 // MutualTLSConfig Mutual TLS configurations
 type MutualTLSConfig struct {
+	Pem []string
 	// Certfiles root certificates for TLS validation (Comma serparated path list)
 	Path string
 	// Client client TLS information
 	Client struct {
+		KeyPem string
 		// Keyfile client key path
 		Keyfile string
+		CertPem string
 		// Certfile client cert path
 		Certfile string
 	}

@@ -33,6 +33,10 @@ func NewDefaultProviderFactory() *DefaultProviderFactory {
 
 // NewConfigProvider creates a Config using the SDK's default implementation
 func (f *DefaultProviderFactory) NewConfigProvider(o opt.ConfigOpts, a opt.SDKOpts) (apiconfig.Config, error) {
+	// configBytes takes precedence over configFile
+	if a.ConfigBytes != nil && len(a.ConfigBytes) > 0 {
+		return configImpl.InitConfigFromBytes(a.ConfigBytes, a.ConfigType)
+	}
 	return configImpl.InitConfig(a.ConfigFile)
 }
 

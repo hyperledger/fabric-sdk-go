@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package config
 
 import (
+	"bytes"
 	"crypto/x509"
 	"encoding/pem"
 	"go/build"
@@ -45,24 +46,57 @@ type Config struct {
 	configViper         *viper.Viper
 }
 
-// InitConfig ...
-// initConfig reads in config file
-func InitConfig(configFile string) (*Config, error) {
-	return InitConfigWithCmdRoot(configFile, cmdRoot)
+// InitConfigFromBytes will initialize the configs from a bytes array
+func InitConfigFromBytes(configBytes []byte, configType string) (*Config, error) {
+	myViper := getNewViper(cmdRoot)
+
+	if configType == "" {
+		return nil, errors.New("empty config type")
+	}
+
+	if len(configBytes) > 0 {
+		buf := bytes.NewBuffer(configBytes)
+		logger.Debugf("buf Len is %d, Cap is %d: %s", buf.Len(), buf.Cap(), buf)
+		// read config from bytes array, but must set ConfigType
+		// for viper to properly unmarshal the bytes array
+		myViper.SetConfigType(configType)
+		myViper.ReadConfig(buf)
+	} else {
+		return nil, errors.New("empty config bytes array")
+	}
+
+	setLogLevel(myViper)
+
+	return &Config{tlsCertPool: x509.NewCertPool(), configViper: myViper}, nil
 }
 
-// InitConfigWithCmdRoot reads in a config file and allows the
-// environment variable prefixed to be specified
-func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, error) {
+// getNewViper returns a new instance of viper
+func getNewViper(cmdRootPrefix string) *viper.Viper {
 	myViper := viper.New()
 	myViper.SetEnvPrefix(cmdRootPrefix)
 	myViper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
 	myViper.SetEnvKeyReplacer(replacer)
+	return myViper
+}
+
+// InitConfig reads in config file
+func InitConfig(configFile string) (*Config, error) {
+	return initConfigWithCmdRoot(configFile, cmdRoot)
+}
+
+// initConfigWithCmdRoot reads in a config file and allows the
+// environment variable prefixed to be specified
+func initConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, error) {
+	myViper := getNewViper(cmdRootPrefix)
+
+	// load default config
+	// for now, loading DefaultConfig only works with File, not []Byte due to viper's ConfigType
 	err := loadDefaultConfig(myViper)
 	if err != nil {
 		return nil, err
 	}
+
 	if configFile != "" {
 		// create new viper
 		myViper.SetConfigFile(configFile)
@@ -76,6 +110,14 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 		}
 	}
 
+	setLogLevel(myViper)
+
+	logger.Infof("%s logging level is set to: %s", logModule, lu.LogLevelString(logging.GetLevel(logModule)))
+	return &Config{tlsCertPool: x509.NewCertPool(), configViper: myViper}, nil
+}
+
+// setLogLevel will set the log level of the client
+func setLogLevel(myViper *viper.Viper) {
 	loggingLevelString := myViper.GetString("client.logging.level")
 	logLevel := apilogging.INFO
 	if loggingLevelString != "" {
@@ -87,9 +129,6 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 		}
 	}
 	logging.SetLevel(logModule, logLevel)
-
-	logger.Infof("%s logging level is set to: %s", logModule, lu.LogLevelString(logging.GetLevel(logModule)))
-	return &Config{tlsCertPool: x509.NewCertPool(), configViper: myViper}, nil
 }
 
 // load Default config
@@ -134,7 +173,31 @@ func (c *Config) CAConfig(org string) (*apiconfig.CAConfig, error) {
 	return &caConfig, nil
 }
 
-// CAServerCertFiles Read configuration option for the server certificate files
+// CAServerCertPems Read configuration option for the server certificates
+// will send a list of cert pem contents directly from the config bytes array
+func (c *Config) CAServerCertPems(org string) ([]string, error) {
+	config, err := c.NetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+	caName, err := c.getCAName(org)
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
+		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
+	}
+	certFilesPem := config.CertificateAuthorities[caName].TLSCACerts.Pem
+	certPems := make([]string, len(certFilesPem))
+	for i, v := range certFilesPem {
+		certPems[i] = string(v)
+	}
+
+	return certPems, nil
+}
+
+// CAServerCertFiles Read configuration option for the server certificates
+// will send a list of cert file paths
 func (c *Config) CAServerCertFiles(org string) ([]string, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
@@ -147,12 +210,14 @@ func (c *Config) CAServerCertFiles(org string) ([]string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
 	}
+
 	certFiles := strings.Split(config.CertificateAuthorities[caName].TLSCACerts.Path, ",")
 
 	certFileModPath := make([]string, len(certFiles))
 	for i, v := range certFiles {
 		certFileModPath[i] = substGoPath(v)
 	}
+
 	return certFileModPath, nil
 }
 
@@ -194,6 +259,29 @@ func (c *Config) CAClientKeyFile(org string) (string, error) {
 	return substGoPath(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Keyfile), nil
 }
 
+// CAClientKeyPem Read configuration option for the fabric CA client key pem embedded in the client config
+func (c *Config) CAClientKeyPem(org string) (string, error) {
+	config, err := c.NetworkConfig()
+	if err != nil {
+		return "", err
+	}
+
+	caName, err := c.getCAName(org)
+	if err != nil {
+		return "", err
+	}
+	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
+		return "", errors.Errorf("CA Server Name '%s' not found", caName)
+	}
+
+	ca := config.CertificateAuthorities[strings.ToLower(caName)]
+	if len(ca.TLSCACerts.Client.CertPem) == 0 {
+		return "", errors.New("Empty Client Key Pem")
+	}
+
+	return ca.TLSCACerts.Client.KeyPem, nil
+}
+
 // CAClientCertFile Read configuration option for the fabric CA client cert file
 func (c *Config) CAClientCertFile(org string) (string, error) {
 	config, err := c.NetworkConfig()
@@ -209,6 +297,30 @@ func (c *Config) CAClientCertFile(org string) (string, error) {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
 	return substGoPath(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Certfile), nil
+}
+
+// CAClientCertPem Read configuration option for the fabric CA client cert pem embedded in the client config
+func (c *Config) CAClientCertPem(org string) (string, error) {
+	config, err := c.NetworkConfig()
+	if err != nil {
+		return "", err
+	}
+
+	caName, err := c.getCAName(org)
+	if err != nil {
+		return "", err
+	}
+
+	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
+		return "", errors.Errorf("CA Server Name '%s' not found", caName)
+	}
+
+	ca := config.CertificateAuthorities[strings.ToLower(caName)]
+	if len(ca.TLSCACerts.Client.CertPem) == 0 {
+		return "", errors.New("Empty Client Cert Pem")
+	}
+
+	return ca.TLSCACerts.Client.CertPem, nil
 }
 
 // TimeoutOrDefault reads connection timeouts for the given connection type
@@ -306,6 +418,8 @@ func (c *Config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
 	for _, orderer := range config.Orderers {
 		if orderer.TLSCACerts.Path != "" {
 			orderer.TLSCACerts.Path = substGoPath(orderer.TLSCACerts.Path)
+		} else if len(orderer.TLSCACerts.Pem) == 0 {
+			errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
 		}
 
 		orderers = append(orderers, orderer)
@@ -563,7 +677,7 @@ func verifyPeerConfig(p apiconfig.PeerConfig, peerName string, tlsEnabled bool) 
 	if p.EventURL == "" {
 		return errors.Errorf("event URL does not exist or empty for peer %s", peerName)
 	}
-	if tlsEnabled && p.TLSCACerts.Pem == "" && p.TLSCACerts.Path == "" {
+	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" {
 		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil
