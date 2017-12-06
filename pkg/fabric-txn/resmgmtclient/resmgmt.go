@@ -213,8 +213,8 @@ func (rc *ResourceMgmtClient) calculateTargets(discovery fab.DiscoveryService, p
 	return targets, nil
 }
 
-// IsChaincodeInstalled verify if chaincode is installed on peer
-func (rc *ResourceMgmtClient) IsChaincodeInstalled(req resmgmt.InstallCCRequest, peer fab.Peer) (bool, error) {
+// isChaincodeInstalled verify if chaincode is installed on peer
+func (rc *ResourceMgmtClient) isChaincodeInstalled(req resmgmt.InstallCCRequest, peer fab.Peer) (bool, error) {
 	chaincodeQueryResponse, err := rc.client.QueryInstalledChaincodes(peer)
 	if err != nil {
 		return false, err
@@ -274,7 +274,7 @@ func (rc *ResourceMgmtClient) InstallCCWithOpts(req resmgmt.InstallCCRequest, op
 	newTargets := make([]fab.Peer, 0)
 
 	for _, target := range targets {
-		installed, err := rc.IsChaincodeInstalled(req, target)
+		installed, err := rc.isChaincodeInstalled(req, target)
 		if err != nil {
 			// Add to responses with unable to verify error message
 			response := resmgmt.InstallCCResponse{Target: target.URL(), Err: errors.Errorf("unable to verify if cc is installed on %s", target.URL())}

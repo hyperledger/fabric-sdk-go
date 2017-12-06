@@ -257,7 +257,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	req := resmgmt.InstallCCRequest{Name: "name", Version: "version", Path: "path"}
 
 	// Test chaincode installed (valid peer)
-	installed, err := rc.IsChaincodeInstalled(req, peer)
+	installed, err := rc.isChaincodeInstalled(req, peer)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,7 +269,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	req = resmgmt.InstallCCRequest{Name: "ID", Version: "v0", Path: "path"}
 
 	// Test chaincode installed
-	installed, err = rc.IsChaincodeInstalled(req, peer)
+	installed, err = rc.isChaincodeInstalled(req, peer)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +278,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	}
 
 	// Test error retrieving installed cc info (peer is nil)
-	_, err = rc.IsChaincodeInstalled(req, nil)
+	_, err = rc.isChaincodeInstalled(req, nil)
 	if err == nil {
 		t.Fatalf("Should have failed with error in get installed chaincodes")
 	}
