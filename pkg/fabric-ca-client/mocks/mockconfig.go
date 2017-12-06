@@ -38,8 +38,8 @@ func (c *MockConfig) CAServerCertPems(org string) ([]string, error) {
 	return nil, nil
 }
 
-// CAServerCertFiles Read configuration option for the server certificate files
-func (c *MockConfig) CAServerCertFiles(org string) ([]string, error) {
+// CAServerCertPaths Read configuration option for the server certificate files
+func (c *MockConfig) CAServerCertPaths(org string) ([]string, error) {
 	return nil, nil
 }
 
@@ -48,8 +48,8 @@ func (c *MockConfig) CAClientKeyPem(org string) (string, error) {
 	return "", nil
 }
 
-// CAClientKeyFile Read configuration option for the fabric CA client key file
-func (c *MockConfig) CAClientKeyFile(org string) (string, error) {
+// CAClientKeyPath Read configuration option for the fabric CA client key file
+func (c *MockConfig) CAClientKeyPath(org string) (string, error) {
 	return "", nil
 }
 
@@ -58,8 +58,8 @@ func (c *MockConfig) CAClientCertPem(org string) (string, error) {
 	return "", nil
 }
 
-// CAClientCertFile Read configuration option for the fabric CA client cert file
-func (c *MockConfig) CAClientCertFile(org string) (string, error) {
+// CAClientCertPath Read configuration option for the fabric CA client cert file
+func (c *MockConfig) CAClientCertPath(org string) (string, error) {
 	return "", nil
 }
 

@@ -80,21 +80,21 @@ func TestCAConfig(t *testing.T) {
 	crossCheckWithViperConfig(configImpl.configViper.GetString("client.cryptoconfig.path"), configImpl.CryptoConfigPath(), "Incorrect crypto config path", t)
 
 	//Testing CA Client File Location
-	certfile, err := configImpl.CAClientCertFile(org1)
+	certfile, err := configImpl.CAClientCertPath(org1)
 
 	if certfile == "" || err != nil {
 		t.Fatalf("CA Cert file location read failed %s", err)
 	}
 
 	//Testing CA Key File Location
-	keyFile, err := configImpl.CAClientKeyFile(org1)
+	keyFile, err := configImpl.CAClientKeyPath(org1)
 
 	if keyFile == "" || err != nil {
 		t.Fatal("CA Key file location read failed")
 	}
 
 	//Testing CA Server Cert Files
-	sCertFiles, err := configImpl.CAServerCertFiles(org1)
+	sCertFiles, err := configImpl.CAServerCertPaths(org1)
 
 	if sCertFiles == nil || len(sCertFiles) == 0 || err != nil {
 		t.Fatal("Getting CA server cert files failed")
@@ -194,19 +194,19 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	}
 
 	//Test CA client cert file failure scenario
-	certfile, err := sampleConfig.CAClientCertFile("peerorg1")
+	certfile, err := sampleConfig.CAClientCertPath("peerorg1")
 	if certfile != "" || err == nil {
 		t.Fatal("CA Cert file location read supposed to fail")
 	}
 
 	//Test CA client cert file failure scenario
-	keyFile, err := sampleConfig.CAClientKeyFile("peerorg1")
+	keyFile, err := sampleConfig.CAClientKeyPath("peerorg1")
 	if keyFile != "" || err == nil {
 		t.Fatal("CA Key file location read supposed to fail")
 	}
 
 	//Testing CA Server Cert Files failure scenario
-	sCertFiles, err := sampleConfig.CAServerCertFiles("peerorg1")
+	sCertFiles, err := sampleConfig.CAServerCertPaths("peerorg1")
 	if len(sCertFiles) > 0 || err == nil {
 		t.Fatal("Getting CA server cert files supposed to fail")
 	}
@@ -275,7 +275,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 func TestTLSACAConfig(t *testing.T) {
 	//Test TLSCA Cert Pool (Positive test case)
-	certFile, _ := configImpl.CAClientCertFile(org1)
+	certFile, _ := configImpl.CAClientCertPath(org1)
 	_, err := configImpl.TLSCACertPool(certFile)
 	if err != nil {
 		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
@@ -287,7 +287,7 @@ func TestTLSACAConfig(t *testing.T) {
 		t.Fatalf("TLS CA cert pool was supposed to fail")
 	}
 
-	keyFile, _ := configImpl.CAClientKeyFile(org1)
+	keyFile, _ := configImpl.CAClientKeyPath(org1)
 	_, err = configImpl.TLSCACertPool(keyFile)
 	if err == nil {
 		t.Fatalf("TLS CA cert pool was supposed to fail when provided with wrong cert file")
@@ -757,7 +757,7 @@ O94CDp7l2k7hMQI0zQ==
 		t.Fatalf("%s Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", peer0, pPem, loadedPPem)
 	}
 
-	// get CAServerCertPems for org1
+	// get CA Server cert pems (embedded) for org1
 	certs, err := c.CAServerCertPems("org1")
 	if err != nil {
 		t.Fatalf("Failed to load CAServerCertPems from config. Error: %s", err)
@@ -766,20 +766,37 @@ O94CDp7l2k7hMQI0zQ==
 		t.Fatalf("Got empty PEM certs for CAServerCertPems")
 	}
 
+	// get the client cert pem (embedded) for org1
 	c.CAClientCertPem("org1")
 	if err != nil {
 		t.Fatalf("Failed to load CAClientCertPem from config. Error: %s", err)
 	}
+
+	// get CA Server certs paths for org1
+	certs, err = c.CAServerCertPaths("org1")
+	if err != nil {
+		t.Fatalf("Failed to load CAServerCertPaths from config. Error: %s", err)
+	}
 	if len(certs) == 0 {
-		t.Fatalf("Got empty PEM certs for CAClientCertPem")
+		t.Fatalf("Got empty cert file paths for CAServerCertPaths")
 	}
 
+	// get the client cert path for org1
+	c.CAClientCertPath("org1")
+	if err != nil {
+		t.Fatalf("Failed to load CAClientCertPath from config. Error: %s", err)
+	}
+
+	// get the client key pem (embedded) for org1
 	c.CAClientKeyPem("org1")
 	if err != nil {
 		t.Fatalf("Failed to load CAClientKeyPem from config. Error: %s", err)
 	}
-	if len(certs) == 0 {
-		t.Fatalf("Got empty PEM certs for CAClientKeyPem")
+
+	// get the client key file path for org1
+	c.CAClientKeyPath("org1")
+	if err != nil {
+		t.Fatalf("Failed to load CAClientKeyPath from config. Error: %s", err)
 	}
 }
 

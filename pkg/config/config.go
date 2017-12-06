@@ -196,9 +196,9 @@ func (c *Config) CAServerCertPems(org string) ([]string, error) {
 	return certPems, nil
 }
 
-// CAServerCertFiles Read configuration option for the server certificates
+// CAServerCertPaths Read configuration option for the server certificates
 // will send a list of cert file paths
-func (c *Config) CAServerCertFiles(org string) ([]string, error) {
+func (c *Config) CAServerCertPaths(org string) ([]string, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -242,8 +242,8 @@ func (c *Config) getCAName(org string) (string, error) {
 	return certAuthorityName, nil
 }
 
-// CAClientKeyFile Read configuration option for the fabric CA client key file
-func (c *Config) CAClientKeyFile(org string) (string, error) {
+// CAClientKeyPath Read configuration option for the fabric CA client key file
+func (c *Config) CAClientKeyPath(org string) (string, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return "", err
@@ -282,8 +282,8 @@ func (c *Config) CAClientKeyPem(org string) (string, error) {
 	return ca.TLSCACerts.Client.KeyPem, nil
 }
 
-// CAClientCertFile Read configuration option for the fabric CA client cert file
-func (c *Config) CAClientCertFile(org string) (string, error) {
+// CAClientCertPath Read configuration option for the fabric CA client cert file
+func (c *Config) CAClientCertPath(org string) (string, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return "", err

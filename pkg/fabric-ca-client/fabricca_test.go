@@ -293,10 +293,10 @@ func TestCreateNewFabricCAClientCertFilesMissingFailure(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil)
-	mockConfig.EXPECT().CAServerCertFiles(org1).Return(nil, errors.New("CAServerCertFiles error"))
+	mockConfig.EXPECT().CAServerCertPaths(org1).Return(nil, errors.New("CAServerCertPaths error"))
 	_, err := NewFabricCAClient(org1, mockConfig, cryptoSuiteProvider)
-	if err.Error() != "CAServerCertFiles error" {
-		t.Fatalf("Expected error from CAServerCertFiles. Got: %s", err.Error())
+	if err.Error() != "CAServerCertPaths error" {
+		t.Fatalf("Expected error from CAServerCertPaths. Got: %s", err.Error())
 	}
 }
 
@@ -306,11 +306,11 @@ func TestCreateNewFabricCAClientCertFileErrorFailure(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil)
-	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
-	mockConfig.EXPECT().CAClientCertFile(org1).Return("", errors.New("CAClientCertFile error"))
+	mockConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
+	mockConfig.EXPECT().CAClientCertPath(org1).Return("", errors.New("CAClientCertPath error"))
 	_, err := NewFabricCAClient(org1, mockConfig, cryptoSuiteProvider)
-	if err.Error() != "CAClientCertFile error" {
-		t.Fatalf("Expected error from CAClientCertFile. Got: %s", err.Error())
+	if err.Error() != "CAClientCertPath error" {
+		t.Fatalf("Expected error from CAClientCertPath. Got: %s", err.Error())
 	}
 }
 
@@ -320,12 +320,12 @@ func TestCreateNewFabricCAClientKeyFileErrorFailure(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil)
-	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
-	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
-	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", errors.New("CAClientKeyFile error"))
+	mockConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
+	mockConfig.EXPECT().CAClientCertPath(org1).Return("", nil)
+	mockConfig.EXPECT().CAClientKeyPath(org1).Return("", errors.New("CAClientKeyPath error"))
 	_, err := NewFabricCAClient(org1, mockConfig, cryptoSuiteProvider)
-	if err.Error() != "CAClientKeyFile error" {
-		t.Fatalf("Expected error from CAClientKeyFile. Got: %s", err.Error())
+	if err.Error() != "CAClientKeyPath error" {
+		t.Fatalf("Expected error from CAClientKeyPath. Got: %s", err.Error())
 	}
 }
 
@@ -337,9 +337,9 @@ func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 	clientMockObject := &config.ClientConfig{Organization: "org1", Logging: config.LoggingType{Level: "info"}, CryptoConfig: config.CCType{Path: "test/path"}}
 
 	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
-	mockConfig.EXPECT().CAServerCertFiles(org1).Return([]string{"test"}, nil)
-	mockConfig.EXPECT().CAClientCertFile(org1).Return("", nil)
-	mockConfig.EXPECT().CAClientKeyFile(org1).Return("", nil)
+	mockConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
+	mockConfig.EXPECT().CAClientCertPath(org1).Return("", nil)
+	mockConfig.EXPECT().CAClientKeyPath(org1).Return("", nil)
 	mockConfig.EXPECT().CAKeyStorePath().Return(os.TempDir())
 	mockConfig.EXPECT().Client().Return(clientMockObject, nil)
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
