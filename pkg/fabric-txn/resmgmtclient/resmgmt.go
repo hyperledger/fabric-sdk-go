@@ -420,7 +420,7 @@ func (rc *ResourceMgmtClient) sendCCProposalWithOpts(ccProposalType CCProposalTy
 
 	case Instantiate:
 		txProposalResponse, txID, err = channel.SendInstantiateProposal(req.Name,
-			req.Args, req.Path, req.Version, req.Policy, peer.PeersToTxnProcessors(targets))
+			req.Args, req.Path, req.Version, req.Policy, req.CollConfig, peer.PeersToTxnProcessors(targets))
 		if err != nil {
 			return errors.Wrap(err, "send instantiate chaincode proposal failed")
 		}

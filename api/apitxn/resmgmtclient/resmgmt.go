@@ -49,11 +49,12 @@ type InstallCCOpts struct {
 
 // InstantiateCCRequest contains instantiate chaincode request parameters
 type InstantiateCCRequest struct {
-	Name    string
-	Path    string
-	Version string
-	Args    [][]byte
-	Policy  *common.SignaturePolicyEnvelope
+	Name       string
+	Path       string
+	Version    string
+	Args       [][]byte
+	Policy     *common.SignaturePolicyEnvelope
+	CollConfig []*common.CollectionConfig
 }
 
 // InstantiateCCOpts contains options for instantiating chaincode
@@ -65,11 +66,12 @@ type InstantiateCCOpts struct {
 
 // UpgradeCCRequest contains upgrade chaincode request parameters
 type UpgradeCCRequest struct {
-	Name    string
-	Path    string
-	Version string
-	Args    [][]byte
-	Policy  *common.SignaturePolicyEnvelope
+	Name       string
+	Path       string
+	Version    string
+	Args       [][]byte
+	Policy     *common.SignaturePolicyEnvelope
+	CollConfig []*common.CollectionConfig
 }
 
 // UpgradeCCOpts contains options for upgrading chaincode
