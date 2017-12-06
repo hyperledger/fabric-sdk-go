@@ -55,18 +55,18 @@ func NewFabricCAClient(org string, config config.Config, cryptoSuite apicryptosu
 	//set server URL
 	c.Config.URL = urlutil.ToAddress(conf.URL)
 	//certs file list
-	c.Config.TLS.CertFiles, err = config.CAServerCertFiles(org)
+	c.Config.TLS.CertFiles, err = config.CAServerCertPaths(org)
 	if err != nil {
 		return nil, err
 	}
 
 	// set key file and cert file
-	c.Config.TLS.Client.CertFile, err = config.CAClientCertFile(org)
+	c.Config.TLS.Client.CertFile, err = config.CAClientCertPath(org)
 	if err != nil {
 		return nil, err
 	}
 
-	c.Config.TLS.Client.KeyFile, err = config.CAClientKeyFile(org)
+	c.Config.TLS.Client.KeyFile, err = config.CAClientKeyPath(org)
 	if err != nil {
 		return nil, err
 	}

@@ -249,7 +249,7 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Confi
 	}
 
 	// Configured cert for cert pool
-	cert, err := config.CAClientCertFile(org1Name)
+	cert, err := config.CAClientCertPath(org1Name)
 	if err != nil {
 		t.Fatal(err)
 	}
