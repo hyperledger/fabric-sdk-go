@@ -45,13 +45,19 @@ type BaseSetupImpl struct {
 	AdminUser       ca.User
 }
 
+// Initial B values for ExampleCC
+const (
+	ExampleCCInitB    = "200"
+	ExampleCCUpgradeB = "400"
+)
+
 // ExampleCC query and transaction arguments
 var queryArgs = [][]byte{[]byte("query"), []byte("b")}
 var txArgs = [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}
 
 // ExampleCC init and upgrade args
-var initArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte("200")}
-var upgradeArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte("400")}
+var initArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte(ExampleCCInitB)}
+var upgradeArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte(ExampleCCUpgradeB)}
 
 var resMgmtClient resmgmt.ResourceMgmtClient
 
@@ -68,6 +74,11 @@ func ExampleCCTxArgs() [][]byte {
 //ExampleCCInitArgs returns example cc initialization args
 func ExampleCCInitArgs() [][]byte {
 	return initArgs
+}
+
+//ExampleCCUpgradeArgs returns example cc upgrade args
+func ExampleCCUpgradeArgs() [][]byte {
+	return upgradeArgs
 }
 
 // Initialize reads configuration from file and sets up client, channel and event hub

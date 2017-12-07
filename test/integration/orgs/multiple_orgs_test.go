@@ -23,7 +23,10 @@ import (
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+
+	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/dynamicselection"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
@@ -149,27 +152,106 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Assert that funds have changed value on org1 peer
-	initialInt, _ := strconv.Atoi(string(initialValue))
-	var finalInt int
+	initial, _ := strconv.Atoi(string(initialValue))
+	verifyValue(t, chClientOrg1User, initial+1)
+
+	// Start chaincode upgrade process (install and instantiate new version of exampleCC)
+	installCCReq = resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Package: ccPkg}
+
+	// Install example cc version '1' to Org1 peers
+	_, err = org1ResMgmt.InstallCC(installCCReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Install example cc version '1' to Org2 peers
+	_, err = org2ResMgmt.InstallCC(installCCReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// New chaincode policy (both orgs have to approve)
+	org1Andorg2Policy, err := cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
+	err = org1ResMgmt.UpgradeCC("orgchannel", resmgmt.UpgradeCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
+	txOpts = apitxn.ExecuteTxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer1}}
+	_, err = chClientOrg2User.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
+	if err == nil {
+		t.Fatalf("Should have failed to move funds due to cc policy")
+	}
+
+	// Org2 user moves funds (cc policy ok since we have provided peers for both Orgs)
+	txOpts = apitxn.ExecuteTxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer0, orgTestPeer1}}
+	_, err = chClientOrg2User.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
+	}
+
+	// Assert that funds have changed value on org1 peer
+	beforeTxValue, _ := strconv.Atoi(integration.ExampleCCUpgradeB)
+	expectedValue := beforeTxValue + 1
+	verifyValue(t, chClientOrg1User, expectedValue)
+
+	// Specify user that will be used by dynamic selection service (to retrieve chanincode policy information)
+	// This user has to have privileges to query lscc for chaincode data
+	mychannelUser := selection.ChannelUser{ChannelID: "orgchannel", UserName: "User1", OrgName: "Org1"}
+
+	// Create SDK setup for channel client with dynamic selection
+	sdkOptions.ProviderFactory = &DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}
+	sdk, err = fabapi.NewSDK(sdkOptions)
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+
+	// Create new client that will use dynamic selection
+	chClientOrg2User, err = sdk.NewChannelClientWithOpts("orgchannel", "User1", &fabapi.ChannelClientOpts{OrgName: org2})
+	if err != nil {
+		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
+	}
+
+	// Org2 user moves funds (dynamic selection will inspect chaincode policy to determine endorsers)
+	_, err = chClientOrg2User.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
+	}
+
+	expectedValue++
+	verifyValue(t, chClientOrg1User, expectedValue)
+
+}
+
+func verifyValue(t *testing.T, chClient apitxn.ChannelClient, expected int) {
+
+	// Assert that funds have changed value on org1 peer
+	var valueInt int
 	for i := 0; i < pollRetries; i++ {
 		// Query final value on org1 peer
 		queryOpts := apitxn.QueryOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer0}}
-		finalValue, err := chClientOrg1User.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, queryOpts)
+		value, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, queryOpts)
 		if err != nil {
 			t.Fatalf("Failed to query funds after transaction: %s", err)
 		}
 		// If value has not propogated sleep with exponential backoff
-		finalInt, _ = strconv.Atoi(string(finalValue))
-		if initialInt+1 != finalInt {
+		valueInt, _ = strconv.Atoi(string(value))
+		if expected != valueInt {
 			backoffFactor := math.Pow(2, float64(i))
 			time.Sleep(time.Millisecond * 50 * time.Duration(backoffFactor))
 		} else {
 			break
 		}
 	}
-	if initialInt+1 != finalInt {
+	if expected != valueInt {
 		t.Fatalf("Org2 'move funds' transaction result was not propagated to Org1. Expected %d, got: %d",
-			(initialInt + 1), finalInt)
+			(expected), valueInt)
 	}
 
 }
@@ -205,4 +287,15 @@ func loadOrgPeers(t *testing.T, sdk *fabapi.FabricSDK) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+// DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
+type DynamicSelectionProviderFactory struct {
+	defprovider.DefaultProviderFactory
+	ChannelUsers []selection.ChannelUser
+}
+
+// NewSelectionProvider returns a new implementation of dynamic selection provider
+func (f *DynamicSelectionProviderFactory) NewSelectionProvider(config apiconfig.Config) (fab.SelectionProvider, error) {
+	return selection.NewSelectionProvider(config, f.ChannelUsers, nil)
 }
