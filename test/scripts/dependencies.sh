@@ -20,7 +20,6 @@ if [ "$FABRIC_SDKGO_DEPEND_INSTALL" = "true" ]; then
     $GO_CMD get -u github.com/client9/misspell/cmd/misspell
     $GO_CMD get -u github.com/golang/lint/golint
     $GO_CMD get -u golang.org/x/tools/cmd/goimports
-    $GO_CMD get -u github.com/golang/mock/mockgen
 fi
 
 # Install specific version of go dep (particularly for CI)
@@ -29,10 +28,22 @@ if [ "$FABRIC_SDKGO_DEPEND_INSTALL" = "true" ] && [ -n "$GO_DEP_COMMIT" ]; then
     TMP=`mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir'`
 
     GOPATH=$TMP go get -d github.com/golang/dep
-    cd $TMP/src/github.com/golang/dep
-    git reset --hard $GO_DEP_COMMIT
+    (cd $TMP/src/github.com/golang/dep && git reset --hard $GO_DEP_COMMIT)
     GOPATH=$TMP go install github.com/golang/dep/cmd/dep
     cp $TMP/bin/dep $GOPATH/bin
+
+    rm -Rf $TMP
+fi
+
+# Install specific version of mockgen
+if [ "$FABRIC_SDKGO_DEPEND_INSTALL" = "true" ] && [ -n "$GO_MOCKGEN_COMMIT" ]; then
+    echo "Installing mockgen@$GO_MOCKGEN_COMMIT to $GOPATH/bin ..."
+    TMP=`mktemp -d 2>/dev/null || mktemp -d -t 'mockgen'`
+ 
+    GOPATH=$TMP go get -d github.com/golang/mock/mockgen
+    (cd $TMP/src/github.com/golang/mock && git reset --hard $GO_MOCKGEN_COMMIT)
+    GOPATH=$TMP go install github.com/golang/mock/mockgen
+    cp $TMP/bin/mockgen $GOPATH/bin
 
     rm -Rf $TMP
 fi
