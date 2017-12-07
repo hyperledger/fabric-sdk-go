@@ -62,6 +62,9 @@ FIXTURE_PROJECT_NAME := fabsdkgo
 # The version of dep that will be installed by depend-install (or in the CI)
 GO_DEP_COMMIT := v0.3.1
 
+# The version of mockgen that will be installed by depend-install
+GO_MOCKGEN_COMMIT := v1.0.0
+
 # Setup Go Tags
 GO_TAGS := $(FABRIC_SDK_EXTRA_GO_TAGS)
 ifeq ($(FABRIC_SDK_EXPERIMENTAL),true)
@@ -79,6 +82,7 @@ export GO_DEP_CMD
 export ARCH
 export GO_LDFLAGS
 export GO_DEP_COMMIT
+export GO_MOCKGEN_COMMIT
 export GO_TAGS
 export GO_TESTFLAGS
 export DOCKER_CMD
