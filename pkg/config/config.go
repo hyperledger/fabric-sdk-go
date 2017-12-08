@@ -67,7 +67,12 @@ func InitConfigFromBytes(configBytes []byte, configType string) (*Config, error)
 
 	setLogLevel(myViper)
 
-	return &Config{tlsCertPool: x509.NewCertPool(), configViper: myViper}, nil
+	tlsCertPool, err := getCertPool(myViper)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Config{tlsCertPool: tlsCertPool, configViper: myViper}, nil
 }
 
 // getNewViper returns a new instance of viper
@@ -111,9 +116,25 @@ func initConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 	}
 
 	setLogLevel(myViper)
+	tlsCertPool, err := getCertPool(myViper)
+	if err != nil {
+		return nil, err
+	}
 
 	logger.Infof("%s logging level is set to: %s", logModule, lu.LogLevelString(logging.GetLevel(logModule)))
-	return &Config{tlsCertPool: x509.NewCertPool(), configViper: myViper}, nil
+	return &Config{tlsCertPool: tlsCertPool, configViper: myViper}, nil
+}
+
+func getCertPool(myViper *viper.Viper) (*x509.CertPool, error) {
+	tlsCertPool := x509.NewCertPool()
+	if myViper.GetBool("client.systemcertpool") == true {
+		var err error
+		if tlsCertPool, err = x509.SystemCertPool(); err != nil {
+			return nil, err
+		}
+		logger.Debugf("Loaded system cert pool of size: %d", len(tlsCertPool.Subjects()))
+	}
+	return tlsCertPool, nil
 }
 
 // setLogLevel will set the log level of the client
@@ -416,9 +437,10 @@ func (c *Config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
 	}
 
 	for _, orderer := range config.Orderers {
+
 		if orderer.TLSCACerts.Path != "" {
 			orderer.TLSCACerts.Path = substGoPath(orderer.TLSCACerts.Path)
-		} else if len(orderer.TLSCACerts.Pem) == 0 {
+		} else if len(orderer.TLSCACerts.Pem) == 0 && c.configViper.GetBool("client.systemcertpool") == false {
 			errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
 		}
 
@@ -479,7 +501,7 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 
 	for _, peerName := range peersConfig {
 		p := config.Peers[strings.ToLower(peerName)]
-		if err = verifyPeerConfig(p, peerName, urlutil.IsTLSEnabled(p.URL)); err != nil {
+		if err = c.verifyPeerConfig(p, peerName, urlutil.IsTLSEnabled(p.URL)); err != nil {
 			return nil, err
 		}
 		if p.TLSCACerts.Path != "" {
@@ -591,7 +613,7 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 			return nil, errors.Errorf("peer config not found for %s", peerName)
 		}
 
-		if err = verifyPeerConfig(p, peerName, urlutil.IsTLSEnabled(p.URL)); err != nil {
+		if err = c.verifyPeerConfig(p, peerName, urlutil.IsTLSEnabled(p.URL)); err != nil {
 			return nil, err
 		}
 
@@ -626,7 +648,7 @@ func (c *Config) NetworkPeers() ([]apiconfig.NetworkPeer, error) {
 
 	for name, p := range netConfig.Peers {
 
-		if err = verifyPeerConfig(p, name, urlutil.IsTLSEnabled(p.URL)); err != nil {
+		if err = c.verifyPeerConfig(p, name, urlutil.IsTLSEnabled(p.URL)); err != nil {
 			return nil, err
 		}
 
@@ -670,14 +692,14 @@ func (c *Config) PeerMspID(name string) (string, error) {
 
 }
 
-func verifyPeerConfig(p apiconfig.PeerConfig, peerName string, tlsEnabled bool) error {
+func (c *Config) verifyPeerConfig(p apiconfig.PeerConfig, peerName string, tlsEnabled bool) error {
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
 	if p.EventURL == "" {
 		return errors.Errorf("event URL does not exist or empty for peer %s", peerName)
 	}
-	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" {
+	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && c.configViper.GetBool("client.systemcertpool") == false {
 		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil

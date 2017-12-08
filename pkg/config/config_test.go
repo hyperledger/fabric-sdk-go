@@ -675,6 +675,40 @@ func TestInterfaces(t *testing.T) {
 	}
 }
 
+func TestSystemCertPoolDisabled(t *testing.T) {
+
+	// get a config file with pool disabled
+	c, err := InitConfig(configTestFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// cert pool should be empty
+	if len(c.tlsCertPool.Subjects()) > 0 {
+		t.Fatal("Expecting empty tls cert pool due to disabled system cert pool")
+	}
+}
+
+func TestSystemCertPoolEnabled(t *testing.T) {
+
+	// get a config file with pool enabled
+	c, err := InitConfig(configPemTestFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(c.tlsCertPool.Subjects()) == 0 {
+		t.Fatal("System Cert Pool not loaded even though it is enabled")
+	}
+
+	// Org2 'mychannel' peer is missing cert + pem (it should not fail when systemcertpool enabled)
+	_, err = c.ChannelPeers("mychannel")
+	if err != nil {
+		t.Fatalf("Should have skipped verifying ca cert + pem: %s", err)
+	}
+
+}
+
 func TestSetTLSCACertPool(t *testing.T) {
 	configImpl.SetTLSCACertPool(nil)
 	t.Log("TLSCACertRoot must be created. Nothing additional to verify..")
