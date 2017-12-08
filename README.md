@@ -35,12 +35,19 @@ You're good to go, happy coding! Check out the examples for usage demonstrations
 
 ## Client SDK
 
-### Compatibility
+### Current Compatibility
+The SDK's integration tests run against three tagged Fabric versions:
+- prev (currently v1.0.0)
+- stable (currently latest of v1.0.x)
+- prerelease (currently latest of v1.1.0-x)
 
-- fabric v1.0.4 & fabric-ca v1.0.4
-  - fabric-sdk-go: master:HEAD
+Additionally for development purposes integration tests also run against the devstable Fabric version as needed.
+
+### Retired versions
+When the 'prev' code level is updated, the last tested fabric-sdk-go commit or tag is listed below.
+
 - fabric v1.0.0 & fabric-ca v1.0.0
-  - fabric-sdk-go: master:110bf21bf3ab0a9a084f46d9698e1daeeda68a59
+  - fabric-sdk-go: master:HEAD
 
 ### Running the test suite
 

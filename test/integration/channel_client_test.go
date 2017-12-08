@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
+	"path"
 	"testing"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 func TestChannelClient(t *testing.T) {
@@ -24,7 +26,7 @@ func TestChannelClient(t *testing.T) {
 		ConfigFile:      ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   "../fixtures/channel/mychannel.tx",
+		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		ConnectEventHub: true,
 	}
 

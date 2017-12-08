@@ -7,9 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
+	"path"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 // TestTransient ...
@@ -19,7 +21,7 @@ func TestTransient(t *testing.T) {
 		ConfigFile:      ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   "../fixtures/channel/mychannel.tx",
+		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		ConnectEventHub: true,
 	}
 

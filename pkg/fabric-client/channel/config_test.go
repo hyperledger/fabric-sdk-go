@@ -7,9 +7,11 @@ package channel
 
 import (
 	"io/ioutil"
+	"path"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 func TestChannelConfigs(t *testing.T) {
@@ -41,7 +43,7 @@ func TestLoadConfigUpdateEnvelope(t *testing.T) {
 	channel, _ := setupTestChannel()
 
 	//Read config file from test directory
-	fileLoc := "../../../test/fixtures/channel/mychannel.tx"
+	fileLoc := path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx")
 	res, err := ioutil.ReadFile(fileLoc)
 	if err != nil {
 		t.Fatalf("Could not load config tx file: %s", err)

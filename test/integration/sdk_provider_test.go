@@ -7,11 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
+	"path"
 	"strconv"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -27,7 +29,7 @@ func TestDynamicSelection(t *testing.T) {
 		ConfigFile:      ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   "../fixtures/channel/mychannel.tx",
+		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		ConnectEventHub: true,
 	}
 

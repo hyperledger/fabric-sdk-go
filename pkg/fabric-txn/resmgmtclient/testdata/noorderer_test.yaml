@@ -18,7 +18,7 @@ client:
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:
-    path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config
+    path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config
 
   credentialStore:
     path: "/tmp/hfc-kvs"

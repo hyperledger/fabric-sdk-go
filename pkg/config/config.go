@@ -10,12 +10,10 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
-	"go/build"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -160,7 +158,7 @@ func loadDefaultConfig(myViper *viper.Viper) error {
 		return nil
 	}
 	// if set, use it to load default config
-	myViper.AddConfigPath(substGoPath(defaultPath))
+	myViper.AddConfigPath(substPathVars(defaultPath))
 	err := myViper.ReadInConfig() // Find and read the config file
 	if err != nil {               // Handle errors reading the config file
 		return errors.Wrap(err, "loading config file failed")
@@ -236,7 +234,7 @@ func (c *Config) CAServerCertPaths(org string) ([]string, error) {
 
 	certFileModPath := make([]string, len(certFiles))
 	for i, v := range certFiles {
-		certFileModPath[i] = substGoPath(v)
+		certFileModPath[i] = substPathVars(v)
 	}
 
 	return certFileModPath, nil
@@ -277,7 +275,7 @@ func (c *Config) CAClientKeyPath(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return substGoPath(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Keyfile), nil
+	return substPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Keyfile), nil
 }
 
 // CAClientKeyPem Read configuration option for the fabric CA client key pem embedded in the client config
@@ -317,7 +315,7 @@ func (c *Config) CAClientCertPath(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return substGoPath(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Certfile), nil
+	return substPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Certfile), nil
 }
 
 // CAClientCertPem Read configuration option for the fabric CA client cert pem embedded in the client config
@@ -439,7 +437,7 @@ func (c *Config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
 	for _, orderer := range config.Orderers {
 
 		if orderer.TLSCACerts.Path != "" {
-			orderer.TLSCACerts.Path = substGoPath(orderer.TLSCACerts.Path)
+			orderer.TLSCACerts.Path = substPathVars(orderer.TLSCACerts.Path)
 		} else if len(orderer.TLSCACerts.Pem) == 0 && c.configViper.GetBool("client.systemcertpool") == false {
 			errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
 		}
@@ -482,7 +480,7 @@ func (c *Config) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
 	}
 
 	if orderer.TLSCACerts.Path != "" {
-		orderer.TLSCACerts.Path = substGoPath(orderer.TLSCACerts.Path)
+		orderer.TLSCACerts.Path = substPathVars(orderer.TLSCACerts.Path)
 	}
 
 	return &orderer, nil
@@ -505,7 +503,7 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 			return nil, err
 		}
 		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = substGoPath(p.TLSCACerts.Path)
+			p.TLSCACerts.Path = substPathVars(p.TLSCACerts.Path)
 		}
 
 		peers = append(peers, p)
@@ -537,7 +535,7 @@ func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, err
 	}
 
 	if peerConfig.TLSCACerts.Path != "" {
-		peerConfig.TLSCACerts.Path = substGoPath(peerConfig.TLSCACerts.Path)
+		peerConfig.TLSCACerts.Path = substPathVars(peerConfig.TLSCACerts.Path)
 	}
 	return &peerConfig, nil
 }
@@ -618,7 +616,7 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 		}
 
 		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = substGoPath(p.TLSCACerts.Path)
+			p.TLSCACerts.Path = substPathVars(p.TLSCACerts.Path)
 		}
 
 		mspID, err := c.PeerMspID(peerName)
@@ -653,7 +651,7 @@ func (c *Config) NetworkPeers() ([]apiconfig.NetworkPeer, error) {
 		}
 
 		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = substGoPath(p.TLSCACerts.Path)
+			p.TLSCACerts.Path = substPathVars(p.TLSCACerts.Path)
 		}
 
 		mspID, err := c.PeerMspID(name)
@@ -796,7 +794,7 @@ func (c *Config) SecurityProviderLabel() string {
 
 // KeyStorePath returns the keystore path used by BCCSP
 func (c *Config) KeyStorePath() string {
-	keystorePath := substGoPath(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
+	keystorePath := substPathVars(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
 	return path.Join(keystorePath, "keystore")
 }
 
@@ -804,12 +802,12 @@ func (c *Config) KeyStorePath() string {
 // 'keystore' directory added. This is done because the fabric-ca-client
 // adds this to the path
 func (c *Config) CAKeyStorePath() string {
-	return substGoPath(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
+	return substPathVars(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
 }
 
 // CryptoConfigPath ...
 func (c *Config) CryptoConfigPath() string {
-	return substGoPath(c.configViper.GetString("client.cryptoconfig.path"))
+	return substPathVars(c.configViper.GetString("client.cryptoconfig.path"))
 }
 
 // loadCAKey
@@ -825,13 +823,4 @@ func loadCAKey(rawData []byte) (*x509.Certificate, error) {
 		return pub, nil
 	}
 	return nil, errors.New("pem data missing")
-}
-
-// substGoPath replaces instances of '$GOPATH' with the GOPATH. If the system
-// has multiple GOPATHs then the first is used.
-func substGoPath(s string) string {
-	gpDefault := build.Default.GOPATH
-	gps := filepath.SplitList(gpDefault)
-
-	return strings.Replace(s, "$GOPATH", gps[0], -1)
 }

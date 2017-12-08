@@ -230,7 +230,7 @@ func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.
 func TestNewOrdererWithTLS(t *testing.T) {
 
 	//Positive Test case
-	orderer, err := NewOrderer("grpcs://", "../../test/fixtures/tls/fabricca/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, false))
+	orderer, err := NewOrderer("grpcs://", "../../test/fixtures/fabricca/tls/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, false))
 	if orderer == nil || err != nil {
 		t.Fatalf("Testing NewOrderer with TLS failed, cause [%s]", err)
 	}

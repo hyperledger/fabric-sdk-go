@@ -7,12 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
+	"path"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 func TestChainCodeInvoke(t *testing.T) {
@@ -21,7 +23,7 @@ func TestChainCodeInvoke(t *testing.T) {
 		ConfigFile:      ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   "../fixtures/channel/mychannel.tx",
+		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		ConnectEventHub: true,
 	}
 

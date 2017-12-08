@@ -1,0 +1,26 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '2'
+
+services:
+
+  integration-tests:
+    image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_BASEIMAGE_FIXTURE_IMAGE}:${BASE_ARCH}-${FABRIC_BASEIMAGE_FIXTURE_TAG}
+    environment:
+      - GO_TAGS
+      - GO_TESTFLAGS
+      - FABRIC_SDKGO_CODELEVEL_TAG
+      - FABRIC_SDKGO_CODELEVEL_VER
+    volumes:
+      - ../../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
+    command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration.sh
+    depends_on:
+      - org1ca1
+      - org2ca1
+      - org1peer1
+      - org2peer1
+      - orderer1
+      - builder

@@ -362,7 +362,7 @@ func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 
 // readCert Reads a random cert for testing
 func readCert(t *testing.T) []byte {
-	cert, err := ioutil.ReadFile("../../test/fixtures/root.pem")
+	cert, err := ioutil.ReadFile("testdata/root.pem")
 	if err != nil {
 		t.Fatalf("Error reading cert: %s", err.Error())
 	}

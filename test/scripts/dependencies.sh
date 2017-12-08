@@ -11,6 +11,7 @@
 
 GO_CMD="${GO_CMD:-go}"
 GO_DEP_CMD="${GO_DEP_CMD:-dep}"
+GOPATH="${GOPATH:-$HOME/go}"
 
 # Automatically install go tools (particularly for CI)
 if [ "$FABRIC_SDKGO_DEPEND_INSTALL" = "true" ]; then

@@ -41,7 +41,7 @@ client:
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:
-    path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config
+    path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config
 
    # BCCSP config for the client. Used by GO SDK.
   BCCSP:
@@ -103,7 +103,7 @@ orderers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
 
 peers:
   peer0.org1.example.com:
@@ -119,7 +119,7 @@ peers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   peer1.org1.example.com:
     # this URL is used to send endorsement and query requests
@@ -134,7 +134,7 @@ peers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
 certificateAuthorities:
 

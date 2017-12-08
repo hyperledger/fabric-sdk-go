@@ -10,11 +10,13 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"testing"
 	"time"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
@@ -141,7 +143,7 @@ func TestClientMethods(t *testing.T) {
 func TestCreateChannel(t *testing.T) {
 	client := NewClient(mocks.NewMockConfig())
 
-	configTx, err := ioutil.ReadFile("../../test/fixtures/channel/mychannel.tx")
+	configTx, err := ioutil.ReadFile(path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

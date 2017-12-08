@@ -59,7 +59,7 @@ client:
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:
-    path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config
+    path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}
 
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"
   # are implementation specific
@@ -230,7 +230,7 @@ orderers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
 
 #
 # List of peers to send various requests to, including endorsement, query
@@ -250,7 +250,7 @@ peers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   peer0.org2.example.com:
     url: grpcs://peer0.org2.example.com:7051
@@ -258,7 +258,7 @@ peers:
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
     tlsCACerts:
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
 
 #
 # Fabric-CA is a special kind of Certificate Authority provided by Hyperledger Fabric which allows
@@ -274,11 +274,11 @@ certificateAuthorities:
       verify: true
     tlsCACerts:
       # Comma-Separated list of paths
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/ca_root.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
       # Client key and cert for SSL handshake with Fabric CA
       client:
-       keyfile: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/client/client_fabric_client-key.pem
-       certfile: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/client/client_fabric_client.pem
+       keyfile: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem
+       certfile: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem
 
     # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
     # needed to enroll and invoke new users.
@@ -295,11 +295,11 @@ certificateAuthorities:
       verify: true
     tlsCACerts:
       # Comma-Separated list of paths
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/ca_root.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
       # Client key and cert for SSL handshake with Fabric CA
       client:
-       keyfile: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/client/client_fabric_client-key.pem
-       certfile: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/fabricca/certs/client/client_fabric_client.pem
+       keyfile: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem
+       certfile: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem
 
      # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
      # needed to enroll and invoke new users.

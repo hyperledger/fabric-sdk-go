@@ -8,12 +8,14 @@ package integration
 
 import (
 	"math/rand"
+	"path"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 const (
@@ -27,7 +29,7 @@ func TestChaincodeInstal(t *testing.T) {
 		ConfigFile:      ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   "../fixtures/channel/mychannel.tx",
+		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		ConnectEventHub: true,
 	}
 

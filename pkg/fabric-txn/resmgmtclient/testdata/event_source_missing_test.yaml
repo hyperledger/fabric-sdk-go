@@ -41,7 +41,7 @@ client:
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:
-    path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config
+    path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config
 
    # BCCSP config for the client. Used by GO SDK.
   BCCSP:
@@ -96,7 +96,7 @@ orderers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
 
 
 peers:
@@ -113,7 +113,7 @@ peers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
 certificateAuthorities:
 

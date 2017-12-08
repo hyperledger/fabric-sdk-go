@@ -8,6 +8,7 @@ package orgs
 
 import (
 	"math"
+	"path"
 	"strconv"
 	"testing"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/dynamicselection"
 
@@ -64,7 +66,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 	// Create channel (or update if it already exists)
 	org1AdminUser := loadOrgUser(t, sdk, org1, "Admin")
-	req := chmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: "../../fixtures/channel/orgchannel.tx", SigningUser: org1AdminUser}
+	req := chmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"), SigningUser: org1AdminUser}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}

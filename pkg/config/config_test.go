@@ -659,8 +659,8 @@ func teardown() {
 }
 
 func crossCheckWithViperConfig(expected string, actual string, message string, t *testing.T) {
-	expected = strings.Replace(expected, "$GOPATH", "", -1)
-	if !strings.HasSuffix(actual, expected) {
+	expected = substPathVars(expected)
+	if actual != expected {
 		t.Fatalf(message)
 	}
 }
