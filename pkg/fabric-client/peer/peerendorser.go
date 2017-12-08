@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
@@ -49,17 +50,12 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 	}
 
 	if urlutil.IsTLSEnabled(target) {
-		certPool, _ := config.TLSCACertPool("")
-		if len(certificate) == 0 && len(certPool.Subjects()) == 0 {
-			return peerEndorser{}, errors.New("certificate is required")
-		}
-
-		tlsCaCertPool, err := config.TLSCACertPool(certificate)
+		tlsConfig, err := comm.TLSConfig(certificate, serverHostOverride, config)
 		if err != nil {
 			return peerEndorser{}, err
 		}
-		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
-		opts = append(opts, grpc.WithTransportCredentials(creds))
+
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}

@@ -90,8 +90,9 @@ client:
      ephemeral: false
      level: 256
 
-  # [Optional]. Use system certificate pool when connecting to peers, orderers (for negotiating TLS) Default: false
-  systemcertpool: true
+  tlsCerts:
+    # [Optional]. Use system certificate pool when connecting to peers, orderers (for negotiating TLS) Default: false
+    systemCertPool: true
 
 #
 # [Optional]. But most apps would have this section so that channel objects can be constructed

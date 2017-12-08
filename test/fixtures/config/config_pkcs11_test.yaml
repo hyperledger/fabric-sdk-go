@@ -91,6 +91,10 @@ client:
      label: "ForFabric"
      library: "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/softhsm/libsofthsm2.so ,/usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so"
 
+  tlsCerts:
+    # [Optional]. Use system certificate pool when connecting to peers, orderers (for negotiating TLS) Default: false
+    systemCertPool: false
+
 #
 # [Optional]. But most apps would have this section so that channel objects can be constructed
 # based on the content below. If an app is creating channels, then it likely will not need this

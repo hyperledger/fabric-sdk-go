@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
@@ -34,12 +35,12 @@ func NewOrderer(url string, certificate string, serverHostOverride string, confi
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.OrdererConnection)))
 	if urlutil.IsTLSEnabled(url) {
-		tlsCaCertPool, err := config.TLSCACertPool(certificate)
+		tlsConfig, err := comm.TLSConfig(certificate, serverHostOverride, config)
 		if err != nil {
 			return nil, err
 		}
-		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
-		opts = append(opts, grpc.WithTransportCredentials(creds))
+
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}

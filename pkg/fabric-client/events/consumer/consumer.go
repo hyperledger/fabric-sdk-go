@@ -18,6 +18,7 @@ import (
 
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -59,16 +60,16 @@ func NewEventsClient(client fab.FabricClient, peerAddress string, certificate st
 }
 
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
-func newEventsClientConnectionWithAddress(peerAddress string, certificate string, serverhostoverride string, config apiconfig.Config) (*grpc.ClientConn, error) {
+func newEventsClientConnectionWithAddress(peerAddress string, certificate string, serverHostOverride string, config apiconfig.Config) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.EventHub)))
 	if urlutil.IsTLSEnabled(peerAddress) {
-		tlsCaCertPool, err := config.TLSCACertPool(certificate)
+		tlsConfig, err := comm.TLSConfig(certificate, serverHostOverride, config)
 		if err != nil {
 			return nil, err
 		}
-		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverhostoverride)
-		opts = append(opts, grpc.WithTransportCredentials(creds))
+
+		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}

@@ -96,8 +96,9 @@ client:
      #library: "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/softhsm/libsofthsm2.so ,/usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so"
      library: "add BCCSP library here"
 
-  # [Optional]. Use system certificate pool when connecting to peers, orderers (for negotiating TLS) Default: false
-  # systemcertpool: true
+  #tlsCerts:
+    # [Optional]. Use system certificate pool when connecting to peers, orderers (for negotiating TLS) Default: false
+    #systemCertPool: true
 
 #
 # [Optional]. But most apps would have this section so that channel objects can be constructed

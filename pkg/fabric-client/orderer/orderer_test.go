@@ -228,17 +228,29 @@ func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.
 }
 
 func TestNewOrdererWithTLS(t *testing.T) {
-
 	//Positive Test case
-	orderer, err := NewOrderer("grpcs://", "../../test/fixtures/fabricca/tls/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, false))
+	orderer, err := NewOrderer("grpcs://", "../../test/fixtures/fabricca/tls/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, false, false))
 	if orderer == nil || err != nil {
 		t.Fatalf("Testing NewOrderer with TLS failed, cause [%s]", err)
 	}
 
 	//Negative Test case
-	orderer, err = NewOrderer("grpcs://", "", "", mocks.NewMockConfigCustomized(true, true))
+	orderer, err = NewOrderer("grpcs://", "", "", mocks.NewMockConfigCustomized(true, false, true))
 	if orderer != nil || err == nil {
 		t.Fatalf("Testing NewOrderer with TLS was supposed to fail")
+	}
+}
+
+func TestNewOrdererWithMutualTLS(t *testing.T) {
+	//Positive Test case
+	orderer, err := NewOrderer("grpcs://", "../../test/fixtures/tls/fabricca/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, true, false))
+	if orderer == nil || err != nil {
+		t.Fatalf("Testing NewOrderer with Mutual TLS failed, cause [%s]", err)
+	}
+	//Negative Test case
+	orderer, err = NewOrderer("grpcs://", "../../test/fixtures/tls/fabricca/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, false, false))
+	if orderer == nil || err != nil {
+		t.Fatalf("Testing NewOrderer with Mutual TLS failed, cause [%s]", err)
 	}
 }
 
