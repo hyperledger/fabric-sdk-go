@@ -297,11 +297,16 @@ func (eventHub *EventHub) Recv(msg *pb.Event) (bool, error) {
 			for _, v := range eventHub.getBlockRegistrants() {
 				v(blockEvent.Block)
 			}
-			for _, tdata := range blockEvent.Block.Data.Data {
-				if ccEvent, channelID, err := getChainCodeEvent(tdata); err != nil {
-					logger.Warnf("getChainCodeEvent return error: %v\n", err)
-				} else if ccEvent != nil {
-					eventHub.notifyChaincodeRegistrants(channelID, ccEvent, true)
+			txFilter := util.TxValidationFlags(blockEvent.Block.Metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER])
+			for i, tdata := range blockEvent.Block.Data.Data {
+				if txFilter.IsValid(i) {
+					if ccEvent, channelID, err := getChainCodeEvent(tdata); err != nil {
+						logger.Warnf("getChainCodeEvent return error: %v\n", err)
+					} else if ccEvent != nil {
+						eventHub.notifyChaincodeRegistrants(channelID, ccEvent, true)
+					}
+				} else {
+					logger.Debugf("received invalid transaction")
 				}
 			}
 			return

@@ -212,10 +212,15 @@ func (b *MockTxEventBuilder) buildChannelHeader() *common.ChannelHeader {
 
 // Build builds a mock chaincode event block
 func (b *MockCCBlockEventBuilder) Build() *pb.Event_Block {
+	return b.BuildWithTxValidationFlag(true)
+}
+
+// Build builds a mock chaincode event block with valid/invalid TxValidation Flag (set in the argument)
+func (b *MockCCBlockEventBuilder) BuildWithTxValidationFlag(isValid bool) *pb.Event_Block {
 	return &pb.Event_Block{
 		Block: &common.Block{
 			Header:   &common.BlockHeader{},
-			Metadata: b.buildBlockMetadata(),
+			Metadata: b.buildBlockMetadataWithValidFlag(isValid),
 			Data: &common.BlockData{
 				Data: [][]byte{internal.MarshalOrPanic(b.buildEnvelope())},
 			},
@@ -224,11 +229,15 @@ func (b *MockCCBlockEventBuilder) Build() *pb.Event_Block {
 }
 
 func (b *MockCCBlockEventBuilder) buildBlockMetadata() *common.BlockMetadata {
+	return b.buildBlockMetadataWithValidFlag(true)
+}
+
+func (b *MockCCBlockEventBuilder) buildBlockMetadataWithValidFlag(isValid bool) *common.BlockMetadata {
 	return &common.BlockMetadata{
 		Metadata: [][]byte{
 			[]byte{},
 			[]byte{},
-			b.buildTransactionsFilterMetaDataBytes(),
+			b.buildTransactionsFilterMetaDataBytesWithValidFlag(isValid),
 			[]byte{},
 		},
 	}
@@ -241,7 +250,15 @@ func (b *MockCCBlockEventBuilder) buildEnvelope() *common.Envelope {
 }
 
 func (b *MockCCBlockEventBuilder) buildTransactionsFilterMetaDataBytes() []byte {
-	return []byte(ledger_util.TxValidationFlags{uint8(pb.TxValidationCode_VALID)})
+	return b.buildTransactionsFilterMetaDataBytesWithValidFlag(true)
+}
+
+func (b *MockCCBlockEventBuilder) buildTransactionsFilterMetaDataBytesWithValidFlag(isValidTx bool) []byte {
+	if isValidTx {
+		return []byte(ledger_util.TxValidationFlags{uint8(pb.TxValidationCode_VALID)})
+	}
+	// return transaction with any non valid flag
+	return []byte(ledger_util.TxValidationFlags{uint8(pb.TxValidationCode_BAD_COMMON_HEADER)})
 }
 
 func (b *MockCCBlockEventBuilder) buildPayload() *common.Payload {

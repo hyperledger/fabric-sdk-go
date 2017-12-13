@@ -215,6 +215,55 @@ func TestChaincodeBlockEvent(t *testing.T) {
 	}
 }
 
+func TestChaincodeBlockEventWithInvalidTx(t *testing.T) {
+	channelID := "somechannelid"
+	ccID := "someccid"
+	eventName := "someevent"
+	txID := generateTxID()
+
+	eventHub, clientFactory := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+
+	client := clientFactory.clients[0]
+	if client == nil {
+		t.Fatalf("No client")
+	}
+
+	eventReceived := make(chan *fab.ChaincodeEvent)
+
+	// Register for CC event
+	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *fab.ChaincodeEvent) {
+		eventReceived <- event
+	})
+
+	// Publish CC event
+	go client.MockEvent(&pb.Event{
+		Event: (&MockCCBlockEventBuilder{
+			CCID:      ccID,
+			EventName: eventName,
+			ChannelID: channelID,
+			TxID:      txID.ID,
+		}).BuildWithTxValidationFlag(false),
+	})
+
+	// Wait for CC event
+	var event *fab.ChaincodeEvent
+	select {
+	case event = <-eventReceived:
+		t.Fatalf("CC event is not expected to be triggered for a CC Block Event with invalid Tx flag")
+	case <-time.After(time.Second * 5):
+		t.Log("Timeout expected on CC event with Block Event having an invalid Tx flag")
+		eventHub.UnregisterChaincodeEvent(registration)
+	}
+
+	// Check CC event
+	if event != nil {
+		t.Fatalf("Expecting nil event but got [%s]", event)
+	}
+}
+
 // completionHandler waits for a single event with a timeout
 type completionHandler struct {
 	completed chan bool
