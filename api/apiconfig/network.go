@@ -26,6 +26,8 @@ type ClientConfig struct {
 	Logging      LoggingType
 	CryptoConfig CCType
 	TLS          TLSType
+	TLSCerts     MutualTLSConfig
+
 	// currently not used by GO-SDK
 	CredentialStore CredentialStoreType
 }
@@ -136,7 +138,7 @@ type TLSConfig struct {
 // MutualTLSConfig Mutual TLS configurations
 type MutualTLSConfig struct {
 	Pem []string
-	// Certfiles root certificates for TLS validation (Comma serparated path list)
+	// Certfiles root certificates for TLS validation (Comma separated path list)
 	Path string
 	// Client client TLS information
 	Client struct {

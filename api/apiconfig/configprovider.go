@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package apiconfig
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 	"time"
 )
@@ -48,6 +49,7 @@ type Config interface {
 	KeyStorePath() string
 	CAKeyStorePath() string
 	CryptoConfigPath() string
+	TLSClientCerts() ([]tls.Certificate, error)
 }
 
 // TimeoutType enumerates the different types of outgoing connections

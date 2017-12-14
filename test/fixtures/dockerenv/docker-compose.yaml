@@ -67,7 +67,9 @@ services:
       - ORDERER_GENERAL_TLS_PRIVATEKEY=/etc/hyperledger/tls/orderer/server.key
       - ORDERER_GENERAL_TLS_CERTIFICATE=/etc/hyperledger/tls/orderer/server.crt
       - ORDERER_GENERAL_TLS_ROOTCAS=[/etc/hyperledger/tls/orderer/ca.crt]
-    #comment out logging.driver in order to render the debug logs
+      - ORDERER_GENERAL_TLS_CLIENTAUTHENABLED
+      - ORDERER_GENERAL_TLS_CLIENTROOTCAS
+    #comment out logging.driver in order to render the debug logs  
     logging:
       driver: none
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/orderer
@@ -78,6 +80,7 @@ services:
         - ../fabric/${FABRIC_FIXTURE_VERSION}/channel:/etc/hyperledger/configtx
         - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp:/etc/hyperledger/msp/orderer
         - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls:/etc/hyperledger/tls/orderer
+        - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/mutual_tls:/etc/hyperledger/mutual_tls/orderer
     networks:
       default:
         aliases:
@@ -89,7 +92,7 @@ services:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - CORE_PEER_ID=peer0.org1.example.com
       - CORE_LOGGING_PEER=debug
-      - CORE_CHAINCODE_STARTUPTIMEOUT=30s
+      # - CORE_CHAINCODE_STARTUPTIMEOUT=30s
       - CORE_CHAINCODE_LOGGING_SHIM=debug
       - CORE_CHAINCODE_LOGGING_LEVEL=debug
       - CORE_CHAINCODE_BUILDER=${FABRIC_DOCKER_REGISTRY}${FABRIC_BUILDER_FIXTURE_IMAGE}:${ARCH}${ARCH_SEP}${FABRIC_BUILDER_FIXTURE_TAG}
@@ -106,6 +109,8 @@ services:
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
       - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/tls/peer/ca.crt
+      - CORE_PEER_TLS_CLIENTAUTHREQUIRED
+      - CORE_PEER_TLS_CLIENTROOTCAS_FILES
       # # the following setting starts chaincode containers on the same
       # # bridge network as the peers
       # # https://docs.docker.com/compose/networking/
@@ -127,6 +132,7 @@ services:
         - /var/run/:/host/var/run/
         - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp:/etc/hyperledger/msp/peer
         - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls:/etc/hyperledger/tls/peer
+        - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/mutual_tls:/etc/hyperledger/mutual_tls/peer
     networks:
       default:
         aliases:
@@ -142,7 +148,7 @@ services:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - CORE_PEER_ID=peer0.org2.example.com
       - CORE_LOGGING_PEER=debug
-      - CORE_CHAINCODE_STARTUPTIMEOUT=30s
+      # - CORE_CHAINCODE_STARTUPTIMEOUT=30s
       - CORE_CHAINCODE_LOGGING_SHIM=debug
       - CORE_CHAINCODE_LOGGING_LEVEL=debug
       - CORE_CHAINCODE_BUILDER=${FABRIC_DOCKER_REGISTRY}${FABRIC_BUILDER_FIXTURE_IMAGE}:${ARCH}${ARCH_SEP}${FABRIC_BUILDER_FIXTURE_TAG}
@@ -159,6 +165,8 @@ services:
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
       - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/tls/peer/ca.crt
+      - CORE_PEER_TLS_CLIENTAUTHREQUIRED
+      - CORE_PEER_TLS_CLIENTROOTCAS_FILES
       # # the following setting starts chaincode containers on the same
       # # bridge network as the peers
       # # https://docs.docker.com/compose/networking/
@@ -180,6 +188,7 @@ services:
         - /var/run/:/host/var/run/
         - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp:/etc/hyperledger/msp/peer
         - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls:/etc/hyperledger/tls/peer
+        - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/mutual_tls:/etc/hyperledger/mutual_tls/peer
     networks:
       default:
         aliases:

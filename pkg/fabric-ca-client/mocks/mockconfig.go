@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 	"time"
 
@@ -200,4 +201,9 @@ func (c *MockConfig) SecurityProviderLabel() string {
 // IsSecurityEnabled ...
 func (c *MockConfig) IsSecurityEnabled() bool {
 	return false
+}
+
+// TLSClientCerts ...
+func (c *MockConfig) TLSClientCerts() ([]tls.Certificate, error) {
+	return nil, nil
 }

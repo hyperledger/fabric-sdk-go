@@ -701,7 +701,7 @@ func TestSystemCertPoolEnabled(t *testing.T) {
 		t.Fatal("System Cert Pool not loaded even though it is enabled")
 	}
 
-	// Org2 'mychannel' peer is missing cert + pem (it should not fail when systemcertpool enabled)
+	// Org2 'mychannel' peer is missing cert + pem (it should not fail when systemCertPool enabled)
 	_, err = c.ChannelPeers("mychannel")
 	if err != nil {
 		t.Fatalf("Should have skipped verifying ca cert + pem: %s", err)
