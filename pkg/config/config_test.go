@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package config
 
 import (
+	"crypto/tls"
 	"fmt"
 	"os"
 	"path"
@@ -14,6 +15,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"reflect"
 
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -861,5 +864,159 @@ func TestInitConfigFromBytesWrongType(t *testing.T) {
 	np, err := c.NetworkPeers()
 	if len(np) > 0 {
 		t.Fatalf("Expected to get an empty list of peers for wrong config type")
+	}
+}
+
+func TestTLSClientCertsFromFiles(t *testing.T) {
+	configImpl.networkConfig.Client.TLSCerts.Client.Certfile = "../../test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	configImpl.networkConfig.Client.TLSCerts.Client.Keyfile = "../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	configImpl.networkConfig.Client.TLSCerts.Client.CertPem = ""
+	configImpl.networkConfig.Client.TLSCerts.Client.KeyPem = ""
+
+	certs, err := configImpl.TLSClientCerts()
+	if err != nil {
+		t.Fatalf("Expected no errors but got error instead: %s", err)
+	}
+
+	if len(certs) != 1 {
+		t.Fatalf("Expected only one tls cert struct")
+	}
+
+	emptyCert := tls.Certificate{}
+
+	if reflect.DeepEqual(certs[0], emptyCert) {
+		t.Fatalf("Actual cert is empty")
+	}
+}
+
+func TestTLSClientCertsFromFilesIncorrectPaths(t *testing.T) {
+	// incorrect paths to files
+	configImpl.networkConfig.Client.TLSCerts.Client.Certfile = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	configImpl.networkConfig.Client.TLSCerts.Client.Keyfile = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	configImpl.networkConfig.Client.TLSCerts.Client.CertPem = ""
+	configImpl.networkConfig.Client.TLSCerts.Client.KeyPem = ""
+
+	_, err := configImpl.TLSClientCerts()
+	if err == nil {
+		t.Fatalf("Expected error but got no errors instead")
+	}
+
+	if !strings.Contains(err.Error(), "no such file or directory") {
+		t.Fatalf("Expected no such file or directory error")
+	}
+}
+
+func TestTLSClientCertsFromPem(t *testing.T) {
+	configImpl.networkConfig.Client.TLSCerts.Client.Certfile = ""
+	configImpl.networkConfig.Client.TLSCerts.Client.Keyfile = ""
+
+	configImpl.networkConfig.Client.TLSCerts.Client.CertPem = `-----BEGIN CERTIFICATE-----
+MIIC5TCCAkagAwIBAgIUMYhiY5MS3jEmQ7Fz4X/e1Dx33J0wCgYIKoZIzj0EAwQw
+gYwxCzAJBgNVBAYTAkNBMRAwDgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3Jv
+bnRvMREwDwYDVQQKEwhsaW51eGN0bDEMMAoGA1UECxMDTGFiMTgwNgYDVQQDEy9s
+aW51eGN0bCBFQ0MgUm9vdCBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eSAoTGFiKTAe
+Fw0xNzEyMDEyMTEzMDBaFw0xODEyMDEyMTEzMDBaMGMxCzAJBgNVBAYTAkNBMRAw
+DgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3JvbnRvMREwDwYDVQQKEwhsaW51
+eGN0bDEMMAoGA1UECxMDTGFiMQ8wDQYDVQQDDAZzZGtfZ28wdjAQBgcqhkjOPQIB
+BgUrgQQAIgNiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv2PotEEGuO6rMyaOu
+pulj2VOj+YtgWw4ZtU49g4Nv6rq1QlKwRYyMwwRJSAZHIUMhYZjcDi7YEOZ3Fs1h
+xKmIxR+TTR2vf9KjgZAwgY0wDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsG
+AQUFBwMCMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFDwS3xhpAWs81OVWvZt+iUNL
+z26DMB8GA1UdIwQYMBaAFLRasbknomawJKuQGiyKs/RzTCujMBgGA1UdEQQRMA+C
+DWZhYnJpY19zZGtfZ28wCgYIKoZIzj0EAwQDgYwAMIGIAkIAk1MxMogtMtNO0rM8
+gw2rrxqbW67ulwmMQzp6EJbm/28T2pIoYWWyIwpzrquypI7BOuf8is5b7Jcgn9oz
+7sdMTggCQgF7/8ZFl+wikAAPbciIL1I+LyCXKwXosdFL6KMT6/myYjsGNeeDeMbg
+3YkZ9DhdH1tN4U/h+YulG/CkKOtUATtQxg==
+-----END CERTIFICATE-----`
+
+	configImpl.networkConfig.Client.TLSCerts.Client.KeyPem = `-----BEGIN EC PRIVATE KEY-----
+MIGkAgEBBDByldj7VTpqTQESGgJpR9PFW9b6YTTde2WN6/IiBo2nW+CIDmwQgmAl
+c/EOc9wmgu+gBwYFK4EEACKhZANiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv
+2PotEEGuO6rMyaOupulj2VOj+YtgWw4ZtU49g4Nv6rq1QlKwRYyMwwRJSAZHIUMh
+YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
+-----END EC PRIVATE KEY-----`
+
+	certs, err := configImpl.TLSClientCerts()
+	if err != nil {
+		t.Fatalf("Expected no errors but got error instead: %s", err)
+	}
+
+	if len(certs) != 1 {
+		t.Fatalf("Expected only one tls cert struct")
+	}
+
+	emptyCert := tls.Certificate{}
+
+	if reflect.DeepEqual(certs[0], emptyCert) {
+		t.Fatalf("Actual cert is empty")
+	}
+}
+
+func TestTLSClientCertsPemBeforeFiles(t *testing.T) {
+	// files have incorrect paths, but pems are loaded first
+	configImpl.networkConfig.Client.TLSCerts.Client.Certfile = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	configImpl.networkConfig.Client.TLSCerts.Client.Keyfile = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+
+	configImpl.networkConfig.Client.TLSCerts.Client.CertPem = `-----BEGIN CERTIFICATE-----
+MIIC5TCCAkagAwIBAgIUMYhiY5MS3jEmQ7Fz4X/e1Dx33J0wCgYIKoZIzj0EAwQw
+gYwxCzAJBgNVBAYTAkNBMRAwDgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3Jv
+bnRvMREwDwYDVQQKEwhsaW51eGN0bDEMMAoGA1UECxMDTGFiMTgwNgYDVQQDEy9s
+aW51eGN0bCBFQ0MgUm9vdCBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eSAoTGFiKTAe
+Fw0xNzEyMDEyMTEzMDBaFw0xODEyMDEyMTEzMDBaMGMxCzAJBgNVBAYTAkNBMRAw
+DgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3JvbnRvMREwDwYDVQQKEwhsaW51
+eGN0bDEMMAoGA1UECxMDTGFiMQ8wDQYDVQQDDAZzZGtfZ28wdjAQBgcqhkjOPQIB
+BgUrgQQAIgNiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv2PotEEGuO6rMyaOu
+pulj2VOj+YtgWw4ZtU49g4Nv6rq1QlKwRYyMwwRJSAZHIUMhYZjcDi7YEOZ3Fs1h
+xKmIxR+TTR2vf9KjgZAwgY0wDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsG
+AQUFBwMCMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFDwS3xhpAWs81OVWvZt+iUNL
+z26DMB8GA1UdIwQYMBaAFLRasbknomawJKuQGiyKs/RzTCujMBgGA1UdEQQRMA+C
+DWZhYnJpY19zZGtfZ28wCgYIKoZIzj0EAwQDgYwAMIGIAkIAk1MxMogtMtNO0rM8
+gw2rrxqbW67ulwmMQzp6EJbm/28T2pIoYWWyIwpzrquypI7BOuf8is5b7Jcgn9oz
+7sdMTggCQgF7/8ZFl+wikAAPbciIL1I+LyCXKwXosdFL6KMT6/myYjsGNeeDeMbg
+3YkZ9DhdH1tN4U/h+YulG/CkKOtUATtQxg==
+-----END CERTIFICATE-----`
+
+	configImpl.networkConfig.Client.TLSCerts.Client.KeyPem = `-----BEGIN EC PRIVATE KEY-----
+MIGkAgEBBDByldj7VTpqTQESGgJpR9PFW9b6YTTde2WN6/IiBo2nW+CIDmwQgmAl
+c/EOc9wmgu+gBwYFK4EEACKhZANiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv
+2PotEEGuO6rMyaOupulj2VOj+YtgWw4ZtU49g4Nv6rq1QlKwRYyMwwRJSAZHIUMh
+YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
+-----END EC PRIVATE KEY-----`
+
+	certs, err := configImpl.TLSClientCerts()
+	if err != nil {
+		t.Fatalf("Expected no errors but got error instead: %s", err)
+	}
+
+	if len(certs) != 1 {
+		t.Fatalf("Expected only one tls cert struct")
+	}
+
+	emptyCert := tls.Certificate{}
+
+	if reflect.DeepEqual(certs[0], emptyCert) {
+		t.Fatalf("Actual cert is empty")
+	}
+}
+
+func TestTLSClientCertsNoCerts(t *testing.T) {
+	configImpl.networkConfig.Client.TLSCerts.Client.Certfile = ""
+	configImpl.networkConfig.Client.TLSCerts.Client.Keyfile = ""
+	configImpl.networkConfig.Client.TLSCerts.Client.CertPem = ""
+	configImpl.networkConfig.Client.TLSCerts.Client.KeyPem = ""
+
+	certs, err := configImpl.TLSClientCerts()
+	if err != nil {
+		t.Fatalf("Expected no errors but got error instead: %s", err)
+	}
+
+	if len(certs) != 1 {
+		t.Fatalf("Expected only emppty tls cert struct")
+	}
+
+	emptyCert := tls.Certificate{}
+
+	if !reflect.DeepEqual(certs[0], emptyCert) {
+		t.Fatalf("Actual cert is not equal to empty cert")
 	}
 }
