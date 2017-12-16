@@ -16,6 +16,7 @@ set -e
 GO_CMD="${GO_CMD:-go}"
 FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-stable}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
+# TODO: better default handling for FABRIC_CRYPTOCONFIG_VERSION
 
 # Packages to include in test run
 PKGS=`$GO_CMD list github.com/hyperledger/fabric-sdk-go/test/integration/... 2> /dev/null | \

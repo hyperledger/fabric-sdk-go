@@ -82,13 +82,15 @@ FABRIC_STABLE_CODELEVEL_TAG     := stable
 FABRIC_PREV_CODELEVEL_TAG       := prev
 FABRIC_PRERELEASE_CODELEVEL_TAG := prerelease
 FABRIC_DEVSTABLE_CODELEVEL_TAG  := devstable
+FABRIC_CODELEVEL_TAG            ?= $(FABRIC_STABLE_CODELEVEL_TAG)
 
 # Code level version targets
 FABRIC_STABLE_CODELEVEL_VER     := v$(FABRIC_STABLE_VERSION_MINOR)
 FABRIC_PREV_CODELEVEL_VER       := v$(FABRIC_PREV_VERSION)
 FABRIC_PRERELEASE_CODELEVEL_VER := v$(FABRIC_PRERELEASE_VERSION)
 FABRIC_DEVSTABLE_CODELEVEL_VER  := v$(FABRIC_DEVSTABLE_VERSION_MINOR)
-FABRIC_CODELEVEL_VER            ?= v$(FABRIC_STABLE_CODELEVEL_VER)
+FABRIC_CODELEVEL_VER            ?= $(FABRIC_STABLE_CODELEVEL_VER)
+FABRIC_CRYPTOCONFIG_VER         ?= v$(FABRIC_STABLE_VERSION_MAJOR)
 
 # Code level to exercise during unit tests
 FABRIC_CODELEVEL_UNITTEST_TAG ?= $(FABRIC_DEVSTABLE_CODELEVEL_TAG)
@@ -268,6 +270,39 @@ ifeq ($(FABRIC_PREV_INTTEST),true)
 endif
 	@$(MAKE) -f $(MAKEFILE_THIS) clean
 
+.PHONY: integration-tests-local
+integration-tests-local: temp-clean depend populate
+	FABRIC_CRYPTOCONFIG_VERSION=$(FABRIC_CRYPTOCONFIG_VER) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_CODELEVEL_TAG) $(TEST_SCRIPTS_PATH)/integration.sh
+
+.PHONY: dockerenv-prev-up
+dockerenv-prev-up: clean
+	@cd $(FIXTURE_DOCKERENV_PATH) && \
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PREV_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PREV_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up --force-recreate
+
+.PHONY: dockerenv-stable-up
+dockerenv-stable-up: clean
+	@cd $(FIXTURE_DOCKERENV_PATH) && \
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up --force-recreate
+
+.PHONY: dockerenv-prerelease-up
+dockerenv-prerelease-up: clean
+	@cd $(FIXTURE_DOCKERENV_PATH) && \
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PRERELEASE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PRERELEASE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up --force-recreate
+
+.PHONY: dockerenv-devstable-up
+dockerenv-devstable-up: clean
+	@. $(FIXTURE_DOCKERENV_PATH)/devstable-env.sh && \
+		$(FABRIC_DEV_REGISTRY_PRE_CMD) && \
+		cd $(FIXTURE_DOCKERENV_PATH) && \
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up --force-recreate
+
+.PHONY: dockerenv-latest-up
+dockerenv-latest-up: clean
+	@. $(FIXTURE_DOCKERENV_PATH)/devstable-env.sh && \
+		. $(FIXTURE_DOCKERENV_PATH)/latest-env.sh && \
+		cd $(FIXTURE_DOCKERENV_PATH) && \
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY="" $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up --force-recreate
+
 .PHONY: mock-gen
 mock-gen:
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > api/apitxn/mocks/mockapitxn.gen.go
@@ -340,9 +375,12 @@ populate-clean:
 	rm -Rf vendor
 
 .PHONY: clean
-clean:
-	-$(GO_CMD) clean
+temp-clean:
 	-rm -Rf /tmp/enroll_user /tmp/msp /tmp/keyvaluestore /tmp/hfc-kvs /tmp/state
 	-rm -f integration-report.xml report.xml
+
+.PHONY: clean
+clean: temp-clean
+	-$(GO_CMD) clean
 	-FIXTURE_PROJECT_NAME=$(FIXTURE_PROJECT_NAME) DOCKER_REMOVE_FORCE=$(FIXTURE_DOCKER_REMOVE_FORCE) $(TEST_SCRIPTS_PATH)/clean_integration.sh
 

@@ -257,8 +257,8 @@ peers:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   peer0.org2.example.com:
-    url: grpcs://peer0.org2.example.com:7051
-    eventUrl: grpcs://peer0.org2.example.com:7053
+    url: grpcs://peer0.org2.example.com:8051
+    eventUrl: grpcs://peer0.org2.example.com:8053
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
     tlsCACerts:
@@ -292,7 +292,7 @@ certificateAuthorities:
     # [Optional] The optional name of the CA.
     caName: ca-org1
   ca-org2:
-    url: https://ca_peerOrg2:7054
+    url: https://ca_peerOrg2:8054
     # the properties specified under this object are passed to the 'http' client verbatim when
     # making the request to the Fabric-CA server
     httpOptions:
