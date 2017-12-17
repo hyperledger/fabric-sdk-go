@@ -28,6 +28,7 @@ var org0 = "org0"
 var org1 = "Org1"
 var configTestFilePath = "../../test/fixtures/config/config_test.yaml"
 var configPemTestFilePath = "testdata/config_test_pem.yaml"
+var configEmbeddedUsersTestFilePath = "../../test/fixtures/config/config_test_embedded_pems.yaml"
 var configType = "yaml"
 
 func TestDefaultConfig(t *testing.T) {
@@ -834,6 +835,36 @@ O94CDp7l2k7hMQI0zQ==
 	c.CAClientKeyPath("org1")
 	if err != nil {
 		t.Fatalf("Failed to load CAClientKeyPath from config. Error: %s", err)
+	}
+}
+
+func TestLoadConfigWithEmbeddedUsers(t *testing.T) {
+	// get a config file with embedded users
+	c, err := InitConfig(configEmbeddedUsersTestFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	conf, err := c.NetworkConfig()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Cert == "" {
+		t.Fatal("Failed to parse the embedded cert for user EmbeddedUser")
+	}
+
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Key == "" {
+		t.Fatal("Failed to parse the embedded key for user EmbeddedUser")
+	}
+
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Key != "" {
+		t.Fatal("Mistakenly found an embedded key for user NonExistentEmbeddedUser")
+	}
+
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Cert != "" {
+		t.Fatal("Mistakenly found an embedded cert for user NonExistentEmbeddedUser")
 	}
 }
 

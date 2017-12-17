@@ -25,6 +25,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 // CredentialManager is used for retriving user's signing identity (ecert + private key)
 type CredentialManager struct {
 	orgName        string
+	embeddedUsers  map[string]apiconfig.UserConfig
 	keyDir         string
 	certDir        string
 	config         apiconfig.Config
@@ -47,8 +48,8 @@ func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvide
 		return nil, errors.New("org config retrieval failed")
 	}
 
-	if orgConfig.CryptoPath == "" {
-		return nil, errors.New("CryptoPath is required")
+	if orgConfig.CryptoPath == "" && len(orgConfig.Users) == 0 {
+		return nil, errors.New("Either a cryptopath or an embedded list of users is required")
 	}
 
 	orgCryptoPath := orgConfig.CryptoPath
@@ -56,7 +57,7 @@ func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvide
 		orgCryptoPath = filepath.Join(config.CryptoConfigPath(), orgCryptoPath)
 	}
 
-	return &CredentialManager{orgName: orgName, config: config, keyDir: orgCryptoPath + "/keystore", certDir: orgCryptoPath + "/signcerts", cryptoProvider: cryptoProvider}, nil
+	return &CredentialManager{orgName: orgName, config: config, embeddedUsers: orgConfig.Users, keyDir: orgCryptoPath + "/keystore", certDir: orgCryptoPath + "/signcerts", cryptoProvider: cryptoProvider}, nil
 }
 
 // GetSigningIdentity will sign the given object with provided key,
@@ -66,31 +67,47 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient
 		return nil, errors.New("username is required")
 	}
 
-	privateKeyDir := strings.Replace(mgr.keyDir, "{userName}", userName, -1)
-	enrollmentCertDir := strings.Replace(mgr.certDir, "{userName}", userName, -1)
-
-	privateKeyPath, err := getFirstPathFromDir(privateKeyDir)
-	if err != nil {
-		return nil, errors.WithMessage(err, "find private key path failed")
-	}
-
-	enrollmentCertPath, err := getFirstPathFromDir(enrollmentCertDir)
-	if err != nil {
-		return nil, errors.WithMessage(err, "find enrollment cert path failed")
-	}
-
 	mspID, err := mgr.config.MspID(mgr.orgName)
 	if err != nil {
 		return nil, errors.WithMessage(err, "MSP ID config read failed")
 	}
 
-	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEM(privateKeyPath, mgr.cryptoProvider, true)
-	if err != nil {
-		return nil, errors.Wrap(err, "import private key failed")
-	}
-	enrollmentCert, err := ioutil.ReadFile(enrollmentCertPath)
-	if err != nil {
-		return nil, errors.Wrap(err, "reading enrollment cert path failed")
+	var privateKey apicryptosuite.Key
+	var enrollmentCert []byte
+
+	embeddedCertBytes := []byte(mgr.embeddedUsers[strings.ToLower(userName)].Cert)
+	embeddedKeyBytes := []byte(mgr.embeddedUsers[strings.ToLower(userName)].Key)
+
+	// First check the embedded users and then the paths
+	if len(embeddedCertBytes) != 0 && len(embeddedKeyBytes) != 0 {
+		privateKey, err = fabricCaUtil.ImportBCCSPKeyFromPEMBytes(embeddedKeyBytes, mgr.cryptoProvider, true)
+		if err != nil {
+			return nil, errors.Wrapf(err, "import private key failed %v", embeddedKeyBytes)
+		}
+
+		enrollmentCert = embeddedCertBytes
+	} else {
+		privateKeyDir := strings.Replace(mgr.keyDir, "{userName}", userName, -1)
+		enrollmentCertDir := strings.Replace(mgr.certDir, "{userName}", userName, -1)
+
+		privateKeyPath, err := getFirstPathFromDir(privateKeyDir)
+		if err != nil {
+			return nil, errors.WithMessage(err, "find private key path failed")
+		}
+
+		enrollmentCertPath, err := getFirstPathFromDir(enrollmentCertDir)
+		if err != nil {
+			return nil, errors.WithMessage(err, "find enrollment cert path failed")
+		}
+
+		privateKey, err = fabricCaUtil.ImportBCCSPKeyFromPEM(privateKeyPath, mgr.cryptoProvider, true)
+		if err != nil {
+			return nil, errors.Wrap(err, "import private key failed")
+		}
+		enrollmentCert, err = ioutil.ReadFile(enrollmentCertPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "reading enrollment cert path failed")
+		}
 	}
 
 	signingIdentity := &apifabclient.SigningIdentity{MspID: mspID, PrivateKey: privateKey, EnrollmentCert: enrollmentCert}
