@@ -80,7 +80,7 @@ organizations:
       - peer0.org2.example.com
 
     certificateAuthorities:
-      - ca-org2
+      - ca.org2.example.com
 
   ordererorg:
       mspID: "OrdererOrg"
@@ -110,8 +110,8 @@ peers:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
 
 certificateAuthorities:
-  ca-org2:
-    url: https://ca_peerOrg2:7054
+  ca.org2.example.com:
+    url: https://ca.org2.example.com:7054
 
     httpOptions:
       verify: true
@@ -126,4 +126,4 @@ certificateAuthorities:
       enrollId: admin
       enrollSecret: adminpw
 
-    caName: ca-org2
+    caName: ca.org2.example.com

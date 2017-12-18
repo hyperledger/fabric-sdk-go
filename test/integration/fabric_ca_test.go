@@ -143,7 +143,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		t.Fatalf("Error Reenroling user. Enrollmet and Reenrollment certificates are the same.")
 	}
 
-	revokeRequest := ca.RevocationRequest{Name: userName, CAName: "ca-org1"}
+	revokeRequest := ca.RevocationRequest{Name: userName, CAName: "ca.org1.example.com"}
 	err = caClient.Revoke(adminUser, &revokeRequest)
 	if err != nil {
 		t.Fatalf("Error from Revoke: %s", err)

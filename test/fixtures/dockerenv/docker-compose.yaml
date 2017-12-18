@@ -10,7 +10,7 @@ services:
     image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_CA_FIXTURE_IMAGE}:${ARCH}${ARCH_SEP}${FABRIC_CA_FIXTURE_TAG}
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
-      - FABRIC_CA_SERVER_CA_NAME=ca-org1
+      - FABRIC_CA_SERVER_CA_NAME=ca.org1.example.com
       - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org1.example.com-cert.pem
       - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/8791d1363e89515f9afa042b0693a2c704bb8dd95d28f97d3549a2b9e3c4352d_sk
       - FABRIC_CA_SERVER_TLS_ENABLED=true
@@ -28,13 +28,13 @@ services:
     networks:
       default:
         aliases:
-          - ca_peerOrg1
+          - ca.org1.example.com
 
   org2ca1:
     image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_CA_FIXTURE_IMAGE}:${ARCH}${ARCH_SEP}${FABRIC_CA_FIXTURE_TAG}
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
-      - FABRIC_CA_SERVER_CA_NAME=ca-org2
+      - FABRIC_CA_SERVER_CA_NAME=ca.org2.example.com
       - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org2.example.com-cert.pem
       - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/a259204dbd6adb14c05a6e02de94567b2a9f7dbe9e6a063ba767d42bf0b544c1_sk
       - FABRIC_CA_SERVER_TLS_ENABLED=true
@@ -52,7 +52,7 @@ services:
     networks:
       default:
         aliases:
-          - ca_peerOrg2
+          - ca.org2.example.com
 
   orderer1:
     image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_ORDERER_FIXTURE_IMAGE}:${ARCH}${ARCH_SEP}${FABRIC_ORDERER_FIXTURE_TAG}

@@ -48,7 +48,7 @@ organizations:
       - peer0.org1.example.com
 
     certificateAuthorities:
-      - ca-org1
+      - ca.org1.example.com
 
 #
 # Empty orderer list (for testing purposes)

@@ -215,7 +215,7 @@ func (b *MockCCBlockEventBuilder) Build() *pb.Event_Block {
 	return b.BuildWithTxValidationFlag(true)
 }
 
-// Build builds a mock chaincode event block with valid/invalid TxValidation Flag (set in the argument)
+// BuildWithTxValidationFlag builds a mock chaincode event block with valid/invalid TxValidation Flag (set in the argument)
 func (b *MockCCBlockEventBuilder) BuildWithTxValidationFlag(isValid bool) *pb.Event_Block {
 	return &pb.Event_Block{
 		Block: &common.Block{

@@ -182,7 +182,7 @@ organizations:
     # dynamic certificate management (enroll, revoke, re-enroll). The following section is only for
     # Fabric-CA servers.
     certificateAuthorities:
-      - ca-org1
+      - ca.org1.example.com
 
     # [Optional]. If the application is going to make requests that are reserved to organization
     # administrators, including creating/updating channels, installing/instantiating chaincodes, it
@@ -211,7 +211,7 @@ organizations:
       - peer0.org2.example.com
 
     certificateAuthorities:
-      - ca-org2
+      - ca.org2.example.com
 
   # Orderer Org name
   ordererorg:
@@ -275,8 +275,8 @@ peers:
 # Certificate Authority instead of Fabric-CA, in which case this section would not be specified.
 #
 certificateAuthorities:
-  ca-org1:
-    url: https://ca_peerOrg1:7054
+  ca.org1.example.com:
+    url: https://ca.org1.example.com:7054
     # the properties specified under this object are passed to the 'http' client verbatim when
     # making the request to the Fabric-CA server
     httpOptions:
@@ -295,9 +295,9 @@ certificateAuthorities:
       enrollId: admin
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
-    caName: ca-org1
-  ca-org2:
-    url: https://ca_peerOrg2:8054
+    caName: ca.org1.example.com
+  ca.org2.example.com:
+    url: https://ca.org2.example.com:8054
     # the properties specified under this object are passed to the 'http' client verbatim when
     # making the request to the Fabric-CA server
     httpOptions:
@@ -316,4 +316,4 @@ certificateAuthorities:
       enrollId: admin
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
-    caName: ca-org2
+    caName: ca.org2.example.com

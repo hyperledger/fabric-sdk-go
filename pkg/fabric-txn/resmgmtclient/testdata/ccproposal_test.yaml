@@ -83,7 +83,7 @@ organizations:
       - peer0.org1.example.com
       - peer1.org1.example.com
     certificateAuthorities:
-      - ca-org1
+      - ca.org1.example.com
 
   # Orderer Org name
   ordererorg:
