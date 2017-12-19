@@ -128,11 +128,11 @@ func ImportBCCSPKeyFromPEM(keyFile string, myCSP apicryptosuite.CryptoSuite, tem
 	}
 
 	key, err := ImportBCCSPKeyFromPEMBytes(keyBuff, myCSP, temporary)
-	
+
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("Failed parsing private key from %s", keyFile))
 	}
-	
+
 	return key, nil
 }
 
@@ -159,6 +159,7 @@ func ImportBCCSPKeyFromPEMBytes(keyBuff []byte, myCSP apicryptosuite.CryptoSuite
 		return nil, errors.Errorf("Failed to import key: invalid secret key type")
 	}
 }
+
 // LoadX509KeyPair reads and parses a public/private key pair from a pair
 // of files. The files must contain PEM encoded data. The certificate file
 // may contain intermediate certificates following the leaf certificate to
