@@ -66,3 +66,31 @@ func TestInvalidOrgCredentialManager(t *testing.T) {
 	}
 
 }
+
+func TestCredentialManagerFromEmbeddedCryptoConfig(t *testing.T) {
+	config, err := config.InitConfig("../../../test/fixtures/config/config_test_embedded_pems.yaml")
+
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	credentialMgr, err := NewCredentialManager("Org1", config, &fcmocks.MockCryptoSuite{})
+	if err != nil {
+		t.Fatalf("Failed to setup credential manager: %s", err)
+	}
+
+	_, err = credentialMgr.GetSigningIdentity("")
+	if err == nil {
+		t.Fatalf("Should have failed to retrieve signing identity for empty user name")
+	}
+
+	_, err = credentialMgr.GetSigningIdentity("Non-Existent")
+	if err == nil {
+		t.Fatalf("Should have failed to retrieve signing identity for non-existent user")
+	}
+
+	_, err = credentialMgr.GetSigningIdentity("EmbeddedUser")
+	if err != nil {
+		t.Fatalf("Failed to retrieve signing identity: %+v", err)
+	}
+}

@@ -91,10 +91,16 @@ type NetworkPeer struct {
 type OrganizationConfig struct {
 	MspID                  string
 	CryptoPath             string
+	Users                  map[string]UserConfig
 	Peers                  []string
 	CertificateAuthorities []string
 	AdminPrivateKey        TLSConfig
 	SignedCert             TLSConfig
+}
+
+type UserConfig struct {
+	Key  string
+	Cert string
 }
 
 // OrdererConfig defines an orderer configuration
