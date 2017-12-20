@@ -829,32 +829,23 @@ func (c *Config) TLSClientCerts() ([]tls.Certificate, error) {
 	var cb, kb []byte
 	if clientConfig.TLSCerts.Client.CertPem != "" {
 		cb = []byte(clientConfig.TLSCerts.Client.CertPem)
-		if clientConfig.TLSCerts.Client.KeyPem != "" {
-			kb = []byte(clientConfig.TLSCerts.Client.KeyPem)
-		} else if clientConfig.TLSCerts.Client.Keyfile != "" {
-			kb, err = loadByteKeyOrCertFromFile(&clientConfig, true)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, errors.Errorf("Missing key for cert/key pair TLS client credentials. Ensure either the key file path or the key content is embedded in the client config.")
-		}
 	} else if clientConfig.TLSCerts.Client.Certfile != "" {
 		cb, err = loadByteKeyOrCertFromFile(&clientConfig, false)
-		if clientConfig.TLSCerts.Client.KeyPem != "" {
-			kb = []byte(clientConfig.TLSCerts.Client.KeyPem)
-			if err != nil {
-				return nil, err
-			}
-		} else if clientConfig.TLSCerts.Client.Keyfile != "" {
-			kb, err = loadByteKeyOrCertFromFile(&clientConfig, true)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, errors.Errorf("Missing key for cert/key pair TLS client credentials. Ensure either the key file path or the key content is embedded in the client config.")
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to load cert from file path '%s'", clientConfig.TLSCerts.Client.Certfile)
 		}
-	} else {
+	}
+
+	if clientConfig.TLSCerts.Client.KeyPem != "" {
+		kb = []byte(clientConfig.TLSCerts.Client.KeyPem)
+	} else if clientConfig.TLSCerts.Client.Keyfile != "" {
+		kb, err = loadByteKeyOrCertFromFile(&clientConfig, true)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to load key from file path '%s'", clientConfig.TLSCerts.Client.Keyfile)
+		}
+	}
+
+	if len(cb) == 0 && len(kb) == 0 {
 		// if no cert found in the config, return empty cert chain
 		return []tls.Certificate{clientCerts}, nil
 	}
