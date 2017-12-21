@@ -34,7 +34,7 @@
 [[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
-  packages = ["proto","ptypes/any","ptypes/timestamp"]
+  packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/timestamp"]
   revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
 
 [[projects]]
@@ -166,6 +166,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ec61895dd39eb7d93cce28a3a33903220d68a760ae035d31106a8f123d6947b5"
+  inputs-digest = "c3d47e8fc08e02298aae9e7540207a28d0b111bd5aa5e225a6c7cbc5534dcb34"
   solver-name = "gps-cdcl"
   solver-version = 1
