@@ -390,14 +390,15 @@ func (c *Channel) SendEnvelope(envelope *fab.SignedEnvelope) (*common.Block, err
 }
 
 // BuildChannelHeader is a utility method to build a common chain header (TODO refactor)
-func BuildChannelHeader(headerType common.HeaderType, channelID string, txID string, epoch uint64, chaincodeID string, timestamp time.Time) (*common.ChannelHeader, error) {
+func BuildChannelHeader(headerType common.HeaderType, channelID string, txID string, epoch uint64, chaincodeID string, timestamp time.Time, tlsCertHash []byte) (*common.ChannelHeader, error) {
 	logger.Debugf("buildChannelHeader - headerType: %s channelID: %s txID: %d epoch: % chaincodeID: %s timestamp: %v", headerType, channelID, txID, epoch, chaincodeID, timestamp)
 	channelHeader := &common.ChannelHeader{
-		Type:      int32(headerType),
-		Version:   1,
-		ChannelId: channelID,
-		TxId:      txID,
-		Epoch:     epoch,
+		Type:        int32(headerType),
+		Version:     1,
+		ChannelId:   channelID,
+		TxId:        txID,
+		Epoch:       epoch,
+		TlsCertHash: tlsCertHash,
 	}
 
 	ts, err := ptypes.TimestampProto(timestamp)

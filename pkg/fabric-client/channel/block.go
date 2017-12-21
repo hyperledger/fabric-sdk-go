@@ -16,6 +16,7 @@ import (
 	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
+	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 )
@@ -61,7 +62,8 @@ func (c *Channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block,
 		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
 	}
 	protos_utils.MakeChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, 1, c.Name(), 0)
-	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), request.TxnID.ID, 0, "", time.Now())
+	tlsCertHash := ccomm.TLSCertHash(c.clientContext.Config())
+	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), request.TxnID.ID, 0, "", time.Now(), tlsCertHash)
 	if err != nil {
 		return nil, errors.Wrap(err, "BuildChannelHeader failed")
 	}
@@ -107,7 +109,8 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 		return nil, errors.Wrap(err, "generating TX ID failed")
 	}
 
-	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), txID, 0, "", time.Now())
+	tlsCertHash := ccomm.TLSCertHash(c.clientContext.Config())
+	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), txID, 0, "", time.Now(), tlsCertHash)
 	if err != nil {
 		return nil, errors.Wrap(err, "BuildChannelHeader failed")
 	}

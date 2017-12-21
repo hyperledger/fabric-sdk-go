@@ -23,6 +23,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
+	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	channel "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
@@ -386,7 +387,8 @@ func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnv
 		}
 
 		// TODO: Move
-		channelHeader, err := channel.BuildChannelHeader(common.HeaderType_CONFIG_UPDATE, request.Name, request.TxnID.ID, 0, "", time.Now())
+		tlsCertHash := ccomm.TLSCertHash(c.config)
+		channelHeader, err := channel.BuildChannelHeader(common.HeaderType_CONFIG_UPDATE, request.Name, request.TxnID.ID, 0, "", time.Now(), tlsCertHash)
 		if err != nil {
 			return errors.WithMessage(err, "BuildChannelHeader failed")
 		}

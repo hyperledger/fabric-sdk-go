@@ -10,6 +10,7 @@ import (
 	"crypto/tls"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	cutil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
@@ -33,4 +34,20 @@ func TLSConfig(certificate string, serverhostoverride string, config apiconfig.C
 	}
 
 	return &tls.Config{RootCAs: tlsCaCertPool, Certificates: clientCerts, ServerName: serverhostoverride}, nil
+}
+
+// TLSCertHash is a utility method to calculate the SHA256 hash of the configured certificate (for usage in channel headers)
+func TLSCertHash(config apiconfig.Config) []byte {
+	certs, err := config.TLSClientCerts()
+	if err != nil || len(certs) == 0 {
+		return nil
+	}
+
+	cert := certs[0]
+	if len(cert.Certificate) == 0 {
+		return nil
+	}
+
+	h := cutil.ComputeSHA256(cert.Certificate[0])
+	return h
 }
