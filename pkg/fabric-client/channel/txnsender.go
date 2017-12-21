@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	proto_ts "github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/golang/protobuf/ptypes"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -399,13 +399,13 @@ func BuildChannelHeader(headerType common.HeaderType, channelID string, txID str
 		TxId:      txID,
 		Epoch:     epoch,
 	}
-	if !timestamp.IsZero() {
-		ts := &proto_ts.Timestamp{
-			Seconds: int64(timestamp.Second()),
-			Nanos:   int32(timestamp.Nanosecond()),
-		}
-		channelHeader.Timestamp = ts
+
+	ts, err := ptypes.TimestampProto(timestamp)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create timestamp in channel header")
 	}
+	channelHeader.Timestamp = ts
+
 	if chaincodeID != "" {
 		ccID := &pb.ChaincodeID{
 			Name: chaincodeID,
