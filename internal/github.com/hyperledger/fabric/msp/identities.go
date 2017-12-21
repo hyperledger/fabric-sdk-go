@@ -25,10 +25,11 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/hex"
-	"encoding/pem"
-	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+
+	"encoding/pem"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	bccsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
