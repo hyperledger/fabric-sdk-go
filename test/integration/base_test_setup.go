@@ -212,7 +212,7 @@ func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, 
 // GetDeployPath ..
 func (setup *BaseSetupImpl) GetDeployPath() string {
 	pwd, _ := os.Getwd()
-	return path.Join(pwd, "../fixtures/testdata")
+	return path.Join(pwd, "../../fixtures/testdata")
 }
 
 // InstallAndInstantiateExampleCC install and instantiate using resource management client
@@ -240,31 +240,6 @@ func (setup *BaseSetupImpl) InstallAndInstantiateCC(ccName, ccPath, ccVersion, g
 
 	ccPolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
 	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy})
-}
-
-// UpgradeExampleCC upgrade example CC
-func (setup *BaseSetupImpl) UpgradeExampleCC() error {
-
-	chainCodePath := "github.com/example_cc"
-	chainCodeVersion := "v1"
-
-	if setup.ChainCodeID == "" {
-		setup.ChainCodeID = GenerateRandomID()
-	}
-
-	ccPkg, err := packager.NewCCPackage(chainCodePath, setup.GetDeployPath())
-	if err != nil {
-		return err
-	}
-
-	_, err = resMgmtClient.InstallCC(resmgmt.InstallCCRequest{Name: setup.ChainCodeID, Path: chainCodePath, Version: chainCodeVersion, Package: ccPkg})
-	if err != nil {
-		return err
-	}
-
-	ccPolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
-	return resMgmtClient.UpgradeCC("mychannel", resmgmt.UpgradeCCRequest{Name: setup.ChainCodeID, Path: chainCodePath, Version: chainCodeVersion, Args: upgradeArgs, Policy: ccPolicy})
-
 }
 
 // GetChannel initializes and returns a channel based on config

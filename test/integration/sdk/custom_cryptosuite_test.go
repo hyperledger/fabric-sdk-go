@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package integration
+package sdk
 
 import (
 	"path"
@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
@@ -27,8 +28,8 @@ const samplekey = "sample-key"
 
 func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 
-	testSetup := BaseSetupImpl{
-		ConfigFile:      ConfigTestFile,
+	testSetup := integration.BaseSetupImpl{
+		ConfigFile:      "../" + integration.ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
 		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
@@ -69,7 +70,7 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	value, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: queryArgs})
+	value, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
@@ -119,8 +120,8 @@ func getTestBCCSP(config apiconfig.Config) bccsp.BCCSP {
 }
 
 func TestCustomCryptoSuite(t *testing.T) {
-	testSetup := BaseSetupImpl{
-		ConfigFile: ConfigTestFile,
+	testSetup := integration.BaseSetupImpl{
+		ConfigFile: "../" + integration.ConfigTestFile,
 	}
 
 	defaultConfig, err := testSetup.InitConfig()

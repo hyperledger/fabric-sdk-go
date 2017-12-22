@@ -3,19 +3,20 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
-package integration
+package fab
 
 import (
 	"os"
 	"path"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 func TestDefaultConfig(t *testing.T) {
-	testSetup := &BaseSetupImpl{
-		ConfigFile:      "../../pkg/config/config.yaml", // explicitly set default config.yaml as setup() sets config_test.yaml for all tests
+	testSetup := &integration.BaseSetupImpl{
+		ConfigFile:      "../../../pkg/config/config.yaml", // explicitly set default config.yaml as setup() sets config_test.yaml for all tests
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
 		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
@@ -37,11 +38,11 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestDefaultConfigFromEnvVariable(t *testing.T) {
-	testSetup := &BaseSetupImpl{
-		ConfigFile:      "../../pkg/config/config.yaml", // explicitly set default config.yaml as Setup test sets config_test.yaml for all tests
+	testSetup := &integration.BaseSetupImpl{
+		ConfigFile:      "../../../pkg/config/config.yaml", // explicitly set default config.yaml as Setup test sets config_test.yaml for all tests
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   "../fixtures/channel/mychannel.tx",
+		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		ConnectEventHub: true,
 	}
 	// set env variable

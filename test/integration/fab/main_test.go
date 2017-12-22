@@ -3,7 +3,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
-package integration
+package fab
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
 var testFabricConfig config.Config
@@ -26,8 +27,8 @@ func setup() {
 	// do any test setup for all tests here...
 	var err error
 
-	testSetup := BaseSetupImpl{
-		ConfigFile: ConfigTestFile,
+	testSetup := integration.BaseSetupImpl{
+		ConfigFile: "../" + integration.ConfigTestFile,
 	}
 
 	testFabricConfig, err = testSetup.InitConfig()
