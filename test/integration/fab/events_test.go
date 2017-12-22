@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package integration
+package fab
 
 import (
 	"path"
@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -35,9 +36,10 @@ func TestEvents(t *testing.T) {
 	testMultipleBlockEventCallbacks(t, testSetup)
 }
 
-func initializeTests(t *testing.T) BaseSetupImpl {
-	testSetup := BaseSetupImpl{
-		ConfigFile:      ConfigTestFile,
+func initializeTests(t *testing.T) integration.BaseSetupImpl {
+	testSetup := integration.BaseSetupImpl{
+		ConfigFile: "../" + integration.ConfigTestFile,
+
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
 		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
@@ -48,7 +50,7 @@ func initializeTests(t *testing.T) BaseSetupImpl {
 		t.Fatalf(err.Error())
 	}
 
-	testSetup.ChainCodeID = GenerateRandomID()
+	testSetup.ChainCodeID = integration.GenerateRandomID()
 
 	if err := testSetup.InstallAndInstantiateCC(testSetup.ChainCodeID, "github.com/events_cc", "v0", testSetup.GetDeployPath(), nil); err != nil {
 		t.Fatalf("InstallAndInstantiateCC return error: %v", err)
@@ -57,7 +59,7 @@ func initializeTests(t *testing.T) BaseSetupImpl {
 	return testSetup
 }
 
-func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
+func testFailedTx(t *testing.T, testSetup integration.BaseSetupImpl) {
 	fcn := "invoke"
 
 	// Arguments for events CC
@@ -104,7 +106,7 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 	wg.Wait()
 }
 
-func monitorFailedTx(t *testing.T, testSetup BaseSetupImpl, done1 chan bool, fail1 chan error, done2 chan bool, fail2 chan error) {
+func monitorFailedTx(t *testing.T, testSetup integration.BaseSetupImpl, done1 chan bool, fail1 chan error, done2 chan bool, fail2 chan error) {
 	rcvDone := false
 	rcvFail := false
 	timeout := time.After(eventTimeout)
@@ -131,7 +133,7 @@ Loop:
 	}
 }
 
-func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
+func testFailedTxErrorCode(t *testing.T, testSetup integration.BaseSetupImpl) {
 	fcn := "invoke"
 
 	tpResponses1, tx1, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, eventCCArgs, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
@@ -193,7 +195,7 @@ func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
 	wg.Wait()
 }
 
-func monitorFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl, done chan bool, fail chan pb.TxValidationCode, done2 chan bool, fail2 chan pb.TxValidationCode) {
+func monitorFailedTxErrorCode(t *testing.T, testSetup integration.BaseSetupImpl, done chan bool, fail chan pb.TxValidationCode, done2 chan bool, fail2 chan pb.TxValidationCode) {
 	rcvDone := false
 	rcvFail := false
 	timeout := time.After(eventTimeout)
@@ -223,7 +225,7 @@ Loop:
 	}
 }
 
-func testReconnectEventHub(t *testing.T, testSetup BaseSetupImpl) {
+func testReconnectEventHub(t *testing.T, testSetup integration.BaseSetupImpl) {
 	// Test disconnect event hub
 	err := testSetup.EventHub.Disconnect()
 	if err != nil {
@@ -238,7 +240,7 @@ func testReconnectEventHub(t *testing.T, testSetup BaseSetupImpl) {
 	}
 }
 
-func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
+func testMultipleBlockEventCallbacks(t *testing.T, testSetup integration.BaseSetupImpl) {
 	fcn := "invoke"
 
 	// Create and register test callback that will be invoked upon block event
@@ -273,7 +275,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 	wg.Wait()
 }
 
-func monitorMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl, done chan bool, fail chan error, test chan bool) {
+func monitorMultipleBlockEventCallbacks(t *testing.T, testSetup integration.BaseSetupImpl, done chan bool, fail chan error, test chan bool) {
 	rcvTxDone := false
 	rcvTxEvent := false
 	timeout := time.After(eventTimeout)

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package integration
+package sdk
 
 import (
 	"path"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -25,8 +26,8 @@ import (
 
 func TestDynamicSelection(t *testing.T) {
 
-	testSetup := BaseSetupImpl{
-		ConfigFile:      ConfigTestFile,
+	testSetup := integration.BaseSetupImpl{
+		ConfigFile:      "../" + integration.ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
 		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
@@ -64,19 +65,19 @@ func TestDynamicSelection(t *testing.T) {
 	// Release all channel client resources
 	defer chClient.Close()
 
-	value, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: queryArgs})
+	value, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
 
 	// Move funds
-	_, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: txArgs})
+	_, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
 
 	// Verify move funds transaction result
-	valueAfterInvoke, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: queryArgs})
+	valueAfterInvoke, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds after transaction: %s", err)
 	}

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package integration
+package fab
 
 import (
 	"path"
@@ -15,6 +15,7 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -23,11 +24,11 @@ import (
 
 func TestChannelQueries(t *testing.T) {
 
-	testSetup := &BaseSetupImpl{
-		ConfigFile:      ConfigTestFile,
+	testSetup := &integration.BaseSetupImpl{
+		ConfigFile:      "../" + integration.ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		ChannelConfig:   path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		ConnectEventHub: true,
 	}
 
@@ -80,9 +81,9 @@ func TestChannelQueries(t *testing.T) {
 
 }
 
-func changeBlockState(t *testing.T, testSetup *BaseSetupImpl) (string, error) {
+func changeBlockState(t *testing.T, testSetup *integration.BaseSetupImpl) (string, error) {
 
-	tpResponses, _, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, "invoke", queryArgs, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses, _, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, "invoke", integration.ExampleCCQueryArgs(), []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
 		return "", errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}
@@ -95,7 +96,7 @@ func changeBlockState(t *testing.T, testSetup *BaseSetupImpl) (string, error) {
 		return "", errors.WithMessage(err, "move funds failed")
 	}
 
-	tpResponses, _, err = testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, "invoke", queryArgs, []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses, _, err = testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, "invoke", integration.ExampleCCQueryArgs(), []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
 		return "", errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}
@@ -191,7 +192,7 @@ func testQueryChannels(t *testing.T, channel fab.Channel, client fab.FabricClien
 
 }
 
-func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.FabricClient, testSetup *BaseSetupImpl) {
+func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.FabricClient, testSetup *integration.BaseSetupImpl) {
 
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()
@@ -227,7 +228,7 @@ func testInstantiatedChaincodes(t *testing.T, channel fab.Channel) {
 
 }
 
-func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Config, testSetup *BaseSetupImpl) {
+func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Config, testSetup *integration.BaseSetupImpl) {
 
 	// Test valid targets
 	targets := peer.PeersToTxnProcessors(channel.Peers())
@@ -303,12 +304,12 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Confi
 }
 
 // MoveFundsAndGetTxID ...
-func moveFundsAndGetTxID(t *testing.T, setup *BaseSetupImpl) (string, error) {
+func moveFundsAndGetTxID(t *testing.T, setup *integration.BaseSetupImpl) (string, error) {
 
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, "invoke", txArgs, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, "invoke", integration.ExampleCCTxArgs(), []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}

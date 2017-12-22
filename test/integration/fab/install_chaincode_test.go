@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package integration
+package fab
 
 import (
 	"math/rand"
@@ -15,6 +15,7 @@ import (
 	"time"
 
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
@@ -25,11 +26,11 @@ const (
 
 func TestChaincodeInstal(t *testing.T) {
 
-	testSetup := &BaseSetupImpl{
-		ConfigFile:      ConfigTestFile,
+	testSetup := &integration.BaseSetupImpl{
+		ConfigFile:      "../" + integration.ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		ChannelConfig:   path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		ConnectEventHub: true,
 	}
 
@@ -43,7 +44,7 @@ func TestChaincodeInstal(t *testing.T) {
 }
 
 // Test chaincode install using chaincodePath to create chaincodePackage
-func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupImpl) {
+func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *integration.BaseSetupImpl) {
 	chainCodeVersion := getRandomCCVersion()
 
 	// Install and Instantiate Events CC
@@ -85,7 +86,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupIm
 }
 
 // Test chaincode install using chaincodePackage[byte]
-func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *BaseSetupImpl) {
+func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *integration.BaseSetupImpl) {
 
 	chainCodeVersion := getRandomCCVersion()
 

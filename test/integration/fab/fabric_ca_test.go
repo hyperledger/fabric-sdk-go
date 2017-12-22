@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package integration
+package fab
 
 import (
 	"bytes"
@@ -28,8 +28,10 @@ import (
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 )
 
-var org1Name = "Org1"
-var org2Name = "Org2"
+const (
+	org1Name = "Org1"
+	org2Name = "Org2"
+)
 
 // This test loads/enrols an admin user
 // Using the admin, it registers, enrols, and revokes a test user

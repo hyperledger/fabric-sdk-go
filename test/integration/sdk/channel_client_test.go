@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package integration
+package sdk
 
 import (
 	"path"
@@ -17,16 +17,21 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
+)
+
+const (
+	org1Name = "Org1"
 )
 
 func TestChannelClient(t *testing.T) {
 
-	testSetup := BaseSetupImpl{
-		ConfigFile:      ConfigTestFile,
+	testSetup := integration.BaseSetupImpl{
+		ConfigFile:      "../" + integration.ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		ChannelConfig:   path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		ConnectEventHub: true,
 	}
 
@@ -60,7 +65,7 @@ func TestChannelClient(t *testing.T) {
 	testQuery("200", testSetup.ChainCodeID, chClient, t)
 
 	// Synchronous transaction
-	_, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: txArgs})
+	_, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -99,7 +104,7 @@ func TestChannelClient(t *testing.T) {
 
 func testQuery(expected string, ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
-	result, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: ccID, Fcn: "invoke", Args: queryArgs})
+	result, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to invoke example cc: %s", err)
 	}
@@ -112,7 +117,7 @@ func testQuery(expected string, ccID string, chClient apitxn.ChannelClient, t *t
 func testQueryWithOpts(expected string, ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
 	notifier := make(chan apitxn.QueryResponse)
-	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: ccID, Fcn: "invoke", Args: queryArgs}, apitxn.QueryOpts{Notifier: notifier})
+	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, apitxn.QueryOpts{Notifier: notifier})
 	if err != nil {
 		t.Fatalf("Failed to invoke example cc asynchronously: %s", err)
 	}
@@ -140,7 +145,7 @@ func testAsyncTransaction(ccID string, chClient apitxn.ChannelClient, t *testing
 	txFilter := &TestTxFilter{}
 	txOpts := apitxn.ExecuteTxOpts{Notifier: txNotifier, TxFilter: txFilter}
 
-	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: txArgs}, txOpts)
+	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -165,7 +170,7 @@ func testCommitError(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 	txFilter := &TestTxFilter{errResponses: errors.New("Error")}
 	txOpts := apitxn.ExecuteTxOpts{Notifier: txNotifier, TxFilter: txFilter}
 
-	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: txArgs}, txOpts)
+	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -185,7 +190,7 @@ func testFilterError(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 	txFilter := &TestTxFilter{err: errors.New("Error")}
 	txOpts := apitxn.ExecuteTxOpts{TxFilter: txFilter}
 
-	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: txArgs}, txOpts)
+	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err == nil {
 		t.Fatalf("Should have failed with filter error")
 	}
@@ -222,7 +227,7 @@ func testChaincodeEvent(ccID string, chClient apitxn.ChannelClient, t *testing.T
 	rce := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
 
 	// Synchronous transaction
-	txID, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: txArgs})
+	txID, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
