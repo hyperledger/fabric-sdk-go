@@ -243,6 +243,16 @@ integration-tests-stable-pkcs11: clean depend populate build-softhsm2-image
 		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-pkcs11-test.yaml up --force-recreate --abort-on-container-exit
 	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-pkcs11-test.yaml"
 
+# Additional test cases that aren't currently run by the CI
+.PHONY: integration-tests-devstable-nomutualtls
+integration-tests-devstable-nomutualtls: clean depend populate
+	@. $(FIXTURE_DOCKERENV_PATH)/devstable-env.sh && \
+		. $(FIXTURE_DOCKERENV_PATH)/nomutualtls-env.sh && \
+		$(FABRIC_DEV_REGISTRY_PRE_CMD) && \
+		cd $(FIXTURE_DOCKERENV_PATH) && \
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)/ $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
+
 .PHONY: integration-tests
 integration-tests: integration-test
 
@@ -374,7 +384,7 @@ endif
 populate-clean:
 	rm -Rf vendor
 
-.PHONY: clean
+.PHONY: temp-clean
 temp-clean:
 	-rm -Rf /tmp/enroll_user /tmp/msp /tmp/keyvaluestore /tmp/hfc-kvs /tmp/state
 	-rm -f integration-report.xml report.xml
