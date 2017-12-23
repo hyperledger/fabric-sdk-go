@@ -838,7 +838,7 @@ O94CDp7l2k7hMQI0zQ==
 	}
 }
 
-func TestLoadConfigWithEmbeddedUsers(t *testing.T) {
+func TestLoadConfigWithEmbeddedUsersWithPems(t *testing.T) {
 	// get a config file with embedded users
 	c, err := InitConfig(configEmbeddedUsersTestFilePath)
 	if err != nil {
@@ -851,19 +851,49 @@ func TestLoadConfigWithEmbeddedUsers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Cert == "" {
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Cert.Pem == "" {
 		t.Fatal("Failed to parse the embedded cert for user EmbeddedUser")
 	}
 
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Key == "" {
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Key.Pem == "" {
 		t.Fatal("Failed to parse the embedded key for user EmbeddedUser")
 	}
 
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Key != "" {
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Key.Pem != "" {
 		t.Fatal("Mistakenly found an embedded key for user NonExistentEmbeddedUser")
 	}
 
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Cert != "" {
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Cert.Pem != "" {
+		t.Fatal("Mistakenly found an embedded cert for user NonExistentEmbeddedUser")
+	}
+}
+
+func TestLoadConfigWithEmbeddedUsersWithPaths(t *testing.T) {
+	// get a config file with embedded users
+	c, err := InitConfig(configEmbeddedUsersTestFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	conf, err := c.NetworkConfig()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUserWithPaths")].Cert.Path == "" {
+		t.Fatal("Failed to parse the embedded cert for user EmbeddedUserWithPaths")
+	}
+
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUserWithPaths")].Key.Path == "" {
+		t.Fatal("Failed to parse the embedded key for user EmbeddedUserWithPaths")
+	}
+
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Key.Path != "" {
+		t.Fatal("Mistakenly found an embedded key for user NonExistentEmbeddedUser")
+	}
+
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Cert.Path != "" {
 		t.Fatal("Mistakenly found an embedded cert for user NonExistentEmbeddedUser")
 	}
 }

@@ -25,7 +25,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 // CredentialManager is used for retriving user's signing identity (ecert + private key)
 type CredentialManager struct {
 	orgName        string
-	embeddedUsers  map[string]apiconfig.UserConfig
+	embeddedUsers  map[string]apiconfig.TLSKeyPair
 	keyDir         string
 	certDir        string
 	config         apiconfig.Config
@@ -62,7 +62,6 @@ func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvide
 
 // GetSigningIdentity will sign the given object with provided key,
 func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient.SigningIdentity, error) {
-
 	if userName == "" {
 		return nil, errors.New("username is required")
 	}
@@ -72,48 +71,101 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient
 		return nil, errors.WithMessage(err, "MSP ID config read failed")
 	}
 
-	var privateKey apicryptosuite.Key
-	var enrollmentCert []byte
+	privateKey, err := mgr.getPrivateKey(userName)
 
-	embeddedCertBytes := []byte(mgr.embeddedUsers[strings.ToLower(userName)].Cert)
-	embeddedKeyBytes := []byte(mgr.embeddedUsers[strings.ToLower(userName)].Key)
+	if err != nil {
+		return nil, err
+	}
 
-	// First check the embedded users and then the paths
-	if len(embeddedCertBytes) != 0 && len(embeddedKeyBytes) != 0 {
-		privateKey, err = fabricCaUtil.ImportBCCSPKeyFromPEMBytes(embeddedKeyBytes, mgr.cryptoProvider, true)
-		if err != nil {
-			return nil, errors.Wrapf(err, "import private key failed %v", embeddedKeyBytes)
-		}
+	enrollmentCert, err := mgr.getEnrollmentCert(userName)
 
-		enrollmentCert = embeddedCertBytes
-	} else {
-		privateKeyDir := strings.Replace(mgr.keyDir, "{userName}", userName, -1)
-		enrollmentCertDir := strings.Replace(mgr.certDir, "{userName}", userName, -1)
-
-		privateKeyPath, err := getFirstPathFromDir(privateKeyDir)
-		if err != nil {
-			return nil, errors.WithMessage(err, "find private key path failed")
-		}
-
-		enrollmentCertPath, err := getFirstPathFromDir(enrollmentCertDir)
-		if err != nil {
-			return nil, errors.WithMessage(err, "find enrollment cert path failed")
-		}
-
-		privateKey, err = fabricCaUtil.ImportBCCSPKeyFromPEM(privateKeyPath, mgr.cryptoProvider, true)
-		if err != nil {
-			return nil, errors.Wrap(err, "import private key failed")
-		}
-		enrollmentCert, err = ioutil.ReadFile(enrollmentCertPath)
-		if err != nil {
-			return nil, errors.Wrap(err, "reading enrollment cert path failed")
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	signingIdentity := &apifabclient.SigningIdentity{MspID: mspID, PrivateKey: privateKey, EnrollmentCert: enrollmentCert}
 
 	return signingIdentity, nil
+}
 
+func (mgr *CredentialManager) getPrivateKey(userName string) (apicryptosuite.Key, error) {
+	keyPem := mgr.embeddedUsers[strings.ToLower(userName)].Key.Pem
+	keyPath := mgr.embeddedUsers[strings.ToLower(userName)].Key.Path
+
+	var privateKey apicryptosuite.Key
+	var err error
+
+	if keyPem != "" {
+		// First try importing from the Embedded Pem
+		privateKey, err = fabricCaUtil.ImportBCCSPKeyFromPEMBytes([]byte(keyPem), mgr.cryptoProvider, true)
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "import private key failed %v", keyPem)
+		}
+	} else if keyPath != "" {
+		// Then try importing from the Embedded Path
+		privateKey, err = fabricCaUtil.ImportBCCSPKeyFromPEM(keyPath, mgr.cryptoProvider, true)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "import private key failed")
+		}
+	} else if mgr.keyDir != "" {
+		// Then try importing from the Crypto Path
+
+		privateKeyDir := strings.Replace(mgr.keyDir, "{userName}", userName, -1)
+
+		privateKeyPath, err := getFirstPathFromDir(privateKeyDir)
+
+		if err != nil {
+			return nil, errors.WithMessage(err, "find private key path failed")
+		}
+
+		privateKey, err = fabricCaUtil.ImportBCCSPKeyFromPEM(privateKeyPath, mgr.cryptoProvider, true)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "import private key failed")
+		}
+	} else {
+		return nil, errors.Errorf("failed to find a private key for user %s", userName)
+	}
+
+	return privateKey, nil
+}
+
+func (mgr *CredentialManager) getEnrollmentCert(userName string) ([]byte, error) {
+	var err error
+
+	certPem := mgr.embeddedUsers[strings.ToLower(userName)].Cert.Pem
+	certPath := mgr.embeddedUsers[strings.ToLower(userName)].Cert.Path
+
+	var enrollmentCertBytes []byte
+
+	if certPem != "" {
+		enrollmentCertBytes = []byte(certPem)
+	} else if certPath != "" {
+		enrollmentCertBytes, err = ioutil.ReadFile(certPath)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "reading enrollment cert path failed")
+		}
+	} else if mgr.certDir != "" {
+		enrollmentCertDir := strings.Replace(mgr.certDir, "{userName}", userName, -1)
+		enrollmentCertPath, err := getFirstPathFromDir(enrollmentCertDir)
+
+		if err != nil {
+			return nil, errors.WithMessage(err, "find enrollment cert path failed")
+		}
+
+		enrollmentCertBytes, err = ioutil.ReadFile(enrollmentCertPath)
+
+		if err != nil {
+			return nil, errors.WithMessage(err, "reading enrollment cert path failed")
+		}
+	} else {
+		return nil, errors.Errorf("failed to find enrollment cert for user %s", userName)
+	}
+
+	return enrollmentCertBytes, nil
 }
 
 // Gets the first path from the dir directory

@@ -91,16 +91,11 @@ type NetworkPeer struct {
 type OrganizationConfig struct {
 	MspID                  string
 	CryptoPath             string
-	Users                  map[string]UserConfig
+	Users                  map[string]TLSKeyPair
 	Peers                  []string
 	CertificateAuthorities []string
 	AdminPrivateKey        TLSConfig
 	SignedCert             TLSConfig
-}
-
-type UserConfig struct {
-	Key  string
-	Cert string
 }
 
 // OrdererConfig defines an orderer configuration
@@ -155,4 +150,10 @@ type MutualTLSConfig struct {
 		// Certfile client cert path
 		Certfile string
 	}
+}
+
+// TLSKeyPair contains the private key and certificate for TLS encryption
+type TLSKeyPair struct {
+	Key  TLSConfig
+	Cert TLSConfig
 }

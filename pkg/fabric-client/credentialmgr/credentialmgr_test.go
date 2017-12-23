@@ -93,4 +93,19 @@ func TestCredentialManagerFromEmbeddedCryptoConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to retrieve signing identity: %+v", err)
 	}
+
+	_, err = credentialMgr.GetSigningIdentity("EmbeddedUserWithPaths")
+	if err != nil {
+		t.Fatalf("Failed to retrieve signing identity: %+v", err)
+	}
+
+	_, err = credentialMgr.GetSigningIdentity("EmbeddedUserMixed")
+	if err != nil {
+		t.Fatalf("Failed to retrieve signing identity: %+v", err)
+	}
+
+	_, err = credentialMgr.GetSigningIdentity("EmbeddedUserMixed2")
+	if err != nil {
+		t.Fatalf("Failed to retrieve signing identity: %+v", err)
+	}
 }
