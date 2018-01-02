@@ -22,7 +22,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
-	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
+	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
+	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client/mocks"
 )
 
@@ -159,7 +160,7 @@ func TestRevoke(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
 	}
-	mockKey := cryptosuiteimpl.GetKey(&mocks.MockKey{})
+	mockKey := bccspwrapper.GetKey(&mocks.MockKey{})
 	user := mocks.NewMockUser("test")
 	// Revoke with nil request
 	err = fabricCAClient.Revoke(user, nil)

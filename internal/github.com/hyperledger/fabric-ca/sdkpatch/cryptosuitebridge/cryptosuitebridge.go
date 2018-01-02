@@ -16,7 +16,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 	cspsigner "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/signer"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
@@ -47,11 +46,6 @@ const (
 	SHA3_384         = bccsp.SHA3_384
 	X509Certificate  = bccsp.X509Certificate
 )
-
-// FactoryOpts holds configuration information used to initialize bccsp factory implementations
-type FactoryOpts struct {
-	*factory.FactoryOpts
-}
 
 // NewCspSigner is a bridge for bccsp signer.New call
 func NewCspSigner(csp apicryptosuite.CryptoSuite, key apicryptosuite.Key) (crypto.Signer, error) {

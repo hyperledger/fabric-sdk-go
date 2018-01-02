@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package bccsp
+package wrapper
 
 import (
 	"errors"
@@ -15,7 +15,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
@@ -37,7 +36,7 @@ func TestCryptoSuite(t *testing.T) {
 	samplebccsp := getMockBCCSP(mockIdentifier)
 
 	//Get cryptosuite
-	samplecryptoSuite := GetSuite(samplebccsp)
+	samplecryptoSuite := NewCryptoSuite(samplebccsp)
 
 	//Verify CryptSuite
 	verifyCryptoSuite(t, samplecryptoSuite)
@@ -57,7 +56,7 @@ func TestCryptoSuiteByConfig(t *testing.T) {
 	mockConfig.EXPECT().Ephemeral().Return(false)
 
 	//Get cryptosuite using config
-	samplecryptoSuite, err := GetSuiteByConfig(mockConfig)
+	samplecryptoSuite, err := getSuiteByConfig(mockConfig)
 	utils.VerifyEmpty(t, err, "Not supposed to get error on GetSuiteByConfig call : %s", err)
 	utils.VerifyNotEmpty(t, samplecryptoSuite, "Supposed to get valid cryptosuite")
 
@@ -80,11 +79,11 @@ func TestCryptoSuiteByConfigFailures(t *testing.T) {
 	mockConfig.EXPECT().Ephemeral().Return(false)
 
 	//Get cryptosuite using config
-	samplecryptoSuite, err := GetSuiteByConfig(mockConfig)
+	samplecryptoSuite, err := getSuiteByConfig(mockConfig)
 	utils.VerifyNotEmpty(t, err, "Supposed to get error on GetSuiteByConfig call : %s", err)
 	utils.VerifyEmpty(t, samplecryptoSuite, "Not supposed to get valid cryptosuite")
 
-	if !strings.HasPrefix(err.Error(), "Could not initialize BCCSP SW") {
+	if !strings.HasPrefix(err.Error(), "Failed initializing configuration") {
 		t.Fatalf("Didn't get expected failure, got %s instead", err)
 	}
 
@@ -102,7 +101,7 @@ func TestCreateInvalidBCCSPSecurityLevel(t *testing.T) {
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
 	mockConfig.EXPECT().Ephemeral().Return(false)
 
-	_, err := GetSuiteByConfig(mockConfig)
+	_, err := getSuiteByConfig(mockConfig)
 	if !strings.Contains(err.Error(), "Security level not supported [100]") {
 		t.Fatalf("Expected invalid security level error, but got %v", err.Error())
 	}
@@ -121,7 +120,7 @@ func TestCreateInvalidBCCSPHashFamily(t *testing.T) {
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
 	mockConfig.EXPECT().Ephemeral().Return(false)
 
-	_, err := GetSuiteByConfig(mockConfig)
+	_, err := getSuiteByConfig(mockConfig)
 	if !strings.Contains(err.Error(), "Hash Family not supported [ABC]") {
 		t.Fatalf("Expected invalid hash family error, but got %v", err.Error())
 	}
@@ -143,11 +142,11 @@ func TestCreateInvalidSecurityProviderPanic(t *testing.T) {
 	mockConfig.EXPECT().SecurityProvider().Return("XYZ")
 	mockConfig.EXPECT().SecurityProvider().Return("XYZ")
 
-	GetSuiteByConfig(mockConfig)
+	getSuiteByConfig(mockConfig)
 	t.Fatalf("Getting cryptosuite with invalid security provider supposed to panic")
 }
 
-func verifyCryptoSuite(t *testing.T, samplecryptoSuite apicryptosuite.CryptoSuite) {
+func verifyCryptoSuite(t *testing.T, samplecryptoSuite CryptoSuite) {
 	//Test cryptosuite.Sign
 	signedBytes, err := samplecryptoSuite.Sign(GetKey(getMockKey(signingKey)), nil, nil)
 	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey : %s", err)

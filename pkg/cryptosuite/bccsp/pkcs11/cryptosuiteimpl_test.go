@@ -1,14 +1,14 @@
-// +build testpkcs11
-
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
 
-package integration
+package pkcs11
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"os"
 	"testing"
 
@@ -16,9 +16,11 @@ import (
 
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	pkcsFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
-	pkcs11 "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	pkcsFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/pkcs11"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
 var configImpl api.Config
@@ -28,6 +30,20 @@ const (
 	providerTypePKCS11 = "PKCS11"
 )
 
+func TestBadConfig(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
+	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
+
+	//Get cryptosuite using config
+	_, err := GetSuiteByConfig(mockConfig)
+	if err == nil {
+		t.Fatalf("Unknown security provider should return error")
+	}
+}
 func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
@@ -48,10 +64,35 @@ func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 	mockConfig.EXPECT().SoftVerify().Return(true)
 
 	//Get cryptosuite using config
-	_, err := cryptosuite.GetSuiteByConfig(mockConfig)
+	c, err := GetSuiteByConfig(mockConfig)
 	if err != nil {
 		t.Fatalf("Not supposed to get error, but got: %v", err)
 	}
+
+	verifyHashFn(t, c)
+}
+
+func TestCryptoSuiteByConfigPKCS11Failure(t *testing.T) {
+
+	//Prepare Config
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	//Prepare Config
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+	mockConfig.EXPECT().SecurityLevel().Return(256)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+	mockConfig.EXPECT().Ephemeral().Return(false)
+	mockConfig.EXPECT().SecurityProviderLibPath().Return("")
+	mockConfig.EXPECT().SecurityProviderLabel().Return("")
+	mockConfig.EXPECT().SecurityProviderPin().Return("")
+	mockConfig.EXPECT().SoftVerify().Return(true)
+
+	//Get cryptosuite using config
+	samplecryptoSuite, err := GetSuiteByConfig(mockConfig)
+	utils.VerifyNotEmpty(t, err, "Supposed to get error on GetSuiteByConfig call : %s", err)
+	utils.VerifyEmpty(t, samplecryptoSuite, "Not supposed to get valid cryptosuite")
 }
 
 func TestPKCS11CSPConfigWithValidOptions(t *testing.T) {
@@ -103,7 +144,7 @@ func TestPKCS11CSPConfigWithEmptyProviderName(t *testing.T) {
 	}
 }
 
-func configurePKCS11Options(hashFamily string, securityLevel int) *pkcsFactory.FactoryOpts {
+func configurePKCS11Options(hashFamily string, securityLevel int) *pkcs11.PKCS11Opts {
 	providerLib, softHSMPin, softHSMTokenLabel := pkcs11.FindPKCS11Lib()
 
 	pkks := pkcs11.FileKeystoreOpts{KeyStorePath: os.TempDir()}
@@ -118,11 +159,19 @@ func configurePKCS11Options(hashFamily string, securityLevel int) *pkcsFactory.F
 		Ephemeral:    false,
 	}
 
-	opts := &pkcsFactory.FactoryOpts{
-		ProviderName: providerTypePKCS11,
-		Pkcs11Opts:   &pkcsOpt,
-	}
-	pkcsFactory.InitFactories(opts)
-	return opts
+	return &pkcsOpt
 
+}
+
+func verifyHashFn(t *testing.T, c apicryptosuite.CryptoSuite) {
+	msg := []byte("Hello")
+	e := sha256.Sum256(msg)
+	a, err := c.Hash(msg, &bccsp.SHA256Opts{})
+	if err != nil {
+		t.Fatalf("Not supposed to get error, but got: %v", err)
+	}
+
+	if bytes.Compare(a, e[:]) != 0 {
+		t.Fatalf("Expected SHA 256 hash function")
+	}
 }

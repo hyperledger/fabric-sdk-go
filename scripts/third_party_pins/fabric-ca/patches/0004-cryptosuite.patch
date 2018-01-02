@@ -8,8 +8,8 @@ SPDX-License-Identifier: Apache-2.0
 
 Signed-off-by: Sudesh Shetty <sudesh.shetty@securekey.com>
 ---
- .../cryptosuitebridge/cryptosuitebridge.go         | 121 +++++++++++++++++++++
- 1 file changed, 121 insertions(+)
+ .../cryptosuitebridge/cryptosuitebridge.go         | 115 +++++++++++++++++++++
+ 1 file changed, 115 insertions(+)
  create mode 100644 sdkpatch/cryptosuitebridge/cryptosuitebridge.go
 
 diff --git a/sdkpatch/cryptosuitebridge/cryptosuitebridge.go b/sdkpatch/cryptosuitebridge/cryptosuitebridge.go
@@ -17,7 +17,7 @@ new file mode 100644
 index 0000000..0af4fd3
 --- /dev/null
 +++ b/sdkpatch/cryptosuitebridge/cryptosuitebridge.go
-@@ -0,0 +1,121 @@
+@@ -0,0 +1,115 @@
 +/*
 +Copyright SecureKey Technologies Inc. All Rights Reserved.
 +
@@ -32,7 +32,6 @@ index 0000000..0af4fd3
 +
 +	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 +	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
-+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 +	cspsigner "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/signer"
 +	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 +	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
@@ -63,11 +62,6 @@ index 0000000..0af4fd3
 +	SHA3_384         = bccsp.SHA3_384
 +	X509Certificate  = bccsp.X509Certificate
 +)
-+
-+// FactoryOpts holds configuration information used to initialize bccsp factory implementations
-+type FactoryOpts struct {
-+	*factory.FactoryOpts
-+}
 +
 +// NewCspSigner is a bridge for bccsp signer.New call
 +func NewCspSigner(csp apicryptosuite.CryptoSuite, key apicryptosuite.Key) (crypto.Signer, error) {

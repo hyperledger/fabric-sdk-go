@@ -222,14 +222,11 @@ func TestNewDefaultSDKFromByte(t *testing.T) {
 		},
 	}
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("The code did not panic")
-		}
-	}()
-
 	// new SDK expected to panic due to wrong config type which didn't load the configs
-	NewSDK(setup)
+	_, err = NewSDK(setup)
+	if err == nil {
+		t.Fatalf("NewSDK should have returned error due to bad config")
+	}
 
 }
 

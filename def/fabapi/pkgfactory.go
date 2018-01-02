@@ -12,7 +12,7 @@ import (
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"

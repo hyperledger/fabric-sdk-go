@@ -19,7 +19,9 @@ GOFILTER_CMD="go run scripts/_go/cmd/gofilter/gofilter.go"
 declare -a PKGS=(
 
     "bccsp"
-    "bccsp/factory"
+    "bccsp/factory/sw"
+    "bccsp/factory/pkcs11"
+    "bccsp/factory/plugin"
     "bccsp/pkcs11"
     "bccsp/signer"
     "bccsp/sw"
@@ -58,14 +60,9 @@ declare -a FILES=(
     "bccsp/opts.go"
     "bccsp/rsaopts.go"
 
-    "bccsp/factory/factory.go"
-    "bccsp/factory/nopkcs11.go"
-    "bccsp/factory/opts.go"
-    "bccsp/factory/pkcs11.go"
-    "bccsp/factory/pkcs11factory.go"
-    "bccsp/factory/swfactory.go"
-    "bccsp/factory/pluginfactory.go"
-    "bccsp/factory/sdkpatch_pluginfactory_noplugin.go"
+    "bccsp/factory/pkcs11/pkcs11factory.go"
+    "bccsp/factory/sw/swfactory.go"
+    "bccsp/factory/plugin/pluginfactory.go"
 
     "bccsp/pkcs11/conf.go"
     "bccsp/pkcs11/ecdsa.go"
@@ -316,15 +313,32 @@ FILTER_FILENAME="msp/mgmt/mgmt.go"
 FILTER_FN="GetLocalMSP"
 gofilter
 
-# adjust bccsp pkcs11 build tags
-FILTER_FILENAME="bccsp/factory/pkcs11factory.go"
-sed -i'' -e 's/\+build !nopkcs11/\+build pkcs11/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+# Split BCCSP factory into subpackages
+mkdir ${TMP_PROJECT_PATH}/bccsp/factory/sw
+mkdir ${TMP_PROJECT_PATH}/bccsp/factory/pkcs11
+mkdir ${TMP_PROJECT_PATH}/bccsp/factory/plugin
+mv ${TMP_PROJECT_PATH}/bccsp/factory/swfactory.go ${TMP_PROJECT_PATH}/bccsp/factory/sw/swfactory.go
+mv ${TMP_PROJECT_PATH}/bccsp/factory/pkcs11factory.go ${TMP_PROJECT_PATH}/bccsp/factory/pkcs11/pkcs11factory.go
+mv ${TMP_PROJECT_PATH}/bccsp/factory/pluginfactory.go ${TMP_PROJECT_PATH}/bccsp/factory/plugin/pluginfactory.go
 
-FILTER_FILENAME="bccsp/factory/pkcs11.go"
-sed -i'' -e 's/\+build !nopkcs11/\+build pkcs11/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+FILTER_FILENAME="bccsp/factory/pkcs11/pkcs11factory.go"
+sed -i'' -e '/\+build !nopkcs11/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/package factory/package pkcs11/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/config \*FactoryOpts/p11Opts \*pkcs11.PKCS11Opts/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/if config == nil || config.Pkcs11Opts == nil/if p11Opts == nil/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/p11Opts := config.Pkcs11Opts/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
-FILTER_FILENAME="bccsp/factory/nopkcs11.go"
-sed -i'' -e 's/\+build nopkcs11/\+build !pkcs11/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+FILTER_FILENAME="bccsp/factory/sw/swfactory.go"
+sed -i'' -e 's/package factory/package sw/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/config \*FactoryOpts/swOpts \*SwOpts/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/if config == nil || config.SwOpts == nil/if swOpts == nil/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/swOpts := config.SwOpts/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+FILTER_FILENAME="bccsp/factory/plugin/pluginfactory.go"
+sed -i'' -e 's/package factory/package plugin/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/config \*FactoryOpts/pluginOpts \*PluginOpts/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/if config == nil || config.PluginOpts == nil/if pluginOpts == nil/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/config.PluginOpts./pluginOpts./g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 echo "Filtering Go sources for allowed declarations ..."
 FILTERS_ENABLED="gen,type"

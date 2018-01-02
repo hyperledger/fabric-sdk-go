@@ -14,18 +14,14 @@
 set -e
 
 GO_CMD="${GO_CMD:-go}"
-FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-stable}"
+FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-devstable}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
-# TODO: better default handling for FABRIC_CRYPTOCONFIG_VERSION
 
 REPO="github.com/hyperledger/fabric-sdk-go"
 
-# Packages to include in test run
-PKGS=`$GO_CMD list $REPO/test/integration/... 2> /dev/null | \
-      grep -v ^$REPO/test/integration/pkcs11 | \
-      grep -v ^$REPO/test/integration\$`
+PKGS="$PKGS $REPO/pkg/cryptosuite/bccsp/pkcs11 $REPO/pkg/cryptosuite/bccsp/multisuite"
+echo "Running PKCS11 unit tests (libltdl and softhsm required)..."
 
-echo "Running integration tests ..."
 RACEFLAG=""
 ARCH=$(uname -m)
 
@@ -33,13 +29,16 @@ if [ "$ARCH" == "x86_64" ]; then
     RACEFLAG="-race"
 fi
 
+# detect softhsm
+# created using command: softhsm2-util --init-token --slot 0 --label "ForFabric" --so-pin 1234 --pin 98765432
+SOFTHSM=`softhsm2-util --show-slots 2> /dev/null | grep ForFabric` || SOFTHSM=""
+if [ "$SOFTHSM" == "" ]; then
+    echo "SoftHSM with ForFabric token not detected ..."
+    exit 1
+fi
+
 echo "Testing with code level $FABRIC_SDKGO_CODELEVEL_TAG (Fabric ${FABRIC_SDKGO_CODELEVEL_VER}) ..."
 GO_TAGS="$GO_TAGS $FABRIC_SDKGO_CODELEVEL_TAG"
 
-if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]; then
-    echo "Testing with PKCS11 ..."
-    PKGS="$REPO/test/integration/pkcs11"
-fi
-
 GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
-$GO_CMD test $RACEFLAG -tags "$GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" $PKGS -p 1 -timeout=40m
+$GO_CMD test $RACEFLAG -cover -tags "testing $GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" $PKGS -p 1 -timeout=40m

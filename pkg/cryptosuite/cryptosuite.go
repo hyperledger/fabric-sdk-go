@@ -15,8 +15,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
-	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -43,8 +42,18 @@ func GetDefault() apicryptosuite.CryptoSuite {
 		return defaultCryptoSuite
 	}
 	//Set default suite
-	logger.Info("No default cryptosuite found, using bccsp factory default implementation")
-	initSuite(cryptosuiteimpl.GetSuite(factory.GetDefault()))
+	logger.Info("No default cryptosuite found, using default SW implementation")
+
+	// Use SW as the default cryptosuite when not initialized properly - should be for testing only
+	s, err := sw.GetSuiteWithDefaultEphemeral()
+	if err != nil {
+		logger.Panicf("Could not initialize default cryptosuite: %v", err)
+	}
+	err = initSuite(s)
+	if err != nil {
+		logger.Panicf("Could not set default cryptosuite: %v", err)
+	}
+
 	return defaultCryptoSuite
 }
 

@@ -18,8 +18,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
+	bccspSw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
@@ -95,28 +95,37 @@ type CustomCryptoSuiteProviderFactory struct {
 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
 func (f *CustomCryptoSuiteProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
-	return cryptosuite.GetSuite(f.bccspProvider), nil
+	c := wrapper.NewCryptoSuite(f.bccspProvider)
+	return &c, nil
 }
 
 func getTestBCCSP(config apiconfig.Config) bccsp.BCCSP {
-
-	// Initialize bccsp factories before calling get client
-	err := bccspFactory.InitFactories(&bccspFactory.FactoryOpts{
-		ProviderName: config.SecurityProvider(),
-		SwOpts: &bccspFactory.SwOpts{
-			HashFamily: config.SecurityAlgorithm(),
-			SecLevel:   config.SecurityLevel(),
-			FileKeystore: &bccspFactory.FileKeystoreOpts{
-				KeyStorePath: config.KeyStorePath(),
-			},
-			Ephemeral: false,
-		},
-	})
+	opts := getOptsByConfig(config)
+	s, err := getBCCSPFromOpts(opts)
 	if err != nil {
-		panic(fmt.Sprintf("Failed getting ephemeral software-based BCCSP [%s]", err))
+		panic(fmt.Sprintf("Failed getting software-based BCCSP [%s]", err))
 	}
 
-	return bccspFactory.GetDefault()
+	return s
+}
+
+func getBCCSPFromOpts(config *bccspSw.SwOpts) (bccsp.BCCSP, error) {
+	f := &bccspSw.SWFactory{}
+
+	return f.Get(config)
+}
+
+func getOptsByConfig(c apiconfig.Config) *bccspSw.SwOpts {
+	opts := &bccspSw.SwOpts{
+		HashFamily: c.SecurityAlgorithm(),
+		SecLevel:   c.SecurityLevel(),
+		FileKeystore: &bccspSw.FileKeystoreOpts{
+			KeyStorePath: c.KeyStorePath(),
+		},
+		Ephemeral: c.Ephemeral(),
+	}
+
+	return opts
 }
 
 func TestCustomCryptoSuite(t *testing.T) {

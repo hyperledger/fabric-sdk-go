@@ -11,10 +11,8 @@ import (
 
 	"sync/atomic"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
-
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
-	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 )
 
 const (
@@ -64,7 +62,12 @@ func TestGetDefault(t *testing.T) {
 	utils.VerifyNotEmpty(t, err, "supposed to get error when invalid default suite is set")
 	utils.VerifyTrue(t, err.Error() == InvalidDefSuiteSetErrorMsg, "unexpected error : expected [%s], got [%s]", InvalidDefSuiteSetErrorMsg, err.Error())
 
-	err = SetDefault(cryptosuiteimpl.GetSuite(factory.GetDefault()))
+	s, err := sw.GetSuiteWithDefaultEphemeral()
+	if err != nil {
+		t.Fatalf("Unable to get default cryptosuite")
+	}
+
+	err = SetDefault(s)
 	utils.VerifyEmpty(t, err, "Not supposed to get error when valid default suite is set")
 
 }
