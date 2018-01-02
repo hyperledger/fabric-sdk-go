@@ -316,6 +316,16 @@ FILTER_FILENAME="msp/mgmt/mgmt.go"
 FILTER_FN="GetLocalMSP"
 gofilter
 
+# adjust bccsp pkcs11 build tags
+FILTER_FILENAME="bccsp/factory/pkcs11factory.go"
+sed -i'' -e 's/\+build !nopkcs11/\+build pkcs11/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+FILTER_FILENAME="bccsp/factory/pkcs11.go"
+sed -i'' -e 's/\+build !nopkcs11/\+build pkcs11/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+FILTER_FILENAME="bccsp/factory/nopkcs11.go"
+sed -i'' -e 's/\+build nopkcs11/\+build !pkcs11/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
 echo "Filtering Go sources for allowed declarations ..."
 FILTERS_ENABLED="gen,type"
 FILTER_TYPE="IMPORT,CONST"

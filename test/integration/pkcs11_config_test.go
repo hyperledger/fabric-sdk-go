@@ -12,9 +12,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	pkcsFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 	pkcs11 "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
+	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 )
 
 var configImpl api.Config
@@ -23,6 +27,32 @@ var securityLevel = 256
 const (
 	providerTypePKCS11 = "PKCS11"
 )
+
+func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	//Prepare Config
+	providerLib, softHSMPin, softHSMTokenLabel := pkcs11.FindPKCS11Lib()
+
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+	mockConfig.EXPECT().SecurityLevel().Return(256)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+	mockConfig.EXPECT().Ephemeral().Return(false)
+	mockConfig.EXPECT().SecurityProviderLibPath().Return(providerLib)
+	mockConfig.EXPECT().SecurityProviderLabel().Return(softHSMTokenLabel)
+	mockConfig.EXPECT().SecurityProviderPin().Return(softHSMPin)
+	mockConfig.EXPECT().SoftVerify().Return(true)
+
+	//Get cryptosuite using config
+	_, err := cryptosuite.GetSuiteByConfig(mockConfig)
+	if err != nil {
+		t.Fatalf("Not supposed to get error, but got: %v", err)
+	}
+}
 
 func TestPKCS11CSPConfigWithValidOptions(t *testing.T) {
 	opts := configurePKCS11Options("SHA2", securityLevel)

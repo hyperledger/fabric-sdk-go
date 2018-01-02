@@ -66,6 +66,11 @@ make
 make clean
 ```
 
+### Go Tags
+The following Go tags can be supplied to enable additional functionality:
+- pkcs11: includes support for configuring BCCSP with PKCS11 provider. Note: libltdl must be installed.
+- experimental: includes support for experimental features.
+
 ## Contributing to the Go SDK
 
 If you want to contribute to the Go SDK, please run the test suite and submit patches to the Gerrit git repostory for review. For general guidelines, please refer to the Fabric project's [contribution page](http://hyperledger-fabric.readthedocs.io/en/latest/CONTRIBUTING.html).

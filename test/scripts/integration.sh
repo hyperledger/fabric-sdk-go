@@ -35,7 +35,7 @@ GO_TAGS="$GO_TAGS $FABRIC_SDKGO_CODELEVEL_TAG"
 
 if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]; then
     echo "Testing with PKCS11 ..."
-    GO_TAGS="$GO_TAGS testpkcs11"
+    GO_TAGS="$GO_TAGS testpkcs11 pkcs11"
 fi
 
 GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"

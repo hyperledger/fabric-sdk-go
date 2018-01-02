@@ -41,6 +41,7 @@ FABRIC_DEVSTABLE_VERSION_MAJOR  := 1
 GO_LDFLAGS                 ?= -s
 GO_TESTFLAGS               ?=
 FABRIC_SDK_EXPERIMENTAL    ?= true
+FABRIC_SDK_PKCS11          ?= false
 FABRIC_SDK_EXTRA_GO_TAGS   ?=
 FABRIC_SDK_POPULATE_VENDOR ?= true
 
@@ -127,12 +128,6 @@ GO_DEP_COMMIT := v0.3.1
 # The version of mockgen that will be installed by depend-install
 GO_MOCKGEN_COMMIT := v1.0.0
 
-# Setup Go Tags
-GO_TAGS := $(FABRIC_SDK_EXTRA_GO_TAGS)
-ifeq ($(FABRIC_SDK_EXPERIMENTAL),true)
-GO_TAGS += experimental
-endif
-
 # Detect CI
 # TODO introduce nightly and adjust verify
 ifdef JENKINS_URL
@@ -143,6 +138,16 @@ FABRIC_STABLE_PKCS11_INTTEST := true
 FABRIC_PREV_INTTEST          := true
 FABRIC_PRERELEASE_INTTEST    := true
 FABRIC_DEVSTABLE_INTTEST     := true
+FABRIC_SDK_PKCS11            := true
+endif
+
+# Setup Go Tags
+GO_TAGS := $(FABRIC_SDK_EXTRA_GO_TAGS)
+ifeq ($(FABRIC_SDK_EXPERIMENTAL),true)
+GO_TAGS += experimental
+endif
+ifeq ($(FABRIC_SDK_PKCS11),true)
+GO_TAGS += pkcs11
 endif
 
 # Detect subtarget execution
