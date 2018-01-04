@@ -85,6 +85,21 @@ func (txRwSet *TxRwSet) ToProtoBytes() ([]byte, error) {
 	return proto.Marshal(protoMsg)
 }
 
+// FromProtoBytes deserializes protobytes into TxReadWriteSet proto message and populates 'TxRwSet'
+func (txRwSet *TxRwSet) FromProtoBytes(protoBytes []byte) error {
+	protoMsg := &rwset.TxReadWriteSet{}
+	var err error
+	var txRwSetTemp *TxRwSet
+	if err = proto.Unmarshal(protoBytes, protoMsg); err != nil {
+		return err
+	}
+	if txRwSetTemp, err = TxRwSetFromProtoMsg(protoMsg); err != nil {
+		return err
+	}
+	txRwSet.NsRwSets = txRwSetTemp.NsRwSets
+	return nil
+}
+
 // ToProtoBytes constructs 'TxPvtReadWriteSet' proto message and serializes using protobuf Marshal
 func (txPvtRwSet *TxPvtRwSet) ToProtoBytes() ([]byte, error) {
 	var protoMsg *rwset.TxPvtReadWriteSet
@@ -93,6 +108,21 @@ func (txPvtRwSet *TxPvtRwSet) ToProtoBytes() ([]byte, error) {
 		return nil, err
 	}
 	return proto.Marshal(protoMsg)
+}
+
+// FromProtoBytes deserializes protobytes into 'TxPvtReadWriteSet' proto message and populates 'TxPvtRwSet'
+func (txPvtRwSet *TxPvtRwSet) FromProtoBytes(protoBytes []byte) error {
+	protoMsg := &rwset.TxPvtReadWriteSet{}
+	var err error
+	var txPvtRwSetTemp *TxPvtRwSet
+	if err = proto.Unmarshal(protoBytes, protoMsg); err != nil {
+		return err
+	}
+	if txPvtRwSetTemp, err = TxPvtRwSetFromProtoMsg(protoMsg); err != nil {
+		return err
+	}
+	txPvtRwSet.NsPvtRwSet = txPvtRwSetTemp.NsPvtRwSet
+	return nil
 }
 
 func (txRwSet *TxRwSet) toProtoMsg() (*rwset.TxReadWriteSet, error) {
@@ -106,6 +136,19 @@ func (txRwSet *TxRwSet) toProtoMsg() (*rwset.TxReadWriteSet, error) {
 		protoMsg.NsRwset = append(protoMsg.NsRwset, nsRwSetProtoMsg)
 	}
 	return protoMsg, nil
+}
+
+func TxRwSetFromProtoMsg(protoMsg *rwset.TxReadWriteSet) (*TxRwSet, error) {
+	txRwSet := &TxRwSet{}
+	var nsRwSet *NsRwSet
+	var err error
+	for _, nsRwSetProtoMsg := range protoMsg.NsRwset {
+		if nsRwSet, err = nsRwSetFromProtoMsg(nsRwSetProtoMsg); err != nil {
+			return nil, err
+		}
+		txRwSet.NsRwSets = append(txRwSet.NsRwSets, nsRwSet)
+	}
+	return txRwSet, nil
 }
 
 func (nsRwSet *NsRwSet) toProtoMsg() (*rwset.NsReadWriteSet, error) {
@@ -125,6 +168,22 @@ func (nsRwSet *NsRwSet) toProtoMsg() (*rwset.NsReadWriteSet, error) {
 	return protoMsg, nil
 }
 
+func nsRwSetFromProtoMsg(protoMsg *rwset.NsReadWriteSet) (*NsRwSet, error) {
+	nsRwSet := &NsRwSet{NameSpace: protoMsg.Namespace, KvRwSet: &kvrwset.KVRWSet{}}
+	if err := proto.Unmarshal(protoMsg.Rwset, nsRwSet.KvRwSet); err != nil {
+		return nil, err
+	}
+	var err error
+	var collHashedRwSet *CollHashedRwSet
+	for _, collHashedRwSetProtoMsg := range protoMsg.CollectionHashedRwset {
+		if collHashedRwSet, err = collHashedRwSetFromProtoMsg(collHashedRwSetProtoMsg); err != nil {
+			return nil, err
+		}
+		nsRwSet.CollHashedRwSets = append(nsRwSet.CollHashedRwSets, collHashedRwSet)
+	}
+	return nsRwSet, nil
+}
+
 func (collHashedRwSet *CollHashedRwSet) toProtoMsg() (*rwset.CollectionHashedReadWriteSet, error) {
 	var err error
 	protoMsg := &rwset.CollectionHashedReadWriteSet{
@@ -135,6 +194,18 @@ func (collHashedRwSet *CollHashedRwSet) toProtoMsg() (*rwset.CollectionHashedRea
 		return nil, err
 	}
 	return protoMsg, nil
+}
+
+func collHashedRwSetFromProtoMsg(protoMsg *rwset.CollectionHashedReadWriteSet) (*CollHashedRwSet, error) {
+	colHashedRwSet := &CollHashedRwSet{
+		CollectionName: protoMsg.CollectionName,
+		PvtRwSetHash:   protoMsg.PvtRwsetHash,
+		HashedRwSet:    &kvrwset.HashedRWSet{},
+	}
+	if err := proto.Unmarshal(protoMsg.HashedRwset, colHashedRwSet.HashedRwSet); err != nil {
+		return nil, err
+	}
+	return colHashedRwSet, nil
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -154,6 +225,19 @@ func (txPvtRwSet *TxPvtRwSet) toProtoMsg() (*rwset.TxPvtReadWriteSet, error) {
 	return protoMsg, nil
 }
 
+func TxPvtRwSetFromProtoMsg(protoMsg *rwset.TxPvtReadWriteSet) (*TxPvtRwSet, error) {
+	txPvtRwset := &TxPvtRwSet{}
+	var nsPvtRwSet *NsPvtRwSet
+	var err error
+	for _, nsRwSetProtoMsg := range protoMsg.NsPvtRwset {
+		if nsPvtRwSet, err = nsPvtRwSetFromProtoMsg(nsRwSetProtoMsg); err != nil {
+			return nil, err
+		}
+		txPvtRwset.NsPvtRwSet = append(txPvtRwset.NsPvtRwSet, nsPvtRwSet)
+	}
+	return txPvtRwset, nil
+}
+
 func (nsPvtRwSet *NsPvtRwSet) toProtoMsg() (*rwset.NsPvtReadWriteSet, error) {
 	protoMsg := &rwset.NsPvtReadWriteSet{Namespace: nsPvtRwSet.NameSpace}
 	var err error
@@ -167,6 +251,19 @@ func (nsPvtRwSet *NsPvtRwSet) toProtoMsg() (*rwset.NsPvtReadWriteSet, error) {
 	return protoMsg, err
 }
 
+func nsPvtRwSetFromProtoMsg(protoMsg *rwset.NsPvtReadWriteSet) (*NsPvtRwSet, error) {
+	nsPvtRwSet := &NsPvtRwSet{NameSpace: protoMsg.Namespace}
+	for _, collPvtRwSetProtoMsg := range protoMsg.CollectionPvtRwset {
+		var err error
+		var collPvtRwSet *CollPvtRwSet
+		if collPvtRwSet, err = collPvtRwSetFromProtoMsg(collPvtRwSetProtoMsg); err != nil {
+			return nil, err
+		}
+		nsPvtRwSet.CollPvtRwSets = append(nsPvtRwSet.CollPvtRwSets, collPvtRwSet)
+	}
+	return nsPvtRwSet, nil
+}
+
 func (collPvtRwSet *CollPvtRwSet) toProtoMsg() (*rwset.CollectionPvtReadWriteSet, error) {
 	var err error
 	protoMsg := &rwset.CollectionPvtReadWriteSet{CollectionName: collPvtRwSet.CollectionName}
@@ -174,4 +271,12 @@ func (collPvtRwSet *CollPvtRwSet) toProtoMsg() (*rwset.CollectionPvtReadWriteSet
 		return nil, err
 	}
 	return protoMsg, nil
+}
+
+func collPvtRwSetFromProtoMsg(protoMsg *rwset.CollectionPvtReadWriteSet) (*CollPvtRwSet, error) {
+	collPvtRwSet := &CollPvtRwSet{CollectionName: protoMsg.CollectionName, KvRwSet: &kvrwset.KVRWSet{}}
+	if err := proto.Unmarshal(protoMsg.Rwset, collPvtRwSet.KvRwSet); err != nil {
+		return nil, err
+	}
+	return collPvtRwSet, nil
 }

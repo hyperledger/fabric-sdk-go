@@ -43,6 +43,42 @@ func Marshal(pb proto.Message) ([]byte, error) {
 	return proto.Marshal(pb)
 }
 
+// ExtractEnvelopeOrPanic retrieves the requested envelope from a given block and unmarshals it -- it panics if either of these operation fail.
+func ExtractEnvelopeOrPanic(block *cb.Block, index int) *cb.Envelope {
+	envelope, err := ExtractEnvelope(block, index)
+	if err != nil {
+		panic(err)
+	}
+	return envelope
+}
+
+// ExtractEnvelope retrieves the requested envelope from a given block and unmarshals it.
+func ExtractEnvelope(block *cb.Block, index int) (*cb.Envelope, error) {
+	if block.Data == nil {
+		return nil, fmt.Errorf("No data in block")
+	}
+
+	envelopeCount := len(block.Data.Data)
+	if index < 0 || index >= envelopeCount {
+		return nil, fmt.Errorf("Envelope index out of bounds")
+	}
+	marshaledEnvelope := block.Data.Data[index]
+	envelope, err := GetEnvelopeFromBlock(marshaledEnvelope)
+	if err != nil {
+		return nil, fmt.Errorf("Block data does not carry an envelope at index %d: %s", index, err)
+	}
+	return envelope, nil
+}
+
+// ExtractPayloadOrPanic retrieves the payload of a given envelope and unmarshals it -- it panics if either of these operations fail.
+func ExtractPayloadOrPanic(envelope *cb.Envelope) *cb.Payload {
+	payload, err := ExtractPayload(envelope)
+	if err != nil {
+		panic(err)
+	}
+	return payload
+}
+
 // ExtractPayload retrieves the payload of a given envelope and unmarshals it.
 func ExtractPayload(envelope *cb.Envelope) (*cb.Payload, error) {
 	payload := &cb.Payload{}

@@ -37,9 +37,6 @@ declare -a PKGS=(
     "sdkpatch/logbridge"
     "sdkpatch/cryptosuitebridge"
 
-    "core/common/ccprovider"
-
-    "core/ledger/kvledger/txmgmt/rwsetutil"
     "core/ledger/kvledger/txmgmt/version"
     "core/ledger/util"
 
@@ -108,15 +105,12 @@ declare -a FILES=(
     "common/channelconfig/organization.go"
 
     "common/ledger/ledger_interface.go"
-    "core/common/ccprovider/ccprovider.go"
     
     "sdkpatch/logbridge/logbridge.go"
     "sdkpatch/cryptosuitebridge/cryptosuitebridge.go"
 
     "core/ledger/ledger_interface.go"
-    "core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
     "core/ledger/kvledger/txmgmt/version/version.go"
-    "core/ledger/util/txvalidationflags.go"
 
 
     "events/consumer/adapter.go"
@@ -206,23 +200,10 @@ FILTER_FILENAME="common/channelconfig/organization.go"
 FILTER_FN=
 gofilter
 
-FILTER_FILENAME="core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
-FILTER_FN="NewHeight,ToProtoBytes,toProtoMsg"
-gofilter
-
 FILTER_FILENAME="core/ledger/kvledger/txmgmt/version/version.go"
 FILTER_FN=
 gofilter
 
-FILTER_FILENAME="core/ledger/util/txvalidationflags.go"
-FILTER_FN="IsValid,IsInvalid,Flag,IsSetTo,NewTxValidationFlags"
-gofilter
-
-
-FILTER_FILENAME="core/common/ccprovider/ccprovider.go"
-FILTER_FN=Reset,String,ProtoMessage
-gofilter
-sed -i'' -e 's/var ccInfoCache = NewCCInfoCache(ccInfoFSProvider)//g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="events/consumer/adapter.go"
 FILTER_FN=

@@ -55,10 +55,6 @@ declare -a FILES=(
     "protos/orderer/configuration.pb.go"
 )
 
-echo 'Removing current upstream project from working directory ...'
-rm -Rf "${INTERNAL_PATH}/protos"
-mkdir -p "${INTERNAL_PATH}/protos"
-
 # Create directory structure for packages
 for i in "${PKGS[@]}"
 do

@@ -43,6 +43,10 @@ git am ${CWD}/${PATCHES_PATH}/*
 
 cd $CWD
 
+echo 'Removing current upstream project from working directory ...'
+rm -Rf "${THIRDPARTY_FABRIC_PATH}/protos"
+mkdir -p "${THIRDPARTY_FABRIC_PATH}/protos"
+
 # fabric client utils
 echo "Pinning and patching fabric client utils..."
 declare -a CLIENT_UTILS_IMPORT_SUBSTS=(
@@ -57,17 +61,24 @@ declare -a CLIENT_UTILS_IMPORT_SUBSTS=(
     's/\"github.com\/hyperledger\/fabric\/protos\/msp/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/msp/g'
     's/\"github.com\/hyperledger\/fabric\/protos\/orderer/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/orderer/g'
     's/\"github.com\/hyperledger\/fabric\/protos\/ledger/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/ledger/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/utils/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/utils/g'
     's/\"github.com\/hyperledger\/fabric\/protos/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/protos/g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
 )
+
 eval "INTERNAL_PATH=$THIRDPARTY_INTERNAL_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS=\"${CLIENT_UTILS_IMPORT_SUBSTS[*]}\" $SCRIPTS_PATH/apply_fabric_client_utils.sh"
 
 # external utils
 echo "Pinning and patching fabric external utils ..."
 declare -a EXTERNAL_UTILS_IMPORT_SUBSTS=(
     's/\"github.com\/pkg\/errors/\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/errors/g'
+    's/\"github.com\/hyperledger\/fabric\/common\/flogging/flogging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge/g'
+    's/\"github.com\/hyperledger\/fabric\/common\/cauthdsl/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/common\/cauthdsl/g'
     's/\"github.com\/hyperledger\/fabric\/protos\/common/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/common/g'
     's/\"github.com\/hyperledger\/fabric\/protos\/msp/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/msp/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/peer/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/peer/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/ledger/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/ledger/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/utils/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/utils/g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
 )
 eval "INTERNAL_PATH=$THIRDPARTY_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS=\"${EXTERNAL_UTILS_IMPORT_SUBSTS[*]}\" $SCRIPTS_PATH/apply_fabric_external_utils.sh"
@@ -78,6 +89,10 @@ declare -a PROTOS_IMPORT_SUBSTS=(
     's/\"github.com\/pkg\/errors/\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/errors/g'
     's/\"github.com\/hyperledger\/fabric\/common\/flogging/flogging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge/g'
     's/\"github.com\/hyperledger\/fabric\/bccsp/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/bccsp/g'
+    's/\"github.com\/hyperledger\/fabric\/common\/cauthdsl/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/common\/cauthdsl/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/peer/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/peer/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/ledger/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/ledger/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/utils/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/utils/g'
     's/\"github.com\/hyperledger\/fabric\/protos\//\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\//g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
 )
@@ -89,11 +104,13 @@ declare -a PROTOS_INTERNAL_IMPORT_SUBSTS=(
     's/\"github.com\/pkg\/errors/\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/errors/g'
     's/\"github.com\/hyperledger\/fabric\/common\/flogging/factory\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge/g'
     's/\"github.com\/hyperledger\/fabric\/bccsp/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/bccsp/g'
+    's/\"github.com\/hyperledger\/fabric\/common\/cauthdsl/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/common\/cauthdsl/g'
     's/\"github.com\/hyperledger\/fabric\/protos\/common/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/common/g'
     's/\"github.com\/hyperledger\/fabric\/protos\/peer/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/peer/g'
     's/\"github.com\/hyperledger\/fabric\/protos\/msp/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/msp/g'
     's/\"github.com\/hyperledger\/fabric\/protos\/orderer/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/orderer/g'
     's/\"github.com\/hyperledger\/fabric\/protos\/ledger/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/ledger/g'
+    's/\"github.com\/hyperledger\/fabric\/protos\/utils/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/utils/g'
     's/\"github.com\/hyperledger\/fabric\/protos/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/protos/g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
 )
