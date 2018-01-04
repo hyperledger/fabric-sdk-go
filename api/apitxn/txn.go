@@ -23,6 +23,7 @@ type QueryRequest struct {
 type QueryOpts struct {
 	Notifier           chan QueryResponse  // async
 	ProposalProcessors []ProposalProcessor // targets
+	TxFilter           TxProposalResponseFilter
 	Timeout            time.Duration
 }
 
@@ -50,13 +51,13 @@ type ExecuteTxRequest struct {
 // ExecuteTxOpts allows the user to specify more advanced options
 type ExecuteTxOpts struct {
 	Notifier           chan ExecuteTxResponse // async
-	TxFilter           ExecuteTxFilter
+	TxFilter           TxProposalResponseFilter
 	ProposalProcessors []ProposalProcessor // targets
 	Timeout            time.Duration
 }
 
-// ExecuteTxFilter allows the user to inspect/modify response before commit
-type ExecuteTxFilter interface {
+// TxProposalResponseFilter allows the user to inspect/modify response before commit
+type TxProposalResponseFilter interface {
 	// process transaction proposal response (there will be no commit if an error is returned)
 	ProcessTxProposalResponse(txProposalResponse []*TransactionProposalResponse) ([]*TransactionProposalResponse, error)
 }
