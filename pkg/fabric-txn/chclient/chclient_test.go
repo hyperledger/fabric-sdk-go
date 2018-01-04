@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package chclient
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -20,9 +21,39 @@ import (
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/mocks"
 )
 
+func TestTxProposalResponseFilter(t *testing.T) {
+	// failed if status not 200
+	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
+	testPeer2 := fcmocks.NewMockPeer("Peer2", "http://peer2.com")
+	testPeer2.Status = 300
+	peers := []apifabclient.Peer{testPeer1, testPeer2}
+	chClient := setupChannelClient(peers, t)
+
+	_, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
+		t.Fatalf("Should have failed for not success status")
+	}
+	if !strings.Contains(err.Error(), "proposal response was not successful, error code 300") {
+		t.Fatalf("Return wrong error message %v", err)
+	}
+
+	testPeer2.Payload = []byte("wrongPayload")
+	testPeer2.Status = 200
+	peers = []apifabclient.Peer{testPeer1, testPeer2}
+	chClient = setupChannelClient(peers, t)
+	_, err = chClient.Query(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
+		t.Fatalf("Should have failed for not success status")
+	}
+	if !strings.Contains(err.Error(), "ProposalResponsePayloads do not match") {
+		t.Fatalf("Return wrong error message %v", err)
+	}
+
+}
+
 func TestQuery(t *testing.T) {
 
-	chClient := setupChannelClient(t)
+	chClient := setupChannelClient(nil, t)
 
 	result, err := chClient.Query(apitxn.QueryRequest{})
 	if err == nil {
@@ -52,7 +83,7 @@ func TestQuery(t *testing.T) {
 
 func TestQueryDiscoveryError(t *testing.T) {
 
-	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, t)
+	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, nil, t)
 
 	_, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
 	if err == nil {
@@ -63,7 +94,7 @@ func TestQueryDiscoveryError(t *testing.T) {
 
 func TestQuerySelectionError(t *testing.T) {
 
-	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), t)
+	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), nil, t)
 
 	_, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
 	if err == nil {
@@ -74,7 +105,7 @@ func TestQuerySelectionError(t *testing.T) {
 
 func TestQueryWithOptSync(t *testing.T) {
 
-	chClient := setupChannelClient(t)
+	chClient := setupChannelClient(nil, t)
 
 	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}, apitxn.QueryOpts{})
 	if err != nil {
@@ -88,7 +119,7 @@ func TestQueryWithOptSync(t *testing.T) {
 
 func TestQueryWithOptAsync(t *testing.T) {
 
-	chClient := setupChannelClient(t)
+	chClient := setupChannelClient(nil, t)
 
 	notifier := make(chan apitxn.QueryResponse)
 
@@ -117,11 +148,11 @@ func TestQueryWithOptAsync(t *testing.T) {
 
 func TestQueryWithOptTarget(t *testing.T) {
 
-	chClient := setupChannelClient(t)
+	chClient := setupChannelClient(nil, t)
 
-	testPeer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
+	testPeer := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
 
-	peers := []apifabclient.Peer{&testPeer}
+	peers := []apifabclient.Peer{testPeer}
 
 	targets := peer.PeersToTxnProcessors(peers)
 
@@ -137,7 +168,7 @@ func TestQueryWithOptTarget(t *testing.T) {
 
 func TestExecuteTx(t *testing.T) {
 
-	chClient := setupChannelClient(t)
+	chClient := setupChannelClient(nil, t)
 
 	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{})
 	if err == nil {
@@ -159,7 +190,7 @@ func TestExecuteTx(t *testing.T) {
 
 func TestExecuteTxDiscoveryError(t *testing.T) {
 
-	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, t)
+	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, nil, t)
 
 	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
 	if err == nil {
@@ -170,7 +201,7 @@ func TestExecuteTxDiscoveryError(t *testing.T) {
 
 func TestExecuteTxSelectionError(t *testing.T) {
 
-	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), t)
+	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), nil, t)
 
 	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
 	if err == nil {
@@ -214,12 +245,12 @@ func setupTestSelection(discErr error, peers []apifabclient.Peer) (apifabclient.
 	return mockSelection.NewSelectionService("mychannel")
 }
 
-func setupChannelClient(t *testing.T) *ChannelClient {
+func setupChannelClient(peers []apifabclient.Peer, t *testing.T) *ChannelClient {
 
-	return setupChannelClientWithError(nil, nil, t)
+	return setupChannelClientWithError(nil, nil, peers, t)
 }
 
-func setupChannelClientWithError(discErr error, selectionErr error, t *testing.T) *ChannelClient {
+func setupChannelClientWithError(discErr error, selectionErr error, peers []apifabclient.Peer, t *testing.T) *ChannelClient {
 
 	fcClient := setupTestClient()
 
@@ -236,7 +267,7 @@ func setupChannelClientWithError(discErr error, selectionErr error, t *testing.T
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	selectionService, err := setupTestSelection(selectionErr, nil)
+	selectionService, err := setupTestSelection(selectionErr, peers)
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}

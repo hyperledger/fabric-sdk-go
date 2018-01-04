@@ -63,24 +63,6 @@ func (c *Channel) CreateTransaction(resps []*apitxn.TransactionProposalResponse)
 		return nil, err
 	}
 
-	// This code is commented out because the ProposalResponsePayload Extension ChaincodeAction Results
-	// return from endorsements is different so the compare will fail
-
-	//            var a1 []byte
-	//            for n, r := range resps {
-	//                            if n == 0 {
-	//                                            a1 = r.Payload
-	//                                            if r.Response.Status != 200 {
-	//                                                            return nil, errors.Errorf("proposal response was not successful, error code %d, msg %s", r.Response.Status, r.Response.Message)
-	//                                            }
-	//                                            continue
-	//                            }
-
-	//                            if bytes.Compare(a1, r.Payload) != 0 {
-	//                                            return nil, errors.New("ProposalResponsePayloads do not match")
-	//                            }
-	//            }
-
 	for _, r := range resps {
 		if r.ProposalResponse.Response.Status != 200 {
 			return nil, errors.Errorf("proposal response was not successful, error code %d, msg %s", r.ProposalResponse.Response.Status, r.ProposalResponse.Response.Message)

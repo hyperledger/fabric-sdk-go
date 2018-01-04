@@ -22,11 +22,12 @@ type MockPeer struct {
 	MockCert  *pem.Block
 	Payload   []byte
 	MockMSP   string
+	Status    int32
 }
 
 // NewMockPeer creates basic mock peer
 func NewMockPeer(name string, url string) *MockPeer {
-	mp := &MockPeer{MockName: name, MockURL: url}
+	mp := &MockPeer{MockName: name, MockURL: url, Status: 200}
 	return mp
 }
 
@@ -80,7 +81,7 @@ func (p *MockPeer) ProcessTransactionProposal(tp apitxn.TransactionProposal) (ap
 	return apitxn.TransactionProposalResult{
 		Endorser:         p.MockURL,
 		Proposal:         tp,
-		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: p.Payload}},
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: p.Status, Payload: p.Payload}},
 	}, nil
 
 }

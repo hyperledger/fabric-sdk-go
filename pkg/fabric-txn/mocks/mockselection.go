@@ -42,9 +42,9 @@ func (ds *MockSelectionService) GetEndorsersForChaincode(channelPeers []apifabcl
 	}
 
 	if ds.Peers == nil {
-		mockPeer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
+		mockPeer := mocks.NewMockPeer("Peer1", "http://peer1.com")
 		peers := make([]apifabclient.Peer, 0)
-		peers = append(peers, &mockPeer)
+		peers = append(peers, mockPeer)
 		ds.Peers = peers
 	}
 

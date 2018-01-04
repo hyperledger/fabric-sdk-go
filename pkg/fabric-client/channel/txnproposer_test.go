@@ -174,7 +174,7 @@ func TestAddPeerDuplicateCheck(t *testing.T) {
 func TestSendTransactionProposal(t *testing.T) {
 	channel, _ := setupTestChannel()
 
-	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A")}
+	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200, Payload: []byte("A")}
 	channel.AddPeer(&peer)
 
 	request := apitxn.ChaincodeInvokeRequest{
@@ -185,7 +185,7 @@ func TestSendTransactionProposal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to send transaction proposal: %s", err)
 	}
-	expectedTpr := &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("A")}}
+	expectedTpr := &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 200, Payload: []byte("A")}}
 
 	if txnid.ID != "1234" || !reflect.DeepEqual(tpr[0].ProposalResponse, expectedTpr) {
 		t.Fatalf("Unexpected transaction proposal response: %v, %v", tpr, txnid)
