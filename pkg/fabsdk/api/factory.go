@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package context
+package api
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -14,13 +14,28 @@ import (
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 )
+
+// SDKOpts provides bootstrap setup
+type SDKOpts struct {
+	//ConfigFile to load from a predefined path
+	ConfigFile string
+	//ConfigBytes to load from an bytes array
+	ConfigBytes []byte
+	//ConfigType to specify the type of the config (mainly used with ConfigBytes as ConfigFile has a file extension to specify the type)
+	// valid values: yaml, json, etc.
+	ConfigType string
+}
+
+// StateStoreOpts provides setup parameters for KeyValueStore
+type StateStoreOpts struct {
+	Path string
+}
 
 // CoreProviderFactory allows overriding of primitives and the fabric core object provider
 type CoreProviderFactory interface {
-	NewConfigProvider(o opt.ConfigOpts, a opt.SDKOpts) (apiconfig.Config, error)
-	NewStateStoreProvider(o opt.StateStoreOpts, config apiconfig.Config) (fab.KeyValueStore, error)
+	NewConfigProvider(a SDKOpts) (apiconfig.Config, error)
+	NewStateStoreProvider(o StateStoreOpts, config apiconfig.Config) (fab.KeyValueStore, error)
 	NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error)
 	NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error)
 	NewFabricProvider(config apiconfig.Config, stateStore fab.KeyValueStore, cryptoSuite apicryptosuite.CryptoSuite, signer fab.SigningManager) (apicore.FabricProvider, error)

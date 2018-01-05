@@ -15,7 +15,6 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -46,7 +45,7 @@ func TestChannelClient(t *testing.T) {
 	// Create SDK setup for the integration tests
 	sdkOptions := fabapi.Options{
 		ConfigFile: testSetup.ConfigFile,
-		StateStoreOpts: opt.StateStoreOpts{
+		StateStoreOpts: fabapi.StateStoreOpts{
 			Path: "/tmp/enroll_user",
 		},
 	}

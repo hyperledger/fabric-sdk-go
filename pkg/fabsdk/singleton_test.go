@@ -6,7 +6,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package fabapi
+package fabsdk
 
 import (
 	"testing"
@@ -24,6 +24,7 @@ func TestDefLoggerFactory(t *testing.T) {
 	setup := Options{
 		ConfigFile: "../../test/fixtures/config/config_test.yaml",
 	}
+	populateReferenceFactoryOptions(&setup)
 
 	_, err := NewSDK(setup)
 	if err != nil {
@@ -67,6 +68,7 @@ func TestOptLoggerFactory(t *testing.T) {
 		ConfigFile:    "../../test/fixtures/config/config_test.yaml",
 		LoggerFactory: lf,
 	}
+	populateReferenceFactoryOptions(&setup)
 
 	_, err := NewSDK(setup)
 	if err != nil {

@@ -12,8 +12,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/dynamicselection/pgresolver"
 )
@@ -30,7 +30,7 @@ type SelectionProvider struct {
 	config apiconfig.Config
 	users  []ChannelUser
 	lbp    pgresolver.LoadBalancePolicy
-	sdk    *fabapi.FabricSDK
+	sdk    *fabsdk.FabricSDK
 }
 
 // NewSelectionProvider returns dynamic selection provider
@@ -51,7 +51,7 @@ type selectionService struct {
 }
 
 // Initialize allow for initializing providers
-func (p *SelectionProvider) Initialize(sdk *fabapi.FabricSDK) error {
+func (p *SelectionProvider) Initialize(sdk *fabsdk.FabricSDK) error {
 	p.sdk = sdk
 	return nil
 }

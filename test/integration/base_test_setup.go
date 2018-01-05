@@ -27,6 +27,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
 
@@ -113,7 +114,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	setup.Channel = channel
 
 	// Channel management client is responsible for managing channels (create/update)
-	chMgmtClient, err := sdk.NewChannelMgmtClientWithOpts("Admin", &deffab.ChannelMgmtClientOpts{OrgName: "ordererorg"})
+	chMgmtClient, err := sdk.NewChannelMgmtClientWithOpts("Admin", &fabsdk.ChannelMgmtClientOpts{OrgName: "ordererorg"})
 	if err != nil {
 		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
@@ -243,7 +244,7 @@ func (setup *BaseSetupImpl) InstallAndInstantiateCC(ccName, ccPath, ccVersion, g
 }
 
 // GetChannel initializes and returns a channel based on config
-func (setup *BaseSetupImpl) GetChannel(sdk *deffab.FabricSDK, client fab.FabricClient, channelID string, orgs []string) (fab.Channel, error) {
+func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, client fab.FabricClient, channelID string, orgs []string) (fab.Channel, error) {
 
 	channel, err := client.NewChannel(channelID)
 	if err != nil {

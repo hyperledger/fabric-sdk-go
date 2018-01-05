@@ -14,23 +14,22 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/def/provider/fabpvdr"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	cryptosuitewrapper "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
+	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
 func TestNewConfigProvider(t *testing.T) {
 	factory := NewProviderFactory()
 
-	configOpts := opt.ConfigOpts{}
-	sdkOpts := opt.SDKOpts{}
+	sdkOpts := apisdk.SDKOpts{}
 
-	config, err := factory.NewConfigProvider(configOpts, sdkOpts)
+	config, err := factory.NewConfigProvider(sdkOpts)
 	if err != nil {
 		t.Fatalf("Unexpected error creating config provider %v", err)
 	}
@@ -44,7 +43,7 @@ func TestNewConfigProvider(t *testing.T) {
 func TestNewStateStoreProvider(t *testing.T) {
 	factory := NewProviderFactory()
 
-	opts := opt.StateStoreOpts{
+	opts := apisdk.StateStoreOpts{
 		Path: "/tmp/fabsdkgo_test/store",
 	}
 	config := mocks.NewMockConfig()
@@ -74,7 +73,7 @@ func newMockStateStore(t *testing.T) apifabclient.KeyValueStore {
 	}
 	mockConfig.EXPECT().Client().Return(&mockClientConfig, nil)
 
-	opts := opt.StateStoreOpts{}
+	opts := apisdk.StateStoreOpts{}
 	stateStore, err := factory.NewStateStoreProvider(opts, mockConfig)
 	if err != nil {
 		t.Fatalf("Unexpected error creating state store provider %v", err)
@@ -99,7 +98,7 @@ func TestNewStateStoreProviderEmptyConfig(t *testing.T) {
 
 	mockClientConfig := apiconfig.ClientConfig{}
 	mockConfig.EXPECT().Client().Return(&mockClientConfig, nil)
-	opts := opt.StateStoreOpts{}
+	opts := apisdk.StateStoreOpts{}
 
 	_, err := factory.NewStateStoreProvider(opts, mockConfig)
 	if err == nil {
@@ -115,7 +114,7 @@ func TestNewStateStoreProviderFailConfig(t *testing.T) {
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	mockConfig.EXPECT().Client().Return(nil, errors.New("error"))
-	opts := opt.StateStoreOpts{}
+	opts := apisdk.StateStoreOpts{}
 
 	_, err := factory.NewStateStoreProvider(opts, mockConfig)
 	if err == nil {

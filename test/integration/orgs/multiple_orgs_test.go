@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -59,7 +60,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Channel management client is responsible for managing channels (create/update channel)
-	chMgmtClient, err := sdk.NewChannelMgmtClientWithOpts("Admin", &fabapi.ChannelMgmtClientOpts{OrgName: "ordererorg"})
+	chMgmtClient, err := sdk.NewChannelMgmtClientWithOpts("Admin", &fabsdk.ChannelMgmtClientOpts{OrgName: "ordererorg"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +87,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Org2 resource management client
-	org2ResMgmt, err := sdk.NewResourceMgmtClientWithOpts("Admin", &fabapi.ResourceMgmtClientOpts{OrgName: org2})
+	org2ResMgmt, err := sdk.NewResourceMgmtClientWithOpts("Admin", &fabsdk.ResourceMgmtClientOpts{OrgName: org2})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,13 +130,13 @@ func TestOrgsEndToEnd(t *testing.T) {
 	loadOrgPeers(t, sdk)
 
 	// Org1 user connects to 'orgchannel'
-	chClientOrg1User, err := sdk.NewChannelClientWithOpts("orgchannel", "User1", &fabapi.ChannelClientOpts{OrgName: org1})
+	chClientOrg1User, err := sdk.NewChannelClientWithOpts("orgchannel", "User1", &fabsdk.ChannelClientOpts{OrgName: org1})
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
 	}
 
 	// Org2 user connects to 'orgchannel'
-	chClientOrg2User, err := sdk.NewChannelClientWithOpts("orgchannel", "User1", &fabapi.ChannelClientOpts{OrgName: org2})
+	chClientOrg2User, err := sdk.NewChannelClientWithOpts("orgchannel", "User1", &fabsdk.ChannelClientOpts{OrgName: org2})
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
 	}
@@ -215,7 +216,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Create new client that will use dynamic selection
-	chClientOrg2User, err = sdk.NewChannelClientWithOpts("orgchannel", "User1", &fabapi.ChannelClientOpts{OrgName: org2})
+	chClientOrg2User, err = sdk.NewChannelClientWithOpts("orgchannel", "User1", &fabsdk.ChannelClientOpts{OrgName: org2})
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
 	}
@@ -258,7 +259,7 @@ func verifyValue(t *testing.T, chClient apitxn.ChannelClient, expected int) {
 
 }
 
-func loadOrgUser(t *testing.T, sdk *fabapi.FabricSDK, orgName string, userName string) fab.User {
+func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) fab.User {
 
 	user, err := sdk.NewPreEnrolledUser(orgName, userName)
 	if err != nil {
@@ -268,7 +269,7 @@ func loadOrgUser(t *testing.T, sdk *fabapi.FabricSDK, orgName string, userName s
 	return user
 }
 
-func loadOrgPeers(t *testing.T, sdk *fabapi.FabricSDK) {
+func loadOrgPeers(t *testing.T, sdk *fabsdk.FabricSDK) {
 
 	org1Peers, err := sdk.ConfigProvider().PeersConfig(org1)
 	if err != nil {

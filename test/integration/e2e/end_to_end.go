@@ -22,6 +22,7 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
 const (
@@ -50,7 +51,7 @@ func Run(t *testing.T, sdkOptions fabapi.Options) {
 
 	// Channel management client is responsible for managing channels (create/update channel)
 	// Supply user that has privileges to create channel (in this case orderer admin)
-	chMgmtClient, err := sdk.NewChannelMgmtClientWithOpts("Admin", &fabapi.ChannelMgmtClientOpts{OrgName: "ordererorg"})
+	chMgmtClient, err := sdk.NewChannelMgmtClientWithOpts("Admin", &fabsdk.ChannelMgmtClientOpts{OrgName: "ordererorg"})
 	if err != nil {
 		t.Fatalf("Failed to create channel management client: %s", err)
 	}
