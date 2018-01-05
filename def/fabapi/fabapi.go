@@ -9,17 +9,19 @@ package fabapi
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
@@ -37,9 +39,10 @@ type Options struct {
 	StateStoreOpts opt.StateStoreOpts
 
 	// Factories to create clients and providers
-	ProviderFactory context.SDKProviderFactory
-	ContextFactory  context.OrgClientFactory
-	SessionFactory  context.SessionClientFactory
+	CoreFactory    context.CoreProviderFactory
+	ServiceFactory context.ServiceProviderFactory
+	ContextFactory context.OrgClientFactory
+	SessionFactory context.SessionClientFactory
 
 	// Factories for creating package-level utilities (keep this to a minimum)
 	// TODO: Should the logger actually be in ProviderFactory
@@ -57,6 +60,7 @@ type FabricSDK struct {
 	discoveryProvider apifabclient.DiscoveryProvider
 	selectionProvider apifabclient.SelectionProvider
 	signingManager    apifabclient.SigningManager
+	fabricProvider    apicore.FabricProvider
 }
 
 // ChannelClientOpts provides options for creating channel client
@@ -98,51 +102,61 @@ func NewSDK(options Options) (*FabricSDK, error) {
 
 	// Initialize logging provider with default logging provider (if needed)
 	if sdk.LoggerFactory == nil {
-		sdk.LoggerFactory = deflogger.LoggerProvider()
+		sdk.LoggerFactory = defcore.NewLoggerProvider()
 	}
 	logging.InitLogger(sdk.LoggerFactory)
 
 	// Initialize default factories (if needed)
-	if sdk.ProviderFactory == nil {
-		sdk.ProviderFactory = defprovider.NewDefaultProviderFactory()
+	if sdk.CoreFactory == nil {
+		sdk.CoreFactory = defcore.NewProviderFactory()
+	}
+	if sdk.ServiceFactory == nil {
+		sdk.ServiceFactory = defsvc.NewProviderFactory()
 	}
 	if sdk.ContextFactory == nil {
-		sdk.ContextFactory = defprovider.NewOrgClientFactory()
+		sdk.ContextFactory = defclient.NewOrgClientFactory()
 	}
 	if sdk.SessionFactory == nil {
-		sdk.SessionFactory = defprovider.NewSessionClientFactory()
+		sdk.SessionFactory = defclient.NewSessionClientFactory()
 	}
 
 	// Initialize config provider
-	config, err := sdk.ProviderFactory.NewConfigProvider(sdk.ConfigOpts, sdkOpts)
+	config, err := sdk.CoreFactory.NewConfigProvider(sdk.ConfigOpts, sdkOpts)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize config")
 	}
 	sdk.configProvider = config
 
 	// Initialize crypto provider
-	cryptosuite, err := sdk.ProviderFactory.NewCryptoSuiteProvider(sdk.configProvider)
+	cryptosuite, err := sdk.CoreFactory.NewCryptoSuiteProvider(sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize crypto suite")
 	}
 	sdk.cryptoSuite = cryptosuite
 
 	// Initialize state store
-	store, err := sdk.ProviderFactory.NewStateStoreProvider(sdk.StateStoreOpts, sdk.configProvider)
+	store, err := sdk.CoreFactory.NewStateStoreProvider(sdk.StateStoreOpts, sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize state store")
 	}
 	sdk.stateStore = store
 
 	// Initialize Signing Manager
-	signingMgr, err := sdk.ProviderFactory.NewSigningManager(sdk.CryptoSuiteProvider(), sdk.configProvider)
+	signingMgr, err := sdk.CoreFactory.NewSigningManager(sdk.CryptoSuiteProvider(), sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize signing manager")
 	}
 	sdk.signingManager = signingMgr
 
+	// Initialize Fabric Provider
+	fabricProvider, err := sdk.CoreFactory.NewFabricProvider(sdk.configProvider, sdk.stateStore, sdk.cryptoSuite, sdk.signingManager)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to initialize core fabric provider")
+	}
+	sdk.fabricProvider = fabricProvider
+
 	// Initialize discovery provider
-	discoveryProvider, err := sdk.ProviderFactory.NewDiscoveryProvider(sdk.configProvider)
+	discoveryProvider, err := sdk.ServiceFactory.NewDiscoveryProvider(sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize discovery provider")
 	}
@@ -152,7 +166,7 @@ func NewSDK(options Options) (*FabricSDK, error) {
 	sdk.discoveryProvider = discoveryProvider
 
 	// Initialize selection provider (for selecting endorsing peers)
-	selectionProvider, err := sdk.ProviderFactory.NewSelectionProvider(sdk.configProvider)
+	selectionProvider, err := sdk.ServiceFactory.NewSelectionProvider(sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize selection provider")
 	}
@@ -194,6 +208,11 @@ func (sdk *FabricSDK) SigningManager() apifabclient.SigningManager {
 	return sdk.signingManager
 }
 
+// FabricProvider provides fabric objects such as peer and user
+func (sdk *FabricSDK) FabricProvider() apicore.FabricProvider {
+	return sdk.fabricProvider
+}
+
 // NewContext creates a context from an org
 func (sdk *FabricSDK) NewContext(orgID string) (*OrgContext, error) {
 	return NewOrgContext(sdk.ContextFactory, orgID, sdk.configProvider)
@@ -208,14 +227,7 @@ func (sdk *FabricSDK) NewSession(c context.Org, user apifabclient.User) (*Sessio
 // TODO: Reduced immutable interface
 // TODO: Parameter for setting up the peers
 func (sdk *FabricSDK) NewSystemClient(s context.Session) (apifabclient.FabricClient, error) {
-	client := NewSystemClient(sdk.configProvider)
-
-	client.SetCryptoSuite(sdk.cryptoSuite)
-	client.SetStateStore(sdk.stateStore)
-	client.SetUserContext(s.Identity())
-	client.SetSigningManager(sdk.signingManager)
-
-	return client, nil
+	return sdk.FabricProvider().NewClient(s.Identity())
 }
 
 // NewChannelMgmtClient returns a new client for managing channels
@@ -348,6 +360,7 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 }
 
 // NewPreEnrolledUser returns a new pre-enrolled user
+// TODO: Rename this func to NewUser
 func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (apifabclient.User, error) {
 
 	credentialMgr, err := sdk.ContextFactory.NewCredentialManager(orgID, sdk.ConfigProvider(), sdk.CryptoSuiteProvider())
@@ -360,7 +373,7 @@ func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (apifabc
 		return nil, errors.WithMessage(err, "failed to get signing identity")
 	}
 
-	user, err := NewPreEnrolledUser(sdk.ConfigProvider(), userName, signingIdentity)
+	user, err := sdk.FabricProvider().NewUser(userName, signingIdentity)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewPreEnrolledUser returned error")
 	}
@@ -369,6 +382,7 @@ func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (apifabc
 }
 
 // NewPreEnrolledUserSession returns a new pre-enrolled user session
+// TODO: Rename this func to NewUserSession
 func (sdk *FabricSDK) NewPreEnrolledUserSession(orgID string, userName string) (*Session, error) {
 
 	context, err := sdk.NewContext(orgID)

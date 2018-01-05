@@ -4,35 +4,37 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package defprovider
+package defcore
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
+	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
+	"github.com/hyperledger/fabric-sdk-go/def/provider/fabpvdr"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
-	discovery "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery/staticdiscovery"
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/staticselection"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
-// DefaultProviderFactory represents the default SDK provider factory.
-type DefaultProviderFactory struct{}
+// ProviderFactory represents the default SDK provider factory.
+type ProviderFactory struct{}
 
-// NewDefaultProviderFactory returns the default SDK provider factory.
-func NewDefaultProviderFactory() *DefaultProviderFactory {
-	f := DefaultProviderFactory{}
+// NewProviderFactory returns the default SDK provider factory.
+func NewProviderFactory() *ProviderFactory {
+	f := ProviderFactory{}
 	return &f
 }
 
 // NewConfigProvider creates a Config using the SDK's default implementation
-func (f *DefaultProviderFactory) NewConfigProvider(o opt.ConfigOpts, a opt.SDKOpts) (apiconfig.Config, error) {
+func (f *ProviderFactory) NewConfigProvider(o opt.ConfigOpts, a opt.SDKOpts) (apiconfig.Config, error) {
 	// configBytes takes precedence over configFile
 	if a.ConfigBytes != nil && len(a.ConfigBytes) > 0 {
 		return configImpl.InitConfigFromBytes(a.ConfigBytes, a.ConfigType)
@@ -41,13 +43,13 @@ func (f *DefaultProviderFactory) NewConfigProvider(o opt.ConfigOpts, a opt.SDKOp
 }
 
 // NewStateStoreProvider creates a KeyValueStore using the SDK's default implementation
-func (f *DefaultProviderFactory) NewStateStoreProvider(o opt.StateStoreOpts, config apiconfig.Config) (fab.KeyValueStore, error) {
+func (f *ProviderFactory) NewStateStoreProvider(o opt.StateStoreOpts, config apiconfig.Config) (fab.KeyValueStore, error) {
 
 	var stateStorePath = o.Path
 	if stateStorePath == "" {
 		clientCofig, err := config.Client()
 		if err != nil {
-			return nil, err
+			return nil, errors.WithMessage(err, "Unable to retrieve client config")
 		}
 		stateStorePath = clientCofig.CredentialStore.Path
 	}
@@ -60,7 +62,7 @@ func (f *DefaultProviderFactory) NewStateStoreProvider(o opt.StateStoreOpts, con
 }
 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
-func (f *DefaultProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
+func (f *ProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
 	cryptoSuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(config)
 	//Setting this cryptosuite as a factory default too
 	if cryptoSuiteProvider != nil {
@@ -70,16 +72,17 @@ func (f *DefaultProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config)
 }
 
 // NewSigningManager returns a new default implementation of signing manager
-func (f *DefaultProviderFactory) NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error) {
+func (f *ProviderFactory) NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error) {
 	return signingMgr.NewSigningManager(cryptoProvider, config)
 }
 
-// NewDiscoveryProvider returns a new default implementation of discovery provider
-func (f *DefaultProviderFactory) NewDiscoveryProvider(config apiconfig.Config) (fab.DiscoveryProvider, error) {
-	return discovery.NewDiscoveryProvider(config)
+// NewFabricProvider returns a new default implementation of fabric primitives
+func (f *ProviderFactory) NewFabricProvider(config apiconfig.Config, stateStore fab.KeyValueStore, cryptoSuite apicryptosuite.CryptoSuite, signer fab.SigningManager) (apicore.FabricProvider, error) {
+	return fabpvdr.NewFabricProvider(config, stateStore, cryptoSuite, signer), nil
 }
 
-// NewSelectionProvider returns a new default implementation of selection service
-func (f *DefaultProviderFactory) NewSelectionProvider(config apiconfig.Config) (fab.SelectionProvider, error) {
-	return selection.NewSelectionProvider(config)
+// NewLoggerProvider returns a new default implementation of a logger backend
+// This function is separated from the factory to allow logger creation first.
+func NewLoggerProvider() apilogging.LoggerProvider {
+	return deflogger.LoggerProvider()
 }

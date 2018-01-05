@@ -24,7 +24,7 @@ import (
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
@@ -208,7 +208,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	mychannelUser := selection.ChannelUser{ChannelID: "orgchannel", UserName: "User1", OrgName: "Org1"}
 
 	// Create SDK setup for channel client with dynamic selection
-	sdkOptions.ProviderFactory = &DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}
+	sdkOptions.ServiceFactory = &DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}
 	sdk, err = fabapi.NewSDK(sdkOptions)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
@@ -293,7 +293,7 @@ func loadOrgPeers(t *testing.T, sdk *fabapi.FabricSDK) {
 
 // DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
 type DynamicSelectionProviderFactory struct {
-	defprovider.DefaultProviderFactory
+	defsvc.ProviderFactory
 	ChannelUsers []selection.ChannelUser
 }
 
