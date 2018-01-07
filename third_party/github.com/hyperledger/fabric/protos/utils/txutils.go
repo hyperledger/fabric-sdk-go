@@ -29,11 +29,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-type signer interface {
-	// Sign the message
-	Sign(msg []byte) ([]byte, error)
-}
-
 // GetEnvelopeFromBlock gets an envelope from a block's Data field.
 func GetEnvelopeFromBlock(data []byte) (*common.Envelope, error) {
 	//Block always begins with an envelope

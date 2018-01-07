@@ -15,6 +15,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	bccsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
@@ -276,6 +277,16 @@ func (msp *bccspmsp) setupSigningIdentity(conf *m.FabricMSPConfig) error {
 		sid, err := msp.getSigningIdentityFromConf(conf.SigningIdentity)
 		if err != nil {
 			return err
+		}
+
+		expirationTime := sid.ExpiresAt()
+		now := time.Now()
+		if expirationTime.After(now) {
+			mspLogger.Debug("Signing identity expires at", expirationTime)
+		} else if expirationTime.IsZero() {
+			mspLogger.Debug("Signing identity has no known expiration time")
+		} else {
+			return errors.Errorf("signing identity expired %v ago", now.Sub(expirationTime))
 		}
 
 		msp.signer = sid

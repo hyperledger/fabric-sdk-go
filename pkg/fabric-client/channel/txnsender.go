@@ -215,7 +215,7 @@ func (c *Channel) sendCCProposal(ccProposalType CCProposalType, chaincodeName st
 	switch ccProposalType {
 
 	case Instantiate:
-		proposal, txID, err = protos_utils.CreateDeployProposalFromCDS(c.Name(), ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
+		proposal, txID, err = protos_utils.CreateDeployProposalFromCDS(c.Name(), ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"), nil)
 		if err != nil {
 			return nil, apitxn.TransactionID{}, errors.Wrap(err, "create instantiate chaincode proposal failed")
 		}

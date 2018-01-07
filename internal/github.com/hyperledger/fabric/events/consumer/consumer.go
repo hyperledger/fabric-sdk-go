@@ -21,6 +21,7 @@ Please review third_party pinning scripts and patches for more details.
 package consumer
 
 import (
+	"crypto/x509"
 	"sync"
 	"time"
 
@@ -45,4 +46,5 @@ type EventsClient struct {
 type RegistrationConfig struct {
 	InterestedEvents []*ehpb.Interest
 	Timestamp        *timestamp.Timestamp
+	TlsCert          *x509.Certificate
 }
