@@ -16,9 +16,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/golang/protobuf/ptypes"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
+	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -40,6 +42,7 @@ type eventsClient struct {
 	adapter                consumer.EventAdapter
 	TLSCertificate         string
 	TLSServerHostOverride  string
+	tlsCertHash            []byte
 	clientConn             *grpc.ClientConn
 	client                 fab.FabricClient
 	processEventsCompleted chan struct{}
@@ -55,8 +58,17 @@ func NewEventsClient(client fab.FabricClient, peerAddress string, certificate st
 		regTimeout = 60 * time.Second
 		err = errors.New("regTimeout > 60, setting to 60 sec")
 	}
-	return &eventsClient{sync.RWMutex{}, peerAddress, regTimeout, nil, adapter,
-		certificate, serverhostoverride, nil, client, nil}, err
+
+	return &eventsClient{
+		RWMutex:               sync.RWMutex{},
+		peerAddress:           peerAddress,
+		regTimeout:            regTimeout,
+		adapter:               adapter,
+		TLSCertificate:        certificate,
+		TLSServerHostOverride: serverhostoverride,
+		client:                client,
+		tlsCertHash:           ccomm.TLSCertHash(client.Config()),
+	}, err
 }
 
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
@@ -117,9 +129,16 @@ func (ec *eventsClient) RegisterAsync(ies []*ehpb.Interest) error {
 	if err != nil {
 		return errors.WithMessage(err, "user context identity retrieval failed")
 	}
+
+	ts, err := ptypes.TimestampProto(time.Now())
+	if err != nil {
+		return errors.Wrap(err, "failed to create timestamp")
+	}
 	emsg := &ehpb.Event{
-		Event:   &ehpb.Event_Register{Register: &ehpb.Register{Events: ies}},
-		Creator: creator,
+		Event:       &ehpb.Event_Register{Register: &ehpb.Register{Events: ies}},
+		Creator:     creator,
+		TlsCertHash: ec.tlsCertHash,
+		Timestamp:   ts,
 	}
 	if err = ec.send(emsg); err != nil {
 		logger.Errorf("error on Register send %s\n", err)
@@ -168,9 +187,15 @@ func (ec *eventsClient) UnregisterAsync(ies []*ehpb.Interest) error {
 		return errors.WithMessage(err, "user context identity retrieval failed")
 	}
 
+	ts, err := ptypes.TimestampProto(time.Now())
+	if err != nil {
+		return errors.Wrap(err, "failed to create timestamp")
+	}
 	emsg := &ehpb.Event{
-		Event:   &ehpb.Event_Unregister{Unregister: &ehpb.Unregister{Events: ies}},
-		Creator: creator,
+		Event:       &ehpb.Event_Unregister{Unregister: &ehpb.Unregister{Events: ies}},
+		Creator:     creator,
+		TlsCertHash: ec.tlsCertHash,
+		Timestamp:   ts,
 	}
 
 	if err = ec.send(emsg); err != nil {
