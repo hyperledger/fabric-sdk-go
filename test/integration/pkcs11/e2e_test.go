@@ -12,7 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/test/integration/e2e"
 )
@@ -20,8 +20,8 @@ import (
 func TestE2E(t *testing.T) {
 	// Create SDK setup for the integration tests
 	sdkOptions := fabapi.Options{
-		ConfigFile:      "../" + ConfigTestFile,
-		ProviderFactory: &CustomCryptoSuiteProviderFactory{},
+		ConfigFile:  "../" + ConfigTestFile,
+		CoreFactory: &CustomCryptoSuiteProviderFactory{},
 	}
 
 	e2e.Run(t, sdkOptions)
@@ -29,7 +29,7 @@ func TestE2E(t *testing.T) {
 
 // CustomCryptoSuiteProviderFactory is will provide custom cryptosuite (bccsp.BCCSP)
 type CustomCryptoSuiteProviderFactory struct {
-	defprovider.DefaultProviderFactory
+	defcore.ProviderFactory
 }
 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP

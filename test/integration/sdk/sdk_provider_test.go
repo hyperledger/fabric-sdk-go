@@ -19,7 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
 
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/dynamicselection"
 )
@@ -48,8 +48,8 @@ func TestDynamicSelection(t *testing.T) {
 
 	// Create SDK setup for channel client with dynamic selection
 	sdkOptions := fabapi.Options{
-		ConfigFile:      testSetup.ConfigFile,
-		ProviderFactory: &DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}},
+		ConfigFile:     testSetup.ConfigFile,
+		ServiceFactory: &DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}},
 	}
 
 	sdk, err := fabapi.NewSDK(sdkOptions)
@@ -92,7 +92,7 @@ func TestDynamicSelection(t *testing.T) {
 
 // DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
 type DynamicSelectionProviderFactory struct {
-	defprovider.DefaultProviderFactory
+	defsvc.ProviderFactory
 	ChannelUsers []selection.ChannelUser
 }
 

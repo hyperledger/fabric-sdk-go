@@ -16,7 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspSw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
@@ -56,8 +56,8 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 
 	// Create SDK setup with custom cryptosuite provider factory
 	sdkOptions := fabapi.Options{
-		ConfigFile:      testSetup.ConfigFile,
-		ProviderFactory: &CustomCryptoSuiteProviderFactory{bccspProvider: customBccspProvider},
+		ConfigFile:  testSetup.ConfigFile,
+		CoreFactory: &CustomCryptoSuiteProviderFactory{bccspProvider: customBccspProvider},
 	}
 
 	sdk, err := fabapi.NewSDK(sdkOptions)
@@ -89,7 +89,7 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 
 // CustomCryptoSuiteProviderFactory is will provide custom cryptosuite (bccsp.BCCSP)
 type CustomCryptoSuiteProviderFactory struct {
-	defprovider.DefaultProviderFactory
+	defcore.ProviderFactory
 	bccspProvider bccsp.BCCSP
 }
 
@@ -146,8 +146,8 @@ func TestCustomCryptoSuite(t *testing.T) {
 
 	// Create SDK setup with custom cryptosuite provider factory
 	sdkOptions := fabapi.Options{
-		ConfigFile:      testSetup.ConfigFile,
-		ProviderFactory: &CustomCryptoSuiteProviderFactory{bccspProvider: customBccspWrapper},
+		ConfigFile:  testSetup.ConfigFile,
+		CoreFactory: &CustomCryptoSuiteProviderFactory{bccspProvider: customBccspWrapper},
 	}
 
 	sdk, err := fabapi.NewSDK(sdkOptions)

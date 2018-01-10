@@ -8,6 +8,7 @@ package context
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 )
@@ -20,6 +21,7 @@ type SDK interface {
 	DiscoveryProvider() fab.DiscoveryProvider
 	SelectionProvider() fab.SelectionProvider
 	SigningManager() fab.SigningManager
+	FabricProvider() apicore.FabricProvider
 }
 
 // Org represents the organization context

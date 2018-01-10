@@ -26,18 +26,19 @@ var rwmutex = &sync.RWMutex{}
 var moduleLevels = &moduleLeveled{}
 var callerInfos = callerInfo{}
 
-type loggingProvider struct {
+// Provider is the default logger implementation
+type Provider struct {
 }
 
 //GetLogger returns SDK logger implementation
-func (p *loggingProvider) GetLogger(module string) apilogging.Logger {
+func (p *Provider) GetLogger(module string) apilogging.Logger {
 	newLogger := log.New(os.Stdout, fmt.Sprintf(logPrefixFormatter, module), log.Ldate|log.Ltime|log.LUTC)
 	return &Logger{logger: newLogger, module: module}
 }
 
 //LoggerProvider returns logging provider for SDK logger
 func LoggerProvider() apilogging.LoggerProvider {
-	return &loggingProvider{}
+	return &Provider{}
 }
 
 //Logger standard SDK logger

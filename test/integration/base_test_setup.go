@@ -106,7 +106,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	setup.Client = sc
 	setup.AdminUser = session.Identity()
 
-	channel, err := setup.GetChannel(setup.Client, setup.ChannelID, []string{setup.OrgID})
+	channel, err := setup.GetChannel(sdk, setup.Client, setup.ChannelID, []string{setup.OrgID})
 	if err != nil {
 		return errors.Wrapf(err, "create channel (%s) failed: %v", setup.ChannelID)
 	}
@@ -243,7 +243,7 @@ func (setup *BaseSetupImpl) InstallAndInstantiateCC(ccName, ccPath, ccVersion, g
 }
 
 // GetChannel initializes and returns a channel based on config
-func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string, orgs []string) (fab.Channel, error) {
+func (setup *BaseSetupImpl) GetChannel(sdk *deffab.FabricSDK, client fab.FabricClient, channelID string, orgs []string) (fab.Channel, error) {
 
 	channel, err := client.NewChannel(channelID)
 	if err != nil {
@@ -270,7 +270,7 @@ func (setup *BaseSetupImpl) GetChannel(client fab.FabricClient, channelID string
 			return nil, errors.WithMessage(err, "reading peer config failed")
 		}
 		for _, p := range peerConfig {
-			endorser, err := deffab.NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: p}, client.Config())
+			endorser, err := sdk.FabricProvider().NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: p})
 			if err != nil {
 				return nil, errors.WithMessage(err, "NewPeer failed")
 			}
