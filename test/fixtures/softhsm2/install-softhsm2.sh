@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-set -e
+set -xe
 
 ARCH=`uname -m`
 
@@ -13,7 +13,7 @@ if [ $ARCH = "s390x" ]; then
 fi
 
 apt-get update && \
-apt-get -qq install -y make zlib1g-dev libbz2-dev libyaml-dev libltdl-dev libtool curl ca-certificates openssl git softhsm2 && \
+apt-get install -y --no-install-recommends softhsm2 curl git gcc g++ libtool libltdl-dev && \
 mkdir -p /var/lib/softhsm/tokens/ && \
 softhsm2-util --init-token --slot 0 --label "ForFabric" --so-pin 1234 --pin 98765432 && \
-rm -rf /var/lib/apt/lists/*
+go get ${PKCS11_TOOL_URL}

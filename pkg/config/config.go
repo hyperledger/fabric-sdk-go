@@ -23,10 +23,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	lu "github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
+
+	cs "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 )
 
 var logger = logging.NewLogger(logModule)
@@ -828,24 +831,41 @@ func (c *Config) TLSClientCerts() ([]tls.Certificate, error) {
 		}
 	}
 
-	if clientConfig.TLSCerts.Client.KeyPem != "" {
-		kb = []byte(clientConfig.TLSCerts.Client.KeyPem)
-	} else if clientConfig.TLSCerts.Client.Keyfile != "" {
-		kb, err = loadByteKeyOrCertFromFile(&clientConfig, true)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to load key from file path '%s'", clientConfig.TLSCerts.Client.Keyfile)
-		}
-	}
-
-	if len(cb) == 0 && len(kb) == 0 {
+	if len(cb) == 0 {
 		// if no cert found in the config, return empty cert chain
 		return []tls.Certificate{clientCerts}, nil
 	}
 
-	// load the key/cert pair from []byte
-	clientCerts, err = tls.X509KeyPair(cb, kb)
+	// Load private key from cert using default crypto suite
+	cs := cs.GetDefault()
+	pk, err := cryptoutil.GetPrivateKeyFromCert(cb, cs)
+
+	// If CryptoSuite fails to load private key from cert then load private key from config
+	if err != nil || pk == nil {
+		logger.Debugf("Reading pk from config, unable to retrieve from cert: %s", err)
+		if clientConfig.TLSCerts.Client.KeyPem != "" {
+			kb = []byte(clientConfig.TLSCerts.Client.KeyPem)
+		} else if clientConfig.TLSCerts.Client.Keyfile != "" {
+			kb, err = loadByteKeyOrCertFromFile(&clientConfig, true)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Failed to load key from file path '%s'", clientConfig.TLSCerts.Client.Keyfile)
+			}
+		}
+
+		// load the key/cert pair from []byte
+		clientCerts, err = tls.X509KeyPair(cb, kb)
+		if err != nil {
+			return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+		}
+
+		return []tls.Certificate{clientCerts}, nil
+
+	}
+
+	// private key was retrieved from cert
+	clientCerts, err = cryptoutil.X509KeyPair(cb, pk, cs)
 	if err != nil {
-		return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+		return nil, err
 	}
 
 	return []tls.Certificate{clientCerts}, nil

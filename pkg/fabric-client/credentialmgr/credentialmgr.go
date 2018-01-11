@@ -16,6 +16,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
@@ -71,16 +72,20 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient
 		return nil, errors.WithMessage(err, "MSP ID config read failed")
 	}
 
-	privateKey, err := mgr.getPrivateKey(userName)
-
+	enrollmentCert, err := mgr.getEnrollmentCert(userName)
 	if err != nil {
 		return nil, err
 	}
 
-	enrollmentCert, err := mgr.getEnrollmentCert(userName)
+	privateKey, err := cryptoutil.GetPrivateKeyFromCert(enrollmentCert, mgr.cryptoProvider)
 
-	if err != nil {
-		return nil, err
+	// If CryptoSuite fails to load private key from cert then load private key from config
+	if err != nil || privateKey == nil {
+		logger.Debugf("Reading pk from config, unable to retrieve from cert: %s", err)
+		privateKey, err = mgr.getPrivateKey(userName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	signingIdentity := &apifabclient.SigningIdentity{MspID: mspID, PrivateKey: privateKey, EnrollmentCert: enrollmentCert}

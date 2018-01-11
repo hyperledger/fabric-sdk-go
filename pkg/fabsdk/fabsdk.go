@@ -164,6 +164,7 @@ func New(options ...SDKOption) (*FabricSDK, error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize crypto suite")
 	}
+
 	sdk.cryptoSuite = cs
 
 	// Setting this cryptosuite as the factory default

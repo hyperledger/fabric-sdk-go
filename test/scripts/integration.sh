@@ -33,12 +33,35 @@ if [ "$ARCH" == "x86_64" ]; then
     RACEFLAG="-race"
 fi
 
+#Add entry here below for your key to be imported into softhsm
+declare -a PRIVATE_KEYS=(
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/v1/crypto-config/ordererOrganizations/example.com/users/Admin@example.com/msp/keystore/f4aa194b12d13d7c2b7b275a7115af5e6f728e11710716f2c754df4587891511_sk"
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/v1/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/ce142124e13093a3e13bc4708b0f2b26e1d4d2ea4d4cc59942790bfc0f3bcc6d_sk"
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/v1/crypto-config/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore/abbe8ee0f86c227b1917d208921497603d2ff28f4ba8e902d703744c4a6fa7b7_sk"
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/v1/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/keystore/371ea01078b18f3b92c1fc8233dfa8d209d882ae40aeff4defd118ba9d572a15_sk"
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/v1/crypto-config/peerOrganizations/org2.example.com/users/User1@org2.example.com/msp/keystore/7777a174c9fe40ab5abe33199a4fe82f1e0a7c45715e395e73a78cc3480d0021_sk"
+)
+GO_SRC=/opt/gopath/src
+
+
 echo "Testing with code level $FABRIC_SDKGO_CODELEVEL_TAG (Fabric ${FABRIC_SDKGO_CODELEVEL_VER}) ..."
 GO_TAGS="$GO_TAGS $FABRIC_SDKGO_CODELEVEL_TAG"
 
 if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]; then
-    echo "Testing with PKCS11 ..."
     PKGS="$REPO/test/integration/pkcs11"
+
+    cd $GOPATH/src/github.com/gbolo/go-util/p11tool
+    for i in "${PRIVATE_KEYS[@]}"
+    do
+        echo "Importing key : ${GO_SRC}/${i}"
+        openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in ${GO_SRC}/${i} -out private.p8
+        go run main.go -action import -keyFile private.p8
+        rm -rf private.p8
+    done
+
+    echo "Testing with PKCS11 ..."
+
 fi
 
 GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
