@@ -13,7 +13,7 @@ import (
 
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
+	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
@@ -36,13 +36,13 @@ func NewSessionClientFactory() *SessionClientFactory {
 /*
 // NewSystemClient returns a new FabricClient.
 // TODO: duplicate of core factory method or rename?
-func (f *SessionClientFactory) NewSystemClient(sdk context.SDK, session context.Session, config apiconfig.Config) (fab.FabricClient, error) {
+func (f *SessionClientFactory) NewSystemClient(sdk apisdk.SDK, session apisdk.Session, config apiconfig.Config) (fab.FabricClient, error) {
 	return sdk.FabricProvider().NewClient(session.Identity())
 }
 */
 
 // NewChannelMgmtClient returns a client that manages channels (create/join channel)
-func (f *SessionClientFactory) NewChannelMgmtClient(sdk context.SDK, session context.Session, config apiconfig.Config) (chmgmt.ChannelMgmtClient, error) {
+func (f *SessionClientFactory) NewChannelMgmtClient(sdk apisdk.SDK, session apisdk.Session, config apiconfig.Config) (chmgmt.ChannelMgmtClient, error) {
 	// For now settings are the same as for system client
 	client, err := sdk.FabricProvider().NewClient(session.Identity())
 	if err != nil {
@@ -52,7 +52,7 @@ func (f *SessionClientFactory) NewChannelMgmtClient(sdk context.SDK, session con
 }
 
 // NewResourceMgmtClient returns a client that manages resources
-func (f *SessionClientFactory) NewResourceMgmtClient(sdk context.SDK, session context.Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error) {
+func (f *SessionClientFactory) NewResourceMgmtClient(sdk apisdk.SDK, session apisdk.Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error) {
 
 	// For now settings are the same as for system client
 	client, err := sdk.FabricProvider().NewClient(session.Identity())
@@ -70,7 +70,7 @@ func (f *SessionClientFactory) NewResourceMgmtClient(sdk context.SDK, session co
 
 // NewChannelClient returns a client that can execute transactions on specified channel
 // TODO - better refactoring for testing and/or extract getChannelImpl to another package
-func (f *SessionClientFactory) NewChannelClient(sdk context.SDK, session context.Session, config apiconfig.Config, channelID string) (apitxn.ChannelClient, error) {
+func (f *SessionClientFactory) NewChannelClient(sdk apisdk.SDK, session apisdk.Session, config apiconfig.Config, channelID string) (apitxn.ChannelClient, error) {
 	// TODO: Add capablity to override sdk's selection and discovery provider
 
 	client := clientImpl.NewClient(sdk.ConfigProvider())
@@ -135,7 +135,7 @@ func getChannel(client fab.FabricClient, channelID string) (fab.Channel, error) 
 	return channel, nil
 }
 
-func getEventHub(client fab.FabricClient, channelID string, session context.Session) (*events.EventHub, error) {
+func getEventHub(client fab.FabricClient, channelID string, session apisdk.Session) (*events.EventHub, error) {
 
 	peerConfig, err := client.Config().ChannelPeers(channelID)
 	if err != nil {

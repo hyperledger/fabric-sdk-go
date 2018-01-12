@@ -21,8 +21,9 @@ REPO="github.com/hyperledger/fabric-sdk-go"
 
 # Packages to include in test run
 PKGS=`$GO_CMD list $REPO... 2> /dev/null | \
-      grep -v ^$REPO/api/ | \
-      grep -v ^$REPO/pkg/fabric-ca-client/mocks | grep -v ^$REPO/pkg/fabric-client/mocks | \
+      grep -v ^$REPO$ | \
+      grep -v ^$REPO/api/ | grep -v ^$REPO/.*/api[^/]*$ | \
+      grep -v ^$REPO/.*/mocks$ | \
       grep -v ^$REPO/internal/github.com/ | grep -v ^$REPO/third_party/ | \
       grep -v ^$REPO/pkg/cryptosuite/bccsp/pkcs11 | grep -v ^$REPO/pkg/cryptosuite/bccsp/multisuite | \
       grep -v ^$REPO/vendor/ | grep -v ^$REPO/test/`

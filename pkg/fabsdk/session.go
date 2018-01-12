@@ -4,13 +4,13 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package fabapi
+package fabsdk
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
+	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
 
 // OrgContext currently represents the clients for an organization that the app is dealing with.
@@ -19,8 +19,8 @@ type OrgContext struct {
 	mspClient fabca.FabricCAClient
 }
 
-// NewOrgContext creates a context based on the providers in the SDK
-func NewOrgContext(factory context.OrgClientFactory, orgID string, config apiconfig.Config) (*OrgContext, error) {
+// newOrgContext creates a context based on the providers in the SDK
+func newOrgContext(factory apisdk.OrgClientFactory, orgID string, config apiconfig.Config) (*OrgContext, error) {
 	c := OrgContext{}
 
 	// TODO: Evaluate context contents during credential client design
@@ -45,12 +45,12 @@ func (c *OrgContext) MSPClient() fabca.FabricCAClient {
 // Session represents an identity being used with clients.
 // TODO: Better description.
 type Session struct {
-	factory context.SessionClientFactory
+	factory apisdk.SessionClientFactory
 	user    fab.User
 }
 
-// NewSession creates a session from a context and a user (TODO)
-func NewSession(user fab.User, factory context.SessionClientFactory) *Session {
+// newSession creates a session from a context and a user (TODO)
+func newSession(user fab.User, factory apisdk.SessionClientFactory) *Session {
 	s := Session{
 		factory: factory,
 		user:    user,

@@ -16,9 +16,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
@@ -40,7 +40,7 @@ type CCPolicyProvider interface {
 }
 
 // NewCCPolicyProvider creates new chaincode policy data provider
-func newCCPolicyProvider(sdk *fabapi.FabricSDK, channelID string, userName string, orgName string) (CCPolicyProvider, error) {
+func newCCPolicyProvider(sdk *fabsdk.FabricSDK, channelID string, userName string, orgName string) (CCPolicyProvider, error) {
 
 	if channelID == "" || userName == "" || orgName == "" {
 		return nil, errors.New("Must provide channel ID, user name and organisation for cc policy provider")
