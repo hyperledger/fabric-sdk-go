@@ -14,8 +14,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
@@ -43,11 +44,12 @@ func TestChannelClient(t *testing.T) {
 	}
 
 	// Create SDK setup for the integration tests
-	sdkOptions := fabapi.Options{
-		ConfigFile: testSetup.ConfigFile,
+	c, err := config.FromFile(testSetup.ConfigFile)
+	if err != nil {
+		t.Fatalf("Failed to load config: %s", err)
 	}
 
-	sdk, err := fabapi.NewSDK(sdkOptions)
+	sdk, err := fabsdk.New(c)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

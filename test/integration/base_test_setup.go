@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
+	"crypto/x509"
+	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -18,22 +20,16 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
-	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-
-	"crypto/x509"
-
-	"fmt"
-
-	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 // BaseSetupImpl implementation of BaseTestSetup
@@ -90,11 +86,12 @@ func ExampleCCUpgradeArgs() [][]byte {
 // Initialize reads configuration from file and sets up client, channel and event hub
 func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	// Create SDK setup for the integration tests
-	sdkOptions := deffab.Options{
-		ConfigFile: setup.ConfigFile,
+	c, err := config.FromFile(setup.ConfigFile)
+	if err != nil {
+		t.Fatalf("Failed to load config: %s", err)
 	}
 
-	sdk, err := deffab.NewSDK(sdkOptions)
+	sdk, err := fabsdk.New(c)
 	if err != nil {
 		return errors.WithMessage(err, "SDK init failed")
 	}

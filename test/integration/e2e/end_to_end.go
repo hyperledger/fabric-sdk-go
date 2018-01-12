@@ -12,8 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
@@ -21,6 +22,7 @@ import (
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
@@ -33,18 +35,18 @@ const (
 )
 
 func runWithConfigFixture(t *testing.T) {
-	// Create SDK setup for the integration tests
-	sdkOptions := fabapi.Options{
-		ConfigFile: "../" + integration.ConfigTestFile,
+	c, err := config.FromFile("../" + integration.ConfigTestFile)
+	if err != nil {
+		t.Fatalf("Failed to load config: %s", err)
 	}
 
-	Run(t, sdkOptions)
+	Run(t, c)
 }
 
 // Run enables testing an end-to-end scenario against the supplied SDK options
-func Run(t *testing.T, sdkOptions fabapi.Options) {
+func Run(t *testing.T, config apiconfig.Config, sdkOpts ...fabsdk.Option) {
 
-	sdk, err := fabapi.NewSDK(sdkOptions)
+	sdk, err := fabsdk.New(config, sdkOpts...)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

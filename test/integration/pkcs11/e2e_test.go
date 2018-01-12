@@ -9,9 +9,11 @@ package pkcs11
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/test/integration/e2e"
@@ -19,12 +21,12 @@ import (
 
 func TestE2E(t *testing.T) {
 	// Create SDK setup for the integration tests
-	sdkOptions := fabapi.Options{
-		ConfigFile:  "../" + ConfigTestFile,
-		CoreFactory: &CustomCryptoSuiteProviderFactory{},
+	c, err := config.FromFile("../" + ConfigTestFile)
+	if err != nil {
+		t.Fatalf("Failed to load config: %s", err)
 	}
 
-	e2e.Run(t, sdkOptions)
+	e2e.Run(t, c, fabsdk.WithCorePkg(&CustomCryptoSuiteProviderFactory{}))
 }
 
 // CustomCryptoSuiteProviderFactory is will provide custom cryptosuite (bccsp.BCCSP)
