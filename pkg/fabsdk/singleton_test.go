@@ -12,21 +12,29 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
+	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
+func dePkgSuiteWithLogger(logger apilogging.LoggerProvider) SDKOption {
+	pkgSuite := apisdk.PkgSuite{
+		Core:    defcore.NewProviderFactory(),
+		Service: defsvc.NewProviderFactory(),
+		Context: defclient.NewOrgClientFactory(),
+		Session: defclient.NewSessionClientFactory(),
+		Logger:  logger,
+	}
+	return PkgSuiteAsOpt(pkgSuite)
+}
 func TestDefLoggerFactory(t *testing.T) {
 	// Cleanup logging singleton
 	logging.UnsafeReset()
 
-	// create SDK with default logger
-	setup := Options{
-		ConfigFile: "../../test/fixtures/config/config_test.yaml",
-	}
-	populateReferenceFactoryOptions(&setup)
-
-	_, err := NewSDK(setup)
+	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), defPkgSuite())
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -64,13 +72,7 @@ func TestOptLoggerFactory(t *testing.T) {
 
 	lf := NewMockLoggerFactory()
 
-	setup := Options{
-		ConfigFile:    "../../test/fixtures/config/config_test.yaml",
-		LoggerFactory: lf,
-	}
-	populateReferenceFactoryOptions(&setup)
-
-	_, err := NewSDK(setup)
+	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), dePkgSuiteWithLogger(lf))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}

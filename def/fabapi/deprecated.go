@@ -4,13 +4,18 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
+// Package fabapi is deprecated and will be removed - see pkg/fabsdk
 package fabapi
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -42,36 +47,52 @@ type StateStoreOpts struct {
 // NewSDK wraps the NewSDK func moved to the pkg folder.
 // Notice: this wrapper is deprecated and will be removed.
 func NewSDK(options Options) (*fabsdk.FabricSDK, error) {
-	opts := newSDKOptionsFromWrapper(options)
-	sdk, err := fabsdk.NewSDK(opts)
+	sdk, err := fabsdk.New(
+		fabsdk.ConfigBytes(options.ConfigByte, options.ConfigType),
+		fabsdk.ConfigFile(options.ConfigFile),
+		fabsdk.StateStorePath(options.StateStoreOpts.Path),
+		pkgSuiteFromOptions(options))
+
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Info("fabapi.NewSDK is depecated - please use fabsdk.NewSDK")
+	logger.Debug("fabapi.NewSDK is deprecated - please use fabsdk.New")
 
 	return sdk, nil
 }
 
-// newSDKOptionsFromWrapper populates the SDK options with the default implementation referenced by the fabapi package
-func newSDKOptionsFromWrapper(opt Options) fabsdk.Options {
-	stateStoreOpts := fabsdk.StateStoreOpts{
-		Path: opt.StateStoreOpts.Path,
+func pkgSuiteFromOptions(options Options) fabsdk.SDKOption {
+	impl := apisdk.PkgSuite{}
+	if options.CoreFactory != nil {
+		impl.Core = options.CoreFactory
+	} else {
+		impl.Core = defcore.NewProviderFactory()
 	}
 
-	sdkOpt := fabsdk.Options{
-		ConfigFile:     opt.ConfigFile,
-		ConfigByte:     opt.ConfigByte,
-		ConfigType:     opt.ConfigType,
-		StateStoreOpts: stateStoreOpts,
-		CoreFactory:    opt.CoreFactory,
-		ServiceFactory: opt.ServiceFactory,
-		ContextFactory: opt.ContextFactory,
-		SessionFactory: opt.SessionFactory,
-		LoggerFactory:  opt.LoggerFactory,
+	if options.ServiceFactory != nil {
+		impl.Service = options.ServiceFactory
+	} else {
+		impl.Service = defsvc.NewProviderFactory()
 	}
 
-	PopulateSDKOpts(&sdkOpt)
+	if options.ContextFactory != nil {
+		impl.Context = options.ContextFactory
+	} else {
+		impl.Context = defclient.NewOrgClientFactory()
+	}
 
-	return sdkOpt
+	if options.SessionFactory != nil {
+		impl.Session = options.SessionFactory
+	} else {
+		impl.Session = defclient.NewSessionClientFactory()
+	}
+
+	if options.LoggerFactory != nil {
+		impl.Logger = options.LoggerFactory
+	} else {
+		impl.Logger = deflogger.LoggerProvider()
+	}
+
+	return fabsdk.PkgSuiteAsOpt(impl)
 }
