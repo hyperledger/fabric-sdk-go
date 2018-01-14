@@ -19,12 +19,14 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
-	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
 // ProviderFactory represents the default SDK provider factory.
-type ProviderFactory struct{}
+type ProviderFactory struct {
+	// stateStoreOpts is deprecated
+	stateStoreOpts StateStoreOptsDeprecated
+}
 
 // NewProviderFactory returns the default SDK provider factory.
 func NewProviderFactory() *ProviderFactory {
@@ -32,19 +34,30 @@ func NewProviderFactory() *ProviderFactory {
 	return &f
 }
 
+// ConfigOpts provides bootstrap setup
+type ConfigOpts struct {
+	//FileName to load from a predefined path
+	FileName string
+	//Raw to load from an bytes array
+	Raw []byte
+	//Format to specify the type of the config (mainly used with ConfigBytes as ConfigFile has a file extension to specify the type)
+	// valid values: yaml, json, etc.
+	Format string
+}
+
 // NewConfigProvider creates a Config using the SDK's default implementation
-func (f *ProviderFactory) NewConfigProvider(sdkOpts apisdk.SDKOpts) (apiconfig.Config, error) {
+func (f *ProviderFactory) NewConfigProvider(opts ConfigOpts) (apiconfig.Config, error) {
 	// configBytes takes precedence over configFile
-	if sdkOpts.ConfigBytes != nil && len(sdkOpts.ConfigBytes) > 0 {
-		return configImpl.FromRaw(sdkOpts.ConfigBytes, sdkOpts.ConfigType)
+	if opts.Raw != nil && len(opts.Raw) > 0 {
+		return configImpl.FromRaw(opts.Raw, opts.Format)
 	}
-	return configImpl.FromFile(sdkOpts.ConfigFile)
+	return configImpl.FromFile(opts.FileName)
 }
 
 // NewStateStoreProvider creates a KeyValueStore using the SDK's default implementation
-func (f *ProviderFactory) NewStateStoreProvider(o apisdk.StateStoreOpts, config apiconfig.Config) (fab.KeyValueStore, error) {
+func (f *ProviderFactory) NewStateStoreProvider(config apiconfig.Config) (fab.KeyValueStore, error) {
 
-	var stateStorePath = o.Path
+	var stateStorePath = f.stateStoreOpts.Path
 	if stateStorePath == "" {
 		clientCofig, err := config.Client()
 		if err != nil {

@@ -17,26 +17,9 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 )
 
-// SDKOpts provides bootstrap setup
-type SDKOpts struct {
-	//ConfigFile to load from a predefined path
-	ConfigFile string
-	//ConfigBytes to load from an bytes array
-	ConfigBytes []byte
-	//ConfigType to specify the type of the config (mainly used with ConfigBytes as ConfigFile has a file extension to specify the type)
-	// valid values: yaml, json, etc.
-	ConfigType string
-}
-
-// StateStoreOpts provides setup parameters for KeyValueStore
-type StateStoreOpts struct {
-	Path string
-}
-
 // CoreProviderFactory allows overriding of primitives and the fabric core object provider
 type CoreProviderFactory interface {
-	NewConfigProvider(a SDKOpts) (apiconfig.Config, error)
-	NewStateStoreProvider(o StateStoreOpts, config apiconfig.Config) (fab.KeyValueStore, error)
+	NewStateStoreProvider(config apiconfig.Config) (fab.KeyValueStore, error)
 	NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error)
 	NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error)
 	NewFabricProvider(config apiconfig.Config, stateStore fab.KeyValueStore, cryptoSuite apicryptosuite.CryptoSuite, signer fab.SigningManager) (apicore.FabricProvider, error)
@@ -63,11 +46,11 @@ type SessionClientFactory interface {
 	NewChannelClient(context SDK, session Session, config apiconfig.Config, channelID string) (txn.ChannelClient, error)
 }
 
-// PkgSuite holds the package factories that create clients and providers
-type PkgSuite struct {
-	Core    CoreProviderFactory
-	Service ServiceProviderFactory
-	Context OrgClientFactory
-	Session SessionClientFactory
-	Logger  apilogging.LoggerProvider
+// PkgSuite provides the package factories that create clients and providers
+type PkgSuite interface {
+	Core() (CoreProviderFactory, error)
+	Service() (ServiceProviderFactory, error)
+	Context() (OrgClientFactory, error)
+	Session() (SessionClientFactory, error)
+	Logger() (apilogging.LoggerProvider, error)
 }

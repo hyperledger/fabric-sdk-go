@@ -45,9 +45,6 @@ func TestChannelClient(t *testing.T) {
 	// Create SDK setup for the integration tests
 	sdkOptions := fabapi.Options{
 		ConfigFile: testSetup.ConfigFile,
-		StateStoreOpts: fabapi.StateStoreOpts{
-			Path: "/tmp/enroll_user",
-		},
 	}
 
 	sdk, err := fabapi.NewSDK(sdkOptions)

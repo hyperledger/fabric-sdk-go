@@ -10,59 +10,65 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
+	"github.com/golang/mock/gomock"
+	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
 )
 
-func defPkgSuite() SDKOption {
-	pkgSuite := apisdk.PkgSuite{
-		Core:    defcore.NewProviderFactory(),
-		Service: defsvc.NewProviderFactory(),
-		Context: defclient.NewOrgClientFactory(),
-		Session: defclient.NewSessionClientFactory(),
-		Logger:  deflogger.LoggerProvider(),
-	}
-	return PkgSuiteAsOpt(pkgSuite)
+func TestPanicOnNilConfig(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("Passing nil configuration was supposed to panic")
+		}
+	}()
+
+	New(nil)
 }
 
 func TestNewGoodOpt(t *testing.T) {
-	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), goodOpt(), defPkgSuite())
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	_, err = New(c, goodOpt())
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
 }
 
-func goodOpt() SDKOption {
-	return func(sdk *FabricSDK) (*FabricSDK, error) {
-		return sdk, nil
+func goodOpt() Option {
+	return func(opts *options) error {
+		return nil
 	}
 }
 
 func TestNewBadOpt(t *testing.T) {
-	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), badOpt(), defPkgSuite())
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	_, err = New(c, badOpt())
 	if err == nil {
 		t.Fatalf("Expected error from New")
 	}
 }
 
-func badOpt() SDKOption {
-	return func(sdk *FabricSDK) (*FabricSDK, error) {
-		return sdk, errors.New("Bad Opt")
+func badOpt() Option {
+	return func(opts *options) error {
+		return errors.New("Bad Opt")
 	}
 }
 func TestNewDefaultSDK(t *testing.T) {
-	// Test new SDK with invalid config file
-	_, err := New(ConfigFile("../../test/fixtures/config/invalid.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
-	if err == nil {
-		t.Fatalf("Should have failed for invalid config file")
+	// Test New SDK with valid config file
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	// Test New SDK with valid config file
-	sdk, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	sdk, err := New(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -87,9 +93,214 @@ func TestNewDefaultSDK(t *testing.T) {
 
 }
 
-func TestNewChannelMgmtClient(t *testing.T) {
+func TestWithCorePkg(t *testing.T) {
+	// Test New SDK with valid config file
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
 
-	sdk, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	_, err = New(c)
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	factory := mockapisdk.NewMockCoreProviderFactory(mockCtrl)
+
+	factory.EXPECT().NewCryptoSuiteProvider(c).Return(nil, nil)
+	factory.EXPECT().NewStateStoreProvider(c).Return(nil, nil)
+	factory.EXPECT().NewSigningManager(nil, c).Return(nil, nil)
+	factory.EXPECT().NewFabricProvider(c, nil, nil, nil).Return(nil, nil)
+
+	_, err = New(c, WithCorePkg(factory))
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+}
+
+func TestWithServicePkg(t *testing.T) {
+	// Test New SDK with valid config file
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	_, err = New(c)
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	factory := mockapisdk.NewMockServiceProviderFactory(mockCtrl)
+
+	factory.EXPECT().NewDiscoveryProvider(c).Return(nil, nil)
+	factory.EXPECT().NewSelectionProvider(c).Return(nil, nil)
+
+	_, err = New(c, WithServicePkg(factory))
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+}
+
+func TestWithContextPkg(t *testing.T) {
+	// Test New SDK with valid config file
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	core, err := newMockCorePkg(c)
+	if err != nil {
+		t.Fatalf("Error initializing core factory: %s", err)
+	}
+
+	_, err = New(c)
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	// Use real implementation of credential manager to provide in later response
+	pkgSuite := defPkgSuite{}
+	ctx, err := pkgSuite.Context()
+	if err != nil {
+		t.Fatalf("Unexpected error getting context: %s", err)
+	}
+
+	cm, err := ctx.NewCredentialManager("Org1", c, core.cryptoSuite)
+	if err != nil {
+		t.Fatalf("Unexpected error getting credential manager: %s", err)
+	}
+
+	// Create mock to ensure the provided factory is called.
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	factory := mockapisdk.NewMockOrgClientFactory(mockCtrl)
+
+	factory.EXPECT().NewCredentialManager("Org1", c, core.cryptoSuite).Return(cm, nil)
+
+	sdk, err := New(c, WithCorePkg(core), WithContextPkg(factory))
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	// Use a method that invokes credential manager (e.g., new user)
+	_, err = sdk.NewPreEnrolledUser("Org1", "User1")
+	if err != nil {
+		t.Fatalf("Unexpected error getting user: %s", err)
+	}
+}
+
+func TestWithSessionPkg(t *testing.T) {
+	// Test New SDK with valid config file
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	core, err := newMockCorePkg(c)
+	if err != nil {
+		t.Fatalf("Error initializing core factory: %s", err)
+	}
+
+	_, err = New(c)
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	// Create mock to ensure the provided factory is called.
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	factory := mockapisdk.NewMockSessionClientFactory(mockCtrl)
+
+	sdk, err := New(c, WithCorePkg(core), WithSessionPkg(factory))
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	// Use real implementation of credential manager to provide in later response
+	pkgSuite := defPkgSuite{}
+	sessPkg, err := pkgSuite.Session()
+	if err != nil {
+		t.Fatalf("Unexpected error getting context: %s", err)
+	}
+
+	session, err := sdk.NewPreEnrolledUserSession("Org1", "User1")
+	if err != nil {
+		t.Fatalf("Unexpected error getting session: %s", err)
+	}
+
+	cm, err := sessPkg.NewChannelMgmtClient(sdk, session, c)
+	if err != nil {
+		t.Fatalf("Unexpected error getting credential manager: %s", err)
+	}
+	factory.EXPECT().NewChannelMgmtClient(sdk, gomock.Any(), c).Return(cm, nil)
+
+	// Use a method that invokes credential manager (e.g., new user)
+	_, err = sdk.NewChannelMgmtClient("User1")
+	if err != nil {
+		t.Fatalf("Unexpected error getting channel management client: %s", err)
+	}
+}
+
+func TestErrPkgSuite(t *testing.T) {
+	ps := mockPkgSuite{}
+
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	_, err = fromPkgSuite(c, &ps)
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	ps.errOnCore = true
+	_, err = fromPkgSuite(c, &ps)
+	if err == nil {
+		t.Fatalf("Expected error initializing SDK")
+	}
+	ps.errOnCore = false
+
+	ps.errOnService = true
+	_, err = fromPkgSuite(c, &ps)
+	if err == nil {
+		t.Fatalf("Expected error initializing SDK")
+	}
+	ps.errOnService = false
+
+	ps.errOnContext = true
+	_, err = fromPkgSuite(c, &ps)
+	if err == nil {
+		t.Fatalf("Expected error initializing SDK")
+	}
+	ps.errOnContext = false
+
+	ps.errOnSession = true
+	_, err = fromPkgSuite(c, &ps)
+	if err == nil {
+		t.Fatalf("Expected error initializing SDK")
+	}
+	ps.errOnSession = false
+
+	ps.errOnLogger = true
+	_, err = fromPkgSuite(c, &ps)
+	if err == nil {
+		t.Fatalf("Expected error initializing SDK")
+	}
+	ps.errOnLogger = false
+}
+
+func TestNewChannelMgmtClient(t *testing.T) {
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	sdk, err := New(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -121,8 +332,12 @@ func TestNewChannelMgmtClient(t *testing.T) {
 }
 
 func TestNewResourceMgmtClient(t *testing.T) {
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
 
-	sdk, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	sdk, err := New(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -153,12 +368,22 @@ func TestNewResourceMgmtClient(t *testing.T) {
 }
 
 func TestNewDefaultTwoValidSDK(t *testing.T) {
-	sdk1, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	c1, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	sdk1, err := New(c1)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 
-	sdk2, err := New(ConfigFile("./testdata/test.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	c2, err := configImpl.FromFile("./testdata/test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	sdk2, err := New(c2)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -212,7 +437,12 @@ func TestNewDefaultSDKFromByte(t *testing.T) {
 		t.Fatalf("Failed to load sample bytes from File. Error: %s", err)
 	}
 
-	sdk, err := New(ConfigBytes(cBytes, "yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	c1, err := configImpl.FromRaw(cBytes, "yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	sdk, err := New(c1)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -220,13 +450,6 @@ func TestNewDefaultSDKFromByte(t *testing.T) {
 	if sdk == nil {
 		t.Fatalf("SDK should not be empty when initialized")
 	}
-
-	// new SDK expected to panic due to wrong config type which didn't load the configs
-	_, err = New(ConfigBytes(cBytes, "json"), StateStorePath("/tmp/state"), defPkgSuite())
-	if err == nil {
-		t.Fatalf("NewSDK should have returned error due to bad config")
-	}
-
 }
 
 func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
