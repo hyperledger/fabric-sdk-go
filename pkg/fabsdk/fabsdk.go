@@ -125,7 +125,10 @@ func New(options ...SDKOption) (*FabricSDK, error) {
 	}
 
 	for _, option := range options {
-		option(&sdk)
+		_, err := option(&sdk)
+		if err != nil {
+			return nil, errors.WithMessage(err, "Error in option passed to New")
+		}
 	}
 
 	// Initialize logging provider with default logging provider (if needed)

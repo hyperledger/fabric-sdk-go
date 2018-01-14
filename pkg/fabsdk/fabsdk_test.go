@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
@@ -28,6 +29,31 @@ func defPkgSuite() SDKOption {
 	return PkgSuiteAsOpt(pkgSuite)
 }
 
+func TestNewGoodOpt(t *testing.T) {
+	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), goodOpt(), defPkgSuite())
+	if err != nil {
+		t.Fatalf("Expected no error from New, but got %v", err)
+	}
+}
+
+func goodOpt() SDKOption {
+	return func(sdk *FabricSDK) (*FabricSDK, error) {
+		return sdk, nil
+	}
+}
+
+func TestNewBadOpt(t *testing.T) {
+	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), badOpt(), defPkgSuite())
+	if err == nil {
+		t.Fatalf("Expected error from New")
+	}
+}
+
+func badOpt() SDKOption {
+	return func(sdk *FabricSDK) (*FabricSDK, error) {
+		return sdk, errors.New("Bad Opt")
+	}
+}
 func TestNewDefaultSDK(t *testing.T) {
 	// Test new SDK with invalid config file
 	_, err := New(ConfigFile("../../test/fixtures/config/invalid.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
