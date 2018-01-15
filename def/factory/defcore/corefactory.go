@@ -15,7 +15,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/def/provider/fabpvdr"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
@@ -64,10 +63,6 @@ func (f *ProviderFactory) NewStateStoreProvider(o apisdk.StateStoreOpts, config 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
 func (f *ProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
 	cryptoSuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(config)
-	//Setting this cryptosuite as a factory default too
-	if cryptoSuiteProvider != nil {
-		cryptosuite.SetDefault(cryptoSuiteProvider)
-	}
 	return cryptoSuiteProvider, err
 }
 
