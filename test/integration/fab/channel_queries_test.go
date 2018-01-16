@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -228,7 +228,7 @@ func testInstantiatedChaincodes(t *testing.T, channel fab.Channel) {
 
 }
 
-func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Config, testSetup *integration.BaseSetupImpl) {
+func testQueryByChaincode(t *testing.T, channel fab.Channel, config apiconfig.Config, testSetup *integration.BaseSetupImpl) {
 
 	// Test valid targets
 	targets := peer.PeersToTxnProcessors(channel.Peers())
@@ -252,19 +252,28 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, config config.Confi
 	}
 
 	// Configured cert for cert pool
-	cert, err := config.CAClientCertPath(org1Name)
+	certPath, err := config.CAClientCertPath(org1Name)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	certConfig := apiconfig.TLSConfig{Path: certPath}
+
+	cert, err := certConfig.TLSCert()
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Create invalid target
-	firstInvalidTarget, err := peer.NewPeerTLSFromCert("test:1111", cert, "", config)
+	firstInvalidTarget, err := peer.New(config, peer.WithURL("test:1111"), peer.WithTLSCert(cert))
 	if err != nil {
 		t.Fatalf("Create NewPeer error(%v)", err)
 	}
 
 	// Create second invalid target
-	secondInvalidTarget, err := peer.NewPeerTLSFromCert("test:2222", cert, "", config)
+	secondInvalidTarget, err := peer.New(config, peer.WithURL("test:2222"), peer.WithTLSCert(cert))
 	if err != nil {
 		t.Fatalf("Create NewPeer error(%v)", err)
 	}

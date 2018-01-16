@@ -50,8 +50,8 @@ func TestJoinChannel(t *testing.T) {
 
 	// Setup target peers
 	var peers []fab.Peer
-	peer, _ := peer.NewPeer(addr, fcmocks.NewMockConfig())
-	peers = append(peers, peer)
+	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL(addr))
+	peers = append(peers, peer1)
 
 	// Test fail genesis block retrieval (no orderer)
 	err := rc.JoinChannelWithOpts("mychannel", resmgmt.JoinChannelOpts{Targets: peers})
@@ -929,8 +929,8 @@ func TestCCProposal(t *testing.T) {
 
 	// Setup target peers
 	var peers []fab.Peer
-	peer, _ := peer.NewPeer(addr, fcmocks.NewMockConfig())
-	peers = append(peers, peer)
+	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL(addr))
+	peers = append(peers, peer1)
 
 	// Create mock orderer
 	orderer := fcmocks.NewMockOrderer("", nil)

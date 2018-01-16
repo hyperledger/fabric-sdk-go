@@ -18,6 +18,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"crypto/x509"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
@@ -35,11 +37,11 @@ type TransactionProposalError struct {
 	Err      error
 }
 
-func newPeerEndorser(target string, certificate string, serverHostOverride string,
+func newPeerEndorser(target string, certificate *x509.Certificate, serverHostOverride string,
 	dialBlocking bool, config apiconfig.Config) (
-	peerEndorser, error) {
+	*peerEndorser, error) {
 	if len(target) == 0 {
-		return peerEndorser{}, errors.New("target is required")
+		return nil, errors.New("target is required")
 	}
 
 	// Construct dialer options for the connection
@@ -52,7 +54,7 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 	if urlutil.IsTLSEnabled(target) {
 		tlsConfig, err := comm.TLSConfig(certificate, serverHostOverride, config)
 		if err != nil {
-			return peerEndorser{}, err
+			return nil, err
 		}
 
 		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
@@ -60,7 +62,7 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 		opts = append(opts, grpc.WithInsecure())
 	}
 
-	pc := peerEndorser{grpcDialOption: opts, target: urlutil.ToAddress(target)}
+	pc := &peerEndorser{grpcDialOption: opts, target: urlutil.ToAddress(target)}
 
 	return pc, nil
 }

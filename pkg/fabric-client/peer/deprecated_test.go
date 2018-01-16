@@ -11,8 +11,10 @@ import (
 	"io/ioutil"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
@@ -20,15 +22,14 @@ import (
 )
 
 // TestNewPeerWithCertNoTLS tests that a peer can be constructed without using a cert
-func TestNewPeerWithCertNoTLS(t *testing.T) {
+func TestDeprecatedNewPeerWithCertNoTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
-
 	url := "http://example.com"
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
-	p, err := New(config, WithURL(url))
+	p, err := NewPeer(url, config)
 
 	if err != nil {
 		t.Fatalf("Expected peer to be constructed")
@@ -40,30 +41,37 @@ func TestNewPeerWithCertNoTLS(t *testing.T) {
 }
 
 // TestNewPeerTLSFromCert tests that a peer can be constructed using a cert
-func TestNewPeerTLSFromCert(t *testing.T) {
+func TestDeprecatedNewPeerTLSFromCert(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
+	tlsConfig := apiconfig.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+	cert, err := tlsConfig.TLSCert()
+
+	if err != nil {
+		t.Fatalf("Failed to load cert: %v", err)
+	}
+
 	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config.EXPECT().TLSCACertPool(cert).Return(mock_apiconfig.CertPool, nil).AnyTimes()
 
 	url := "grpcs://0.0.0.0:1234"
 
 	// TODO - test actual parameters and test server name override
-	_, err := New(config, WithURL(url), WithTLSCert(mock_apiconfig.GoodCert))
+	_, err = NewPeerTLSFromCert(url, "../../../test/fixtures/fabricca/tls/ca/ca_root.pem", "", config)
 
 	if err != nil {
-		t.Fatalf("Expected peer to be constructed")
+		t.Fatalf("Expected peer to be constructed, failed with error: %v", err)
 	}
 }
 
 // TestNewPeerWithCertBadParams tests that bad parameters causes an expected failure
-func TestNewPeerWithCertBadParams(t *testing.T) {
+func TestDeprecatedNewPeerWithCertBadParams(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
-
-	_, err := New(config)
+	_, err := NewPeer("", config)
 
 	if err == nil {
 		t.Fatalf("Peer should not be constructed - bad params")
@@ -71,14 +79,13 @@ func TestNewPeerWithCertBadParams(t *testing.T) {
 }
 
 // TestNewPeerTLSFromCertBad tests that bad parameters causes an expected failure
-func TestNewPeerTLSFromCertBad(t *testing.T) {
+func TestDeprecatedNewPeerTLSFromCertBad(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-
 	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
 	url := "grpcs://0.0.0.0:1234"
-	_, err := New(config, WithURL(url))
+	_, err := NewPeerTLSFromCert(url, "", "", config)
 
 	if err == nil {
 		t.Fatalf("Expected peer construction to fail")
@@ -86,13 +93,13 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 }
 
 // TestEnrollmentCert tests the enrollment certificate getter/setters
-func TestEnrollmentCert(t *testing.T) {
+func TestDeprecatedEnrollmentCert(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
-
-	peer, err := New(config, WithURL(peer1URL))
+	peer, err := NewPeer(peer1URL, config)
 	if err != nil {
 		t.Fatalf("Failed to create NewPeerWithCert error(%v)", err)
 	}
@@ -116,13 +123,13 @@ func TestEnrollmentCert(t *testing.T) {
 }
 
 // TestRoles tests the roles certificate getter/setters
-func TestRoles(t *testing.T) {
+func TestDeprecatedRoles(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
-
-	peer, err := New(config, WithURL(peer1URL))
+	peer, err := NewPeer(peer1URL, config)
 	if err != nil {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
@@ -142,13 +149,13 @@ func TestRoles(t *testing.T) {
 
 // TestRoles tests the name certificate getter/setters
 
-func TestNames(t *testing.T) {
+func TestDeprecatedNames(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
-
-	peer, err := New(config, WithURL(peer1URL))
+	peer, err := NewPeer(peer1URL, config)
 	if err != nil {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
@@ -165,27 +172,8 @@ func TestNames(t *testing.T) {
 	}
 }
 
-func TestMSPIDs(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
-
-	peer, err := New(config, WithURL(peer1URL))
-
-	if err != nil {
-		t.Fatalf("Failed to create NewPeer error(%v)", err)
-	}
-	testMSP := "orgN"
-	peer.SetMSPID(testMSP)
-
-	if peer.MSPID() != testMSP {
-		t.Fatalf("Unexpected peer msp id")
-	}
-}
-
 // Test that peer is proxy for proposal processor interface
-func TestProposalProcessorSendProposal(t *testing.T) {
+func TestDeprecatedProposalProcessorSendProposal(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	proc := mock_apitxn.NewMockProposalProcessor(mockCtrl)
@@ -203,20 +191,19 @@ func TestProposalProcessorSendProposal(t *testing.T) {
 	}
 }
 
-func TestPeersToTxnProcessors(t *testing.T) {
+func TestDeprecatedPeersToTxnProcessors(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
-
-	peer1, err := New(config, WithURL(peer1URL))
-
+	peer1, err := NewPeer(peer1URL, config)
 	if err != nil {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
 
-	peer2, err := New(config, WithURL(peer2URL))
-
+	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	peer2, err := NewPeer(peer2URL, config)
 	if err != nil {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
@@ -231,7 +218,7 @@ func TestPeersToTxnProcessors(t *testing.T) {
 	}
 }
 
-func TestInterfaces(t *testing.T) {
+func TestDeprecatedInterfaces(t *testing.T) {
 	var apiPeer fab.Peer
 	var peer Peer
 

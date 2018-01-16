@@ -21,8 +21,13 @@ import (
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"crypto/x509"
+
+	"fmt"
+
 	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
@@ -255,9 +260,9 @@ func (setup *BaseSetupImpl) GetChannel(sdk *deffab.FabricSDK, client fab.FabricC
 		return nil, errors.WithMessage(err, "RandomOrdererConfig failed")
 	}
 
-	orderer, err := orderer.NewOrdererFromConfig(ordererConfig, client.Config())
+	orderer, err := orderer.New(client.Config(), orderer.FromOrdererConfig(ordererConfig))
 	if err != nil {
-		return nil, errors.WithMessage(err, "NewOrderer failed")
+		return nil, errors.WithMessage(err, "New failed")
 	}
 	err = channel.AddOrderer(orderer)
 	if err != nil {
@@ -369,7 +374,18 @@ func (setup *BaseSetupImpl) getEventHub(t *testing.T, client fab.FabricClient) (
 			if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
 				serverHostOverride = str
 			}
-			eventHub.SetPeerAddr(p.EventURL, p.TLSCACerts.Path, serverHostOverride)
+
+			var cert *x509.Certificate
+
+			if urlutil.IsTLSEnabled(p.EventURL) {
+				cert, err = p.TLSCACerts.TLSCert()
+
+				if err != nil {
+					return nil, errors.WithMessage(err, fmt.Sprintf("EventHub failed to load TLS certificate for peer (%s)", p.URL))
+				}
+			}
+
+			eventHub.SetPeerAddr(p.EventURL, cert, serverHostOverride)
 			foundEventHub = true
 			break
 		}

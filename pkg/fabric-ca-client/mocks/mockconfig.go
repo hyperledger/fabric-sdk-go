@@ -90,7 +90,7 @@ func (c *MockConfig) ChannelOrderers(name string) ([]apiconfig.OrdererConfig, er
 }
 
 // TLSCACertPool ...
-func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
+func (c *MockConfig) TLSCACertPool(cert ...*x509.Certificate) (*x509.CertPool, error) {
 	return nil, nil
 }
 

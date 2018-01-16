@@ -718,21 +718,13 @@ func (c *Config) SetTLSCACertPool(certPool *x509.CertPool) {
 	c.tlsCertPool = certPool
 }
 
-// TLSCACertPool returns the configured cert pool. If a tlsCertificate path
+// TLSCACertPool returns the configured cert pool. If a certConfig
 // is provided, the certficate is added to the pool
-func (c *Config) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
-	if tlsCertificate != "" {
-		rawData, err := ioutil.ReadFile(tlsCertificate)
-		if err != nil {
-			return nil, err
+func (c *Config) TLSCACertPool(certs ...*x509.Certificate) (*x509.CertPool, error) {
+	for _, cert := range certs {
+		if cert != nil {
+			c.tlsCertPool.AddCert(cert)
 		}
-
-		cert, err := loadCAKey(rawData)
-		if err != nil {
-			return nil, err
-		}
-
-		c.tlsCertPool.AddCert(cert)
 	}
 
 	return c.tlsCertPool, nil

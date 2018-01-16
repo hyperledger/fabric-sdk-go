@@ -280,12 +280,12 @@ func loadOrgPeers(t *testing.T, sdk *fabapi.FabricSDK) {
 		t.Fatal(err)
 	}
 
-	orgTestPeer0, err = peer.NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: org1Peers[0]}, sdk.ConfigProvider())
+	orgTestPeer0, err = peer.New(sdk.ConfigProvider(), peer.FromPeerConfig(&apiconfig.NetworkPeer{PeerConfig: org1Peers[0]}))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	orgTestPeer1, err = peer.NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: org2Peers[0]}, sdk.ConfigProvider())
+	orgTestPeer1, err = peer.New(sdk.ConfigProvider(), peer.FromPeerConfig(&apiconfig.NetworkPeer{PeerConfig: org2Peers[0]}))
 	if err != nil {
 		t.Fatal(err)
 	}

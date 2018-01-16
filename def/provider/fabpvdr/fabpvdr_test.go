@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
@@ -88,7 +89,7 @@ func TestNewPeer(t *testing.T) {
 
 	url := "grpcs://localhost:8080"
 
-	peer, err := p.NewPeer(url, "ABCD", "")
+	peer, err := p.NewPeer(url, mock_apiconfig.GoodCert, "")
 	if err != nil {
 		t.Fatalf("Unexpected error creating peer %v", err)
 	}
@@ -122,6 +123,7 @@ func TestNewPeerFromConfig(t *testing.T) {
 	}
 
 	peer, err := p.NewPeerFromConfig(&peerCfg)
+
 	if err != nil {
 		t.Fatalf("Unexpected error creating peer %v", err)
 	}

@@ -9,53 +9,136 @@ package orderer
 import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
+	"crypto/x509"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"google.golang.org/grpc/credentials"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
 // Orderer allows a client to broadcast a transaction.
 type Orderer struct {
+	config         apiconfig.Config
 	url            string
+	tlsCACert      *x509.Certificate
+	serverName     string
 	grpcDialOption []grpc.DialOption
 }
 
-// NewOrderer Returns a Orderer instance
-func NewOrderer(url string, certificate string, serverHostOverride string, config apiconfig.Config) (*Orderer, error) {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.OrdererConnection)))
-	if urlutil.IsTLSEnabled(url) {
-		tlsConfig, err := comm.TLSConfig(certificate, serverHostOverride, config)
+// Option describes a functional parameter for the New constructor
+type Option func(*Orderer) error
+
+// New Returns a Orderer instance
+func New(config apiconfig.Config, opts ...Option) (*Orderer, error) {
+	orderer := &Orderer{config: config}
+
+	for _, opt := range opts {
+		err := opt(orderer)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	grpcOpts := append([]grpc.DialOption{}, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.OrdererConnection)))
+
+	if urlutil.IsTLSEnabled(orderer.url) {
+		tlsConfig, err := comm.TLSConfig(orderer.tlsCACert, orderer.serverName, config)
+
 		if err != nil {
 			return nil, err
 		}
 
-		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	} else {
-		opts = append(opts, grpc.WithInsecure())
+		grpcOpts = append(grpcOpts, grpc.WithInsecure())
 	}
-	return &Orderer{url: urlutil.ToAddress(url), grpcDialOption: opts}, nil
+
+	orderer.url = urlutil.ToAddress(orderer.url)
+	orderer.grpcDialOption = grpcOpts
+
+	return orderer, nil
 }
 
-// NewOrdererFromConfig returns an Orderer instance constructed from orderer config
-func NewOrdererFromConfig(ordererCfg *apiconfig.OrdererConfig, config apiconfig.Config) (*Orderer, error) {
+// WithURL is a functional option for the orderer.New constructor that configures the orderer's URL.
+func WithURL(url string) Option {
+	return func(o *Orderer) error {
+		o.url = url
 
-	serverHostOverride := ""
-	if str, ok := ordererCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
-		serverHostOverride = str
+		return nil
 	}
+}
 
-	return NewOrderer(ordererCfg.URL, ordererCfg.TLSCACerts.Path, serverHostOverride, config)
+// WithTLSCert is a functional option for the orderer.New constructor that configures the orderer's TLS certificate
+func WithTLSCert(tlsCACert *x509.Certificate) Option {
+	return func(o *Orderer) error {
+		o.tlsCACert = tlsCACert
+
+		return nil
+	}
+}
+
+// WithServerName is a functional option for the orderer.New constructor that configures the peer's server name
+func WithServerName(serverName string) Option {
+	return func(o *Orderer) error {
+		o.serverName = serverName
+
+		return nil
+	}
+}
+
+// FromOrdererConfig is a functional option for the orderer.New constructor that configures a new orderer
+// from a apiconfig.OrdererConfig struct
+func FromOrdererConfig(ordererCfg *apiconfig.OrdererConfig) Option {
+	return func(o *Orderer) error {
+		o.url = ordererCfg.URL
+
+		var err error
+
+		if urlutil.IsTLSEnabled(ordererCfg.URL) {
+			o.tlsCACert, err = ordererCfg.TLSCACerts.TLSCert()
+
+			if err != nil {
+				return err
+			}
+		}
+
+		o.serverName = getServerNameOverride(ordererCfg)
+
+		return nil
+	}
+}
+
+// FromOrdererName is a functional option for the orderer.New constructor that obtains an apiconfig.OrdererConfig
+// by name from the apiconfig.Config supplied to the constructor, and then constructs a new orderer from it
+func FromOrdererName(name string) Option {
+	return func(o *Orderer) error {
+		ordererCfg, err := o.config.OrdererConfig(name)
+
+		if err != nil {
+			return err
+		}
+
+		return FromOrdererConfig(ordererCfg)(o)
+	}
+}
+
+func getServerNameOverride(ordererCfg *apiconfig.OrdererConfig) string {
+	serverNameOverride := ""
+	if str, ok := ordererCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
+		serverNameOverride = str
+	}
+	return serverNameOverride
 }
 
 // URL Get the Orderer url. Required property for the instance objects.

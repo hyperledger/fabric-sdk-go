@@ -49,7 +49,7 @@ func (dp *DiscoveryProvider) NewDiscoveryService(channelID string) (apifabclient
 
 		for _, p := range chPeers {
 
-			newPeer, err := peer.NewPeerFromConfig(&p.NetworkPeer, dp.config)
+			newPeer, err := peer.New(dp.config, peer.FromPeerConfig(&p.NetworkPeer))
 			if err != nil || newPeer == nil {
 				return nil, errors.WithMessage(err, "NewPeer failed")
 			}
@@ -65,7 +65,7 @@ func (dp *DiscoveryProvider) NewDiscoveryService(channelID string) (apifabclient
 		}
 
 		for _, p := range netPeers {
-			newPeer, err := peer.NewPeerFromConfig(&p, dp.config)
+			newPeer, err := peer.New(dp.config, peer.FromPeerConfig(&p))
 			if err != nil {
 				return nil, errors.WithMessage(err, "NewPeerFromConfig failed")
 			}

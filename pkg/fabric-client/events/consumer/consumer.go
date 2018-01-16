@@ -25,6 +25,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"crypto/x509"
+
 	consumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -40,7 +42,7 @@ type eventsClient struct {
 	regTimeout             time.Duration
 	stream                 ehpb.Events_ChatClient
 	adapter                consumer.EventAdapter
-	TLSCertificate         string
+	TLSCertificate         *x509.Certificate
 	TLSServerHostOverride  string
 	tlsCertHash            []byte
 	clientConn             *grpc.ClientConn
@@ -49,7 +51,7 @@ type eventsClient struct {
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
-func NewEventsClient(client fab.FabricClient, peerAddress string, certificate string, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (fab.EventsClient, error) {
+func NewEventsClient(client fab.FabricClient, peerAddress string, certificate *x509.Certificate, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (fab.EventsClient, error) {
 	var err error
 	if regTimeout < 100*time.Millisecond {
 		regTimeout = 100 * time.Millisecond
@@ -72,11 +74,11 @@ func NewEventsClient(client fab.FabricClient, peerAddress string, certificate st
 }
 
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
-func newEventsClientConnectionWithAddress(peerAddress string, certificate string, serverHostOverride string, config apiconfig.Config) (*grpc.ClientConn, error) {
+func newEventsClientConnectionWithAddress(peerAddress string, cert *x509.Certificate, serverHostOverride string, config apiconfig.Config) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.EventHub)))
 	if urlutil.IsTLSEnabled(peerAddress) {
-		tlsConfig, err := comm.TLSConfig(certificate, serverHostOverride, config)
+		tlsConfig, err := comm.TLSConfig(cert, serverHostOverride, config)
 		if err != nil {
 			return nil, err
 		}

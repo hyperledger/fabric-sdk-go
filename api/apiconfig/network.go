@@ -6,6 +6,14 @@ SPDX-License-Identifier: Apache-2.0
 
 package apiconfig
 
+import (
+	"crypto/x509"
+	"encoding/pem"
+	"io/ioutil"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+)
+
 // NetworkConfig provides a static definition of a Hyperledger Fabric network
 type NetworkConfig struct {
 	Name                   string
@@ -134,6 +142,51 @@ type TLSConfig struct {
 	Path string
 	// Certificate actual content
 	Pem string
+}
+
+// Bytes returns the tls certificate as a byte array by loading it either from the embedded Pem or Path
+func (cfg TLSConfig) Bytes() ([]byte, error) {
+	var bytes []byte
+	var err error
+
+	if cfg.Pem != "" {
+		bytes = []byte(cfg.Pem)
+	} else if cfg.Path != "" {
+		bytes, err = ioutil.ReadFile(cfg.Path)
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to load pem bytes from path %s", cfg.Path)
+		}
+	}
+
+	return bytes, nil
+}
+
+// TLSCert returns the tls certificate as a *x509.Certificate by loading it either from the embedded Pem or Path
+func (cfg TLSConfig) TLSCert() (*x509.Certificate, error) {
+	bytes, err := cfg.Bytes()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return loadCert(bytes)
+}
+
+// loadCAKey
+func loadCert(rawData []byte) (*x509.Certificate, error) {
+	block, _ := pem.Decode(rawData)
+
+	if block != nil {
+		pub, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, errors.Wrap(err, "certificate parsing failed")
+		}
+
+		return pub, nil
+	}
+
+	return nil, errors.New("pem data missing")
 }
 
 // MutualTLSConfig Mutual TLS configurations

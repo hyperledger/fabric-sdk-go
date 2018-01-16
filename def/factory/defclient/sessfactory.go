@@ -122,9 +122,9 @@ func getChannel(client fab.FabricClient, channelID string) (fab.Channel, error) 
 
 	for _, ordererCfg := range chOrderers {
 
-		orderer, err := orderer.NewOrdererFromConfig(&ordererCfg, client.Config())
+		orderer, err := orderer.New(client.Config(), orderer.FromOrdererConfig(&ordererCfg))
 		if err != nil {
-			return nil, errors.WithMessage(err, "NewOrderer failed")
+			return nil, errors.WithMessage(err, "creating orderer failed")
 		}
 		err = channel.AddOrderer(orderer)
 		if err != nil {

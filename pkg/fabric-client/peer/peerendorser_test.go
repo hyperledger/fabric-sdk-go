@@ -7,22 +7,18 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"net"
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/golang/mock/gomock"
 	"google.golang.org/grpc"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
@@ -40,17 +36,12 @@ const (
 func TestNewPeerEndorserTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
 	url := "grpcs://0.0.0.0:1234"
-	certPool := x509.NewCertPool()
 
-	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
-	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{}, nil)
-
-	conn, err := newPeerEndorser(url, "cert", "", true, config)
+	conn, err := newPeerEndorser(url, mock_apiconfig.GoodCert, "", true, config)
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
 	}
@@ -68,7 +59,8 @@ func TestNewPeerEndorserTLS(t *testing.T) {
 func TestNewPeerEndorserMutualTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
 	//mutualTLSCerts := apiconfig.MutualTLSConfig{
 	//	Client: struct {
@@ -80,14 +72,8 @@ func TestNewPeerEndorserMutualTLS(t *testing.T) {
 	//}
 
 	url := "grpcs://0.0.0.0:1234"
-	certPool := x509.NewCertPool()
 
-	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
-	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{}, nil)
-
-	conn, err := newPeerEndorser(url, "cert", "", true, config)
+	conn, err := newPeerEndorser(url, mock_apiconfig.GoodCert, "", true, config)
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed: %v", err)
 	}
@@ -105,17 +91,12 @@ func TestNewPeerEndorserMutualTLS(t *testing.T) {
 func TestNewPeerEndorserMutualTLSNoClientCerts(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
 	url := "grpcs://0.0.0.0:1234"
-	certPool := x509.NewCertPool()
 
-	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
-	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{}, nil)
-
-	_, err := newPeerEndorser(url, "cert", "", true, config)
+	_, err := newPeerEndorser(url, mock_apiconfig.GoodCert, "", true, config)
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed: %v", err)
 	}
@@ -126,16 +107,12 @@ func TestNewPeerEndorserMutualTLSNoClientCerts(t *testing.T) {
 func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
 	url := "grpcs://0.0.0.0:1234"
-	certPool := x509.NewCertPool()
 
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool("cert").Return(certPool, errors.New("ohoh"))
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
-
-	_, err := newPeerEndorser(url, "cert", "", true, config)
+	_, err := newPeerEndorser(url, mock_apiconfig.BadCert, "", true, config)
 	if err == nil {
 		t.Fatalf("Peer conn construction should have failed")
 	}
@@ -146,12 +123,12 @@ func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 func TestNewPeerEndorserNoTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
 	url := "grpc://0.0.0.0:1234"
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
-	conn, err := newPeerEndorser(url, "", "", true, config)
+	conn, err := newPeerEndorser(url, nil, "", true, config)
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
 	}
@@ -176,12 +153,12 @@ func TestNewPeerEndorserNoTLS(t *testing.T) {
 func TestNewPeerEndorserBlocking(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
 	url := "0.0.0.0:1234"
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
-	conn, err := newPeerEndorser(url, "", "", true, config)
+	conn, err := newPeerEndorser(url, nil, "", true, config)
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
 	}
@@ -206,12 +183,12 @@ func TestNewPeerEndorserBlocking(t *testing.T) {
 func TestNewPeerEndorserNonBlocking(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
 	url := "0.0.0.0:1234"
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
-	conn, err := newPeerEndorser(url, "", "", false, config)
+	conn, err := newPeerEndorser(url, nil, "", false, config)
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
 	}
@@ -231,10 +208,11 @@ func TestNewPeerEndorserNonBlocking(t *testing.T) {
 func TestNewPeerEndorserBadParams(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
 	url := ""
-	_, err := newPeerEndorser(url, "", "", true, config)
+	_, err := newPeerEndorser(url, nil, "", true, config)
 	if err == nil {
 		t.Fatalf("Peer conn should not be constructed - bad params")
 	}
@@ -245,15 +223,13 @@ func TestNewPeerEndorserBadParams(t *testing.T) {
 func TestNewPeerEndorserTLSBad(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
 	url := "grpcs://0.0.0.0:1234"
-	certPool := x509.NewCertPool()
 
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	_, err := newPeerEndorser(url, nil, "", true, config)
 
-	_, err := newPeerEndorser(url, "", "", true, config)
 	if err == nil {
 		t.Fatalf("Peer conn should not be constructed - bad cert pool")
 	}
@@ -284,11 +260,10 @@ func TestProcessProposalGoodDial(t *testing.T) {
 func testProcessProposal(t *testing.T, url string) (apitxn.TransactionProposalResult, error) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
-	conn, err := newPeerEndorser(url, "", "", true, config)
+	conn, err := newPeerEndorser(url, nil, "", true, config)
 	if err != nil {
 		t.Fatalf("Peer conn construction error (%v)", err)
 	}

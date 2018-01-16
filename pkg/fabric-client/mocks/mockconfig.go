@@ -106,7 +106,7 @@ func (c *MockConfig) PeerConfig(org string, name string) (*config.PeerConfig, er
 }
 
 // TLSCACertPool ...
-func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
+func (c *MockConfig) TLSCACertPool(cert ...*x509.Certificate) (*x509.CertPool, error) {
 	if c.errorCase {
 		return nil, errors.New("just to test error scenario")
 	}

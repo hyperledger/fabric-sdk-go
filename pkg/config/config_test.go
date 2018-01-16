@@ -277,25 +277,93 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	}
 }
 
-func TestTLSACAConfig(t *testing.T) {
+func TestTLSCAConfig(t *testing.T) {
 	//Test TLSCA Cert Pool (Positive test case)
+
 	certFile, _ := configImpl.CAClientCertPath(org1)
-	_, err := configImpl.TLSCACertPool(certFile)
+	certConfig := api.TLSConfig{Path: certFile}
+
+	cert, err := certConfig.TLSCert()
+
 	if err != nil {
 		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
 	}
 
+	_, err = configImpl.TLSCACertPool(cert)
+
+	if err != nil {
+		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
+	}
 	//Test TLSCA Cert Pool (Negative test case)
-	_, err = configImpl.TLSCACertPool("some random invalid path")
+
+	badCertConfig := api.TLSConfig{Path: "some random invalid path"}
+
+	badCert, err := badCertConfig.TLSCert()
+
 	if err == nil {
 		t.Fatalf("TLS CA cert pool was supposed to fail")
 	}
 
+	_, err = configImpl.TLSCACertPool(badCert)
+
 	keyFile, _ := configImpl.CAClientKeyPath(org1)
-	_, err = configImpl.TLSCACertPool(keyFile)
+
+	keyConfig := api.TLSConfig{Path: keyFile}
+
+	key, err := keyConfig.TLSCert()
+
 	if err == nil {
 		t.Fatalf("TLS CA cert pool was supposed to fail when provided with wrong cert file")
 	}
+
+	_, err = configImpl.TLSCACertPool(key)
+}
+
+func TestTLSCAConfigFromPems(t *testing.T) {
+	c, err := InitConfig(configEmbeddedUsersTestFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//Test TLSCA Cert Pool (Positive test case)
+
+	certPem, _ := c.CAClientCertPem(org1)
+	certConfig := api.TLSConfig{Pem: certPem}
+
+	cert, err := certConfig.TLSCert()
+
+	if err != nil {
+		t.Fatalf("TLS CA cert parse failed, reason: %v", err)
+	}
+
+	_, err = configImpl.TLSCACertPool(cert)
+
+	if err != nil {
+		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
+	}
+	//Test TLSCA Cert Pool (Negative test case)
+
+	badCertConfig := api.TLSConfig{Pem: "some random invalid pem"}
+
+	badCert, err := badCertConfig.TLSCert()
+
+	if err == nil {
+		t.Fatalf("TLS CA cert parse was supposed to fail")
+	}
+
+	_, err = configImpl.TLSCACertPool(badCert)
+
+	keyPem, _ := configImpl.CAClientKeyPem(org1)
+
+	keyConfig := api.TLSConfig{Pem: keyPem}
+
+	key, err := keyConfig.TLSCert()
+
+	if err == nil {
+		t.Fatalf("TLS CA cert pool was supposed to fail when provided with wrong cert file")
+	}
+
+	_, err = configImpl.TLSCACertPool(key)
 }
 
 func TestTimeouts(t *testing.T) {
