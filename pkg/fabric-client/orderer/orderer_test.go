@@ -13,15 +13,20 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	grpccodes "google.golang.org/grpc/codes"
 
+	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	"github.com/stretchr/testify/assert"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 )
 
 var testOrdererURL = "127.0.0.1:0"
@@ -295,6 +300,10 @@ func TestSendBroadcast(t *testing.T) {
 	if err == nil || !strings.HasPrefix(err.Error(), "NewAtomicBroadcastClient") {
 		t.Fatalf("Test SendBroadcast was supposed to fail with expected error, instead it fail with [%s] error", err)
 	}
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error")
+	assert.EqualValues(t, grpccodes.Unavailable, status.ToGRPCStatusCode(statusError.Code))
+	assert.Equal(t, status.GRPCTransportStatus, statusError.Group)
 
 }
 
@@ -393,14 +402,15 @@ func TestSendBroadcastServerBadResponse(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr))
 
-	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
-	if err == nil || err.Error() != "broadcast response is not success INTERNAL_SERVER_ERROR" {
-		t.Fatalf("Expected internal server error, but got %s", err)
+	if err == nil {
+		t.Fatalf("Expected error")
 	}
-	if status.String() != "INTERNAL_SERVER_ERROR" {
-		t.Fatalf("Expected internal server error, but got %v", status)
-	}
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error")
+	assert.EqualValues(t, common.Status_INTERNAL_SERVER_ERROR, status.ToOrdererStatusCode(statusError.Code))
+	assert.Equal(t, status.OrdererServerStatus, statusError.Group)
 }
 
 func TestSendBroadcastError(t *testing.T) {
@@ -414,12 +424,33 @@ func TestSendBroadcastError(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr))
 
-	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	statusCode, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
-	if err == nil || status != nil {
+	if err == nil || statusCode != nil {
 		t.Fatalf("expected Send Broadcast to fail with error, but got %s", err)
 	}
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error")
+	assert.EqualValues(t, grpccodes.Unknown, status.ToGRPCStatusCode(statusError.Code))
+	assert.Equal(t, status.GRPCTransportStatus, statusError.Group)
+}
 
+func TestBroadcastBadDial(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
+
+	config.EXPECT().TimeoutOrDefault(apiconfig.OrdererConnection).Return(time.Second * 1)
+
+	orderer, _ := NewOrderer("127.0.0.1:0", "", "", config)
+	orderer.grpcDialOption = append(orderer.grpcDialOption, grpc.WithBlock())
+	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	assert.NotNil(t, err)
+
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error")
+	assert.EqualValues(t, status.ConnectionFailed, status.ToSDKStatusCode(statusError.Code))
+	assert.Equal(t, status.OrdererClientStatus, statusError.Group)
 }
 
 func TestInterfaces(t *testing.T) {

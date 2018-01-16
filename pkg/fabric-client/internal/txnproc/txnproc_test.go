@@ -7,12 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package txnproc
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSendTransactionProposalToProcessors(t *testing.T) {
@@ -59,4 +61,26 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 	if result == nil || err != nil {
 		t.Fatalf("Test SendTransactionProposal failed, with error '%s'", err.Error())
 	}
+}
+
+func TestProposalResponseError(t *testing.T) {
+	testError := fmt.Errorf("Test Error")
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	proc := mock_apitxn.NewMockProposalProcessor(mockCtrl)
+
+	tp := apitxn.TransactionProposal{
+		SignedProposal: &pb.SignedProposal{},
+	}
+
+	// Test with error from lower layer
+	tpr := apitxn.TransactionProposalResult{Endorser: "example.com", Status: 200,
+		Proposal: tp, ProposalResponse: nil}
+	proc.EXPECT().ProcessTransactionProposal(tp).Return(tpr, testError)
+	targets := []apitxn.ProposalProcessor{proc}
+	resp, _ := SendTransactionProposalToProcessors(&apitxn.TransactionProposal{
+		SignedProposal: &pb.SignedProposal{},
+	}, targets)
+	assert.Equal(t, testError, resp[0].Err)
 }

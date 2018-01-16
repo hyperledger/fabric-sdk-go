@@ -15,11 +15,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
+	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 )
 
 // ChannelClient enables access to a Fabric network.
@@ -39,8 +40,8 @@ type txProposalResponseFilter struct {
 func (txProposalResponseFilter *txProposalResponseFilter) ProcessTxProposalResponse(txProposalResponse []*apitxn.TransactionProposalResponse) ([]*apitxn.TransactionProposalResponse, error) {
 	var a1 []byte
 	for n, r := range txProposalResponse {
-		if r.ProposalResponse.GetResponse().Status != 200 {
-			return nil, errors.Errorf("proposal response was not successful, error code %d, msg %s", r.ProposalResponse.GetResponse().Status, r.ProposalResponse.GetResponse().Message)
+		if r.ProposalResponse.GetResponse().Status != int32(common.Status_SUCCESS) {
+			return nil, status.NewFromProposalResponse(r.ProposalResponse, r.Endorser)
 		}
 		if n == 0 {
 			a1 = r.ProposalResponse.GetResponse().Payload
@@ -48,7 +49,8 @@ func (txProposalResponseFilter *txProposalResponseFilter) ProcessTxProposalRespo
 		}
 
 		if bytes.Compare(a1, r.ProposalResponse.GetResponse().Payload) != 0 {
-			return nil, errors.Errorf("ProposalResponsePayloads do not match")
+			return nil, status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
+				"ProposalResponsePayloads do not match", nil)
 		}
 	}
 
@@ -216,7 +218,6 @@ func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts
 }
 
 func sendTransaction(channel fab.Channel, txID apitxn.TransactionID, txProposalResponses []*apitxn.TransactionProposalResponse, eventHub fab.EventHub, notifier chan apitxn.ExecuteTxResponse, timeout time.Duration) {
-
 	if eventHub.IsConnected() == false {
 		err := eventHub.Connect()
 		if err != nil {
@@ -224,7 +225,7 @@ func sendTransaction(channel fab.Channel, txID apitxn.TransactionID, txProposalR
 		}
 	}
 
-	chcode := internal.RegisterTxEvent(txID, eventHub)
+	statusNotifier := internal.RegisterTxEvent(txID, eventHub)
 	_, err := internal.CreateAndSendTransaction(channel, txProposalResponses)
 	if err != nil {
 		notifier <- apitxn.ExecuteTxResponse{Response: apitxn.TransactionID{}, Error: errors.Wrap(err, "CreateAndSendTransaction failed")}
@@ -232,11 +233,11 @@ func sendTransaction(channel fab.Channel, txID apitxn.TransactionID, txProposalR
 	}
 
 	select {
-	case code := <-chcode:
-		if code == pb.TxValidationCode_VALID {
-			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: code}
+	case result := <-statusNotifier:
+		if result.Error == nil {
+			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: result.Code}
 		} else {
-			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: code, Error: errors.New("ExecuteTx transaction response failed")}
+			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: result.Code, Error: result.Error}
 		}
 	case <-time.After(timeout):
 		notifier <- apitxn.ExecuteTxResponse{Response: txID, Error: errors.New("ExecuteTx didn't receive block event")}

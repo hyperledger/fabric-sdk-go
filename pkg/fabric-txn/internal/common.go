@@ -17,6 +17,12 @@ import (
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
+// TxStatus is the transaction status returned from eventhub tx events
+type TxStatus struct {
+	Code  pb.TxValidationCode
+	Error error
+}
+
 // CreateAndSendTransactionProposal ...
 func CreateAndSendTransactionProposal(sender apitxn.ProposalSender, chainCodeID string,
 	fcn string, args [][]byte, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
@@ -36,7 +42,7 @@ func CreateAndSendTransactionProposal(sender apitxn.ProposalSender, chainCodeID 
 	for _, v := range transactionProposalResponses {
 		if v.Err != nil {
 			logger.Debugf("SendTransactionProposal failed (%v, %s)", v.Endorser, v.Err.Error())
-			return nil, request.TxnID, errors.Wrap(v.Err, "SendTransactionProposal failed")
+			return nil, request.TxnID, errors.WithMessage(v.Err, "SendTransactionProposal failed")
 		}
 		logger.Debugf("invoke Endorser '%s' returned ProposalResponse status:%v", v.Endorser, v.Status)
 	}
@@ -70,13 +76,13 @@ func CreateAndSendTransaction(sender apitxn.Sender, resps []*apitxn.TransactionP
 // transaction completes. If the code is TxValidationCode_VALID then
 // the transaction committed successfully, otherwise the code indicates the error
 // that occurred.
-func RegisterTxEvent(txID apitxn.TransactionID, eventHub fab.EventHub) chan pb.TxValidationCode {
-	chcode := make(chan pb.TxValidationCode)
+func RegisterTxEvent(txID apitxn.TransactionID, eventHub fab.EventHub) chan TxStatus {
+	statusNotifier := make(chan TxStatus)
 
 	eventHub.RegisterTxEvent(txID, func(txId string, code pb.TxValidationCode, err error) {
-		logger.Debugf("Received code(%s) for txid(%s)\n", code, txId)
-		chcode <- code
+		logger.Debugf("Received code(%s) for txid(%s) and err(%s)\n", code, txId, err)
+		statusNotifier <- TxStatus{Code: code, Error: err}
 	})
 
-	return chcode
+	return statusNotifier
 }

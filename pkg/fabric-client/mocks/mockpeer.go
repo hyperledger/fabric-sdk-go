@@ -16,13 +16,15 @@ import (
 
 // MockPeer is a mock fabricsdk.Peer.
 type MockPeer struct {
-	MockName  string
-	MockURL   string
-	MockRoles []string
-	MockCert  *pem.Block
-	Payload   []byte
-	MockMSP   string
-	Status    int32
+	Error           error
+	MockName        string
+	MockURL         string
+	MockRoles       []string
+	MockCert        *pem.Block
+	Payload         []byte
+	ResponseMessage string
+	MockMSP         string
+	Status          int32
 }
 
 // NewMockPeer creates basic mock peer
@@ -79,9 +81,11 @@ func (p *MockPeer) URL() string {
 // ProcessTransactionProposal does not send anything anywhere but returns an empty mock ProposalResponse
 func (p *MockPeer) ProcessTransactionProposal(tp apitxn.TransactionProposal) (apitxn.TransactionProposalResult, error) {
 	return apitxn.TransactionProposalResult{
-		Endorser:         p.MockURL,
-		Proposal:         tp,
-		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: p.Status, Payload: p.Payload}},
-	}, nil
+		Endorser: p.MockURL,
+		Proposal: tp,
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+			Message: p.ResponseMessage, Status: p.Status, Payload: p.Payload},
+			Endorsement: &pb.Endorsement{Endorser: []byte("test"), Signature: []byte("test")}},
+	}, p.Error
 
 }

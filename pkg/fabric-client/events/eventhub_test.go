@@ -16,8 +16,10 @@ import (
 	"reflect"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -262,6 +264,48 @@ func TestChaincodeBlockEventWithInvalidTx(t *testing.T) {
 	if event != nil {
 		t.Fatalf("Expecting nil event but got [%s]", event)
 	}
+}
+
+func TestInvalidTxStatusError(t *testing.T) {
+	validationCode := pb.TxValidationCode_ILLEGAL_WRITESET
+	channelID := "somechannelid"
+	txID := generateTxID()
+
+	eventHub, clientFactory := createMockedEventHub(t)
+	if t.Failed() {
+		return
+	}
+
+	client := clientFactory.clients[0]
+	assert.NotNil(t, client)
+
+	txReceived := make(chan error)
+
+	// Register for tx event
+	eventHub.RegisterTxEvent(txID, func(txID string, c pb.TxValidationCode, e error) {
+		txReceived <- e
+	})
+
+	// Publish CC event
+	go client.MockEvent(&pb.Event{
+		Event: (&MockTxEventBuilder{
+			ChannelID: channelID,
+			TxID:      txID.ID,
+		}).BuildWithTxValidationCode(validationCode),
+	})
+
+	select {
+	case err := <-txReceived:
+		assert.NotNil(t, err, "Expected non-nil error")
+		statusError, ok := status.FromError(err)
+		assert.True(t, ok, "Expected status error")
+		assert.EqualValues(t, validationCode, status.ToTransactionValidationCode(statusError.Code))
+		assert.Equal(t, status.EventServerStatus, statusError.Group)
+		assert.Equal(t, "received invalid transaction", statusError.Message, "Expected error message")
+	case <-time.After(time.Second * 5):
+		t.Fatal("Timeout waiting for block with invalid Tx flag")
+	}
+
 }
 
 // completionHandler waits for a single event with a timeout

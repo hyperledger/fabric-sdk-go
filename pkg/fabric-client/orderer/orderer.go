@@ -9,19 +9,21 @@ package orderer
 import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"crypto/x509"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"google.golang.org/grpc/credentials"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -151,12 +153,16 @@ func (o *Orderer) URL() string {
 func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, error) {
 	conn, err := grpc.Dial(o.url, o.grpcDialOption...)
 	if err != nil {
-		return nil, err
+		return nil, status.New(status.OrdererClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), nil)
 	}
 	defer conn.Close()
 
 	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Broadcast(context.Background())
 	if err != nil {
+		rpcStatus, ok := grpcstatus.FromError(err)
+		if ok {
+			err = status.NewFromGRPCStatus(rpcStatus)
+		}
 		return nil, errors.Wrap(err, "NewAtomicBroadcastClient failed")
 	}
 	done := make(chan bool)
@@ -168,6 +174,10 @@ func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, e
 			broadcastResponse, err := broadcastStream.Recv()
 			logger.Debugf("Orderer.broadcastStream - response:%v, error:%v\n", broadcastResponse, err)
 			if err != nil {
+				rpcStatus, ok := grpcstatus.FromError(err)
+				if ok {
+					err = status.NewFromGRPCStatus(rpcStatus)
+				}
 				broadcastErr = errors.Wrap(err, "broadcast recv failed")
 				done <- true
 				return
@@ -178,7 +188,7 @@ func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, e
 				return
 			}
 			if broadcastResponse.Status != common.Status_SUCCESS {
-				broadcastErr = errors.Errorf("broadcast response is not success %v", broadcastResponse.Status)
+				broadcastErr = status.New(status.OrdererServerStatus, int32(broadcastResponse.Status), broadcastResponse.Info, nil)
 				done <- true
 				return
 			}

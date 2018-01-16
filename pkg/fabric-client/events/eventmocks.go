@@ -157,7 +157,7 @@ func (b *MockTxEventBuilder) Build() *pb.Event_Block {
 	return &pb.Event_Block{
 		Block: &common.Block{
 			Header:   &common.BlockHeader{},
-			Metadata: b.buildBlockMetadata(),
+			Metadata: b.buildBlockMetadata(pb.TxValidationCode_VALID),
 			Data: &common.BlockData{
 				Data: [][]byte{internal.MarshalOrPanic(b.buildEnvelope())},
 			},
@@ -165,19 +165,32 @@ func (b *MockTxEventBuilder) Build() *pb.Event_Block {
 	}
 }
 
-func (b *MockTxEventBuilder) buildBlockMetadata() *common.BlockMetadata {
+// BuildWithTxValidationCode Build builds a mock TX event block
+func (b *MockTxEventBuilder) BuildWithTxValidationCode(c pb.TxValidationCode) *pb.Event_Block {
+	return &pb.Event_Block{
+		Block: &common.Block{
+			Header:   &common.BlockHeader{},
+			Metadata: b.buildBlockMetadata(c),
+			Data: &common.BlockData{
+				Data: [][]byte{internal.MarshalOrPanic(b.buildEnvelope())},
+			},
+		},
+	}
+}
+
+func (b *MockTxEventBuilder) buildBlockMetadata(c pb.TxValidationCode) *common.BlockMetadata {
 	return &common.BlockMetadata{
 		Metadata: [][]byte{
 			[]byte{},
 			[]byte{},
-			b.buildTransactionsFilterMetaDataBytes(),
+			b.buildTransactionsFilterMetaDataBytes(c),
 			[]byte{},
 		},
 	}
 }
 
-func (b *MockTxEventBuilder) buildTransactionsFilterMetaDataBytes() []byte {
-	return []byte(ledger_util.TxValidationFlags{uint8(pb.TxValidationCode_VALID)})
+func (b *MockTxEventBuilder) buildTransactionsFilterMetaDataBytes(c pb.TxValidationCode) []byte {
+	return []byte(ledger_util.TxValidationFlags{uint8(c)})
 }
 
 // Build builds a mock chaincode event

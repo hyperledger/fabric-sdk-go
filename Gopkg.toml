@@ -69,3 +69,7 @@
 [[constraint]]
   name = "gopkg.in/yaml.v2"
   branch = "v2"
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "1.2.0"  

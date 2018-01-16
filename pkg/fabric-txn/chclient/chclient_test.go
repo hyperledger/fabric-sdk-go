@@ -7,25 +7,35 @@ SPDX-License-Identifier: Apache-2.0
 package chclient
 
 import (
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/status"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+)
+
+const (
+	testAddress = "127.0.0.1:47882"
 )
 
 func TestTxProposalResponseFilter(t *testing.T) {
+	testErrorResponse := "internal error"
 	// failed if status not 200
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
 	testPeer2 := fcmocks.NewMockPeer("Peer2", "http://peer2.com")
-	testPeer2.Status = 300
+	testPeer2.Status = 500
+	testPeer2.ResponseMessage = testErrorResponse
+
 	peers := []apifabclient.Peer{testPeer1, testPeer2}
 	chClient := setupChannelClient(peers, t)
 
@@ -33,9 +43,11 @@ func TestTxProposalResponseFilter(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Should have failed for not success status")
 	}
-	if !strings.Contains(err.Error(), "proposal response was not successful, error code 300") {
-		t.Fatalf("Return wrong error message %v", err)
-	}
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error")
+	assert.EqualValues(t, common.Status_INTERNAL_SERVER_ERROR, status.ToPeerStatusCode(statusError.Code))
+	assert.Equal(t, status.EndorserServerStatus, statusError.Group)
+	assert.Equal(t, testErrorResponse, statusError.Message, "Expected response message from server")
 
 	testPeer2.Payload = []byte("wrongPayload")
 	testPeer2.Status = 200
@@ -45,10 +57,11 @@ func TestTxProposalResponseFilter(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Should have failed for not success status")
 	}
-	if !strings.Contains(err.Error(), "ProposalResponsePayloads do not match") {
-		t.Fatalf("Return wrong error message %v", err)
-	}
-
+	statusError, ok = status.FromError(err)
+	assert.True(t, ok, "Expected status error")
+	assert.EqualValues(t, status.EndorsementMismatch, status.ToSDKStatusCode(statusError.Code))
+	assert.Equal(t, status.EndorserClientStatus, statusError.Group)
+	assert.Equal(t, "ProposalResponsePayloads do not match", statusError.Message, "Expected response message from server")
 }
 
 func TestQuery(t *testing.T) {
@@ -210,6 +223,88 @@ func TestExecuteTxSelectionError(t *testing.T) {
 
 }
 
+// TestRPCErrorPropagation tests if status errors are wrapped and propagated from
+// the lower level APIs to the high level channel client API
+// This ensures that the status is not swallowed by calling error.Error()
+func TestRPCStatusErrorPropagation(t *testing.T) {
+	testErrMessage := "Test RPC Error"
+	testStatus := status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), testErrMessage, nil)
+
+	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
+	testPeer1.Error = testStatus
+	chClient := setupChannelClient([]apifabclient.Peer{testPeer1}, t)
+
+	_, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
+		t.Fatalf("Should have failed for not success status")
+	}
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error")
+	assert.EqualValues(t, status.ConnectionFailed, status.ToSDKStatusCode(statusError.Code))
+	assert.Equal(t, status.EndorserClientStatus, statusError.Group)
+	assert.Equal(t, testErrMessage, statusError.Message, "Expected response message from server")
+}
+
+// TestOrdererStatusError ensures that status errors are propagated through
+// the code execution paths from the low-level orderer broadcast APIs
+func TestOrdererStatusError(t *testing.T) {
+	testErrorMessage := "test error"
+
+	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
+	peers := []apifabclient.Peer{testPeer1}
+	testOrderer1 := fcmocks.NewMockOrderer("", make(chan *apifabclient.SignedEnvelope))
+	orderers := []apifabclient.Orderer{testOrderer1}
+	chClient := setupChannelClientWithNodes(peers, orderers, t)
+	chClient.eventHub = fcmocks.NewMockEventHub()
+
+	mockOrderer, ok := testOrderer1.(fcmocks.MockOrderer)
+	assert.True(t, ok, "Expected object to be mock orderer")
+	mockOrderer.EnqueueSendBroadcastError(status.New(status.OrdererClientStatus,
+		status.ConnectionFailed.ToInt32(), testErrorMessage, nil))
+
+	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error got %+v", err)
+	assert.EqualValues(t, status.ConnectionFailed, status.ToSDKStatusCode(statusError.Code))
+	assert.Equal(t, status.OrdererClientStatus, statusError.Group)
+	assert.Equal(t, testErrorMessage, statusError.Message, "Expected response message from server")
+
+	chClient.Close()
+}
+
+func TestTransactionValidationError(t *testing.T) {
+	validationCode := pb.TxValidationCode_BAD_RWSET
+	mockEventHub := fcmocks.NewMockEventHub()
+	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
+	peers := []apifabclient.Peer{testPeer1}
+
+	chClient := setupChannelClient(peers, t)
+	chClient.eventHub = mockEventHub
+	notifier := make(chan apitxn.ExecuteTxResponse)
+
+	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}},
+		apitxn.ExecuteTxOpts{Notifier: notifier})
+	assert.Nil(t, err, "Expected success got error %+v", err)
+
+	select {
+	case callback := <-mockEventHub.RegisteredTxCallbacks:
+		callback("txid", validationCode,
+			status.New(status.EventServerStatus, int32(validationCode), "test", nil))
+	case <-time.After(time.Second * 5):
+		t.Fatal("Timed out waiting for execute Tx to register event callback")
+	}
+
+	select {
+	case response := <-notifier:
+		assert.NotNil(t, response.Error, "expected error")
+		statusError, ok := status.FromError(response.Error)
+		assert.True(t, ok, "Expected status error got %+v", err)
+		assert.EqualValues(t, validationCode, status.ToTransactionValidationCode(statusError.Code))
+	case <-time.After(time.Second * 5):
+		t.Fatal("Timed out waiting for execute Tx")
+	}
+}
+
 func setupTestChannel() (*channel.Channel, error) {
 	client := setupTestClient()
 	return channel.NewChannel("testChannel", client)
@@ -276,6 +371,30 @@ func setupChannelClientWithError(discErr error, selectionErr error, peers []apif
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
+
+	return ch
+}
+
+func setupChannelClientWithNodes(peers []apifabclient.Peer,
+	orderers []apifabclient.Orderer, t *testing.T) *ChannelClient {
+
+	fcClient := setupTestClient()
+	testChannel, err := setupTestChannel()
+	assert.Nil(t, err, "Failed to setup test channel")
+
+	for _, orderer := range orderers {
+		err = testChannel.AddOrderer(orderer)
+		assert.Nil(t, err, "Failed to add orderer %+v", orderer)
+	}
+
+	discoveryService, err := setupTestDiscovery(nil, nil)
+	assert.Nil(t, err, "Failed to setup discovery service")
+
+	selectionService, err := setupTestSelection(nil, peers)
+	assert.Nil(t, err, "Failed to setup discovery service")
+
+	ch, err := NewChannelClient(fcClient, testChannel, discoveryService, selectionService, nil)
+	assert.Nil(t, err, "Failed to create new channel client")
 
 	return ch
 }
