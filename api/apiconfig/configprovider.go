@@ -36,7 +36,7 @@ type Config interface {
 	ChannelPeers(name string) ([]ChannelPeer, error)
 	ChannelOrderers(name string) ([]OrdererConfig, error)
 	SetTLSCACertPool(*x509.CertPool)
-	TLSCACertPool(tlsCertificate string) (*x509.CertPool, error)
+	TLSCACertPool(certConfig ...*x509.Certificate) (*x509.CertPool, error)
 	IsSecurityEnabled() bool
 	SecurityAlgorithm() string
 	SecurityLevel() int

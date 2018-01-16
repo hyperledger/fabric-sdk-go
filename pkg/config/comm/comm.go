@@ -9,21 +9,24 @@ package comm
 import (
 	"crypto/tls"
 
+	"crypto/x509"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	cutil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 // TLSConfig returns the appropriate config for TLS including the root CAs,
-// certs for mutual TLS, and server host override
-func TLSConfig(certificate string, serverhostoverride string, config apiconfig.Config) (*tls.Config, error) {
-	certPool, _ := config.TLSCACertPool("")
+// certs for mutual TLS, and server host override. Works with certs loaded either from a path or embedded pem.
+func TLSConfig(cert *x509.Certificate, serverName string, config apiconfig.Config) (*tls.Config, error) {
+	certPool, _ := config.TLSCACertPool()
 
-	if len(certificate) == 0 && (certPool == nil || len(certPool.Subjects()) == 0) {
+	if cert == nil && (certPool == nil || len(certPool.Subjects()) == 0) {
 		return nil, errors.New("certificate is required")
 	}
 
-	tlsCaCertPool, err := config.TLSCACertPool(certificate)
+	tlsCaCertPool, err := config.TLSCACertPool(cert)
+
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +36,7 @@ func TLSConfig(certificate string, serverhostoverride string, config apiconfig.C
 		return nil, errors.Errorf("Error loading cert/key pair for TLS client credentials: %v", err)
 	}
 
-	return &tls.Config{RootCAs: tlsCaCertPool, Certificates: clientCerts, ServerName: serverhostoverride}, nil
+	return &tls.Config{RootCAs: tlsCaCertPool, Certificates: clientCerts, ServerName: serverName}, nil
 }
 
 // TLSCertHash is a utility method to calculate the SHA256 hash of the configured certificate (for usage in channel headers)

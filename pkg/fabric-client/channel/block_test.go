@@ -18,7 +18,7 @@ import (
 func TestGenesisBlock(t *testing.T) {
 	var peers []fab.Peer
 	channel, _ := setupTestChannel()
-	peer, _ := peer.NewPeer(testAddress, mocks.NewMockConfig())
+	peer, _ := peer.New(mocks.NewMockConfig(), peer.WithURL(testAddress))
 	peers = append(peers, peer)
 	orderer := mocks.NewMockOrderer("", nil)
 	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockError())

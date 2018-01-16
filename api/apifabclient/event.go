@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package apifabclient
 
 import (
+	"crypto/x509"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -15,7 +17,7 @@ import (
 
 // EventHub ...
 type EventHub interface {
-	SetPeerAddr(peerURL string, certificate string, serverHostOverride string)
+	SetPeerAddr(peerURL string, certificate *x509.Certificate, serverHostOverride string)
 	IsConnected() bool
 	Connect() error
 	Disconnect() error

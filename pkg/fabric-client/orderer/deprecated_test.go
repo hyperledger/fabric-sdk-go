@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
-	"net"
 	"strings"
 	"testing"
 	"time"
@@ -18,29 +17,10 @@ import (
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
-
-var testOrdererURL = "127.0.0.1:0"
-
-var validRootCA = `-----BEGIN CERTIFICATE-----
-MIICYjCCAgmgAwIBAgIUB3CTDOU47sUC5K4kn/Caqnh114YwCgYIKoZIzj0EAwIw
-fzELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNh
-biBGcmFuY2lzY28xHzAdBgNVBAoTFkludGVybmV0IFdpZGdldHMsIEluYy4xDDAK
-BgNVBAsTA1dXVzEUMBIGA1UEAxMLZXhhbXBsZS5jb20wHhcNMTYxMDEyMTkzMTAw
-WhcNMjExMDExMTkzMTAwWjB/MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZv
-cm5pYTEWMBQGA1UEBxMNU2FuIEZyYW5jaXNjbzEfMB0GA1UEChMWSW50ZXJuZXQg
-V2lkZ2V0cywgSW5jLjEMMAoGA1UECxMDV1dXMRQwEgYDVQQDEwtleGFtcGxlLmNv
-bTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKIH5b2JaSmqiQXHyqC+cmknICcF
-i5AddVjsQizDV6uZ4v6s+PWiJyzfA/rTtMvYAPq/yeEHpBUB1j053mxnpMujYzBh
-MA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBQXZ0I9
-qp6CP8TFHZ9bw5nRtZxIEDAfBgNVHSMEGDAWgBQXZ0I9qp6CP8TFHZ9bw5nRtZxI
-EDAKBggqhkjOPQQDAgNHADBEAiAHp5Rbp9Em1G/UmKn8WsCbqDfWecVbZPQj3RK4
-oG5kQQIgQAe4OOKYhJdh3f7URaKfGTf492/nmRmtK+ySKjpHSrU=
------END CERTIFICATE-----`
 
 //
 // Orderer via chain setOrderer/getOrderer
@@ -49,13 +29,13 @@ oG5kQQIgQAe4OOKYhJdh3f7URaKfGTf492/nmRmtK+ySKjpHSrU=
 // orderer URL was set correctly through the getOrderer method. Repeat the
 // process by updating the orderer URL to a different address.
 //
-func TestOrdererViaChain(t *testing.T) {
+func TestDeprecatedOrdererViaChain(t *testing.T) {
 	client := client.NewClient(mocks.NewMockConfig())
 	chain, err := client.NewChannel("testChain-orderer-member")
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	orderer, _ := New(mocks.NewMockConfig(), WithURL("localhost:7050"))
+	orderer, _ := NewOrderer("localhost:7050", "", "", mocks.NewMockConfig())
 	err = chain.AddOrderer(orderer)
 	if err != nil {
 		t.Fatalf("Error adding orderer: %v", err)
@@ -66,9 +46,9 @@ func TestOrdererViaChain(t *testing.T) {
 		t.Fatalf("Failed to retieve the new orderer URL from the chain")
 	}
 	chain.RemoveOrderer(orderer)
-	orderer2, err := New(mocks.NewMockConfig(), WithURL("localhost:7054"))
+	orderer2, err := NewOrderer("localhost:7054", "", "", mocks.NewMockConfig())
 	if err != nil {
-		t.Fatalf("Failed to create New orderer: error(%v)", err)
+		t.Fatalf("Failed to create NewOrderer error(%v)", err)
 	}
 	err = chain.AddOrderer(orderer2)
 	if err != nil {
@@ -89,7 +69,7 @@ func TestOrdererViaChain(t *testing.T) {
 // before the orderer URL was set. Verify that an error is reported when tying
 // to send the request.
 //
-func TestPeerViaChainMissingOrderer(t *testing.T) {
+func TestDeprecatedPeerViaChainMissingOrderer(t *testing.T) {
 	client := client.NewClient(mocks.NewMockConfig())
 	chain, err := client.NewChannel("testChain-orderer-member2")
 	if err != nil {
@@ -112,16 +92,15 @@ func TestPeerViaChainMissingOrderer(t *testing.T) {
 // with the data set to null. Verify that an error is reported when tying
 // to send null data.
 //
-func TestOrdererViaChainNilData(t *testing.T) {
+func TestDeprecatedOrdererViaChainNilData(t *testing.T) {
 	client := client.NewClient(mocks.NewMockConfig())
 	chain, err := client.NewChannel("testChain-orderer-member2")
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	orderer, err := New(mocks.NewMockConfig(), WithURL("localhost:7050"))
-
+	orderer, err := NewOrderer("localhost:7050", "", "", mocks.NewMockConfig())
 	if err != nil {
-		t.Fatalf("Failed to create New orderer: error(%v)", err)
+		t.Fatalf("Failed to create NewOrderer error(%v)", err)
 	}
 	err = chain.AddOrderer(orderer)
 	if err != nil {
@@ -137,13 +116,12 @@ func TestOrdererViaChainNilData(t *testing.T) {
 	}
 }
 
-func TestSendDeliver(t *testing.T) {
+func TestDeprecatedSendDeliver(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	mockServer, addr := startMockServer(t, grpcServer)
 
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr))
-
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 	// Test deliver happy path
 	blocks, errs := orderer.SendDeliver(&fab.SignedEnvelope{})
 	select {
@@ -185,7 +163,7 @@ func TestSendDeliver(t *testing.T) {
 		t.Fatalf("Did not receive block or error from SendDeliver")
 	}
 
-	orderer, _ = New(mocks.NewMockConfig(), WithURL(testOrdererURL+"invalid-test"))
+	orderer, _ = NewOrderer(testOrdererURL+"invalid-test", "", "", mocks.NewMockConfig())
 	// Test deliver happy path
 	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
 	select {
@@ -199,97 +177,46 @@ func TestSendDeliver(t *testing.T) {
 
 }
 
-func startMockServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockBroadcastServer, string) {
-	lis, err := net.Listen("tcp", testOrdererURL)
-	addr := lis.Addr().String()
-
-	broadcastServer := new(mocks.MockBroadcastServer)
-	ab.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
-	if err != nil {
-		t.Logf("Error starting test server %s", err)
-		t.FailNow()
-	}
-	t.Logf("Starting test server on %s", addr)
-	go grpcServer.Serve(lis)
-
-	return broadcastServer, addr
-}
-
-func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.Server, broadcastServer *mocks.MockBroadcastServer) string {
-	lis, err := net.Listen("tcp", serverURL)
-	addr := lis.Addr().String()
-
-	ab.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
-	if err != nil {
-		t.Logf("Error starting test server %s", err)
-		t.FailNow()
-	}
-	t.Logf("Starting test customized server on %s\n", addr)
-	go grpcServer.Serve(lis)
-
-	return addr
-}
-
-func TestNewOrdererWithTLS(t *testing.T) {
-	tlsConfig := apiconfig.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
-
-	cert, err := tlsConfig.TLSCert()
-
-	if err != nil {
-		t.Fatalf("Testing New with TLS failed, cause [%s]", err)
-	}
-
-	orderer, err := New(mocks.NewMockConfigCustomized(true, false, false), WithURL("grpcs://"), WithTLSCert(cert))
-
-	if orderer == nil || err != nil {
-		t.Fatalf("Testing New with TLS failed, cause [%s]", err)
-	}
-
-	//Negative Test case
-	orderer, err = New(mocks.NewMockConfigCustomized(true, false, true), WithURL("grpcs://"))
-
-	if orderer != nil || err == nil {
-		t.Fatalf("Testing New with TLS was supposed to fail")
-	}
-}
-
-func TestNewOrdererWithMutualTLS(t *testing.T) {
+func TestDeprecatedNewOrdererWithTLS(t *testing.T) {
 	//Positive Test case
-	tlsConfig := apiconfig.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
-
-	cert, err := tlsConfig.TLSCert()
-
-	if err != nil {
-		t.Fatalf("Testing New with TLS failed, cause [%s]", err)
-	}
-
-	orderer, err := New(mocks.NewMockConfigCustomized(true, true, false), WithURL("grpcs://"), WithTLSCert(cert))
-
+	orderer, err := NewOrderer("grpcs://", "../../../test/fixtures/fabricca/tls/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, false, false))
 	if orderer == nil || err != nil {
-		t.Fatalf("Testing New with Mutual TLS failed, cause [%s]", err)
+		t.Fatalf("Testing NewOrderer with TLS failed, cause [%s]", err)
 	}
+
 	//Negative Test case
-	orderer, err = New(mocks.NewMockConfigCustomized(true, false, false), WithURL("grpcs://"), WithTLSCert(cert))
-
-	if orderer == nil || err != nil {
-		t.Fatalf("Testing New with Mutual TLS failed, cause [%s]", err)
+	orderer, err = NewOrderer("grpcs://", "", "", mocks.NewMockConfigCustomized(true, false, true))
+	if orderer != nil || err == nil {
+		t.Fatalf("Testing NewOrderer with TLS was supposed to fail")
 	}
 }
 
-func TestSendBroadcast(t *testing.T) {
+func TestDeprecatedNewOrdererWithMutualTLS(t *testing.T) {
+	//Positive Test case
+	orderer, err := NewOrderer("grpcs://", "../../../test/fixtures/fabricca/tls/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, true, false))
+	if orderer == nil || err != nil {
+		t.Fatalf("Testing NewOrderer with Mutual TLS failed, cause [%s]", err)
+	}
+	//Negative Test case
+	orderer, err = NewOrderer("grpcs://", "../../../test/fixtures/fabricca/tls/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, false, false))
+	if orderer == nil || err != nil {
+		t.Fatalf("Testing NewOrderer with Mutual TLS failed, cause [%s]", err)
+	}
+}
+
+func TestDeprecatedSendBroadcast(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	_, addr := startMockServer(t, grpcServer)
 
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr))
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
 	if err != nil {
 		t.Fatalf("Test SendBroadcast was not supposed to fail")
 	}
 
-	orderer, _ = New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"))
-
+	orderer, _ = NewOrderer(testOrdererURL+"Test", "", "", mocks.NewMockConfig())
 	_, err = orderer.SendBroadcast(&fab.SignedEnvelope{})
 
 	if err == nil || !strings.HasPrefix(err.Error(), "NewAtomicBroadcastClient") {
@@ -298,7 +225,7 @@ func TestSendBroadcast(t *testing.T) {
 
 }
 
-func TestSendDeliverServerBadResponse(t *testing.T) {
+func TestDeprecatedSendDeliverServerBadResponse(t *testing.T) {
 
 	broadcastServer := mocks.MockBroadcastServer{
 		DeliverResponse: &ab.DeliverResponse{
@@ -311,7 +238,7 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr))
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -327,7 +254,7 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 	}
 }
 
-func TestSendDeliverServerSuccessResponse(t *testing.T) {
+func TestDeprecatedSendDeliverServerSuccessResponse(t *testing.T) {
 
 	broadcastServer := mocks.MockBroadcastServer{
 		DeliverResponse: &ab.DeliverResponse{
@@ -341,7 +268,7 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr))
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -357,7 +284,7 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 	}
 }
 
-func TestSendDeliverFailure(t *testing.T) {
+func TestDeprecatedSendDeliverFailure(t *testing.T) {
 
 	broadcastServer := mocks.MockBroadcastServer{
 		DeliverResponse: &ab.DeliverResponse{},
@@ -366,7 +293,7 @@ func TestSendDeliverFailure(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr))
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -382,7 +309,7 @@ func TestSendDeliverFailure(t *testing.T) {
 	}
 }
 
-func TestSendBroadcastServerBadResponse(t *testing.T) {
+func TestDeprecatedSendBroadcastServerBadResponse(t *testing.T) {
 
 	broadcastServer := mocks.MockBroadcastServer{
 		BroadcastInternalServerError: true,
@@ -391,7 +318,7 @@ func TestSendBroadcastServerBadResponse(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr))
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 
 	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
@@ -403,7 +330,7 @@ func TestSendBroadcastServerBadResponse(t *testing.T) {
 	}
 }
 
-func TestSendBroadcastError(t *testing.T) {
+func TestDeprecatedSendBroadcastError(t *testing.T) {
 
 	broadcastServer := mocks.MockBroadcastServer{
 		BroadcastError: errors.New("just to test error scenario"),
@@ -412,7 +339,7 @@ func TestSendBroadcastError(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr))
+	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 
 	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
@@ -422,7 +349,7 @@ func TestSendBroadcastError(t *testing.T) {
 
 }
 
-func TestInterfaces(t *testing.T) {
+func TestDeprecatedInterfaces(t *testing.T) {
 	var apiOrderer fab.Orderer
 	var orderer Orderer
 

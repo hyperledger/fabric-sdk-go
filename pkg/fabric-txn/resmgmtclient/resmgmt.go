@@ -525,7 +525,7 @@ func (rc *ResourceMgmtClient) getChannel(channelID string) (fab.Channel, error) 
 	}
 
 	for _, ordererCfg := range orderers {
-		orderer, err := orderer.NewOrdererFromConfig(&ordererCfg, rc.config)
+		orderer, err := orderer.New(rc.config, orderer.FromOrdererConfig(&ordererCfg))
 		if err != nil {
 			return nil, errors.WithMessage(err, "NewOrdererFromConfig failed")
 		}

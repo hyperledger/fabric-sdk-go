@@ -37,7 +37,8 @@ func TestPeerViaChannel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChannel %v", err)
 	}
-	peer1, err := peer.NewPeer(peer1URL, config)
+	peer1, err := peer.New(config, peer.WithURL(peer1URL))
+
 	if err != nil {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
@@ -51,7 +52,9 @@ func TestPeerViaChannel(t *testing.T) {
 		t.Fatalf("Failed to retieve the new peers URL from the channel")
 	}
 	channel.RemovePeer(peer1)
-	peer2, err := peer.NewPeer(peer2URL, config)
+
+	peer2, err := peer.New(config, peer.WithURL(peer2URL))
+
 	if err != nil {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
@@ -117,11 +120,12 @@ func TestPeerViaChannelNilData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChannel %v", err)
 	}
-	peer, err := peer.NewPeer(peer1URL, config)
+
+	peer1, err := peer.New(config, peer.WithURL(peer1URL))
 	if err != nil {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
-	err = channel.AddPeer(peer)
+	err = channel.AddPeer(peer1)
 	if err != nil {
 		t.Fatalf("Error adding peer: %v", err)
 	}

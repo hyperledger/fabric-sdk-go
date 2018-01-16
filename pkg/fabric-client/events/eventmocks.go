@@ -16,6 +16,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"crypto/x509"
+
 	fcConsumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -46,7 +48,7 @@ type mockEventClientFactory struct {
 	clients []*mockEventClient
 }
 
-func (mecf *mockEventClientFactory) newEventsClient(client fab.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (fab.EventsClient, error) {
+func (mecf *mockEventClientFactory) newEventsClient(client fab.FabricClient, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (fab.EventsClient, error) {
 	mec := &mockEventClient{
 		PeerAddress: peerAddress,
 		RegTimeout:  regTimeout,
@@ -117,7 +119,7 @@ func createMockedEventHub(t *testing.T) (*EventHub, *mockEventClientFactory) {
 	var clientFactory mockEventClientFactory
 	eventHub.eventsClientFactory = &clientFactory
 
-	eventHub.SetPeerAddr("mock://mock", "", "")
+	eventHub.SetPeerAddr("mock://mock", nil, "")
 
 	err = eventHub.Connect()
 	if err != nil {

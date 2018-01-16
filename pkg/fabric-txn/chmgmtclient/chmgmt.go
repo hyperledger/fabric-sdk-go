@@ -91,7 +91,7 @@ func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, 
 		return errors.Errorf("failed to retrieve orderer config: %s", err)
 	}
 
-	orderer, err := orderer.NewOrdererFromConfig(ordererCfg, cc.config)
+	orderer, err := orderer.New(cc.config, orderer.FromOrdererConfig(ordererCfg))
 	if err != nil {
 		return errors.WithMessage(err, "failed to create new orderer from config")
 	}

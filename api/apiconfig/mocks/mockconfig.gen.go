@@ -451,16 +451,20 @@ func (_mr *MockConfigMockRecorder) SoftVerify() *gomock.Call {
 }
 
 // TLSCACertPool mocks base method
-func (_m *MockConfig) TLSCACertPool(_param0 string) (*x509.CertPool, error) {
-	ret := _m.ctrl.Call(_m, "TLSCACertPool", _param0)
+func (_m *MockConfig) TLSCACertPool(_param0 ...*x509.Certificate) (*x509.CertPool, error) {
+	_s := []interface{}{}
+	for _, _x := range _param0 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "TLSCACertPool", _s...)
 	ret0, _ := ret[0].(*x509.CertPool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // TLSCACertPool indicates an expected call of TLSCACertPool
-func (_mr *MockConfigMockRecorder) TLSCACertPool(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "TLSCACertPool", reflect.TypeOf((*MockConfig)(nil).TLSCACertPool), arg0)
+func (_mr *MockConfigMockRecorder) TLSCACertPool(arg0 ...interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "TLSCACertPool", reflect.TypeOf((*MockConfig)(nil).TLSCACertPool), arg0...)
 }
 
 // TLSClientCerts mocks base method

@@ -187,7 +187,7 @@ func TestEnrollAndTransact(t *testing.T) {
 		t.Fatalf("Failed to get peer config : %s", err)
 	}
 	networkPeer := &apiconfig.NetworkPeer{PeerConfig: peers[0], MspID: mspID}
-	testPeer, err := peer.NewPeerFromConfig(networkPeer, testFabricConfig)
+	testPeer, err := peer.New(testFabricConfig, peer.FromPeerConfig(networkPeer))
 	if err != nil {
 		t.Fatalf("Failed to create peer from config : %s", err)
 	}
