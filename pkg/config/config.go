@@ -11,6 +11,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -35,7 +36,7 @@ import (
 var logger = logging.NewLogger(logModule)
 
 const (
-	cmdRoot        = "fabric_sdk"
+	cmdRoot        = "FABRIC_SDK"
 	logModule      = "fabric_sdk_go"
 	defaultTimeout = time.Second * 5
 )
@@ -46,39 +47,151 @@ type Config struct {
 	networkConfig       *apiconfig.NetworkConfig
 	networkConfigCached bool
 	configViper         *viper.Viper
+	opts                options
 }
 
-// InitConfigFromBytes will initialize the configs from a bytes array
-func InitConfigFromBytes(configBytes []byte, configType string) (*Config, error) {
-	myViper := getNewViper(cmdRoot)
+type options struct {
+	envPrefix    string
+	templatePath string
+	template     *Config
+}
+
+// Option configures the package.
+type Option func(opts *options) error
+
+// FromReader loads configuration from in.
+// configType can be "json" or "yaml".
+func FromReader(in io.Reader, configType string, opts ...Option) (*Config, error) {
+	c, err := newConfig(opts...)
+	if err != nil {
+		return nil, err
+	}
 
 	if configType == "" {
 		return nil, errors.New("empty config type")
 	}
 
-	if len(configBytes) > 0 {
-		buf := bytes.NewBuffer(configBytes)
-		logger.Debugf("buf Len is %d, Cap is %d: %s", buf.Len(), buf.Cap(), buf)
-		// read config from bytes array, but must set ConfigType
-		// for viper to properly unmarshal the bytes array
-		myViper.SetConfigType(configType)
-		myViper.ReadConfig(buf)
-	} else {
-		return nil, errors.New("empty config bytes array")
-	}
+	// read config from bytes array, but must set ConfigType
+	// for viper to properly unmarshal the bytes array
+	c.configViper.SetConfigType(configType)
+	c.configViper.MergeConfig(in)
 
-	setLogLevel(myViper)
+	return initConfig(c)
+}
 
-	tlsCertPool, err := getCertPool(myViper)
+// FromFile reads from named config file
+func FromFile(name string, opts ...Option) (*Config, error) {
+	c, err := newConfig(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Config{tlsCertPool: tlsCertPool, configViper: myViper}, nil
+	if name == "" {
+		return nil, errors.New("filename is required")
+	}
+
+	// create new viper
+	c.configViper.SetConfigFile(name)
+
+	// If a config file is found, read it in.
+	err = c.configViper.MergeInConfig()
+	if err == nil {
+		logger.Debugf("Using config file: %s", c.configViper.ConfigFileUsed())
+	} else {
+		return nil, errors.Wrap(err, "loading config file failed")
+	}
+
+	return initConfig(c)
 }
 
-// getNewViper returns a new instance of viper
-func getNewViper(cmdRootPrefix string) *viper.Viper {
+// FromRaw will initialize the configs from a byte array
+func FromRaw(configBytes []byte, configType string, opts ...Option) (*Config, error) {
+
+	if len(configBytes) == 0 {
+		return nil, errors.New("empty config byte array")
+	}
+
+	buf := bytes.NewBuffer(configBytes)
+	logger.Debugf("config.FromRaw buf Len is %d, Cap is %d: %s", buf.Len(), buf.Cap(), buf)
+
+	return FromReader(buf, configType, opts...)
+}
+
+/*
+// FromDefaultPath loads configuration from the default path
+func FromDefaultPath(opts ...Option) (*Config, error) {
+	optsWithDef := append(opts, withTemplatePathFromEnv("CONFIG_PATH"))
+
+	c, err := newConfig(optsWithDef...)
+	if err != nil {
+		return nil, err
+	}
+	if c.opts.templatePath == "" {
+		return nil, errors.New("Configuration path is not set")
+	}
+
+	return initConfig(c)
+}
+*/
+
+// WithEnvPrefix defines the prefix for environment variable overrides.
+// See viper SetEnvPrefix for more information.
+func WithEnvPrefix(prefix string) Option {
+	return func(opts *options) error {
+		opts.envPrefix = prefix
+		return nil
+	}
+}
+
+/*
+// WithTemplatePath loads the named file to populate a configuration template prior to loading the instance configuration.
+func WithTemplatePath(path string) Option {
+	return func(opts *options) error {
+		opts.templatePath = path
+		return nil
+	}
+}
+*/
+
+/*
+func withTemplatePathFromEnv(e string) Option {
+	return func(opts *options) error {
+		if opts.templatePath == "" {
+			opts.templatePath = os.Getenv(opts.envPrefix + "_" + e)
+		}
+
+		return nil
+	}
+}
+*/
+
+func newConfig(opts ...Option) (*Config, error) {
+	o := options{
+		envPrefix: cmdRoot,
+	}
+
+	for _, option := range opts {
+		err := option(&o)
+		if err != nil {
+			return nil, errors.WithMessage(err, "Error in option passed to New")
+		}
+	}
+
+	v := newViper(o.envPrefix)
+	c := Config{
+		configViper: v,
+		opts:        o,
+	}
+
+	err := c.loadTemplateConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	return &c, nil
+}
+
+func newViper(cmdRootPrefix string) *viper.Viper {
 	myViper := viper.New()
 	myViper.SetEnvPrefix(cmdRootPrefix)
 	myViper.AutomaticEnv()
@@ -87,44 +200,16 @@ func getNewViper(cmdRootPrefix string) *viper.Viper {
 	return myViper
 }
 
-// InitConfig reads in config file
-func InitConfig(configFile string) (*Config, error) {
-	return initConfigWithCmdRoot(configFile, cmdRoot)
-}
-
-// initConfigWithCmdRoot reads in a config file and allows the
-// environment variable prefixed to be specified
-func initConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, error) {
-	myViper := getNewViper(cmdRootPrefix)
-
-	// load default config
-	// for now, loading DefaultConfig only works with File, not []Byte due to viper's ConfigType
-	err := loadDefaultConfig(myViper)
+func initConfig(c *Config) (*Config, error) {
+	setLogLevel(c.configViper)
+	tlsCertPool, err := getCertPool(c.configViper)
 	if err != nil {
 		return nil, err
 	}
+	c.tlsCertPool = tlsCertPool
 
-	if configFile != "" {
-		// create new viper
-		myViper.SetConfigFile(configFile)
-		// If a config file is found, read it in.
-		err := myViper.ReadInConfig()
-
-		if err == nil {
-			logger.Debugf("Using config file: %s", myViper.ConfigFileUsed())
-		} else {
-			return nil, errors.Wrap(err, "loading config file failed")
-		}
-	}
-
-	setLogLevel(myViper)
-	tlsCertPool, err := getCertPool(myViper)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Infof("%s logging level is set to: %s", logModule, lu.LogLevelString(logging.GetLevel(logModule)))
-	return &Config{tlsCertPool: tlsCertPool, configViper: myViper}, nil
+	logger.Infof("config %s logging level is set to: %s", logModule, lu.LogLevelString(logging.GetLevel(logModule)))
+	return c, nil
 }
 
 func getCertPool(myViper *viper.Viper) (*x509.CertPool, error) {
@@ -155,16 +240,17 @@ func setLogLevel(myViper *viper.Viper) {
 }
 
 // load Default config
-func loadDefaultConfig(myViper *viper.Viper) error {
+func (c *Config) loadTemplateConfig() error {
 	// get Environment Default Config Path
-	defaultPath := os.Getenv("FABRIC_SDK_CONFIG_PATH")
-	if defaultPath == "" {
+	templatePath := c.opts.templatePath
+	if templatePath == "" {
 		return nil
 	}
+
 	// if set, use it to load default config
-	myViper.AddConfigPath(substPathVars(defaultPath))
-	err := myViper.ReadInConfig() // Find and read the config file
-	if err != nil {               // Handle errors reading the config file
+	c.configViper.AddConfigPath(substPathVars(templatePath))
+	err := c.configViper.ReadInConfig() // Find and read the config file
+	if err != nil {                     // Handle errors reading the config file
 		return errors.Wrap(err, "loading config file failed")
 	}
 	return nil
