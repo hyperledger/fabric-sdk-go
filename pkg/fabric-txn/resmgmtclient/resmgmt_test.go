@@ -210,7 +210,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	client := setupTestClient("test", "Org1MSP")
 
 	// No channel orderer, no global orderer
-	noOrdererConfig, err := config.InitConfig("./testdata/noorderer_test.yaml")
+	noOrdererConfig, err := config.FromFile("./testdata/noorderer_test.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +222,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	}
 
 	// Misconfigured channel orderer
-	invalidChOrdererConfig, err := config.InitConfig("./testdata/invalidchorderer_test.yaml")
+	invalidChOrdererConfig, err := config.FromFile("./testdata/invalidchorderer_test.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +234,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	}
 
 	// Misconfigured global orderer (cert cannot be loaded)
-	invalidOrdererConfig, err := config.InitConfig("./testdata/invalidorderer_test.yaml")
+	invalidOrdererConfig, err := config.FromFile("./testdata/invalidorderer_test.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -921,7 +921,7 @@ func TestCCProposal(t *testing.T) {
 	client.SetChannel("mychannel", channel)
 
 	// Setup resource management client
-	cfg, err := config.InitConfig("./testdata/ccproposal_test.yaml")
+	cfg, err := config.FromFile("./testdata/ccproposal_test.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -989,7 +989,7 @@ func TestCCProposal(t *testing.T) {
 	}
 
 	// Test no event source in config
-	cfg, err = config.InitConfig("./testdata/event_source_missing_test.yaml")
+	cfg, err = config.FromFile("./testdata/event_source_missing_test.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1018,7 +1018,7 @@ func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryProvider,
 }
 
 func getNetworkConfig(t *testing.T) *config.Config {
-	config, err := config.InitConfig("../../../test/fixtures/config/config_test.yaml")
+	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}

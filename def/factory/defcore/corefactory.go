@@ -36,9 +36,9 @@ func NewProviderFactory() *ProviderFactory {
 func (f *ProviderFactory) NewConfigProvider(sdkOpts apisdk.SDKOpts) (apiconfig.Config, error) {
 	// configBytes takes precedence over configFile
 	if sdkOpts.ConfigBytes != nil && len(sdkOpts.ConfigBytes) > 0 {
-		return configImpl.InitConfigFromBytes(sdkOpts.ConfigBytes, sdkOpts.ConfigType)
+		return configImpl.FromRaw(sdkOpts.ConfigBytes, sdkOpts.ConfigType)
 	}
-	return configImpl.InitConfig(sdkOpts.ConfigFile)
+	return configImpl.FromFile(sdkOpts.ConfigFile)
 }
 
 // NewStateStoreProvider creates a KeyValueStore using the SDK's default implementation

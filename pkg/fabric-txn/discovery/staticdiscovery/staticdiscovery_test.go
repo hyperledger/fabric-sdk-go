@@ -14,7 +14,7 @@ import (
 
 func TestStaticDiscovery(t *testing.T) {
 
-	config, err := config.InitConfig("../../../../test/fixtures/config/config_test.yaml")
+	config, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

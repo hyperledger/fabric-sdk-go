@@ -140,7 +140,7 @@ func setupTestClient() *fcmocks.MockClient {
 }
 
 func getNetworkConfig(t *testing.T) *config.Config {
-	config, err := config.InitConfig(networkCfg)
+	config, err := config.FromFile(networkCfg)
 	if err != nil {
 		t.Fatal(err)
 	}

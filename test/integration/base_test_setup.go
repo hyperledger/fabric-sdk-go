@@ -189,7 +189,7 @@ func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client fab.FabricClient)
 
 // InitConfig ...
 func (setup *BaseSetupImpl) InitConfig() (apiconfig.Config, error) {
-	configImpl, err := config.InitConfig(setup.ConfigFile)
+	configImpl, err := config.FromFile(setup.ConfigFile)
 	if err != nil {
 		return nil, err
 	}

@@ -27,7 +27,9 @@ import (
 func TestNewConfigProvider(t *testing.T) {
 	factory := NewProviderFactory()
 
-	sdkOpts := apisdk.SDKOpts{}
+	sdkOpts := apisdk.SDKOpts{
+		ConfigFile: "../../../test/fixtures/config/config_test.yaml",
+	}
 
 	config, err := factory.NewConfigProvider(sdkOpts)
 	if err != nil {
