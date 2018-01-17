@@ -16,10 +16,12 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 )
 
 //
@@ -320,14 +322,15 @@ func TestDeprecatedSendBroadcastServerBadResponse(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
 
-	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
-	if err == nil || err.Error() != "broadcast response is not success INTERNAL_SERVER_ERROR" {
-		t.Fatalf("Expected internal server error, but got %s", err)
+	if err == nil {
+		t.Fatalf("Expected error")
 	}
-	if status.String() != "INTERNAL_SERVER_ERROR" {
-		t.Fatalf("Expected internal server error, but got %v", status)
-	}
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error")
+	assert.EqualValues(t, common.Status_INTERNAL_SERVER_ERROR, status.ToOrdererStatusCode(statusError.Code))
+	assert.Equal(t, status.OrdererServerStatus, statusError.Group)
 }
 
 func TestDeprecatedSendBroadcastError(t *testing.T) {

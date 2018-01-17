@@ -21,7 +21,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -454,7 +453,7 @@ func (rc *ResourceMgmtClient) sendCCProposalWithOpts(ccProposalType CCProposalTy
 	}
 
 	// Register for commit event
-	chcode := internal.RegisterTxEvent(txID, eventHub)
+	statusNotifier := internal.RegisterTxEvent(txID, eventHub)
 
 	if _, err = internal.CreateAndSendTransaction(channel, txProposalResponse); err != nil {
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
@@ -466,11 +465,11 @@ func (rc *ResourceMgmtClient) sendCCProposalWithOpts(ccProposalType CCProposalTy
 	}
 
 	select {
-	case code := <-chcode:
-		if code == pb.TxValidationCode_VALID {
+	case result := <-statusNotifier:
+		if result.Error == nil {
 			return nil
 		}
-		return errors.Errorf("instantiateOrUpgradeCC received tx validation code %s", code)
+		return errors.WithMessage(result.Error, "instantiateOrUpgradeCC failed")
 	case <-time.After(timeout):
 		return errors.New("instantiateOrUpgradeCC timeout")
 	}

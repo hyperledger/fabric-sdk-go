@@ -8,14 +8,15 @@ package peer
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	"crypto/x509"
@@ -28,13 +29,6 @@ import (
 type peerEndorser struct {
 	grpcDialOption []grpc.DialOption
 	target         string
-}
-
-// TransactionProposalError represents an error condition that prevented proposal processing.
-type TransactionProposalError struct {
-	Endorser string
-	Proposal apitxn.TransactionProposal
-	Err      error
 }
 
 func newPeerEndorser(target string, certificate *x509.Certificate, serverHostOverride string,
@@ -73,12 +67,11 @@ func (p *peerEndorser) ProcessTransactionProposal(proposal apitxn.TransactionPro
 
 	proposalResponse, err := p.sendProposal(proposal)
 	if err != nil {
-		tpe := TransactionProposalError{
-			Endorser: p.target,
-			Proposal: proposal,
-			Err:      err,
-		}
-		return apitxn.TransactionProposalResult{}, &tpe
+		return apitxn.TransactionProposalResult{
+				Proposal: proposal,
+				Endorser: p.target,
+			}, errors.Wrapf(err, "Transaction processor (%s) returned error for txID '%s'",
+				p.target, proposal.TxnID.ID)
 	}
 
 	return apitxn.TransactionProposalResult{
@@ -100,15 +93,17 @@ func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {
 func (p *peerEndorser) sendProposal(proposal apitxn.TransactionProposal) (*pb.ProposalResponse, error) {
 	conn, err := p.conn()
 	if err != nil {
-		return nil, err
+		return nil, status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), nil)
 	}
 	defer p.releaseConn(conn)
 
 	endorserClient := pb.NewEndorserClient(conn)
-	return endorserClient.ProcessProposal(context.Background(), proposal.SignedProposal)
-}
-
-func (tpe TransactionProposalError) Error() string {
-	return fmt.Sprintf("Transaction processor (%s) returned error '%s' for txID '%s'",
-		tpe.Endorser, tpe.Err.Error(), tpe.Proposal.TxnID.ID)
+	resp, err := endorserClient.ProcessProposal(context.Background(), proposal.SignedProposal)
+	if err != nil {
+		rpcStatus, ok := grpcstatus.FromError(err)
+		if ok {
+			err = status.NewFromGRPCStatus(rpcStatus)
+		}
+	}
+	return resp, err
 }

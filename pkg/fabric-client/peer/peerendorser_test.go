@@ -7,20 +7,23 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
+	"fmt"
 	"net"
 	"reflect"
-	"strings"
 	"testing"
+	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	grpcCodes "google.golang.org/grpc/codes"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 )
 
 const (
@@ -260,8 +263,8 @@ func TestProcessProposalGoodDial(t *testing.T) {
 func testProcessProposal(t *testing.T, url string) (apitxn.TransactionProposalResult, error) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-
 	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(gomock.Any()).Return(time.Second * 1).AnyTimes()
 
 	conn, err := newPeerEndorser(url, nil, "", true, config)
 	if err != nil {
@@ -278,10 +281,14 @@ func mockTransactionProposal() apitxn.TransactionProposal {
 }
 
 func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockEndorserServer, string) {
+	return startEndorserServerWithError(t, grpcServer, nil)
+}
+
+func startEndorserServerWithError(t *testing.T, grpcServer *grpc.Server, testErr error) (*mocks.MockEndorserServer, string) {
 	lis, err := net.Listen("tcp", testAddress)
 	addr := lis.Addr().String()
 
-	endorserServer := &mocks.MockEndorserServer{}
+	endorserServer := &mocks.MockEndorserServer{ProposalError: testErr}
 	pb.RegisterEndorserServer(grpcServer, endorserServer)
 	if err != nil {
 		t.Logf("Error starting test server %s", err)
@@ -292,19 +299,29 @@ func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockEndo
 	return endorserServer, addr
 }
 
-func TestTransactionProposalError(t *testing.T) {
-	var mockError error
+func TestEndorserConnectionError(t *testing.T) {
+	_, err := testProcessProposal(t, testAddress)
+	assert.NotNil(t, err, "Expected connection error without server running")
 
-	mockError = TransactionProposalError{
-		Endorser: "1.2.3.4:1000",
-		Proposal: mockTransactionProposal(),
-		Err:      errors.New("error"),
-	}
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error on failed connection")
+	assert.Equal(t, status.EndorserClientStatus, statusError.Group)
+	assert.Equal(t, int32(status.ConnectionFailed), statusError.Code)
+}
 
-	errText := mockError.Error()
-	mockText := "Transaction processor (1.2.3.4:1000) returned error 'error'"
+func TestEndorserRPCError(t *testing.T) {
+	testErrorMessage := "RPC error condition"
 
-	if !strings.Contains(errText, mockText) {
-		t.Fatalf("Unexpected error")
-	}
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	_, addr := startEndorserServerWithError(t, grpcServer, fmt.Errorf(testErrorMessage))
+
+	_, err := testProcessProposal(t, addr)
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error on failed connection")
+	assert.Equal(t, status.GRPCTransportStatus, statusError.Group)
+	assert.Equal(t, testErrorMessage, statusError.Message)
+
+	grpcCode := status.ToGRPCStatusCode(statusError.Code)
+	assert.Equal(t, grpcCodes.Unknown, grpcCode)
 }

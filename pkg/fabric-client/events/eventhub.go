@@ -28,6 +28,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/util"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
@@ -446,7 +447,8 @@ func (eventHub *EventHub) txCallback(block *common.Block) {
 			callback := eventHub.getTXRegistrant(channelHeader.TxId)
 			if callback != nil {
 				if txFilter.IsInvalid(i) {
-					callback(channelHeader.TxId, txFilter.Flag(i), errors.New("received invalid transaction"))
+					callback(channelHeader.TxId, txFilter.Flag(i),
+						status.New(status.EventServerStatus, int32(txFilter.Flag(i)), "received invalid transaction", nil))
 				} else {
 					callback(channelHeader.TxId, txFilter.Flag(i), nil)
 				}
