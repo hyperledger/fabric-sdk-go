@@ -51,12 +51,12 @@ GO_TAGS="$GO_TAGS $FABRIC_SDKGO_CODELEVEL_TAG"
 if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]; then
     PKGS="$REPO/test/integration/pkcs11"
 
-    cd $GOPATH/src/github.com/gbolo/go-util/p11tool
+    #cd $GOPATH/src/github.com/gbolo/go-util/p11tool
     for i in "${PRIVATE_KEYS[@]}"
     do
         echo "Importing key : ${GO_SRC}/${i}"
         openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in ${GO_SRC}/${i} -out private.p8
-        go run main.go -action import -keyFile private.p8
+        pkcs11helper -action import -keyFile private.p8
         rm -rf private.p8
     done
 

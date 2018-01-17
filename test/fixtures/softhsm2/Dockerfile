@@ -11,10 +11,10 @@ FROM ${FABRIC_BASE_IMAGE}:${FABRIC_BASE_TAG}
 ENV GOPATH=/opt/gopath \
     GOROOT=/opt/go \
     GO_VERSION=1.9.2 \
-    PATH=$PATH:/opt/go/bin:/opt/gopath/bin \
-    PKCS11_TOOL_URL=github.com/gbolo/go-util/p11tool
+    PATH=$PATH:/opt/go/bin:/opt/gopath/bin
 
-COPY install-softhsm2.sh /tmp
+COPY test/fixtures/softhsm2/install-softhsm2.sh /tmp
+COPY scripts/_go/src/pkcs11helper /opt/gopath/src/pkcs11helper
 RUN bash /tmp/install-softhsm2.sh
 CMD ["/bin/bash"]
 

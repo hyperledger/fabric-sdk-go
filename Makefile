@@ -200,7 +200,7 @@ build-softhsm2-image:
 	 @$(DOCKER_CMD) build --no-cache -q -t "softhsm2-image" \
 		--build-arg FABRIC_BASE_IMAGE=$(FABRIC_BASE_IMAGE) \
 		--build-arg FABRIC_BASE_TAG=$(FABRIC_BASE_TAG) \
-		$(FIXTURE_SOFTHSM2_PATH)
+		-f $(FIXTURE_SOFTHSM2_PATH)/Dockerfile .
 
 .PHONY: unit-test
 unit-test: checks depend populate
