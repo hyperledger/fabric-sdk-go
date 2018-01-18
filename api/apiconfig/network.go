@@ -30,13 +30,11 @@ type NetworkConfig struct {
 
 // ClientConfig provides the definition of the client configuration
 type ClientConfig struct {
-	Organization string
-	Logging      LoggingType
-	CryptoConfig CCType
-	TLS          TLSType
-	TLSCerts     MutualTLSConfig
-
-	// currently not used by GO-SDK
+	Organization    string
+	Logging         LoggingType
+	CryptoConfig    CCType
+	TLS             TLSType
+	TLSCerts        MutualTLSConfig
 	CredentialStore CredentialStoreType
 }
 

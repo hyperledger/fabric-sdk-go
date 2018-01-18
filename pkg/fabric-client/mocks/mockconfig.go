@@ -35,6 +35,12 @@ func NewMockConfigCustomized(tlsEnabled, mutualTLSEnabled, errorCase bool) confi
 
 // Client ...
 func (c *MockConfig) Client() (*config.ClientConfig, error) {
+	clientConfig := config.ClientConfig{}
+
+	clientConfig.CredentialStore = config.CredentialStoreType{
+		Path: "/tmp/fabsdkgo_test/store",
+	}
+
 	if c.mutualTLSEnabled {
 		mutualTLSCerts := config.MutualTLSConfig{
 			Client: struct {
@@ -44,11 +50,10 @@ func (c *MockConfig) Client() (*config.ClientConfig, error) {
 				Certfile string
 			}{KeyPem: "", Keyfile: "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem", CertPem: "", Certfile: "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"},
 		}
-
-		return &config.ClientConfig{TLSCerts: mutualTLSCerts}, nil
+		clientConfig.TLSCerts = mutualTLSCerts
 	}
 
-	return &config.ClientConfig{}, nil
+	return &clientConfig, nil
 }
 
 // CAConfig not implemented

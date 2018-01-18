@@ -1,0 +1,120 @@
+/*
+Copyright SecureKey Technologies Inc. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package fabsdk
+
+import (
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apicore"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
+	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+)
+
+type mockCorePkg struct {
+	stateStore     apifabclient.KeyValueStore
+	cryptoSuite    apicryptosuite.CryptoSuite
+	signingManager apifabclient.SigningManager
+	fabricProvider apicore.FabricProvider
+}
+
+func newMockCorePkg(config apiconfig.Config) (*mockCorePkg, error) {
+	pkgSuite := defPkgSuite{}
+	core, err := pkgSuite.Core()
+	if err != nil {
+		return nil, err
+	}
+	stateStore, err := core.NewStateStoreProvider(config)
+	if err != nil {
+		return nil, err
+	}
+	cs, err := core.NewCryptoSuiteProvider(config)
+	if err != nil {
+		return nil, err
+	}
+	sm, err := core.NewSigningManager(cs, config)
+	if err != nil {
+		return nil, err
+	}
+	fp, err := core.NewFabricProvider(config, stateStore, cs, sm)
+	if err != nil {
+		return nil, err
+	}
+
+	c := mockCorePkg{
+		stateStore:     stateStore,
+		cryptoSuite:    cs,
+		signingManager: sm,
+		fabricProvider: fp,
+	}
+
+	return &c, nil
+}
+
+func (mc *mockCorePkg) NewStateStoreProvider(config apiconfig.Config) (apifabclient.KeyValueStore, error) {
+	return mc.stateStore, nil
+}
+
+func (mc *mockCorePkg) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
+	return mc.cryptoSuite, nil
+}
+
+func (mc *mockCorePkg) NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (apifabclient.SigningManager, error) {
+	return mc.signingManager, nil
+}
+
+func (mc *mockCorePkg) NewFabricProvider(config apiconfig.Config, stateStore apifabclient.KeyValueStore, cryptoSuite apicryptosuite.CryptoSuite, signer apifabclient.SigningManager) (apicore.FabricProvider, error) {
+	return mc.fabricProvider, nil
+}
+
+type mockPkgSuite struct {
+	errOnCore    bool
+	errOnService bool
+	errOnContext bool
+	errOnSession bool
+	errOnLogger  bool
+}
+
+func (ps *mockPkgSuite) Core() (apisdk.CoreProviderFactory, error) {
+	if ps.errOnCore {
+		return nil, errors.New("Error")
+	}
+	return defcore.NewProviderFactory(), nil
+}
+
+func (ps *mockPkgSuite) Service() (apisdk.ServiceProviderFactory, error) {
+	if ps.errOnService {
+		return nil, errors.New("Error")
+	}
+	return defsvc.NewProviderFactory(), nil
+}
+
+func (ps *mockPkgSuite) Context() (apisdk.OrgClientFactory, error) {
+	if ps.errOnContext {
+		return nil, errors.New("Error")
+	}
+	return defclient.NewOrgClientFactory(), nil
+}
+
+func (ps *mockPkgSuite) Session() (apisdk.SessionClientFactory, error) {
+	if ps.errOnSession {
+		return nil, errors.New("Error")
+	}
+	return defclient.NewSessionClientFactory(), nil
+}
+
+func (ps *mockPkgSuite) Logger() (apilogging.LoggerProvider, error) {
+	if ps.errOnLogger {
+		return nil, errors.New("Error")
+	}
+	return deflogger.LoggerProvider(), nil
+}

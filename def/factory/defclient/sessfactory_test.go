@@ -22,8 +22,7 @@ import (
 	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 	chmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
 	resmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
-	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/mocks"
+	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
 )
 
 /*
@@ -56,7 +55,7 @@ func TestNewChannelMgmtClient(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mock_context.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
 
 	mockSDK.EXPECT().FabricProvider().Return(p.FabricProvider)
 
@@ -79,7 +78,7 @@ func TestNewResourceMgmtClient(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mock_context.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
 
 	mockSDK.EXPECT().FabricProvider().Return(p.FabricProvider)
 	mockSDK.EXPECT().DiscoveryProvider().Return(p.DiscoveryProvider)
@@ -103,7 +102,7 @@ func TestNewChannelClient(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mock_context.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
 
 	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
 	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
@@ -131,7 +130,7 @@ func TestNewChannelClientBadChannel(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mock_context.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
 
 	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
 	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
@@ -152,7 +151,7 @@ func TestNewChannelClientBadOrg(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mock_context.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
 
 	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
 	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
@@ -188,10 +187,10 @@ func newMockProviders(t *testing.T) *mockProviders {
 	coreFactory := defcore.NewProviderFactory()
 	svcFactory := defsvc.NewProviderFactory()
 
-	sdkOpts := apisdk.SDKOpts{
-		ConfigFile: "../../../test/fixtures/config/config_test.yaml",
+	opts := defcore.ConfigOpts{
+		FileName: "../../../test/fixtures/config/config_test.yaml",
 	}
-	config, err := coreFactory.NewConfigProvider(sdkOpts)
+	config, err := coreFactory.NewConfigProvider(opts)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -200,8 +199,7 @@ func newMockProviders(t *testing.T) *mockProviders {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	storeOpts := apisdk.StateStoreOpts{}
-	stateStore, err := coreFactory.NewStateStoreProvider(storeOpts, config)
+	stateStore, err := coreFactory.NewStateStoreProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}

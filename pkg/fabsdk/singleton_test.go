@@ -12,29 +12,21 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
-	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
-func dePkgSuiteWithLogger(logger apilogging.LoggerProvider) SDKOption {
-	pkgSuite := apisdk.PkgSuite{
-		Core:    defcore.NewProviderFactory(),
-		Service: defsvc.NewProviderFactory(),
-		Context: defclient.NewOrgClientFactory(),
-		Session: defclient.NewSessionClientFactory(),
-		Logger:  logger,
-	}
-	return PkgSuiteAsOpt(pkgSuite)
-}
 func TestDefLoggerFactory(t *testing.T) {
 	// Cleanup logging singleton
 	logging.UnsafeReset()
 
-	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), defPkgSuite())
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	_, err = New(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -72,7 +64,12 @@ func TestOptLoggerFactory(t *testing.T) {
 
 	lf := NewMockLoggerFactory()
 
-	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), dePkgSuiteWithLogger(lf))
+	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	_, err = New(c, WithLoggerPkg(lf))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
