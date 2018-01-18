@@ -129,7 +129,7 @@ func Run(t *testing.T, config apiconfig.Config, sdkOpts ...fabsdk.Option) {
 	rce := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
 
 	// Move funds
-	_, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	_, _, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}

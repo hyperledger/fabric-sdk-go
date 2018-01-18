@@ -183,17 +183,17 @@ func TestExecuteTx(t *testing.T) {
 
 	chClient := setupChannelClient(nil, t)
 
-	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{})
+	_, _, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{})
 	if err == nil {
 		t.Fatalf("Should have failed for empty invoke request")
 	}
 
-	_, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
+	_, _, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
 	if err == nil {
 		t.Fatalf("Should have failed for empty chaincode ID")
 	}
 
-	_, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "testCC", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
+	_, _, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "testCC", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
 	if err == nil {
 		t.Fatalf("Should have failed for empty function")
 	}
@@ -205,7 +205,7 @@ func TestExecuteTxDiscoveryError(t *testing.T) {
 
 	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, nil, t)
 
-	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
+	_, _, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
 	if err == nil {
 		t.Fatalf("Should have failed to execute tx with error in discovery.GetPeers()")
 	}
@@ -216,7 +216,7 @@ func TestExecuteTxSelectionError(t *testing.T) {
 
 	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), nil, t)
 
-	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
+	_, _, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
 	if err == nil {
 		t.Fatalf("Should have failed to execute tx with error in selection.GetEndorserrsFor ...")
 	}
@@ -262,7 +262,7 @@ func TestOrdererStatusError(t *testing.T) {
 	mockOrderer.EnqueueSendBroadcastError(status.New(status.OrdererClientStatus,
 		status.ConnectionFailed.ToInt32(), testErrorMessage, nil))
 
-	_, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
+	_, _, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
 	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error got %+v", err)
 	assert.EqualValues(t, status.ConnectionFailed, status.ToSDKStatusCode(statusError.Code))
@@ -282,9 +282,11 @@ func TestTransactionValidationError(t *testing.T) {
 	chClient.eventHub = mockEventHub
 	notifier := make(chan apitxn.ExecuteTxResponse)
 
-	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}},
+	result, _, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}},
 		apitxn.ExecuteTxOpts{Notifier: notifier})
-	assert.Nil(t, err, "Expected success got error %+v", err)
+	if result != nil {
+		t.Fatalf("Expecting nil, got %s", result)
+	}
 
 	select {
 	case callback := <-mockEventHub.RegisteredTxCallbacks:
