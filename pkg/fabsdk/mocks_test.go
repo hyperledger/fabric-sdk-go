@@ -17,7 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
 type mockCorePkg struct {
@@ -116,5 +116,5 @@ func (ps *mockPkgSuite) Logger() (apilogging.LoggerProvider, error) {
 	if ps.errOnLogger {
 		return nil, errors.New("Error")
 	}
-	return deflogger.LoggerProvider(), nil
+	return modlog.LoggerProvider(), nil
 }

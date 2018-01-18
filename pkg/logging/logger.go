@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
@@ -53,7 +53,7 @@ func loggerProvider() apilogging.LoggerProvider {
 	loggerProviderOnce.Do(func() {
 		// A custom logger must be initialized prior to the first log output
 		// Otherwise the built-in logger is used
-		loggerProviderInstance = deflogger.LoggerProvider()
+		loggerProviderInstance = modlog.LoggerProvider()
 		logger := loggerProviderInstance.GetLogger(loggerModule)
 		logger.Info(loggerNotInitializedMsg)
 	})
@@ -78,17 +78,17 @@ func InitLogger(l apilogging.LoggerProvider) {
 
 //SetLevel - setting log level for given module
 func SetLevel(module string, level apilogging.Level) {
-	deflogger.SetLevel(module, level)
+	modlog.SetLevel(module, level)
 }
 
 //GetLevel - getting log level for given module
 func GetLevel(module string) apilogging.Level {
-	return deflogger.GetLevel(module)
+	return modlog.GetLevel(module)
 }
 
 //IsEnabledFor - Check if given log level is enabled for given module
 func IsEnabledFor(module string, level apilogging.Level) bool {
-	return deflogger.IsEnabledFor(module, level)
+	return modlog.IsEnabledFor(module, level)
 }
 
 // LogLevel returns the log level from a string representation.
