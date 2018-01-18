@@ -80,3 +80,5 @@ func ConcatenateBytes(data ...[]byte) []byte {
 	}
 	return result
 }
+
+const DELIMITER = "."
