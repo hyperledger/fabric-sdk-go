@@ -14,7 +14,7 @@ set -e
 IMPORT_SUBSTS=($IMPORT_SUBSTS)
 
 GOIMPORTS_CMD=goimports
-GOFILTER_CMD="go run scripts/_go/cmd/gofilter/gofilter.go"
+GOFILTER_CMD="go run scripts/_go/src/gofilter/cmd/gofilter/gofilter.go"
 
 declare -a PKGS=(
         "common/cauthdsl"
