@@ -3,7 +3,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
-package deflogger
+package decorator
 
 import (
 	"testing"
@@ -14,7 +14,7 @@ import (
 
 func TestLogLevels(t *testing.T) {
 
-	mlevel := moduleLeveled{}
+	mlevel := ModuleLevels{}
 
 	mlevel.SetLevel("module-xyz-info", apilogging.INFO)
 	mlevel.SetLevel("module-xyz-debug", apilogging.DEBUG)

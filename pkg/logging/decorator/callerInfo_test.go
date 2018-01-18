@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package deflogger
+package decorator
 
 import (
 	"testing"
@@ -15,7 +15,7 @@ import (
 
 func TestCallerInfoSetting(t *testing.T) {
 
-	sampleCallerInfoSetting := callerInfo{}
+	sampleCallerInfoSetting := CallerInfo{}
 	samppleModuleName := "sample-module-name"
 
 	sampleCallerInfoSetting.ShowCallerInfo(samppleModuleName, apilogging.DEBUG)

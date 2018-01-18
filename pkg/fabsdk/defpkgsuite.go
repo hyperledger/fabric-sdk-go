@@ -12,7 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
 type defPkgSuite struct{}
@@ -34,5 +34,5 @@ func (ps *defPkgSuite) Session() (apisdk.SessionClientFactory, error) {
 }
 
 func (ps *defPkgSuite) Logger() (apilogging.LoggerProvider, error) {
-	return deflogger.LoggerProvider(), nil
+	return modlog.LoggerProvider(), nil
 }

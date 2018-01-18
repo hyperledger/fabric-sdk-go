@@ -14,7 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
 func TestDefLoggerFactory(t *testing.T) {
@@ -97,7 +97,7 @@ type MockLoggerFactory struct {
 func NewMockLoggerFactory() *MockLoggerFactory {
 	lf := MockLoggerFactory{}
 	lf.ActiveModules = make(map[string]bool)
-	lf.logger = deflogger.LoggerProvider()
+	lf.logger = modlog.LoggerProvider()
 
 	return &lf
 }

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package deflogger
+package modlog
 
 import (
 	"bytes"
@@ -17,11 +17,12 @@ import (
 )
 
 const (
-	basicLevelOutputWithCallerInfoExpectedRegex = "\\[%s\\] .* UTC - deflogger.* -> %4.4s brown fox jumps over the lazy dog"
+	basicLevelOutputWithCallerInfoExpectedRegex = "\\[%s\\] .* UTC - modlog.* -> %4.4s brown fox jumps over the lazy dog"
 	basicLevelOutputExpectedRegex               = "\\[%s\\] .* UTC .*-> %4.4s brown fox jumps over the lazy dog"
 	printLevelOutputExpectedRegex               = "\\[%s\\] .* brown fox jumps over the lazy dog"
 	customLevelOutputExpectedRegex              = "\\[%s\\] .* CUSTOM LOG OUTPUT"
 	moduleName                                  = "module-xyz"
+	moduleName2                                 = "module-xyz-deftest"
 )
 
 type fn func(...interface{})
@@ -58,7 +59,7 @@ func VerifyCriticalLoggings(t *testing.T, level apilogging.Level, loggerFunc fn,
 }
 
 //VerifyBasicLogging utility func which does job calling and verifying basic log level functions - DEBUG, INFO, ERROR, WARNING
-func VerifyBasicLogging(t *testing.T, level apilogging.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer, verifyCustom bool) {
+func VerifyBasicLogging(t *testing.T, level apilogging.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer, verifyCustom bool, moduleName string) {
 
 	//Call logger func
 	if loggerFunc != nil {
