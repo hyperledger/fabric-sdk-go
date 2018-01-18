@@ -147,17 +147,17 @@ func sendTransactionProposal(request apitxn.QueryRequest, channel fab.Channel, p
 }
 
 // ExecuteTx prepares and executes transaction
-func (cc *ChannelClient) ExecuteTx(request apitxn.ExecuteTxRequest) (apitxn.TransactionID, error) {
+func (cc *ChannelClient) ExecuteTx(request apitxn.ExecuteTxRequest) ([]byte, apitxn.TransactionID, error) {
 
 	return cc.ExecuteTxWithOpts(request, apitxn.ExecuteTxOpts{})
 }
 
 // ExecuteTxWithOpts allows the user to provide options for execute transaction:
 // sync vs async, filter to inspect proposal response before commit etc)
-func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts apitxn.ExecuteTxOpts) (apitxn.TransactionID, error) {
+func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts apitxn.ExecuteTxOpts) ([]byte, apitxn.TransactionID, error) {
 
 	if request.ChaincodeID == "" || request.Fcn == "" {
-		return apitxn.TransactionID{}, errors.New("chaincode name and function name are required")
+		return nil, apitxn.TransactionID{}, errors.New("chaincode name and function name are required")
 	}
 
 	txProcessors := opts.ProposalProcessors
@@ -165,13 +165,13 @@ func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts
 		// Use discovery service to figure out proposal processors
 		peers, err := cc.discovery.GetPeers()
 		if err != nil {
-			return apitxn.TransactionID{}, errors.WithMessage(err, "GetPeers failed")
+			return nil, apitxn.TransactionID{}, errors.WithMessage(err, "GetPeers failed")
 		}
 		endorsers := peers
 		if cc.selection != nil {
 			endorsers, err = cc.selection.GetEndorsersForChaincode(peers, request.ChaincodeID)
 			if err != nil {
-				return apitxn.TransactionID{}, errors.WithMessage(err, "Failed to get endorsing peers for ExecuteTx")
+				return nil, apitxn.TransactionID{}, errors.WithMessage(err, "Failed to get endorsing peers for ExecuteTx")
 			}
 		}
 		txProcessors = peer.PeersToTxnProcessors(endorsers)
@@ -180,16 +180,21 @@ func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts
 	txProposalResponses, txID, err := internal.CreateAndSendTransactionProposal(cc.channel,
 		request.ChaincodeID, request.Fcn, request.Args, txProcessors, request.TransientMap)
 	if err != nil {
-		return apitxn.TransactionID{}, errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
+		return nil, apitxn.TransactionID{}, errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}
 
 	if opts.TxFilter == nil {
 		opts.TxFilter = &txProposalResponseFilter{}
 	}
 
+	var payloadResponse []byte
 	txProposalResponses, err = opts.TxFilter.ProcessTxProposalResponse(txProposalResponses)
+	if len(txProposalResponses) > 0 {
+		payloadResponse = txProposalResponses[0].ProposalResponse.GetResponse().Payload
+	}
+
 	if err != nil {
-		return txID, errors.WithMessage(err, "TxFilter failed")
+		return payloadResponse, txID, errors.WithMessage(err, "TxFilter failed")
 	}
 
 	notifier := opts.Notifier
@@ -205,14 +210,14 @@ func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts
 	go sendTransaction(cc.channel, txID, txProposalResponses, cc.eventHub, notifier, timeout)
 
 	if opts.Notifier != nil {
-		return txID, nil
+		return payloadResponse, txID, nil
 	}
 
 	select {
 	case response := <-notifier:
-		return response.Response, response.Error
+		return payloadResponse, response.Response, response.Error
 	case <-time.After(timeout): // This should never happen since there's timeout in sendTransaction
-		return txID, errors.New("ExecuteTx request timed out")
+		return payloadResponse, txID, errors.New("ExecuteTx request timed out")
 	}
 
 }

@@ -62,10 +62,24 @@ func TestChannelClient(t *testing.T) {
 	// Synchronous query
 	testQuery("200", testSetup.ChainCodeID, chClient, t)
 
+	transientData := "Some data"
+	transientDataMap := make(map[string][]byte)
+	transientDataMap["result"] = []byte(transientData)
+
 	// Synchronous transaction
-	_, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, _, err := chClient.ExecuteTx(
+		apitxn.ExecuteTxRequest{
+			ChaincodeID:  testSetup.ChainCodeID,
+			Fcn:          "invoke",
+			Args:         integration.ExampleCCTxArgs(),
+			TransientMap: transientDataMap,
+		})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
+	}
+	// The example CC should return the transient data as a response
+	if string(response) != transientData {
+		t.Fatalf("Expecting response [%s] but got [%s]", transientData, response)
 	}
 
 	// Verify transaction using asynchronous query
@@ -143,7 +157,7 @@ func testAsyncTransaction(ccID string, chClient apitxn.ChannelClient, t *testing
 	txFilter := &TestTxFilter{}
 	txOpts := apitxn.ExecuteTxOpts{Notifier: txNotifier, TxFilter: txFilter}
 
-	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
+	_, _, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -168,7 +182,7 @@ func testCommitError(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 	txFilter := &TestTxFilter{errResponses: errors.New("Error")}
 	txOpts := apitxn.ExecuteTxOpts{Notifier: txNotifier, TxFilter: txFilter}
 
-	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
+	_, _, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -188,7 +202,7 @@ func testFilterError(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 	txFilter := &TestTxFilter{err: errors.New("Error")}
 	txOpts := apitxn.ExecuteTxOpts{TxFilter: txFilter}
 
-	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
+	_, _, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err == nil {
 		t.Fatalf("Should have failed with filter error")
 	}
@@ -225,7 +239,7 @@ func testChaincodeEvent(ccID string, chClient apitxn.ChannelClient, t *testing.T
 	rce := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
 
 	// Synchronous transaction
-	txID, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	_, txID, err := chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}

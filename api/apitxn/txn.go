@@ -94,10 +94,10 @@ type ChannelClient interface {
 	QueryWithOpts(request QueryRequest, opt QueryOpts) ([]byte, error)
 
 	// ExecuteTx execute transaction
-	ExecuteTx(request ExecuteTxRequest) (TransactionID, error)
+	ExecuteTx(request ExecuteTxRequest) ([]byte, TransactionID, error)
 
 	// ExecuteTxWithOpts allows the user to provide options for transaction execution (sync vs async, etc.)
-	ExecuteTxWithOpts(request ExecuteTxRequest, opt ExecuteTxOpts) (TransactionID, error)
+	ExecuteTxWithOpts(request ExecuteTxRequest, opt ExecuteTxOpts) ([]byte, TransactionID, error)
 
 	// RegisterChaincodeEvent registers chain code event
 	// @param {chan bool} channel which receives event details when the event is complete
