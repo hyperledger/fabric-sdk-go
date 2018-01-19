@@ -16,18 +16,15 @@ import (
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
 )
 
-func TestPanicOnNilConfig(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("Passing nil configuration was supposed to panic")
-		}
-	}()
-
-	New(nil)
-}
+const (
+	sdkConfigFile      = "../../test/fixtures/config/config_test.yaml"
+	sdkValidClientUser = "User1"
+	sdkValidClientOrg1 = "Org1"
+	sdkValidClientOrg2 = "Org2"
+)
 
 func TestNewGoodOpt(t *testing.T) {
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	c, err := configImpl.FromFile(sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -45,7 +42,7 @@ func goodOpt() Option {
 }
 
 func TestNewBadOpt(t *testing.T) {
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	c, err := configImpl.FromFile(sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -61,9 +58,10 @@ func badOpt() Option {
 		return errors.New("Bad Opt")
 	}
 }
+
 func TestNewDefaultSDK(t *testing.T) {
 	// Test New SDK with valid config file
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	c, err := configImpl.FromFile(sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -74,19 +72,19 @@ func TestNewDefaultSDK(t *testing.T) {
 	}
 
 	// Default channel client (uses organisation from client configuration)
-	_, err = sdk.NewChannelClient("mychannel", "User1")
+	_, err = sdk.NewChannelClient("mychannel", sdkValidClientUser)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
 	// Test configuration failure for channel client (mychannel does't have event source configured for Org2)
-	_, err = sdk.NewChannelClientWithOpts("mychannel", "User1", &ChannelClientOpts{OrgName: "Org2"})
+	_, err = sdk.NewChannelClientWithOpts("mychannel", sdkValidClientUser, &ChannelClientOpts{OrgName: sdkValidClientOrg2})
 	if err == nil {
 		t.Fatalf("Should have failed to create channel client since event source not configured for Org2")
 	}
 
 	// Test new channel client with options
-	_, err = sdk.NewChannelClientWithOpts("orgchannel", "User1", &ChannelClientOpts{OrgName: "Org2"})
+	_, err = sdk.NewChannelClientWithOpts("orgchannel", sdkValidClientUser, &ChannelClientOpts{OrgName: sdkValidClientOrg2})
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -95,7 +93,7 @@ func TestNewDefaultSDK(t *testing.T) {
 
 func TestWithCorePkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	c, err := configImpl.FromFile(sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -122,7 +120,7 @@ func TestWithCorePkg(t *testing.T) {
 
 func TestWithServicePkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	c, err := configImpl.FromFile(sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -147,7 +145,7 @@ func TestWithServicePkg(t *testing.T) {
 
 func TestWithContextPkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	c, err := configImpl.FromFile(sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -169,7 +167,7 @@ func TestWithContextPkg(t *testing.T) {
 		t.Fatalf("Unexpected error getting context: %s", err)
 	}
 
-	cm, err := ctx.NewCredentialManager("Org1", c, core.cryptoSuite)
+	cm, err := ctx.NewCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite)
 	if err != nil {
 		t.Fatalf("Unexpected error getting credential manager: %s", err)
 	}
@@ -179,7 +177,7 @@ func TestWithContextPkg(t *testing.T) {
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockOrgClientFactory(mockCtrl)
 
-	factory.EXPECT().NewCredentialManager("Org1", c, core.cryptoSuite).Return(cm, nil)
+	factory.EXPECT().NewCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite).Return(cm, nil)
 
 	sdk, err := New(c, WithCorePkg(core), WithContextPkg(factory))
 	if err != nil {
@@ -187,7 +185,7 @@ func TestWithContextPkg(t *testing.T) {
 	}
 
 	// Use a method that invokes credential manager (e.g., new user)
-	_, err = sdk.NewPreEnrolledUser("Org1", "User1")
+	_, err = sdk.NewPreEnrolledUser(sdkValidClientOrg1, sdkValidClientUser)
 	if err != nil {
 		t.Fatalf("Unexpected error getting user: %s", err)
 	}
@@ -195,7 +193,7 @@ func TestWithContextPkg(t *testing.T) {
 
 func TestWithSessionPkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	c, err := configImpl.FromFile(sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -227,10 +225,12 @@ func TestWithSessionPkg(t *testing.T) {
 		t.Fatalf("Unexpected error getting context: %s", err)
 	}
 
-	session, err := sdk.NewPreEnrolledUserSession("Org1", "User1")
+	identity, err := sdk.newIdentity(sdkValidClientOrg1, WithUser(sdkValidClientUser))
 	if err != nil {
-		t.Fatalf("Unexpected error getting session: %s", err)
+		t.Fatalf("Unexpected error getting identity: %s", err)
 	}
+
+	session := newSession(identity)
 
 	cm, err := sessPkg.NewChannelMgmtClient(sdk, session, c)
 	if err != nil {
@@ -239,7 +239,7 @@ func TestWithSessionPkg(t *testing.T) {
 	factory.EXPECT().NewChannelMgmtClient(sdk, gomock.Any(), c).Return(cm, nil)
 
 	// Use a method that invokes credential manager (e.g., new user)
-	_, err = sdk.NewChannelMgmtClient("User1")
+	_, err = sdk.NewChannelMgmtClient(sdkValidClientUser)
 	if err != nil {
 		t.Fatalf("Unexpected error getting channel management client: %s", err)
 	}
@@ -248,7 +248,7 @@ func TestWithSessionPkg(t *testing.T) {
 func TestErrPkgSuite(t *testing.T) {
 	ps := mockPkgSuite{}
 
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	c, err := configImpl.FromFile(sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -294,81 +294,8 @@ func TestErrPkgSuite(t *testing.T) {
 	ps.errOnLogger = false
 }
 
-func TestNewChannelMgmtClient(t *testing.T) {
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
-	if err != nil {
-		t.Fatalf("Error initializing SDK: %s", err)
-	}
-
-	// Test configuration failure for channel management client (invalid user/default organisation)
-	_, err = sdk.NewChannelMgmtClient("Invalid")
-	if err == nil {
-		t.Fatalf("Should have failed to create channel client due to invalid user")
-	}
-
-	// Test valid configuration for channel management client
-	_, err = sdk.NewChannelMgmtClient("Admin")
-	if err != nil {
-		t.Fatalf("Failed to create new channel client: %s", err)
-	}
-
-	// Test configuration failure for new channel management client with options (invalid org)
-	_, err = sdk.NewChannelMgmtClientWithOpts("Admin", &ChannelMgmtClientOpts{OrgName: "Invalid"})
-	if err == nil {
-		t.Fatalf("Should have failed to create channel client due to invalid organisation")
-	}
-
-	// Test new channel management client with options (orderer admin configuration)
-	_, err = sdk.NewChannelMgmtClientWithOpts("Admin", &ChannelMgmtClientOpts{OrgName: "ordererorg"})
-	if err != nil {
-		t.Fatalf("Failed to create new channel client with opts: %s", err)
-	}
-
-}
-
-func TestNewResourceMgmtClient(t *testing.T) {
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
-	if err != nil {
-		t.Fatalf("Error initializing SDK: %s", err)
-	}
-
-	// Test configuration failure for resource management client (invalid user/default organisation)
-	_, err = sdk.NewResourceMgmtClient("Invalid")
-	if err == nil {
-		t.Fatalf("Should have failed to create resource management client due to invalid user")
-	}
-
-	// Test valid configuration for resource management client
-	_, err = sdk.NewResourceMgmtClient("Admin")
-	if err != nil {
-		t.Fatalf("Failed to create new resource management client: %s", err)
-	}
-
-	// Test configuration failure for new resource management client with options (invalid org)
-	_, err = sdk.NewResourceMgmtClientWithOpts("Admin", &ResourceMgmtClientOpts{OrgName: "Invalid"})
-	if err == nil {
-		t.Fatalf("Should have failed to create resource management client due to invalid organization")
-	}
-
-	// Test new resource management client with options (Org2 configuration)
-	_, err = sdk.NewResourceMgmtClientWithOpts("Admin", &ResourceMgmtClientOpts{OrgName: "Org2"})
-	if err != nil {
-		t.Fatalf("Failed to create new resource management client with opts: %s", err)
-	}
-}
-
 func TestNewDefaultTwoValidSDK(t *testing.T) {
-	c1, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	c1, err := configImpl.FromFile(sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -394,7 +321,7 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 		t.Fatalf("Error getting client from config: %s", err)
 	}
 
-	if client1.Organization != "Org1" {
+	if client1.Organization != sdkValidClientOrg1 {
 		t.Fatalf("Unexpected org in config: %s", client1.Organization)
 	}
 
@@ -403,36 +330,36 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 		t.Fatalf("Error getting client from config: %s", err)
 	}
 
-	if client2.Organization != "Org2" {
+	if client2.Organization != sdkValidClientOrg2 {
 		t.Fatalf("Unexpected org in config: %s", client1.Organization)
 	}
 
 	// Test SDK1 channel clients ('mychannel', 'orgchannel')
-	_, err = sdk1.NewChannelClient("mychannel", "User1")
+	_, err = sdk1.NewChannelClient("mychannel", sdkValidClientUser)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	_, err = sdk1.NewChannelClient("orgchannel", "User1")
+	_, err = sdk1.NewChannelClient("orgchannel", sdkValidClientUser)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
 	// SDK 2 doesn't have 'mychannel' configured
-	_, err = sdk2.NewChannelClient("mychannel", "User1")
+	_, err = sdk2.NewChannelClient("mychannel", sdkValidClientUser)
 	if err == nil {
 		t.Fatalf("Should have failed to create channel that is not configured")
 	}
 
 	// SDK 2 has 'orgchannel' configured
-	_, err = sdk2.NewChannelClient("orgchannel", "User1")
+	_, err = sdk2.NewChannelClient("orgchannel", sdkValidClientUser)
 	if err != nil {
 		t.Fatalf("Failed to create new 'orgchannel' channel client: %s", err)
 	}
 }
 
 func TestNewDefaultSDKFromByte(t *testing.T) {
-	cBytes, err := loadConfigBytesFromFile(t, "../../test/fixtures/config/config_test.yaml")
+	cBytes, err := loadConfigBytesFromFile(t, sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Failed to load sample bytes from File. Error: %s", err)
 	}

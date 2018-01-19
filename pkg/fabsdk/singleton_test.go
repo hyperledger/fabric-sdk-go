@@ -21,7 +21,7 @@ func TestDefLoggerFactory(t *testing.T) {
 	// Cleanup logging singleton
 	logging.UnsafeReset()
 
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	c, err := configImpl.FromFile(sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestOptLoggerFactory(t *testing.T) {
 
 	lf := NewMockLoggerFactory()
 
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
+	c, err := configImpl.FromFile(sdkConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}

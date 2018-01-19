@@ -13,7 +13,8 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 )
 
-// SDK represents the configuration context
+// SDK represents the configured providers context
+// TODO rename
 type SDK interface {
 	CryptoSuiteProvider() apicryptosuite.CryptoSuite
 	StateStoreProvider() fab.KeyValueStore
