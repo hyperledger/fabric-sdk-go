@@ -20,12 +20,7 @@ const (
 )
 
 func TestNewChannelMgmtWithOptsClient(t *testing.T) {
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(configImpl.FromFile("../../test/fixtures/config/config_test.yaml"))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -57,12 +52,7 @@ func TestNewChannelMgmtWithOptsClient(t *testing.T) {
 }
 
 func TestNewResourceMgmtWithOptsClient(t *testing.T) {
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(configImpl.FromFile("../../test/fixtures/config/config_test.yaml"))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -93,12 +83,7 @@ func TestNewResourceMgmtWithOptsClient(t *testing.T) {
 }
 
 func TestNewPreEnrolledUserSession(t *testing.T) {
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(configImpl.FromFile("../../test/fixtures/config/config_test.yaml"))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}

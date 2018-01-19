@@ -15,12 +15,7 @@ import (
 
 func TestCCPolicyProvider(t *testing.T) {
 	// Create SDK setup for channel client with dynamic selection
-	c, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")
-	if err != nil {
-		t.Fatalf("Failed to load config: %s", err)
-	}
-
-	sdk, err := fabsdk.New(c)
+	sdk, err := fabsdk.New(config.FromFile("../../../../test/fixtures/config/config_test.yaml"))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

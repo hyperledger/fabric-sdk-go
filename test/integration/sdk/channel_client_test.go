@@ -44,12 +44,7 @@ func TestChannelClient(t *testing.T) {
 	}
 
 	// Create SDK setup for the integration tests
-	c, err := config.FromFile(testSetup.ConfigFile)
-	if err != nil {
-		t.Fatalf("Failed to load config: %s", err)
-	}
-
-	sdk, err := fabsdk.New(c)
+	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

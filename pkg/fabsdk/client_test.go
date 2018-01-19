@@ -23,12 +23,24 @@ const (
 )
 
 func TestNewGoodClientOpt(t *testing.T) {
-	c, err := configImpl.FromFile(clientConfigFile)
+	sdk, err := New(configImpl.FromFile(clientConfigFile))
+	if err != nil {
+		t.Fatalf("Expected no error from New, but got %v", err)
+	}
+
+	_, err = sdk.NewClient(WithUser(clientValidUser), goodClientOpt())
+	if err != nil {
+		t.Fatalf("Expected no error from Client, but got %v", err)
+	}
+}
+
+func TestFromConfigGoodClientOpt(t *testing.T) {
+	c, err := configImpl.FromFile(clientConfigFile)()
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := fromConfig(c)
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -46,12 +58,7 @@ func goodClientOpt() ClientOption {
 }
 
 func TestNewBadClientOpt(t *testing.T) {
-	c, err := configImpl.FromFile(clientConfigFile)
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(configImpl.FromFile(clientConfigFile))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -69,12 +76,7 @@ func badClientOpt() ClientOption {
 }
 
 func TestClient(t *testing.T) {
-	c, err := configImpl.FromFile(clientConfigFile)
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(configImpl.FromFile(clientConfigFile))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -86,12 +88,7 @@ func TestClient(t *testing.T) {
 }
 
 func TestWithOrg(t *testing.T) {
-	c, err := configImpl.FromFile(clientConfigFile)
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(configImpl.FromFile(clientConfigFile))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -123,7 +120,7 @@ func TestWithFilter(t *testing.T) {
 }
 
 func TestWithConfig(t *testing.T) {
-	c, err := configImpl.FromFile(clientConfigFile)
+	c, err := configImpl.FromFile(clientConfigFile)()
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -141,12 +138,7 @@ func TestWithConfig(t *testing.T) {
 }
 
 func TestNoIdentity(t *testing.T) {
-	c, err := configImpl.FromFile(clientConfigFile)
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(configImpl.FromFile(clientConfigFile))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -158,12 +150,7 @@ func TestNoIdentity(t *testing.T) {
 }
 
 func TestNewChannelMgmtClient(t *testing.T) {
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(configImpl.FromFile("../../test/fixtures/config/config_test.yaml"))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -182,12 +169,7 @@ func TestNewChannelMgmtClient(t *testing.T) {
 }
 
 func TestNewResourceMgmtClient(t *testing.T) {
-	c, err := configImpl.FromFile("../../test/fixtures/config/config_test.yaml")
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(configImpl.FromFile("../../test/fixtures/config/config_test.yaml"))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}

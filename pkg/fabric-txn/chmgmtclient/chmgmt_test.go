@@ -9,6 +9,7 @@ package chmgmtclient
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
@@ -139,8 +140,8 @@ func setupTestClient() *fcmocks.MockClient {
 	return client
 }
 
-func getNetworkConfig(t *testing.T) *config.Config {
-	config, err := config.FromFile(networkCfg)
+func getNetworkConfig(t *testing.T) apiconfig.Config {
+	config, err := config.FromFile(networkCfg)()
 	if err != nil {
 		t.Fatal(err)
 	}

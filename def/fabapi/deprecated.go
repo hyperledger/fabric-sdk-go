@@ -45,7 +45,7 @@ type StateStoreOpts struct {
 	Path string
 }
 
-func configFromOptions(options *Options) (apiconfig.Config, error) {
+func configFromOptions(options *Options) apiconfig.ConfigProvider {
 	if options.ConfigByte != nil {
 		return config.FromRaw(options.ConfigByte, options.ConfigType)
 	}
@@ -54,19 +54,15 @@ func configFromOptions(options *Options) (apiconfig.Config, error) {
 		return config.FromFile(options.ConfigFile)
 	}
 
-	return nil, errors.New("No configuration provided")
+	return func() (apiconfig.Config, error) {
+		return nil, errors.New("No configuration provided")
+	}
 }
 
 // NewSDK wraps the NewSDK func moved to the pkg folder.
 // Notice: this wrapper is deprecated and will be removed.
 func NewSDK(options Options) (*fabsdk.FabricSDK, error) {
-	configProvider, err := configFromOptions(&options)
-	if err != nil {
-		return nil, err
-	}
-
-	sdk, err := fabsdk.New(
-		configProvider,
+	sdk, err := fabsdk.New(configFromOptions(&options),
 		sdkOptionsFromDeprecatedOptions(options)...)
 
 	if err != nil {

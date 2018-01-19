@@ -52,6 +52,9 @@ type Config interface {
 	TLSClientCerts() ([]tls.Certificate, error)
 }
 
+// ConfigProvider enables creation of a Config instance
+type ConfigProvider func() (Config, error)
+
 // TimeoutType enumerates the different types of outgoing connections
 type TimeoutType int
 

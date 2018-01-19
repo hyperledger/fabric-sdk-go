@@ -21,12 +21,9 @@ import (
 
 func TestE2E(t *testing.T) {
 	// Create SDK setup for the integration tests
-	c, err := config.FromFile("../" + ConfigTestFile)
-	if err != nil {
-		t.Fatalf("Failed to load config: %s", err)
-	}
-
-	e2e.Run(t, c, fabsdk.WithCorePkg(&CustomCryptoSuiteProviderFactory{}))
+	e2e.Run(t,
+		config.FromFile("../"+ConfigTestFile),
+		fabsdk.WithCorePkg(&CustomCryptoSuiteProviderFactory{}))
 }
 
 // CustomCryptoSuiteProviderFactory is will provide custom cryptosuite (bccsp.BCCSP)

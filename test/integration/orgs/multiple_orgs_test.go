@@ -50,12 +50,7 @@ var orgTestPeer1 fab.Peer
 func TestOrgsEndToEnd(t *testing.T) {
 
 	// Create SDK setup for the integration tests
-	c, err := config.FromFile("../" + integration.ConfigTestFile)
-	if err != nil {
-		t.Fatalf("Failed to load config: %s", err)
-	}
-
-	sdk, err := fabsdk.New(c)
+	sdk, err := fabsdk.New(config.FromFile("../" + integration.ConfigTestFile))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -222,7 +217,8 @@ func TestOrgsEndToEnd(t *testing.T) {
 	mychannelUser := selection.ChannelUser{ChannelID: "orgchannel", UserName: "User1", OrgName: "Org1"}
 
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err = fabsdk.New(c, fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}))
+	sdk, err = fabsdk.New(config.FromFile("../"+integration.ConfigTestFile),
+		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

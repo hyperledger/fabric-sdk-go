@@ -35,18 +35,13 @@ const (
 )
 
 func runWithConfigFixture(t *testing.T) {
-	c, err := config.FromFile("../" + integration.ConfigTestFile)
-	if err != nil {
-		t.Fatalf("Failed to load config: %s", err)
-	}
-
-	Run(t, c)
+	Run(t, config.FromFile("../"+integration.ConfigTestFile))
 }
 
 // Run enables testing an end-to-end scenario against the supplied SDK options
-func Run(t *testing.T, config apiconfig.Config, sdkOpts ...fabsdk.Option) {
+func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Option) {
 
-	sdk, err := fabsdk.New(config, sdkOpts...)
+	sdk, err := fabsdk.New(configOpt, sdkOpts...)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

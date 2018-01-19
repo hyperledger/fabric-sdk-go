@@ -41,7 +41,7 @@ func TestNewMSPClient(t *testing.T) {
 func TestNewCredentialManager(t *testing.T) {
 	factory := NewOrgClientFactory()
 
-	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")
+	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

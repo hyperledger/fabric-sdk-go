@@ -31,7 +31,7 @@ func setup() {
 		ConfigFile: "../" + integration.ConfigTestFile,
 	}
 
-	testFabricConfig, err = testSetup.InitConfig()
+	testFabricConfig, err = testSetup.InitConfig()()
 	if err != nil {
 		fmt.Printf("Failed InitConfig [%s]\n", err)
 		os.Exit(1)

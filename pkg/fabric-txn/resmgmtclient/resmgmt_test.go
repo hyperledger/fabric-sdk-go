@@ -15,6 +15,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -210,7 +211,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	client := setupTestClient("test", "Org1MSP")
 
 	// No channel orderer, no global orderer
-	noOrdererConfig, err := config.FromFile("./testdata/noorderer_test.yaml")
+	noOrdererConfig, err := config.FromFile("./testdata/noorderer_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +223,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	}
 
 	// Misconfigured channel orderer
-	invalidChOrdererConfig, err := config.FromFile("./testdata/invalidchorderer_test.yaml")
+	invalidChOrdererConfig, err := config.FromFile("./testdata/invalidchorderer_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +235,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	}
 
 	// Misconfigured global orderer (cert cannot be loaded)
-	invalidOrdererConfig, err := config.FromFile("./testdata/invalidorderer_test.yaml")
+	invalidOrdererConfig, err := config.FromFile("./testdata/invalidorderer_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -921,7 +922,7 @@ func TestCCProposal(t *testing.T) {
 	client.SetChannel("mychannel", channel)
 
 	// Setup resource management client
-	cfg, err := config.FromFile("./testdata/ccproposal_test.yaml")
+	cfg, err := config.FromFile("./testdata/ccproposal_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -989,7 +990,7 @@ func TestCCProposal(t *testing.T) {
 	}
 
 	// Test no event source in config
-	cfg, err = config.FromFile("./testdata/event_source_missing_test.yaml")
+	cfg, err = config.FromFile("./testdata/event_source_missing_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1017,8 +1018,8 @@ func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryProvider,
 	return mockDiscovery, nil
 }
 
-func getNetworkConfig(t *testing.T) *config.Config {
-	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")
+func getNetworkConfig(t *testing.T) apiconfig.Config {
+	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1032,7 +1033,7 @@ func setupDefaultResMgmtClient(t *testing.T) *ResourceMgmtClient {
 	return setupResMgmtClient(client, nil, network, t)
 }
 
-func setupResMgmtClient(client *fcmocks.MockClient, discErr error, config *config.Config, t *testing.T) *ResourceMgmtClient {
+func setupResMgmtClient(client *fcmocks.MockClient, discErr error, config apiconfig.Config, t *testing.T) *ResourceMgmtClient {
 
 	discovery, err := setupTestDiscovery(discErr, nil)
 	if err != nil {

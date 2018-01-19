@@ -86,12 +86,7 @@ func ExampleCCUpgradeArgs() [][]byte {
 // Initialize reads configuration from file and sets up client, channel and event hub
 func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	// Create SDK setup for the integration tests
-	c, err := config.FromFile(setup.ConfigFile)
-	if err != nil {
-		t.Fatalf("Failed to load config: %s", err)
-	}
-
-	sdk, err := fabsdk.New(c)
+	sdk, err := fabsdk.New(config.FromFile(setup.ConfigFile))
 	if err != nil {
 		return errors.WithMessage(err, "SDK init failed")
 	}
@@ -185,12 +180,8 @@ func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client fab.FabricClient)
 }
 
 // InitConfig ...
-func (setup *BaseSetupImpl) InitConfig() (apiconfig.Config, error) {
-	configImpl, err := config.FromFile(setup.ConfigFile)
-	if err != nil {
-		return nil, err
-	}
-	return configImpl, nil
+func (setup *BaseSetupImpl) InitConfig() apiconfig.ConfigProvider {
+	return config.FromFile(setup.ConfigFile)
 }
 
 // InstallCC use low level client to install chaincode

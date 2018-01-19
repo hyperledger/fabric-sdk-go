@@ -15,31 +15,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/def/provider/fabpvdr"
-	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	cryptosuitewrapper "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
-
-func TestNewConfigProvider(t *testing.T) {
-	factory := NewProviderFactory()
-
-	opts := ConfigOpts{
-		FileName: "../../../test/fixtures/config/config_test.yaml",
-	}
-
-	config, err := factory.NewConfigProvider(opts)
-	if err != nil {
-		t.Fatalf("Unexpected error creating config provider %v", err)
-	}
-
-	_, ok := config.(*configImpl.Config)
-	if !ok {
-		t.Fatalf("Unexpected config provider created")
-	}
-}
 
 func TestNewStateStoreProvider(t *testing.T) {
 	factory := NewProviderFactory()

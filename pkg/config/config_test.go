@@ -179,7 +179,11 @@ func TestCAConfig(t *testing.T) {
 func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	//Tamper 'client.network' value and use a new config to avoid conflicting with other tests
-	sampleConfig, err := FromFile(configTestFilePath)
+	configProvider, err := FromFile(configTestFilePath)()
+	if err != nil {
+		t.Fatalf("Unexpected error reading config: %v", err)
+	}
+	sampleConfig := configProvider.(*Config)
 	sampleConfig.configViper.Set("client", "INVALID")
 	sampleConfig.configViper.Set("peers", "INVALID")
 	sampleConfig.configViper.Set("organizations", "INVALID")
@@ -314,7 +318,7 @@ func TestTLSCAConfig(t *testing.T) {
 }
 
 func TestTLSCAConfigFromPems(t *testing.T) {
-	c, err := FromFile(configEmbeddedUsersTestFilePath)
+	c, err := FromFile(configEmbeddedUsersTestFilePath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -517,7 +521,7 @@ func TestFromRawSuccess(t *testing.T) {
 	cBytes, err := loadConfigBytesFromFile(t, configTestFilePath)
 
 	// test init config from bytes
-	_, err = FromRaw(cBytes, configType)
+	_, err = FromRaw(cBytes, configType)()
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
@@ -529,14 +533,14 @@ func TestFromReaderSuccess(t *testing.T) {
 	buf := bytes.NewBuffer(cBytes)
 
 	// test init config from bytes
-	_, err = FromReader(buf, configType)
+	_, err = FromReader(buf, configType)()
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
 }
 
 func TestFromFileEmptyFilename(t *testing.T) {
-	_, err := FromFile("")
+	_, err := FromFile("")()
 	if err == nil {
 		t.Fatalf("Expected error when passing empty string to FromFile")
 	}
@@ -565,23 +569,10 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 	return cBytes, err
 }
 
-func TestInitConfigFromRawEmpty(t *testing.T) {
-	// test init config from an empty bytes
-	_, err := FromRaw([]byte{}, configType)
-	if err == nil {
-		t.Fatalf("Expected to fail initialize config with empty bytes array.")
-	}
-	// test init config with an empty configType
-	_, err = FromRaw([]byte("test config"), "")
-	if err == nil {
-		t.Fatalf("Expected to fail initialize config with empty config type.")
-	}
-}
-
 func TestInitConfigSuccess(t *testing.T) {
 	//Test init config
 	//...Positive case
-	_, err := FromFile(configTestFilePath)
+	_, err := FromFile(configTestFilePath)()
 	if err != nil {
 		t.Fatalf("Failed to initialize config. Error: %s", err)
 	}
@@ -595,10 +586,12 @@ func TestInitConfigWithCmdRoot(t *testing.T) {
 	logger.Infof("fileLoc is %s", fileLoc)
 
 	logger.Infof("fileLoc right before calling InitConfigWithCmdRoot is %s", fileLoc)
-	config, err := FromFile(fileLoc, WithEnvPrefix(cmdRoot))
+	configProvider, err := FromFile(fileLoc, WithEnvPrefix(cmdRoot))()
 	if err != nil {
 		t.Fatalf("Failed to initialize config with cmd root. Error: %s", err)
 	}
+
+	config := configProvider.(*Config)
 
 	//Test if Viper is initialized after calling init config
 	if config.configViper.GetString("client.BCCSP.security.hashAlgorithm") != configImpl.SecurityAlgorithm() {
@@ -620,12 +613,12 @@ func TestInitConfigPanic(t *testing.T) {
 		}
 	}()
 
-	FromFile(configTestFilePath)
+	FromFile(configTestFilePath)()
 }
 
 func TestInitConfigInvalidLocation(t *testing.T) {
 	//...Negative case
-	_, err := FromFile("invalid file location")
+	_, err := FromFile("invalid file location")()
 	if err == nil {
 		t.Fatalf("Config file initialization is supposed to fail. Error: %s", err)
 	}
@@ -645,10 +638,12 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testValue before config initialization got: %s", testValue1)
 	}
 	// initialize go sdk
-	config, err := FromFile(configTestFilePath)
+	configProvider, err := FromFile(configTestFilePath)()
 	if err != nil {
 		t.Log(err.Error())
 	}
+
+	config := configProvider.(*Config)
 
 	// Make sure initial value is unaffected
 	testValue2 := viper.GetString("test.testkey")
@@ -694,11 +689,12 @@ func TestEnvironmentVariablesSpecificCmdRoot(t *testing.T) {
 		t.Log(err.Error())
 	}
 
-	config, err := FromFile(configTestFilePath, WithEnvPrefix("test_root"))
+	configProvider, err := FromFile(configTestFilePath, WithEnvPrefix("test_root"))()
 	if err != nil {
 		t.Log(err.Error())
 	}
 
+	config := configProvider.(*Config)
 	testValue = config.configViper.GetString("env.test")
 	if testValue != "456" {
 		t.Fatalf("Expected environment variable value but got: %s", testValue)
@@ -732,10 +728,11 @@ func TestMain(m *testing.M) {
 func setUp(m *testing.M) {
 	// do any test setup here...
 	var err error
-	configImpl, err = FromFile(configTestFilePath)
+	configProvider, err := FromFile(configTestFilePath)()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+	configImpl = configProvider.(*Config)
 }
 
 func teardown() {
@@ -763,10 +760,12 @@ func TestInterfaces(t *testing.T) {
 func TestSystemCertPoolDisabled(t *testing.T) {
 
 	// get a config file with pool disabled
-	c, err := FromFile(configTestFilePath)
+	configProvider, err := FromFile(configTestFilePath)()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	c := configProvider.(*Config)
 
 	// cert pool should be empty
 	if len(c.tlsCertPool.Subjects()) > 0 {
@@ -777,10 +776,12 @@ func TestSystemCertPoolDisabled(t *testing.T) {
 func TestSystemCertPoolEnabled(t *testing.T) {
 
 	// get a config file with pool enabled
-	c, err := FromFile(configPemTestFilePath)
+	configProvider, err := FromFile(configPemTestFilePath)()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	c := configProvider.(*Config)
 
 	if len(c.tlsCertPool.Subjects()) == 0 {
 		t.Fatal("System Cert Pool not loaded even though it is enabled")
@@ -807,7 +808,7 @@ func TestInitConfigFromRawWithPem(t *testing.T) {
 	}
 
 	// test init config from bytes
-	c, err := FromRaw(cBytes, configType)
+	c, err := FromRaw(cBytes, configType)()
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
@@ -921,7 +922,7 @@ O94CDp7l2k7hMQI0zQ==
 
 func TestLoadConfigWithEmbeddedUsersWithPems(t *testing.T) {
 	// get a config file with embedded users
-	c, err := FromFile(configEmbeddedUsersTestFilePath)
+	c, err := FromFile(configEmbeddedUsersTestFilePath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -951,7 +952,7 @@ func TestLoadConfigWithEmbeddedUsersWithPems(t *testing.T) {
 
 func TestLoadConfigWithEmbeddedUsersWithPaths(t *testing.T) {
 	// get a config file with embedded users
-	c, err := FromFile(configEmbeddedUsersTestFilePath)
+	c, err := FromFile(configEmbeddedUsersTestFilePath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -987,13 +988,13 @@ func TestInitConfigFromRawWrongType(t *testing.T) {
 	}
 
 	// test init config with empty type
-	c, err := FromRaw(cBytes, "")
+	c, err := FromRaw(cBytes, "")()
 	if err == nil {
 		t.Fatalf("Expected error when initializing config with wrong config type but got no error.")
 	}
 
 	// test init config with wrong type
-	c, err = FromRaw(cBytes, "json")
+	c, err = FromRaw(cBytes, "json")()
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
@@ -1234,7 +1235,7 @@ func TestTLSClientCertsNoCerts(t *testing.T) {
 }
 
 func TestNewGoodOpt(t *testing.T) {
-	_, err := FromFile("../../test/fixtures/config/config_test.yaml", goodOpt())
+	_, err := FromFile("../../test/fixtures/config/config_test.yaml", goodOpt())()
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -1246,12 +1247,12 @@ func TestNewGoodOpt(t *testing.T) {
 
 	buf := bytes.NewBuffer(cBytes)
 
-	_, err = FromReader(buf, configType, goodOpt())
+	_, err = FromReader(buf, configType, goodOpt())()
 	if err != nil {
 		t.Fatalf("Unexpected error from FromReader: %v", err)
 	}
 
-	_, err = FromRaw(cBytes, configType, goodOpt())
+	_, err = FromRaw(cBytes, configType, goodOpt())()
 	if err != nil {
 		t.Fatalf("Unexpected error from FromRaw %v", err)
 	}
@@ -1277,7 +1278,7 @@ func goodOpt() Option {
 }
 
 func TestNewBadOpt(t *testing.T) {
-	_, err := FromFile("../../test/fixtures/config/config_test.yaml", badOpt())
+	_, err := FromFile("../../test/fixtures/config/config_test.yaml", badOpt())()
 	if err == nil {
 		t.Fatalf("Expected error from FromFile")
 	}
@@ -1289,12 +1290,12 @@ func TestNewBadOpt(t *testing.T) {
 
 	buf := bytes.NewBuffer(cBytes)
 
-	_, err = FromReader(buf, configType, badOpt())
+	_, err = FromReader(buf, configType, badOpt())()
 	if err == nil {
 		t.Fatalf("Expected error from FromReader")
 	}
 
-	_, err = FromRaw(cBytes, configType, badOpt())
+	_, err = FromRaw(cBytes, configType, badOpt())()
 	if err == nil {
 		t.Fatalf("Expected error from FromRaw")
 	}

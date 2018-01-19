@@ -61,56 +61,55 @@ type Option func(opts *options) error
 
 // FromReader loads configuration from in.
 // configType can be "json" or "yaml".
-func FromReader(in io.Reader, configType string, opts ...Option) (*Config, error) {
-	c, err := newConfig(opts...)
-	if err != nil {
-		return nil, err
+func FromReader(in io.Reader, configType string, opts ...Option) apiconfig.ConfigProvider {
+	return func() (apiconfig.Config, error) {
+		c, err := newConfig(opts...)
+		if err != nil {
+			return nil, err
+		}
+
+		if configType == "" {
+			return nil, errors.New("empty config type")
+		}
+
+		// read config from bytes array, but must set ConfigType
+		// for viper to properly unmarshal the bytes array
+		c.configViper.SetConfigType(configType)
+		c.configViper.MergeConfig(in)
+
+		return initConfig(c)
 	}
-
-	if configType == "" {
-		return nil, errors.New("empty config type")
-	}
-
-	// read config from bytes array, but must set ConfigType
-	// for viper to properly unmarshal the bytes array
-	c.configViper.SetConfigType(configType)
-	c.configViper.MergeConfig(in)
-
-	return initConfig(c)
 }
 
 // FromFile reads from named config file
-func FromFile(name string, opts ...Option) (*Config, error) {
-	c, err := newConfig(opts...)
-	if err != nil {
-		return nil, err
+func FromFile(name string, opts ...Option) apiconfig.ConfigProvider {
+	return func() (apiconfig.Config, error) {
+		c, err := newConfig(opts...)
+		if err != nil {
+			return nil, err
+		}
+
+		if name == "" {
+			return nil, errors.New("filename is required")
+		}
+
+		// create new viper
+		c.configViper.SetConfigFile(name)
+
+		// If a config file is found, read it in.
+		err = c.configViper.MergeInConfig()
+		if err == nil {
+			logger.Debugf("Using config file: %s", c.configViper.ConfigFileUsed())
+		} else {
+			return nil, errors.Wrap(err, "loading config file failed")
+		}
+
+		return initConfig(c)
 	}
-
-	if name == "" {
-		return nil, errors.New("filename is required")
-	}
-
-	// create new viper
-	c.configViper.SetConfigFile(name)
-
-	// If a config file is found, read it in.
-	err = c.configViper.MergeInConfig()
-	if err == nil {
-		logger.Debugf("Using config file: %s", c.configViper.ConfigFileUsed())
-	} else {
-		return nil, errors.Wrap(err, "loading config file failed")
-	}
-
-	return initConfig(c)
 }
 
 // FromRaw will initialize the configs from a byte array
-func FromRaw(configBytes []byte, configType string, opts ...Option) (*Config, error) {
-
-	if len(configBytes) == 0 {
-		return nil, errors.New("empty config byte array")
-	}
-
+func FromRaw(configBytes []byte, configType string, opts ...Option) apiconfig.ConfigProvider {
 	buf := bytes.NewBuffer(configBytes)
 	logger.Debugf("config.FromRaw buf Len is %d, Cap is %d: %s", buf.Len(), buf.Cap(), buf)
 

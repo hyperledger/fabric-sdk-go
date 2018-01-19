@@ -325,14 +325,14 @@ func toString(peers []apifabclient.Peer) string {
 
 func TestDynamicSelection(t *testing.T) {
 
-	config, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")
+	c, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
 	mychannelUser := ChannelUser{ChannelID: "mychannel", UserName: "User1", OrgName: "Org1"}
 
-	selectionProvider, err := NewSelectionProvider(config, []ChannelUser{mychannelUser}, nil)
+	selectionProvider, err := NewSelectionProvider(c, []ChannelUser{mychannelUser}, nil)
 	if err != nil {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}
@@ -348,7 +348,9 @@ func TestDynamicSelection(t *testing.T) {
 	}
 
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(config, fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []ChannelUser{mychannelUser}}))
+	sdk, err := fabsdk.New(
+		config.FromFile("../../../../test/fixtures/config/config_test.yaml"),
+		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []ChannelUser{mychannelUser}}))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -390,7 +392,7 @@ func TestDynamicSelection(t *testing.T) {
 	}
 
 	// Test custom load balancer
-	selectionProvider, err = NewSelectionProvider(config, []ChannelUser{mychannelUser}, newCustomLBP())
+	selectionProvider, err = NewSelectionProvider(c, []ChannelUser{mychannelUser}, newCustomLBP())
 	if err != nil {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}

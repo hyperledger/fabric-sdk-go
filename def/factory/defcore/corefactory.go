@@ -14,7 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 
 	"github.com/hyperledger/fabric-sdk-go/def/provider/fabpvdr"
-	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
@@ -33,26 +32,6 @@ type ProviderFactory struct {
 func NewProviderFactory() *ProviderFactory {
 	f := ProviderFactory{}
 	return &f
-}
-
-// ConfigOpts provides bootstrap setup
-type ConfigOpts struct {
-	//FileName to load from a predefined path
-	FileName string
-	//Raw to load from an bytes array
-	Raw []byte
-	//Format to specify the type of the config (mainly used with ConfigBytes as ConfigFile has a file extension to specify the type)
-	// valid values: yaml, json, etc.
-	Format string
-}
-
-// NewConfigProvider creates a Config using the SDK's default implementation
-func (f *ProviderFactory) NewConfigProvider(opts ConfigOpts) (apiconfig.Config, error) {
-	// configBytes takes precedence over configFile
-	if opts.Raw != nil && len(opts.Raw) > 0 {
-		return configImpl.FromRaw(opts.Raw, opts.Format)
-	}
-	return configImpl.FromFile(opts.FileName)
 }
 
 // NewStateStoreProvider creates a KeyValueStore using the SDK's default implementation

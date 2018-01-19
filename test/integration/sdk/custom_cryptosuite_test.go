@@ -45,7 +45,7 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
-	defaultConfig, err := testSetup.InitConfig()
+	defaultConfig, err := testSetup.InitConfig()()
 
 	if err != nil {
 		panic(fmt.Sprintf("Failed to get default config [%s]", err))
@@ -56,12 +56,8 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 	customBccspProvider := getTestBCCSP(defaultConfig)
 
 	// Create SDK setup with custom cryptosuite provider factory
-	c, err := config.FromFile(testSetup.ConfigFile)
-	if err != nil {
-		t.Fatalf("Failed to load config: %s", err)
-	}
-
-	sdk, err := fabsdk.New(c, fabsdk.WithCorePkg(&CustomCryptoSuiteProviderFactory{bccspProvider: customBccspProvider}))
+	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile),
+		fabsdk.WithCorePkg(&CustomCryptoSuiteProviderFactory{bccspProvider: customBccspProvider}))
 
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
@@ -135,7 +131,7 @@ func TestCustomCryptoSuite(t *testing.T) {
 		ConfigFile: "../" + integration.ConfigTestFile,
 	}
 
-	defaultConfig, err := testSetup.InitConfig()
+	defaultConfig, err := testSetup.InitConfig()()
 
 	if err != nil {
 		panic(fmt.Sprintf("Failed to get default config [%s]", err))
@@ -146,12 +142,8 @@ func TestCustomCryptoSuite(t *testing.T) {
 	//Get BCCSP custom wrapper for Test BCCSP
 	customBccspWrapper := getBCCSPWrapper(customBccspProvider)
 
-	c, err := config.FromFile(testSetup.ConfigFile)
-	if err != nil {
-		t.Fatalf("Failed to load config: %s", err)
-	}
-
-	sdk, err := fabsdk.New(c, fabsdk.WithCorePkg(&CustomCryptoSuiteProviderFactory{bccspProvider: customBccspWrapper}))
+	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile),
+		fabsdk.WithCorePkg(&CustomCryptoSuiteProviderFactory{bccspProvider: customBccspWrapper}))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

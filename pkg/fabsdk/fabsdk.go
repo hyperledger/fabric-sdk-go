@@ -51,9 +51,20 @@ type ProviderInit interface {
 
 // New initializes the SDK based on the set of options provided.
 // configProvider provides the application configuration and is required.
-func New(configProvider apiconfig.Config, opts ...Option) (*FabricSDK, error) {
+func New(cp apiconfig.ConfigProvider, opts ...Option) (*FabricSDK, error) {
 	pkgSuite := defPkgSuite{}
-	return fromPkgSuite(configProvider, &pkgSuite, opts...)
+	config, err := cp()
+	if err != nil {
+		return nil, errors.New("unable to load configuration")
+	}
+	return fromPkgSuite(config, &pkgSuite, opts...)
+}
+
+// fromConfig initializes the SDK based on the set of options provided.
+// configProvider provides the application configuration and is required.
+func fromConfig(config apiconfig.Config, opts ...Option) (*FabricSDK, error) {
+	pkgSuite := defPkgSuite{}
+	return fromPkgSuite(config, &pkgSuite, opts...)
 }
 
 // fromPkgSuite creates an SDK based on the implementations in the provided pkg suite.

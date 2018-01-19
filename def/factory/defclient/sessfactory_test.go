@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
@@ -187,10 +188,7 @@ func newMockProviders(t *testing.T) *mockProviders {
 	coreFactory := defcore.NewProviderFactory()
 	svcFactory := defsvc.NewProviderFactory()
 
-	opts := defcore.ConfigOpts{
-		FileName: "../../../test/fixtures/config/config_test.yaml",
-	}
-	config, err := coreFactory.NewConfigProvider(opts)
+	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
