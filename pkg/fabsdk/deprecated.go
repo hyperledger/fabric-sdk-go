@@ -38,14 +38,6 @@ type ResourceMgmtClientOpts struct {
 	ConfigProvider apiconfig.Config
 }
 
-// NewSystemClient returns a new client for the system (operations not on a channel)
-// TODO: Reduced immutable interface
-// TODO: Parameter for setting up the peers
-// This function is deprecated.
-func (sdk *FabricSDK) NewSystemClient(s apisdk.Session) (apifabclient.FabricClient, error) {
-	return sdk.FabricProvider().NewClient(s.Identity())
-}
-
 // NewChannelMgmtClientWithOpts returns a new client for managing channels with options
 // This function is deprecated.
 func (sdk *FabricSDK) NewChannelMgmtClientWithOpts(userName string, opt *ChannelMgmtClientOpts) (chmgmt.ChannelMgmtClient, error) {
@@ -104,6 +96,47 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 	}
 
 	return c.Channel(channelID)
+}
+
+// NewChannelMgmtClient returns a new client for managing channels
+// This function is deprecated.
+func (sdk *FabricSDK) NewChannelMgmtClient(userName string, opts ...ClientOption) (chmgmt.ChannelMgmtClient, error) {
+	c, err := sdk.NewClient(WithUser(userName), opts...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "error creating client from SDK")
+	}
+
+	return c.ChannelMgmt()
+}
+
+// NewResourceMgmtClient returns a new client for managing system resources
+// This function is deprecated.
+func (sdk *FabricSDK) NewResourceMgmtClient(userName string, opts ...ClientOption) (resmgmt.ResourceMgmtClient, error) {
+	c, err := sdk.NewClient(WithUser(userName), opts...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "error creating client from SDK")
+	}
+
+	return c.ResourceMgmt()
+}
+
+// NewChannelClient returns a new client for a channel
+// This function is deprecated.
+func (sdk *FabricSDK) NewChannelClient(channelID string, userName string, opts ...ClientOption) (apitxn.ChannelClient, error) {
+	c, err := sdk.NewClient(WithUser(userName), opts...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "error creating client from SDK")
+	}
+
+	return c.Channel(channelID)
+}
+
+// NewSystemClient returns a new client for the system (operations not on a channel)
+// TODO: Reduced immutable interface
+// TODO: Parameter for setting up the peers
+// This function is deprecated.
+func (sdk *FabricSDK) NewSystemClient(s apisdk.Session) (apifabclient.FabricClient, error) {
+	return sdk.FabricProvider().NewClient(s.Identity())
 }
 
 // NewPreEnrolledUserSession returns a new pre-enrolled user session

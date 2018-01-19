@@ -71,20 +71,30 @@ func TestNewDefaultSDK(t *testing.T) {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 
+	clt1, err := sdk.NewClient(WithUser(sdkValidClientUser))
+	if err != nil {
+		t.Fatalf("Failed to create client: %s", err)
+	}
+
 	// Default channel client (uses organisation from client configuration)
-	_, err = sdk.NewChannelClient("mychannel", sdkValidClientUser)
+	_, err = clt1.Channel("mychannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
+	clt2, err := sdk.NewClient(WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
+	if err != nil {
+		t.Fatalf("Failed to create client: %s", err)
+	}
+
 	// Test configuration failure for channel client (mychannel does't have event source configured for Org2)
-	_, err = sdk.NewChannelClientWithOpts("mychannel", sdkValidClientUser, &ChannelClientOpts{OrgName: sdkValidClientOrg2})
+	_, err = clt2.Channel("mychannel")
 	if err == nil {
 		t.Fatalf("Should have failed to create channel client since event source not configured for Org2")
 	}
 
 	// Test new channel client with options
-	_, err = sdk.NewChannelClientWithOpts("orgchannel", sdkValidClientUser, &ChannelClientOpts{OrgName: sdkValidClientOrg2})
+	_, err = clt2.Channel("orgchannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -238,8 +248,13 @@ func TestWithSessionPkg(t *testing.T) {
 	}
 	factory.EXPECT().NewChannelMgmtClient(sdk, gomock.Any(), c).Return(cm, nil)
 
+	clt, err := sdk.NewClient(WithUser(sdkValidClientUser))
+	if err != nil {
+		t.Fatalf("Unexpected error getting client: %s", err)
+	}
+
 	// Use a method that invokes credential manager (e.g., new user)
-	_, err = sdk.NewChannelMgmtClient(sdkValidClientUser)
+	_, err = clt.ChannelMgmt()
 	if err != nil {
 		t.Fatalf("Unexpected error getting channel management client: %s", err)
 	}
@@ -334,25 +349,35 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 		t.Fatalf("Unexpected org in config: %s", client1.Organization)
 	}
 
+	clt1, err := sdk1.NewClient(WithUser(sdkValidClientUser))
+	if err != nil {
+		t.Fatalf("Failed to create client: %s", err)
+	}
+
 	// Test SDK1 channel clients ('mychannel', 'orgchannel')
-	_, err = sdk1.NewChannelClient("mychannel", sdkValidClientUser)
+	_, err = clt1.Channel("mychannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	_, err = sdk1.NewChannelClient("orgchannel", sdkValidClientUser)
+	_, err = clt1.Channel("orgchannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
+	}
+
+	clt2, err := sdk2.NewClient(WithUser(sdkValidClientUser))
+	if err != nil {
+		t.Fatalf("Failed to create client: %s", err)
 	}
 
 	// SDK 2 doesn't have 'mychannel' configured
-	_, err = sdk2.NewChannelClient("mychannel", sdkValidClientUser)
+	_, err = clt2.Channel("mychannel")
 	if err == nil {
 		t.Fatalf("Should have failed to create channel that is not configured")
 	}
 
 	// SDK 2 has 'orgchannel' configured
-	_, err = sdk2.NewChannelClient("orgchannel", sdkValidClientUser)
+	_, err = clt2.Channel("orgchannel")
 	if err != nil {
 		t.Fatalf("Failed to create new 'orgchannel' channel client: %s", err)
 	}

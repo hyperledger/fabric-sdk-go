@@ -30,6 +30,18 @@ func TestNewChannelMgmtWithOptsClient(t *testing.T) {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 
+	// Test configuration failure for channel management client (invalid user/default organisation)
+	_, err = sdk.NewChannelMgmtClient("Invalid")
+	if err == nil {
+		t.Fatalf("Should have failed to create channel client due to invalid user")
+	}
+
+	// Test valid configuration for channel management client
+	_, err = sdk.NewChannelMgmtClient(clientValidAdmin)
+	if err != nil {
+		t.Fatalf("Failed to create new channel client: %s", err)
+	}
+
 	// Test configuration failure for new channel management client with options (invalid org)
 	_, err = sdk.NewChannelMgmtClientWithOpts(txValidClientAdmin, &ChannelMgmtClientOpts{OrgName: "Invalid"})
 	if err == nil {
@@ -53,6 +65,18 @@ func TestNewResourceMgmtWithOptsClient(t *testing.T) {
 	sdk, err := New(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	// Test configuration failure for resource management client (invalid user/default organisation)
+	_, err = sdk.NewResourceMgmtClient("Invalid")
+	if err == nil {
+		t.Fatalf("Should have failed to create resource management client due to invalid user")
+	}
+
+	// Test valid configuration for resource management client
+	_, err = sdk.NewResourceMgmtClient(clientValidAdmin)
+	if err != nil {
+		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
 
 	// Test configuration failure for new resource management client with options (invalid org)
