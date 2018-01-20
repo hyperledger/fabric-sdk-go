@@ -133,9 +133,8 @@ func TestSendInstantiateProposal(t *testing.T) {
 	client := mocks.NewMockClient()
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	cryptoSuite := &mocks.MockCryptoSuite{}
-	client.SaveUserToStateStore(user, true)
 	client.SetCryptoSuite(cryptoSuite)
-	client.SetUserContext(user)
+	client.SetIdentityContext(user)
 	channel, _ := NewChannel("testChannel", client)
 
 	mockCtrl := gomock.NewController(t)
@@ -213,9 +212,8 @@ func TestSendUpgradeProposal(t *testing.T) {
 	client := mocks.NewMockClient()
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	cryptoSuite := &mocks.MockCryptoSuite{}
-	client.SaveUserToStateStore(user, true)
 	client.SetCryptoSuite(cryptoSuite)
-	client.SetUserContext(user)
+	client.SetIdentityContext(user)
 	channel, _ := NewChannel("testChannel", client)
 
 	mockCtrl := gomock.NewController(t)
@@ -459,7 +457,7 @@ func TestSignPayload(t *testing.T) {
 	client := mocks.NewMockInvalidClient()
 	user := mocks.NewMockUser("test")
 	cryptoSuite := &mocks.MockCryptoSuite{}
-	client.SaveUserToStateStore(user, true)
+	client.SetIdentityContext(user)
 	client.SetCryptoSuite(cryptoSuite)
 	channel, _ := NewChannel("testChannel", client)
 

@@ -58,7 +58,7 @@ func TestWithIdentity(t *testing.T) {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
 
-	identity, err := sdk.NewPreEnrolledUser(identityValidOptOrg, identityValidOptUser)
+	identity, err := sdk.newUser(identityValidOptOrg, identityValidOptUser)
 	if err != nil {
 		t.Fatalf("Unexpected error loading identity: %v", err)
 	}

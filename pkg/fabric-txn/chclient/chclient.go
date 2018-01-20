@@ -25,7 +25,7 @@ import (
 
 // ChannelClient enables access to a Fabric network.
 type ChannelClient struct {
-	client    fab.FabricClient
+	client    fab.Resource
 	channel   fab.Channel
 	discovery fab.DiscoveryService
 	selection fab.SelectionService
@@ -58,7 +58,7 @@ func (txProposalResponseFilter *txProposalResponseFilter) ProcessTxProposalRespo
 }
 
 // NewChannelClient returns a ChannelClient instance.
-func NewChannelClient(client fab.FabricClient, channel fab.Channel, discovery fab.DiscoveryService, selection fab.SelectionService, eventHub fab.EventHub) (*ChannelClient, error) {
+func NewChannelClient(client fab.Resource, channel fab.Channel, discovery fab.DiscoveryService, selection fab.SelectionService, eventHub fab.EventHub) (*ChannelClient, error) {
 
 	channelClient := ChannelClient{client: client, channel: channel, discovery: discovery, selection: selection, eventHub: eventHub}
 

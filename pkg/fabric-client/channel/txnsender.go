@@ -202,10 +202,10 @@ func (c *Channel) sendCCProposal(ccProposalType CCProposalType, chaincodeName st
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion},
 		Input: &pb.ChaincodeInput{Args: args}}}
 
-	if c.clientContext.UserContext() == nil {
+	if c.clientContext.IdentityContext() == nil {
 		return nil, apitxn.TransactionID{}, errors.New("user context is nil")
 	}
-	creator, err := c.clientContext.UserContext().Identity()
+	creator, err := c.clientContext.IdentityContext().Identity()
 	if err != nil {
 		return nil, apitxn.TransactionID{}, errors.Wrap(err, "getting user context's identity failed")
 	}
@@ -260,7 +260,7 @@ func (c *Channel) sendCCProposal(ccProposalType CCProposalType, chaincodeName st
 // SignPayload signs payload
 func (c *Channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
 	//Get user info
-	user := c.clientContext.UserContext()
+	user := c.clientContext.IdentityContext()
 	if user == nil {
 		return nil, errors.New("user is nil")
 	}
@@ -356,7 +356,7 @@ func (c *Channel) SendEnvelope(envelope *fab.SignedEnvelope) (*common.Block, err
 				}
 				mutex.Unlock()
 
-			case <-time.After(c.ClientContext().Config().TimeoutOrDefault(apiconfig.OrdererResponse)):
+			case <-time.After(c.clientContext.Config().TimeoutOrDefault(apiconfig.OrdererResponse)):
 				mutex.Lock()
 				if errorResponse == nil {
 					errorResponse = errors.New("timeout waiting for response from orderer")

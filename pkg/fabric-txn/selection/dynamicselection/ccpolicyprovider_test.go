@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicselection
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
@@ -44,18 +45,6 @@ func TestCCPolicyProvider(t *testing.T) {
 		t.Fatalf("Should have failed for nil sdk")
 	}
 
-	// Non-existent user
-	ccPolicyProvider, err = newCCPolicyProvider(sdk, "mychannel", "Invalid", "Org1")
-	if err == nil {
-		t.Fatalf("Should have failed for invalid user name")
-	}
-
-	// Invalid org
-	ccPolicyProvider, err = newCCPolicyProvider(sdk, "mychannel", "User1", "Invalid")
-	if err == nil {
-		t.Fatalf("Should have failed for invalid org name")
-	}
-
 	// Invalid channel
 	ccPolicyProvider, err = newCCPolicyProvider(sdk, "non-existent", "User1", "Org1")
 	if err == nil {
@@ -78,5 +67,27 @@ func TestCCPolicyProvider(t *testing.T) {
 	_, err = ccPolicyProvider.GetChaincodePolicy("abc")
 	if err == nil {
 		t.Fatalf("Should have failed to retrieve non-existent cc policy")
+	}
+}
+
+func TestBadClient(t *testing.T) {
+	// Create SDK setup for channel client with dynamic selection
+	sdk, err := fabsdk.New(config.FromFile("../../../../test/fixtures/config/config_test.yaml"))
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+
+	// Non-existent user
+	ccPolicyProvider, err := newCCPolicyProvider(sdk, "mychannel", "Invalid", "Org1")
+	_, err = ccPolicyProvider.GetChaincodePolicy("mychannel")
+	if !strings.Contains(err.Error(), "Unable to load identity") {
+		t.Fatalf("Should have failed for invalid user name: %v", err)
+	}
+
+	// Invalid org
+	ccPolicyProvider, err = newCCPolicyProvider(sdk, "mychannel", "User1", "Invalid")
+	_, err = ccPolicyProvider.GetChaincodePolicy("mychannel")
+	if !strings.Contains(err.Error(), "Unable to load identity") {
+		t.Fatalf("Should have failed for invalid org name")
 	}
 }

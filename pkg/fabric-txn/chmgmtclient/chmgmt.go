@@ -23,12 +23,12 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // ChannelMgmtClient enables managing channels in Fabric network.
 type ChannelMgmtClient struct {
-	client fab.FabricClient
+	client fab.Resource
 	config config.Config
 }
 
 // NewChannelMgmtClient returns a channel management client instance
-func NewChannelMgmtClient(client fab.FabricClient, config config.Config) (*ChannelMgmtClient, error) {
+func NewChannelMgmtClient(client fab.Resource, config config.Config) (*ChannelMgmtClient, error) {
 	cc := &ChannelMgmtClient{client: client, config: config}
 	return cc, nil
 }
@@ -49,10 +49,10 @@ func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, 
 
 	// Signing user has to belong to one of configured channel organisations
 	// In case that order org is one of channel orgs we can use context user
-	signer := cc.client.UserContext()
-	if req.SigningUser != nil {
+	signer := cc.client.IdentityContext()
+	if req.SigningIdentity != nil {
 		// Retrieve custom signing identity here
-		signer = req.SigningUser
+		signer = req.SigningIdentity
 	}
 
 	if signer == nil {

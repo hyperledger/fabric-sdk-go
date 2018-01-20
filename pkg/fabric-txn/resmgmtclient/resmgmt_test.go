@@ -116,7 +116,7 @@ func TestNoSigningUserFailure(t *testing.T) {
 	}
 
 	user := fcmocks.NewMockUserWithMSPID("test", "")
-	client.SetUserContext(user)
+	client.SetIdentityContext(user)
 
 	_, err = NewResourceMgmtClient(client, discovery, nil, config)
 	if err == nil {
@@ -1052,8 +1052,7 @@ func setupTestClient(userName string, mspID string) *fcmocks.MockClient {
 	client := fcmocks.NewMockClient()
 	user := fcmocks.NewMockUserWithMSPID(userName, mspID)
 	cryptoSuite := &fcmocks.MockCryptoSuite{}
-	client.SaveUserToStateStore(user, true)
-	client.SetUserContext(user)
+	client.SetIdentityContext(user)
 	client.SetCryptoSuite(cryptoSuite)
 
 	return client

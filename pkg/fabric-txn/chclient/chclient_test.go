@@ -316,8 +316,7 @@ func setupTestClient() *fcmocks.MockClient {
 	client := fcmocks.NewMockClient()
 	user := fcmocks.NewMockUser("test")
 	cryptoSuite := &fcmocks.MockCryptoSuite{}
-	client.SaveUserToStateStore(user, true)
-	client.SetUserContext(user)
+	client.SetIdentityContext(user)
 	client.SetCryptoSuite(cryptoSuite)
 	return client
 }

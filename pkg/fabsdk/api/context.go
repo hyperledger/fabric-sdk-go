@@ -13,24 +13,23 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 )
 
-// SDK represents the configured providers context
-// TODO rename
-type SDK interface {
+// Providers represents the configured providers context
+type Providers interface {
+	CoreProviders
+	SvcProviders
+}
+
+// CoreProviders represents the configured core providers context
+type CoreProviders interface {
 	CryptoSuiteProvider() apicryptosuite.CryptoSuite
 	StateStoreProvider() fab.KeyValueStore
 	ConfigProvider() apiconfig.Config
-	DiscoveryProvider() fab.DiscoveryProvider
-	SelectionProvider() fab.SelectionProvider
 	SigningManager() fab.SigningManager
 	FabricProvider() apicore.FabricProvider
 }
 
-// Org represents the organization context
-type Org interface {
-	// TODO
-}
-
-// Session primarily represents the session and identity context
-type Session interface {
-	Identity() fab.User
+// SvcProviders represents the configured service providers context
+type SvcProviders interface {
+	DiscoveryProvider() fab.DiscoveryProvider
+	SelectionProvider() fab.SelectionProvider
 }

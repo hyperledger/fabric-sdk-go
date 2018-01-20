@@ -63,7 +63,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 	// Create channel (or update if it already exists)
 	org1AdminUser := loadOrgUser(t, sdk, org1, "Admin")
-	req := chmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"), SigningUser: org1AdminUser}
+	req := chmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"), SigningIdentity: org1AdminUser}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
@@ -255,14 +255,13 @@ func verifyValue(t *testing.T, chClient apitxn.ChannelClient, expected int) {
 
 }
 
-func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) fab.User {
+func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) fab.IdentityContext {
 
-	user, err := sdk.NewPreEnrolledUser(orgName, userName)
+	session, err := sdk.NewClient(fabsdk.WithUser(userName), fabsdk.WithOrg(orgName)).Session()
 	if err != nil {
-		t.Fatal(errors.Wrapf(err, "NewPreEnrolledUser failed, %s, %s", orgName, userName))
+		t.Fatal(errors.Wrapf(err, "Session failed, %s, %s", orgName, userName))
 	}
-
-	return user
+	return session.Identity()
 }
 
 func loadOrgPeers(t *testing.T, sdk *fabsdk.FabricSDK) {

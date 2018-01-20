@@ -40,10 +40,9 @@ type OrgClientFactory interface {
 
 // SessionClientFactory allows overriding default clients and providers of a session
 type SessionClientFactory interface {
-	//NewSystemClient(context SDK, session Session, config apiconfig.Config) (fab.FabricClient, error)
-	NewChannelMgmtClient(context SDK, session Session, config apiconfig.Config) (chmgmt.ChannelMgmtClient, error)
-	NewResourceMgmtClient(context SDK, session Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error)
-	NewChannelClient(context SDK, session Session, config apiconfig.Config, channelID string) (txn.ChannelClient, error)
+	NewChannelMgmtClient(sdk Providers, session Session, config apiconfig.Config) (chmgmt.ChannelMgmtClient, error)
+	NewResourceMgmtClient(sdk Providers, session Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error)
+	NewChannelClient(sdk Providers, session Session, config apiconfig.Config, channelID string) (txn.ChannelClient, error)
 }
 
 // PkgSuite provides the package factories that create clients and providers

@@ -46,12 +46,12 @@ type eventsClient struct {
 	TLSServerHostOverride  string
 	tlsCertHash            []byte
 	clientConn             *grpc.ClientConn
-	client                 fab.FabricClient
+	client                 fab.Resource
 	processEventsCompleted chan struct{}
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
-func NewEventsClient(client fab.FabricClient, peerAddress string, certificate *x509.Certificate, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (fab.EventsClient, error) {
+func NewEventsClient(client fab.Resource, peerAddress string, certificate *x509.Certificate, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (fab.EventsClient, error) {
 	var err error
 	if regTimeout < 100*time.Millisecond {
 		regTimeout = 100 * time.Millisecond
@@ -99,10 +99,7 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 	ec.Lock()
 	defer ec.Unlock()
 
-	user, err := ec.client.LoadUserFromStateStore("")
-	if err != nil {
-		return errors.WithMessage(err, "LoadUserFromStateStore failed")
-	}
+	user := ec.client.IdentityContext()
 	payload, err := proto.Marshal(emsg)
 	if err != nil {
 		return errors.Wrap(err, "marshal event failed")
@@ -124,12 +121,12 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 
 // RegisterAsync - registers interest in a event and doesn't wait for a response
 func (ec *eventsClient) RegisterAsync(ies []*ehpb.Interest) error {
-	if ec.client.UserContext() == nil {
-		return errors.New("user context is nil")
+	if ec.client.IdentityContext() == nil {
+		return errors.New("identity context is nil")
 	}
-	creator, err := ec.client.UserContext().Identity()
+	creator, err := ec.client.IdentityContext().Identity()
 	if err != nil {
-		return errors.WithMessage(err, "user context identity retrieval failed")
+		return errors.WithMessage(err, "identity context identity retrieval failed")
 	}
 
 	ts, err := ptypes.TimestampProto(time.Now())
@@ -181,10 +178,10 @@ func (ec *eventsClient) register(ies []*ehpb.Interest) error {
 
 // UnregisterAsync - Unregisters interest in a event and doesn't wait for a response
 func (ec *eventsClient) UnregisterAsync(ies []*ehpb.Interest) error {
-	if ec.client.UserContext() == nil {
-		return errors.New("user context is required")
+	if ec.client.IdentityContext() == nil {
+		return errors.New("identity context is required")
 	}
-	creator, err := ec.client.UserContext().Identity()
+	creator, err := ec.client.IdentityContext().Identity()
 	if err != nil {
 		return errors.WithMessage(err, "user context identity retrieval failed")
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
+	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -26,11 +27,26 @@ func TestNewFabricProvider(t *testing.T) {
 	newMockFabricProvider(t)
 }
 
-func TestNewClient(t *testing.T) {
+func TestNewChannelClient(t *testing.T) {
 	p := newMockFabricProvider(t)
 
 	user := mocks.NewMockUser("user")
-	client, err := p.NewClient(user)
+	client, err := p.NewChannelClient(user, "mychannel")
+	if err != nil {
+		t.Fatalf("Unexpected error creating client %v", err)
+	}
+
+	_, ok := client.(*channelImpl.Channel)
+	if !ok {
+		t.Fatalf("Unexpected client impl created")
+	}
+}
+
+func TestNewResourceClient(t *testing.T) {
+	p := newMockFabricProvider(t)
+
+	user := mocks.NewMockUser("user")
+	client, err := p.NewResourceClient(user)
 	if err != nil {
 		t.Fatalf("Unexpected error creating client %v", err)
 	}
@@ -41,9 +57,6 @@ func TestNewClient(t *testing.T) {
 	}
 
 	// Brittle tests follow (may need to be removed when we minimize client interface)
-	if !reflect.DeepEqual(client.StateStore(), p.stateStore) {
-		t.Fatalf("Unexpected keyvalue store")
-	}
 	if !reflect.DeepEqual(client.CryptoSuite(), p.cryptoSuite) {
 		t.Fatalf("Unexpected cryptosuite")
 	}

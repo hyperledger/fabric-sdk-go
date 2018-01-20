@@ -55,20 +55,8 @@ func TestJoinChannel(t *testing.T) {
 	peers = append(peers, peer)
 	orderer := mocks.NewMockOrderer("", nil)
 	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
-	txid, _ := channel.ClientContext().NewTxnID()
 
-	badtxid1, _ := channel.ClientContext().NewTxnID()
-	badtxid2, _ := channel.ClientContext().NewTxnID()
-
-	badtxid1.ID = ""
-	badtxid2.Nonce = nil
-
-	genesisBlockReqeust := &fab.GenesisBlockRequest{
-		TxnID: txid,
-	}
-	t.Logf("TxnID: %v", txid)
-
-	genesisBlock, err := channel.GenesisBlock(genesisBlockReqeust)
+	genesisBlock, err := channel.GenesisBlock()
 	if err == nil {
 		t.Fatalf("Should not have been able to get genesis block because of orderer missing")
 	}
@@ -77,7 +65,7 @@ func TestJoinChannel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error adding orderer: %v", err)
 	}
-	genesisBlock, err = channel.GenesisBlock(genesisBlockReqeust)
+	genesisBlock, err = channel.GenesisBlock()
 	if err != nil {
 		t.Fatalf("Error getting genesis block: %v", err)
 	}
@@ -88,29 +76,8 @@ func TestJoinChannel(t *testing.T) {
 	}
 
 	request := &fab.JoinChannelRequest{
-		Targets:      peers,
-		GenesisBlock: genesisBlock,
-		TxnID:        badtxid1,
-	}
-	err = channel.JoinChannel(request)
-	if err == nil {
-		t.Fatalf("Should not have been able to join channel because of missing TxID parameter")
-	}
-
-	request = &fab.JoinChannelRequest{
-		Targets:      peers,
-		GenesisBlock: genesisBlock,
-		TxnID:        badtxid2,
-	}
-	err = channel.JoinChannel(request)
-	if err == nil {
-		t.Fatalf("Should not have been able to join channel because of missing Nonce parameter")
-	}
-
-	request = &fab.JoinChannelRequest{
 		Targets: peers,
 		//GenesisBlock: genesisBlock,
-		TxnID: txid,
 	}
 	err = channel.JoinChannel(request)
 	if err == nil {
@@ -120,7 +87,6 @@ func TestJoinChannel(t *testing.T) {
 	request = &fab.JoinChannelRequest{
 		//Targets: peers,
 		GenesisBlock: genesisBlock,
-		TxnID:        txid,
 	}
 	err = channel.JoinChannel(request)
 	if err == nil {
@@ -130,7 +96,6 @@ func TestJoinChannel(t *testing.T) {
 	request = &fab.JoinChannelRequest{
 		Targets:      peers,
 		GenesisBlock: genesisBlock,
-		TxnID:        txid,
 	}
 	if err == nil {
 		t.Fatalf("Should not have been able to join channel because of invalid targets")
@@ -150,7 +115,6 @@ func TestJoinChannel(t *testing.T) {
 	endorserServer.ProposalError = errors.New("Test Error")
 	request = &fab.JoinChannelRequest{
 		Targets: peers,
-		TxnID:   txid,
 	}
 	err = channel.JoinChannel(request)
 	if err == nil {
@@ -190,7 +154,7 @@ func TestSendTransactionProposal(t *testing.T) {
 	}
 	expectedTpr := &pb.ProposalResponse{Response: &pb.Response{Message: responseMessage, Status: 200, Payload: []byte("A")}}
 
-	if txnid.ID != "1234" || !reflect.DeepEqual(tpr[0].ProposalResponse.Response, expectedTpr.Response) {
+	if !reflect.DeepEqual(tpr[0].ProposalResponse.Response, expectedTpr.Response) {
 		t.Fatalf("Unexpected transaction proposal response: %v, %v", tpr, txnid)
 	}
 }

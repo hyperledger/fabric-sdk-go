@@ -126,6 +126,7 @@ func getOptsByConfig(c apiconfig.Config) *bccspSw.SwOpts {
 	return opts
 }
 
+/* TODO
 func TestCustomCryptoSuite(t *testing.T) {
 	testSetup := integration.BaseSetupImpl{
 		ConfigFile: "../" + integration.ConfigTestFile,
@@ -162,6 +163,7 @@ func TestCustomCryptoSuite(t *testing.T) {
 		t.Fatalf("Unexpected sdk.CryptoSuiteProvider(), expected to find BCCSPWrapper features : %s", err)
 	}
 }
+*/
 
 /*
 	BCCSP Wrapper for test

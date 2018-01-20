@@ -15,7 +15,7 @@ type SaveChannelRequest struct {
 	// Path to channel configuration file
 	ChannelConfig string
 	// User that signs channel configuration
-	SigningUser fab.User
+	SigningIdentity fab.IdentityContext
 }
 
 // SaveChannelOpts contains options for saving channel

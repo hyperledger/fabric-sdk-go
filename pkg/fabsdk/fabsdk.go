@@ -44,11 +44,6 @@ type options struct {
 // Option configures the SDK.
 type Option func(opts *options) error
 
-// ProviderInit interface allows for initializing providers
-type ProviderInit interface {
-	Initialize(sdk *FabricSDK) error
-}
-
 // New initializes the SDK based on the set of options provided.
 // configProvider provides the application configuration and is required.
 func New(cp apiconfig.ConfigProvider, opts ...Option) (*FabricSDK, error) {
@@ -154,6 +149,12 @@ func WithLoggerPkg(logger apilogging.LoggerProvider) Option {
 	}
 }
 
+// providerInit interface allows for initializing providers
+// TODO: minimize interface
+type providerInit interface {
+	Initialize(sdk *FabricSDK) error
+}
+
 func initSDK(sdk *FabricSDK, opts []Option) error {
 	for _, option := range opts {
 		err := option(&sdk.opts)
@@ -187,7 +188,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.stateStore = store
 
 	// Initialize Signing Manager
-	signingMgr, err := sdk.opts.Core.NewSigningManager(sdk.CryptoSuiteProvider(), sdk.configProvider)
+	signingMgr, err := sdk.opts.Core.NewSigningManager(sdk.cryptoSuite, sdk.configProvider)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize signing manager")
 	}
@@ -205,7 +206,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize discovery provider")
 	}
-	if pi, ok := discoveryProvider.(ProviderInit); ok {
+	if pi, ok := discoveryProvider.(providerInit); ok {
 		pi.Initialize(sdk)
 	}
 	sdk.discoveryProvider = discoveryProvider
@@ -215,7 +216,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize selection provider")
 	}
-	if pi, ok := selectionProvider.(ProviderInit); ok {
+	if pi, ok := selectionProvider.(providerInit); ok {
 		pi.Initialize(sdk)
 	}
 	sdk.selectionProvider = selectionProvider
@@ -223,46 +224,22 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	return nil
 }
 
-// ConfigProvider returns the Config provider of sdk.
+// ConfigProvider returns the SDK's configuration.
+// TODO rename to Config
 func (sdk *FabricSDK) ConfigProvider() apiconfig.Config {
 	return sdk.configProvider
 }
 
-// CryptoSuiteProvider returns the BCCSP provider of sdk.
-func (sdk *FabricSDK) CryptoSuiteProvider() apicryptosuite.CryptoSuite {
-	return sdk.cryptoSuite
+func (sdk *FabricSDK) context() *sdkContext {
+	c := sdkContext{
+		sdk: sdk,
+	}
+	return &c
 }
 
-// StateStoreProvider returns state store
-func (sdk *FabricSDK) StateStoreProvider() apifabclient.KeyValueStore {
-	return sdk.stateStore
-}
+func (sdk *FabricSDK) newUser(orgID string, userName string) (apifabclient.IdentityContext, error) {
 
-// DiscoveryProvider returns discovery provider
-func (sdk *FabricSDK) DiscoveryProvider() apifabclient.DiscoveryProvider {
-	return sdk.discoveryProvider
-}
-
-// SelectionProvider returns selection provider
-func (sdk *FabricSDK) SelectionProvider() apifabclient.SelectionProvider {
-	return sdk.selectionProvider
-}
-
-// SigningManager returns signing manager
-func (sdk *FabricSDK) SigningManager() apifabclient.SigningManager {
-	return sdk.signingManager
-}
-
-// FabricProvider provides fabric objects such as peer and user
-func (sdk *FabricSDK) FabricProvider() apicore.FabricProvider {
-	return sdk.fabricProvider
-}
-
-// NewPreEnrolledUser returns a new pre-enrolled user
-// TODO: Rename this func to NewUser
-func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (apifabclient.User, error) {
-
-	credentialMgr, err := sdk.opts.Context.NewCredentialManager(orgID, sdk.ConfigProvider(), sdk.CryptoSuiteProvider())
+	credentialMgr, err := sdk.opts.Context.NewCredentialManager(orgID, sdk.configProvider, sdk.cryptoSuite)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get credential manager")
 	}
@@ -272,23 +249,10 @@ func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (apifabc
 		return nil, errors.WithMessage(err, "failed to get signing identity")
 	}
 
-	user, err := sdk.FabricProvider().NewUser(userName, signingIdentity)
+	user, err := sdk.fabricProvider.NewUser(userName, signingIdentity)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewPreEnrolledUser returned error")
 	}
 
 	return user, nil
-}
-
-// newSessionFromIdentityName returns a new user session
-func (sdk *FabricSDK) newSessionFromIdentityName(orgID string, id string) (*Session, error) {
-
-	user, err := sdk.NewPreEnrolledUser(orgID, id)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get pre-enrolled user")
-	}
-
-	session := newSession(user)
-
-	return session, nil
 }

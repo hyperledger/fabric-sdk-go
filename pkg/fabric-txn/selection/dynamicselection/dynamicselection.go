@@ -26,6 +26,7 @@ type ChannelUser struct {
 }
 
 // SelectionProvider implements selection provider
+// TODO: refactor users into client contexts
 type SelectionProvider struct {
 	config apiconfig.Config
 	users  []ChannelUser

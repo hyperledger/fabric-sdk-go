@@ -176,7 +176,7 @@ func testQueryBlock(t *testing.T, channel fab.Channel) {
 
 }
 
-func testQueryChannels(t *testing.T, channel fab.Channel, client fab.FabricClient) {
+func testQueryChannels(t *testing.T, channel fab.Channel, client fab.Resource) {
 
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()
@@ -192,7 +192,7 @@ func testQueryChannels(t *testing.T, channel fab.Channel, client fab.FabricClien
 
 }
 
-func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.FabricClient, testSetup *integration.BaseSetupImpl) {
+func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.Resource, testSetup *integration.BaseSetupImpl) {
 
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()
@@ -232,9 +232,6 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, config apiconfig.Co
 
 	// Test valid targets
 	targets := peer.PeersToTxnProcessors(channel.Peers())
-
-	// set Client User Context to Admin before calling QueryByChaincode
-	testSetup.Client.SetUserContext(testSetup.AdminUser)
 
 	request := apitxn.ChaincodeInvokeRequest{
 		Targets:     targets,

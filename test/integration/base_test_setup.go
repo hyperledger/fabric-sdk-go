@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
@@ -34,7 +33,7 @@ import (
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
-	Client          fab.FabricClient
+	Client          fab.Resource
 	Channel         fab.Channel
 	EventHub        fab.EventHub
 	ConnectEventHub bool
@@ -44,7 +43,6 @@ type BaseSetupImpl struct {
 	ChainCodeID     string
 	Initialized     bool
 	ChannelConfig   string
-	AdminUser       ca.User
 }
 
 // Initial B values for ExampleCC
@@ -91,18 +89,17 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 		return errors.WithMessage(err, "SDK init failed")
 	}
 
-	session, err := sdk.NewPreEnrolledUserSession(setup.OrgID, "Admin")
+	session, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(setup.OrgID)).Session()
 	if err != nil {
 		return errors.WithMessage(err, "failed getting admin user session for org")
 	}
 
-	sc, err := sdk.NewSystemClient(session)
+	sc, err := sdk.FabricProvider().NewResourceClient(session.Identity())
 	if err != nil {
-		return errors.WithMessage(err, "NewSystemClient failed")
+		return errors.WithMessage(err, "NewResourceClient failed")
 	}
 
 	setup.Client = sc
-	setup.AdminUser = session.Identity()
 
 	channel, err := setup.GetChannel(sdk, setup.Client, setup.ChannelID, []string{setup.OrgID})
 	if err != nil {
@@ -130,14 +127,8 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 
 	if !alreadyJoined {
 
-		// Channel config signing user (has to belong to one of channel orgs)
-		org1Admin, err := sdk.NewPreEnrolledUser("Org1", "Admin")
-		if err != nil {
-			return errors.WithMessage(err, "failed getting Org1 admin user")
-		}
-
 		// Create channel (or update if it already exists)
-		req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningUser: org1Admin}
+		req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session.Identity()}
 
 		if err = chMgmtClient.SaveChannel(req); err != nil {
 			return errors.WithMessage(err, "SaveChannel failed")
@@ -163,7 +154,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	return nil
 }
 
-func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client fab.FabricClient) error {
+func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client fab.Resource) error {
 	eventHub, err := setup.getEventHub(t, client)
 	if err != nil {
 		return err
@@ -232,12 +223,12 @@ func (setup *BaseSetupImpl) InstallAndInstantiateCC(ccName, ccPath, ccVersion, g
 		return err
 	}
 
-	ccPolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
+	ccPolicy := cauthdsl.SignedByMspMember(setup.Client.IdentityContext().MspID())
 	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy})
 }
 
 // GetChannel initializes and returns a channel based on config
-func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, client fab.FabricClient, channelID string, orgs []string) (fab.Channel, error) {
+func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, client fab.Resource, channelID string, orgs []string) (fab.Channel, error) {
 
 	channel, err := client.NewChannel(channelID)
 	if err != nil {
@@ -346,7 +337,7 @@ func (setup *BaseSetupImpl) RegisterTxEvent(t *testing.T, txID apitxn.Transactio
 }
 
 // getEventHub initilizes the event hub
-func (setup *BaseSetupImpl) getEventHub(t *testing.T, client fab.FabricClient) (fab.EventHub, error) {
+func (setup *BaseSetupImpl) getEventHub(t *testing.T, client fab.Resource) (fab.EventHub, error) {
 	eventHub, err := events.NewEventHub(client)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewEventHub failed")

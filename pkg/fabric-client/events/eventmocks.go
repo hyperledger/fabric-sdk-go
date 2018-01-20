@@ -48,7 +48,7 @@ type mockEventClientFactory struct {
 	clients []*mockEventClient
 }
 
-func (mecf *mockEventClientFactory) newEventsClient(client fab.FabricClient, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (fab.EventsClient, error) {
+func (mecf *mockEventClientFactory) newEventsClient(client fab.Resource, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (fab.EventsClient, error) {
 	mec := &mockEventClient{
 		PeerAddress: peerAddress,
 		RegTimeout:  regTimeout,

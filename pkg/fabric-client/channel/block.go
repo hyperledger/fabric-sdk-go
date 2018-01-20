@@ -9,9 +9,10 @@ package channel
 import (
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+
 	"github.com/golang/protobuf/proto"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
@@ -28,28 +29,25 @@ import (
 //          `nonce` : required - Integer of the once time number
 //
 // See /protos/peer/proposal_response.proto
-func (c *Channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block, error) {
+func (c *Channel) GenesisBlock() (*common.Block, error) {
 	logger.Debug("GenesisBlock - start")
 
 	// verify that we have an orderer configured
 	if len(c.Orderers()) == 0 {
 		return nil, errors.New("GenesisBlock missing orderer assigned to this channel for the GenesisBlock request")
 	}
-	// verify that we have transaction id
-	if request.TxnID.ID == "" {
-		return nil, errors.New("GenesisBlock missing txId input parameter with the required transaction identifier")
-	}
-	// verify that we have the nonce
-	if request.TxnID.Nonce == nil {
-		return nil, errors.New("GenesisBlock missing nonce input parameter with the required single use number")
+	if c.clientContext.IdentityContext() == nil {
+		return nil, errors.New("identity context required")
 	}
 
-	if c.clientContext.UserContext() == nil {
-		return nil, errors.New("user context required")
-	}
-	creator, err := c.clientContext.UserContext().Identity()
+	creator, err := c.clientContext.IdentityContext().Identity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get creator identity")
+	}
+
+	txnID, err := internal.NewTxnID(c.clientContext.IdentityContext())
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to calculate transaction id")
 	}
 
 	// now build the seek info , will be used once the channel is created
@@ -63,11 +61,11 @@ func (c *Channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block,
 	}
 	protos_utils.MakeChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, 1, c.Name(), 0)
 	tlsCertHash := ccomm.TLSCertHash(c.clientContext.Config())
-	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), request.TxnID.ID, 0, "", time.Now(), tlsCertHash)
+	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), txnID.ID, 0, "", time.Now(), tlsCertHash)
 	if err != nil {
 		return nil, errors.Wrap(err, "BuildChannelHeader failed")
 	}
-	seekHeader, err := fc.BuildHeader(creator, seekInfoHeader, request.TxnID.Nonce)
+	seekHeader, err := fc.BuildHeader(creator, seekInfoHeader, txnID.Nonce)
 	if err != nil {
 		return nil, errors.Wrap(err, "BuildHeader failed")
 	}
@@ -96,10 +94,10 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 		return nil, errors.Wrap(err, "GenerateRandomNonce failed")
 	}
 
-	if c.clientContext.UserContext() == nil {
+	if c.clientContext.IdentityContext() == nil {
 		return nil, errors.New("User context required")
 	}
-	creator, err := c.clientContext.UserContext().Identity()
+	creator, err := c.clientContext.IdentityContext().Identity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "serializing identity failed")
 	}

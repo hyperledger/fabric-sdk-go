@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -176,7 +177,7 @@ func filterProposalResponses(tpr []*txn.TransactionProposalResponse) ([][]byte, 
 	return responses, nil
 }
 
-func queryByChaincode(channelID string, request txn.ChaincodeInvokeRequest, clientContext ClientContext) ([][]byte, error) {
+func queryByChaincode(channelID string, request txn.ChaincodeInvokeRequest, clientContext fab.Context) ([][]byte, error) {
 	if err := validateChaincodeInvokeRequest(request); err != nil {
 		return nil, err
 	}
@@ -221,6 +222,6 @@ func (c *Channel) QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([]
 
 // QueryBySystemChaincode invokes a system chaincode
 // TODO - should be moved.
-func QueryBySystemChaincode(request txn.ChaincodeInvokeRequest, clientContext ClientContext) ([][]byte, error) {
+func QueryBySystemChaincode(request txn.ChaincodeInvokeRequest, clientContext fab.Context) ([][]byte, error) {
 	return queryByChaincode(systemChannel, request, clientContext)
 }

@@ -52,7 +52,7 @@ type Channel interface {
 	OrganizationUnits() ([]string, error)
 
 	// Channel Info
-	GenesisBlock(request *GenesisBlockRequest) (*common.Block, error)
+	GenesisBlock() (*common.Block, error)
 	JoinChannel(request *JoinChannelRequest) error
 	UpdateChannel() bool
 	IsReadonly() bool
@@ -74,14 +74,8 @@ type OrgAnchorPeer struct {
 	Port int32
 }
 
-// GenesisBlockRequest ...
-type GenesisBlockRequest struct {
-	TxnID txn.TransactionID
-}
-
 // JoinChannelRequest allows a set of peers to transact on a channel on the network
 type JoinChannelRequest struct {
 	Targets      []Peer
 	GenesisBlock *common.Block
-	TxnID        txn.TransactionID
 }

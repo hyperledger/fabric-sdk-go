@@ -88,12 +88,12 @@ func TestNewPreEnrolledUserSession(t *testing.T) {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 
-	_, err = sdk.NewPreEnrolledUserSession("org1", txValidClientUser)
+	_, err = sdk.newSessionFromIdentityName("org1", txValidClientUser)
 	if err != nil {
 		t.Fatalf("Unexpected error loading user session: %s", err)
 	}
 
-	_, err = sdk.NewPreEnrolledUserSession("notarealorg", txValidClientUser)
+	_, err = sdk.newSessionFromIdentityName("notarealorg", txValidClientUser)
 	if err == nil {
 		t.Fatal("Expected error loading user session from fake org")
 	}

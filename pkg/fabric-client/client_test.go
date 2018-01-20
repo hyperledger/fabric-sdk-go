@@ -18,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
@@ -51,7 +50,7 @@ func TestClientMethods(t *testing.T) {
 	}
 
 	//Client tests: Should return error "user required"
-	err = client.SaveUserToStateStore(nil, false)
+	err = client.SaveUserToStateStore(nil)
 	if err == nil {
 		t.Fatalf("client.SaveUserToStateStore didn't return error")
 	}
@@ -68,34 +67,14 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("client.LoadUserFromStateStore should return nil user")
 	}
 
-	//Client tests: successfully SaveUserToStateStore with skipPersistence true
-	user = identity.NewUser("someUser", testMsp)
-	err = client.SaveUserToStateStore(user, true)
-	if err != nil {
-		t.Fatalf("client.SaveUserToStateStore return error[%s]", err)
-	}
-	user, err = client.LoadUserFromStateStore("someUser")
-	if err != nil {
-		t.Fatalf("client.LoadUserFromStateStore return error[%s]", err)
-	}
-	if user == nil {
-		t.Fatalf("client.LoadUserFromStateStore return nil user")
-	}
-	if user.Name() != "someUser" {
-		t.Fatalf("client.LoadUserFromStateStore didn't return the right user")
-	}
-
-	if user.MspID() != testMsp {
-		t.Fatalf("client.LoadUserFromStateStore didn't return the right msp")
-	}
-
 	//Client tests: Should throw "stateStore is nil"
-	err = client.SaveUserToStateStore(user, false)
+	client.SetStateStore(nil)
+	err = client.SaveUserToStateStore(mocks.NewMockUser("hello"))
 	if err == nil {
 		t.Fatalf("client.SaveUserToStateStore didn't return error")
 	}
 	if err.Error() != "stateStore is nil" {
-		t.Fatalf("client.SaveUserToStateStore didn't return right error")
+		t.Fatalf("client.SaveUserToStateStore didn't return right error: %v", err)
 	}
 
 	//Client tests: Create new chain
@@ -129,7 +108,7 @@ func TestClientMethods(t *testing.T) {
 	client.SetSigningManager(mocks.NewMockSigningManager())
 
 	greeting := []byte("Hello")
-	signedObj, err := client.SigningManager().Sign(greeting, user.PrivateKey())
+	signedObj, err := client.SigningManager().Sign(greeting, nil)
 	if err != nil {
 		t.Fatalf("Failed to sign object.")
 	}
@@ -137,7 +116,6 @@ func TestClientMethods(t *testing.T) {
 	if !bytes.Equal(signedObj, greeting) {
 		t.Fatalf("Expecting Hello, got %s", signedObj)
 	}
-
 }
 
 func TestCreateChannel(t *testing.T) {
@@ -213,7 +191,7 @@ func TestQueryMethodsOnClient(t *testing.T) {
 }
 
 func TestInterfaces(t *testing.T) {
-	var apiClient fab.FabricClient
+	var apiClient fab.Resource
 	var client Client
 
 	apiClient = &client

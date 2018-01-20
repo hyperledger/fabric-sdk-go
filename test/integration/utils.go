@@ -33,7 +33,7 @@ func randomString(strlen int) string {
 // HasPrimaryPeerJoinedChannel checks whether the primary peer of a channel
 // has already joined the channel. It returns true if it has, false otherwise,
 // or an error
-func HasPrimaryPeerJoinedChannel(client fab.FabricClient, channel fab.Channel) (bool, error) {
+func HasPrimaryPeerJoinedChannel(client fab.Resource, channel fab.Channel) (bool, error) {
 	foundChannel := false
 	primaryPeer := channel.PrimaryPeer()
 	response, err := client.QueryChannels(primaryPeer)

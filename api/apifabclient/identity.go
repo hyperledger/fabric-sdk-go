@@ -23,10 +23,18 @@ import "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 // An application cannot use the Peer identity to sign things because the application doesn’t
 // have access to the Peer identity’s private key.
 type User interface {
+	IdentityContext
+
 	Name() string
-	MspID() string
 	EnrollmentCertificate() []byte
-	PrivateKey() apicryptosuite.Key
 	Roles() []string
+}
+
+// IdentityContext supplies the serialized identity and key reference.
+//
+// TODO - refactor SigningIdentity and this interface.
+type IdentityContext interface {
+	MspID() string
 	Identity() ([]byte, error)
+	PrivateKey() apicryptosuite.Key
 }

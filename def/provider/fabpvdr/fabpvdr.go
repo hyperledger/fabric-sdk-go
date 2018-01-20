@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
+	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 )
@@ -38,13 +39,13 @@ func NewFabricProvider(config apiconfig.Config, stateStore apifabclient.KeyValue
 	return &f
 }
 
-// NewClient returns a new FabricClient initialized for the current instance of the SDK
-func (f *FabricProvider) NewClient(user apifabclient.User) (apifabclient.FabricClient, error) {
+// NewResourceClient returns a new client initialized for the current instance of the SDK
+func (f *FabricProvider) NewResourceClient(ic apifabclient.IdentityContext) (apifabclient.Resource, error) {
 	client := clientImpl.NewClient(f.config)
 
 	client.SetCryptoSuite(f.cryptoSuite)
 	client.SetStateStore(f.stateStore)
-	client.SetUserContext(user)
+	client.SetIdentityContext(ic)
 	client.SetSigningManager(f.signer)
 
 	return client, nil
@@ -74,6 +75,18 @@ func (f *FabricProvider) NewPeer(url string, certificate *x509.Certificate, serv
 // NewPeerFromConfig returns a new default implementation of Peer based configuration
 func (f *FabricProvider) NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer) (apifabclient.Peer, error) {
 	return peerImpl.New(f.config, peerImpl.FromPeerConfig(peerCfg))
+}
+
+// NewChannelClient returns a new client initialized for the current instance of the SDK
+func (f *FabricProvider) NewChannelClient(ic apifabclient.IdentityContext, name string) (apifabclient.Channel, error) {
+	client := clientImpl.NewClient(f.config)
+
+	client.SetCryptoSuite(f.cryptoSuite)
+	client.SetStateStore(f.stateStore)
+	client.SetIdentityContext(ic)
+	client.SetSigningManager(f.signer)
+
+	return channelImpl.NewChannel(name, client)
 }
 
 /*

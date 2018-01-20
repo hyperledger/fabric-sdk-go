@@ -127,7 +127,7 @@ func TestQueryMissingParams(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error")
 	}
-	_, err = queryByChaincode("", request, channel.ClientContext())
+	_, err = queryByChaincode("", request, channel.clientContext)
 	if err == nil {
 		t.Fatalf("Expected error")
 	}

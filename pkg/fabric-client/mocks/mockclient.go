@@ -21,13 +21,13 @@ import (
 
 // MockClient ...
 type MockClient struct {
-	channels       map[string]fab.Channel
-	cryptoSuite    apicryptosuite.CryptoSuite
-	stateStore     fab.KeyValueStore
-	userContext    fab.User
-	config         config.Config
-	errorScenario  bool
-	signingManager fab.SigningManager
+	channels        map[string]fab.Channel
+	cryptoSuite     apicryptosuite.CryptoSuite
+	stateStore      fab.KeyValueStore
+	identityContext fab.IdentityContext
+	config          config.Config
+	errorScenario   bool
+	signingManager  fab.SigningManager
 }
 
 // NewMockClient ...
@@ -36,14 +36,14 @@ type MockClient struct {
  */
 func NewMockClient() *MockClient {
 	channels := make(map[string]fab.Channel)
-	c := &MockClient{channels: channels, cryptoSuite: nil, stateStore: nil, userContext: nil, config: NewMockConfig(), signingManager: NewMockSigningManager()}
+	c := &MockClient{channels: channels, config: NewMockConfig(), signingManager: NewMockSigningManager()}
 	return c
 }
 
 //NewMockInvalidClient : Returns new Mock FabricClient with error flag on used to test invalid scenarios
 func NewMockInvalidClient() *MockClient {
 	channels := make(map[string]fab.Channel)
-	c := &MockClient{channels: channels, cryptoSuite: nil, stateStore: nil, userContext: nil, config: NewMockConfig(), errorScenario: true}
+	c := &MockClient{channels: channels, config: NewMockConfig(), errorScenario: true}
 	return c
 }
 
@@ -106,7 +106,7 @@ func (c *MockClient) SetSigningManager(signingMgr fab.SigningManager) {
 }
 
 // SaveUserToStateStore ...
-func (c *MockClient) SaveUserToStateStore(user fab.User, skipPersistence bool) error {
+func (c *MockClient) SaveUserToStateStore(user fab.User) error {
 	return errors.New("Not implemented yet")
 
 }
@@ -129,7 +129,7 @@ func (c *MockClient) ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
 }
 
 // SignChannelConfig ...
-func (c *MockClient) SignChannelConfig(config []byte, signer fab.User) (*common.ConfigSignature, error) {
+func (c *MockClient) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
 	if bytes.Compare(config, []byte("SignChannelConfigError")) == 0 {
 		return nil, errors.New("Mock sign channel config error")
 	}
@@ -177,14 +177,14 @@ func (c *MockClient) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitx
 	return []*apitxn.TransactionProposalResponse{response}, "1234", nil
 }
 
-// UserContext ...
-func (c *MockClient) UserContext() fab.User {
-	return c.userContext
+// IdentityContext ...
+func (c *MockClient) IdentityContext() fab.IdentityContext {
+	return c.identityContext
 }
 
-// SetUserContext ...
-func (c *MockClient) SetUserContext(user fab.User) {
-	c.userContext = user
+// SetIdentityContext ...
+func (c *MockClient) SetIdentityContext(user fab.IdentityContext) {
+	c.identityContext = user
 }
 
 // NewTxnID computes a TransactionID for the current user context

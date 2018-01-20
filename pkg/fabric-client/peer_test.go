@@ -114,7 +114,7 @@ func TestPeerViaChannelNilData(t *testing.T) {
 	client := NewClient(config)
 
 	user := mocks.NewMockUser("joe")
-	client.SetUserContext(user)
+	client.SetIdentityContext(user)
 
 	channel, err := client.NewChannel("testChannel-peer")
 	if err != nil {

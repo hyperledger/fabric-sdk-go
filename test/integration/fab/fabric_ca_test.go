@@ -98,7 +98,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		adminUser2 := identity.NewUser("admin", mspID)
 		adminUser2.SetPrivateKey(key)
 		adminUser2.SetEnrollmentCertificate(cert)
-		err = client.SaveUserToStateStore(adminUser2, false)
+		err = client.SaveUserToStateStore(adminUser2)
 		if err != nil {
 			t.Fatalf("client.SaveUserToStateStore return error: %v", err)
 		}
@@ -216,7 +216,7 @@ func TestEnrollAndTransact(t *testing.T) {
 	myUser.SetPrivateKey(key)
 
 	testClient := client.NewClient(testFabricConfig)
-	testClient.SetUserContext(myUser)
+	testClient.SetIdentityContext(myUser)
 	testClient.SetSigningManager(signingManager)
 
 	_, err = testClient.QueryChannels(testPeer)

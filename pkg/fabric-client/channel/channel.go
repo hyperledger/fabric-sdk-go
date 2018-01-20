@@ -7,11 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -25,27 +22,18 @@ type Channel struct {
 	name          string // aka channel ID
 	peers         map[string]fab.Peer
 	orderers      map[string]fab.Orderer
-	clientContext ClientContext
+	clientContext fab.Context
 	primaryPeer   fab.Peer
 	mspManager    msp.MSPManager
 	anchorPeers   []*fab.OrgAnchorPeer
 	initialized   bool
 }
 
-// ClientContext ...
-type ClientContext interface {
-	UserContext() fab.User
-	SigningManager() fab.SigningManager
-	NewTxnID() (apitxn.TransactionID, error)
-	Config() config.Config
-	CryptoSuite() apicryptosuite.CryptoSuite
-}
-
 // NewChannel represents a channel in a Fabric network.
 // name: used to identify different channel instances. The naming of channel instances
 // is enforced by the ordering service and must be unique within the blockchain network.
 // client: Provides operational context such as submitting User etc.
-func NewChannel(name string, client fab.FabricClient) (*Channel, error) {
+func NewChannel(name string, client fab.Context) (*Channel, error) {
 	if name == "" {
 		return nil, errors.Errorf("name is required")
 	}
@@ -56,15 +44,9 @@ func NewChannel(name string, client fab.FabricClient) (*Channel, error) {
 	o := make(map[string]fab.Orderer)
 	c := Channel{name: name, peers: p,
 		orderers: o, clientContext: client, mspManager: msp.NewMSPManager()}
-	logger.Infof("Constructed channel instance for channel %s", c.name)
-	logger.Debugf("Constructed channel instance: %V", c)
+	logger.Debugf("Constructed channel instance for channel %s: %v", c.name, c)
 
 	return &c, nil
-}
-
-// ClientContext returns the Client that was passed in to NewChannel
-func (c *Channel) ClientContext() ClientContext {
-	return c.clientContext
 }
 
 // Name returns the channel name.

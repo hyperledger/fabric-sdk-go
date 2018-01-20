@@ -26,37 +26,12 @@ import (
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
 )
 
-/*
-func TestNewSystemClient(t *testing.T) {
-	p := newMockProviders(t)
-
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	mockSDK := mock_context.NewMockSDK(mockCtrl)
-
-	mockSDK.EXPECT().FabricProvider().Return(p.FabricProvider)
-
-	factory := NewSessionClientFactory()
-	session := newMockSession()
-
-	client, err := factory.NewSystemClient(mockSDK, session, p.ConfigProvider)
-	if err != nil {
-		t.Fatalf("Unexpected error creating system client %v", err)
-	}
-
-	_, ok := client.(*clientImpl.Client)
-	if !ok {
-		t.Fatalf("Unexpected client created")
-	}
-}
-*/
-
 func TestNewChannelMgmtClient(t *testing.T) {
 	p := newMockProviders(t)
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
 	mockSDK.EXPECT().FabricProvider().Return(p.FabricProvider)
 
@@ -79,7 +54,7 @@ func TestNewResourceMgmtClient(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
 	mockSDK.EXPECT().FabricProvider().Return(p.FabricProvider)
 	mockSDK.EXPECT().DiscoveryProvider().Return(p.DiscoveryProvider)
@@ -103,7 +78,7 @@ func TestNewChannelClient(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
 	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
 	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
@@ -131,7 +106,7 @@ func TestNewChannelClientBadChannel(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
 	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
 	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
@@ -152,7 +127,7 @@ func TestNewChannelClientBadOrg(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
 	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
 	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
@@ -170,7 +145,7 @@ func TestNewChannelClientBadOrg(t *testing.T) {
 	}
 }
 
-func getChannelMock(client apifabclient.FabricClient, channelID string) (apifabclient.Channel, error) {
+func getChannelMock(client apifabclient.Resource, channelID string) (apifabclient.Channel, error) {
 	return channel.NewChannel("channel", client)
 }
 
@@ -235,7 +210,7 @@ func newMockProviders(t *testing.T) *mockProviders {
 }
 
 type mockSession struct {
-	user apifabclient.User
+	user apifabclient.IdentityContext
 }
 
 func newMockSession() *mockSession {
@@ -250,6 +225,6 @@ func newMockSessionWithUser(username, mspID string) *mockSession {
 	return &session
 }
 
-func (s *mockSession) Identity() apifabclient.User {
+func (s *mockSession) Identity() apifabclient.IdentityContext {
 	return s.user
 }

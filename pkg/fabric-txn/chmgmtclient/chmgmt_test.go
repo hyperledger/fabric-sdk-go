@@ -66,7 +66,7 @@ func TestSaveChannelFailure(t *testing.T) {
 	// Set up client with error in create channel
 	errClient := fcmocks.NewMockInvalidClient()
 	user := fcmocks.NewMockUser("test")
-	errClient.SetUserContext(user)
+	errClient.SetIdentityContext(user)
 	network := getNetworkConfig(t)
 
 	cc, err := NewChannelMgmtClient(errClient, network)
@@ -134,8 +134,7 @@ func setupTestClient() *fcmocks.MockClient {
 	client := fcmocks.NewMockClient()
 	user := fcmocks.NewMockUser("test")
 	cryptoSuite := &fcmocks.MockCryptoSuite{}
-	client.SaveUserToStateStore(user, true)
-	client.SetUserContext(user)
+	client.SetIdentityContext(user)
 	client.SetCryptoSuite(cryptoSuite)
 	return client
 }

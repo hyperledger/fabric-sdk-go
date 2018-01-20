@@ -37,7 +37,7 @@ if [ "$ARCH" == "x86_64" ]; then
 fi
 
 echo "Testing with code level $FABRIC_SDKGO_CODELEVEL_TAG (Fabric ${FABRIC_SDKGO_CODELEVEL_VER}) ..."
-GO_TAGS="$GO_TAGS $FABRIC_SDKGO_CODELEVEL_TAG"
+GO_TAGS="$GO_TAGS $FABRIC_SDKGO_CODELEVEL_TAG deprecated"
 
 GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
 $GO_CMD test $RACEFLAG -cover -tags "testing $GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" $PKGS -p 1 -timeout=40m

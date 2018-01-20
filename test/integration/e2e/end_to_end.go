@@ -54,13 +54,14 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	}
 
 	// Org admin user is signing user for creating channel
-	orgAdminUser, err := sdk.NewPreEnrolledUser(orgName, orgAdmin)
+	session, err := sdk.NewClient(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName)).Session()
 	if err != nil {
-		t.Fatalf("NewPreEnrolledUser failed for %s, %s: %s", orgName, orgAdmin, err)
+		t.Fatalf("Failed to get session for %s, %s: %s", orgName, orgAdmin, err)
 	}
+	orgAdminUser := session.Identity()
 
 	// Create channel
-	req := chmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"), SigningUser: orgAdminUser}
+	req := chmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"), SigningIdentity: orgAdminUser}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
