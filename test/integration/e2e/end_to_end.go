@@ -48,7 +48,7 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 
 	// Channel management client is responsible for managing channels (create/update channel)
 	// Supply user that has privileges to create channel (in this case orderer admin)
-	chMgmtClient, err := sdk.NewClientChannelMgmt(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg"))
+	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ChannelMgmt()
 	if err != nil {
 		t.Fatalf("Failed to create channel management client: %s", err)
 	}
@@ -69,7 +69,7 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	time.Sleep(time.Second * 3)
 
 	// Org resource management client
-	orgResMgmt, err := sdk.NewClientResourceMgmt(fabsdk.WithUser(orgAdmin))
+	orgResMgmt, err := sdk.NewClient(fabsdk.WithUser(orgAdmin)).ResourceMgmt()
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
@@ -103,14 +103,8 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 
 	// ************ Test setup complete ************** //
 
-	// Client provides access to APIs for transacting with Fabric (Org1 is default org)
-	client, err := sdk.NewClient(fabsdk.WithUser("User1"))
-	if err != nil {
-		t.Fatalf("Failed to create client: %s", err)
-	}
-
-	// Channel client is used to query and execute transactions
-	chClient, err := client.Channel(channelID)
+	// Channel client is used to query and execute transactions (Org1 is default org)
+	chClient, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(channelID)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}

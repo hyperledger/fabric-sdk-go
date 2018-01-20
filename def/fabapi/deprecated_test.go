@@ -30,21 +30,14 @@ func TestNewSDK(t *testing.T) {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 
-	c1, err := sdk.NewClient(fabsdk.WithUser("User1"))
-	if err != nil {
-		t.Fatalf("Failed to create client: %s", err)
-	}
-
 	// Default channel client (uses organisation from client configuration)
-	_, err = c1.Channel("mychannel")
+	_, err = sdk.NewClient(fabsdk.WithUser("User1")).Channel("mychannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	c2, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg("Org2"))
-	if err != nil {
-		t.Fatalf("Failed to create client: %s", err)
-	}
+	// keep a common client context for the next two tests
+	c2 := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg("Org2"))
 
 	// Test configuration failure for channel client (mychannel does't have event source configured for Org2)
 	_, err = c2.Channel("mychannel")

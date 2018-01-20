@@ -111,13 +111,13 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	setup.Channel = channel
 
 	// Channel management client is responsible for managing channels (create/update)
-	chMgmtClient, err := sdk.NewClientChannelMgmt(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg"))
+	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ChannelMgmt()
 	if err != nil {
 		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
 
 	// Resource management client is responsible for managing resources (joining channels, install/instantiate/upgrade chaincodes)
-	resMgmtClient, err = sdk.NewClientResourceMgmt(fabsdk.WithUser("Admin"))
+	resMgmtClient, err = sdk.NewClient(fabsdk.WithUser("Admin")).ResourceMgmt()
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}

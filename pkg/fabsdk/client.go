@@ -18,10 +18,7 @@ import (
 
 // Client represents the fabric transaction clients
 type Client struct {
-	opts          *clientOptions
-	identity      apifabclient.User
-	providers     apisdk.SDK
-	clientFactory apisdk.SessionClientFactory
+	provider clientProvider
 }
 
 // ClientOption configures the clients created by the SDK.
@@ -31,6 +28,15 @@ type clientOptions struct {
 	orgID          string
 	configProvider apiconfig.Config
 	targetFilter   resmgmt.TargetFilter
+}
+
+type clientProvider func() (*clientContext, error)
+
+type clientContext struct {
+	opts          *clientOptions
+	identity      apifabclient.User
+	providers     apisdk.SDK
+	clientFactory apisdk.SessionClientFactory
 }
 
 // WithOrg uses the configuration and users from the named organization.
@@ -59,24 +65,32 @@ func withConfig(configProvider apiconfig.Config) ClientOption {
 }
 
 // NewClient allows creation of transactions using the supplied identity as the credential.
-func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ClientOption) (*Client, error) {
-	o, err := newClientOptions(sdk.ConfigProvider(), opts)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to retrieve configuration from SDK")
-	}
+func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ClientOption) *Client {
+	// delay execution of the following logic to avoid error return from this function.
+	// this is done to allow a cleaner API - i.e., client, err := sdk.NewClient(args).<Desired Interface>(extra args)
+	provider := func() (*clientContext, error) {
+		o, err := newClientOptions(sdk.ConfigProvider(), opts)
+		if err != nil {
+			return nil, errors.WithMessage(err, "unable to retrieve configuration from SDK")
+		}
 
-	identity, err := sdk.newIdentity(o.orgID, identityOpt)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to create client context")
-	}
+		identity, err := sdk.newIdentity(o.orgID, identityOpt)
+		if err != nil {
+			return nil, errors.WithMessage(err, "unable to create client context")
+		}
 
+		cc := clientContext{
+			opts:          o,
+			identity:      identity,
+			providers:     sdk,
+			clientFactory: sdk.opts.Session,
+		}
+		return &cc, nil
+	}
 	client := Client{
-		opts:          o,
-		identity:      identity,
-		providers:     sdk,
-		clientFactory: sdk.opts.Session,
+		provider: provider,
 	}
-	return &client, nil
+	return &client
 }
 
 func newClientOptions(config apiconfig.Config, options []ClientOption) (*clientOptions, error) {
@@ -107,8 +121,13 @@ func newClientOptions(config apiconfig.Config, options []ClientOption) (*clientO
 
 // ChannelMgmt returns a client API for managing channels
 func (c *Client) ChannelMgmt() (chmgmt.ChannelMgmtClient, error) {
-	session := newSession(c.identity)
-	client, err := c.clientFactory.NewChannelMgmtClient(c.providers, session, c.opts.configProvider)
+	p, err := c.provider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to get client provider context")
+	}
+
+	session := newSession(p.identity)
+	client, err := p.clientFactory.NewChannelMgmtClient(p.providers, session, p.opts.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create new channel management client")
 	}
@@ -118,8 +137,13 @@ func (c *Client) ChannelMgmt() (chmgmt.ChannelMgmtClient, error) {
 
 // ResourceMgmt returns a client API for managing system resources
 func (c *Client) ResourceMgmt() (resmgmt.ResourceMgmtClient, error) {
-	session := newSession(c.identity)
-	client, err := c.clientFactory.NewResourceMgmtClient(c.providers, session, c.opts.configProvider, c.opts.targetFilter)
+	p, err := c.provider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to get client provider context")
+	}
+
+	session := newSession(p.identity)
+	client, err := p.clientFactory.NewResourceMgmtClient(p.providers, session, p.opts.configProvider, p.opts.targetFilter)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to created new resource management client")
 	}
@@ -129,41 +153,16 @@ func (c *Client) ResourceMgmt() (resmgmt.ResourceMgmtClient, error) {
 
 // Channel returns a client API for transacting on a channel
 func (c *Client) Channel(id string) (apitxn.ChannelClient, error) {
-	session := newSession(c.identity)
-	client, err := c.clientFactory.NewChannelClient(c.providers, session, c.opts.configProvider, id)
+	p, err := c.provider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to get client provider context")
+	}
+
+	session := newSession(p.identity)
+	client, err := p.clientFactory.NewChannelClient(p.providers, session, p.opts.configProvider, id)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to created new resource management client")
 	}
 
 	return client, nil
-}
-
-// NewClientChannelMgmt returns a new client for managing channels
-func (sdk *FabricSDK) NewClientChannelMgmt(identity IdentityOption, opts ...ClientOption) (chmgmt.ChannelMgmtClient, error) {
-	c, err := sdk.NewClient(identity, opts...)
-	if err != nil {
-		return nil, errors.WithMessage(err, "error creating client from SDK")
-	}
-
-	return c.ChannelMgmt()
-}
-
-// NewClientResourceMgmt returns a new client for managing system resources
-func (sdk *FabricSDK) NewClientResourceMgmt(identity IdentityOption, opts ...ClientOption) (resmgmt.ResourceMgmtClient, error) {
-	c, err := sdk.NewClient(identity, opts...)
-	if err != nil {
-		return nil, errors.WithMessage(err, "error creating client from SDK")
-	}
-
-	return c.ResourceMgmt()
-}
-
-// NewClientChannel returns a new client for a channel
-func (sdk *FabricSDK) NewClientChannel(identity IdentityOption, channelID string, opts ...ClientOption) (apitxn.ChannelClient, error) {
-	c, err := sdk.NewClient(identity, opts...)
-	if err != nil {
-		return nil, errors.WithMessage(err, "error creating client from SDK")
-	}
-
-	return c.Channel(channelID)
 }

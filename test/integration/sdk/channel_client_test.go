@@ -49,7 +49,7 @@ func TestChannelClient(t *testing.T) {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
 
-	chClient, err := sdk.NewClientChannel(fabsdk.WithUser("User1"), testSetup.ChannelID)
+	chClient, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(testSetup.ChannelID)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}

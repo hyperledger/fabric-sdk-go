@@ -56,7 +56,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Channel management client is responsible for managing channels (create/update channel)
-	chMgmtClient, err := sdk.NewClientChannelMgmt(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg"))
+	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ChannelMgmt()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	time.Sleep(time.Second * 3)
 
 	// Org1 resource management client (Org1 is default org)
-	org1ResMgmt, err := sdk.NewClientResourceMgmt(fabsdk.WithUser("Admin"))
+	org1ResMgmt, err := sdk.NewClient(fabsdk.WithUser("Admin")).ResourceMgmt()
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
@@ -83,7 +83,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Org2 resource management client
-	org2ResMgmt, err := sdk.NewClientResourceMgmt(fabsdk.WithUser("Admin"), fabsdk.WithOrg(org2))
+	org2ResMgmt, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(org2)).ResourceMgmt()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,26 +125,14 @@ func TestOrgsEndToEnd(t *testing.T) {
 	// Load specific targets for move funds test
 	loadOrgPeers(t, sdk)
 
-	// Client provides access to txn APIs
-	clientOrg1User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org1))
-	if err != nil {
-		t.Fatalf("Failed to create new client for Org1 user: %s", err)
-	}
-
 	// Org1 user connects to 'orgchannel'
-	chClientOrg1User, err := clientOrg1User.Channel("orgchannel")
+	chClientOrg1User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org1)).Channel("orgchannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
 	}
 
-	// Client provides access to txn APIs
-	clientOrg2User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org2))
-	if err != nil {
-		t.Fatalf("Failed to create new client for Org1 user: %s", err)
-	}
-
 	// Org2 user connects to 'orgchannel'
-	chClientOrg2User, err := clientOrg2User.Channel("orgchannel")
+	chClientOrg2User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org2)).Channel("orgchannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
 	}
@@ -224,7 +212,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Create new client that will use dynamic selection
-	chClientOrg2User, err = sdk.NewClientChannel(fabsdk.WithUser("User1"), "orgchannel", fabsdk.WithOrg(org2))
+	chClientOrg2User, err = sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org2)).Channel("orgchannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
 	}
