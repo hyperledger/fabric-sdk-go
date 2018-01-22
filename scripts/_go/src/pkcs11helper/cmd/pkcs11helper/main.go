@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	pw "pkcs11helper/pkg/pkcs11wrapper"
+
 	"github.com/miekg/pkcs11"
 )
 
@@ -42,7 +43,7 @@ func main() {
 
 	if *pkcs11Library == "" {
 		// if no lib is specified, just try to find libsofthsm2.so
-		p11Lib, err = searchForLib(strings.Join(defaultPkcs11LibPaths,","))
+		p11Lib, err = searchForLib(strings.Join(defaultPkcs11LibPaths, ","))
 		exitWhenError(err)
 	} else {
 		p11Lib, err = searchForLib(*pkcs11Library)
