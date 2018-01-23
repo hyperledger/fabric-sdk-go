@@ -133,13 +133,20 @@ func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransacti
 // This query will be made to the primary peer.
 func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
 
-	payload, err := c.queryBySystemChaincodeByTarget("lscc", "getchaincodes", nil, c.PrimaryPeer())
+	targets := []txn.ProposalProcessor{c.PrimaryPeer()}
+	request := txn.ChaincodeInvokeRequest{
+		Targets:     targets,
+		ChaincodeID: "lscc",
+		Fcn:         "getchaincodes",
+	}
+
+	payload, err := c.QueryByChaincode(request)
 	if err != nil {
 		return nil, errors.WithMessage(err, "lscc.getchaincodes failed")
 	}
 
 	response := new(pb.ChaincodeQueryResponse)
-	err = proto.Unmarshal(payload, response)
+	err = proto.Unmarshal(payload[0], response)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal of ChaincodeQueryResponse failed")
 	}
@@ -211,7 +218,9 @@ func (c *Channel) queryBySystemChaincodeByTarget(chaincodeID string, fcn string,
 	return responses[0], nil
 }
 
-// QueryBySystemChaincode invokes a system chaincode
+// QueryBySystemChaincode invokes a chaincode that isn't part of a channel.
+//
+// TODO: This function's name is confusing - call the normal QueryByChaincode for system chaincode on a channel.
 func (c *Channel) QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error) {
 	request, err := c.chaincodeInvokeRequestAddDefaultPeers(request)
 	if err != nil {

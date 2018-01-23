@@ -76,8 +76,7 @@ func TestChannelQueries(t *testing.T) {
 
 	testQueryByChaincode(t, channel, client.Config(), testSetup)
 
-	// TODO: Synch with test in node SDK when it becomes available
-	// testInstantiatedChaincodes(t, channel)
+	testInstantiatedChaincodes(t, channel)
 
 }
 
