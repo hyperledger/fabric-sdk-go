@@ -50,7 +50,7 @@ func New(cp apiconfig.ConfigProvider, opts ...Option) (*FabricSDK, error) {
 	pkgSuite := defPkgSuite{}
 	config, err := cp()
 	if err != nil {
-		return nil, errors.New("unable to load configuration")
+		return nil, errors.WithMessage(err, "unable to load configuration")
 	}
 	return fromPkgSuite(config, &pkgSuite, opts...)
 }
