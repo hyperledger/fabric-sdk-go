@@ -8,7 +8,6 @@ package events
 
 import (
 	"encoding/hex"
-	"testing"
 	"time"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -110,10 +109,10 @@ func (mec *mockEventClient) Stop() error {
 	return nil
 }
 
-func createMockedEventHub(t *testing.T) (*EventHub, *mockEventClientFactory) {
+func createMockedEventHub() (*EventHub, *mockEventClientFactory, error) {
 	eventHub, err := NewEventHub(client.NewClient(mocks.NewMockConfig()))
 	if err != nil {
-		t.Fatalf("Error creating event hub: %v", err)
+		return nil, nil, errors.WithMessage(err, "Error creating event hub")
 	}
 
 	var clientFactory mockEventClientFactory
@@ -123,11 +122,10 @@ func createMockedEventHub(t *testing.T) (*EventHub, *mockEventClientFactory) {
 
 	err = eventHub.Connect()
 	if err != nil {
-		t.Fatalf("Failed to connect: %v", err)
-		return nil, nil
+		return nil, nil, errors.WithMessage(err, "Failed to connect")
 	}
 
-	return eventHub, &clientFactory
+	return eventHub, &clientFactory, nil
 }
 
 // MockTxEventBuilder builds a mock TX event block

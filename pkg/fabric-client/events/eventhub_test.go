@@ -30,8 +30,8 @@ func TestDeadlock(t *testing.T) {
 	channelID := "mychannel"
 	ccID := "testccid"
 
-	eventHub, clientFactory := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, clientFactory, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 
@@ -115,8 +115,8 @@ func TestChaincodeEvent(t *testing.T) {
 	ccID := "someccid"
 	eventName := "someevent"
 
-	eventHub, clientFactory := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, clientFactory, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 
@@ -166,8 +166,8 @@ func TestChaincodeBlockEvent(t *testing.T) {
 	eventName := "someevent"
 	txID := generateTxID()
 
-	eventHub, clientFactory := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, clientFactory, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 
@@ -223,8 +223,8 @@ func TestChaincodeBlockEventWithInvalidTx(t *testing.T) {
 	eventName := "someevent"
 	txID := generateTxID()
 
-	eventHub, clientFactory := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, clientFactory, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 
@@ -271,8 +271,8 @@ func TestInvalidTxStatusError(t *testing.T) {
 	channelID := "somechannelid"
 	txID := generateTxID()
 
-	eventHub, clientFactory := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, clientFactory, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 
@@ -379,8 +379,8 @@ func flood(invocationsPerThread int, threads int, f func()) {
 }
 
 func TestRegisterBlockEvent(t *testing.T) {
-	eventHub, _ := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, _, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 
@@ -435,8 +435,8 @@ func (w *callbackWrapper) testCallback(block *common.Block) {
 }
 
 func TestRegisterChaincodeEvent(t *testing.T) {
-	eventHub, _ := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, _, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 
@@ -483,8 +483,8 @@ func (w *callbackWrapper) testChaincodeCallback(ce *fab.ChaincodeEvent) {
 }
 
 func TestDisconnect(t *testing.T) {
-	eventHub, _ := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, _, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 	eventHub.Disconnect()
@@ -492,8 +492,8 @@ func TestDisconnect(t *testing.T) {
 }
 
 func TestDisconnectWhenDisconnected(t *testing.T) {
-	eventHub, _ := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, _, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 	eventHub.connected = false
@@ -508,27 +508,27 @@ func verifyDisconnectedEventHub(eventHub *EventHub, t *testing.T) {
 }
 
 func TestConnectWhenConnected(t *testing.T) {
-	eventHub, _ := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, _, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 
 	eventHub.connected = true
-	err := eventHub.Connect()
+	err = eventHub.Connect()
 	if err != nil {
 		t.Fatalf("EventHub failed to connect after Connect call %s", err)
 	}
 }
 
 func TestConnectWhenPeerAddrEmpty(t *testing.T) {
-	eventHub, _ := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, _, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 
 	eventHub.connected = false // need to reset connected in order to reach peerAddr check
 	eventHub.peerAddr = ""
-	err := eventHub.Connect()
+	err = eventHub.Connect()
 
 	if err == nil {
 		t.Fatal("peerAddr empty, failed to get expected connect error")
@@ -537,14 +537,14 @@ func TestConnectWhenPeerAddrEmpty(t *testing.T) {
 }
 
 func TestConnectWithInterestsTrueAndGetInterests(t *testing.T) {
-	eventHub, _ := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, _, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 
 	eventHub.connected = false
 	eventHub.SetInterests(true)
-	err := eventHub.Connect()
+	err = eventHub.Connect()
 
 	if err != nil {
 		t.Fatalf("InterestedEvents must not be empty. Error received: %s", err)
@@ -557,14 +557,14 @@ func TestConnectWithInterestsTrueAndGetInterests(t *testing.T) {
 }
 
 func TestConnectWithInterestsFalseAndGetInterests(t *testing.T) {
-	eventHub, _ := createMockedEventHub(t)
-	if t.Failed() {
+	eventHub, _, err := createMockedEventHub()
+	if err != nil {
 		return
 	}
 
 	eventHub.connected = false
 	eventHub.SetInterests(false)
-	err := eventHub.Connect()
+	err = eventHub.Connect()
 
 	if err == nil {
 		t.Fatalf("InterestedEvents must not be empty. Error received: %s", err)
