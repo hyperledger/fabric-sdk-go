@@ -45,7 +45,7 @@ type options struct {
 type Option func(opts *options) error
 
 // New initializes the SDK based on the set of options provided.
-// configProvider provides the application configuration and is required.
+// configProvider provides the application configuration.
 func New(cp apiconfig.ConfigProvider, opts ...Option) (*FabricSDK, error) {
 	pkgSuite := defPkgSuite{}
 	config, err := cp()
@@ -55,11 +55,13 @@ func New(cp apiconfig.ConfigProvider, opts ...Option) (*FabricSDK, error) {
 	return fromPkgSuite(config, &pkgSuite, opts...)
 }
 
-// fromConfig initializes the SDK based on the set of options provided.
-// configProvider provides the application configuration and is required.
-func fromConfig(config apiconfig.Config, opts ...Option) (*FabricSDK, error) {
-	pkgSuite := defPkgSuite{}
-	return fromPkgSuite(config, &pkgSuite, opts...)
+// WithConfig converts a Config interface to a ConfigProvider.
+// This is a helper function for those who already loaded the config
+// prior to instantiating the SDK.
+func WithConfig(config apiconfig.Config) apiconfig.ConfigProvider {
+	return func() (apiconfig.Config, error) {
+		return config, nil
+	}
 }
 
 // fromPkgSuite creates an SDK based on the implementations in the provided pkg suite.

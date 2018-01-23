@@ -58,8 +58,12 @@ func TestNewDefaultSDK(t *testing.T) {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 
+	verifySDK(t, sdk)
+}
+
+func verifySDK(t *testing.T, sdk *FabricSDK) {
 	// Default channel client (uses organisation from client configuration)
-	_, err = sdk.NewClient(WithUser(sdkValidClientUser)).Channel("mychannel")
+	_, err := sdk.NewClient(WithUser(sdkValidClientUser)).Channel("mychannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -78,7 +82,21 @@ func TestNewDefaultSDK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
+}
 
+func TestWithConfigOpt(t *testing.T) {
+	// Test New SDK with valid config file
+	c, err := configImpl.FromFile(sdkConfigFile)()
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	sdk, err := New(WithConfig(c))
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	verifySDK(t, sdk)
 }
 
 func TestWithCorePkg(t *testing.T) {
@@ -88,7 +106,7 @@ func TestWithCorePkg(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	_, err = fromConfig(c)
+	_, err = New(WithConfig(c))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -102,7 +120,7 @@ func TestWithCorePkg(t *testing.T) {
 	factory.EXPECT().NewSigningManager(nil, c).Return(nil, nil)
 	factory.EXPECT().NewFabricProvider(c, nil, nil, nil).Return(nil, nil)
 
-	_, err = fromConfig(c, WithCorePkg(factory))
+	_, err = New(WithConfig(c), WithCorePkg(factory))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -115,7 +133,7 @@ func TestWithServicePkg(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	_, err = fromConfig(c)
+	_, err = New(WithConfig(c))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -127,7 +145,7 @@ func TestWithServicePkg(t *testing.T) {
 	factory.EXPECT().NewDiscoveryProvider(c).Return(nil, nil)
 	factory.EXPECT().NewSelectionProvider(c).Return(nil, nil)
 
-	_, err = fromConfig(c, WithServicePkg(factory))
+	_, err = New(WithConfig(c), WithServicePkg(factory))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -145,7 +163,7 @@ func TestWithContextPkg(t *testing.T) {
 		t.Fatalf("Error initializing core factory: %s", err)
 	}
 
-	_, err = fromConfig(c)
+	sdk, err := New(WithConfig(c))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -169,7 +187,7 @@ func TestWithContextPkg(t *testing.T) {
 
 	factory.EXPECT().NewCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite).Return(cm, nil)
 
-	sdk, err := fromConfig(c, WithCorePkg(core), WithContextPkg(factory))
+	sdk, err = New(WithConfig(c), WithCorePkg(core), WithContextPkg(factory))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -193,7 +211,7 @@ func TestWithSessionPkg(t *testing.T) {
 		t.Fatalf("Error initializing core factory: %s", err)
 	}
 
-	_, err = fromConfig(c)
+	_, err = New(WithConfig(c))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -203,7 +221,7 @@ func TestWithSessionPkg(t *testing.T) {
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockSessionClientFactory(mockCtrl)
 
-	sdk, err := fromConfig(c, WithCorePkg(core), WithSessionPkg(factory))
+	sdk, err := New(WithConfig(c), WithCorePkg(core), WithSessionPkg(factory))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}

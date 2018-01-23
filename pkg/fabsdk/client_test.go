@@ -40,7 +40,7 @@ func TestFromConfigGoodClientOpt(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := fromConfig(c)
+	sdk, err := New(WithConfig(c))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
