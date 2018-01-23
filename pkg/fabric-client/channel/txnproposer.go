@@ -41,7 +41,7 @@ func SendTransactionProposalWithChannelID(channelID string, request apitxn.Chain
 		return nil, apitxn.TransactionID{}, errors.WithMessage(err, "validateChaincodeInvokeRequest failed")
 	}
 
-	txid, err := internal.NewTxnID(clientContext.IdentityContext())
+	txid, err := internal.NewTxnID(clientContext)
 	if err != nil {
 		return nil, apitxn.TransactionID{}, errors.WithMessage(err, "NewTxnID failed")
 	}
@@ -101,10 +101,7 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
 	// create a proposal from a ChaincodeInvocationSpec
-	if clientContext.IdentityContext() == nil {
-		return nil, errors.New("User context is nil")
-	}
-	creator, err := clientContext.IdentityContext().Identity()
+	creator, err := clientContext.Identity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to get user context identity")
 	}
@@ -120,17 +117,12 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 		return nil, errors.Wrap(err, "marshal proposal failed")
 	}
 
-	user := clientContext.IdentityContext()
-	if user == nil {
-		return nil, errors.WithMessage(err, "failed to get user context")
-	}
-
 	signingMgr := clientContext.SigningManager()
 	if signingMgr == nil {
 		return nil, errors.New("signing manager is nil")
 	}
 
-	signature, err := signingMgr.Sign(proposalBytes, user.PrivateKey())
+	signature, err := signingMgr.Sign(proposalBytes, clientContext.PrivateKey())
 	if err != nil {
 		return nil, err
 	}
@@ -167,11 +159,6 @@ func (c *Channel) ProposalBytes(tp *apitxn.TransactionProposal) ([]byte, error) 
 }
 
 func (c *Channel) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error) {
-	user := c.clientContext.IdentityContext()
-	if user == nil {
-		return nil, errors.New("user context is nil")
-	}
-
 	proposalBytes, err := proto.Marshal(proposal)
 	if err != nil {
 		return nil, errors.Wrap(err, "mashal proposal failed")
@@ -182,7 +169,7 @@ func (c *Channel) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error
 		return nil, errors.New("signing manager is nil")
 	}
 
-	signature, err := signingMgr.Sign(proposalBytes, user.PrivateKey())
+	signature, err := signingMgr.Sign(proposalBytes, c.clientContext.PrivateKey())
 	if err != nil {
 		return nil, errors.WithMessage(err, "signing proposal failed")
 	}
@@ -217,16 +204,12 @@ func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
 		return errors.New("missing block input parameter with the required genesis block")
 	}
 
-	if c.clientContext.IdentityContext() == nil {
-		return errors.New("user context is nil")
-	}
-
-	txnID, err := internal.NewTxnID(c.clientContext.IdentityContext())
+	txnID, err := internal.NewTxnID(c.clientContext)
 	if err != nil {
 		return errors.WithMessage(err, "failed to calculate transaction id")
 	}
 
-	creator, err := c.clientContext.IdentityContext().Identity()
+	creator, err := c.clientContext.Identity()
 	if err != nil {
 		return errors.WithMessage(err, "getting creator identity failed")
 	}

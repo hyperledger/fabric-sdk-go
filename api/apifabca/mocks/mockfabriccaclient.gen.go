@@ -9,6 +9,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	apicryptosuite "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	apifabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 )
 
 // MockFabricCAClient is a mock of FabricCAClient interface
@@ -88,10 +89,11 @@ func (_mr *MockFabricCAClientMockRecorder) Register(arg0, arg1 interface{}) *gom
 }
 
 // Revoke mocks base method
-func (_m *MockFabricCAClient) Revoke(_param0 apifabca.User, _param1 *apifabca.RevocationRequest) error {
+func (_m *MockFabricCAClient) Revoke(_param0 apifabca.User, _param1 *apifabca.RevocationRequest) (*api.RevocationResponse, error) {
 	ret := _m.ctrl.Call(_m, "Revoke", _param0, _param1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*api.RevocationResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Revoke indicates an expected call of Revoke

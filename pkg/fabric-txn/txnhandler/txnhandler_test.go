@@ -148,17 +148,14 @@ func prepareRequestContext(request apitxn.Request, opts apitxn.Opts, t *testing.
 }
 
 func setupTestChannel() (*channel.Channel, error) {
-	client := setupTestClient()
-	return channel.NewChannel("testChannel", client)
+	ctx := setupTestContext()
+	return channel.New(ctx, "testChannel")
 }
 
-func setupTestClient() *fcmocks.MockClient {
-	client := fcmocks.NewMockClient()
+func setupTestContext() apifabclient.Context {
 	user := fcmocks.NewMockUser("test")
-	cryptoSuite := &fcmocks.MockCryptoSuite{}
-	client.SetIdentityContext(user)
-	client.SetCryptoSuite(cryptoSuite)
-	return client
+	ctx := fcmocks.NewMockContext(user)
+	return ctx
 }
 
 func setupChannelClientContext(discErr error, selectionErr error, peers []apifabclient.Peer, t *testing.T) *txnhandlerApi.ClientContext {

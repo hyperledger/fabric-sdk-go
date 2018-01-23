@@ -13,10 +13,9 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 )
 
-// Session primarily represents the session and identity context
-// TODO: does this need to be exposed?
-type Session interface {
-	Identity() apifabclient.IdentityContext
+// SessionContext primarily represents the session and identity context
+type SessionContext interface {
+	apifabclient.IdentityContext
 }
 
 // Client represents the Client APIs supported by the SDK

@@ -26,17 +26,32 @@ const (
 
 // ChannelClient enables access to a Fabric network.
 type ChannelClient struct {
-	client    fab.Resource
-	channel   fab.Channel
+	context   fab.ProviderContext
 	discovery fab.DiscoveryService
 	selection fab.SelectionService
+	channel   fab.Channel
 	eventHub  fab.EventHub
 }
 
-// NewChannelClient returns a ChannelClient instance.
-func NewChannelClient(client fab.Resource, channel fab.Channel, discovery fab.DiscoveryService, selection fab.SelectionService, eventHub fab.EventHub) (*ChannelClient, error) {
+// Context holds the providers and services needed to create a ChannelClient.
+type Context struct {
+	fab.ProviderContext
+	DiscoveryService fab.DiscoveryService
+	SelectionService fab.SelectionService
+	Channel          fab.Channel
+	EventHub         fab.EventHub
+}
 
-	channelClient := ChannelClient{client: client, channel: channel, discovery: discovery, selection: selection, eventHub: eventHub}
+// New returns a ChannelClient instance.
+func New(c Context) (*ChannelClient, error) {
+
+	channelClient := ChannelClient{
+		context:   c,
+		discovery: c.DiscoveryService,
+		selection: c.SelectionService,
+		channel:   c.Channel,
+		eventHub:  c.EventHub,
+	}
 
 	return &channelClient, nil
 }
@@ -140,7 +155,7 @@ func (cc *ChannelClient) addDefaultTimeout(timeOutType apiconfig.TimeoutType, op
 	}
 
 	if txnOpts.Timeout == 0 {
-		return append(options, apitxn.WithTimeout(cc.client.Config().TimeoutOrDefault(timeOutType)))
+		return append(options, apitxn.WithTimeout(cc.context.Config().TimeoutOrDefault(timeOutType)))
 	}
 	return options
 }

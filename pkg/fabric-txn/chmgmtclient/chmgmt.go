@@ -23,13 +23,25 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // ChannelMgmtClient enables managing channels in Fabric network.
 type ChannelMgmtClient struct {
-	client fab.Resource
-	config config.Config
+	provider fab.ProviderContext
+	identity fab.IdentityContext
+	resource fab.Resource
 }
 
-// NewChannelMgmtClient returns a channel management client instance
-func NewChannelMgmtClient(client fab.Resource, config config.Config) (*ChannelMgmtClient, error) {
-	cc := &ChannelMgmtClient{client: client, config: config}
+// Context holds the providers and services needed to create a ChannelMgmtClient.
+type Context struct {
+	fab.ProviderContext
+	fab.IdentityContext
+	Resource fab.Resource
+}
+
+// New returns a channel management client instance
+func New(c Context) (*ChannelMgmtClient, error) {
+	cc := &ChannelMgmtClient{
+		provider: c.ProviderContext,
+		identity: c.IdentityContext,
+		resource: c.Resource,
+	}
 	return cc, nil
 }
 
@@ -49,7 +61,7 @@ func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, 
 
 	// Signing user has to belong to one of configured channel organisations
 	// In case that order org is one of channel orgs we can use context user
-	signer := cc.client.IdentityContext()
+	signer := cc.identity
 	if req.SigningIdentity != nil {
 		// Retrieve custom signing identity here
 		signer = req.SigningIdentity
@@ -64,12 +76,12 @@ func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, 
 		return errors.WithMessage(err, "reading channel config file failed")
 	}
 
-	chConfig, err := cc.client.ExtractChannelConfig(configTx)
+	chConfig, err := cc.resource.ExtractChannelConfig(configTx)
 	if err != nil {
 		return errors.WithMessage(err, "extracting channel config failed")
 	}
 
-	configSignature, err := cc.client.SignChannelConfig(chConfig, signer)
+	configSignature, err := cc.resource.SignChannelConfig(chConfig, signer)
 	if err != nil {
 		return errors.WithMessage(err, "signing configuration failed")
 	}
@@ -80,10 +92,10 @@ func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, 
 	// Figure out orderer configuration
 	var ordererCfg *config.OrdererConfig
 	if opts.OrdererID != "" {
-		ordererCfg, err = cc.config.OrdererConfig(opts.OrdererID)
+		ordererCfg, err = cc.provider.Config().OrdererConfig(opts.OrdererID)
 	} else {
 		// Default is random orderer from configuration
-		ordererCfg, err = cc.config.RandomOrdererConfig()
+		ordererCfg, err = cc.provider.Config().RandomOrdererConfig()
 	}
 
 	// Check if retrieving orderer configuration went ok
@@ -91,7 +103,7 @@ func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, 
 		return errors.Errorf("failed to retrieve orderer config: %s", err)
 	}
 
-	orderer, err := orderer.New(cc.config, orderer.FromOrdererConfig(ordererCfg))
+	orderer, err := orderer.New(cc.provider.Config(), orderer.FromOrdererConfig(ordererCfg))
 	if err != nil {
 		return errors.WithMessage(err, "failed to create new orderer from config")
 	}
@@ -103,7 +115,7 @@ func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, 
 		Signatures: configSignatures,
 	}
 
-	_, err = cc.client.CreateChannel(request)
+	_, err = cc.resource.CreateChannel(request)
 	if err != nil {
 		return errors.WithMessage(err, "create channel failed")
 	}

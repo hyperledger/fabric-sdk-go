@@ -257,7 +257,7 @@ func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName s
 	if err != nil {
 		t.Fatal(errors.Wrapf(err, "Session failed, %s, %s", orgName, userName))
 	}
-	return session.Identity()
+	return session
 }
 
 func loadOrgPeers(t *testing.T, sdk *fabsdk.FabricSDK) {

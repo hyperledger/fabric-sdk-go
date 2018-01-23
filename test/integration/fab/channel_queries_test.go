@@ -74,7 +74,7 @@ func TestChannelQueries(t *testing.T) {
 
 	testInstalledChaincodes(t, channel, client, testSetup)
 
-	testQueryByChaincode(t, channel, client.Config(), testSetup)
+	testQueryByChaincode(t, channel, testSetup)
 
 	testInstantiatedChaincodes(t, channel)
 
@@ -227,7 +227,9 @@ func testInstantiatedChaincodes(t *testing.T, channel fab.Channel) {
 
 }
 
-func testQueryByChaincode(t *testing.T, channel fab.Channel, config apiconfig.Config, testSetup *integration.BaseSetupImpl) {
+func testQueryByChaincode(t *testing.T, channel fab.Channel, testSetup *integration.BaseSetupImpl) {
+
+	config := testSetup.SDK.Config()
 
 	// Test valid targets
 	targets := peer.PeersToTxnProcessors(channel.Peers())

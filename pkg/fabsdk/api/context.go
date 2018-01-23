@@ -13,13 +13,13 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 )
 
-// Providers represents the configured providers context
+// Providers represents the SDK configured providers context.
 type Providers interface {
 	CoreProviders
 	SvcProviders
 }
 
-// CoreProviders represents the configured core providers context
+// CoreProviders represents the SDK configured core providers context.
 type CoreProviders interface {
 	CryptoSuite() apicryptosuite.CryptoSuite
 	StateStore() fab.KeyValueStore
@@ -28,8 +28,9 @@ type CoreProviders interface {
 	FabricProvider() apicore.FabricProvider
 }
 
-// SvcProviders represents the configured service providers context
+// SvcProviders represents the SDK configured service providers context.
 type SvcProviders interface {
 	DiscoveryProvider() fab.DiscoveryProvider
 	SelectionProvider() fab.SelectionProvider
+	ChannelProvider() fab.ChannelProvider
 }

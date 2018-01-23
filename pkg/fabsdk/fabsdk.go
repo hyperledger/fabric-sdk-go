@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -31,6 +32,7 @@ type FabricSDK struct {
 	selectionProvider apifabclient.SelectionProvider
 	signingManager    apifabclient.SigningManager
 	fabricProvider    apicore.FabricProvider
+	channelProvider   *chpvdr.ChannelProvider
 }
 
 type options struct {
@@ -197,7 +199,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.signingManager = signingMgr
 
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.opts.Core.NewFabricProvider(sdk.config, sdk.stateStore, sdk.cryptoSuite, sdk.signingManager)
+	fabricProvider, err := sdk.opts.Core.NewFabricProvider(sdk.fabContext())
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
@@ -223,6 +225,12 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	}
 	sdk.selectionProvider = selectionProvider
 
+	channelProvider, err := chpvdr.New(fabricProvider)
+	if err != nil {
+		return errors.WithMessage(err, "failed to initialize channel provider")
+	}
+	sdk.channelProvider = channelProvider
+
 	return nil
 }
 
@@ -231,9 +239,16 @@ func (sdk *FabricSDK) Config() apiconfig.Config {
 	return sdk.config
 }
 
+func (sdk *FabricSDK) fabContext() *fabContext {
+	c := fabContext{
+		sdk: sdk,
+	}
+	return &c
+}
+
 func (sdk *FabricSDK) context() *sdkContext {
 	c := sdkContext{
-		sdk: sdk,
+		fabContext: fabContext{sdk},
 	}
 	return &c
 }

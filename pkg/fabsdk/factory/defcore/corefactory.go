@@ -65,8 +65,8 @@ func (f *ProviderFactory) NewSigningManager(cryptoProvider apicryptosuite.Crypto
 }
 
 // NewFabricProvider returns a new default implementation of fabric primitives
-func (f *ProviderFactory) NewFabricProvider(config apiconfig.Config, stateStore fab.KeyValueStore, cryptoSuite apicryptosuite.CryptoSuite, signer fab.SigningManager) (apicore.FabricProvider, error) {
-	return fabpvdr.NewFabricProvider(config, stateStore, cryptoSuite, signer), nil
+func (f *ProviderFactory) NewFabricProvider(context fab.ProviderContext) (apicore.FabricProvider, error) {
+	return fabpvdr.New(context), nil
 }
 
 // NewLoggerProvider returns a new default implementation of a logger backend

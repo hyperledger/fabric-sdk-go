@@ -35,6 +35,11 @@ type Client struct {
 	signingManager  fab.SigningManager
 }
 
+type fabContext struct {
+	fab.ProviderContext
+	fab.IdentityContext
+}
+
 // NewClient returns a Client instance.
 //
 // Deprecated: see fabsdk package.
@@ -51,8 +56,9 @@ func (c *Client) NewChannel(name string) (fab.Channel, error) {
 	if _, ok := c.channels[name]; ok {
 		return nil, errors.Errorf("channel %s already exists", name)
 	}
-	var err error
-	channel, err := channel.NewChannel(name, c)
+
+	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	channel, err := channel.New(ctx, name)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +215,8 @@ func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
  * @returns {byte[]} The bytes of the ConfigUpdate protobuf
  */
 func (c *Client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
-	rc := resource.New(c)
+	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	rc := resource.New(ctx)
 	return rc.ExtractChannelConfig(configEnvelope)
 }
 
@@ -220,7 +227,8 @@ func (c *Client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
  * @return {ConfigSignature} - The signature of the current user on the config bytes
  */
 func (c *Client) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
-	rc := resource.New(c)
+	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	rc := resource.New(ctx)
 	return rc.SignChannelConfig(config, signer)
 }
 
@@ -246,26 +254,30 @@ func (c *Client) SignChannelConfig(config []byte, signer fab.IdentityContext) (*
  * @returns {Result} Result Object with status on the create process.
  */
 func (c *Client) CreateChannel(request fab.CreateChannelRequest) (apitxn.TransactionID, error) {
-	rc := resource.New(c)
+	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	rc := resource.New(ctx)
 	return rc.CreateChannel(request)
 }
 
 // QueryChannels queries the names of all the channels that a peer has joined.
 func (c *Client) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) {
-	rc := resource.New(c)
+	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	rc := resource.New(ctx)
 	return rc.QueryChannels(peer)
 }
 
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
 // Returns the details of all chaincodes installed on a peer.
 func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResponse, error) {
-	rc := resource.New(c)
+	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	rc := resource.New(ctx)
 	return rc.QueryInstalledChaincodes(peer)
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
 func (c *Client) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.TransactionProposalResponse, string, error) {
-	rc := resource.New(c)
+	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	rc := resource.New(ctx)
 	return rc.InstallChaincode(req)
 }
 

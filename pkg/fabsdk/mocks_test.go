@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
@@ -45,7 +46,9 @@ func newMockCorePkg(config apiconfig.Config) (*mockCorePkg, error) {
 	if err != nil {
 		return nil, err
 	}
-	fp, err := core.NewFabricProvider(config, stateStore, cs, sm)
+
+	ctx := mocks.NewMockProviderContextCustom(config, cs, sm)
+	fp, err := core.NewFabricProvider(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +75,7 @@ func (mc *mockCorePkg) NewSigningManager(cryptoProvider apicryptosuite.CryptoSui
 	return mc.signingManager, nil
 }
 
-func (mc *mockCorePkg) NewFabricProvider(config apiconfig.Config, stateStore apifabclient.KeyValueStore, cryptoSuite apicryptosuite.CryptoSuite, signer apifabclient.SigningManager) (apicore.FabricProvider, error) {
+func (mc *mockCorePkg) NewFabricProvider(ctx apifabclient.ProviderContext) (apicore.FabricProvider, error) {
 	return mc.fabricProvider, nil
 }
 

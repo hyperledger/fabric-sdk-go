@@ -7,20 +7,17 @@ SPDX-License-Identifier: Apache-2.0
 package fabpvdr
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
-	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource"
 )
 
 func TestNewFabricProvider(t *testing.T) {
@@ -38,7 +35,7 @@ func TestNewChannelClient(t *testing.T) {
 
 	_, ok := client.(*channelImpl.Channel)
 	if !ok {
-		t.Fatalf("Unexpected client impl created")
+		t.Fatalf("Unexpected client impl created: %v", client)
 	}
 }
 
@@ -51,20 +48,9 @@ func TestNewResourceClient(t *testing.T) {
 		t.Fatalf("Unexpected error creating client %v", err)
 	}
 
-	_, ok := client.(*clientImpl.Client)
+	_, ok := client.(*resource.Resource)
 	if !ok {
 		t.Fatalf("Unexpected client impl created")
-	}
-
-	// Brittle tests follow (may need to be removed when we minimize client interface)
-	if !reflect.DeepEqual(client.CryptoSuite(), p.cryptoSuite) {
-		t.Fatalf("Unexpected cryptosuite")
-	}
-	if !reflect.DeepEqual(client.SigningManager(), p.signer) {
-		t.Fatalf("Unexpected signing manager")
-	}
-	if !reflect.DeepEqual(client.Config(), p.config) {
-		t.Fatalf("Unexpected config")
 	}
 }
 
@@ -83,7 +69,7 @@ func TestNewCAClient(t *testing.T) {
 		t.Fatalf("Unexpected client impl created")
 	}
 
-	conf, err := p.config.CAConfig(org)
+	conf, err := p.providerContext.Config().CAConfig(org)
 	if err != nil {
 		t.Fatalf("Unexpected error getting CA config %v", err)
 	}
@@ -148,7 +134,7 @@ func TestNewUser(t *testing.T) {
 	org := "org1"
 
 	p := newMockFabricProvider(t)
-	cm, err := mocks.NewMockCredentialManager(org, p.config, p.cryptoSuite)
+	cm, err := mocks.NewMockCredentialManager(org, p.providerContext.Config(), p.providerContext.CryptoSuite())
 	if err != nil {
 		t.Fatalf("Unexpected error creating credential manager %v", err)
 	}
@@ -170,16 +156,20 @@ func TestNewUser(t *testing.T) {
 }
 
 func newMockFabricProvider(t *testing.T) *FabricProvider {
-	config := mocks.NewMockConfig()
-	kv, err := keyvaluestore.CreateNewFileKeyValueStore("/tmp/fabsdktest")
-	if err != nil {
-		t.Fatalf("Unexpected error getting keyvalue store %v", err)
-	}
-	cryptosuite, err := sw.GetSuiteWithDefaultEphemeral()
-	if err != nil {
-		t.Fatalf("Unexpected error getting cryptosuite %v", err)
-	}
-	signer := mocks.NewMockSigningManager()
-
-	return NewFabricProvider(config, kv, cryptosuite, signer)
+	ctx := mocks.NewMockProviderContext()
+	return New(ctx)
 }
+
+/*
+config := mocks.NewMockConfig()
+cryptosuite, err := sw.GetSuiteWithDefaultEphemeral()
+if err != nil {
+	t.Fatalf("Unexpected error getting cryptosuite %v", err)
+}
+signer := mocks.NewMockSigningManager()
+
+ctx := mocks.MockProviderContext{
+	Config: mocks.NewMockConfig(),
+
+}
+*/

@@ -7,8 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package apifabclient
 
 import (
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig" // TODO: Think about package hierarchy
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -16,60 +14,14 @@ import (
 
 // Resource is a client that provides access to fabric resources such as chaincode.
 type Resource interface {
-	Context
-	client
-
-	// TODO refactor into channel provider and remove from Resource (upcoming CR)
-	NewChannel(name string) (Channel, error)
-	Channel(name string) Channel
-}
-
-type client interface {
 	CreateChannel(request CreateChannelRequest) (txn.TransactionID, error)
 	InstallChaincode(request InstallChaincodeRequest) ([]*txn.TransactionProposalResponse, string, error)
 	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
 	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
 
+	// TODO - the following methods are utilities
 	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
 	SignChannelConfig(config []byte, signer IdentityContext) (*common.ConfigSignature, error)
-}
-
-// Context supplies the configuration and signing identity to client objects.
-type Context interface {
-	SigningManager() SigningManager
-	Config() config.Config
-	CryptoSuite() apicryptosuite.CryptoSuite
-	IdentityContext() IdentityContext
-}
-
-// FabricClient provides access to infrastructure functionality.
-//
-// Deprecated: this interface has been renamed.
-/*
- * Main interaction handler with end user. A client instance provides a handler to interact
- * with a network of peers, orderers and optionally member services. An application using the
- * SDK may need to interact with multiple networks, each through a separate instance of the Client.
- *
- * Each client when initially created should be initialized with configuration data from the
- * consensus service, which includes a list of trusted roots, orderer certificates and IP addresses,
- * and a list of peer certificates and IP addresses that it can access. This must be done out of band
- * as part of bootstrapping the application environment. It is also the responsibility of the application
- * to maintain the configuration of a client as the SDK does not persist this object.
- *
- * Each Client instance can maintain several {@link Channel} instances representing channels and the associated
- * private ledgers.
- *
- *
- */
-type FabricClient interface {
-	Resource
-
-	QueryChannelInfo(name string, peers []Peer) (Channel, error)
-
-	SetIdentityContext(identity IdentityContext)
-	SaveUserToStateStore(user User) error
-	LoadUserFromStateStore(name string) (User, error)
-	StateStore() KeyValueStore
 }
 
 // CreateChannelRequest requests channel creation on the network
