@@ -69,6 +69,8 @@ const (
 	EndorserClientStatus
 	// OrdererClientStatus status returned from the orderer client
 	OrdererClientStatus
+	// ClientStatus is a generic client status
+	ClientStatus
 )
 
 // GroupName maps the groups in this packages to human-readable strings
@@ -82,6 +84,7 @@ var GroupName = map[int32]string{
 	6: "Fabric CA Server Status",
 	7: "Endorser Client Status",
 	8: "Orderer Client Status",
+	9: "Client Status",
 }
 
 func (g Group) String() string {
@@ -120,7 +123,7 @@ func (s *Status) codeString() string {
 		return ToFabricCommonStatusCode(s.Code).String()
 	case EventServerStatus:
 		return ToTransactionValidationCode(s.Code).String()
-	case EndorserClientStatus, OrdererClientStatus:
+	case EndorserClientStatus, OrdererClientStatus, ClientStatus:
 		return ToSDKStatusCode(s.Code).String()
 	default:
 		return Unknown.String()

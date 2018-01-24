@@ -29,6 +29,9 @@ const (
 
 	// EndorsementMismatch is returned when there is a mismatch in endorsements received by the SDK
 	EndorsementMismatch Code = 3
+
+	// EmptyCert is return when an empty cert is returned
+	EmptyCert Code = 4
 )
 
 // CodeName maps the codes in this packages to human-readable strings
@@ -37,6 +40,7 @@ var CodeName = map[int32]string{
 	1: "UNKNOWN",
 	2: "CONNECTION_FAILED",
 	3: "ENDORSEMENT_MISMATCH",
+	4: "EMPTY_CERT",
 }
 
 // ToInt32 cast to int32

@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 )
 
 // NetworkConfig provides a static definition of a Hyperledger Fabric network
@@ -184,7 +185,8 @@ func loadCert(rawData []byte) (*x509.Certificate, error) {
 		return pub, nil
 	}
 
-	return nil, errors.New("pem data missing")
+	// return an error with an error code for clients to test against status.EmptyCert code
+	return nil, status.New(status.ClientStatus, status.EmptyCert.ToInt32(), "pem data missing", nil)
 }
 
 // MutualTLSConfig Mutual TLS configurations
