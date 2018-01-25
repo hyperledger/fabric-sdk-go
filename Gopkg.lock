@@ -10,7 +10,21 @@
 [[projects]]
   branch = "master"
   name = "github.com/cloudflare/cfssl"
-  packages = ["api","auth","certdb","config","crypto/pkcs7","csr","errors","helpers","helpers/derhelpers","info","log","ocsp/config","signer"]
+  packages = [
+    "api",
+    "auth",
+    "certdb",
+    "config",
+    "crypto/pkcs7",
+    "csr",
+    "errors",
+    "helpers",
+    "helpers/derhelpers",
+    "info",
+    "log",
+    "ocsp/config",
+    "signer"
+  ]
   revision = "7d88da830aad9d533c2fb8532da23f6a75331b52"
 
 [[projects]]
@@ -40,19 +54,42 @@
 [[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
-  packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/timestamp"]
+  packages = [
+    "proto",
+    "ptypes",
+    "ptypes/any",
+    "ptypes/duration",
+    "ptypes/timestamp"
+  ]
   revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
 
 [[projects]]
   branch = "master"
   name = "github.com/google/certificate-transparency-go"
-  packages = [".","asn1","tls","x509","x509/pkix"]
+  packages = [
+    ".",
+    "asn1",
+    "tls",
+    "x509",
+    "x509/pkix"
+  ]
   revision = "5881f1bec20ea85ed0ae1fea1d3bb48e3708f61c"
 
 [[projects]]
   branch = "master"
   name = "github.com/hashicorp/hcl"
-  packages = [".","hcl/ast","hcl/parser","hcl/printer","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
+  packages = [
+    ".",
+    "hcl/ast",
+    "hcl/parser",
+    "hcl/printer",
+    "hcl/scanner",
+    "hcl/strconv",
+    "hcl/token",
+    "json/parser",
+    "json/scanner",
+    "json/token"
+  ]
   revision = "68e816d1c783414e79bc65b3994d9ab6b0a722ab"
 
 [[projects]]
@@ -100,7 +137,10 @@
 [[projects]]
   branch = "master"
   name = "github.com/spf13/afero"
-  packages = [".","mem"]
+  packages = [
+    ".",
+    "mem"
+  ]
   revision = "ee1bd8ee15a1306d1f9201acc41ef39cd9f99a1b"
 
 [[projects]]
@@ -136,13 +176,26 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["ocsp","pkcs12","pkcs12/internal/rc2","sha3"]
+  packages = [
+    "ocsp",
+    "pkcs12",
+    "pkcs12/internal/rc2",
+    "sha3"
+  ]
   revision = "76eec36fa14229c4b25bb894c2d0e591527af429"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
+  packages = [
+    "context",
+    "http2",
+    "http2/hpack",
+    "idna",
+    "internal/timeseries",
+    "lex/httplex",
+    "trace"
+  ]
   revision = "0a9397675ba34b2845f758fe3cd68828369c6517"
 
 [[projects]]
@@ -160,7 +213,22 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
-  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
+  packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable"
+  ]
   revision = "1cbadb444a806fd9430d14ad08967ed91da4fa0a"
 
 [[projects]]
@@ -171,7 +239,23 @@
 
 [[projects]]
   name = "google.golang.org/grpc"
-  packages = [".","codes","connectivity","credentials","grpclb/grpc_lb_v1","grpclog","internal","keepalive","metadata","naming","peer","stats","status","tap","transport"]
+  packages = [
+    ".",
+    "codes",
+    "connectivity",
+    "credentials",
+    "grpclb/grpc_lb_v1",
+    "grpclog",
+    "internal",
+    "keepalive",
+    "metadata",
+    "naming",
+    "peer",
+    "stats",
+    "status",
+    "tap",
+    "transport"
+  ]
   revision = "b3ddf786825de56a4178401b7e174ee332173b66"
   version = "v1.5.2"
 
@@ -184,6 +268,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a822229afab07672c1ec0b95c66e9e629f9f6f030cd37a594b2e494850132ca6"
+  inputs-digest = "6ebfe9f59d1c677ea5083599d9811c5326ef47cce8a963a9fcec2d5f464e6de0"
   solver-name = "gps-cdcl"
   solver-version = 1
