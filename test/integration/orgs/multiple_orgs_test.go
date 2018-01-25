@@ -25,7 +25,7 @@ import (
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 

@@ -8,10 +8,10 @@ package fabsdk
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 

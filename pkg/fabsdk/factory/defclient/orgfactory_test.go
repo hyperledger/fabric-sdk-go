@@ -9,9 +9,9 @@ package defclient
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	credentialMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/credentialmgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 )
 
 /*
@@ -41,7 +41,7 @@ func TestNewMSPClient(t *testing.T) {
 func TestNewCredentialManager(t *testing.T) {
 	factory := NewOrgClientFactory()
 
-	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
+	config, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

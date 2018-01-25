@@ -9,14 +9,13 @@ package defclient
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -24,6 +23,7 @@ import (
 	chmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
 	resmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 )
 
 func TestNewChannelMgmtClient(t *testing.T) {
@@ -163,7 +163,7 @@ func newMockProviders(t *testing.T) *mockProviders {
 	coreFactory := defcore.NewProviderFactory()
 	svcFactory := defsvc.NewProviderFactory()
 
-	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
+	config, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

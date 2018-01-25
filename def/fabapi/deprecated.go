@@ -10,10 +10,10 @@ package fabapi
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
 	"github.com/pkg/errors"

@@ -18,7 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/dynamicselection"

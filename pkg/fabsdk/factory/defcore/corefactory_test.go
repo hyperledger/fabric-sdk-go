@@ -14,11 +14,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/def/provider/fabpvdr"
 	cryptosuitewrapper "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 

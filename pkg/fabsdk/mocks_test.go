@@ -12,11 +12,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
