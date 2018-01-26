@@ -132,7 +132,7 @@ func TestWithConfig(t *testing.T) {
 		t.Fatalf("Expected no error from option, but got %v", err)
 	}
 
-	if opts.configProvider != c {
+	if opts.config != c {
 		t.Fatalf("Expected config to be set in opts")
 	}
 }

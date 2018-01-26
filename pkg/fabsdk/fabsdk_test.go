@@ -315,7 +315,7 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	}
 
 	// Default sdk with two channels
-	client1, err := sdk1.configProvider.Client()
+	client1, err := sdk1.config.Client()
 	if err != nil {
 		t.Fatalf("Error getting client from config: %s", err)
 	}
@@ -324,7 +324,7 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 		t.Fatalf("Unexpected org in config: %s", client1.Organization)
 	}
 
-	client2, err := sdk2.configProvider.Client()
+	client2, err := sdk2.config.Client()
 	if err != nil {
 		t.Fatalf("Error getting client from config: %s", err)
 	}
@@ -408,7 +408,7 @@ func TestWithConfigSuccess(t *testing.T) {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 
-	client1, err := sdk.configProvider.Client()
+	client1, err := sdk.config.Client()
 	if err != nil {
 		t.Fatalf("Error getting client from config: %s", err)
 	}

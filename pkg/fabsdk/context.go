@@ -18,18 +18,18 @@ type sdkContext struct {
 	sdk *FabricSDK
 }
 
-// ConfigProvider returns the Config provider of sdk.
-func (c *sdkContext) ConfigProvider() apiconfig.Config {
-	return c.sdk.configProvider
+// Config returns the Config provider of sdk.
+func (c *sdkContext) Config() apiconfig.Config {
+	return c.sdk.config
 }
 
-// CryptoSuiteProvider returns the BCCSP provider of sdk.
-func (c *sdkContext) CryptoSuiteProvider() apicryptosuite.CryptoSuite {
+// CryptoSuite returns the BCCSP provider of sdk.
+func (c *sdkContext) CryptoSuite() apicryptosuite.CryptoSuite {
 	return c.sdk.cryptoSuite
 }
 
-// StateStoreProvider returns state store
-func (c *sdkContext) StateStoreProvider() apifabclient.KeyValueStore {
+// StateStore returns state store
+func (c *sdkContext) StateStore() apifabclient.KeyValueStore {
 	return c.sdk.stateStore
 }
 

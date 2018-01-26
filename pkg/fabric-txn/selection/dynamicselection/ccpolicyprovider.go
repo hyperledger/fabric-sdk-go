@@ -50,12 +50,12 @@ func newCCPolicyProvider(sdk *fabsdk.FabricSDK, channelID string, userName strin
 	client := sdk.NewClient(fabsdk.WithUser(userName), fabsdk.WithOrg(orgName))
 
 	// TODO: Add option to use anchor peers instead of config
-	targetPeers, err := sdk.ConfigProvider().ChannelPeers(channelID)
+	targetPeers, err := sdk.Config().ChannelPeers(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to read configuration for channel peers")
 	}
 
-	return &ccPolicyProvider{config: sdk.ConfigProvider(), client: client, channelID: channelID, targetPeers: targetPeers, ccDataMap: make(map[string]*ccprovider.ChaincodeData)}, nil
+	return &ccPolicyProvider{config: sdk.Config(), client: client, channelID: channelID, targetPeers: targetPeers, ccDataMap: make(map[string]*ccprovider.ChaincodeData)}, nil
 }
 
 type ccPolicyProvider struct {
