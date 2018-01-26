@@ -134,6 +134,8 @@ type GetServerInfoResponse struct {
 	// CAChain is the PEM-encoded bytes of the fabric-ca-server's CA chain.
 	// The 1st element of the chain is the root CA cert
 	CAChain []byte
+	// Version of the server
+	Version string
 }
 
 // Convert from network to local server information
@@ -144,6 +146,7 @@ func (c *Client) net2LocalServerInfo(net *serverInfoResponseNet, local *GetServe
 	}
 	local.CAName = net.CAName
 	local.CAChain = caChain
+	local.Version = net.Version
 	return nil
 }
 
@@ -235,7 +238,7 @@ func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, apicryptosuite.Key
 	cr.CN = id
 
 	if cr.KeyRequest == nil {
-		cr.KeyRequest = csr.NewBasicKeyRequest()
+		cr.KeyRequest = newCfsslBasicKeyRequest(api.NewBasicKeyRequest())
 	}
 
 	key, cspSigner, err := util.BCCSPKeyRequestGenerate(cr, c.csp)
@@ -271,7 +274,7 @@ func (c *Client) newCertificateRequest(req *api.CSRInfo) *csr.CertificateRequest
 		}
 	}
 	if req != nil && req.KeyRequest != nil {
-		cr.KeyRequest = req.KeyRequest
+		cr.KeyRequest = newCfsslBasicKeyRequest(req.KeyRequest)
 	}
 	if req != nil {
 		cr.CA = req.CA
@@ -315,7 +318,7 @@ func (c *Client) SendReq(req *http.Request, result interface{}) (err error) {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "POST failure of request: %s", reqStr)
+		return errors.Wrapf(err, "%s failure of request: %s", req.Method, reqStr)
 	}
 	var respBody []byte
 	if resp.Body != nil {
@@ -375,6 +378,10 @@ func (c *Client) getURL(endpoint string) (string, error) {
 	}
 	rtn := fmt.Sprintf("%s/%s", nurl, endpoint)
 	return rtn, nil
+}
+
+func newCfsslBasicKeyRequest(bkr *api.BasicKeyRequest) *csr.BasicKeyRequest {
+	return &csr.BasicKeyRequest{A: bkr.Algo, S: bkr.Size}
 }
 
 // NormalizeURL normalizes a URL (from cfssl)

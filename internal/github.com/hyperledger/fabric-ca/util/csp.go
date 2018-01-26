@@ -26,6 +26,7 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -88,9 +89,15 @@ func GetSignerFromCert(cert *x509.Certificate, csp apicryptosuite.CryptoSuite) (
 		return nil, nil, errors.WithMessage(err, "Failed to import certificate's public key")
 	}
 	// Get the key given the SKI value
-	privateKey, err := csp.GetKey(certPubK.SKI())
+	ski := certPubK.SKI()
+	privateKey, err := csp.GetKey(ski)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "Could not find matching private key for SKI")
+	}
+	// BCCSP returns a public key if the private key for the SKI wasn't found, so
+	// we need to return an error in that case.
+	if !privateKey.Private() {
+		return nil, nil, errors.Errorf("The private key associated with the certificate with SKI '%s' was not found", hex.EncodeToString(ski))
 	}
 	// Construct and initialize the signer
 	signer, err := factory.NewCspSigner(csp, privateKey)
@@ -112,7 +119,6 @@ func BCCSPKeyRequestGenerate(req *csr.CertificateRequest, myCSP apicryptosuite.C
 	if err != nil {
 		return nil, nil, err
 	}
-
 	cspSigner, err := factory.NewCspSigner(myCSP, key)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "Failed initializing CryptoSigner")

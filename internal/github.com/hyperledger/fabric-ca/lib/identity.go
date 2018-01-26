@@ -77,12 +77,12 @@ func (i *Identity) Register(req *api.RegistrationRequest) (rr *api.RegistrationR
 
 	// Send a post to the "register" endpoint with req as body
 	resp := &api.RegistrationResponse{}
-	err = i.Post("register", reqBody, resp)
+	err = i.Post("register", reqBody, resp, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debug("The register request completely successfully")
+	log.Debug("The register request completed successfully")
 	return resp, nil
 }
 
@@ -114,7 +114,7 @@ func (i *Identity) Reenroll(req *api.ReenrollmentRequest) (*EnrollmentResponse, 
 		return nil, err
 	}
 	var result enrollmentResponseNet
-	err = i.Post("reenroll", body, &result)
+	err = i.Post("reenroll", body, &result, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -122,28 +122,38 @@ func (i *Identity) Reenroll(req *api.ReenrollmentRequest) (*EnrollmentResponse, 
 }
 
 // Revoke the identity associated with 'id'
-func (i *Identity) Revoke(req *api.RevocationRequest) error {
+func (i *Identity) Revoke(req *api.RevocationRequest) (*api.RevocationResponse, error) {
 	log.Debugf("Entering identity.Revoke %+v", req)
 	reqBody, err := util.Marshal(req, "RevocationRequest")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = i.Post("revoke", reqBody, nil)
+	var result revocationResponseNet
+	err = i.Post("revoke", reqBody, &result, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	log.Debugf("Successfully revoked %+v", req)
-	return nil
+	log.Debugf("Successfully revoked certificates: %+v", req)
+	crl, err := util.B64Decode(result.CRL)
+	if err != nil {
+		return nil, err
+	}
+	return &api.RevocationResponse{RevokedCerts: result.RevokedCerts, CRL: crl}, nil
 }
 
-// Post sends arbtrary request body (reqBody) to an endpoint.
+// Post sends arbitrary request body (reqBody) to an endpoint.
 // This adds an authorization header which contains the signature
 // of this identity over the body and non-signature part of the authorization header.
 // The return value is the body of the response.
-func (i *Identity) Post(endpoint string, reqBody []byte, result interface{}) error {
+func (i *Identity) Post(endpoint string, reqBody []byte, result interface{}, queryParam map[string]string) error {
 	req, err := i.client.newPost(endpoint, reqBody)
 	if err != nil {
 		return err
+	}
+	if queryParam != nil {
+		for key, value := range queryParam {
+			addQueryParm(req, key, value)
+		}
 	}
 	err = i.addTokenAuthHdr(req, reqBody)
 	if err != nil {
@@ -153,7 +163,7 @@ func (i *Identity) Post(endpoint string, reqBody []byte, result interface{}) err
 }
 
 func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
-	log.Debug("adding token-based authorization header")
+	log.Debug("Adding token-based authorization header")
 	cert := i.ecert.cert
 	key := i.ecert.key
 	token, err := util.CreateToken(i.CSP, cert, key, body)

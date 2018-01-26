@@ -8,6 +8,7 @@ package apifabca
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 )
 
 // FabricCAClient is the client interface for fabric-ca
@@ -17,7 +18,7 @@ type FabricCAClient interface {
 	// Reenroll to renew user's enrollment certificate
 	Reenroll(user User) (apicryptosuite.Key, []byte, error)
 	Register(registrar User, request *RegistrationRequest) (string, error)
-	Revoke(registrar User, request *RevocationRequest) error
+	Revoke(registrar User, request *RevocationRequest) (*api.RevocationResponse, error)
 }
 
 // RegistrationRequest defines the attributes required to register a user with the CA

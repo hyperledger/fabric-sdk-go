@@ -163,7 +163,7 @@ func TestRevoke(t *testing.T) {
 	mockKey := bccspwrapper.GetKey(&mocks.MockKey{})
 	user := mocks.NewMockUser("test")
 	// Revoke with nil request
-	err = fabricCAClient.Revoke(user, nil)
+	_, err = fabricCAClient.Revoke(user, nil)
 	if err == nil {
 		t.Fatalf("Expected error with nil request")
 	}
@@ -171,7 +171,7 @@ func TestRevoke(t *testing.T) {
 		t.Fatalf("Expected error revocation request required. Got: %s", err.Error())
 	}
 	//Revoke with nil user
-	err = fabricCAClient.Revoke(nil, &ca.RevocationRequest{})
+	_, err = fabricCAClient.Revoke(nil, &ca.RevocationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error with nil user")
 	}
@@ -180,7 +180,7 @@ func TestRevoke(t *testing.T) {
 	}
 	user.SetEnrollmentCertificate(readCert(t))
 	user.SetPrivateKey(mockKey)
-	err = fabricCAClient.Revoke(user, &ca.RevocationRequest{})
+	_, err = fabricCAClient.Revoke(user, &ca.RevocationRequest{})
 	if err == nil {
 		t.Fatalf("Expected decoding error with test cert")
 	}

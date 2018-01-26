@@ -21,6 +21,7 @@ Please review third_party pinning scripts and patches for more details.
 package api
 
 import (
+	"math/big"
 	"time"
 
 	"github.com/cloudflare/cfssl/csr"
@@ -32,7 +33,7 @@ type RegistrationRequest struct {
 	// Name is the unique name of the identity
 	Name string `json:"id" help:"Unique name of the identity"`
 	// Type of identity being registered (e.g. "peer, app, user")
-	Type string `json:"type" def:"user" help:"Type of identity being registered (e.g. 'peer, app, user')"`
+	Type string `json:"type" def:"client" help:"Type of identity being registered (e.g. 'peer, app, user')"`
 	// Secret is an optional password.  If not specified,
 	// a random secret is generated.  In both cases, the secret
 	// is returned in the RegistrationResponse.
@@ -119,6 +120,61 @@ type RevocationRequest struct {
 	Reason string `json:"reason,omitempty" opt:"r" help:"Reason for revocation"`
 	// CAName is the name of the CA to connect to
 	CAName string `json:"caname,omitempty" skip:"true"`
+	// GenCRL specifies whether to generate a CRL
+	GenCRL bool `def:"false" skip:"true" json:"gencrl,omitempty"`
+}
+
+// RevocationResponse represents response from the server for a revocation request
+type RevocationResponse struct {
+	// RevokedCerts is an array of certificates that were revoked
+	RevokedCerts []RevokedCert
+	// CRL is PEM-encoded certificate revocation list (CRL) that contains all unexpired revoked certificates
+	CRL []byte
+}
+
+// RevokedCert represents a revoked certificate
+type RevokedCert struct {
+	// Serial number of the revoked certificate
+	Serial string
+	// AKI of the revoked certificate
+	AKI string
+}
+
+// GetTCertBatchRequest is input provided to identity.GetTCertBatch
+type GetTCertBatchRequest struct {
+	// Number of TCerts in the batch.
+	Count int `json:"count"`
+	// The attribute names whose names and values are to be sealed in the issued TCerts.
+	AttrNames []string `json:"attr_names,omitempty"`
+	// EncryptAttrs denotes whether to encrypt attribute values or not.
+	// When set to true, each issued TCert in the batch will contain encrypted attribute values.
+	EncryptAttrs bool `json:"encrypt_attrs,omitempty"`
+	// Certificate Validity Period.  If specified, the value used
+	// is the minimum of this value and the configured validity period
+	// of the TCert manager.
+	ValidityPeriod time.Duration `json:"validity_period,omitempty"`
+	// The pre-key to be used for key derivation.
+	PreKey string `json:"prekey"`
+	// DisableKeyDerivation if true disables key derivation so that a TCert is not
+	// cryptographically related to an ECert.  This may be necessary when using an
+	// HSM which does not support the TCert's key derivation function.
+	DisableKeyDerivation bool `json:"disable_kdf,omitempty"`
+	// CAName is the name of the CA to connect to
+	CAName string `json:"caname,omitempty" skip:"true"`
+}
+
+// GetTCertBatchResponse is the return value of identity.GetTCertBatch
+type GetTCertBatchResponse struct {
+	ID     *big.Int  `json:"id"`
+	TS     time.Time `json:"ts"`
+	Key    []byte    `json:"key"`
+	TCerts []TCert   `json:"tcerts"`
+}
+
+// TCert encapsulates a signed transaction certificate and optionally a map of keys
+type TCert struct {
+	Cert []byte            `json:"cert"`
+	Keys map[string][]byte `json:"keys,omitempty"` //base64 encoded string as value
 }
 
 // GetCAInfoRequest is request to get generic CA information
@@ -137,17 +193,134 @@ type GenCRLRequest struct {
 
 // GenCRLResponse represents a response to get CRL
 type GenCRLResponse struct {
-	CRL string
+	// CRL is PEM-encoded certificate revocation list (CRL) that contains requested unexpired revoked certificates
+	CRL []byte
+}
+
+// AddIdentityRequest represents the request to add a new identity to the
+// fabric-ca-server
+type AddIdentityRequest struct {
+	ID             string      `json:"id" skip:"true"`
+	Type           string      `json:"type" def:"user" help:"Type of identity being registered (e.g. 'peer, app, user')"`
+	Affiliation    string      `json:"affiliation" help:"The identity's affiliation"`
+	Attributes     []Attribute `json:"attrs" mapstructure:"attrs" `
+	MaxEnrollments int         `json:"max_enrollments" mapstructure:"max_enrollments"  def:"-1" help:"The maximum number of times the secret can be reused to enroll."`
+	// Secret is an optional password.  If not specified,
+	// a random secret is generated.  In both cases, the secret
+	// is returned in the RegistrationResponse.
+	Secret string `json:"secret,omitempty" mask:"password" help:"The enrollment secret for the identity being added"`
+	CAName string `json:"caname,omitempty" skip:"true"`
+}
+
+// ModifyIdentityRequest represents the request to modify an existing identity on the
+// fabric-ca-server
+type ModifyIdentityRequest struct {
+	ID             string      `skip:"true"`
+	Type           string      `json:"type" def:"user" help:"Type of identity being registered (e.g. 'peer, app, user')"`
+	Affiliation    string      `json:"affiliation" help:"The identity's affiliation"`
+	Attributes     []Attribute `mapstructure:"attrs" json:"attrs"`
+	MaxEnrollments int         `mapstructure:"max_enrollments" json:"max_enrollments" def:"-1" help:"The maximum number of times the secret can be reused to enroll."`
+	Secret         string      `json:"secret,omitempty" mask:"password" help:"The enrollment secret for the identity"`
+	CAName         string      `json:"caname,omitempty" skip:"true"`
+}
+
+// RemoveIdentityRequest represents the request to remove an existing identity from the
+// fabric-ca-server
+type RemoveIdentityRequest struct {
+	ID     string `skip:"true"`
+	Force  bool   `json:"force"`
+	CAName string `json:"caname,omitempty" skip:"true"`
+}
+
+// GetIDResponse is the response from the GetIdentity call
+type GetIDResponse struct {
+	ID             string      `json:"id" skip:"true"`
+	Type           string      `json:"type" def:"user"`
+	Affiliation    string      `json:"affiliation"`
+	Attributes     []Attribute `json:"attrs" mapstructure:"attrs" `
+	MaxEnrollments int         `json:"max_enrollments" mapstructure:"max_enrollments"`
+	CAName         string      `json:"caname,omitempty"`
+}
+
+// GetAllIDsResponse is the response from the GetAllIdentities call
+type GetAllIDsResponse struct {
+	Identities []IdentityInfo `json:"identities"`
+	CAName     string         `json:"caname,omitempty"`
+}
+
+// IdentityResponse is the response from the any add/modify/remove identity call
+type IdentityResponse struct {
+	ID             string      `json:"id" skip:"true"`
+	Type           string      `json:"type,omitempty"`
+	Affiliation    string      `json:"affiliation"`
+	Attributes     []Attribute `json:"attrs,omitempty" mapstructure:"attrs"`
+	MaxEnrollments int         `json:"max_enrollments,omitempty" mapstructure:"max_enrollments"`
+	Secret         string      `json:"secret,omitempty"`
+	CAName         string      `json:"caname,omitempty"`
+}
+
+// IdentityInfo contains information about an identity
+type IdentityInfo struct {
+	ID             string      `json:"id"`
+	Type           string      `json:"type"`
+	Affiliation    string      `json:"affiliation"`
+	Attributes     []Attribute `json:"attrs" mapstructure:"attrs"`
+	MaxEnrollments int         `json:"max_enrollments" mapstructure:"max_enrollments"`
+}
+
+// AddAffiliationRequest represents the request to add a new affiliation to the
+// fabric-ca-server
+type AddAffiliationRequest struct {
+	Name   string `json:"name"`
+	Force  bool   `json:"force"`
+	CAName string `json:"caname,omitempty"`
+}
+
+// ModifyAffiliationRequest represents the request to modify an existing affiliation on the
+// fabric-ca-server
+type ModifyAffiliationRequest struct {
+	Name    string
+	NewName string `json:"name"`
+	Force   bool   `json:"force"`
+	CAName  string `json:"caname,omitempty"`
+}
+
+// RemoveAffiliationRequest represents the request to remove an existing affiliation from the
+// fabric-ca-server
+type RemoveAffiliationRequest struct {
+	Name   string
+	Force  bool   `json:"force"`
+	CAName string `json:"caname,omitempty"`
+}
+
+// AffiliationResponse contains the response for get, add, modify, and remove an affiliation
+type AffiliationResponse struct {
+	AffiliationInfo `mapstructure:",squash"`
+	CAName          string `json:"caname,omitempty"`
+}
+
+// AffiliationInfo contains the affiliation name, child affiliation info, and identities
+// associated with this affiliation.
+type AffiliationInfo struct {
+	Name         string            `json:"name"`
+	Affiliations []AffiliationInfo `json:"affiliations,omitempty"`
+	Identities   []IdentityInfo    `json:"identities,omitempty"`
 }
 
 // CSRInfo is Certificate Signing Request (CSR) Information
 type CSRInfo struct {
-	CN           string               `json:"CN"`
-	Names        []csr.Name           `json:"names,omitempty"`
-	Hosts        []string             `json:"hosts,omitempty"`
-	KeyRequest   *csr.BasicKeyRequest `json:"key,omitempty"`
-	CA           *csr.CAConfig        `json:"ca,omitempty"`
-	SerialNumber string               `json:"serial_number,omitempty"`
+	CN           string           `json:"CN"`
+	Names        []csr.Name       `json:"names,omitempty"`
+	Hosts        []string         `json:"hosts,omitempty"`
+	KeyRequest   *BasicKeyRequest `json:"key,omitempty"`
+	CA           *csr.CAConfig    `json:"ca,omitempty"`
+	SerialNumber string           `json:"serial_number,omitempty"`
+}
+
+// BasicKeyRequest encapsulates size and algorithm for the key to be generated
+type BasicKeyRequest struct {
+	Algo string `json:"algo" yaml:"algo"`
+	Size int    `json:"size" yaml:"size"`
 }
 
 // Attribute is a name and value pair
@@ -182,4 +355,11 @@ func (ar *AttributeRequest) GetName() string {
 // IsRequired returns true if the attribute being requested is required
 func (ar *AttributeRequest) IsRequired() bool {
 	return !ar.Optional
+}
+
+// NewBasicKeyRequest returns the BasicKeyRequest object that is constructed
+// from the object returned by the csr.NewBasicKeyRequest() function
+func NewBasicKeyRequest() *BasicKeyRequest {
+	bkr := csr.NewBasicKeyRequest()
+	return &BasicKeyRequest{Algo: bkr.A, Size: bkr.S}
 }

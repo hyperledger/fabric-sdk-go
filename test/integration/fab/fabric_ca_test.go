@@ -146,7 +146,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 
 	revokeRequest := ca.RevocationRequest{Name: userName, CAName: "ca.org1.example.com"}
-	err = caClient.Revoke(adminUser, &revokeRequest)
+	_, err = caClient.Revoke(adminUser, &revokeRequest)
 	if err != nil {
 		t.Fatalf("Error from Revoke: %s", err)
 	}

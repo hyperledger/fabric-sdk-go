@@ -34,6 +34,7 @@ declare -a FILES=(
     "lib/signer.go"
     "lib/clientconfig.go"
     "lib/util.go"
+    "lib/serverrevoke.go"
     "lib/sdkpatch_serverstruct.go"
 
     "lib/tls/tls.go"
@@ -71,7 +72,7 @@ FILTERS_ENABLED="fn"
 
 FILTER_FILENAME="lib/client.go"
 FILTER_FN="Enroll,GenCSR,SendReq,Init,newPost,newEnrollmentResponse,newCertificateRequest"
-FILTER_FN+=",getURL,NormalizeURL,initHTTPClient,net2LocalServerInfo,NewIdentity"
+FILTER_FN+=",getURL,NormalizeURL,initHTTPClient,net2LocalServerInfo,NewIdentity,newCfsslBasicKeyRequest"
 gofilter
 sed -i'' -e 's/util.GetServerPort()/\"\"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/log "github.com\// a\
@@ -111,7 +112,7 @@ sed -i'' -e 's/*factory.FactoryOpts/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT
 
 
 FILTER_FILENAME="lib/util.go"
-FILTER_FN="GetCertID,BytesToX509Cert"
+FILTER_FN="GetCertID,BytesToX509Cert,addQueryParm"
 gofilter
 
 FILTER_FILENAME="lib/tls/tls.go"
@@ -177,6 +178,10 @@ factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledg
 sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/&bccsp.SHAOpts{}/factory.GetSHAOpts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+FILTER_FILENAME="lib/serverrevoke.go"
+FILTER_FN=
+gofilter
 
 # Apply patching
 echo "Patching import paths on upstream project ..."

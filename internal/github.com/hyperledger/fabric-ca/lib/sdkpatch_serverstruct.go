@@ -24,6 +24,8 @@ type serverInfoResponseNet struct {
 	CAName string
 	// Base64 encoding of PEM-encoded certificate chain
 	CAChain string
+	// Version of the server
+	Version string
 }
 
 type enrollmentResponseNet struct {

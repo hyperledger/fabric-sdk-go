@@ -6,16 +6,16 @@
 
 # This file contains environment overrides to enable testing
 # against the latest pre-release target.
-export FABRIC_FIXTURE_VERSION="v1.1.0-preview"
+export FABRIC_FIXTURE_VERSION="v1.1.0-alpha"
 export FABRIC_CRYPTOCONFIG_VERSION="v1"
 
 export FABRIC_CA_FIXTURE_TAG="1.1.0-preview"
-export FABRIC_ORDERER_FIXTURE_TAG="1.1.0-preview"
-export FABRIC_PEER_FIXTURE_TAG="1.1.0-preview"
-export FABRIC_COUCHDB_FIXTURE_TAG="1.1.0-preview"
-export FABRIC_BUILDER_FIXTURE_TAG="1.1.0-preview"
-export FABRIC_BASEOS_FIXTURE_TAG="0.4.2"
-export FABRIC_BASEIMAGE_FIXTURE_TAG="0.4.2"
+export FABRIC_ORDERER_FIXTURE_TAG="1.1.0-alpha"
+export FABRIC_PEER_FIXTURE_TAG="1.1.0-alpha"
+export FABRIC_COUCHDB_FIXTURE_TAG="1.1.0-alpha"
+export FABRIC_BUILDER_FIXTURE_TAG="1.1.0-alpha"
+export FABRIC_BASEOS_FIXTURE_TAG="0.4.5"
+export FABRIC_BASEIMAGE_FIXTURE_TAG="0.4.5"
 
 # override configuration that loads crypto-config
 FABRIC_SDK_CLIENT_CRYPTOCONFIG_PATH='${GOPATH}'"/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"

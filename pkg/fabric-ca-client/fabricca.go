@@ -191,15 +191,15 @@ func (fabricCAServices *FabricCA) Register(registrar sdkApi.User,
 // registrar: The User that is initiating the revocation
 // request: Revocation Request
 func (fabricCAServices *FabricCA) Revoke(registrar sdkApi.User,
-	request *sdkApi.RevocationRequest) error {
+	request *sdkApi.RevocationRequest) (*api.RevocationResponse, error) {
 	// Validate revocation request
 	if request == nil {
-		return errors.New("revocation request required")
+		return nil, errors.New("revocation request required")
 	}
 	// Create request signing identity
 	identity, err := fabricCAServices.createSigningIdentity(registrar)
 	if err != nil {
-		return errors.Wrap(err, "failed to create request for signing identity")
+		return nil, errors.Wrap(err, "failed to create request for signing identity")
 	}
 	// Create revocation request
 	var req = api.RevocationRequest{
