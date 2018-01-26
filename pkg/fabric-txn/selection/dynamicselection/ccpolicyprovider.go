@@ -131,17 +131,13 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 		}
 
 		// Send query to channel peer
-		request := apitxn.QueryRequest{
+		request := apitxn.Request{
 			ChaincodeID: ccID,
 			Fcn:         ccFcn,
 			Args:        ccArgs,
 		}
 
-		opts := apitxn.QueryOpts{
-			ProposalProcessors: []apitxn.ProposalProcessor{peer},
-		}
-
-		resp, err := channel.QueryWithOpts(request, opts)
+		resp, err := channel.Query(request, apitxn.WithProposalProcessor(peer))
 		if err != nil {
 			queryErrors = append(queryErrors, err.Error())
 			continue

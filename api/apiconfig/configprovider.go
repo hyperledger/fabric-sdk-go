@@ -67,8 +67,8 @@ const (
 	EventReg
 	// Query timeout
 	Query
-	// ExecuteTx timeout
-	ExecuteTx
+	// Execute timeout
+	Execute
 	// OrdererConnection orderer connection timeout
 	OrdererConnection
 	// OrdererResponse orderer response timeout

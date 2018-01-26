@@ -448,7 +448,7 @@ func (rc *ResourceMgmtClient) sendCCProposalWithOpts(ccProposalType CCProposalTy
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
-	timeout := rc.config.TimeoutOrDefault(config.ExecuteTx)
+	timeout := rc.config.TimeoutOrDefault(config.Execute)
 	if opts.Timeout != 0 {
 		timeout = opts.Timeout
 	}

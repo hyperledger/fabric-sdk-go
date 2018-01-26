@@ -63,19 +63,19 @@ func TestDynamicSelection(t *testing.T) {
 	// Release all channel client resources
 	defer chClient.Close()
 
-	value, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	value, err := chClient.Query(apitxn.Request{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
 
 	// Move funds
-	_, _, err = chClient.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	_, _, err = chClient.Execute(apitxn.Request{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
 
 	// Verify move funds transaction result
-	valueAfterInvoke, err := chClient.Query(apitxn.QueryRequest{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	valueAfterInvoke, err := chClient.Query(apitxn.Request{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds after transaction: %s", err)
 	}
@@ -83,7 +83,7 @@ func TestDynamicSelection(t *testing.T) {
 	valueInt, _ := strconv.Atoi(string(value))
 	valueAfterInvokeInt, _ := strconv.Atoi(string(valueAfterInvoke))
 	if valueInt+1 != valueAfterInvokeInt {
-		t.Fatalf("ExecuteTx failed. Before: %s, after: %s", value, valueAfterInvoke)
+		t.Fatalf("Execute failed. Before: %s, after: %s", value, valueAfterInvoke)
 	}
 
 }
