@@ -266,22 +266,22 @@ func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName s
 
 func loadOrgPeers(t *testing.T, sdk *fabsdk.FabricSDK) {
 
-	org1Peers, err := sdk.ConfigProvider().PeersConfig(org1)
+	org1Peers, err := sdk.Config().PeersConfig(org1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	org2Peers, err := sdk.ConfigProvider().PeersConfig(org2)
+	org2Peers, err := sdk.Config().PeersConfig(org2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	orgTestPeer0, err = peer.New(sdk.ConfigProvider(), peer.FromPeerConfig(&apiconfig.NetworkPeer{PeerConfig: org1Peers[0]}))
+	orgTestPeer0, err = peer.New(sdk.Config(), peer.FromPeerConfig(&apiconfig.NetworkPeer{PeerConfig: org1Peers[0]}))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	orgTestPeer1, err = peer.New(sdk.ConfigProvider(), peer.FromPeerConfig(&apiconfig.NetworkPeer{PeerConfig: org2Peers[0]}))
+	orgTestPeer1, err = peer.New(sdk.Config(), peer.FromPeerConfig(&apiconfig.NetworkPeer{PeerConfig: org2Peers[0]}))
 	if err != nil {
 		t.Fatal(err)
 	}

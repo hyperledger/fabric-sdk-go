@@ -38,7 +38,7 @@ func TestNewChannelMgmtClient(t *testing.T) {
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	client, err := factory.NewChannelMgmtClient(mockSDK, session, p.ConfigProvider)
+	client, err := factory.NewChannelMgmtClient(mockSDK, session, p.Config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating system client %v", err)
 	}
@@ -62,7 +62,7 @@ func TestNewResourceMgmtClient(t *testing.T) {
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	client, err := factory.NewResourceMgmtClient(mockSDK, session, p.ConfigProvider, nil)
+	client, err := factory.NewResourceMgmtClient(mockSDK, session, p.Config, nil)
 	if err != nil {
 		t.Fatalf("Unexpected error creating system client %v", err)
 	}
@@ -80,9 +80,9 @@ func TestNewChannelClient(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
-	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
-	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
-	mockSDK.EXPECT().StateStoreProvider().Return(p.StateStoreProvider)
+	mockSDK.EXPECT().Config().Return(p.Config)
+	mockSDK.EXPECT().CryptoSuite().Return(p.CryptoSuite)
+	mockSDK.EXPECT().StateStore().Return(p.StateStore)
 	mockSDK.EXPECT().SigningManager().Return(p.SigningManager)
 	mockSDK.EXPECT().DiscoveryProvider().Return(p.DiscoveryProvider)
 	mockSDK.EXPECT().SelectionProvider().Return(p.SelectionProvider)
@@ -90,7 +90,7 @@ func TestNewChannelClient(t *testing.T) {
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	client, err := factory.NewChannelClient(mockSDK, session, p.ConfigProvider, "mychannel")
+	client, err := factory.NewChannelClient(mockSDK, session, p.Config, "mychannel")
 	if err != nil {
 		t.Fatalf("Unexpected error creating channel client: %v", err)
 	}
@@ -108,15 +108,15 @@ func TestNewChannelClientBadChannel(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
-	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
-	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
-	mockSDK.EXPECT().StateStoreProvider().Return(p.StateStoreProvider)
+	mockSDK.EXPECT().Config().Return(p.Config)
+	mockSDK.EXPECT().CryptoSuite().Return(p.CryptoSuite)
+	mockSDK.EXPECT().StateStore().Return(p.StateStore)
 	mockSDK.EXPECT().SigningManager().Return(p.SigningManager)
 
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	_, err := factory.NewChannelClient(mockSDK, session, p.ConfigProvider, "badchannel")
+	_, err := factory.NewChannelClient(mockSDK, session, p.Config, "badchannel")
 	if err == nil {
 		t.Fatalf("Expected error creating channel client")
 	}
@@ -129,9 +129,9 @@ func TestNewChannelClientBadOrg(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
-	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
-	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
-	mockSDK.EXPECT().StateStoreProvider().Return(p.StateStoreProvider)
+	mockSDK.EXPECT().Config().Return(p.Config)
+	mockSDK.EXPECT().CryptoSuite().Return(p.CryptoSuite)
+	mockSDK.EXPECT().StateStore().Return(p.StateStore)
 	mockSDK.EXPECT().SigningManager().Return(p.SigningManager)
 	mockSDK.EXPECT().DiscoveryProvider().Return(p.DiscoveryProvider)
 	mockSDK.EXPECT().SelectionProvider().Return(p.SelectionProvider)
@@ -139,7 +139,7 @@ func TestNewChannelClientBadOrg(t *testing.T) {
 	factory := NewSessionClientFactory()
 	session := newMockSessionWithUser("user1", "BadOrg")
 
-	_, err := factory.NewChannelClient(mockSDK, session, p.ConfigProvider, "mychannel")
+	_, err := factory.NewChannelClient(mockSDK, session, p.Config, "mychannel")
 	if err == nil {
 		t.Fatalf("Expected error creating channel client")
 	}
@@ -150,13 +150,13 @@ func getChannelMock(client apifabclient.Resource, channelID string) (apifabclien
 }
 
 type mockProviders struct {
-	CryptosuiteProvider apicryptosuite.CryptoSuite
-	StateStoreProvider  apifabclient.KeyValueStore
-	ConfigProvider      apiconfig.Config
-	SigningManager      apifabclient.SigningManager
-	FabricProvider      apicore.FabricProvider
-	DiscoveryProvider   apifabclient.DiscoveryProvider
-	SelectionProvider   apifabclient.SelectionProvider
+	CryptoSuite       apicryptosuite.CryptoSuite
+	StateStore        apifabclient.KeyValueStore
+	Config            apiconfig.Config
+	SigningManager    apifabclient.SigningManager
+	FabricProvider    apicore.FabricProvider
+	DiscoveryProvider apifabclient.DiscoveryProvider
+	SelectionProvider apifabclient.SelectionProvider
 }
 
 func newMockProviders(t *testing.T) *mockProviders {
@@ -198,13 +198,13 @@ func newMockProviders(t *testing.T) *mockProviders {
 	}
 
 	providers := mockProviders{
-		CryptosuiteProvider: cryptosuite,
-		StateStoreProvider:  stateStore,
-		ConfigProvider:      config,
-		SigningManager:      signer,
-		FabricProvider:      fabricProvider,
-		DiscoveryProvider:   dp,
-		SelectionProvider:   sp,
+		CryptoSuite:       cryptosuite,
+		StateStore:        stateStore,
+		Config:            config,
+		SigningManager:    signer,
+		FabricProvider:    fabricProvider,
+		DiscoveryProvider: dp,
+		SelectionProvider: sp,
 	}
 	return &providers
 }

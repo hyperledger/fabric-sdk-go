@@ -40,28 +40,28 @@ func (_m *MockCoreProviders) EXPECT() *MockCoreProvidersMockRecorder {
 	return _m.recorder
 }
 
-// ConfigProvider mocks base method
-func (_m *MockCoreProviders) ConfigProvider() apiconfig.Config {
-	ret := _m.ctrl.Call(_m, "ConfigProvider")
+// Config mocks base method
+func (_m *MockCoreProviders) Config() apiconfig.Config {
+	ret := _m.ctrl.Call(_m, "Config")
 	ret0, _ := ret[0].(apiconfig.Config)
 	return ret0
 }
 
-// ConfigProvider indicates an expected call of ConfigProvider
-func (_mr *MockCoreProvidersMockRecorder) ConfigProvider() *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "ConfigProvider", reflect.TypeOf((*MockCoreProviders)(nil).ConfigProvider))
+// Config indicates an expected call of Config
+func (_mr *MockCoreProvidersMockRecorder) Config() *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "Config", reflect.TypeOf((*MockCoreProviders)(nil).Config))
 }
 
-// CryptoSuiteProvider mocks base method
-func (_m *MockCoreProviders) CryptoSuiteProvider() apicryptosuite.CryptoSuite {
-	ret := _m.ctrl.Call(_m, "CryptoSuiteProvider")
+// CryptoSuite mocks base method
+func (_m *MockCoreProviders) CryptoSuite() apicryptosuite.CryptoSuite {
+	ret := _m.ctrl.Call(_m, "CryptoSuite")
 	ret0, _ := ret[0].(apicryptosuite.CryptoSuite)
 	return ret0
 }
 
-// CryptoSuiteProvider indicates an expected call of CryptoSuiteProvider
-func (_mr *MockCoreProvidersMockRecorder) CryptoSuiteProvider() *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "CryptoSuiteProvider", reflect.TypeOf((*MockCoreProviders)(nil).CryptoSuiteProvider))
+// CryptoSuite indicates an expected call of CryptoSuite
+func (_mr *MockCoreProvidersMockRecorder) CryptoSuite() *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "CryptoSuite", reflect.TypeOf((*MockCoreProviders)(nil).CryptoSuite))
 }
 
 // FabricProvider mocks base method
@@ -88,16 +88,16 @@ func (_mr *MockCoreProvidersMockRecorder) SigningManager() *gomock.Call {
 	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "SigningManager", reflect.TypeOf((*MockCoreProviders)(nil).SigningManager))
 }
 
-// StateStoreProvider mocks base method
-func (_m *MockCoreProviders) StateStoreProvider() apifabclient.KeyValueStore {
-	ret := _m.ctrl.Call(_m, "StateStoreProvider")
+// StateStore mocks base method
+func (_m *MockCoreProviders) StateStore() apifabclient.KeyValueStore {
+	ret := _m.ctrl.Call(_m, "StateStore")
 	ret0, _ := ret[0].(apifabclient.KeyValueStore)
 	return ret0
 }
 
-// StateStoreProvider indicates an expected call of StateStoreProvider
-func (_mr *MockCoreProvidersMockRecorder) StateStoreProvider() *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "StateStoreProvider", reflect.TypeOf((*MockCoreProviders)(nil).StateStoreProvider))
+// StateStore indicates an expected call of StateStore
+func (_mr *MockCoreProvidersMockRecorder) StateStore() *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "StateStore", reflect.TypeOf((*MockCoreProviders)(nil).StateStore))
 }
 
 // MockSvcProviders is a mock of SvcProviders interface
@@ -170,28 +170,28 @@ func (_m *MockProviders) EXPECT() *MockProvidersMockRecorder {
 	return _m.recorder
 }
 
-// ConfigProvider mocks base method
-func (_m *MockProviders) ConfigProvider() apiconfig.Config {
-	ret := _m.ctrl.Call(_m, "ConfigProvider")
+// Config mocks base method
+func (_m *MockProviders) Config() apiconfig.Config {
+	ret := _m.ctrl.Call(_m, "Config")
 	ret0, _ := ret[0].(apiconfig.Config)
 	return ret0
 }
 
-// ConfigProvider indicates an expected call of ConfigProvider
-func (_mr *MockProvidersMockRecorder) ConfigProvider() *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "ConfigProvider", reflect.TypeOf((*MockProviders)(nil).ConfigProvider))
+// Config indicates an expected call of Config
+func (_mr *MockProvidersMockRecorder) Config() *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "Config", reflect.TypeOf((*MockProviders)(nil).Config))
 }
 
-// CryptoSuiteProvider mocks base method
-func (_m *MockProviders) CryptoSuiteProvider() apicryptosuite.CryptoSuite {
-	ret := _m.ctrl.Call(_m, "CryptoSuiteProvider")
+// CryptoSuite mocks base method
+func (_m *MockProviders) CryptoSuite() apicryptosuite.CryptoSuite {
+	ret := _m.ctrl.Call(_m, "CryptoSuite")
 	ret0, _ := ret[0].(apicryptosuite.CryptoSuite)
 	return ret0
 }
 
-// CryptoSuiteProvider indicates an expected call of CryptoSuiteProvider
-func (_mr *MockProvidersMockRecorder) CryptoSuiteProvider() *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "CryptoSuiteProvider", reflect.TypeOf((*MockProviders)(nil).CryptoSuiteProvider))
+// CryptoSuite indicates an expected call of CryptoSuite
+func (_mr *MockProvidersMockRecorder) CryptoSuite() *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "CryptoSuite", reflect.TypeOf((*MockProviders)(nil).CryptoSuite))
 }
 
 // DiscoveryProvider mocks base method
@@ -242,16 +242,16 @@ func (_mr *MockProvidersMockRecorder) SigningManager() *gomock.Call {
 	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "SigningManager", reflect.TypeOf((*MockProviders)(nil).SigningManager))
 }
 
-// StateStoreProvider mocks base method
-func (_m *MockProviders) StateStoreProvider() apifabclient.KeyValueStore {
-	ret := _m.ctrl.Call(_m, "StateStoreProvider")
+// StateStore mocks base method
+func (_m *MockProviders) StateStore() apifabclient.KeyValueStore {
+	ret := _m.ctrl.Call(_m, "StateStore")
 	ret0, _ := ret[0].(apifabclient.KeyValueStore)
 	return ret0
 }
 
-// StateStoreProvider indicates an expected call of StateStoreProvider
-func (_mr *MockProvidersMockRecorder) StateStoreProvider() *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "StateStoreProvider", reflect.TypeOf((*MockProviders)(nil).StateStoreProvider))
+// StateStore indicates an expected call of StateStore
+func (_mr *MockProvidersMockRecorder) StateStore() *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "StateStore", reflect.TypeOf((*MockProviders)(nil).StateStore))
 }
 
 // MockCoreProviderFactory is a mock of CoreProviderFactory interface

@@ -65,9 +65,9 @@ func (f *SessionClientFactory) NewResourceMgmtClient(sdk apisdk.Providers, sessi
 func (f *SessionClientFactory) NewChannelClient(sdk apisdk.Providers, session apisdk.Session, config apiconfig.Config, channelID string) (apitxn.ChannelClient, error) {
 	// TODO: Add capablity to override sdk's selection and discovery provider
 
-	client := clientImpl.NewClient(sdk.ConfigProvider())
-	client.SetCryptoSuite(sdk.CryptoSuiteProvider())
-	client.SetStateStore(sdk.StateStoreProvider())
+	client := clientImpl.NewClient(sdk.Config())
+	client.SetCryptoSuite(sdk.CryptoSuite())
+	client.SetStateStore(sdk.StateStore())
 	client.SetIdentityContext(session.Identity())
 	client.SetSigningManager(sdk.SigningManager())
 

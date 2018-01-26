@@ -25,9 +25,9 @@ type Client struct {
 type ClientOption func(opts *clientOptions) error
 
 type clientOptions struct {
-	orgID          string
-	configProvider apiconfig.Config
-	targetFilter   resmgmt.TargetFilter
+	orgID        string
+	config       apiconfig.Config
+	targetFilter resmgmt.TargetFilter
 }
 
 type clientProvider func() (*clientContext, error)
@@ -57,9 +57,9 @@ func WithTargetFilter(targetFilter resmgmt.TargetFilter) ClientOption {
 
 // withConfig allows for overriding the configuration of the client.
 // TODO: This should be removed once the depreacted functions are removed.
-func withConfig(configProvider apiconfig.Config) ClientOption {
+func withConfig(config apiconfig.Config) ClientOption {
 	return func(opts *clientOptions) error {
-		opts.configProvider = configProvider
+		opts.config = config
 		return nil
 	}
 }
@@ -69,7 +69,7 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ClientOption
 	// delay execution of the following logic to avoid error return from this function.
 	// this is done to allow a cleaner API - i.e., client, err := sdk.NewClient(args).<Desired Interface>(extra args)
 	provider := func() (*clientContext, error) {
-		o, err := newClientOptions(sdk.configProvider, opts)
+		o, err := newClientOptions(sdk.config, opts)
 		if err != nil {
 			return nil, errors.WithMessage(err, "unable to retrieve configuration from SDK")
 		}
@@ -101,8 +101,8 @@ func newClientOptions(config apiconfig.Config, options []ClientOption) (*clientO
 	}
 
 	opts := clientOptions{
-		orgID:          client.Organization,
-		configProvider: config,
+		orgID:  client.Organization,
+		config: config,
 	}
 
 	for _, option := range options {
@@ -127,7 +127,7 @@ func (c *Client) ChannelMgmt() (chmgmt.ChannelMgmtClient, error) {
 	}
 
 	session := newSession(p.identity)
-	client, err := p.clientFactory.NewChannelMgmtClient(p.providers, session, p.opts.configProvider)
+	client, err := p.clientFactory.NewChannelMgmtClient(p.providers, session, p.opts.config)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create new channel management client")
 	}
@@ -143,7 +143,7 @@ func (c *Client) ResourceMgmt() (resmgmt.ResourceMgmtClient, error) {
 	}
 
 	session := newSession(p.identity)
-	client, err := p.clientFactory.NewResourceMgmtClient(p.providers, session, p.opts.configProvider, p.opts.targetFilter)
+	client, err := p.clientFactory.NewResourceMgmtClient(p.providers, session, p.opts.config, p.opts.targetFilter)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to created new resource management client")
 	}
@@ -159,7 +159,7 @@ func (c *Client) Channel(id string) (apitxn.ChannelClient, error) {
 	}
 
 	session := newSession(p.identity)
-	client, err := p.clientFactory.NewChannelClient(p.providers, session, p.opts.configProvider, id)
+	client, err := p.clientFactory.NewChannelClient(p.providers, session, p.opts.config, id)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to created new resource management client")
 	}

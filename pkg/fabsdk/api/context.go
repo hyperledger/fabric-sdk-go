@@ -21,9 +21,9 @@ type Providers interface {
 
 // CoreProviders represents the configured core providers context
 type CoreProviders interface {
-	CryptoSuiteProvider() apicryptosuite.CryptoSuite
-	StateStoreProvider() fab.KeyValueStore
-	ConfigProvider() apiconfig.Config
+	CryptoSuite() apicryptosuite.CryptoSuite
+	StateStore() fab.KeyValueStore
+	Config() apiconfig.Config
 	SigningManager() fab.SigningManager
 	FabricProvider() apicore.FabricProvider
 }

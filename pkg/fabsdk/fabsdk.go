@@ -24,7 +24,7 @@ import (
 type FabricSDK struct {
 	opts options
 
-	configProvider    apiconfig.Config
+	config            apiconfig.Config
 	stateStore        apifabclient.KeyValueStore
 	cryptoSuite       apicryptosuite.CryptoSuite
 	discoveryProvider apifabclient.DiscoveryProvider
@@ -66,7 +66,7 @@ func WithConfig(config apiconfig.Config) apiconfig.ConfigProvider {
 
 // fromPkgSuite creates an SDK based on the implementations in the provided pkg suite.
 // TODO: For now leaving this method as private until we have more usage.
-func fromPkgSuite(configProvider apiconfig.Config, pkgSuite apisdk.PkgSuite, opts ...Option) (*FabricSDK, error) {
+func fromPkgSuite(config apiconfig.Config, pkgSuite apisdk.PkgSuite, opts ...Option) (*FabricSDK, error) {
 	core, err := pkgSuite.Core()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to initialize core pkg")
@@ -100,7 +100,7 @@ func fromPkgSuite(configProvider apiconfig.Config, pkgSuite apisdk.PkgSuite, opt
 			Session: sess,
 			Logger:  lg,
 		},
-		configProvider: configProvider,
+		config: config,
 	}
 
 	err = initSDK(&sdk, opts)
@@ -172,7 +172,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	logging.InitLogger(sdk.opts.Logger)
 
 	// Initialize crypto provider
-	cs, err := sdk.opts.Core.NewCryptoSuiteProvider(sdk.configProvider)
+	cs, err := sdk.opts.Core.NewCryptoSuiteProvider(sdk.config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize crypto suite")
 	}
@@ -183,28 +183,28 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	cryptosuite.SetDefault(cs)
 
 	// Initialize state store
-	store, err := sdk.opts.Core.NewStateStoreProvider(sdk.configProvider)
+	store, err := sdk.opts.Core.NewStateStoreProvider(sdk.config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize state store")
 	}
 	sdk.stateStore = store
 
 	// Initialize Signing Manager
-	signingMgr, err := sdk.opts.Core.NewSigningManager(sdk.cryptoSuite, sdk.configProvider)
+	signingMgr, err := sdk.opts.Core.NewSigningManager(sdk.cryptoSuite, sdk.config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize signing manager")
 	}
 	sdk.signingManager = signingMgr
 
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.opts.Core.NewFabricProvider(sdk.configProvider, sdk.stateStore, sdk.cryptoSuite, sdk.signingManager)
+	fabricProvider, err := sdk.opts.Core.NewFabricProvider(sdk.config, sdk.stateStore, sdk.cryptoSuite, sdk.signingManager)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
 	sdk.fabricProvider = fabricProvider
 
 	// Initialize discovery provider
-	discoveryProvider, err := sdk.opts.Service.NewDiscoveryProvider(sdk.configProvider)
+	discoveryProvider, err := sdk.opts.Service.NewDiscoveryProvider(sdk.config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize discovery provider")
 	}
@@ -214,7 +214,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.discoveryProvider = discoveryProvider
 
 	// Initialize selection provider (for selecting endorsing peers)
-	selectionProvider, err := sdk.opts.Service.NewSelectionProvider(sdk.configProvider)
+	selectionProvider, err := sdk.opts.Service.NewSelectionProvider(sdk.config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize selection provider")
 	}
@@ -226,10 +226,9 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	return nil
 }
 
-// ConfigProvider returns the SDK's configuration.
-// TODO rename to Config
-func (sdk *FabricSDK) ConfigProvider() apiconfig.Config {
-	return sdk.configProvider
+// Config returns the SDK's configuration.
+func (sdk *FabricSDK) Config() apiconfig.Config {
+	return sdk.config
 }
 
 func (sdk *FabricSDK) context() *sdkContext {
@@ -241,7 +240,7 @@ func (sdk *FabricSDK) context() *sdkContext {
 
 func (sdk *FabricSDK) newUser(orgID string, userName string) (apifabclient.IdentityContext, error) {
 
-	credentialMgr, err := sdk.opts.Context.NewCredentialManager(orgID, sdk.configProvider, sdk.cryptoSuite)
+	credentialMgr, err := sdk.opts.Context.NewCredentialManager(orgID, sdk.config, sdk.cryptoSuite)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get credential manager")
 	}
