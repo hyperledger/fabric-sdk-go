@@ -138,14 +138,13 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Org1 user queries initial value on both peers
-	initialValue, err := chClientOrg1User.Query(apitxn.QueryRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	initialValue, err := chClientOrg1User.Query(apitxn.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
 
 	// Org2 user moves funds on org2 peer
-	txOpts := apitxn.ExecuteTxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer1}}
-	_, _, err = chClientOrg2User.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
+	_, _, err = chClientOrg2User.Execute(apitxn.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, apitxn.WithProposalProcessor(orgTestPeer1))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -182,15 +181,13 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
-	txOpts = apitxn.ExecuteTxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer1}}
-	_, _, err = chClientOrg2User.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
+	_, _, err = chClientOrg2User.Execute(apitxn.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, apitxn.WithProposalProcessor(orgTestPeer1))
 	if err == nil {
 		t.Fatalf("Should have failed to move funds due to cc policy")
 	}
 
 	// Org2 user moves funds (cc policy ok since we have provided peers for both Orgs)
-	txOpts = apitxn.ExecuteTxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer0, orgTestPeer1}}
-	_, _, err = chClientOrg2User.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
+	_, _, err = chClientOrg2User.Execute(apitxn.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, apitxn.WithProposalProcessor(orgTestPeer0, orgTestPeer1))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -218,7 +215,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Org2 user moves funds (dynamic selection will inspect chaincode policy to determine endorsers)
-	_, _, err = chClientOrg2User.ExecuteTx(apitxn.ExecuteTxRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	_, _, err = chClientOrg2User.Execute(apitxn.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -234,8 +231,7 @@ func verifyValue(t *testing.T, chClient apitxn.ChannelClient, expected int) {
 	var valueInt int
 	for i := 0; i < pollRetries; i++ {
 		// Query final value on org1 peer
-		queryOpts := apitxn.QueryOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer0}}
-		value, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, queryOpts)
+		value, err := chClient.Query(apitxn.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, apitxn.WithProposalProcessor(orgTestPeer0))
 		if err != nil {
 			t.Fatalf("Failed to query funds after transaction: %s", err)
 		}

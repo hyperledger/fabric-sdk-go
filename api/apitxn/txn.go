@@ -12,49 +12,32 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-// QueryRequest contains the parameters for query
-type QueryRequest struct {
-	ChaincodeID string
-	Fcn         string
-	Args        [][]byte
-}
-
-// QueryOpts allows the user to specify more advanced options
-type QueryOpts struct {
-	Notifier           chan QueryResponse  // async
-	ProposalProcessors []ProposalProcessor // targets
-	TxFilter           TxProposalResponseFilter
-	Timeout            time.Duration
-}
-
-// QueryResponse contains result of asynchronous call
-type QueryResponse struct {
-	Response []byte
-	Error    error
-}
-
-// ExecuteTxResponse contains result of asynchronous call
-type ExecuteTxResponse struct {
-	Response         TransactionID
-	Error            error
-	TxValidationCode pb.TxValidationCode
-}
-
-// ExecuteTxRequest contains the parameters to execute transaction
-type ExecuteTxRequest struct {
+// Request contains the parameters to execute transaction
+type Request struct {
 	ChaincodeID  string
 	Fcn          string
 	Args         [][]byte
 	TransientMap map[string][]byte
 }
 
-// ExecuteTxOpts allows the user to specify more advanced options
-type ExecuteTxOpts struct {
-	Notifier           chan ExecuteTxResponse // async
-	TxFilter           TxProposalResponseFilter
+//Response contains response parameters for query and execute transaction
+type Response struct {
+	Payload          []byte
+	Error            error
+	TransactionID    TransactionID
+	TxValidationCode pb.TxValidationCode
+	Responses        []*TransactionProposalResponse
+}
+
+// Opts allows the user to specify more advanced options
+type Opts struct {
+	Notifier           chan Response       // async
 	ProposalProcessors []ProposalProcessor // targets
 	Timeout            time.Duration
 }
+
+//Option func for each Opts argument
+type Option func(opts *Opts) error
 
 // TxProposalResponseFilter allows the user to inspect/modify response before commit
 type TxProposalResponseFilter interface {
@@ -87,17 +70,11 @@ type CCEvent struct {
  */
 type ChannelClient interface {
 
-	// Query chaincode
-	Query(request QueryRequest) ([]byte, error)
+	// Query chaincode  with request and optional options provided
+	Query(request Request, opts ...Option) ([]byte, error)
 
-	// QueryWithOpts allows the user to provide options for query (sync vs async, etc.)
-	QueryWithOpts(request QueryRequest, opt QueryOpts) ([]byte, error)
-
-	// ExecuteTx execute transaction
-	ExecuteTx(request ExecuteTxRequest) ([]byte, TransactionID, error)
-
-	// ExecuteTxWithOpts allows the user to provide options for transaction execution (sync vs async, etc.)
-	ExecuteTxWithOpts(request ExecuteTxRequest, opt ExecuteTxOpts) ([]byte, TransactionID, error)
+	// Execute execute transaction  with request and optional options provided
+	Execute(request Request, opts ...Option) ([]byte, TransactionID, error)
 
 	// RegisterChaincodeEvent registers chain code event
 	// @param {chan bool} channel which receives event details when the event is complete

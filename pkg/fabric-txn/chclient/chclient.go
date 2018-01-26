@@ -8,19 +8,20 @@ SPDX-License-Identifier: Apache-2.0
 package chclient
 
 import (
-	"bytes"
 	"reflect"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn/txnhandler"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
-	"github.com/hyperledger/fabric-sdk-go/pkg/status"
+	txnHandlerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
+)
+
+const (
+	defaultHandlerTimeout = time.Second * 10
 )
 
 // ChannelClient enables access to a Fabric network.
@@ -32,31 +33,6 @@ type ChannelClient struct {
 	eventHub  fab.EventHub
 }
 
-// txProposalResponseFilter process transaction proposal response
-type txProposalResponseFilter struct {
-}
-
-// ProcessTxProposalResponse process transaction proposal response
-func (txProposalResponseFilter *txProposalResponseFilter) ProcessTxProposalResponse(txProposalResponse []*apitxn.TransactionProposalResponse) ([]*apitxn.TransactionProposalResponse, error) {
-	var a1 []byte
-	for n, r := range txProposalResponse {
-		if r.ProposalResponse.GetResponse().Status != int32(common.Status_SUCCESS) {
-			return nil, status.NewFromProposalResponse(r.ProposalResponse, r.Endorser)
-		}
-		if n == 0 {
-			a1 = r.ProposalResponse.GetResponse().Payload
-			continue
-		}
-
-		if bytes.Compare(a1, r.ProposalResponse.GetResponse().Payload) != 0 {
-			return nil, status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
-				"ProposalResponsePayloads do not match", nil)
-		}
-	}
-
-	return txProposalResponse, nil
-}
-
 // NewChannelClient returns a ChannelClient instance.
 func NewChannelClient(client fab.Resource, channel fab.Channel, discovery fab.DiscoveryService, selection fab.SelectionService, eventHub fab.EventHub) (*ChannelClient, error) {
 
@@ -65,188 +41,108 @@ func NewChannelClient(client fab.Resource, channel fab.Channel, discovery fab.Di
 	return &channelClient, nil
 }
 
-// Query chaincode
-func (cc *ChannelClient) Query(request apitxn.QueryRequest) ([]byte, error) {
+// Query chaincode using request and optional options provided
+func (cc *ChannelClient) Query(request apitxn.Request, options ...apitxn.Option) ([]byte, error) {
 
-	return cc.QueryWithOpts(request, apitxn.QueryOpts{})
+	response := cc.InvokeHandler(txnHandlerImpl.NewQueryHandler(), request, cc.addDefaultTimeout(apiconfig.Query, options...)...)
 
+	return response.Payload, response.Error
 }
 
-// QueryWithOpts allows the user to provide options for query (sync vs async, etc.)
-func (cc *ChannelClient) QueryWithOpts(request apitxn.QueryRequest, opts apitxn.QueryOpts) ([]byte, error) {
+// Execute prepares and executes transaction using request and optional options provided
+func (cc *ChannelClient) Execute(request apitxn.Request, options ...apitxn.Option) ([]byte, apitxn.TransactionID, error) {
+
+	response := cc.InvokeHandler(txnHandlerImpl.NewExecuteHandler(), request, cc.addDefaultTimeout(apiconfig.Execute, options...)...)
+
+	return response.Payload, response.TransactionID, response.Error
+}
+
+//InvokeHandler invokes handler using request and options provided
+func (cc *ChannelClient) InvokeHandler(handler txnhandler.Handler, request apitxn.Request, options ...apitxn.Option) apitxn.Response {
+	//TODO: this function going to be exposed through ChannelClient interface
+	//Read execute tx options
+	txnOpts, err := cc.prepareOptsFromOptions(options...)
+	if err != nil {
+		return apitxn.Response{Error: err}
+	}
+
+	//Prepare context objects for handler
+	requestContext, clientContext, err := cc.prepareHandlerContexts(request, txnOpts)
+	if err != nil {
+		return apitxn.Response{Error: err}
+	}
+
+	//Perform action through handler
+	go handler.Handle(requestContext, clientContext)
+
+	//notifier in options will handle response if provided
+	if txnOpts.Notifier != nil {
+		return apitxn.Response{}
+	}
+
+	select {
+	case response := <-requestContext.Opts.Notifier:
+		return response
+	case <-time.After(requestContext.Opts.Timeout):
+		return apitxn.Response{Error: errors.New("handler timed out while performing operation")}
+	}
+}
+
+//prepareHandlerContexts prepares context objects for handlers
+func (cc *ChannelClient) prepareHandlerContexts(request apitxn.Request, options apitxn.Opts) (*txnhandler.RequestContext, *txnhandler.ClientContext, error) {
 
 	if request.ChaincodeID == "" || request.Fcn == "" {
-		return nil, errors.New("ChaincodeID and Fcn are required")
+		return nil, nil, errors.New("ChaincodeID and Fcn are required")
 	}
 
-	notifier := opts.Notifier
-	if notifier == nil {
-		notifier = make(chan apitxn.QueryResponse)
+	clientContext := &txnhandler.ClientContext{
+		Channel:   cc.channel,
+		Selection: cc.selection,
+		Discovery: cc.discovery,
+		EventHub:  cc.eventHub,
 	}
 
-	txProcessors := opts.ProposalProcessors
-	if len(txProcessors) == 0 {
-		// Use discovery service to figure out proposal processors
-		peers, err := cc.discovery.GetPeers()
+	requestContext := &txnhandler.RequestContext{
+		Request:  request,
+		Opts:     options,
+		Response: apitxn.Response{},
+	}
+
+	if requestContext.Opts.Timeout == 0 {
+		requestContext.Opts.Timeout = defaultHandlerTimeout
+	}
+
+	if requestContext.Opts.Notifier == nil {
+		requestContext.Opts.Notifier = make(chan apitxn.Response)
+	}
+
+	return requestContext, clientContext, nil
+
+}
+
+//prepareOptsFromOptions Reads apitxn.Opts from apitxn.Option array
+func (cc *ChannelClient) prepareOptsFromOptions(options ...apitxn.Option) (apitxn.Opts, error) {
+	txnOpts := apitxn.Opts{}
+	for _, option := range options {
+		err := option(&txnOpts)
 		if err != nil {
-			return nil, errors.WithMessage(err, "GetPeers failed")
+			return txnOpts, errors.WithMessage(err, "Failed to read opts")
 		}
-		endorsers := peers
-		if cc.selection != nil {
-			endorsers, err = cc.selection.GetEndorsersForChaincode(peers, request.ChaincodeID)
-			if err != nil {
-				return nil, errors.WithMessage(err, "Failed to get endorsing peers")
-			}
-		}
-		txProcessors = peer.PeersToTxnProcessors(endorsers)
 	}
-
-	go sendTransactionProposal(request, cc.channel, txProcessors, opts.TxFilter, notifier)
-
-	if opts.Notifier != nil {
-		return nil, nil
-	}
-
-	timeout := cc.client.Config().TimeoutOrDefault(apiconfig.Query)
-	if opts.Timeout != 0 {
-		timeout = opts.Timeout
-	}
-
-	select {
-	case response := <-notifier:
-		return response.Response, response.Error
-	case <-time.After(timeout):
-		return nil, errors.New("query request timed out")
-	}
-
+	return txnOpts, nil
 }
 
-func sendTransactionProposal(request apitxn.QueryRequest, channel fab.Channel, proposalProcessors []apitxn.ProposalProcessor, txFilter apitxn.TxProposalResponseFilter, notifier chan apitxn.QueryResponse) {
-
-	transactionProposalResponses, _, err := internal.CreateAndSendTransactionProposal(channel,
-		request.ChaincodeID, request.Fcn, request.Args, proposalProcessors, nil)
-
-	if err != nil {
-		notifier <- apitxn.QueryResponse{Response: nil, Error: err}
-		return
+//addDefaultTimeout adds given default timeout if it is missing in options
+func (cc *ChannelClient) addDefaultTimeout(timeOutType apiconfig.TimeoutType, options ...apitxn.Option) []apitxn.Option {
+	txnOpts := apitxn.Opts{}
+	for _, option := range options {
+		option(&txnOpts)
 	}
 
-	if txFilter == nil {
-		txFilter = &txProposalResponseFilter{}
+	if txnOpts.Timeout == 0 {
+		return append(options, apitxn.WithTimeout(cc.client.Config().TimeoutOrDefault(timeOutType)))
 	}
-
-	transactionProposalResponses, err = txFilter.ProcessTxProposalResponse(transactionProposalResponses)
-	if err != nil {
-		notifier <- apitxn.QueryResponse{Response: nil, Error: errors.WithMessage(err, "TxFilter failed")}
-		return
-	}
-
-	response := transactionProposalResponses[0].ProposalResponse.GetResponse().Payload
-
-	notifier <- apitxn.QueryResponse{Response: response, Error: nil}
-}
-
-// ExecuteTx prepares and executes transaction
-func (cc *ChannelClient) ExecuteTx(request apitxn.ExecuteTxRequest) ([]byte, apitxn.TransactionID, error) {
-
-	return cc.ExecuteTxWithOpts(request, apitxn.ExecuteTxOpts{})
-}
-
-// ExecuteTxWithOpts allows the user to provide options for execute transaction:
-// sync vs async, filter to inspect proposal response before commit etc)
-func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts apitxn.ExecuteTxOpts) ([]byte, apitxn.TransactionID, error) {
-
-	if request.ChaincodeID == "" || request.Fcn == "" {
-		return nil, apitxn.TransactionID{}, errors.New("chaincode name and function name are required")
-	}
-
-	txProcessors := opts.ProposalProcessors
-	if len(txProcessors) == 0 {
-		// Use discovery service to figure out proposal processors
-		peers, err := cc.discovery.GetPeers()
-		if err != nil {
-			return nil, apitxn.TransactionID{}, errors.WithMessage(err, "GetPeers failed")
-		}
-		endorsers := peers
-		if cc.selection != nil {
-			endorsers, err = cc.selection.GetEndorsersForChaincode(peers, request.ChaincodeID)
-			if err != nil {
-				return nil, apitxn.TransactionID{}, errors.WithMessage(err, "Failed to get endorsing peers for ExecuteTx")
-			}
-		}
-		txProcessors = peer.PeersToTxnProcessors(endorsers)
-	}
-
-	txProposalResponses, txID, err := internal.CreateAndSendTransactionProposal(cc.channel,
-		request.ChaincodeID, request.Fcn, request.Args, txProcessors, request.TransientMap)
-	if err != nil {
-		return nil, apitxn.TransactionID{}, errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
-	}
-
-	if opts.TxFilter == nil {
-		opts.TxFilter = &txProposalResponseFilter{}
-	}
-
-	var payloadResponse []byte
-	txProposalResponses, err = opts.TxFilter.ProcessTxProposalResponse(txProposalResponses)
-	if len(txProposalResponses) > 0 {
-		payloadResponse = txProposalResponses[0].ProposalResponse.GetResponse().Payload
-	}
-
-	if err != nil {
-		return payloadResponse, txID, errors.WithMessage(err, "TxFilter failed")
-	}
-
-	notifier := opts.Notifier
-	if notifier == nil {
-		notifier = make(chan apitxn.ExecuteTxResponse)
-	}
-
-	timeout := cc.client.Config().TimeoutOrDefault(apiconfig.ExecuteTx)
-	if opts.Timeout != 0 {
-		timeout = opts.Timeout
-	}
-
-	go sendTransaction(cc.channel, txID, txProposalResponses, cc.eventHub, notifier, timeout)
-
-	if opts.Notifier != nil {
-		return payloadResponse, txID, nil
-	}
-
-	select {
-	case response := <-notifier:
-		return payloadResponse, response.Response, response.Error
-	case <-time.After(timeout): // This should never happen since there's timeout in sendTransaction
-		return payloadResponse, txID, errors.New("ExecuteTx request timed out")
-	}
-
-}
-
-func sendTransaction(channel fab.Channel, txID apitxn.TransactionID, txProposalResponses []*apitxn.TransactionProposalResponse, eventHub fab.EventHub, notifier chan apitxn.ExecuteTxResponse, timeout time.Duration) {
-	if eventHub.IsConnected() == false {
-		err := eventHub.Connect()
-		if err != nil {
-			notifier <- apitxn.ExecuteTxResponse{Response: apitxn.TransactionID{}, Error: err}
-		}
-	}
-
-	statusNotifier := internal.RegisterTxEvent(txID, eventHub)
-	_, err := internal.CreateAndSendTransaction(channel, txProposalResponses)
-	if err != nil {
-		notifier <- apitxn.ExecuteTxResponse{Response: apitxn.TransactionID{}, Error: errors.Wrap(err, "CreateAndSendTransaction failed")}
-		return
-	}
-
-	select {
-	case result := <-statusNotifier:
-		if result.Error == nil {
-			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: result.Code}
-		} else {
-			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: result.Code, Error: result.Error}
-		}
-	case <-time.After(timeout):
-		notifier <- apitxn.ExecuteTxResponse{Response: txID, Error: errors.New("ExecuteTx didn't receive block event")}
-	}
+	return options
 }
 
 // Close releases channel client resources (disconnects event hub etc.)
