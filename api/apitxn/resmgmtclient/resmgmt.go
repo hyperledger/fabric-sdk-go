@@ -19,12 +19,6 @@ type TargetFilter interface {
 	Accept(peer fab.Peer) bool
 }
 
-// JoinChannelOpts contains options for peers joining channel
-type JoinChannelOpts struct {
-	Targets      []fab.Peer   // target peers
-	TargetFilter TargetFilter // peer filter
-}
-
 // InstallCCRequest contains install chaincode request parameters
 type InstallCCRequest struct {
 	Name    string
@@ -41,12 +35,6 @@ type InstallCCResponse struct {
 	Err    error
 }
 
-// InstallCCOpts contains options for installing chaincode
-type InstallCCOpts struct {
-	Targets      []fab.Peer   // target peers
-	TargetFilter TargetFilter // target filter
-}
-
 // InstantiateCCRequest contains instantiate chaincode request parameters
 type InstantiateCCRequest struct {
 	Name       string
@@ -55,13 +43,6 @@ type InstantiateCCRequest struct {
 	Args       [][]byte
 	Policy     *common.SignaturePolicyEnvelope
 	CollConfig []*common.CollectionConfig
-}
-
-// InstantiateCCOpts contains options for instantiating chaincode
-type InstantiateCCOpts struct {
-	Targets      []fab.Peer   // target peers
-	TargetFilter TargetFilter // target filter
-	Timeout      time.Duration
 }
 
 // UpgradeCCRequest contains upgrade chaincode request parameters
@@ -74,37 +55,28 @@ type UpgradeCCRequest struct {
 	CollConfig []*common.CollectionConfig
 }
 
-// UpgradeCCOpts contains options for upgrading chaincode
-type UpgradeCCOpts struct {
-	Targets      []fab.Peer   // target peers
-	TargetFilter TargetFilter // target filter
-	Timeout      time.Duration
+//Opts contains options for operations performed by ResourceMgmtClient
+type Opts struct {
+	Targets      []fab.Peer    // target peers
+	TargetFilter TargetFilter  // target filter
+	Timeout      time.Duration //timeout options for instantiate and upgrade CC
 }
+
+//Option func for each Opts argument
+type Option func(opts *Opts) error
 
 // ResourceMgmtClient is responsible for managing resources: peers joining channels, and installing and instantiating chaincodes(TODO).
 type ResourceMgmtClient interface {
 
-	// InstallCC installs chaincode
-	InstallCC(req InstallCCRequest) ([]InstallCCResponse, error)
+	// InstallCC installs chaincode with optional custom options (specific peers, filtered peers)
+	InstallCC(req InstallCCRequest, options ...Option) ([]InstallCCResponse, error)
 
-	// InstallCCWithOpts installs chaincode with custom options (specific peers, filtered peers)
-	InstallCCWithOpts(req InstallCCRequest, opts InstallCCOpts) ([]InstallCCResponse, error)
+	// InstantiateCC instantiates chaincode with optional custom options (specific peers, filtered peers, timeout)
+	InstantiateCC(channelID string, req InstantiateCCRequest, options ...Option) error
 
-	// InstantiateCC instantiates chaincode using default settings
-	InstantiateCC(channelID string, req InstantiateCCRequest) error
+	// UpgradeCC upgrades chaincode  with optional custom options (specific peers, filtered peers, timeout)
+	UpgradeCC(channelID string, req UpgradeCCRequest, options ...Option) error
 
-	// InstantiateCCWithOpts instantiates chaincode with custom options (target peers, filtered peers)
-	InstantiateCCWithOpts(channelID string, req InstantiateCCRequest, opts InstantiateCCOpts) error
-
-	// UpgradeCC upgrades chaincode using default settings
-	UpgradeCC(channelID string, req UpgradeCCRequest) error
-
-	// UpgradeCCWithOpts upgrades chaincode with custom options (target peers, filtered peers)
-	UpgradeCCWithOpts(channelID string, req UpgradeCCRequest, opts UpgradeCCOpts) error
-
-	// JoinChannel allows for peers to join existing channel
-	JoinChannel(channelID string) error
-
-	//JoinChannelWithOpts allows for customizing set of peers about to join the channel (specific peers/filtered peers)
-	JoinChannelWithOpts(channelID string, opts JoinChannelOpts) error
+	// JoinChannel allows for peers to join existing channel with optional custom options (specific peers, filtered peers)
+	JoinChannel(channelID string, options ...Option) error
 }

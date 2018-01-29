@@ -93,30 +93,24 @@ func New(ctx Context, filter resmgmt.TargetFilter) (*ResourceMgmtClient, error) 
 	return resourceClient, nil
 }
 
-// JoinChannel allows for default peers to join existing channel. Default peers are selected by applying default filter to all network peers.
-func (rc *ResourceMgmtClient) JoinChannel(channelID string) error {
+// JoinChannel allows for peers to join existing channel with optional custom options (specific peers, filtered peers)
+func (rc *ResourceMgmtClient) JoinChannel(channelID string, options ...resmgmt.Option) error {
 
 	if channelID == "" {
 		return errors.New("must provide channel ID")
 	}
 
-	targets, err := rc.getDefaultTargets(rc.discovery)
+	opts, err := rc.prepareResmgmtOpts(options...)
 	if err != nil {
-		return errors.WithMessage(err, "failed to get default targets for JoinChannel")
+		return errors.WithMessage(err, "failed to get opts for JoinChannel")
 	}
 
-	if len(targets) == 0 {
-		return errors.New("No default targets available")
-	}
-
-	return rc.JoinChannelWithOpts(channelID, resmgmt.JoinChannelOpts{Targets: targets})
-}
-
-//JoinChannelWithOpts allows for customizing set of peers about to join the channel (specific peers or custom 'filtered' peers)
-func (rc *ResourceMgmtClient) JoinChannelWithOpts(channelID string, opts resmgmt.JoinChannelOpts) error {
-
-	if channelID == "" {
-		return errors.New("must provide channel ID")
+	//Default targets when targets are not provided in options
+	if len(opts.Targets) == 0 {
+		opts.Targets, err = rc.getDefaultTargets(rc.discovery)
+		if err != nil {
+			return errors.WithMessage(err, "failed to get default targets for JoinChannel")
+		}
 	}
 
 	targets, err := rc.calculateTargets(rc.discovery, opts.Targets, opts.TargetFilter)
@@ -232,27 +226,8 @@ func (rc *ResourceMgmtClient) isChaincodeInstalled(req resmgmt.InstallCCRequest,
 	return false, nil
 }
 
-// InstallCC - install chaincode
-func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest) ([]resmgmt.InstallCCResponse, error) {
-
-	if err := checkRequiredInstallCCParams(req); err != nil {
-		return nil, err
-	}
-
-	targets, err := rc.getDefaultTargets(rc.discovery)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get default targets for InstallCC")
-	}
-
-	if len(targets) == 0 {
-		return nil, errors.New("No default targets available for install cc")
-	}
-
-	return rc.InstallCCWithOpts(req, resmgmt.InstallCCOpts{Targets: targets})
-}
-
-// InstallCCWithOpts installs chaincode with custom options
-func (rc *ResourceMgmtClient) InstallCCWithOpts(req resmgmt.InstallCCRequest, opts resmgmt.InstallCCOpts) ([]resmgmt.InstallCCResponse, error) {
+// InstallCC installs chaincode with optional custom options (specific peers, filtered peers)
+func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest, options ...resmgmt.Option) ([]resmgmt.InstallCCResponse, error) {
 
 	// For each peer query if chaincode installed. If cc is installed treat as success with message 'already installed'.
 	// If cc is not installed try to install, and if that fails add to the list with error and peer name.
@@ -260,6 +235,19 @@ func (rc *ResourceMgmtClient) InstallCCWithOpts(req resmgmt.InstallCCRequest, op
 	err := checkRequiredInstallCCParams(req)
 	if err != nil {
 		return nil, err
+	}
+
+	opts, err := rc.prepareResmgmtOpts(options...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get opts for InstallCC")
+	}
+
+	//Default targets when targets are not provided in options
+	if len(opts.Targets) == 0 {
+		opts.Targets, err = rc.getDefaultTargets(rc.discovery)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to get default targets for InstallCC")
+		}
 	}
 
 	targets, err := rc.calculateTargets(rc.discovery, opts.Targets, opts.TargetFilter)
@@ -326,42 +314,29 @@ func checkRequiredInstallCCParams(req resmgmt.InstallCCRequest) error {
 }
 
 // InstantiateCC instantiates chaincode using default settings
-func (rc *ResourceMgmtClient) InstantiateCC(channelID string, req resmgmt.InstantiateCCRequest) error {
+func (rc *ResourceMgmtClient) InstantiateCC(channelID string, req resmgmt.InstantiateCCRequest, options ...resmgmt.Option) error {
+
+	return rc.sendCCProposal(Instantiate, channelID, req, options...)
+
+}
+
+// UpgradeCC upgrades chaincode  with optional custom options (specific peers, filtered peers, timeout)
+func (rc *ResourceMgmtClient) UpgradeCC(channelID string, req resmgmt.UpgradeCCRequest, options ...resmgmt.Option) error {
+
+	return rc.sendCCProposal(Upgrade, channelID, resmgmt.InstantiateCCRequest(req), options...)
+
+}
+
+// sendCCProposal sends proposal for type  Instantiate, Upgrade
+func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType CCProposalType, channelID string, req resmgmt.InstantiateCCRequest, options ...resmgmt.Option) error {
 
 	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
 		return err
 	}
 
-	// per channel discovery service
-	discovery, err := rc.discoveryProvider.NewDiscoveryService(channelID)
+	opts, err := rc.prepareResmgmtOpts(options...)
 	if err != nil {
-		return errors.WithMessage(err, "failed to create channel discovery service")
-	}
-
-	targets, err := rc.getDefaultTargets(discovery)
-	if err != nil {
-		return errors.WithMessage(err, "failed to get default targets for InstantiateCC")
-	}
-
-	if len(targets) == 0 {
-		return errors.New("No default targets available for instantiate cc")
-	}
-
-	return rc.InstantiateCCWithOpts(channelID, req, resmgmt.InstantiateCCOpts{Targets: targets})
-}
-
-// InstantiateCCWithOpts instantiates chaincode with custom options
-func (rc *ResourceMgmtClient) InstantiateCCWithOpts(channelID string, req resmgmt.InstantiateCCRequest, opts resmgmt.InstantiateCCOpts) error {
-
-	return rc.sendCCProposalWithOpts(Instantiate, channelID, req, opts)
-
-}
-
-// UpgradeCC upgrades chaincode using default settings
-func (rc *ResourceMgmtClient) UpgradeCC(channelID string, req resmgmt.UpgradeCCRequest) error {
-
-	if err := checkRequiredCCProposalParams(channelID, resmgmt.InstantiateCCRequest(req)); err != nil {
-		return err
+		return errors.WithMessage(err, "failed to get opts for cc proposal")
 	}
 
 	// per channel discovery service
@@ -370,36 +345,12 @@ func (rc *ResourceMgmtClient) UpgradeCC(channelID string, req resmgmt.UpgradeCCR
 		return errors.WithMessage(err, "failed to create channel discovery service")
 	}
 
-	targets, err := rc.getDefaultTargets(discovery)
-	if err != nil {
-		return errors.WithMessage(err, "failed to get default targets for UpgradeCC")
-	}
-
-	if len(targets) == 0 {
-		return errors.New("No default targets available for upgrade cc")
-	}
-
-	return rc.UpgradeCCWithOpts(channelID, req, resmgmt.UpgradeCCOpts{Targets: targets})
-}
-
-// UpgradeCCWithOpts upgrades chaincode with custom options
-func (rc *ResourceMgmtClient) UpgradeCCWithOpts(channelID string, req resmgmt.UpgradeCCRequest, opts resmgmt.UpgradeCCOpts) error {
-
-	return rc.sendCCProposalWithOpts(Upgrade, channelID, resmgmt.InstantiateCCRequest(req), resmgmt.InstantiateCCOpts(opts))
-
-}
-
-// InstantiateCCWithOpts instantiates chaincode with custom options
-func (rc *ResourceMgmtClient) sendCCProposalWithOpts(ccProposalType CCProposalType, channelID string, req resmgmt.InstantiateCCRequest, opts resmgmt.InstantiateCCOpts) error {
-
-	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
-		return err
-	}
-
-	// per channel discovery service
-	discovery, err := rc.discoveryProvider.NewDiscoveryService(channelID)
-	if err != nil {
-		return errors.WithMessage(err, "failed to create channel discovery service")
+	//Default targets when targets are not provided in options
+	if len(opts.Targets) == 0 {
+		opts.Targets, err = rc.getDefaultTargets(discovery)
+		if err != nil {
+			return errors.WithMessage(err, "failed to get default targets for cc proposal")
+		}
 	}
 
 	targets, err := rc.calculateTargets(discovery, opts.Targets, opts.TargetFilter)
@@ -507,4 +458,16 @@ func (rc *ResourceMgmtClient) getChannel(channelID string) (fab.Channel, error) 
 		return nil, errors.WithMessage(err, "failed to get channel")
 	}
 	return channel, nil
+}
+
+//prepareResmgmtOpts Reads resmgmt.Opts from resmgmt.Option array
+func (rc *ResourceMgmtClient) prepareResmgmtOpts(options ...resmgmt.Option) (resmgmt.Opts, error) {
+	resmgmtOpts := resmgmt.Opts{}
+	for _, option := range options {
+		err := option(&resmgmtOpts)
+		if err != nil {
+			return resmgmtOpts, errors.WithMessage(err, "Failed to read resource management opts")
+		}
+	}
+	return resmgmtOpts, nil
 }
