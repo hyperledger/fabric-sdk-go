@@ -57,6 +57,9 @@ func NewSpecificSeekPosition(index uint64) *ab.SeekPosition {
 
 // GetLastConfigFromBlock returns the LastConfig data from the given block
 func GetLastConfigFromBlock(block *common.Block) (*common.LastConfig, error) {
+	if block.Metadata == nil {
+		return nil, errors.New("block metadata is nil")
+	}
 	metadata := &common.Metadata{}
 	err := proto.Unmarshal(block.Metadata.Metadata[common.BlockMetadataIndex_LAST_CONFIG], metadata)
 	if err != nil {

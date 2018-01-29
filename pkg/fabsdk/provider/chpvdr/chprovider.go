@@ -56,3 +56,8 @@ func (cs *ChannelService) Channel() (apifabclient.Channel, error) {
 func (cs *ChannelService) EventHub() (apifabclient.EventHub, error) {
 	return cs.fabricProvider.NewEventHub(cs.identityContext, cs.channelID)
 }
+
+// ChannelConfig returns the ChannelConfig for the named channel
+func (cs *ChannelService) ChannelConfig() (apifabclient.ChannelConfig, error) {
+	return cs.fabricProvider.NewChannelConfig(cs.identityContext, cs.channelID)
+}

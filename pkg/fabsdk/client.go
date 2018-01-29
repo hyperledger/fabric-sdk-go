@@ -171,6 +171,17 @@ func (c *Client) Channel(id string) (apitxn.ChannelClient, error) {
 	return client, nil
 }
 
+// ChannelService returns a client API for interacting with a channel.
+func (c *Client) ChannelService(id string) (apifabclient.ChannelService, error) {
+	p, err := c.provider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to get client provider context")
+	}
+
+	channelProvider := p.providers.ChannelProvider()
+	return channelProvider.NewChannelService(p.identity, id)
+}
+
 // Session returns the underlying identity of the client.
 //
 // Deprecated: this method is temporary.
