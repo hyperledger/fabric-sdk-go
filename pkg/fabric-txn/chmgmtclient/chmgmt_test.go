@@ -109,22 +109,22 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	req := chmgmtclient.SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig}
 
 	// Test empty option (default order is random orderer from config)
-	opts := chmgmtclient.SaveChannelOpts{}
-	err := cc.SaveChannelWithOpts(req, opts)
+	opts := chmgmtclient.WithOrdererID("")
+	err := cc.SaveChannel(req, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Test valid orderer ID
-	opts.OrdererID = "orderer.example.com"
-	err = cc.SaveChannelWithOpts(req, opts)
+	opts = chmgmtclient.WithOrdererID("orderer.example.com")
+	err = cc.SaveChannel(req, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Test invalid orderer ID
-	opts.OrdererID = "Invalid"
-	err = cc.SaveChannelWithOpts(req, opts)
+	opts = chmgmtclient.WithOrdererID("Invalid")
+	err = cc.SaveChannel(req, opts)
 	if err == nil {
 		t.Fatal("Should have failed for invalid orderer ID")
 	}

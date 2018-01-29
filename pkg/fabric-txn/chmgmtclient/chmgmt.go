@@ -34,12 +34,12 @@ func NewChannelMgmtClient(client fab.Resource, config config.Config) (*ChannelMg
 }
 
 // SaveChannel creates or updates channel
-func (cc *ChannelMgmtClient) SaveChannel(req chmgmt.SaveChannelRequest) error {
-	return cc.SaveChannelWithOpts(req, chmgmt.SaveChannelOpts{})
-}
+func (cc *ChannelMgmtClient) SaveChannel(req chmgmt.SaveChannelRequest, options ...chmgmt.Option) error {
 
-// SaveChannelWithOpts creates or updates channel with custom options
-func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, opts chmgmt.SaveChannelOpts) error {
+	opts, err := cc.prepareSaveChannelOpts(options...)
+	if err != nil {
+		return err
+	}
 
 	if req.ChannelID == "" || req.ChannelConfig == "" {
 		return errors.New("must provide channel ID and channel config")
@@ -109,4 +109,16 @@ func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, 
 	}
 
 	return nil
+}
+
+//prepareSaveChannelOpts Reads chmgmt.Opts from chmgmt.Option array
+func (cc *ChannelMgmtClient) prepareSaveChannelOpts(options ...chmgmt.Option) (chmgmt.Opts, error) {
+	saveChannelOpts := chmgmt.Opts{}
+	for _, option := range options {
+		err := option(&saveChannelOpts)
+		if err != nil {
+			return saveChannelOpts, errors.WithMessage(err, "Failed to read save channel opts")
+		}
+	}
+	return saveChannelOpts, nil
 }

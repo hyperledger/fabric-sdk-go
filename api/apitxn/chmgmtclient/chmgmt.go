@@ -18,17 +18,18 @@ type SaveChannelRequest struct {
 	SigningIdentity fab.IdentityContext
 }
 
-// SaveChannelOpts contains options for saving channel
-type SaveChannelOpts struct {
+// Opts contains options for saving channel, this struct is intended for reference only.
+// Will be used in form of Option to pass arguments
+type Opts struct {
 	OrdererID string // use specific orderer
 }
+
+//Option func for each Opts argument
+type Option func(opts *Opts) error
 
 // ChannelMgmtClient supports creating new channels
 type ChannelMgmtClient interface {
 
-	// SaveChannel creates or updates channel
-	SaveChannel(req SaveChannelRequest) error
-
-	// SaveChannel creates or updates channel with custom options
-	SaveChannelWithOpts(req SaveChannelRequest, opts SaveChannelOpts) error
+	// SaveChannel creates or updates channel with optional Opts options
+	SaveChannel(req SaveChannelRequest, options ...Option) error
 }
