@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
+	"crypto/x509"
 	"fmt"
 	"net"
 	"reflect"
@@ -351,13 +352,14 @@ func TestBroadcastBadDial(t *testing.T) {
 	config := mock_core.NewMockConfig(mockCtrl)
 
 	config.EXPECT().TimeoutOrDefault(core.OrdererConnection).Return(time.Second * 1)
-	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("error adding cert to pool")).AnyTimes()
+	config.EXPECT().TLSCACertPool(gomock.Any()).Return(x509.NewCertPool(), nil).AnyTimes()
 
-	orderer, _ := NewOrderer("grpc://127.0.0.1:0", "", "", config, kap)
+	orderer, err := New(config, WithURL("grpc://127.0.0.1:0"))
+	assert.Nil(t, err)
 	orderer.grpcDialOption = append(orderer.grpcDialOption, grpc.WithBlock())
 	orderer.secured = true
 	orderer.allowInsecure = true
-	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err = orderer.SendBroadcast(&fab.SignedEnvelope{})
 	assert.NotNil(t, err)
 
 	if err == nil || !strings.Contains(err.Error(), "CONNECTION_FAILED") {
@@ -519,7 +521,7 @@ func TestNewOrdererFromConfig(t *testing.T) {
 		URL:         "",
 		GRPCOptions: grpcOpts,
 	}
-	_, err := NewOrdererFromConfig(ordererConfig, mocks.NewMockConfig())
+	_, err := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig))
 	if err != nil {
 		t.Fatalf("Failed to get new orderer from config%v", err)
 	}

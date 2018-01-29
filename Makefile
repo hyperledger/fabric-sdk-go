@@ -70,6 +70,9 @@ THIRDPARTY_FABRIC_COMMIT    ?= v1.1.0-alpha
 # Force removal of images in cleanup (overridable)
 FIXTURE_DOCKER_REMOVE_FORCE ?= false
 
+# Options for exercising unit tests (overridable)
+FABRIC_DEPRECATED_UNITTEST   ?= false
+
 # Code levels to exercise integration/e2e tests against (overridable)
 FABRIC_STABLE_INTTEST        ?= true
 FABRIC_STABLE_PKCS11_INTTEST ?= false
@@ -129,6 +132,7 @@ GO_DEP_COMMIT := v0.4.1
 ifdef JENKINS_URL
 export FABRIC_SDKGO_DEPEND_INSTALL=true
 
+FABRIC_DEPRECATED_UNITTEST   := true
 FABRIC_STABLE_INTTEST        := true
 FABRIC_STABLE_PKCS11_INTTEST := true
 FABRIC_PREV_INTTEST          := true
@@ -202,6 +206,9 @@ build-softhsm2-image:
 .PHONY: unit-test
 unit-test: checks depend populate
 	@FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
+ifeq ($(FABRIC_DEPRECATED_UNITTEST),true)
+	@GO_TAGS="$(GO_TAGS) deprecated" GO_TESTFLAGS="$(GO_TESTFLAGS) -count=1" FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
+endif
 
 .PHONY: unit-tests
 unit-tests: unit-test
@@ -209,7 +216,6 @@ unit-tests: unit-test
 .PHONY: unit-tests-pkcs11
 unit-tests-pkcs11: checks depend populate
 	@FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit-pkcs11.sh
-
 
 .PHONY: integration-tests-stable
 integration-tests-stable: clean depend populate
