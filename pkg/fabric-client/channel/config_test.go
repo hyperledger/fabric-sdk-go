@@ -16,13 +16,10 @@ import (
 
 func TestChannelConfigs(t *testing.T) {
 
-	client := mocks.NewMockClient()
 	user := mocks.NewMockUser("test")
-	cryptoSuite := &mocks.MockCryptoSuite{}
-	client.SetIdentityContext(user)
-	client.SetCryptoSuite(cryptoSuite)
+	ctx := mocks.NewMockContext(user)
 
-	channel, _ := NewChannel("testChannel", client)
+	channel, _ := New(ctx, "testChannel")
 
 	if channel.IsReadonly() {
 		//TODO: Rightnow it is returning false always, need to revisit test once actual implementation is provided

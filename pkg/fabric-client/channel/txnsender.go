@@ -202,10 +202,7 @@ func (c *Channel) sendCCProposal(ccProposalType CCProposalType, chaincodeName st
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion},
 		Input: &pb.ChaincodeInput{Args: args}}}
 
-	if c.clientContext.IdentityContext() == nil {
-		return nil, apitxn.TransactionID{}, errors.New("user context is nil")
-	}
-	creator, err := c.clientContext.IdentityContext().Identity()
+	creator, err := c.clientContext.Identity()
 	if err != nil {
 		return nil, apitxn.TransactionID{}, errors.Wrap(err, "getting user context's identity failed")
 	}
@@ -259,22 +256,11 @@ func (c *Channel) sendCCProposal(ccProposalType CCProposalType, chaincodeName st
 
 // SignPayload signs payload
 func (c *Channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
-	//Get user info
-	user := c.clientContext.IdentityContext()
-	if user == nil {
-		return nil, errors.New("user is nil")
-	}
-
 	signingMgr := c.clientContext.SigningManager()
-	if signingMgr == nil {
-		return nil, errors.New("signing manager is nil")
-	}
-
-	signature, err := signingMgr.Sign(payload, user.PrivateKey())
+	signature, err := signingMgr.Sign(payload, c.clientContext.PrivateKey())
 	if err != nil {
 		return nil, err
 	}
-	// here's the envelope
 	return &fab.SignedEnvelope{Payload: payload, Signature: signature}, nil
 }
 

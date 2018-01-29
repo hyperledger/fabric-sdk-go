@@ -36,16 +36,12 @@ func (c *Channel) GenesisBlock() (*common.Block, error) {
 	if len(c.Orderers()) == 0 {
 		return nil, errors.New("GenesisBlock missing orderer assigned to this channel for the GenesisBlock request")
 	}
-	if c.clientContext.IdentityContext() == nil {
-		return nil, errors.New("identity context required")
-	}
-
-	creator, err := c.clientContext.IdentityContext().Identity()
+	creator, err := c.clientContext.Identity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get creator identity")
 	}
 
-	txnID, err := internal.NewTxnID(c.clientContext.IdentityContext())
+	txnID, err := internal.NewTxnID(c.clientContext)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to calculate transaction id")
 	}
@@ -94,10 +90,7 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 		return nil, errors.Wrap(err, "GenerateRandomNonce failed")
 	}
 
-	if c.clientContext.IdentityContext() == nil {
-		return nil, errors.New("User context required")
-	}
-	creator, err := c.clientContext.IdentityContext().Identity()
+	creator, err := c.clientContext.Identity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "serializing identity failed")
 	}

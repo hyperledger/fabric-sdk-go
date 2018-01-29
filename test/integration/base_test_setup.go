@@ -7,8 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
-	"crypto/x509"
-	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -20,11 +18,8 @@ import (
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
@@ -33,6 +28,8 @@ import (
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
+	SDK             *fabsdk.FabricSDK
+	Identity        fab.IdentityContext
 	Client          fab.Resource
 	Channel         fab.Channel
 	EventHub        fab.EventHub
@@ -88,20 +85,23 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	if err != nil {
 		return errors.WithMessage(err, "SDK init failed")
 	}
+	setup.SDK = sdk
 
 	session, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(setup.OrgID)).Session()
 	if err != nil {
 		return errors.WithMessage(err, "failed getting admin user session for org")
 	}
 
-	sc, err := sdk.FabricProvider().NewResourceClient(session.Identity())
+	setup.Identity = session
+
+	sc, err := sdk.FabricProvider().NewResourceClient(setup.Identity)
 	if err != nil {
 		return errors.WithMessage(err, "NewResourceClient failed")
 	}
 
 	setup.Client = sc
 
-	channel, err := setup.GetChannel(sdk, setup.Client, setup.ChannelID, []string{setup.OrgID})
+	channel, err := setup.GetChannel(sdk, setup.Identity, sdk.Config(), setup.ChannelID, []string{setup.OrgID})
 	if err != nil {
 		return errors.Wrapf(err, "create channel (%s) failed: %v", setup.ChannelID)
 	}
@@ -128,7 +128,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	if !alreadyJoined {
 
 		// Create channel (or update if it already exists)
-		req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session.Identity()}
+		req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session}
 
 		if err = chMgmtClient.SaveChannel(req); err != nil {
 			return errors.WithMessage(err, "SaveChannel failed")
@@ -145,7 +145,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 		}
 	}
 
-	if err := setup.setupEventHub(t, sc); err != nil {
+	if err := setup.setupEventHub(t, sdk, setup.Identity); err != nil {
 		return err
 	}
 
@@ -154,8 +154,36 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	return nil
 }
 
-func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client fab.Resource) error {
-	eventHub, err := setup.getEventHub(t, client)
+// GetChannel initializes and returns a channel based on config
+func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.Config, channelID string, orgs []string) (fab.Channel, error) {
+
+	channel, err := sdk.FabricProvider().NewChannelClient(ic, channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "NewChannel failed")
+	}
+
+	for _, org := range orgs {
+		peerConfig, err := config.PeersConfig(org)
+		if err != nil {
+			return nil, errors.WithMessage(err, "reading peer config failed")
+		}
+		for _, p := range peerConfig {
+			endorser, err := sdk.FabricProvider().NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: p})
+			if err != nil {
+				return nil, errors.WithMessage(err, "NewPeer failed")
+			}
+			err = channel.AddPeer(endorser)
+			if err != nil {
+				return nil, errors.WithMessage(err, "adding peer failed")
+			}
+		}
+	}
+
+	return channel, nil
+}
+
+func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client *fabsdk.FabricSDK, identity fab.IdentityContext) error {
+	eventHub, err := client.FabricProvider().NewEventHub(identity, setup.ChannelID)
 	if err != nil {
 		return err
 	}
@@ -223,50 +251,8 @@ func (setup *BaseSetupImpl) InstallAndInstantiateCC(ccName, ccPath, ccVersion, g
 		return err
 	}
 
-	ccPolicy := cauthdsl.SignedByMspMember(setup.Client.IdentityContext().MspID())
+	ccPolicy := cauthdsl.SignedByMspMember(setup.Identity.MspID())
 	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy})
-}
-
-// GetChannel initializes and returns a channel based on config
-func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, client fab.Resource, channelID string, orgs []string) (fab.Channel, error) {
-
-	channel, err := client.NewChannel(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewChannel failed")
-	}
-
-	ordererConfig, err := client.Config().RandomOrdererConfig()
-	if err != nil {
-		return nil, errors.WithMessage(err, "RandomOrdererConfig failed")
-	}
-
-	orderer, err := orderer.New(client.Config(), orderer.FromOrdererConfig(ordererConfig))
-	if err != nil {
-		return nil, errors.WithMessage(err, "New failed")
-	}
-	err = channel.AddOrderer(orderer)
-	if err != nil {
-		return nil, errors.WithMessage(err, "adding orderer failed")
-	}
-
-	for _, org := range orgs {
-		peerConfig, err := client.Config().PeersConfig(org)
-		if err != nil {
-			return nil, errors.WithMessage(err, "reading peer config failed")
-		}
-		for _, p := range peerConfig {
-			endorser, err := sdk.FabricProvider().NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: p})
-			if err != nil {
-				return nil, errors.WithMessage(err, "NewPeer failed")
-			}
-			err = channel.AddPeer(endorser)
-			if err != nil {
-				return nil, errors.WithMessage(err, "adding peer failed")
-			}
-		}
-	}
-
-	return channel, nil
 }
 
 // CreateAndSendTransactionProposal ... TODO duplicate
@@ -334,46 +320,4 @@ func (setup *BaseSetupImpl) RegisterTxEvent(t *testing.T, txID apitxn.Transactio
 	})
 
 	return done, fail
-}
-
-// getEventHub initilizes the event hub
-func (setup *BaseSetupImpl) getEventHub(t *testing.T, client fab.Resource) (fab.EventHub, error) {
-	eventHub, err := events.NewEventHub(client)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewEventHub failed")
-	}
-	foundEventHub := false
-	peerConfig, err := client.Config().PeersConfig(setup.OrgID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "PeersConfig failed")
-	}
-	for _, p := range peerConfig {
-		if p.URL != "" {
-			t.Logf("EventHub connect to peer (%s)", p.URL)
-			serverHostOverride := ""
-			if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
-				serverHostOverride = str
-			}
-
-			var cert *x509.Certificate
-
-			if urlutil.IsTLSEnabled(p.EventURL) {
-				cert, err = p.TLSCACerts.TLSCert()
-
-				if err != nil {
-					return nil, errors.WithMessage(err, fmt.Sprintf("EventHub failed to load TLS certificate for peer (%s)", p.URL))
-				}
-			}
-
-			eventHub.SetPeerAddr(p.EventURL, cert, serverHostOverride)
-			foundEventHub = true
-			break
-		}
-	}
-
-	if !foundEventHub {
-		return nil, errors.New("event hub configuration not found")
-	}
-
-	return eventHub, nil
 }

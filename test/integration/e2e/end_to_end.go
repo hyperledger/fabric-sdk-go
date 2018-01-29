@@ -58,7 +58,7 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	if err != nil {
 		t.Fatalf("Failed to get session for %s, %s: %s", orgName, orgAdmin, err)
 	}
-	orgAdminUser := session.Identity()
+	orgAdminUser := session
 
 	// Create channel
 	req := chmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"), SigningIdentity: orgAdminUser}

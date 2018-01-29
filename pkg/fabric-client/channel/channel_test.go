@@ -34,24 +34,25 @@ oG5kQQIgQAe4OOKYhJdh3f7URaKfGTf492/nmRmtK+ySKjpHSrU=
 `
 
 func TestChannelMethods(t *testing.T) {
-	client := mocks.NewMockClient()
-	channel, err := NewChannel("testChannel", client)
+	user := mocks.NewMockUser("test")
+	ctx := mocks.NewMockContext(user)
+	channel, err := New(ctx, "testChannel")
 	if err != nil {
-		t.Fatalf("NewChannel return error[%s]", err)
+		t.Fatalf("New return error[%s]", err)
 	}
 	if channel.Name() != "testChannel" {
-		t.Fatalf("NewChannel create wrong channel")
+		t.Fatalf("New create wrong channel")
 	}
 
-	_, err = NewChannel("", client)
+	_, err = New(ctx, "")
 	if err == nil {
-		t.Fatalf("NewChannel didn't return error")
+		t.Fatalf("New didn't return error")
 	}
 	if err.Error() != "name is required" {
-		t.Fatalf("NewChannel didn't return right error")
+		t.Fatalf("New didn't return right error")
 	}
 
-	_, err = NewChannel("testChannel", nil)
+	_, err = New(nil, "testChannel")
 	if err == nil {
 		t.Fatalf("NewChannel didn't return error")
 	}
@@ -295,12 +296,9 @@ func isValueInList(value string, list []string) bool {
 }
 
 func setupTestChannel() (*Channel, error) {
-	client := mocks.NewMockClient()
 	user := mocks.NewMockUser("test")
-	cryptoSuite := &mocks.MockCryptoSuite{}
-	client.SetIdentityContext(user)
-	client.SetCryptoSuite(cryptoSuite)
-	return NewChannel("testChannel", client)
+	ctx := mocks.NewMockContext(user)
+	return New(ctx, "testChannel")
 }
 
 func setupMassiveTestChannel(numberOfPeers int, numberOfOrderers int) (*Channel, error) {

@@ -118,7 +118,7 @@ func TestWithCorePkg(t *testing.T) {
 	factory.EXPECT().NewCryptoSuiteProvider(c).Return(nil, nil)
 	factory.EXPECT().NewStateStoreProvider(c).Return(nil, nil)
 	factory.EXPECT().NewSigningManager(nil, c).Return(nil, nil)
-	factory.EXPECT().NewFabricProvider(c, nil, nil, nil).Return(nil, nil)
+	factory.EXPECT().NewFabricProvider(gomock.Any()).Return(nil, nil)
 
 	_, err = New(WithConfig(c), WithCorePkg(factory))
 	if err != nil {
@@ -238,14 +238,14 @@ func TestWithSessionPkg(t *testing.T) {
 		t.Fatalf("Unexpected error getting identity: %s", err)
 	}
 
-	session := newSession(identity)
+	session := newSession(identity, sdk.channelProvider)
 	sdkContext := sdk.context()
 
-	cm, err := sessPkg.NewChannelMgmtClient(sdkContext, session, c)
+	cm, err := sessPkg.NewChannelMgmtClient(sdkContext, session)
 	if err != nil {
 		t.Fatalf("Unexpected error getting credential manager: %s", err)
 	}
-	factory.EXPECT().NewChannelMgmtClient(sdkContext, gomock.Any(), c).Return(cm, nil)
+	factory.EXPECT().NewChannelMgmtClient(sdkContext, gomock.Any()).Return(cm, nil)
 
 	// Use a method that invokes credential manager (e.g., new user)
 	_, err = sdk.NewClient(WithUser(sdkValidClientUser)).ChannelMgmt()

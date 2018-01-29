@@ -47,7 +47,7 @@ type mockEventClientFactory struct {
 	clients []*mockEventClient
 }
 
-func (mecf *mockEventClientFactory) newEventsClient(client fab.Resource, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (fab.EventsClient, error) {
+func (mecf *mockEventClientFactory) newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (fab.EventsClient, error) {
 	mec := &mockEventClient{
 		PeerAddress: peerAddress,
 		RegTimeout:  regTimeout,
@@ -110,7 +110,12 @@ func (mec *mockEventClient) Stop() error {
 }
 
 func createMockedEventHub() (*EventHub, *mockEventClientFactory, error) {
-	eventHub, err := NewEventHub(client.NewClient(mocks.NewMockConfig()))
+	client := client.NewClient(mocks.NewMockConfig())
+	ctx := Context{
+		ProviderContext: client,
+		IdentityContext: client.IdentityContext(),
+	}
+	eventHub, err := New(ctx)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "Error creating event hub")
 	}

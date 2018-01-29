@@ -135,22 +135,9 @@ func TestNewSigningManager(t *testing.T) {
 
 func TestNewFactoryFabricProvider(t *testing.T) {
 	factory := NewProviderFactory()
+	ctx := mocks.NewMockProviderContext()
 
-	config := mocks.NewMockConfig()
-
-	cryptosuite, err := factory.NewCryptoSuiteProvider(config)
-	if err != nil {
-		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
-	}
-
-	signer, err := factory.NewSigningManager(cryptosuite, config)
-	if err != nil {
-		t.Fatalf("Unexpected error creating signing manager %v", err)
-	}
-
-	stateStore := newMockStateStore(t)
-
-	fabricProvider, err := factory.NewFabricProvider(config, stateStore, cryptosuite, signer)
+	fabricProvider, err := factory.NewFabricProvider(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error creating fabric provider %v", err)
 	}

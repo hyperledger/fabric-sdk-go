@@ -46,12 +46,13 @@ type eventsClient struct {
 	TLSServerHostOverride  string
 	tlsCertHash            []byte
 	clientConn             *grpc.ClientConn
-	client                 fab.Resource
+	provider               fab.ProviderContext
+	identity               fab.IdentityContext
 	processEventsCompleted chan struct{}
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
-func NewEventsClient(client fab.Resource, peerAddress string, certificate *x509.Certificate, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (fab.EventsClient, error) {
+func NewEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (fab.EventsClient, error) {
 	var err error
 	if regTimeout < 100*time.Millisecond {
 		regTimeout = 100 * time.Millisecond
@@ -68,8 +69,9 @@ func NewEventsClient(client fab.Resource, peerAddress string, certificate *x509.
 		adapter:               adapter,
 		TLSCertificate:        certificate,
 		TLSServerHostOverride: serverhostoverride,
-		client:                client,
-		tlsCertHash:           ccomm.TLSCertHash(client.Config()),
+		provider:              provider,
+		identity:              identity,
+		tlsCertHash:           ccomm.TLSCertHash(provider.Config()),
 	}, err
 }
 
@@ -99,13 +101,13 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 	ec.Lock()
 	defer ec.Unlock()
 
-	user := ec.client.IdentityContext()
+	user := ec.identity
 	payload, err := proto.Marshal(emsg)
 	if err != nil {
 		return errors.Wrap(err, "marshal event failed")
 	}
 
-	signingMgr := ec.client.SigningManager()
+	signingMgr := ec.provider.SigningManager()
 	if signingMgr == nil {
 		return errors.New("signing manager is nil")
 	}
@@ -121,10 +123,10 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 
 // RegisterAsync - registers interest in a event and doesn't wait for a response
 func (ec *eventsClient) RegisterAsync(ies []*ehpb.Interest) error {
-	if ec.client.IdentityContext() == nil {
+	if ec.identity == nil {
 		return errors.New("identity context is nil")
 	}
-	creator, err := ec.client.IdentityContext().Identity()
+	creator, err := ec.identity.Identity()
 	if err != nil {
 		return errors.WithMessage(err, "identity context identity retrieval failed")
 	}
@@ -178,10 +180,10 @@ func (ec *eventsClient) register(ies []*ehpb.Interest) error {
 
 // UnregisterAsync - Unregisters interest in a event and doesn't wait for a response
 func (ec *eventsClient) UnregisterAsync(ies []*ehpb.Interest) error {
-	if ec.client.IdentityContext() == nil {
+	if ec.identity == nil {
 		return errors.New("identity context is required")
 	}
-	creator, err := ec.client.IdentityContext().Identity()
+	creator, err := ec.identity.Identity()
 	if err != nil {
 		return errors.WithMessage(err, "user context identity retrieval failed")
 	}
@@ -283,7 +285,7 @@ func (ec *eventsClient) processEvents() error {
 
 //Start establishes connection with Event hub and registers interested events with it
 func (ec *eventsClient) Start() error {
-	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress, ec.TLSCertificate, ec.TLSServerHostOverride, ec.client.Config())
+	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress, ec.TLSCertificate, ec.TLSServerHostOverride, ec.provider.Config())
 	if err != nil {
 		return errors.WithMessage(err, "events connection failed")
 	}
@@ -333,7 +335,7 @@ func (ec *eventsClient) Stop() error {
 	// Server ended its send stream in response to CloseSend()
 	case <-ec.processEventsCompleted:
 		// Timeout waiting for server to end stream
-	case <-time.After(ec.client.Config().TimeoutOrDefault(apiconfig.EventHub)):
+	case <-time.After(ec.provider.Config().TimeoutOrDefault(apiconfig.EventHub)):
 		timeoutErr = errors.New("close event stream timeout")
 	}
 

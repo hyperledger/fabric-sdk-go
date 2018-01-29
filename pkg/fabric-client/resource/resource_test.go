@@ -76,10 +76,7 @@ func TestCreateChannel(t *testing.T) {
 }
 
 func setupTestClient() *Resource {
-	client := mocks.NewMockClient()
 	user := mocks.NewMockUser("test")
-	cryptoSuite := &mocks.MockCryptoSuite{}
-	client.SetIdentityContext(user)
-	client.SetCryptoSuite(cryptoSuite)
-	return New(client)
+	ctx := mocks.NewMockContext(user)
+	return New(ctx)
 }

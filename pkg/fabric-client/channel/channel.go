@@ -29,21 +29,26 @@ type Channel struct {
 	initialized   bool
 }
 
-// NewChannel represents a channel in a Fabric network.
+// New represents a channel in a Fabric network.
 // name: used to identify different channel instances. The naming of channel instances
 // is enforced by the ordering service and must be unique within the blockchain network.
 // client: Provides operational context such as submitting User etc.
-func NewChannel(name string, client fab.Context) (*Channel, error) {
+func New(ctx fab.Context, name string) (*Channel, error) {
 	if name == "" {
 		return nil, errors.Errorf("name is required")
 	}
-	if client == nil {
+	if ctx == nil {
 		return nil, errors.Errorf("client is required")
 	}
 	p := make(map[string]fab.Peer)
 	o := make(map[string]fab.Orderer)
-	c := Channel{name: name, peers: p,
-		orderers: o, clientContext: client, mspManager: msp.NewMSPManager()}
+	c := Channel{
+		name:          name,
+		peers:         p,
+		orderers:      o,
+		clientContext: ctx,
+		mspManager:    msp.NewMSPManager(),
+	}
 	logger.Debugf("Constructed channel instance for channel %s: %v", c.name, c)
 
 	return &c, nil

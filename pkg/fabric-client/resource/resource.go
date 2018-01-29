@@ -78,7 +78,7 @@ func (c *Resource) SignChannelConfig(config []byte, signer fab.IdentityContext) 
 	signingUser := signer
 	// If signing user is not provided default to client's user context
 	if signingUser == nil {
-		signingUser = c.clientContext.IdentityContext()
+		signingUser = c.clientContext
 	}
 
 	if signingUser == nil {
@@ -133,7 +133,7 @@ func (c *Resource) CreateChannel(request fab.CreateChannelRequest) (apitxn.Trans
 	}
 
 	if !haveEnvelope && request.TxnID.ID == "" {
-		txnID, err := c.newTxnID()
+		txnID, err := internal.NewTxnID(c.clientContext)
 		if err != nil {
 			return txnID, err
 		}
@@ -196,10 +196,7 @@ func (c *Resource) createOrUpdateChannel(request fab.CreateChannelRequest, haveE
 		if err != nil {
 			return errors.WithMessage(err, "BuildChannelHeader failed")
 		}
-		if c.clientContext.IdentityContext() == nil {
-			return errors.New("identity context is nil")
-		}
-		creator, err := c.clientContext.IdentityContext().Identity()
+		creator, err := c.clientContext.Identity()
 		if err != nil {
 			return errors.WithMessage(err, "getting creator failed")
 		}
@@ -226,7 +223,7 @@ func (c *Resource) createOrUpdateChannel(request fab.CreateChannelRequest, haveE
 			return errors.New("signing manager is nil")
 		}
 
-		signature, err = signingMgr.Sign(payloadBytes, c.clientContext.IdentityContext().PrivateKey())
+		signature, err = signingMgr.Sign(payloadBytes, c.clientContext.PrivateKey())
 		if err != nil {
 			return errors.WithMessage(err, "signing payload failed")
 		}
@@ -305,10 +302,7 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.
 		Type: req.Package.Type, ChaincodeId: &pb.ChaincodeID{Name: req.Name, Path: req.Path, Version: req.Version}},
 		CodePackage: req.Package.Code, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
 
-	if c.clientContext.IdentityContext() == nil {
-		return nil, "", errors.New("signing identity required")
-	}
-	creator, err := c.clientContext.IdentityContext().Identity()
+	creator, err := c.clientContext.Identity()
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get creator identity")
 	}
@@ -322,7 +316,7 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.
 	if err != nil {
 		return nil, "", err
 	}
-	user := c.clientContext.IdentityContext()
+	user := c.clientContext
 	if user == nil {
 		return nil, "", errors.New("User context is nil")
 	}
@@ -348,15 +342,6 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.
 	}, req.Targets)
 
 	return transactionProposalResponse, txID, err
-}
-
-// newTxnID computes a TransactionID for the current user context
-func (c *Resource) newTxnID() (apitxn.TransactionID, error) {
-	if c.clientContext.IdentityContext() == nil {
-		return apitxn.TransactionID{}, errors.New("user context is nil")
-	}
-
-	return internal.NewTxnID(c.clientContext.IdentityContext())
 }
 
 func (c *Resource) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args [][]byte, target apitxn.ProposalProcessor) ([]byte, error) {

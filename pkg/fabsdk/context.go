@@ -14,18 +14,27 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
-type sdkContext struct {
+type fabContext struct {
 	sdk *FabricSDK
 }
 
+type sdkContext struct {
+	fabContext
+}
+
 // Config returns the Config provider of sdk.
-func (c *sdkContext) Config() apiconfig.Config {
+func (c *fabContext) Config() apiconfig.Config {
 	return c.sdk.config
 }
 
 // CryptoSuite returns the BCCSP provider of sdk.
-func (c *sdkContext) CryptoSuite() apicryptosuite.CryptoSuite {
+func (c *fabContext) CryptoSuite() apicryptosuite.CryptoSuite {
 	return c.sdk.cryptoSuite
+}
+
+// SigningManager returns signing manager
+func (c *fabContext) SigningManager() apifabclient.SigningManager {
+	return c.sdk.signingManager
 }
 
 // StateStore returns state store
@@ -43,14 +52,14 @@ func (c *sdkContext) SelectionProvider() apifabclient.SelectionProvider {
 	return c.sdk.selectionProvider
 }
 
-// SigningManager returns signing manager
-func (c *sdkContext) SigningManager() apifabclient.SigningManager {
-	return c.sdk.signingManager
-}
-
 // FabricProvider provides fabric objects such as peer and user
 func (c *sdkContext) FabricProvider() apicore.FabricProvider {
 	return c.sdk.fabricProvider
+}
+
+// ChannelProvider provides channel services.
+func (c *sdkContext) ChannelProvider() apifabclient.ChannelProvider {
+	return c.sdk.channelProvider
 }
 
 type identityOptions struct {
@@ -108,26 +117,19 @@ func (sdk *FabricSDK) newIdentity(orgName string, options ...IdentityOption) (ap
 	return opts.identity, nil
 }
 
-// session represents an identity being used with clients.
-// TODO: Better description
-// TODO: consider removing this extra wrapper.
+// session represents an identity being used with clients along with services
+// that associate with that identity (particularly the channel service).
 type session struct {
-	user apifabclient.IdentityContext
+	apifabclient.IdentityContext
 }
 
 // newSession creates a session from a context and a user (TODO)
-func newSession(user apifabclient.IdentityContext) *session {
+func newSession(ic apifabclient.IdentityContext, cp apifabclient.ChannelProvider) *session {
 	s := session{
-		user: user,
+		IdentityContext: ic,
 	}
 
 	return &s
-}
-
-// Identity returns the User in the session.
-// TODO: reduce interface to identity
-func (s *session) Identity() apifabclient.IdentityContext {
-	return s.user
 }
 
 // FabricProvider provides fabric objects such as peer and user

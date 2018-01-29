@@ -309,17 +309,14 @@ func TestTransactionValidationError(t *testing.T) {
 }
 
 func setupTestChannel() (*channel.Channel, error) {
-	client := setupTestClient()
-	return channel.NewChannel("testChannel", client)
+	ctx := setupTestContext()
+	return channel.New(ctx, "testChannel")
 }
 
-func setupTestClient() *fcmocks.MockClient {
-	client := fcmocks.NewMockClient()
+func setupTestContext() apifabclient.Context {
 	user := fcmocks.NewMockUser("test")
-	cryptoSuite := &fcmocks.MockCryptoSuite{}
-	client.SetIdentityContext(user)
-	client.SetCryptoSuite(cryptoSuite)
-	return client
+	ctx := fcmocks.NewMockContext(user)
+	return ctx
 }
 
 func setupTestDiscovery(discErr error, peers []apifabclient.Peer) (apifabclient.DiscoveryService, error) {
@@ -349,7 +346,7 @@ func setupChannelClient(peers []apifabclient.Peer, t *testing.T) *ChannelClient 
 
 func setupChannelClientWithError(discErr error, selectionErr error, peers []apifabclient.Peer, t *testing.T) *ChannelClient {
 
-	fcClient := setupTestClient()
+	fabCtx := setupTestContext()
 
 	testChannel, err := setupTestChannel()
 	if err != nil {
@@ -369,7 +366,13 @@ func setupChannelClientWithError(discErr error, selectionErr error, peers []apif
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	ch, err := NewChannelClient(fcClient, testChannel, discoveryService, selectionService, nil)
+	ctx := Context{
+		ProviderContext:  fabCtx,
+		DiscoveryService: discoveryService,
+		SelectionService: selectionService,
+		Channel:          testChannel,
+	}
+	ch, err := New(ctx)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -380,7 +383,7 @@ func setupChannelClientWithError(discErr error, selectionErr error, peers []apif
 func setupChannelClientWithNodes(peers []apifabclient.Peer,
 	orderers []apifabclient.Orderer, t *testing.T) *ChannelClient {
 
-	fcClient := setupTestClient()
+	fabCtx := setupTestContext()
 	testChannel, err := setupTestChannel()
 	assert.Nil(t, err, "Failed to setup test channel")
 
@@ -395,7 +398,13 @@ func setupChannelClientWithNodes(peers []apifabclient.Peer,
 	selectionService, err := setupTestSelection(nil, peers)
 	assert.Nil(t, err, "Failed to setup discovery service")
 
-	ch, err := NewChannelClient(fcClient, testChannel, discoveryService, selectionService, nil)
+	ctx := Context{
+		ProviderContext:  fabCtx,
+		DiscoveryService: discoveryService,
+		SelectionService: selectionService,
+		Channel:          testChannel,
+	}
+	ch, err := New(ctx)
 	assert.Nil(t, err, "Failed to create new channel client")
 
 	return ch

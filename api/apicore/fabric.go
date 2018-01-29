@@ -18,6 +18,7 @@ import (
 type FabricProvider interface {
 	NewChannelClient(user apifabclient.IdentityContext, name string) (apifabclient.Channel, error)
 	NewResourceClient(user apifabclient.IdentityContext) (apifabclient.Resource, error)
+	NewEventHub(ic apifabclient.IdentityContext, channelID string) (apifabclient.EventHub, error)
 	NewCAClient(orgID string) (apifabca.FabricCAClient, error)
 
 	NewPeer(url string, certificate *x509.Certificate, serverHostOverride string) (apifabclient.Peer, error)

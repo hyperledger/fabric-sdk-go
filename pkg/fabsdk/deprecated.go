@@ -129,7 +129,7 @@ func (sdk *FabricSDK) newSessionFromIdentityName(orgID string, id string) (*sess
 		return nil, errors.WithMessage(err, "failed to get pre-enrolled user")
 	}
 
-	session := newSession(user)
+	session := newSession(user, sdk.channelProvider)
 
 	return session, nil
 }
@@ -137,6 +137,6 @@ func (sdk *FabricSDK) newSessionFromIdentityName(orgID string, id string) (*sess
 // NewSystemClient returns a new client for the system (operations not on a channel)
 //
 // Deprecated: the system client is being replaced with the interfaces supplied by NewClient()
-func (sdk *FabricSDK) NewSystemClient(s apisdk.Session) (apifabclient.Resource, error) {
-	return sdk.FabricProvider().NewResourceClient(s.Identity())
+func (sdk *FabricSDK) NewSystemClient(s apisdk.SessionContext) (apifabclient.Resource, error) {
+	return sdk.FabricProvider().NewResourceClient(s)
 }
