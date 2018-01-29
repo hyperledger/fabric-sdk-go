@@ -8,6 +8,8 @@ package apitxn
 
 import (
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/retry"
 )
 
 //WithTimeout encapsulates time.Duration to Option
@@ -22,6 +24,14 @@ func WithTimeout(timeout time.Duration) Option {
 func WithProposalProcessor(proposalProcessors ...ProposalProcessor) Option {
 	return func(opts *Opts) error {
 		opts.ProposalProcessors = proposalProcessors
+		return nil
+	}
+}
+
+// WithRetry option to configure retries
+func WithRetry(opt retry.Opts) Option {
+	return func(opts *Opts) error {
+		opts.Retry = opt
 		return nil
 	}
 }

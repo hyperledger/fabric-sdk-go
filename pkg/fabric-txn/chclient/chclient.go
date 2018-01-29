@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/txnhandler"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	txnHandlerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
+	"github.com/hyperledger/fabric-sdk-go/pkg/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 )
 
@@ -85,8 +86,12 @@ func (cc *ChannelClient) InvokeHandler(handler txnhandler.Handler, request apitx
 	complete := make(chan bool)
 
 	go func() {
+	handleInvoke:
 		//Perform action through handler
 		handler.Handle(requestContext, clientContext)
+		if requestContext.RetryHandler.Required(requestContext.Response.Error) {
+			goto handleInvoke
+		}
 		complete <- true
 	}()
 	select {
@@ -113,9 +118,10 @@ func (cc *ChannelClient) prepareHandlerContexts(request apitxn.Request, options 
 	}
 
 	requestContext := &txnhandler.RequestContext{
-		Request:  request,
-		Opts:     options,
-		Response: apitxn.Response{},
+		Request:      request,
+		Opts:         options,
+		Response:     apitxn.Response{},
+		RetryHandler: retry.New(options.Retry),
 	}
 
 	if requestContext.Opts.Timeout == 0 {

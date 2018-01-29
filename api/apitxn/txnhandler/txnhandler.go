@@ -9,6 +9,7 @@ package txnhandler
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/pkg/retry"
 )
 
 //Handler for chaining transaction executions
@@ -26,7 +27,8 @@ type ClientContext struct {
 
 //RequestContext contains request, opts, response parameters for handler execution
 type RequestContext struct {
-	Request  apitxn.Request
-	Opts     apitxn.Opts
-	Response apitxn.Response
+	Request      apitxn.Request
+	Opts         apitxn.Opts
+	Response     apitxn.Response
+	RetryHandler retry.Handler
 }
