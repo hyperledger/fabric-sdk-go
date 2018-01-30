@@ -9,7 +9,7 @@ package apitxn
 import (
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 

@@ -17,9 +17,9 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/txnhandler"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	txnHandlerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
-	"github.com/hyperledger/fabric-sdk-go/pkg/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 )
 
 const (

@@ -9,7 +9,7 @@ package apitxn
 import (
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 )
 
 //WithTimeout encapsulates time.Duration to Option

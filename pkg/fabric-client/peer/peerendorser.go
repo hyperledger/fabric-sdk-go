@@ -16,7 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
-	"github.com/hyperledger/fabric-sdk-go/pkg/status"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	"crypto/x509"
