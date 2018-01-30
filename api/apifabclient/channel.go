@@ -65,6 +65,7 @@ type Channel interface {
 	QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error)
 	QueryByChaincode(txn.ChaincodeInvokeRequest) ([][]byte, error)
 	QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error)
+	QueryConfigBlock(peers []Peer, minResponses int) (*common.ConfigEnvelope, error)
 }
 
 // OrgAnchorPeer contains information about an anchor peer on this channel

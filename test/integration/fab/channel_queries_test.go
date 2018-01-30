@@ -70,9 +70,11 @@ func TestChannelQueries(t *testing.T) {
 
 	testQueryBlock(t, channel)
 
+	testQueryConfigBlock(t, channel)
+
 	testQueryChannels(t, channel, client)
 
-	testInstalledChaincodes(t, channel, client, testSetup)
+	testInstalledChaincodes(t, channel, client)
 
 	testQueryByChaincode(t, channel, testSetup)
 
@@ -175,6 +177,23 @@ func testQueryBlock(t *testing.T, channel fab.Channel) {
 
 }
 
+func testQueryConfigBlock(t *testing.T, channel fab.Channel) {
+
+	// Our target will be primary peer on this channel
+	targets := []fab.Peer{channel.PrimaryPeer()}
+
+	// Retrieve current channel configuration
+	cfgEnvelope, err := channel.QueryConfigBlock(targets, 1)
+	if err != nil {
+		t.Fatalf("QueryConfig return error: %v", err)
+	}
+
+	if cfgEnvelope.Config == nil {
+		t.Fatalf("QueryConfig config data is nil")
+	}
+
+}
+
 func testQueryChannels(t *testing.T, channel fab.Channel, client fab.Resource) {
 
 	// Our target will be primary peer on this channel
@@ -191,7 +210,7 @@ func testQueryChannels(t *testing.T, channel fab.Channel, client fab.Resource) {
 
 }
 
-func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.Resource, testSetup *integration.BaseSetupImpl) {
+func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.Resource) {
 
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()

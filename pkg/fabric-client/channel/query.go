@@ -7,16 +7,16 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"bytes"
 	"strconv"
 
 	"github.com/golang/protobuf/proto"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
 const (
@@ -233,4 +233,83 @@ func (c *Channel) QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([]
 // TODO - should be moved.
 func QueryBySystemChaincode(request txn.ChaincodeInvokeRequest, clientContext fab.Context) ([][]byte, error) {
 	return queryByChaincode(systemChannel, request, clientContext)
+}
+
+// QueryConfigBlock returns the current configuration block for the specified channel. If the
+// peer doesn't belong to the channel, return error
+func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.ConfigEnvelope, error) {
+
+	if len(peers) == 0 {
+		return nil, errors.New("peer(s) required")
+	}
+
+	if minResponses <= 0 {
+		return nil, errors.New("Minimum endorser has to be greater than zero")
+	}
+
+	request := txn.ChaincodeInvokeRequest{
+		ChaincodeID: "cscc",
+		Fcn:         "GetConfigBlock",
+		Args:        [][]byte{[]byte(c.Name())},
+		Targets:     peersToTxnProcessors(peers),
+	}
+
+	// we are using system channel here (query to system cc)
+	transactionProposalResponses, _, err := SendTransactionProposalWithChannelID(systemChannel, request, c.clientContext)
+	if err != nil {
+		return nil, errors.WithMessage(err, "SendTransactionProposalWithChannelID failed")
+	}
+
+	responses, err := filterProposalResponses(transactionProposalResponses)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(responses) < minResponses {
+		return nil, errors.Errorf("Required minimum %d endorsments got %d", minResponses, len(responses))
+	}
+
+	r := responses[0]
+	for _, p := range responses {
+		if bytes.Compare(r, p) != 0 {
+			return nil, errors.New("Payloads for config block do not match")
+		}
+	}
+
+	block := &common.Block{}
+	err = proto.Unmarshal(responses[0], block)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal block failed")
+	}
+
+	if block.Data == nil || block.Data.Data == nil {
+		return nil, errors.New("config block data is nil")
+	}
+
+	if len(block.Data.Data) != 1 {
+		return nil, errors.New("config block must contain one transaction")
+	}
+
+	envelope := &common.Envelope{}
+	if err = proto.Unmarshal(block.Data.Data[0], envelope); err != nil {
+		return nil, errors.Wrap(err, "unmarshal envelope from config block failed")
+	}
+	payload := &common.Payload{}
+	if err := proto.Unmarshal(envelope.Payload, payload); err != nil {
+		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
+	}
+	channelHeader := &common.ChannelHeader{}
+	if err := proto.Unmarshal(payload.Header.ChannelHeader, channelHeader); err != nil {
+		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
+	}
+	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG {
+		return nil, errors.New("block must be of type 'CONFIG'")
+	}
+	configEnvelope := &common.ConfigEnvelope{}
+	if err := proto.Unmarshal(payload.Data, configEnvelope); err != nil {
+		return nil, errors.Wrap(err, "unmarshal config envelope failed")
+	}
+
+	return configEnvelope, nil
+
 }

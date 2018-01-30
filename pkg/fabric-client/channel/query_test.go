@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
@@ -180,4 +182,97 @@ func TestQueryBySystemChaincode(t *testing.T) {
 	if !reflect.DeepEqual(resp[0], expectedResp) {
 		t.Fatalf("Unexpected transaction proposal response: %v", resp)
 	}
+}
+
+func TestQueryConfig(t *testing.T) {
+	channel, _ := setupTestChannel()
+
+	// empty targets
+	_, err := channel.QueryConfigBlock([]fab.Peer{}, 1)
+	if err == nil {
+		t.Fatalf("Should have failed due to empty targets")
+	}
+
+	// min endorsers <= 0
+	_, err = channel.QueryConfigBlock([]fab.Peer{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 0)
+	if err == nil {
+		t.Fatalf("Should have failed due to empty targets")
+	}
+
+	// peer without payload
+	_, err = channel.QueryConfigBlock([]fab.Peer{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 1)
+	if err == nil {
+		t.Fatalf("Should have failed due to nil block metadata")
+	}
+
+	// create config block builder in order to create valid payload
+	builder := &mocks.MockConfigBlockBuilder{
+		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
+			ModPolicy: "Admins",
+			MSPNames: []string{
+				"Org1MSP",
+				"Org2MSP",
+			},
+			OrdererAddress: "localhost:7054",
+			RootCA:         validRootCA,
+		},
+		Index:           0,
+		LastConfigIndex: 0,
+	}
+
+	payload, err := proto.Marshal(builder.Build())
+	if err != nil {
+		t.Fatalf("Failed to marshal mock block")
+	}
+
+	// peer with valid config block payload
+	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: payload}
+
+	// fail with min endorsers
+	res, err := channel.QueryConfigBlock([]fab.Peer{&peer}, 2)
+	if err == nil {
+		t.Fatalf("Should have failed with since there's one endorser and at least two are required")
+	}
+
+	// success with one endorser
+	res, err = channel.QueryConfigBlock([]fab.Peer{&peer}, 1)
+	if err != nil || res == nil {
+		t.Fatalf("Test QueryConfig failed: %v", err)
+	}
+
+	// create second endorser with same payload
+	peer2 := mocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, Payload: payload}
+
+	// success with two endorsers
+	res, err = channel.QueryConfigBlock([]fab.Peer{&peer, &peer2}, 2)
+	if err != nil || res == nil {
+		t.Fatalf("Test QueryConfig failed: %v", err)
+	}
+
+	// Create different config block payload
+	builder2 := &mocks.MockConfigBlockBuilder{
+		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
+			ModPolicy: "Admins",
+			MSPNames: []string{
+				"Org1MSP",
+			},
+			OrdererAddress: "builder2:7054",
+			RootCA:         validRootCA,
+		},
+		Index:           0,
+		LastConfigIndex: 0,
+	}
+
+	payload2, err := proto.Marshal(builder2.Build())
+	if err != nil {
+		t.Fatalf("Failed to marshal mock block 2")
+	}
+
+	// peer 2 now had different payload; query config block should fail
+	peer2.Payload = payload2
+	res, err = channel.QueryConfigBlock([]fab.Peer{&peer, &peer2}, 2)
+	if err == nil {
+		t.Fatalf("Should have failed for different block payloads")
+	}
+
 }

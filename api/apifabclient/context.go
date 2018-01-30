@@ -31,6 +31,7 @@ type ChannelProvider interface {
 
 // ChannelService supplies services related to a channel.
 type ChannelService interface {
+	ChannelConfig() (ChannelConfig, error)
 	Channel() (Channel, error)
 	EventHub() (EventHub, error) // TODO support new event delivery
 }

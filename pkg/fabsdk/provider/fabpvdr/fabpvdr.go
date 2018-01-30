@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
@@ -109,6 +110,17 @@ func (f *FabricProvider) NewEventHub(ic apifabclient.IdentityContext, channelID 
 		IdentityContext: ic,
 	}
 	return events.FromConfig(eventCtx, &eventSource.PeerConfig)
+}
+
+// NewChannelConfig initializes the channel config
+func (f *FabricProvider) NewChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
+
+	ctx := chconfig.Context{
+		ProviderContext: f.providerContext,
+		IdentityContext: ic,
+	}
+
+	return chconfig.New(ctx, channelID)
 }
 
 // NewCAClient returns a new FabricCAClient initialized for the current instance of the SDK.
