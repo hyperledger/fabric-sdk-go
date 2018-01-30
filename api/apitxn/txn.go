@@ -24,7 +24,6 @@ type Request struct {
 //Response contains response parameters for query and execute transaction
 type Response struct {
 	Payload          []byte
-	Error            error
 	TransactionID    TransactionID
 	TxValidationCode pb.TxValidationCode
 	Responses        []*TransactionProposalResponse
@@ -72,10 +71,10 @@ type CCEvent struct {
 type ChannelClient interface {
 
 	// Query chaincode  with request and optional options provided
-	Query(request Request, opts ...Option) Response
+	Query(request Request, opts ...Option) (Response, error)
 
 	// Execute execute transaction  with request and optional options provided
-	Execute(request Request, opts ...Option) Response
+	Execute(request Request, opts ...Option) (Response, error)
 
 	// RegisterChaincodeEvent registers chain code event
 	// @param {chan bool} channel which receives event details when the event is complete

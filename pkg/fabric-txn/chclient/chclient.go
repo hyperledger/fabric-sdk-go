@@ -59,28 +59,28 @@ func New(c Context) (*ChannelClient, error) {
 }
 
 // Query chaincode using request and optional options provided
-func (cc *ChannelClient) Query(request apitxn.Request, options ...apitxn.Option) apitxn.Response {
+func (cc *ChannelClient) Query(request apitxn.Request, options ...apitxn.Option) (apitxn.Response, error) {
 	return cc.InvokeHandler(txnHandlerImpl.NewQueryHandler(), request, cc.addDefaultTimeout(apiconfig.Query, options...)...)
 }
 
 // Execute prepares and executes transaction using request and optional options provided
-func (cc *ChannelClient) Execute(request apitxn.Request, options ...apitxn.Option) apitxn.Response {
+func (cc *ChannelClient) Execute(request apitxn.Request, options ...apitxn.Option) (apitxn.Response, error) {
 	return cc.InvokeHandler(txnHandlerImpl.NewExecuteHandler(), request, cc.addDefaultTimeout(apiconfig.Execute, options...)...)
 }
 
 //InvokeHandler invokes handler using request and options provided
-func (cc *ChannelClient) InvokeHandler(handler txnhandler.Handler, request apitxn.Request, options ...apitxn.Option) apitxn.Response {
+func (cc *ChannelClient) InvokeHandler(handler txnhandler.Handler, request apitxn.Request, options ...apitxn.Option) (apitxn.Response, error) {
 	//TODO: this function going to be exposed through ChannelClient interface
 	//Read execute tx options
 	txnOpts, err := cc.prepareOptsFromOptions(options...)
 	if err != nil {
-		return apitxn.Response{Error: err}
+		return apitxn.Response{}, err
 	}
 
 	//Prepare context objects for handler
 	requestContext, clientContext, err := cc.prepareHandlerContexts(request, txnOpts)
 	if err != nil {
-		return apitxn.Response{Error: err}
+		return apitxn.Response{}, err
 	}
 
 	complete := make(chan bool)
@@ -89,17 +89,17 @@ func (cc *ChannelClient) InvokeHandler(handler txnhandler.Handler, request apitx
 	handleInvoke:
 		//Perform action through handler
 		handler.Handle(requestContext, clientContext)
-		if requestContext.RetryHandler.Required(requestContext.Response.Error) {
+		if requestContext.RetryHandler.Required(requestContext.Error) {
 			goto handleInvoke
 		}
 		complete <- true
 	}()
 	select {
 	case <-complete:
-		return requestContext.Response
+		return requestContext.Response, requestContext.Error
 	case <-time.After(txnOpts.Timeout):
-		return apitxn.Response{Error: status.New(status.ClientStatus, status.Timeout.ToInt32(),
-			"Operation timed out", nil)}
+		return apitxn.Response{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
+			"Operation timed out", nil)
 	}
 }
 

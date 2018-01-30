@@ -113,9 +113,9 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	// Release all channel client resources
 	defer chClient.Close()
 
-	response := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
-	if response.Error != nil {
-		t.Fatalf("Failed to query funds: %s", response.Error)
+	response, err := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	if err != nil {
+		t.Fatalf("Failed to query funds: %s", err)
 	}
 	value := response.Payload
 
@@ -126,9 +126,9 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	rce := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
 
 	// Move funds
-	response = chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
-	if response.Error != nil {
-		t.Fatalf("Failed to move funds: %s", response.Error)
+	response, err = chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
 	}
 
 	select {
@@ -145,9 +145,9 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	}
 
 	// Verify move funds transaction result
-	response = chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
-	if response.Error != nil {
-		t.Fatalf("Failed to query funds after transaction: %s", response.Error)
+	response, err = chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	if err != nil {
+		t.Fatalf("Failed to query funds after transaction: %s", err)
 	}
 
 	valueInt, _ := strconv.Atoi(string(value))

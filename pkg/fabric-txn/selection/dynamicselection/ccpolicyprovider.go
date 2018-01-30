@@ -137,9 +137,9 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 			Args:        ccArgs,
 		}
 
-		resp := channel.Query(request, apitxn.WithProposalProcessor(peer))
-		if resp.Error != nil {
-			queryErrors = append(queryErrors, resp.Error.Error())
+		resp, err := channel.Query(request, apitxn.WithProposalProcessor(peer))
+		if err != nil {
+			queryErrors = append(queryErrors, err.Error())
 			continue
 		} else {
 			// Valid response obtained, stop querying

@@ -41,11 +41,11 @@ func TestTxProposalResponseFilter(t *testing.T) {
 	peers := []apifabclient.Peer{testPeer1, testPeer2}
 	chClient := setupChannelClient(peers, t)
 
-	response := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
-	if response.Error == nil {
+	_, err := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
 		t.Fatalf("Should have failed for not success status")
 	}
-	statusError, ok := status.FromError(response.Error)
+	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error")
 	assert.EqualValues(t, common.Status_INTERNAL_SERVER_ERROR, status.ToPeerStatusCode(statusError.Code))
 	assert.Equal(t, status.EndorserServerStatus, statusError.Group)
@@ -55,11 +55,11 @@ func TestTxProposalResponseFilter(t *testing.T) {
 	testPeer2.Status = 200
 	peers = []apifabclient.Peer{testPeer1, testPeer2}
 	chClient = setupChannelClient(peers, t)
-	response = chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
-	if response.Error == nil {
+	_, err = chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
 		t.Fatalf("Should have failed for not success status")
 	}
-	statusError, ok = status.FromError(response.Error)
+	statusError, ok = status.FromError(err)
 	assert.True(t, ok, "Expected status error")
 	assert.EqualValues(t, status.EndorsementMismatch, status.ToSDKStatusCode(statusError.Code))
 	assert.Equal(t, status.EndorserClientStatus, statusError.Group)
@@ -70,24 +70,24 @@ func TestQuery(t *testing.T) {
 
 	chClient := setupChannelClient(nil, t)
 
-	response := chClient.Query(apitxn.Request{})
-	if response.Error == nil {
+	_, err := chClient.Query(apitxn.Request{})
+	if err == nil {
 		t.Fatalf("Should have failed for empty query request")
 	}
 
-	response = chClient.Query(apitxn.Request{Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
-	if response.Error == nil {
+	_, err = chClient.Query(apitxn.Request{Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
 		t.Fatalf("Should have failed for empty chaincode ID")
 	}
 
-	response = chClient.Query(apitxn.Request{ChaincodeID: "testCC", Args: [][]byte{[]byte("query"), []byte("b")}})
-	if response.Error == nil {
+	_, err = chClient.Query(apitxn.Request{ChaincodeID: "testCC", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
 		t.Fatalf("Should have failed for empty function")
 	}
 
-	response = chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
-	if response.Error != nil {
-		t.Fatalf("Failed to invoke test cc: %s", response.Error)
+	response, err := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err != nil {
+		t.Fatalf("Failed to invoke test cc: %s", err)
 	}
 
 	if response.Payload != nil {
@@ -99,8 +99,8 @@ func TestQuery(t *testing.T) {
 func TestQueryDiscoveryError(t *testing.T) {
 	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, nil, t)
 
-	response := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
-	if response.Error == nil {
+	_, err := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
 		t.Fatalf("Should have failed to query with error in discovery.GetPeers()")
 	}
 }
@@ -108,8 +108,8 @@ func TestQueryDiscoveryError(t *testing.T) {
 func TestQuerySelectionError(t *testing.T) {
 	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), nil, t)
 
-	response := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
-	if response.Error == nil {
+	_, err := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
 		t.Fatalf("Should have failed to query with error in selection.GetEndorsersFor ...")
 	}
 }
@@ -117,9 +117,9 @@ func TestQuerySelectionError(t *testing.T) {
 func TestQueryWithOptSync(t *testing.T) {
 	chClient := setupChannelClient(nil, t)
 
-	response := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
-	if response.Error != nil {
-		t.Fatalf("Failed to invoke test cc: %s", response.Error)
+	response, err := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err != nil {
+		t.Fatalf("Failed to invoke test cc: %s", err)
 	}
 
 	if response.Payload != nil {
@@ -130,17 +130,21 @@ func TestQueryWithOptSync(t *testing.T) {
 // TestQueryWithOptAsync demonstrates an example of an asynchronous query call
 func TestQueryWithOptAsync(t *testing.T) {
 	chClient := setupChannelClient(nil, t)
-
-	notifier := make(chan apitxn.Response)
-	go func() {
-		notifier <- chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
-	}()
-	response := <-notifier
-	if response.Error != nil {
-		t.Fatalf("Failed to invoke test cc: %s", response.Error)
+	type responseAndError struct {
+		Response apitxn.Response
+		Error    error
 	}
-	if response.Payload != nil {
-		t.Fatalf("Expecting nil, got %s", response.Payload)
+	notifier := make(chan responseAndError)
+	go func() {
+		resp, err := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+		notifier <- responseAndError{Response: resp, Error: err}
+	}()
+	resp := <-notifier
+	if resp.Error != nil {
+		t.Fatalf("Failed to invoke test cc: %s", resp.Error)
+	}
+	if resp.Response.Payload != nil {
+		t.Fatalf("Expecting nil, got %s", resp.Response.Payload)
 	}
 }
 
@@ -153,10 +157,10 @@ func TestQueryWithOptTarget(t *testing.T) {
 
 	targets := peer.PeersToTxnProcessors(peers)
 
-	response := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke",
+	response, err := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke",
 		Args: [][]byte{[]byte("query"), []byte("b")}}, apitxn.WithProposalProcessor(targets...))
-	if response.Error != nil {
-		t.Fatalf("Failed to invoke test cc: %s", response.Error)
+	if err != nil {
+		t.Fatalf("Failed to invoke test cc: %s", err)
 	}
 
 	if response.Payload != nil {
@@ -167,18 +171,18 @@ func TestQueryWithOptTarget(t *testing.T) {
 func TestExecuteTx(t *testing.T) {
 	chClient := setupChannelClient(nil, t)
 
-	response := chClient.Execute(apitxn.Request{})
-	if response.Error == nil {
+	_, err := chClient.Execute(apitxn.Request{})
+	if err == nil {
 		t.Fatalf("Should have failed for empty invoke request")
 	}
 
-	response = chClient.Execute(apitxn.Request{Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
-	if response.Error == nil {
+	_, err = chClient.Execute(apitxn.Request{Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
+	if err == nil {
 		t.Fatalf("Should have failed for empty chaincode ID")
 	}
 
-	response = chClient.Execute(apitxn.Request{ChaincodeID: "testCC", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
-	if response.Error == nil {
+	_, err = chClient.Execute(apitxn.Request{ChaincodeID: "testCC", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
+	if err == nil {
 		t.Fatalf("Should have failed for empty function")
 	}
 
@@ -188,9 +192,9 @@ func TestExecuteTx(t *testing.T) {
 func TestExecuteTxDiscoveryError(t *testing.T) {
 	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, nil, t)
 
-	response := chClient.Execute(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke",
+	_, err := chClient.Execute(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke",
 		Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
-	if response.Error == nil {
+	if err == nil {
 		t.Fatalf("Should have failed to execute tx with error in discovery.GetPeers()")
 	}
 }
@@ -198,9 +202,9 @@ func TestExecuteTxDiscoveryError(t *testing.T) {
 func TestExecuteTxSelectionError(t *testing.T) {
 	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), nil, t)
 
-	response := chClient.Execute(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke",
+	_, err := chClient.Execute(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke",
 		Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
-	if response.Error == nil {
+	if err == nil {
 		t.Fatalf("Should have failed to execute tx with error in selection.GetEndorserrsFor ...")
 	}
 }
@@ -216,11 +220,11 @@ func TestRPCStatusErrorPropagation(t *testing.T) {
 	testPeer1.Error = testStatus
 	chClient := setupChannelClient([]apifabclient.Peer{testPeer1}, t)
 
-	response := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
-	if response.Error == nil {
+	_, err := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
 		t.Fatalf("Should have failed for not success status")
 	}
-	statusError, ok := status.FromError(response.Error)
+	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error")
 	assert.EqualValues(t, status.ConnectionFailed, status.ToSDKStatusCode(statusError.Code))
 	assert.Equal(t, status.EndorserClientStatus, statusError.Group)
@@ -244,10 +248,10 @@ func TestOrdererStatusError(t *testing.T) {
 	mockOrderer.EnqueueSendBroadcastError(status.New(status.OrdererClientStatus,
 		status.ConnectionFailed.ToInt32(), testErrorMessage, nil))
 
-	response := chClient.Execute(apitxn.Request{ChaincodeID: "test", Fcn: "invoke",
+	_, err := chClient.Execute(apitxn.Request{ChaincodeID: "test", Fcn: "invoke",
 		Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
-	statusError, ok := status.FromError(response.Error)
-	assert.True(t, ok, "Expected status error got %+v", response.Error)
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error got %+v", err)
 	assert.EqualValues(t, status.ConnectionFailed, status.ToSDKStatusCode(statusError.Code))
 	assert.Equal(t, status.OrdererClientStatus, statusError.Group)
 	assert.Equal(t, testErrorMessage, statusError.Message, "Expected response message from server")
@@ -273,12 +277,12 @@ func TestTransactionValidationError(t *testing.T) {
 
 	chClient := setupChannelClient(peers, t)
 	chClient.eventHub = mockEventHub
-	response := chClient.Execute(apitxn.Request{ChaincodeID: "test", Fcn: "invoke",
+	response, err := chClient.Execute(apitxn.Request{ChaincodeID: "test", Fcn: "invoke",
 		Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
 	assert.Nil(t, response.Payload, "Expected nil result on failed execute operation")
-	assert.NotNil(t, response.Error, "expected error")
-	statusError, ok := status.FromError(response.Error)
-	assert.True(t, ok, "Expected status error got %+v", response.Error)
+	assert.NotNil(t, err, "expected error")
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error got %+v", err)
 	assert.EqualValues(t, validationCode, status.ToTransactionValidationCode(statusError.Code))
 }
 
@@ -291,9 +295,9 @@ func TestExecuteTxWithRetries(t *testing.T) {
 	retryOpts := retry.DefaultOpts
 	retryOpts.RetryableCodes = retry.ChannelClientRetryableCodes
 
-	response := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}},
+	_, err := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}},
 		apitxn.WithRetry(retryOpts))
-	if response.Error == nil {
+	if err == nil {
 		t.Fatalf("Should have failed for not success status")
 	}
 	assert.Equal(t, retry.DefaultOpts.Attempts, testPeer1.ProcessProposalCalls-1, "Expected peer to be called (retry attempts + 1) times")

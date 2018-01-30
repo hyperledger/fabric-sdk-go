@@ -44,8 +44,8 @@ func TestQueryHandlerSuccess(t *testing.T) {
 
 	//Perform action through handler
 	queryHandler.Handle(requestContext, clientContext)
-	if requestContext.Response.Error != nil {
-		t.Fatal("Query handler failed", requestContext.Response.Error)
+	if requestContext.Error != nil {
+		t.Fatal("Query handler failed", requestContext.Error)
 	}
 }
 
@@ -75,7 +75,7 @@ func TestExecuteTxHandlerSuccess(t *testing.T) {
 	executeHandler := NewExecuteHandler()
 	//Perform action through handler
 	executeHandler.Handle(requestContext, clientContext)
-	assert.Nil(t, requestContext.Response.Error)
+	assert.Nil(t, requestContext.Error)
 }
 
 func TestQueryHandlerErrors(t *testing.T) {
@@ -92,8 +92,8 @@ func TestQueryHandlerErrors(t *testing.T) {
 
 	//Perform action through handler
 	queryHandler.Handle(requestContext, clientContext)
-	if requestContext.Response.Error == nil || !strings.Contains(requestContext.Response.Error.Error(), discoveryServiceError) {
-		t.Fatal("Expected error: ", discoveryServiceError, ", Received error:", requestContext.Response.Error.Error())
+	if requestContext.Error == nil || !strings.Contains(requestContext.Error.Error(), discoveryServiceError) {
+		t.Fatal("Expected error: ", discoveryServiceError, ", Received error:", requestContext.Error.Error())
 	}
 
 	//Error Scenario 2
@@ -101,8 +101,8 @@ func TestQueryHandlerErrors(t *testing.T) {
 
 	//Perform action through handler
 	queryHandler.Handle(requestContext, clientContext)
-	if requestContext.Response.Error == nil || !strings.Contains(requestContext.Response.Error.Error(), selectionServiceError) {
-		t.Fatal("Expected error: ", selectionServiceError, ", Received error:", requestContext.Response.Error.Error())
+	if requestContext.Error == nil || !strings.Contains(requestContext.Error.Error(), selectionServiceError) {
+		t.Fatal("Expected error: ", selectionServiceError, ", Received error:", requestContext.Error.Error())
 	}
 
 }

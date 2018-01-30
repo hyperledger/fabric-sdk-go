@@ -61,15 +61,15 @@ func TestChannelClient(t *testing.T) {
 	transientDataMap["result"] = []byte(transientData)
 
 	// Synchronous transaction
-	response := chClient.Execute(
+	response, err := chClient.Execute(
 		apitxn.Request{
 			ChaincodeID:  testSetup.ChainCodeID,
 			Fcn:          "invoke",
 			Args:         integration.ExampleCCTxArgs(),
 			TransientMap: transientDataMap,
 		})
-	if response.Error != nil {
-		t.Fatalf("Failed to move funds: %s", response.Error)
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
 	}
 	// The example CC should return the transient data as a response
 	if string(response.Payload) != transientData {
@@ -104,9 +104,9 @@ func TestChannelClient(t *testing.T) {
 
 func testQuery(expected string, ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
-	response := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
-	if response.Error != nil {
-		t.Fatalf("Failed to invoke example cc: %s", response.Error)
+	response, err := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	if err != nil {
+		t.Fatalf("Failed to invoke example cc: %s", err)
 	}
 
 	if string(response.Payload) != expected {
@@ -115,9 +115,9 @@ func testQuery(expected string, ccID string, chClient apitxn.ChannelClient, t *t
 }
 
 func testQueryWithOpts(expected string, ccID string, chClient apitxn.ChannelClient, t *testing.T) {
-	response := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
-	if response.Error != nil {
-		t.Fatalf("Query returned error: %s", response.Error)
+	response, err := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	if err != nil {
+		t.Fatalf("Query returned error: %s", err)
 	}
 	if string(response.Payload) != expected {
 		t.Fatalf("Expecting %s, got %s", expected, response.Payload)
@@ -125,9 +125,9 @@ func testQueryWithOpts(expected string, ccID string, chClient apitxn.ChannelClie
 }
 
 func testTransaction(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
-	response := chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
-	if response.Error != nil {
-		t.Fatalf("Failed to move funds: %s", response.Error)
+	response, err := chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
 	}
 	if response.TxValidationCode != pb.TxValidationCode_VALID {
 		t.Fatalf("Expecting TxValidationCode to be TxValidationCode_VALID but received: %s", response.TxValidationCode)
@@ -163,10 +163,9 @@ func testChaincodeEvent(ccID string, chClient apitxn.ChannelClient, t *testing.T
 	notifier := make(chan *apitxn.CCEvent)
 	rce := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
 
-	// Synchronous transaction
-	response := chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
-	if response.Error != nil {
-		t.Fatalf("Failed to move funds: %s", response.Error)
+	response, err := chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
 	}
 
 	select {
@@ -180,7 +179,7 @@ func testChaincodeEvent(ccID string, chClient apitxn.ChannelClient, t *testing.T
 	}
 
 	// Unregister chain code event using registration handle
-	err := chClient.UnregisterChaincodeEvent(rce)
+	err = chClient.UnregisterChaincodeEvent(rce)
 	if err != nil {
 		t.Fatalf("Unregister cc event failed: %s", err)
 	}

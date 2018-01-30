@@ -30,5 +30,6 @@ type RequestContext struct {
 	Request      apitxn.Request
 	Opts         apitxn.Opts
 	Response     apitxn.Response
+	Error        error
 	RetryHandler retry.Handler
 }
