@@ -15,3 +15,9 @@ type DiscoveryProvider interface {
 type DiscoveryService interface {
 	GetPeers() ([]Peer, error)
 }
+
+// TargetFilter allows for filtering target peers
+type TargetFilter interface {
+	// Accept returns true if peer should be included in the list of target peers
+	Accept(peer Peer) bool
+}

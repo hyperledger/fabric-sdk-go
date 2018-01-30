@@ -45,7 +45,7 @@ type ResourceMgmtClientOpts struct {
 //
 // Deprecated: Use NewClient instead.
 func (sdk *FabricSDK) NewChannelMgmtClientWithOpts(userName string, opt *ChannelMgmtClientOpts) (chmgmt.ChannelMgmtClient, error) {
-	o := []ClientOption{}
+	o := []ContextOption{}
 	if opt.OrgName != "" {
 		o = append(o, WithOrg(opt.OrgName))
 	}
@@ -61,26 +61,26 @@ func (sdk *FabricSDK) NewChannelMgmtClientWithOpts(userName string, opt *Channel
 //
 // Deprecated: Use NewClient instead.
 func (sdk *FabricSDK) NewResourceMgmtClientWithOpts(userName string, opt *ResourceMgmtClientOpts) (resmgmt.ResourceMgmtClient, error) {
-	o := []ClientOption{}
+	o := []ContextOption{}
 	if opt.OrgName != "" {
 		o = append(o, WithOrg(opt.OrgName))
-	}
-	if opt.TargetFilter != nil {
-		o = append(o, WithTargetFilter(opt.TargetFilter))
 	}
 	if opt.ConfigProvider != nil {
 		o = append(o, withConfig(opt.ConfigProvider))
 	}
-
+	clientOpts := []ClientOption{}
+	if opt.TargetFilter != nil {
+		clientOpts = append(clientOpts, WithTargetFilter(opt.TargetFilter))
+	}
 	c := sdk.NewClient(WithUser(userName), o...)
-	return c.ResourceMgmt()
+	return c.ResourceMgmt(clientOpts...)
 }
 
 // NewChannelClientWithOpts returns a new client for a channel (user has to be pre-enrolled)
 //
 // Deprecated: Use NewClient instead.
 func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string, opt *ChannelClientOpts) (apitxn.ChannelClient, error) {
-	o := []ClientOption{}
+	o := []ContextOption{}
 	if opt.OrgName != "" {
 		o = append(o, WithOrg(opt.OrgName))
 	}
@@ -95,7 +95,7 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 // NewChannelMgmtClient returns a new client for managing channels
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelMgmtClient(userName string, opts ...ClientOption) (chmgmt.ChannelMgmtClient, error) {
+func (sdk *FabricSDK) NewChannelMgmtClient(userName string, opts ...ContextOption) (chmgmt.ChannelMgmtClient, error) {
 	c := sdk.NewClient(WithUser(userName), opts...)
 	return c.ChannelMgmt()
 }
@@ -103,7 +103,7 @@ func (sdk *FabricSDK) NewChannelMgmtClient(userName string, opts ...ClientOption
 // NewResourceMgmtClient returns a new client for managing system resources
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewResourceMgmtClient(userName string, opts ...ClientOption) (resmgmt.ResourceMgmtClient, error) {
+func (sdk *FabricSDK) NewResourceMgmtClient(userName string, opts ...ContextOption) (resmgmt.ResourceMgmtClient, error) {
 	c := sdk.NewClient(WithUser(userName), opts...)
 	return c.ResourceMgmt()
 }
@@ -111,7 +111,7 @@ func (sdk *FabricSDK) NewResourceMgmtClient(userName string, opts ...ClientOptio
 // NewChannelClient returns a new client for a channel
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelClient(channelID string, userName string, opts ...ClientOption) (apitxn.ChannelClient, error) {
+func (sdk *FabricSDK) NewChannelClient(channelID string, userName string, opts ...ContextOption) (apitxn.ChannelClient, error) {
 	c := sdk.NewClient(WithUser(userName), opts...)
 	return c.Channel(channelID)
 }

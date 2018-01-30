@@ -89,7 +89,7 @@ func TestNewChannelClient(t *testing.T) {
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	client, err := factory.NewChannelClient(mockSDK, session, "mychannel")
+	client, err := factory.NewChannelClient(mockSDK, session, "mychannel", nil)
 	if err != nil {
 		t.Fatalf("Unexpected error creating channel client: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestNewChannelClientBadChannel(t *testing.T) {
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	_, err := factory.NewChannelClient(mockSDK, session, "badchannel")
+	_, err := factory.NewChannelClient(mockSDK, session, "badchannel", nil)
 	if err == nil {
 		t.Fatalf("Expected error creating channel client")
 	}

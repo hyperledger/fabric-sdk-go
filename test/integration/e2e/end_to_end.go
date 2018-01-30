@@ -14,7 +14,9 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
@@ -104,8 +106,9 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 
 	// ************ Test setup complete ************** //
 
+	discoveryFilter := &mockDiscoveryFilter{called: false}
 	// Channel client is used to query and execute transactions (Org1 is default org)
-	chClient, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(channelID)
+	chClient, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(channelID, fabsdk.WithTargetFilter(discoveryFilter))
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -118,6 +121,10 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 		t.Fatalf("Failed to query funds: %s", response.Error)
 	}
 	value := response.Payload
+
+	if !discoveryFilter.called {
+		t.Fatalf("discoveryFilter not called")
+	}
 
 	eventID := "test([a-zA-Z]+)"
 
@@ -155,4 +162,14 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	if valueInt+1 != valueAfterInvokeInt {
 		t.Fatalf("Execute failed. Before: %s, after: %s", value, response.Payload)
 	}
+}
+
+type mockDiscoveryFilter struct {
+	called bool
+}
+
+// Accept returns true if this peer is to be included in the target list
+func (df *mockDiscoveryFilter) Accept(peer apifabclient.Peer) bool {
+	df.called = true
+	return true
 }
