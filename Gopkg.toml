@@ -14,7 +14,7 @@
 
 [[constraint]]
   name = "google.golang.org/grpc"
-  version = "1.5.2"
+  version = "1.8.0"
 
 [[constraint]]
   name = "github.com/golang/protobuf"
@@ -60,4 +60,4 @@
 
 [[constraint]]
   name = "github.com/stretchr/testify"
-  version = "1.2.0"  
+  version = "1.2.0"
