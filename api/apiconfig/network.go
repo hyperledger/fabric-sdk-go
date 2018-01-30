@@ -12,7 +12,7 @@ import (
 	"io/ioutil"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	"github.com/hyperledger/fabric-sdk-go/pkg/status"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 )
 
 // NetworkConfig provides a static definition of a Hyperledger Fabric network

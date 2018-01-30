@@ -10,7 +10,7 @@ package retry
 import (
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/status"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 )
 
 // Opts defines the retry parameters

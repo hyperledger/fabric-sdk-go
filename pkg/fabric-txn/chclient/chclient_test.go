@@ -16,13 +16,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/retry"
-
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 

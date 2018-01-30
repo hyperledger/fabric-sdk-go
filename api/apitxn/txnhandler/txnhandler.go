@@ -9,7 +9,7 @@ package txnhandler
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/pkg/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 )
 
 //Handler for chaining transaction executions
