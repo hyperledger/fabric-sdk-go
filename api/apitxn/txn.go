@@ -31,7 +31,6 @@ type Response struct {
 
 // Opts allows the user to specify more advanced options
 type Opts struct {
-	Notifier           chan Response       // async
 	ProposalProcessors []ProposalProcessor // targets
 	Timeout            time.Duration
 }
@@ -71,10 +70,10 @@ type CCEvent struct {
 type ChannelClient interface {
 
 	// Query chaincode  with request and optional options provided
-	Query(request Request, opts ...Option) ([]byte, error)
+	Query(request Request, opts ...Option) Response
 
 	// Execute execute transaction  with request and optional options provided
-	Execute(request Request, opts ...Option) ([]byte, TransactionID, error)
+	Execute(request Request, opts ...Option) Response
 
 	// RegisterChaincodeEvent registers chain code event
 	// @param {chan bool} channel which receives event details when the event is complete

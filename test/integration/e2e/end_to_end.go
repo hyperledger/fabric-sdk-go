@@ -113,10 +113,11 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	// Release all channel client resources
 	defer chClient.Close()
 
-	value, err := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
-	if err != nil {
-		t.Fatalf("Failed to query funds: %s", err)
+	response := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	if response.Error != nil {
+		t.Fatalf("Failed to query funds: %s", response.Error)
 	}
+	value := response.Payload
 
 	eventID := "test([a-zA-Z]+)"
 
@@ -125,9 +126,9 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	rce := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
 
 	// Move funds
-	_, _, err = chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
-	if err != nil {
-		t.Fatalf("Failed to move funds: %s", err)
+	response = chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	if response.Error != nil {
+		t.Fatalf("Failed to move funds: %s", response.Error)
 	}
 
 	select {
@@ -144,14 +145,14 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	}
 
 	// Verify move funds transaction result
-	valueAfterInvoke, err := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
-	if err != nil {
-		t.Fatalf("Failed to query funds after transaction: %s", err)
+	response = chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	if response.Error != nil {
+		t.Fatalf("Failed to query funds after transaction: %s", response.Error)
 	}
 
 	valueInt, _ := strconv.Atoi(string(value))
-	valueAfterInvokeInt, _ := strconv.Atoi(string(valueAfterInvoke))
+	valueAfterInvokeInt, _ := strconv.Atoi(string(response.Payload))
 	if valueInt+1 != valueAfterInvokeInt {
-		t.Fatalf("Execute failed. Before: %s, after: %s", value, valueAfterInvoke)
+		t.Fatalf("Execute failed. Before: %s, after: %s", value, response.Payload)
 	}
 }

@@ -174,14 +174,14 @@ organizations:
     # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
     users:
       Admin:
-        key: 
+        key:
           pem: |
             -----BEGIN PRIVATE KEY-----
             MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg5Ahcehypz6IpAYy6
             DtIf5zZsRjP4PtsmDhLbBJsXmD6hRANCAAR+YRAn8dFpDQDyvDA7JKPl5PoZenj3
             m1KOnMry/mOZcnXnTIh2ASV4ss8VluzBcyHGAv7BCmxXxDkjcV9eybv8
             -----END PRIVATE KEY-----
-        cert: 
+        cert:
           pem: |
             -----BEGIN CERTIFICATE-----
             MIICGjCCAcCgAwIBAgIRAIQkbh9nsGnLmDalAVlj8sUwCgYIKoZIzj0EAwIwczEL
@@ -198,7 +198,7 @@ organizations:
             CsbWERvZPjR/GFEDEvc=
             -----END CERTIFICATE-----
       EmbeddedUser:
-        key: 
+        key:
           pem: |
             -----BEGIN PRIVATE KEY-----
             MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB
@@ -290,14 +290,14 @@ organizations:
 
     users:
       Admin:
-        key: 
+        key:
           pem: |
             -----BEGIN PRIVATE KEY-----
             MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgJ+bYISOlJ2gS24gG
             BN3wyp9xEkrTfIWGIQV8dQ0N1xWhRANCAASJ/SKMjyaqhyq5NjG9DWXWV2OZItn5
             wX6ykELNC0UXXqS7Ivd58r2gmjsAX6I0YCie3P9gtDfem+nM1NN3c76b
             -----END PRIVATE KEY-----
-        cert: 
+        cert:
           pem: |
             -----BEGIN CERTIFICATE-----
             MIICGDCCAb+gAwIBAgIQeIi7Jkt6rpWXkiSbOmf4xDAKBggqhkjOPQQDAjBzMQsw
@@ -314,14 +314,14 @@ organizations:
             STrxiXhat7xfrSAE
             -----END CERTIFICATE-----
       User1:
-        key: 
+        key:
           pem: |
             -----BEGIN PRIVATE KEY-----
             MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgG94fUeLA85t5jQ/L
             71crBw74XjGUDXbegJXy/SP2ax2hRANCAASIELcczJtLhW3jzc1ogd0R23F1hNwf
             BqVR+VyEW2bREf7lrOLKj7cYl7BqcUx04kK8aS/6Di9lRH0EwK8775Su
             -----END PRIVATE KEY-----
-        cert: 
+        cert:
           pem: |
             -----BEGIN CERTIFICATE-----
             MIICGDCCAb+gAwIBAgIQHMp+UdtCOLJAE7QMGIsXCTAKBggqhkjOPQQDAjBzMQsw
@@ -353,7 +353,7 @@ organizations:
 
       users:
         Admin:
-          key: 
+          key:
             pem: |
               -----BEGIN PRIVATE KEY-----
               MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgF0K9SLI1Ug5HaZQ3
@@ -361,7 +361,7 @@ organizations:
               UY/CLyCVNz+UAW32Ki00KWWlGnClXMEaiOicVSm+bUakog4m8Zk6EZQd
               -----END PRIVATE KEY-----
 #            path:
-          cert: 
+          cert:
             pem: |
               -----BEGIN CERTIFICATE-----
               MIICCjCCAbGgAwIBAgIRAP6rTgrL8PUGUhDZBlTbttkwCgYIKoZIzj0EAwIwaTEL

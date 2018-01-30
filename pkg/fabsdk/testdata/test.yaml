@@ -93,7 +93,7 @@ organizations:
 
     users:
       OrgXUser:
-        key: 
+        key:
           pem: |
             -----BEGIN PRIVATE KEY-----
             MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB

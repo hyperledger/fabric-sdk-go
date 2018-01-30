@@ -32,6 +32,9 @@ const (
 
 	// EmptyCert is return when an empty cert is returned
 	EmptyCert Code = 4
+
+	// Timeout operation timed out
+	Timeout Code = 5
 )
 
 // CodeName maps the codes in this packages to human-readable strings
@@ -41,6 +44,7 @@ var CodeName = map[int32]string{
 	2: "CONNECTION_FAILED",
 	3: "ENDORSEMENT_MISMATCH",
 	4: "EMPTY_CERT",
+	5: "TIMEOUT",
 }
 
 // ToInt32 cast to int32

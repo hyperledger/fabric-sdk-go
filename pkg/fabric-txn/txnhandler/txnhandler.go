@@ -35,14 +35,14 @@ func (e *EndorseTxHandler) Handle(requestContext *txnhandler.RequestContext, cli
 		// Use discovery service to figure out proposal processors
 		peers, err := clientContext.Discovery.GetPeers()
 		if err != nil {
-			requestContext.Opts.Notifier <- apitxn.Response{Payload: nil, Error: errors.WithMessage(err, "GetPeers failed")}
+			requestContext.Response = apitxn.Response{Payload: nil, Error: errors.WithMessage(err, "GetPeers failed")}
 			return
 		}
 		endorsers := peers
 		if clientContext.Selection != nil {
 			endorsers, err = clientContext.Selection.GetEndorsersForChaincode(peers, requestContext.Request.ChaincodeID)
 			if err != nil {
-				requestContext.Opts.Notifier <- apitxn.Response{Payload: nil, Error: errors.WithMessage(err, "Failed to get endorsing peers")}
+				requestContext.Response = apitxn.Response{Payload: nil, Error: errors.WithMessage(err, "Failed to get endorsing peers")}
 				return
 			}
 		}
@@ -54,7 +54,7 @@ func (e *EndorseTxHandler) Handle(requestContext *txnhandler.RequestContext, cli
 		requestContext.Request.ChaincodeID, requestContext.Request.Fcn, requestContext.Request.Args, txProcessors, requestContext.Request.TransientMap)
 
 	if err != nil {
-		requestContext.Opts.Notifier <- apitxn.Response{Payload: nil, TransactionID: txnID, Error: err}
+		requestContext.Response = apitxn.Response{Payload: nil, TransactionID: txnID, Error: err}
 		return
 	}
 
@@ -69,7 +69,7 @@ func (e *EndorseTxHandler) Handle(requestContext *txnhandler.RequestContext, cli
 		if len(transactionProposalResponses) > 0 {
 			response = transactionProposalResponses[0].ProposalResponse.GetResponse().Payload
 		}
-		requestContext.Opts.Notifier <- apitxn.Response{Payload: response, TransactionID: txnID, Responses: transactionProposalResponses}
+		requestContext.Response = apitxn.Response{Payload: response, TransactionID: txnID, Responses: transactionProposalResponses}
 	}
 }
 
@@ -84,7 +84,8 @@ func (f *EndorsementValidationHandler) Handle(requestContext *txnhandler.Request
 	//Filter tx proposal responses
 	err := f.validate(requestContext.Response.Responses)
 	if err != nil {
-		requestContext.Opts.Notifier <- apitxn.Response{Payload: nil, TransactionID: requestContext.Response.TransactionID, Error: errors.WithMessage(err, "TxFilter failed")}
+		requestContext.Response = apitxn.Response{Payload: nil, TransactionID: requestContext.Response.TransactionID,
+			Error: errors.WithMessage(err, "TxFilter failed")}
 		return
 	}
 
@@ -99,7 +100,7 @@ func (f *EndorsementValidationHandler) Handle(requestContext *txnhandler.Request
 	if f.next != nil {
 		f.next.Handle(requestContext, clientContext)
 	} else {
-		requestContext.Opts.Notifier <- apitxn.Response{Payload: response, Error: nil}
+		requestContext.Response = apitxn.Response{Payload: response, Error: nil}
 	}
 }
 
@@ -135,7 +136,8 @@ func (c *CommitTxHandler) Handle(requestContext *txnhandler.RequestContext, clie
 	if clientContext.EventHub.IsConnected() == false {
 		err := clientContext.EventHub.Connect()
 		if err != nil {
-			requestContext.Opts.Notifier <- apitxn.Response{TransactionID: apitxn.TransactionID{}, Error: err}
+			requestContext.Response = apitxn.Response{TransactionID: apitxn.TransactionID{}, Error: err}
+			return
 		}
 	}
 
@@ -145,19 +147,21 @@ func (c *CommitTxHandler) Handle(requestContext *txnhandler.RequestContext, clie
 	statusNotifier := internal.RegisterTxEvent(txnID, clientContext.EventHub)
 	_, err := internal.CreateAndSendTransaction(clientContext.Channel, requestContext.Response.Responses)
 	if err != nil {
-		requestContext.Opts.Notifier <- apitxn.Response{TransactionID: apitxn.TransactionID{}, Error: errors.Wrap(err, "CreateAndSendTransaction failed")}
+		requestContext.Response = apitxn.Response{TransactionID: apitxn.TransactionID{}, Error: errors.Wrap(err, "CreateAndSendTransaction failed")}
 		return
 	}
 
 	select {
 	case result := <-statusNotifier:
 		if result.Error == nil {
-			requestContext.Opts.Notifier <- apitxn.Response{Payload: requestContext.Response.Payload, TransactionID: txnID, TxValidationCode: result.Code}
+			requestContext.Response = apitxn.Response{Payload: requestContext.Response.Payload, TransactionID: txnID, TxValidationCode: result.Code}
 		} else {
-			requestContext.Opts.Notifier <- apitxn.Response{Payload: requestContext.Response.Payload, TransactionID: txnID, TxValidationCode: result.Code, Error: result.Error}
+			requestContext.Response = apitxn.Response{Payload: requestContext.Response.Payload, TransactionID: txnID, TxValidationCode: result.Code, Error: result.Error}
+			return
 		}
 	case <-time.After(requestContext.Opts.Timeout):
-		requestContext.Opts.Notifier <- apitxn.Response{TransactionID: txnID, Error: errors.New("Execute didn't receive block event")}
+		requestContext.Response = apitxn.Response{TransactionID: txnID, Error: errors.New("Execute didn't receive block event")}
+		return
 	}
 
 	//Delegate to next step if any

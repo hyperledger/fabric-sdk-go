@@ -61,28 +61,28 @@ func TestChannelClient(t *testing.T) {
 	transientDataMap["result"] = []byte(transientData)
 
 	// Synchronous transaction
-	response, _, err := chClient.Execute(
+	response := chClient.Execute(
 		apitxn.Request{
 			ChaincodeID:  testSetup.ChainCodeID,
 			Fcn:          "invoke",
 			Args:         integration.ExampleCCTxArgs(),
 			TransientMap: transientDataMap,
 		})
-	if err != nil {
-		t.Fatalf("Failed to move funds: %s", err)
+	if response.Error != nil {
+		t.Fatalf("Failed to move funds: %s", response.Error)
 	}
 	// The example CC should return the transient data as a response
-	if string(response) != transientData {
-		t.Fatalf("Expecting response [%s] but got [%s]", transientData, response)
+	if string(response.Payload) != transientData {
+		t.Fatalf("Expecting response [%s] but got [%v]", transientData, response)
 	}
 
-	// Verify transaction using asynchronous query
+	// Verify transaction using query
 	testQueryWithOpts("201", testSetup.ChainCodeID, chClient, t)
 
-	// Asynchronous transaction
-	testAsyncTransaction(testSetup.ChainCodeID, chClient, t)
+	// transaction
+	testTransaction(testSetup.ChainCodeID, chClient, t)
 
-	// Verify asynchronous transaction
+	// Verify transaction
 	testQuery("202", testSetup.ChainCodeID, chClient, t)
 
 	// Verify that filter error and commit error did not modify value
@@ -104,59 +104,33 @@ func TestChannelClient(t *testing.T) {
 
 func testQuery(expected string, ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
-	result, err := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
-	if err != nil {
-		t.Fatalf("Failed to invoke example cc: %s", err)
+	response := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	if response.Error != nil {
+		t.Fatalf("Failed to invoke example cc: %s", response.Error)
 	}
 
-	if string(result) != expected {
-		t.Fatalf("Expecting %s, got %s", expected, result)
+	if string(response.Payload) != expected {
+		t.Fatalf("Expecting %s, got %s", expected, response.Payload)
 	}
 }
 
 func testQueryWithOpts(expected string, ccID string, chClient apitxn.ChannelClient, t *testing.T) {
-
-	notifier := make(chan apitxn.Response)
-	result, err := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, apitxn.WithNotifier(notifier))
-	if err != nil {
-		t.Fatalf("Failed to invoke example cc asynchronously: %s", err)
+	response := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	if response.Error != nil {
+		t.Fatalf("Query returned error: %s", response.Error)
 	}
-	if result != nil {
-		t.Fatalf("Expecting empty, got %s", result)
+	if string(response.Payload) != expected {
+		t.Fatalf("Expecting %s, got %s", expected, response.Payload)
 	}
-
-	select {
-	case response := <-notifier:
-		if response.Error != nil {
-			t.Fatalf("Query returned error: %s", response.Error)
-		}
-		if string(response.Payload) != expected {
-			t.Fatalf("Expecting %s, got %s", expected, response.Payload)
-		}
-	case <-time.After(time.Second * 20):
-		t.Fatalf("Query Request timed out")
-	}
-
 }
 
-func testAsyncTransaction(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
-
-	txNotifier := make(chan apitxn.Response)
-	_, _, err := chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, apitxn.WithNotifier(txNotifier))
-	if err != nil {
-		t.Fatalf("Failed to move funds: %s", err)
+func testTransaction(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
+	response := chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	if response.Error != nil {
+		t.Fatalf("Failed to move funds: %s", response.Error)
 	}
-
-	select {
-	case response := <-txNotifier:
-		if response.Error != nil {
-			t.Fatalf("Execute returned error: %s", response.Error)
-		}
-		if response.TxValidationCode != pb.TxValidationCode_VALID {
-			t.Fatalf("Expecting TxValidationCode to be TxValidationCode_VALID but received: %s", response.TxValidationCode)
-		}
-	case <-time.After(time.Second * 20):
-		t.Fatalf("Execute timed out")
+	if response.TxValidationCode != pb.TxValidationCode_VALID {
+		t.Fatalf("Expecting TxValidationCode to be TxValidationCode_VALID but received: %s", response.TxValidationCode)
 	}
 }
 
@@ -190,23 +164,23 @@ func testChaincodeEvent(ccID string, chClient apitxn.ChannelClient, t *testing.T
 	rce := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
 
 	// Synchronous transaction
-	_, txID, err := chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
-	if err != nil {
-		t.Fatalf("Failed to move funds: %s", err)
+	response := chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	if response.Error != nil {
+		t.Fatalf("Failed to move funds: %s", response.Error)
 	}
 
 	select {
 	case ccEvent := <-notifier:
 		t.Logf("Received cc event: %s", ccEvent)
-		if ccEvent.TxID != txID.ID {
-			t.Fatalf("CCEvent(%s) and Execute(%s) transaction IDs don't match", ccEvent.TxID, txID.ID)
+		if ccEvent.TxID != response.TransactionID.ID {
+			t.Fatalf("CCEvent(%s) and Execute(%s) transaction IDs don't match", ccEvent.TxID, response.TransactionID.ID)
 		}
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive CC for eventId(%s)\n", eventID)
 	}
 
 	// Unregister chain code event using registration handle
-	err = chClient.UnregisterChaincodeEvent(rce)
+	err := chClient.UnregisterChaincodeEvent(rce)
 	if err != nil {
 		t.Fatalf("Unregister cc event failed: %s", err)
 	}

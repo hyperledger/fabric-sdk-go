@@ -18,14 +18,6 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
-//WithNotifier encapsulates Response to Option
-func WithNotifier(notifier chan Response) Option {
-	return func(opts *Opts) error {
-		opts.Notifier = notifier
-		return nil
-	}
-}
-
 //WithProposalProcessor encapsulates ProposalProcessors to Option
 func WithProposalProcessor(proposalProcessors ...ProposalProcessor) Option {
 	return func(opts *Opts) error {

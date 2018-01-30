@@ -114,7 +114,7 @@ peers:
     eventUrl: grpc://127.0.0.1:7053
 
     grpcOptions:
-      ssl-target-name-override: 
+      ssl-target-name-override:
       grpc.http2.keepalive_time: 15
 
     tlsCACerts:
@@ -129,7 +129,7 @@ peers:
     eventUrl: grpc://127.0.0.1:8053
 
     grpcOptions:
-      ssl-target-name-override: 
+      ssl-target-name-override:
       grpc.http2.keepalive_time: 15
 
     tlsCACerts:
@@ -137,4 +137,3 @@ peers:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
 certificateAuthorities:
-

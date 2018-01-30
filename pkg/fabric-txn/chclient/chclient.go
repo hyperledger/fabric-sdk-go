@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/txnhandler"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	txnHandlerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
+	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 )
 
 const (
@@ -57,19 +58,13 @@ func New(c Context) (*ChannelClient, error) {
 }
 
 // Query chaincode using request and optional options provided
-func (cc *ChannelClient) Query(request apitxn.Request, options ...apitxn.Option) ([]byte, error) {
-
-	response := cc.InvokeHandler(txnHandlerImpl.NewQueryHandler(), request, cc.addDefaultTimeout(apiconfig.Query, options...)...)
-
-	return response.Payload, response.Error
+func (cc *ChannelClient) Query(request apitxn.Request, options ...apitxn.Option) apitxn.Response {
+	return cc.InvokeHandler(txnHandlerImpl.NewQueryHandler(), request, cc.addDefaultTimeout(apiconfig.Query, options...)...)
 }
 
 // Execute prepares and executes transaction using request and optional options provided
-func (cc *ChannelClient) Execute(request apitxn.Request, options ...apitxn.Option) ([]byte, apitxn.TransactionID, error) {
-
-	response := cc.InvokeHandler(txnHandlerImpl.NewExecuteHandler(), request, cc.addDefaultTimeout(apiconfig.Execute, options...)...)
-
-	return response.Payload, response.TransactionID, response.Error
+func (cc *ChannelClient) Execute(request apitxn.Request, options ...apitxn.Option) apitxn.Response {
+	return cc.InvokeHandler(txnHandlerImpl.NewExecuteHandler(), request, cc.addDefaultTimeout(apiconfig.Execute, options...)...)
 }
 
 //InvokeHandler invokes handler using request and options provided
@@ -87,19 +82,19 @@ func (cc *ChannelClient) InvokeHandler(handler txnhandler.Handler, request apitx
 		return apitxn.Response{Error: err}
 	}
 
-	//Perform action through handler
-	go handler.Handle(requestContext, clientContext)
+	complete := make(chan bool)
 
-	//notifier in options will handle response if provided
-	if txnOpts.Notifier != nil {
-		return apitxn.Response{}
-	}
-
+	go func() {
+		//Perform action through handler
+		handler.Handle(requestContext, clientContext)
+		complete <- true
+	}()
 	select {
-	case response := <-requestContext.Opts.Notifier:
-		return response
-	case <-time.After(requestContext.Opts.Timeout):
-		return apitxn.Response{Error: errors.New("handler timed out while performing operation")}
+	case <-complete:
+		return requestContext.Response
+	case <-time.After(txnOpts.Timeout):
+		return apitxn.Response{Error: status.New(status.ClientStatus, status.Timeout.ToInt32(),
+			"Operation timed out", nil)}
 	}
 }
 
@@ -125,10 +120,6 @@ func (cc *ChannelClient) prepareHandlerContexts(request apitxn.Request, options 
 
 	if requestContext.Opts.Timeout == 0 {
 		requestContext.Opts.Timeout = defaultHandlerTimeout
-	}
-
-	if requestContext.Opts.Notifier == nil {
-		requestContext.Opts.Notifier = make(chan apitxn.Response)
 	}
 
 	return requestContext, clientContext, nil

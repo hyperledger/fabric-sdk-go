@@ -68,15 +68,15 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	value, err := chClient.Query(apitxn.Request{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
-	if err != nil {
-		t.Fatalf("Failed to query funds: %s", err)
+	response := chClient.Query(apitxn.Request{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	if response.Error != nil {
+		t.Fatalf("Failed to query funds: %s", response.Error)
 	}
 
-	t.Logf("*** QueryValue before invoke %s", value)
+	t.Logf("*** QueryValue before invoke %s", response.Payload)
 
 	// Check the Query value
-	if string(value) != "200" {
+	if string(response.Payload) != "200" {
 		t.Fatalf("channel client query operation failed, upexpected query value")
 	}
 
