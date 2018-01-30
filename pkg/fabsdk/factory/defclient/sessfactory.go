@@ -13,9 +13,11 @@ import (
 	apiresmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
 )
 
@@ -65,7 +67,7 @@ func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers,
 }
 
 // NewChannelClient returns a client that can execute transactions on specified channel
-func (f *SessionClientFactory) NewChannelClient(providers apisdk.Providers, session apisdk.SessionContext, channelID string) (apitxn.ChannelClient, error) {
+func (f *SessionClientFactory) NewChannelClient(providers apisdk.Providers, session apisdk.SessionContext, channelID string, targetFilter apifabclient.TargetFilter) (apitxn.ChannelClient, error) {
 
 	chProvider := providers.ChannelProvider()
 	chService, err := chProvider.NewChannelService(session, channelID)
@@ -80,10 +82,12 @@ func (f *SessionClientFactory) NewChannelClient(providers apisdk.Providers, sess
 		return nil, errors.WithMessage(err, "getEventHub failed")
 	}
 
-	discovery, err := providers.DiscoveryProvider().NewDiscoveryService(channelID)
+	discoveryService, err := providers.DiscoveryProvider().NewDiscoveryService(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "create discovery service failed")
 	}
+
+	discoveryService = discovery.NewDiscoveryFilterService(discoveryService, targetFilter)
 
 	selection, err := providers.SelectionProvider().NewSelectionService(channelID)
 	if err != nil {
@@ -93,7 +97,7 @@ func (f *SessionClientFactory) NewChannelClient(providers apisdk.Providers, sess
 	ctx := chclient.Context{
 		ProviderContext:  providers,
 		Channel:          channel,
-		DiscoveryService: discovery,
+		DiscoveryService: discoveryService,
 		SelectionService: selection,
 		EventHub:         eventHub,
 	}

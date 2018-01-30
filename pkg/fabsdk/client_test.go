@@ -51,8 +51,8 @@ func TestFromConfigGoodClientOpt(t *testing.T) {
 	}
 }
 
-func goodClientOpt() ClientOption {
-	return func(opts *clientOptions) error {
+func goodClientOpt() ContextOption {
+	return func(opts *contextOptions) error {
 		return nil
 	}
 }
@@ -69,8 +69,8 @@ func TestNewBadClientOpt(t *testing.T) {
 	}
 }
 
-func badClientOpt() ClientOption {
-	return func(opts *clientOptions) error {
+func badClientOpt() ContextOption {
+	return func(opts *contextOptions) error {
 		return errors.New("Bad Opt")
 	}
 }
@@ -126,7 +126,7 @@ func TestWithConfig(t *testing.T) {
 	}
 	opt := withConfig(c)
 
-	opts := clientOptions{}
+	opts := contextOptions{}
 	err = opt(&opts)
 	if err != nil {
 		t.Fatalf("Expected no error from option, but got %v", err)

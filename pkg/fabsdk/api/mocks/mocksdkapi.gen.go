@@ -462,16 +462,16 @@ func (_m *MockSessionClientFactory) EXPECT() *MockSessionClientFactoryMockRecord
 }
 
 // NewChannelClient mocks base method
-func (_m *MockSessionClientFactory) NewChannelClient(_param0 api.Providers, _param1 api.SessionContext, _param2 string) (apitxn.ChannelClient, error) {
-	ret := _m.ctrl.Call(_m, "NewChannelClient", _param0, _param1, _param2)
+func (_m *MockSessionClientFactory) NewChannelClient(_param0 api.Providers, _param1 api.SessionContext, _param2 string, _param3 apifabclient.TargetFilter) (apitxn.ChannelClient, error) {
+	ret := _m.ctrl.Call(_m, "NewChannelClient", _param0, _param1, _param2, _param3)
 	ret0, _ := ret[0].(apitxn.ChannelClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewChannelClient indicates an expected call of NewChannelClient
-func (_mr *MockSessionClientFactoryMockRecorder) NewChannelClient(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "NewChannelClient", reflect.TypeOf((*MockSessionClientFactory)(nil).NewChannelClient), arg0, arg1, arg2)
+func (_mr *MockSessionClientFactoryMockRecorder) NewChannelClient(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "NewChannelClient", reflect.TypeOf((*MockSessionClientFactory)(nil).NewChannelClient), arg0, arg1, arg2, arg3)
 }
 
 // NewChannelMgmtClient mocks base method

@@ -43,7 +43,7 @@ type OrgClientFactory interface {
 type SessionClientFactory interface {
 	NewChannelMgmtClient(sdk Providers, session SessionContext) (chmgmt.ChannelMgmtClient, error)
 	NewResourceMgmtClient(sdk Providers, session SessionContext, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error)
-	NewChannelClient(sdk Providers, session SessionContext, channelID string) (txn.ChannelClient, error)
+	NewChannelClient(sdk Providers, session SessionContext, channelID string, targetFilter fab.TargetFilter) (txn.ChannelClient, error)
 }
 
 // PkgSuite provides the package factories that create clients and providers

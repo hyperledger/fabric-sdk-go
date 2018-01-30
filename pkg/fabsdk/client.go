@@ -16,24 +16,30 @@ import (
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
 
-// Client represents the fabric transaction clients
-type Client struct {
+// ClientContext  represents the fabric transaction clients
+type ClientContext struct {
 	provider clientProvider
+}
+
+// ContextOption configures the client context created by the SDK.
+type ContextOption func(opts *contextOptions) error
+
+type contextOptions struct {
+	orgID  string
+	config apiconfig.Config
 }
 
 // ClientOption configures the clients created by the SDK.
 type ClientOption func(opts *clientOptions) error
 
 type clientOptions struct {
-	orgID        string
-	config       apiconfig.Config
-	targetFilter resmgmt.TargetFilter
+	targetFilter apifabclient.TargetFilter
 }
 
 type clientProvider func() (*clientContext, error)
 
 type clientContext struct {
-	opts          *clientOptions
+	opts          *contextOptions
 	identity      apifabclient.IdentityContext
 	providers     providers
 	clientFactory apisdk.SessionClientFactory
@@ -44,15 +50,15 @@ type providers interface {
 }
 
 // WithOrg uses the configuration and users from the named organization.
-func WithOrg(name string) ClientOption {
-	return func(opts *clientOptions) error {
+func WithOrg(name string) ContextOption {
+	return func(opts *contextOptions) error {
 		opts.orgID = name
 		return nil
 	}
 }
 
 // WithTargetFilter allows for filtering target peers.
-func WithTargetFilter(targetFilter resmgmt.TargetFilter) ClientOption {
+func WithTargetFilter(targetFilter apifabclient.TargetFilter) ClientOption {
 	return func(opts *clientOptions) error {
 		opts.targetFilter = targetFilter
 		return nil
@@ -61,19 +67,19 @@ func WithTargetFilter(targetFilter resmgmt.TargetFilter) ClientOption {
 
 // withConfig allows for overriding the configuration of the client.
 // TODO: This should be removed once the depreacted functions are removed.
-func withConfig(config apiconfig.Config) ClientOption {
-	return func(opts *clientOptions) error {
+func withConfig(config apiconfig.Config) ContextOption {
+	return func(opts *contextOptions) error {
 		opts.config = config
 		return nil
 	}
 }
 
 // NewClient allows creation of transactions using the supplied identity as the credential.
-func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ClientOption) *Client {
+func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ContextOption) *ClientContext {
 	// delay execution of the following logic to avoid error return from this function.
 	// this is done to allow a cleaner API - i.e., client, err := sdk.NewClient(args).<Desired Interface>(extra args)
 	provider := func() (*clientContext, error) {
-		o, err := newClientOptions(sdk.config, opts)
+		o, err := newContextOptions(sdk.config, opts)
 		if err != nil {
 			return nil, errors.WithMessage(err, "unable to retrieve configuration from SDK")
 		}
@@ -91,20 +97,20 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ClientOption
 		}
 		return &cc, nil
 	}
-	client := Client{
+	client := ClientContext{
 		provider: provider,
 	}
 	return &client
 }
 
-func newClientOptions(config apiconfig.Config, options []ClientOption) (*clientOptions, error) {
+func newContextOptions(config apiconfig.Config, options []ContextOption) (*contextOptions, error) {
 	// Read default org name from configuration
 	client, err := config.Client()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to retrieve client from network config")
 	}
 
-	opts := clientOptions{
+	opts := contextOptions{
 		orgID:  client.Organization,
 		config: config,
 	}
@@ -123,8 +129,21 @@ func newClientOptions(config apiconfig.Config, options []ClientOption) (*clientO
 	return &opts, nil
 }
 
+func newClientOptions(options []ClientOption) (*clientOptions, error) {
+	opts := clientOptions{}
+
+	for _, option := range options {
+		err := option(&opts)
+		if err != nil {
+			return nil, errors.WithMessage(err, "error in option passed to client")
+		}
+	}
+
+	return &opts, nil
+}
+
 // ChannelMgmt returns a client API for managing channels.
-func (c *Client) ChannelMgmt() (chmgmt.ChannelMgmtClient, error) {
+func (c *ClientContext) ChannelMgmt() (chmgmt.ChannelMgmtClient, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
@@ -140,14 +159,18 @@ func (c *Client) ChannelMgmt() (chmgmt.ChannelMgmtClient, error) {
 }
 
 // ResourceMgmt returns a client API for managing system resources.
-func (c *Client) ResourceMgmt() (resmgmt.ResourceMgmtClient, error) {
+func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (resmgmt.ResourceMgmtClient, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
 	}
+	o, err := newClientOptions(opts)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to retrieve client options")
+	}
 
 	session := newSession(p.identity, p.providers.ChannelProvider())
-	client, err := p.clientFactory.NewResourceMgmtClient(p.providers, session, p.opts.targetFilter)
+	client, err := p.clientFactory.NewResourceMgmtClient(p.providers, session, o.targetFilter)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to created new resource management client")
 	}
@@ -156,14 +179,17 @@ func (c *Client) ResourceMgmt() (resmgmt.ResourceMgmtClient, error) {
 }
 
 // Channel returns a client API for transacting on a channel.
-func (c *Client) Channel(id string) (apitxn.ChannelClient, error) {
+func (c *ClientContext) Channel(id string, opts ...ClientOption) (apitxn.ChannelClient, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
 	}
-
+	o, err := newClientOptions(opts)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to retrieve client options")
+	}
 	session := newSession(p.identity, p.providers.ChannelProvider())
-	client, err := p.clientFactory.NewChannelClient(p.providers, session, id)
+	client, err := p.clientFactory.NewChannelClient(p.providers, session, id, o.targetFilter)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to created new resource management client")
 	}
@@ -185,7 +211,7 @@ func (c *Client) ChannelService(id string) (apifabclient.ChannelService, error) 
 // Session returns the underlying identity of the client.
 //
 // Deprecated: this method is temporary.
-func (c *Client) Session() (apisdk.SessionContext, error) {
+func (c *ClientContext) Session() (apisdk.SessionContext, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
