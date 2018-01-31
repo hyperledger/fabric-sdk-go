@@ -198,7 +198,7 @@ func (c *ClientContext) Channel(id string, opts ...ClientOption) (apitxn.Channel
 }
 
 // ChannelService returns a client API for interacting with a channel.
-func (c *Client) ChannelService(id string) (apifabclient.ChannelService, error) {
+func (c *ClientContext) ChannelService(id string) (apifabclient.ChannelService, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
