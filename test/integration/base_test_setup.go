@@ -136,10 +136,6 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 
 		time.Sleep(time.Second * 3)
 
-		if err = channel.Initialize(nil); err != nil {
-			return errors.WithMessage(err, "channel init failed")
-		}
-
 		if err = resMgmtClient.JoinChannel(setup.ChannelID); err != nil {
 			return errors.WithMessage(err, "JoinChannel failed")
 		}

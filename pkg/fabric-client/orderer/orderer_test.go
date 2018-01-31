@@ -25,7 +25,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
-	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
@@ -46,101 +45,6 @@ qp6CP8TFHZ9bw5nRtZxIEDAfBgNVHSMEGDAWgBQXZ0I9qp6CP8TFHZ9bw5nRtZxI
 EDAKBggqhkjOPQQDAgNHADBEAiAHp5Rbp9Em1G/UmKn8WsCbqDfWecVbZPQj3RK4
 oG5kQQIgQAe4OOKYhJdh3f7URaKfGTf492/nmRmtK+ySKjpHSrU=
 -----END CERTIFICATE-----`
-
-//
-// Orderer via chain setOrderer/getOrderer
-//
-// Set the orderer URL through the chain setOrderer method. Verify that the
-// orderer URL was set correctly through the getOrderer method. Repeat the
-// process by updating the orderer URL to a different address.
-//
-func TestOrdererViaChain(t *testing.T) {
-	client := client.NewClient(mocks.NewMockConfig())
-	chain, err := client.NewChannel("testChain-orderer-member")
-	if err != nil {
-		t.Fatalf("error from NewChain %v", err)
-	}
-	orderer, _ := New(mocks.NewMockConfig(), WithURL("localhost:7050"))
-	err = chain.AddOrderer(orderer)
-	if err != nil {
-		t.Fatalf("Error adding orderer: %v", err)
-	}
-
-	orderers := chain.Orderers()
-	if orderers == nil || len(orderers) != 1 || orderers[0].URL() != "localhost:7050" {
-		t.Fatalf("Failed to retieve the new orderer URL from the chain")
-	}
-	chain.RemoveOrderer(orderer)
-	orderer2, err := New(mocks.NewMockConfig(), WithURL("localhost:7054"))
-	if err != nil {
-		t.Fatalf("Failed to create New orderer: error(%v)", err)
-	}
-	err = chain.AddOrderer(orderer2)
-	if err != nil {
-		t.Fatalf("Error adding orderer: %v", err)
-	}
-	orderers = chain.Orderers()
-
-	if orderers == nil || len(orderers) != 1 || orderers[0].URL() != "localhost:7054" {
-		t.Fatalf("Failed to retieve the new orderer URL from the chain")
-	}
-
-}
-
-//
-// Orderer via chain missing orderer
-//
-// Attempt to send a request to the orderer with the sendTransaction method
-// before the orderer URL was set. Verify that an error is reported when tying
-// to send the request.
-//
-func TestPeerViaChainMissingOrderer(t *testing.T) {
-	client := client.NewClient(mocks.NewMockConfig())
-	chain, err := client.NewChannel("testChain-orderer-member2")
-	if err != nil {
-		t.Fatalf("error from NewChain %v", err)
-	}
-	_, err = chain.SendTransaction(nil)
-	if err == nil {
-		t.Fatalf("SendTransaction didn't return error")
-	}
-	if err.Error() != "orderers is nil" {
-		t.Fatalf("SendTransaction didn't return right error")
-	}
-
-}
-
-//
-// Orderer via chain nil data
-//
-// Attempt to send a request to the orderer with the sendTransaction method
-// with the data set to null. Verify that an error is reported when tying
-// to send null data.
-//
-func TestOrdererViaChainNilData(t *testing.T) {
-	client := client.NewClient(mocks.NewMockConfig())
-	chain, err := client.NewChannel("testChain-orderer-member2")
-	if err != nil {
-		t.Fatalf("error from NewChain %v", err)
-	}
-	orderer, err := New(mocks.NewMockConfig(), WithURL("localhost:7050"))
-
-	if err != nil {
-		t.Fatalf("Failed to create New orderer: error(%v)", err)
-	}
-	err = chain.AddOrderer(orderer)
-	if err != nil {
-		t.Fatalf("Error adding orderer: %v", err)
-	}
-
-	_, err = chain.SendTransaction(nil)
-	if err == nil {
-		t.Fatalf("SendTransaction didn't return error")
-	}
-	if err.Error() != "transaction is nil" {
-		t.Fatalf("SendTransaction didn't return right error")
-	}
-}
 
 func TestSendDeliver(t *testing.T) {
 	grpcServer := grpc.NewServer()

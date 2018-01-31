@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	channel "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -58,7 +59,7 @@ func (c *Client) NewChannel(name string) (fab.Channel, error) {
 	}
 
 	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
-	channel, err := channel.New(ctx, name)
+	channel, err := channel.New(ctx, chconfig.NewChannelCfg(name))
 	if err != nil {
 		return nil, err
 	}

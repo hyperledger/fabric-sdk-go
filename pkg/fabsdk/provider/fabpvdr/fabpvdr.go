@@ -60,7 +60,7 @@ func (f *FabricProvider) NewChannelClient(ic apifabclient.IdentityContext, chann
 		ProviderContext: f.providerContext,
 		IdentityContext: ic,
 	}
-	channel, err := channelImpl.New(ctx, channelID)
+	channel, err := channelImpl.New(ctx, chconfig.NewChannelCfg(channelID))
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewChannel failed")
 	}

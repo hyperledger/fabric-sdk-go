@@ -327,7 +327,7 @@ func TestExecuteTxWithRetries(t *testing.T) {
 
 func setupTestChannel() (*channel.Channel, error) {
 	ctx := setupTestContext()
-	return channel.New(ctx, "testChannel")
+	return channel.New(ctx, fcmocks.NewMockChannelCfg("testChannel"))
 }
 
 func setupTestContext() apifabclient.Context {

@@ -66,7 +66,7 @@ func TestJoinChannel(t *testing.T) {
 
 	rc := setupResMgmtClient(ctx, nil, t)
 
-	channel, err := channel.New(ctx, "mychannel")
+	channel, err := channel.New(ctx, fcmocks.NewMockChannelCfg("mychannel"))
 	if err != nil {
 		t.Fatalf("Error setting up channel: %v", err)
 	}
@@ -962,7 +962,7 @@ func TestCCProposal(t *testing.T) {
 
 	rc = setupResMgmtClient(ctx, nil, t)
 
-	channel, err := channel.New(ctx, "mychannel")
+	channel, err := channel.New(ctx, fcmocks.NewMockChannelCfg("mychannel"))
 	if err != nil {
 		t.Fatalf("Error setting up channel: %v", err)
 	}
@@ -1071,7 +1071,7 @@ func setupResMgmtClient(fabCtx fab.Context, discErr error, t *testing.T) *Resour
 	}
 
 	// Create test channel and add it to the client (no added orderer yet)
-	channel, err := channel.New(fabCtx, "mychannel")
+	channel, err := channel.New(fabCtx, fcmocks.NewMockChannelCfg("mychannel"))
 	if err != nil {
 		t.Fatalf("Failed to setup channel: %s", err)
 	}
