@@ -8,7 +8,6 @@ package internal
 
 import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -24,10 +23,10 @@ type TxStatus struct {
 }
 
 // CreateAndSendTransactionProposal ...
-func CreateAndSendTransactionProposal(sender apitxn.ProposalSender, chainCodeID string,
-	fcn string, args [][]byte, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+func CreateAndSendTransactionProposal(sender fab.ProposalSender, chainCodeID string,
+	fcn string, args [][]byte, targets []fab.ProposalProcessor, transientData map[string][]byte) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
-	request := apitxn.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeRequest{
 		Targets:      targets,
 		Fcn:          fcn,
 		Args:         args,
@@ -51,7 +50,7 @@ func CreateAndSendTransactionProposal(sender apitxn.ProposalSender, chainCodeID 
 }
 
 // CreateAndSendTransaction ...
-func CreateAndSendTransaction(sender apitxn.Sender, resps []*apitxn.TransactionProposalResponse) (*apitxn.TransactionResponse, error) {
+func CreateAndSendTransaction(sender fab.Sender, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
 
 	tx, err := sender.CreateTransaction(resps)
 	if err != nil {
@@ -76,7 +75,7 @@ func CreateAndSendTransaction(sender apitxn.Sender, resps []*apitxn.TransactionP
 // transaction completes. If the code is TxValidationCode_VALID then
 // the transaction committed successfully, otherwise the code indicates the error
 // that occurred.
-func RegisterTxEvent(txID apitxn.TransactionID, eventHub fab.EventHub) chan TxStatus {
+func RegisterTxEvent(txID fab.TransactionID, eventHub fab.EventHub) chan TxStatus {
 	statusNotifier := make(chan TxStatus)
 
 	eventHub.RegisterTxEvent(txID, func(txId string, code pb.TxValidationCode, err error) {

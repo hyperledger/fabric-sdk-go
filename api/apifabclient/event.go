@@ -9,7 +9,6 @@ package apifabclient
 import (
 	"crypto/x509"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -23,8 +22,8 @@ type EventHub interface {
 	Disconnect() error
 	RegisterChaincodeEvent(ccid string, eventname string, callback func(*ChaincodeEvent)) *ChainCodeCBE
 	UnregisterChaincodeEvent(cbe *ChainCodeCBE)
-	RegisterTxEvent(txnID apitxn.TransactionID, callback func(string, pb.TxValidationCode, error))
-	UnregisterTxEvent(txnID apitxn.TransactionID)
+	RegisterTxEvent(txnID TransactionID, callback func(string, pb.TxValidationCode, error))
+	UnregisterTxEvent(txnID TransactionID)
 	RegisterBlockEvent(callback func(*common.Block))
 	UnregisterBlockEvent(callback func(*common.Block))
 }

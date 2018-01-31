@@ -18,17 +18,16 @@ import (
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
 )
 
 // SendTransactionProposal sends the created proposal to peer for endorsement.
 // TODO: return the entire request or just the txn ID?
-func (c *Channel) SendTransactionProposal(request apitxn.ChaincodeInvokeRequest) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+func (c *Channel) SendTransactionProposal(request fab.ChaincodeInvokeRequest) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 	request, err := c.chaincodeInvokeRequestAddDefaultPeers(request)
 	if err != nil {
-		return nil, apitxn.TransactionID{}, err
+		return nil, fab.TransactionID{}, err
 	}
 
 	return SendTransactionProposalWithChannelID(c.name, request, c.clientContext)
@@ -36,14 +35,14 @@ func (c *Channel) SendTransactionProposal(request apitxn.ChaincodeInvokeRequest)
 
 // SendTransactionProposalWithChannelID sends the created proposal to peer for endorsement.
 // TODO: return the entire request or just the txn ID?
-func SendTransactionProposalWithChannelID(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext fab.Context) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+func SendTransactionProposalWithChannelID(channelID string, request fab.ChaincodeInvokeRequest, clientContext fab.Context) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 	if err := validateChaincodeInvokeRequest(request); err != nil {
-		return nil, apitxn.TransactionID{}, errors.WithMessage(err, "validateChaincodeInvokeRequest failed")
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "validateChaincodeInvokeRequest failed")
 	}
 
 	txid, err := internal.NewTxnID(clientContext)
 	if err != nil {
-		return nil, apitxn.TransactionID{}, errors.WithMessage(err, "NewTxnID failed")
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "NewTxnID failed")
 	}
 	request.TxnID = txid
 
@@ -56,7 +55,7 @@ func SendTransactionProposalWithChannelID(channelID string, request apitxn.Chain
 	return responses, request.TxnID, err
 }
 
-func validateChaincodeInvokeRequest(request apitxn.ChaincodeInvokeRequest) error {
+func validateChaincodeInvokeRequest(request fab.ChaincodeInvokeRequest) error {
 	if request.ChaincodeID == "" {
 		return errors.New("ChaincodeID is required")
 	}
@@ -71,7 +70,7 @@ func validateChaincodeInvokeRequest(request apitxn.ChaincodeInvokeRequest) error
 	return nil
 }
 
-func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(request apitxn.ChaincodeInvokeRequest) (apitxn.ChaincodeInvokeRequest, error) {
+func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(request fab.ChaincodeInvokeRequest) (fab.ChaincodeInvokeRequest, error) {
 	// Use default peers if targets are not specified.
 	if request.Targets == nil || len(request.Targets) == 0 {
 		if c.peers == nil || len(c.peers) == 0 {
@@ -86,7 +85,7 @@ func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(request apitxn.Chaincode
 // newTransactionProposal creates a proposal for transaction. This involves assembling the proposal
 // with the data (chaincodeName, function to call, arguments, transient data, etc.) and signing it using the private key corresponding to the
 // ECert to sign.
-func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext fab.Context) (*apitxn.TransactionProposal, error) {
+func newTransactionProposal(channelID string, request fab.ChaincodeInvokeRequest, clientContext fab.Context) (*fab.TransactionProposal, error) {
 
 	// Add function name to arguments
 	argsArray := make([][]byte, len(request.Args)+1)
@@ -129,7 +128,7 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 
 	// construct the transaction proposal
 	signedProposal := pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}
-	tp := apitxn.TransactionProposal{
+	tp := fab.TransactionProposal{
 		TxnID:          request.TxnID,
 		SignedProposal: &signedProposal,
 		Proposal:       proposal,
@@ -139,13 +138,13 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 }
 
 // TODO: There should be a strategy for choosing processors.
-func (c *Channel) txnProcessors() []apitxn.ProposalProcessor {
+func (c *Channel) txnProcessors() []fab.ProposalProcessor {
 	return peersToTxnProcessors(c.Peers())
 }
 
 // peersToTxnProcessors converts a slice of Peers to a slice of ProposalProcessors
-func peersToTxnProcessors(peers []fab.Peer) []apitxn.ProposalProcessor {
-	tpp := make([]apitxn.ProposalProcessor, len(peers))
+func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
+	tpp := make([]fab.ProposalProcessor, len(peers))
 
 	for i := range peers {
 		tpp[i] = peers[i]
@@ -154,7 +153,7 @@ func peersToTxnProcessors(peers []fab.Peer) []apitxn.ProposalProcessor {
 }
 
 // ProposalBytes returns the serialized transaction.
-func (c *Channel) ProposalBytes(tp *apitxn.TransactionProposal) ([]byte, error) {
+func (c *Channel) ProposalBytes(tp *fab.TransactionProposal) ([]byte, error) {
 	return proto.Marshal(tp.SignedProposal)
 }
 
@@ -241,7 +240,7 @@ func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
 	if err != nil {
 		return errors.WithMessage(err, "signing proposal failed")
 	}
-	transactionProposal := &apitxn.TransactionProposal{
+	transactionProposal := &fab.TransactionProposal{
 		TxnID:          txnID,
 		SignedProposal: signedProposal,
 		Proposal:       proposal,

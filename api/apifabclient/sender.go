@@ -4,8 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package apitxn allows SDK users to plugin their own implementations of transaction processing.
-package apitxn
+package apifabclient
 
 import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"

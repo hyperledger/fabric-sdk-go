@@ -11,12 +11,11 @@ import (
 	"strconv"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -133,8 +132,8 @@ func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransacti
 // This query will be made to the primary peer.
 func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
 
-	targets := []txn.ProposalProcessor{c.PrimaryPeer()}
-	request := txn.ChaincodeInvokeRequest{
+	targets := []fab.ProposalProcessor{c.PrimaryPeer()}
+	request := fab.ChaincodeInvokeRequest{
 		Targets:     targets,
 		ChaincodeID: "lscc",
 		Fcn:         "getchaincodes",
@@ -159,7 +158,7 @@ func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, err
 // from the arguments that this is a query request. The chaincode must also return
 // results in the byte array format and the caller will have to be able to decode.
 // these results.
-func (c *Channel) QueryByChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error) {
+func (c *Channel) QueryByChaincode(request fab.ChaincodeInvokeRequest) ([][]byte, error) {
 	request, err := c.chaincodeInvokeRequestAddDefaultPeers(request)
 	if err != nil {
 		return nil, err
@@ -167,7 +166,7 @@ func (c *Channel) QueryByChaincode(request txn.ChaincodeInvokeRequest) ([][]byte
 	return queryByChaincode(c.name, request, c.clientContext)
 }
 
-func filterProposalResponses(tpr []*txn.TransactionProposalResponse) ([][]byte, error) {
+func filterProposalResponses(tpr []*fab.TransactionProposalResponse) ([][]byte, error) {
 	var responses [][]byte
 	errMsg := ""
 	for _, response := range tpr {
@@ -184,7 +183,7 @@ func filterProposalResponses(tpr []*txn.TransactionProposalResponse) ([][]byte, 
 	return responses, nil
 }
 
-func queryByChaincode(channelID string, request txn.ChaincodeInvokeRequest, clientContext fab.Context) ([][]byte, error) {
+func queryByChaincode(channelID string, request fab.ChaincodeInvokeRequest, clientContext fab.Context) ([][]byte, error) {
 	if err := validateChaincodeInvokeRequest(request); err != nil {
 		return nil, err
 	}
@@ -200,9 +199,9 @@ func queryByChaincode(channelID string, request txn.ChaincodeInvokeRequest, clie
 // queryBySystemChaincodeByTarget is an internal helper function that queries system chaincode.
 // This function is not exported to keep the external interface of this package to only expose
 // request structs.
-func (c *Channel) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args [][]byte, target txn.ProposalProcessor) ([]byte, error) {
-	targets := []txn.ProposalProcessor{target}
-	request := txn.ChaincodeInvokeRequest{
+func (c *Channel) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args [][]byte, target fab.ProposalProcessor) ([]byte, error) {
+	targets := []fab.ProposalProcessor{target}
+	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: chaincodeID,
 		Fcn:         fcn,
 		Args:        args,
@@ -221,7 +220,7 @@ func (c *Channel) queryBySystemChaincodeByTarget(chaincodeID string, fcn string,
 // QueryBySystemChaincode invokes a chaincode that isn't part of a channel.
 //
 // TODO: This function's name is confusing - call the normal QueryByChaincode for system chaincode on a channel.
-func (c *Channel) QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error) {
+func (c *Channel) QueryBySystemChaincode(request fab.ChaincodeInvokeRequest) ([][]byte, error) {
 	request, err := c.chaincodeInvokeRequestAddDefaultPeers(request)
 	if err != nil {
 		return nil, err
@@ -231,7 +230,7 @@ func (c *Channel) QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([]
 
 // QueryBySystemChaincode invokes a system chaincode
 // TODO - should be moved.
-func QueryBySystemChaincode(request txn.ChaincodeInvokeRequest, clientContext fab.Context) ([][]byte, error) {
+func QueryBySystemChaincode(request fab.ChaincodeInvokeRequest, clientContext fab.Context) ([][]byte, error) {
 	return queryByChaincode(systemChannel, request, clientContext)
 }
 
@@ -247,7 +246,7 @@ func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.
 		return nil, errors.New("Minimum endorser has to be greater than zero")
 	}
 
-	request := txn.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "cscc",
 		Fcn:         "GetConfigBlock",
 		Args:        [][]byte{[]byte(c.Name())},

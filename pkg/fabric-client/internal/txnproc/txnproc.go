@@ -10,8 +10,7 @@ package txnproc
 import (
 	"sync"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -19,7 +18,7 @@ import (
 var logger = logging.NewLogger("fabric_sdk_go")
 
 // SendTransactionProposalToProcessors sends a TransactionProposal to ProposalProcessor.
-func SendTransactionProposalToProcessors(proposal *apitxn.TransactionProposal, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, error) {
+func SendTransactionProposalToProcessors(proposal *apifabclient.TransactionProposal, targets []apifabclient.ProposalProcessor) ([]*apifabclient.TransactionProposalResponse, error) {
 
 	if proposal == nil || proposal.SignedProposal == nil {
 		return nil, errors.New("signedProposal is required")
@@ -30,12 +29,12 @@ func SendTransactionProposalToProcessors(proposal *apitxn.TransactionProposal, t
 	}
 
 	var responseMtx sync.Mutex
-	var transactionProposalResponses []*apitxn.TransactionProposalResponse
+	var transactionProposalResponses []*apifabclient.TransactionProposalResponse
 	var wg sync.WaitGroup
 
 	for _, p := range targets {
 		wg.Add(1)
-		go func(processor apitxn.ProposalProcessor) {
+		go func(processor apifabclient.ProposalProcessor) {
 			defer wg.Done()
 
 			r, err := processor.ProcessTransactionProposal(*proposal)
@@ -44,7 +43,7 @@ func SendTransactionProposalToProcessors(proposal *apitxn.TransactionProposal, t
 				// Error is handled downstream.
 			}
 
-			tpr := apitxn.TransactionProposalResponse{
+			tpr := apifabclient.TransactionProposalResponse{
 				TransactionProposalResult: r, Err: err}
 
 			responseMtx.Lock()

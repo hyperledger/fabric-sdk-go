@@ -10,7 +10,6 @@ import (
 	"crypto/x509"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -57,13 +56,13 @@ func (m *MockEventHub) UnregisterChaincodeEvent(cbe *apifabclient.ChainCodeCBE) 
 }
 
 // RegisterTxEvent not implemented
-func (m *MockEventHub) RegisterTxEvent(txnID apitxn.TransactionID, callback func(string, pb.TxValidationCode, error)) {
+func (m *MockEventHub) RegisterTxEvent(txnID apifabclient.TransactionID, callback func(string, pb.TxValidationCode, error)) {
 	go func() { m.RegisteredTxCallbacks <- callback }()
 	return
 }
 
 // UnregisterTxEvent not implemented
-func (m *MockEventHub) UnregisterTxEvent(txnID apitxn.TransactionID) {
+func (m *MockEventHub) UnregisterTxEvent(txnID apifabclient.TransactionID) {
 	return
 }
 

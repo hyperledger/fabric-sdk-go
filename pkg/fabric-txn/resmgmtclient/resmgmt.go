@@ -12,7 +12,6 @@ import (
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
@@ -367,8 +366,8 @@ func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType CCProposalType, chan
 		return errors.WithMessage(err, "get channel failed")
 	}
 
-	var txProposalResponse []*apitxn.TransactionProposalResponse
-	var txID apitxn.TransactionID
+	var txProposalResponse []*fab.TransactionProposalResponse
+	var txID fab.TransactionID
 
 	switch ccProposalType {
 

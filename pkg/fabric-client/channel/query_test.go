@@ -11,7 +11,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
@@ -28,7 +27,7 @@ func TestQueryMethods(t *testing.T) {
 		t.Fatalf("Query hash cannot be nil")
 	}
 
-	badRequest1 := apitxn.ChaincodeInvokeRequest{
+	badRequest1 := fab.ChaincodeInvokeRequest{
 		Fcn:  "method",
 		Args: [][]byte{[]byte("arg")},
 	}
@@ -37,7 +36,7 @@ func TestQueryMethods(t *testing.T) {
 		t.Fatalf("QueryByChannelcode: name cannot be empty")
 	}
 
-	badRequest2 := apitxn.ChaincodeInvokeRequest{
+	badRequest2 := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "qscc",
 	}
 	_, err = channel.QueryByChaincode(badRequest2)
@@ -45,7 +44,7 @@ func TestQueryMethods(t *testing.T) {
 		t.Fatalf("QueryByChannelcode: arguments cannot be empty")
 	}
 
-	badRequest3 := apitxn.ChaincodeInvokeRequest{
+	badRequest3 := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "qscc",
 		Fcn:         "method",
 		Args:        [][]byte{[]byte("arg")},
@@ -121,7 +120,7 @@ func TestQueryInfo(t *testing.T) {
 func TestQueryMissingParams(t *testing.T) {
 	channel, _ := setupTestChannel()
 
-	request := apitxn.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
@@ -137,7 +136,7 @@ func TestQueryMissingParams(t *testing.T) {
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A")}
 	channel.AddPeer(&peer)
 
-	request = apitxn.ChaincodeInvokeRequest{
+	request = fab.ChaincodeInvokeRequest{
 		Fcn: "Hello",
 	}
 	_, err = channel.QueryByChaincode(request)
@@ -145,7 +144,7 @@ func TestQueryMissingParams(t *testing.T) {
 		t.Fatalf("Expected error")
 	}
 
-	request = apitxn.ChaincodeInvokeRequest{
+	request = fab.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 	}
 	_, err = channel.QueryByChaincode(request)
@@ -153,7 +152,7 @@ func TestQueryMissingParams(t *testing.T) {
 		t.Fatalf("Expected error")
 	}
 
-	request = apitxn.ChaincodeInvokeRequest{
+	request = fab.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
@@ -169,7 +168,7 @@ func TestQueryBySystemChaincode(t *testing.T) {
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A")}
 	channel.AddPeer(&peer)
 
-	request := apitxn.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}

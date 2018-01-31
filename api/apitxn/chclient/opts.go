@@ -9,7 +9,7 @@ package chclient
 import (
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 )
 
@@ -22,7 +22,7 @@ func WithTimeout(timeout time.Duration) Option {
 }
 
 //WithProposalProcessor encapsulates ProposalProcessors to Option
-func WithProposalProcessor(proposalProcessors ...apitxn.ProposalProcessor) Option {
+func WithProposalProcessor(proposalProcessors ...apifabclient.ProposalProcessor) Option {
 	return func(opts *Opts) error {
 		opts.ProposalProcessors = proposalProcessors
 		return nil

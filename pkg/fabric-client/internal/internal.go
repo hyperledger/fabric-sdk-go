@@ -10,7 +10,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
@@ -18,24 +17,24 @@ import (
 var logger = logging.NewLogger("fabric_sdk_go")
 
 // NewTxnID computes a TransactionID for the current user context
-func NewTxnID(signingIdentity apifabclient.IdentityContext) (apitxn.TransactionID, error) {
+func NewTxnID(signingIdentity apifabclient.IdentityContext) (apifabclient.TransactionID, error) {
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
-		return apitxn.TransactionID{}, err
+		return apifabclient.TransactionID{}, err
 	}
 
 	creator, err := signingIdentity.Identity()
 	if err != nil {
-		return apitxn.TransactionID{}, err
+		return apifabclient.TransactionID{}, err
 	}
 
 	id, err := protos_utils.ComputeProposalTxID(nonce, creator)
 	if err != nil {
-		return apitxn.TransactionID{}, err
+		return apifabclient.TransactionID{}, err
 	}
 
-	txnID := apitxn.TransactionID{
+	txnID := apifabclient.TransactionID{
 		ID:    id,
 		Nonce: nonce,
 	}

@@ -13,7 +13,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
@@ -30,7 +29,7 @@ type Peer struct {
 	config                apiconfig.Config
 	certificate           *x509.Certificate
 	serverName            string
-	processor             apitxn.ProposalProcessor
+	processor             fab.ProposalProcessor
 	name                  string
 	mspID                 string
 	roles                 []string
@@ -127,7 +126,7 @@ func getServerNameOverride(peerCfg *apiconfig.NetworkPeer) string {
 }
 
 // WithPeerProcessor is a functional option for the peer.New constructor that configures the peer's proposal processor
-func WithPeerProcessor(processor apitxn.ProposalProcessor) Option {
+func WithPeerProcessor(processor fab.ProposalProcessor) Option {
 	return func(p *Peer) error {
 		p.processor = processor
 
@@ -188,13 +187,13 @@ func (p *Peer) URL() string {
 }
 
 // ProcessTransactionProposal sends the created proposal to peer for endorsement.
-func (p *Peer) ProcessTransactionProposal(proposal apitxn.TransactionProposal) (apitxn.TransactionProposalResult, error) {
+func (p *Peer) ProcessTransactionProposal(proposal fab.TransactionProposal) (fab.TransactionProposalResult, error) {
 	return p.processor.ProcessTransactionProposal(proposal)
 }
 
 // PeersToTxnProcessors converts a slice of Peers to a slice of TxnProposalProcessors
-func PeersToTxnProcessors(peers []fab.Peer) []apitxn.ProposalProcessor {
-	tpp := make([]apitxn.ProposalProcessor, len(peers))
+func PeersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
+	tpp := make([]fab.ProposalProcessor, len(peers))
 
 	for i := range peers {
 		tpp[i] = peers[i]

@@ -11,7 +11,6 @@ import (
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -254,7 +253,7 @@ func (c *Client) SignChannelConfig(config []byte, signer fab.IdentityContext) (*
  *                         required by the channel create policy when using the `config` parameter.
  * @returns {Result} Result Object with status on the create process.
  */
-func (c *Client) CreateChannel(request fab.CreateChannelRequest) (apitxn.TransactionID, error) {
+func (c *Client) CreateChannel(request fab.CreateChannelRequest) (fab.TransactionID, error) {
 	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
 	rc := resource.New(ctx)
 	return rc.CreateChannel(request)
@@ -276,7 +275,7 @@ func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
-func (c *Client) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.TransactionProposalResponse, string, error) {
+func (c *Client) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
 	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
 	rc := resource.New(ctx)
 	return rc.InstallChaincode(req)

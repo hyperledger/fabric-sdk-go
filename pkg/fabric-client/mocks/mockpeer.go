@@ -10,7 +10,7 @@ package mocks
 import (
 	"encoding/pem"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -80,9 +80,9 @@ func (p *MockPeer) URL() string {
 }
 
 // ProcessTransactionProposal does not send anything anywhere but returns an empty mock ProposalResponse
-func (p *MockPeer) ProcessTransactionProposal(tp apitxn.TransactionProposal) (apitxn.TransactionProposalResult, error) {
+func (p *MockPeer) ProcessTransactionProposal(tp apifabclient.TransactionProposal) (apifabclient.TransactionProposalResult, error) {
 	p.ProcessProposalCalls++
-	return apitxn.TransactionProposalResult{
+	return apifabclient.TransactionProposalResult{
 		Endorser: p.MockURL,
 		Proposal: tp,
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{

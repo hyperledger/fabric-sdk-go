@@ -17,8 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/mocks"
+	mock_fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
 )
 
 // TestNewPeerWithCertNoTLS tests that a peer can be constructed without using a cert
@@ -176,10 +175,10 @@ func TestDeprecatedNames(t *testing.T) {
 func TestDeprecatedProposalProcessorSendProposal(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	proc := mock_apitxn.NewMockProposalProcessor(mockCtrl)
+	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
 	tp := mockTransactionProposal()
-	tpr := apitxn.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
+	tpr := fab.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
 
 	proc.EXPECT().ProcessTransactionProposal(tp).Return(tpr, nil)
 

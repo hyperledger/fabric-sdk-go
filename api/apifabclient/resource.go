@@ -7,15 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package apifabclient
 
 import (
-	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 // Resource is a client that provides access to fabric resources such as chaincode.
 type Resource interface {
-	CreateChannel(request CreateChannelRequest) (txn.TransactionID, error)
-	InstallChaincode(request InstallChaincodeRequest) ([]*txn.TransactionProposalResponse, string, error)
+	CreateChannel(request CreateChannelRequest) (TransactionID, error)
+	InstallChaincode(request InstallChaincodeRequest) ([]*TransactionProposalResponse, string, error)
 	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
 	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
 
@@ -45,7 +44,7 @@ type CreateChannelRequest struct {
 
 	// TODO: InvokeChannelRequest allows the TransactionID to be passed in.
 	// This request struct also has the field for consistency but perhaps it should be removed.
-	TxnID txn.TransactionID
+	TxnID TransactionID
 }
 
 // InstallChaincodeRequest requests chaincode installation on the network
@@ -59,7 +58,7 @@ type InstallChaincodeRequest struct {
 	// required - package (chaincode package type and bytes)
 	Package *CCPackage
 	// required - proposal processor list
-	Targets []txn.ProposalProcessor
+	Targets []ProposalProcessor
 }
 
 // CCPackage contains package type and bytes required to create CDS

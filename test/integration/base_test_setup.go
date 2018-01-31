@@ -14,7 +14,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
@@ -253,9 +252,9 @@ func (setup *BaseSetupImpl) InstallAndInstantiateCC(ccName, ccPath, ccVersion, g
 
 // CreateAndSendTransactionProposal ... TODO duplicate
 func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel, chainCodeID string,
-	fcn string, args [][]byte, targets []apitxn.ProposalProcessor, transientData map[string][]byte) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+	fcn string, args [][]byte, targets []fab.ProposalProcessor, transientData map[string][]byte) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
-	request := apitxn.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeRequest{
 		Targets:      targets,
 		Fcn:          fcn,
 		Args:         args,
@@ -277,7 +276,7 @@ func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel
 }
 
 // CreateAndSendTransaction ...
-func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps []*apitxn.TransactionProposalResponse) (*apitxn.TransactionResponse, error) {
+func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
 
 	tx, err := channel.CreateTransaction(resps)
 	if err != nil {
@@ -301,7 +300,7 @@ func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps 
 // returns a boolean channel which receives true when the event is complete
 // and an error channel for errors
 // TODO - Duplicate
-func (setup *BaseSetupImpl) RegisterTxEvent(t *testing.T, txID apitxn.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
+func (setup *BaseSetupImpl) RegisterTxEvent(t *testing.T, txID fab.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
 	done := make(chan bool)
 	fail := make(chan error)
 

@@ -14,7 +14,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -38,7 +37,7 @@ const (
 )
 
 // CreateTransaction create a transaction with proposal response, following the endorsement policy.
-func (c *Channel) CreateTransaction(resps []*apitxn.TransactionProposalResponse) (*apitxn.Transaction, error) {
+func (c *Channel) CreateTransaction(resps []*fab.TransactionProposalResponse) (*fab.Transaction, error) {
 	if len(resps) == 0 {
 		return nil, errors.New("at least one proposal response is necessary")
 	}
@@ -95,14 +94,14 @@ func (c *Channel) CreateTransaction(resps []*apitxn.TransactionProposalResponse)
 	taas := make([]*pb.TransactionAction, 1)
 	taas[0] = taa
 
-	return &apitxn.Transaction{
+	return &fab.Transaction{
 		Transaction: &pb.Transaction{Actions: taas},
 		Proposal:    proposal,
 	}, nil
 }
 
 // SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
-func (c *Channel) SendTransaction(tx *apitxn.Transaction) (*apitxn.TransactionResponse, error) {
+func (c *Channel) SendTransaction(tx *fab.Transaction) (*fab.TransactionResponse, error) {
 	if c.orderers == nil || len(c.orderers) == 0 {
 		return nil, errors.New("orderers is nil")
 	}
@@ -155,7 +154,7 @@ func (c *Channel) SendTransaction(tx *apitxn.Transaction) (*apitxn.TransactionRe
 func (c *Channel) SendInstantiateProposal(chaincodeName string,
 	args [][]byte, chaincodePath string, chaincodeVersion string,
 	chaincodePolicy *common.SignaturePolicyEnvelope,
-	collConfig []*common.CollectionConfig, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+	collConfig []*common.CollectionConfig, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	return c.sendCCProposal(Instantiate, chaincodeName, args, chaincodePath, chaincodeVersion, chaincodePolicy, collConfig, targets)
 
@@ -168,7 +167,7 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 // chaincodeVersion: required - string of the version of the chaincode
 func (c *Channel) SendUpgradeProposal(chaincodeName string,
 	args [][]byte, chaincodePath string, chaincodeVersion string,
-	chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+	chaincodePolicy *common.SignaturePolicyEnvelope, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	return c.sendCCProposal(Upgrade, chaincodeName, args, chaincodePath, chaincodeVersion, chaincodePolicy, nil, targets)
 
@@ -179,23 +178,23 @@ func (c *Channel) sendCCProposal(ccProposalType CCProposalType, chaincodeName st
 	args [][]byte, chaincodePath string, chaincodeVersion string,
 	chaincodePolicy *common.SignaturePolicyEnvelope,
 	collConfig []*common.CollectionConfig,
-	targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+	targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	if chaincodeName == "" {
-		return nil, apitxn.TransactionID{}, errors.New("chaincodeName is required")
+		return nil, fab.TransactionID{}, errors.New("chaincodeName is required")
 	}
 	if chaincodePath == "" {
-		return nil, apitxn.TransactionID{}, errors.New("chaincodePath is required")
+		return nil, fab.TransactionID{}, errors.New("chaincodePath is required")
 	}
 	if chaincodeVersion == "" {
-		return nil, apitxn.TransactionID{}, errors.New("chaincodeVersion is required")
+		return nil, fab.TransactionID{}, errors.New("chaincodeVersion is required")
 	}
 	if chaincodePolicy == nil {
-		return nil, apitxn.TransactionID{}, errors.New("chaincodePolicy is required")
+		return nil, fab.TransactionID{}, errors.New("chaincodePolicy is required")
 	}
 
 	if targets == nil || len(targets) < 1 {
-		return nil, apitxn.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
+		return nil, fab.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
 	}
 
 	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
@@ -204,18 +203,18 @@ func (c *Channel) sendCCProposal(ccProposalType CCProposalType, chaincodeName st
 
 	creator, err := c.clientContext.Identity()
 	if err != nil {
-		return nil, apitxn.TransactionID{}, errors.Wrap(err, "getting user context's identity failed")
+		return nil, fab.TransactionID{}, errors.Wrap(err, "getting user context's identity failed")
 	}
 	chaincodePolicyBytes, err := protos_utils.Marshal(chaincodePolicy)
 	if err != nil {
-		return nil, apitxn.TransactionID{}, err
+		return nil, fab.TransactionID{}, err
 	}
 	var collConfigBytes []byte
 	if collConfig != nil {
 		var err error
 		collConfigBytes, err = proto.Marshal(&common.CollectionConfigPackage{Config: collConfig})
 		if err != nil {
-			return nil, apitxn.TransactionID{}, err
+			return nil, fab.TransactionID{}, err
 		}
 	}
 
@@ -227,25 +226,25 @@ func (c *Channel) sendCCProposal(ccProposalType CCProposalType, chaincodeName st
 	case Instantiate:
 		proposal, txID, err = protos_utils.CreateDeployProposalFromCDS(c.Name(), ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"), collConfigBytes)
 		if err != nil {
-			return nil, apitxn.TransactionID{}, errors.Wrap(err, "create instantiate chaincode proposal failed")
+			return nil, fab.TransactionID{}, errors.Wrap(err, "create instantiate chaincode proposal failed")
 		}
 	case Upgrade:
 		proposal, txID, err = protos_utils.CreateUpgradeProposalFromCDS(c.Name(), ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
 		if err != nil {
-			return nil, apitxn.TransactionID{}, errors.Wrap(err, "create  upgrade chaincode proposal failed")
+			return nil, fab.TransactionID{}, errors.Wrap(err, "create  upgrade chaincode proposal failed")
 		}
 	default:
-		return nil, apitxn.TransactionID{}, errors.Errorf("chaincode proposal type %d not supported", ccProposalType)
+		return nil, fab.TransactionID{}, errors.Errorf("chaincode proposal type %d not supported", ccProposalType)
 	}
 
 	signedProposal, err := c.signProposal(proposal)
 	if err != nil {
-		return nil, apitxn.TransactionID{}, err
+		return nil, fab.TransactionID{}, err
 	}
 
-	txnID := apitxn.TransactionID{ID: txID} // Nonce is missing
+	txnID := fab.TransactionID{ID: txID} // Nonce is missing
 
-	transactionProposalResponse, err := txnproc.SendTransactionProposalToProcessors(&apitxn.TransactionProposal{
+	transactionProposalResponse, err := txnproc.SendTransactionProposalToProcessors(&fab.TransactionProposal{
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
 		TxnID:          txnID,
@@ -266,7 +265,7 @@ func (c *Channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
 
 // BroadcastEnvelope will send the given envelope to some orderer, picking random endpoints
 // until all are exhausted
-func (c *Channel) BroadcastEnvelope(envelope *fab.SignedEnvelope) (*apitxn.TransactionResponse, error) {
+func (c *Channel) BroadcastEnvelope(envelope *fab.SignedEnvelope) (*fab.TransactionResponse, error) {
 	// Check if orderers are defined
 	if len(c.orderers) == 0 {
 		return nil, errors.New("orderers not set")
@@ -279,7 +278,7 @@ func (c *Channel) BroadcastEnvelope(envelope *fab.SignedEnvelope) (*apitxn.Trans
 	}
 
 	// Iterate them in a random order and try broadcasting 1 by 1
-	var errResp *apitxn.TransactionResponse
+	var errResp *fab.TransactionResponse
 	for _, i := range rand.Perm(len(orderers)) {
 		resp := c.sendBroadcast(envelope, orderers[i])
 		if resp.Err != nil {
@@ -291,16 +290,16 @@ func (c *Channel) BroadcastEnvelope(envelope *fab.SignedEnvelope) (*apitxn.Trans
 	return errResp, nil
 }
 
-func (c *Channel) sendBroadcast(envelope *fab.SignedEnvelope, orderer fab.Orderer) *apitxn.TransactionResponse {
+func (c *Channel) sendBroadcast(envelope *fab.SignedEnvelope, orderer fab.Orderer) *fab.TransactionResponse {
 	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
 	if _, err := orderer.SendBroadcast(envelope); err != nil {
 		logger.Debugf("Receive Error Response from orderer :%v\n", err)
-		return &apitxn.TransactionResponse{Orderer: orderer.URL(),
+		return &fab.TransactionResponse{Orderer: orderer.URL(),
 			Err: errors.Wrapf(err, "calling orderer '%s' failed", orderer.URL())}
 	}
 
 	logger.Debugf("Receive Success Response from orderer\n")
-	return &apitxn.TransactionResponse{Orderer: orderer.URL(), Err: nil}
+	return &fab.TransactionResponse{Orderer: orderer.URL(), Err: nil}
 }
 
 // SendEnvelope sends the given envelope to each orderer and returns a block response

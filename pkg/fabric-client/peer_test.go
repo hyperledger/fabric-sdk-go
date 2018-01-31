@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 )
@@ -94,8 +94,8 @@ func TestSendTransactionProposalMissingPeer(t *testing.T) {
 	}
 }
 
-func mockChaincodeInvokeRequest() apitxn.ChaincodeInvokeRequest {
-	return apitxn.ChaincodeInvokeRequest{
+func mockChaincodeInvokeRequest() apifabclient.ChaincodeInvokeRequest {
+	return apifabclient.ChaincodeInvokeRequest{
 		ChaincodeID: "helloworld",
 		Fcn:         "hello",
 	}
@@ -129,7 +129,7 @@ func TestPeerViaChannelNilData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error adding peer: %v", err)
 	}
-	_, _, err = channel.SendTransactionProposal(apitxn.ChaincodeInvokeRequest{})
+	_, _, err = channel.SendTransactionProposal(apifabclient.ChaincodeInvokeRequest{})
 	if err == nil {
 		t.Fatalf("SendTransaction didn't return error")
 	}

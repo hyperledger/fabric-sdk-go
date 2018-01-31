@@ -10,7 +10,6 @@ import (
 	"bytes"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -50,12 +49,12 @@ func (c *MockResource) SignChannelConfig(config []byte, signer fab.IdentityConte
 }
 
 // CreateChannel ...
-func (c *MockResource) CreateChannel(request fab.CreateChannelRequest) (apitxn.TransactionID, error) {
+func (c *MockResource) CreateChannel(request fab.CreateChannelRequest) (fab.TransactionID, error) {
 	if c.errorScenario {
-		return apitxn.TransactionID{}, errors.New("Create Channel Error")
+		return fab.TransactionID{}, errors.New("Create Channel Error")
 	}
 
-	return apitxn.TransactionID{}, nil
+	return fab.TransactionID{}, nil
 }
 
 //QueryChannels ...
@@ -74,18 +73,18 @@ func (c *MockResource) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQue
 }
 
 // InstallChaincode mocks install chaincode
-func (c *MockResource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.TransactionProposalResponse, string, error) {
+func (c *MockResource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
 	if req.Name == "error" {
 		return nil, "", errors.New("Generate Error")
 	}
 
 	if req.Name == "errorInResponse" {
-		result := apitxn.TransactionProposalResult{Endorser: "http://peer1.com", Status: 10}
-		response := &apitxn.TransactionProposalResponse{TransactionProposalResult: result, Err: errors.New("Generate Response Error")}
-		return []*apitxn.TransactionProposalResponse{response}, "1234", nil
+		result := fab.TransactionProposalResult{Endorser: "http://peer1.com", Status: 10}
+		response := &fab.TransactionProposalResponse{TransactionProposalResult: result, Err: errors.New("Generate Response Error")}
+		return []*fab.TransactionProposalResponse{response}, "1234", nil
 	}
 
-	result := apitxn.TransactionProposalResult{Endorser: "http://peer1.com", Status: 0}
-	response := &apitxn.TransactionProposalResponse{TransactionProposalResult: result}
-	return []*apitxn.TransactionProposalResponse{response}, "1234", nil
+	result := fab.TransactionProposalResult{Endorser: "http://peer1.com", Status: 0}
+	response := &fab.TransactionProposalResponse{TransactionProposalResult: result}
+	return []*fab.TransactionProposalResponse{response}, "1234", nil
 }

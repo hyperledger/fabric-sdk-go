@@ -17,8 +17,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/mocks"
+	mock_fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -34,7 +33,7 @@ func TestCreateTransaction(t *testing.T) {
 	channel.AddPeer(&peer)
 
 	//Test Empty proposal response scenario
-	_, err := channel.CreateTransaction([]*apitxn.TransactionProposalResponse{})
+	_, err := channel.CreateTransaction([]*fab.TransactionProposalResponse{})
 
 	if err == nil || err.Error() != "at least one proposal response is necessary" {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction, for empty proposal response scenario")
@@ -42,14 +41,14 @@ func TestCreateTransaction(t *testing.T) {
 
 	//Test invalid proposal header scenario
 
-	txid := apitxn.TransactionID{
+	txid := fab.TransactionID{
 		ID: "1234",
 	}
 
-	test := &apitxn.TransactionProposalResponse{
-		TransactionProposalResult: apitxn.TransactionProposalResult{
+	test := &fab.TransactionProposalResponse{
+		TransactionProposalResult: fab.TransactionProposalResult{
 			Endorser: "http://peer1.com",
-			Proposal: apitxn.TransactionProposal{
+			Proposal: fab.TransactionProposal{
 				TxnID:          txid,
 				Proposal:       &pb.Proposal{Header: []byte("TEST"), Extension: []byte(""), Payload: []byte("")},
 				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")},
@@ -58,7 +57,7 @@ func TestCreateTransaction(t *testing.T) {
 		},
 	}
 
-	input := []*apitxn.TransactionProposalResponse{test}
+	input := []*fab.TransactionProposalResponse{test}
 
 	_, err = channel.CreateTransaction(input)
 
@@ -67,10 +66,10 @@ func TestCreateTransaction(t *testing.T) {
 	}
 
 	//Test invalid proposal payload scenario
-	test = &apitxn.TransactionProposalResponse{
-		TransactionProposalResult: apitxn.TransactionProposalResult{
+	test = &fab.TransactionProposalResponse{
+		TransactionProposalResult: fab.TransactionProposalResult{
 			Endorser: "http://peer1.com",
-			Proposal: apitxn.TransactionProposal{
+			Proposal: fab.TransactionProposal{
 				TxnID:          txid,
 				Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("TEST")},
 				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")},
@@ -79,7 +78,7 @@ func TestCreateTransaction(t *testing.T) {
 		},
 	}
 
-	input = []*apitxn.TransactionProposalResponse{test}
+	input = []*fab.TransactionProposalResponse{test}
 
 	_, err = channel.CreateTransaction(input)
 	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
@@ -87,10 +86,10 @@ func TestCreateTransaction(t *testing.T) {
 	}
 
 	//Test proposal response
-	test = &apitxn.TransactionProposalResponse{
-		TransactionProposalResult: apitxn.TransactionProposalResult{
+	test = &fab.TransactionProposalResponse{
+		TransactionProposalResult: fab.TransactionProposalResult{
 			Endorser: "http://peer1.com",
-			Proposal: apitxn.TransactionProposal{
+			Proposal: fab.TransactionProposal{
 				Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
 				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TxnID: txid,
 			},
@@ -98,7 +97,7 @@ func TestCreateTransaction(t *testing.T) {
 		},
 	}
 
-	input = []*apitxn.TransactionProposalResponse{test}
+	input = []*fab.TransactionProposalResponse{test}
 	_, err = channel.CreateTransaction(input)
 
 	if err == nil || err.Error() != "proposal response was not successful, error code 99, msg success" {
@@ -107,10 +106,10 @@ func TestCreateTransaction(t *testing.T) {
 
 	//Test repeated field header nil scenario
 
-	test = &apitxn.TransactionProposalResponse{
-		TransactionProposalResult: apitxn.TransactionProposalResult{
+	test = &fab.TransactionProposalResponse{
+		TransactionProposalResult: fab.TransactionProposalResult{
 			Endorser: "http://peer1.com",
-			Proposal: apitxn.TransactionProposal{
+			Proposal: fab.TransactionProposal{
 				Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
 				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TxnID: txid,
 			},
@@ -118,7 +117,7 @@ func TestCreateTransaction(t *testing.T) {
 		},
 	}
 
-	_, err = channel.CreateTransaction([]*apitxn.TransactionProposalResponse{test})
+	_, err = channel.CreateTransaction([]*fab.TransactionProposalResponse{test})
 
 	if err == nil || err.Error() != "repeated field endorsements has nil element" {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction")
@@ -136,14 +135,14 @@ func TestSendInstantiateProposal(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	proc := mock_apitxn.NewMockProposalProcessor(mockCtrl)
+	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
-	tp := apitxn.TransactionProposal{SignedProposal: &pb.SignedProposal{}}
-	tpr := apitxn.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
+	tp := fab.TransactionProposal{SignedProposal: &pb.SignedProposal{}}
+	tpr := fab.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
 
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(tpr, nil)
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(tpr, nil)
-	targets := []apitxn.ProposalProcessor{proc}
+	targets := []fab.ProposalProcessor{proc}
 
 	//Add a Peer
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
@@ -212,13 +211,13 @@ func TestSendUpgradeProposal(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	proc := mock_apitxn.NewMockProposalProcessor(mockCtrl)
+	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
-	tp := apitxn.TransactionProposal{SignedProposal: &pb.SignedProposal{}}
-	tpr := apitxn.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
+	tp := fab.TransactionProposal{SignedProposal: &pb.SignedProposal{}}
+	tpr := fab.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
 
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(tpr, nil)
-	targets := []apitxn.ProposalProcessor{proc}
+	targets := []fab.ProposalProcessor{proc}
 
 	//Add a Peer
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
@@ -390,8 +389,8 @@ func TestSendTransaction(t *testing.T) {
 	}
 
 	//Create tx with nil proposal
-	txn := apitxn.Transaction{
-		Proposal: &apitxn.TransactionProposal{
+	txn := fab.Transaction{
+		Proposal: &fab.TransactionProposal{
 			Proposal: nil,
 		},
 		Transaction: &pb.Transaction{},
@@ -406,8 +405,8 @@ func TestSendTransaction(t *testing.T) {
 	}
 
 	//Create tx with improper proposal header
-	txn = apitxn.Transaction{
-		Proposal: &apitxn.TransactionProposal{
+	txn = fab.Transaction{
+		Proposal: &fab.TransactionProposal{
 			Proposal: &pb.Proposal{Header: []byte("TEST")},
 		},
 		Transaction: &pb.Transaction{},
@@ -421,8 +420,8 @@ func TestSendTransaction(t *testing.T) {
 	}
 
 	//Create tx with proper proposal header
-	txn = apitxn.Transaction{
-		Proposal: &apitxn.TransactionProposal{
+	txn = fab.Transaction{
+		Proposal: &fab.TransactionProposal{
 			Proposal: &pb.Proposal{Header: []byte(""), Payload: []byte(""), Extension: []byte("")},
 		},
 		Transaction: &pb.Transaction{},
@@ -473,8 +472,8 @@ func TestConcurrentOrderers(t *testing.T) {
 		t.Fatalf("Failed to create massive channel: %s", err)
 	}
 
-	txn := apitxn.Transaction{
-		Proposal: &apitxn.TransactionProposal{
+	txn := fab.Transaction{
+		Proposal: &fab.TransactionProposal{
 			Proposal: &pb.Proposal{},
 		},
 		Transaction: &pb.Transaction{},

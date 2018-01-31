@@ -10,7 +10,7 @@ import (
 	"crypto/x509"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 )
 
@@ -89,6 +89,6 @@ func NewPeer(url string, config apiconfig.Config) (*Peer, error) {
 
 // NewPeerFromProcessor constructs a Peer with a ProposalProcessor to simulate transactions.
 // Deprecated: use peer.New() instead
-func NewPeerFromProcessor(url string, processor apitxn.ProposalProcessor, config apiconfig.Config) (*Peer, error) {
+func NewPeerFromProcessor(url string, processor apifabclient.ProposalProcessor, config apiconfig.Config) (*Peer, error) {
 	return &Peer{url: url, processor: processor}, nil
 }

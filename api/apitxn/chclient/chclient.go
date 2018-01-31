@@ -9,7 +9,7 @@ package chclient
 import (
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -25,14 +25,14 @@ type Request struct {
 //Response contains response parameters for query and execute transaction
 type Response struct {
 	Payload          []byte
-	TransactionID    apitxn.TransactionID
+	TransactionID    apifabclient.TransactionID
 	TxValidationCode pb.TxValidationCode
-	Responses        []*apitxn.TransactionProposalResponse
+	Responses        []*apifabclient.TransactionProposalResponse
 }
 
 // Opts allows the user to specify more advanced options
 type Opts struct {
-	ProposalProcessors []apitxn.ProposalProcessor // targets
+	ProposalProcessors []apifabclient.ProposalProcessor // targets
 	Timeout            time.Duration
 	Retry              retry.Opts
 }
@@ -43,7 +43,7 @@ type Option func(opts *Opts) error
 // TxProposalResponseFilter allows the user to inspect/modify response before commit
 type TxProposalResponseFilter interface {
 	// process transaction proposal response (there will be no commit if an error is returned)
-	ProcessTxProposalResponse(txProposalResponse []*apitxn.TransactionProposalResponse) ([]*apitxn.TransactionProposalResponse, error)
+	ProcessTxProposalResponse(txProposalResponse []*apifabclient.TransactionProposalResponse) ([]*apifabclient.TransactionProposalResponse, error)
 }
 
 // Registration is a handle that is returned from a successful Register Chaincode Event.

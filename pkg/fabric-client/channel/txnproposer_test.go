@@ -14,7 +14,6 @@ import (
 	"google.golang.org/grpc"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
@@ -26,7 +25,7 @@ import (
 func TestCreateTransactionProposal(t *testing.T) {
 	channel, _ := setupTestChannel()
 
-	request := apitxn.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "qscc",
 	}
 
@@ -144,7 +143,7 @@ func TestSendTransactionProposal(t *testing.T) {
 		ResponseMessage: responseMessage}
 	channel.AddPeer(&peer)
 
-	request := apitxn.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
@@ -162,7 +161,7 @@ func TestSendTransactionProposal(t *testing.T) {
 func TestSendTransactionProposalMissingParams(t *testing.T) {
 	channel, _ := setupTestChannel()
 
-	request := apitxn.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
@@ -174,7 +173,7 @@ func TestSendTransactionProposalMissingParams(t *testing.T) {
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A")}
 	channel.AddPeer(&peer)
 
-	request = apitxn.ChaincodeInvokeRequest{
+	request = fab.ChaincodeInvokeRequest{
 		Fcn: "Hello",
 	}
 	_, _, err = channel.SendTransactionProposal(request)
@@ -182,7 +181,7 @@ func TestSendTransactionProposalMissingParams(t *testing.T) {
 		t.Fatalf("Expected error")
 	}
 
-	request = apitxn.ChaincodeInvokeRequest{
+	request = fab.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 	}
 	_, _, err = channel.SendTransactionProposal(request)
@@ -190,7 +189,7 @@ func TestSendTransactionProposalMissingParams(t *testing.T) {
 		t.Fatalf("Expected error")
 	}
 
-	request = apitxn.ChaincodeInvokeRequest{
+	request = fab.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
@@ -208,7 +207,7 @@ func TestConcurrentPeers(t *testing.T) {
 		t.Fatalf("Failed to create massive channel: %s", err)
 	}
 
-	result, err := txnproc.SendTransactionProposalToProcessors(&apitxn.TransactionProposal{
+	result, err := txnproc.SendTransactionProposalToProcessors(&fab.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
 	}, channel.txnProcessors())
 	if err != nil {

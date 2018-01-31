@@ -14,7 +14,7 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -62,19 +62,19 @@ func newPeerEndorser(target string, certificate *x509.Certificate, serverHostOve
 }
 
 // ProcessTransactionProposal sends the transaction proposal to a peer and returns the response.
-func (p *peerEndorser) ProcessTransactionProposal(proposal apitxn.TransactionProposal) (apitxn.TransactionProposalResult, error) {
+func (p *peerEndorser) ProcessTransactionProposal(proposal apifabclient.TransactionProposal) (apifabclient.TransactionProposalResult, error) {
 	logger.Debugf("Processing proposal using endorser :%s", p.target)
 
 	proposalResponse, err := p.sendProposal(proposal)
 	if err != nil {
-		return apitxn.TransactionProposalResult{
+		return apifabclient.TransactionProposalResult{
 				Proposal: proposal,
 				Endorser: p.target,
 			}, errors.Wrapf(err, "Transaction processor (%s) returned error for txID '%s'",
 				p.target, proposal.TxnID.ID)
 	}
 
-	return apitxn.TransactionProposalResult{
+	return apifabclient.TransactionProposalResult{
 		Proposal:         proposal,
 		ProposalResponse: proposalResponse,
 		Endorser:         p.target, // TODO: what format is expected for Endorser? Just target? URL?
@@ -90,7 +90,7 @@ func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {
 	conn.Close()
 }
 
-func (p *peerEndorser) sendProposal(proposal apitxn.TransactionProposal) (*pb.ProposalResponse, error) {
+func (p *peerEndorser) sendProposal(proposal apifabclient.TransactionProposal) (*pb.ProposalResponse, error) {
 	conn, err := p.conn()
 	if err != nil {
 		return nil, status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), nil)

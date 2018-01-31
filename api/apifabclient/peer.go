@@ -8,8 +8,6 @@ package apifabclient
 
 import (
 	"encoding/pem"
-
-	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 )
 
 // The Peer class represents a peer in the target blockchain network to which
@@ -26,7 +24,7 @@ import (
 // It should be noted that Peer event streams function at the Peer level and not at the
 // channel and chaincode levels.
 type Peer interface {
-	txn.ProposalProcessor
+	ProposalProcessor
 
 	// ECert Client (need verb)
 	EnrollmentCertificate() *pem.Block

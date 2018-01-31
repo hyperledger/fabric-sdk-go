@@ -14,7 +14,6 @@ import (
 	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
@@ -125,7 +124,7 @@ func (c *Resource) SignChannelConfig(config []byte, signer fab.IdentityContext) 
 }
 
 // CreateChannel calls the orderer to start building the new channel.
-func (c *Resource) CreateChannel(request fab.CreateChannelRequest) (apitxn.TransactionID, error) {
+func (c *Resource) CreateChannel(request fab.CreateChannelRequest) (fab.TransactionID, error) {
 	haveEnvelope := false
 	if request.Envelope != nil {
 		logger.Debug("createChannel - have envelope")
@@ -282,7 +281,7 @@ func (c *Resource) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryRe
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
-func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.TransactionProposalResponse, string, error) {
+func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
 
 	if req.Name == "" {
 		return nil, "", errors.New("chaincode name required")
@@ -333,9 +332,9 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.
 
 	signedProposal := &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}
 
-	txnID := apitxn.TransactionID{ID: txID} // Nonce is missing
+	txnID := fab.TransactionID{ID: txID} // Nonce is missing
 
-	transactionProposalResponse, err := txnproc.SendTransactionProposalToProcessors(&apitxn.TransactionProposal{
+	transactionProposalResponse, err := txnproc.SendTransactionProposalToProcessors(&fab.TransactionProposal{
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
 		TxnID:          txnID,
@@ -344,9 +343,9 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.
 	return transactionProposalResponse, txID, err
 }
 
-func (c *Resource) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args [][]byte, target apitxn.ProposalProcessor) ([]byte, error) {
-	targets := []apitxn.ProposalProcessor{target}
-	request := apitxn.ChaincodeInvokeRequest{
+func (c *Resource) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args [][]byte, target fab.ProposalProcessor) ([]byte, error) {
+	targets := []fab.ProposalProcessor{target}
+	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: chaincodeID,
 		Fcn:         fcn,
 		Args:        args,

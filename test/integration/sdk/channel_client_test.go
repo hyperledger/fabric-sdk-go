@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -220,12 +220,12 @@ type TestTxFilter struct {
 	errResponses error
 }
 
-func (tf *TestTxFilter) ProcessTxProposalResponse(txProposalResponse []*apitxn.TransactionProposalResponse) ([]*apitxn.TransactionProposalResponse, error) {
+func (tf *TestTxFilter) ProcessTxProposalResponse(txProposalResponse []*apifabclient.TransactionProposalResponse) ([]*apifabclient.TransactionProposalResponse, error) {
 	if tf.err != nil {
 		return nil, tf.err
 	}
 
-	var newResponses []*apitxn.TransactionProposalResponse
+	var newResponses []*apifabclient.TransactionProposalResponse
 
 	if tf.errResponses != nil {
 		// 404 will cause transaction commit error

@@ -18,10 +18,10 @@ import (
 	"google.golang.org/grpc"
 	grpcCodes "google.golang.org/grpc/codes"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
@@ -260,7 +260,7 @@ func TestProcessProposalGoodDial(t *testing.T) {
 	}
 }
 
-func testProcessProposal(t *testing.T, url string) (apitxn.TransactionProposalResult, error) {
+func testProcessProposal(t *testing.T, url string) (apifabclient.TransactionProposalResult, error) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
@@ -274,8 +274,8 @@ func testProcessProposal(t *testing.T, url string) (apitxn.TransactionProposalRe
 	return conn.ProcessTransactionProposal(mockTransactionProposal())
 }
 
-func mockTransactionProposal() apitxn.TransactionProposal {
-	return apitxn.TransactionProposal{
+func mockTransactionProposal() apifabclient.TransactionProposal {
+	return apifabclient.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
 	}
 }
