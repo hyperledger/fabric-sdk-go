@@ -14,7 +14,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -131,13 +131,13 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 		}
 
 		// Send query to channel peer
-		request := apitxn.Request{
+		request := chclient.Request{
 			ChaincodeID: ccID,
 			Fcn:         ccFcn,
 			Args:        ccArgs,
 		}
 
-		resp, err := channel.Query(request, apitxn.WithProposalProcessor(peer))
+		resp, err := channel.Query(request, chclient.WithProposalProcessor(peer))
 		if err != nil {
 			queryErrors = append(queryErrors, err.Error())
 			continue
