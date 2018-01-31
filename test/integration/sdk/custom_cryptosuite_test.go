@@ -14,7 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspSw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
@@ -68,7 +68,7 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	response, err := chClient.Query(apitxn.Request{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(chclient.Request{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}

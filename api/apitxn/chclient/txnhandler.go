@@ -4,11 +4,10 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package txnhandler
+package chclient
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 )
 
@@ -27,9 +26,9 @@ type ClientContext struct {
 
 //RequestContext contains request, opts, response parameters for handler execution
 type RequestContext struct {
-	Request      apitxn.Request
-	Opts         apitxn.Opts
-	Response     apitxn.Response
+	Request      Request
+	Opts         Opts
+	Response     Response
 	Error        error
 	RetryHandler retry.Handler
 }

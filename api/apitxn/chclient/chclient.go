@@ -4,11 +4,12 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package apitxn
+package chclient
 
 import (
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -24,14 +25,14 @@ type Request struct {
 //Response contains response parameters for query and execute transaction
 type Response struct {
 	Payload          []byte
-	TransactionID    TransactionID
+	TransactionID    apitxn.TransactionID
 	TxValidationCode pb.TxValidationCode
-	Responses        []*TransactionProposalResponse
+	Responses        []*apitxn.TransactionProposalResponse
 }
 
 // Opts allows the user to specify more advanced options
 type Opts struct {
-	ProposalProcessors []ProposalProcessor // targets
+	ProposalProcessors []apitxn.ProposalProcessor // targets
 	Timeout            time.Duration
 	Retry              retry.Opts
 }
@@ -42,7 +43,7 @@ type Option func(opts *Opts) error
 // TxProposalResponseFilter allows the user to inspect/modify response before commit
 type TxProposalResponseFilter interface {
 	// process transaction proposal response (there will be no commit if an error is returned)
-	ProcessTxProposalResponse(txProposalResponse []*TransactionProposalResponse) ([]*TransactionProposalResponse, error)
+	ProcessTxProposalResponse(txProposalResponse []*apitxn.TransactionProposalResponse) ([]*apitxn.TransactionProposalResponse, error)
 }
 
 // Registration is a handle that is returned from a successful Register Chaincode Event.
@@ -70,11 +71,14 @@ type CCEvent struct {
  */
 type ChannelClient interface {
 
-	// Query chaincode  with request and optional options provided
+	// Query chaincode with request and optional options provided
 	Query(request Request, opts ...Option) (Response, error)
 
-	// Execute execute transaction  with request and optional options provided
+	// Execute execute transaction with request and optional options provided
 	Execute(request Request, opts ...Option) (Response, error)
+
+	// InvokeHandler invokes the given handler with the given request and optional options provided
+	InvokeHandler(handler Handler, request Request, options ...Option) (Response, error)
 
 	// RegisterChaincodeEvent registers chain code event
 	// @param {chan bool} channel which receives event details when the event is complete

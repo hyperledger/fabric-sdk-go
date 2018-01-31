@@ -9,7 +9,7 @@ package fabsdk
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -79,7 +79,7 @@ func (sdk *FabricSDK) NewResourceMgmtClientWithOpts(userName string, opt *Resour
 // NewChannelClientWithOpts returns a new client for a channel (user has to be pre-enrolled)
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string, opt *ChannelClientOpts) (apitxn.ChannelClient, error) {
+func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string, opt *ChannelClientOpts) (chclient.ChannelClient, error) {
 	o := []ContextOption{}
 	if opt.OrgName != "" {
 		o = append(o, WithOrg(opt.OrgName))
@@ -111,7 +111,7 @@ func (sdk *FabricSDK) NewResourceMgmtClient(userName string, opts ...ContextOpti
 // NewChannelClient returns a new client for a channel
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelClient(channelID string, userName string, opts ...ContextOption) (apitxn.ChannelClient, error) {
+func (sdk *FabricSDK) NewChannelClient(channelID string, userName string, opts ...ContextOption) (chclient.ChannelClient, error) {
 	c := sdk.NewClient(WithUser(userName), opts...)
 	return c.Channel(channelID)
 }

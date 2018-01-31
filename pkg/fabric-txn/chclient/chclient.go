@@ -13,9 +13,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/txnhandler"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
@@ -59,28 +58,27 @@ func New(c Context) (*ChannelClient, error) {
 }
 
 // Query chaincode using request and optional options provided
-func (cc *ChannelClient) Query(request apitxn.Request, options ...apitxn.Option) (apitxn.Response, error) {
+func (cc *ChannelClient) Query(request chclient.Request, options ...chclient.Option) (chclient.Response, error) {
 	return cc.InvokeHandler(txnHandlerImpl.NewQueryHandler(), request, cc.addDefaultTimeout(apiconfig.Query, options...)...)
 }
 
 // Execute prepares and executes transaction using request and optional options provided
-func (cc *ChannelClient) Execute(request apitxn.Request, options ...apitxn.Option) (apitxn.Response, error) {
+func (cc *ChannelClient) Execute(request chclient.Request, options ...chclient.Option) (chclient.Response, error) {
 	return cc.InvokeHandler(txnHandlerImpl.NewExecuteHandler(), request, cc.addDefaultTimeout(apiconfig.Execute, options...)...)
 }
 
 //InvokeHandler invokes handler using request and options provided
-func (cc *ChannelClient) InvokeHandler(handler txnhandler.Handler, request apitxn.Request, options ...apitxn.Option) (apitxn.Response, error) {
-	//TODO: this function going to be exposed through ChannelClient interface
+func (cc *ChannelClient) InvokeHandler(handler chclient.Handler, request chclient.Request, options ...chclient.Option) (chclient.Response, error) {
 	//Read execute tx options
 	txnOpts, err := cc.prepareOptsFromOptions(options...)
 	if err != nil {
-		return apitxn.Response{}, err
+		return chclient.Response{}, err
 	}
 
 	//Prepare context objects for handler
 	requestContext, clientContext, err := cc.prepareHandlerContexts(request, txnOpts)
 	if err != nil {
-		return apitxn.Response{}, err
+		return chclient.Response{}, err
 	}
 
 	complete := make(chan bool)
@@ -98,29 +96,29 @@ func (cc *ChannelClient) InvokeHandler(handler txnhandler.Handler, request apitx
 	case <-complete:
 		return requestContext.Response, requestContext.Error
 	case <-time.After(txnOpts.Timeout):
-		return apitxn.Response{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
+		return chclient.Response{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
 			"Operation timed out", nil)
 	}
 }
 
 //prepareHandlerContexts prepares context objects for handlers
-func (cc *ChannelClient) prepareHandlerContexts(request apitxn.Request, options apitxn.Opts) (*txnhandler.RequestContext, *txnhandler.ClientContext, error) {
+func (cc *ChannelClient) prepareHandlerContexts(request chclient.Request, options chclient.Opts) (*chclient.RequestContext, *chclient.ClientContext, error) {
 
 	if request.ChaincodeID == "" || request.Fcn == "" {
 		return nil, nil, errors.New("ChaincodeID and Fcn are required")
 	}
 
-	clientContext := &txnhandler.ClientContext{
+	clientContext := &chclient.ClientContext{
 		Channel:   cc.channel,
 		Selection: cc.selection,
 		Discovery: cc.discovery,
 		EventHub:  cc.eventHub,
 	}
 
-	requestContext := &txnhandler.RequestContext{
+	requestContext := &chclient.RequestContext{
 		Request:      request,
 		Opts:         options,
-		Response:     apitxn.Response{},
+		Response:     chclient.Response{},
 		RetryHandler: retry.New(options.Retry),
 	}
 
@@ -132,9 +130,9 @@ func (cc *ChannelClient) prepareHandlerContexts(request apitxn.Request, options 
 
 }
 
-//prepareOptsFromOptions Reads apitxn.Opts from apitxn.Option array
-func (cc *ChannelClient) prepareOptsFromOptions(options ...apitxn.Option) (apitxn.Opts, error) {
-	txnOpts := apitxn.Opts{}
+//prepareOptsFromOptions Reads apitxn.Opts from chclient.Option array
+func (cc *ChannelClient) prepareOptsFromOptions(options ...chclient.Option) (chclient.Opts, error) {
+	txnOpts := chclient.Opts{}
 	for _, option := range options {
 		err := option(&txnOpts)
 		if err != nil {
@@ -145,14 +143,14 @@ func (cc *ChannelClient) prepareOptsFromOptions(options ...apitxn.Option) (apitx
 }
 
 //addDefaultTimeout adds given default timeout if it is missing in options
-func (cc *ChannelClient) addDefaultTimeout(timeOutType apiconfig.TimeoutType, options ...apitxn.Option) []apitxn.Option {
-	txnOpts := apitxn.Opts{}
+func (cc *ChannelClient) addDefaultTimeout(timeOutType apiconfig.TimeoutType, options ...chclient.Option) []chclient.Option {
+	txnOpts := chclient.Opts{}
 	for _, option := range options {
 		option(&txnOpts)
 	}
 
 	if txnOpts.Timeout == 0 {
-		return append(options, apitxn.WithTimeout(cc.context.Config().TimeoutOrDefault(timeOutType)))
+		return append(options, chclient.WithTimeout(cc.context.Config().TimeoutOrDefault(timeOutType)))
 	}
 	return options
 }
@@ -169,18 +167,18 @@ func (cc *ChannelClient) Close() error {
 // RegisterChaincodeEvent registers chain code event
 // @param {chan bool} channel which receives event details when the event is complete
 // @returns {object} object handle that should be used to unregister
-func (cc *ChannelClient) RegisterChaincodeEvent(notify chan<- *apitxn.CCEvent, chainCodeID string, eventID string) apitxn.Registration {
+func (cc *ChannelClient) RegisterChaincodeEvent(notify chan<- *chclient.CCEvent, chainCodeID string, eventID string) chclient.Registration {
 
 	// Register callback for CE
 	rce := cc.eventHub.RegisterChaincodeEvent(chainCodeID, eventID, func(ce *fab.ChaincodeEvent) {
-		notify <- &apitxn.CCEvent{ChaincodeID: ce.ChaincodeID, EventName: ce.EventName, TxID: ce.TxID, Payload: ce.Payload}
+		notify <- &chclient.CCEvent{ChaincodeID: ce.ChaincodeID, EventName: ce.EventName, TxID: ce.TxID, Payload: ce.Payload}
 	})
 
 	return rce
 }
 
 // UnregisterChaincodeEvent removes chain code event registration
-func (cc *ChannelClient) UnregisterChaincodeEvent(registration apitxn.Registration) error {
+func (cc *ChannelClient) UnregisterChaincodeEvent(registration chclient.Registration) error {
 
 	switch regType := registration.(type) {
 

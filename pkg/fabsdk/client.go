@@ -9,7 +9,7 @@ package fabsdk
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -179,7 +179,7 @@ func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (resmgmt.ResourceMgmt
 }
 
 // Channel returns a client API for transacting on a channel.
-func (c *ClientContext) Channel(id string, opts ...ClientOption) (apitxn.ChannelClient, error) {
+func (c *ClientContext) Channel(id string, opts ...ClientOption) (chclient.ChannelClient, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")

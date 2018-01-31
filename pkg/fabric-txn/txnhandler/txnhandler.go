@@ -12,7 +12,7 @@ import (
 	"bytes"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/txnhandler"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
@@ -22,11 +22,11 @@ import (
 
 //EndorseTxHandler for handling endorse transactions
 type EndorseTxHandler struct {
-	next txnhandler.Handler
+	next chclient.Handler
 }
 
 //Handle for endorsing transactions
-func (e *EndorseTxHandler) Handle(requestContext *txnhandler.RequestContext, clientContext *txnhandler.ClientContext) {
+func (e *EndorseTxHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
 
 	//Get proposal processor, if not supplied then use discovery service to get available peers as endorser
 	//If selection service available then get endorser peers for this chaincode
@@ -53,54 +53,42 @@ func (e *EndorseTxHandler) Handle(requestContext *txnhandler.RequestContext, cli
 	transactionProposalResponses, txnID, err := internal.CreateAndSendTransactionProposal(clientContext.Channel,
 		requestContext.Request.ChaincodeID, requestContext.Request.Fcn, requestContext.Request.Args, txProcessors, requestContext.Request.TransientMap)
 
+	requestContext.Response.TransactionID = txnID
+
 	if err != nil {
 		requestContext.Error = err
 		return
 	}
 
 	requestContext.Response.Responses = transactionProposalResponses
-	requestContext.Response.TransactionID = txnID
+	if len(transactionProposalResponses) > 0 {
+		requestContext.Response.Payload = transactionProposalResponses[0].ProposalResponse.GetResponse().Payload
+	}
 
 	//Delegate to next step if any
 	if e.next != nil {
 		e.next.Handle(requestContext, clientContext)
-	} else {
-		var response []byte
-		if len(transactionProposalResponses) > 0 {
-			response = transactionProposalResponses[0].ProposalResponse.GetResponse().Payload
-		}
-		requestContext.Response = apitxn.Response{Payload: response, TransactionID: txnID, Responses: transactionProposalResponses}
 	}
 }
 
 //EndorsementValidationHandler for transaction proposal response filtering
 type EndorsementValidationHandler struct {
-	next txnhandler.Handler
+	next chclient.Handler
 }
 
 //Handle for Filtering proposal response
-func (f *EndorsementValidationHandler) Handle(requestContext *txnhandler.RequestContext, clientContext *txnhandler.ClientContext) {
+func (f *EndorsementValidationHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
 
 	//Filter tx proposal responses
 	err := f.validate(requestContext.Response.Responses)
 	if err != nil {
-		requestContext.Response = apitxn.Response{Payload: nil, TransactionID: requestContext.Response.TransactionID}
-		requestContext.Error = errors.WithMessage(err, "TxFilter failed")
+		requestContext.Error = errors.WithMessage(err, "endorsement validation failed")
 		return
 	}
-
-	var response []byte
-	if len(requestContext.Response.Responses) > 0 {
-		response = requestContext.Response.Responses[0].ProposalResponse.GetResponse().Payload
-	}
-
-	requestContext.Response.Payload = response
 
 	//Delegate to next step if any
 	if f.next != nil {
 		f.next.Handle(requestContext, clientContext)
-	} else {
-		requestContext.Response = apitxn.Response{Payload: response}
 	}
 }
 
@@ -126,11 +114,11 @@ func (f *EndorsementValidationHandler) validate(txProposalResponse []*apitxn.Tra
 
 //CommitTxHandler for committing transactions
 type CommitTxHandler struct {
-	next txnhandler.Handler
+	next chclient.Handler
 }
 
 //Handle handles commit tx
-func (c *CommitTxHandler) Handle(requestContext *txnhandler.RequestContext, clientContext *txnhandler.ClientContext) {
+func (c *CommitTxHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
 
 	//Connect to Event hub if not yet connected
 	if clientContext.EventHub.IsConnected() == false {
@@ -153,15 +141,13 @@ func (c *CommitTxHandler) Handle(requestContext *txnhandler.RequestContext, clie
 
 	select {
 	case result := <-statusNotifier:
-		if result.Error == nil {
-			requestContext.Response = apitxn.Response{Payload: requestContext.Response.Payload, TransactionID: txnID, TxValidationCode: result.Code}
-		} else {
-			requestContext.Response = apitxn.Response{Payload: requestContext.Response.Payload, TransactionID: txnID, TxValidationCode: result.Code}
+		requestContext.Response.TxValidationCode = result.Code
+
+		if result.Error != nil {
 			requestContext.Error = result.Error
 			return
 		}
 	case <-time.After(requestContext.Opts.Timeout):
-		requestContext.Response = apitxn.Response{TransactionID: txnID}
 		requestContext.Error = errors.New("Execute didn't receive block event")
 		return
 	}
@@ -173,11 +159,33 @@ func (c *CommitTxHandler) Handle(requestContext *txnhandler.RequestContext, clie
 }
 
 //NewQueryHandler returns query handler with EndorseTxHandler & EndorsementValidationHandler Chained
-func NewQueryHandler() txnhandler.Handler {
-	return &EndorseTxHandler{&EndorsementValidationHandler{}}
+func NewQueryHandler(next ...chclient.Handler) chclient.Handler {
+	return NewEndorseHandler(NewEndorsementValidationHandler(next...))
 }
 
 //NewExecuteHandler returns query handler with EndorseTxHandler, EndorsementValidationHandler & CommitTxHandler Chained
-func NewExecuteHandler() txnhandler.Handler {
-	return &EndorseTxHandler{&EndorsementValidationHandler{&CommitTxHandler{}}}
+func NewExecuteHandler(next ...chclient.Handler) chclient.Handler {
+	return NewEndorseHandler(NewEndorsementValidationHandler(NewCommitHandler(next...)))
+}
+
+//NewEndorseHandler returns a handler that endorses a transaction proposal
+func NewEndorseHandler(next ...chclient.Handler) *EndorseTxHandler {
+	return &EndorseTxHandler{next: getNext(next)}
+}
+
+//NewEndorsementValidationHandler returns a handler that validates an endorsement
+func NewEndorsementValidationHandler(next ...chclient.Handler) *EndorsementValidationHandler {
+	return &EndorsementValidationHandler{next: getNext(next)}
+}
+
+//NewCommitHandler returns a handler that commits transaction propsal responses
+func NewCommitHandler(next ...chclient.Handler) *CommitTxHandler {
+	return &CommitTxHandler{next: getNext(next)}
+}
+
+func getNext(next []chclient.Handler) chclient.Handler {
+	if len(next) > 0 {
+		return next[0]
+	}
+	return nil
 }

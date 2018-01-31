@@ -8,9 +8,9 @@ package api
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 )
 
 // SessionContext primarily represents the session and identity context
@@ -22,5 +22,5 @@ type SessionContext interface {
 type Client interface {
 	ChannelMgmt() (chmgmt.ChannelMgmtClient, error)
 	ResourceMgmt() (resmgmt.ResourceMgmtClient, error)
-	Channel(id string) (apitxn.ChannelClient, error)
+	Channel(id string) (chclient.ChannelClient, error)
 }

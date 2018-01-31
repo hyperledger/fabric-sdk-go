@@ -12,7 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 )
@@ -43,7 +43,7 @@ type OrgClientFactory interface {
 type SessionClientFactory interface {
 	NewChannelMgmtClient(sdk Providers, session SessionContext) (chmgmt.ChannelMgmtClient, error)
 	NewResourceMgmtClient(sdk Providers, session SessionContext, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error)
-	NewChannelClient(sdk Providers, session SessionContext, channelID string, targetFilter fab.TargetFilter) (txn.ChannelClient, error)
+	NewChannelClient(sdk Providers, session SessionContext, channelID string, targetFilter fab.TargetFilter) (chclient.ChannelClient, error)
 }
 
 // PkgSuite provides the package factories that create clients and providers

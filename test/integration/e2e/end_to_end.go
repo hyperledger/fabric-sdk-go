@@ -15,12 +15,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
@@ -116,7 +116,7 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	// Release all channel client resources
 	defer chClient.Close()
 
-	response, err := chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
@@ -129,11 +129,11 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	eventID := "test([a-zA-Z]+)"
 
 	// Register chaincode event (pass in channel which receives event details when the event is complete)
-	notifier := make(chan *apitxn.CCEvent)
+	notifier := make(chan *chclient.CCEvent)
 	rce := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
 
 	// Move funds
-	response, err = chClient.Execute(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err = chClient.Execute(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -152,7 +152,7 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	}
 
 	// Verify move funds transaction result
-	response, err = chClient.Query(apitxn.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err = chClient.Query(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds after transaction: %s", err)
 	}

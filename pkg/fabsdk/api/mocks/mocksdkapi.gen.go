@@ -11,7 +11,7 @@ import (
 	apicore "github.com/hyperledger/fabric-sdk-go/api/apicore"
 	apicryptosuite "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	apitxn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	chclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -462,9 +462,9 @@ func (_m *MockSessionClientFactory) EXPECT() *MockSessionClientFactoryMockRecord
 }
 
 // NewChannelClient mocks base method
-func (_m *MockSessionClientFactory) NewChannelClient(_param0 api.Providers, _param1 api.SessionContext, _param2 string, _param3 apifabclient.TargetFilter) (apitxn.ChannelClient, error) {
+func (_m *MockSessionClientFactory) NewChannelClient(_param0 api.Providers, _param1 api.SessionContext, _param2 string, _param3 apifabclient.TargetFilter) (chclient.ChannelClient, error) {
 	ret := _m.ctrl.Call(_m, "NewChannelClient", _param0, _param1, _param2, _param3)
-	ret0, _ := ret[0].(apitxn.ChannelClient)
+	ret0, _ := ret[0].(chclient.ChannelClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

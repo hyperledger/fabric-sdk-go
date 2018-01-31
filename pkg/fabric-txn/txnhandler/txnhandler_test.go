@@ -10,8 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	txnhandlerApi "github.com/hyperledger/fabric-sdk-go/api/apitxn/txnhandler"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/stretchr/testify/assert"
@@ -33,10 +32,10 @@ const (
 func TestQueryHandlerSuccess(t *testing.T) {
 
 	//Sample request
-	request := apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}
+	request := chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}
 
 	//Prepare context objects for handler
-	requestContext := prepareRequestContext(request, apitxn.Opts{}, t)
+	requestContext := prepareRequestContext(request, chclient.Opts{}, t)
 	clientContext := setupChannelClientContext(nil, nil, nil, t)
 
 	//Get query handler
@@ -50,12 +49,11 @@ func TestQueryHandlerSuccess(t *testing.T) {
 }
 
 func TestExecuteTxHandlerSuccess(t *testing.T) {
-
 	//Sample request
-	request := apitxn.Request{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}}
+	request := chclient.Request{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}}
 
 	//Prepare context objects for handler
-	requestContext := prepareRequestContext(request, apitxn.Opts{}, t)
+	requestContext := prepareRequestContext(request, chclient.Opts{}, t)
 	clientContext := setupChannelClientContext(nil, nil, nil, t)
 
 	//Prepare mock eventhub
@@ -81,10 +79,10 @@ func TestExecuteTxHandlerSuccess(t *testing.T) {
 func TestQueryHandlerErrors(t *testing.T) {
 
 	//Error Scenario 1
-	request := apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}
+	request := chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}
 
 	//Prepare context objects for handler
-	requestContext := prepareRequestContext(request, apitxn.Opts{}, t)
+	requestContext := prepareRequestContext(request, chclient.Opts{}, t)
 	clientContext := setupChannelClientContext(errors.New(discoveryServiceError), nil, nil, t)
 
 	//Get query handler
@@ -104,17 +102,16 @@ func TestQueryHandlerErrors(t *testing.T) {
 	if requestContext.Error == nil || !strings.Contains(requestContext.Error.Error(), selectionServiceError) {
 		t.Fatal("Expected error: ", selectionServiceError, ", Received error:", requestContext.Error.Error())
 	}
-
 }
 
 //prepareHandlerContexts prepares context objects for handlers
-func prepareRequestContext(request apitxn.Request, opts apitxn.Opts, t *testing.T) *txnhandlerApi.RequestContext {
+func prepareRequestContext(request chclient.Request, opts chclient.Opts, t *testing.T) *chclient.RequestContext {
 
-	var requestContext *txnhandlerApi.RequestContext
+	var requestContext *chclient.RequestContext
 
-	requestContext = &txnhandlerApi.RequestContext{Request: request,
+	requestContext = &chclient.RequestContext{Request: request,
 		Opts:     opts,
-		Response: apitxn.Response{},
+		Response: chclient.Response{},
 	}
 
 	requestContext.Opts.Timeout = testTimeOut
@@ -134,7 +131,7 @@ func setupTestContext() apifabclient.Context {
 	return ctx
 }
 
-func setupChannelClientContext(discErr error, selectionErr error, peers []apifabclient.Peer, t *testing.T) *txnhandlerApi.ClientContext {
+func setupChannelClientContext(discErr error, selectionErr error, peers []apifabclient.Peer, t *testing.T) *chclient.ClientContext {
 
 	testChannel, err := setupTestChannel()
 	if err != nil {
@@ -154,7 +151,7 @@ func setupChannelClientContext(discErr error, selectionErr error, peers []apifab
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	return &txnhandlerApi.ClientContext{
+	return &chclient.ClientContext{
 		Channel:   testChannel,
 		Discovery: discoveryService,
 		Selection: selectionService,

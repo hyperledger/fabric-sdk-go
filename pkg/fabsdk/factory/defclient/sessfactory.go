@@ -7,8 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package defclient
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-
+	apichclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	apichmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	apiresmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -67,7 +66,7 @@ func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers,
 }
 
 // NewChannelClient returns a client that can execute transactions on specified channel
-func (f *SessionClientFactory) NewChannelClient(providers apisdk.Providers, session apisdk.SessionContext, channelID string, targetFilter apifabclient.TargetFilter) (apitxn.ChannelClient, error) {
+func (f *SessionClientFactory) NewChannelClient(providers apisdk.Providers, session apisdk.SessionContext, channelID string, targetFilter apifabclient.TargetFilter) (apichclient.ChannelClient, error) {
 
 	chProvider := providers.ChannelProvider()
 	chService, err := chProvider.NewChannelService(session, channelID)
