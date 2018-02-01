@@ -95,7 +95,7 @@ func (cc *ChannelClient) InvokeHandler(handler chclient.Handler, request chclien
 	select {
 	case <-complete:
 		return requestContext.Response, requestContext.Error
-	case <-time.After(txnOpts.Timeout):
+	case <-time.After(requestContext.Opts.Timeout):
 		return chclient.Response{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
 			"Operation timed out", nil)
 	}
