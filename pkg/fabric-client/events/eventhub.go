@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	syncmap "golang.org/x/sync/syncmap"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -40,11 +39,11 @@ type EventHub struct {
 	//Used for protecting parts of code from running concurrently
 	mtx sync.RWMutex
 	// Map of clients registered for chaincode events
-	chaincodeRegistrants syncmap.Map
+	chaincodeRegistrants sync.Map
 	// Array of clients registered for block events
 	blockRegistrants []func(*common.Block)
 	// Map of clients registered for transactional events
-	txRegistrants syncmap.Map
+	txRegistrants sync.Map
 	// peer addr to connect to
 	peerAddr string
 	// peer tls certificate
