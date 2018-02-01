@@ -69,7 +69,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Allow orderer to process channel creation
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 5)
 
 	// Org1 resource management client (Org1 is default org)
 	org1ResMgmt, err := sdk.NewClient(fabsdk.WithUser("Admin")).ResourceMgmt()
