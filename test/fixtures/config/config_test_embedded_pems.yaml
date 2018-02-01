@@ -48,7 +48,7 @@ client:
     timeout:
       connection: 3s
       queryResponse: 45s
-      executeTxResponse: 30s
+      executeTxResponse: 60s
   eventService:
     timeout:
       connection: 3s

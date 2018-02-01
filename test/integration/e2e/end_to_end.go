@@ -69,7 +69,7 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	}
 
 	// Allow orderer to process channel creation
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 5)
 
 	// Org resource management client
 	orgResMgmt, err := sdk.NewClient(fabsdk.WithUser(orgAdmin)).ResourceMgmt()

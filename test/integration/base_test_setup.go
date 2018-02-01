@@ -134,7 +134,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 			return errors.WithMessage(err, "SaveChannel failed")
 		}
 
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 5)
 
 		if err = channel.Initialize(nil); err != nil {
 			return errors.WithMessage(err, "channel init failed")
