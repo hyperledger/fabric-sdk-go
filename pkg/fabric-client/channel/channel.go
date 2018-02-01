@@ -11,6 +11,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -33,8 +34,8 @@ type Channel struct {
 // name: used to identify different channel instances. The naming of channel instances
 // is enforced by the ordering service and must be unique within the blockchain network.
 // client: Provides operational context such as submitting User etc.
-func New(ctx fab.Context, name string) (*Channel, error) {
-	if name == "" {
+func New(ctx fab.Context, cfg fab.ChannelCfg) (*Channel, error) {
+	if cfg.Name() == "" {
 		return nil, errors.Errorf("name is required")
 	}
 	if ctx == nil {
@@ -42,13 +43,48 @@ func New(ctx fab.Context, name string) (*Channel, error) {
 	}
 	p := make(map[string]fab.Peer)
 	o := make(map[string]fab.Orderer)
+
 	c := Channel{
-		name:          name,
+		name:          cfg.Name(),
 		peers:         p,
 		orderers:      o,
 		clientContext: ctx,
-		mspManager:    msp.NewMSPManager(),
 	}
+
+	mspManager := msp.NewMSPManager()
+	if len(cfg.Msps()) > 0 {
+		msps, err := loadMSPs(cfg.Msps(), ctx.CryptoSuite())
+		if err != nil {
+			return nil, errors.WithMessage(err, "load MSPs from config failed")
+		}
+
+		if err := mspManager.Setup(msps); err != nil {
+			return nil, errors.WithMessage(err, "MSPManager Setup failed")
+		}
+	}
+
+	c.mspManager = mspManager
+	c.anchorPeers = cfg.AnchorPeers()
+
+	// Add orderer if specified in config
+	for _, name := range cfg.Orderers() {
+
+		// Figure out orderer configuration
+		oCfg, err := ctx.Config().OrdererConfig(name)
+
+		// Check if retrieving orderer configuration went ok
+		if err != nil || oCfg == nil {
+			return nil, errors.Errorf("failed to retrieve orderer config: %s", err)
+		}
+
+		o, err := orderer.New(ctx.Config(), orderer.FromOrdererConfig(oCfg))
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create new orderer from config")
+		}
+
+		c.orderers[o.URL()] = o
+	}
+
 	logger.Debugf("Constructed channel instance for channel %s: %v", c.name, c)
 
 	return &c, nil

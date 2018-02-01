@@ -53,6 +53,46 @@ type ChannelConfig struct {
 	opts      Opts
 }
 
+// ChannelCfg contains channel configuration
+type ChannelCfg struct {
+	name        string
+	msps        []*msp.MSPConfig
+	anchorPeers []*fab.OrgAnchorPeer
+	orderers    []string
+	versions    *fab.Versions
+}
+
+// NewChannelCfg creates channel cfg
+// TODO: This is temporary, Remove once we have config injected in sdk
+func NewChannelCfg(name string) fab.ChannelCfg {
+	return &ChannelCfg{name: name}
+}
+
+// Name returns name
+func (cfg *ChannelCfg) Name() string {
+	return cfg.name
+}
+
+// Msps returns msps
+func (cfg *ChannelCfg) Msps() []*msp.MSPConfig {
+	return cfg.msps
+}
+
+// AnchorPeers returns anchor peers
+func (cfg *ChannelCfg) AnchorPeers() []*fab.OrgAnchorPeer {
+	return cfg.anchorPeers
+}
+
+// Orderers returns orderers
+func (cfg *ChannelCfg) Orderers() []string {
+	return cfg.orderers
+}
+
+// Versions returns versions
+func (cfg *ChannelCfg) Versions() *fab.Versions {
+	return cfg.versions
+}
+
 // New channel config implementation
 func New(ctx fab.Context, channelID string, options ...Option) (*ChannelConfig, error) {
 	opts, err := prepareOpts(options...)
@@ -64,14 +104,18 @@ func New(ctx fab.Context, channelID string, options ...Option) (*ChannelConfig, 
 }
 
 // Query returns channel configuration
-func (c *ChannelConfig) Query() (*fab.ChannelCfg, error) {
-	// TODO: Add orderer impl later on
+func (c *ChannelConfig) Query() (fab.ChannelCfg, error) {
+
+	if c.opts.Orderer != "" {
+		return c.queryOrderer()
+	}
+
 	return c.queryPeers()
 }
 
-func (c *ChannelConfig) queryPeers() (*fab.ChannelCfg, error) {
+func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 
-	ch, err := channel.New(c.ctx, c.channelID)
+	ch, err := channel.New(c.ctx, &ChannelCfg{name: c.channelID})
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewChannel failed")
 	}
@@ -106,7 +150,22 @@ func (c *ChannelConfig) queryPeers() (*fab.ChannelCfg, error) {
 		return nil, errors.WithMessage(err, "QueryBlockConfig failed")
 	}
 
-	return extractConfig(configEnvelope)
+	return extractConfig(c.channelID, configEnvelope)
+}
+
+func (c *ChannelConfig) queryOrderer() (*ChannelCfg, error) {
+
+	ch, err := channel.New(c.ctx, &ChannelCfg{name: c.channelID, orderers: []string{c.opts.Orderer}})
+	if err != nil {
+		return nil, errors.WithMessage(err, "NewChannel failed")
+	}
+
+	configEnvelope, err := ch.ChannelConfig()
+	if err != nil {
+		return nil, errors.WithMessage(err, "ChannelConfig() failed")
+	}
+
+	return extractConfig(c.channelID, configEnvelope)
 }
 
 // WithPeers encapsulates peers to Option
@@ -145,7 +204,7 @@ func prepareOpts(options ...Option) (Opts, error) {
 	return opts, nil
 }
 
-func extractConfig(configEnvelope *common.ConfigEnvelope) (*fab.ChannelCfg, error) {
+func extractConfig(channel string, configEnvelope *common.ConfigEnvelope) (*ChannelCfg, error) {
 
 	group := configEnvelope.Config.ChannelGroup
 
@@ -153,14 +212,15 @@ func extractConfig(configEnvelope *common.ConfigEnvelope) (*fab.ChannelCfg, erro
 		Channel: &common.ConfigGroup{},
 	}
 
-	config := &fab.ChannelCfg{
-		Msps:        []*msp.MSPConfig{},
-		AnchorPeers: []*fab.OrgAnchorPeer{},
-		Orderers:    []string{},
-		Versions:    versions,
+	config := &ChannelCfg{
+		name:        channel,
+		msps:        []*msp.MSPConfig{},
+		anchorPeers: []*fab.OrgAnchorPeer{},
+		orderers:    []string{},
+		versions:    versions,
 	}
 
-	err := loadConfig(config, config.Versions.Channel, group, "base", "", true)
+	err := loadConfig(config, config.versions.Channel, group, "base", "", true)
 	if err != nil {
 		return nil, errors.WithMessage(err, "load config items from config group failed")
 	}
@@ -171,7 +231,7 @@ func extractConfig(configEnvelope *common.ConfigEnvelope) (*fab.ChannelCfg, erro
 
 }
 
-func loadConfig(configItems *fab.ChannelCfg, versionsGroup *common.ConfigGroup, group *common.ConfigGroup, name string, org string, top bool) error {
+func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, group *common.ConfigGroup, name string, org string, top bool) error {
 	logger.Debugf("loadConfigGroup - %s - START groups Org: %s", name, org)
 	if group == nil {
 		return nil
@@ -224,7 +284,7 @@ func loadConfig(configItems *fab.ChannelCfg, versionsGroup *common.ConfigGroup, 
 	return nil
 }
 
-func loadConfigPolicy(configItems *fab.ChannelCfg, key string, versionsPolicy *common.ConfigPolicy, configPolicy *common.ConfigPolicy, groupName string, org string) error {
+func loadConfigPolicy(configItems *ChannelCfg, key string, versionsPolicy *common.ConfigPolicy, configPolicy *common.ConfigPolicy, groupName string, org string) error {
 	logger.Debugf("loadConfigPolicy - %s - name: %s", groupName, key)
 	logger.Debugf("loadConfigPolicy - %s - version: %d", groupName, configPolicy.Version)
 	logger.Debugf("loadConfigPolicy - %s - mod_policy: %s", groupName, configPolicy.ModPolicy)
@@ -233,7 +293,7 @@ func loadConfigPolicy(configItems *fab.ChannelCfg, key string, versionsPolicy *c
 	return loadPolicy(configItems, versionsPolicy, key, configPolicy.Policy, groupName, org)
 }
 
-func loadPolicy(configItems *fab.ChannelCfg, versionsPolicy *common.ConfigPolicy, key string, policy *common.Policy, groupName string, org string) error {
+func loadPolicy(configItems *ChannelCfg, versionsPolicy *common.ConfigPolicy, key string, policy *common.Policy, groupName string, org string) error {
 
 	policyType := common.Policy_PolicyType(policy.Type)
 
@@ -269,7 +329,7 @@ func loadPolicy(configItems *fab.ChannelCfg, versionsPolicy *common.ConfigPolicy
 	return nil
 }
 
-func loadConfigValue(configItems *fab.ChannelCfg, key string, versionsValue *common.ConfigValue, configValue *common.ConfigValue, groupName string, org string) error {
+func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.ConfigValue, configValue *common.ConfigValue, groupName string, org string) error {
 	logger.Debugf("loadConfigValue - %s - START value name: %s", groupName, key)
 	logger.Debugf("loadConfigValue - %s   - version: %d", groupName, configValue.Version)
 	logger.Debugf("loadConfigValue - %s   - modPolicy: %s", groupName, configValue.ModPolicy)
@@ -289,7 +349,7 @@ func loadConfigValue(configItems *fab.ChannelCfg, key string, versionsValue *com
 		if len(anchorPeers.AnchorPeers) > 0 {
 			for _, anchorPeer := range anchorPeers.AnchorPeers {
 				oap := &fab.OrgAnchorPeer{Org: org, Host: anchorPeer.Host, Port: anchorPeer.Port}
-				configItems.AnchorPeers = append(configItems.AnchorPeers, oap)
+				configItems.anchorPeers = append(configItems.anchorPeers, oap)
 				logger.Debugf("loadConfigValue - %s   - AnchorPeer :: %s:%d:%s", groupName, oap.Host, oap.Port, oap.Org)
 			}
 		}
@@ -309,7 +369,7 @@ func loadConfigValue(configItems *fab.ChannelCfg, key string, versionsValue *com
 			return errors.Errorf("unsupported MSP type (%v)", mspType)
 		}
 
-		configItems.Msps = append(configItems.Msps, mspConfig)
+		configItems.msps = append(configItems.msps, mspConfig)
 		break
 
 	case channelConfig.ConsensusTypeKey:
@@ -395,7 +455,7 @@ func loadConfigValue(configItems *fab.ChannelCfg, key string, versionsValue *com
 		logger.Debugf("loadConfigValue - %s   - OrdererAddresses addresses value :: %s", groupName, ordererAddresses.Addresses)
 		if len(ordererAddresses.Addresses) > 0 {
 			for _, ordererAddress := range ordererAddresses.Addresses {
-				configItems.Orderers = append(configItems.Orderers, ordererAddress)
+				configItems.orderers = append(configItems.orderers, ordererAddress)
 			}
 		}
 		break

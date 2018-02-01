@@ -290,26 +290,6 @@ func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.
 		return nil, errors.New("config block must contain one transaction")
 	}
 
-	envelope := &common.Envelope{}
-	if err = proto.Unmarshal(block.Data.Data[0], envelope); err != nil {
-		return nil, errors.Wrap(err, "unmarshal envelope from config block failed")
-	}
-	payload := &common.Payload{}
-	if err := proto.Unmarshal(envelope.Payload, payload); err != nil {
-		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
-	}
-	channelHeader := &common.ChannelHeader{}
-	if err := proto.Unmarshal(payload.Header.ChannelHeader, channelHeader); err != nil {
-		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
-	}
-	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG {
-		return nil, errors.New("block must be of type 'CONFIG'")
-	}
-	configEnvelope := &common.ConfigEnvelope{}
-	if err := proto.Unmarshal(payload.Data, configEnvelope); err != nil {
-		return nil, errors.Wrap(err, "unmarshal config envelope failed")
-	}
-
-	return configEnvelope, nil
+	return createConfigEnvelope(block.Data.Data[0])
 
 }

@@ -36,7 +36,7 @@ oG5kQQIgQAe4OOKYhJdh3f7URaKfGTf492/nmRmtK+ySKjpHSrU=
 func TestChannelMethods(t *testing.T) {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
-	channel, err := New(ctx, "testChannel")
+	channel, err := New(ctx, mocks.NewMockChannelCfg("testChannel"))
 	if err != nil {
 		t.Fatalf("New return error[%s]", err)
 	}
@@ -44,7 +44,7 @@ func TestChannelMethods(t *testing.T) {
 		t.Fatalf("New create wrong channel")
 	}
 
-	_, err = New(ctx, "")
+	_, err = New(ctx, mocks.NewMockChannelCfg(""))
 	if err == nil {
 		t.Fatalf("New didn't return error")
 	}
@@ -52,7 +52,7 @@ func TestChannelMethods(t *testing.T) {
 		t.Fatalf("New didn't return right error")
 	}
 
-	_, err = New(nil, "testChannel")
+	_, err = New(nil, mocks.NewMockChannelCfg("testChannel"))
 	if err == nil {
 		t.Fatalf("NewChannel didn't return error")
 	}
@@ -97,7 +97,7 @@ func TestAddRemoveOrderer(t *testing.T) {
 	}
 }
 
-func TestAnchorAndRemovePeers(t *testing.T) {
+func TestAddAndRemovePeers(t *testing.T) {
 	//Setup channel
 	channel, _ := setupTestChannel()
 
@@ -113,12 +113,10 @@ func TestAnchorAndRemovePeers(t *testing.T) {
 
 	//Add the Peer again
 	channel.AddPeer(&peer)
-
-	channel.Initialize(nil)
-	if len(channel.AnchorPeers()) != 0 {
-		//Currently testing only for empty anchor list
-		t.Fatal("Anchor peer list is incorrect")
+	if len(channel.Peers()) != 1 {
+		t.Fatal("Add Peer failed")
 	}
+
 }
 
 func TestPrimaryPeer(t *testing.T) {
@@ -170,122 +168,6 @@ func TestPrimaryPeer(t *testing.T) {
 
 }
 
-func TestChannelInitializeFromOrderer(t *testing.T) {
-	org1MSPID := "ORG1MSP"
-	org2MSPID := "ORG2MSP"
-
-	channel, _ := setupTestChannel()
-	builder := &mocks.MockConfigBlockBuilder{
-		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
-			ModPolicy: "Admins",
-			MSPNames: []string{
-				org1MSPID,
-				org2MSPID,
-			},
-			OrdererAddress: "localhost:7054",
-			RootCA:         validRootCA,
-		},
-		Index:           0,
-		LastConfigIndex: 0,
-	}
-	orderer := mocks.NewMockOrderer("", nil)
-	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(builder.Build())
-	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(builder.Build())
-	err := channel.AddOrderer(orderer)
-	if err != nil {
-		t.Fatalf("Error adding orderer: %v", err)
-	}
-
-	err = channel.Initialize(nil)
-	if err != nil {
-		t.Fatalf("channel Initialize failed : %v", err)
-	}
-	if !channel.IsInitialized() {
-		t.Fatalf("channel Initialize failed : channel initialized flag not set")
-	}
-
-	mspManager := channel.MSPManager()
-	if mspManager == nil {
-		t.Fatalf("nil MSPManager on new channel")
-	}
-	msps, err := mspManager.GetMSPs()
-	if err != nil || len(msps) == 0 {
-		t.Fatalf("At least one MSP expected in MSPManager")
-	}
-	msp, ok := msps[org1MSPID]
-	if !ok {
-		t.Fatalf("Could not find %s", org1MSPID)
-	}
-	if identifier, _ := msp.GetIdentifier(); identifier != org1MSPID {
-		t.Fatalf("Expecting MSP identifier to be %s but got %s", org1MSPID, identifier)
-	}
-	msp, ok = msps[org2MSPID]
-	if !ok {
-		t.Fatalf("Could not find %s", org2MSPID)
-	}
-	if identifier, _ := msp.GetIdentifier(); identifier != org2MSPID {
-		t.Fatalf("Expecting MSP identifier to be %s but got %s", org2MSPID, identifier)
-	}
-
-	channel.SetMSPManager(nil)
-	if channel.MSPManager() != nil {
-		t.Fatal("Set MSPManager is not working as expected")
-	}
-
-}
-
-func TestOrganizationUnits(t *testing.T) {
-	org1MSPID := "ORG1MSP"
-	org2MSPID := "ORG2MSP"
-
-	channel, _ := setupTestChannel()
-	orgUnits, err := channel.OrganizationUnits()
-
-	if len(orgUnits) > 0 {
-		t.Fatalf("Returned non configured organizational unit : %v", err)
-	}
-	builder := &mocks.MockConfigBlockBuilder{
-		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
-			ModPolicy: "Admins",
-			MSPNames: []string{
-				channel.Name(),
-				org1MSPID,
-				org2MSPID,
-			},
-			OrdererAddress: "localhost:7054",
-			RootCA:         validRootCA,
-		},
-		Index:           0,
-		LastConfigIndex: 0,
-	}
-	orderer := mocks.NewMockOrderer("", nil)
-	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(builder.Build())
-	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(builder.Build())
-	err = channel.AddOrderer(orderer)
-	if err != nil {
-		t.Fatalf("Error adding orderer: %v", err)
-	}
-
-	err = channel.Initialize(nil)
-	if err != nil {
-		t.Fatalf("channel Initialize failed : %v", err)
-	}
-	orgUnits, err = channel.OrganizationUnits()
-	if err != nil {
-		t.Fatalf("CANNOT retrieve organizational units : %v", err)
-	}
-	if !isValueInList(channel.Name(), orgUnits) {
-		t.Fatalf("Could not find %s in the list of organizations", channel.Name())
-	}
-	if !isValueInList(org1MSPID, orgUnits) {
-		t.Fatalf("Could not find %s in the list of organizations", org1MSPID)
-	}
-	if !isValueInList(org2MSPID, orgUnits) {
-		t.Fatalf("Could not find %s in the list of organizations", org2MSPID)
-	}
-
-}
-
 func isValueInList(value string, list []string) bool {
 	for _, v := range list {
 		if v == value {
@@ -298,7 +180,7 @@ func isValueInList(value string, list []string) bool {
 func setupTestChannel() (*Channel, error) {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
-	return New(ctx, "testChannel")
+	return New(ctx, mocks.NewMockChannelCfg("testChannel"))
 }
 
 func setupMassiveTestChannel(numberOfPeers int, numberOfOrderers int) (*Channel, error) {

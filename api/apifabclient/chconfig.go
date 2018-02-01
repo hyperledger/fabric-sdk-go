@@ -15,15 +15,16 @@ import (
 type ChannelConfig interface {
 
 	// Query channel configuration
-	Query() (*ChannelCfg, error)
+	Query() (ChannelCfg, error)
 }
 
 // ChannelCfg contains channel configuration
-type ChannelCfg struct {
-	Msps        []*msp.MSPConfig
-	AnchorPeers []*OrgAnchorPeer
-	Orderers    []string
-	Versions    *Versions
+type ChannelCfg interface {
+	Name() string
+	Msps() []*msp.MSPConfig
+	AnchorPeers() []*OrgAnchorPeer
+	Orderers() []string
+	Versions() *Versions
 }
 
 // Versions ...

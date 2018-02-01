@@ -122,7 +122,7 @@ func prepareRequestContext(request chclient.Request, opts chclient.Opts, t *test
 
 func setupTestChannel() (*channel.Channel, error) {
 	ctx := setupTestContext()
-	return channel.New(ctx, "testChannel")
+	return channel.New(ctx, fcmocks.NewMockChannelCfg("testChannel"))
 }
 
 func setupTestContext() apifabclient.Context {

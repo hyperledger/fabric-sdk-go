@@ -132,7 +132,7 @@ func TestSendInstantiateProposal(t *testing.T) {
 	//Setup channel
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	ctx := mocks.NewMockContext(user)
-	channel, _ := New(ctx, "testChannel")
+	channel, _ := New(ctx, mocks.NewMockChannelCfg("testChannel"))
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -208,7 +208,7 @@ func TestSendUpgradeProposal(t *testing.T) {
 	//Setup channel
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	ctx := mocks.NewMockContext(user)
-	channel, _ := New(ctx, "testChannel")
+	channel, _ := New(ctx, mocks.NewMockChannelCfg("testChannel"))
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
