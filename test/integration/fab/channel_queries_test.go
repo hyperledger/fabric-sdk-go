@@ -18,8 +18,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/pkg/errors"
 )
 
 func TestChannelQueries(t *testing.T) {

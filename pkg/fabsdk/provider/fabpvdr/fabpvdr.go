@@ -12,7 +12,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
@@ -21,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource"
+	"github.com/pkg/errors"
 )
 
 // FabricProvider represents the default implementation of Fabric objects.

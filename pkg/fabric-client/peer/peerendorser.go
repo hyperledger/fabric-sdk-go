@@ -22,7 +22,7 @@ import (
 	"crypto/x509"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 // peerEndorser enables access to a GRPC-based endorser for running transaction proposal simulations

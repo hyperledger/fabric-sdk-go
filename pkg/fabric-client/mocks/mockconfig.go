@@ -13,7 +13,7 @@ import (
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 // MockConfig ...

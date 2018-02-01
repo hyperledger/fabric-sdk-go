@@ -11,7 +11,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 // SigningManager is used for signing objects with private key

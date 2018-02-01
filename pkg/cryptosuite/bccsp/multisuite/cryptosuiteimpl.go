@@ -11,7 +11,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 //GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config

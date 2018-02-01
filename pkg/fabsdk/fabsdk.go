@@ -15,10 +15,10 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/pkg/errors"
 )
 
 // FabricSDK provides access (and context) to clients being managed by the SDK.

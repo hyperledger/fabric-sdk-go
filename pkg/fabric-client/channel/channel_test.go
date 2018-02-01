@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/pkg/errors"
 )
 
 var testAddress = "127.0.0.1:0"

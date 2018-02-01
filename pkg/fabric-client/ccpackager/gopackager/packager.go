@@ -17,8 +17,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"

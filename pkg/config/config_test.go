@@ -20,8 +20,8 @@ import (
 	"reflect"
 
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 

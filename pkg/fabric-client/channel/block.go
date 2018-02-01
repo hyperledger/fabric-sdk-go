@@ -18,8 +18,8 @@ import (
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+	"github.com/pkg/errors"
 )
 
 // GenesisBlock returns the genesis block from the defined orderer that may be

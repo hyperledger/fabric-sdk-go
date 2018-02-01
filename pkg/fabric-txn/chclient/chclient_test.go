@@ -15,7 +15,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
@@ -23,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
 )
 
 const (

@@ -17,8 +17,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")

@@ -11,8 +11,8 @@ import (
 	"encoding/pem"
 	"io/ioutil"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
+	"github.com/pkg/errors"
 )
 
 // NetworkConfig provides a static definition of a Hyperledger Fabric network

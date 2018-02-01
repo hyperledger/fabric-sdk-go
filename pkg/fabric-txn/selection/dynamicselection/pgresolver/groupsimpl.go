@@ -11,7 +11,7 @@ import (
 	"reflect"
 
 	sdkApi "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 // NewGroupOfGroups returns a new group of groups

@@ -24,12 +24,12 @@ import (
 
 	cnsmr "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/util"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")

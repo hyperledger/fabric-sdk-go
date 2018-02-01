@@ -8,7 +8,7 @@ package mocks
 
 import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 // MockChannelProvider holds a mock channel provider.

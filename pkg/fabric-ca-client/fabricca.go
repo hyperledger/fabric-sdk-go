@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fabricca
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/pkg/errors"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/api/apifabca"

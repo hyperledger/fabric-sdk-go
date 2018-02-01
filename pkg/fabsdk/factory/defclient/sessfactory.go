@@ -13,11 +13,11 @@ import (
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
+	"github.com/pkg/errors"
 )
 
 // SessionClientFactory represents the default implementation of a session client.

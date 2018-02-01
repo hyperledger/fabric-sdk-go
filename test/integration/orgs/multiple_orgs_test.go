@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"

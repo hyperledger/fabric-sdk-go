@@ -11,7 +11,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 const (

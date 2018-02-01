@@ -21,7 +21,7 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 func (msp *bccspmsp) validateIdentity(id *identity) error {

@@ -12,7 +12,7 @@ package status
 import (
 	"fmt"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/pkg/errors"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	grpcstatus "google.golang.org/grpc/status"

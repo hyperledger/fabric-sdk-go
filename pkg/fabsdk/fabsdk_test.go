@@ -12,8 +12,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
+	"github.com/pkg/errors"
 )
 
 const (

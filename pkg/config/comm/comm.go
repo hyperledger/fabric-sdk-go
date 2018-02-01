@@ -13,7 +13,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	cutil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 // TLSConfig returns the appropriate config for TLS including the root CAs,

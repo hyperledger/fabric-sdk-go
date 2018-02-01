@@ -14,8 +14,8 @@ import (
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+	"github.com/pkg/errors"
 )
 
 // ChannelConfig queries for the current config block for this channel.

@@ -14,9 +14,9 @@ import (
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
 )
 
 const (

@@ -13,8 +13,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
 )
 
 // CreateSeekGenesisBlockRequest creates a seek request for block 0 on the specified

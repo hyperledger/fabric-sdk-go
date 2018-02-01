@@ -20,8 +20,8 @@ import (
 	"time"
 
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	ledger_util "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/util"
+	"github.com/pkg/errors"
 )
 
 // NewSimpleMockBlock returns a simple mock block

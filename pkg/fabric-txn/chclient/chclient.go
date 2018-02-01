@@ -15,10 +15,10 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	txnHandlerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
+	"github.com/pkg/errors"
 )
 
 const (

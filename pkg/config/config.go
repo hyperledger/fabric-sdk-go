@@ -26,9 +26,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	lu "github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
+	"github.com/pkg/errors"
 
 	cs "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 )
