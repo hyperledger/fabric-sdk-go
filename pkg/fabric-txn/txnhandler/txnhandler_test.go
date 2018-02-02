@@ -104,6 +104,60 @@ func TestQueryHandlerErrors(t *testing.T) {
 	}
 }
 
+func TestEndorsementHandler(t *testing.T) {
+	request := chclient.Request{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}}
+
+	requestContext := prepareRequestContext(request, chclient.Opts{ProposalProcessors: []apifabclient.ProposalProcessor{fcmocks.NewMockPeer("p2", "")}}, t)
+	clientContext := setupChannelClientContext(nil, nil, nil, t)
+
+	handler := NewEndorsementHandler()
+	handler.Handle(requestContext, clientContext)
+	assert.Nil(t, requestContext.Error)
+}
+
+func TestProposalProcessorHandler(t *testing.T) {
+	peer1 := fcmocks.NewMockPeer("p1", "")
+	peer2 := fcmocks.NewMockPeer("p2", "")
+	discoveryPeers := []apifabclient.Peer{peer1, peer2}
+
+	//Get query handler
+	handler := NewProposalProcessorHandler()
+
+	request := chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}
+
+	selectionErr := errors.New("Some selection error")
+	requestContext := prepareRequestContext(request, chclient.Opts{}, t)
+	handler.Handle(requestContext, setupChannelClientContext(nil, selectionErr, discoveryPeers, t))
+	if requestContext.Error == nil || !strings.Contains(requestContext.Error.Error(), selectionErr.Error()) {
+		t.Fatal("Expected error: ", selectionErr, ", Received error:", requestContext.Error)
+	}
+
+	requestContext = prepareRequestContext(request, chclient.Opts{}, t)
+	handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
+	if requestContext.Error != nil {
+		t.Fatalf("Got error: %s", requestContext.Error)
+	}
+	if len(requestContext.Opts.ProposalProcessors) != len(discoveryPeers) {
+		t.Fatalf("Expecting %d proposal processors but got %d", len(discoveryPeers), len(requestContext.Opts.ProposalProcessors))
+	}
+	if requestContext.Opts.ProposalProcessors[0] != peer1 || requestContext.Opts.ProposalProcessors[1] != peer2 {
+		t.Fatalf("Didn't get expected peers")
+	}
+
+	// Directly pass in the proposal processors. In this case it should use those directly
+	requestContext = prepareRequestContext(request, chclient.Opts{ProposalProcessors: []apifabclient.ProposalProcessor{peer2}}, t)
+	handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
+	if requestContext.Error != nil {
+		t.Fatalf("Got error: %s", requestContext.Error)
+	}
+	if len(requestContext.Opts.ProposalProcessors) != 1 {
+		t.Fatalf("Expecting 1 proposal processor but got %d", len(requestContext.Opts.ProposalProcessors))
+	}
+	if requestContext.Opts.ProposalProcessors[0] != peer2 {
+		t.Fatalf("Didn't get expected peers")
+	}
+}
+
 //prepareHandlerContexts prepares context objects for handlers
 func prepareRequestContext(request chclient.Request, opts chclient.Opts, t *testing.T) *chclient.RequestContext {
 

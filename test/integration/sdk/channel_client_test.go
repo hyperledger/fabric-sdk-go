@@ -176,19 +176,21 @@ func testInvokeHandler(ccID string, chClient chclient.ChannelClient, t *testing.
 	txValidationCode := pb.TxValidationCode(-1)
 
 	response, err := chClient.InvokeHandler(
-		txnhandler.NewEndorseHandler(
-			txnhandler.NewEndorsementValidationHandler(
-				&testHandler{
-					t:        t,
-					txID:     &txID,
-					endorser: &endorser,
-					next: txnhandler.NewCommitHandler(
-						&testHandler{
-							t:                t,
-							txValidationCode: &txValidationCode,
-						},
-					),
-				},
+		txnhandler.NewProposalProcessorHandler(
+			txnhandler.NewEndorsementHandler(
+				txnhandler.NewEndorsementValidationHandler(
+					&testHandler{
+						t:        t,
+						txID:     &txID,
+						endorser: &endorser,
+						next: txnhandler.NewCommitHandler(
+							&testHandler{
+								t:                t,
+								txValidationCode: &txValidationCode,
+							},
+						),
+					},
+				),
 			),
 		),
 		chclient.Request{

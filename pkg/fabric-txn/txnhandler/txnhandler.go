@@ -20,38 +20,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-//EndorseTxHandler for handling endorse transactions
-type EndorseTxHandler struct {
+//EndorsementHandler for handling endorse transactions
+type EndorsementHandler struct {
 	next chclient.Handler
 }
 
 //Handle for endorsing transactions
-func (e *EndorseTxHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
-
-	//Get proposal processor, if not supplied then use discovery service to get available peers as endorser
-	//If selection service available then get endorser peers for this chaincode
-	txProcessors := requestContext.Opts.ProposalProcessors
-	if len(txProcessors) == 0 {
-		// Use discovery service to figure out proposal processors
-		peers, err := clientContext.Discovery.GetPeers()
-		if err != nil {
-			requestContext.Error = errors.WithMessage(err, "GetPeers failed")
-			return
-		}
-		endorsers := peers
-		if clientContext.Selection != nil {
-			endorsers, err = clientContext.Selection.GetEndorsersForChaincode(peers, requestContext.Request.ChaincodeID)
-			if err != nil {
-				requestContext.Error = errors.WithMessage(err, "Failed to get endorsing peers")
-				return
-			}
-		}
-		txProcessors = peer.PeersToTxnProcessors(endorsers)
-	}
-
+func (e *EndorsementHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
 	// Endorse Tx
 	transactionProposalResponses, txnID, err := internal.CreateAndSendTransactionProposal(clientContext.Channel,
-		requestContext.Request.ChaincodeID, requestContext.Request.Fcn, requestContext.Request.Args, txProcessors, requestContext.Request.TransientMap)
+		requestContext.Request.ChaincodeID, requestContext.Request.Fcn, requestContext.Request.Args, requestContext.Opts.ProposalProcessors, requestContext.Request.TransientMap)
 
 	requestContext.Response.TransactionID = txnID
 
@@ -68,6 +46,39 @@ func (e *EndorseTxHandler) Handle(requestContext *chclient.RequestContext, clien
 	//Delegate to next step if any
 	if e.next != nil {
 		e.next.Handle(requestContext, clientContext)
+	}
+}
+
+//ProposalProcessorHandler for selecting proposal processors
+type ProposalProcessorHandler struct {
+	next chclient.Handler
+}
+
+//Handle selects proposal processors
+func (h *ProposalProcessorHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
+	//Get proposal processor, if not supplied then use discovery service to get available peers as endorser
+	//If selection service available then get endorser peers for this chaincode
+	if len(requestContext.Opts.ProposalProcessors) == 0 {
+		// Use discovery service to figure out proposal processors
+		peers, err := clientContext.Discovery.GetPeers()
+		if err != nil {
+			requestContext.Error = errors.WithMessage(err, "GetPeers failed")
+			return
+		}
+		endorsers := peers
+		if clientContext.Selection != nil {
+			endorsers, err = clientContext.Selection.GetEndorsersForChaincode(peers, requestContext.Request.ChaincodeID)
+			if err != nil {
+				requestContext.Error = errors.WithMessage(err, "Failed to get endorsing peers")
+				return
+			}
+		}
+		requestContext.Opts.ProposalProcessors = peer.PeersToTxnProcessors(endorsers)
+	}
+
+	//Delegate to next step if any
+	if h.next != nil {
+		h.next.Handle(requestContext, clientContext)
 	}
 }
 
@@ -160,17 +171,30 @@ func (c *CommitTxHandler) Handle(requestContext *chclient.RequestContext, client
 
 //NewQueryHandler returns query handler with EndorseTxHandler & EndorsementValidationHandler Chained
 func NewQueryHandler(next ...chclient.Handler) chclient.Handler {
-	return NewEndorseHandler(NewEndorsementValidationHandler(next...))
+	return NewProposalProcessorHandler(
+		NewEndorsementHandler(
+			NewEndorsementValidationHandler(next...),
+		),
+	)
 }
 
 //NewExecuteHandler returns query handler with EndorseTxHandler, EndorsementValidationHandler & CommitTxHandler Chained
 func NewExecuteHandler(next ...chclient.Handler) chclient.Handler {
-	return NewEndorseHandler(NewEndorsementValidationHandler(NewCommitHandler(next...)))
+	return NewProposalProcessorHandler(
+		NewEndorsementHandler(
+			NewEndorsementValidationHandler(NewCommitHandler(next...)),
+		),
+	)
 }
 
-//NewEndorseHandler returns a handler that endorses a transaction proposal
-func NewEndorseHandler(next ...chclient.Handler) *EndorseTxHandler {
-	return &EndorseTxHandler{next: getNext(next)}
+//NewProposalProcessorHandler returns a handler that selects proposal processors
+func NewProposalProcessorHandler(next ...chclient.Handler) *ProposalProcessorHandler {
+	return &ProposalProcessorHandler{next: getNext(next)}
+}
+
+//NewEndorsementHandler returns a handler that endorses a transaction proposal
+func NewEndorsementHandler(next ...chclient.Handler) *EndorsementHandler {
+	return &EndorsementHandler{next: getNext(next)}
 }
 
 //NewEndorsementValidationHandler returns a handler that validates an endorsement

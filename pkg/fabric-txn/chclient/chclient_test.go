@@ -20,7 +20,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
@@ -211,6 +213,64 @@ func TestInvokeHandler(t *testing.T) {
 	}
 }
 
+// customEndorsementHandler ignores the channel in the ClientContext
+// and instead sends the proposal to the given channel
+type customEndorsementHandler struct {
+	channel apifabclient.Channel
+	next    chclient.Handler
+}
+
+func (h *customEndorsementHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
+	transactionProposalResponses, txnID, err := internal.CreateAndSendTransactionProposal(h.channel,
+		requestContext.Request.ChaincodeID, requestContext.Request.Fcn, requestContext.Request.Args, requestContext.Opts.ProposalProcessors, requestContext.Request.TransientMap)
+
+	requestContext.Response.TransactionID = txnID
+
+	if err != nil {
+		requestContext.Error = err
+		return
+	}
+
+	requestContext.Response.Responses = transactionProposalResponses
+	if len(transactionProposalResponses) > 0 {
+		requestContext.Response.Payload = transactionProposalResponses[0].ProposalResponse.GetResponse().Payload
+	}
+
+	//Delegate to next step if any
+	if h.next != nil {
+		h.next.Handle(requestContext, clientContext)
+	}
+}
+
+func TestQueryWithCustomEndorser(t *testing.T) {
+	chClient := setupChannelClient(nil, t)
+
+	// Use the customEndorsementHandler to send the proposal to
+	// the system channel instead of the channel in context
+
+	systemChannel, err := setupChannel("")
+	if err != nil {
+		t.Fatalf("Error getting system channel: %s", err)
+	}
+
+	response, err := chClient.InvokeHandler(
+		txnhandler.NewProposalProcessorHandler(
+			&customEndorsementHandler{
+				channel: systemChannel,
+				next:    txnhandler.NewEndorsementValidationHandler(),
+			},
+		),
+		chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}},
+	)
+	if err != nil {
+		t.Fatalf("Failed to invoke test cc: %s", err)
+	}
+
+	if response.Payload != nil {
+		t.Fatalf("Expecting nil, got %s", response.Payload)
+	}
+}
+
 func TestExecuteTxDiscoveryError(t *testing.T) {
 	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, nil, t)
 
@@ -326,8 +386,12 @@ func TestExecuteTxWithRetries(t *testing.T) {
 }
 
 func setupTestChannel() (*channel.Channel, error) {
+	return setupChannel("testChannel")
+}
+
+func setupChannel(channelID string) (*channel.Channel, error) {
 	ctx := setupTestContext()
-	return channel.New(ctx, fcmocks.NewMockChannelCfg("testChannel"))
+	return channel.New(ctx, fcmocks.NewMockChannelCfg(channelID))
 }
 
 func setupTestContext() apifabclient.Context {

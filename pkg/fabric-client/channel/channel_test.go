@@ -45,11 +45,8 @@ func TestChannelMethods(t *testing.T) {
 	}
 
 	_, err = New(ctx, mocks.NewMockChannelCfg(""))
-	if err == nil {
-		t.Fatalf("New didn't return error")
-	}
-	if err.Error() != "name is required" {
-		t.Fatalf("New didn't return right error")
+	if err != nil {
+		t.Fatalf("Got error creating channel with empty channel ID: %s", err)
 	}
 
 	_, err = New(nil, mocks.NewMockChannelCfg("testChannel"))
@@ -178,9 +175,13 @@ func isValueInList(value string, list []string) bool {
 }
 
 func setupTestChannel() (*Channel, error) {
+	return setupChannel("testChannel")
+}
+
+func setupChannel(channelID string) (*Channel, error) {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
-	return New(ctx, mocks.NewMockChannelCfg("testChannel"))
+	return New(ctx, mocks.NewMockChannelCfg(channelID))
 }
 
 func setupMassiveTestChannel(numberOfPeers int, numberOfOrderers int) (*Channel, error) {

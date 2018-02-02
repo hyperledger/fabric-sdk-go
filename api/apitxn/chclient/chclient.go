@@ -40,12 +40,6 @@ type Opts struct {
 //Option func for each Opts argument
 type Option func(opts *Opts) error
 
-// TxProposalResponseFilter allows the user to inspect/modify response before commit
-type TxProposalResponseFilter interface {
-	// process transaction proposal response (there will be no commit if an error is returned)
-	ProcessTxProposalResponse(txProposalResponse []*apifabclient.TransactionProposalResponse) ([]*apifabclient.TransactionProposalResponse, error)
-}
-
 // Registration is a handle that is returned from a successful Register Chaincode Event.
 // This handle should be used in Unregister in order to unregister the event.
 type Registration interface {

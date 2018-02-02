@@ -35,9 +35,6 @@ type Channel struct {
 // is enforced by the ordering service and must be unique within the blockchain network.
 // client: Provides operational context such as submitting User etc.
 func New(ctx fab.Context, cfg fab.ChannelCfg) (*Channel, error) {
-	if cfg.Name() == "" {
-		return nil, errors.Errorf("name is required")
-	}
 	if ctx == nil {
 		return nil, errors.Errorf("client is required")
 	}

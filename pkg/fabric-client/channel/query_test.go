@@ -56,6 +56,24 @@ func TestQueryMethods(t *testing.T) {
 
 }
 
+func TestQueryOnSystemChannel(t *testing.T) {
+	channel, _ := setupChannel(systemChannel)
+	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
+	err := channel.AddPeer(&peer)
+	if err != nil {
+		t.Fatalf("Error adding peer to channel: %s", err)
+	}
+
+	request := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "ccID",
+		Fcn:         "method",
+		Args:        [][]byte{[]byte("arg")},
+	}
+	if _, err := channel.QueryByChaincode(request); err != nil {
+		t.Fatalf("Error invoking chaincode on system channel: %s", err)
+	}
+}
+
 func TestChannelQueryBlock(t *testing.T) {
 
 	channel, _ := setupTestChannel()
