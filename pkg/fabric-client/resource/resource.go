@@ -12,19 +12,17 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
-	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
-	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -87,15 +85,15 @@ func (c *Resource) SignChannelConfig(config []byte, signer fab.IdentityContext) 
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get user context's identity")
 	}
-	nonce, err := fc.GenerateRandomNonce()
+	txnID, err := txn.NewID(signingUser)
 	if err != nil {
-		return nil, errors.Wrap(err, "GenerateRandomNonce failed")
+		return nil, errors.Wrap(err, "New Transaction ID failed")
 	}
 
 	// signature is across a signature header and the config update
 	signatureHeader := &common.SignatureHeader{
 		Creator: creator,
-		Nonce:   nonce,
+		Nonce:   txnID.Nonce,
 	}
 	signatureHeaderBytes, err := proto.Marshal(signatureHeader)
 	if err != nil {
@@ -189,17 +187,17 @@ func (c *Resource) createOrUpdateChannel(request fab.CreateChannelRequest, haveE
 		}
 
 		// TODO: Move
-		tlsCertHash := ccomm.TLSCertHash(c.clientContext.Config())
-		channelHeader, err := txn.BuildChannelHeader(common.HeaderType_CONFIG_UPDATE, request.Name, request.TxnID.ID, 0, "", time.Now(), tlsCertHash)
+		channelHeaderOpts := txn.ChannelHeaderOpts{
+			ChannelID:   request.Name,
+			TxnID:       request.TxnID,
+			TLSCertHash: ccomm.TLSCertHash(c.clientContext.Config()),
+		}
+		channelHeader, err := txn.CreateChannelHeader(common.HeaderType_CONFIG_UPDATE, channelHeaderOpts)
 		if err != nil {
 			return errors.WithMessage(err, "BuildChannelHeader failed")
 		}
-		creator, err := c.clientContext.Identity()
-		if err != nil {
-			return errors.WithMessage(err, "getting creator failed")
-		}
 
-		header, err := fc.BuildHeader(creator, channelHeader, request.TxnID.Nonce)
+		header, err := txn.CreateHeader(c.clientContext, channelHeader, request.TxnID)
 		if err != nil {
 			return errors.Wrap(err, "BuildHeader failed")
 		}

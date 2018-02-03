@@ -17,6 +17,7 @@ import (
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/stretchr/testify/assert"
@@ -53,7 +54,11 @@ func TestDeadlock(t *testing.T) {
 	// create a flood of TX events
 	txCompletion := newMultiCompletionHandler(eventsSent, timeout)
 	go flood(eventsPerThread, threads, func() {
-		transactionID := generateTxID()
+		transactionID, err := mocks.NewMockTxnID()
+		if err != nil {
+			t.Fatalf("mock txn ID failed: %s", err)
+		}
+
 		received := newCompletionHandler(timeout)
 		eventHub.RegisterTxEvent(transactionID, func(txID string, code pb.TxValidationCode, err error) {
 			txCompletion.done()
@@ -75,7 +80,11 @@ func TestDeadlock(t *testing.T) {
 	// create a flood of CC events
 	ccCompletion := newMultiCompletionHandler(eventsSent, timeout)
 	go flood(eventsPerThread, threads, func() {
-		eventName := generateTxID()
+		eventName, err := mocks.NewMockTxnID()
+		if err != nil {
+			t.Fatalf("mock txn ID failed: %s", err)
+		}
+
 		received := newCompletionHandler(timeout)
 		registration := eventHub.RegisterChaincodeEvent(ccID, eventName.ID, func(event *fab.ChaincodeEvent) {
 			ccCompletion.done()
@@ -164,7 +173,10 @@ func TestChaincodeBlockEvent(t *testing.T) {
 	channelID := "somechannelid"
 	ccID := "someccid"
 	eventName := "someevent"
-	txID := generateTxID()
+	txID, err := mocks.NewMockTxnID()
+	if err != nil {
+		t.Fatalf("mock txn ID failed: %s", err)
+	}
 
 	eventHub, clientFactory, err := createMockedEventHub()
 	if err != nil {
@@ -221,7 +233,10 @@ func TestChaincodeBlockEventWithInvalidTx(t *testing.T) {
 	channelID := "somechannelid"
 	ccID := "someccid"
 	eventName := "someevent"
-	txID := generateTxID()
+	txID, err := mocks.NewMockTxnID()
+	if err != nil {
+		t.Fatalf("mock txn ID failed: %s", err)
+	}
 
 	eventHub, clientFactory, err := createMockedEventHub()
 	if err != nil {
@@ -269,7 +284,10 @@ func TestChaincodeBlockEventWithInvalidTx(t *testing.T) {
 func TestInvalidTxStatusError(t *testing.T) {
 	validationCode := pb.TxValidationCode_ILLEGAL_WRITESET
 	channelID := "somechannelid"
-	txID := generateTxID()
+	txID, err := mocks.NewMockTxnID()
+	if err != nil {
+		t.Fatalf("mock txn ID failed: %s", err)
+	}
 
 	eventHub, clientFactory, err := createMockedEventHub()
 	if err != nil {

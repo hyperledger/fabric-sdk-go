@@ -15,10 +15,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
+
+var logger = logging.NewLogger("fabric_sdk_go")
 
 //EndorsementHandler for handling endorse transactions
 type EndorsementHandler struct {
@@ -28,8 +31,7 @@ type EndorsementHandler struct {
 //Handle for endorsing transactions
 func (e *EndorsementHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
 	// Endorse Tx
-	transactionProposalResponses, txnID, err := internal.CreateAndSendTransactionProposal(clientContext.Channel,
-		requestContext.Request.ChaincodeID, requestContext.Request.Fcn, requestContext.Request.Args, requestContext.Opts.ProposalProcessors, requestContext.Request.TransientMap)
+	transactionProposalResponses, txnID, err := createAndSendTransactionProposal(clientContext.Channel, &requestContext.Request, requestContext.Opts.ProposalProcessors)
 
 	requestContext.Response.TransactionID = txnID
 
@@ -143,8 +145,8 @@ func (c *CommitTxHandler) Handle(requestContext *chclient.RequestContext, client
 	txnID := requestContext.Response.TransactionID
 
 	//Register Tx event
-	statusNotifier := internal.RegisterTxEvent(txnID, clientContext.EventHub)
-	_, err := internal.CreateAndSendTransaction(clientContext.Channel, requestContext.Response.Responses)
+	statusNotifier := txn.RegisterStatus(txnID, clientContext.EventHub)
+	_, err := createAndSendTransaction(clientContext.Channel, requestContext.Response.Responses)
 	if err != nil {
 		requestContext.Error = errors.Wrap(err, "CreateAndSendTransaction failed")
 		return
@@ -212,4 +214,48 @@ func getNext(next []chclient.Handler) chclient.Handler {
 		return next[0]
 	}
 	return nil
+}
+
+func createAndSendTransaction(sender apifabclient.Sender, resps []*apifabclient.TransactionProposalResponse) (*apifabclient.TransactionResponse, error) {
+
+	tx, err := sender.CreateTransaction(resps)
+	if err != nil {
+		return nil, errors.WithMessage(err, "CreateTransaction failed")
+	}
+
+	transactionResponse, err := sender.SendTransaction(tx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "SendTransaction failed")
+
+	}
+	if transactionResponse.Err != nil {
+		logger.Debugf("orderer %s failed (%s)", transactionResponse.Orderer, transactionResponse.Err.Error())
+		return nil, errors.Wrap(transactionResponse.Err, "orderer failed")
+	}
+
+	return transactionResponse, nil
+}
+
+func createAndSendTransactionProposal(sender apifabclient.ProposalSender, chrequest *chclient.Request, targets []apifabclient.ProposalProcessor) ([]*apifabclient.TransactionProposalResponse, apifabclient.TransactionID, error) {
+	request := apifabclient.ChaincodeInvokeRequest{
+		ChaincodeID:  chrequest.ChaincodeID,
+		Fcn:          chrequest.Fcn,
+		Args:         chrequest.Args,
+		TransientMap: chrequest.TransientMap,
+	}
+
+	transactionProposalResponses, txnID, err := sender.SendTransactionProposal(request, targets)
+	if err != nil {
+		return nil, txnID, err
+	}
+
+	for _, v := range transactionProposalResponses {
+		if v.Err != nil {
+			logger.Debugf("SendTransactionProposal failed (%v, %s)", v.Endorser, v.Err.Error())
+			return nil, txnID, errors.WithMessage(v.Err, "SendTransactionProposal failed")
+		}
+		logger.Debugf("invoke Endorser '%s' returned ProposalResponse status:%v", v.Endorser, v.Status)
+	}
+
+	return transactionProposalResponses, txnID, nil
 }

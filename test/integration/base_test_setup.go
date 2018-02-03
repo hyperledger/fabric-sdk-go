@@ -255,13 +255,12 @@ func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel
 	fcn string, args [][]byte, targets []fab.ProposalProcessor, transientData map[string][]byte) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	request := fab.ChaincodeInvokeRequest{
-		Targets:      targets,
 		Fcn:          fcn,
 		Args:         args,
 		TransientMap: transientData,
 		ChaincodeID:  chainCodeID,
 	}
-	transactionProposalResponses, txnID, err := channel.SendTransactionProposal(request)
+	transactionProposalResponses, txnID, err := channel.SendTransactionProposal(request, targets)
 	if err != nil {
 		return nil, txnID, err
 	}

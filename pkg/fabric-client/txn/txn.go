@@ -4,6 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
+// Package txn enables creating, endorsing and sending transactions to Fabric peers and orderers.
 package txn
 
 import (
@@ -275,4 +276,26 @@ func signProposal(ctx context, proposal *pb.Proposal) (*pb.SignedProposal, error
 	}
 
 	return &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}, nil
+}
+
+// Status is the transaction status returned from eventhub tx events
+type Status struct {
+	Code  pb.TxValidationCode
+	Error error
+}
+
+// RegisterStatus registers on the given eventhub for the given transaction id
+// returns a TxValidationCode channel which receives the validation code when the
+// transaction completes. If the code is TxValidationCode_VALID then
+// the transaction committed successfully, otherwise the code indicates the error
+// that occurred.
+func RegisterStatus(txID fab.TransactionID, eventHub fab.EventHub) chan Status {
+	statusNotifier := make(chan Status)
+
+	eventHub.RegisterTxEvent(txID, func(txId string, code pb.TxValidationCode, err error) {
+		logger.Debugf("Received code(%s) for txid(%s) and err(%s)\n", code, txId, err)
+		statusNotifier <- Status{Code: code, Error: err}
+	})
+
+	return statusNotifier
 }

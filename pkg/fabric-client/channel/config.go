@@ -14,7 +14,6 @@ import (
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/pkg/errors"
 )
 
@@ -27,21 +26,21 @@ func (c *Channel) ChannelConfig() (*common.ConfigEnvelope, error) {
 	logger.Debugf("channelConfig - start for channel %s", c.name)
 
 	// Get the newest block
-	block, err := c.block(fc.NewNewestSeekPosition())
+	block, err := c.block(newNewestSeekPosition())
 	if err != nil {
 		return nil, err
 	}
 	logger.Debugf("channelConfig - Retrieved newest block number: %d\n", block.Header.Number)
 
 	// Get the index of the last config block
-	lastConfig, err := fc.GetLastConfigFromBlock(block)
+	lastConfig, err := getLastConfigFromBlock(block)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetLastConfigFromBlock failed")
 	}
 	logger.Debugf("channelConfig - Last config index: %d\n", lastConfig.Index)
 
 	// Get the last config block
-	block, err = c.block(fc.NewSpecificSeekPosition(lastConfig.Index))
+	block, err = c.block(newSpecificSeekPosition(lastConfig.Index))
 
 	if err != nil {
 		return nil, errors.WithMessage(err, "retrieve block failed")
@@ -138,4 +137,24 @@ func loadMSPs(mspConfigs []*mb.MSPConfig, cs apicryptosuite.CryptoSuite) ([]msp.
 
 	logger.Debugf("loadMSPs - loaded %d MSPs", len(msps))
 	return msps, nil
+}
+
+// getLastConfigFromBlock returns the LastConfig data from the given block
+func getLastConfigFromBlock(block *common.Block) (*common.LastConfig, error) {
+	if block.Metadata == nil {
+		return nil, errors.New("block metadata is nil")
+	}
+	metadata := &common.Metadata{}
+	err := proto.Unmarshal(block.Metadata.Metadata[common.BlockMetadataIndex_LAST_CONFIG], metadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal block metadata failed")
+	}
+
+	lastConfig := &common.LastConfig{}
+	err = proto.Unmarshal(metadata.Value, lastConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal last config from metadata failed")
+	}
+
+	return lastConfig, err
 }

@@ -7,22 +7,19 @@ SPDX-License-Identifier: Apache-2.0
 package events
 
 import (
-	"encoding/hex"
+	"crypto/x509"
 	"time"
 
+	"github.com/pkg/errors"
+
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-
-	"crypto/x509"
-
 	fcConsumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
-	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	ledger_util "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/util"
-	"github.com/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
 
 type mockEventClientMockEventRegistration struct {
@@ -161,7 +158,7 @@ func (b *MockTxEventBuilder) Build() *pb.Event_Block {
 			Header:   &common.BlockHeader{},
 			Metadata: b.buildBlockMetadata(pb.TxValidationCode_VALID),
 			Data: &common.BlockData{
-				Data: [][]byte{internal.MarshalOrPanic(b.buildEnvelope())},
+				Data: [][]byte{protos_utils.MarshalOrPanic(b.buildEnvelope())},
 			},
 		},
 	}
@@ -174,7 +171,7 @@ func (b *MockTxEventBuilder) BuildWithTxValidationCode(c pb.TxValidationCode) *p
 			Header:   &common.BlockHeader{},
 			Metadata: b.buildBlockMetadata(c),
 			Data: &common.BlockData{
-				Data: [][]byte{internal.MarshalOrPanic(b.buildEnvelope())},
+				Data: [][]byte{protos_utils.MarshalOrPanic(b.buildEnvelope())},
 			},
 		},
 	}
@@ -208,14 +205,14 @@ func (b *MockCCEventBuilder) Build() *pb.Event_ChaincodeEvent {
 
 func (b *MockTxEventBuilder) buildEnvelope() *common.Envelope {
 	return &common.Envelope{
-		Payload: internal.MarshalOrPanic(b.buildPayload()),
+		Payload: protos_utils.MarshalOrPanic(b.buildPayload()),
 	}
 }
 
 func (b *MockTxEventBuilder) buildPayload() *common.Payload {
 	return &common.Payload{
 		Header: &common.Header{
-			ChannelHeader: internal.MarshalOrPanic(b.buildChannelHeader()),
+			ChannelHeader: protos_utils.MarshalOrPanic(b.buildChannelHeader()),
 		},
 	}
 }
@@ -239,7 +236,7 @@ func (b *MockCCBlockEventBuilder) BuildWithTxValidationFlag(isValid bool) *pb.Ev
 			Header:   &common.BlockHeader{},
 			Metadata: b.buildBlockMetadataWithValidFlag(isValid),
 			Data: &common.BlockData{
-				Data: [][]byte{internal.MarshalOrPanic(b.buildEnvelope())},
+				Data: [][]byte{protos_utils.MarshalOrPanic(b.buildEnvelope())},
 			},
 		},
 	}
@@ -262,7 +259,7 @@ func (b *MockCCBlockEventBuilder) buildBlockMetadataWithValidFlag(isValid bool) 
 
 func (b *MockCCBlockEventBuilder) buildEnvelope() *common.Envelope {
 	return &common.Envelope{
-		Payload: internal.MarshalOrPanic(b.buildPayload()),
+		Payload: protos_utils.MarshalOrPanic(b.buildPayload()),
 	}
 }
 
@@ -282,9 +279,9 @@ func (b *MockCCBlockEventBuilder) buildPayload() *common.Payload {
 	logger.Debug("MockCCBlockEventBuilder.buildPayload")
 	return &common.Payload{
 		Header: &common.Header{
-			ChannelHeader: internal.MarshalOrPanic(b.buildChannelHeader()),
+			ChannelHeader: protos_utils.MarshalOrPanic(b.buildChannelHeader()),
 		},
-		Data: internal.MarshalOrPanic(b.buildTransaction()),
+		Data: protos_utils.MarshalOrPanic(b.buildTransaction()),
 	}
 }
 
@@ -305,7 +302,7 @@ func (b *MockCCBlockEventBuilder) buildTransaction() *pb.Transaction {
 func (b *MockCCBlockEventBuilder) buildTransactionAction() *pb.TransactionAction {
 	return &pb.TransactionAction{
 		Header:  []byte{},
-		Payload: internal.MarshalOrPanic(b.buildChaincodeActionPayload()),
+		Payload: protos_utils.MarshalOrPanic(b.buildChaincodeActionPayload()),
 	}
 }
 
@@ -318,7 +315,7 @@ func (b *MockCCBlockEventBuilder) buildChaincodeActionPayload() *pb.ChaincodeAct
 
 func (b *MockCCBlockEventBuilder) buildChaincodeEndorsedAction() *pb.ChaincodeEndorsedAction {
 	return &pb.ChaincodeEndorsedAction{
-		ProposalResponsePayload: internal.MarshalOrPanic(b.buildProposalResponsePayload()),
+		ProposalResponsePayload: protos_utils.MarshalOrPanic(b.buildProposalResponsePayload()),
 		Endorsements:            []*pb.Endorsement{},
 	}
 }
@@ -326,13 +323,13 @@ func (b *MockCCBlockEventBuilder) buildChaincodeEndorsedAction() *pb.ChaincodeEn
 func (b *MockCCBlockEventBuilder) buildProposalResponsePayload() *pb.ProposalResponsePayload {
 	return &pb.ProposalResponsePayload{
 		ProposalHash: []byte("somehash"),
-		Extension:    internal.MarshalOrPanic(b.buildChaincodeAction()),
+		Extension:    protos_utils.MarshalOrPanic(b.buildChaincodeAction()),
 	}
 }
 
 func (b *MockCCBlockEventBuilder) buildChaincodeAction() *pb.ChaincodeAction {
 	return &pb.ChaincodeAction{
-		Events: internal.MarshalOrPanic(b.buildChaincodeEvent()),
+		Events: protos_utils.MarshalOrPanic(b.buildChaincodeEvent()),
 	}
 }
 
@@ -343,24 +340,4 @@ func (b *MockCCBlockEventBuilder) buildChaincodeEvent() *pb.ChaincodeEvent {
 		TxId:        b.TxID,
 		Payload:     b.Payload,
 	}
-}
-
-func generateTxID() fab.TransactionID {
-	nonce, err := internal.GenerateRandomNonce()
-	if err != nil {
-		panic(errors.WithMessage(err, "GenerateRandomNonce failed"))
-	}
-	digest, err := cryptosuite.GetDefault().Hash(
-		nonce,
-		cryptosuite.GetSHA256Opts())
-	if err != nil {
-		panic(errors.Wrap(err, "hashing nonce failed"))
-	}
-
-	txnid := fab.TransactionID{
-		ID:    hex.EncodeToString(digest),
-		Nonce: nonce,
-	}
-
-	return txnid
 }

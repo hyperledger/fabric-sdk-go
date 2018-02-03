@@ -42,18 +42,18 @@ func (c *Channel) SendTransaction(tx *fab.Transaction) (*fab.TransactionResponse
 
 // SendTransactionProposal sends the created proposal to peer for endorsement.
 // TODO: return the entire request or just the txn ID?
-func (c *Channel) SendTransactionProposal(request fab.ChaincodeInvokeRequest) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+func (c *Channel) SendTransactionProposal(request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 	tp, err := txn.NewProposal(c.clientContext, c.name, request)
 	if err != nil {
 		return nil, fab.TransactionID{}, errors.WithMessage(err, "new transaction proposal failed")
 	}
 
-	request, err = c.chaincodeInvokeRequestAddDefaultPeers(request)
+	targets, err = c.chaincodeInvokeRequestAddDefaultPeers(targets)
 	if err != nil {
 		return nil, fab.TransactionID{}, err
 	}
 
-	tpr, err := txn.SendProposal(tp, request.Targets)
+	tpr, err := txn.SendProposal(tp, targets)
 	if err != nil {
 		return nil, fab.TransactionID{}, errors.WithMessage(err, "send transaction proposal failed")
 	}
@@ -195,23 +195,19 @@ func validateChaincodeInvokeRequest(request fab.ChaincodeInvokeRequest) error {
 	if request.Fcn == "" {
 		return errors.New("Fcn is required")
 	}
-
-	if request.Targets == nil || len(request.Targets) < 1 {
-		return errors.New("Targets is required")
-	}
 	return nil
 }
 
-func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(request fab.ChaincodeInvokeRequest) (fab.ChaincodeInvokeRequest, error) {
+func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(targets []fab.ProposalProcessor) ([]fab.ProposalProcessor, error) {
 	// Use default peers if targets are not specified.
-	if request.Targets == nil || len(request.Targets) == 0 {
+	if targets == nil || len(targets) == 0 {
 		if c.peers == nil || len(c.peers) == 0 {
-			return request, errors.New("targets were not specified and no peers have been configured")
+			return nil, errors.New("targets were not specified and no peers have been configured")
 		}
 
-		request.Targets = c.txnProcessors()
+		return c.txnProcessors(), nil
 	}
-	return request, nil
+	return targets, nil
 }
 
 // helper function that sends an instantiate or upgrade chaincode proposal to one or more endorsing peers

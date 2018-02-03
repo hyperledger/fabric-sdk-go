@@ -20,7 +20,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -221,8 +220,7 @@ type customEndorsementHandler struct {
 }
 
 func (h *customEndorsementHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
-	transactionProposalResponses, txnID, err := internal.CreateAndSendTransactionProposal(h.channel,
-		requestContext.Request.ChaincodeID, requestContext.Request.Fcn, requestContext.Request.Args, requestContext.Opts.ProposalProcessors, requestContext.Request.TransientMap)
+	transactionProposalResponses, txnID, err := createAndSendTransactionProposal(h.channel, &requestContext.Request, requestContext.Opts.ProposalProcessors)
 
 	requestContext.Response.TransactionID = txnID
 
@@ -489,4 +487,25 @@ func setupChannelClientWithNodes(peers []apifabclient.Peer,
 	assert.Nil(t, err, "Failed to create new channel client")
 
 	return ch
+}
+
+func createAndSendTransactionProposal(sender apifabclient.ProposalSender, chrequest *chclient.Request, targets []apifabclient.ProposalProcessor) ([]*apifabclient.TransactionProposalResponse, apifabclient.TransactionID, error) {
+	request := apifabclient.ChaincodeInvokeRequest{
+		ChaincodeID:  chrequest.ChaincodeID,
+		Fcn:          chrequest.Fcn,
+		Args:         chrequest.Args,
+		TransientMap: chrequest.TransientMap,
+	}
+
+	transactionProposalResponses, txnID, err := sender.SendTransactionProposal(request, targets)
+	if err != nil {
+		return nil, txnID, err
+	}
+
+	for _, v := range transactionProposalResponses {
+		if v.Err != nil {
+			return nil, txnID, errors.WithMessage(v.Err, "SendTransactionProposal failed")
+		}
+	}
+	return transactionProposalResponses, txnID, nil
 }

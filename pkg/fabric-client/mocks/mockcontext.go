@@ -9,6 +9,8 @@ package mocks
 import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
+	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 )
@@ -73,4 +75,32 @@ func NewMockContext(ic fab.IdentityContext) *MockContext {
 		IdentityContext:     ic,
 	}
 	return &ctx
+}
+
+// NewMockTxnID creates mock TxnID based on mock user.
+func NewMockTxnID() (fab.TransactionID, error) {
+	user := NewMockUser("test")
+
+	// generate a random nonce
+	nonce, err := crypto.GetRandomNonce()
+	if err != nil {
+		return fab.TransactionID{}, err
+	}
+
+	creator, err := user.Identity()
+	if err != nil {
+		return fab.TransactionID{}, err
+	}
+
+	id, err := protos_utils.ComputeProposalTxID(nonce, creator)
+	if err != nil {
+		return fab.TransactionID{}, err
+	}
+
+	txnID := fab.TransactionID{
+		ID:    id,
+		Nonce: nonce,
+	}
+
+	return txnID, nil
 }

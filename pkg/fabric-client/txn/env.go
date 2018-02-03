@@ -61,29 +61,42 @@ func SignPayload(ctx context, payload []byte) (*fab.SignedEnvelope, error) {
 	return &fab.SignedEnvelope{Payload: payload, Signature: signature}, nil
 }
 
-// BuildChannelHeader is a utility method to build a common chain header (TODO refactor)
+// ChannelHeaderOpts holds the parameters to create a ChannelHeader.
+type ChannelHeaderOpts struct {
+	ChannelID   string
+	TxnID       fab.TransactionID
+	Epoch       uint64
+	ChaincodeID string
+	Timestamp   time.Time
+	TLSCertHash []byte
+}
+
+// CreateChannelHeader is a utility method to build a common chain header (TODO refactor)
 //
 // TODO: Determine if this function should be exported after refactoring is completed.
-func BuildChannelHeader(headerType common.HeaderType, channelID string, txID string, epoch uint64, chaincodeID string, timestamp time.Time, tlsCertHash []byte) (*common.ChannelHeader, error) {
-	logger.Debugf("buildChannelHeader - headerType: %s channelID: %s txID: %d epoch: % chaincodeID: %s timestamp: %v", headerType, channelID, txID, epoch, chaincodeID, timestamp)
+func CreateChannelHeader(headerType common.HeaderType, opts ChannelHeaderOpts) (*common.ChannelHeader, error) {
+	logger.Debugf("buildChannelHeader - headerType: %s channelID: %s txID: %d epoch: % chaincodeID: %s timestamp: %v", headerType, opts.ChannelID, opts.TxnID.ID, opts.Epoch, opts.ChaincodeID, opts.Timestamp)
 	channelHeader := &common.ChannelHeader{
 		Type:        int32(headerType),
-		Version:     1,
-		ChannelId:   channelID,
-		TxId:        txID,
-		Epoch:       epoch,
-		TlsCertHash: tlsCertHash,
+		ChannelId:   opts.ChannelID,
+		TxId:        opts.TxnID.ID,
+		Epoch:       opts.Epoch,
+		TlsCertHash: opts.TLSCertHash,
 	}
 
-	ts, err := ptypes.TimestampProto(timestamp)
+	if opts.Timestamp.IsZero() {
+		opts.Timestamp = time.Now()
+	}
+
+	ts, err := ptypes.TimestampProto(opts.Timestamp)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create timestamp in channel header")
 	}
 	channelHeader.Timestamp = ts
 
-	if chaincodeID != "" {
+	if opts.ChaincodeID != "" {
 		ccID := &pb.ChaincodeID{
-			Name: chaincodeID,
+			Name: opts.ChaincodeID,
 		}
 		headerExt := &pb.ChaincodeHeaderExtension{
 			ChaincodeId: ccID,
@@ -95,4 +108,30 @@ func BuildChannelHeader(headerType common.HeaderType, channelID string, txID str
 		channelHeader.Extension = headerExtBytes
 	}
 	return channelHeader, nil
+}
+
+// CreateHeader creates a Header from a ChannelHeader.
+func CreateHeader(ctx fab.IdentityContext, channelHeader *common.ChannelHeader, txnID fab.TransactionID) (*common.Header, error) {
+	creator, err := ctx.Identity()
+	if err != nil {
+		return nil, errors.WithMessage(err, "extracting creator from identity context failed")
+	}
+
+	signatureHeader := &common.SignatureHeader{
+		Creator: creator,
+		Nonce:   txnID.Nonce,
+	}
+	sh, err := proto.Marshal(signatureHeader)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal signatureHeader failed")
+	}
+	ch, err := proto.Marshal(channelHeader)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal channelHeader failed")
+	}
+	header := &common.Header{
+		SignatureHeader: sh,
+		ChannelHeader:   ch,
+	}
+	return header, nil
 }

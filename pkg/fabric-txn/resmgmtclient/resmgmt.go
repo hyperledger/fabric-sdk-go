@@ -15,7 +15,7 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -410,9 +410,9 @@ func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType CCProposalType, chan
 	}
 
 	// Register for commit event
-	statusNotifier := internal.RegisterTxEvent(txID, eventHub)
+	statusNotifier := txn.RegisterStatus(txID, eventHub)
 
-	if _, err = internal.CreateAndSendTransaction(channel, txProposalResponse); err != nil {
+	if _, err = createAndSendTransaction(channel, txProposalResponse); err != nil {
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
@@ -469,4 +469,24 @@ func (rc *ResourceMgmtClient) prepareResmgmtOpts(options ...resmgmt.Option) (res
 		}
 	}
 	return resmgmtOpts, nil
+}
+
+func createAndSendTransaction(sender fab.Sender, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
+
+	tx, err := sender.CreateTransaction(resps)
+	if err != nil {
+		return nil, errors.WithMessage(err, "CreateTransaction failed")
+	}
+
+	transactionResponse, err := sender.SendTransaction(tx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "SendTransaction failed")
+
+	}
+	if transactionResponse.Err != nil {
+		logger.Debugf("orderer %s failed (%s)", transactionResponse.Orderer, transactionResponse.Err.Error())
+		return nil, errors.Wrap(transactionResponse.Err, "orderer failed")
+	}
+
+	return transactionResponse, nil
 }

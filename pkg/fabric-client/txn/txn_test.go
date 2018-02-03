@@ -279,7 +279,12 @@ func TestSendTransaction(t *testing.T) {
 
 func TestBuildChannelHeader(t *testing.T) {
 
-	header, err := BuildChannelHeader(common.HeaderType_CHAINCODE_PACKAGE, "test", "", 1, "1234", time.Time{}, []byte{})
+	o := ChannelHeaderOpts{
+		ChannelID:   "test",
+		Epoch:       1,
+		ChaincodeID: "1234",
+	}
+	header, err := CreateChannelHeader(common.HeaderType_CHAINCODE_PACKAGE, o)
 
 	if err != nil || header == nil {
 		t.Fatalf("Test Build Channel Header failed, cause : '%s'", err.Error())

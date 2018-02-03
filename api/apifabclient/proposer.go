@@ -17,7 +17,7 @@ type ProposalProcessor interface {
 
 // ProposalSender provides the ability for a transaction proposal to be created and sent.
 type ProposalSender interface {
-	SendTransactionProposal(ChaincodeInvokeRequest) ([]*TransactionProposalResponse, TransactionID, error)
+	SendTransactionProposal(ChaincodeInvokeRequest, []ProposalProcessor) ([]*TransactionProposalResponse, TransactionID, error)
 }
 
 // TransactionID contains the ID of a Fabric Transaction Proposal
@@ -30,7 +30,6 @@ type TransactionID struct {
 type ChaincodeInvokeRequest struct {
 	Targets      []ProposalProcessor // TODO: remove
 	ChaincodeID  string
-	TxnID        TransactionID // TODO: remove from external interface
 	TransientMap map[string][]byte
 	Fcn          string
 	Args         [][]byte
