@@ -69,31 +69,6 @@ func TestPeerViaChannel(t *testing.T) {
 	}
 }
 
-//
-// Peer via channel missing peer
-//
-// Attempt to send a request to the peer with the SendTransactionProposal method
-// before the peer was set. Verify that an error is reported when tying
-// to send the request.
-//
-func TestSendTransactionProposalMissingPeer(t *testing.T) {
-	config := mocks.NewMockConfig()
-
-	client := NewClient(config)
-
-	channel, err := client.NewChannel("testChannel-peer")
-	if err != nil {
-		t.Fatalf("error from NewChannel %v", err)
-	}
-	_, _, err = channel.SendTransactionProposal(mockChaincodeInvokeRequest())
-	if err == nil {
-		t.Fatalf("SendTransactionProposal didn't return error")
-	}
-	if err.Error() != "targets were not specified and no peers have been configured" {
-		t.Fatalf("SendTransactionProposal didn't return right error: %v", err)
-	}
-}
-
 func mockChaincodeInvokeRequest() apifabclient.ChaincodeInvokeRequest {
 	return apifabclient.ChaincodeInvokeRequest{
 		ChaincodeID: "helloworld",

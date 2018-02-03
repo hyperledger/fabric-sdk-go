@@ -9,8 +9,6 @@ package channel
 import (
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
-
 	"github.com/golang/protobuf/proto"
 
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
@@ -19,6 +17,7 @@ import (
 
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/pkg/errors"
 )
 
@@ -41,7 +40,7 @@ func (c *Channel) GenesisBlock() (*common.Block, error) {
 		return nil, errors.WithMessage(err, "failed to get creator identity")
 	}
 
-	txnID, err := internal.NewTxnID(c.clientContext)
+	txnID, err := txn.NewID(c.clientContext)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to calculate transaction id")
 	}
@@ -57,7 +56,7 @@ func (c *Channel) GenesisBlock() (*common.Block, error) {
 	}
 	protos_utils.MakeChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, 1, c.Name(), 0)
 	tlsCertHash := ccomm.TLSCertHash(c.clientContext.Config())
-	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), txnID.ID, 0, "", time.Now(), tlsCertHash)
+	seekInfoHeader, err := txn.BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), txnID.ID, 0, "", time.Now(), tlsCertHash)
 	if err != nil {
 		return nil, errors.Wrap(err, "BuildChannelHeader failed")
 	}
@@ -71,12 +70,12 @@ func (c *Channel) GenesisBlock() (*common.Block, error) {
 	}
 	seekPayloadBytes := fc.MarshalOrPanic(seekPayload)
 
-	signedEnvelope, err := c.SignPayload(seekPayloadBytes)
+	signedEnvelope, err := txn.SignPayload(c.clientContext, seekPayloadBytes)
 	if err != nil {
 		return nil, errors.WithMessage(err, "SignPayload failed")
 	}
 
-	block, err := c.SendEnvelope(signedEnvelope)
+	block, err := txn.SendEnvelope(c.clientContext, signedEnvelope, c.Orderers())
 	if err != nil {
 		return nil, errors.WithMessage(err, "SendEnvelope failed")
 	}
@@ -101,7 +100,7 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 	}
 
 	tlsCertHash := ccomm.TLSCertHash(c.clientContext.Config())
-	seekInfoHeader, err := BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), txID, 0, "", time.Now(), tlsCertHash)
+	seekInfoHeader, err := txn.BuildChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, c.Name(), txID, 0, "", time.Now(), tlsCertHash)
 	if err != nil {
 		return nil, errors.Wrap(err, "BuildChannelHeader failed")
 	}
@@ -147,10 +146,10 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 		return nil, err
 	}
 
-	signedEnvelope, err := c.SignPayload(seekPayloadBytes)
+	signedEnvelope, err := txn.SignPayload(c.clientContext, seekPayloadBytes)
 	if err != nil {
 		return nil, errors.WithMessage(err, "SignPayload failed")
 	}
 
-	return c.SendEnvelope(signedEnvelope)
+	return txn.SendEnvelope(c.clientContext, signedEnvelope, c.Orderers())
 }

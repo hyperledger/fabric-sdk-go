@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -188,12 +189,17 @@ func queryByChaincode(channelID string, request fab.ChaincodeInvokeRequest, clie
 		return nil, err
 	}
 
-	transactionProposalResponses, _, err := SendTransactionProposalWithChannelID(channelID, request, clientContext)
+	tp, err := txn.NewProposal(clientContext, channelID, request)
 	if err != nil {
-		return nil, errors.WithMessage(err, "SendTransactionProposalWithChannelID failed")
+		return nil, errors.WithMessage(err, "NewProposal failed")
 	}
 
-	return filterProposalResponses(transactionProposalResponses)
+	tpr, err := txn.SendProposal(tp, request.Targets)
+	if err != nil {
+		return nil, errors.WithMessage(err, "SendProposal failed")
+	}
+
+	return filterProposalResponses(tpr)
 }
 
 // queryBySystemChaincodeByTarget is an internal helper function that queries system chaincode.
@@ -250,16 +256,19 @@ func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.
 		ChaincodeID: "cscc",
 		Fcn:         "GetConfigBlock",
 		Args:        [][]byte{[]byte(c.Name())},
-		Targets:     peersToTxnProcessors(peers),
 	}
 
-	// we are using system channel here (query to system cc)
-	transactionProposalResponses, _, err := SendTransactionProposalWithChannelID(systemChannel, request, c.clientContext)
+	tp, err := txn.NewProposal(c.clientContext, systemChannel, request)
 	if err != nil {
-		return nil, errors.WithMessage(err, "SendTransactionProposalWithChannelID failed")
+		return nil, errors.WithMessage(err, "NewProposal failed")
 	}
 
-	responses, err := filterProposalResponses(transactionProposalResponses)
+	tpr, err := txn.SendProposal(tp, peersToTxnProcessors(peers))
+	if err != nil {
+		return nil, errors.WithMessage(err, "SendProposal failed")
+	}
+
+	responses, err := filterProposalResponses(tpr)
 	if err != nil {
 		return nil, err
 	}

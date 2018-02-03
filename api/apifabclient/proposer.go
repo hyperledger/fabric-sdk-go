@@ -28,9 +28,9 @@ type TransactionID struct {
 
 // ChaincodeInvokeRequest contains the parameters for sending a transaction proposal.
 type ChaincodeInvokeRequest struct {
-	Targets      []ProposalProcessor
+	Targets      []ProposalProcessor // TODO: remove
 	ChaincodeID  string
-	TxnID        TransactionID // TODO: does it make sense to include the TxnID in the request?
+	TxnID        TransactionID // TODO: remove from external interface
 	TransientMap map[string][]byte
 	Fcn          string
 	Args         [][]byte

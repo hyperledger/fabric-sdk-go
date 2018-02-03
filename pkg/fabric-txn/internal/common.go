@@ -41,7 +41,7 @@ func CreateAndSendTransactionProposal(sender fab.ProposalSender, chainCodeID str
 	for _, v := range transactionProposalResponses {
 		if v.Err != nil {
 			logger.Debugf("SendTransactionProposal failed (%v, %s)", v.Endorser, v.Err.Error())
-			return nil, request.TxnID, errors.WithMessage(v.Err, "SendTransactionProposal failed")
+			return nil, txnID, errors.WithMessage(v.Err, "SendTransactionProposal failed")
 		}
 		logger.Debugf("invoke Endorser '%s' returned ProposalResponse status:%v", v.Endorser, v.Status)
 	}

@@ -18,9 +18,8 @@ import (
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -132,7 +131,7 @@ func (c *Resource) CreateChannel(request fab.CreateChannelRequest) (fab.Transact
 	}
 
 	if !haveEnvelope && request.TxnID.ID == "" {
-		txnID, err := internal.NewTxnID(c.clientContext)
+		txnID, err := txn.NewID(c.clientContext)
 		if err != nil {
 			return txnID, err
 		}
@@ -191,7 +190,7 @@ func (c *Resource) createOrUpdateChannel(request fab.CreateChannelRequest, haveE
 
 		// TODO: Move
 		tlsCertHash := ccomm.TLSCertHash(c.clientContext.Config())
-		channelHeader, err := channel.BuildChannelHeader(common.HeaderType_CONFIG_UPDATE, request.Name, request.TxnID.ID, 0, "", time.Now(), tlsCertHash)
+		channelHeader, err := txn.BuildChannelHeader(common.HeaderType_CONFIG_UPDATE, request.Name, request.TxnID.ID, 0, "", time.Now(), tlsCertHash)
 		if err != nil {
 			return errors.WithMessage(err, "BuildChannelHeader failed")
 		}
@@ -334,7 +333,7 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.Tra
 
 	txnID := fab.TransactionID{ID: txID} // Nonce is missing
 
-	transactionProposalResponse, err := txnproc.SendTransactionProposalToProcessors(&fab.TransactionProposal{
+	transactionProposalResponse, err := txn.SendProposal(&fab.TransactionProposal{
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
 		TxnID:          txnID,
