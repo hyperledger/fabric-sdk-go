@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
@@ -35,7 +36,7 @@ func NewProviderFactory() *ProviderFactory {
 }
 
 // NewStateStoreProvider creates a KeyValueStore using the SDK's default implementation
-func (f *ProviderFactory) NewStateStoreProvider(config apiconfig.Config) (fab.KeyValueStore, error) {
+func (f *ProviderFactory) NewStateStoreProvider(config apiconfig.Config) (kvstore.KVStore, error) {
 
 	var stateStorePath = f.stateStoreOpts.Path
 	if stateStorePath == "" {
@@ -46,7 +47,7 @@ func (f *ProviderFactory) NewStateStoreProvider(config apiconfig.Config) (fab.Ke
 		stateStorePath = clientCofig.CredentialStore.Path
 	}
 
-	stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
+	stateStore, err := kvs.NewFileKeyValueStore(&kvs.FileKeyValueStoreOptions{Path: stateStorePath})
 	if err != nil {
 		return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
@@ -26,7 +27,7 @@ type FabricSDK struct {
 	opts options
 
 	config            apiconfig.Config
-	stateStore        apifabclient.KeyValueStore
+	stateStore        kvstore.KVStore
 	cryptoSuite       apicryptosuite.CryptoSuite
 	discoveryProvider apifabclient.DiscoveryProvider
 	selectionProvider apifabclient.SelectionProvider

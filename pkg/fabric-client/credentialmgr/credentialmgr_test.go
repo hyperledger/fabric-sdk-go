@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
@@ -20,7 +21,7 @@ func TestCredentialManager(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	credentialMgr, err := NewCredentialManager("Org1", config, &fcmocks.MockCryptoSuite{})
+	credentialMgr, err := NewCredentialManager("Org1", config, cryptosuite.GetDefault())
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -50,19 +51,9 @@ func TestInvalidOrgCredentialManager(t *testing.T) {
 	}
 
 	// Invalid Org
-	credentialMgr, err := NewCredentialManager("invalidOrg", config, &fcmocks.MockCryptoSuite{})
+	_, err = NewCredentialManager("invalidOrg", config, &fcmocks.MockCryptoSuite{})
 	if err == nil {
 		t.Fatalf("Should have failed to setup manager for invalid org")
-	}
-
-	// Valid Org, Invalid User
-	credentialMgr, err = NewCredentialManager("Org1", config, &fcmocks.MockCryptoSuite{})
-	if err != nil {
-		t.Fatalf("Failed to setup credential manager: %s", err)
-	}
-	_, err = credentialMgr.GetSigningIdentity("testUser")
-	if err == nil {
-		t.Fatalf("Should have failed to retrieve signing identity for invalid user name")
 	}
 
 }
@@ -74,7 +65,7 @@ func TestCredentialManagerFromEmbeddedCryptoConfig(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	credentialMgr, err := NewCredentialManager("Org1", config, &fcmocks.MockCryptoSuite{})
+	credentialMgr, err := NewCredentialManager("Org1", config, cryptosuite.GetDefault())
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

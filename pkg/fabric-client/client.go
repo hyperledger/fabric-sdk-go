@@ -11,6 +11,7 @@ import (
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -29,7 +30,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 type Client struct {
 	channels        map[string]fab.Channel
 	cryptoSuite     apicryptosuite.CryptoSuite
-	stateStore      fab.KeyValueStore
+	stateStore      kvstore.KVStore
 	signingIdentity fab.IdentityContext
 	config          config.Config
 	signingManager  fab.SigningManager
@@ -94,16 +95,16 @@ func (c *Client) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, e
 // Deprecated: see fabsdk package.
 /*
  * The SDK should have a built-in key value store implementation (suggest a file-based implementation to allow easy setup during
- * development). But production systems would want a store backed by database for more robust storage and clustering,
+ * development). But production systems would want a store backed by database for more robust kvstore and clustering,
  * so that multiple app instances can share app state via the database (note that this doesn’t necessarily make the app stateful).
  * This API makes this pluggable so that different store implementations can be selected by the application.
  */
-func (c *Client) SetStateStore(stateStore fab.KeyValueStore) {
+func (c *Client) SetStateStore(stateStore kvstore.KVStore) {
 	c.stateStore = stateStore
 }
 
 // StateStore is a convenience method for obtaining the state store object in use for this client.
-func (c *Client) StateStore() fab.KeyValueStore {
+func (c *Client) StateStore() kvstore.KVStore {
 	return c.stateStore
 }
 
@@ -161,7 +162,7 @@ func (c *Client) SaveUserToStateStore(user fab.User) error {
 	if err != nil {
 		return errors.Wrap(err, "marshal json return error")
 	}
-	err = c.stateStore.SetValue(user.Name(), data)
+	err = c.stateStore.Store(user.Name(), data)
 	if err != nil {
 		return errors.WithMessage(err, "stateStore SetValue failed")
 	}
@@ -184,12 +185,19 @@ func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
 	if c.cryptoSuite == nil {
 		return nil, errors.New("cryptoSuite required")
 	}
-	value, err := c.stateStore.Value(name)
+	value, err := c.stateStore.Load(name)
 	if err != nil {
-		return nil, nil
+		if err == kvstore.ErrNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	valueBytes, ok := value.([]byte)
+	if !ok {
+		return nil, errors.New("state store return wrong data type")
 	}
 	var userJSON identity.JSON
-	err = json.Unmarshal(value, &userJSON)
+	err = json.Unmarshal(valueBytes, &userJSON)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal user JSON failed")
 	}

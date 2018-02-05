@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defclient"
@@ -22,7 +23,7 @@ import (
 )
 
 type mockCorePkg struct {
-	stateStore     apifabclient.KeyValueStore
+	stateStore     kvstore.KVStore
 	cryptoSuite    apicryptosuite.CryptoSuite
 	signingManager apifabclient.SigningManager
 	fabricProvider apicore.FabricProvider
@@ -63,7 +64,7 @@ func newMockCorePkg(config apiconfig.Config) (*mockCorePkg, error) {
 	return &c, nil
 }
 
-func (mc *mockCorePkg) NewStateStoreProvider(config apiconfig.Config) (apifabclient.KeyValueStore, error) {
+func (mc *mockCorePkg) NewStateStoreProvider(config apiconfig.Config) (kvstore.KVStore, error) {
 	return mc.stateStore, nil
 }
 

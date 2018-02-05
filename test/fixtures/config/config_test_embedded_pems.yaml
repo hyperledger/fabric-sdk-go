@@ -255,7 +255,8 @@ organizations:
             -----END PRIVATE KEY-----
         cert:
           path: ../../../test/fixtures/config/mutual_tls/client_sdk_go.pem
-#    cryptoPath:  peerOrganizations/org1.example.com/users/{userName}@org1.example.com/msp
+
+#    cryptoPath:  peerOrganizations/org2.example.com/users/{userName}@org2.example.com/msp
 
     peers:
       - peer0.org1.example.com
@@ -338,7 +339,7 @@ organizations:
             gg8FSinwbe6pVVX5
             -----END CERTIFICATE-----
     # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
-#    cryptoPath:  peerOrganizations/org2.example.com/users/{userName}@org2.example.com/msp
+#    cryptoPath:  peerOrganizations/org1.example.com/users/{userName}@org1.example.com/msp
 
     peers:
       - peer0.org2.example.com

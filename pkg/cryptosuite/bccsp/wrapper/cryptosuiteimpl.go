@@ -17,8 +17,10 @@ import (
 var logger = logging.NewLogger("fabric_sdk_go")
 
 //NewCryptoSuite returns cryptosuite adaptor for given bccsp.BCCSP implementation
-func NewCryptoSuite(bccsp bccsp.BCCSP) CryptoSuite {
-	return CryptoSuite{bccsp}
+func NewCryptoSuite(bccsp bccsp.BCCSP) apicryptosuite.CryptoSuite {
+	return &CryptoSuite{
+		BCCSP: bccsp,
+	}
 }
 
 //GetKey returns implementation of of cryptosuite.Key

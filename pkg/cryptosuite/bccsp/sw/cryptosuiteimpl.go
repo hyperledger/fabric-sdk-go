@@ -27,22 +27,21 @@ func GetSuiteByConfig(config apiconfig.Config) (apicryptosuite.CryptoSuite, erro
 
 	opts := getOptsByConfig(config)
 	bccsp, err := getBCCSPFromOpts(opts)
-
 	if err != nil {
 		return nil, err
 	}
-	return &wrapper.CryptoSuite{BCCSP: bccsp}, nil
+	return wrapper.NewCryptoSuite(bccsp), nil
 }
 
 //GetSuiteWithDefaultEphemeral returns cryptosuite adaptor for bccsp with default ephemeral options (intended to aid testing)
 func GetSuiteWithDefaultEphemeral() (apicryptosuite.CryptoSuite, error) {
 	opts := getEphemeralOpts()
-	bccsp, err := getBCCSPFromOpts(opts)
 
+	bccsp, err := getBCCSPFromOpts(opts)
 	if err != nil {
 		return nil, err
 	}
-	return &wrapper.CryptoSuite{BCCSP: bccsp}, nil
+	return wrapper.NewCryptoSuite(bccsp), nil
 }
 
 func getBCCSPFromOpts(config *bccspSw.SwOpts) (bccsp.BCCSP, error) {

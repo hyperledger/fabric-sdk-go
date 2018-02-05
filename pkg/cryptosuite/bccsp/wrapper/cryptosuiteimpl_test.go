@@ -15,6 +15,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
@@ -146,7 +147,7 @@ func TestCreateInvalidSecurityProviderPanic(t *testing.T) {
 	t.Fatalf("Getting cryptosuite with invalid security provider supposed to panic")
 }
 
-func verifyCryptoSuite(t *testing.T, samplecryptoSuite CryptoSuite) {
+func verifyCryptoSuite(t *testing.T, samplecryptoSuite apicryptosuite.CryptoSuite) {
 	//Test cryptosuite.Sign
 	signedBytes, err := samplecryptoSuite.Sign(GetKey(getMockKey(signingKey)), nil, nil)
 	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey : %s", err)

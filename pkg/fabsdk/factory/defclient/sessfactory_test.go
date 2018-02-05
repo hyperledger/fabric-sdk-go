@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
@@ -120,7 +121,7 @@ func TestNewChannelClientBadChannel(t *testing.T) {
 
 type mockProviders struct {
 	CryptoSuite       apicryptosuite.CryptoSuite
-	StateStore        apifabclient.KeyValueStore
+	StateStore        kvstore.KVStore
 	Config            apiconfig.Config
 	SigningManager    apifabclient.SigningManager
 	FabricProvider    apicore.FabricProvider
