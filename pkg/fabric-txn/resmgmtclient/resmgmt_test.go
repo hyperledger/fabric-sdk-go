@@ -1050,13 +1050,6 @@ func setupResMgmtClient(fabCtx fab.Context, discErr error, t *testing.T) *Resour
 		t.Fatalf("Failed to setup channel provider: %s", err)
 	}
 
-	// Create test channel and add it to the client (no added orderer yet)
-	channel, err := channel.New(fabCtx, fcmocks.NewMockChannelCfg("mychannel"))
-	if err != nil {
-		t.Fatalf("Failed to setup channel: %s", err)
-	}
-	chProvider.SetChannel("mychannel", channel)
-
 	resource := fcmocks.NewMockResource()
 
 	ctx := Context{

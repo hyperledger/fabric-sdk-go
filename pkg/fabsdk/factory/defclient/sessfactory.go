@@ -72,6 +72,9 @@ func (f *SessionClientFactory) NewChannelClient(providers apisdk.Providers, sess
 
 	chProvider := providers.ChannelProvider()
 	chService, err := chProvider.NewChannelService(session, channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "create channel service failed")
+	}
 
 	channel, err := chService.Channel()
 	if err != nil {

@@ -57,33 +57,14 @@ func (f *FabricProvider) NewResourceClient(ic apifabclient.IdentityContext) (api
 }
 
 // NewChannelClient returns a new client initialized for the current instance of the SDK.
-//
-// TODO - add argument with channel config interface (to enable channel configuration obtained from the network)
-func (f *FabricProvider) NewChannelClient(ic apifabclient.IdentityContext, channelID string) (apifabclient.Channel, error) {
+func (f *FabricProvider) NewChannelClient(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
 	ctx := &fabContext{
 		ProviderContext: f.providerContext,
 		IdentityContext: ic,
 	}
-	channel, err := channelImpl.New(ctx, chconfig.NewChannelCfg(channelID))
+	channel, err := channelImpl.New(ctx, cfg)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewChannel failed")
-	}
-
-	chOrderers, err := f.providerContext.Config().ChannelOrderers(channel.Name())
-	if err != nil {
-		return nil, errors.WithMessage(err, "reading channel orderers failed")
-	}
-
-	for _, oCfg := range chOrderers {
-		orderer, err := f.NewOrdererFromConfig(&oCfg)
-		if err != nil {
-			return nil, errors.WithMessage(err, "creating orderers from config failed")
-		}
-
-		err = channel.AddOrderer(orderer)
-		if err != nil {
-			return nil, errors.WithMessage(err, "adding orderer failed")
-		}
 	}
 
 	return channel, nil

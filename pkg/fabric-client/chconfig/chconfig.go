@@ -137,6 +137,7 @@ func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 			}
 
 			targets = append(targets, newPeer)
+
 		}
 	}
 

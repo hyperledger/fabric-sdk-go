@@ -30,18 +30,16 @@ func randomString(strlen int) string {
 	return string(result)
 }
 
-// HasPrimaryPeerJoinedChannel checks whether the primary peer of a channel
-// has already joined the channel. It returns true if it has, false otherwise,
-// or an error
-func HasPrimaryPeerJoinedChannel(client fab.Resource, channel fab.Channel) (bool, error) {
+// HasPeerJoinedChannel checks whether the peer has already joined the channel.
+// It returns true if it has, false otherwise, or an error
+func HasPeerJoinedChannel(client fab.Resource, peer fab.Peer, channel string) (bool, error) {
 	foundChannel := false
-	primaryPeer := channel.PrimaryPeer()
-	response, err := client.QueryChannels(primaryPeer)
+	response, err := client.QueryChannels(peer)
 	if err != nil {
 		return false, errors.WithMessage(err, "failed to query channel for primary peer")
 	}
 	for _, responseChannel := range response.Channels {
-		if responseChannel.ChannelId == channel.Name() {
+		if responseChannel.ChannelId == channel {
 			foundChannel = true
 		}
 	}

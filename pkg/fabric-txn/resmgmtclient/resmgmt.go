@@ -64,6 +64,11 @@ type Context struct {
 	Resource          fab.Resource
 }
 
+type fabContext struct {
+	fab.ProviderContext
+	fab.IdentityContext
+}
+
 // New returns a ResourceMgmtClient instance
 func New(ctx Context, filter resmgmt.TargetFilter) (*ResourceMgmtClient, error) {
 

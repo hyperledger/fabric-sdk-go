@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package chpvdr
 
 import (
+	"sync"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 )
@@ -19,21 +21,43 @@ import (
 // underlying channel services need to recreate their channel clients.
 type ChannelProvider struct {
 	fabricProvider apicore.FabricProvider
+	chCfgMap       sync.Map
 }
 
 // New creates a ChannelProvider based on a context
 func New(fabricProvider apicore.FabricProvider) (*ChannelProvider, error) {
-	cp := ChannelProvider{fabricProvider}
+	cp := ChannelProvider{fabricProvider: fabricProvider}
 	return &cp, nil
 }
 
 // NewChannelService creates a ChannelService for an identity
 func (cp *ChannelProvider) NewChannelService(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelService, error) {
+
+	var cfg apifabclient.ChannelCfg
+	v, ok := cp.chCfgMap.Load(channelID)
+	if !ok {
+		p, err := cp.fabricProvider.NewChannelConfig(ic, channelID)
+		if err != nil {
+			return nil, err
+		}
+
+		cfg, err = p.Query()
+		if err != nil {
+			return nil, err
+		}
+
+		cp.chCfgMap.Store(channelID, cfg)
+	} else {
+		cfg = v.(apifabclient.ChannelCfg)
+	}
+
 	cs := ChannelService{
+		provider:        cp,
 		fabricProvider:  cp.fabricProvider,
 		identityContext: ic,
-		channelID:       channelID,
+		cfg:             cfg,
 	}
+
 	return &cs, nil
 }
 
@@ -42,22 +66,23 @@ func (cp *ChannelProvider) NewChannelService(ic apifabclient.IdentityContext, ch
 //
 // TODO: add cache for channel rather than reconstructing each time.
 type ChannelService struct {
+	provider        *ChannelProvider
 	fabricProvider  apicore.FabricProvider
 	identityContext apifabclient.IdentityContext
-	channelID       string
+	cfg             apifabclient.ChannelCfg
 }
 
 // Channel returns the named Channel client.
 func (cs *ChannelService) Channel() (apifabclient.Channel, error) {
-	return cs.fabricProvider.NewChannelClient(cs.identityContext, cs.channelID)
+	return cs.fabricProvider.NewChannelClient(cs.identityContext, cs.cfg)
 }
 
 // EventHub returns the EventHub for the named channel.
 func (cs *ChannelService) EventHub() (apifabclient.EventHub, error) {
-	return cs.fabricProvider.NewEventHub(cs.identityContext, cs.channelID)
+	return cs.fabricProvider.NewEventHub(cs.identityContext, cs.cfg.Name())
 }
 
 // ChannelConfig returns the ChannelConfig for the named channel
 func (cs *ChannelService) ChannelConfig() (apifabclient.ChannelConfig, error) {
-	return cs.fabricProvider.NewChannelConfig(cs.identityContext, cs.channelID)
+	return cs.fabricProvider.NewChannelConfig(cs.identityContext, cs.cfg.Name())
 }

@@ -16,7 +16,7 @@ import (
 
 // FabricProvider enables access to fabric objects such as peer and user
 type FabricProvider interface {
-	NewChannelClient(user apifabclient.IdentityContext, name string) (apifabclient.Channel, error)
+	NewChannelClient(user apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error)
 	NewChannelConfig(user apifabclient.IdentityContext, name string) (apifabclient.ChannelConfig, error)
 	NewResourceClient(user apifabclient.IdentityContext) (apifabclient.Resource, error)
 	NewEventHub(ic apifabclient.IdentityContext, channelID string) (apifabclient.EventHub, error)

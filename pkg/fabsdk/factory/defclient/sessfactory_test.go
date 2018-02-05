@@ -1,3 +1,5 @@
+// +build testing
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -7,7 +9,6 @@ SPDX-License-Identifier: Apache-2.0
 package defclient
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
@@ -26,6 +27,7 @@ import (
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
+	"github.com/pkg/errors"
 )
 
 func TestNewChannelMgmtClient(t *testing.T) {
@@ -174,6 +176,9 @@ func newMockProviders(t *testing.T) *mockProviders {
 	if err != nil {
 		t.Fatalf("Unexpected error creating discovery provider %v", err)
 	}
+
+	cp.SetChannelConfig(fabmocks.NewMockChannelCfg("mychannel"))
+	cp.SetChannelConfig(fabmocks.NewMockChannelCfg("orgchannel"))
 
 	providers := mockProviders{
 		CryptoSuite:       cryptosuite,

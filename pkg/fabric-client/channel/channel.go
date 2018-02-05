@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"strings"
+
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
@@ -66,8 +68,16 @@ func New(ctx fab.Context, cfg fab.ChannelCfg) (*Channel, error) {
 	// Add orderer if specified in config
 	for _, name := range cfg.Orderers() {
 
+		oID := name
+
+		// TODO: Temporary until full orderer config is retrieved
+		s := strings.Split(name, ":")
+		if len(s) > 1 {
+			oID = s[0]
+		}
+
 		// Figure out orderer configuration
-		oCfg, err := ctx.Config().OrdererConfig(name)
+		oCfg, err := ctx.Config().OrdererConfig(oID)
 
 		// Check if retrieving orderer configuration went ok
 		if err != nil || oCfg == nil {

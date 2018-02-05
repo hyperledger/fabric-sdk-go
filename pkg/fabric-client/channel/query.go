@@ -257,7 +257,7 @@ func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.
 		Args:        [][]byte{[]byte(c.Name())},
 	}
 
-	tp, err := txn.NewProposal(c.clientContext, systemChannel, request)
+	tp, err := txn.NewProposal(c.clientContext, c.Name(), request)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewProposal failed")
 	}

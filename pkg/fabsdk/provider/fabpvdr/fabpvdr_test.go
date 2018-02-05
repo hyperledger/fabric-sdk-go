@@ -28,7 +28,7 @@ func TestNewChannelClient(t *testing.T) {
 	p := newMockFabricProvider(t)
 
 	user := mocks.NewMockUser("user")
-	client, err := p.NewChannelClient(user, "mychannel")
+	client, err := p.NewChannelClient(user, mocks.NewMockChannelCfg("mychannel"))
 	if err != nil {
 		t.Fatalf("Unexpected error creating client %v", err)
 	}

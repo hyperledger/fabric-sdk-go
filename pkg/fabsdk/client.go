@@ -191,7 +191,7 @@ func (c *ClientContext) Channel(id string, opts ...ClientOption) (chclient.Chann
 	session := newSession(p.identity, p.providers.ChannelProvider())
 	client, err := p.clientFactory.NewChannelClient(p.providers, session, id, o.targetFilter)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to created new resource management client")
+		return nil, errors.WithMessage(err, "failed to created new channel client")
 	}
 
 	return client, nil

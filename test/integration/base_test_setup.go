@@ -18,6 +18,7 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
@@ -100,11 +101,11 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 
 	setup.Client = sc
 
-	channel, err := setup.GetChannel(sdk, setup.Identity, sdk.Config(), setup.ChannelID, []string{setup.OrgID})
+	// TODO: Review logic for retrieving peers (should this be channel peer only)
+	channel, err := setup.GetChannel(sdk, setup.Identity, sdk.Config(), chconfig.NewChannelCfg(setup.ChannelID), []string{setup.OrgID})
 	if err != nil {
 		return errors.Wrapf(err, "create channel (%s) failed: %v", setup.ChannelID)
 	}
-	setup.Channel = channel
 
 	// Channel management client is responsible for managing channels (create/update)
 	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ChannelMgmt()
@@ -119,7 +120,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	}
 
 	// Check if primary peer has joined channel
-	alreadyJoined, err := HasPrimaryPeerJoinedChannel(sc, channel)
+	alreadyJoined, err := HasPeerJoinedChannel(sc, channel.PrimaryPeer(), channel.Name())
 	if err != nil {
 		return errors.WithMessage(err, "failed while checking if primary peer has already joined channel")
 	}
@@ -144,15 +145,32 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 		return err
 	}
 
+	// At this point we are able to retrieve channel configuration
+	configProvider, err := sdk.FabricProvider().NewChannelConfig(setup.Identity, setup.ChannelID)
+	if err != nil {
+		return err
+	}
+	chCfg, err := configProvider.Query()
+	if err != nil {
+		return err
+	}
+
+	// Get channel from dynamic info
+	channel, err = setup.GetChannel(sdk, setup.Identity, sdk.Config(), chCfg, []string{setup.OrgID})
+	if err != nil {
+		return errors.Wrapf(err, "create channel (%s) failed: %v", setup.ChannelID)
+	}
+	setup.Channel = channel
+
 	setup.Initialized = true
 
 	return nil
 }
 
 // GetChannel initializes and returns a channel based on config
-func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.Config, channelID string, orgs []string) (fab.Channel, error) {
+func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.Config, chCfg fab.ChannelCfg, orgs []string) (fab.Channel, error) {
 
-	channel, err := sdk.FabricProvider().NewChannelClient(ic, channelID)
+	channel, err := sdk.FabricProvider().NewChannelClient(ic, chCfg)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewChannel failed")
 	}

@@ -49,3 +49,19 @@ func (cfg *MockChannelCfg) Orderers() []string {
 func (cfg *MockChannelCfg) Versions() *fab.Versions {
 	return cfg.MockVersions
 }
+
+// MockChannelConfig mocks query channel configuration
+type MockChannelConfig struct {
+	channelID string
+	ctx       fab.Context
+}
+
+// NewMockChannelConfig mocks channel config implementation
+func NewMockChannelConfig(ctx fab.Context, channelID string) (*MockChannelConfig, error) {
+	return &MockChannelConfig{channelID: channelID, ctx: ctx}, nil
+}
+
+// Query mocks query for channel configuration
+func (c *MockChannelConfig) Query() (fab.ChannelCfg, error) {
+	return NewMockChannelCfg(c.channelID), nil
+}
