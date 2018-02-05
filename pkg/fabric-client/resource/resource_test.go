@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package resource
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"path"
@@ -79,4 +80,24 @@ func setupTestClient() *Resource {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
 	return New(ctx)
+}
+
+func TestQueryBySystemChaincode(t *testing.T) {
+	c := setupTestClient()
+
+	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A")}
+
+	request := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "cc",
+		Fcn:         "Hello",
+	}
+	resp, err := c.queryByChaincode(request, &peer)
+	if err != nil {
+		t.Fatalf("Failed to query: %s", err)
+	}
+	expectedResp := []byte("A")
+
+	if !bytes.Equal(resp, expectedResp) {
+		t.Fatalf("Unexpected transaction proposal response: %v (expected %v)", resp, expectedResp)
+	}
 }

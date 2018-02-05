@@ -17,7 +17,6 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -244,7 +243,11 @@ func (c *Resource) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error
 		return nil, errors.New("peer required")
 	}
 
-	payload, err := c.queryBySystemChaincodeByTarget("cscc", "GetChannels", [][]byte{}, peer)
+	request := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "cscc",
+		Fcn:         "GetChannels",
+	}
+	payload, err := c.queryByChaincode(request, peer)
 	if err != nil {
 		return nil, errors.WithMessage(err, "cscc.GetChannels failed")
 	}
@@ -264,10 +267,16 @@ func (c *Resource) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryRe
 	if peer == nil {
 		return nil, errors.New("peer required")
 	}
-	payload, err := c.queryBySystemChaincodeByTarget("lscc", "getinstalledchaincodes", [][]byte{}, peer)
+
+	request := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "lscc",
+		Fcn:         "getinstalledchaincodes",
+	}
+	payload, err := c.queryByChaincode(request, peer)
 	if err != nil {
 		return nil, errors.WithMessage(err, "lscc.getinstalledchaincodes failed")
 	}
+
 	response := new(pb.ChaincodeQueryResponse)
 	err = proto.Unmarshal(payload, response)
 	if err != nil {
@@ -340,24 +349,46 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.Tra
 	return transactionProposalResponse, txID, err
 }
 
-func (c *Resource) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args [][]byte, target fab.ProposalProcessor) ([]byte, error) {
-	targets := []fab.ProposalProcessor{target}
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: chaincodeID,
-		Fcn:         fcn,
-		Args:        args,
-		Targets:     targets,
-	}
-	responses, err := channel.QueryBySystemChaincode(request, c.clientContext)
+func (c *Resource) queryByChaincode(request fab.ChaincodeInvokeRequest, target fab.ProposalProcessor) ([]byte, error) {
+	const systemChannel = ""
 
+	targets := []fab.ProposalProcessor{target}
+
+	tp, err := txn.NewProposal(c.clientContext, systemChannel, request)
 	if err != nil {
-		return nil, errors.WithMessage(err, "QueryBySystemChaincode failed")
+		return nil, errors.WithMessage(err, "NewProposal failed")
+	}
+
+	tpr, err := txn.SendProposal(tp, targets)
+	if err != nil {
+		return nil, errors.WithMessage(err, "SendProposal failed")
+	}
+
+	responses, err := filterProposalResponses(tpr)
+	if err != nil {
+		return nil, errors.WithMessage(err, "response filtering failed")
 	}
 	// we are only querying one peer hence one result
 	if len(responses) != 1 {
-		return nil, errors.Errorf("QueryBySystemChaincode should have one result only - actual result count: %d", len(responses))
+		return nil, errors.Errorf("should have one result, but actual result count is: %d", len(responses))
 	}
 
 	return responses[0], nil
+}
 
+func filterProposalResponses(tpr []*fab.TransactionProposalResponse) ([][]byte, error) {
+	var responses [][]byte
+	errMsg := ""
+	for _, response := range tpr {
+		if response.Err != nil {
+			errMsg = errMsg + response.Err.Error() + "\n"
+		} else {
+			responses = append(responses, response.ProposalResponse.GetResponse().Payload)
+		}
+	}
+
+	if len(errMsg) > 0 {
+		return responses, errors.New(errMsg)
+	}
+	return responses, nil
 }
