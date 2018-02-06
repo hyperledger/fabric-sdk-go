@@ -85,6 +85,7 @@ func TestNewChannelClient(t *testing.T) {
 	mockSDK.EXPECT().ChannelProvider().Return(p.ChannelProvider)
 	mockSDK.EXPECT().DiscoveryProvider().Return(p.DiscoveryProvider)
 	mockSDK.EXPECT().SelectionProvider().Return(p.SelectionProvider)
+	mockSDK.EXPECT().Config().Return(p.Config)
 
 	factory := NewSessionClientFactory()
 	session := newMockSession()

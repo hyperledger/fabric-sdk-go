@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -373,6 +374,7 @@ func TestExecuteTxWithRetries(t *testing.T) {
 	testPeer1.Error = testStatus
 	chClient := setupChannelClient([]apifabclient.Peer{testPeer1}, t)
 	retryOpts := retry.DefaultOpts
+	retryOpts.InitialBackoff = 1 * time.Microsecond
 	retryOpts.RetryableCodes = retry.ChannelClientRetryableCodes
 
 	_, err := chClient.Query(chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}},
@@ -381,6 +383,62 @@ func TestExecuteTxWithRetries(t *testing.T) {
 		t.Fatalf("Should have failed for not success status")
 	}
 	assert.Equal(t, retry.DefaultOpts.Attempts, testPeer1.ProcessProposalCalls-1, "Expected peer to be called (retry attempts + 1) times")
+}
+
+func TestDiscoveryGreylist(t *testing.T) {
+	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
+	testPeer1.Error = status.New(status.EndorserClientStatus,
+		status.ConnectionFailed.ToInt32(), "test", []interface{}{testPeer1.URL()})
+
+	testChannel, err := setupTestChannel()
+	assert.Nil(t, err, "Got error %s", err)
+
+	orderer := fcmocks.NewMockOrderer("", nil)
+	testChannel.AddOrderer(orderer)
+
+	discoveryService, err := setupTestDiscovery(nil, []apifabclient.Peer{testPeer1})
+	assert.Nil(t, err, "Got error %s", err)
+
+	selectionService, err := setupTestSelection(nil, nil)
+	assert.Nil(t, err, "Got error %s", err)
+	selectionService.SelectAll = true
+
+	ctx := Context{
+		ProviderContext:  setupTestContext(),
+		DiscoveryService: discoveryService,
+		SelectionService: selectionService,
+		Channel:          testChannel,
+	}
+	chClient, err := New(ctx)
+	assert.Nil(t, err, "Got error %s", err)
+
+	attempts := 3
+	retryOpts := retry.Opts{
+		Attempts:       attempts,
+		BackoffFactor:  1,
+		InitialBackoff: time.Millisecond * 1,
+		MaxBackoff:     time.Second * 1,
+		RetryableCodes: retry.ChannelClientRetryableCodes,
+	}
+	_, err = chClient.Query(chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}},
+		chclient.WithRetry(retryOpts))
+	assert.NotNil(t, err, "expected error")
+	s, ok := status.FromError(err)
+	assert.True(t, ok, "expected status error")
+	assert.EqualValues(t, status.NoPeersFound.ToInt32(), s.Code, "expected No Peers Found status on greylist")
+	assert.Equal(t, 1, testPeer1.ProcessProposalCalls, "expected peer 1 to be greylisted")
+	// Wait for greylist expiry
+	time.Sleep(ctx.Config().TimeoutOrDefault(apiconfig.DiscoveryGreylistExpiry))
+	testPeer1.ProcessProposalCalls = 0
+	testPeer1.Error = status.New(status.EndorserServerStatus, int32(common.Status_SERVICE_UNAVAILABLE), "test", nil)
+	// Try again
+	_, err = chClient.Query(chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}},
+		chclient.WithRetry(retryOpts))
+	assert.NotNil(t, err, "expected error")
+	s, ok = status.FromError(err)
+	assert.True(t, ok, "expected status error")
+	assert.EqualValues(t, int32(common.Status_SERVICE_UNAVAILABLE), s.Code, "expected configured mock error")
+	assert.Equal(t, attempts+1, testPeer1.ProcessProposalCalls, "expected peer 1 not to be greylisted")
 }
 
 func setupTestChannel() (*channel.Channel, error) {
@@ -408,7 +466,7 @@ func setupTestDiscovery(discErr error, peers []apifabclient.Peer) (apifabclient.
 	return mockDiscovery.NewDiscoveryService("mychannel")
 }
 
-func setupTestSelection(discErr error, peers []apifabclient.Peer) (apifabclient.SelectionService, error) {
+func setupTestSelection(discErr error, peers []apifabclient.Peer) (*txnmocks.MockSelectionService, error) {
 
 	mockSelection, err := txnmocks.NewMockSelectionProvider(discErr, peers)
 	if err != nil {

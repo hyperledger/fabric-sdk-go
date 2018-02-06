@@ -19,8 +19,9 @@ type MockSelectionProvider struct {
 
 // MockSelectionService implements mock selection service
 type MockSelectionService struct {
-	Error error
-	Peers []apifabclient.Peer
+	Error     error
+	Peers     []apifabclient.Peer
+	SelectAll bool
 }
 
 // NewMockSelectionProvider returns mock selection provider
@@ -29,7 +30,7 @@ func NewMockSelectionProvider(err error, peers []apifabclient.Peer) (*MockSelect
 }
 
 // NewSelectionService returns mock selection service
-func (dp *MockSelectionProvider) NewSelectionService(channelID string) (apifabclient.SelectionService, error) {
+func (dp *MockSelectionProvider) NewSelectionService(channelID string) (*MockSelectionService, error) {
 	return &MockSelectionService{Error: dp.Error, Peers: dp.Peers}, nil
 }
 
@@ -39,6 +40,10 @@ func (ds *MockSelectionService) GetEndorsersForChaincode(channelPeers []apifabcl
 
 	if ds.Error != nil {
 		return nil, ds.Error
+	}
+
+	if ds.SelectAll {
+		return channelPeers, nil
 	}
 
 	if ds.Peers == nil {

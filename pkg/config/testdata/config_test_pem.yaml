@@ -49,6 +49,8 @@ client:
       connection: 3s
       queryResponse: 45s
       executeTxResponse: 30s
+      discovery:
+        greylistExpiry: 5s
   eventService:
     timeout:
       connection: 3s

@@ -35,6 +35,9 @@ const (
 
 	// Timeout operation timed out
 	Timeout Code = 5
+
+	// NoPeersFound No peers were discovered/configured
+	NoPeersFound Code = 6
 )
 
 // CodeName maps the codes in this packages to human-readable strings
@@ -45,6 +48,7 @@ var CodeName = map[int32]string{
 	3: "ENDORSEMENT_MISMATCH",
 	4: "EMPTY_CERT",
 	5: "TIMEOUT",
+	6: "NO_PEERS_FOUND",
 }
 
 // ToInt32 cast to int32

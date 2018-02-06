@@ -97,7 +97,7 @@ func (c *MockConfig) CAClientCertPath(org string) (string, error) {
 
 //TimeoutOrDefault not implemented
 func (c *MockConfig) TimeoutOrDefault(arg config.TimeoutType) time.Duration {
-	return time.Second * 10
+	return time.Second * 5
 }
 
 // PeersConfig Retrieves the fabric peers from the config file provided

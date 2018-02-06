@@ -73,4 +73,6 @@ const (
 	OrdererConnection
 	// OrdererResponse orderer response timeout
 	OrdererResponse
+	// DiscoveryGreylistExpiry discovery Greylist expiration period
+	DiscoveryGreylistExpiry
 )

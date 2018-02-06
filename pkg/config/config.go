@@ -446,6 +446,8 @@ func (c *Config) TimeoutOrDefault(conn apiconfig.TimeoutType) time.Duration {
 		timeout = c.configViper.GetDuration("client.peer.timeout.queryResponse")
 	case apiconfig.Execute:
 		timeout = c.configViper.GetDuration("client.peer.timeout.executeTxResponse")
+	case apiconfig.DiscoveryGreylistExpiry:
+		timeout = c.configViper.GetDuration("client.peer.timeout.discovery.greylistExpiry")
 	case apiconfig.EventHub:
 		timeout = c.configViper.GetDuration("client.eventService.timeout.connection")
 	case apiconfig.EventReg:

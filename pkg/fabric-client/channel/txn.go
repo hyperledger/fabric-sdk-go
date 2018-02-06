@@ -18,6 +18,7 @@ import (
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 )
 
@@ -202,7 +203,8 @@ func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(targets []fab.ProposalPr
 	// Use default peers if targets are not specified.
 	if targets == nil || len(targets) == 0 {
 		if c.peers == nil || len(c.peers) == 0 {
-			return nil, errors.New("targets were not specified and no peers have been configured")
+			return nil, status.New(status.ClientStatus, status.NoPeersFound.ToInt32(),
+				"targets were not specified and no peers have been configured", nil)
 		}
 
 		return c.txnProcessors(), nil

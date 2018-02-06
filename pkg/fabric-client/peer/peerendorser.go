@@ -93,7 +93,7 @@ func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {
 func (p *peerEndorser) sendProposal(proposal apifabclient.TransactionProposal) (*pb.ProposalResponse, error) {
 	conn, err := p.conn()
 	if err != nil {
-		return nil, status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), nil)
+		return nil, status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), []interface{}{p.target})
 	}
 	defer p.releaseConn(conn)
 

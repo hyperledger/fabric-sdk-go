@@ -17,6 +17,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery/greylist"
 	txnHandlerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
 	"github.com/pkg/errors"
 )
@@ -32,6 +34,7 @@ type ChannelClient struct {
 	selection fab.SelectionService
 	channel   fab.Channel
 	eventHub  fab.EventHub
+	greylist *greylist.Filter
 }
 
 // Context holds the providers and services needed to create a ChannelClient.
@@ -45,10 +48,12 @@ type Context struct {
 
 // New returns a ChannelClient instance.
 func New(c Context) (*ChannelClient, error) {
+	greylistProvider := greylist.New(c.Config().TimeoutOrDefault(apiconfig.DiscoveryGreylistExpiry))
 
 	channelClient := ChannelClient{
+		greylist: greylistProvider,
 		context:   c,
-		discovery: c.DiscoveryService,
+		discovery: discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
 		selection: c.SelectionService,
 		channel:   c.Channel,
 		eventHub:  c.EventHub,
@@ -87,7 +92,7 @@ func (cc *ChannelClient) InvokeHandler(handler chclient.Handler, request chclien
 	handleInvoke:
 		//Perform action through handler
 		handler.Handle(requestContext, clientContext)
-		if requestContext.RetryHandler.Required(requestContext.Error) {
+		if cc.resolveRetry(requestContext, txnOpts) {
 			goto handleInvoke
 		}
 		complete <- true
@@ -97,8 +102,18 @@ func (cc *ChannelClient) InvokeHandler(handler chclient.Handler, request chclien
 		return requestContext.Response, requestContext.Error
 	case <-time.After(requestContext.Opts.Timeout):
 		return chclient.Response{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
-			"Operation timed out", nil)
+			"request timed out", nil)
 	}
+}
+
+func (cc *ChannelClient) resolveRetry(req *chclient.RequestContext, opts chclient.Opts) bool {
+	if !req.RetryHandler.Required(req.Error) {
+		return false
+	}
+	cc.greylist.Greylist(req.Error)
+	// Reset processors
+	req.Opts.ProposalProcessors = opts.ProposalProcessors
+	return true
 }
 
 //prepareHandlerContexts prepares context objects for handlers
