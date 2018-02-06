@@ -11,6 +11,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/pkg/errors"
 )
 
@@ -38,7 +39,7 @@ func (c *fabContext) SigningManager() apifabclient.SigningManager {
 }
 
 // StateStore returns state store
-func (c *sdkContext) StateStore() apifabclient.KeyValueStore {
+func (c *sdkContext) StateStore() kvstore.KVStore {
 	return c.sdk.stateStore
 }
 

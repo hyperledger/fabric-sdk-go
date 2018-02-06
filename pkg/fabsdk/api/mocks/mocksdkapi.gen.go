@@ -14,6 +14,7 @@ import (
 	chclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
 
@@ -89,9 +90,9 @@ func (_mr *MockCoreProvidersMockRecorder) SigningManager() *gomock.Call {
 }
 
 // StateStore mocks base method
-func (_m *MockCoreProviders) StateStore() apifabclient.KeyValueStore {
+func (_m *MockCoreProviders) StateStore() kvstore.KVStore {
 	ret := _m.ctrl.Call(_m, "StateStore")
-	ret0, _ := ret[0].(apifabclient.KeyValueStore)
+	ret0, _ := ret[0].(kvstore.KVStore)
 	return ret0
 }
 
@@ -267,9 +268,9 @@ func (_mr *MockProvidersMockRecorder) SigningManager() *gomock.Call {
 }
 
 // StateStore mocks base method
-func (_m *MockProviders) StateStore() apifabclient.KeyValueStore {
+func (_m *MockProviders) StateStore() kvstore.KVStore {
 	ret := _m.ctrl.Call(_m, "StateStore")
-	ret0, _ := ret[0].(apifabclient.KeyValueStore)
+	ret0, _ := ret[0].(kvstore.KVStore)
 	return ret0
 }
 
@@ -341,9 +342,9 @@ func (_mr *MockCoreProviderFactoryMockRecorder) NewSigningManager(arg0, arg1 int
 }
 
 // NewStateStoreProvider mocks base method
-func (_m *MockCoreProviderFactory) NewStateStoreProvider(_param0 apiconfig.Config) (apifabclient.KeyValueStore, error) {
+func (_m *MockCoreProviderFactory) NewStateStoreProvider(_param0 apiconfig.Config) (kvstore.KVStore, error) {
 	ret := _m.ctrl.Call(_m, "NewStateStoreProvider", _param0)
-	ret0, _ := ret[0].(apifabclient.KeyValueStore)
+	ret0, _ := ret[0].(kvstore.KVStore)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

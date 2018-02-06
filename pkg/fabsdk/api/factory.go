@@ -15,11 +15,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 )
 
 // CoreProviderFactory allows overriding of primitives and the fabric core object provider
 type CoreProviderFactory interface {
-	NewStateStoreProvider(config apiconfig.Config) (fab.KeyValueStore, error)
+	NewStateStoreProvider(config apiconfig.Config) (kvstore.KVStore, error)
 	NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error)
 	NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error)
 	NewFabricProvider(context fab.ProviderContext) (apicore.FabricProvider, error)

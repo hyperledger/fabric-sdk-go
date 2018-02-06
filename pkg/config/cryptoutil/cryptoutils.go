@@ -27,18 +27,8 @@ var logger = logging.NewLogger("fabric_sdk_go")
 // GetPrivateKeyFromCert will return private key represented by SKI in cert's public key
 func GetPrivateKeyFromCert(cert []byte, cs apicryptosuite.CryptoSuite) (apicryptosuite.Key, error) {
 
-	dcert, _ := pem.Decode(cert)
-	if dcert == nil {
-		return nil, errors.Errorf("Unable to decode cert bytes [%v]", cert)
-	}
-
-	x509Cert, err := x509.ParseCertificate(dcert.Bytes)
-	if err != nil {
-		return nil, errors.Errorf("Unable to parse cert from decoded bytes: %s", err)
-	}
-
 	// get the public key in the right format
-	certPubK, err := cs.KeyImport(x509Cert, factory.GetX509PublicKeyImportOpts(true))
+	certPubK, err := GetPublicKeyFromCert(cert, cs)
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to import certificate's public key")
 	}
@@ -55,6 +45,28 @@ func GetPrivateKeyFromCert(cert []byte, cs apicryptosuite.CryptoSuite) (apicrypt
 
 	if key != nil && key.Private() == false {
 		return nil, errors.Errorf("Found key is not private, SKI: %s", certPubK.SKI())
+	}
+
+	return key, nil
+}
+
+// GetPublicKeyFromCert will return public key the from cert
+func GetPublicKeyFromCert(cert []byte, cs apicryptosuite.CryptoSuite) (apicryptosuite.Key, error) {
+
+	dcert, _ := pem.Decode(cert)
+	if dcert == nil {
+		return nil, errors.Errorf("Unable to decode cert bytes [%v]", cert)
+	}
+
+	x509Cert, err := x509.ParseCertificate(dcert.Bytes)
+	if err != nil {
+		return nil, errors.Errorf("Unable to parse cert from decoded bytes: %s", err)
+	}
+
+	// get the public key in the right format
+	key, err := cs.KeyImport(x509Cert, factory.GetX509PublicKeyImportOpts(true))
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to import certificate's public key")
 	}
 
 	return key, nil

@@ -11,82 +11,172 @@ import (
 	"os"
 	"path"
 
-	"io"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
 
+const (
+	newDirMode  = 0700
+	newFileMode = 0600
+)
+
 var logger = logging.NewLogger("fabric_sdk_go")
 
-// FileKeyValueStore ...
+// KeySerializer converts a key to a unique fila path
+type KeySerializer func(key interface{}) (string, error)
+
+// Marshaller marshals a value into a byte array
+type Marshaller func(value interface{}) ([]byte, error)
+
+// Unmarshaller unmarshals a value from a byte array
+type Unmarshaller func(value []byte) (interface{}, error)
+
+// FileKeyValueStore stores each value into a separate file.
+// KeySerializer maps a key to a unique file path (raletive to the store path)
+// ValueSerializer and ValueDeserializer serializes/de-serializes a value
+// to and from a byte array that is stored in the path derived from the key.
 type FileKeyValueStore struct {
-	path string
+	path          string
+	keySerializer KeySerializer
+	marshaller    Marshaller
+	unmarshaller  Unmarshaller
 }
 
-// CreateNewFileKeyValueStore ...
-func CreateNewFileKeyValueStore(path string) (*FileKeyValueStore, error) {
-	if len(path) == 0 {
-		return nil, errors.New("FileKeyValueStore path is empty")
-	}
-	createDirIfNotExists(path)
-	return &FileKeyValueStore{path: path}, nil
+// FileKeyValueStoreOptions allow overriding store defaults
+type FileKeyValueStoreOptions struct {
+	// Store path, mandatory
+	Path string
+	// Optional. If not provided, default key serializer is used.
+	KeySerializer KeySerializer
+	// Optional. If not provided, default Marshaller is used.
+	Marshaller Marshaller
+	// Optional. If not provided, default Unmarshaller is used.
+	Unmarshaller Unmarshaller
 }
 
-// Value ...
-/**
- * Get the value associated with name.
- * @param {string} name
- * @returns []byte for the value
- */
-func (fkvs *FileKeyValueStore) Value(key string) ([]byte, error) {
-	file := path.Join(fkvs.path, key+".json")
-	value, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, err
+// Default Marshaller
+func defaultMarshaller(value interface{}) ([]byte, error) {
+	if value == nil {
+		return nil, nil
 	}
+	valueBytes, ok := value.([]byte)
+	if !ok {
+		return nil, errors.New("converting value to byte array failed")
+	}
+	return valueBytes, nil
+}
+
+// Default Unmarshaller
+func defaultUnmarshaller(value []byte) (interface{}, error) {
 	return value, nil
 }
 
-// SetValue ...
-/**
- * Set the value associated with name.
- * @param {string} name of the key to save
- * @param {[]byte} value to save
- */
-func (fkvs *FileKeyValueStore) SetValue(key string, value []byte) error {
-	file := path.Join(fkvs.path, key+".json")
-	err := ioutil.WriteFile(file, value, 0600)
+// GetPath returns the store path
+func (fkvs *FileKeyValueStore) GetPath() string {
+	return fkvs.path
+}
+
+// NewFileKeyValueStore creates a new instance of FileKeyValueStore using provided options
+func NewFileKeyValueStore(opts *FileKeyValueStoreOptions) (*FileKeyValueStore, error) {
+	if opts == nil {
+		return nil, errors.New("FileKeyValueStoreOptions is nil")
+	}
+	if opts.Path == "" {
+		return nil, errors.New("FileKeyValueStore path is empty")
+	}
+	if opts.KeySerializer == nil {
+		// Default key serializer
+		opts.KeySerializer = func(key interface{}) (string, error) {
+			keyString, ok := key.(string)
+			if !ok {
+				return "", errors.New("converting key to string failed")
+			}
+			return path.Join(opts.Path, keyString), nil
+		}
+	}
+	if opts.Marshaller == nil {
+		opts.Marshaller = defaultMarshaller
+	}
+	if opts.Unmarshaller == nil {
+		opts.Unmarshaller = defaultUnmarshaller
+	}
+	return &FileKeyValueStore{
+		path:          opts.Path,
+		keySerializer: opts.KeySerializer,
+		marshaller:    opts.Marshaller,
+		unmarshaller:  opts.Unmarshaller,
+	}, nil
+}
+
+// Load returns the value stored in the store for a key.
+// If a value for the key was not found, returns (nil, ErrNotFound)
+func (fkvs *FileKeyValueStore) Load(key interface{}) (interface{}, error) {
+	file, err := fkvs.keySerializer(key)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		return nil, kvstore.ErrNotFound
+	}
+	bytes, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	if bytes == nil {
+		return nil, kvstore.ErrNotFound
+	}
+	return fkvs.unmarshaller(bytes)
+}
+
+// Store sets the value for the key.
+func (fkvs *FileKeyValueStore) Store(key interface{}, value interface{}) error {
+	if key == nil {
+		return errors.New("key is nil")
+	}
+	if value == nil {
+		return errors.New("value is nil")
+	}
+	file, err := fkvs.keySerializer(key)
 	if err != nil {
 		return err
 	}
-	return nil
+	if value == nil {
+		_, err := os.Stat(file)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return errors.Wrapf(err, "stat dir failed")
+			}
+			// Doesn't exist, OK
+			return nil
+		}
+		return os.Remove(file)
+	}
+	valueBytes, err := fkvs.marshaller(value)
+	if err != nil {
+		return err
+	}
+	os.MkdirAll(path.Dir(file), newDirMode)
+	return ioutil.WriteFile(file, valueBytes, newFileMode)
 }
 
-// createDirIfNotExists
-func createDirIfNotExists(path string) error {
-
-	missing := false
-	_, err := os.Stat(path)
-
-	if err != nil && os.IsNotExist(err) {
-		missing = true
+// Delete deletes the value for a key.
+func (fkvs *FileKeyValueStore) Delete(key interface{}) error {
+	if key == nil {
+		return errors.New("key is nil")
 	}
-
-	if !missing {
-		f, err := os.Open(path)
-		defer f.Close()
-
-		_, err = f.Readdir(1)
-		if err != nil && err == io.EOF {
-			missing = true
+	file, err := fkvs.keySerializer(key)
+	if err != nil {
+		return err
+	}
+	_, err = os.Stat(file)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return errors.Wrapf(err, "stat dir failed")
 		}
-
+		// Doesn't exist, OK
+		return nil
 	}
-
-	if missing {
-		os.MkdirAll(path, 0755)
-	}
-
-	return nil
+	return os.Remove(file)
 }

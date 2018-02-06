@@ -13,7 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	cryptosuitewrapper "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -38,7 +38,7 @@ func TestNewStateStoreProvider(t *testing.T) {
 	}
 }
 
-func newMockStateStore(t *testing.T) apifabclient.KeyValueStore {
+func newMockStateStore(t *testing.T) kvstore.KVStore {
 	factory := NewProviderFactory()
 
 	mockCtrl := gomock.NewController(t)

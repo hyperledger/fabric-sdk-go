@@ -11,6 +11,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 )
 
 // Providers represents the SDK configured providers context.
@@ -22,7 +23,7 @@ type Providers interface {
 // CoreProviders represents the SDK configured core providers context.
 type CoreProviders interface {
 	CryptoSuite() apicryptosuite.CryptoSuite
-	StateStore() fab.KeyValueStore
+	StateStore() kvstore.KVStore
 	Config() apiconfig.Config
 	SigningManager() fab.SigningManager
 	FabricProvider() apicore.FabricProvider

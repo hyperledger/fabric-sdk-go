@@ -54,7 +54,9 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 
 	client.SetCryptoSuite(cryptoSuiteProvider)
-	stateStore, err := kvs.CreateNewFileKeyValueStore("/tmp/enroll_user")
+	stateStore, err := kvs.NewFileKeyValueStore(&kvs.FileKeyValueStoreOptions{
+		Path: "/tmp/enroll_user",
+	})
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
