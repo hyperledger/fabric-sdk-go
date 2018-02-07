@@ -10,7 +10,9 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"math/rand"
+	"path"
 	"strconv"
 	"testing"
 	"time"
@@ -53,9 +55,17 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
 
+	stateStorePath := "/tmp/enroll_user"
 	client.SetCryptoSuite(cryptoSuiteProvider)
 	stateStore, err := kvs.NewFileKeyValueStore(&kvs.FileKeyValueStoreOptions{
-		Path: "/tmp/enroll_user",
+		Path: stateStorePath,
+		KeySerializer: func(key interface{}) (string, error) {
+			keyString, ok := key.(string)
+			if !ok {
+				return "", errors.New("converting key to string failed")
+			}
+			return path.Join(stateStorePath, keyString+".json"), nil
+		},
 	})
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)

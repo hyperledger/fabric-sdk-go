@@ -8,9 +8,11 @@ package fabricclient
 
 import (
 	"bytes"
+	"path"
 	"testing"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
@@ -85,7 +87,17 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("client.NewChain create wrong chain")
 	}
 
-	stateStore, err := kvs.NewFileKeyValueStore(&kvs.FileKeyValueStoreOptions{Path: "/tmp/keyvaluestore"})
+	stateStorePath := "/tmp/keyvaluestore"
+	stateStore, err := kvs.NewFileKeyValueStore(&kvs.FileKeyValueStoreOptions{
+		Path: stateStorePath,
+		KeySerializer: func(key interface{}) (string, error) {
+			keyString, ok := key.(string)
+			if !ok {
+				return "", errors.New("converting key to string failed")
+			}
+			return path.Join(stateStorePath, keyString+".json"), nil
+		},
+	})
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
