@@ -18,6 +18,9 @@ type Resource interface {
 	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
 	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
 
+	GenesisBlockFromOrderer(channelName string, orderer Orderer) (*common.Block, error)
+	JoinChannel(request JoinChannelRequest) error
+
 	// TODO - the following methods are utilities
 	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
 	SignChannelConfig(config []byte, signer IdentityContext) (*common.ConfigSignature, error)
@@ -65,4 +68,12 @@ type InstallChaincodeRequest struct {
 type CCPackage struct {
 	Type pb.ChaincodeSpec_Type
 	Code []byte
+}
+
+// JoinChannelRequest allows a set of peers to transact on a channel on the network
+type JoinChannelRequest struct {
+	// The name of the channel to be joined.
+	Name         string
+	GenesisBlock *common.Block
+	Targets      []ProposalProcessor
 }

@@ -8,6 +8,8 @@ SPDX-License-Identifier: Apache-2.0
 package resource
 
 import (
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -16,6 +18,7 @@ import (
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
+	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -138,6 +141,87 @@ func (c *Resource) CreateChannel(request fab.CreateChannelRequest) (fab.Transact
 	return request.TxnID, c.createOrUpdateChannel(request, haveEnvelope)
 }
 
+// GenesisBlockFromOrderer returns the genesis block from the defined orderer that may be
+// used in a join request
+func (c *Resource) GenesisBlockFromOrderer(channelName string, orderer fab.Orderer) (*common.Block, error) {
+
+	orderers := []fab.Orderer{orderer}
+
+	txnID, err := txn.NewID(c.clientContext)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to calculate transaction id")
+	}
+
+	// now build the seek info , will be used once the channel is created
+	// to get the genesis block back
+	seekStart := newSpecificSeekPosition(0)
+	seekStop := newSpecificSeekPosition(0)
+	seekInfo := &ab.SeekInfo{
+		Start:    seekStart,
+		Stop:     seekStop,
+		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
+	}
+
+	tlsCertHash := ccomm.TLSCertHash(c.clientContext.Config())
+	channelHeaderOpts := txn.ChannelHeaderOpts{
+		ChannelID:   channelName,
+		TxnID:       txnID,
+		TLSCertHash: tlsCertHash,
+	}
+	seekInfoHeader, err := txn.CreateChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, channelHeaderOpts)
+	if err != nil {
+		return nil, errors.Wrap(err, "BuildChannelHeader failed")
+	}
+	seekHeader, err := txn.CreateHeader(c.clientContext, seekInfoHeader, txnID)
+	if err != nil {
+		return nil, errors.Wrap(err, "BuildHeader failed")
+	}
+	seekPayload := &common.Payload{
+		Header: seekHeader,
+		Data:   protos_utils.MarshalOrPanic(seekInfo),
+	}
+	seekPayloadBytes := protos_utils.MarshalOrPanic(seekPayload)
+
+	signedEnvelope, err := txn.SignPayload(c.clientContext, seekPayloadBytes)
+	if err != nil {
+		return nil, errors.WithMessage(err, "SignPayload failed")
+	}
+
+	block, err := txn.SendEnvelope(c.clientContext, signedEnvelope, orderers)
+	if err != nil {
+		return nil, errors.WithMessage(err, "SendEnvelope failed")
+	}
+	return block, nil
+}
+
+// JoinChannel sends a join channel proposal to the target peer.
+//
+// TODO extract targets from request into parameter.
+func (c *Resource) JoinChannel(request fab.JoinChannelRequest) error {
+
+	if request.GenesisBlock == nil {
+		return errors.New("missing block input parameter with the required genesis block")
+	}
+
+	genesisBlockBytes, err := proto.Marshal(request.GenesisBlock)
+	if err != nil {
+		return errors.Wrap(err, "marshal genesis block failed")
+	}
+
+	// Create join channel transaction proposal for target peers
+	var args [][]byte
+	args = append(args, genesisBlockBytes)
+
+	pr := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "cscc",
+		Fcn:         "JoinChain",
+		Args:        args,
+	}
+
+	_, err = c.queryChaincode(pr, request.Targets)
+	return err
+}
+
 // createOrUpdateChannel creates a new channel or updates an existing channel.
 func (c *Resource) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnvelope bool) error {
 	// Validate request
@@ -247,7 +331,7 @@ func (c *Resource) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error
 		ChaincodeID: "cscc",
 		Fcn:         "GetChannels",
 	}
-	payload, err := c.queryByChaincode(request, peer)
+	payload, err := c.queryChaincodeWithTarget(request, peer)
 	if err != nil {
 		return nil, errors.WithMessage(err, "cscc.GetChannels failed")
 	}
@@ -272,7 +356,7 @@ func (c *Resource) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryRe
 		ChaincodeID: "lscc",
 		Fcn:         "getinstalledchaincodes",
 	}
-	payload, err := c.queryByChaincode(request, peer)
+	payload, err := c.queryChaincodeWithTarget(request, peer)
 	if err != nil {
 		return nil, errors.WithMessage(err, "lscc.getinstalledchaincodes failed")
 	}
@@ -349,7 +433,39 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.Tra
 	return transactionProposalResponse, txID, err
 }
 
-func (c *Resource) queryByChaincode(request fab.ChaincodeInvokeRequest, target fab.ProposalProcessor) ([]byte, error) {
+// MultiError represents a slice of errors originating from each target peer.
+type MultiError []error
+
+func (me MultiError) Error() string {
+	msg := []string{}
+	for _, e := range me {
+		msg = append(msg, e.Error())
+	}
+	return strings.Join(msg, ",")
+}
+
+func (c *Resource) queryChaincode(request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([][]byte, error) {
+	errors := MultiError{}
+	responses := [][]byte{}
+	isErr := false
+
+	for _, target := range targets {
+		resp, err := c.queryChaincodeWithTarget(request, target)
+
+		responses = append(responses, resp)
+		errors = append(errors, err)
+
+		if err != nil {
+			isErr = true
+		}
+	}
+	if isErr {
+		return responses, errors
+	}
+	return responses, nil
+}
+
+func (c *Resource) queryChaincodeWithTarget(request fab.ChaincodeInvokeRequest, target fab.ProposalProcessor) ([]byte, error) {
 	const systemChannel = ""
 
 	targets := []fab.ProposalProcessor{target}
@@ -364,31 +480,27 @@ func (c *Resource) queryByChaincode(request fab.ChaincodeInvokeRequest, target f
 		return nil, errors.WithMessage(err, "SendProposal failed")
 	}
 
-	responses, err := filterProposalResponses(tpr)
+	err = validateResponse(tpr[0])
 	if err != nil {
-		return nil, errors.WithMessage(err, "response filtering failed")
-	}
-	// we are only querying one peer hence one result
-	if len(responses) != 1 {
-		return nil, errors.Errorf("should have one result, but actual result count is: %d", len(responses))
+		return nil, errors.WithMessage(err, "transaction proposal failed")
 	}
 
-	return responses[0], nil
+	return tpr[0].ProposalResponse.GetResponse().Payload, nil
 }
 
-func filterProposalResponses(tpr []*fab.TransactionProposalResponse) ([][]byte, error) {
-	var responses [][]byte
-	errMsg := ""
-	for _, response := range tpr {
-		if response.Err != nil {
-			errMsg = errMsg + response.Err.Error() + "\n"
-		} else {
-			responses = append(responses, response.ProposalResponse.GetResponse().Payload)
-		}
+func validateResponse(response *fab.TransactionProposalResponse) error {
+	if response.Err != nil {
+		return errors.Errorf("error from %s (%s)", response.Endorser, response.Err.Error())
 	}
 
-	if len(errMsg) > 0 {
-		return responses, errors.New(errMsg)
+	if response.Status != http.StatusOK {
+		return errors.Errorf("bad status from %s (%d)", response.Endorser, response.Status)
 	}
-	return responses, nil
+
+	return nil
+}
+
+// newSpecificSeekPosition returns a SeekPosition that requests the block at the given index
+func newSpecificSeekPosition(index uint64) *ab.SeekPosition {
+	return &ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: index}}}
 }

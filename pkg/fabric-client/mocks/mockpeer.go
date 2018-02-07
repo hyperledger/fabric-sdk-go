@@ -85,6 +85,7 @@ func (p *MockPeer) ProcessTransactionProposal(tp apifabclient.TransactionProposa
 	return apifabclient.TransactionProposalResult{
 		Endorser: p.MockURL,
 		Proposal: tp,
+		Status:   p.Status,
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
 			Message: p.ResponseMessage, Status: p.Status, Payload: p.Payload},
 			Endorsement: &pb.Endorsement{Endorser: []byte("test"), Signature: []byte("test")}},

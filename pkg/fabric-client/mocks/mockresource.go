@@ -62,6 +62,20 @@ func (c *MockResource) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, e
 	return nil, errors.New("Not implemented yet")
 }
 
+// GenesisBlockFromOrderer returns the genesis block from the defined orderer that may be
+// used in a join request
+func (c *MockResource) GenesisBlockFromOrderer(channelName string, orderer fab.Orderer) (*common.Block, error) {
+	return NewSimpleMockBlock(), nil
+}
+
+// JoinChannel sends a join channel proposal to the target peer.
+func (c *MockResource) JoinChannel(request fab.JoinChannelRequest) error {
+	if c.errorScenario {
+		return errors.New("error")
+	}
+	return nil
+}
+
 //QueryInstalledChaincodes mocks query installed chaincodes
 func (c *MockResource) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResponse, error) {
 	if peer == nil {

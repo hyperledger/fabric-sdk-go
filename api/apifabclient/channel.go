@@ -28,12 +28,13 @@ type Channel interface {
 
 	Name() string
 	ChannelConfig() (*common.ConfigEnvelope, error)
+
 	SendInstantiateProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope,
 		collConfig []*common.CollectionConfig, targets []ProposalProcessor) ([]*TransactionProposalResponse, TransactionID, error)
 	SendUpgradeProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []ProposalProcessor) ([]*TransactionProposalResponse, TransactionID, error)
 
 	// Network
-	// TODO: Use PeerEndorser
+	// Deprecated: getters/setters are deprecated from interface.
 	AddPeer(peer Peer) error
 	RemovePeer(peer Peer)
 	Peers() []Peer
@@ -46,12 +47,6 @@ type Channel interface {
 	SetMSPManager(mspManager msp.MSPManager)
 	MSPManager() msp.MSPManager
 	OrganizationUnits() ([]string, error)
-
-	// Channel Info
-	GenesisBlock() (*common.Block, error)
-	JoinChannel(request *JoinChannelRequest) error
-	UpdateChannel() bool
-	IsReadonly() bool
 
 	// Query
 	QueryInfo() (*common.BlockchainInfo, error)
@@ -69,10 +64,4 @@ type OrgAnchorPeer struct {
 	Org  string
 	Host string
 	Port int32
-}
-
-// JoinChannelRequest allows a set of peers to transact on a channel on the network
-type JoinChannelRequest struct {
-	Targets      []Peer
-	GenesisBlock *common.Block
 }

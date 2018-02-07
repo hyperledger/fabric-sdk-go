@@ -47,7 +47,8 @@ func (f *SessionClientFactory) NewChannelMgmtClient(providers apisdk.Providers, 
 // NewResourceMgmtClient returns a client that manages resources
 func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers, session apisdk.SessionContext, filter apiresmgmt.TargetFilter) (apiresmgmt.ResourceMgmtClient, error) {
 
-	resource, err := providers.FabricProvider().NewResourceClient(session)
+	fabProvider := providers.FabricProvider()
+	resource, err := fabProvider.NewResourceClient(session)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +62,7 @@ func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers,
 		Resource:          resource,
 		DiscoveryProvider: discovery,
 		ChannelProvider:   chProvider,
+		FabricProvider:    fabProvider,
 	}
 	return resmgmtclient.New(ctx, filter)
 }

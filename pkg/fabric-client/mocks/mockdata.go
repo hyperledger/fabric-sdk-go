@@ -46,6 +46,11 @@ func NewSimpleMockError() error {
 	return errors.New("Test Error")
 }
 
+/*
+func NewMockGenesisBlock() *common.Block {
+	file := file.Open()
+}*/
+
 // MockConfigGroupBuilder is used to build a mock ConfigGroup
 type MockConfigGroupBuilder struct {
 	Version        uint64

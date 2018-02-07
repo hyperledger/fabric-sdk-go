@@ -7,9 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"fmt"
-	"net/http"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
@@ -60,103 +57,6 @@ func (c *Channel) SendTransactionProposal(request fab.ChaincodeInvokeRequest, ta
 	}
 
 	return tpr, tp.TxnID, nil
-}
-
-// JoinChannel sends a join channel proposal to one or more endorsing peers
-// Will get the genesis block from the defined orderer to be used
-// in the proposal.
-// request: An object containing the following fields:
-// `targets` : required - An array of `Peer` objects that will join
-//             this channel
-// `block`   : the genesis block of the channel
-//             see GenesisBlock() method
-// See /protos/peer/proposal_response.proto
-func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
-	logger.Debug("joinChannel - start")
-
-	// verify that we have targets (Peers) to join this channel
-	// defined by the caller
-	if request == nil {
-		return errors.New("join channel request is required")
-	}
-
-	// verify that a Peer(s) has been selected to join this channel
-	if request.Targets == nil {
-		return errors.New("missing targets input parameter with the peer objects for the join channel proposal")
-	}
-
-	if request.GenesisBlock == nil {
-		return errors.New("missing block input parameter with the required genesis block")
-	}
-
-	txnID, err := txn.NewID(c.clientContext)
-	if err != nil {
-		return errors.WithMessage(err, "failed to calculate transaction id")
-	}
-
-	creator, err := c.clientContext.Identity()
-	if err != nil {
-		return errors.WithMessage(err, "getting creator identity failed")
-	}
-
-	genesisBlockBytes, err := proto.Marshal(request.GenesisBlock)
-	if err != nil {
-		return errors.Wrap(err, "marshal genesis block failed")
-	}
-
-	// Create join channel transaction proposal for target peers
-	joinCommand := "JoinChain"
-	var args [][]byte
-	args = append(args, []byte(joinCommand))
-	args = append(args, genesisBlockBytes)
-	ccSpec := &pb.ChaincodeSpec{
-		Type:        pb.ChaincodeSpec_GOLANG,
-		ChaincodeId: &pb.ChaincodeID{Name: "cscc"},
-		Input:       &pb.ChaincodeInput{Args: args},
-	}
-	cciSpec := &pb.ChaincodeInvocationSpec{
-		ChaincodeSpec: ccSpec,
-	}
-
-	proposal, _, err := protos_utils.CreateChaincodeProposalWithTxIDNonceAndTransient(txnID.ID, common.HeaderType_ENDORSER_TRANSACTION, "", cciSpec, txnID.Nonce, creator, nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to build chaincode proposal")
-	}
-	signedProposal, err := txn.SignProposal(c.clientContext, proposal)
-	if err != nil {
-		return errors.WithMessage(err, "signing proposal failed")
-	}
-	transactionProposal := &fab.TransactionProposal{
-		TxnID:          txnID,
-		SignedProposal: signedProposal,
-		Proposal:       proposal,
-	}
-
-	targets := peersToTxnProcessors(request.Targets)
-
-	// Send join proposal
-	proposalResponses, err := txn.SendProposal(transactionProposal, targets)
-	if err != nil {
-		return errors.WithMessage(err, "sending join transaction proposal failed")
-	}
-	// Check responses from target peers for success/failure and join all errors
-	var joinError string
-	for _, response := range proposalResponses {
-		if response.Err != nil {
-			joinError = joinError +
-				fmt.Sprintf("join channel proposal response error: %s \n",
-					response.Err.Error())
-		} else if response.Status != http.StatusOK {
-			joinError = joinError +
-				fmt.Sprintf("join channel proposal HTTP response status: %d \n", response.Status)
-		}
-	}
-
-	if joinError != "" {
-		return errors.New(joinError)
-	}
-
-	return nil
 }
 
 // SendInstantiateProposal sends an instantiate proposal to one or more endorsing peers.

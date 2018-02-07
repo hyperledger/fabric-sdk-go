@@ -11,7 +11,6 @@ import (
 	"path"
 	"testing"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
@@ -142,14 +141,4 @@ func TestQueryMethodsOnClient(t *testing.T) {
 		t.Fatalf("QueryInstalledChaincodes: peer cannot be nil")
 	}
 
-}
-
-func TestInterfaces(t *testing.T) {
-	var apiClient fab.Resource
-	var client Client
-
-	apiClient = &client
-	if apiClient == nil {
-		t.Fatalf("this shouldn't happen.")
-	}
 }

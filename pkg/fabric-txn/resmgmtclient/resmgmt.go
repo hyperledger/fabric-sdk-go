@@ -11,6 +11,7 @@ import (
 	"time"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
@@ -28,6 +29,7 @@ type ResourceMgmtClient struct {
 	identity          fab.IdentityContext
 	discoveryProvider fab.DiscoveryProvider // used to get per channel discovery service(s)
 	channelProvider   fab.ChannelProvider
+	fabricProvider    apicore.FabricProvider
 	discovery         fab.DiscoveryService // global discovery service (detects all peers on the network)
 	resource          fab.Resource
 	filter            resmgmt.TargetFilter
@@ -58,6 +60,7 @@ type Context struct {
 	fab.IdentityContext
 	DiscoveryProvider fab.DiscoveryProvider
 	ChannelProvider   fab.ChannelProvider
+	FabricProvider    apicore.FabricProvider
 	Resource          fab.Resource
 }
 
@@ -80,16 +83,17 @@ func New(ctx Context, filter resmgmt.TargetFilter) (*ResourceMgmtClient, error) 
 		return nil, errors.WithMessage(err, "failed to create global discovery service")
 	}
 
-	resourceClient := &ResourceMgmtClient{
+	resourceClient := ResourceMgmtClient{
 		provider:          ctx,
 		identity:          ctx,
 		discoveryProvider: ctx.DiscoveryProvider,
 		channelProvider:   ctx.ChannelProvider,
+		fabricProvider:    ctx.FabricProvider,
 		resource:          ctx.Resource,
 		discovery:         discovery,
 		filter:            rcFilter,
 	}
-	return resourceClient, nil
+	return &resourceClient, nil
 }
 
 // JoinChannel allows for peers to join existing channel with optional custom options (specific peers, filtered peers)
@@ -121,22 +125,32 @@ func (rc *ResourceMgmtClient) JoinChannel(channelID string, options ...resmgmt.O
 		return errors.New("No targets available")
 	}
 
-	channel, err := rc.getChannel(channelID)
+	// TODO: should the code to get orderers from sdk config be part of channel service?
+	oConfig, err := rc.provider.Config().ChannelOrderers(channelID)
 	if err != nil {
-		return errors.WithMessage(err, "get channel failed")
+		return errors.WithMessage(err, "failed to load orderer config")
+	}
+	if len(oConfig) == 0 {
+		return errors.Errorf("no orderers are configured for channel %s", channelID)
 	}
 
-	genesisBlock, err := channel.GenesisBlock()
+	// TODO: handle more than the first orderer.
+	orderer, err := rc.fabricProvider.NewOrdererFromConfig(&oConfig[0])
+	if err != nil {
+		return errors.WithMessage(err, "failed to create orderers from config")
+	}
+
+	genesisBlock, err := rc.resource.GenesisBlockFromOrderer(channelID, orderer)
 	if err != nil {
 		return errors.WithMessage(err, "genesis block retrieval failed")
 	}
 
-	joinChannelRequest := &fab.JoinChannelRequest{
-		Targets:      targets,
+	joinChannelRequest := fab.JoinChannelRequest{
+		Targets:      peersToTxnProcessors(targets),
 		GenesisBlock: genesisBlock,
 	}
 
-	err = channel.JoinChannel(joinChannelRequest)
+	err = rc.resource.JoinChannel(joinChannelRequest)
 	if err != nil {
 		return errors.WithMessage(err, "join channel failed")
 	}
@@ -214,7 +228,7 @@ func (rc *ResourceMgmtClient) isChaincodeInstalled(req resmgmt.InstallCCRequest,
 		return false, err
 	}
 
-	logger.Infof("%v", chaincodeQueryResponse)
+	logger.Debugf("isChaincodeInstalled: %v", chaincodeQueryResponse)
 
 	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
 		if chaincode.Name == req.Name && chaincode.Version == req.Version && chaincode.Path == req.Path {
@@ -295,7 +309,7 @@ func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest, options ..
 
 	for _, v := range transactionProposalResponse {
 
-		logger.Infof("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v, error:'%s'", req.Name, v.Endorser, v.Status, v.Err)
+		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v, error:'%s'", req.Name, v.Endorser, v.Status, v.Err)
 
 		response := resmgmt.InstallCCResponse{Target: v.Endorser, Status: v.Status, Err: v.Err}
 		responses = append(responses, response)
@@ -489,4 +503,14 @@ func createAndSendTransaction(sender fab.Sender, resps []*fab.TransactionProposa
 	}
 
 	return transactionResponse, nil
+}
+
+// peersToTxnProcessors converts a slice of Peers to a slice of ProposalProcessors
+func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
+	tpp := make([]fab.ProposalProcessor, len(peers))
+
+	for i := range peers {
+		tpp[i] = peers[i]
+	}
+	return tpp
 }

@@ -41,6 +41,10 @@ func New(ctx apifabclient.ProviderContext) *FabricProvider {
 	return &f
 }
 
+//
+// TODO - the methods in this package should be Create rather than New.
+//
+
 // NewResourceClient returns a new client initialized for the current instance of the SDK.
 func (f *FabricProvider) NewResourceClient(ic apifabclient.IdentityContext) (apifabclient.Resource, error) {
 	ctx := &fabContext{
@@ -70,12 +74,12 @@ func (f *FabricProvider) NewChannelClient(ic apifabclient.IdentityContext, chann
 		return nil, errors.WithMessage(err, "reading channel orderers failed")
 	}
 
-	for _, ordererCfg := range chOrderers {
-
-		orderer, err := orderer.New(f.providerContext.Config(), orderer.FromOrdererConfig(&ordererCfg))
+	for _, oCfg := range chOrderers {
+		orderer, err := f.NewOrdererFromConfig(&oCfg)
 		if err != nil {
-			return nil, errors.WithMessage(err, "creating orderer failed")
+			return nil, errors.WithMessage(err, "creating orderers from config failed")
 		}
+
 		err = channel.AddOrderer(orderer)
 		if err != nil {
 			return nil, errors.WithMessage(err, "adding orderer failed")
@@ -128,9 +132,6 @@ func (f *FabricProvider) NewCAClient(orgID string) (apifabca.FabricCAClient, err
 	return fabricCAClient.NewFabricCAClient(orgID, f.providerContext.Config(), f.providerContext.CryptoSuite())
 }
 
-/////////////
-// TODO - refactor the below (see if we really need to create these objects from the factory rather than directly)
-
 // NewUser returns a new default implementation of a User.
 func (f *FabricProvider) NewUser(name string, signingIdentity *apifabclient.SigningIdentity) (apifabclient.User, error) {
 
@@ -143,6 +144,8 @@ func (f *FabricProvider) NewUser(name string, signingIdentity *apifabclient.Sign
 }
 
 // NewPeer returns a new default implementation of Peer
+//
+// TODO: This should be FromConfig like the others.
 func (f *FabricProvider) NewPeer(url string, certificate *x509.Certificate, serverHostOverride string) (apifabclient.Peer, error) {
 	return peerImpl.New(f.providerContext.Config(), peerImpl.WithURL(url), peerImpl.WithTLSCert(certificate), peerImpl.WithServerName(serverHostOverride))
 }
@@ -150,4 +153,13 @@ func (f *FabricProvider) NewPeer(url string, certificate *x509.Certificate, serv
 // NewPeerFromConfig returns a new default implementation of Peer based configuration
 func (f *FabricProvider) NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer) (apifabclient.Peer, error) {
 	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg))
+}
+
+// NewOrdererFromConfig creates a default implementation of Orderer based on configuration.
+func (f *FabricProvider) NewOrdererFromConfig(cfg *apiconfig.OrdererConfig) (apifabclient.Orderer, error) {
+	orderer, err := orderer.New(f.providerContext.Config(), orderer.FromOrdererConfig(cfg))
+	if err != nil {
+		return nil, errors.WithMessage(err, "creating orderer failed")
+	}
+	return orderer, nil
 }

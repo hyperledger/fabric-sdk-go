@@ -24,5 +24,6 @@ type FabricProvider interface {
 
 	NewPeer(url string, certificate *x509.Certificate, serverHostOverride string) (apifabclient.Peer, error)
 	NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer) (apifabclient.Peer, error)
+	NewOrdererFromConfig(cfg *apiconfig.OrdererConfig) (apifabclient.Orderer, error)
 	NewUser(name string, signingIdentity *apifabclient.SigningIdentity) (apifabclient.User, error)
 }

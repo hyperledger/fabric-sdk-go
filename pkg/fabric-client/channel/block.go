@@ -11,92 +11,11 @@ import (
 
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/pkg/errors"
 )
-
-// GenesisBlock returns the genesis block from the defined orderer that may be
-// used in a join request
-// request: An object containing the following fields:
-//          `txId` : required - String of the transaction id
-//          `nonce` : required - Integer of the once time number
-//
-// See /protos/peer/proposal_response.proto
-func (c *Channel) GenesisBlock() (*common.Block, error) {
-	logger.Debug("GenesisBlock - start")
-
-	// verify that we have an orderer configured
-	if len(c.Orderers()) == 0 {
-		return nil, errors.New("GenesisBlock missing orderer assigned to this channel for the GenesisBlock request")
-	}
-
-	txnID, err := txn.NewID(c.clientContext)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to calculate transaction id")
-	}
-
-	// now build the seek info , will be used once the channel is created
-	// to get the genesis block back
-	seekStart := newSpecificSeekPosition(0)
-	seekStop := newSpecificSeekPosition(0)
-	seekInfo := &ab.SeekInfo{
-		Start:    seekStart,
-		Stop:     seekStop,
-		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
-	}
-
-	tlsCertHash := ccomm.TLSCertHash(c.clientContext.Config())
-	channelHeaderOpts := txn.ChannelHeaderOpts{
-		ChannelID:   c.Name(),
-		TxnID:       txnID,
-		TLSCertHash: tlsCertHash,
-	}
-	seekInfoHeader, err := txn.CreateChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, channelHeaderOpts)
-	if err != nil {
-		return nil, errors.Wrap(err, "BuildChannelHeader failed")
-	}
-	seekHeader, err := txn.CreateHeader(c.clientContext, seekInfoHeader, txnID)
-	if err != nil {
-		return nil, errors.Wrap(err, "BuildHeader failed")
-	}
-	seekPayload := &common.Payload{
-		Header: seekHeader,
-		Data:   protos_utils.MarshalOrPanic(seekInfo),
-	}
-	seekPayloadBytes := protos_utils.MarshalOrPanic(seekPayload)
-
-	signedEnvelope, err := txn.SignPayload(c.clientContext, seekPayloadBytes)
-	if err != nil {
-		return nil, errors.WithMessage(err, "SignPayload failed")
-	}
-
-	block, err := txn.SendEnvelope(c.clientContext, signedEnvelope, c.Orderers())
-	if err != nil {
-		return nil, errors.WithMessage(err, "SendEnvelope failed")
-	}
-	return block, nil
-}
-
-// createSeekGenesisBlockRequest creates a seek request for block 0 on the specified
-// channel. This request is sent to the ordering service to request blocks
-func createSeekGenesisBlockRequest(channelName string, creator []byte) []byte {
-	return protos_utils.MarshalOrPanic(&common.Payload{
-		Header: &common.Header{
-			ChannelHeader: protos_utils.MarshalOrPanic(&common.ChannelHeader{
-				ChannelId: channelName,
-			}),
-			SignatureHeader: protos_utils.MarshalOrPanic(&common.SignatureHeader{Creator: creator}),
-		},
-		Data: protos_utils.MarshalOrPanic(&ab.SeekInfo{
-			Start:    &ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: 0}}},
-			Stop:     &ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: 0}}},
-			Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
-		}),
-	})
-}
 
 // block retrieves the block at the given position
 func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
@@ -112,7 +31,7 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 	}
 
 	channelHeaderOpts := txn.ChannelHeaderOpts{
-		ChannelID:   c.Name(),
+		ChannelID:   c.name,
 		TxnID:       txnID,
 		TLSCertHash: ccomm.TLSCertHash(c.clientContext.Config()),
 	}
