@@ -9,6 +9,7 @@ package mocks
 // TODO: Move protos to this library
 import (
 	"encoding/pem"
+	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -16,6 +17,7 @@ import (
 
 // MockPeer is a mock fabricsdk.Peer.
 type MockPeer struct {
+	RWLock               *sync.RWMutex
 	Error                error
 	MockName             string
 	MockURL              string
@@ -30,7 +32,7 @@ type MockPeer struct {
 
 // NewMockPeer creates basic mock peer
 func NewMockPeer(name string, url string) *MockPeer {
-	mp := &MockPeer{MockName: name, MockURL: url, Status: 200}
+	mp := &MockPeer{MockName: name, MockURL: url, Status: 200, RWLock: &sync.RWMutex{}}
 	return mp
 }
 
@@ -81,6 +83,10 @@ func (p *MockPeer) URL() string {
 
 // ProcessTransactionProposal does not send anything anywhere but returns an empty mock ProposalResponse
 func (p *MockPeer) ProcessTransactionProposal(tp apifabclient.TransactionProposal) (apifabclient.TransactionProposalResult, error) {
+	if p.RWLock != nil {
+		p.RWLock.Lock()
+		defer p.RWLock.Unlock()
+	}
 	p.ProcessProposalCalls++
 	return apifabclient.TransactionProposalResult{
 		Endorser: p.MockURL,

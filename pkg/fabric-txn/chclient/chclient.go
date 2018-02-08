@@ -20,8 +20,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery/greylist"
 	txnHandlerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
+
+var logger = logging.NewLogger("fabric_sdk_go")
 
 const (
 	defaultHandlerTimeout = time.Second * 10
@@ -110,9 +113,14 @@ func (cc *ChannelClient) resolveRetry(req *chclient.RequestContext, opts chclien
 	if !req.RetryHandler.Required(req.Error) {
 		return false
 	}
+	logger.Infof("Retrying on error %s", req.Error)
+
 	cc.greylist.Greylist(req.Error)
-	// Reset processors
+	// Reset context parameters
 	req.Opts.ProposalProcessors = opts.ProposalProcessors
+	req.Error = nil
+	req.Response = chclient.Response{}
+
 	return true
 }
 

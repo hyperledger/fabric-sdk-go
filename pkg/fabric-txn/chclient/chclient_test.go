@@ -369,20 +369,32 @@ func TestTransactionValidationError(t *testing.T) {
 
 func TestExecuteTxWithRetries(t *testing.T) {
 	testStatus := status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), "test", nil)
+	testResp := []byte("test")
+	retryInterval := 2 * time.Second
 
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
 	testPeer1.Error = testStatus
 	chClient := setupChannelClient([]apifabclient.Peer{testPeer1}, t)
 	retryOpts := retry.DefaultOpts
-	retryOpts.InitialBackoff = 1 * time.Microsecond
+	retryOpts.Attempts = 1
+	retryOpts.BackoffFactor = 1
+	retryOpts.InitialBackoff = retryInterval
 	retryOpts.RetryableCodes = retry.ChannelClientRetryableCodes
 
-	_, err := chClient.Query(chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}},
+	go func() {
+		// Remove peer error condition after retry attempt interval
+		time.Sleep(retryInterval / 2)
+		testPeer1.RWLock.Lock()
+		testPeer1.Error = nil
+		testPeer1.Payload = testResp
+		testPeer1.RWLock.Unlock()
+	}()
+
+	resp, err := chClient.Query(chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}},
 		chclient.WithRetry(retryOpts))
-	if err == nil {
-		t.Fatalf("Should have failed for not success status")
-	}
-	assert.Equal(t, retry.DefaultOpts.Attempts, testPeer1.ProcessProposalCalls-1, "Expected peer to be called (retry attempts + 1) times")
+	assert.Nil(t, err, "expected error to be nil")
+	assert.Equal(t, 2, testPeer1.ProcessProposalCalls, "Expected peer to be called twice")
+	assert.Equal(t, testResp, resp.Payload, "expected correct response")
 }
 
 func TestDiscoveryGreylist(t *testing.T) {
