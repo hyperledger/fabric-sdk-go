@@ -9,9 +9,9 @@ package chpvdr
 import (
 	"sync"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
 
 // ChannelProvider keeps context across ChannelService instances.
@@ -21,12 +21,12 @@ import (
 // TODO: add listener for channel config changes. Upon channel config change,
 // underlying channel services need to recreate their channel clients.
 type ChannelProvider struct {
-	fabricProvider apicore.FabricProvider
+	fabricProvider api.FabricProvider
 	chCfgMap       sync.Map
 }
 
 // New creates a ChannelProvider based on a context
-func New(fabricProvider apicore.FabricProvider) (*ChannelProvider, error) {
+func New(fabricProvider api.FabricProvider) (*ChannelProvider, error) {
 	cp := ChannelProvider{fabricProvider: fabricProvider}
 	return &cp, nil
 }
@@ -73,7 +73,7 @@ func (cp *ChannelProvider) NewChannelService(ic apifabclient.IdentityContext, ch
 // TODO: add cache for channel rather than reconstructing each time.
 type ChannelService struct {
 	provider        *ChannelProvider
-	fabricProvider  apicore.FabricProvider
+	fabricProvider  api.FabricProvider
 	identityContext apifabclient.IdentityContext
 	cfg             apifabclient.ChannelCfg
 }

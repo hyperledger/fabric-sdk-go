@@ -8,10 +8,10 @@ package fabsdk
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
 
@@ -54,7 +54,7 @@ func (c *sdkContext) SelectionProvider() apifabclient.SelectionProvider {
 }
 
 // FabricProvider provides fabric objects such as peer and user
-func (c *sdkContext) FabricProvider() apicore.FabricProvider {
+func (c *sdkContext) FabricProvider() api.FabricProvider {
 	return c.sdk.fabricProvider
 }
 
@@ -136,6 +136,6 @@ func newSession(ic apifabclient.IdentityContext, cp apifabclient.ChannelProvider
 // FabricProvider provides fabric objects such as peer and user
 //
 // TODO: move under Providers()
-func (sdk *FabricSDK) FabricProvider() apicore.FabricProvider {
+func (sdk *FabricSDK) FabricProvider() api.FabricProvider {
 	return sdk.fabricProvider
 }

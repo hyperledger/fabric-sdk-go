@@ -8,7 +8,6 @@ package api
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
@@ -23,7 +22,7 @@ type CoreProviderFactory interface {
 	NewStateStoreProvider(config apiconfig.Config) (kvstore.KVStore, error)
 	NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error)
 	NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error)
-	NewFabricProvider(context fab.ProviderContext) (apicore.FabricProvider, error)
+	NewFabricProvider(context fab.ProviderContext) (FabricProvider, error)
 }
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)

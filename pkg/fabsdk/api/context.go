@@ -8,7 +8,6 @@ package api
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
@@ -26,7 +25,7 @@ type CoreProviders interface {
 	StateStore() kvstore.KVStore
 	Config() apiconfig.Config
 	SigningManager() fab.SigningManager
-	FabricProvider() apicore.FabricProvider
+	FabricProvider() FabricProvider
 }
 
 // SvcProviders represents the SDK configured service providers context.

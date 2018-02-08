@@ -11,12 +11,12 @@ import (
 	"time"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -29,7 +29,7 @@ type ResourceMgmtClient struct {
 	identity          fab.IdentityContext
 	discoveryProvider fab.DiscoveryProvider // used to get per channel discovery service(s)
 	channelProvider   fab.ChannelProvider
-	fabricProvider    apicore.FabricProvider
+	fabricProvider    api.FabricProvider
 	discovery         fab.DiscoveryService // global discovery service (detects all peers on the network)
 	resource          fab.Resource
 	filter            resmgmt.TargetFilter
@@ -60,7 +60,7 @@ type Context struct {
 	fab.IdentityContext
 	DiscoveryProvider fab.DiscoveryProvider
 	ChannelProvider   fab.ChannelProvider
-	FabricProvider    apicore.FabricProvider
+	FabricProvider    api.FabricProvider
 	Resource          fab.Resource
 }
 

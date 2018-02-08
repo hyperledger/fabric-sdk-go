@@ -9,7 +9,6 @@ package fabsdk
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
@@ -32,7 +31,7 @@ type FabricSDK struct {
 	discoveryProvider apifabclient.DiscoveryProvider
 	selectionProvider apifabclient.SelectionProvider
 	signingManager    apifabclient.SigningManager
-	fabricProvider    apicore.FabricProvider
+	fabricProvider    apisdk.FabricProvider
 	channelProvider   *chpvdr.ChannelProvider
 }
 

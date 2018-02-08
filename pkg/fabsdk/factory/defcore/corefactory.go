@@ -8,7 +8,6 @@ package defcore
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
@@ -17,6 +16,7 @@ import (
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
 
@@ -66,7 +66,7 @@ func (f *ProviderFactory) NewSigningManager(cryptoProvider apicryptosuite.Crypto
 }
 
 // NewFabricProvider returns a new default implementation of fabric primitives
-func (f *ProviderFactory) NewFabricProvider(context fab.ProviderContext) (apicore.FabricProvider, error) {
+func (f *ProviderFactory) NewFabricProvider(context fab.ProviderContext) (api.FabricProvider, error) {
 	return fabpvdr.New(context), nil
 }
 

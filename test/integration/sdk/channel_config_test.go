@@ -10,11 +10,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -146,7 +146,7 @@ func (f *CustomFabricProvider) CreateChannelConfig(ic apifabclient.IdentityConte
 }
 
 // NewFabricProvider returns a new default implementation of fabric primitives
-func (f *ChannelConfigFromOrdererProviderFactory) NewFabricProvider(context apifabclient.ProviderContext) (apicore.FabricProvider, error) {
+func (f *ChannelConfigFromOrdererProviderFactory) NewFabricProvider(context apifabclient.ProviderContext) (api.FabricProvider, error) {
 
 	fabProvider := fabpvdr.New(context)
 

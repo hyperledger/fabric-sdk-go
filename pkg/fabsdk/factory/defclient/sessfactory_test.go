@@ -11,11 +11,11 @@ package defclient
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
@@ -127,7 +127,7 @@ type mockProviders struct {
 	StateStore        kvstore.KVStore
 	Config            apiconfig.Config
 	SigningManager    apifabclient.SigningManager
-	FabricProvider    apicore.FabricProvider
+	FabricProvider    api.FabricProvider
 	DiscoveryProvider apifabclient.DiscoveryProvider
 	SelectionProvider apifabclient.SelectionProvider
 	ChannelProvider   apifabclient.ChannelProvider

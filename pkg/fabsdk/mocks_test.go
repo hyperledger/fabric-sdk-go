@@ -8,7 +8,6 @@ package fabsdk
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
@@ -26,7 +25,7 @@ type mockCorePkg struct {
 	stateStore     kvstore.KVStore
 	cryptoSuite    apicryptosuite.CryptoSuite
 	signingManager apifabclient.SigningManager
-	fabricProvider apicore.FabricProvider
+	fabricProvider apisdk.FabricProvider
 }
 
 func newMockCorePkg(config apiconfig.Config) (*mockCorePkg, error) {
@@ -76,7 +75,7 @@ func (mc *mockCorePkg) NewSigningManager(cryptoProvider apicryptosuite.CryptoSui
 	return mc.signingManager, nil
 }
 
-func (mc *mockCorePkg) NewFabricProvider(ctx apifabclient.ProviderContext) (apicore.FabricProvider, error) {
+func (mc *mockCorePkg) NewFabricProvider(ctx apifabclient.ProviderContext) (apisdk.FabricProvider, error) {
 	return mc.fabricProvider, nil
 }
 

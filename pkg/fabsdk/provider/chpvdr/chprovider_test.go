@@ -9,11 +9,11 @@ package chpvdr
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
@@ -95,7 +95,7 @@ func (f *MockFabricProvider) CreateChannelClient(ic apifabclient.IdentityContext
 }
 
 // NewFabricProvider mocks new default implementation of fabric primitives
-func (f *MockProviderFactory) NewFabricProvider(context apifabclient.ProviderContext) (apicore.FabricProvider, error) {
+func (f *MockProviderFactory) NewFabricProvider(context apifabclient.ProviderContext) (api.FabricProvider, error) {
 	fabProvider := fabpvdr.New(context)
 
 	cfp := MockFabricProvider{
