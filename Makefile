@@ -124,9 +124,6 @@ FABRIC_TOOLS_DEVSTABLE_TAG  := DEV_STABLE
 # The version of dep that will be installed by depend-install (or in the CI)
 GO_DEP_COMMIT := v0.4.1
 
-# The version of mockgen that will be installed by depend-install
-GO_MOCKGEN_COMMIT := v1.0.0
-
 # Detect CI
 # TODO introduce nightly and adjust verify
 ifdef JENKINS_URL
