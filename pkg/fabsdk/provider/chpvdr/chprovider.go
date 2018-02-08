@@ -11,6 +11,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 )
 
 // ChannelProvider keeps context across ChannelService instances.
@@ -34,21 +35,26 @@ func New(fabricProvider apicore.FabricProvider) (*ChannelProvider, error) {
 func (cp *ChannelProvider) NewChannelService(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelService, error) {
 
 	var cfg apifabclient.ChannelCfg
-	v, ok := cp.chCfgMap.Load(channelID)
-	if !ok {
-		p, err := cp.fabricProvider.NewChannelConfig(ic, channelID)
-		if err != nil {
-			return nil, err
-		}
+	if channelID != "" {
+		v, ok := cp.chCfgMap.Load(channelID)
+		if !ok {
+			p, err := cp.fabricProvider.NewChannelConfig(ic, channelID)
+			if err != nil {
+				return nil, err
+			}
 
-		cfg, err = p.Query()
-		if err != nil {
-			return nil, err
-		}
+			cfg, err = p.Query()
+			if err != nil {
+				return nil, err
+			}
 
-		cp.chCfgMap.Store(channelID, cfg)
+			cp.chCfgMap.Store(channelID, cfg)
+		} else {
+			cfg = v.(apifabclient.ChannelCfg)
+		}
 	} else {
-		cfg = v.(apifabclient.ChannelCfg)
+		// System channel
+		cfg = chconfig.NewChannelCfg("")
 	}
 
 	cs := ChannelService{
