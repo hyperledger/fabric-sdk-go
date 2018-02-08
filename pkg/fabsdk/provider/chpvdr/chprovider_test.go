@@ -44,6 +44,17 @@ func TestBasicValidChannel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}
+
+	// System channel
+	channelService, err = cp.NewChannelService(user, "")
+	if err != nil {
+		t.Fatalf("Unexpected error creating Channel Service: %v", err)
+	}
+
+	_, err = channelService.Channel()
+	if err != nil {
+		t.Fatalf("Unexpected error creating Channel Service: %v", err)
+	}
 }
 
 // MockProviderFactory is configured to retrieve channel config from orderer
