@@ -184,6 +184,8 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 		t.Fatalf("Unexpected error reading config: %v", err)
 	}
 	sampleConfig := configProvider.(*Config)
+
+	sampleConfig.networkConfigCached = false
 	sampleConfig.configViper.Set("client", "INVALID")
 	sampleConfig.configViper.Set("peers", "INVALID")
 	sampleConfig.configViper.Set("organizations", "INVALID")
