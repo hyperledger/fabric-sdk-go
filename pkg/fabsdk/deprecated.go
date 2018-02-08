@@ -138,5 +138,5 @@ func (sdk *FabricSDK) newSessionFromIdentityName(orgID string, id string) (*sess
 //
 // Deprecated: the system client is being replaced with the interfaces supplied by NewClient()
 func (sdk *FabricSDK) NewSystemClient(s apisdk.SessionContext) (apifabclient.Resource, error) {
-	return sdk.FabricProvider().NewResourceClient(s)
+	return sdk.FabricProvider().CreateResourceClient(s)
 }

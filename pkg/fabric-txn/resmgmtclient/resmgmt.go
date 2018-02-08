@@ -140,7 +140,7 @@ func (rc *ResourceMgmtClient) JoinChannel(channelID string, options ...resmgmt.O
 	}
 
 	// TODO: handle more than the first orderer.
-	orderer, err := rc.fabricProvider.NewOrdererFromConfig(&oConfig[0])
+	orderer, err := rc.fabricProvider.CreateOrdererFromConfig(&oConfig[0])
 	if err != nil {
 		return errors.WithMessage(err, "failed to create orderers from config")
 	}

@@ -266,7 +266,7 @@ func (sdk *FabricSDK) newUser(orgID string, userName string) (apifabclient.Ident
 		return nil, errors.WithMessage(err, "failed to get signing identity")
 	}
 
-	user, err := sdk.fabricProvider.NewUser(userName, signingIdentity)
+	user, err := sdk.fabricProvider.CreateUser(userName, signingIdentity)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewPreEnrolledUser returned error")
 	}

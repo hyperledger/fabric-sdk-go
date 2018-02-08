@@ -38,7 +38,7 @@ func (cp *ChannelProvider) NewChannelService(ic apifabclient.IdentityContext, ch
 	if channelID != "" {
 		v, ok := cp.chCfgMap.Load(channelID)
 		if !ok {
-			p, err := cp.fabricProvider.NewChannelConfig(ic, channelID)
+			p, err := cp.fabricProvider.CreateChannelConfig(ic, channelID)
 			if err != nil {
 				return nil, err
 			}
@@ -80,15 +80,15 @@ type ChannelService struct {
 
 // Channel returns the named Channel client.
 func (cs *ChannelService) Channel() (apifabclient.Channel, error) {
-	return cs.fabricProvider.NewChannelClient(cs.identityContext, cs.cfg)
+	return cs.fabricProvider.CreateChannelClient(cs.identityContext, cs.cfg)
 }
 
 // EventHub returns the EventHub for the named channel.
 func (cs *ChannelService) EventHub() (apifabclient.EventHub, error) {
-	return cs.fabricProvider.NewEventHub(cs.identityContext, cs.cfg.Name())
+	return cs.fabricProvider.CreateEventHub(cs.identityContext, cs.cfg.Name())
 }
 
 // ChannelConfig returns the ChannelConfig for the named channel
 func (cs *ChannelService) ChannelConfig() (apifabclient.ChannelConfig, error) {
-	return cs.fabricProvider.NewChannelConfig(cs.identityContext, cs.cfg.Name())
+	return cs.fabricProvider.CreateChannelConfig(cs.identityContext, cs.cfg.Name())
 }

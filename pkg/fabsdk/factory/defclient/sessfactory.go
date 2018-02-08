@@ -32,7 +32,7 @@ func NewSessionClientFactory() *SessionClientFactory {
 // NewChannelMgmtClient returns a client that manages channels (create/join channel)
 func (f *SessionClientFactory) NewChannelMgmtClient(providers apisdk.Providers, session apisdk.SessionContext) (apichmgmt.ChannelMgmtClient, error) {
 	// For now settings are the same as for system client
-	resource, err := providers.FabricProvider().NewResourceClient(session)
+	resource, err := providers.FabricProvider().CreateResourceClient(session)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (f *SessionClientFactory) NewChannelMgmtClient(providers apisdk.Providers, 
 func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers, session apisdk.SessionContext, filter apiresmgmt.TargetFilter) (apiresmgmt.ResourceMgmtClient, error) {
 
 	fabProvider := providers.FabricProvider()
-	resource, err := fabProvider.NewResourceClient(session)
+	resource, err := fabProvider.CreateResourceClient(session)
 	if err != nil {
 		return nil, err
 	}

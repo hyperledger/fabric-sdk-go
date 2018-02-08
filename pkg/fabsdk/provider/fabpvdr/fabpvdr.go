@@ -7,8 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package fabpvdr
 
 import (
-	"crypto/x509"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -41,12 +39,8 @@ func New(ctx apifabclient.ProviderContext) *FabricProvider {
 	return &f
 }
 
-//
-// TODO - the methods in this package should be Create rather than New.
-//
-
-// NewResourceClient returns a new client initialized for the current instance of the SDK.
-func (f *FabricProvider) NewResourceClient(ic apifabclient.IdentityContext) (apifabclient.Resource, error) {
+// CreateResourceClient returns a new client initialized for the current instance of the SDK.
+func (f *FabricProvider) CreateResourceClient(ic apifabclient.IdentityContext) (apifabclient.Resource, error) {
 	ctx := &fabContext{
 		ProviderContext: f.providerContext,
 		IdentityContext: ic,
@@ -56,8 +50,8 @@ func (f *FabricProvider) NewResourceClient(ic apifabclient.IdentityContext) (api
 	return client, nil
 }
 
-// NewChannelClient returns a new client initialized for the current instance of the SDK.
-func (f *FabricProvider) NewChannelClient(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
+// CreateChannelClient returns a new client initialized for the current instance of the SDK.
+func (f *FabricProvider) CreateChannelClient(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
 	ctx := &fabContext{
 		ProviderContext: f.providerContext,
 		IdentityContext: ic,
@@ -70,8 +64,8 @@ func (f *FabricProvider) NewChannelClient(ic apifabclient.IdentityContext, cfg a
 	return channel, nil
 }
 
-// NewEventHub initilizes the event hub.
-func (f *FabricProvider) NewEventHub(ic apifabclient.IdentityContext, channelID string) (apifabclient.EventHub, error) {
+// CreateEventHub initilizes the event hub.
+func (f *FabricProvider) CreateEventHub(ic apifabclient.IdentityContext, channelID string) (apifabclient.EventHub, error) {
 	peerConfig, err := f.providerContext.Config().ChannelPeers(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "read configuration for channel peers failed")
@@ -97,8 +91,8 @@ func (f *FabricProvider) NewEventHub(ic apifabclient.IdentityContext, channelID 
 	return events.FromConfig(eventCtx, &eventSource.PeerConfig)
 }
 
-// NewChannelConfig initializes the channel config
-func (f *FabricProvider) NewChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
+// CreateChannelConfig initializes the channel config
+func (f *FabricProvider) CreateChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
 
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
@@ -108,13 +102,13 @@ func (f *FabricProvider) NewChannelConfig(ic apifabclient.IdentityContext, chann
 	return chconfig.New(ctx, channelID)
 }
 
-// NewCAClient returns a new FabricCAClient initialized for the current instance of the SDK.
-func (f *FabricProvider) NewCAClient(orgID string) (apifabca.FabricCAClient, error) {
+// CreateCAClient returns a new FabricCAClient initialized for the current instance of the SDK.
+func (f *FabricProvider) CreateCAClient(orgID string) (apifabca.FabricCAClient, error) {
 	return fabricCAClient.NewFabricCAClient(orgID, f.providerContext.Config(), f.providerContext.CryptoSuite())
 }
 
-// NewUser returns a new default implementation of a User.
-func (f *FabricProvider) NewUser(name string, signingIdentity *apifabclient.SigningIdentity) (apifabclient.User, error) {
+// CreateUser returns a new default implementation of a User.
+func (f *FabricProvider) CreateUser(name string, signingIdentity *apifabclient.SigningIdentity) (apifabclient.User, error) {
 
 	user := identityImpl.NewUser(name, signingIdentity.MspID)
 
@@ -124,20 +118,13 @@ func (f *FabricProvider) NewUser(name string, signingIdentity *apifabclient.Sign
 	return user, nil
 }
 
-// NewPeer returns a new default implementation of Peer
-//
-// TODO: This should be FromConfig like the others.
-func (f *FabricProvider) NewPeer(url string, certificate *x509.Certificate, serverHostOverride string) (apifabclient.Peer, error) {
-	return peerImpl.New(f.providerContext.Config(), peerImpl.WithURL(url), peerImpl.WithTLSCert(certificate), peerImpl.WithServerName(serverHostOverride))
-}
-
-// NewPeerFromConfig returns a new default implementation of Peer based configuration
-func (f *FabricProvider) NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer) (apifabclient.Peer, error) {
+// CreatePeerFromConfig returns a new default implementation of Peer based configuration
+func (f *FabricProvider) CreatePeerFromConfig(peerCfg *apiconfig.NetworkPeer) (apifabclient.Peer, error) {
 	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg))
 }
 
-// NewOrdererFromConfig creates a default implementation of Orderer based on configuration.
-func (f *FabricProvider) NewOrdererFromConfig(cfg *apiconfig.OrdererConfig) (apifabclient.Orderer, error) {
+// CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.
+func (f *FabricProvider) CreateOrdererFromConfig(cfg *apiconfig.OrdererConfig) (apifabclient.Orderer, error) {
 	orderer, err := orderer.New(f.providerContext.Config(), orderer.FromOrdererConfig(cfg))
 	if err != nil {
 		return nil, errors.WithMessage(err, "creating orderer failed")

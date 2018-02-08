@@ -64,12 +64,12 @@ type MockProviderFactory struct {
 
 // CustomFabricProvider overrides channel config default implementation
 type MockFabricProvider struct {
-	fabpvdr.FabricProvider
+	*fabpvdr.FabricProvider
 	providerContext apifabclient.ProviderContext
 }
 
-// NewChannelConfig initializes the channel config
-func (f *MockFabricProvider) NewChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
+// CreateChannelConfig initializes the channel config
+func (f *MockFabricProvider) CreateChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
 
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
@@ -80,7 +80,8 @@ func (f *MockFabricProvider) NewChannelConfig(ic apifabclient.IdentityContext, c
 
 }
 
-func (f *MockFabricProvider) NewChannelClient(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
+// CreateChannelClient overrides the default.
+func (f *MockFabricProvider) CreateChannelClient(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
 		IdentityContext: ic,
@@ -95,8 +96,10 @@ func (f *MockFabricProvider) NewChannelClient(ic apifabclient.IdentityContext, c
 
 // NewFabricProvider mocks new default implementation of fabric primitives
 func (f *MockProviderFactory) NewFabricProvider(context apifabclient.ProviderContext) (apicore.FabricProvider, error) {
+	fabProvider := fabpvdr.New(context)
 
 	cfp := MockFabricProvider{
+		FabricProvider:  fabProvider,
 		providerContext: context,
 	}
 	return &cfp, nil

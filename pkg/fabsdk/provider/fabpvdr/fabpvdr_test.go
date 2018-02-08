@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
@@ -24,11 +23,11 @@ func TestNewFabricProvider(t *testing.T) {
 	newMockFabricProvider(t)
 }
 
-func TestNewChannelClient(t *testing.T) {
+func TestCreateChannelClient(t *testing.T) {
 	p := newMockFabricProvider(t)
 
 	user := mocks.NewMockUser("user")
-	client, err := p.NewChannelClient(user, mocks.NewMockChannelCfg("mychannel"))
+	client, err := p.CreateChannelClient(user, mocks.NewMockChannelCfg("mychannel"))
 	if err != nil {
 		t.Fatalf("Unexpected error creating client %v", err)
 	}
@@ -39,11 +38,11 @@ func TestNewChannelClient(t *testing.T) {
 	}
 }
 
-func TestNewResourceClient(t *testing.T) {
+func TestCreateResourceClient(t *testing.T) {
 	p := newMockFabricProvider(t)
 
 	user := mocks.NewMockUser("user")
-	client, err := p.NewResourceClient(user)
+	client, err := p.CreateResourceClient(user)
 	if err != nil {
 		t.Fatalf("Unexpected error creating client %v", err)
 	}
@@ -54,12 +53,12 @@ func TestNewResourceClient(t *testing.T) {
 	}
 }
 
-func TestNewCAClient(t *testing.T) {
+func TestCreateCAClient(t *testing.T) {
 	p := newMockFabricProvider(t)
 
 	org := "org1"
 
-	client, err := p.NewCAClient(org)
+	client, err := p.CreateCAClient(org)
 	if err != nil {
 		t.Fatalf("Unexpected error creating client %v", err)
 	}
@@ -83,19 +82,6 @@ func TestNewCAClient(t *testing.T) {
 	}
 }
 
-func TestNewPeer(t *testing.T) {
-	p := newMockFabricProvider(t)
-
-	url := "grpcs://localhost:8080"
-
-	peer, err := p.NewPeer(url, mock_apiconfig.GoodCert, "")
-	if err != nil {
-		t.Fatalf("Unexpected error creating peer %v", err)
-	}
-
-	verifyPeer(t, peer, url)
-}
-
 func verifyPeer(t *testing.T, peer apifabclient.Peer, url string) {
 	_, ok := peer.(*peerImpl.Peer)
 	if !ok {
@@ -110,7 +96,7 @@ func verifyPeer(t *testing.T, peer apifabclient.Peer, url string) {
 	}
 }
 
-func TestNewPeerFromConfig(t *testing.T) {
+func TestCreatePeerFromConfig(t *testing.T) {
 	p := newMockFabricProvider(t)
 
 	url := "grpc://localhost:8080"
@@ -121,7 +107,7 @@ func TestNewPeerFromConfig(t *testing.T) {
 		},
 	}
 
-	peer, err := p.NewPeerFromConfig(&peerCfg)
+	peer, err := p.CreatePeerFromConfig(&peerCfg)
 
 	if err != nil {
 		t.Fatalf("Unexpected error creating peer %v", err)
@@ -130,7 +116,7 @@ func TestNewPeerFromConfig(t *testing.T) {
 	verifyPeer(t, peer, url)
 }
 
-func TestNewUser(t *testing.T) {
+func TestCreateUser(t *testing.T) {
 	org := "org1"
 
 	p := newMockFabricProvider(t)
@@ -144,7 +130,7 @@ func TestNewUser(t *testing.T) {
 		t.Fatalf("Unexpected error getting signing identity %v", err)
 	}
 
-	user, err := p.NewUser("user", signingIdentity)
+	user, err := p.CreateUser("user", signingIdentity)
 	if err != nil {
 		t.Fatalf("Unexpected error getting user %v", err)
 	}

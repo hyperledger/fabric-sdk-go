@@ -130,14 +130,13 @@ type ChannelConfigFromOrdererProviderFactory struct {
 
 // CustomFabricProvider overrides channel config default implementation
 type CustomFabricProvider struct {
-	fabpvdr.FabricProvider
+	*fabpvdr.FabricProvider
 	orderer         string
 	providerContext apifabclient.ProviderContext
 }
 
-// NewChannelConfig initializes the channel config
-func (f *CustomFabricProvider) NewChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
-
+// CreateChannelConfig initializes the channel config
+func (f *CustomFabricProvider) CreateChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
 		IdentityContext: ic,
@@ -149,7 +148,10 @@ func (f *CustomFabricProvider) NewChannelConfig(ic apifabclient.IdentityContext,
 // NewFabricProvider returns a new default implementation of fabric primitives
 func (f *ChannelConfigFromOrdererProviderFactory) NewFabricProvider(context apifabclient.ProviderContext) (apicore.FabricProvider, error) {
 
+	fabProvider := fabpvdr.New(context)
+
 	cfp := CustomFabricProvider{
+		FabricProvider:  fabProvider,
 		providerContext: context,
 		orderer:         f.orderer,
 	}
