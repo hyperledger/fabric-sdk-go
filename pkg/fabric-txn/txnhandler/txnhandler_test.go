@@ -23,10 +23,12 @@ import (
 )
 
 const (
-	testTimeOut           = 20 * time.Second
-	discoveryServiceError = "Discovery service error"
-	selectionServiceError = "Selection service error"
-	filterTxError         = "Filter Tx error"
+	testTimeOut              = 20 * time.Second
+	discoveryServiceError    = "Discovery service error"
+	selectionServiceError    = "Selection service error"
+	endorsementMisMatchError = "ProposalResponsePayloads do not match"
+
+	filterTxError = "Filter Tx error"
 )
 
 func TestQueryHandlerSuccess(t *testing.T) {
@@ -36,7 +38,11 @@ func TestQueryHandlerSuccess(t *testing.T) {
 
 	//Prepare context objects for handler
 	requestContext := prepareRequestContext(request, chclient.Opts{}, t)
-	clientContext := setupChannelClientContext(nil, nil, nil, t)
+
+	mockPeer1 := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200, Payload: []byte("value")}
+	mockPeer2 := &fcmocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200, Payload: []byte("value")}
+
+	clientContext := setupChannelClientContext(nil, nil, []apifabclient.Peer{mockPeer1, mockPeer2}, t)
 
 	//Get query handler
 	queryHandler := NewQueryHandler()
@@ -54,7 +60,11 @@ func TestExecuteTxHandlerSuccess(t *testing.T) {
 
 	//Prepare context objects for handler
 	requestContext := prepareRequestContext(request, chclient.Opts{}, t)
-	clientContext := setupChannelClientContext(nil, nil, nil, t)
+
+	mockPeer1 := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200, Payload: []byte("value")}
+	mockPeer2 := &fcmocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200, Payload: []byte("value")}
+
+	clientContext := setupChannelClientContext(nil, nil, []apifabclient.Peer{mockPeer1, mockPeer2}, t)
 
 	//Prepare mock eventhub
 	mockEventHub := fcmocks.NewMockEventHub()
@@ -101,6 +111,44 @@ func TestQueryHandlerErrors(t *testing.T) {
 	queryHandler.Handle(requestContext, clientContext)
 	if requestContext.Error == nil || !strings.Contains(requestContext.Error.Error(), selectionServiceError) {
 		t.Fatal("Expected error: ", selectionServiceError, ", Received error:", requestContext.Error.Error())
+	}
+
+	//Error Scenario 3 different payload return
+	mockPeer1 := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200,
+		Payload: []byte("value")}
+	mockPeer2 := &fcmocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200,
+		Payload: []byte("value1")}
+
+	clientContext = setupChannelClientContext(nil, nil, []apifabclient.Peer{mockPeer1, mockPeer2}, t)
+
+	//Perform action through handler
+	queryHandler.Handle(requestContext, clientContext)
+	if requestContext.Error == nil || !strings.Contains(requestContext.Error.Error(), endorsementMisMatchError) {
+		t.Fatal("Expected error: ", endorsementMisMatchError, ", Received error:", requestContext.Error.Error())
+	}
+}
+
+func TestExecuteTxHandlerErrors(t *testing.T) {
+
+	//Sample request
+	request := chclient.Request{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}}
+
+	//Prepare context objects for handler
+	requestContext := prepareRequestContext(request, chclient.Opts{}, t)
+
+	mockPeer1 := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP",
+		Status: 200, Payload: []byte("value")}
+	mockPeer2 := &fcmocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP",
+		Status: 200, Payload: []byte("value1")}
+
+	clientContext := setupChannelClientContext(nil, nil, []apifabclient.Peer{mockPeer1, mockPeer2}, t)
+
+	//Get query handler
+	executeHandler := NewExecuteHandler()
+	//Perform action through handler
+	executeHandler.Handle(requestContext, clientContext)
+	if requestContext.Error == nil || !strings.Contains(requestContext.Error.Error(), endorsementMisMatchError) {
+		t.Fatal("Expected error: ", endorsementMisMatchError, ", Received error:", requestContext.Error.Error())
 	}
 }
 

@@ -95,6 +95,20 @@ func TestQuery(t *testing.T) {
 		t.Fatalf("Expecting nil, got %s", response.Payload)
 	}
 
+	// Test return different payload
+	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
+	testPeer1.Payload = []byte("test1")
+	testPeer2 := fcmocks.NewMockPeer("Peer2", "http://peer2.com")
+	testPeer2.Payload = []byte("test2")
+	chClient = setupChannelClient([]apifabclient.Peer{testPeer1, testPeer2}, t)
+	_, err = chClient.Query(chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
+		t.Fatalf("Should have failed")
+	}
+	s, ok := status.FromError(err)
+	assert.True(t, ok, "expected status error")
+	assert.EqualValues(t, status.EndorsementMismatch.ToInt32(), s.Code, "expected mismatch error")
+
 }
 
 func TestQueryDiscoveryError(t *testing.T) {
@@ -187,7 +201,22 @@ func TestExecuteTx(t *testing.T) {
 		t.Fatalf("Should have failed for empty function")
 	}
 
+	// Test return different payload
+	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
+	testPeer1.Payload = []byte("test1")
+	testPeer2 := fcmocks.NewMockPeer("Peer2", "http://peer2.com")
+	testPeer2.Payload = []byte("test2")
+	chClient = setupChannelClient([]apifabclient.Peer{testPeer1, testPeer2}, t)
+	_, err = chClient.Execute(chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("b")}})
+	if err == nil {
+		t.Fatalf("Should have failed")
+	}
+	s, ok := status.FromError(err)
+	assert.True(t, ok, "expected status error")
+	assert.EqualValues(t, status.EndorsementMismatch.ToInt32(), s.Code, "expected mismatch error")
+
 	// TODO: Test Valid Scenario with mocks
+
 }
 
 type customHandler struct {
