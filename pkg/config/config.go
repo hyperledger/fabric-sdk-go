@@ -207,6 +207,10 @@ func initConfig(c *Config) (*Config, error) {
 	}
 	c.tlsCertPool = tlsCertPool
 
+	if err = c.cacheNetworkConfiguration(); err != nil {
+		return nil, errors.WithMessage(err, "network configuration load failed")
+	}
+
 	logger.Infof("config %s logging level is set to: %s", logModule, lu.LogLevelString(logging.GetLevel(logModule)))
 	return c, nil
 }
@@ -481,45 +485,46 @@ func (c *Config) MspID(org string) (string, error) {
 }
 
 func (c *Config) cacheNetworkConfiguration() error {
-	c.networkConfig = new(apiconfig.NetworkConfig)
-	c.networkConfig.Name = c.configViper.GetString("name")
-	c.networkConfig.Xtype = c.configViper.GetString("x-type")
-	c.networkConfig.Description = c.configViper.GetString("description")
-	c.networkConfig.Version = c.configViper.GetString("version")
+	networkConfig := apiconfig.NetworkConfig{}
+	networkConfig.Name = c.configViper.GetString("name")
+	networkConfig.Xtype = c.configViper.GetString("x-type")
+	networkConfig.Description = c.configViper.GetString("description")
+	networkConfig.Version = c.configViper.GetString("version")
 
-	err := c.configViper.UnmarshalKey("client", &c.networkConfig.Client)
-	logger.Debugf("Client is: %+v", c.networkConfig.Client)
+	err := c.configViper.UnmarshalKey("client", &networkConfig.Client)
+	logger.Debugf("Client is: %+v", networkConfig.Client)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("channels", &c.networkConfig.Channels)
-	logger.Debugf("channels are: %+v", c.networkConfig.Channels)
+	err = c.configViper.UnmarshalKey("channels", &networkConfig.Channels)
+	logger.Debugf("channels are: %+v", networkConfig.Channels)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("organizations", &c.networkConfig.Organizations)
-	logger.Debugf("organizations are: %+v", c.networkConfig.Organizations)
+	err = c.configViper.UnmarshalKey("organizations", &networkConfig.Organizations)
+	logger.Debugf("organizations are: %+v", networkConfig.Organizations)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("orderers", &c.networkConfig.Orderers)
-	logger.Debugf("orderers are: %+v", c.networkConfig.Orderers)
+	err = c.configViper.UnmarshalKey("orderers", &networkConfig.Orderers)
+	logger.Debugf("orderers are: %+v", networkConfig.Orderers)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("peers", &c.networkConfig.Peers)
-	logger.Debugf("peers are: %+v", c.networkConfig.Peers)
+	err = c.configViper.UnmarshalKey("peers", &networkConfig.Peers)
+	logger.Debugf("peers are: %+v", networkConfig.Peers)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("certificateAuthorities", &c.networkConfig.CertificateAuthorities)
-	logger.Debugf("certificateAuthorities are: %+v", c.networkConfig.CertificateAuthorities)
+	err = c.configViper.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
+	logger.Debugf("certificateAuthorities are: %+v", networkConfig.CertificateAuthorities)
 	if err != nil {
 		return err
 	}
 
+	c.networkConfig = &networkConfig
 	c.networkConfigCached = true
-	return err
+	return nil
 }
 
 // OrderersConfig returns a list of defined orderers
