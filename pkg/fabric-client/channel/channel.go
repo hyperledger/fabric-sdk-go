@@ -7,10 +7,17 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"strings"
-
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
+	"crypto/x509"
+
+	"encoding/pem"
+
+	"strings"
+
+	"regexp"
+
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -60,6 +67,16 @@ func New(ctx fab.Context, cfg fab.ChannelCfg) (*Channel, error) {
 		if err := mspManager.Setup(msps); err != nil {
 			return nil, errors.WithMessage(err, "MSPManager Setup failed")
 		}
+
+		for _, msp := range msps {
+			for _, cert := range msp.GetTLSRootCerts() {
+				addCertsToConfig(ctx.Config(), cert)
+			}
+
+			for _, cert := range msp.GetTLSIntermediateCerts() {
+				addCertsToConfig(ctx.Config(), cert)
+			}
+		}
 	}
 
 	c.mspManager = mspManager
@@ -67,24 +84,19 @@ func New(ctx fab.Context, cfg fab.ChannelCfg) (*Channel, error) {
 
 	// Add orderer if specified in config
 	for _, name := range cfg.Orderers() {
-
-		oID := name
-
-		// TODO: Temporary until full orderer config is retrieved
-		s := strings.Split(name, ":")
-		if len(s) > 1 {
-			oID = s[0]
+		//Get orderer config by orderer address
+		oCfg, err := getOrdererConfig(ctx.Config(), name)
+		if err != nil {
+			return nil, errors.Errorf("failed to retrieve orderer config...: %s", err)
 		}
 
-		// Figure out orderer configuration
-		oCfg, err := ctx.Config().OrdererConfig(oID)
-
-		// Check if retrieving orderer configuration went ok
-		if err != nil || oCfg == nil {
-			return nil, errors.Errorf("failed to retrieve orderer config: %s", err)
+		var o *orderer.Orderer
+		if oCfg == nil {
+			o, err = orderer.New(ctx.Config(), orderer.WithURL(resolveOrdererURL(name)), orderer.WithServerName(resolveOrdererAddress(name)))
+		} else {
+			o, err = orderer.New(ctx.Config(), orderer.FromOrdererConfig(oCfg))
 		}
 
-		o, err := orderer.New(ctx.Config(), orderer.FromOrdererConfig(oCfg))
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to create new orderer from config")
 		}
@@ -272,4 +284,46 @@ func (c *Channel) IsReadonly() bool {
 // IsInitialized ... TODO
 func (c *Channel) IsInitialized() bool {
 	return c.initialized
+}
+
+//addCertsToConfig adds cert bytes to config TLSCACertPool
+func addCertsToConfig(config apiconfig.Config, pemCerts []byte) {
+	for len(pemCerts) > 0 {
+		var block *pem.Block
+		block, pemCerts = pem.Decode(pemCerts)
+		if block == nil {
+			break
+		}
+		if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+			continue
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			continue
+		}
+		config.TLSCACertPool(cert)
+	}
+}
+
+// getOrdererConfig returns ordererconfig for given ordererAddress (ports will be ignored)
+func getOrdererConfig(config apiconfig.Config, ordererAddress string) (*apiconfig.OrdererConfig, error) {
+	return config.OrdererConfig(resolveOrdererAddress(ordererAddress))
+}
+
+// resolveOrdererAddress resolves order address to remove port from address if present
+func resolveOrdererAddress(ordererAddress string) string {
+	s := strings.Split(ordererAddress, ":")
+	if len(s) > 1 {
+		return s[0]
+	}
+	return ordererAddress
+}
+
+// resolveOrdererURL resolves order URL to prefix protocol if not present
+func resolveOrdererURL(ordererURL string) string {
+	if ok, err := regexp.MatchString(".*://", ordererURL); ok && err == nil {
+		return ordererURL
+	}
+	return "grpcs://" + ordererURL
 }
