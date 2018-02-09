@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/stretchr/testify/assert"
 
@@ -488,7 +489,18 @@ func setupTestChannel() (*channel.Channel, error) {
 
 func setupChannel(channelID string) (*channel.Channel, error) {
 	ctx := setupTestContext()
-	return channel.New(ctx, fcmocks.NewMockChannelCfg(channelID))
+	channel, err := channel.New(ctx, fcmocks.NewMockChannelCfg(channelID))
+	if err != nil {
+		return nil, err
+	}
+	// Add mock msp to msp manager
+	msps := make(map[string]msp.MSP)
+	msps["Org1MSP"] = fcmocks.NewMockMSP(nil)
+	mspMgr := fcmocks.NewMockMSPManager(msps)
+
+	channel.SetMSPManager(mspMgr)
+
+	return channel, nil
 }
 
 func setupTestContext() apifabclient.Context {

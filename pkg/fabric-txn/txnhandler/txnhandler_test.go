@@ -17,6 +17,8 @@ import (
 
 	"strings"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/mocks"
@@ -239,6 +241,12 @@ func setupChannelClientContext(discErr error, selectionErr error, peers []apifab
 	if err != nil {
 		t.Fatalf("Failed to setup test channel: %s", err)
 	}
+
+	// Add mock msp to msp manager
+	msps := make(map[string]msp.MSP)
+	msps["Org1MSP"] = fcmocks.NewMockMSP(nil)
+
+	testChannel.SetMSPManager(fcmocks.NewMockMSPManager(msps))
 
 	orderer := fcmocks.NewMockOrderer("", nil)
 	testChannel.AddOrderer(orderer)
