@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
@@ -175,7 +176,9 @@ func (c *CommitTxHandler) Handle(requestContext *chclient.RequestContext, client
 func NewQueryHandler(next ...chclient.Handler) chclient.Handler {
 	return NewProposalProcessorHandler(
 		NewEndorsementHandler(
-			NewEndorsementValidationHandler(next...),
+			NewEndorsementValidationHandler(
+				NewSignatureValidationHandler(next...),
+			),
 		),
 	)
 }
@@ -184,7 +187,9 @@ func NewQueryHandler(next ...chclient.Handler) chclient.Handler {
 func NewExecuteHandler(next ...chclient.Handler) chclient.Handler {
 	return NewProposalProcessorHandler(
 		NewEndorsementHandler(
-			NewEndorsementValidationHandler(NewCommitHandler(next...)),
+			NewEndorsementValidationHandler(
+				NewSignatureValidationHandler(NewCommitHandler(next...)),
+			),
 		),
 	)
 }
