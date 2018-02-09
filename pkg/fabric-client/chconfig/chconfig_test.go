@@ -105,7 +105,7 @@ func getPeerWithConfigBlockPayload(t *testing.T) fab.Peer {
 	}
 
 	// peer with valid config block payload
-	peer := &mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: payload}
+	peer := &mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: payload, Status: 200}
 
 	return peer
 }

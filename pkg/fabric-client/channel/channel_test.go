@@ -7,6 +7,7 @@ package channel
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -163,6 +164,45 @@ func TestPrimaryPeer(t *testing.T) {
 		t.Fatalf("Primary and our choice are not equal")
 	}
 
+}
+
+func TestQueryOnSystemChannel(t *testing.T) {
+	channel, _ := setupChannel(systemChannel)
+	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200}
+	err := channel.AddPeer(&peer)
+	if err != nil {
+		t.Fatalf("Error adding peer to channel: %s", err)
+	}
+
+	request := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "ccID",
+		Fcn:         "method",
+		Args:        [][]byte{[]byte("arg")},
+	}
+	if _, err := channel.QueryByChaincode(request); err != nil {
+		t.Fatalf("Error invoking chaincode on system channel: %s", err)
+	}
+}
+
+func TestQueryBySystemChaincode(t *testing.T) {
+	channel, _ := setupTestChannel()
+
+	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A"), Status: 200}
+	channel.AddPeer(&peer)
+
+	request := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "cc",
+		Fcn:         "Hello",
+	}
+	resp, err := channel.QueryBySystemChaincode(request)
+	if err != nil {
+		t.Fatalf("Failed to query: %s", err)
+	}
+	expectedResp := []byte("A")
+
+	if !reflect.DeepEqual(resp[0], expectedResp) {
+		t.Fatalf("Unexpected transaction proposal response: %v", resp)
+	}
 }
 
 func isValueInList(value string, list []string) bool {

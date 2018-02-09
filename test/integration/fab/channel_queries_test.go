@@ -321,7 +321,7 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, testSetup *integrat
 
 	// Verify that valid targets returned response
 	if len(queryResponses) != len(targets) {
-		t.Fatalf("QueryByChaincode number of results mismatch. Expected: %d Got: %d", len(targets), len(queryResponses))
+		t.Fatalf("QueryByChaincode number of results mismatch. Expected: %d Got: %d (and error %v)", len(targets), len(queryResponses), err)
 	}
 
 	channel.RemovePeer(firstInvalidTarget)
