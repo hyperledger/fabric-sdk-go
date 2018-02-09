@@ -7,21 +7,20 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
 	"crypto/x509"
-
 	"encoding/pem"
-
+	"regexp"
 	"strings"
 
-	"regexp"
+	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -326,4 +325,99 @@ func resolveOrdererURL(ordererURL string) string {
 		return ordererURL
 	}
 	return "grpcs://" + ordererURL
+}
+
+// QueryInfo queries for various useful information on the state of the channel
+// (height, known peers).
+// This query will be made to the primary peer.
+func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
+	l := NewLedger(c.clientContext, c.name)
+	resps, err := l.QueryInfo([]fab.ProposalProcessor{c.PrimaryPeer()})
+	if err != nil {
+		return nil, err
+	}
+	return resps[0], err
+}
+
+// QueryBlockByHash queries the ledger for Block by block hash.
+// This query will be made to the primary peer.
+// Returns the block.
+func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
+	l := NewLedger(c.clientContext, c.name)
+	resps, err := l.QueryBlockByHash(blockHash, []fab.ProposalProcessor{c.PrimaryPeer()})
+	if err != nil {
+		return nil, err
+	}
+	return resps[0], err
+}
+
+// QueryBlock queries the ledger for Block by block number.
+// This query will be made to the primary peer.
+// blockNumber: The number which is the ID of the Block.
+// It returns the block.
+func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
+	l := NewLedger(c.clientContext, c.name)
+	resps, err := l.QueryBlock(blockNumber, []fab.ProposalProcessor{c.PrimaryPeer()})
+	if err != nil {
+		return nil, err
+	}
+	return resps[0], err
+}
+
+// QueryTransaction queries the ledger for Transaction by number.
+// This query will be made to the primary peer.
+// Returns the ProcessedTransaction information containing the transaction.
+// TODO: add optional target
+func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error) {
+	l := NewLedger(c.clientContext, c.name)
+	resps, err := l.QueryTransaction(transactionID, []fab.ProposalProcessor{c.PrimaryPeer()})
+	if err != nil {
+		return nil, err
+	}
+	return resps[0], err
+}
+
+// QueryInstantiatedChaincodes queries the instantiated chaincodes on this channel.
+// This query will be made to the primary peer.
+func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
+	l := NewLedger(c.clientContext, c.name)
+	resps, err := l.QueryInstantiatedChaincodes([]fab.ProposalProcessor{c.PrimaryPeer()})
+	if err != nil {
+		return nil, err
+	}
+	return resps[0], err
+
+}
+
+// QueryConfigBlock returns the current configuration block for the specified channel. If the
+// peer doesn't belong to the channel, return error
+func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.ConfigEnvelope, error) {
+	l := NewLedger(c.clientContext, c.name)
+	return l.QueryConfigBlock(peers, minResponses)
+}
+
+// QueryByChaincode sends a proposal to one or more endorsing peers that will be handled by the chaincode.
+// This request will be presented to the chaincode 'invoke' and must understand
+// from the arguments that this is a query request. The chaincode must also return
+// results in the byte array format and the caller will have to be able to decode.
+// these results.
+func (c *Channel) QueryByChaincode(request fab.ChaincodeInvokeRequest) ([][]byte, error) {
+	targets, err := c.chaincodeInvokeRequestAddDefaultPeers(request.Targets)
+	if err != nil {
+		return nil, err
+	}
+	resps, err := queryChaincode(c.clientContext, c.name, request, targets)
+	return filterProposalResponses(resps, err)
+}
+
+// QueryBySystemChaincode invokes a chaincode that isn't part of a channel.
+//
+// TODO: This function's name is confusing - call the normal QueryByChaincode for system chaincode on a channel.
+func (c *Channel) QueryBySystemChaincode(request fab.ChaincodeInvokeRequest) ([][]byte, error) {
+	targets, err := c.chaincodeInvokeRequestAddDefaultPeers(request.Targets)
+	if err != nil {
+		return nil, err
+	}
+	resps, err := queryChaincode(c.clientContext, systemChannel, request, targets)
+	return filterProposalResponses(resps, err)
 }
