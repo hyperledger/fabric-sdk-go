@@ -94,31 +94,31 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient
 		return nil, errors.New("username is required")
 	}
 
+	certBytes, err := mgr.getEmbeddedCertBytes(userName)
+
+	if err != nil {
+		return nil, errors.WithMessage(err, "fetching embedded cert failed")
+	}
+
+	if certBytes == nil {
+		certBytes, err = mgr.getStoredCertBytes(userName)
+
+		if err != nil {
+			return nil, errors.WithMessage(err, "fetching cert from store failed")
+		}
+	}
+
+	if certBytes == nil {
+		return nil, fmt.Errorf("cert not found for user [%s]", userName)
+	}
+
 	privateKey, err := mgr.getEmbeddedPrivateKey(userName)
+
 	if err != nil {
 		return nil, errors.WithMessage(err, "fetching embedded private key failed")
 	}
 
-	mspID, err := mgr.config.MspID(mgr.orgName)
-	if err != nil {
-		return nil, errors.WithMessage(err, "MSP ID config read failed")
-	}
-
-	var certBytes []byte
 	if privateKey == nil {
-		certBytes, err = mgr.getEmbeddedCertBytes(userName)
-		if err != nil {
-			return nil, errors.WithMessage(err, "fetching enbedded cert failed")
-		}
-		if certBytes == nil {
-			certBytes, err = mgr.getStoredCertBytes(userName)
-			if err != nil {
-				return nil, errors.WithMessage(err, "fetching cert from store failed")
-			}
-		}
-		if certBytes == nil {
-			return nil, fmt.Errorf("cert not found for user [%s]", userName)
-		}
 		privateKey, err = mgr.getPivateKeyFromCert(userName, certBytes)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting private key from cert failed")
@@ -127,6 +127,12 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient
 
 	if privateKey == nil {
 		return nil, fmt.Errorf("unable to find private key for user [%s]", userName)
+	}
+
+	mspID, err := mgr.config.MspID(mgr.orgName)
+
+	if err != nil {
+		return nil, errors.WithMessage(err, "MSP ID config read failed")
 	}
 
 	signingIdentity := &apifabclient.SigningIdentity{MspID: mspID, PrivateKey: privateKey, EnrollmentCert: certBytes}
