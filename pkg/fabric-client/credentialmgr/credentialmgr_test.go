@@ -38,16 +38,17 @@ func TestCredentialManager(t *testing.T) {
 		t.Fatalf("Should have failed to retrieve signing identity for non-existent user")
 	}
 
-	id, err := credentialMgr.GetSigningIdentity("User1")
-	if err != nil {
-		t.Fatalf("Failed to retrieve signing identity: %s", err)
-	}
-	if err := checkSigningIdentity(id); err != nil {
+	if err := checkSigningIdentity(credentialMgr, "User1"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
 }
 
-func checkSigningIdentity(id *apifabclient.SigningIdentity) error {
+func checkSigningIdentity(credentialMgr apifabclient.CredentialManager, user string) error {
+	id, err := credentialMgr.GetSigningIdentity(user)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to retrieve signing identity: %s", err)
+	}
+
 	if id == nil {
 		return errors.New("SigningIdentity is nil")
 	}
@@ -100,35 +101,19 @@ func TestCredentialManagerFromEmbeddedCryptoConfig(t *testing.T) {
 		t.Fatalf("Should have failed to retrieve signing identity for non-existent user")
 	}
 
-	id, err := credentialMgr.GetSigningIdentity("EmbeddedUser")
-	if err != nil {
-		t.Fatalf("Failed to retrieve signing identity: %+v", err)
-	}
-	if err := checkSigningIdentity(id); err != nil {
+	if err := checkSigningIdentity(credentialMgr, "EmbeddedUser"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
 
-	id, err = credentialMgr.GetSigningIdentity("EmbeddedUserWithPaths")
-	if err != nil {
-		t.Fatalf("Failed to retrieve signing identity: %+v", err)
-	}
-	if err := checkSigningIdentity(id); err != nil {
+	if err := checkSigningIdentity(credentialMgr, "EmbeddedUserWithPaths"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
 
-	id, err = credentialMgr.GetSigningIdentity("EmbeddedUserMixed")
-	if err != nil {
-		t.Fatalf("Failed to retrieve signing identity: %+v", err)
-	}
-	if err := checkSigningIdentity(id); err != nil {
+	if err := checkSigningIdentity(credentialMgr, "EmbeddedUserMixed"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
 
-	id, err = credentialMgr.GetSigningIdentity("EmbeddedUserMixed2")
-	if err != nil {
-		t.Fatalf("Failed to retrieve signing identity: %+v", err)
-	}
-	if err := checkSigningIdentity(id); err != nil {
+	if err := checkSigningIdentity(credentialMgr, "EmbeddedUserMixed2"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
 }
