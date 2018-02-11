@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 	"testing"
-	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -37,7 +36,6 @@ type BaseSetupImpl struct {
 	ConfigFile      string
 	OrgID           string
 	ChannelID       string
-	ChainCodeID     string
 	Initialized     bool
 	ChannelConfig   string
 }
@@ -55,8 +53,6 @@ var txArgs = [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}
 // ExampleCC init and upgrade args
 var initArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte(ExampleCCInitB)}
 var upgradeArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte(ExampleCCUpgradeB)}
-
-var resMgmtClient resmgmt.ResourceMgmtClient
 
 // ExampleCCQueryArgs returns example cc query args
 func ExampleCCQueryArgs() [][]byte {
@@ -102,44 +98,14 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	setup.Client = sc
 
 	// TODO: Review logic for retrieving peers (should this be channel peer only)
-	channel, err := setup.GetChannel(sdk, setup.Identity, sdk.Config(), chconfig.NewChannelCfg(setup.ChannelID), []string{setup.OrgID})
+	channel, err := GetChannel(sdk, setup.Identity, sdk.Config(), chconfig.NewChannelCfg(setup.ChannelID), []string{setup.OrgID})
 	if err != nil {
 		return errors.Wrapf(err, "create channel (%s) failed: %v", setup.ChannelID)
 	}
 
-	// Channel management client is responsible for managing channels (create/update)
-	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ChannelMgmt()
-	if err != nil {
-		t.Fatalf("Failed to create new channel management client: %s", err)
-	}
-
-	// Resource management client is responsible for managing resources (joining channels, install/instantiate/upgrade chaincodes)
-	resMgmtClient, err = sdk.NewClient(fabsdk.WithUser("Admin")).ResourceMgmt()
-	if err != nil {
-		t.Fatalf("Failed to create new resource management client: %s", err)
-	}
-
-	// Check if primary peer has joined channel
-	alreadyJoined, err := HasPeerJoinedChannel(sc, channel.PrimaryPeer(), channel.Name())
-	if err != nil {
-		return errors.WithMessage(err, "failed while checking if primary peer has already joined channel")
-	}
-
-	if !alreadyJoined {
-
-		// Create channel (or update if it already exists)
-		req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session}
-
-		if err = chMgmtClient.SaveChannel(req); err != nil {
-			return errors.WithMessage(err, "SaveChannel failed")
-		}
-
-		time.Sleep(time.Second * 5)
-
-		if err = resMgmtClient.JoinChannel(setup.ChannelID); err != nil {
-			return errors.WithMessage(err, "JoinChannel failed")
-		}
-	}
+	targets := []fab.ProposalProcessor{channel.PrimaryPeer()}
+	req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session}
+	InitializeChannel(sdk, setup.OrgID, req, targets)
 
 	if err := setup.setupEventHub(t, sdk, setup.Identity); err != nil {
 		return err
@@ -156,7 +122,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	}
 
 	// Get channel from dynamic info
-	channel, err = setup.GetChannel(sdk, setup.Identity, sdk.Config(), chCfg, []string{setup.OrgID})
+	channel, err = GetChannel(sdk, setup.Identity, sdk.Config(), chCfg, []string{setup.OrgID})
 	if err != nil {
 		return errors.Wrapf(err, "create channel (%s) failed: %v", setup.ChannelID)
 	}
@@ -168,7 +134,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 }
 
 // GetChannel initializes and returns a channel based on config
-func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.Config, chCfg fab.ChannelCfg, orgs []string) (fab.Channel, error) {
+func GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.Config, chCfg fab.ChannelCfg, orgs []string) (fab.Channel, error) {
 
 	channel, err := sdk.FabricProvider().CreateChannelClient(ic, chCfg)
 	if err != nil {
@@ -236,27 +202,33 @@ func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, 
 }
 
 // GetDeployPath ..
-func (setup *BaseSetupImpl) GetDeployPath() string {
+func GetDeployPath() string {
 	pwd, _ := os.Getwd()
 	return path.Join(pwd, "../../fixtures/testdata")
 }
 
 // InstallAndInstantiateExampleCC install and instantiate using resource management client
-func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
-
-	if setup.ChainCodeID == "" {
-		setup.ChainCodeID = GenerateRandomID()
-	}
-
-	return setup.InstallAndInstantiateCC(setup.ChainCodeID, "github.com/example_cc", "v0", setup.GetDeployPath(), initArgs)
+func InstallAndInstantiateExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.IdentityOption, orgName string, chainCodeID string) error {
+	return InstallAndInstantiateCC(sdk, user, orgName, chainCodeID, "github.com/example_cc", "v0", GetDeployPath(), initArgs)
 }
 
 // InstallAndInstantiateCC install and instantiate using resource management client
-func (setup *BaseSetupImpl) InstallAndInstantiateCC(ccName, ccPath, ccVersion, goPath string, ccArgs [][]byte) error {
+func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.IdentityOption, orgName string, ccName, ccPath, ccVersion, goPath string, ccArgs [][]byte) error {
 
 	ccPkg, err := packager.NewCCPackage(ccPath, goPath)
 	if err != nil {
-		return err
+		return errors.WithMessage(err, "creating chaincode package failed")
+	}
+
+	mspID, err := sdk.Config().MspID(orgName)
+	if err != nil {
+		return errors.WithMessage(err, "looking up MSP ID failed")
+	}
+
+	// Resource management client is responsible for managing resources (joining channels, install/instantiate/upgrade chaincodes)
+	resMgmtClient, err := sdk.NewClient(user, fabsdk.WithOrg(orgName)).ResourceMgmt()
+	if err != nil {
+		return errors.WithMessage(err, "Failed to create new resource management client")
 	}
 
 	_, err = resMgmtClient.InstallCC(resmgmt.InstallCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Package: ccPkg})
@@ -264,12 +236,12 @@ func (setup *BaseSetupImpl) InstallAndInstantiateCC(ccName, ccPath, ccVersion, g
 		return err
 	}
 
-	ccPolicy := cauthdsl.SignedByMspMember(setup.Identity.MspID())
+	ccPolicy := cauthdsl.SignedByMspMember(mspID)
 	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy})
 }
 
 // CreateAndSendTransactionProposal ... TODO duplicate
-func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel, chainCodeID string,
+func CreateAndSendTransactionProposal(channel fab.Channel, chainCodeID string,
 	fcn string, args [][]byte, targets []fab.ProposalProcessor, transientData map[string][]byte) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	request := fab.ChaincodeInvokeRequest{
@@ -293,7 +265,7 @@ func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel
 }
 
 // CreateAndSendTransaction ...
-func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
+func CreateAndSendTransaction(channel fab.Channel, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
 
 	tx, err := channel.CreateTransaction(resps)
 	if err != nil {
@@ -317,7 +289,7 @@ func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps 
 // returns a boolean channel which receives true when the event is complete
 // and an error channel for errors
 // TODO - Duplicate
-func (setup *BaseSetupImpl) RegisterTxEvent(t *testing.T, txID fab.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
+func RegisterTxEvent(t *testing.T, txID fab.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
 	done := make(chan bool)
 	fail := make(chan error)
 

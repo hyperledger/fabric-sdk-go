@@ -68,3 +68,8 @@ func (cs *MockChannelService) Channel() (fab.Channel, error) {
 func (cs *MockChannelService) ChannelConfig() (fab.ChannelConfig, error) {
 	return nil, nil
 }
+
+// Ledger ...
+func (cs *MockChannelService) Ledger() (fab.ChannelLedger, error) {
+	return nil, nil
+}

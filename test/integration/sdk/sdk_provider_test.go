@@ -39,7 +39,8 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	if err := testSetup.InstallAndInstantiateExampleCC(); err != nil {
+	chainCodeID := integration.GenerateRandomID()
+	if err := integration.InstallAndInstantiateExampleCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
@@ -63,20 +64,20 @@ func TestDynamicSelection(t *testing.T) {
 	// Release all channel client resources
 	defer chClient.Close()
 
-	response, err := chClient.Query(chclient.Request{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(chclient.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
 	value := response.Payload
 
 	// Move funds
-	response, err = chClient.Execute(chclient.Request{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err = chClient.Execute(chclient.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
 
 	// Verify move funds transaction result
-	response, err = chClient.Query(chclient.Request{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err = chClient.Query(chclient.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds after transaction: %s", err)
 	}

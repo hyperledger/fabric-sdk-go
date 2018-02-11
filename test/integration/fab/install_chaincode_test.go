@@ -51,7 +51,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *integration
 	// Retrieve installed chaincodes
 	client := testSetup.Client
 
-	ccPkg, err := packager.NewCCPackage(chainCodePath, testSetup.GetDeployPath())
+	ccPkg, err := packager.NewCCPackage(chainCodePath, integration.GetDeployPath())
 	if err != nil {
 		t.Fatalf("Failed to package chaincode")
 	}
@@ -90,7 +90,7 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *integrat
 
 	chainCodeVersion := getRandomCCVersion()
 
-	ccPkg, err := packager.NewCCPackage(chainCodePath, testSetup.GetDeployPath())
+	ccPkg, err := packager.NewCCPackage(chainCodePath, integration.GetDeployPath())
 	if err != nil {
 		t.Fatalf("PackageCC return error: %s", err)
 	}

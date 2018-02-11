@@ -331,7 +331,11 @@ func resolveOrdererURL(ordererURL string) string {
 // (height, known peers).
 // This query will be made to the primary peer.
 func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
-	l := NewLedger(c.clientContext, c.name)
+	l, err := NewLedger(c.clientContext, c.name)
+	if err != nil {
+		return nil, errors.WithMessage(err, "ledger client creation failed")
+	}
+
 	resps, err := l.QueryInfo([]fab.ProposalProcessor{c.PrimaryPeer()})
 	if err != nil {
 		return nil, err
@@ -343,7 +347,11 @@ func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
 // This query will be made to the primary peer.
 // Returns the block.
 func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
-	l := NewLedger(c.clientContext, c.name)
+	l, err := NewLedger(c.clientContext, c.name)
+	if err != nil {
+		return nil, errors.WithMessage(err, "ledger client creation failed")
+	}
+
 	resps, err := l.QueryBlockByHash(blockHash, []fab.ProposalProcessor{c.PrimaryPeer()})
 	if err != nil {
 		return nil, err
@@ -356,7 +364,11 @@ func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 // blockNumber: The number which is the ID of the Block.
 // It returns the block.
 func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
-	l := NewLedger(c.clientContext, c.name)
+	l, err := NewLedger(c.clientContext, c.name)
+	if err != nil {
+		return nil, errors.WithMessage(err, "ledger client creation failed")
+	}
+
 	resps, err := l.QueryBlock(blockNumber, []fab.ProposalProcessor{c.PrimaryPeer()})
 	if err != nil {
 		return nil, err
@@ -369,7 +381,11 @@ func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
 // Returns the ProcessedTransaction information containing the transaction.
 // TODO: add optional target
 func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error) {
-	l := NewLedger(c.clientContext, c.name)
+	l, err := NewLedger(c.clientContext, c.name)
+	if err != nil {
+		return nil, errors.WithMessage(err, "ledger client creation failed")
+	}
+
 	resps, err := l.QueryTransaction(transactionID, []fab.ProposalProcessor{c.PrimaryPeer()})
 	if err != nil {
 		return nil, err
@@ -380,7 +396,11 @@ func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransacti
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on this channel.
 // This query will be made to the primary peer.
 func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
-	l := NewLedger(c.clientContext, c.name)
+	l, err := NewLedger(c.clientContext, c.name)
+	if err != nil {
+		return nil, errors.WithMessage(err, "ledger client creation failed")
+	}
+
 	resps, err := l.QueryInstantiatedChaincodes([]fab.ProposalProcessor{c.PrimaryPeer()})
 	if err != nil {
 		return nil, err
@@ -392,7 +412,11 @@ func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, err
 // QueryConfigBlock returns the current configuration block for the specified channel. If the
 // peer doesn't belong to the channel, return error
 func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.ConfigEnvelope, error) {
-	l := NewLedger(c.clientContext, c.name)
+	l, err := NewLedger(c.clientContext, c.name)
+	if err != nil {
+		return nil, errors.WithMessage(err, "ledger client creation failed")
+	}
+
 	return l.QueryConfigBlock(peers, minResponses)
 }
 

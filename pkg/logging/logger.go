@@ -55,7 +55,7 @@ func loggerProvider() apilogging.LoggerProvider {
 		// Otherwise the built-in logger is used
 		loggerProviderInstance = modlog.LoggerProvider()
 		logger := loggerProviderInstance.GetLogger(loggerModule)
-		logger.Info(loggerNotInitializedMsg)
+		logger.Debug(loggerNotInitializedMsg)
 	})
 	return loggerProviderInstance
 }

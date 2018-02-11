@@ -181,5 +181,5 @@ func setupTestLedger() (*Ledger, error) {
 func setupLedger(channelID string) (*Ledger, error) {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
-	return NewLedger(ctx, channelID), nil
+	return NewLedger(ctx, channelID)
 }

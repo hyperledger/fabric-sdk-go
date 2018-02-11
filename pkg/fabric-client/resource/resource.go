@@ -321,7 +321,7 @@ func (c *Resource) createOrUpdateChannel(request fab.CreateChannelRequest, haveE
 }
 
 // QueryChannels queries the names of all the channels that a peer has joined.
-func (c *Resource) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) {
+func (c *Resource) QueryChannels(peer fab.ProposalProcessor) (*pb.ChannelQueryResponse, error) {
 
 	if peer == nil {
 		return nil, errors.New("peer required")
@@ -346,7 +346,7 @@ func (c *Resource) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error
 
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
 // Returns the details of all chaincodes installed on a peer.
-func (c *Resource) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResponse, error) {
+func (c *Resource) QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
 
 	if peer == nil {
 		return nil, errors.New("peer required")

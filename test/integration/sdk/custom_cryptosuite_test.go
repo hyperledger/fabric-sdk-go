@@ -41,7 +41,8 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	if err := testSetup.InstallAndInstantiateExampleCC(); err != nil {
+	chainCodeID := integration.GenerateRandomID()
+	if err := integration.InstallAndInstantiateExampleCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
@@ -68,7 +69,7 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	response, err := chClient.Query(chclient.Request{ChaincodeID: testSetup.ChainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(chclient.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}

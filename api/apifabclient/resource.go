@@ -15,8 +15,8 @@ import (
 type Resource interface {
 	CreateChannel(request CreateChannelRequest) (TransactionID, error)
 	InstallChaincode(request InstallChaincodeRequest) ([]*TransactionProposalResponse, string, error)
-	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
-	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
+	QueryInstalledChaincodes(peer ProposalProcessor) (*pb.ChaincodeQueryResponse, error)
+	QueryChannels(peer ProposalProcessor) (*pb.ChannelQueryResponse, error)
 
 	GenesisBlockFromOrderer(channelName string, orderer Orderer) (*common.Block, error)
 	JoinChannel(request JoinChannelRequest) error

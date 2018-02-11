@@ -23,6 +23,7 @@ You're good to go, happy coding! Check out the examples for usage demonstrations
 ### Examples
 
 - [E2E Test](test/integration/e2e/end_to_end.go): Basic example that uses SDK to query and execute transaction
+- [Ledger Query Test](test/integration/fab/channel_ledger_test.go): Basic example that uses SDK to query a channel's underlying ledger
 - [Multi Org Test](test/integration/orgs/multiple_orgs_test.go): An example that has multiple organisations involved in transaction
 - [Dynamic Endorser Selection](test/integration/sdk/sdk_provider_test.go): An example that uses dynamic endorser selection (based on chaincode policy) 
 - [E2E PKCS11 Test](test/integration/pkcs11/e2e_test.go): E2E Test using a PKCS11 crypto suite and configuration

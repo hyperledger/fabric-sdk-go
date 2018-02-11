@@ -64,6 +64,20 @@ func (f *FabricProvider) CreateChannelClient(ic apifabclient.IdentityContext, cf
 	return channel, nil
 }
 
+// CreateChannelLedger returns a new client initialized for the current instance of the SDK.
+func (f *FabricProvider) CreateChannelLedger(ic apifabclient.IdentityContext, channelName string) (apifabclient.ChannelLedger, error) {
+	ctx := &fabContext{
+		ProviderContext: f.providerContext,
+		IdentityContext: ic,
+	}
+	ledger, err := channelImpl.NewLedger(ctx, channelName)
+	if err != nil {
+		return nil, errors.WithMessage(err, "NewLedger failed")
+	}
+
+	return ledger, nil
+}
+
 // CreateEventHub initilizes the event hub.
 func (f *FabricProvider) CreateEventHub(ic apifabclient.IdentityContext, channelID string) (apifabclient.EventHub, error) {
 	peerConfig, err := f.providerContext.Config().ChannelPeers(channelID)

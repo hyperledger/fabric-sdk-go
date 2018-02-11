@@ -32,12 +32,12 @@ type Ledger struct {
 }
 
 // NewLedger constructs a Ledger client for the current context and named channel.
-func NewLedger(ctx fab.Context, chName string) *Ledger {
+func NewLedger(ctx fab.Context, chName string) (*Ledger, error) {
 	l := Ledger{
 		ctx:    ctx,
 		chName: chName,
 	}
-	return &l
+	return &l, nil
 }
 
 // QueryInfo queries for various useful information on the state of the channel

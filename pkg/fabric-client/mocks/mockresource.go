@@ -58,7 +58,7 @@ func (c *MockResource) CreateChannel(request fab.CreateChannelRequest) (fab.Tran
 }
 
 //QueryChannels ...
-func (c *MockResource) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) {
+func (c *MockResource) QueryChannels(peer fab.ProposalProcessor) (*pb.ChannelQueryResponse, error) {
 	return nil, errors.New("Not implemented yet")
 }
 
@@ -77,7 +77,7 @@ func (c *MockResource) JoinChannel(request fab.JoinChannelRequest) error {
 }
 
 //QueryInstalledChaincodes mocks query installed chaincodes
-func (c *MockResource) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResponse, error) {
+func (c *MockResource) QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
 	if peer == nil {
 		return nil, errors.New("Generate Error")
 	}

@@ -61,11 +61,11 @@ type Channel interface {
 
 // ChannelLedger provides access to the underlying ledger for a channel.
 type ChannelLedger interface {
-	QueryInfo(targets []ProposalProcessor) (*common.BlockchainInfo, error)
-	QueryBlock(blockNumber int, targets []ProposalProcessor) (*common.Block, error)
-	QueryBlockByHash(blockHash []byte, targets []ProposalProcessor) (*common.Block, error)
-	QueryTransaction(transactionID string, targets []ProposalProcessor) (*pb.ProcessedTransaction, error)
-	QueryInstantiatedChaincodes(targets []ProposalProcessor) (*pb.ChaincodeQueryResponse, error)
+	QueryInfo(targets []ProposalProcessor) ([]*common.BlockchainInfo, error)
+	QueryBlock(blockNumber int, targets []ProposalProcessor) ([]*common.Block, error)
+	QueryBlockByHash(blockHash []byte, targets []ProposalProcessor) ([]*common.Block, error)
+	QueryTransaction(transactionID string, targets []ProposalProcessor) ([]*pb.ProcessedTransaction, error)
+	QueryInstantiatedChaincodes(targets []ProposalProcessor) ([]*pb.ChaincodeQueryResponse, error)
 }
 
 // OrgAnchorPeer contains information about an anchor peer on this channel

@@ -92,3 +92,8 @@ func (cs *ChannelService) EventHub() (apifabclient.EventHub, error) {
 func (cs *ChannelService) ChannelConfig() (apifabclient.ChannelConfig, error) {
 	return cs.fabricProvider.CreateChannelConfig(cs.identityContext, cs.cfg.Name())
 }
+
+// Ledger providers a client for the current context and named channel.
+func (cs *ChannelService) Ledger() (apifabclient.ChannelLedger, error) {
+	return cs.fabricProvider.CreateChannelLedger(cs.identityContext, cs.cfg.Name())
+}

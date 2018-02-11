@@ -40,7 +40,8 @@ func TestChannelClient(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	if err := testSetup.InstallAndInstantiateExampleCC(); err != nil {
+	chainCodeID := integration.GenerateRandomID()
+	if err := integration.InstallAndInstantiateExampleCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
@@ -56,7 +57,7 @@ func TestChannelClient(t *testing.T) {
 	}
 
 	// Synchronous query
-	testQuery("200", testSetup.ChainCodeID, chClient, t)
+	testQuery("200", chainCodeID, chClient, t)
 
 	transientData := "Some data"
 	transientDataMap := make(map[string][]byte)
@@ -65,7 +66,7 @@ func TestChannelClient(t *testing.T) {
 	// Synchronous transaction
 	response, err := chClient.Execute(
 		chclient.Request{
-			ChaincodeID:  testSetup.ChainCodeID,
+			ChaincodeID:  chainCodeID,
 			Fcn:          "invoke",
 			Args:         integration.ExampleCCTxArgs(),
 			TransientMap: transientDataMap,
@@ -79,25 +80,25 @@ func TestChannelClient(t *testing.T) {
 	}
 
 	// Verify transaction using query
-	testQueryWithOpts("201", testSetup.ChainCodeID, chClient, t)
+	testQueryWithOpts("201", chainCodeID, chClient, t)
 
 	// transaction
-	testTransaction(testSetup.ChainCodeID, chClient, t)
+	testTransaction(chainCodeID, chClient, t)
 
 	// Verify transaction
-	testQuery("202", testSetup.ChainCodeID, chClient, t)
+	testQuery("202", chainCodeID, chClient, t)
 
 	// Verify that filter error and commit error did not modify value
-	testQuery("202", testSetup.ChainCodeID, chClient, t)
+	testQuery("202", chainCodeID, chClient, t)
 
 	// Test register and receive chaincode event
-	testChaincodeEvent(testSetup.ChainCodeID, chClient, t)
+	testChaincodeEvent(chainCodeID, chClient, t)
 
 	// Verify transaction with chain code event completed
-	testQuery("203", testSetup.ChainCodeID, chClient, t)
+	testQuery("203", chainCodeID, chClient, t)
 
 	// Test invocation of custom handler
-	testInvokeHandler(testSetup.ChainCodeID, chClient, t)
+	testInvokeHandler(chainCodeID, chClient, t)
 
 	// Release channel client resources
 	err = chClient.Close()
