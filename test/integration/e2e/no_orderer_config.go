@@ -59,7 +59,10 @@ func runWithNoOrdererConfig(t *testing.T, configOpt apiconfig.ConfigProvider, sd
 
 	// Register chaincode event (pass in channel which receives event details when the event is complete)
 	notifier := make(chan *chclient.CCEvent)
-	rce := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
+	rce, err := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
+	if err != nil {
+		t.Fatalf("Failed to register cc event: %s", err)
+	}
 
 	// Move funds
 	response, err = chClient.Execute(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})

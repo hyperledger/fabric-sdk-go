@@ -190,14 +190,20 @@ func (cc *ChannelClient) Close() error {
 // RegisterChaincodeEvent registers chain code event
 // @param {chan bool} channel which receives event details when the event is complete
 // @returns {object} object handle that should be used to unregister
-func (cc *ChannelClient) RegisterChaincodeEvent(notify chan<- *chclient.CCEvent, chainCodeID string, eventID string) chclient.Registration {
+func (cc *ChannelClient) RegisterChaincodeEvent(notify chan<- *chclient.CCEvent, chainCodeID string, eventID string) (chclient.Registration, error) {
+
+	if cc.eventHub.IsConnected() == false {
+		if err := cc.eventHub.Connect(); err != nil {
+			return nil, errors.WithMessage(err, "Event hub failed to connect")
+		}
+	}
 
 	// Register callback for CE
 	rce := cc.eventHub.RegisterChaincodeEvent(chainCodeID, eventID, func(ce *fab.ChaincodeEvent) {
 		notify <- &chclient.CCEvent{ChaincodeID: ce.ChaincodeID, EventName: ce.EventName, TxID: ce.TxID, Payload: ce.Payload}
 	})
 
-	return rce
+	return rce, nil
 }
 
 // UnregisterChaincodeEvent removes chain code event registration

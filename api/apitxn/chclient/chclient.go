@@ -77,7 +77,7 @@ type ChannelClient interface {
 	// RegisterChaincodeEvent registers chain code event
 	// @param {chan bool} channel which receives event details when the event is complete
 	// @returns {object}  object handle that should be used to unregister
-	RegisterChaincodeEvent(notify chan<- *CCEvent, chainCodeID string, eventID string) Registration
+	RegisterChaincodeEvent(notify chan<- *CCEvent, chainCodeID string, eventID string) (Registration, error)
 
 	// UnregisterChaincodeEvent unregisters chain code event
 	UnregisterChaincodeEvent(registration Registration) error

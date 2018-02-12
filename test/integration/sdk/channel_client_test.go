@@ -100,6 +100,15 @@ func TestChannelClient(t *testing.T) {
 	// Test invocation of custom handler
 	testInvokeHandler(chainCodeID, chClient, t)
 
+	// Test receive event using separate client
+	listener, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(testSetup.ChannelID)
+	if err != nil {
+		t.Fatalf("Failed to create new channel client: %s", err)
+	}
+	defer listener.Close()
+
+	testChaincodeEventListener(chainCodeID, chClient, listener, t)
+
 	// Release channel client resources
 	err = chClient.Close()
 	if err != nil {
@@ -245,7 +254,10 @@ func testChaincodeEvent(ccID string, chClient chclient.ChannelClient, t *testing
 
 	// Register chaincode event (pass in channel which receives event details when the event is complete)
 	notifier := make(chan *chclient.CCEvent)
-	rce := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
+	rce, err := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
+	if err != nil {
+		t.Fatalf("Failed to register cc event: %s", err)
+	}
 
 	response, err := chClient.Execute(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
@@ -264,6 +276,40 @@ func testChaincodeEvent(ccID string, chClient chclient.ChannelClient, t *testing
 
 	// Unregister chain code event using registration handle
 	err = chClient.UnregisterChaincodeEvent(rce)
+	if err != nil {
+		t.Fatalf("Unregister cc event failed: %s", err)
+	}
+
+}
+
+func testChaincodeEventListener(ccID string, chClient chclient.ChannelClient, listener chclient.ChannelClient, t *testing.T) {
+
+	eventID := "test([a-zA-Z]+)"
+
+	// Register chaincode event (pass in channel which receives event details when the event is complete)
+	notifier := make(chan *chclient.CCEvent)
+	rce, err := listener.RegisterChaincodeEvent(notifier, ccID, eventID)
+	if err != nil {
+		t.Fatalf("Failed to register cc event: %s", err)
+	}
+
+	response, err := chClient.Execute(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
+	}
+
+	select {
+	case ccEvent := <-notifier:
+		t.Logf("Received cc event: %s", ccEvent)
+		if ccEvent.TxID != response.TransactionID.ID {
+			t.Fatalf("CCEvent(%s) and Execute(%s) transaction IDs don't match", ccEvent.TxID, response.TransactionID.ID)
+		}
+	case <-time.After(time.Second * 20):
+		t.Fatalf("Did NOT receive CC for eventId(%s)\n", eventID)
+	}
+
+	// Unregister chain code event using registration handle
+	err = listener.UnregisterChaincodeEvent(rce)
 	if err != nil {
 		t.Fatalf("Unregister cc event failed: %s", err)
 	}
