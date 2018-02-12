@@ -145,7 +145,7 @@ func TestJoinChannelRequiredParameters(t *testing.T) {
 
 	// Test missing default targets
 	err = rc.JoinChannel("mychannel")
-	if err == nil {
+	if err == nil || !strings.Contains(err.Error(), "No targets available") {
 		t.Fatalf("InstallCC should have failed with no default targets error")
 	}
 
@@ -167,14 +167,26 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
 	// Test both targets and filter provided (error condition)
 	err = rc.JoinChannel("mychannel", resmgmt.WithTargets(peers...), resmgmt.WithTargetFilter(&MSPFilter{mspID: "MspID"}))
-	if err == nil {
+	if err == nil || !strings.Contains(err.Error(), "If targets are provided, filter cannot be provided") {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
 
-	// Test missing default targets
+	// Test targets only
+	err = rc.JoinChannel("mychannel", resmgmt.WithTargets(peers...))
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	// Test filter only (filter has no match)
 	err = rc.JoinChannel("mychannel", resmgmt.WithTargetFilter(&MSPFilter{mspID: "MspID"}))
-	if err == nil {
+	if err == nil || !strings.Contains(err.Error(), "No targets available") {
 		t.Fatalf("InstallCC should have failed with no targets error")
+	}
+
+	// Test filter only (filter has a match)
+	err = rc.JoinChannel("mychannel", resmgmt.WithTargetFilter(&MSPFilter{mspID: "Org1MSP"}))
+	if err != nil {
+		t.Fatalf(err.Error())
 	}
 
 }

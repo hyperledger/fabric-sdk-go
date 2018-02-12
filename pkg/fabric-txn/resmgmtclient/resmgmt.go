@@ -113,14 +113,6 @@ func (rc *ResourceMgmtClient) JoinChannel(channelID string, options ...resmgmt.O
 		return errors.WithMessage(err, "failed to get opts for JoinChannel")
 	}
 
-	//Default targets when targets are not provided in options
-	if len(opts.Targets) == 0 {
-		opts.Targets, err = rc.getDefaultTargets(rc.discovery)
-		if err != nil {
-			return errors.WithMessage(err, "failed to get default targets for JoinChannel")
-		}
-	}
-
 	targets, err := rc.calculateTargets(rc.discovery, opts.Targets, opts.TargetFilter)
 	if err != nil {
 		return errors.WithMessage(err, "failed to determine target peers for JoinChannel")
