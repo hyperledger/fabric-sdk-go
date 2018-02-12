@@ -9,6 +9,7 @@ package credentialmgr
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -101,8 +102,7 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient
 	}
 
 	if certBytes == nil {
-		certBytes, err = mgr.getStoredCertBytes(userName)
-
+		certBytes, err = mgr.getCertBytesFromCertStore(userName)
 		if err != nil {
 			return nil, errors.WithMessage(err, "fetching cert from store failed")
 		}
@@ -119,7 +119,7 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient
 	}
 
 	if privateKey == nil {
-		privateKey, err = mgr.getPivateKeyFromCert(userName, certBytes)
+		privateKey, err = mgr.getPrivateKeyFromCert(userName, certBytes)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting private key from cert failed")
 		}
@@ -172,9 +172,18 @@ func (mgr *CredentialManager) getEmbeddedPrivateKey(userName string) (apicryptos
 		pemBytes = []byte(keyPem)
 	} else if keyPath != "" {
 		// Try importing from the Embedded Path
-		pemBytes, err = ioutil.ReadFile(keyPath)
+		_, err := os.Stat(keyPath)
 		if err != nil {
-			return nil, errors.Wrapf(err, "reading private key from embedded path failed")
+			if !os.IsNotExist(err) {
+				return nil, errors.Wrapf(err, "OS stat embedded path failed")
+			}
+			// file doesn't exist, continue
+		} else {
+			// file exists, try to read it
+			pemBytes, err = ioutil.ReadFile(keyPath)
+			if err != nil {
+				return nil, errors.Wrapf(err, "reading private key from embedded path failed")
+			}
 		}
 	}
 
@@ -193,7 +202,7 @@ func (mgr *CredentialManager) getEmbeddedPrivateKey(userName string) (apicryptos
 	return privateKey, nil
 }
 
-func (mgr *CredentialManager) getStoredPrivateKeyPem(userName string, ski []byte) ([]byte, error) {
+func (mgr *CredentialManager) getPrivateKeyPemFromKeyStore(userName string, ski []byte) ([]byte, error) {
 	if mgr.privKeyStore == nil {
 		return nil, nil
 	}
@@ -204,9 +213,6 @@ func (mgr *CredentialManager) getStoredPrivateKeyPem(userName string, ski []byte
 			SKI:      ski,
 		})
 	if err != nil {
-		if err == kvstore.ErrNotFound {
-			return nil, nil
-		}
 		return nil, err
 	}
 	keyBytes, ok := key.([]byte)
@@ -216,7 +222,7 @@ func (mgr *CredentialManager) getStoredPrivateKeyPem(userName string, ski []byte
 	return keyBytes, nil
 }
 
-func (mgr *CredentialManager) getStoredCertBytes(userName string) ([]byte, error) {
+func (mgr *CredentialManager) getCertBytesFromCertStore(userName string) ([]byte, error) {
 	if mgr.certStore == nil {
 		return nil, nil
 	}
@@ -237,7 +243,7 @@ func (mgr *CredentialManager) getStoredCertBytes(userName string) ([]byte, error
 	return certBytes, nil
 }
 
-func (mgr *CredentialManager) getPivateKeyFromCert(userName string, cert []byte) (apicryptosuite.Key, error) {
+func (mgr *CredentialManager) getPrivateKeyFromCert(userName string, cert []byte) (apicryptosuite.Key, error) {
 	if cert == nil {
 		return nil, errors.New("cert is nil")
 	}
@@ -245,28 +251,23 @@ func (mgr *CredentialManager) getPivateKeyFromCert(userName string, cert []byte)
 	if err != nil {
 		return nil, errors.WithMessage(err, "fetching public key from cert failed")
 	}
-	secProvider := mgr.config.SecurityProvider()
-	if secProvider == "SW" {
-		return mgr.getPivateKeyForSKIFromStore(userName, pubKey.SKI())
+	privKey, err := mgr.getPrivateKeyFromKeyStore(userName, pubKey.SKI())
+	if err == nil {
+		return privKey, nil
 	}
-	return mgr.getPivateKeyForSKIFromHSM(pubKey.SKI())
+	if err != kvstore.ErrNotFound {
+		return nil, errors.WithMessage(err, "fetching private key from key store failed")
+	}
+	return mgr.cryptoProvider.GetKey(pubKey.SKI())
 }
 
-func (mgr *CredentialManager) getPivateKeyForSKIFromStore(userName string, ski []byte) (apicryptosuite.Key, error) {
-	pemBytes, err := mgr.getStoredPrivateKeyPem(userName, ski)
+func (mgr *CredentialManager) getPrivateKeyFromKeyStore(userName string, ski []byte) (apicryptosuite.Key, error) {
+	pemBytes, err := mgr.getPrivateKeyPemFromKeyStore(userName, ski)
 	if err != nil {
 		return nil, err
 	}
-	if pemBytes == nil {
-		return nil, fmt.Errorf("private key not found in key store for user [%s]", userName)
+	if pemBytes != nil {
+		return fabricCaUtil.ImportBCCSPKeyFromPEMBytes(pemBytes, mgr.cryptoProvider, true)
 	}
-	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEMBytes(pemBytes, mgr.cryptoProvider, true)
-	if err != nil {
-		return nil, errors.Wrapf(err, "import private key failed %v", pemBytes)
-	}
-	return privateKey, nil
-}
-
-func (mgr *CredentialManager) getPivateKeyForSKIFromHSM(ski []byte) (apicryptosuite.Key, error) {
-	return mgr.cryptoProvider.GetKey(ski)
+	return nil, kvstore.ErrNotFound
 }

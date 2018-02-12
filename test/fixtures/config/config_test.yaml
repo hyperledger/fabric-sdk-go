@@ -64,8 +64,7 @@ client:
       connection: 3s
       response: 5s
 
-
-  # Needed to load users crypto keys and certs.
+  # Root of the MSP directories with keys and certs.
   cryptoconfig:
     path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}
 
@@ -83,7 +82,7 @@ client:
       path: /tmp/msp
 
     # [Optional]. Specific to Composer environment. Not used by SDK Go.
-    wallet: wallet-name
+    #wallet: wallet-name
 
    # BCCSP config for the client. Used by GO SDK.
   BCCSP:
@@ -176,7 +175,7 @@ organizations:
   Org1:
     mspid: Org1MSP
 
-    # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
     cryptoPath:  peerOrganizations/org1.example.com/users/{userName}@org1.example.com/msp
 
     peers:
@@ -210,7 +209,7 @@ organizations:
   Org2:
     mspid: Org2MSP
 
-    # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
     cryptoPath:  peerOrganizations/org2.example.com/users/{userName}@org2.example.com/msp
 
     peers:
