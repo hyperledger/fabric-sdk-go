@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	mock_fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
 // TestNewPeerWithCertNoTLS tests that a peer can be constructed without using a cert
@@ -225,4 +226,24 @@ func TestDeprecatedInterfaces(t *testing.T) {
 	if apiPeer == nil {
 		t.Fatalf("this shouldn't happen.")
 	}
+}
+
+func TestNewPeerFromConfig(t *testing.T) {
+
+	grpcOpts := make(map[string]interface{})
+
+	peerConfig := apiconfig.PeerConfig{
+		URL:         "abc.com",
+		GRPCOptions: grpcOpts,
+	}
+
+	networkPeer := &apiconfig.NetworkPeer{
+		PeerConfig: peerConfig,
+		MspID:      "Org1MSP",
+	}
+	_, err := NewPeerFromConfig(networkPeer, mocks.NewMockConfig())
+	if err != nil {
+		t.Fatalf("Failed to create new peer from config: %v", err)
+	}
+
 }

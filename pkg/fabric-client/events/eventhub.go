@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/spf13/cast"
+	"google.golang.org/grpc/keepalive"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -60,18 +62,21 @@ type EventHub struct {
 	// FabricClient
 	provider fab.ProviderContext
 	identity fab.IdentityContext
+	kap      keepalive.ClientParameters
+	failFast bool
 }
 
 // eventClientFactory creates an EventsClient instance
 type eventClientFactory interface {
-	newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error)
+	newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool) (fab.EventsClient, error)
 }
 
 // consumerClientFactory is the default implementation oif the eventClientFactory
 type consumerClientFactory struct{}
 
-func (ccf *consumerClientFactory) newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error) {
-	return consumer.NewEventsClient(provider, identity, peerAddress, certificate, serverHostOverride, regTimeout, adapter)
+func (ccf *consumerClientFactory) newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string,
+	regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool) (fab.EventsClient, error) {
+	return consumer.NewEventsClient(provider, identity, peerAddress, certificate, serverHostOverride, regTimeout, adapter, kap, failFast)
 }
 
 // Context holds the providers and services needed to create an EventHub.
@@ -119,8 +124,33 @@ func FromConfig(ctx Context, peerCfg *apiconfig.PeerConfig) (*EventHub, error) {
 	}
 
 	eventHub.peerTLSServerHostOverride = serverHostOverride
-
+	eventHub.kap = getKeepAliveOptions(peerCfg)
+	eventHub.failFast = getFailFast(peerCfg)
 	return eventHub, nil
+}
+
+func getFailFast(peerCfg *apiconfig.PeerConfig) bool {
+	var failFast = true //the default
+	if ff, ok := peerCfg.GRPCOptions["fail-fast"].(bool); ok {
+		failFast = cast.ToBool(ff)
+	}
+
+	return failFast
+}
+
+func getKeepAliveOptions(peerCfg *apiconfig.PeerConfig) keepalive.ClientParameters {
+
+	var kap keepalive.ClientParameters
+	if kaTime, ok := peerCfg.GRPCOptions["keep-alive-time"]; ok {
+		kap.Time = cast.ToDuration(kaTime)
+	}
+	if kaTimeout, ok := peerCfg.GRPCOptions["keep-alive-timeout"]; ok {
+		kap.Timeout = cast.ToDuration(kaTimeout)
+	}
+	if kaPermit, ok := peerCfg.GRPCOptions["keep-alive-permit"]; ok {
+		kap.PermitWithoutStream = cast.ToBool(kaPermit)
+	}
+	return kap
 }
 
 // SetInterests clears all interests and sets the interests for BLOCK type of events.
@@ -282,7 +312,7 @@ func (eventHub *EventHub) Connect() error {
 	if eventHub.grpcClient == nil {
 		eventsClient, _ := eventHub.eventsClientFactory.newEventsClient(eventHub.provider, eventHub.identity,
 			eventHub.peerAddr, eventHub.peerTLSCertificate, eventHub.peerTLSServerHostOverride,
-			eventHub.provider.Config().TimeoutOrDefault(apiconfig.EventReg), eventHub)
+			eventHub.provider.Config().TimeoutOrDefault(apiconfig.EventReg), eventHub, eventHub.kap, eventHub.failFast)
 		eventHub.grpcClient = eventsClient
 	}
 

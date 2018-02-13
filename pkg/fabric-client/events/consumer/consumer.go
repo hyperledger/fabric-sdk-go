@@ -7,14 +7,16 @@ SPDX-License-Identifier: Apache-2.0
 package consumer
 
 import (
-	"context"
 	"io"
 	"sync"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 
 	"github.com/golang/protobuf/ptypes"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -49,10 +51,14 @@ type eventsClient struct {
 	provider               fab.ProviderContext
 	identity               fab.IdentityContext
 	processEventsCompleted chan struct{}
+	kap                    keepalive.ClientParameters
+	failFast               bool
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
-func NewEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (fab.EventsClient, error) {
+func NewEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate,
+	serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter,
+	kap keepalive.ClientParameters, failFast bool) (fab.EventsClient, error) {
 	var err error
 	if regTimeout < 100*time.Millisecond {
 		regTimeout = 100 * time.Millisecond
@@ -72,13 +78,15 @@ func NewEventsClient(provider fab.ProviderContext, identity fab.IdentityContext,
 		provider:              provider,
 		identity:              identity,
 		tlsCertHash:           ccomm.TLSCertHash(provider.Config()),
+		kap:                   kap,
+		failFast:              failFast,
 	}, err
 }
 
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
-func newEventsClientConnectionWithAddress(peerAddress string, cert *x509.Certificate, serverHostOverride string, config apiconfig.Config) (*grpc.ClientConn, error) {
+func newEventsClientConnectionWithAddress(peerAddress string, cert *x509.Certificate, serverHostOverride string,
+	config apiconfig.Config, kap keepalive.ClientParameters, failFast bool) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.EventHub)))
 	if urlutil.IsTLSEnabled(peerAddress) {
 		tlsConfig, err := comm.TLSConfig(cert, serverHostOverride, config)
 		if err != nil {
@@ -89,7 +97,15 @@ func newEventsClientConnectionWithAddress(peerAddress string, cert *x509.Certifi
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}
-	conn, err := grpc.Dial(urlutil.ToAddress(peerAddress), opts...)
+
+	if kap.Time > 0 {
+		opts = append(opts, grpc.WithKeepaliveParams(kap))
+	}
+	opts = append(opts, grpc.WithDefaultCallOptions(grpc.FailFast(failFast)))
+
+	ctx := context.Background()
+	ctx, _ = context.WithTimeout(ctx, config.TimeoutOrDefault(apiconfig.EventHub))
+	conn, err := grpc.DialContext(ctx, urlutil.ToAddress(peerAddress), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +301,8 @@ func (ec *eventsClient) processEvents() error {
 
 //Start establishes connection with Event hub and registers interested events with it
 func (ec *eventsClient) Start() error {
-	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress, ec.TLSCertificate, ec.TLSServerHostOverride, ec.provider.Config())
+	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress, ec.TLSCertificate, ec.TLSServerHostOverride,
+		ec.provider.Config(), ec.kap, ec.failFast)
 	if err != nil {
 		return errors.WithMessage(err, "events connection failed")
 	}
