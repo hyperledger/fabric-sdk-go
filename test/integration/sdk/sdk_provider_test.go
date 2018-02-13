@@ -35,7 +35,7 @@ func TestDynamicSelection(t *testing.T) {
 		ConnectEventHub: true,
 	}
 
-	if err := testSetup.Initialize(t); err != nil {
+	if err := testSetup.Initialize(); err != nil {
 		t.Fatalf(err.Error())
 	}
 

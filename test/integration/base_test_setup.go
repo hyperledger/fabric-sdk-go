@@ -75,7 +75,7 @@ func ExampleCCUpgradeArgs() [][]byte {
 }
 
 // Initialize reads configuration from file and sets up client, channel and event hub
-func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
+func (setup *BaseSetupImpl) Initialize() error {
 	// Create SDK setup for the integration tests
 	sdk, err := fabsdk.New(config.FromFile(setup.ConfigFile))
 	if err != nil {
@@ -107,7 +107,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session}
 	InitializeChannel(sdk, setup.OrgID, req, targets)
 
-	if err := setup.setupEventHub(t, sdk, setup.Identity); err != nil {
+	if err := setup.setupEventHub(sdk, setup.Identity); err != nil {
 		return err
 	}
 
@@ -161,7 +161,7 @@ func GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.
 	return channel, nil
 }
 
-func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client *fabsdk.FabricSDK, identity fab.IdentityContext) error {
+func (setup *BaseSetupImpl) setupEventHub(client *fabsdk.FabricSDK, identity fab.IdentityContext) error {
 	eventHub, err := client.FabricProvider().CreateEventHub(identity, setup.ChannelID)
 	if err != nil {
 		return err
