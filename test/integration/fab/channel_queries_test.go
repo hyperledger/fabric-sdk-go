@@ -23,7 +23,7 @@ func TestChannelQueries(t *testing.T) {
 
 	testQueryChannels(t, testSetup.Channel, testSetup.Client)
 
-	testInstalledChaincodes(t, testSetup.Channel, testSetup.Client)
+	testInstalledChaincodes(t, chaincodeID, testSetup.Channel, testSetup.Client)
 
 	testQueryByChaincode(t, testSetup.SDK.Config(), testSetup.Channel)
 }
@@ -60,7 +60,7 @@ func testQueryChannels(t *testing.T, channel fab.Channel, client fab.Resource) {
 
 }
 
-func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.Resource) {
+func testInstalledChaincodes(t *testing.T, ccID string, channel fab.Channel, client fab.Resource) {
 
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()
@@ -71,10 +71,17 @@ func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.Resou
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
 
+	found := false
 	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
 		t.Logf("**InstalledCC: %s", chaincode)
+		if chaincode.Name == ccID {
+			found = true
+		}
 	}
 
+	if !found {
+		t.Fatalf("QueryInstalledChaincodes failed to find installed %s chaincode", ccID)
+	}
 }
 
 func testQueryByChaincode(t *testing.T, config apiconfig.Config, channel fab.Channel) {

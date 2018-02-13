@@ -106,7 +106,7 @@ func TestLedgerQueries(t *testing.T) {
 
 	testQueryBlock(t, ledger, targets)
 
-	testInstantiatedChaincodes(t, ledger, targets)
+	testInstantiatedChaincodes(t, chaincodeID, ledger, targets)
 
 }
 
@@ -211,7 +211,7 @@ func testQueryBlock(t *testing.T, ledger fab.ChannelLedger, targets []fab.Propos
 	}
 }
 
-func testInstantiatedChaincodes(t *testing.T, ledger fab.ChannelLedger, targets []fab.ProposalProcessor) {
+func testInstantiatedChaincodes(t *testing.T, ccID string, ledger fab.ChannelLedger, targets []fab.ProposalProcessor) {
 
 	// Test Query Instantiated chaincodes
 	chaincodeQueryResponses, err := ledger.QueryInstantiatedChaincodes(targets)
@@ -219,10 +219,18 @@ func testInstantiatedChaincodes(t *testing.T, ledger fab.ChannelLedger, targets 
 		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
 	}
 
+	found := false
 	for _, chaincodeQueryResponse := range chaincodeQueryResponses {
 		for _, chaincode := range chaincodeQueryResponse.Chaincodes {
 			t.Logf("**InstantiatedCC: %s", chaincode)
+			if chaincode.Name == ccID {
+				found = true
+			}
 		}
+	}
+
+	if !found {
+		t.Fatalf("QueryInstantiatedChaincodes failed to find instantiated %s chaincode", ccID)
 	}
 }
 
