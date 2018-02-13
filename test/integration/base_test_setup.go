@@ -187,15 +187,9 @@ func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, 
 
 	icr := fab.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: peer.PeersToTxnProcessors(setup.Channel.Peers())}
 
-	transactionProposalResponse, _, err := setup.Client.InstallChaincode(icr)
-
+	_, _, err := setup.Client.InstallChaincode(icr)
 	if err != nil {
 		return errors.WithMessage(err, "InstallChaincode failed")
-	}
-	for _, v := range transactionProposalResponse {
-		if v.Err != nil {
-			return errors.WithMessage(v.Err, "InstallChaincode endorser failed")
-		}
 	}
 
 	return nil
@@ -253,12 +247,6 @@ func CreateAndSendTransactionProposal(channel fab.Channel, chainCodeID string,
 	transactionProposalResponses, txnID, err := channel.SendTransactionProposal(request, targets)
 	if err != nil {
 		return nil, txnID, err
-	}
-
-	for _, v := range transactionProposalResponses {
-		if v.Err != nil {
-			return nil, txnID, errors.Wrapf(v.Err, "endorser %s failed", v.Endorser)
-		}
 	}
 
 	return transactionProposalResponses, txnID, nil

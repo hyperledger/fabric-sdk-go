@@ -86,7 +86,7 @@ func (p *MockPeer) URL() string {
 }
 
 // ProcessTransactionProposal does not send anything anywhere but returns an empty mock ProposalResponse
-func (p *MockPeer) ProcessTransactionProposal(tp apifabclient.TransactionProposal) (apifabclient.TransactionProposalResult, error) {
+func (p *MockPeer) ProcessTransactionProposal(tp apifabclient.TransactionProposal) (apifabclient.TransactionProposalResponse, error) {
 	if p.RWLock != nil {
 		p.RWLock.Lock()
 		defer p.RWLock.Unlock()
@@ -98,12 +98,12 @@ func (p *MockPeer) ProcessTransactionProposal(tp apifabclient.TransactionProposa
 		sID := &msp.SerializedIdentity{Mspid: "Org1MSP", IdBytes: []byte(certPem)}
 		endorser, err := proto.Marshal(sID)
 		if err != nil {
-			return apifabclient.TransactionProposalResult{}, err
+			return apifabclient.TransactionProposalResponse{}, err
 		}
 		p.Endorser = endorser
 	}
 
-	return apifabclient.TransactionProposalResult{
+	return apifabclient.TransactionProposalResponse{
 		Endorser: p.MockURL,
 		Proposal: tp,
 		Status:   p.Status,

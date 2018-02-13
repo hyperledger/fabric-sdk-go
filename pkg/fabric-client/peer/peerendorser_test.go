@@ -260,7 +260,7 @@ func TestProcessProposalGoodDial(t *testing.T) {
 	}
 }
 
-func testProcessProposal(t *testing.T, url string) (apifabclient.TransactionProposalResult, error) {
+func testProcessProposal(t *testing.T, url string) (apifabclient.TransactionProposalResponse, error) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.DefaultMockConfig(mockCtrl)

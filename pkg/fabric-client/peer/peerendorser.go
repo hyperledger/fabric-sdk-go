@@ -62,19 +62,19 @@ func newPeerEndorser(target string, certificate *x509.Certificate, serverHostOve
 }
 
 // ProcessTransactionProposal sends the transaction proposal to a peer and returns the response.
-func (p *peerEndorser) ProcessTransactionProposal(proposal apifabclient.TransactionProposal) (apifabclient.TransactionProposalResult, error) {
+func (p *peerEndorser) ProcessTransactionProposal(proposal apifabclient.TransactionProposal) (apifabclient.TransactionProposalResponse, error) {
 	logger.Debugf("Processing proposal using endorser :%s", p.target)
 
 	proposalResponse, err := p.sendProposal(proposal)
 	if err != nil {
-		return apifabclient.TransactionProposalResult{
+		return apifabclient.TransactionProposalResponse{
 				Proposal: proposal,
 				Endorser: p.target,
 			}, errors.Wrapf(err, "Transaction processor (%s) returned error for txID '%s'",
 				p.target, proposal.TxnID.ID)
 	}
 
-	return apifabclient.TransactionProposalResult{
+	return apifabclient.TransactionProposalResponse{
 		Proposal:         proposal,
 		ProposalResponse: proposalResponse,
 		Endorser:         p.target, // TODO: what format is expected for Endorser? Just target? URL?

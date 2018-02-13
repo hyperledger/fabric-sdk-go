@@ -17,6 +17,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -159,7 +160,7 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 	tp := fab.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
 	}
-	tpr := fab.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
+	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
 	proc.EXPECT().ProcessTransactionProposal(tp).Return(tpr, nil)
 	targets := []fab.ProposalProcessor{proc}
 
@@ -202,20 +203,25 @@ func TestProposalResponseError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	proc := mock_apifabclient.NewMockProposalProcessor(mockCtrl)
+	proc2 := mock_apifabclient.NewMockProposalProcessor(mockCtrl)
 
 	tp := fab.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
 	}
 
 	// Test with error from lower layer
-	tpr := fab.TransactionProposalResult{Endorser: "example.com", Status: 200,
+	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 200,
 		Proposal: tp, ProposalResponse: nil}
 	proc.EXPECT().ProcessTransactionProposal(tp).Return(tpr, testError)
-	targets := []fab.ProposalProcessor{proc}
-	resp, _ := SendProposal(&fab.TransactionProposal{
+	proc2.EXPECT().ProcessTransactionProposal(tp).Return(tpr, testError)
+
+	targets := []fab.ProposalProcessor{proc, proc2}
+	_, err := SendProposal(&fab.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
 	}, targets)
-	assert.Equal(t, testError, resp[0].Err)
+	errs, ok := err.(multi.Errors)
+	assert.True(t, ok, "expected multi errors object")
+	assert.Equal(t, testError, errs[0])
 }
 
 func setupMassiveTestPeers(numberOfPeers int) []fab.ProposalProcessor {

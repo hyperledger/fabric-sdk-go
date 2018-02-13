@@ -32,7 +32,6 @@ type InstallCCResponse struct {
 	Target string
 	Status int32
 	Info   string
-	Err    error
 }
 
 // InstantiateCCRequest contains instantiate chaincode request parameters

@@ -46,7 +46,7 @@ func TestSendInstantiateProposal(t *testing.T) {
 	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
 	tp := fab.TransactionProposal{SignedProposal: &pb.SignedProposal{}}
-	tpr := fab.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
+	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
 
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(tpr, nil)
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(tpr, nil)
@@ -122,7 +122,7 @@ func TestSendUpgradeProposal(t *testing.T) {
 	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
 	tp := fab.TransactionProposal{SignedProposal: &pb.SignedProposal{}}
-	tpr := fab.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
+	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
 
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(tpr, nil)
 	targets := []fab.ProposalProcessor{proc}

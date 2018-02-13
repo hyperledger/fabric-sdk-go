@@ -190,7 +190,7 @@ func TestProposalProcessorSendProposal(t *testing.T) {
 	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
 	tp := mockTransactionProposal()
-	tpr := fab.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
+	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
 
 	proc.EXPECT().ProcessTransactionProposal(tp).Return(tpr, nil)
 

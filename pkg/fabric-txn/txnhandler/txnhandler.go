@@ -249,18 +249,5 @@ func createAndSendTransactionProposal(sender apifabclient.ProposalSender, chrequ
 		TransientMap: chrequest.TransientMap,
 	}
 
-	transactionProposalResponses, txnID, err := sender.SendTransactionProposal(request, targets)
-	if err != nil {
-		return nil, txnID, err
-	}
-
-	for _, v := range transactionProposalResponses {
-		if v.Err != nil {
-			logger.Debugf("SendTransactionProposal failed (%v, %s)", v.Endorser, v.Err.Error())
-			return nil, txnID, errors.WithMessage(v.Err, "SendTransactionProposal failed")
-		}
-		logger.Debugf("invoke Endorser '%s' returned ProposalResponse status:%v", v.Endorser, v.Status)
-	}
-
-	return transactionProposalResponses, txnID, nil
+	return sender.SendTransactionProposal(request, targets)
 }

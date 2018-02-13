@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package chclient
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -406,7 +407,7 @@ func TestExecuteTxWithRetries(t *testing.T) {
 	testPeer1.Error = testStatus
 	chClient := setupChannelClient([]apifabclient.Peer{testPeer1}, t)
 	retryOpts := retry.DefaultOpts
-	retryOpts.Attempts = 1
+	retryOpts.Attempts = 3
 	retryOpts.BackoffFactor = 1
 	retryOpts.InitialBackoff = retryInterval
 	retryOpts.RetryableCodes = retry.ChannelClientRetryableCodes
@@ -425,6 +426,26 @@ func TestExecuteTxWithRetries(t *testing.T) {
 	assert.Nil(t, err, "expected error to be nil")
 	assert.Equal(t, 2, testPeer1.ProcessProposalCalls, "Expected peer to be called twice")
 	assert.Equal(t, testResp, resp.Payload, "expected correct response")
+}
+
+func TestMultiErrorPropogation(t *testing.T) {
+	testErr := fmt.Errorf("Test Error")
+
+	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
+	testPeer1.Error = testErr
+	testPeer2 := fcmocks.NewMockPeer("Peer2", "http://peer2.com")
+	testPeer2.Error = testErr
+	chClient := setupChannelClient([]apifabclient.Peer{testPeer1, testPeer2}, t)
+
+	_, err := chClient.Query(chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
+	if err == nil {
+		t.Fatalf("Should have failed for not success status")
+	}
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error")
+	assert.EqualValues(t, status.MultipleErrors, status.ToSDKStatusCode(statusError.Code))
+	assert.Equal(t, status.ClientStatus, statusError.Group)
+	assert.Equal(t, "Multiple errors occurred: \nTest Error\nTest Error", statusError.Message, "Expected multi error message")
 }
 
 func TestDiscoveryGreylist(t *testing.T) {
@@ -608,15 +629,5 @@ func createAndSendTransactionProposal(sender apifabclient.ProposalSender, chrequ
 		TransientMap: chrequest.TransientMap,
 	}
 
-	transactionProposalResponses, txnID, err := sender.SendTransactionProposal(request, targets)
-	if err != nil {
-		return nil, txnID, err
-	}
-
-	for _, v := range transactionProposalResponses {
-		if v.Err != nil {
-			return nil, txnID, errors.WithMessage(v.Err, "SendTransactionProposal failed")
-		}
-	}
-	return transactionProposalResponses, txnID, nil
+	return sender.SendTransactionProposal(request, targets)
 }

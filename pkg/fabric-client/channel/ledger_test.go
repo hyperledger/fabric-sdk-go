@@ -6,11 +6,14 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestQueryMethods(t *testing.T) {
@@ -172,6 +175,23 @@ func TestQueryConfig(t *testing.T) {
 		t.Fatalf("Should have failed for different block payloads")
 	}
 
+}
+
+func TestFilterResponses(t *testing.T) {
+	tprs := []*fab.TransactionProposalResponse{}
+	err := fmt.Errorf("test")
+	for i := 0; i <= 100; i++ {
+		var s int
+		if i%2 == 0 {
+			s = 200
+		} else {
+			s = 500
+		}
+		tprs = append(tprs, &fab.TransactionProposalResponse{Status: int32(s)})
+	}
+	f, errs := filterResponses(tprs, err)
+	assert.Len(t, f, 51)
+	assert.Len(t, errs.(multi.Errors), 51)
 }
 
 func setupTestLedger() (*Ledger, error) {

@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -106,8 +107,6 @@ func SignProposal(ctx context, proposal *pb.Proposal) (*pb.SignedProposal, error
 }
 
 // SendProposal sends a TransactionProposal to ProposalProcessor.
-//
-// TODO: Refactor error out of struct and into multi error (eg type ResponseErrors []error)
 func SendProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
 
 	if proposal == nil || proposal.SignedProposal == nil {
@@ -121,26 +120,28 @@ func SendProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProce
 	var responseMtx sync.Mutex
 	var transactionProposalResponses []*fab.TransactionProposalResponse
 	var wg sync.WaitGroup
+	errs := multi.Errors{}
 
 	for _, p := range targets {
 		wg.Add(1)
 		go func(processor fab.ProposalProcessor) {
 			defer wg.Done()
 
-			r, err := processor.ProcessTransactionProposal(*proposal)
+			resp, err := processor.ProcessTransactionProposal(*proposal)
 			if err != nil {
 				logger.Debugf("Received error response from txn proposal processing: %v", err)
-				// Error is handled downstream.
+				responseMtx.Lock()
+				errs = append(errs, err)
+				responseMtx.Unlock()
+				return
 			}
 
-			tpr := fab.TransactionProposalResponse{
-				TransactionProposalResult: r, Err: err}
-
 			responseMtx.Lock()
-			transactionProposalResponses = append(transactionProposalResponses, &tpr)
+			transactionProposalResponses = append(transactionProposalResponses, &resp)
 			responseMtx.Unlock()
 		}(p)
 	}
 	wg.Wait()
-	return transactionProposalResponses, nil
+
+	return transactionProposalResponses, errs.ToError()
 }

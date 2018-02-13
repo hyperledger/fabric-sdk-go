@@ -14,6 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	grpcstatus "google.golang.org/grpc/status"
 )
@@ -94,8 +95,8 @@ func (g Group) String() string {
 	return UnknownStatus.String()
 }
 
-// FromError returns a Status representing err if it was produced from this
-// package, otherwise it returns nil, false.
+// FromError returns a Status representing err if available,
+// otherwise it returns nil, false.
 func FromError(err error) (s *Status, ok bool) {
 	if err == nil {
 		return &Status{Code: int32(OK)}, true
@@ -106,6 +107,9 @@ func FromError(err error) (s *Status, ok bool) {
 	unwrappedErr := errors.Cause(err)
 	if s, ok := unwrappedErr.(*Status); ok {
 		return s, true
+	}
+	if m, ok := unwrappedErr.(multi.Errors); ok {
+		return New(ClientStatus, MultipleErrors.ToInt32(), m.Error(), nil), true
 	}
 
 	return nil, false

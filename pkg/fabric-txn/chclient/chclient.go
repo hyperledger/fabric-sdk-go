@@ -15,6 +15,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery"
@@ -109,19 +110,25 @@ func (cc *ChannelClient) InvokeHandler(handler chclient.Handler, request chclien
 	}
 }
 
-func (cc *ChannelClient) resolveRetry(req *chclient.RequestContext, opts chclient.Opts) bool {
-	if !req.RetryHandler.Required(req.Error) {
-		return false
+func (cc *ChannelClient) resolveRetry(ctx *chclient.RequestContext, opts chclient.Opts) bool {
+	errs, ok := ctx.Error.(multi.Errors)
+	if !ok {
+		errs = append(errs, ctx.Error)
 	}
-	logger.Infof("Retrying on error %s", req.Error)
+	for _, e := range errs {
+		if ctx.RetryHandler.Required(e) {
+			logger.Infof("Retrying on error %s", e)
+			cc.greylist.Greylist(e)
 
-	cc.greylist.Greylist(req.Error)
-	// Reset context parameters
-	req.Opts.ProposalProcessors = opts.ProposalProcessors
-	req.Error = nil
-	req.Response = chclient.Response{}
+			// Reset context parameters
+			ctx.Opts.ProposalProcessors = opts.ProposalProcessors
+			ctx.Error = nil
+			ctx.Response = chclient.Response{}
 
-	return true
+			return true
+		}
+	}
+	return false
 }
 
 //prepareHandlerContexts prepares context objects for handlers
@@ -150,7 +157,6 @@ func (cc *ChannelClient) prepareHandlerContexts(request chclient.Request, option
 	}
 
 	return requestContext, clientContext, nil
-
 }
 
 //prepareOptsFromOptions Reads apitxn.Opts from chclient.Option array

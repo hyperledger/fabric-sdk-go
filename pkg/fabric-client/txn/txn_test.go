@@ -38,15 +38,13 @@ func TestNewTransaction(t *testing.T) {
 	}
 
 	test := &fab.TransactionProposalResponse{
-		TransactionProposalResult: fab.TransactionProposalResult{
-			Endorser: "http://peer1.com",
-			Proposal: fab.TransactionProposal{
-				TxnID:          txid,
-				Proposal:       &pb.Proposal{Header: []byte("TEST"), Extension: []byte(""), Payload: []byte("")},
-				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")},
-			},
-			ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
+		Endorser: "http://peer1.com",
+		Proposal: fab.TransactionProposal{
+			TxnID:          txid,
+			Proposal:       &pb.Proposal{Header: []byte("TEST"), Extension: []byte(""), Payload: []byte("")},
+			SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")},
 		},
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
 	input := []*fab.TransactionProposalResponse{test}
@@ -59,15 +57,13 @@ func TestNewTransaction(t *testing.T) {
 
 	//Test invalid proposal payload scenario
 	test = &fab.TransactionProposalResponse{
-		TransactionProposalResult: fab.TransactionProposalResult{
-			Endorser: "http://peer1.com",
-			Proposal: fab.TransactionProposal{
-				TxnID:          txid,
-				Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("TEST")},
-				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")},
-			},
-			ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
+		Endorser: "http://peer1.com",
+		Proposal: fab.TransactionProposal{
+			TxnID:          txid,
+			Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("TEST")},
+			SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")},
 		},
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
 	input = []*fab.TransactionProposalResponse{test}
@@ -79,14 +75,12 @@ func TestNewTransaction(t *testing.T) {
 
 	//Test proposal response
 	test = &fab.TransactionProposalResponse{
-		TransactionProposalResult: fab.TransactionProposalResult{
-			Endorser: "http://peer1.com",
-			Proposal: fab.TransactionProposal{
-				Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
-				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TxnID: txid,
-			},
-			ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
+		Endorser: "http://peer1.com",
+		Proposal: fab.TransactionProposal{
+			Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
+			SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TxnID: txid,
 		},
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
 	input = []*fab.TransactionProposalResponse{test}
@@ -99,14 +93,12 @@ func TestNewTransaction(t *testing.T) {
 	//Test repeated field header nil scenario
 
 	test = &fab.TransactionProposalResponse{
-		TransactionProposalResult: fab.TransactionProposalResult{
-			Endorser: "http://peer1.com",
-			Proposal: fab.TransactionProposal{
-				Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
-				SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TxnID: txid,
-			},
-			ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 200, Payload: []byte("")}},
+		Endorser: "http://peer1.com",
+		Proposal: fab.TransactionProposal{
+			Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
+			SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TxnID: txid,
 		},
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 200, Payload: []byte("")}},
 	}
 
 	_, err = New([]*fab.TransactionProposalResponse{test})
