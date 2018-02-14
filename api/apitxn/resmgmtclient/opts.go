@@ -35,3 +35,11 @@ func WithTimeout(timeout time.Duration) Option {
 		return nil
 	}
 }
+
+//WithOrdererID encapsulates OrdererID to Option
+func WithOrdererID(ordererID string) Option {
+	return func(opts *Opts) error {
+		opts.OrdererID = ordererID
+		return nil
+	}
+}

@@ -12,7 +12,6 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 )
@@ -41,7 +40,6 @@ type OrgClientFactory interface {
 
 // SessionClientFactory allows overriding default clients and providers of a session
 type SessionClientFactory interface {
-	NewChannelMgmtClient(sdk Providers, session SessionContext) (chmgmt.ChannelMgmtClient, error)
 	NewResourceMgmtClient(sdk Providers, session SessionContext, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error)
 	NewChannelClient(sdk Providers, session SessionContext, channelID string, targetFilter fab.TargetFilter) (chclient.ChannelClient, error)
 }

@@ -28,7 +28,7 @@ func TestNewGoodClientOpt(t *testing.T) {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
 
-	_, err = sdk.NewClient(WithUser(clientValidUser), goodClientOpt()).ChannelMgmt()
+	_, err = sdk.NewClient(WithUser(clientValidUser), goodClientOpt()).ResourceMgmt()
 	if err != nil {
 		t.Fatalf("Expected no error from Client, but got %v", err)
 	}
@@ -45,7 +45,7 @@ func TestFromConfigGoodClientOpt(t *testing.T) {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
 
-	_, err = sdk.NewClient(WithUser(clientValidUser), goodClientOpt()).ChannelMgmt()
+	_, err = sdk.NewClient(WithUser(clientValidUser), goodClientOpt()).ResourceMgmt()
 	if err != nil {
 		t.Fatalf("Expected no error from Client, but got %v", err)
 	}
@@ -63,7 +63,7 @@ func TestNewBadClientOpt(t *testing.T) {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
 
-	_, err = sdk.NewClient(WithUser(clientValidUser), badClientOpt()).ChannelMgmt()
+	_, err = sdk.NewClient(WithUser(clientValidUser), badClientOpt()).ResourceMgmt()
 	if err == nil {
 		t.Fatal("Expected error from Client")
 	}
@@ -81,7 +81,7 @@ func TestClient(t *testing.T) {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
 
-	_, err = sdk.NewClient(WithUser(clientValidUser)).ChannelMgmt()
+	_, err = sdk.NewClient(WithUser(clientValidUser)).ResourceMgmt()
 	if err != nil {
 		t.Fatalf("Expected no error from Client, but got %v", err)
 	}
@@ -93,12 +93,12 @@ func TestWithOrg(t *testing.T) {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
 
-	_, err = sdk.NewClient(WithUser("notarealuser"), WithOrg(clientValidExtraOrg)).ChannelMgmt()
+	_, err = sdk.NewClient(WithUser("notarealuser"), WithOrg(clientValidExtraOrg)).ResourceMgmt()
 	if err == nil {
 		t.Fatal("Expected error from Client")
 	}
 
-	_, err = sdk.NewClient(WithUser(clientValidExtraUser), WithOrg(clientValidExtraOrg)).ChannelMgmt()
+	_, err = sdk.NewClient(WithUser(clientValidExtraUser), WithOrg(clientValidExtraOrg)).ResourceMgmt()
 	if err != nil {
 		t.Fatalf("Expected no error from Client, but got %v", err)
 	}
@@ -143,7 +143,7 @@ func TestNoIdentity(t *testing.T) {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
 
-	_, err = sdk.NewClient(noopIdentityOpt(), goodClientOpt()).ChannelMgmt()
+	_, err = sdk.NewClient(noopIdentityOpt(), goodClientOpt()).ResourceMgmt()
 	if err == nil {
 		t.Fatal("Expected error from Client")
 	}
