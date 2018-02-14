@@ -193,6 +193,21 @@ orderers:
 #    grpcOptions:
 #      ssl-target-name-override: orderer.example.com
 #      grpc-max-send-message-length: 15
+#   #these are keep alive client parameters:
+#      Make sure these parameters are set in coordination with the keepalive policy on the server,
+#      as incompatible settings can result in closing of connection.
+#      After a duration of this time if the client doesn't see any activity
+#      it pings the server to see if the transport is still alive.
+#      The current default value is infinity   
+#      keep-alive-time: 5s
+#      After having pinged for keepalive check, the client waits for a duration of Timeout 
+#      and if no activity is seen even after that the connection is closed.
+#      The current default value is 20 seconds
+#      keep-alive-timeout: 6s
+#      If true, client runs keepalive checks even with no active RPCs
+#      keep-alive-permit: false
+    #fail-fast is action to take when an RPC is attempted on broken connections or unreachable servers
+#      fail-fast: true
 
 #    tlsCACerts:
       # Certificate location absolute path

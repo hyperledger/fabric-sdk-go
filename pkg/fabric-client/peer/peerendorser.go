@@ -7,10 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
-	"context"
+	"time"
+
+	"golang.org/x/net/context"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -29,24 +32,40 @@ import (
 type peerEndorser struct {
 	grpcDialOption []grpc.DialOption
 	target         string
+	dialTimeout    time.Duration
+	failFast       bool
 }
 
-func newPeerEndorser(target string, certificate *x509.Certificate, serverHostOverride string,
-	dialBlocking bool, config apiconfig.Config) (
-	*peerEndorser, error) {
-	if len(target) == 0 {
+type peerEndorserRequest struct {
+	target             string
+	certificate        *x509.Certificate
+	serverHostOverride string
+	dialBlocking       bool
+	config             apiconfig.Config
+	kap                keepalive.ClientParameters
+	failFast           bool
+}
+
+func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
+	if len(endorseReq.target) == 0 {
 		return nil, errors.New("target is required")
 	}
 
 	// Construct dialer options for the connection
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.Endorser)))
-	if dialBlocking { // TODO: configurable?
+	if endorseReq.kap.Time > 0 || endorseReq.kap.Timeout > 0 {
+		opts = append(opts, grpc.WithKeepaliveParams(endorseReq.kap))
+	}
+	opts = append(opts, grpc.WithDefaultCallOptions(grpc.FailFast(endorseReq.failFast)))
+
+	timeout := endorseReq.config.TimeoutOrDefault(apiconfig.Endorser)
+
+	if endorseReq.dialBlocking { // TODO: configurable?
 		opts = append(opts, grpc.WithBlock())
 	}
 
-	if urlutil.IsTLSEnabled(target) {
-		tlsConfig, err := comm.TLSConfig(certificate, serverHostOverride, config)
+	if urlutil.IsTLSEnabled(endorseReq.target) {
+		tlsConfig, err := comm.TLSConfig(endorseReq.certificate, endorseReq.serverHostOverride, endorseReq.config)
 		if err != nil {
 			return nil, err
 		}
@@ -56,7 +75,7 @@ func newPeerEndorser(target string, certificate *x509.Certificate, serverHostOve
 		opts = append(opts, grpc.WithInsecure())
 	}
 
-	pc := &peerEndorser{grpcDialOption: opts, target: urlutil.ToAddress(target)}
+	pc := &peerEndorser{grpcDialOption: opts, target: urlutil.ToAddress(endorseReq.target), dialTimeout: timeout}
 
 	return pc, nil
 }
@@ -83,7 +102,9 @@ func (p *peerEndorser) ProcessTransactionProposal(proposal apifabclient.Transact
 }
 
 func (p *peerEndorser) conn() (*grpc.ClientConn, error) {
-	return grpc.Dial(p.target, p.grpcDialOption...)
+	ctx := context.Background()
+	ctx, _ = context.WithTimeout(ctx, p.dialTimeout)
+	return grpc.DialContext(ctx, p.target, p.grpcDialOption...)
 }
 
 func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {

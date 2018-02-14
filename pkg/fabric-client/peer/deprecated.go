@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"google.golang.org/grpc/keepalive"
 )
 
 // NewPeerTLSFromCert constructs a Peer given its endpoint configuration settings.
@@ -31,9 +32,19 @@ func NewPeerTLSFromCert(url string, certPath string, serverHostOverride string, 
 			return nil, err
 		}
 	}
+	var kap keepalive.ClientParameters
 
 	// TODO: config is declaring TLS but cert & serverHostOverride is being passed-in...
-	conn, err := newPeerEndorser(url, certificate, serverHostOverride, connBlocking, config)
+	endorseRequest := peerEndorserRequest{
+		target:             url,
+		certificate:        certificate,
+		serverHostOverride: serverHostOverride,
+		dialBlocking:       connBlocking,
+		config:             config,
+		kap:                kap,
+		failFast:           false,
+	}
+	conn, err := newPeerEndorser(&endorseRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +62,8 @@ func NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer, config apiconfig.Config) 
 	}
 	var certificate *x509.Certificate
 	var err error
-
+	kap := getKeepAliveOptions(peerCfg)
+	failFast := getFailFast(peerCfg)
 	if urlutil.IsTLSEnabled(peerCfg.URL) {
 		certificate, err = peerCfg.TLSCACerts.TLSCert()
 
@@ -59,7 +71,16 @@ func NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer, config apiconfig.Config) 
 			return nil, err
 		}
 	}
-	conn, err := newPeerEndorser(peerCfg.URL, certificate, serverHostOverride, connBlocking, config)
+	endorseRequest := peerEndorserRequest{
+		target:             peerCfg.URL,
+		certificate:        certificate,
+		serverHostOverride: serverHostOverride,
+		dialBlocking:       connBlocking,
+		config:             config,
+		kap:                kap,
+		failFast:           failFast,
+	}
+	conn, err := newPeerEndorser(&endorseRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +100,17 @@ func NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer, config apiconfig.Config) 
 // url is the URL with format of "host:port".
 // Deprecated: use peer.New() instead
 func NewPeer(url string, config apiconfig.Config) (*Peer, error) {
-	conn, err := newPeerEndorser(url, nil, "", connBlocking, config)
+	var kap keepalive.ClientParameters
+	endorseRequest := peerEndorserRequest{
+		target:             url,
+		certificate:        nil,
+		serverHostOverride: "",
+		dialBlocking:       connBlocking,
+		config:             config,
+		kap:                kap,
+		failFast:           false,
+	}
+	conn, err := newPeerEndorser(&endorseRequest)
 	if err != nil {
 		return nil, err
 	}

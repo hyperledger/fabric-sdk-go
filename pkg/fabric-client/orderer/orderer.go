@@ -7,9 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
+	"time"
+
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -19,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	"github.com/spf13/cast"
 
 	"crypto/x509"
 
@@ -35,6 +39,9 @@ type Orderer struct {
 	tlsCACert      *x509.Certificate
 	serverName     string
 	grpcDialOption []grpc.DialOption
+	kap            keepalive.ClientParameters
+	dialTimeout    time.Duration
+	failFast       bool
 }
 
 // Option describes a functional parameter for the New constructor
@@ -51,8 +58,12 @@ func New(config apiconfig.Config, opts ...Option) (*Orderer, error) {
 			return nil, err
 		}
 	}
-
-	grpcOpts := append([]grpc.DialOption{}, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.OrdererConnection)))
+	var grpcOpts []grpc.DialOption
+	if orderer.kap.Time > 0 {
+		grpcOpts = append(grpcOpts, grpc.WithKeepaliveParams(orderer.kap))
+	}
+	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.FailFast(orderer.failFast)))
+	orderer.dialTimeout = config.TimeoutOrDefault(apiconfig.OrdererConnection)
 
 	if urlutil.IsTLSEnabled(orderer.url) {
 		tlsConfig, err := comm.TLSConfig(orderer.tlsCACert, orderer.serverName, config)
@@ -116,7 +127,8 @@ func FromOrdererConfig(ordererCfg *apiconfig.OrdererConfig) Option {
 		}
 
 		o.serverName = getServerNameOverride(ordererCfg)
-
+		o.kap = getKeepAliveOptions(ordererCfg)
+		o.failFast = getFailFast(ordererCfg)
 		return nil
 	}
 }
@@ -143,6 +155,30 @@ func getServerNameOverride(ordererCfg *apiconfig.OrdererConfig) string {
 	return serverNameOverride
 }
 
+func getFailFast(ordererCfg *apiconfig.OrdererConfig) bool {
+
+	var failFast = true
+	if ff, ok := ordererCfg.GRPCOptions["fail-fast"].(bool); ok {
+		failFast = cast.ToBool(ff)
+	}
+	return failFast
+}
+
+func getKeepAliveOptions(ordererCfg *apiconfig.OrdererConfig) keepalive.ClientParameters {
+
+	var kap keepalive.ClientParameters
+	if kaTime, ok := ordererCfg.GRPCOptions["keep-alive-time"].(time.Duration); ok {
+		kap.Time = cast.ToDuration(kaTime)
+	}
+	if kaTimeout, ok := ordererCfg.GRPCOptions["keep-alive-timeout"].(time.Duration); ok {
+		kap.Timeout = cast.ToDuration(kaTimeout)
+	}
+	if kaPermit, ok := ordererCfg.GRPCOptions["keep-alive-permit"].(time.Duration); ok {
+		kap.PermitWithoutStream = cast.ToBool(kaPermit)
+	}
+	return kap
+}
+
 // URL Get the Orderer url. Required property for the instance objects.
 // Returns the address of the Orderer.
 func (o *Orderer) URL() string {
@@ -151,13 +187,14 @@ func (o *Orderer) URL() string {
 
 // SendBroadcast Send the created transaction to Orderer.
 func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, error) {
-	conn, err := grpc.Dial(o.url, o.grpcDialOption...)
+	ctx := context.Background()
+	ctx, _ = context.WithTimeout(ctx, o.dialTimeout)
+	conn, err := grpc.DialContext(ctx, o.url, o.grpcDialOption...)
 	if err != nil {
 		return nil, status.New(status.OrdererClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), nil)
 	}
 	defer conn.Close()
-
-	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Broadcast(context.Background())
+	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Broadcast(ctx)
 	if err != nil {
 		rpcStatus, ok := grpcstatus.FromError(err)
 		if ok {

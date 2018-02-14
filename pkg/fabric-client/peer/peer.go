@@ -15,6 +15,8 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/spf13/cast"
+	"google.golang.org/grpc/keepalive"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -35,6 +37,8 @@ type Peer struct {
 	roles                 []string
 	enrollmentCertificate *pem.Block
 	url                   string
+	kap                   keepalive.ClientParameters
+	failFast              bool
 }
 
 // Option describes a functional parameter for the New constructor
@@ -55,7 +59,16 @@ func New(config apiconfig.Config, opts ...Option) (*Peer, error) {
 
 	if peer.processor == nil {
 		// TODO: config is declaring TLS but cert & serverHostOverride is being passed-in...
-		peer.processor, err = newPeerEndorser(peer.url, peer.certificate, peer.serverName, connBlocking, peer.config)
+		endorseRequest := peerEndorserRequest{
+			target:             peer.url,
+			certificate:        peer.certificate,
+			serverHostOverride: peer.serverName,
+			dialBlocking:       connBlocking,
+			config:             peer.config,
+			kap:                peer.kap,
+			failFast:           peer.failFast,
+		}
+		peer.processor, err = newPeerEndorser(&endorseRequest)
 
 		if err != nil {
 			return nil, err
@@ -111,7 +124,8 @@ func FromPeerConfig(peerCfg *apiconfig.NetworkPeer) Option {
 
 		// TODO: Remove upon making peer interface immutable
 		p.mspID = peerCfg.MspID
-
+		p.kap = getKeepAliveOptions(peerCfg)
+		p.failFast = getFailFast(peerCfg)
 		return nil
 	}
 }
@@ -123,6 +137,30 @@ func getServerNameOverride(peerCfg *apiconfig.NetworkPeer) string {
 	}
 
 	return serverHostOverride
+}
+
+func getFailFast(peerCfg *apiconfig.NetworkPeer) bool {
+	var failFast = true
+	if ff, ok := peerCfg.GRPCOptions["fail-fast"].(bool); ok {
+		failFast = cast.ToBool(ff)
+	}
+
+	return failFast
+}
+
+func getKeepAliveOptions(peerCfg *apiconfig.NetworkPeer) keepalive.ClientParameters {
+
+	var kap keepalive.ClientParameters
+	if kaTime, ok := peerCfg.GRPCOptions["keep-alive-time"]; ok {
+		kap.Time = cast.ToDuration(kaTime)
+	}
+	if kaTimeout, ok := peerCfg.GRPCOptions["keep-alive-timeout"]; ok {
+		kap.Timeout = cast.ToDuration(kaTimeout)
+	}
+	if kaPermit, ok := peerCfg.GRPCOptions["keep-alive-permit"]; ok {
+		kap.PermitWithoutStream = cast.ToBool(kaPermit)
+	}
+	return kap
 }
 
 // WithPeerProcessor is a functional option for the peer.New constructor that configures the peer's proposal processor

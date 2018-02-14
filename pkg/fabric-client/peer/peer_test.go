@@ -8,11 +8,14 @@ package peer
 
 import (
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	mock_fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
@@ -238,4 +241,57 @@ func TestInterfaces(t *testing.T) {
 	if apiPeer == nil {
 		t.Fatalf("this shouldn't happen.")
 	}
+}
+
+func TestWithServerName(t *testing.T) {
+	option := WithServerName("name")
+	if option == nil {
+		t.Fatalf("Failed to get option for server name.")
+	}
+	fmt.Printf("%v\n", &option)
+}
+
+func TestPeerOptions(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	grpcOpts := make(map[string]interface{})
+	grpcOpts["fail-fast"] = true
+	grpcOpts["keep-alive-time"] = 1 * time.Second
+	grpcOpts["keep-alive-timeout"] = 2 * time.Second
+	grpcOpts["keep-alive-permit"] = false
+	grpcOpts["ssl-target-name-override"] = "mnq"
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+
+	tlsConfig := apiconfig.TLSConfig{
+		Path: "abc.com",
+		Pem:  "",
+	}
+	peerConfig := apiconfig.PeerConfig{
+		URL:         "abc.com",
+		GRPCOptions: grpcOpts,
+		TLSCACerts:  tlsConfig,
+	}
+
+	networkPeer := &apiconfig.NetworkPeer{
+		PeerConfig: peerConfig,
+		MspID:      "Org1MSP",
+	}
+	//from config with grpc
+	_, err := New(config, FromPeerConfig(networkPeer))
+	if err != nil {
+		t.Fatalf("Failed to create new peer FromPeerConfig (%v)", err)
+	}
+
+	//with peer processor
+	_, err = New(config, WithPeerProcessor(nil))
+	if err == nil {
+		t.Fatalf("Expected 'Failed to create new peer WithPeerProcessor ((target is required))")
+	}
+
+	//with peer processor
+	_, err = New(config, WithServerName("server-name"))
+	if err == nil {
+		t.Fatalf("Expected 'Failed to create new peer WithServerName ((target is required))")
+	}
+
 }
