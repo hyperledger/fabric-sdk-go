@@ -431,7 +431,7 @@ func (c *Channel) QueryByChaincode(request fab.ChaincodeInvokeRequest) ([][]byte
 		return nil, err
 	}
 	resps, err := queryChaincode(c.clientContext, c.name, request, targets)
-	return filterProposalResponses(resps, err)
+	return collectProposalResponses(resps), err
 }
 
 // QueryBySystemChaincode invokes a chaincode that isn't part of a channel.
@@ -443,5 +443,5 @@ func (c *Channel) QueryBySystemChaincode(request fab.ChaincodeInvokeRequest) ([]
 		return nil, err
 	}
 	resps, err := queryChaincode(c.clientContext, systemChannel, request, targets)
-	return filterProposalResponses(resps, err)
+	return collectProposalResponses(resps), err
 }

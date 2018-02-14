@@ -38,6 +38,9 @@ const (
 
 	// NoPeersFound No peers were discovered/configured
 	NoPeersFound Code = 6
+
+	// MultipleErrors multiple errors occurred
+	MultipleErrors Code = 7
 )
 
 // CodeName maps the codes in this packages to human-readable strings
@@ -49,6 +52,7 @@ var CodeName = map[int32]string{
 	4: "EMPTY_CERT",
 	5: "TIMEOUT",
 	6: "NO_PEERS_FOUND",
+	7: "MULTIPLE_ERRORS",
 }
 
 // ToInt32 cast to int32

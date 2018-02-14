@@ -9,7 +9,6 @@ package resource
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -20,6 +19,7 @@ import (
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -433,36 +433,19 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.Tra
 	return transactionProposalResponse, txID, err
 }
 
-// MultiError represents a slice of errors originating from each target peer.
-type MultiError []error
-
-func (me MultiError) Error() string {
-	msg := []string{}
-	for _, e := range me {
-		msg = append(msg, e.Error())
-	}
-	return strings.Join(msg, ",")
-}
-
 func (c *Resource) queryChaincode(request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([][]byte, error) {
-	errors := MultiError{}
+	var errors multi.Errors
 	responses := [][]byte{}
-	isErr := false
 
 	for _, target := range targets {
 		resp, err := c.queryChaincodeWithTarget(request, target)
-
 		responses = append(responses, resp)
-		errors = append(errors, err)
-
 		if err != nil {
-			isErr = true
+			errors = append(errors, err)
 		}
 	}
-	if isErr {
-		return responses, errors
-	}
-	return responses, nil
+
+	return responses, errors.ToError()
 }
 
 func (c *Resource) queryChaincodeWithTarget(request fab.ChaincodeInvokeRequest, target fab.ProposalProcessor) ([]byte, error) {
@@ -489,10 +472,6 @@ func (c *Resource) queryChaincodeWithTarget(request fab.ChaincodeInvokeRequest, 
 }
 
 func validateResponse(response *fab.TransactionProposalResponse) error {
-	if response.Err != nil {
-		return errors.Errorf("error from %s (%s)", response.Endorser, response.Err.Error())
-	}
-
 	if response.Status != http.StatusOK {
 		return errors.Errorf("bad status from %s (%d)", response.Endorser, response.Status)
 	}

@@ -12,7 +12,7 @@ import (
 
 // ProposalProcessor simulates transaction proposal, so that a client can submit the result for ordering.
 type ProposalProcessor interface {
-	ProcessTransactionProposal(proposal TransactionProposal) (TransactionProposalResult, error)
+	ProcessTransactionProposal(proposal TransactionProposal) (TransactionProposalResponse, error)
 }
 
 // ProposalSender provides the ability for a transaction proposal to be created and sent.
@@ -43,19 +43,11 @@ type TransactionProposal struct {
 	Proposal       *pb.Proposal
 }
 
-// TransactionProposalResponse encapsulates both the result of transaction proposal processing and errors.
+// TransactionProposalResponse respresents the result of transaction proposal processing.
 type TransactionProposalResponse struct {
-	TransactionProposalResult
-	Err error // TODO: consider refactoring
-}
-
-// TransactionProposalResult respresents the result of transaction proposal processing.
-type TransactionProposalResult struct {
 	Endorser string
 	Status   int32
 
 	Proposal         TransactionProposal
 	ProposalResponse *pb.ProposalResponse
 }
-
-// TODO: TransactionProposalResponse and TransactionProposalResult may need better names.

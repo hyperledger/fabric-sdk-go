@@ -10,12 +10,12 @@ import (
 	"bytes"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -54,32 +54,31 @@ func (c *Ledger) QueryInfo(targets []fab.ProposalProcessor) ([]*common.Blockchai
 		Fcn:         "GetChainInfo",
 		Args:        args,
 	}
-	tprs, err := queryChaincode(c.ctx, systemChannel, request, targets)
-	processed, err := processTxnProposalResponse(tprs, err, createBlockchainInfo)
+	tprs, errs := queryChaincode(c.ctx, systemChannel, request, targets)
 
 	responses := []*common.BlockchainInfo{}
-	for _, p := range processed {
-		responses = append(responses, p.(*common.BlockchainInfo))
+	for _, tpr := range tprs {
+		r, err := createBlockchainInfo(tpr)
+		if err != nil {
+			errs = multi.Append(errs, errors.WithMessage(err, "From target: "+tpr.Endorser))
+		} else {
+			responses = append(responses, r)
+		}
 	}
-	return responses, err
+	return responses, errs
 }
 
-func createBlockchainInfo(tpr *fab.TransactionProposalResponse, err error) (interface{}, error) {
+func createBlockchainInfo(tpr *fab.TransactionProposalResponse) (*common.BlockchainInfo, error) {
 	response := common.BlockchainInfo{}
-	if err != nil {
-		// response had an error - do not process.
-		return &response, err
-	}
-
-	err = proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
+	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal of transaction proposal response failed")
 	}
-	return &response, err
+	return &response, nil
 }
 
 // QueryBlockByHash queries the ledger for Block by block hash.
-// This query will be made to the primary peer.
+// This query will be made to specified targets.
 // Returns the block.
 func (c *Ledger) QueryBlockByHash(blockHash []byte, targets []fab.ProposalProcessor) ([]*common.Block, error) {
 
@@ -97,18 +96,22 @@ func (c *Ledger) QueryBlockByHash(blockHash []byte, targets []fab.ProposalProces
 		Fcn:         "GetBlockByHash",
 		Args:        args,
 	}
-	tprs, err := queryChaincode(c.ctx, systemChannel, request, targets)
-	processed, err := processTxnProposalResponse(tprs, err, createCommonBlock)
+	tprs, errs := queryChaincode(c.ctx, systemChannel, request, targets)
 
 	responses := []*common.Block{}
-	for _, p := range processed {
-		responses = append(responses, p.(*common.Block))
+	for _, tpr := range tprs {
+		r, err := createCommonBlock(tpr)
+		if err != nil {
+			errs = multi.Append(errs, errors.WithMessage(err, "From target: "+tpr.Endorser))
+		} else {
+			responses = append(responses, r)
+		}
 	}
-	return responses, err
+	return responses, errs
 }
 
 // QueryBlock queries the ledger for Block by block number.
-// This query will be made to the primary peer.
+// This query will be made to specified targets.
 // blockNumber: The number which is the ID of the Block.
 // It returns the block.
 func (c *Ledger) QueryBlock(blockNumber int, targets []fab.ProposalProcessor) ([]*common.Block, error) {
@@ -128,24 +131,23 @@ func (c *Ledger) QueryBlock(blockNumber int, targets []fab.ProposalProcessor) ([
 		Args:        args,
 	}
 
-	tprs, err := queryChaincode(c.ctx, systemChannel, request, targets)
-	processed, err := processTxnProposalResponse(tprs, err, createCommonBlock)
+	tprs, errs := queryChaincode(c.ctx, systemChannel, request, targets)
 
 	responses := []*common.Block{}
-	for _, p := range processed {
-		responses = append(responses, p.(*common.Block))
+	for _, tpr := range tprs {
+		r, err := createCommonBlock(tpr)
+		if err != nil {
+			errs = multi.Append(errs, errors.WithMessage(err, "From target: "+tpr.Endorser))
+		} else {
+			responses = append(responses, r)
+		}
 	}
-	return responses, err
+	return responses, errs
 }
 
-func createCommonBlock(tpr *fab.TransactionProposalResponse, err error) (interface{}, error) {
+func createCommonBlock(tpr *fab.TransactionProposalResponse) (*common.Block, error) {
 	response := common.Block{}
-	if err != nil {
-		// response had an error - do not process.
-		return &response, err
-	}
-
-	err = proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
+	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal of transaction proposal response failed")
 	}
@@ -153,9 +155,8 @@ func createCommonBlock(tpr *fab.TransactionProposalResponse, err error) (interfa
 }
 
 // QueryTransaction queries the ledger for Transaction by number.
-// This query will be made to the primary peer.
+// This query will be made to specified targets.
 // Returns the ProcessedTransaction information containing the transaction.
-// TODO: add optional target
 func (c *Ledger) QueryTransaction(transactionID string, targets []fab.ProposalProcessor) ([]*pb.ProcessedTransaction, error) {
 
 	// prepare arguments to call qscc GetTransactionByID function
@@ -169,24 +170,24 @@ func (c *Ledger) QueryTransaction(transactionID string, targets []fab.ProposalPr
 		Args:        args,
 	}
 
-	tprs, err := queryChaincode(c.ctx, systemChannel, request, targets)
-	processed, err := processTxnProposalResponse(tprs, err, createProcessedTransaction)
+	tprs, errs := queryChaincode(c.ctx, systemChannel, request, targets)
 
 	responses := []*pb.ProcessedTransaction{}
-	for _, p := range processed {
-		responses = append(responses, p.(*pb.ProcessedTransaction))
+	for _, tpr := range tprs {
+		r, err := createProcessedTransaction(tpr)
+		if err != nil {
+			errs = multi.Append(errs, errors.WithMessage(err, "From target: "+tpr.Endorser))
+		} else {
+			responses = append(responses, r)
+		}
 	}
-	return responses, err
+
+	return responses, errs
 }
 
-func createProcessedTransaction(tpr *fab.TransactionProposalResponse, err error) (interface{}, error) {
+func createProcessedTransaction(tpr *fab.TransactionProposalResponse) (*pb.ProcessedTransaction, error) {
 	response := pb.ProcessedTransaction{}
-	if err != nil {
-		// response had an error - do not process.
-		return &response, err
-	}
-
-	err = proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
+	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal of transaction proposal response failed")
 	}
@@ -194,35 +195,34 @@ func createProcessedTransaction(tpr *fab.TransactionProposalResponse, err error)
 }
 
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on this channel.
-// This query will be made to the primary peer.
+// This query will be made to specified targets.
 func (c *Ledger) QueryInstantiatedChaincodes(targets []fab.ProposalProcessor) ([]*pb.ChaincodeQueryResponse, error) {
 	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "lscc",
 		Fcn:         "getchaincodes",
 	}
 
-	tprs, err := queryChaincode(c.ctx, c.chName, request, targets)
-	processed, err := processTxnProposalResponse(tprs, err, createChaincodeQueryResponse)
+	tprs, errs := queryChaincode(c.ctx, c.chName, request, targets)
 
 	responses := []*pb.ChaincodeQueryResponse{}
-	for _, p := range processed {
-		responses = append(responses, p.(*pb.ChaincodeQueryResponse))
+	for _, tpr := range tprs {
+		r, err := createChaincodeQueryResponse(tpr)
+		if err != nil {
+			errs = multi.Append(errs, errors.WithMessage(err, "From target: "+tpr.Endorser))
+		} else {
+			responses = append(responses, r)
+		}
 	}
-	return responses, err
+	return responses, errs
 }
 
-func createChaincodeQueryResponse(tpr *fab.TransactionProposalResponse, err error) (interface{}, error) {
+func createChaincodeQueryResponse(tpr *fab.TransactionProposalResponse) (*pb.ChaincodeQueryResponse, error) {
 	response := pb.ChaincodeQueryResponse{}
-	if err != nil {
-		// response had an error - do not process.
-		return &response, err
-	}
-
-	err = proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
+	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal of transaction proposal response failed")
 	}
-	return &response, err
+	return &response, nil
 }
 
 // QueryConfigBlock returns the current configuration block for the specified channel. If the
@@ -243,14 +243,11 @@ func (c *Ledger) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.C
 		Args:        [][]byte{[]byte(c.chName)},
 	}
 	tpr, err := queryChaincode(c.ctx, c.chName, request, peersToTxnProcessors(peers))
-	if err != nil {
+	if err != nil && len(tpr) == 0 {
 		return nil, errors.WithMessage(err, "queryChaincode failed")
 	}
 
-	responses, err := filterProposalResponses(tpr, err)
-	if err != nil {
-		return nil, err
-	}
+	responses := collectProposalResponses(tpr)
 
 	if len(responses) < minResponses {
 		return nil, errors.Errorf("Required minimum %d endorsments got %d", minResponses, len(responses))
@@ -281,138 +278,34 @@ func (c *Ledger) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.C
 
 }
 
-type txnProposalResponseOp func(*fab.TransactionProposalResponse, error) (interface{}, error)
-
-func processTxnProposalResponse(tprs []*fab.TransactionProposalResponse, tperr error, op txnProposalResponseOp) ([]interface{}, error) {
-
-	// examine errors from peers and prepare error slice that can be checked during each response' processing.
-	var errs MultiError
-	if tperr != nil {
-		var ok bool
-		errs, ok = tperr.(MultiError)
-		if !ok {
-			return nil, errors.WithMessage(tperr, "chaincode query failed")
-		}
-	} else {
-		errs = make([]error, len(tprs))
-	}
-
-	// process each response and set processing error, if needed.
-	responses := []interface{}{}
-	var resperrs MultiError
-	isErr := false
-	for i, tpr := range tprs {
-		var resp interface{}
-		var err error
-
-		resp, err = op(tpr, errs[i])
-		if err != nil {
-			isErr = true
-		}
-
-		responses = append(responses, resp)
-		resperrs = append(resperrs, err)
-	}
-
-	// when any error has occurred return responses and errors as a MultiError.
-	if isErr {
-		return responses, resperrs
-	}
-	return responses, nil
-}
-
-func filterProposalResponses(tprs []*fab.TransactionProposalResponse, tperr error) ([][]byte, error) {
-	// examine errors from peers and prepare error slice that can be checked during each response' processing.
-	var errs MultiError
-	if tperr != nil {
-		var ok bool
-		errs, ok = tperr.(MultiError)
-		if !ok {
-			return nil, errors.WithMessage(tperr, "chaincode query failed")
-		}
-	} else {
-		errs = make(MultiError, len(tprs))
-	}
-
+func collectProposalResponses(tprs []*fab.TransactionProposalResponse) [][]byte {
 	responses := [][]byte{}
-	errMsg := ""
-	for i, tpr := range tprs {
-		if errs[i] != nil {
-			errMsg = errMsg + errs[i].Error() + "\n"
-		} else {
-			responses = append(responses, tpr.ProposalResponse.GetResponse().Payload)
-		}
+	for _, tpr := range tprs {
+		responses = append(responses, tpr.ProposalResponse.GetResponse().Payload)
 	}
 
-	if len(errMsg) > 0 {
-		return responses, errors.New(errMsg)
-	}
-	return responses, nil
-}
-
-// MultiError represents a slice of errors originating from each target peer.
-type MultiError []error
-
-func (me MultiError) Error() string {
-	msg := []string{}
-	for _, e := range me {
-		msg = append(msg, e.Error())
-	}
-	return strings.Join(msg, ",")
+	return responses
 }
 
 func queryChaincode(ctx fab.Context, channel string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
-	errors := MultiError{}
-	responses := []*fab.TransactionProposalResponse{}
-	isErr := false
-
-	// TODO: this can be done concurrently.
-	for _, target := range targets {
-		resp, err := queryChaincodeWithTarget(ctx, channel, request, target)
-
-		responses = append(responses, resp)
-		errors = append(errors, err)
-
-		if err != nil {
-			isErr = true
-		}
-	}
-	if isErr {
-		return responses, errors
-	}
-	return responses, nil
-}
-
-func queryChaincodeWithTarget(ctx fab.Context, channel string, request fab.ChaincodeInvokeRequest, target fab.ProposalProcessor) (*fab.TransactionProposalResponse, error) {
-
-	targets := []fab.ProposalProcessor{target}
-
 	tp, err := txn.NewProposal(ctx, channel, request)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewProposal failed")
 	}
+	tprs, errs := txn.SendProposal(tp, targets)
 
-	tpr, err := txn.SendProposal(tp, targets)
-	if err != nil {
-		return nil, errors.WithMessage(err, "SendProposal failed")
-	}
-
-	err = validateResponse(tpr[0])
-	if err != nil {
-		return nil, errors.WithMessage(err, "transaction proposal failed")
-	}
-
-	return tpr[0], nil
+	return filterResponses(tprs, errs)
 }
 
-func validateResponse(response *fab.TransactionProposalResponse) error {
-	if response.Err != nil {
-		return errors.Errorf("error from %s (%s)", response.Endorser, response.Err.Error())
+func filterResponses(responses []*fab.TransactionProposalResponse, errs error) ([]*fab.TransactionProposalResponse, error) {
+	filteredResponses := responses[:0]
+	for _, response := range responses {
+		if response.Status == http.StatusOK {
+			filteredResponses = append(filteredResponses, response)
+		} else {
+			errs = multi.Append(errs, errors.Errorf("bad status from %s (%d)", response.Endorser, response.Status))
+		}
 	}
 
-	if response.Status != http.StatusOK {
-		return errors.Errorf("bad status from %s (%d)", response.Endorser, response.Status)
-	}
-
-	return nil
+	return filteredResponses, errs
 }

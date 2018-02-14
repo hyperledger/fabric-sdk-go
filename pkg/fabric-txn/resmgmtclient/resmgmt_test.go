@@ -302,7 +302,8 @@ func TestInstallCCWithOpts(t *testing.T) {
 
 	// Setup targets
 	var peers []fab.Peer
-	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
+	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
+		Status: 200, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
 	peers = append(peers, &peer)
 
 	// Already installed chaincode request
@@ -344,13 +345,6 @@ func TestInstallCCWithOpts(t *testing.T) {
 	_, err = rc.InstallCC(req, resmgmt.WithTargets(peers...))
 	if err == nil {
 		t.Fatalf("Should have failed since install cc returns an error in the client")
-	}
-
-	// Chaincode that causes response error in installed chaincodes
-	req = resmgmt.InstallCCRequest{Name: "errorInResponse", Version: "v0", Path: "path", Package: &fab.CCPackage{Type: 1, Code: []byte("code")}}
-	responses, err = rc.InstallCC(req, resmgmt.WithTargets(peers...))
-	if err != nil {
-		t.Fatal(err)
 	}
 }
 

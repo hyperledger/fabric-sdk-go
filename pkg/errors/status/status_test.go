@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -65,6 +66,14 @@ func TestFromError(t *testing.T) {
 
 	s, ok = FromError(fmt.Errorf("Test"))
 	assert.False(t, ok)
+
+	errs := multi.Errors{}
+	errs = append(errs, fmt.Errorf("Test"))
+	s, ok = FromError(errs)
+	assert.True(t, ok)
+	assert.Equal(t, ClientStatus, s.Group)
+	assert.EqualValues(t, MultipleErrors.ToInt32(), s.Code)
+	assert.Equal(t, errs.Error(), s.Message)
 }
 
 func TestStatusToError(t *testing.T) {

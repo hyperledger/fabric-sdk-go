@@ -14,6 +14,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -270,16 +271,15 @@ func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest, options ..
 	}
 
 	responses := make([]resmgmt.InstallCCResponse, 0)
+	var errs multi.Errors
 
 	// Targets will be adjusted if cc has already been installed
 	newTargets := make([]fab.Peer, 0)
-
 	for _, target := range targets {
 		installed, err := rc.isChaincodeInstalled(req, target)
 		if err != nil {
-			// Add to responses with unable to verify error message
-			response := resmgmt.InstallCCResponse{Target: target.URL(), Err: errors.Errorf("unable to verify if cc is installed on %s", target.URL())}
-			responses = append(responses, response)
+			// Add to errors with unable to verify error message
+			errs = append(errs, errors.Errorf("unable to verify if cc is installed on %s", target.URL()))
 			continue
 		}
 		if installed {
@@ -300,20 +300,18 @@ func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest, options ..
 
 	icr := fab.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package, Targets: peer.PeersToTxnProcessors(newTargets)}
 	transactionProposalResponse, _, err := rc.resource.InstallChaincode(icr)
-	if err != nil {
-		return nil, errors.WithMessage(err, "InstallChaincode failed")
-	}
-
 	for _, v := range transactionProposalResponse {
+		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v", req.Name, v.Endorser, v.Status)
 
-		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v, error:'%s'", req.Name, v.Endorser, v.Status, v.Err)
-
-		response := resmgmt.InstallCCResponse{Target: v.Endorser, Status: v.Status, Err: v.Err}
+		response := resmgmt.InstallCCResponse{Target: v.Endorser, Status: v.Status}
 		responses = append(responses, response)
 	}
 
-	return responses, nil
+	if err != nil {
+		return responses, errors.WithMessage(err, "InstallChaincode failed")
+	}
 
+	return responses, nil
 }
 
 func checkRequiredInstallCCParams(req resmgmt.InstallCCRequest) error {
@@ -396,12 +394,6 @@ func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType CCProposalType, chan
 		}
 	default:
 		return errors.Errorf("chaincode proposal type %d not supported", ccProposalType)
-	}
-
-	for _, v := range txProposalResponse {
-		if v.Err != nil {
-			return errors.WithMessage(v.Err, "cc proposal failed")
-		}
 	}
 
 	channelService, err := rc.channelProvider.NewChannelService(rc.identity, channelID)

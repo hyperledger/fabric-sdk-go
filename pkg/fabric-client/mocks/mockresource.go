@@ -93,12 +93,9 @@ func (c *MockResource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab
 	}
 
 	if req.Name == "errorInResponse" {
-		result := fab.TransactionProposalResult{Endorser: "http://peer1.com", Status: 10}
-		response := &fab.TransactionProposalResponse{TransactionProposalResult: result, Err: errors.New("Generate Response Error")}
-		return []*fab.TransactionProposalResponse{response}, "1234", nil
+		return []*fab.TransactionProposalResponse{}, "1234", errors.New("Generate Response Error")
 	}
 
-	result := fab.TransactionProposalResult{Endorser: "http://peer1.com", Status: 0}
-	response := &fab.TransactionProposalResponse{TransactionProposalResult: result}
+	response := &fab.TransactionProposalResponse{Endorser: "http://peer1.com", Status: 0}
 	return []*fab.TransactionProposalResponse{response}, "1234", nil
 }
