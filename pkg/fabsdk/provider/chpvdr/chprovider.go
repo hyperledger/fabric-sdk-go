@@ -88,8 +88,8 @@ func (cs *ChannelService) EventHub() (apifabclient.EventHub, error) {
 	return cs.fabricProvider.CreateEventHub(cs.identityContext, cs.cfg.Name())
 }
 
-// ChannelConfig returns the ChannelConfig for the named channel
-func (cs *ChannelService) ChannelConfig() (apifabclient.ChannelConfig, error) {
+// Config returns the Config for the named channel
+func (cs *ChannelService) Config() (apifabclient.ChannelConfig, error) {
 	return cs.fabricProvider.CreateChannelConfig(cs.identityContext, cs.cfg.Name())
 }
 

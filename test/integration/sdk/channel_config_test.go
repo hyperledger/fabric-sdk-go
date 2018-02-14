@@ -46,7 +46,7 @@ func TestChannelConfig(t *testing.T) {
 		t.Fatalf("Failed to create new channel service: %s", err)
 	}
 
-	cfg, err := cs.ChannelConfig()
+	cfg, err := cs.Config()
 	if err != nil {
 		t.Fatalf("Failed to create new channel config: %s", err)
 	}
@@ -97,7 +97,7 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 		t.Fatalf("Failed to create new channel service: %s", err)
 	}
 
-	cfg, err := cs.ChannelConfig()
+	cfg, err := cs.Config()
 	if err != nil {
 		t.Fatalf("Failed to create new channel config: %s", err)
 	}

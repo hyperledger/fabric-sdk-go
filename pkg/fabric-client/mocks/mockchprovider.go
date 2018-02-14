@@ -64,8 +64,8 @@ func (cs *MockChannelService) Channel() (fab.Channel, error) {
 	return ch, nil
 }
 
-// ChannelConfig ...
-func (cs *MockChannelService) ChannelConfig() (fab.ChannelConfig, error) {
+// Config ...
+func (cs *MockChannelService) Config() (fab.ChannelConfig, error) {
 	return nil, nil
 }
 
