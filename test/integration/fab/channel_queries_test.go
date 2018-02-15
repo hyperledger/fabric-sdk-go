@@ -19,18 +19,16 @@ func TestChannelQueries(t *testing.T) {
 	chaincodeID := integration.GenerateRandomID()
 	testSetup := initializeTests(t, chaincodeID)
 
-	testQueryConfigBlock(t, testSetup.Channel)
+	testQueryConfigBlock(t, testSetup.Channel, testSetup.Targets[:1])
 
-	testQueryChannels(t, testSetup.Channel, testSetup.Client)
+	testQueryChannels(t, testSetup.Channel, testSetup.Client, testSetup.Targets[0])
 
-	testInstalledChaincodes(t, chaincodeID, testSetup.Channel, testSetup.Client)
+	testInstalledChaincodes(t, chaincodeID, testSetup.Channel, testSetup.Client, testSetup.Targets[0])
 
-	testQueryByChaincode(t, testSetup.SDK.Config(), testSetup.Channel)
+	testQueryByChaincode(t, testSetup.SDK.Config(), testSetup.Channel, testSetup.Targets)
 }
 
-func testQueryConfigBlock(t *testing.T, channel fab.Channel) {
-	// Our target will be primary peer on this channel
-	targets := []fab.Peer{channel.PrimaryPeer()}
+func testQueryConfigBlock(t *testing.T, channel fab.Channel, targets []fab.ProposalProcessor) {
 
 	// Retrieve current channel configuration
 	cfgEnvelope, err := channel.QueryConfigBlock(targets, 1)
@@ -44,11 +42,10 @@ func testQueryConfigBlock(t *testing.T, channel fab.Channel) {
 
 }
 
-func testQueryChannels(t *testing.T, channel fab.Channel, client fab.Resource) {
+func testQueryChannels(t *testing.T, channel fab.Channel, client fab.Resource, target fab.ProposalProcessor) {
 
 	// Our target will be primary peer on this channel
-	target := channel.PrimaryPeer()
-	t.Logf("****QueryChannels for %s", target.URL())
+	t.Logf("****QueryChannels for %s", target)
 	channelQueryResponse, err := client.QueryChannels(target)
 	if err != nil {
 		t.Fatalf("QueryChannels return error: %v", err)
@@ -60,11 +57,10 @@ func testQueryChannels(t *testing.T, channel fab.Channel, client fab.Resource) {
 
 }
 
-func testInstalledChaincodes(t *testing.T, ccID string, channel fab.Channel, client fab.Resource) {
+func testInstalledChaincodes(t *testing.T, ccID string, channel fab.Channel, client fab.Resource, target fab.ProposalProcessor) {
 
 	// Our target will be primary peer on this channel
-	target := channel.PrimaryPeer()
-	t.Logf("****QueryInstalledChaincodes for %s", target.URL())
+	t.Logf("****QueryInstalledChaincodes for %s", target)
 
 	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(target)
 	if err != nil {
@@ -84,9 +80,7 @@ func testInstalledChaincodes(t *testing.T, ccID string, channel fab.Channel, cli
 	}
 }
 
-func testQueryByChaincode(t *testing.T, config apiconfig.Config, channel fab.Channel) {
-
-	targets := peer.PeersToTxnProcessors(channel.Peers())
+func testQueryByChaincode(t *testing.T, config apiconfig.Config, channel fab.Channel, targets []fab.ProposalProcessor) {
 
 	request := fab.ChaincodeInvokeRequest{
 		Targets:     targets,

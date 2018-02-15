@@ -7,7 +7,6 @@ package channel
 
 import (
 	"net"
-	"strings"
 	"testing"
 
 	"google.golang.org/grpc"
@@ -22,19 +21,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
-func TestAddPeerDuplicateCheck(t *testing.T) {
-	channel, _ := setupTestChannel()
-
-	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
-	channel.AddPeer(&peer)
-
-	err := channel.AddPeer(&peer)
-
-	if err == nil || !strings.Contains(err.Error(), "http://peer1.com already exists") {
-		t.Fatal("Duplicate Peer check is not working as expected")
-	}
-}
-
 func TestSendInstantiateProposal(t *testing.T) {
 	//Setup channel
 	user := mocks.NewMockUserWithMSPID("test", "1234")
@@ -45,15 +31,14 @@ func TestSendInstantiateProposal(t *testing.T) {
 	defer mockCtrl.Finish()
 	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
-	tp := fab.TransactionProposal{SignedProposal: &pb.SignedProposal{}}
-	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
+	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99}
 
-	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(tpr, nil)
-	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(tpr, nil)
+	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(&tpr, nil)
+	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(&tpr, nil)
 	targets := []fab.ProposalProcessor{proc}
 
 	//Add a Peer
-	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
+	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}}
 	channel.AddPeer(&peer)
 
 	tresponse, txnid, err := channel.SendInstantiateProposal("", nil, "",
@@ -121,10 +106,9 @@ func TestSendUpgradeProposal(t *testing.T) {
 	defer mockCtrl.Finish()
 	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
-	tp := fab.TransactionProposal{SignedProposal: &pb.SignedProposal{}}
-	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
+	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, ProposalResponse: nil}
 
-	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(tpr, nil)
+	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(&tpr, nil)
 	targets := []fab.ProposalProcessor{proc}
 
 	//Add a Peer

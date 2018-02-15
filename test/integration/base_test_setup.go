@@ -17,7 +17,6 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
@@ -30,6 +29,8 @@ type BaseSetupImpl struct {
 	SDK             *fabsdk.FabricSDK
 	Identity        fab.IdentityContext
 	Client          fab.Resource
+	Transactor      fab.Transactor
+	Targets         []fab.ProposalProcessor
 	Channel         fab.Channel
 	EventHub        fab.EventHub
 	ConnectEventHub bool
@@ -83,90 +84,51 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 	setup.SDK = sdk
 
-	session, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(setup.OrgID)).Session()
+	client := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(setup.OrgID))
+
+	session, err := client.Session()
 	if err != nil {
 		return errors.WithMessage(err, "failed getting admin user session for org")
 	}
-
 	setup.Identity = session
 
-	sc, err := sdk.FabricProvider().CreateResourceClient(setup.Identity)
+	rc, err := sdk.FabricProvider().CreateResourceClient(setup.Identity)
 	if err != nil {
 		return errors.WithMessage(err, "NewResourceClient failed")
 	}
+	setup.Client = rc
 
-	setup.Client = sc
-
-	// TODO: Review logic for retrieving peers (should this be channel peer only)
-	channel, err := GetChannel(sdk, setup.Identity, sdk.Config(), chconfig.NewChannelCfg(setup.ChannelID), []string{setup.OrgID})
+	targets, err := getOrgTargets(sdk.Config(), setup.OrgID)
 	if err != nil {
-		return errors.Wrapf(err, "create channel (%s) failed: %v", setup.ChannelID)
+		return errors.Wrapf(err, "loading target peers from config failed")
 	}
+	setup.Targets = targets
 
-	targets := []fab.ProposalProcessor{channel.PrimaryPeer()}
+	// Create channel for tests
 	req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session}
 	InitializeChannel(sdk, setup.OrgID, req, targets)
 
-	if err := setup.setupEventHub(sdk, setup.Identity); err != nil {
-		return err
+	// Create the channel transactor
+	chService, err := client.ChannelService(setup.ChannelID)
+	if err != nil {
+		return errors.WithMessage(err, "channel service creation failed")
 	}
+	transactor, err := chService.Transactor()
+	if err != nil {
+		return errors.WithMessage(err, "transactor client creation failed")
+	}
+	setup.Transactor = transactor
 
-	// At this point we are able to retrieve channel configuration
-	configProvider, err := sdk.FabricProvider().CreateChannelConfig(setup.Identity, setup.ChannelID)
+	channel, err := chService.Channel()
 	if err != nil {
-		return err
-	}
-	chCfg, err := configProvider.Query()
-	if err != nil {
-		return err
-	}
-
-	// Get channel from dynamic info
-	channel, err = GetChannel(sdk, setup.Identity, sdk.Config(), chCfg, []string{setup.OrgID})
-	if err != nil {
-		return errors.Wrapf(err, "create channel (%s) failed: %v", setup.ChannelID)
+		return errors.WithMessage(err, "channel client creation failed")
 	}
 	setup.Channel = channel
 
-	setup.Initialized = true
-
-	return nil
-}
-
-// GetChannel initializes and returns a channel based on config
-func GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.Config, chCfg fab.ChannelCfg, orgs []string) (fab.Channel, error) {
-
-	channel, err := sdk.FabricProvider().CreateChannelClient(ic, chCfg)
+	eventHub, err := chService.EventHub()
 	if err != nil {
-		return nil, errors.WithMessage(err, "NewChannel failed")
+		return errors.WithMessage(err, "eventhub client creation failed")
 	}
-
-	for _, org := range orgs {
-		peerConfig, err := config.PeersConfig(org)
-		if err != nil {
-			return nil, errors.WithMessage(err, "reading peer config failed")
-		}
-		for _, p := range peerConfig {
-			endorser, err := sdk.FabricProvider().CreatePeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: p})
-			if err != nil {
-				return nil, errors.WithMessage(err, "NewPeer failed")
-			}
-			err = channel.AddPeer(endorser)
-			if err != nil {
-				return nil, errors.WithMessage(err, "adding peer failed")
-			}
-		}
-	}
-
-	return channel, nil
-}
-
-func (setup *BaseSetupImpl) setupEventHub(client *fabsdk.FabricSDK, identity fab.IdentityContext) error {
-	eventHub, err := client.FabricProvider().CreateEventHub(identity, setup.ChannelID)
-	if err != nil {
-		return err
-	}
-
 	if setup.ConnectEventHub {
 		if err := eventHub.Connect(); err != nil {
 			return errors.WithMessage(err, "eventHub connect failed")
@@ -174,7 +136,26 @@ func (setup *BaseSetupImpl) setupEventHub(client *fabsdk.FabricSDK, identity fab
 	}
 	setup.EventHub = eventHub
 
+	setup.Initialized = true
+
 	return nil
+}
+
+func getOrgTargets(config apiconfig.Config, org string) ([]fab.ProposalProcessor, error) {
+	targets := []fab.ProposalProcessor{}
+
+	peerConfig, err := config.PeersConfig(org)
+	if err != nil {
+		return nil, errors.WithMessage(err, "reading peer config failed")
+	}
+	for _, p := range peerConfig {
+		target, err := peer.New(config, peer.FromPeerConfig(&apiconfig.NetworkPeer{PeerConfig: p}))
+		if err != nil {
+			return nil, errors.WithMessage(err, "NewPeer failed")
+		}
+		targets = append(targets, target)
+	}
+	return targets, nil
 }
 
 // InitConfig ...
@@ -183,9 +164,9 @@ func (setup *BaseSetupImpl) InitConfig() apiconfig.ConfigProvider {
 }
 
 // InstallCC use low level client to install chaincode
-func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, ccPackage *fab.CCPackage) error {
+func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, ccPackage *fab.CCPackage, targets []fab.ProposalProcessor) error {
 
-	icr := fab.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: peer.PeersToTxnProcessors(setup.Channel.Peers())}
+	icr := fab.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: targets}
 
 	_, _, err := setup.Client.InstallChaincode(icr)
 	if err != nil {
@@ -235,32 +216,38 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.IdentityOption, 
 }
 
 // CreateAndSendTransactionProposal ... TODO duplicate
-func CreateAndSendTransactionProposal(channel fab.Channel, chainCodeID string,
-	fcn string, args [][]byte, targets []fab.ProposalProcessor, transientData map[string][]byte) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+func CreateAndSendTransactionProposal(transactor fab.ProposalSender, chainCodeID string,
+	fcn string, args [][]byte, targets []fab.ProposalProcessor, transientData map[string][]byte) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, error) {
 
-	request := fab.ChaincodeInvokeRequest{
+	propReq := fab.ChaincodeInvokeRequest{
 		Fcn:          fcn,
 		Args:         args,
 		TransientMap: transientData,
 		ChaincodeID:  chainCodeID,
 	}
-	transactionProposalResponses, txnID, err := channel.SendTransactionProposal(request, targets)
+
+	tp, err := transactor.CreateChaincodeInvokeProposal(propReq)
 	if err != nil {
-		return nil, txnID, err
+		return nil, nil, errors.WithMessage(err, "creating transaction proposal failed")
 	}
 
-	return transactionProposalResponses, txnID, nil
+	tpr, err := transactor.SendTransactionProposal(tp, targets)
+	return tpr, tp, err
 }
 
 // CreateAndSendTransaction ...
-func CreateAndSendTransaction(channel fab.Channel, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
+func CreateAndSendTransaction(transactor fab.Sender, proposal *fab.TransactionProposal, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
 
-	tx, err := channel.CreateTransaction(resps)
+	txRequest := fab.TransactionRequest{
+		Proposal:          proposal,
+		ProposalResponses: resps,
+	}
+	tx, err := transactor.CreateTransaction(txRequest)
 	if err != nil {
 		return nil, errors.WithMessage(err, "CreateTransaction failed")
 	}
 
-	transactionResponse, err := channel.SendTransaction(tx)
+	transactionResponse, err := transactor.SendTransaction(tx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "SendTransaction failed")
 

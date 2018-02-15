@@ -8,11 +8,11 @@ SPDX-License-Identifier: Apache-2.0
 package txn
 
 import (
+	"bytes"
 	"math/rand"
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -46,21 +46,21 @@ type context interface {
 }
 
 // New create a transaction with proposal response, following the endorsement policy.
-func New(resps []*fab.TransactionProposalResponse) (*fab.Transaction, error) {
-	if len(resps) == 0 {
+func New(request fab.TransactionRequest) (*fab.Transaction, error) {
+	if len(request.ProposalResponses) == 0 {
 		return nil, errors.New("at least one proposal response is necessary")
 	}
 
-	proposal := &resps[0].Proposal
+	proposal := request.Proposal
 
 	// the original header
-	hdr, err := protos_utils.GetHeader(proposal.Proposal.Header)
+	hdr, err := protos_utils.GetHeader(proposal.Header)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal proposal header failed")
 	}
 
 	// the original payload
-	pPayl, err := protos_utils.GetChaincodeProposalPayload(proposal.Proposal.Payload)
+	pPayl, err := protos_utils.GetChaincodeProposalPayload(proposal.Payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal proposal payload failed")
 	}
@@ -71,19 +71,24 @@ func New(resps []*fab.TransactionProposalResponse) (*fab.Transaction, error) {
 		return nil, err
 	}
 
-	for _, r := range resps {
+	responsePayload := request.ProposalResponses[0].ProposalResponse.Payload
+	for _, r := range request.ProposalResponses {
 		if r.ProposalResponse.Response.Status != 200 {
 			return nil, errors.Errorf("proposal response was not successful, error code %d, msg %s", r.ProposalResponse.Response.Status, r.ProposalResponse.Response.Message)
+		}
+		if !bytes.Equal(responsePayload, r.ProposalResponse.Payload) {
+			return nil, errors.Errorf("proposal response payloads are not the same (%v, %v)", responsePayload, r.ProposalResponse.Payload)
 		}
 	}
 
 	// fill endorsements
-	endorsements := make([]*pb.Endorsement, len(resps))
-	for n, r := range resps {
+	endorsements := make([]*pb.Endorsement, len(request.ProposalResponses))
+	for n, r := range request.ProposalResponses {
 		endorsements[n] = r.ProposalResponse.Endorsement
 	}
+
 	// create ChaincodeEndorsedAction
-	cea := &pb.ChaincodeEndorsedAction{ProposalResponsePayload: resps[0].ProposalResponse.Payload, Endorsements: endorsements}
+	cea := &pb.ChaincodeEndorsedAction{ProposalResponsePayload: responsePayload, Endorsements: endorsements}
 
 	// obtain the bytes of the proposal payload that will go to the transaction
 	propPayloadBytes, err := protos_utils.GetBytesProposalPayloadForTx(pPayl, hdrExt.PayloadVisibility)
@@ -257,25 +262,6 @@ func SendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orde
 	}
 
 	return nil, errors.New("unexpected: didn't receive a block from any of the orderer servces and didn't receive any error")
-}
-
-func signProposal(ctx context, proposal *pb.Proposal) (*pb.SignedProposal, error) {
-	proposalBytes, err := proto.Marshal(proposal)
-	if err != nil {
-		return nil, errors.Wrap(err, "mashal proposal failed")
-	}
-
-	signingMgr := ctx.SigningManager()
-	if signingMgr == nil {
-		return nil, errors.New("signing manager is nil")
-	}
-
-	signature, err := signingMgr.Sign(proposalBytes, ctx.PrivateKey())
-	if err != nil {
-		return nil, errors.WithMessage(err, "signing proposal failed")
-	}
-
-	return &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}, nil
 }
 
 // Status is the transaction status returned from eventhub tx events

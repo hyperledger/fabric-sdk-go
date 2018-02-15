@@ -23,9 +23,6 @@ import (
  * primary orderer to retrieve the configuration settings for this channel.
  */
 type Channel interface {
-	Sender
-	ProposalSender
-
 	Name() string
 	ChannelConfig() (*common.ConfigEnvelope, error)
 
@@ -56,7 +53,7 @@ type Channel interface {
 	QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error)
 	QueryByChaincode(ChaincodeInvokeRequest) ([][]byte, error)
 	QueryBySystemChaincode(request ChaincodeInvokeRequest) ([][]byte, error)
-	QueryConfigBlock(peers []Peer, minResponses int) (*common.ConfigEnvelope, error)
+	QueryConfigBlock(targets []ProposalProcessor, minResponses int) (*common.ConfigEnvelope, error)
 }
 
 // ChannelLedger provides access to the underlying ledger for a channel.

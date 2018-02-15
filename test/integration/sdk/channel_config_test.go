@@ -87,7 +87,7 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 
 	// Create SDK setup for channel client with retrieve channel configuration from orderer
 	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile),
-		fabsdk.WithCorePkg(&ChannelConfigFromOrdererProviderFactory{orderer: "orderer.example.com"}))
+		fabsdk.WithCorePkg(&ChannelConfigFromOrdererProviderFactory{orderer: "orderer.example.com:7050"}))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

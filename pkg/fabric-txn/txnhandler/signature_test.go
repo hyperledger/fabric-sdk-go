@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -162,12 +163,25 @@ func setupContextForSignatureValidation(mspMgr *fcmocks.MockMSPManager, peers []
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	return &chclient.ClientContext{
-		Channel:   testChannel,
-		Discovery: discoveryService,
-		Selection: selectionService,
+	ctx := setupTestContext()
+	transactor := txnmocks.MockTransactor{
+		Ctx:       ctx,
+		ChannelID: "",
 	}
 
+	return &chclient.ClientContext{
+		Channel:    testChannel,
+		Discovery:  discoveryService,
+		Selection:  selectionService,
+		Transactor: &transactor,
+	}
+
+}
+
+func setupTestContext() apifabclient.Context {
+	user := fcmocks.NewMockUser("test")
+	ctx := fcmocks.NewMockContext(user)
+	return ctx
 }
 
 var certPem = `-----BEGIN CERTIFICATE-----

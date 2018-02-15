@@ -247,12 +247,12 @@ func TestInvokeHandler(t *testing.T) {
 // customEndorsementHandler ignores the channel in the ClientContext
 // and instead sends the proposal to the given channel
 type customEndorsementHandler struct {
-	channel apifabclient.Channel
-	next    chclient.Handler
+	transactor apifabclient.Transactor
+	next       chclient.Handler
 }
 
 func (h *customEndorsementHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
-	transactionProposalResponses, txnID, err := createAndSendTransactionProposal(h.channel, &requestContext.Request, requestContext.Opts.ProposalProcessors)
+	transactionProposalResponses, txnID, err := createAndSendTransactionProposal(h.transactor, &requestContext.Request, requestContext.Opts.ProposalProcessors)
 
 	requestContext.Response.TransactionID = txnID
 
@@ -278,16 +278,17 @@ func TestQueryWithCustomEndorser(t *testing.T) {
 	// Use the customEndorsementHandler to send the proposal to
 	// the system channel instead of the channel in context
 
-	systemChannel, err := setupChannel("")
-	if err != nil {
-		t.Fatalf("Error getting system channel: %s", err)
+	ctx := setupTestContext()
+	transactor := txnmocks.MockTransactor{
+		Ctx:       ctx,
+		ChannelID: "",
 	}
 
 	response, err := chClient.InvokeHandler(
 		txnhandler.NewProposalProcessorHandler(
 			&customEndorsementHandler{
-				channel: systemChannel,
-				next:    txnhandler.NewEndorsementValidationHandler(),
+				transactor: &transactor,
+				next:       txnhandler.NewEndorsementValidationHandler(),
 			},
 		),
 		chclient.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}},
@@ -453,11 +454,11 @@ func TestDiscoveryGreylist(t *testing.T) {
 	testPeer1.Error = status.New(status.EndorserClientStatus,
 		status.ConnectionFailed.ToInt32(), "test", []interface{}{testPeer1.URL()})
 
-	testChannel, err := setupTestChannel()
-	assert.Nil(t, err, "Got error %s", err)
+	fabCtx := setupTestContext()
 
 	orderer := fcmocks.NewMockOrderer("", nil)
-	testChannel.AddOrderer(orderer)
+	testChannelSvc, err := setupTestChannelService(fabCtx, []apifabclient.Orderer{orderer})
+	assert.Nil(t, err, "Got error %s", err)
 
 	discoveryService, err := setupTestDiscovery(nil, []apifabclient.Peer{testPeer1})
 	assert.Nil(t, err, "Got error %s", err)
@@ -467,10 +468,10 @@ func TestDiscoveryGreylist(t *testing.T) {
 	selectionService.SelectAll = true
 
 	ctx := Context{
-		ProviderContext:  setupTestContext(),
+		ProviderContext:  fabCtx,
 		DiscoveryService: discoveryService,
 		SelectionService: selectionService,
-		Channel:          testChannel,
+		ChannelService:   testChannelSvc,
 	}
 	chClient, err := New(ctx)
 	assert.Nil(t, err, "Got error %s", err)
@@ -502,10 +503,32 @@ func TestDiscoveryGreylist(t *testing.T) {
 	assert.True(t, ok, "expected status error")
 	assert.EqualValues(t, int32(common.Status_SERVICE_UNAVAILABLE), s.Code, "expected configured mock error")
 	assert.Equal(t, attempts+1, testPeer1.ProcessProposalCalls, "expected peer 1 not to be greylisted")
+
 }
 
-func setupTestChannel() (*channel.Channel, error) {
-	return setupChannel("testChannel")
+func setupTestChannelService(ctx apifabclient.Context, orderers []apifabclient.Orderer) (apifabclient.ChannelService, error) {
+	const channelName = "testChannel"
+	testChannel, err := setupChannel(channelName)
+
+	chProvider, err := fcmocks.NewMockChannelProvider(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "mock channel provider creation failed")
+	}
+	chProvider.SetChannel(channelName, testChannel)
+
+	chService, err := chProvider.NewChannelService(ctx, channelName)
+	if err != nil {
+		return nil, errors.WithMessage(err, "mock channel service creation failed")
+	}
+
+	transactor := txnmocks.MockTransactor{
+		Ctx:       ctx,
+		ChannelID: channelName,
+		Orderers:  orderers,
+	}
+	chService.(*fcmocks.MockChannelService).SetTransactor(&transactor)
+
+	return chService, nil
 }
 
 func setupChannel(channelID string) (*channel.Channel, error) {
@@ -558,14 +581,9 @@ func setupChannelClient(peers []apifabclient.Peer, t *testing.T) *ChannelClient 
 func setupChannelClientWithError(discErr error, selectionErr error, peers []apifabclient.Peer, t *testing.T) *ChannelClient {
 
 	fabCtx := setupTestContext()
-
-	testChannel, err := setupTestChannel()
-	if err != nil {
-		t.Fatalf("Failed to setup test channel: %s", err)
-	}
-
 	orderer := fcmocks.NewMockOrderer("", nil)
-	testChannel.AddOrderer(orderer)
+	testChannelSvc, err := setupTestChannelService(fabCtx, []apifabclient.Orderer{orderer})
+	assert.Nil(t, err, "Got error %s", err)
 
 	discoveryService, err := setupTestDiscovery(discErr, nil)
 	if err != nil {
@@ -581,7 +599,7 @@ func setupChannelClientWithError(discErr error, selectionErr error, peers []apif
 		ProviderContext:  fabCtx,
 		DiscoveryService: discoveryService,
 		SelectionService: selectionService,
-		Channel:          testChannel,
+		ChannelService:   testChannelSvc,
 	}
 	ch, err := New(ctx)
 	if err != nil {
@@ -595,13 +613,8 @@ func setupChannelClientWithNodes(peers []apifabclient.Peer,
 	orderers []apifabclient.Orderer, t *testing.T) *ChannelClient {
 
 	fabCtx := setupTestContext()
-	testChannel, err := setupTestChannel()
-	assert.Nil(t, err, "Failed to setup test channel")
-
-	for _, orderer := range orderers {
-		err = testChannel.AddOrderer(orderer)
-		assert.Nil(t, err, "Failed to add orderer %+v", orderer)
-	}
+	testChannelSvc, err := setupTestChannelService(fabCtx, orderers)
+	assert.Nil(t, err, "Got error %s", err)
 
 	discoveryService, err := setupTestDiscovery(nil, nil)
 	assert.Nil(t, err, "Failed to setup discovery service")
@@ -613,7 +626,7 @@ func setupChannelClientWithNodes(peers []apifabclient.Peer,
 		ProviderContext:  fabCtx,
 		DiscoveryService: discoveryService,
 		SelectionService: selectionService,
-		Channel:          testChannel,
+		ChannelService:   testChannelSvc,
 	}
 	ch, err := New(ctx)
 	assert.Nil(t, err, "Failed to create new channel client")
@@ -628,6 +641,11 @@ func createAndSendTransactionProposal(sender apifabclient.ProposalSender, chrequ
 		Args:         chrequest.Args,
 		TransientMap: chrequest.TransientMap,
 	}
+	tpreq, err := sender.CreateChaincodeInvokeProposal(request)
+	if err != nil {
+		return nil, apifabclient.TransactionID{}, errors.WithMessage(err, "creation of transaction proposal failed")
+	}
 
-	return sender.SendTransactionProposal(request, targets)
+	tpr, err := sender.SendTransactionProposal(tpreq, targets)
+	return tpr, tpreq.TxnID, err
 }

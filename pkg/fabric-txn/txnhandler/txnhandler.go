@@ -31,10 +31,17 @@ type EndorsementHandler struct {
 
 //Handle for endorsing transactions
 func (e *EndorsementHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
-	// Endorse Tx
-	transactionProposalResponses, txnID, err := createAndSendTransactionProposal(clientContext.Channel, &requestContext.Request, requestContext.Opts.ProposalProcessors)
 
-	requestContext.Response.TransactionID = txnID
+	if len(requestContext.Opts.ProposalProcessors) == 0 {
+		requestContext.Error = status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), "targets were not provided", nil)
+		return
+	}
+
+	// Endorse Tx
+	transactionProposalResponses, proposal, err := createAndSendTransactionProposal(clientContext.Transactor, &requestContext.Request, requestContext.Opts.ProposalProcessors)
+
+	requestContext.Response.Proposal = proposal
+	requestContext.Response.TransactionID = proposal.TxnID // TODO: still needed?
 
 	if err != nil {
 		requestContext.Error = err
@@ -147,7 +154,7 @@ func (c *CommitTxHandler) Handle(requestContext *chclient.RequestContext, client
 
 	//Register Tx event
 	statusNotifier := txn.RegisterStatus(txnID, clientContext.EventHub)
-	_, err := createAndSendTransaction(clientContext.Channel, requestContext.Response.Responses)
+	_, err := createAndSendTransaction(clientContext.Transactor, requestContext.Response.Proposal, requestContext.Response.Responses)
 	if err != nil {
 		requestContext.Error = errors.Wrap(err, "CreateAndSendTransaction failed")
 		return
@@ -221,9 +228,14 @@ func getNext(next []chclient.Handler) chclient.Handler {
 	return nil
 }
 
-func createAndSendTransaction(sender apifabclient.Sender, resps []*apifabclient.TransactionProposalResponse) (*apifabclient.TransactionResponse, error) {
+func createAndSendTransaction(sender apifabclient.Sender, proposal *apifabclient.TransactionProposal, resps []*apifabclient.TransactionProposalResponse) (*apifabclient.TransactionResponse, error) {
 
-	tx, err := sender.CreateTransaction(resps)
+	txnRequest := apifabclient.TransactionRequest{
+		Proposal:          proposal,
+		ProposalResponses: resps,
+	}
+
+	tx, err := sender.CreateTransaction(txnRequest)
 	if err != nil {
 		return nil, errors.WithMessage(err, "CreateTransaction failed")
 	}
@@ -241,7 +253,7 @@ func createAndSendTransaction(sender apifabclient.Sender, resps []*apifabclient.
 	return transactionResponse, nil
 }
 
-func createAndSendTransactionProposal(sender apifabclient.ProposalSender, chrequest *chclient.Request, targets []apifabclient.ProposalProcessor) ([]*apifabclient.TransactionProposalResponse, apifabclient.TransactionID, error) {
+func createAndSendTransactionProposal(sender apifabclient.ProposalSender, chrequest *chclient.Request, targets []apifabclient.ProposalProcessor) ([]*apifabclient.TransactionProposalResponse, *apifabclient.TransactionProposal, error) {
 	request := apifabclient.ChaincodeInvokeRequest{
 		ChaincodeID:  chrequest.ChaincodeID,
 		Fcn:          chrequest.Fcn,
@@ -249,5 +261,11 @@ func createAndSendTransactionProposal(sender apifabclient.ProposalSender, chrequ
 		TransientMap: chrequest.TransientMap,
 	}
 
-	return sender.SendTransactionProposal(request, targets)
+	proposal, err := sender.CreateChaincodeInvokeProposal(request)
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "creating transaction proposal failed")
+	}
+
+	transactionProposalResponses, err := sender.SendTransactionProposal(proposal, targets)
+	return transactionProposalResponses, proposal, err
 }

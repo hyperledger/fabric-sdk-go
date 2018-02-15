@@ -15,6 +15,7 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -35,15 +36,6 @@ type ResourceMgmtClient struct {
 	resource          fab.Resource
 	filter            resmgmt.TargetFilter
 }
-
-// CCProposalType reflects transitions in the chaincode lifecycle
-type CCProposalType int
-
-// Define chaincode proposal types
-const (
-	Instantiate CCProposalType = iota
-	Upgrade
-)
 
 // MSPFilter is default filter
 type MSPFilter struct {
@@ -324,19 +316,19 @@ func checkRequiredInstallCCParams(req resmgmt.InstallCCRequest) error {
 // InstantiateCC instantiates chaincode using default settings
 func (rc *ResourceMgmtClient) InstantiateCC(channelID string, req resmgmt.InstantiateCCRequest, options ...resmgmt.Option) error {
 
-	return rc.sendCCProposal(Instantiate, channelID, req, options...)
+	return rc.sendCCProposal(channel.InstantiateChaincode, channelID, req, options...)
 
 }
 
 // UpgradeCC upgrades chaincode  with optional custom options (specific peers, filtered peers, timeout)
 func (rc *ResourceMgmtClient) UpgradeCC(channelID string, req resmgmt.UpgradeCCRequest, options ...resmgmt.Option) error {
 
-	return rc.sendCCProposal(Upgrade, channelID, resmgmt.InstantiateCCRequest(req), options...)
+	return rc.sendCCProposal(channel.UpgradeChaincode, channelID, resmgmt.InstantiateCCRequest(req), options...)
 
 }
 
 // sendCCProposal sends proposal for type  Instantiate, Upgrade
-func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType CCProposalType, channelID string, req resmgmt.InstantiateCCRequest, options ...resmgmt.Option) error {
+func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType channel.ChaincodeProposalType, channelID string, req resmgmt.InstantiateCCRequest, options ...resmgmt.Option) error {
 
 	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
 		return err
@@ -370,36 +362,29 @@ func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType CCProposalType, chan
 		return errors.New("No targets available for cc proposal")
 	}
 
-	channel, err := rc.getChannel(channelID)
-	if err != nil {
-		return errors.WithMessage(err, "get channel failed")
-	}
-
-	var txProposalResponse []*fab.TransactionProposalResponse
-	var txID fab.TransactionID
-
-	switch ccProposalType {
-
-	case Instantiate:
-		txProposalResponse, txID, err = channel.SendInstantiateProposal(req.Name,
-			req.Args, req.Path, req.Version, req.Policy, req.CollConfig, peer.PeersToTxnProcessors(targets))
-		if err != nil {
-			return errors.Wrap(err, "send instantiate chaincode proposal failed")
-		}
-	case Upgrade:
-		txProposalResponse, txID, err = channel.SendUpgradeProposal(req.Name,
-			req.Args, req.Path, req.Version, req.Policy, peer.PeersToTxnProcessors(targets))
-		if err != nil {
-			return errors.Wrap(err, "send upgrade chaincode proposal failed")
-		}
-	default:
-		return errors.Errorf("chaincode proposal type %d not supported", ccProposalType)
-	}
-
+	// Get transactor on the channel to create and send the deploy proposal
 	channelService, err := rc.channelProvider.NewChannelService(rc.identity, channelID)
 	if err != nil {
 		return errors.WithMessage(err, "Unable to get channel service")
 	}
+	transactor, err := channelService.Transactor()
+	if err != nil {
+		return errors.WithMessage(err, "get channel transactor failed")
+	}
+
+	// create a transaction proposal for chaincode deployment
+	deployProposal := channel.ChaincodeDeployRequest(req)
+	tp, err := channel.CreateChaincodeDeployProposal(rc.identity, ccProposalType, channelID, deployProposal)
+	if err != nil {
+		return errors.WithMessage(err, "creating chaincode deploy transaction proposal failed")
+	}
+
+	// Process and send transaction proposal
+	txProposalResponse, err := transactor.SendTransactionProposal(tp, peersToTxnProcessors(targets))
+	if err != nil {
+		return errors.WithMessage(err, "sending deploy transaction proposal failed")
+	}
+
 	eventHub, err := channelService.EventHub()
 	if err != nil {
 		return errors.WithMessage(err, "Unable to get EventHub")
@@ -413,9 +398,13 @@ func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType CCProposalType, chan
 	}
 
 	// Register for commit event
-	statusNotifier := txn.RegisterStatus(txID, eventHub)
+	statusNotifier := txn.RegisterStatus(tp.TxnID, eventHub)
 
-	if _, err = createAndSendTransaction(channel, txProposalResponse); err != nil {
+	transactionRequest := fab.TransactionRequest{
+		Proposal:          tp,
+		ProposalResponses: txProposalResponse,
+	}
+	if _, err = createAndSendTransaction(transactor, transactionRequest); err != nil {
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
@@ -448,20 +437,6 @@ func checkRequiredCCProposalParams(channelID string, req resmgmt.InstantiateCCRe
 	return nil
 }
 
-// getChannel is helper method for instantiating channel. If channel is not configured it will use random orderer from global orderer configuration
-func (rc *ResourceMgmtClient) getChannel(channelID string) (fab.Channel, error) {
-
-	channelService, err := rc.channelProvider.NewChannelService(rc.identity, channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "Unable to get channel service")
-	}
-	channel, err := channelService.Channel()
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get channel")
-	}
-	return channel, nil
-}
-
 //prepareResmgmtOpts Reads resmgmt.Opts from resmgmt.Option array
 func (rc *ResourceMgmtClient) prepareResmgmtOpts(options ...resmgmt.Option) (resmgmt.Opts, error) {
 	resmgmtOpts := resmgmt.Opts{}
@@ -474,9 +449,9 @@ func (rc *ResourceMgmtClient) prepareResmgmtOpts(options ...resmgmt.Option) (res
 	return resmgmtOpts, nil
 }
 
-func createAndSendTransaction(sender fab.Sender, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
+func createAndSendTransaction(sender fab.Sender, request fab.TransactionRequest) (*fab.TransactionResponse, error) {
 
-	tx, err := sender.CreateTransaction(resps)
+	tx, err := sender.CreateTransaction(request)
 	if err != nil {
 		return nil, errors.WithMessage(err, "CreateTransaction failed")
 	}

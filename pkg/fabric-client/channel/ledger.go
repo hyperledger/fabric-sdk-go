@@ -227,10 +227,10 @@ func createChaincodeQueryResponse(tpr *fab.TransactionProposalResponse) (*pb.Cha
 
 // QueryConfigBlock returns the current configuration block for the specified channel. If the
 // peer doesn't belong to the channel, return error
-func (c *Ledger) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.ConfigEnvelope, error) {
+func (c *Ledger) QueryConfigBlock(targets []fab.ProposalProcessor, minResponses int) (*common.ConfigEnvelope, error) {
 
-	if len(peers) == 0 {
-		return nil, errors.New("peer(s) required")
+	if len(targets) == 0 {
+		return nil, errors.New("target(s) required")
 	}
 
 	if minResponses <= 0 {
@@ -242,7 +242,7 @@ func (c *Ledger) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.C
 		Fcn:         "GetConfigBlock",
 		Args:        [][]byte{[]byte(c.chName)},
 	}
-	tpr, err := queryChaincode(c.ctx, c.chName, request, peersToTxnProcessors(peers))
+	tpr, err := queryChaincode(c.ctx, c.chName, request, targets)
 	if err != nil && len(tpr) == 0 {
 		return nil, errors.WithMessage(err, "queryChaincode failed")
 	}
@@ -288,11 +288,11 @@ func collectProposalResponses(tprs []*fab.TransactionProposalResponse) [][]byte 
 }
 
 func queryChaincode(ctx fab.Context, channel string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
-	tp, err := txn.NewProposal(ctx, channel, request)
+	tp, err := txn.CreateChaincodeInvokeProposal(ctx, channel, request)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewProposal failed")
 	}
-	tprs, errs := txn.SendProposal(tp, targets)
+	tprs, errs := txn.SendProposal(ctx, tp, targets)
 
 	return filterResponses(tprs, errs)
 }

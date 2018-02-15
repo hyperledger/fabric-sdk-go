@@ -76,16 +76,6 @@ func (f *SessionClientFactory) NewChannelClient(providers apisdk.Providers, sess
 		return nil, errors.WithMessage(err, "create channel service failed")
 	}
 
-	channel, err := chService.Channel()
-	if err != nil {
-		return nil, errors.WithMessage(err, "create channel failed")
-	}
-
-	eventHub, err := chService.EventHub()
-	if err != nil {
-		return nil, errors.WithMessage(err, "getEventHub failed")
-	}
-
 	discoveryService, err := providers.DiscoveryProvider().NewDiscoveryService(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "create discovery service failed")
@@ -100,10 +90,9 @@ func (f *SessionClientFactory) NewChannelClient(providers apisdk.Providers, sess
 
 	ctx := chclient.Context{
 		ProviderContext:  providers,
-		Channel:          channel,
 		DiscoveryService: discoveryService,
 		SelectionService: selection,
-		EventHub:         eventHub,
+		ChannelService:   chService,
 	}
 	return chclient.New(ctx)
 }

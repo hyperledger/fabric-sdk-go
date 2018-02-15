@@ -33,6 +33,13 @@ type ChannelProvider interface {
 type ChannelService interface {
 	Config() (ChannelConfig, error)
 	Ledger() (ChannelLedger, error)
-	Channel() (Channel, error)
+	Channel() (Channel, error) // TODO remove
+	Transactor() (Transactor, error)
 	EventHub() (EventHub, error) // TODO support new event delivery
+}
+
+// Transactor supplies methods for sending transaction proposals and transactions.
+type Transactor interface {
+	Sender
+	ProposalSender
 }

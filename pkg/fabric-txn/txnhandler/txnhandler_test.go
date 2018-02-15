@@ -229,12 +229,6 @@ func setupTestChannel() (*channel.Channel, error) {
 	return channel.New(ctx, fcmocks.NewMockChannelCfg("testChannel"))
 }
 
-func setupTestContext() apifabclient.Context {
-	user := fcmocks.NewMockUser("test")
-	ctx := fcmocks.NewMockContext(user)
-	return ctx
-}
-
 func setupChannelClientContext(discErr error, selectionErr error, peers []apifabclient.Peer, t *testing.T) *chclient.ClientContext {
 
 	testChannel, err := setupTestChannel()
@@ -261,10 +255,18 @@ func setupChannelClientContext(discErr error, selectionErr error, peers []apifab
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
+	ctx := setupTestContext()
+	transactor := txnmocks.MockTransactor{
+		Ctx:       ctx,
+		ChannelID: "testChannel",
+		Orderers:  []apifabclient.Orderer{orderer},
+	}
+
 	return &chclient.ClientContext{
-		Channel:   testChannel,
-		Discovery: discoveryService,
-		Selection: selectionService,
+		Channel:    testChannel,
+		Discovery:  discoveryService,
+		Selection:  selectionService,
+		Transactor: &transactor,
 	}
 
 }

@@ -120,8 +120,8 @@ func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 		return nil, errors.WithMessage(err, "NewChannel failed")
 	}
 
-	targets := c.opts.Targets
-	if targets == nil {
+	targets := []fab.ProposalProcessor{}
+	if c.opts.Targets == nil {
 
 		// Calculate targets from config
 		chPeers, err := c.ctx.Config().ChannelPeers(c.channelID)
@@ -129,7 +129,6 @@ func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 			return nil, errors.WithMessage(err, "read configuration for channel peers failed")
 		}
 
-		targets = []fab.Peer{}
 		for _, p := range chPeers {
 			newPeer, err := peer.New(c.ctx.Config(), peer.FromPeerConfig(&p.NetworkPeer))
 			if err != nil || newPeer == nil {
@@ -139,6 +138,8 @@ func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 			targets = append(targets, newPeer)
 
 		}
+	} else {
+		targets = peersToTxnProcessors(c.opts.Targets)
 	}
 
 	minEndorsers := c.opts.MinResponses
@@ -465,4 +466,14 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 		logger.Debugf("loadConfigValue - %s   - value: %s", groupName, configValue.Value)
 	}
 	return nil
+}
+
+// peersToTxnProcessors converts a slice of Peers to a slice of ProposalProcessors
+func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
+	tpp := make([]fab.ProposalProcessor, len(peers))
+
+	for i := range peers {
+		tpp[i] = peers[i]
+	}
+	return tpp
 }

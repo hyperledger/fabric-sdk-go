@@ -20,9 +20,10 @@ type Handler interface {
 //ClientContext contains context parameters for handler execution
 type ClientContext struct {
 	CryptoSuite apicryptosuite.CryptoSuite
-	Channel     apifabclient.Channel
 	Discovery   apifabclient.DiscoveryService
 	Selection   apifabclient.SelectionService
+	Channel     apifabclient.Channel // TODO: this should be removed when we have MSP split out.
+	Transactor  apifabclient.Transactor
 	EventHub    apifabclient.EventHub
 }
 

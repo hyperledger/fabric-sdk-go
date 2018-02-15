@@ -279,7 +279,7 @@ func TestProcessProposalGoodDial(t *testing.T) {
 	}
 }
 
-func testProcessProposal(t *testing.T, url string) (apifabclient.TransactionProposalResponse, error) {
+func testProcessProposal(t *testing.T, url string) (*apifabclient.TransactionProposalResponse, error) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
@@ -290,7 +290,7 @@ func testProcessProposal(t *testing.T, url string) (apifabclient.TransactionProp
 		t.Fatalf("Peer conn construction error (%v)", err)
 	}
 
-	return conn.ProcessTransactionProposal(mockTransactionProposal())
+	return conn.ProcessTransactionProposal(mockProcessProposalRequest())
 }
 
 func getPeerEndorserRequest(url string, cert *x509.Certificate, serverHostOverride string,
@@ -307,8 +307,9 @@ func getPeerEndorserRequest(url string, cert *x509.Certificate, serverHostOverri
 	}
 
 }
-func mockTransactionProposal() apifabclient.TransactionProposal {
-	return apifabclient.TransactionProposal{
+
+func mockProcessProposalRequest() apifabclient.ProcessProposalRequest {
+	return apifabclient.ProcessProposalRequest{
 		SignedProposal: &pb.SignedProposal{},
 	}
 }

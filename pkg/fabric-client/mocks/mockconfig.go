@@ -145,7 +145,9 @@ func (c *MockConfig) SecurityProviderLibPath() string {
 
 // OrderersConfig returns a list of defined orderers
 func (c *MockConfig) OrderersConfig() ([]config.OrdererConfig, error) {
-	return nil, nil
+	oConfig, err := c.OrdererConfig("")
+
+	return []config.OrdererConfig{*oConfig}, err
 }
 
 // RandomOrdererConfig not implemented

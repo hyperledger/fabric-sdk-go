@@ -35,9 +35,9 @@ func (m *MockProposalProcessor) EXPECT() *MockProposalProcessorMockRecorder {
 }
 
 // ProcessTransactionProposal mocks base method
-func (m *MockProposalProcessor) ProcessTransactionProposal(arg0 apifabclient.TransactionProposal) (apifabclient.TransactionProposalResponse, error) {
+func (m *MockProposalProcessor) ProcessTransactionProposal(arg0 apifabclient.ProcessProposalRequest) (*apifabclient.TransactionProposalResponse, error) {
 	ret := m.ctrl.Call(m, "ProcessTransactionProposal", arg0)
-	ret0, _ := ret[0].(apifabclient.TransactionProposalResponse)
+	ret0, _ := ret[0].(*apifabclient.TransactionProposalResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

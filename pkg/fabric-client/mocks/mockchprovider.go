@@ -13,14 +13,16 @@ import (
 
 // MockChannelProvider holds a mock channel provider.
 type MockChannelProvider struct {
-	ctx      fab.ProviderContext
-	channels map[string]fab.Channel
+	ctx        fab.ProviderContext
+	channels   map[string]fab.Channel
+	transactor fab.Transactor
 }
 
 // MockChannelService holds a mock channel service.
 type MockChannelService struct {
-	provider  *MockChannelProvider
-	channelID string
+	provider   *MockChannelProvider
+	channelID  string
+	transactor fab.Transactor
 }
 
 // NewMockChannelProvider returns a mock ChannelProvider
@@ -29,8 +31,8 @@ func NewMockChannelProvider(ctx fab.Context) (*MockChannelProvider, error) {
 
 	// Create a mock client with the mock channel
 	cp := MockChannelProvider{
-		ctx,
-		channels,
+		ctx:      ctx,
+		channels: channels,
 	}
 	return &cp, nil
 }
@@ -40,11 +42,17 @@ func (cp *MockChannelProvider) SetChannel(id string, channel fab.Channel) {
 	cp.channels[id] = channel
 }
 
+// SetTransactor sets the default transactor for all mock channel services
+func (cp *MockChannelProvider) SetTransactor(transactor fab.Transactor) {
+	cp.transactor = transactor
+}
+
 // NewChannelService returns a mock ChannelService
 func (cp *MockChannelProvider) NewChannelService(ic fab.IdentityContext, channelID string) (fab.ChannelService, error) {
 	cs := MockChannelService{
-		provider:  cp,
-		channelID: channelID,
+		provider:   cp,
+		channelID:  channelID,
+		transactor: cp.transactor,
 	}
 	return &cs, nil
 }
@@ -62,6 +70,16 @@ func (cs *MockChannelService) Channel() (fab.Channel, error) {
 	}
 
 	return ch, nil
+}
+
+// Transactor ...
+func (cs *MockChannelService) Transactor() (fab.Transactor, error) {
+	return cs.transactor, nil
+}
+
+// SetTransactor changes the return value of Transactor
+func (cs *MockChannelService) SetTransactor(t fab.Transactor) {
+	cs.transactor = t
 }
 
 // Config ...

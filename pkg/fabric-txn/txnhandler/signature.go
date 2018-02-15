@@ -74,6 +74,7 @@ func verifyProposalResponse(res *pb.ProposalResponse, ctx *chclient.ClientContex
 		return errors.WithMessage(err, "Unmarshal endorser error")
 	}
 
+	// TODO ctx.Channel is temporary and needs to be replaced with an MSP interface from channel service.
 	if ctx.Channel.MSPManager() == nil {
 		return errors.Errorf("Channel %s msp manager is nil", ctx.Channel.Name())
 	}

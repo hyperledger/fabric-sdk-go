@@ -81,24 +81,21 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 }
 
 // ProcessTransactionProposal sends the transaction proposal to a peer and returns the response.
-func (p *peerEndorser) ProcessTransactionProposal(proposal apifabclient.TransactionProposal) (apifabclient.TransactionProposalResponse, error) {
-	logger.Debugf("Processing proposal using endorser :%s", p.target)
+func (p *peerEndorser) ProcessTransactionProposal(request apifabclient.ProcessProposalRequest) (*apifabclient.TransactionProposalResponse, error) {
+	logger.Debugf("Processing proposal using endorser: %s", p.target)
 
-	proposalResponse, err := p.sendProposal(proposal, p.secured)
+	proposalResponse, err := p.sendProposal(request, p.secured)
 	if err != nil {
-		return apifabclient.TransactionProposalResponse{
-				Proposal: proposal,
-				Endorser: p.target,
-			}, errors.Wrapf(err, "Transaction processor (%s) returned error for txID '%s'",
-				p.target, proposal.TxnID.ID)
+		tpr := apifabclient.TransactionProposalResponse{Endorser: p.target}
+		return &tpr, errors.Wrapf(err, "Transaction processing for endorser [%s]", p.target)
 	}
 
-	return apifabclient.TransactionProposalResponse{
-		Proposal:         proposal,
+	tpr := apifabclient.TransactionProposalResponse{
 		ProposalResponse: proposalResponse,
-		Endorser:         p.target, // TODO: what format is expected for Endorser? Just target? URL?
+		Endorser:         p.target,
 		Status:           proposalResponse.GetResponse().Status,
-	}, nil
+	}
+	return &tpr, nil
 }
 
 func (p *peerEndorser) conn(secured bool) (*grpc.ClientConn, error) {
@@ -120,7 +117,7 @@ func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {
 	conn.Close()
 }
 
-func (p *peerEndorser) sendProposal(proposal apifabclient.TransactionProposal, secured bool) (*pb.ProposalResponse, error) {
+func (p *peerEndorser) sendProposal(proposal apifabclient.ProcessProposalRequest, secured bool) (*pb.ProposalResponse, error) {
 	conn, err := p.conn(secured)
 	if err != nil {
 		if secured && p.allowInsecure {

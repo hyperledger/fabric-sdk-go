@@ -18,6 +18,7 @@ type FabricProvider interface {
 	CreateChannelLedger(ic apifabclient.IdentityContext, name string) (apifabclient.ChannelLedger, error)
 	CreateChannelConfig(user apifabclient.IdentityContext, name string) (apifabclient.ChannelConfig, error)
 	CreateResourceClient(user apifabclient.IdentityContext) (apifabclient.Resource, error)
+	CreateChannelTransactor(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Transactor, error)
 	CreateEventHub(ic apifabclient.IdentityContext, name string) (apifabclient.EventHub, error)
 	CreateCAClient(orgID string) (apifabca.FabricCAClient, error)
 

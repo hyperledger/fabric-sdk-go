@@ -196,15 +196,15 @@ func TestProposalProcessorSendProposal(t *testing.T) {
 	defer mockCtrl.Finish()
 	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
-	tp := mockTransactionProposal()
-	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}
+	tp := mockProcessProposalRequest()
+	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, ProposalResponse: nil}
 
-	proc.EXPECT().ProcessTransactionProposal(tp).Return(tpr, nil)
+	proc.EXPECT().ProcessTransactionProposal(tp).Return(&tpr, nil)
 
 	p := Peer{processor: proc, name: "", roles: nil}
 	tpr1, err := p.ProcessTransactionProposal(tp)
 
-	if err != nil || !reflect.DeepEqual(tpr, tpr1) {
+	if err != nil || !reflect.DeepEqual(&tpr, tpr1) {
 		t.Fatalf("Peer didn't proxy proposal processing")
 	}
 }

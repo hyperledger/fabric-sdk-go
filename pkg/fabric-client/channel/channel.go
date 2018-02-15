@@ -16,7 +16,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -34,6 +36,7 @@ type Channel struct {
 	primaryPeer   fab.Peer
 	mspManager    msp.MSPManager
 	anchorPeers   []*fab.OrgAnchorPeer
+	transactor    fab.Transactor
 	initialized   bool
 }
 
@@ -48,11 +51,17 @@ func New(ctx fab.Context, cfg fab.ChannelCfg) (*Channel, error) {
 	p := make(map[string]fab.Peer)
 	o := make(map[string]fab.Orderer)
 
+	transactor, err := NewTransactor(ctx, cfg)
+	if err != nil {
+		return nil, errors.WithMessage(err, "transactor creation failed")
+	}
+
 	c := Channel{
 		name:          cfg.Name(),
 		peers:         p,
 		orderers:      o,
 		clientContext: ctx,
+		transactor:    transactor,
 	}
 
 	mspManager := msp.NewMSPManager()
@@ -402,13 +411,13 @@ func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, err
 
 // QueryConfigBlock returns the current configuration block for the specified channel. If the
 // peer doesn't belong to the channel, return error
-func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.ConfigEnvelope, error) {
+func (c *Channel) QueryConfigBlock(targets []fab.ProposalProcessor, minResponses int) (*common.ConfigEnvelope, error) {
 	l, err := NewLedger(c.clientContext, c.name)
 	if err != nil {
 		return nil, errors.WithMessage(err, "ledger client creation failed")
 	}
 
-	return l.QueryConfigBlock(peers, minResponses)
+	return l.QueryConfigBlock(targets, minResponses)
 }
 
 // QueryByChaincode sends a proposal to one or more endorsing peers that will be handled by the chaincode.
@@ -421,6 +430,7 @@ func (c *Channel) QueryByChaincode(request fab.ChaincodeInvokeRequest) ([][]byte
 	if err != nil {
 		return nil, err
 	}
+
 	resps, err := queryChaincode(c.clientContext, c.name, request, targets)
 	return collectProposalResponses(resps), err
 }
@@ -433,6 +443,119 @@ func (c *Channel) QueryBySystemChaincode(request fab.ChaincodeInvokeRequest) ([]
 	if err != nil {
 		return nil, err
 	}
+
 	resps, err := queryChaincode(c.clientContext, systemChannel, request, targets)
 	return collectProposalResponses(resps), err
+}
+
+// SendInstantiateProposal sends an instantiate proposal to one or more endorsing peers.
+func (c *Channel) SendInstantiateProposal(chaincodeName string,
+	args [][]byte, chaincodePath string, chaincodeVersion string,
+	chaincodePolicy *common.SignaturePolicyEnvelope,
+	collConfig []*common.CollectionConfig, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+
+	if chaincodeName == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodeName is required")
+	}
+	if chaincodePath == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodePath is required")
+	}
+	if chaincodeVersion == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodeVersion is required")
+	}
+	if chaincodePolicy == nil {
+		return nil, fab.TransactionID{}, errors.New("chaincodePolicy is required")
+	}
+	if len(targets) == 0 {
+		return nil, fab.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
+	}
+
+	cp := ChaincodeDeployRequest{
+		Name:       chaincodeName,
+		Args:       args,
+		Path:       chaincodePath,
+		Version:    chaincodeVersion,
+		Policy:     chaincodePolicy,
+		CollConfig: collConfig,
+	}
+
+	tp, err := CreateChaincodeDeployProposal(c.clientContext, InstantiateChaincode, c.name, cp)
+	if err != nil {
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
+	}
+
+	tpr, err := txn.SendProposal(c.clientContext, tp, targets)
+	return tpr, tp.TxnID, err
+}
+
+// SendUpgradeProposal sends an upgrade proposal to one or more endorsing peers.
+func (c *Channel) SendUpgradeProposal(chaincodeName string,
+	args [][]byte, chaincodePath string, chaincodeVersion string,
+	chaincodePolicy *common.SignaturePolicyEnvelope, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+
+	if chaincodeName == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodeName is required")
+	}
+	if chaincodePath == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodePath is required")
+	}
+	if chaincodeVersion == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodeVersion is required")
+	}
+	if chaincodePolicy == nil {
+		return nil, fab.TransactionID{}, errors.New("chaincodePolicy is required")
+	}
+	if len(targets) == 0 {
+		return nil, fab.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
+	}
+
+	cp := ChaincodeDeployRequest{
+		Name:    chaincodeName,
+		Args:    args,
+		Path:    chaincodePath,
+		Version: chaincodeVersion,
+		Policy:  chaincodePolicy,
+	}
+
+	tp, err := CreateChaincodeDeployProposal(c.clientContext, UpgradeChaincode, c.name, cp)
+	if err != nil {
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
+	}
+
+	tpr, err := txn.SendProposal(c.clientContext, tp, targets)
+	return tpr, tp.TxnID, err
+}
+
+func validateChaincodeInvokeRequest(request fab.ChaincodeInvokeRequest) error {
+	if request.ChaincodeID == "" {
+		return errors.New("ChaincodeID is required")
+	}
+
+	if request.Fcn == "" {
+		return errors.New("Fcn is required")
+	}
+	return nil
+}
+
+func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(targets []fab.ProposalProcessor) ([]fab.ProposalProcessor, error) {
+	// Use default peers if targets are not specified.
+	if targets == nil || len(targets) == 0 {
+		if c.peers == nil || len(c.peers) == 0 {
+			return nil, status.New(status.ClientStatus, status.NoPeersFound.ToInt32(),
+				"targets were not specified and no peers have been configured", nil)
+		}
+
+		return peersToTxnProcessors(c.Peers()), nil
+	}
+	return targets, nil
+}
+
+// peersToTxnProcessors converts a slice of Peers to a slice of ProposalProcessors
+func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
+	tpp := make([]fab.ProposalProcessor, len(peers))
+
+	for i := range peers {
+		tpp[i] = peers[i]
+	}
+	return tpp
 }

@@ -10,7 +10,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -42,7 +41,7 @@ func TestTransient(t *testing.T) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte(transientData)
 
-	transactionProposalResponse, _, err := integration.CreateAndSendTransactionProposal(testSetup.Channel, chaincodeID, fcn, integration.ExampleCCTxArgs(), []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, _, err := integration.CreateAndSendTransactionProposal(testSetup.Transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), testSetup.Targets[:1], transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
@@ -58,7 +57,7 @@ func TestTransient(t *testing.T) {
 	}
 	//transient data null
 	transientDataMap["result"] = []byte{}
-	transactionProposalResponse, _, err = integration.CreateAndSendTransactionProposal(testSetup.Channel, chaincodeID, fcn, integration.ExampleCCTxArgs(), []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, _, err = integration.CreateAndSendTransactionProposal(testSetup.Transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), testSetup.Targets[:1], transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal with empty transient data return an error: %v", err)
 	}

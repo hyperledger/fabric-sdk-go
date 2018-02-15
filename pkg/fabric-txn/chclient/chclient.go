@@ -33,12 +33,13 @@ const (
 
 // ChannelClient enables access to a Fabric network.
 type ChannelClient struct {
-	context   fab.ProviderContext
-	discovery fab.DiscoveryService
-	selection fab.SelectionService
-	channel   fab.Channel
-	eventHub  fab.EventHub
-	greylist  *greylist.Filter
+	context    fab.ProviderContext
+	discovery  fab.DiscoveryService
+	selection  fab.SelectionService
+	channel    fab.Channel
+	transactor fab.Transactor
+	eventHub   fab.EventHub
+	greylist   *greylist.Filter
 }
 
 // Context holds the providers and services needed to create a ChannelClient.
@@ -46,21 +47,37 @@ type Context struct {
 	fab.ProviderContext
 	DiscoveryService fab.DiscoveryService
 	SelectionService fab.SelectionService
-	Channel          fab.Channel
-	EventHub         fab.EventHub
+	ChannelService   fab.ChannelService
 }
 
 // New returns a ChannelClient instance.
 func New(c Context) (*ChannelClient, error) {
 	greylistProvider := greylist.New(c.Config().TimeoutOrDefault(apiconfig.DiscoveryGreylistExpiry))
 
+	eventHub, err := c.ChannelService.EventHub()
+	if err != nil {
+		return nil, errors.WithMessage(err, "event hub creation failed")
+	}
+
+	transactor, err := c.ChannelService.Transactor()
+	if err != nil {
+		return nil, errors.WithMessage(err, "transactor creation failed")
+	}
+
+	// TODO - this should be removed once MSP is split out.
+	channel, err := c.ChannelService.Channel()
+	if err != nil {
+		return nil, errors.WithMessage(err, "channel client creation failed")
+	}
+
 	channelClient := ChannelClient{
-		greylist:  greylistProvider,
-		context:   c,
-		discovery: discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
-		selection: c.SelectionService,
-		channel:   c.Channel,
-		eventHub:  c.EventHub,
+		greylist:   greylistProvider,
+		context:    c,
+		discovery:  discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
+		selection:  c.SelectionService,
+		channel:    channel,
+		transactor: transactor,
+		eventHub:   eventHub,
 	}
 
 	return &channelClient, nil
@@ -139,10 +156,11 @@ func (cc *ChannelClient) prepareHandlerContexts(request chclient.Request, option
 	}
 
 	clientContext := &chclient.ClientContext{
-		Channel:   cc.channel,
-		Selection: cc.selection,
-		Discovery: cc.discovery,
-		EventHub:  cc.eventHub,
+		Selection:  cc.selection,
+		Discovery:  cc.discovery,
+		Channel:    cc.channel,
+		Transactor: cc.transactor,
+		EventHub:   cc.eventHub,
 	}
 
 	requestContext := &chclient.RequestContext{

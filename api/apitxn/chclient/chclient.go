@@ -27,6 +27,7 @@ type Response struct {
 	Payload          []byte
 	TransactionID    apifabclient.TransactionID
 	TxValidationCode pb.TxValidationCode
+	Proposal         *apifabclient.TransactionProposal
 	Responses        []*apifabclient.TransactionProposalResponse
 }
 

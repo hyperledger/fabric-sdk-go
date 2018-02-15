@@ -56,11 +56,11 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *integration
 		t.Fatalf("Failed to package chaincode")
 	}
 
-	if err := testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, ccPkg); err != nil {
+	if err := testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
-	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(testSetup.Channel.PrimaryPeer())
+	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(testSetup.Targets[0])
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
@@ -76,7 +76,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *integration
 		t.Fatalf("Failed to retrieve installed chaincode.")
 	}
 	//Install same chaincode again, should fail
-	err = testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, ccPkg)
+	err = testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
@@ -95,13 +95,13 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *integrat
 		t.Fatalf("PackageCC return error: %s", err)
 	}
 
-	err = testSetup.InstallCC("install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg)
+	err = testSetup.InstallCC("install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg, testSetup.Targets)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
 	//Install same chaincode again, should fail
-	err = testSetup.InstallCC("install", chainCodePath, chainCodeVersion, ccPkg)
+	err = testSetup.InstallCC("install", chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}

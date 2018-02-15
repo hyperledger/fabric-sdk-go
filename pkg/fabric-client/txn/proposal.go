@@ -20,9 +20,8 @@ import (
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
 
-// NewProposal creates a proposal for transaction. This involves assembling the proposal with the data
-// (chaincodeName, function to call, arguments, transient data, etc.) and signing it using identity in the current context.
-func NewProposal(ctx context, channelID string, request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
+// CreateChaincodeInvokeProposal creates a proposal for transaction.
+func CreateChaincodeInvokeProposal(ctx fab.IdentityContext, channelID string, request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
 	if request.ChaincodeID == "" {
 		return nil, errors.New("ChaincodeID is required")
 	}
@@ -59,35 +58,16 @@ func NewProposal(ctx context, channelID string, request fab.ChaincodeInvokeReque
 		return nil, errors.Wrap(err, "failed to create chaincode proposal")
 	}
 
-	// sign proposal bytes
-	proposalBytes, err := proto.Marshal(proposal)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal proposal failed")
-	}
-
-	signingMgr := ctx.SigningManager()
-	if signingMgr == nil {
-		return nil, errors.New("signing manager is nil")
-	}
-
-	signature, err := signingMgr.Sign(proposalBytes, ctx.PrivateKey())
-	if err != nil {
-		return nil, err
-	}
-
-	// construct the transaction proposal
-	signedProposal := pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}
 	tp := fab.TransactionProposal{
-		TxnID:          txid,
-		SignedProposal: &signedProposal,
-		Proposal:       proposal,
+		TxnID:    txid,
+		Proposal: proposal,
 	}
 
 	return &tp, nil
 }
 
-// SignProposal creates a SignedProposal based on the current context.
-func SignProposal(ctx context, proposal *pb.Proposal) (*pb.SignedProposal, error) {
+// signProposal creates a SignedProposal based on the current context.
+func signProposal(ctx context, proposal *pb.Proposal) (*pb.SignedProposal, error) {
 	proposalBytes, err := proto.Marshal(proposal)
 	if err != nil {
 		return nil, errors.Wrap(err, "mashal proposal failed")
@@ -100,22 +80,29 @@ func SignProposal(ctx context, proposal *pb.Proposal) (*pb.SignedProposal, error
 
 	signature, err := signingMgr.Sign(proposalBytes, ctx.PrivateKey())
 	if err != nil {
-		return nil, errors.WithMessage(err, "signing proposal failed")
+		return nil, errors.WithMessage(err, "sign failed")
 	}
 
 	return &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}, nil
 }
 
 // SendProposal sends a TransactionProposal to ProposalProcessor.
-func SendProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+func SendProposal(ctx context, proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
 
-	if proposal == nil || proposal.SignedProposal == nil {
-		return nil, errors.New("signedProposal is required")
+	if proposal == nil {
+		return nil, errors.New("proposal is required")
 	}
 
 	if len(targets) < 1 {
 		return nil, errors.New("targets is required")
 	}
+
+	signedProposal, err := signProposal(ctx, proposal.Proposal)
+	if err != nil {
+		return nil, errors.WithMessage(err, "sign proposal failed")
+	}
+
+	request := fab.ProcessProposalRequest{SignedProposal: signedProposal}
 
 	var responseMtx sync.Mutex
 	var transactionProposalResponses []*fab.TransactionProposalResponse
@@ -127,7 +114,7 @@ func SendProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProce
 		go func(processor fab.ProposalProcessor) {
 			defer wg.Done()
 
-			resp, err := processor.ProcessTransactionProposal(*proposal)
+			resp, err := processor.ProcessTransactionProposal(request)
 			if err != nil {
 				logger.Debugf("Received error response from txn proposal processing: %v", err)
 				responseMtx.Lock()
@@ -137,7 +124,7 @@ func SendProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProce
 			}
 
 			responseMtx.Lock()
-			transactionProposalResponses = append(transactionProposalResponses, &resp)
+			transactionProposalResponses = append(transactionProposalResponses, resp)
 			responseMtx.Unlock()
 		}(p)
 	}

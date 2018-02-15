@@ -8,6 +8,7 @@ package channel
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -58,16 +59,6 @@ func TestChannelMethods(t *testing.T) {
 		t.Fatalf("NewChannel didn't return right error")
 	}
 
-}
-
-func TestInterfaces(t *testing.T) {
-	var apiChannel fab.Channel
-	var channel Channel
-
-	apiChannel = &channel
-	if apiChannel == nil {
-		t.Fatalf("this shouldn't happen.")
-	}
 }
 
 func TestAddRemoveOrderer(t *testing.T) {
@@ -248,4 +239,17 @@ func setupMassiveTestChannel(numberOfPeers int, numberOfOrderers int) (*Channel,
 	}
 
 	return channel, error
+}
+
+func TestAddPeerDuplicateCheck(t *testing.T) {
+	channel, _ := setupTestChannel()
+
+	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
+	channel.AddPeer(&peer)
+
+	err := channel.AddPeer(&peer)
+
+	if err == nil || !strings.Contains(err.Error(), "http://peer1.com already exists") {
+		t.Fatal("Duplicate Peer check is not working as expected")
+	}
 }

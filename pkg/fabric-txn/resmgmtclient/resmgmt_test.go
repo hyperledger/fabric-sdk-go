@@ -934,8 +934,6 @@ func TestCCProposal(t *testing.T) {
 	}
 	ctx.SetConfig(cfg)
 
-	rc := setupResMgmtClient(ctx, nil, t)
-
 	// Setup target peers
 	var peers []fab.Peer
 	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL(addr))
@@ -944,7 +942,7 @@ func TestCCProposal(t *testing.T) {
 	// Create mock orderer
 	orderer := fcmocks.NewMockOrderer("", nil)
 
-	rc = setupResMgmtClient(ctx, nil, t)
+	rc := setupResMgmtClient(ctx, nil, t)
 
 	channel, err := channel.New(ctx, fcmocks.NewMockChannelCfg("mychannel"))
 	if err != nil {
@@ -955,6 +953,12 @@ func TestCCProposal(t *testing.T) {
 		t.Fatalf("Error adding orderer: %v", err)
 	}
 	rc.channelProvider.(*fcmocks.MockChannelProvider).SetChannel("mychannel", channel)
+	transactor := txnmocks.MockTransactor{
+		Ctx:       ctx,
+		ChannelID: "mychannel",
+		Orderers:  []fab.Orderer{orderer},
+	}
+	rc.channelProvider.(*fcmocks.MockChannelProvider).SetTransactor(&transactor)
 
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
 	instantiateReq := resmgmt.InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
@@ -1055,6 +1059,12 @@ func setupResMgmtClient(fabCtx fab.Context, discErr error, t *testing.T) *Resour
 	if err != nil {
 		t.Fatalf("Failed to setup channel provider: %s", err)
 	}
+
+	transactor := txnmocks.MockTransactor{
+		Ctx:       fabCtx,
+		ChannelID: "",
+	}
+	chProvider.SetTransactor(&transactor)
 
 	resource := fcmocks.NewMockResource()
 

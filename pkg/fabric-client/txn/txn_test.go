@@ -24,8 +24,12 @@ import (
 
 func TestNewTransaction(t *testing.T) {
 
+	txnReq := fab.TransactionRequest{
+		Proposal:          &fab.TransactionProposal{Proposal: &pb.Proposal{}},
+		ProposalResponses: []*fab.TransactionProposalResponse{},
+	}
 	//Test Empty proposal response scenario
-	_, err := New([]*fab.TransactionProposalResponse{})
+	_, err := New(txnReq)
 
 	if err == nil || err.Error() != "at least one proposal response is necessary" {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction, for empty proposal response scenario")
@@ -37,72 +41,82 @@ func TestNewTransaction(t *testing.T) {
 		ID: "1234",
 	}
 
-	test := &fab.TransactionProposalResponse{
-		Endorser: "http://peer1.com",
-		Proposal: fab.TransactionProposal{
-			TxnID:          txid,
-			Proposal:       &pb.Proposal{Header: []byte("TEST"), Extension: []byte(""), Payload: []byte("")},
-			SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")},
-		},
+	proposal := fab.TransactionProposal{
+		TxnID:    txid,
+		Proposal: &pb.Proposal{Header: []byte("TEST"), Extension: []byte(""), Payload: []byte("")},
+	}
+
+	proposalResp := fab.TransactionProposalResponse{
+		Endorser:         "http://peer1.com",
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
-	input := []*fab.TransactionProposalResponse{test}
-
-	_, err = New(input)
+	txnReq = fab.TransactionRequest{
+		Proposal:          &proposal,
+		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
+	}
+	_, err = New(txnReq)
 
 	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction, invalid proposal header scenario")
 	}
 
 	//Test invalid proposal payload scenario
-	test = &fab.TransactionProposalResponse{
-		Endorser: "http://peer1.com",
-		Proposal: fab.TransactionProposal{
-			TxnID:          txid,
-			Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("TEST")},
-			SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")},
-		},
+	proposal = fab.TransactionProposal{
+		TxnID:    txid,
+		Proposal: &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("TEST")},
+	}
+
+	proposalResp = fab.TransactionProposalResponse{
+		Endorser:         "http://peer1.com",
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
-	input = []*fab.TransactionProposalResponse{test}
-
-	_, err = New(input)
+	txnReq = fab.TransactionRequest{
+		Proposal:          &proposal,
+		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
+	}
+	_, err = New(txnReq)
 	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction, invalid proposal payload scenario")
 	}
 
 	//Test proposal response
-	test = &fab.TransactionProposalResponse{
-		Endorser: "http://peer1.com",
-		Proposal: fab.TransactionProposal{
-			Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
-			SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TxnID: txid,
-		},
+	proposal = fab.TransactionProposal{
+		TxnID:    txid,
+		Proposal: &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
+	}
+
+	proposalResp = fab.TransactionProposalResponse{
+		Endorser:         "http://peer1.com",
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
-	input = []*fab.TransactionProposalResponse{test}
-	_, err = New(input)
-
+	txnReq = fab.TransactionRequest{
+		Proposal:          &proposal,
+		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
+	}
+	_, err = New(txnReq)
 	if err == nil || err.Error() != "proposal response was not successful, error code 99, msg success" {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction")
 	}
 
 	//Test repeated field header nil scenario
+	proposal = fab.TransactionProposal{
+		TxnID:    txid,
+		Proposal: &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
+	}
 
-	test = &fab.TransactionProposalResponse{
-		Endorser: "http://peer1.com",
-		Proposal: fab.TransactionProposal{
-			Proposal:       &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
-			SignedProposal: &pb.SignedProposal{Signature: []byte(""), ProposalBytes: []byte("")}, TxnID: txid,
-		},
+	proposalResp = fab.TransactionProposalResponse{
+		Endorser:         "http://peer1.com",
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 200, Payload: []byte("")}},
 	}
 
-	_, err = New([]*fab.TransactionProposalResponse{test})
-
+	txnReq = fab.TransactionRequest{
+		Proposal:          &proposal,
+		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
+	}
+	_, err = New(txnReq)
 	if err == nil || err.Error() != "repeated field endorsements has nil element" {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction")
 	}

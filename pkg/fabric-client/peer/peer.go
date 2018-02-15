@@ -8,6 +8,7 @@ package peer
 
 import (
 	"encoding/pem"
+	"fmt"
 
 	"crypto/x509"
 
@@ -249,8 +250,12 @@ func (p *Peer) URL() string {
 }
 
 // ProcessTransactionProposal sends the created proposal to peer for endorsement.
-func (p *Peer) ProcessTransactionProposal(proposal fab.TransactionProposal) (fab.TransactionProposalResponse, error) {
+func (p *Peer) ProcessTransactionProposal(proposal fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
 	return p.processor.ProcessTransactionProposal(proposal)
+}
+
+func (p *Peer) String() string {
+	return fmt.Sprintf("%s (%s)", p.name, p.url)
 }
 
 // PeersToTxnProcessors converts a slice of Peers to a slice of TxnProposalProcessors

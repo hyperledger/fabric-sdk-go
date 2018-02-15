@@ -116,6 +116,17 @@ func (f *FabricProvider) CreateChannelConfig(ic apifabclient.IdentityContext, ch
 	return chconfig.New(ctx, channelID)
 }
 
+// CreateChannelTransactor initializes the transactor
+func (f *FabricProvider) CreateChannelTransactor(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Transactor, error) {
+
+	ctx := chconfig.Context{
+		ProviderContext: f.providerContext,
+		IdentityContext: ic,
+	}
+
+	return channelImpl.NewTransactor(ctx, cfg)
+}
+
 // CreateCAClient returns a new FabricCAClient initialized for the current instance of the SDK.
 func (f *FabricProvider) CreateCAClient(orgID string) (apifabca.FabricCAClient, error) {
 	return fabricCAClient.NewFabricCAClient(orgID, f.providerContext.Config(), f.providerContext.CryptoSuite())
