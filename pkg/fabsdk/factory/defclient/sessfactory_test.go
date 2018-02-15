@@ -23,37 +23,11 @@ import (
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 
-	resmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/pkg/errors"
 )
-
-func TestNewResourceMgmtClient(t *testing.T) {
-	p := newMockProviders(t)
-
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
-
-	mockSDK.EXPECT().ChannelProvider().Return(p.ChannelProvider)
-	mockSDK.EXPECT().FabricProvider().Return(p.FabricProvider)
-	mockSDK.EXPECT().DiscoveryProvider().Return(p.DiscoveryProvider)
-
-	factory := NewSessionClientFactory()
-	session := newMockSession()
-
-	client, err := factory.NewResourceMgmtClient(mockSDK, session, nil)
-	if err != nil {
-		t.Fatalf("Unexpected error creating system client %v", err)
-	}
-
-	_, ok := client.(*resmgmtImpl.ResourceMgmtClient)
-	if !ok {
-		t.Fatalf("Unexpected client created")
-	}
-}
 
 func TestNewChannelClient(t *testing.T) {
 	p := newMockProviders(t)

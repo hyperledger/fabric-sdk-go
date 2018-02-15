@@ -10,7 +10,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
@@ -40,25 +40,6 @@ type ResourceMgmtClientOpts struct {
 	ConfigProvider apiconfig.Config
 }
 
-// NewResourceMgmtClientWithOpts returns a new resource management client (user has to be pre-enrolled)
-//
-// Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewResourceMgmtClientWithOpts(userName string, opt *ResourceMgmtClientOpts) (resmgmt.ResourceMgmtClient, error) {
-	o := []ContextOption{}
-	if opt.OrgName != "" {
-		o = append(o, WithOrg(opt.OrgName))
-	}
-	if opt.ConfigProvider != nil {
-		o = append(o, withConfig(opt.ConfigProvider))
-	}
-	clientOpts := []ClientOption{}
-	if opt.TargetFilter != nil {
-		clientOpts = append(clientOpts, WithTargetFilter(opt.TargetFilter))
-	}
-	c := sdk.NewClient(WithUser(userName), o...)
-	return c.ResourceMgmt(clientOpts...)
-}
-
 // NewChannelClientWithOpts returns a new client for a channel (user has to be pre-enrolled)
 //
 // Deprecated: Use NewClient instead.
@@ -73,14 +54,6 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 
 	c := sdk.NewClient(WithUser(userName), o...)
 	return c.Channel(channelID)
-}
-
-// New returns a new client for managing system resources
-//
-// Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) New(userName string, opts ...ContextOption) (resmgmt.ResourceMgmtClient, error) {
-	c := sdk.NewClient(WithUser(userName), opts...)
-	return c.ResourceMgmt()
 }
 
 // NewChannelClient returns a new client for a channel

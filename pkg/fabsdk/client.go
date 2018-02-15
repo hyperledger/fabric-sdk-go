@@ -10,7 +10,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
@@ -142,23 +142,39 @@ func newClientOptions(options []ClientOption) (*clientOptions, error) {
 }
 
 // ResourceMgmt returns a client API for managing system resources.
-func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (resmgmt.ResourceMgmtClient, error) {
+func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.ResourceMgmtClient, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
 	}
+
 	o, err := newClientOptions(opts)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to retrieve client options")
 	}
 
 	session := newSession(p.identity, p.providers.ChannelProvider())
-	client, err := p.clientFactory.NewResourceMgmtClient(p.providers, session, o.targetFilter)
+
+	fabProvider := p.providers.FabricProvider()
+	resource, err := fabProvider.CreateResourceClient(session)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to created new resource management client")
+		return nil, err
 	}
 
-	return client, nil
+	discovery := p.providers.DiscoveryProvider()
+	chProvider := p.providers.ChannelProvider()
+
+	ctx := resmgmt.Context{
+		ProviderContext:   p.providers,
+		IdentityContext:   session,
+		Resource:          resource,
+		DiscoveryProvider: discovery,
+		ChannelProvider:   chProvider,
+		FabricProvider:    fabProvider,
+	}
+
+	return resmgmt.New(ctx, resmgmt.WithDefaultTargetFilter(o.targetFilter))
+
 }
 
 // Channel returns a client API for transacting on a channel.

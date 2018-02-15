@@ -13,7 +13,6 @@ import (
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
@@ -24,8 +23,71 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
+
+// TargetFilter allows for filtering target peers
+type TargetFilter interface {
+	// Accept returns true if peer should be included in the list of target peers
+	Accept(peer fab.Peer) bool
+}
+
+// InstallCCRequest contains install chaincode request parameters
+type InstallCCRequest struct {
+	Name    string
+	Path    string
+	Version string
+	Package *fab.CCPackage
+}
+
+// InstallCCResponse contains install chaincode response status
+type InstallCCResponse struct {
+	Target string
+	Status int32
+	Info   string
+}
+
+// InstantiateCCRequest contains instantiate chaincode request parameters
+type InstantiateCCRequest struct {
+	Name       string
+	Path       string
+	Version    string
+	Args       [][]byte
+	Policy     *common.SignaturePolicyEnvelope
+	CollConfig []*common.CollectionConfig
+}
+
+// UpgradeCCRequest contains upgrade chaincode request parameters
+type UpgradeCCRequest struct {
+	Name       string
+	Path       string
+	Version    string
+	Args       [][]byte
+	Policy     *common.SignaturePolicyEnvelope
+	CollConfig []*common.CollectionConfig
+}
+
+//Opts contains options for operations performed by ResourceMgmtClient
+type Opts struct {
+	Targets      []fab.Peer    // target peers
+	TargetFilter TargetFilter  // target filter
+	Timeout      time.Duration //timeout options for instantiate and upgrade CC
+	OrdererID    string        // use specific orderer
+}
+
+//SaveChannelRequest used to save channel request
+type SaveChannelRequest struct {
+	// Channel Name (ID)
+	ChannelID string
+	// Path to channel configuration file
+	ChannelConfig string
+	// User that signs channel configuration
+	SigningIdentity fab.IdentityContext
+}
+
+//Option func for each Opts argument
+type Option func(opts *Opts) error
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
@@ -38,7 +100,7 @@ type ResourceMgmtClient struct {
 	fabricProvider    api.FabricProvider
 	discovery         fab.DiscoveryService // global discovery service (detects all peers on the network)
 	resource          fab.Resource
-	filter            resmgmt.TargetFilter
+	filter            TargetFilter
 }
 
 // MSPFilter is default filter
@@ -66,11 +128,19 @@ type fabContext struct {
 	fab.IdentityContext
 }
 
-// Option describes a functional parameter for the New constructor
-type Option func(*ResourceMgmtClient) error
+// ClientOption describes a functional parameter for the New constructor
+type ClientOption func(*ResourceMgmtClient) error
+
+// WithDefaultTargetFilter option to configure new
+func WithDefaultTargetFilter(filter TargetFilter) ClientOption {
+	return func(rmc *ResourceMgmtClient) error {
+		rmc.filter = filter
+		return nil
+	}
+}
 
 // New returns a ResourceMgmtClient instance
-func New(ctx Context, opts ...Option) (*ResourceMgmtClient, error) {
+func New(ctx Context, opts ...ClientOption) (*ResourceMgmtClient, error) {
 
 	resourceClient := &ResourceMgmtClient{
 		provider:          ctx,
@@ -105,16 +175,8 @@ func New(ctx Context, opts ...Option) (*ResourceMgmtClient, error) {
 	return resourceClient, nil
 }
 
-// WithTargetFilter option to configure new
-func WithTargetFilter(filter resmgmt.TargetFilter) Option {
-	return func(rmc *ResourceMgmtClient) error {
-		rmc.filter = filter
-		return nil
-	}
-}
-
 // JoinChannel allows for peers to join existing channel with optional custom options (specific peers, filtered peers)
-func (rc *ResourceMgmtClient) JoinChannel(channelID string, options ...resmgmt.Option) error {
+func (rc *ResourceMgmtClient) JoinChannel(channelID string, options ...Option) error {
 
 	if channelID == "" {
 		return errors.New("must provide channel ID")
@@ -168,7 +230,7 @@ func (rc *ResourceMgmtClient) JoinChannel(channelID string, options ...resmgmt.O
 }
 
 // filterTargets is helper method to filter peers
-func filterTargets(peers []fab.Peer, filter resmgmt.TargetFilter) []fab.Peer {
+func filterTargets(peers []fab.Peer, filter TargetFilter) []fab.Peer {
 
 	if filter == nil {
 		return peers
@@ -201,7 +263,7 @@ func (rc *ResourceMgmtClient) getDefaultTargets(discovery fab.DiscoveryService) 
 }
 
 // calculateTargets calculates targets based on targets and filter
-func (rc *ResourceMgmtClient) calculateTargets(discovery fab.DiscoveryService, peers []fab.Peer, filter resmgmt.TargetFilter) ([]fab.Peer, error) {
+func (rc *ResourceMgmtClient) calculateTargets(discovery fab.DiscoveryService, peers []fab.Peer, filter TargetFilter) ([]fab.Peer, error) {
 
 	if peers != nil && filter != nil {
 		return nil, errors.New("If targets are provided, filter cannot be provided")
@@ -231,7 +293,7 @@ func (rc *ResourceMgmtClient) calculateTargets(discovery fab.DiscoveryService, p
 }
 
 // isChaincodeInstalled verify if chaincode is installed on peer
-func (rc *ResourceMgmtClient) isChaincodeInstalled(req resmgmt.InstallCCRequest, peer fab.Peer) (bool, error) {
+func (rc *ResourceMgmtClient) isChaincodeInstalled(req InstallCCRequest, peer fab.Peer) (bool, error) {
 	chaincodeQueryResponse, err := rc.resource.QueryInstalledChaincodes(peer)
 	if err != nil {
 		return false, err
@@ -249,7 +311,7 @@ func (rc *ResourceMgmtClient) isChaincodeInstalled(req resmgmt.InstallCCRequest,
 }
 
 // InstallCC installs chaincode with optional custom options (specific peers, filtered peers)
-func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest, options ...resmgmt.Option) ([]resmgmt.InstallCCResponse, error) {
+func (rc *ResourceMgmtClient) InstallCC(req InstallCCRequest, options ...Option) ([]InstallCCResponse, error) {
 
 	// For each peer query if chaincode installed. If cc is installed treat as success with message 'already installed'.
 	// If cc is not installed try to install, and if that fails add to the list with error and peer name.
@@ -281,7 +343,7 @@ func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest, options ..
 		return nil, errors.New("No targets available for install cc")
 	}
 
-	responses := make([]resmgmt.InstallCCResponse, 0)
+	responses := make([]InstallCCResponse, 0)
 	var errs multi.Errors
 
 	// Targets will be adjusted if cc has already been installed
@@ -295,7 +357,7 @@ func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest, options ..
 		}
 		if installed {
 			// Nothing to do - add info message to response
-			response := resmgmt.InstallCCResponse{Target: target.URL(), Info: "already installed"}
+			response := InstallCCResponse{Target: target.URL(), Info: "already installed"}
 			responses = append(responses, response)
 		} else {
 			// Not installed - add for processing
@@ -314,7 +376,7 @@ func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest, options ..
 	for _, v := range transactionProposalResponse {
 		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v", req.Name, v.Endorser, v.Status)
 
-		response := resmgmt.InstallCCResponse{Target: v.Endorser, Status: v.Status}
+		response := InstallCCResponse{Target: v.Endorser, Status: v.Status}
 		responses = append(responses, response)
 	}
 
@@ -325,7 +387,7 @@ func (rc *ResourceMgmtClient) InstallCC(req resmgmt.InstallCCRequest, options ..
 	return responses, nil
 }
 
-func checkRequiredInstallCCParams(req resmgmt.InstallCCRequest) error {
+func checkRequiredInstallCCParams(req InstallCCRequest) error {
 	if req.Name == "" || req.Version == "" || req.Path == "" || req.Package == nil {
 		return errors.New("Chaincode name, version, path and chaincode package are required")
 	}
@@ -333,21 +395,27 @@ func checkRequiredInstallCCParams(req resmgmt.InstallCCRequest) error {
 }
 
 // InstantiateCC instantiates chaincode using default settings
-func (rc *ResourceMgmtClient) InstantiateCC(channelID string, req resmgmt.InstantiateCCRequest, options ...resmgmt.Option) error {
+func (rc *ResourceMgmtClient) InstantiateCC(channelID string, req InstantiateCCRequest, options ...Option) error {
 
 	return rc.sendCCProposal(channel.InstantiateChaincode, channelID, req, options...)
 
 }
 
 // UpgradeCC upgrades chaincode  with optional custom options (specific peers, filtered peers, timeout)
-func (rc *ResourceMgmtClient) UpgradeCC(channelID string, req resmgmt.UpgradeCCRequest, options ...resmgmt.Option) error {
+func (rc *ResourceMgmtClient) UpgradeCC(channelID string, req UpgradeCCRequest, options ...Option) error {
 
-	return rc.sendCCProposal(channel.UpgradeChaincode, channelID, resmgmt.InstantiateCCRequest(req), options...)
+	return rc.sendCCProposal(channel.UpgradeChaincode, channelID, InstantiateCCRequest(req), options...)
 
 }
 
+// QueryInstalledChaincodes queries the installed chaincodes on a peer.
+// Returns the details of all chaincodes installed on a peer.
+func (rc *ResourceMgmtClient) QueryInstalledChaincodes(proposalProcessor fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
+	return rc.resource.QueryInstalledChaincodes(proposalProcessor)
+}
+
 // sendCCProposal sends proposal for type  Instantiate, Upgrade
-func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType channel.ChaincodeProposalType, channelID string, req resmgmt.InstantiateCCRequest, options ...resmgmt.Option) error {
+func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType channel.ChaincodeProposalType, channelID string, req InstantiateCCRequest, options ...Option) error {
 
 	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
 		return err
@@ -453,7 +521,7 @@ func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType channel.ChaincodePro
 
 }
 
-func checkRequiredCCProposalParams(channelID string, req resmgmt.InstantiateCCRequest) error {
+func checkRequiredCCProposalParams(channelID string, req InstantiateCCRequest) error {
 
 	if channelID == "" {
 		return errors.New("must provide channel ID")
@@ -465,9 +533,9 @@ func checkRequiredCCProposalParams(channelID string, req resmgmt.InstantiateCCRe
 	return nil
 }
 
-//prepareResmgmtOpts Reads resmgmt.Opts from resmgmt.Option array
-func (rc *ResourceMgmtClient) prepareResmgmtOpts(options ...resmgmt.Option) (resmgmt.Opts, error) {
-	resmgmtOpts := resmgmt.Opts{}
+//prepareResmgmtOpts Reads Opts from Option array
+func (rc *ResourceMgmtClient) prepareResmgmtOpts(options ...Option) (Opts, error) {
+	resmgmtOpts := Opts{}
 	for _, option := range options {
 		err := option(&resmgmtOpts)
 		if err != nil {
@@ -508,7 +576,7 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 }
 
 // SaveChannel creates or updates channel
-func (rc *ResourceMgmtClient) SaveChannel(req resmgmt.SaveChannelRequest, options ...resmgmt.Option) error {
+func (rc *ResourceMgmtClient) SaveChannel(req SaveChannelRequest, options ...Option) error {
 
 	opts, err := rc.prepareSaveChannelOpts(options...)
 	if err != nil {
@@ -590,8 +658,8 @@ func (rc *ResourceMgmtClient) SaveChannel(req resmgmt.SaveChannelRequest, option
 }
 
 //prepareSaveChannelOpts Reads chmgmt.Opts from chmgmt.Option array
-func (rc *ResourceMgmtClient) prepareSaveChannelOpts(options ...resmgmt.Option) (resmgmt.Opts, error) {
-	saveChannelOpts := resmgmt.Opts{}
+func (rc *ResourceMgmtClient) prepareSaveChannelOpts(options ...Option) (Opts, error) {
+	saveChannelOpts := Opts{}
 	for _, option := range options {
 		err := option(&saveChannelOpts)
 		if err != nil {

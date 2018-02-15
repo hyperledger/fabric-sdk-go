@@ -8,7 +8,6 @@ package api
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 )
 
@@ -19,6 +18,5 @@ type SessionContext interface {
 
 // Client represents the Client APIs supported by the SDK
 type Client interface {
-	ResourceMgmt() (resmgmt.ResourceMgmtClient, error)
 	Channel(id string) (chclient.ChannelClient, error)
 }

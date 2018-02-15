@@ -178,28 +178,7 @@ func TestWithSessionPkg(t *testing.T) {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 
-	// Use real implementation of credential manager to provide in later response
-	pkgSuite := defPkgSuite{}
-	sessPkg, err := pkgSuite.Session()
-	if err != nil {
-		t.Fatalf("Unexpected error getting context: %s", err)
-	}
-
-	identity, err := sdk.newIdentity(sdkValidClientOrg1, WithUser(sdkValidClientUser))
-	if err != nil {
-		t.Fatalf("Unexpected error getting identity: %s", err)
-	}
-
-	session := newSession(identity, sdk.channelProvider)
-	sdkContext := sdk.context()
-
-	cm, err := sessPkg.NewResourceMgmtClient(sdkContext, session, nil)
-	if err != nil {
-		t.Fatalf("Unexpected error getting credential manager: %s", err)
-	}
-	factory.EXPECT().NewResourceMgmtClient(sdkContext, gomock.Any(), gomock.Any()).Return(cm, nil)
-
-	// Use a method that invokes credential manager (e.g., new user)
+	// Get resource management
 	_, err = sdk.NewClient(WithUser(sdkValidClientUser)).ResourceMgmt()
 	if err != nil {
 		t.Fatalf("Unexpected error getting channel management client: %s", err)
