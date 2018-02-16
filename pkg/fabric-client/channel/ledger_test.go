@@ -13,6 +13,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -175,6 +176,39 @@ func TestQueryConfig(t *testing.T) {
 		t.Fatalf("Should have failed for different block payloads")
 	}
 
+}
+
+func TestQueryConfigBlockDifferentMetadata(t *testing.T) {
+	channel, _ := setupTestLedger()
+	builder := &mocks.MockConfigBlockBuilder{
+		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
+			ModPolicy: "Admins",
+			MSPNames: []string{
+				"Org1MSP",
+				"Org2MSP",
+			},
+			OrdererAddress: "localhost:7054",
+			RootCA:         validRootCA,
+		},
+		Index:           0,
+		LastConfigIndex: 0,
+	}
+
+	b := builder.Build()
+	b.Metadata = &common.BlockMetadata{Metadata: [][]byte{[]byte("test1")}}
+
+	payload1, err := proto.Marshal(b)
+	assert.Nil(t, err, "Failed to marshal mock block")
+
+	b.Metadata = &common.BlockMetadata{Metadata: [][]byte{[]byte("test2")}}
+	payload2, err := proto.Marshal(b)
+	assert.Nil(t, err, "Failed to marshal mock block")
+
+	peer1 := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: payload1, Status: 200}
+	peer2 := mocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, Payload: payload2, Status: 200}
+
+	_, err = channel.QueryConfigBlock([]fab.ProposalProcessor{&peer1, &peer2}, 2)
+	assert.Nil(t, err, "Expected success querying blocks with identical block data payloads")
 }
 
 func TestFilterResponses(t *testing.T) {

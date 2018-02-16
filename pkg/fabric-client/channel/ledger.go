@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"bytes"
 	"net/http"
 	"strconv"
 
@@ -242,28 +241,30 @@ func (c *Ledger) QueryConfigBlock(targets []fab.ProposalProcessor, minResponses 
 		Fcn:         "GetConfigBlock",
 		Args:        [][]byte{[]byte(c.chName)},
 	}
-	tpr, err := queryChaincode(c.ctx, c.chName, request, targets)
-	if err != nil && len(tpr) == 0 {
+	tprs, err := queryChaincode(c.ctx, c.chName, request, targets)
+	if err != nil && len(tprs) == 0 {
 		return nil, errors.WithMessage(err, "queryChaincode failed")
 	}
 
-	responses := collectProposalResponses(tpr)
-
-	if len(responses) < minResponses {
-		return nil, errors.Errorf("Required minimum %d endorsments got %d", minResponses, len(responses))
+	if len(tprs) < minResponses {
+		return nil, errors.Errorf("Required minimum %d endorsments got %d", minResponses, len(tprs))
 	}
 
-	r := responses[0]
-	for _, p := range responses {
-		if bytes.Compare(r, p) != 0 {
+	block, err := createCommonBlock(tprs[0])
+	if err != nil {
+		return nil, err
+	}
+
+	// Compare block data from  remaining responses
+	for _, tpr := range tprs[1:] {
+		b, err := createCommonBlock(tpr)
+		if err != nil {
+			return nil, err
+		}
+
+		if !proto.Equal(block.Data, b.Data) {
 			return nil, errors.New("Payloads for config block do not match")
 		}
-	}
-
-	block := &common.Block{}
-	err = proto.Unmarshal(responses[0], block)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal block failed")
 	}
 
 	if block.Data == nil || block.Data.Data == nil {
