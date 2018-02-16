@@ -63,6 +63,7 @@ type ChannelLedger interface {
 	QueryBlockByHash(blockHash []byte, targets []ProposalProcessor) ([]*common.Block, error)
 	QueryTransaction(transactionID string, targets []ProposalProcessor) ([]*pb.ProcessedTransaction, error)
 	QueryInstantiatedChaincodes(targets []ProposalProcessor) ([]*pb.ChaincodeQueryResponse, error)
+	QueryConfigBlock(targets []ProposalProcessor, minResponses int) (*common.ConfigEnvelope, error) // TODO: generalize minResponses
 }
 
 // OrgAnchorPeer contains information about an anchor peer on this channel

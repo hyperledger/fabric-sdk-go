@@ -31,7 +31,6 @@ type BaseSetupImpl struct {
 	Client          fab.Resource
 	Transactor      fab.Transactor
 	Targets         []fab.ProposalProcessor
-	Channel         fab.Channel
 	EventHub        fab.EventHub
 	ConnectEventHub bool
 	ConfigFile      string
@@ -118,12 +117,6 @@ func (setup *BaseSetupImpl) Initialize() error {
 		return errors.WithMessage(err, "transactor client creation failed")
 	}
 	setup.Transactor = transactor
-
-	channel, err := chService.Channel()
-	if err != nil {
-		return errors.WithMessage(err, "channel client creation failed")
-	}
-	setup.Channel = channel
 
 	eventHub, err := chService.EventHub()
 	if err != nil {
