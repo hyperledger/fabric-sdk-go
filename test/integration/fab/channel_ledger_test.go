@@ -108,6 +108,7 @@ func TestLedgerQueries(t *testing.T) {
 
 	testInstantiatedChaincodes(t, chaincodeID, ledger, targets)
 
+	testQueryConfigBlock(t, ledger, targets)
 }
 
 func changeBlockState(t *testing.T, channel chclient.ChannelClient, chaincodeID string) (string, error) {
@@ -252,4 +253,18 @@ func moveFundsAndGetTxID(t *testing.T, channel chclient.ChannelClient, chaincode
 	}
 
 	return resp.TransactionID.ID, nil
+}
+
+func testQueryConfigBlock(t *testing.T, ledger fab.ChannelLedger, targets []fab.ProposalProcessor) {
+
+	// Retrieve current channel configuration
+	cfgEnvelope, err := ledger.QueryConfigBlock(targets, 1)
+	if err != nil {
+		t.Fatalf("QueryConfig return error: %v", err)
+	}
+
+	if cfgEnvelope.Config == nil {
+		t.Fatalf("QueryConfig config data is nil")
+	}
+
 }
