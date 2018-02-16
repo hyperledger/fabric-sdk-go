@@ -53,12 +53,15 @@ type eventsClient struct {
 	processEventsCompleted chan struct{}
 	kap                    keepalive.ClientParameters
 	failFast               bool
+	secured                bool
+	allowInsecure          bool
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
 func NewEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate,
 	serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter,
-	kap keepalive.ClientParameters, failFast bool) (fab.EventsClient, error) {
+	kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error) {
+
 	var err error
 	if regTimeout < 100*time.Millisecond {
 		regTimeout = 100 * time.Millisecond
@@ -80,14 +83,17 @@ func NewEventsClient(provider fab.ProviderContext, identity fab.IdentityContext,
 		tlsCertHash:           ccomm.TLSCertHash(provider.Config()),
 		kap:                   kap,
 		failFast:              failFast,
+		secured:               urlutil.AttemptSecured(peerAddress),
+		allowInsecure:         allowInsecure,
 	}, err
 }
 
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
 func newEventsClientConnectionWithAddress(peerAddress string, cert *x509.Certificate, serverHostOverride string,
-	config apiconfig.Config, kap keepalive.ClientParameters, failFast bool) (*grpc.ClientConn, error) {
+	config apiconfig.Config, kap keepalive.ClientParameters, failFast bool, secured bool) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
-	if urlutil.IsTLSEnabled(peerAddress) {
+	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.EventHub)))
+	if secured {
 		tlsConfig, err := comm.TLSConfig(cert, serverHostOverride, config)
 		if err != nil {
 			return nil, err
@@ -301,8 +307,13 @@ func (ec *eventsClient) processEvents() error {
 
 //Start establishes connection with Event hub and registers interested events with it
 func (ec *eventsClient) Start() error {
+	return ec.establishConnectionAndRegister(ec.secured)
+}
+
+func (ec *eventsClient) establishConnectionAndRegister(secured bool) error {
 	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress, ec.TLSCertificate, ec.TLSServerHostOverride,
-		ec.provider.Config(), ec.kap, ec.failFast)
+		ec.provider.Config(), ec.kap, ec.failFast, secured)
+
 	if err != nil {
 		return errors.WithMessage(err, "events connection failed")
 	}
@@ -320,6 +331,12 @@ func (ec *eventsClient) Start() error {
 	serverClient := ehpb.NewEventsClient(conn)
 	ec.stream, err = serverClient.Chat(context.Background())
 	if err != nil {
+		logger.Error("events connection failed, cause: ", err)
+		if secured && ec.allowInsecure {
+			//If secured mode failed and allow insecure is enabled then retry in insecure mode
+			logger.Debug("Secured establishConnectionAndRegister failed, attempting insecured")
+			return ec.establishConnectionAndRegister(false)
+		}
 		return errors.Wrap(err, "events connection failed")
 	}
 

@@ -60,23 +60,24 @@ type EventHub struct {
 	// Factory that creates EventsClient
 	eventsClientFactory eventClientFactory
 	// FabricClient
-	provider fab.ProviderContext
-	identity fab.IdentityContext
-	kap      keepalive.ClientParameters
-	failFast bool
+	provider      fab.ProviderContext
+	identity      fab.IdentityContext
+	kap           keepalive.ClientParameters
+	failFast      bool
+	allowInsecure bool
 }
 
 // eventClientFactory creates an EventsClient instance
 type eventClientFactory interface {
-	newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool) (fab.EventsClient, error)
+	newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error)
 }
 
 // consumerClientFactory is the default implementation oif the eventClientFactory
 type consumerClientFactory struct{}
 
 func (ccf *consumerClientFactory) newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string,
-	regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool) (fab.EventsClient, error) {
-	return consumer.NewEventsClient(provider, identity, peerAddress, certificate, serverHostOverride, regTimeout, adapter, kap, failFast)
+	regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error) {
+	return consumer.NewEventsClient(provider, identity, peerAddress, certificate, serverHostOverride, regTimeout, adapter, kap, failFast, allowInsecure)
 }
 
 // Context holds the providers and services needed to create an EventHub.
@@ -126,6 +127,8 @@ func FromConfig(ctx Context, peerCfg *apiconfig.PeerConfig) (*EventHub, error) {
 	eventHub.peerTLSServerHostOverride = serverHostOverride
 	eventHub.kap = getKeepAliveOptions(peerCfg)
 	eventHub.failFast = getFailFast(peerCfg)
+	eventHub.allowInsecure = isInsecureConnectionAllowed(peerCfg)
+
 	return eventHub, nil
 }
 
@@ -278,10 +281,12 @@ func (eventHub *EventHub) removeChaincodeInterest(ChaincodeID string, EventName 
 // peeraddr peer url
 // peerTLSCertificate peer tls certificate
 // peerTLSServerHostOverride tls serverhostoverride
-func (eventHub *EventHub) SetPeerAddr(peerURL string, peerTLSCertificate *x509.Certificate, peerTLSServerHostOverride string) {
+// inSecure option enables grpc retry when grpcs fails (only when no protocol provided in peerURL)
+func (eventHub *EventHub) SetPeerAddr(peerURL string, peerTLSCertificate *x509.Certificate, peerTLSServerHostOverride string, allowInsecure bool) {
 	eventHub.peerAddr = peerURL
 	eventHub.peerTLSCertificate = peerTLSCertificate
 	eventHub.peerTLSServerHostOverride = peerTLSServerHostOverride
+	eventHub.allowInsecure = allowInsecure && !urlutil.HasProtocol(peerURL)
 }
 
 // IsConnected gets connected state of eventhub
@@ -312,7 +317,7 @@ func (eventHub *EventHub) Connect() error {
 	if eventHub.grpcClient == nil {
 		eventsClient, _ := eventHub.eventsClientFactory.newEventsClient(eventHub.provider, eventHub.identity,
 			eventHub.peerAddr, eventHub.peerTLSCertificate, eventHub.peerTLSServerHostOverride,
-			eventHub.provider.Config().TimeoutOrDefault(apiconfig.EventReg), eventHub, eventHub.kap, eventHub.failFast)
+			eventHub.provider.Config().TimeoutOrDefault(apiconfig.EventReg), eventHub, eventHub.kap, eventHub.failFast, eventHub.allowInsecure)
 		eventHub.grpcClient = eventsClient
 	}
 
@@ -601,4 +606,14 @@ func (eventHub *EventHub) notifyChaincodeRegistrants(channelID string, ccEvent *
 			}
 		}
 	}
+}
+
+func isInsecureConnectionAllowed(peerCfg *apiconfig.PeerConfig) bool {
+	//allowInsecure used only when protocol is missing from URL
+	allowInsecure := !urlutil.HasProtocol(peerCfg.URL)
+	boolVal, ok := peerCfg.GRPCOptions["allow-insecure"].(bool)
+	if ok {
+		return allowInsecure && boolVal
+	}
+	return false
 }

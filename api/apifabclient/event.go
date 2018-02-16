@@ -16,7 +16,7 @@ import (
 
 // EventHub ...
 type EventHub interface {
-	SetPeerAddr(peerURL string, certificate *x509.Certificate, serverHostOverride string)
+	SetPeerAddr(peerURL string, certificate *x509.Certificate, serverHostOverride string, allowInsecure bool)
 	IsConnected() bool
 	Connect() error
 	Disconnect() error

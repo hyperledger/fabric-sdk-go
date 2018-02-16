@@ -333,13 +333,16 @@ organizations:
 #
 orderers:
   orderer.example.com:
-    url: grpcs://orderer.example.com:7050
+    url: orderer.example.com:7050
 
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
+    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: orderer.example.com
       grpc-max-send-message-length: 15
+      #will be taken into consideration if address has no protocol defined and secured connection fails
+      allow-insecure: true
 
     tlsCACerts:
       # Certificate location absolute path
@@ -352,24 +355,30 @@ orderers:
 peers:
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
-    url: grpcs://peer0.org1.example.com:7051
+    url: peer0.org1.example.com:7051
 
     # this URL is used to connect the EventHub and registering event listeners
-    eventUrl: grpcs://peer0.org1.example.com:7053
+    eventUrl: peer0.org1.example.com:7053
 
+    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
       grpc.http2.keepalive_time: 15
+      #will be taken into consideration if address has no protocol defined and secured connection fails
+      allow-insecure: true
 
     tlsCACerts:
       # Certificate location absolute path
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   peer0.org2.example.com:
-    url: grpcs://peer0.org2.example.com:8051
-    eventUrl: grpcs://peer0.org2.example.com:8053
+    url: peer0.org2.example.com:8051
+    eventUrl: peer0.org2.example.com:8053
+    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
+      #will be taken into consideration if address has no protocol defined and secured connection fails
+      allow-insecure: true
     tlsCACerts:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
 

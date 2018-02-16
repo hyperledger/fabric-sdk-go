@@ -43,8 +43,10 @@ func NewPeerTLSFromCert(url string, certPath string, serverHostOverride string, 
 		config:             config,
 		kap:                kap,
 		failFast:           false,
+		allowInsecure:      true,
 	}
 	conn, err := newPeerEndorser(&endorseRequest)
+
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +62,12 @@ func NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer, config apiconfig.Config) 
 	if str, ok := peerCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
 		serverHostOverride = str
 	}
+
+	allowInsecure := false
+	if boolVal, ok := peerCfg.GRPCOptions["allow-insecure"].(bool); ok {
+		allowInsecure = !urlutil.HasProtocol(peerCfg.URL) && boolVal
+	}
+
 	var certificate *x509.Certificate
 	var err error
 	kap := getKeepAliveOptions(peerCfg)
@@ -71,6 +79,7 @@ func NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer, config apiconfig.Config) 
 			return nil, err
 		}
 	}
+
 	endorseRequest := peerEndorserRequest{
 		target:             peerCfg.URL,
 		certificate:        certificate,
@@ -79,8 +88,10 @@ func NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer, config apiconfig.Config) 
 		config:             config,
 		kap:                kap,
 		failFast:           failFast,
+		allowInsecure:      allowInsecure,
 	}
 	conn, err := newPeerEndorser(&endorseRequest)
+
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +120,7 @@ func NewPeer(url string, config apiconfig.Config) (*Peer, error) {
 		config:             config,
 		kap:                kap,
 		failFast:           false,
+		allowInsecure:      true,
 	}
 	conn, err := newPeerEndorser(&endorseRequest)
 	if err != nil {

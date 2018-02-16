@@ -209,6 +209,9 @@ orderers:
     #fail-fast is action to take when an RPC is attempted on broken connections or unreachable servers
 #      fail-fast: true
 
+#      When no protocol provided in url, grpcs connection will be tried first, if failed it falls back to grpc when this option set to true
+#      allow-insecure: true
+
 #    tlsCACerts:
       # Certificate location absolute path
 #      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
@@ -228,6 +231,8 @@ peers:
 #    grpcOptions:
 #      ssl-target-name-override: peer0.org1.example.com
 #      grpc.http2.keepalive_time: 15
+#      When no protocol provided in url, grpcs connection will be tried first, if failed it falls back to grpc when this option set to true
+#      allow-insecure: true
 
 #    tlsCACerts:
       # Certificate location absolute path

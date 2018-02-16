@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	mock_fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
+	"github.com/pkg/errors"
 )
 
 // TestNewPeerWithCertNoTLS tests that a peer can be constructed without using a cert
@@ -77,7 +78,10 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	//config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("failed to get certpool")).AnyTimes()
 
 	url := "grpcs://0.0.0.0:1234"
 	_, err := New(config, WithURL(url))
@@ -260,10 +264,11 @@ func TestPeerOptions(t *testing.T) {
 	grpcOpts["keep-alive-timeout"] = 2 * time.Second
 	grpcOpts["keep-alive-permit"] = false
 	grpcOpts["ssl-target-name-override"] = "mnq"
+	grpcOpts["allow-insecure"] = true
 	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
 
 	tlsConfig := apiconfig.TLSConfig{
-		Path: "abc.com",
+		Path: "",
 		Pem:  "",
 	}
 	peerConfig := apiconfig.PeerConfig{
@@ -292,6 +297,25 @@ func TestPeerOptions(t *testing.T) {
 	_, err = New(config, WithServerName("server-name"))
 	if err == nil {
 		t.Fatalf("Expected 'Failed to create new peer WithServerName ((target is required))")
+	}
+}
+
+// TestNewPeerSecured validates that insecure option
+func TestNewPeerSecured(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+
+	url := "grpc://0.0.0.0:1234"
+
+	conn, err := New(config, WithURL(url), WithInsecure())
+	if err != nil {
+		t.Fatalf("Peer conn should be constructed")
+	}
+
+	if !conn.inSecure {
+		t.Fatalf("Expected insecure to be true")
 	}
 
 }

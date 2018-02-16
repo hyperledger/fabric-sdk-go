@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/spf13/cast"
 	"google.golang.org/grpc/keepalive"
@@ -39,6 +40,7 @@ type Peer struct {
 	url                   string
 	kap                   keepalive.ClientParameters
 	failFast              bool
+	inSecure              bool
 }
 
 // Option describes a functional parameter for the New constructor
@@ -67,6 +69,7 @@ func New(config apiconfig.Config, opts ...Option) (*Peer, error) {
 			config:             peer.config,
 			kap:                peer.kap,
 			failFast:           peer.failFast,
+			allowInsecure:      peer.inSecure,
 		}
 		peer.processor, err = newPeerEndorser(&endorseRequest)
 
@@ -105,19 +108,31 @@ func WithServerName(serverName string) Option {
 	}
 }
 
+// WithInsecure is a functional option for the peer.New constructor that configures the peer's grpc insecure option
+func WithInsecure() Option {
+	return func(p *Peer) error {
+		p.inSecure = true
+
+		return nil
+	}
+}
+
 // FromPeerConfig is a functional option for the peer.New constructor that configures a new peer
 // from a apiconfig.NetworkPeer struct
 func FromPeerConfig(peerCfg *apiconfig.NetworkPeer) Option {
 	return func(p *Peer) error {
+
 		p.url = peerCfg.URL
 		p.serverName = getServerNameOverride(peerCfg)
+		p.inSecure = isInsecureConnectionAllowed(peerCfg)
 
 		var err error
+		p.certificate, err = peerCfg.TLSCACerts.TLSCert()
 
-		if urlutil.IsTLSEnabled(peerCfg.URL) {
-			p.certificate, err = peerCfg.TLSCACerts.TLSCert()
-
-			if err != nil {
+		if err != nil {
+			//Ignore empty cert errors,
+			errStatus, ok := err.(*status.Status)
+			if !ok || errStatus.Code != status.EmptyCert.ToInt32() {
 				return err
 			}
 		}
@@ -161,6 +176,15 @@ func getKeepAliveOptions(peerCfg *apiconfig.NetworkPeer) keepalive.ClientParamet
 		kap.PermitWithoutStream = cast.ToBool(kaPermit)
 	}
 	return kap
+}
+func isInsecureConnectionAllowed(peerCfg *apiconfig.NetworkPeer) bool {
+	//allowInsecure used only when protocol is missing from URL
+	allowInsecure := !urlutil.HasProtocol(peerCfg.URL)
+	boolVal, ok := peerCfg.GRPCOptions["allow-insecure"].(bool)
+	if ok {
+		return allowInsecure && boolVal
+	}
+	return false
 }
 
 // WithPeerProcessor is a functional option for the peer.New constructor that configures the peer's proposal processor

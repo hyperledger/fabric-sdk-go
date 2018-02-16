@@ -8,7 +8,6 @@ package comm
 
 import (
 	"bytes"
-	"crypto/x509"
 	"encoding/hex"
 	"testing"
 
@@ -21,29 +20,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 )
-
-func TestTLSConfigEmptyCertPoolAndCertificate(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
-
-	// nil cert pool
-	config.EXPECT().TLSCACertPool().Return(nil, nil)
-
-	_, err := TLSConfig(nil, "", config)
-	if err == nil {
-		t.Fatal("Expected failure with nil cert pool")
-	}
-
-	// empty cert pool
-	certPool := x509.NewCertPool()
-	config.EXPECT().TLSCACertPool().Return(certPool, nil)
-
-	_, err = TLSConfig(nil, "", config)
-	if err == nil {
-		t.Fatal("Expected failure with empty cert pool")
-	}
-}
 
 func TestTLSConfigErrorAddingCertificate(t *testing.T) {
 	mockCtrl := gomock.NewController(t)

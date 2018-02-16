@@ -26,7 +26,7 @@ func NewMockEventHub() *MockEventHub {
 }
 
 // SetPeerAddr not implemented
-func (m *MockEventHub) SetPeerAddr(peerURL string, certificate *x509.Certificate, serverHostOverride string) {
+func (m *MockEventHub) SetPeerAddr(peerURL string, certificate *x509.Certificate, serverHostOverride string, allowInsecure bool) {
 	// Not implemented
 }
 

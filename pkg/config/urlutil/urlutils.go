@@ -9,6 +9,8 @@ package urlutil
 import (
 	"strings"
 
+	"regexp"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -33,8 +35,22 @@ func ToAddress(url string) string {
 	if strings.HasPrefix(url, "grpcs://") {
 		return strings.TrimPrefix(url, "grpcs://")
 	}
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		logger.Warnf("URL '%s' has no prefix. Please enter a prefix as it will be mandatory in a future release", url)
-	}
 	return url
+}
+
+//AttemptSecured is a utility function which verifies URL and returns if secured connections needs to established
+func AttemptSecured(url string) bool {
+	ok, err := regexp.MatchString(".*(?i)s://", url)
+	if ok && err == nil {
+		return true
+	} else if !strings.Contains(url, "://") {
+		return true
+	} else {
+		return false
+	}
+}
+
+//HasProtocol is a utility function which verifies if protocol is provided in URL
+func HasProtocol(url string) bool {
+	return strings.Contains(url, "://")
 }

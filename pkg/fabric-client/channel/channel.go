@@ -9,7 +9,6 @@ package channel
 import (
 	"crypto/x509"
 	"encoding/pem"
-	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -91,7 +90,7 @@ func New(ctx fab.Context, cfg fab.ChannelCfg) (*Channel, error) {
 
 		var o *orderer.Orderer
 		if oCfg == nil {
-			o, err = orderer.New(ctx.Config(), orderer.WithURL(resolveOrdererURL(name)), orderer.WithServerName(resolveOrdererAddress(name)))
+			o, err = orderer.New(ctx.Config(), orderer.WithURL(name), orderer.WithServerName(resolveOrdererAddress(name)))
 		} else {
 			o, err = orderer.New(ctx.Config(), orderer.FromOrdererConfig(oCfg))
 		}
@@ -317,14 +316,6 @@ func resolveOrdererAddress(ordererAddress string) string {
 		return s[0]
 	}
 	return ordererAddress
-}
-
-// resolveOrdererURL resolves order URL to prefix protocol if not present
-func resolveOrdererURL(ordererURL string) string {
-	if ok, err := regexp.MatchString(".*://", ordererURL); ok && err == nil {
-		return ordererURL
-	}
-	return "grpcs://" + ordererURL
 }
 
 // QueryInfo queries for various useful information on the state of the channel

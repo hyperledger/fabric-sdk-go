@@ -186,14 +186,17 @@ organizations:
 peers:
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
-    url: grpcs://peer0.org1.example.com:7051
+    url: peer0.org1.example.com:7051
 
     # this URL is used to connect the EventHub and registering event listeners
-    eventUrl: grpcs://peer0.org1.example.com:7053
+    eventUrl: peer0.org1.example.com:7053
 
+    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
       grpc.http2.keepalive_time: 15
+      #will be taken into consideration if address has no protocol defined and secured connection fails
+      allow-insecure: true
 
     tlsCACerts:
       # Certificate location absolute path

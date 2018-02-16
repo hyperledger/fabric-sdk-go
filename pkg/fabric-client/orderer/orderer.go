@@ -19,13 +19,13 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/spf13/cast"
 
 	"crypto/x509"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -34,14 +34,17 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // Orderer allows a client to broadcast a transaction.
 type Orderer struct {
-	config         apiconfig.Config
-	url            string
-	tlsCACert      *x509.Certificate
-	serverName     string
-	grpcDialOption []grpc.DialOption
-	kap            keepalive.ClientParameters
-	dialTimeout    time.Duration
-	failFast       bool
+	config               apiconfig.Config
+	url                  string
+	tlsCACert            *x509.Certificate
+	serverName           string
+	grpcDialOption       []grpc.DialOption
+	kap                  keepalive.ClientParameters
+	dialTimeout          time.Duration
+	failFast             bool
+	transportCredentials credentials.TransportCredentials
+	secured              bool
+	allowInsecure        bool
 }
 
 // Option describes a functional parameter for the New constructor
@@ -65,20 +68,16 @@ func New(config apiconfig.Config, opts ...Option) (*Orderer, error) {
 	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.FailFast(orderer.failFast)))
 	orderer.dialTimeout = config.TimeoutOrDefault(apiconfig.OrdererConnection)
 
-	if urlutil.IsTLSEnabled(orderer.url) {
-		tlsConfig, err := comm.TLSConfig(orderer.tlsCACert, orderer.serverName, config)
-
-		if err != nil {
-			return nil, err
-		}
-
-		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
-	} else {
-		grpcOpts = append(grpcOpts, grpc.WithInsecure())
+	//tls config
+	tlsConfig, err := comm.TLSConfig(orderer.tlsCACert, orderer.serverName, config)
+	if err != nil {
+		return nil, err
 	}
 
-	orderer.url = urlutil.ToAddress(orderer.url)
 	orderer.grpcDialOption = grpcOpts
+	orderer.transportCredentials = credentials.NewTLS(tlsConfig)
+	orderer.secured = urlutil.AttemptSecured(orderer.url)
+	orderer.url = urlutil.ToAddress(orderer.url)
 
 	return orderer, nil
 }
@@ -101,10 +100,19 @@ func WithTLSCert(tlsCACert *x509.Certificate) Option {
 	}
 }
 
-// WithServerName is a functional option for the orderer.New constructor that configures the peer's server name
+// WithServerName is a functional option for the orderer.New constructor that configures the orderer's server name
 func WithServerName(serverName string) Option {
 	return func(o *Orderer) error {
 		o.serverName = serverName
+
+		return nil
+	}
+}
+
+// WithInsecure is a functional option for the orderer.New constructor that configures the orderer's grpc insecure option
+func WithInsecure() Option {
+	return func(o *Orderer) error {
+		o.allowInsecure = true
 
 		return nil
 	}
@@ -118,10 +126,12 @@ func FromOrdererConfig(ordererCfg *apiconfig.OrdererConfig) Option {
 
 		var err error
 
-		if urlutil.IsTLSEnabled(ordererCfg.URL) {
-			o.tlsCACert, err = ordererCfg.TLSCACerts.TLSCert()
+		o.tlsCACert, err = ordererCfg.TLSCACerts.TLSCert()
 
-			if err != nil {
+		if err != nil {
+			//Ignore empty cert errors,
+			errStatus, ok := err.(*status.Status)
+			if !ok || errStatus.Code != status.EmptyCert.ToInt32() {
 				return err
 			}
 		}
@@ -129,6 +139,8 @@ func FromOrdererConfig(ordererCfg *apiconfig.OrdererConfig) Option {
 		o.serverName = getServerNameOverride(ordererCfg)
 		o.kap = getKeepAliveOptions(ordererCfg)
 		o.failFast = getFailFast(ordererCfg)
+		o.allowInsecure = isInsecureConnectionAllowed(ordererCfg)
+
 		return nil
 	}
 }
@@ -179,6 +191,16 @@ func getKeepAliveOptions(ordererCfg *apiconfig.OrdererConfig) keepalive.ClientPa
 	return kap
 }
 
+func isInsecureConnectionAllowed(ordererCfg *apiconfig.OrdererConfig) bool {
+	//allowInsecure used only when protocol is missing from URL
+	allowInsecure := !urlutil.HasProtocol(ordererCfg.URL)
+	boolVal, ok := ordererCfg.GRPCOptions["allow-insecure"].(bool)
+	if ok {
+		return allowInsecure && boolVal
+	}
+	return false
+}
+
 // URL Get the Orderer url. Required property for the instance objects.
 // Returns the address of the Orderer.
 func (o *Orderer) URL() string {
@@ -187,9 +209,31 @@ func (o *Orderer) URL() string {
 
 // SendBroadcast Send the created transaction to Orderer.
 func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, error) {
+	return o.sendBroadcast(envelope, o.secured)
+}
+
+// SendDeliver sends a deliver request to the ordering service and returns the
+// blocks requested
+// envelope: contains the seek request for blocks
+func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
+	chan error) {
+	return o.sendDeliver(envelope, o.secured)
+}
+
+// SendBroadcast Send the created transaction to Orderer.
+func (o *Orderer) sendBroadcast(envelope *fab.SignedEnvelope, secured bool) (*common.Status, error) {
+	var grpcOpts []grpc.DialOption
+	grpcOpts = append(grpcOpts, o.grpcDialOption...)
+	if secured {
+		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(o.transportCredentials))
+	} else {
+		grpcOpts = append(grpcOpts, grpc.WithInsecure())
+	}
+
 	ctx := context.Background()
 	ctx, _ = context.WithTimeout(ctx, o.dialTimeout)
-	conn, err := grpc.DialContext(ctx, o.url, o.grpcDialOption...)
+	conn, err := grpc.DialContext(ctx, o.url, grpcOpts...)
+
 	if err != nil {
 		return nil, status.New(status.OrdererClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), nil)
 	}
@@ -199,6 +243,12 @@ func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, e
 		rpcStatus, ok := grpcstatus.FromError(err)
 		if ok {
 			err = status.NewFromGRPCStatus(rpcStatus)
+		}
+		logger.Error("NewAtomicBroadcastClient failed, cause : ", err)
+		if secured && o.allowInsecure {
+			//If secured mode failed and allow insecure is enabled then retry in insecure mode
+			logger.Debug("Secured sendBroadcast failed, attempting insecured")
+			return o.sendBroadcast(envelope, false)
 		}
 		return nil, errors.Wrap(err, "NewAtomicBroadcastClient failed")
 	}
@@ -245,7 +295,7 @@ func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, e
 // SendDeliver sends a deliver request to the ordering service and returns the
 // blocks requested
 // envelope: contains the seek request for blocks
-func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
+func (o *Orderer) sendDeliver(envelope *fab.SignedEnvelope, secured bool) (chan *common.Block,
 	chan error) {
 	responses := make(chan *common.Block)
 	errs := make(chan error, 1)
@@ -254,20 +304,38 @@ func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
 		errs <- errors.New("envelope is nil")
 		return responses, errs
 	}
+
 	// Establish connection to Ordering Service
-	conn, err := grpc.Dial(o.url, o.grpcDialOption...)
+	var grpcOpts []grpc.DialOption
+	grpcOpts = append(grpcOpts, o.grpcDialOption...)
+	if secured {
+		grpcOpts = append(o.grpcDialOption, grpc.WithTransportCredentials(o.transportCredentials))
+	} else {
+		grpcOpts = append(o.grpcDialOption, grpc.WithInsecure())
+	}
+
+	ctx := context.Background()
+	ctx, _ = context.WithTimeout(ctx, o.dialTimeout)
+	conn, err := grpc.DialContext(ctx, o.url, grpcOpts...)
 	if err != nil {
 		errs <- err
 		return responses, errs
 	}
+
 	// Create atomic broadcast client
 	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).
-		Deliver(context.Background())
+		Deliver(ctx)
 	if err != nil {
+		logger.Error("NewAtomicBroadcastClient failed, cause : ", err)
+		if secured && o.allowInsecure {
+			//If secured mode failed and allow insecure is enabled then retry in insecure mode
+			logger.Debug("Secured sendBroadcast failed, attempting insecured")
+			return o.sendDeliver(envelope, false)
+		}
 		errs <- errors.Wrap(err, "NewAtomicBroadcastClient failed")
 		return responses, errs
 	}
-	// Send block request envolope
+	// Send block request envelope
 	logger.Debugf("Requesting blocks from ordering service")
 	if err := broadcastStream.Send(&common.Envelope{
 		Payload:   envelope.Payload,
@@ -276,6 +344,7 @@ func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
 		errs <- errors.Wrap(err, "failed to send block request to orderer")
 		return responses, errs
 	}
+
 	// Receive blocks from the GRPC stream and put them on the channel
 	go func() {
 		defer conn.Close()
@@ -310,6 +379,5 @@ func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
 			}
 		}
 	}()
-
 	return responses, errs
 }
