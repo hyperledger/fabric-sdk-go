@@ -113,7 +113,7 @@ func TestOrderersFromChannelCfg(t *testing.T) {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
 	chConfig := mocks.NewMockChannelCfg("testChannel")
-	chConfig.(*mocks.MockChannelCfg).MockOrderers = []string{"example.com"}
+	chConfig.MockOrderers = []string{"example.com"}
 
 	o, err := orderersFromChannelCfg(ctx, chConfig)
 	assert.Nil(t, err)
@@ -125,7 +125,7 @@ func TestOrderersFromChannelCfgBadTLS(t *testing.T) {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
 	chConfig := mocks.NewMockChannelCfg("testChannel")
-	chConfig.(*mocks.MockChannelCfg).MockOrderers = []string{"doesnotexist.com"}
+	chConfig.MockOrderers = []string{"doesnotexist.com"}
 
 	o, err := orderersFromChannelCfg(ctx, chConfig)
 	assert.Nil(t, err)

@@ -11,12 +11,11 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
@@ -40,7 +39,7 @@ type Client struct {
 	context    context.ProviderContext
 	discovery  fab.DiscoveryService
 	selection  fab.SelectionService
-	channel    fab.Channel
+	membership fab.ChannelMembership
 	transactor fab.Transactor
 	eventHub   fab.EventHub
 	greylist   *greylist.Filter
@@ -68,10 +67,9 @@ func New(c Context) (*Client, error) {
 		return nil, errors.WithMessage(err, "transactor creation failed")
 	}
 
-	// TODO - this should be removed once MSP is split out.
-	channel, err := c.ChannelService.Channel()
+	membership, err := c.ChannelService.Membership()
 	if err != nil {
-		return nil, errors.WithMessage(err, "channel client creation failed")
+		return nil, errors.WithMessage(err, "membership creation failed")
 	}
 
 	channelClient := Client{
@@ -79,7 +77,7 @@ func New(c Context) (*Client, error) {
 		context:    c,
 		discovery:  discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
 		selection:  c.SelectionService,
-		channel:    channel,
+		membership: membership,
 		transactor: transactor,
 		eventHub:   eventHub,
 	}
@@ -162,7 +160,7 @@ func (cc *Client) prepareHandlerContexts(request Request, o opts) (*invoke.Reque
 	clientContext := &invoke.ClientContext{
 		Selection:  cc.selection,
 		Discovery:  cc.discovery,
-		Channel:    cc.channel,
+		Membership: cc.membership,
 		Transactor: cc.transactor,
 		EventHub:   cc.eventHub,
 	}

@@ -90,6 +90,14 @@ type ChannelCfg interface {
 	Versions() *Versions
 }
 
+// ChannelMembership helps identify a channel's members
+type ChannelMembership interface {
+	// Validate if the given ID was issued by the channel's members
+	Validate(serializedID []byte) error
+	// Verify the given signature
+	Verify(serializedID []byte, msg []byte, sig []byte) error
+}
+
 // Versions ...
 type Versions struct {
 	ReadSet  *common.ConfigGroup

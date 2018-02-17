@@ -7,15 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package invoke
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
-
-	"github.com/golang/protobuf/proto"
 
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -31,7 +28,6 @@ type SignatureValidationHandler struct {
 
 //Handle for Filtering proposal response
 func (f *SignatureValidationHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
-
 	//Filter tx proposal responses
 	err := f.validate(requestContext.Response.Responses, clientContext)
 	if err != nil {
@@ -46,7 +42,6 @@ func (f *SignatureValidationHandler) Handle(requestContext *RequestContext, clie
 }
 
 func (f *SignatureValidationHandler) validate(txProposalResponse []*fab.TransactionProposalResponse, ctx *ClientContext) error {
-
 	for _, r := range txProposalResponse {
 		if r.ProposalResponse.GetResponse().Status != int32(common.Status_SUCCESS) {
 			return status.NewFromProposalResponse(r.ProposalResponse, r.Endorser)
@@ -58,45 +53,15 @@ func (f *SignatureValidationHandler) validate(txProposalResponse []*fab.Transact
 	}
 
 	return nil
-
 }
 
 func verifyProposalResponse(res *pb.ProposalResponse, ctx *ClientContext) error {
-
 	if res.GetEndorsement() == nil {
 		return errors.Errorf("Missing endorsement in proposal response")
 	}
+	creatorID := res.GetEndorsement().Endorser
 
-	serializedIdentity := &msp.SerializedIdentity{}
-	if err := proto.Unmarshal(res.GetEndorsement().Endorser, serializedIdentity); err != nil {
-		return errors.WithMessage(err, "Unmarshal endorser error")
-	}
-
-	// TODO ctx.Channel is temporary and needs to be replaced with an MSP interface from channel service.
-	if ctx.Channel.MSPManager() == nil {
-		return errors.Errorf("Channel %s msp manager is nil", ctx.Channel.Name())
-	}
-
-	msps, err := ctx.Channel.MSPManager().GetMSPs()
-	if err != nil {
-		return errors.WithMessage(err, "GetMSPs return error:%v")
-	}
-	if len(msps) == 0 {
-		return errors.Errorf("Channel %s msps is empty", ctx.Channel.Name())
-	}
-
-	msp := msps[serializedIdentity.Mspid]
-	if msp == nil {
-		return errors.Errorf("MSP %s not found", serializedIdentity.Mspid)
-	}
-
-	creator, err := msp.DeserializeIdentity(res.GetEndorsement().Endorser)
-	if err != nil {
-		return errors.WithMessage(err, "Failed to deserialize creator identity")
-	}
-
-	// ensure that creator is a valid certificate
-	err = creator.Validate()
+	err := ctx.Membership.Validate(creatorID)
 	if err != nil {
 		return errors.WithMessage(err, "The creator certificate is not valid")
 	}
@@ -105,7 +70,7 @@ func verifyProposalResponse(res *pb.ProposalResponse, ctx *ClientContext) error 
 	digest := append(res.GetPayload(), res.GetEndorsement().Endorser...)
 
 	// validate the signature
-	err = creator.Verify(digest, res.GetEndorsement().Signature)
+	err = ctx.Membership.Verify(creatorID, digest, res.GetEndorsement().Signature)
 	if err != nil {
 		return errors.WithMessage(err, "The creator's signature over the proposal is not valid")
 	}

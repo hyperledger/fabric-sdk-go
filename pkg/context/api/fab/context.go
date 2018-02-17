@@ -15,6 +15,7 @@ type ChannelService interface {
 	Channel() (Channel, error) // TODO remove
 	Transactor() (Transactor, error)
 	EventHub() (EventHub, error) // TODO support new event delivery
+	Membership() (ChannelMembership, error)
 }
 
 // Transactor supplies methods for sending transaction proposals and transactions.

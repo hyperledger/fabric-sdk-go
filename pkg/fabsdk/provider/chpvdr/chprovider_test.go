@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBasicValidChannel(t *testing.T) {
@@ -56,6 +57,10 @@ func TestBasicValidChannel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}
+
+	m, err := channelService.Membership()
+	assert.Nil(t, err)
+	assert.NotNil(t, m)
 }
 
 // MockProviderFactory is configured to retrieve channel config from orderer

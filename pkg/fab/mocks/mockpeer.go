@@ -11,10 +11,7 @@ import (
 	"encoding/pem"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	msp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -93,16 +90,6 @@ func (p *MockPeer) ProcessTransactionProposal(tp fab.ProcessProposalRequest) (*f
 	}
 	p.ProcessProposalCalls++
 
-	if p.Endorser == nil {
-		// We serialize identities by prepending the MSPID and appending the ASN.1 DER content of the cert
-		sID := &msp.SerializedIdentity{Mspid: "Org1MSP", IdBytes: []byte(certPem)}
-		endorser, err := proto.Marshal(sID)
-		if err != nil {
-			return &fab.TransactionProposalResponse{}, err
-		}
-		p.Endorser = endorser
-	}
-
 	return &fab.TransactionProposalResponse{
 		Endorser: p.MockURL,
 		Status:   p.Status,
@@ -112,29 +99,3 @@ func (p *MockPeer) ProcessTransactionProposal(tp fab.ProcessProposalRequest) (*f
 	}, p.Error
 
 }
-
-var certPem = `-----BEGIN CERTIFICATE-----
-MIIC5TCCAkagAwIBAgIUMYhiY5MS3jEmQ7Fz4X/e1Dx33J0wCgYIKoZIzj0EAwQw
-gYwxCzAJBgNVBAYTAkNBMRAwDgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3Jv
-bnRvMREwDwYDVQQKEwhsaW51eGN0bDEMMAoGA1UECxMDTGFiMTgwNgYDVQQDEy9s
-aW51eGN0bCBFQ0MgUm9vdCBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eSAoTGFiKTAe
-Fw0xNzEyMDEyMTEzMDBaFw0xODEyMDEyMTEzMDBaMGMxCzAJBgNVBAYTAkNBMRAw
-DgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3JvbnRvMREwDwYDVQQKEwhsaW51
-eGN0bDEMMAoGA1UECxMDTGFiMQ8wDQYDVQQDDAZzZGtfZ28wdjAQBgcqhkjOPQIB
-BgUrgQQAIgNiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv2PotEEGuO6rMyaOu
-pulj2VOj+YtgWw4ZtU49g4Nv6rq1QlKwRYyMwwRJSAZHIUMhYZjcDi7YEOZ3Fs1h
-xKmIxR+TTR2vf9KjgZAwgY0wDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsG
-AQUFBwMCMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFDwS3xhpAWs81OVWvZt+iUNL
-z26DMB8GA1UdIwQYMBaAFLRasbknomawJKuQGiyKs/RzTCujMBgGA1UdEQQRMA+C
-DWZhYnJpY19zZGtfZ28wCgYIKoZIzj0EAwQDgYwAMIGIAkIAk1MxMogtMtNO0rM8
-gw2rrxqbW67ulwmMQzp6EJbm/28T2pIoYWWyIwpzrquypI7BOuf8is5b7Jcgn9oz
-7sdMTggCQgF7/8ZFl+wikAAPbciIL1I+LyCXKwXosdFL6KMT6/myYjsGNeeDeMbg
-3YkZ9DhdH1tN4U/h+YulG/CkKOtUATtQxg==
------END CERTIFICATE-----`
-
-var keyPem = `-----BEGIN EC PRIVATE KEY-----
-MIGkAgEBBDByldj7VTpqTQESGgJpR9PFW9b6YTTde2WN6/IiBo2nW+CIDmwQgmAl
-c/EOc9wmgu+gBwYFK4EEACKhZANiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv
-2PotEEGuO6rMyaOupulj2VOj+YtgWw4ZtU49g4Nv6rq1QlKwRYyMwwRJSAZHIUMh
-YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
------END EC PRIVATE KEY-----`

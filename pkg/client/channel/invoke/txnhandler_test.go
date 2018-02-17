@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -208,10 +207,7 @@ func TestProposalProcessorHandler(t *testing.T) {
 
 //prepareHandlerContexts prepares context objects for handlers
 func prepareRequestContext(request Request, opts Opts, t *testing.T) *RequestContext {
-
-	var requestContext *RequestContext
-
-	requestContext = &RequestContext{Request: request,
+	requestContext := &RequestContext{Request: request,
 		Opts:     opts,
 		Response: Response{},
 	}
@@ -219,7 +215,6 @@ func prepareRequestContext(request Request, opts Opts, t *testing.T) *RequestCon
 	requestContext.Opts.Timeout = testTimeOut
 
 	return requestContext
-
 }
 
 func setupTestChannel() (*channel.Channel, error) {
@@ -228,20 +223,7 @@ func setupTestChannel() (*channel.Channel, error) {
 }
 
 func setupChannelClientContext(discErr error, selectionErr error, peers []fab.Peer, t *testing.T) *ClientContext {
-
-	testChannel, err := setupTestChannel()
-	if err != nil {
-		t.Fatalf("Failed to setup test channel: %s", err)
-	}
-
-	// Add mock msp to msp manager
-	msps := make(map[string]msp.MSP)
-	msps["Org1MSP"] = fcmocks.NewMockMSP(nil)
-
-	testChannel.SetMSPManager(fcmocks.NewMockMSPManager(msps))
-
-	orderer := fcmocks.NewMockOrderer("", nil)
-	testChannel.AddOrderer(orderer)
+	membership := fcmocks.NewMockMembership()
 
 	discoveryService, err := setupTestDiscovery(discErr, nil)
 	if err != nil {
@@ -254,6 +236,7 @@ func setupChannelClientContext(discErr error, selectionErr error, peers []fab.Pe
 	}
 
 	ctx := setupTestContext()
+	orderer := fcmocks.NewMockOrderer("", nil)
 	transactor := txnmocks.MockTransactor{
 		Ctx:       ctx,
 		ChannelID: "testChannel",
@@ -261,7 +244,7 @@ func setupChannelClientContext(discErr error, selectionErr error, peers []fab.Pe
 	}
 
 	return &ClientContext{
-		Channel:    testChannel,
+		Membership: membership,
 		Discovery:  discoveryService,
 		Selection:  selectionService,
 		Transactor: &transactor,

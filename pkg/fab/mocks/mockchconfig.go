@@ -19,10 +19,11 @@ type MockChannelCfg struct {
 	MockAnchorPeers []*fab.OrgAnchorPeer
 	MockOrderers    []string
 	MockVersions    *fab.Versions
+	MockMembership  fab.ChannelMembership
 }
 
 // NewMockChannelCfg ...
-func NewMockChannelCfg(name string) fab.ChannelCfg {
+func NewMockChannelCfg(name string) *MockChannelCfg {
 	return &MockChannelCfg{MockName: name}
 }
 

@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateFabricProvider(t *testing.T) {
@@ -142,6 +143,13 @@ func TestCreateUser(t *testing.T) {
 	if !ok {
 		t.Fatalf("Unexpected peer impl created")
 	}
+}
+
+func TestCreateMembership(t *testing.T) {
+	p := newMockFabricProvider(t)
+	m, err := p.CreateChannelMembership(mocks.NewMockChannelCfg(""))
+	assert.Nil(t, err)
+	assert.NotNil(t, m)
 }
 
 func newMockFabricProvider(t *testing.T) *FabricProvider {
