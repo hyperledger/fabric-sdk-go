@@ -73,7 +73,7 @@
     "x509",
     "x509/pkix"
   ]
-  revision = "565dc33ed1f4f57523d464a59b3ece8c93944dce"
+  revision = "391726f8973ddb3521ab1a462bd55a35c6f67f0b"
 
 [[projects]]
   branch = "master"
@@ -102,7 +102,7 @@
   branch = "master"
   name = "github.com/miekg/pkcs11"
   packages = ["."]
-  revision = "57296583125bf58643f8bac3635bc1af1d65a6df"
+  revision = "88ac7c418f89b164432a00c46ec7b7612d686b57"
 
 [[projects]]
   branch = "master"
@@ -171,6 +171,8 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = [
+    "cryptobyte",
+    "cryptobyte/asn1",
     "ocsp",
     "pkcs12",
     "pkcs12/internal/rc2",
@@ -263,6 +265,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bf7647808493a0217336ed9f3c07da164a6142d847d7834df008df7dc6ce62ad"
+  inputs-digest = "6fa350e889abed4098c4404699366f2ddd3f319b61c98d6801e3c643f6b3f3fc"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -38,7 +38,7 @@ FABRIC_DEVSTABLE_VERSION_MINOR  := 1.1
 FABRIC_DEVSTABLE_VERSION_MAJOR  := 1
 
 # Build flags (overridable)
-GO_LDFLAGS                 ?= -s
+GO_LDFLAGS                 ?=
 GO_TESTFLAGS               ?=
 FABRIC_SDK_EXPERIMENTAL    ?= true
 FABRIC_SDK_EXTRA_GO_TAGS   ?=

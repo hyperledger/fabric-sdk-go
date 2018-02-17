@@ -47,7 +47,6 @@ do
       exit 1
    fi
 
-   OUTPUT="$($GOIMPORTS_CMD -w -srcdir $PROJECT_PATH -l $i)"
    OUTPUT="$($GOIMPORTS_CMD -srcdir $PROJECT_PATH -l $i)"
 
    if [[ $OUTPUT ]]; then
