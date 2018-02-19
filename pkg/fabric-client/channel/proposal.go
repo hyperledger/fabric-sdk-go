@@ -8,6 +8,7 @@ package channel
 
 import (
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -39,51 +40,52 @@ type ChaincodeDeployRequest struct {
 // CreateChaincodeDeployProposal creates an instantiate or upgrade chaincode proposal.
 func CreateChaincodeDeployProposal(ctx fab.IdentityContext, deploy ChaincodeProposalType, channelID string, chaincode ChaincodeDeployRequest) (*fab.TransactionProposal, error) {
 
+	// Generate arguments for deploy (channel, marshaled CCDS, marshaled chaincode policy, marshaled collection policy)
+	args := [][]byte{}
+	args = append(args, []byte(channelID))
+
 	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincode.Name, Path: chaincode.Path, Version: chaincode.Version},
 		Input: &pb.ChaincodeInput{Args: chaincode.Args}}}
-
-	creator, err := ctx.Identity()
+	ccdsBytes, err := protos_utils.Marshal(ccds)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting user context's identity failed")
+		return nil, errors.WithMessage(err, "marshal of chaincode deployment spec failed")
 	}
+	args = append(args, ccdsBytes)
+
 	chaincodePolicyBytes, err := protos_utils.Marshal(chaincode.Policy)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessage(err, "marshal of chaincode policy failed")
 	}
-	var collConfigBytes []byte
+	args = append(args, chaincodePolicyBytes)
+
+	args = append(args, []byte("escc"))
+	args = append(args, []byte("vscc"))
+
 	if chaincode.CollConfig != nil {
 		var err error
-		collConfigBytes, err = proto.Marshal(&common.CollectionConfigPackage{Config: chaincode.CollConfig})
+		collConfigBytes, err := proto.Marshal(&common.CollectionConfigPackage{Config: chaincode.CollConfig})
 		if err != nil {
-			return nil, err
+			return nil, errors.WithMessage(err, "marshal of collection policy failed")
 		}
+		args = append(args, collConfigBytes)
 	}
 
-	var proposal *pb.Proposal
-	var txID string
-
+	// Fcn is deploy or upgrade
+	fcn := ""
 	switch deploy {
-
 	case InstantiateChaincode:
-		proposal, txID, err = protos_utils.CreateDeployProposalFromCDS(channelID, ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"), collConfigBytes)
-		if err != nil {
-			return nil, errors.Wrap(err, "create instantiate chaincode proposal failed")
-		}
+		fcn = "deploy"
 	case UpgradeChaincode:
-		proposal, txID, err = protos_utils.CreateUpgradeProposalFromCDS(channelID, ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
-		if err != nil {
-			return nil, errors.Wrap(err, "create  upgrade chaincode proposal failed")
-		}
+		fcn = "upgrade"
 	default:
-		return nil, errors.Errorf("chaincode proposal type %d not supported", deploy)
+		return nil, errors.WithMessage(err, "chaincode deployment type unknown")
 	}
 
-	txnID := fab.TransactionID{ID: txID} // Nonce is missing
-	tp := fab.TransactionProposal{
-		Proposal: proposal,
-		TxnID:    txnID,
+	cir := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "lscc",
+		Fcn:         fcn,
+		Args:        args,
 	}
-
-	return &tp, err
+	return txn.CreateChaincodeInvokeProposal(ctx, channelID, cir)
 }

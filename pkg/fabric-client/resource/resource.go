@@ -9,10 +9,8 @@ package resource
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/golang/protobuf/proto"
-	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -386,30 +384,24 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.Tra
 		return nil, "", errors.New("chaincode package is required")
 	}
 
-	now := time.Now()
-	cds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
-		Type: req.Package.Type, ChaincodeId: &pb.ChaincodeID{Name: req.Name, Path: req.Path, Version: req.Version}},
-		CodePackage: req.Package.Code, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
-
-	creator, err := c.clientContext.Identity()
-	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to get creator identity")
+	propReq := ChaincodeInstallRequest{
+		Name:    req.Name,
+		Path:    req.Path,
+		Version: req.Version,
+		Package: &ChaincodePackage{
+			Type: req.Package.Type,
+			Code: req.Package.Code,
+		},
 	}
 
-	// create an install from a chaincodeDeploymentSpec
-	proposal, txID, err := protos_utils.CreateInstallProposalFromCDS(cds, creator)
+	prop, err := CreateChaincodeInstallProposal(c.clientContext, propReq)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to create chaincode deploy proposal")
+		return nil, "", errors.Wrap(err, "creation of install chaincode proposal failed")
 	}
 
-	txnID := fab.TransactionID{ID: txID} // Nonce is missing
+	transactionProposalResponse, err := txn.SendProposal(c.clientContext, prop, req.Targets)
 
-	transactionProposalResponse, err := txn.SendProposal(c.clientContext, &fab.TransactionProposal{
-		Proposal: proposal,
-		TxnID:    txnID,
-	}, req.Targets)
-
-	return transactionProposalResponse, txID, err
+	return transactionProposalResponse, prop.TxnID.ID, err
 }
 
 func (c *Resource) queryChaincode(request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([][]byte, error) {
