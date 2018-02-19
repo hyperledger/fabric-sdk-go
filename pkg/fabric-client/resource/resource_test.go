@@ -24,20 +24,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-func TestExtractChannelConfig(t *testing.T) {
-	client := setupTestClient()
-
-	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	_, err = client.ExtractChannelConfig(configTx)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-}
-
 func TestSignChannelConfig(t *testing.T) {
 	client := setupTestClient()
 

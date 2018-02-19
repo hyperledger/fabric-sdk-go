@@ -223,9 +223,7 @@ func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
  * @returns {byte[]} The bytes of the ConfigUpdate protobuf
  */
 func (c *Client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
-	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
-	rc := resource.New(ctx)
-	return rc.ExtractChannelConfig(configEnvelope)
+	return resource.ExtractChannelConfig(configEnvelope)
 }
 
 // SignChannelConfig ...
@@ -236,8 +234,7 @@ func (c *Client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
  */
 func (c *Client) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
 	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
-	rc := resource.New(ctx)
-	return rc.SignChannelConfig(config, signer)
+	return resource.CreateConfigSignature(ctx, config)
 }
 
 // CreateChannel ...

@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -377,7 +378,11 @@ func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType channel.ChaincodePro
 
 	// create a transaction proposal for chaincode deployment
 	deployProposal := channel.ChaincodeDeployRequest(req)
-	tp, err := channel.CreateChaincodeDeployProposal(rc.identity, ccProposalType, channelID, deployProposal)
+	deployCtx := fabContext{
+		ProviderContext: rc.provider,
+		IdentityContext: rc.identity,
+	}
+	tp, err := channel.CreateChaincodeDeployProposal(&deployCtx, ccProposalType, channelID, deployProposal)
 	if err != nil {
 		return errors.WithMessage(err, "creating chaincode deploy transaction proposal failed")
 	}
@@ -513,12 +518,16 @@ func (rc *ResourceMgmtClient) SaveChannel(req resmgmt.SaveChannelRequest, option
 		return errors.WithMessage(err, "reading channel config file failed")
 	}
 
-	chConfig, err := rc.resource.ExtractChannelConfig(configTx)
+	chConfig, err := resource.ExtractChannelConfig(configTx)
 	if err != nil {
 		return errors.WithMessage(err, "extracting channel config failed")
 	}
 
-	configSignature, err := rc.resource.SignChannelConfig(chConfig, signer)
+	sigCtx := Context{
+		IdentityContext: signer,
+		ProviderContext: rc.provider,
+	}
+	configSignature, err := resource.CreateConfigSignature(&sigCtx, chConfig)
 	if err != nil {
 		return errors.WithMessage(err, "signing configuration failed")
 	}

@@ -7,7 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package txn
 
 import (
+	"encoding/hex"
+	"hash"
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -18,27 +22,32 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
 
 // NewID computes a TransactionID for the current user context
 //
 // TODO: Determine if this function should be exported after refactoring is completed.
-func NewID(signingIdentity fab.IdentityContext) (fab.TransactionID, error) {
+func NewID(ctx fab.Context) (fab.TransactionID, error) {
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
-		return fab.TransactionID{}, err
+		return fab.TransactionID{}, errors.WithMessage(err, "nonce creation failed")
 	}
 
-	creator, err := signingIdentity.Identity()
+	creator, err := ctx.Identity()
 	if err != nil {
-		return fab.TransactionID{}, err
+		return fab.TransactionID{}, errors.WithMessage(err, "identity from context failed")
 	}
 
-	id, err := protos_utils.ComputeProposalTxID(nonce, creator)
+	ho := cryptosuite.GetSHA256Opts() // TODO: make configurable
+	h, err := ctx.CryptoSuite().GetHash(ho)
 	if err != nil {
-		return fab.TransactionID{}, err
+		return fab.TransactionID{}, errors.WithMessage(err, "hash function creation failed")
+	}
+
+	id, err := computeTxnID(nonce, creator, h)
+	if err != nil {
+		return fab.TransactionID{}, errors.WithMessage(err, "txn ID computation failed")
 	}
 
 	txnID := fab.TransactionID{
@@ -47,6 +56,19 @@ func NewID(signingIdentity fab.IdentityContext) (fab.TransactionID, error) {
 	}
 
 	return txnID, nil
+}
+
+func computeTxnID(nonce, creator []byte, h hash.Hash) (string, error) {
+	b := append(nonce, creator...)
+
+	_, err := h.Write(b)
+	if err != nil {
+		return "", err
+	}
+	digest := h.Sum(nil)
+	id := hex.EncodeToString(digest)
+
+	return id, nil
 }
 
 // SignPayload signs payload

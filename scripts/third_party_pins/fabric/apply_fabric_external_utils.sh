@@ -64,9 +64,8 @@ gofilter
 FILTER_FILENAME="protos/utils/proputils.go"
 FILTER_FN="GetHeader,GetChaincodeProposalPayload,GetSignatureHeader,GetChaincodeHeaderExtension,GetBytesChaincodeActionPayload"
 FILTER_FN+=",GetBytesTransaction,GetBytesPayload,GetHeader,GetBytesProposalResponsePayload,GetBytesProposal"
-FILTER_FN+=",GetBytesChaincodeProposalPayload,ComputeProposalTxID"
 FILTER_FN+=",CreateChaincodeProposalWithTxIDNonceAndTransient"
-FILTER_FN+=",GetTransaction,GetPayload"
+FILTER_FN+=",GetTransaction,GetPayload,GetBytesChaincodeProposalPayload"
 FILTER_FN+=",GetChaincodeActionPayload,GetProposalResponsePayload,GetChaincodeAction,GetChaincodeEvents,GetBytesChaincodeEvent,GetBytesEnvelope"
 gofilter
 sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/factory"/factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"

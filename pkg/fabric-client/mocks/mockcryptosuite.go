@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"crypto/sha256"
 	"hash"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
@@ -38,8 +39,8 @@ func (m *MockCryptoSuite) Hash(msg []byte, opts apicryptosuite.HashOpts) (hash [
 }
 
 // GetHash mock get hash
-func (m *MockCryptoSuite) GetHash(opts apicryptosuite.HashOpts) (h hash.Hash, err error) {
-	return nil, nil
+func (m *MockCryptoSuite) GetHash(opts apicryptosuite.HashOpts) (hash.Hash, error) {
+	return sha256.New(), nil
 }
 
 // Sign mock signing

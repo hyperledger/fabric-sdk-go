@@ -21,7 +21,7 @@ import (
 )
 
 // CreateChaincodeInvokeProposal creates a proposal for transaction.
-func CreateChaincodeInvokeProposal(ctx fab.IdentityContext, channelID string, request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
+func CreateChaincodeInvokeProposal(ctx fab.Context, channelID string, request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
 	if request.ChaincodeID == "" {
 		return nil, errors.New("ChaincodeID is required")
 	}

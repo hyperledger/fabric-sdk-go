@@ -40,8 +40,7 @@ const (
 )
 
 type context interface {
-	SigningManager() fab.SigningManager
-	Config() apiconfig.Config
+	fab.ProviderContext
 	fab.IdentityContext
 }
 
