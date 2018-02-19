@@ -31,6 +31,9 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
+const channelConfig = "./testdata/test.tx"
+const networkCfg = "../../../test/fixtures/config/config_test.yaml"
+
 func TestJoinChannelFail(t *testing.T) {
 
 	ctx := setupTestContext("test", "Org1MSP")
@@ -1029,15 +1032,6 @@ func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryProvider,
 	return mockDiscovery, nil
 }
 
-func getNetworkConfig(t *testing.T) apiconfig.Config {
-	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return config
-}
-
 func setupDefaultResMgmtClient(t *testing.T) *ResourceMgmtClient {
 	ctx := setupTestContext("test", "Org1MSP")
 	network := getNetworkConfig(t)
@@ -1103,4 +1097,121 @@ func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*fcmocks.MockEn
 	t.Logf("Starting test server on %s\n", addr)
 	go grpcServer.Serve(lis)
 	return endorserServer, addr
+}
+
+func getNetworkConfig(t *testing.T) apiconfig.Config {
+	config, err := config.FromFile(networkCfg)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return config
+}
+
+func TestSaveChannel(t *testing.T) {
+
+	cc := setupDefaultResMgmtClient(t)
+
+	// Test empty channel request
+	err := cc.SaveChannel(resmgmt.SaveChannelRequest{})
+	if err == nil {
+		t.Fatalf("Should have failed for empty channel request")
+	}
+
+	// Test empty channel name
+	err = cc.SaveChannel(resmgmt.SaveChannelRequest{ChannelID: "", ChannelConfig: channelConfig})
+	if err == nil {
+		t.Fatalf("Should have failed for empty channel id")
+	}
+
+	// Test empty channel config
+	err = cc.SaveChannel(resmgmt.SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: ""})
+	if err == nil {
+		t.Fatalf("Should have failed for empty channel config")
+	}
+
+	// Test extract configuration error
+	err = cc.SaveChannel(resmgmt.SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: "./testdata/extractcherr.tx"})
+	if err == nil {
+		t.Fatalf("Should have failed to extract configuration")
+	}
+
+	// Test sign channel error
+	err = cc.SaveChannel(resmgmt.SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: "./testdata/signcherr.tx"})
+	if err == nil {
+		t.Fatalf("Should have failed to sign configuration")
+	}
+
+	// Test valid Save Channel request (success)
+	err = cc.SaveChannel(resmgmt.SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+
+func TestSaveChannelFailure(t *testing.T) {
+
+	// Set up context with error in create channel
+	user := fcmocks.NewMockUser("test")
+	errCtx := fcmocks.NewMockContext(user)
+	network := getNetworkConfig(t)
+	errCtx.SetConfig(network)
+	resource := fcmocks.NewMockInvalidResource()
+	discovery, err := setupTestDiscovery(nil, nil)
+	if err != nil {
+		t.Fatalf("Failed to setup discovery service: %s", err)
+	}
+	fabCtx := setupTestContext("user", "Org1Msp1")
+	chProvider, err := fcmocks.NewMockChannelProvider(fabCtx)
+	if err != nil {
+		t.Fatalf("Failed to setup channel provider: %s", err)
+	}
+	ctx := Context{
+		ProviderContext:   errCtx,
+		IdentityContext:   fabCtx,
+		Resource:          resource,
+		ChannelProvider:   chProvider,
+		DiscoveryProvider: discovery,
+	}
+	cc, err := New(ctx, nil)
+	if err != nil {
+		t.Fatalf("Failed to create new channel management client: %s", err)
+	}
+
+	// Test create channel failure
+	err = cc.SaveChannel(resmgmt.SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig})
+	if err == nil {
+		t.Fatal("Should have failed with create channel error")
+	}
+
+}
+
+func TestSaveChannelWithOpts(t *testing.T) {
+
+	cc := setupDefaultResMgmtClient(t)
+
+	// Valid request (same for all options)
+	req := resmgmt.SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig}
+
+	// Test empty option (default order is random orderer from config)
+	opts := resmgmt.WithOrdererID("")
+	err := cc.SaveChannel(req, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test valid orderer ID
+	opts = resmgmt.WithOrdererID("orderer.example.com")
+	err = cc.SaveChannel(req, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test invalid orderer ID
+	opts = resmgmt.WithOrdererID("Invalid")
+	err = cc.SaveChannel(req, opts)
+	if err == nil {
+		t.Fatal("Should have failed for invalid orderer ID")
+	}
 }

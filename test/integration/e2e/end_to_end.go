@@ -19,7 +19,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
@@ -48,7 +47,7 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 
 	// Channel management client is responsible for managing channels (create/update channel)
 	// Supply user that has privileges to create channel (in this case orderer admin)
-	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ChannelMgmt()
+	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ResourceMgmt()
 	if err != nil {
 		t.Fatalf("Failed to create channel management client: %s", err)
 	}
@@ -61,7 +60,7 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 	orgAdminUser := session
 
 	// Create channel
-	req := chmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"), SigningIdentity: orgAdminUser}
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"), SigningIdentity: orgAdminUser}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}

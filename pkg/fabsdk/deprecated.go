@@ -10,7 +10,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
@@ -39,22 +38,6 @@ type ResourceMgmtClientOpts struct {
 	OrgName        string
 	TargetFilter   resmgmt.TargetFilter
 	ConfigProvider apiconfig.Config
-}
-
-// NewChannelMgmtClientWithOpts returns a new client for managing channels with options
-//
-// Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelMgmtClientWithOpts(userName string, opt *ChannelMgmtClientOpts) (chmgmt.ChannelMgmtClient, error) {
-	o := []ContextOption{}
-	if opt.OrgName != "" {
-		o = append(o, WithOrg(opt.OrgName))
-	}
-	if opt.ConfigProvider != nil {
-		o = append(o, withConfig(opt.ConfigProvider))
-	}
-
-	c := sdk.NewClient(WithUser(userName), o...)
-	return c.ChannelMgmt()
 }
 
 // NewResourceMgmtClientWithOpts returns a new resource management client (user has to be pre-enrolled)
@@ -92,18 +75,10 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 	return c.Channel(channelID)
 }
 
-// NewChannelMgmtClient returns a new client for managing channels
+// New returns a new client for managing system resources
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelMgmtClient(userName string, opts ...ContextOption) (chmgmt.ChannelMgmtClient, error) {
-	c := sdk.NewClient(WithUser(userName), opts...)
-	return c.ChannelMgmt()
-}
-
-// NewResourceMgmtClient returns a new client for managing system resources
-//
-// Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewResourceMgmtClient(userName string, opts ...ContextOption) (resmgmt.ResourceMgmtClient, error) {
+func (sdk *FabricSDK) New(userName string, opts ...ContextOption) (resmgmt.ResourceMgmtClient, error) {
 	c := sdk.NewClient(WithUser(userName), opts...)
 	return c.ResourceMgmt()
 }

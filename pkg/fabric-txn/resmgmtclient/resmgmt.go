@@ -8,14 +8,17 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmtclient
 
 import (
+	"io/ioutil"
 	"time"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -477,4 +480,94 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 		tpp[i] = peers[i]
 	}
 	return tpp
+}
+
+// SaveChannel creates or updates channel
+func (rc *ResourceMgmtClient) SaveChannel(req resmgmt.SaveChannelRequest, options ...resmgmt.Option) error {
+
+	opts, err := rc.prepareSaveChannelOpts(options...)
+	if err != nil {
+		return err
+	}
+
+	if req.ChannelID == "" || req.ChannelConfig == "" {
+		return errors.New("must provide channel ID and channel config")
+	}
+
+	logger.Debugf("***** Saving channel: %s *****\n", req.ChannelID)
+
+	// Signing user has to belong to one of configured channel organisations
+	// In case that order org is one of channel orgs we can use context user
+	signer := rc.identity
+	if req.SigningIdentity != nil {
+		// Retrieve custom signing identity here
+		signer = req.SigningIdentity
+	}
+
+	if signer == nil {
+		return errors.New("must provide signing user")
+	}
+
+	configTx, err := ioutil.ReadFile(req.ChannelConfig)
+	if err != nil {
+		return errors.WithMessage(err, "reading channel config file failed")
+	}
+
+	chConfig, err := rc.resource.ExtractChannelConfig(configTx)
+	if err != nil {
+		return errors.WithMessage(err, "extracting channel config failed")
+	}
+
+	configSignature, err := rc.resource.SignChannelConfig(chConfig, signer)
+	if err != nil {
+		return errors.WithMessage(err, "signing configuration failed")
+	}
+
+	var configSignatures []*common.ConfigSignature
+	configSignatures = append(configSignatures, configSignature)
+
+	// Figure out orderer configuration
+	var ordererCfg *config.OrdererConfig
+	if opts.OrdererID != "" {
+		ordererCfg, err = rc.provider.Config().OrdererConfig(opts.OrdererID)
+	} else {
+		// Default is random orderer from configuration
+		ordererCfg, err = rc.provider.Config().RandomOrdererConfig()
+	}
+
+	// Check if retrieving orderer configuration went ok
+	if err != nil || ordererCfg == nil {
+		return errors.Errorf("failed to retrieve orderer config: %s", err)
+	}
+
+	orderer, err := orderer.New(rc.provider.Config(), orderer.FromOrdererConfig(ordererCfg))
+	if err != nil {
+		return errors.WithMessage(err, "failed to create new orderer from config")
+	}
+
+	request := fab.CreateChannelRequest{
+		Name:       req.ChannelID,
+		Orderer:    orderer,
+		Config:     chConfig,
+		Signatures: configSignatures,
+	}
+
+	_, err = rc.resource.CreateChannel(request)
+	if err != nil {
+		return errors.WithMessage(err, "create channel failed")
+	}
+
+	return nil
+}
+
+//prepareSaveChannelOpts Reads chmgmt.Opts from chmgmt.Option array
+func (rc *ResourceMgmtClient) prepareSaveChannelOpts(options ...resmgmt.Option) (resmgmt.Opts, error) {
+	saveChannelOpts := resmgmt.Opts{}
+	for _, option := range options {
+		err := option(&saveChannelOpts)
+		if err != nil {
+			return saveChannelOpts, errors.WithMessage(err, "Failed to read save channel opts")
+		}
+	}
+	return saveChannelOpts, nil
 }

@@ -22,7 +22,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
@@ -56,14 +55,14 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Channel management client is responsible for managing channels (create/update channel)
-	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ChannelMgmt()
+	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ResourceMgmt()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Create channel (or update if it already exists)
 	org1AdminUser := loadOrgUser(t, sdk, org1, "Admin")
-	req := chmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"), SigningIdentity: org1AdminUser}
+	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"), SigningIdentity: org1AdminUser}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}

@@ -59,6 +59,17 @@ type Opts struct {
 	Targets      []fab.Peer    // target peers
 	TargetFilter TargetFilter  // target filter
 	Timeout      time.Duration //timeout options for instantiate and upgrade CC
+	OrdererID    string        // use specific orderer
+}
+
+//SaveChannelRequest used to save channel request
+type SaveChannelRequest struct {
+	// Channel Name (ID)
+	ChannelID string
+	// Path to channel configuration file
+	ChannelConfig string
+	// User that signs channel configuration
+	SigningIdentity fab.IdentityContext
 }
 
 //Option func for each Opts argument
@@ -78,4 +89,7 @@ type ResourceMgmtClient interface {
 
 	// JoinChannel allows for peers to join existing channel with optional custom options (specific peers, filtered peers)
 	JoinChannel(channelID string, options ...Option) error
+
+	// SaveChannel creates or updates channel with optional Opts options
+	SaveChannel(req SaveChannelRequest, options ...Option) error
 }

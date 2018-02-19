@@ -12,7 +12,6 @@ import (
 	apicryptosuite "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	chclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	chmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	kvstore "github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -473,19 +472,6 @@ func (m *MockSessionClientFactory) NewChannelClient(arg0 api.Providers, arg1 api
 // NewChannelClient indicates an expected call of NewChannelClient
 func (mr *MockSessionClientFactoryMockRecorder) NewChannelClient(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewChannelClient", reflect.TypeOf((*MockSessionClientFactory)(nil).NewChannelClient), arg0, arg1, arg2, arg3)
-}
-
-// NewChannelMgmtClient mocks base method
-func (m *MockSessionClientFactory) NewChannelMgmtClient(arg0 api.Providers, arg1 api.SessionContext) (chmgmtclient.ChannelMgmtClient, error) {
-	ret := m.ctrl.Call(m, "NewChannelMgmtClient", arg0, arg1)
-	ret0, _ := ret[0].(chmgmtclient.ChannelMgmtClient)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// NewChannelMgmtClient indicates an expected call of NewChannelMgmtClient
-func (mr *MockSessionClientFactoryMockRecorder) NewChannelMgmtClient(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewChannelMgmtClient", reflect.TypeOf((*MockSessionClientFactory)(nil).NewChannelMgmtClient), arg0, arg1)
 }
 
 // NewResourceMgmtClient mocks base method
