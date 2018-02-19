@@ -251,12 +251,18 @@ certificateAuthorities:
 #    httpOptions:
 #      verify: true
 #    tlsCACerts:
+#      dash-pipe ('- |') delimited pem strings of CA cert
+#      pem: 'pem strings of CA cert'
       # Comma-Separated list of paths
 #      path: path/to/tls/cert/for/ca-org1
       # Client key and cert for SSL handshake with Fabric CA
 #      client:
-#       keyfile: path/to/client_fabric_client-key.pem
-#       certfile: path/to/client_fabric_client.pem
+#        key:
+#          path: path/to/client_fabric_client-key.pem
+#          pem: `key pem'
+#        cert:
+#          path: path/to/client_fabric_client-key.pem
+#          pem: `cert pem`
 
     # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
     # needed to enroll and invoke new users.
