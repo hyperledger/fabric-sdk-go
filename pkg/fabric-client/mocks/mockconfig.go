@@ -43,12 +43,17 @@ func (c *MockConfig) Client() (*config.ClientConfig, error) {
 
 	if c.mutualTLSEnabled {
 		mutualTLSCerts := config.MutualTLSConfig{
-			Client: struct {
-				KeyPem   string
-				Keyfile  string
-				CertPem  string
-				Certfile string
-			}{KeyPem: "", Keyfile: "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem", CertPem: "", Certfile: "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"},
+
+			Client: config.TLSKeyPair{
+				Key: config.TLSConfig{
+					Path: "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem",
+					Pem:  "",
+				},
+				Cert: config.TLSConfig{
+					Path: "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem",
+					Pem:  "",
+				},
+			},
 		}
 		clientConfig.TLSCerts = mutualTLSCerts
 	}

@@ -268,8 +268,8 @@ func (c *Config) Client() (*apiconfig.ClientConfig, error) {
 	client := config.Client
 
 	client.TLSCerts.Path = substPathVars(client.TLSCerts.Path)
-	client.TLSCerts.Client.Keyfile = substPathVars(client.TLSCerts.Client.Keyfile)
-	client.TLSCerts.Client.Certfile = substPathVars(client.TLSCerts.Client.Certfile)
+	client.TLSCerts.Client.Key.Path = substPathVars(client.TLSCerts.Client.Key.Path)
+	client.TLSCerts.Client.Cert.Path = substPathVars(client.TLSCerts.Client.Cert.Path)
 
 	return &client, nil
 }
@@ -373,7 +373,7 @@ func (c *Config) CAClientKeyPath(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return substPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Keyfile), nil
+	return substPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Key.Path), nil
 }
 
 // CAClientKeyPem Read configuration option for the fabric CA client key pem embedded in the client config
@@ -392,11 +392,11 @@ func (c *Config) CAClientKeyPem(org string) (string, error) {
 	}
 
 	ca := config.CertificateAuthorities[strings.ToLower(caName)]
-	if len(ca.TLSCACerts.Client.CertPem) == 0 {
+	if len(ca.TLSCACerts.Client.Key.Pem) == 0 {
 		return "", errors.New("Empty Client Key Pem")
 	}
 
-	return ca.TLSCACerts.Client.KeyPem, nil
+	return ca.TLSCACerts.Client.Key.Pem, nil
 }
 
 // CAClientCertPath Read configuration option for the fabric CA client cert file
@@ -413,7 +413,7 @@ func (c *Config) CAClientCertPath(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return substPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Certfile), nil
+	return substPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Cert.Path), nil
 }
 
 // CAClientCertPem Read configuration option for the fabric CA client cert pem embedded in the client config
@@ -433,11 +433,11 @@ func (c *Config) CAClientCertPem(org string) (string, error) {
 	}
 
 	ca := config.CertificateAuthorities[strings.ToLower(caName)]
-	if len(ca.TLSCACerts.Client.CertPem) == 0 {
+	if len(ca.TLSCACerts.Client.Cert.Pem) == 0 {
 		return "", errors.New("Empty Client Cert Pem")
 	}
 
-	return ca.TLSCACerts.Client.CertPem, nil
+	return ca.TLSCACerts.Client.Cert.Pem, nil
 }
 
 // TimeoutOrDefault reads connection timeouts for the given connection type
@@ -914,13 +914,9 @@ func (c *Config) TLSClientCerts() ([]tls.Certificate, error) {
 	clientConfig := config.Client
 	var clientCerts tls.Certificate
 	var cb, kb []byte
-	if clientConfig.TLSCerts.Client.CertPem != "" {
-		cb = []byte(clientConfig.TLSCerts.Client.CertPem)
-	} else if clientConfig.TLSCerts.Client.Certfile != "" {
-		cb, err = loadByteKeyOrCertFromFile(&clientConfig, false)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to load cert from file path '%s'", clientConfig.TLSCerts.Client.Certfile)
-		}
+	cb, err = clientConfig.TLSCerts.Client.Cert.Bytes()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to load tls client cert")
 	}
 
 	if len(cb) == 0 {
@@ -935,12 +931,12 @@ func (c *Config) TLSClientCerts() ([]tls.Certificate, error) {
 	// If CryptoSuite fails to load private key from cert then load private key from config
 	if err != nil || pk == nil {
 		logger.Debugf("Reading pk from config, unable to retrieve from cert: %s", err)
-		if clientConfig.TLSCerts.Client.KeyPem != "" {
-			kb = []byte(clientConfig.TLSCerts.Client.KeyPem)
-		} else if clientConfig.TLSCerts.Client.Keyfile != "" {
+		if clientConfig.TLSCerts.Client.Key.Pem != "" {
+			kb = []byte(clientConfig.TLSCerts.Client.Key.Pem)
+		} else if clientConfig.TLSCerts.Client.Key.Path != "" {
 			kb, err = loadByteKeyOrCertFromFile(&clientConfig, true)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to load key from file path '%s'", clientConfig.TLSCerts.Client.Keyfile)
+				return nil, errors.Wrapf(err, "Failed to load key from file path '%s'", clientConfig.TLSCerts.Client.Key.Path)
 			}
 		}
 
@@ -967,12 +963,12 @@ func loadByteKeyOrCertFromFile(c *apiconfig.ClientConfig, isKey bool) ([]byte, e
 	var path string
 	a := "key"
 	if isKey {
-		path = substPathVars(c.TLSCerts.Client.Keyfile)
-		c.TLSCerts.Client.Keyfile = path
+		path = substPathVars(c.TLSCerts.Client.Key.Path)
+		c.TLSCerts.Client.Key.Path = path
 	} else {
 		a = "cert"
-		path = substPathVars(c.TLSCerts.Client.Certfile)
-		c.TLSCerts.Client.Certfile = path
+		path = substPathVars(c.TLSCerts.Client.Cert.Path)
+		c.TLSCerts.Client.Cert.Path = path
 	}
 	bts, err := ioutil.ReadFile(path)
 	if err != nil {
