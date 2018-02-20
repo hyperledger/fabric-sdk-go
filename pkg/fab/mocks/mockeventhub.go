@@ -17,12 +17,12 @@ import (
 
 // MockEventHub Mock EventHub
 type MockEventHub struct {
-	RegisteredTxCallbacks chan func(string, pb.TxValidationCode, error)
+	RegisteredTxCallbacks chan func(fab.TransactionID, pb.TxValidationCode, error)
 }
 
 // NewMockEventHub creates a new mock EventHub
 func NewMockEventHub() *MockEventHub {
-	return &MockEventHub{RegisteredTxCallbacks: make(chan func(string, pb.TxValidationCode, error))}
+	return &MockEventHub{RegisteredTxCallbacks: make(chan func(fab.TransactionID, pb.TxValidationCode, error))}
 }
 
 // SetPeerAddr not implemented
@@ -56,7 +56,7 @@ func (m *MockEventHub) UnregisterChaincodeEvent(cbe *fab.ChainCodeCBE) {
 }
 
 // RegisterTxEvent not implemented
-func (m *MockEventHub) RegisterTxEvent(txnID fab.TransactionID, callback func(string, pb.TxValidationCode, error)) {
+func (m *MockEventHub) RegisterTxEvent(txnID fab.TransactionID, callback func(fab.TransactionID, pb.TxValidationCode, error)) {
 	go func() { m.RegisteredTxCallbacks <- callback }()
 	return
 }

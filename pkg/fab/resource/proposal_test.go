@@ -30,7 +30,7 @@ func TestCreateChaincodeInstallProposal(t *testing.T) {
 		Package: &ChaincodePackage{},
 	}
 
-	txid, err := txn.NewID(c.clientContext)
+	txid, err := txn.NewHeader(c.clientContext, fab.SystemChannel)
 	assert.Nil(t, err, "create transaction ID failed")
 
 	prop, err := CreateChaincodeInstallProposal(txid, request)

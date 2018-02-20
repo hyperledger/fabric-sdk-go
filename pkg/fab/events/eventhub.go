@@ -444,16 +444,16 @@ func (eventHub *EventHub) UnregisterChaincodeEvent(cbe *fab.ChainCodeCBE) {
 // txid: transaction id
 // callback: Function that takes a single parameter which
 // is a json object representation of type "message Transaction"
-func (eventHub *EventHub) RegisterTxEvent(txnID fab.TransactionID, callback func(string, pb.TxValidationCode, error)) {
-	logger.Debugf("reg txid %s\n", txnID.ID)
-	eventHub.txRegistrants.Store(txnID.ID, callback)
+func (eventHub *EventHub) RegisterTxEvent(txnID fab.TransactionID, callback func(fab.TransactionID, pb.TxValidationCode, error)) {
+	logger.Debugf("reg txid %s\n", txnID)
+	eventHub.txRegistrants.Store(txnID, callback)
 }
 
 // UnregisterTxEvent unregister transactional event registration.
 // txid: transaction id
 func (eventHub *EventHub) UnregisterTxEvent(txnID fab.TransactionID) {
-	logger.Debugf("un-reg txid %s\n", txnID.ID)
-	eventHub.txRegistrants.Delete(txnID.ID)
+	logger.Debugf("un-reg txid %s\n", txnID)
+	eventHub.txRegistrants.Delete(txnID)
 }
 
 /**
@@ -483,16 +483,18 @@ func (eventHub *EventHub) txCallback(block *common.Block) {
 				logger.Debugf("error extracting ChannelHeader from payload: %v\n", err)
 				return
 			}
-			callback := eventHub.getTXRegistrant(channelHeader.TxId)
+
+			txnID := fab.TransactionID(channelHeader.TxId)
+			callback := eventHub.getTXRegistrant(txnID)
 			if callback != nil {
 				if txFilter.IsInvalid(i) {
-					callback(channelHeader.TxId, txFilter.Flag(i),
+					callback(fab.TransactionID(txnID), txFilter.Flag(i),
 						status.New(status.EventServerStatus, int32(txFilter.Flag(i)), "received invalid transaction", nil))
 				} else {
-					callback(channelHeader.TxId, txFilter.Flag(i), nil)
+					callback(fab.TransactionID(txnID), txFilter.Flag(i), nil)
 				}
 			} else {
-				logger.Debugf("No callback registered for TxID: %s\n", channelHeader.TxId)
+				logger.Debugf("No callback registered for TxID: %s\n", txnID)
 			}
 		}
 	}
@@ -522,12 +524,12 @@ func (eventHub *EventHub) getChaincodeRegistrants(chaincodeID string) []*fab.Cha
 	return clone
 }
 
-func (eventHub *EventHub) getTXRegistrant(txID string) func(string, pb.TxValidationCode, error) {
+func (eventHub *EventHub) getTXRegistrant(txID fab.TransactionID) func(fab.TransactionID, pb.TxValidationCode, error) {
 	v, ok := eventHub.txRegistrants.Load(txID)
 	if !ok {
 		return nil
 	}
-	return v.(func(string, pb.TxValidationCode, error))
+	return v.(func(fab.TransactionID, pb.TxValidationCode, error))
 }
 
 // getChainCodeEvents parses block events for chaincode events associated with individual transactions

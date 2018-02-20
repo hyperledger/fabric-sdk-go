@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -125,7 +127,7 @@ func testFailedTxErrorCode(t *testing.T, testSetup integration.BaseSetupImpl, ch
 	done := make(chan bool)
 	fail := make(chan pb.TxValidationCode)
 
-	testSetup.EventHub.RegisterTxEvent(prop1.TxnID, func(txId string, errorCode pb.TxValidationCode, err error) {
+	testSetup.EventHub.RegisterTxEvent(prop1.TxnID, func(txId fab.TransactionID, errorCode pb.TxValidationCode, err error) {
 		if err != nil {
 			fail <- errorCode
 		} else {
@@ -138,7 +140,7 @@ func testFailedTxErrorCode(t *testing.T, testSetup integration.BaseSetupImpl, ch
 	done2 := make(chan bool)
 	fail2 := make(chan pb.TxValidationCode)
 
-	testSetup.EventHub.RegisterTxEvent(prop2.TxnID, func(txId string, errorCode pb.TxValidationCode, err error) {
+	testSetup.EventHub.RegisterTxEvent(prop2.TxnID, func(txId fab.TransactionID, errorCode pb.TxValidationCode, err error) {
 		if err != nil {
 			fail2 <- errorCode
 		} else {

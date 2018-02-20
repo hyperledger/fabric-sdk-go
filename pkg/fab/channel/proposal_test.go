@@ -41,44 +41,44 @@ func TestSendInstantiateProposal(t *testing.T) {
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}}
 	channel.AddPeer(&peer)
 
-	tresponse, txnid, err := channel.SendInstantiateProposal("", nil, "",
+	tresponse, _, err := channel.SendInstantiateProposal("", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), nil, targets)
 
 	if err == nil || err.Error() != "chaincodeName is required" {
 		t.Fatal("Validation for chain code name parameter for send Instantiate Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "",
+	tresponse, _, err = channel.SendInstantiateProposal("qscc", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), nil, targets)
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "",
+	tresponse, _, err = channel.SendInstantiateProposal("qscc", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), nil, targets)
 
 	if err == nil || err.Error() != "chaincodePath is required" {
 		t.Fatal("Validation for chain code path for send Instantiate Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, _, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), nil, targets)
 
 	if err == nil || err.Error() != "chaincodeVersion is required" {
 		t.Fatal("Validation for chain code version for send Instantiate Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, _, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", nil, nil, nil)
 	if err == nil || err.Error() != "chaincodePolicy is required" {
 		t.Fatal("Validation for chain code policy for send Instantiate Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, _, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", cauthdsl.SignedByMspMember("Org1MSP"), nil, targets)
 
-	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
+	if err != nil || len(tresponse) == 0 {
 		t.Fatal("Send Instantiate Proposal Test failed")
 	}
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, _, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", cauthdsl.SignedByMspMember("Org1MSP"), nil, nil)
 
 	if err == nil || err.Error() != "missing peer objects for chaincode proposal" {
@@ -89,9 +89,9 @@ func TestSendInstantiateProposal(t *testing.T) {
 	collConfig := []*common.CollectionConfig{
 		newCollectionConfig("somecollection", 1, 3, cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})),
 	}
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, _, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", cauthdsl.SignedByMspMember("Org1MSP"), collConfig, targets)
-	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
+	if err != nil || len(tresponse) == 0 {
 		t.Fatal("Send Instantiate Proposal Test failed")
 	}
 }
@@ -115,44 +115,44 @@ func TestSendUpgradeProposal(t *testing.T) {
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
 	channel.AddPeer(&peer)
 
-	tresponse, txnid, err := channel.SendUpgradeProposal("", nil, "",
+	tresponse, _, err := channel.SendUpgradeProposal("", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
 	if err == nil || err.Error() != "chaincodeName is required" {
 		t.Fatal("Validation for chain code name parameter for send Upgrade Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "",
+	tresponse, _, err = channel.SendUpgradeProposal("qscc", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "",
+	tresponse, _, err = channel.SendUpgradeProposal("qscc", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
 	if err == nil || err.Error() != "chaincodePath is required" {
 		t.Fatal("Validation for chain code path for send Upgrade Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+	tresponse, _, err = channel.SendUpgradeProposal("qscc", nil, "test",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
 	if err == nil || err.Error() != "chaincodeVersion is required" {
 		t.Fatal("Validation for chain code version for send Upgrade Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+	tresponse, _, err = channel.SendUpgradeProposal("qscc", nil, "test",
 		"2", nil, nil)
 	if err == nil || err.Error() != "chaincodePolicy is required" {
 		t.Fatal("Validation for chain code policy for send Upgrade Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+	tresponse, _, err = channel.SendUpgradeProposal("qscc", nil, "test",
 		"2", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
-	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
+	if err != nil || len(tresponse) == 0 {
 		t.Fatal("Send Upgrade Proposal Test failed")
 	}
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+	tresponse, _, err = channel.SendUpgradeProposal("qscc", nil, "test",
 		"2", cauthdsl.SignedByMspMember("Org1MSP"), nil)
 	if err == nil || err.Error() != "missing peer objects for chaincode proposal" {
 		t.Fatal("Missing peer objects validation is not working as expected")

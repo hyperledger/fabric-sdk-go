@@ -82,33 +82,63 @@ func NewMockContext(ic context.IdentityContext) *MockContext {
 	return &ctx
 }
 
-// NewMockTxnID creates mock TxnID based on mock user.
-func NewMockTxnID() (fab.TransactionID, error) {
+// MockTransactionHeader supplies a transaction ID and metadata.
+type MockTransactionHeader struct {
+	MockID        fab.TransactionID
+	MockCreator   []byte
+	MockNonce     []byte
+	MockChannelID string
+}
+
+// TransactionID returns the transaction's computed identifier.
+func (th *MockTransactionHeader) TransactionID() fab.TransactionID {
+	return fab.TransactionID(th.MockID)
+}
+
+// Creator returns the transaction creator's identity bytes.
+func (th *MockTransactionHeader) Creator() []byte {
+	return th.MockCreator
+}
+
+// Nonce returns the transaction's generated nonce.
+func (th *MockTransactionHeader) Nonce() []byte {
+	return th.MockNonce
+}
+
+// ChannelID returns the transaction's target channel identifier.
+func (th *MockTransactionHeader) ChannelID() string {
+	return th.MockChannelID
+}
+
+// NewMockTransactionHeader creates mock TxnID based on mock user.
+func NewMockTransactionHeader(channelID string) (fab.TransactionHeader, error) {
 	user := NewMockUser("test")
 
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
-		return fab.TransactionID{}, err
+		return nil, err
 	}
 
 	creator, err := user.Identity()
 	if err != nil {
-		return fab.TransactionID{}, err
+		return nil, err
 	}
 
 	h := sha256.New()
 	id, err := computeTxnID(nonce, creator, h)
 	if err != nil {
-		return fab.TransactionID{}, err
+		return nil, err
 	}
 
-	txnID := fab.TransactionID{
-		ID:    id,
-		Nonce: nonce,
+	txnID := MockTransactionHeader{
+		MockID:        fab.TransactionID(id),
+		MockCreator:   creator,
+		MockNonce:     nonce,
+		MockChannelID: channelID,
 	}
 
-	return txnID, nil
+	return &txnID, nil
 }
 
 func computeTxnID(nonce, creator []byte, h hash.Hash) (string, error) {

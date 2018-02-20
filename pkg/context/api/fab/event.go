@@ -22,7 +22,7 @@ type EventHub interface {
 	Disconnect() error
 	RegisterChaincodeEvent(ccid string, eventname string, callback func(*ChaincodeEvent)) *ChainCodeCBE
 	UnregisterChaincodeEvent(cbe *ChainCodeCBE)
-	RegisterTxEvent(txnID TransactionID, callback func(string, pb.TxValidationCode, error))
+	RegisterTxEvent(txnID TransactionID, callback func(TransactionID, pb.TxValidationCode, error))
 	UnregisterTxEvent(txnID TransactionID)
 	RegisterBlockEvent(callback func(*common.Block))
 	UnregisterBlockEvent(callback func(*common.Block))

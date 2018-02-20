@@ -20,24 +20,18 @@ import (
 // block retrieves the block at the given position
 func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 
-	creator, err := c.clientContext.Identity()
-	if err != nil {
-		return nil, errors.WithMessage(err, "serializing identity failed")
-	}
-
-	txnID, err := txn.NewID(c.clientContext)
+	th, err := txn.NewHeader(c.clientContext, c.name)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating TX ID failed")
 	}
 
 	channelHeaderOpts := txn.ChannelHeaderOpts{
-		ChannelID:   c.name,
-		TxnID:       txnID,
+		TxnHeader:   th,
 		TLSCertHash: ccomm.TLSCertHash(c.clientContext.Config()),
 	}
 	seekInfoHeader, err := txn.CreateChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, channelHeaderOpts)
 	if err != nil {
-		return nil, errors.Wrap(err, "NewChannelHeader failed")
+		return nil, errors.Wrap(err, "CreateChannelHeader failed")
 	}
 
 	seekInfoHeaderBytes, err := proto.Marshal(seekInfoHeader)
@@ -45,9 +39,9 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 		return nil, errors.Wrap(err, "marshal seek info failed")
 	}
 
-	signatureHeader := &common.SignatureHeader{
-		Creator: creator,
-		Nonce:   txnID.Nonce,
+	signatureHeader, err := txn.CreateSignatureHeader(th)
+	if err != nil {
+		return nil, errors.Wrap(err, "CreateSignatureHeader failed")
 	}
 
 	signatureHeaderBytes, err := proto.Marshal(signatureHeader)

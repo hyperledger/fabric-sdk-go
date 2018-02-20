@@ -245,7 +245,7 @@ func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
-func (c *Client) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
+func (c *Client) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
 	rc := resource.New(ctx)
 	return rc.InstallChaincode(req)

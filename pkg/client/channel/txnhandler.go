@@ -249,7 +249,7 @@ func createAndSendTransaction(sender fab.Sender, proposal *fab.TransactionPropos
 	return transactionResponse, nil
 }
 
-func createAndSendTransactionProposal(sender fab.ProposalSender, chrequest *Request, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, error) {
+func createAndSendTransactionProposal(transactor fab.Transactor, chrequest *Request, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, error) {
 	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID:  chrequest.ChaincodeID,
 		Fcn:          chrequest.Fcn,
@@ -257,11 +257,13 @@ func createAndSendTransactionProposal(sender fab.ProposalSender, chrequest *Requ
 		TransientMap: chrequest.TransientMap,
 	}
 
-	proposal, err := sender.CreateChaincodeInvokeProposal(request)
+	txh, err := transactor.CreateTransactionHeader()
+
+	proposal, err := txn.CreateChaincodeInvokeProposal(txh, request)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "creating transaction proposal failed")
 	}
 
-	transactionProposalResponses, err := sender.SendTransactionProposal(proposal, targets)
+	transactionProposalResponses, err := transactor.SendTransactionProposal(proposal, targets)
 	return transactionProposalResponses, proposal, err
 }

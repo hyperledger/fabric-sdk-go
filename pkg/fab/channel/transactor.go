@@ -92,29 +92,15 @@ func orderersByTarget(ctx context.Context) (map[string]core.OrdererConfig, error
 	return ordererDict, nil
 }
 
-// CreateTransactionID creates a Transaction ID based on the current context.
-func (t *Transactor) CreateTransactionID() (fab.TransactionID, error) {
-	txid, err := txn.NewID(t.ctx)
+// CreateTransactionHeader creates a Transaction Header based on the current context.
+func (t *Transactor) CreateTransactionHeader() (fab.TransactionHeader, error) {
+
+	txh, err := txn.NewHeader(t.ctx, t.ChannelID)
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "new transaction ID failed")
+		return nil, errors.WithMessage(err, "new transaction ID failed")
 	}
 
-	return txid, nil
-}
-
-// CreateChaincodeInvokeProposal creates a Transaction Proposal based on the current context and channel ID.
-func (t *Transactor) CreateChaincodeInvokeProposal(request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
-	txid, err := t.CreateTransactionID()
-	if err != nil {
-		return nil, errors.WithMessage(err, "create transaction ID failed")
-	}
-
-	tp, err := txn.CreateChaincodeInvokeProposal(txid, t.ChannelID, request)
-	if err != nil {
-		return nil, errors.WithMessage(err, "new transaction proposal failed")
-	}
-
-	return tp, nil
+	return txh, nil
 }
 
 // SendTransactionProposal sends a TransactionProposal to the target peers.

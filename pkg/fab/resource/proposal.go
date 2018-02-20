@@ -38,7 +38,7 @@ type ChaincodePackage struct {
 }
 
 // CreateChaincodeInstallProposal creates an install chaincode proposal.
-func CreateChaincodeInstallProposal(txid fab.TransactionID, request ChaincodeInstallRequest) (*fab.TransactionProposal, error) {
+func CreateChaincodeInstallProposal(txh *txn.TransactionHeader, request ChaincodeInstallRequest) (*fab.TransactionProposal, error) {
 
 	// Generate arguments for install
 	args := [][]byte{}
@@ -63,7 +63,7 @@ func CreateChaincodeInstallProposal(txid fab.TransactionID, request ChaincodeIns
 		Args:        args,
 	}
 
-	return txn.CreateChaincodeInvokeProposal(txid, "", cir)
+	return txn.CreateChaincodeInvokeProposal(txh, cir)
 }
 
 // CreateConfigSignature creates a ConfigSignature for the current context.
