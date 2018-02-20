@@ -382,7 +382,12 @@ func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType channel.ChaincodePro
 		ProviderContext: rc.provider,
 		IdentityContext: rc.identity,
 	}
-	tp, err := channel.CreateChaincodeDeployProposal(&deployCtx, ccProposalType, channelID, deployProposal)
+
+	txid, err := txn.NewID(&deployCtx)
+	if err != nil {
+		return errors.WithMessage(err, "create transaction ID failed")
+	}
+	tp, err := channel.CreateChaincodeDeployProposal(txid, ccProposalType, channelID, deployProposal)
 	if err != nil {
 		return errors.WithMessage(err, "creating chaincode deploy transaction proposal failed")
 	}

@@ -51,8 +51,9 @@ func NewID(ctx fab.Context) (fab.TransactionID, error) {
 	}
 
 	txnID := fab.TransactionID{
-		ID:    id,
-		Nonce: nonce,
+		ID:      id,
+		Creator: creator,
+		Nonce:   nonce,
 	}
 
 	return txnID, nil

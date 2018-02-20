@@ -479,7 +479,12 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 		CollConfig: collConfig,
 	}
 
-	tp, err := CreateChaincodeDeployProposal(c.clientContext, InstantiateChaincode, c.name, cp)
+	txid, err := txn.NewID(c.clientContext)
+	if err != nil {
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "create transaction ID failed")
+	}
+
+	tp, err := CreateChaincodeDeployProposal(txid, InstantiateChaincode, c.name, cp)
 	if err != nil {
 		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
 	}
@@ -517,7 +522,12 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 		Policy:  chaincodePolicy,
 	}
 
-	tp, err := CreateChaincodeDeployProposal(c.clientContext, UpgradeChaincode, c.name, cp)
+	txid, err := txn.NewID(c.clientContext)
+	if err != nil {
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "create transaction ID failed")
+	}
+
+	tp, err := CreateChaincodeDeployProposal(txid, UpgradeChaincode, c.name, cp)
 	if err != nil {
 		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
 	}

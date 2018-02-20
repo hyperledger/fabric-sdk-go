@@ -342,9 +342,14 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.Tra
 		},
 	}
 
-	prop, err := CreateChaincodeInstallProposal(c.clientContext, propReq)
+	txid, err := txn.NewID(c.clientContext)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "creation of install chaincode proposal failed")
+		return nil, "", errors.WithMessage(err, "create transaction ID failed")
+	}
+
+	prop, err := CreateChaincodeInstallProposal(txid, propReq)
+	if err != nil {
+		return nil, "", errors.WithMessage(err, "creation of install chaincode proposal failed")
 	}
 
 	transactionProposalResponse, err := txn.SendProposal(c.clientContext, prop, req.Targets)
@@ -372,7 +377,12 @@ func (c *Resource) queryChaincodeWithTarget(request fab.ChaincodeInvokeRequest, 
 
 	targets := []fab.ProposalProcessor{target}
 
-	tp, err := txn.CreateChaincodeInvokeProposal(c.clientContext, systemChannel, request)
+	txid, err := txn.NewID(c.clientContext)
+	if err != nil {
+		return nil, errors.WithMessage(err, "create transaction ID failed")
+	}
+
+	tp, err := txn.CreateChaincodeInvokeProposal(txid, systemChannel, request)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewProposal failed")
 	}

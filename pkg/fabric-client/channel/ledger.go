@@ -289,7 +289,12 @@ func collectProposalResponses(tprs []*fab.TransactionProposalResponse) [][]byte 
 }
 
 func queryChaincode(ctx fab.Context, channel string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
-	tp, err := txn.CreateChaincodeInvokeProposal(ctx, channel, request)
+	txid, err := txn.NewID(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "creation of transaction ID failed")
+	}
+
+	tp, err := txn.CreateChaincodeInvokeProposal(txid, channel, request)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewProposal failed")
 	}

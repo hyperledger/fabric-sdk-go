@@ -91,9 +91,24 @@ func orderersByTarget(ctx fab.Context) (map[string]apiconfig.OrdererConfig, erro
 	return ordererDict, nil
 }
 
-// CreateChaincodeInvokeProposal creates a Transaction Proposal based on the current context and channel config.
+// CreateTransactionID creates a Transaction ID based on the current context.
+func (t *Transactor) CreateTransactionID() (fab.TransactionID, error) {
+	txid, err := txn.NewID(t.ctx)
+	if err != nil {
+		return fab.TransactionID{}, errors.WithMessage(err, "new transaction ID failed")
+	}
+
+	return txid, nil
+}
+
+// CreateChaincodeInvokeProposal creates a Transaction Proposal based on the current context and channel ID.
 func (t *Transactor) CreateChaincodeInvokeProposal(request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
-	tp, err := txn.CreateChaincodeInvokeProposal(t.ctx, t.ChannelID, request)
+	txid, err := t.CreateTransactionID()
+	if err != nil {
+		return nil, errors.WithMessage(err, "create transaction ID failed")
+	}
+
+	tp, err := txn.CreateChaincodeInvokeProposal(txid, t.ChannelID, request)
 	if err != nil {
 		return nil, errors.WithMessage(err, "new transaction proposal failed")
 	}
@@ -101,12 +116,13 @@ func (t *Transactor) CreateChaincodeInvokeProposal(request fab.ChaincodeInvokeRe
 	return tp, nil
 }
 
-// SendTransactionProposal ...
+// SendTransactionProposal sends a TransactionProposal to the target peers.
 func (t *Transactor) SendTransactionProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
 	return txn.SendProposal(t.ctx, proposal, targets)
 }
 
 // CreateTransaction create a transaction with proposal response.
+// TODO: should this be removed as it is purely a wrapper?
 func (t *Transactor) CreateTransaction(request fab.TransactionRequest) (*fab.Transaction, error) {
 	return txn.New(request)
 }

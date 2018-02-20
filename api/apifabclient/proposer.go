@@ -19,14 +19,17 @@ type ProposalProcessor interface {
 //
 // TODO: CreateChaincodeInvokeProposal should be refactored as it is mostly a factory method.
 type ProposalSender interface {
+	CreateTransactionID() (TransactionID, error)
 	CreateChaincodeInvokeProposal(ChaincodeInvokeRequest) (*TransactionProposal, error)
 	SendTransactionProposal(*TransactionProposal, []ProposalProcessor) ([]*TransactionProposalResponse, error)
 }
 
 // TransactionID contains the ID of a Fabric Transaction Proposal
+// TODO: change to interface?
 type TransactionID struct {
-	ID    string
-	Nonce []byte
+	ID      string
+	Creator []byte
+	Nonce   []byte
 }
 
 // ChaincodeInvokeRequest contains the parameters for sending a transaction proposal.

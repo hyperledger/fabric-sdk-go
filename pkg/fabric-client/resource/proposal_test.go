@@ -30,7 +30,10 @@ func TestCreateChaincodeInstallProposal(t *testing.T) {
 		Package: &ChaincodePackage{},
 	}
 
-	prop, err := CreateChaincodeInstallProposal(c.clientContext, request)
+	txid, err := txn.NewID(c.clientContext)
+	assert.Nil(t, err, "create transaction ID failed")
+
+	prop, err := CreateChaincodeInstallProposal(txid, request)
 	assert.Nil(t, err, "CreateChaincodeInstallProposal failed")
 
 	_, err = txn.SendProposal(c.clientContext, prop, []fab.ProposalProcessor{&peer})

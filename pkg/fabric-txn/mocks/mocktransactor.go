@@ -19,9 +19,24 @@ type MockTransactor struct {
 	Orderers  []fab.Orderer
 }
 
+// CreateTransactionID creates a Transaction ID based on the current context.
+func (t *MockTransactor) CreateTransactionID() (fab.TransactionID, error) {
+	txid, err := txn.NewID(t.Ctx)
+	if err != nil {
+		return fab.TransactionID{}, errors.WithMessage(err, "new transaction ID failed")
+	}
+
+	return txid, nil
+}
+
 // CreateChaincodeInvokeProposal creates a Transaction Proposal based on the current context and channel config.
 func (t *MockTransactor) CreateChaincodeInvokeProposal(request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
-	tp, err := txn.CreateChaincodeInvokeProposal(t.Ctx, t.ChannelID, request)
+	txid, err := t.CreateTransactionID()
+	if err != nil {
+		return nil, errors.WithMessage(err, "create transaction ID failed")
+	}
+
+	tp, err := txn.CreateChaincodeInvokeProposal(txid, t.ChannelID, request)
 	if err != nil {
 		return nil, errors.WithMessage(err, "new transaction proposal failed")
 	}
@@ -29,7 +44,7 @@ func (t *MockTransactor) CreateChaincodeInvokeProposal(request fab.ChaincodeInvo
 	return tp, nil
 }
 
-// SendTransactionProposal ...
+// SendTransactionProposal sends a TransactionProposal to the target peers.
 func (t *MockTransactor) SendTransactionProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
 	return txn.SendProposal(t.Ctx, proposal, targets)
 }
