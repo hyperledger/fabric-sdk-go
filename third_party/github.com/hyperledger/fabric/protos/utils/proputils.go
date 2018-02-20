@@ -11,11 +11,8 @@ Please review third_party pinning scripts and patches for more details.
 package utils
 
 import (
-	"encoding/hex"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
-	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -190,18 +187,4 @@ func GetBytesPayload(payl *common.Payload) ([]byte, error) {
 func GetBytesEnvelope(env *common.Envelope) ([]byte, error) {
 	bytes, err := proto.Marshal(env)
 	return bytes, err
-}
-
-// ComputeProposalTxID computes TxID as the Hash computed
-// over the concatenation of nonce and creator.
-func ComputeProposalTxID(nonce, creator []byte) (string, error) {
-	// TODO: Get the Hash function to be used from
-	// channel configuration
-	digest, err := factory.GetDefault().Hash(
-		append(nonce, creator...),
-		factory.GetSHA256Opts())
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(digest), nil
 }

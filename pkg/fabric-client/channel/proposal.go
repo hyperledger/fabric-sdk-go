@@ -38,7 +38,7 @@ type ChaincodeDeployRequest struct {
 }
 
 // CreateChaincodeDeployProposal creates an instantiate or upgrade chaincode proposal.
-func CreateChaincodeDeployProposal(ctx fab.IdentityContext, deploy ChaincodeProposalType, channelID string, chaincode ChaincodeDeployRequest) (*fab.TransactionProposal, error) {
+func CreateChaincodeDeployProposal(ctx fab.Context, deploy ChaincodeProposalType, channelID string, chaincode ChaincodeDeployRequest) (*fab.TransactionProposal, error) {
 
 	// Generate arguments for deploy (channel, marshaled CCDS, marshaled chaincode policy, marshaled collection policy)
 	args := [][]byte{}

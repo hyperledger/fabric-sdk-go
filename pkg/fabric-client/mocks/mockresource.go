@@ -31,15 +31,6 @@ func NewMockResource() *MockResource {
 	return &MockResource{}
 }
 
-// ExtractChannelConfig ...
-func (c *MockResource) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
-	if bytes.Compare(configEnvelope, []byte("ExtractChannelConfigError")) == 0 {
-		return nil, errors.New("Mock extract channel config error")
-	}
-
-	return configEnvelope, nil
-}
-
 // SignChannelConfig ...
 func (c *MockResource) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
 	if bytes.Compare(config, []byte("SignChannelConfigError")) == 0 {

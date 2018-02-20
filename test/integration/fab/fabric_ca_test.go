@@ -228,6 +228,7 @@ func TestEnrollAndTransact(t *testing.T) {
 	myUser.SetPrivateKey(key)
 
 	testClient := client.NewClient(testFabricConfig)
+	testClient.SetCryptoSuite(cryptoSuiteProvider)
 	testClient.SetIdentityContext(myUser)
 	testClient.SetSigningManager(signingManager)
 

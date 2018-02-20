@@ -9,14 +9,17 @@ package resource
 import (
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/pkg/errors"
 
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
+	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
-
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 )
 
 // ChaincodeInstallRequest requests chaincode installation on the network
@@ -34,7 +37,7 @@ type ChaincodePackage struct {
 }
 
 // CreateChaincodeInstallProposal creates an install chaincode proposal.
-func CreateChaincodeInstallProposal(ctx fab.IdentityContext, request ChaincodeInstallRequest) (*fab.TransactionProposal, error) {
+func CreateChaincodeInstallProposal(ctx fab.Context, request ChaincodeInstallRequest) (*fab.TransactionProposal, error) {
 
 	// Generate arguments for install
 	args := [][]byte{}
@@ -53,13 +56,75 @@ func CreateChaincodeInstallProposal(ctx fab.IdentityContext, request ChaincodeIn
 	}
 	args = append(args, ccdsBytes)
 
-	args = append(args, []byte("escc"))
-	args = append(args, []byte("vscc"))
-
 	cir := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "lscc",
 		Fcn:         "install",
 		Args:        args,
 	}
 	return txn.CreateChaincodeInvokeProposal(ctx, "", cir)
+}
+
+// CreateConfigSignature creates a ConfigSignature for the current context.
+func CreateConfigSignature(ctx fab.Context, config []byte) (*common.ConfigSignature, error) {
+
+	creator, err := ctx.Identity()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get user context's identity")
+	}
+
+	// generate a random nonce
+	nonce, err := crypto.GetRandomNonce()
+	if err != nil {
+		return nil, errors.WithMessage(err, "nonce creation failed")
+	}
+
+	// signature is across a signature header and the config update
+	signatureHeader := &common.SignatureHeader{
+		Creator: creator,
+		Nonce:   nonce,
+	}
+	signatureHeaderBytes, err := proto.Marshal(signatureHeader)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal signatureHeader failed")
+	}
+
+	// get all the bytes to be signed together, then sign
+	signingBytes := fcutils.ConcatenateBytes(signatureHeaderBytes, config)
+	signingMgr := ctx.SigningManager()
+	signature, err := signingMgr.Sign(signingBytes, ctx.PrivateKey())
+	if err != nil {
+		return nil, errors.WithMessage(err, "signing of channel config failed")
+	}
+
+	// build the return object
+	configSignature := common.ConfigSignature{
+		SignatureHeader: signatureHeaderBytes,
+		Signature:       signature,
+	}
+	return &configSignature, nil
+}
+
+// ExtractChannelConfig extracts the protobuf 'ConfigUpdate' object out of the 'ConfigEnvelope'.
+func ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
+	logger.Debug("extractConfigUpdate - start")
+
+	envelope := &common.Envelope{}
+	err := proto.Unmarshal(configEnvelope, envelope)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal config envelope failed")
+	}
+
+	payload := &common.Payload{}
+	err = proto.Unmarshal(envelope.Payload, payload)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal envelope payload failed")
+	}
+
+	configUpdateEnvelope := &common.ConfigUpdateEnvelope{}
+	err = proto.Unmarshal(payload.Data, configUpdateEnvelope)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal config update envelope")
+	}
+
+	return configUpdateEnvelope.ConfigUpdate, nil
 }

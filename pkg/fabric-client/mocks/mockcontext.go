@@ -7,10 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"hash"
+
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
-	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 )
@@ -92,7 +95,8 @@ func NewMockTxnID() (fab.TransactionID, error) {
 		return fab.TransactionID{}, err
 	}
 
-	id, err := protos_utils.ComputeProposalTxID(nonce, creator)
+	h := sha256.New()
+	id, err := computeTxnID(nonce, creator, h)
 	if err != nil {
 		return fab.TransactionID{}, err
 	}
@@ -103,4 +107,17 @@ func NewMockTxnID() (fab.TransactionID, error) {
 	}
 
 	return txnID, nil
+}
+
+func computeTxnID(nonce, creator []byte, h hash.Hash) (string, error) {
+	b := append(nonce, creator...)
+
+	_, err := h.Write(b)
+	if err != nil {
+		return "", err
+	}
+	digest := h.Sum(nil)
+	id := hex.EncodeToString(digest)
+
+	return id, nil
 }
