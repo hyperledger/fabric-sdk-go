@@ -21,18 +21,13 @@ import (
 )
 
 // CreateChaincodeInvokeProposal creates a proposal for transaction.
-func CreateChaincodeInvokeProposal(ctx fab.Context, channelID string, request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
+func CreateChaincodeInvokeProposal(txid fab.TransactionID, channelID string, request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
 	if request.ChaincodeID == "" {
 		return nil, errors.New("ChaincodeID is required")
 	}
 
 	if request.Fcn == "" {
 		return nil, errors.New("Fcn is required")
-	}
-
-	txid, err := NewID(ctx)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to create a transaction ID")
 	}
 
 	// Add function name to arguments
@@ -47,13 +42,7 @@ func CreateChaincodeInvokeProposal(ctx fab.Context, channelID string, request fa
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: request.ChaincodeID},
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
-	// create a proposal from a ChaincodeInvocationSpec
-	creator, err := ctx.Identity()
-	if err != nil {
-		return nil, errors.WithMessage(err, "Failed to get user context identity")
-	}
-
-	proposal, _, err := protos_utils.CreateChaincodeProposalWithTxIDNonceAndTransient(txid.ID, common.HeaderType_ENDORSER_TRANSACTION, channelID, ccis, txid.Nonce, creator, request.TransientMap)
+	proposal, _, err := protos_utils.CreateChaincodeProposalWithTxIDNonceAndTransient(txid.ID, common.HeaderType_ENDORSER_TRANSACTION, channelID, ccis, txid.Nonce, txid.Creator, request.TransientMap)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create chaincode proposal")
 	}

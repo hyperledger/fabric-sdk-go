@@ -12,8 +12,14 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestCreateTxnID(t *testing.T) {
+	transactor := createTransactor(t)
+	createTxnID(t, transactor)
+}
 
 func TestTransactionProposal(t *testing.T) {
 	transactor := createTransactor(t)
@@ -30,7 +36,7 @@ func TestTransaction(t *testing.T) {
 		Proposal:          tp,
 		ProposalResponses: tpr,
 	}
-	tx, err := transactor.CreateTransaction(request)
+	tx, err := txn.New(request)
 	assert.Nil(t, err)
 
 	_, err = transactor.SendTransaction(tx)
@@ -46,7 +52,7 @@ func TestTransactionBadStatus(t *testing.T) {
 		Proposal:          tp,
 		ProposalResponses: tpr,
 	}
-	_, err := transactor.CreateTransaction(request)
+	_, err := txn.New(request)
 	assert.NotNil(t, err)
 }
 
@@ -63,12 +69,21 @@ func createTransactor(t *testing.T) apifabclient.Transactor {
 	return transactor
 }
 
+func createTxnID(t *testing.T, transactor apifabclient.Transactor) apifabclient.TransactionID {
+	txid, err := transactor.CreateTransactionID()
+	assert.Nil(t, err, "creation of transaction ID failed")
+
+	return txid
+}
+
 func createTransactionProposal(t *testing.T, transactor apifabclient.Transactor) *apifabclient.TransactionProposal {
 	request := apifabclient.ChaincodeInvokeRequest{
 		ChaincodeID: "example",
 		Fcn:         "fcn",
 	}
-	tp, err := transactor.CreateChaincodeInvokeProposal(request)
+
+	txid := createTxnID(t, transactor)
+	tp, err := txn.CreateChaincodeInvokeProposal(txid, "testChannel", request)
 	assert.Nil(t, err)
 
 	assert.NotEmpty(t, tp.TxnID.ID)
