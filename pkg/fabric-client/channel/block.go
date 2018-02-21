@@ -71,22 +71,12 @@ func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
 		return nil, errors.Wrap(err, "marshal seek info failed")
 	}
 
-	seekPayload := &common.Payload{
+	payload := common.Payload{
 		Header: seekHeader,
 		Data:   seekInfoBytes,
 	}
 
-	seekPayloadBytes, err := proto.Marshal(seekPayload)
-	if err != nil {
-		return nil, err
-	}
-
-	signedEnvelope, err := txn.SignPayload(c.clientContext, seekPayloadBytes)
-	if err != nil {
-		return nil, errors.WithMessage(err, "SignPayload failed")
-	}
-
-	return txn.SendEnvelope(c.clientContext, signedEnvelope, c.Orderers())
+	return txn.SendPayload(c.clientContext, &payload, c.Orderers())
 }
 
 // newNewestSeekPosition returns a SeekPosition that requests the newest block

@@ -133,19 +133,9 @@ func Send(ctx context, tx *fab.Transaction, orderers []fab.Orderer) (*fab.Transa
 	}
 
 	// create the payload
-	payl := &common.Payload{Header: hdr, Data: txBytes}
-	paylBytes, err := protos_utils.GetBytesPayload(payl)
-	if err != nil {
-		return nil, err
-	}
+	payload := common.Payload{Header: hdr, Data: txBytes}
 
-	// here's the envelope
-	envelope, err := SignPayload(ctx, paylBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	transactionResponse, err := BroadcastEnvelope(envelope, orderers)
+	transactionResponse, err := BroadcastPayload(ctx, &payload, orderers)
 	if err != nil {
 		return nil, err
 	}
@@ -153,9 +143,25 @@ func Send(ctx context, tx *fab.Transaction, orderers []fab.Orderer) (*fab.Transa
 	return transactionResponse, nil
 }
 
-// BroadcastEnvelope will send the given envelope to some orderer, picking random endpoints
+// BroadcastPayload will send the given payload to some orderer, picking random endpoints
 // until all are exhausted
-func BroadcastEnvelope(envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func BroadcastPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+	// Check if orderers are defined
+	if len(orderers) == 0 {
+		return nil, errors.New("orderers not set")
+	}
+
+	envelope, err := signPayload(ctx, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return broadcastEnvelope(ctx, envelope, orderers)
+}
+
+// broadcastEnvelope will send the given envelope to some orderer, picking random endpoints
+// until all are exhausted
+func broadcastEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
 	// Check if orderers are defined
 	if len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
@@ -192,11 +198,22 @@ func sendBroadcast(envelope *fab.SignedEnvelope, orderer fab.Orderer) *fab.Trans
 	return &fab.TransactionResponse{Orderer: orderer.URL(), Err: nil}
 }
 
-// SendEnvelope sends the given envelope to each orderer and returns a block response
-func SendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*common.Block, error) {
+// SendPayload sends the given payload to each orderer and returns a block response
+func SendPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (*common.Block, error) {
 	if orderers == nil || len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
 	}
+
+	envelope, err := signPayload(ctx, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return sendEnvelope(ctx, envelope, orderers)
+}
+
+// sendEnvelope sends the given envelope to each orderer and returns a block response
+func sendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*common.Block, error) {
 
 	var blockResponse *common.Block
 	var errorResponse error

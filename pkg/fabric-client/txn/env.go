@@ -72,16 +72,19 @@ func computeTxnID(nonce, creator []byte, h hash.Hash) (string, error) {
 	return id, nil
 }
 
-// SignPayload signs payload
-//
-// TODO: Determine if this function should be exported after refactoring is completed.
-func SignPayload(ctx context, payload []byte) (*fab.SignedEnvelope, error) {
-	signingMgr := ctx.SigningManager()
-	signature, err := signingMgr.Sign(payload, ctx.PrivateKey())
+// signPayload signs payload
+func signPayload(ctx context, payload *common.Payload) (*fab.SignedEnvelope, error) {
+	payloadBytes, err := proto.Marshal(payload)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessage(err, "marshaling of payload failed")
 	}
-	return &fab.SignedEnvelope{Payload: payload, Signature: signature}, nil
+
+	signingMgr := ctx.SigningManager()
+	signature, err := signingMgr.Sign(payloadBytes, ctx.PrivateKey())
+	if err != nil {
+		return nil, errors.WithMessage(err, "signing of payload failed")
+	}
+	return &fab.SignedEnvelope{Payload: payloadBytes, Signature: signature}, nil
 }
 
 // ChannelHeaderOpts holds the parameters to create a ChannelHeader.
@@ -133,15 +136,11 @@ func CreateChannelHeader(headerType common.HeaderType, opts ChannelHeaderOpts) (
 	return channelHeader, nil
 }
 
-// CreateHeader creates a Header from a ChannelHeader.
-func CreateHeader(ctx fab.IdentityContext, channelHeader *common.ChannelHeader, txnID fab.TransactionID) (*common.Header, error) {
-	creator, err := ctx.Identity()
-	if err != nil {
-		return nil, errors.WithMessage(err, "extracting creator from identity context failed")
-	}
+// createHeader creates a Header from a ChannelHeader.
+func createHeader(txnID fab.TransactionID, channelHeader *common.ChannelHeader) (*common.Header, error) {
 
 	signatureHeader := &common.SignatureHeader{
-		Creator: creator,
+		Creator: txnID.Creator,
 		Nonce:   txnID.Nonce,
 	}
 	sh, err := proto.Marshal(signatureHeader)
@@ -152,9 +151,24 @@ func CreateHeader(ctx fab.IdentityContext, channelHeader *common.ChannelHeader, 
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal channelHeader failed")
 	}
-	header := &common.Header{
+	header := common.Header{
 		SignatureHeader: sh,
 		ChannelHeader:   ch,
 	}
-	return header, nil
+	return &header, nil
+}
+
+// CreatePayload creates a slice of payload bytes from a ChannelHeader and a data slice.
+func CreatePayload(txnID fab.TransactionID, channelHeader *common.ChannelHeader, data []byte) (*common.Payload, error) {
+	header, err := createHeader(txnID, channelHeader)
+	if err != nil {
+		return nil, errors.Wrap(err, "header creation failed")
+	}
+
+	payload := common.Payload{
+		Header: header,
+		Data:   data,
+	}
+
+	return &payload, nil
 }

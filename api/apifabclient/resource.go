@@ -40,10 +40,6 @@ type CreateChannelRequest struct {
 	// required by the channel create policy when using the `config` parameter.
 	// see signChannelConfig() method of this package
 	Signatures []*common.ConfigSignature
-
-	// TODO: InvokeChannelRequest allows the TransactionID to be passed in.
-	// This request struct also has the field for consistency but perhaps it should be removed.
-	TxnID TransactionID
 }
 
 // InstallChaincodeRequest requests chaincode installation on the network

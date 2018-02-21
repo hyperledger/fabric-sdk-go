@@ -21,7 +21,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -70,21 +69,47 @@ func (c *Resource) SignChannelConfig(config []byte, signer fab.IdentityContext) 
 
 // CreateChannel calls the orderer to start building the new channel.
 func (c *Resource) CreateChannel(request fab.CreateChannelRequest) (fab.TransactionID, error) {
-	haveEnvelope := false
+	if request.Orderer == nil {
+		return fab.TransactionID{}, errors.New("missing orderer request parameter for the initialize channel")
+	}
+
+	if request.Name == "" {
+		return fab.TransactionID{}, errors.New("missing name request parameter for the new channel")
+	}
+
 	if request.Envelope != nil {
-		logger.Debug("createChannel - have envelope")
-		haveEnvelope = true
+		return c.createChannelFromEnvelope(request)
 	}
 
-	if !haveEnvelope && request.TxnID.ID == "" {
-		txnID, err := txn.NewID(c.clientContext)
-		if err != nil {
-			return txnID, err
-		}
-		request.TxnID = txnID
+	if request.Config == nil {
+		return fab.TransactionID{}, errors.New("missing envelope request parameter containing the configuration of the new channel")
 	}
 
-	return request.TxnID, c.createOrUpdateChannel(request, haveEnvelope)
+	if request.Signatures == nil {
+		return fab.TransactionID{}, errors.New("missing signatures request parameter for the new channel")
+	}
+
+	txnID, err := txn.NewID(c.clientContext)
+	if err != nil {
+		return txnID, err
+	}
+
+	return txnID, c.createOrUpdateChannel(txnID, request)
+}
+
+// TODO: this function was extracted from createOrUpdateChannel, but needs a closer examination.
+func (c *Resource) createChannelFromEnvelope(request fab.CreateChannelRequest) (fab.TransactionID, error) {
+	env, err := c.extractSignedEnvelope(request.Envelope)
+	if err != nil {
+		return fab.TransactionID{}, errors.WithMessage(err, "signed envelope not valid")
+	}
+
+	// Send request
+	_, err = request.Orderer.SendBroadcast(env)
+	if err != nil {
+		return fab.TransactionID{}, errors.WithMessage(err, "failed broadcast to orderer")
+	}
+	return fab.TransactionID{}, nil
 }
 
 // GenesisBlockFromOrderer returns the genesis block from the defined orderer that may be
@@ -107,6 +132,10 @@ func (c *Resource) GenesisBlockFromOrderer(channelName string, orderer fab.Order
 		Stop:     seekStop,
 		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
 	}
+	seekInfoBytes, err := proto.Marshal(seekInfo)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshaling of seek info header failed")
+	}
 
 	tlsCertHash := ccomm.TLSCertHash(c.clientContext.Config())
 	channelHeaderOpts := txn.ChannelHeaderOpts{
@@ -116,24 +145,15 @@ func (c *Resource) GenesisBlockFromOrderer(channelName string, orderer fab.Order
 	}
 	seekInfoHeader, err := txn.CreateChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, channelHeaderOpts)
 	if err != nil {
-		return nil, errors.Wrap(err, "BuildChannelHeader failed")
-	}
-	seekHeader, err := txn.CreateHeader(c.clientContext, seekInfoHeader, txnID)
-	if err != nil {
-		return nil, errors.Wrap(err, "BuildHeader failed")
-	}
-	seekPayload := &common.Payload{
-		Header: seekHeader,
-		Data:   protos_utils.MarshalOrPanic(seekInfo),
-	}
-	seekPayloadBytes := protos_utils.MarshalOrPanic(seekPayload)
-
-	signedEnvelope, err := txn.SignPayload(c.clientContext, seekPayloadBytes)
-	if err != nil {
-		return nil, errors.WithMessage(err, "SignPayload failed")
+		return nil, errors.Wrap(err, "CreateChannelHeader failed")
 	}
 
-	block, err := txn.SendEnvelope(c.clientContext, signedEnvelope, orderers)
+	payload, err := txn.CreatePayload(txnID, seekInfoHeader, seekInfoBytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "CreatePayload failed")
+	}
+
+	block, err := txn.SendPayload(c.clientContext, payload, orderers)
 	if err != nil {
 		return nil, errors.WithMessage(err, "SendEnvelope failed")
 	}
@@ -168,101 +188,50 @@ func (c *Resource) JoinChannel(request fab.JoinChannelRequest) error {
 	return err
 }
 
-// createOrUpdateChannel creates a new channel or updates an existing channel.
-func (c *Resource) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnvelope bool) error {
-	// Validate request
-	if request.Config == nil && !haveEnvelope {
-		return errors.New("missing envelope request parameter containing the configuration of the new channel")
-	}
-
-	if request.Signatures == nil && !haveEnvelope {
-		return errors.New("missing signatures request parameter for the new channel")
-	}
-
-	if request.TxnID.ID == "" && !haveEnvelope {
-		return errors.New("txId required")
-	}
-
-	if request.TxnID.Nonce == nil && !haveEnvelope {
-		return errors.New("nonce required")
-	}
-
-	if request.Orderer == nil {
-		return errors.New("missing orderer request parameter for the initialize channel")
-	}
-
-	if request.Name == "" {
-		return errors.New("missing name request parameter for the new channel")
-	}
-
-	// channel = null;
-	var signature []byte
-	var payloadBytes []byte
-
-	if haveEnvelope {
-		logger.Debug("createOrUpdateChannel - have envelope")
-		envelope := &common.Envelope{}
-		err := proto.Unmarshal(request.Envelope, envelope)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal request envelope failed")
-		}
-		signature = envelope.Signature
-		payloadBytes = envelope.Payload
-	} else {
-		logger.Debug("createOrUpdateChannel - have config_update")
-		configUpdateEnvelope := &common.ConfigUpdateEnvelope{
-			ConfigUpdate: request.Config,
-			Signatures:   request.Signatures,
-		}
-
-		// TODO: Move
-		channelHeaderOpts := txn.ChannelHeaderOpts{
-			ChannelID:   request.Name,
-			TxnID:       request.TxnID,
-			TLSCertHash: ccomm.TLSCertHash(c.clientContext.Config()),
-		}
-		channelHeader, err := txn.CreateChannelHeader(common.HeaderType_CONFIG_UPDATE, channelHeaderOpts)
-		if err != nil {
-			return errors.WithMessage(err, "BuildChannelHeader failed")
-		}
-
-		header, err := txn.CreateHeader(c.clientContext, channelHeader, request.TxnID)
-		if err != nil {
-			return errors.Wrap(err, "BuildHeader failed")
-		}
-		configUpdateEnvelopeBytes, err := proto.Marshal(configUpdateEnvelope)
-		if err != nil {
-			return errors.Wrap(err, "marshal configUpdateEnvelope failed")
-		}
-		payload := &common.Payload{
-			Header: header,
-			Data:   configUpdateEnvelopeBytes,
-		}
-		payloadBytes, err = proto.Marshal(payload)
-		if err != nil {
-			return errors.Wrap(err, "marshal payload failed")
-		}
-
-		signingMgr := c.clientContext.SigningManager()
-		if signingMgr == nil {
-			return errors.New("signing manager is nil")
-		}
-
-		signature, err = signingMgr.Sign(payloadBytes, c.clientContext.PrivateKey())
-		if err != nil {
-			return errors.WithMessage(err, "signing payload failed")
-		}
-	}
-
-	// Send request
-	_, err := request.Orderer.SendBroadcast(&fab.SignedEnvelope{
-		Signature: signature,
-		Payload:   payloadBytes,
-	})
+func (c *Resource) extractSignedEnvelope(reqEnvelope []byte) (*fab.SignedEnvelope, error) {
+	envelope := &common.Envelope{}
+	err := proto.Unmarshal(reqEnvelope, envelope)
 	if err != nil {
-		return errors.WithMessage(err, "failed broadcast to orderer")
+		return nil, errors.Wrap(err, "unmarshal request envelope failed")
+	}
+	se := fab.SignedEnvelope{
+		Signature: envelope.Signature,
+		Payload:   envelope.Payload,
+	}
+	return &se, nil
+}
+
+// createOrUpdateChannel creates a new channel or updates an existing channel.
+func (c *Resource) createOrUpdateChannel(txnID fab.TransactionID, request fab.CreateChannelRequest) error {
+
+	configUpdateEnvelope := &common.ConfigUpdateEnvelope{
+		ConfigUpdate: request.Config,
+		Signatures:   request.Signatures,
+	}
+	configUpdateEnvelopeBytes, err := proto.Marshal(configUpdateEnvelope)
+	if err != nil {
+		return errors.Wrap(err, "marshal configUpdateEnvelope failed")
 	}
 
+	channelHeaderOpts := txn.ChannelHeaderOpts{
+		ChannelID:   request.Name,
+		TxnID:       txnID,
+		TLSCertHash: ccomm.TLSCertHash(c.clientContext.Config()),
+	}
+	channelHeader, err := txn.CreateChannelHeader(common.HeaderType_CONFIG_UPDATE, channelHeaderOpts)
+	if err != nil {
+		return errors.WithMessage(err, "CreateChannelHeader failed")
+	}
+
+	payload, err := txn.CreatePayload(txnID, channelHeader, configUpdateEnvelopeBytes)
+	if err != nil {
+		return errors.WithMessage(err, "CreatePayload failed")
+	}
+
+	_, err = txn.BroadcastPayload(c.clientContext, payload, []fab.Orderer{request.Orderer})
+	if err != nil {
+		return errors.WithMessage(err, "SendEnvelope failed")
+	}
 	return nil
 }
 

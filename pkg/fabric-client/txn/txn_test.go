@@ -138,6 +138,9 @@ func (r *mockReader) Read(p []byte) (int, error) {
 }
 
 func TestBroadcastEnvelope(t *testing.T) {
+	user := mocks.NewMockUserWithMSPID("test", "1234")
+	ctx := mocks.NewMockContext(user)
+
 	lsnr1 := make(chan *fab.SignedEnvelope)
 	lsnr2 := make(chan *fab.SignedEnvelope)
 	//Create mock orderers
@@ -150,7 +153,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 		Signature: []byte(""),
 		Payload:   []byte(""),
 	}
-	res, err := BroadcastEnvelope(sigEnvelope, orderers)
+	res, err := broadcastEnvelope(ctx, sigEnvelope, orderers)
 
 	if err != nil || res.Err != nil {
 		t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
@@ -180,7 +183,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 	// It should always succeed even though one of them has failed
 	for i := 0; i < broadcastCount; i++ {
-		if res, err := BroadcastEnvelope(sigEnvelope, orderers); err != nil || res.Err != nil {
+		if res, err := broadcastEnvelope(ctx, sigEnvelope, orderers); err != nil || res.Err != nil {
 			t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
 		}
 	}
@@ -192,7 +195,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 
 	for i := 0; i < broadcastCount; i++ {
-		res, err := BroadcastEnvelope(sigEnvelope, orderers)
+		res, err := broadcastEnvelope(ctx, sigEnvelope, orderers)
 		if err != nil {
 			t.Fatalf("Test Broadcast sending failed, cause %v", err)
 		}
@@ -205,7 +208,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 
 	emptyOrderers := []fab.Orderer{}
-	_, err = BroadcastEnvelope(sigEnvelope, emptyOrderers)
+	_, err = broadcastEnvelope(ctx, sigEnvelope, emptyOrderers)
 
 	if err == nil || err.Error() != "orderers not set" {
 		t.Fatal("orderers not set validation on broadcast envelope is not working as expected")
@@ -302,7 +305,9 @@ func TestSignPayload(t *testing.T) {
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
-	signedEnv, err := SignPayload(ctx, []byte(""))
+	payload := common.Payload{}
+
+	signedEnv, err := signPayload(ctx, &payload)
 
 	if err != nil || signedEnv == nil {
 		t.Fatal("Test Sign Payload Failed")
