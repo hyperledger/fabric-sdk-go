@@ -20,7 +20,6 @@ import (
 
 // GenerateRandomID generates random ID
 func GenerateRandomID() string {
-	rand.Seed(time.Now().UnixNano())
 	return randomString(10)
 }
 

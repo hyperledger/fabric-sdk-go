@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -111,6 +110,5 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *integrat
 }
 
 func getRandomCCVersion() string {
-	rand.Seed(time.Now().UnixNano())
 	return "v0" + strconv.Itoa(rand.Intn(10000000))
 }
