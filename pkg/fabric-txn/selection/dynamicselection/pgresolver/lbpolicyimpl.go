@@ -8,7 +8,6 @@ package pgresolver
 
 import (
 	"math/rand"
-	"time"
 )
 
 type randomLBP struct {
@@ -28,7 +27,6 @@ func (lbp *randomLBP) Choose(peerGroups []PeerGroup) PeerGroup {
 		return NewPeerGroup()
 	}
 
-	rand.Seed(int64(time.Now().Nanosecond()))
 	index := rand.Intn(len(peerGroups))
 
 	logger.Debugf("randomLBP - Choosing index %d\n", index)
@@ -52,7 +50,6 @@ func (lbp *roundRobinLBP) Choose(peerGroups []PeerGroup) PeerGroup {
 	}
 
 	if lbp.index == -1 {
-		rand.Seed(int64(time.Now().Nanosecond()))
 		lbp.index = rand.Intn(len(peerGroups))
 	} else {
 		lbp.index++

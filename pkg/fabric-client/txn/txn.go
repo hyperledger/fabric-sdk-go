@@ -26,10 +26,6 @@ import (
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 // CCProposalType reflects transitions in the chaincode lifecycle
 type CCProposalType int
 

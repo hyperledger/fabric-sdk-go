@@ -15,7 +15,6 @@ import (
 	"path"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
@@ -239,6 +238,5 @@ func TestEnrollAndTransact(t *testing.T) {
 }
 
 func createRandomName() string {
-	rand.Seed(time.Now().UnixNano())
 	return "user" + strconv.Itoa(rand.Intn(500000))
 }

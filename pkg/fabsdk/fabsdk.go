@@ -8,6 +8,9 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
@@ -180,6 +183,9 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	}
 
 	sdk.cryptoSuite = cs
+
+	// Initialize rand (TODO: should probably be optional)
+	rand.Seed(time.Now().UnixNano())
 
 	// Setting this cryptosuite as the factory default
 	cryptosuite.SetDefault(cs)
