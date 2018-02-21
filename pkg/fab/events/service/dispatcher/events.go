@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package dispatcher
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -17,7 +17,7 @@ type Event interface{}
 
 // RegisterEvent is the base for all registration events.
 type RegisterEvent struct {
-	RegCh chan<- apifabclient.Registration
+	RegCh chan<- fab.Registration
 	ErrCh chan<- error
 }
 
@@ -52,11 +52,11 @@ type RegisterTxStatusEvent struct {
 
 // UnregisterEvent unregisters a registration
 type UnregisterEvent struct {
-	Reg apifabclient.Registration
+	Reg fab.Registration
 }
 
 // NewRegisterBlockEvent creates a new RegisterBlockEvent
-func NewRegisterBlockEvent(filter apifabclient.BlockFilter, eventch chan<- *apifabclient.BlockEvent, respch chan<- apifabclient.Registration, errCh chan<- error) *RegisterBlockEvent {
+func NewRegisterBlockEvent(filter fab.BlockFilter, eventch chan<- *fab.BlockEvent, respch chan<- fab.Registration, errCh chan<- error) *RegisterBlockEvent {
 	return &RegisterBlockEvent{
 		Reg:           &BlockReg{Filter: filter, Eventch: eventch},
 		RegisterEvent: NewRegisterEvent(respch, errCh),
@@ -64,7 +64,7 @@ func NewRegisterBlockEvent(filter apifabclient.BlockFilter, eventch chan<- *apif
 }
 
 // NewRegisterFilteredBlockEvent creates a new RegisterFilterBlockEvent
-func NewRegisterFilteredBlockEvent(eventch chan<- *apifabclient.FilteredBlockEvent, respch chan<- apifabclient.Registration, errCh chan<- error) *RegisterFilteredBlockEvent {
+func NewRegisterFilteredBlockEvent(eventch chan<- *fab.FilteredBlockEvent, respch chan<- fab.Registration, errCh chan<- error) *RegisterFilteredBlockEvent {
 	return &RegisterFilteredBlockEvent{
 		Reg:           &FilteredBlockReg{Eventch: eventch},
 		RegisterEvent: NewRegisterEvent(respch, errCh),
@@ -72,14 +72,14 @@ func NewRegisterFilteredBlockEvent(eventch chan<- *apifabclient.FilteredBlockEve
 }
 
 // NewUnregisterEvent creates a new UnregisterEvent
-func NewUnregisterEvent(reg apifabclient.Registration) *UnregisterEvent {
+func NewUnregisterEvent(reg fab.Registration) *UnregisterEvent {
 	return &UnregisterEvent{
 		Reg: reg,
 	}
 }
 
 // NewRegisterChaincodeEvent creates a new RegisterChaincodeEvent
-func NewRegisterChaincodeEvent(ccID, eventFilter string, eventch chan<- *apifabclient.CCEvent, respch chan<- apifabclient.Registration, errCh chan<- error) *RegisterChaincodeEvent {
+func NewRegisterChaincodeEvent(ccID, eventFilter string, eventch chan<- *fab.CCEvent, respch chan<- fab.Registration, errCh chan<- error) *RegisterChaincodeEvent {
 	return &RegisterChaincodeEvent{
 		Reg: &ChaincodeReg{
 			ChaincodeID: ccID,
@@ -91,7 +91,7 @@ func NewRegisterChaincodeEvent(ccID, eventFilter string, eventch chan<- *apifabc
 }
 
 // NewRegisterTxStatusEvent creates a new RegisterTxStatusEvent
-func NewRegisterTxStatusEvent(txID string, eventch chan<- *apifabclient.TxStatusEvent, respch chan<- apifabclient.Registration, errCh chan<- error) *RegisterTxStatusEvent {
+func NewRegisterTxStatusEvent(txID string, eventch chan<- *fab.TxStatusEvent, respch chan<- fab.Registration, errCh chan<- error) *RegisterTxStatusEvent {
 	return &RegisterTxStatusEvent{
 		Reg:           &TxStatusReg{TxID: txID, Eventch: eventch},
 		RegisterEvent: NewRegisterEvent(respch, errCh),
@@ -99,7 +99,7 @@ func NewRegisterTxStatusEvent(txID string, eventch chan<- *apifabclient.TxStatus
 }
 
 // NewRegisterEvent creates a new RgisterEvent
-func NewRegisterEvent(respch chan<- apifabclient.Registration, errCh chan<- error) RegisterEvent {
+func NewRegisterEvent(respch chan<- fab.Registration, errCh chan<- error) RegisterEvent {
 	return RegisterEvent{
 		RegCh: respch,
 		ErrCh: errCh,
@@ -107,8 +107,8 @@ func NewRegisterEvent(respch chan<- apifabclient.Registration, errCh chan<- erro
 }
 
 // NewChaincodeEvent creates a new ChaincodeEvent
-func NewChaincodeEvent(chaincodeID, eventName, txID string) *apifabclient.CCEvent {
-	return &apifabclient.CCEvent{
+func NewChaincodeEvent(chaincodeID, eventName, txID string) *fab.CCEvent {
+	return &fab.CCEvent{
 		ChaincodeID: chaincodeID,
 		EventName:   eventName,
 		TxID:        txID,
@@ -116,8 +116,8 @@ func NewChaincodeEvent(chaincodeID, eventName, txID string) *apifabclient.CCEven
 }
 
 // NewTxStatusEvent creates a new TxStatusEvent
-func NewTxStatusEvent(txID string, txValidationCode pb.TxValidationCode) *apifabclient.TxStatusEvent {
-	return &apifabclient.TxStatusEvent{
+func NewTxStatusEvent(txID string, txValidationCode pb.TxValidationCode) *fab.TxStatusEvent {
+	return &fab.TxStatusEvent{
 		TxID:             txID,
 		TxValidationCode: txValidationCode,
 	}

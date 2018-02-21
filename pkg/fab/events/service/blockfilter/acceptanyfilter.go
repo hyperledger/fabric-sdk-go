@@ -7,11 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package blockfilter
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
 // AcceptAny returns a block filter that accepts any block
-var AcceptAny apifabclient.BlockFilter = func(block *cb.Block) bool {
+var AcceptAny fab.BlockFilter = func(block *cb.Block) bool {
 	return true
 }
