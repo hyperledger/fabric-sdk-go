@@ -135,7 +135,7 @@ func (f *FabricProvider) CreateCAClient(orgID string) (apifabca.FabricCAClient, 
 // CreateUser returns a new default implementation of a User.
 func (f *FabricProvider) CreateUser(name string, signingIdentity *apifabclient.SigningIdentity) (apifabclient.User, error) {
 
-	user := identityImpl.NewUser(name, signingIdentity.MspID)
+	user := identityImpl.NewUser(signingIdentity.MspID, name)
 
 	user.SetPrivateKey(signingIdentity.PrivateKey)
 	user.SetEnrollmentCertificate(signingIdentity.EnrollmentCert)

@@ -71,9 +71,9 @@ client:
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"
   # are implementation specific
   credentialStore:
-    # [Optional]. Not used by Go SDK. Others SDKs may use it if using an alternative impl
-    # Could be used if SDK would require an object for properties like url, db name, etc.
-    path: "/tmp/hfc-kvs"
+    # [Optional]. Used by user store. Not needed if all credentials are embedded in configuration
+    # and enrollments are performed elswhere.
+    path: "/tmp/state-store"
 
     # [Optional]. Specific to the CryptoSuite implementation used by GO SDK. Software-based implementations
     # requiring a key store. PKCS#11 based implementations does not.
