@@ -47,7 +47,7 @@ func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers,
 		ChannelProvider:   chProvider,
 		FabricProvider:    fabProvider,
 	}
-	return resmgmtclient.New(ctx, filter)
+	return resmgmtclient.New(ctx, resmgmtclient.WithTargetFilter(filter))
 }
 
 // NewChannelClient returns a client that can execute transactions on specified channel
