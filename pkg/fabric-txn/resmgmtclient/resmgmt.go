@@ -66,17 +66,25 @@ type fabContext struct {
 	fab.IdentityContext
 }
 
+// Option describes a functional parameter for the New constructor
+type Option func(*ResourceMgmtClient) error
+
 // New returns a ResourceMgmtClient instance
-func New(ctx Context, filter resmgmt.TargetFilter) (*ResourceMgmtClient, error) {
+func New(ctx Context, opts ...Option) (*ResourceMgmtClient, error) {
 
-	rcFilter := filter
-	if rcFilter == nil {
-		// Default target filter is based on user msp
-		if ctx.MspID() == "" {
-			return nil, errors.New("mspID not available in user context")
+	resourceClient := &ResourceMgmtClient{
+		provider:          ctx,
+		identity:          ctx,
+		discoveryProvider: ctx.DiscoveryProvider,
+		channelProvider:   ctx.ChannelProvider,
+		fabricProvider:    ctx.FabricProvider,
+		resource:          ctx.Resource,
+	}
+	for _, opt := range opts {
+		err := opt(resourceClient)
+		if err != nil {
+			return nil, err
 		}
-
-		rcFilter = &MSPFilter{mspID: ctx.MspID()}
 	}
 
 	// setup global discovery service
@@ -84,18 +92,25 @@ func New(ctx Context, filter resmgmt.TargetFilter) (*ResourceMgmtClient, error) 
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create global discovery service")
 	}
-
-	resourceClient := ResourceMgmtClient{
-		provider:          ctx,
-		identity:          ctx,
-		discoveryProvider: ctx.DiscoveryProvider,
-		channelProvider:   ctx.ChannelProvider,
-		fabricProvider:    ctx.FabricProvider,
-		resource:          ctx.Resource,
-		discovery:         discovery,
-		filter:            rcFilter,
+	resourceClient.discovery = discovery
+	//check if target filter was set - if not set the default
+	if resourceClient.filter == nil {
+		// Default target filter is based on user msp
+		if ctx.MspID() == "" {
+			return nil, errors.New("mspID not available in user context")
+		}
+		rcFilter := &MSPFilter{mspID: ctx.MspID()}
+		resourceClient.filter = rcFilter
 	}
-	return &resourceClient, nil
+	return resourceClient, nil
+}
+
+// WithTargetFilter option to configure new
+func WithTargetFilter(filter resmgmt.TargetFilter) Option {
+	return func(rmc *ResourceMgmtClient) error {
+		rmc.filter = filter
+		return nil
+	}
 }
 
 // JoinChannel allows for peers to join existing channel with optional custom options (specific peers, filtered peers)
