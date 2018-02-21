@@ -8,7 +8,7 @@ package mocks
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 )
 
 // MockUser ...
@@ -26,12 +26,12 @@ type MockUser struct {
  *
  * @param {string} name - The user name
  */
-func NewMockUser(name string) ca.User {
+func NewMockUser(name string) apifabclient.User {
 	return &MockUser{name: name}
 }
 
 //NewMockUserWithMSPID to return mock user with MSP ids
-func NewMockUserWithMSPID(name string, mspid string) ca.User {
+func NewMockUserWithMSPID(name string, mspid string) apifabclient.User {
 	return &MockUser{name: name, mspID: mspid}
 }
 

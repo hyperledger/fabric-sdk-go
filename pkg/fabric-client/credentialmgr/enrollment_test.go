@@ -7,20 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package credentialmgr
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	camocks "github.com/hyperledger/fabric-sdk-go/api/apifabca/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/credentialmgr/persistence"
-	"github.com/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
@@ -31,6 +25,10 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
+	clientCofig, err := config.Client()
+	if err != nil {
+		t.Fatalf("Unable to retrieve client config: %v", err)
+	}
 	netConfig, err := config.NetworkConfig()
 	if err != nil {
 		t.Fatalf("NetworkConfig failed: %s", err)
@@ -40,6 +38,14 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 	if !ok {
 		t.Fatalf("org config not found: %s", orgName)
 	}
+
+	// Delete all private keys from the crypto suite store
+	// and users from the user store
+	keyStorePath := config.KeyStorePath()
+	cleanup(t, keyStorePath)
+	defer cleanup(t, keyStorePath)
+	cleanup(t, clientCofig.CredentialStore.Path)
+	defer cleanup(t, clientCofig.CredentialStore.Path)
 
 	cs, err := sw.GetSuiteByConfig(config)
 
@@ -52,34 +58,19 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 		t.Fatalf("checkSigningIdentity failed: %s", err)
 	}
 
+	// Refers to the same location used by the CredentialManager
+	userStore, err := identity.NewCertFileUserStore(clientCofig.CredentialStore.Path, cs)
+	if err != nil {
+		t.Fatalf("Failed to setup userStore: %s", err)
+	}
+
 	userToEnroll := "enrollmentID"
-	certLookupKey := &persistence.CertKey{
-		MspID:    orgConfig.MspID,
-		UserName: userToEnroll,
-	}
-
-	// Refers to the same location used by the CredentialManager for looking up certs
-	certStore, err := getCertStore(config, orgName)
-	if err != nil {
-		t.Fatalf("NewFileCertStore failed: %v", err)
-	}
-
-	// // Delete all private keys from the crypto suite store
-	keyStorePath := config.KeyStorePath()
-	err = cleanup(keyStorePath)
-	if err != nil {
-		t.Fatalf("cleanup keyStorePath failed: %v", err)
-	}
-
-	// Delete userToEnroll from cert store in case it's there
-	err = certStore.Delete(certLookupKey)
-	if err != nil {
-		t.Fatalf("certStore.Delete failed: %v", err)
-	}
 
 	if err := checkSigningIdentity(credentialMgr, userToEnroll); err == nil {
 		t.Fatalf("checkSigningIdentity should fail for user who hasn't been enrolled")
 	}
+
+	// Enroll the user
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -90,13 +81,14 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("fabricCAClient Enroll failed: %v", err)
 	}
-	if certBytes == nil || len(certBytes) == 0 {
-		t.Fatalf("Got an empty cert from Enrill()")
-	}
 
-	err = certStore.Store(certLookupKey, certBytes)
+	// Private key is saved to key store by Enroll()
+	// For now, the app has to save the cert (user)
+	user := identity.NewUser(orgConfig.MspID, userToEnroll)
+	user.SetEnrollmentCertificate([]byte(certBytes))
+	err = userStore.Store(user)
 	if err != nil {
-		t.Fatalf("certStore.Store: %v", err)
+		t.Fatalf("userStore.Store: %s", err)
 	}
 
 	if err := checkSigningIdentity(credentialMgr, userToEnroll); err != nil {
@@ -140,44 +132,4 @@ CsbWERvZPjR/GFEDEvc=
 		// This is normally done by a crypto suite when a new key is generated
 		privateKey, err = util.ImportBCCSPKeyFromPEMBytes(keyBytes, cs, false)
 	}).Return(privateKey, certBytes, err)
-}
-
-func getCertStore(config apiconfig.Config, orgName string) (kvstore.KVStore, error) {
-	netConfig, err := config.NetworkConfig()
-	if err != nil {
-		return nil, err
-	}
-	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
-	if !ok {
-		return nil, errors.New("org config retrieval failed")
-	}
-	orgCryptoPathTemplate := orgConfig.CryptoPath
-	if !filepath.IsAbs(orgCryptoPathTemplate) {
-		orgCryptoPathTemplate = filepath.Join(config.CryptoConfigPath(), orgCryptoPathTemplate)
-	}
-	fmt.Printf("orgCryptoPathTemplate: %s\n", orgCryptoPathTemplate)
-	certStore, err := persistence.NewFileCertStore(orgCryptoPathTemplate)
-	if err != nil {
-		return nil, errors.Wrapf(err, "creating a cert store failed")
-	}
-	return certStore, nil
-}
-
-func cleanup(storePath string) error {
-	d, err := os.Open(storePath)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-	names, err := d.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-	for _, name := range names {
-		err = os.RemoveAll(filepath.Join(storePath, name))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

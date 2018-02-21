@@ -16,7 +16,7 @@ import (
 )
 
 func TestUserMethods(t *testing.T) {
-	user := NewUser("testUser", "testMSP")
+	user := NewUser("testMSP", "testUser")
 
 	//test Name
 	if user.Name() != "testUser" {

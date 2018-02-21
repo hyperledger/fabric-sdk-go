@@ -10,11 +10,11 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"math/rand"
-	"path"
 	"strconv"
 	"testing"
+
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
@@ -22,7 +22,6 @@ import (
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
-	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 
@@ -56,16 +55,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 	stateStorePath := "/tmp/enroll_user"
 	client.SetCryptoSuite(cryptoSuiteProvider)
-	stateStore, err := kvs.NewFileKeyValueStore(&kvs.FileKeyValueStoreOptions{
-		Path: stateStorePath,
-		KeySerializer: func(key interface{}) (string, error) {
-			keyString, ok := key.(string)
-			if !ok {
-				return "", errors.New("converting key to string failed")
-			}
-			return path.Join(stateStorePath, keyString+".json"), nil
-		},
-	})
+	stateStore, err := identity.NewCertFileUserStore(stateStorePath, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
@@ -77,12 +67,12 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 
 	// Admin user is used to register, enroll and revoke a test user
-	adminUser, err := client.LoadUserFromStateStore("admin")
-
+	adminUser, err := client.LoadUserFromStateStore(mspID, "admin")
 	if err != nil {
-		t.Fatalf("client.LoadUserFromStateStore return error: %v", err)
-	}
-	if adminUser == nil {
+		if err != apifabclient.ErrUserNotFound {
+			t.Fatalf("client.LoadUserFromStateStore return error: %v", err)
+		}
+
 		key, cert, err := caClient.Enroll("admin", "adminpw")
 		if err != nil {
 			t.Fatalf("Enroll return error: %v", err)
@@ -106,19 +96,16 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		if cert509.Subject.CommonName != "admin" {
 			t.Fatalf("CommonName in x509 cert is not the enrollmentID")
 		}
-		adminUser2 := identity.NewUser("admin", mspID)
+		adminUser2 := identity.NewUser(mspID, "admin")
 		adminUser2.SetPrivateKey(key)
 		adminUser2.SetEnrollmentCertificate(cert)
 		err = client.SaveUserToStateStore(adminUser2)
 		if err != nil {
 			t.Fatalf("client.SaveUserToStateStore return error: %v", err)
 		}
-		adminUser, err = client.LoadUserFromStateStore("admin")
+		adminUser, err = client.LoadUserFromStateStore(mspID, "admin")
 		if err != nil {
-			t.Fatalf("client.LoadUserFromStateStore return error: %v", err)
-		}
-		if adminUser == nil {
-			t.Fatalf("client.LoadUserFromStateStore return nil")
+			t.Fatalf("expected enrolled admin user, but LoadUserFromStateStore returned error: %v", err)
 		}
 	}
 
@@ -143,7 +130,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	//re-enroll
 	t.Logf("** Attempt to re-enrolled user:  '%s'", userName)
 	//create new user object and set certificate and private key of the previously enrolled user
-	enrolleduser := identity.NewUser(userName, mspID)
+	enrolleduser := identity.NewUser(mspID, userName)
 	enrolleduser.SetEnrollmentCertificate(ecert)
 	enrolleduser.SetPrivateKey(ekey)
 	//reenroll
@@ -222,7 +209,7 @@ func TestEnrollAndTransact(t *testing.T) {
 		t.Fatalf("Enroll returned error: %v", err)
 	}
 
-	myUser := identity.NewUser("myUser", mspID)
+	myUser := identity.NewUser(mspID, "myUser")
 	myUser.SetEnrollmentCertificate(cert)
 	myUser.SetPrivateKey(key)
 

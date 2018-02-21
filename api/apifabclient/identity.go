@@ -6,7 +6,11 @@ SPDX-License-Identifier: Apache-2.0
 
 package apifabclient
 
-import "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+import (
+	"errors"
+
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+)
 
 // User represents users that have been enrolled and represented by
 // an enrollment certificate (ECert) and a signing key. The ECert must have
@@ -37,4 +41,21 @@ type IdentityContext interface {
 	MspID() string
 	Identity() ([]byte, error)
 	PrivateKey() apicryptosuite.Key
+}
+
+var (
+	// ErrUserNotFound indicates the user was not found
+	ErrUserNotFound = errors.New("user not found")
+)
+
+// UserKey is a lookup key in UserStore
+type UserKey struct {
+	MspID string
+	Name  string
+}
+
+// UserStore is responsible for User persistence
+type UserStore interface {
+	Store(User) error
+	Load(UserKey) (User, error)
 }

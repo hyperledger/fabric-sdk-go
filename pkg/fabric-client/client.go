@@ -7,18 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package fabricclient
 
 import (
-	"encoding/json"
-
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	channel "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
@@ -30,7 +26,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 type Client struct {
 	channels        map[string]fab.Channel
 	cryptoSuite     apicryptosuite.CryptoSuite
-	stateStore      kvstore.KVStore
+	stateStore      fab.UserStore
 	signingIdentity fab.IdentityContext
 	config          config.Config
 	signingManager  fab.SigningManager
@@ -99,12 +95,12 @@ func (c *Client) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, e
  * so that multiple app instances can share app state via the database (note that this doesn’t necessarily make the app stateful).
  * This API makes this pluggable so that different store implementations can be selected by the application.
  */
-func (c *Client) SetStateStore(stateStore kvstore.KVStore) {
+func (c *Client) SetStateStore(stateStore fab.UserStore) {
 	c.stateStore = stateStore
 }
 
 // StateStore is a convenience method for obtaining the state store object in use for this client.
-func (c *Client) StateStore() kvstore.KVStore {
+func (c *Client) StateStore() fab.UserStore {
 	return c.stateStore
 }
 
@@ -152,63 +148,29 @@ func (c *Client) SaveUserToStateStore(user fab.User) error {
 	if c.stateStore == nil {
 		return errors.New("stateStore is nil")
 	}
-	userJSON := &identity.JSON{
-		MspID:                 user.MspID(),
-		Roles:                 user.Roles(),
-		PrivateKeySKI:         user.PrivateKey().SKI(),
-		EnrollmentCertificate: user.EnrollmentCertificate(),
-	}
-	data, err := json.Marshal(userJSON)
+	err := c.stateStore.Store(user)
 	if err != nil {
-		return errors.Wrap(err, "marshal json return error")
-	}
-	err = c.stateStore.Store(user.Name(), data)
-	if err != nil {
-		return errors.WithMessage(err, "stateStore SetValue failed")
+		return errors.WithMessage(err, "saving user failed")
 	}
 	return nil
 }
 
-// LoadUserFromStateStore ...
-/**
- * Restore the state of this member from the key value store (if found).  If not found, do nothing.
- * @returns {Promise} A Promise for a {User} object upon successful restore, or if the user by the name
- * does not exist in the state store, returns null without rejecting the promise
- */
-func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
-	if name == "" {
-		return nil, nil
+// LoadUserFromStateStore loads a user from user store.
+// If user is not found, returns ErrUserNotFound
+func (c *Client) LoadUserFromStateStore(mspID string, name string) (fab.User, error) {
+	if mspID == "" || name == "" {
+		return nil, errors.New("Invalid user key")
 	}
 	if c.stateStore == nil {
-		return nil, nil
+		return nil, errors.New("Invalid state - start store is missing")
 	}
 	if c.cryptoSuite == nil {
 		return nil, errors.New("cryptoSuite required")
 	}
-	value, err := c.stateStore.Load(name)
+	user, err := c.stateStore.Load(fab.UserKey{MspID: mspID, Name: name})
 	if err != nil {
-		if err == kvstore.ErrNotFound {
-			return nil, nil
-		}
 		return nil, err
 	}
-	valueBytes, ok := value.([]byte)
-	if !ok {
-		return nil, errors.New("state store return wrong data type")
-	}
-	var userJSON identity.JSON
-	err = json.Unmarshal(valueBytes, &userJSON)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal user JSON failed")
-	}
-	user := identity.NewUser(name, userJSON.MspID)
-	user.SetRoles(userJSON.Roles)
-	user.SetEnrollmentCertificate(userJSON.EnrollmentCertificate)
-	key, err := c.cryptoSuite.GetKey(userJSON.PrivateKeySKI)
-	if err != nil {
-		return nil, errors.Wrap(err, "cryptoSuite GetKey failed")
-	}
-	user.SetPrivateKey(key)
 	return user, nil
 }
 

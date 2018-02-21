@@ -8,69 +8,118 @@ package fabricclient
 
 import (
 	"bytes"
+	"os"
 	"path"
 	"testing"
 
-	"github.com/pkg/errors"
-
+	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
-	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/pkg/errors"
 )
 
 var testMsp = "testMsp"
 
+var storePathRoot = "/tmp/testcertfileuserstore"
+var storePath = path.Join(storePathRoot, "-certs")
+
+var testPrivKey1 = `-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB
+5Ul+GpjM1P5rqc6RhjD5OkTgl5OhRANCAATyFT0voXX7cA4PPtNstWleaTpwjvbS
+J3+tMGTG67f+TdCfDxWYMpQYxLlE8VkbEzKWDwCYvDZRMKCQfv2ErNvb
+-----END PRIVATE KEY-----`
+
+var testCert1 = `-----BEGIN CERTIFICATE-----
+MIICGTCCAcCgAwIBAgIRALR/1GXtEud5GQL2CZykkOkwCgYIKoZIzj0EAwIwczEL
+MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
+cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
+Lm9yZzEuZXhhbXBsZS5jb20wHhcNMTcwNzI4MTQyNzIwWhcNMjcwNzI2MTQyNzIw
+WjBbMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
+U2FuIEZyYW5jaXNjbzEfMB0GA1UEAwwWVXNlcjFAb3JnMS5leGFtcGxlLmNvbTBZ
+MBMGByqGSM49AgEGCCqGSM49AwEHA0IABPIVPS+hdftwDg8+02y1aV5pOnCO9tIn
+f60wZMbrt/5N0J8PFZgylBjEuUTxWRsTMpYPAJi8NlEwoJB+/YSs29ujTTBLMA4G
+A1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1UdIwQkMCKAIIeR0TY+iVFf
+mvoEKwaToscEu43ZXSj5fTVJornjxDUtMAoGCCqGSM49BAMCA0cAMEQCID+dZ7H5
+AiaiI2BjxnL3/TetJ8iFJYZyWvK//an13WV/AiARBJd/pI5A7KZgQxJhXmmR8bie
+XdsmTcdRvJ3TS/6HCA==
+-----END CERTIFICATE-----`
+
+func crypto(t *testing.T) apicryptosuite.CryptoSuite {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+	mockConfig.EXPECT().SecurityLevel().Return(256)
+	mockConfig.EXPECT().KeyStorePath().Return(path.Join(storePathRoot, "-keys"))
+	mockConfig.EXPECT().Ephemeral().Return(false)
+
+	//Get cryptosuite using config
+	c, err := sw.GetSuiteByConfig(mockConfig)
+	if err != nil {
+		t.Fatalf("Not supposed to get error, but got: %v", err)
+	}
+	return c
+}
+
+func cleanup(storePath string) error {
+	err := os.RemoveAll(storePath)
+	if err != nil {
+		return errors.Wrapf(err, "Cleaning up directory '%s' failed", storePath)
+	}
+	return nil
+}
+
 func TestClientMethods(t *testing.T) {
+
+	cleanup(storePathRoot)
+	defer cleanup(storePathRoot)
+
+	crypto := crypto(t)
+	_, err := fabricCaUtil.ImportBCCSPKeyFromPEMBytes([]byte(testPrivKey1), crypto, false)
+	if err != nil {
+		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed [%s]", err)
+	}
+
 	client := NewClient(mocks.NewMockConfig())
 	if client.CryptoSuite() != nil {
 		t.Fatalf("Client CryptoSuite should initially be nil")
 	}
 
-	s, err := sw.GetSuiteWithDefaultEphemeral()
-	if err != nil {
-		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
-	}
-
-	client.SetCryptoSuite(s)
+	client.SetCryptoSuite(crypto)
 	if client.CryptoSuite() == nil {
 		t.Fatalf("Client CryptoSuite should not be nil after setCryptoSuite")
 	}
 
-	//Client tests: LoadUserFromStateStore successful nill user
-	user, err := client.LoadUserFromStateStore("")
-	if err != nil {
-		t.Fatalf("client.LoadUserFromStateStore return error[%s]", err)
-	}
-	if user != nil {
-		t.Fatalf("client.LoadUserFromStateStore should return nil user")
+	// Load nil user with no MspID
+	_, err = client.LoadUserFromStateStore("", "nonexistant")
+	if err == nil {
+		t.Fatalf("should return error for nil MspID")
 	}
 
-	//Client tests: Should return error "user required"
+	// Load nil user with no Name
+	_, err = client.LoadUserFromStateStore("nonexistant", "")
+	if err == nil {
+		t.Fatalf("should return error for nil Name")
+	}
+
+	// Save nil user
 	err = client.SaveUserToStateStore(nil)
 	if err == nil {
-		t.Fatalf("client.SaveUserToStateStore didn't return error")
-	}
-	if err.Error() != "user required" {
-		t.Fatalf("client.SaveUserToStateStore didn't return right error")
+		t.Fatalf("should return error for nil user")
 	}
 
-	//Client tests: LoadUserFromStateStore with no context in memory or persisted returns nil
-	user, err = client.LoadUserFromStateStore("someUser")
-	if err != nil {
-		t.Fatalf("client.LoadUserFromStateStore return error[%s]", err)
-	}
-	if user != nil {
-		t.Fatalf("client.LoadUserFromStateStore should return nil user")
-	}
-
-	//Client tests: Should throw "stateStore is nil"
+	// nil state store
 	client.SetStateStore(nil)
 	err = client.SaveUserToStateStore(mocks.NewMockUser("hello"))
 	if err == nil {
-		t.Fatalf("client.SaveUserToStateStore didn't return error")
-	}
-	if err.Error() != "stateStore is nil" {
-		t.Fatalf("client.SaveUserToStateStore didn't return right error: %v", err)
+		t.Fatalf("should return error for nil state store")
 	}
 
 	//Client tests: Create new chain
@@ -86,32 +135,33 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("client.NewChain create wrong chain")
 	}
 
-	stateStorePath := "/tmp/keyvaluestore"
-	stateStore, err := kvs.NewFileKeyValueStore(&kvs.FileKeyValueStoreOptions{
-		Path: stateStorePath,
-		KeySerializer: func(key interface{}) (string, error) {
-			keyString, ok := key.(string)
-			if !ok {
-				return "", errors.New("converting key to string failed")
-			}
-			return path.Join(stateStorePath, keyString+".json"), nil
-		},
-	})
+	stateStore, err := identity.NewCertFileUserStore(storePath, crypto)
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
 	client.SetStateStore(stateStore)
-	client.StateStore().Store("testvalue", []byte("data"))
-	value, err := client.StateStore().Load("testvalue")
+
+	// Load unknown user
+	_, err = client.LoadUserFromStateStore("nonexistant", "nonexistant")
+	if err != fab.ErrUserNotFound {
+		t.Fatalf("should return ErrUserNotFound, got: %v", err)
+	}
+
+	saveUser := identity.NewUser("myname", "mymsp")
+	saveUser.SetEnrollmentCertificate([]byte(testCert1))
+	client.StateStore().Store(saveUser)
+	retrievedUser, err := client.StateStore().Load(fab.UserKey{MspID: saveUser.MspID(), Name: saveUser.Name()})
 	if err != nil {
 		t.Fatalf("client.StateStore().Load() return error[%s]", err)
 	}
-	valueBytes, ok := value.([]byte)
-	if !ok {
-		t.Fatalf("client.StateStore().Load() returned wrong data type")
+	if retrievedUser.MspID() != saveUser.MspID() {
+		t.Fatalf("MspID doesn't match")
 	}
-	if string(valueBytes) != "data" {
-		t.Fatalf("client.StateStore().GetValue() didn't return the right value")
+	if retrievedUser.Name() != saveUser.Name() {
+		t.Fatalf("Name doesn't match")
+	}
+	if string(retrievedUser.EnrollmentCertificate()) != string(saveUser.EnrollmentCertificate()) {
+		t.Fatalf("EnrollmentCertificate doesn't match")
 	}
 
 	// Set and use siging manager

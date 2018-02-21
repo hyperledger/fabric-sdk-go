@@ -10,6 +10,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	apicryptosuite "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	apifabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 )
 
@@ -63,7 +64,7 @@ func (mr *MockFabricCAClientMockRecorder) Enroll(arg0, arg1 interface{}) *gomock
 }
 
 // Reenroll mocks base method
-func (m *MockFabricCAClient) Reenroll(arg0 apifabca.User) (apicryptosuite.Key, []byte, error) {
+func (m *MockFabricCAClient) Reenroll(arg0 apifabclient.User) (apicryptosuite.Key, []byte, error) {
 	ret := m.ctrl.Call(m, "Reenroll", arg0)
 	ret0, _ := ret[0].(apicryptosuite.Key)
 	ret1, _ := ret[1].([]byte)
@@ -77,7 +78,7 @@ func (mr *MockFabricCAClientMockRecorder) Reenroll(arg0 interface{}) *gomock.Cal
 }
 
 // Register mocks base method
-func (m *MockFabricCAClient) Register(arg0 apifabca.User, arg1 *apifabca.RegistrationRequest) (string, error) {
+func (m *MockFabricCAClient) Register(arg0 apifabclient.User, arg1 *apifabca.RegistrationRequest) (string, error) {
 	ret := m.ctrl.Call(m, "Register", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
@@ -90,7 +91,7 @@ func (mr *MockFabricCAClientMockRecorder) Register(arg0, arg1 interface{}) *gomo
 }
 
 // Revoke mocks base method
-func (m *MockFabricCAClient) Revoke(arg0 apifabca.User, arg1 *apifabca.RevocationRequest) (*api.RevocationResponse, error) {
+func (m *MockFabricCAClient) Revoke(arg0 apifabclient.User, arg1 *apifabca.RevocationRequest) (*api.RevocationResponse, error) {
 	ret := m.ctrl.Call(m, "Revoke", arg0, arg1)
 	ret0, _ := ret[0].(*api.RevocationResponse)
 	ret1, _ := ret[1].(error)

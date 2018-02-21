@@ -23,20 +23,12 @@ type User struct {
 	enrollmentCertificate []byte
 }
 
-// JSON representation of the user struct
-type JSON struct {
-	MspID                 string
-	Roles                 []string
-	PrivateKeySKI         []byte
-	EnrollmentCertificate []byte
-}
-
 // NewUser Constructor for a user.
-// @param {string} name - The user name
 // @param {string} mspID - The mspID for this user
-// @returns {ca.User} new user
-func NewUser(name string, mspID string) *User {
-	return &User{name: name, mspID: mspID}
+// @param {string} name - The user name
+// @returns {User} new user
+func NewUser(mspID string, name string) *User {
+	return &User{mspID: mspID, name: name}
 }
 
 // Name Get the user name.

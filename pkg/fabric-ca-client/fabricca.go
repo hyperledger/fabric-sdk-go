@@ -11,6 +11,7 @@ import (
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	fabric_ca "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
@@ -124,7 +125,7 @@ func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret s
 
 // Reenroll an enrolled user in order to receive a signed X509 certificate
 // Returns X509 certificate
-func (fabricCAServices *FabricCA) Reenroll(user sdkApi.User) (apicryptosuite.Key, []byte, error) {
+func (fabricCAServices *FabricCA) Reenroll(user apifabclient.User) (apicryptosuite.Key, []byte, error) {
 	if user == nil {
 		return nil, nil, errors.New("user required")
 	}
@@ -153,7 +154,7 @@ func (fabricCAServices *FabricCA) Reenroll(user sdkApi.User) (apicryptosuite.Key
 // registrar: The User that is initiating the registration
 // request: Registration Request
 // Returns Enrolment Secret
-func (fabricCAServices *FabricCA) Register(registrar sdkApi.User,
+func (fabricCAServices *FabricCA) Register(registrar apifabclient.User,
 	request *sdkApi.RegistrationRequest) (string, error) {
 	// Validate registration request
 	if request == nil {
@@ -190,7 +191,7 @@ func (fabricCAServices *FabricCA) Register(registrar sdkApi.User,
 // Revoke a User with the Fabric CA
 // registrar: The User that is initiating the revocation
 // request: Revocation Request
-func (fabricCAServices *FabricCA) Revoke(registrar sdkApi.User,
+func (fabricCAServices *FabricCA) Revoke(registrar apifabclient.User,
 	request *sdkApi.RevocationRequest) (*api.RevocationResponse, error) {
 	// Validate revocation request
 	if request == nil {
@@ -212,8 +213,7 @@ func (fabricCAServices *FabricCA) Revoke(registrar sdkApi.User,
 }
 
 // createSigningIdentity creates an identity to sign Fabric CA requests with
-func (fabricCAServices *FabricCA) createSigningIdentity(user sdkApi.
-	User) (*fabric_ca.Identity, error) {
+func (fabricCAServices *FabricCA) createSigningIdentity(user apifabclient.User) (*fabric_ca.Identity, error) {
 	// Validate user
 	if user == nil {
 		return nil, errors.New("user required")
