@@ -210,7 +210,7 @@ orderers:
 #      fail-fast: true
 
 #      When no protocol provided in url, grpcs connection will be tried first, if failed it falls back to grpc when this option set to true
-#      allow-insecure: true
+#      allow-insecure: false
 
 #    tlsCACerts:
       # Certificate location absolute path
@@ -232,7 +232,7 @@ peers:
 #      ssl-target-name-override: peer0.org1.example.com
 #      grpc.http2.keepalive_time: 15
 #      When no protocol provided in url, grpcs connection will be tried first, if failed it falls back to grpc when this option set to true
-#      allow-insecure: true
+#      allow-insecure: false
 
 #    tlsCACerts:
       # Certificate location absolute path

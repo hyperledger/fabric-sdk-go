@@ -250,7 +250,7 @@ orderers:
       keep-alive-permit: false
       fail-fast: true
       #will be taken into consideration if address has no protocol defined and secured connection fails
-      allow-insecure: true
+      allow-insecure: false
 
     tlsCACerts:
       # Certificate location absolute path
@@ -280,7 +280,7 @@ peers:
       keep-alive-permit: false
       fail-fast: true
       #will be taken into consideration if address has no protocol defined and secured connection fails
-      allow-insecure: true
+      allow-insecure: false
 
     tlsCACerts:
       # Certificate location absolute path
@@ -300,7 +300,7 @@ peers:
       keep-alive-permit: false
       fail-fast: true
       #will be taken into consideration if address has no protocol defined and secured connection fails
-      allow-insecure: true
+      allow-insecure: false
 
     tlsCACerts:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem

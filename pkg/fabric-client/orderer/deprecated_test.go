@@ -31,7 +31,7 @@ func TestDeprecatedSendDeliver(t *testing.T) {
 	defer grpcServer.Stop()
 	mockServer, addr := startMockServer(t, grpcServer)
 
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig(), kap)
+	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 	// Test deliver happy path
 	blocks, errs := orderer.SendDeliver(&fab.SignedEnvelope{})
 	select {
@@ -119,7 +119,7 @@ func TestDeprecatedSendBroadcast(t *testing.T) {
 	defer grpcServer.Stop()
 	_, addr := startMockServer(t, grpcServer)
 
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig(), kap)
+	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
 	if err != nil {
@@ -148,7 +148,7 @@ func TestDeprecatedSendDeliverServerBadResponse(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig(), kap)
+	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -178,7 +178,7 @@ func TestDeprecatedSendDeliverServerSuccessResponse(t *testing.T) {
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig(), kap)
+	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -203,7 +203,7 @@ func TestDeprecatedSendDeliverFailure(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig(), kap)
+	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -228,7 +228,7 @@ func TestDeprecatedSendBroadcastServerBadResponse(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig(), kap)
+	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
@@ -250,7 +250,7 @@ func TestDeprecatedSendBroadcastError(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig(), kap)
+	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
 	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 

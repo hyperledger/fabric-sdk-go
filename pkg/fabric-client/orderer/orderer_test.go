@@ -223,7 +223,7 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), WithInsecure())
+	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -253,7 +253,7 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), WithInsecure())
+	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -278,7 +278,7 @@ func TestSendDeliverFailure(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), WithInsecure())
+	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -303,7 +303,7 @@ func TestSendBroadcastServerBadResponse(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), WithInsecure())
+	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
@@ -325,7 +325,7 @@ func TestSendBroadcastError(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), WithInsecure())
+	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
 	statusCode, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
@@ -346,7 +346,7 @@ func TestBroadcastBadDial(t *testing.T) {
 	config.EXPECT().TimeoutOrDefault(apiconfig.OrdererConnection).Return(time.Second * 1)
 	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("error adding cert to pool")).AnyTimes()
 
-	orderer, _ := NewOrderer("127.0.0.1:0", "", "", config, kap)
+	orderer, _ := NewOrderer("grpc://127.0.0.1:0", "", "", config, kap)
 	orderer.grpcDialOption = append(orderer.grpcDialOption, grpc.WithBlock())
 	orderer.secured = true
 	orderer.allowInsecure = true
@@ -444,7 +444,7 @@ func TestForDeadlineExceeded(t *testing.T) {
 
 func TestSendDeliverDefaultOpts(t *testing.T) {
 	//keep alive option is not set and fail fast is false - invalid URL
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"), WithInsecure())
+	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+testOrdererURL+"Test"), WithInsecure())
 	orderer.dialTimeout = 5 * time.Second
 	fmt.Printf("GRPC opts%v \n", orderer.grpcDialOption)
 	for i, v := range orderer.grpcDialOption {
@@ -460,7 +460,7 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 	defer grpcServer.Stop()
 	_, addr := startMockServer(t, grpcServer)
 
-	orderer, _ = New(mocks.NewMockConfig(), WithURL(addr), WithInsecure())
+	orderer, _ = New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 	orderer.dialTimeout = 5 * time.Second
 	// Test deliver happy path
 	blocks, errs := orderer.SendDeliver(&fab.SignedEnvelope{})
@@ -479,7 +479,7 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 
 func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
 	//keep alive options set and failfast is true
-	ordererConfig := getGRPCOpts(testOrdererURL+"Test", true, true)
+	ordererConfig := getGRPCOpts("grpc://"+testOrdererURL+"Test", true, true)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"), FromOrdererConfig(ordererConfig))
 	orderer.dialTimeout = 5 * time.Second
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})

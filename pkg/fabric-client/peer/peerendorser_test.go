@@ -260,7 +260,7 @@ func TestNewPeerEndorserTLSBad(t *testing.T) {
 // TestProcessProposalBadDial validates that a down
 // endorser fails gracefully.
 func TestProcessProposalBadDial(t *testing.T) {
-	_, err := testProcessProposal(t, testAddress)
+	_, err := testProcessProposal(t, "grpc://"+testAddress)
 	if err == nil {
 		t.Fatalf("Process proposal should have failed")
 	}
@@ -273,7 +273,7 @@ func TestProcessProposalGoodDial(t *testing.T) {
 	defer grpcServer.Stop()
 	_, addr := startEndorserServer(t, grpcServer)
 
-	_, err := testProcessProposal(t, addr)
+	_, err := testProcessProposal(t, "grpc://"+addr)
 	if err != nil {
 		t.Fatalf("Process proposal failed (%v)", err)
 	}
@@ -334,7 +334,7 @@ func startEndorserServerWithError(t *testing.T, grpcServer *grpc.Server, testErr
 }
 
 func TestEndorserConnectionError(t *testing.T) {
-	_, err := testProcessProposal(t, testAddress)
+	_, err := testProcessProposal(t, "grpc://"+testAddress)
 	assert.NotNil(t, err, "Expected connection error without server running")
 
 	statusError, ok := status.FromError(err)
@@ -350,7 +350,7 @@ func TestEndorserRPCError(t *testing.T) {
 	defer grpcServer.Stop()
 	_, addr := startEndorserServerWithError(t, grpcServer, fmt.Errorf(testErrorMessage))
 
-	_, err := testProcessProposal(t, addr)
+	_, err := testProcessProposal(t, "grpc://"+addr)
 	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error on failed connection")
 	assert.Equal(t, status.GRPCTransportStatus, statusError.Group)
