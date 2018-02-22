@@ -110,6 +110,11 @@ func TestCAConfig(t *testing.T) {
 		t.Fatal("Get CA Config failed")
 	}
 
+	// Test User Store Path
+	if vConfig.GetString("client.credentialStore.path") != configImpl.CredentialStorePath() {
+		t.Fatalf("Incorrect User Store path")
+	}
+
 	// Test CA KeyStore Path
 	if vConfig.GetString("client.credentialStore.cryptoStore.path") != configImpl.CAKeyStorePath() {
 		t.Fatalf("Incorrect CA keystore path")

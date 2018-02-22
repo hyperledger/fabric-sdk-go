@@ -8,8 +8,6 @@ package fab
 
 import (
 	"bytes"
-	"crypto/x509"
-	"encoding/pem"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -22,7 +20,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/signingmgr"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fab/ca"
 )
@@ -65,49 +62,6 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
 
-	// Admin user is used to register, enroll and revoke a test user
-	adminUser, err := client.LoadUserFromStateStore(mspID, "admin")
-	if err != nil {
-		if err != api.ErrUserNotFound {
-			t.Fatalf("client.LoadUserFromStateStore return error: %v", err)
-		}
-
-		key, cert, err := caClient.Enroll("admin", "adminpw")
-		if err != nil {
-			t.Fatalf("Enroll return error: %v", err)
-		}
-		if key == nil {
-			t.Fatalf("private key return from Enroll is nil")
-		}
-		if cert == nil {
-			t.Fatalf("cert return from Enroll is nil")
-		}
-
-		certPem, _ := pem.Decode(cert)
-		if certPem == nil {
-			t.Fatal("Fail to decode pem block")
-		}
-
-		cert509, err := x509.ParseCertificate(certPem.Bytes)
-		if err != nil {
-			t.Fatalf("x509 ParseCertificate return error: %v", err)
-		}
-		if cert509.Subject.CommonName != "admin" {
-			t.Fatalf("CommonName in x509 cert is not the enrollmentID")
-		}
-		adminUser2 := identity.NewUser(mspID, "admin")
-		adminUser2.SetPrivateKey(key)
-		adminUser2.SetEnrollmentCertificate(cert)
-		err = client.SaveUserToStateStore(adminUser2)
-		if err != nil {
-			t.Fatalf("client.SaveUserToStateStore return error: %v", err)
-		}
-		adminUser, err = client.LoadUserFromStateStore(mspID, "admin")
-		if err != nil {
-			t.Fatalf("expected enrolled admin user, but LoadUserFromStateStore returned error: %v", err)
-		}
-	}
-
 	// Register a random user
 	userName := createRandomName()
 	registerRequest := fab.RegistrationRequest{
@@ -116,7 +70,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		Affiliation: "org1.department1",
 		CAName:      caConfig.CAName,
 	}
-	enrolmentSecret, err := caClient.Register(adminUser, &registerRequest)
+	enrolmentSecret, err := caClient.Register(&registerRequest)
 	if err != nil {
 		t.Fatalf("Error from Register: %s", err)
 	}
@@ -143,7 +97,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 
 	revokeRequest := fab.RevocationRequest{Name: userName, CAName: "ca.org1.example.com"}
-	_, err = caClient.Revoke(adminUser, &revokeRequest)
+	_, err = caClient.Revoke(&revokeRequest)
 	if err != nil {
 		t.Fatalf("Error from Revoke: %s", err)
 	}

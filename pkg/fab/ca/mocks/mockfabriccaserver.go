@@ -13,27 +13,37 @@ import (
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
+// Matching key-cert pair. On enroll, the key will be
+// imported into the key store, and the cert will be
+// returned to the caller.
+
+var privateKey = `-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB
+5Ul+GpjM1P5rqc6RhjD5OkTgl5OhRANCAATyFT0voXX7cA4PPtNstWleaTpwjvbS
+J3+tMGTG67f+TdCfDxWYMpQYxLlE8VkbEzKWDwCYvDZRMKCQfv2ErNvb
+-----END PRIVATE KEY-----`
+
 var ecert = `-----BEGIN CERTIFICATE-----
-MIICEjCCAbigAwIBAgIQPjb63mDL4e062MPjtcA1CDAKBggqhkjOPQQDAjBgMQsw
-CQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy
-YW5jaXNjbzERMA8GA1UEChMIcGVlck9yZzExETAPBgNVBAMTCHBlZXJPcmcxMB4X
-DTE3MDMwMTE3MzY0MVoXDTI3MDIyNzE3MzY0MVowUjELMAkGA1UEBhMCVVMxEzAR
-BgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBGcmFuY2lzY28xFjAUBgNV
-BAMTDXBlZXJPcmcxUGVlcjEwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAS0hO8C
-8ph+PiFkYikdVAK/zCd2ckxb6m5bTOq54VtWR7wbdPuu9djICTaROTUmfeoAHF60
-ol/Z/penR/G6chqKo2IwYDAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYB
-BQUHAwEwDAYDVR0TAQH/BAIwADArBgNVHSMEJDAigCDYpbPKwbgh9uS0h86vH9I5
-zc/DEIlBUJCLkPBekXlVajAKBggqhkjOPQQDAgNIADBFAiEAmGS3LTaqCkWV+myl
-lhg9ovtLJABuxQLnajMJYQOXURgCIHLVNrDbEF0KpEmFwXIBYMFdsKGRAF0kC43M
-bpq87UJq
------END CERTIFICATE-----
-`
+MIICGTCCAcCgAwIBAgIRALR/1GXtEud5GQL2CZykkOkwCgYIKoZIzj0EAwIwczEL
+MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
+cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
+Lm9yZzEuZXhhbXBsZS5jb20wHhcNMTcwNzI4MTQyNzIwWhcNMjcwNzI2MTQyNzIw
+WjBbMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
+U2FuIEZyYW5jaXNjbzEfMB0GA1UEAwwWVXNlcjFAb3JnMS5leGFtcGxlLmNvbTBZ
+MBMGByqGSM49AgEGCCqGSM49AwEHA0IABPIVPS+hdftwDg8+02y1aV5pOnCO9tIn
+f60wZMbrt/5N0J8PFZgylBjEuUTxWRsTMpYPAJi8NlEwoJB+/YSs29ujTTBLMA4G
+A1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1UdIwQkMCKAIIeR0TY+iVFf
+mvoEKwaToscEu43ZXSj5fTVJornjxDUtMAoGCCqGSM49BAMCA0cAMEQCID+dZ7H5
+AiaiI2BjxnL3/TetJ8iFJYZyWvK//an13WV/AiARBJd/pI5A7KZgQxJhXmmR8bie
+XdsmTcdRvJ3TS/6HCA==
+-----END CERTIFICATE-----`
 
 // The enrollment response from the server
 type enrollmentResponseNet struct {
@@ -52,7 +62,13 @@ type serverInfoResponseNet struct {
 }
 
 // StartFabricCAMockServer Start fabric ca mock server
-func StartFabricCAMockServer(address string) error {
+func StartFabricCAMockServer(address string, cs core.CryptoSuite) error {
+
+	// Import private key so it can be looked up by SKI from the cert
+	_, err := util.ImportBCCSPKeyFromPEMBytes([]byte(privateKey), cs, false)
+	if err != nil {
+		return err
+	}
 
 	// Register request handlers
 	http.HandleFunc("/register", Register)
@@ -64,7 +80,7 @@ func StartFabricCAMockServer(address string) error {
 		TLSConfig: nil,
 	}
 
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 
 	if err != nil {
 		return errors.Wrap(err, "HTTP Server: Failed to start")

@@ -8,8 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
-	api0 "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	api "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	core "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
@@ -100,7 +99,7 @@ func (mr *MockFabricCAClientMockRecorder) Enroll(arg0, arg1 interface{}) *gomock
 }
 
 // Reenroll mocks base method
-func (m *MockFabricCAClient) Reenroll(arg0 api0.User) (core.Key, []byte, error) {
+func (m *MockFabricCAClient) Reenroll(arg0 api.User) (core.Key, []byte, error) {
 	ret := m.ctrl.Call(m, "Reenroll", arg0)
 	ret0, _ := ret[0].(core.Key)
 	ret1, _ := ret[1].([]byte)
@@ -114,27 +113,27 @@ func (mr *MockFabricCAClientMockRecorder) Reenroll(arg0 interface{}) *gomock.Cal
 }
 
 // Register mocks base method
-func (m *MockFabricCAClient) Register(arg0 api0.User, arg1 *fab.RegistrationRequest) (string, error) {
-	ret := m.ctrl.Call(m, "Register", arg0, arg1)
+func (m *MockFabricCAClient) Register(arg0 *fab.RegistrationRequest) (string, error) {
+	ret := m.ctrl.Call(m, "Register", arg0)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Register indicates an expected call of Register
-func (mr *MockFabricCAClientMockRecorder) Register(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockFabricCAClient)(nil).Register), arg0, arg1)
+func (mr *MockFabricCAClientMockRecorder) Register(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockFabricCAClient)(nil).Register), arg0)
 }
 
 // Revoke mocks base method
-func (m *MockFabricCAClient) Revoke(arg0 api0.User, arg1 *fab.RevocationRequest) (*api.RevocationResponse, error) {
-	ret := m.ctrl.Call(m, "Revoke", arg0, arg1)
-	ret0, _ := ret[0].(*api.RevocationResponse)
+func (m *MockFabricCAClient) Revoke(arg0 *fab.RevocationRequest) (*fab.RevocationResponse, error) {
+	ret := m.ctrl.Call(m, "Revoke", arg0)
+	ret0, _ := ret[0].(*fab.RevocationResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Revoke indicates an expected call of Revoke
-func (mr *MockFabricCAClientMockRecorder) Revoke(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*MockFabricCAClient)(nil).Revoke), arg0, arg1)
+func (mr *MockFabricCAClientMockRecorder) Revoke(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*MockFabricCAClient)(nil).Revoke), arg0)
 }

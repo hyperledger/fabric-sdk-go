@@ -184,6 +184,11 @@ func (c *MockConfig) KeyStorePath() string {
 	return "/tmp/fabsdkgo_test"
 }
 
+// CredentialStorePath ...
+func (c *MockConfig) CredentialStorePath() string {
+	return "/tmp/userstore"
+}
+
 // CAKeyStorePath not implemented
 func (c *MockConfig) CAKeyStorePath() string {
 	return "/tmp/fabsdkgo_test"
