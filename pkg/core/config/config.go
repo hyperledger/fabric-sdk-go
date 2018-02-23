@@ -25,8 +25,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
-	lu "github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/loglevel"
 	"github.com/pkg/errors"
 
 	cs "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
@@ -210,7 +209,7 @@ func initConfig(c *Config) (*Config, error) {
 		return nil, errors.WithMessage(err, "network configuration load failed")
 	}
 
-	logger.Infof("config %s logging level is set to: %s", logModule, lu.LogLevelString(logging.GetLevel(logModule)))
+	logger.Infof("config %s logging level is set to: %s", logModule, loglevel.ParseString(logging.GetLevel(logModule)))
 	return c, nil
 }
 
@@ -229,7 +228,7 @@ func getCertPool(myViper *viper.Viper) (*x509.CertPool, error) {
 // setLogLevel will set the log level of the client
 func setLogLevel(myViper *viper.Viper) {
 	loggingLevelString := myViper.GetString("client.logging.level")
-	logLevel := api.INFO
+	logLevel := loglevel.INFO
 	if loggingLevelString != "" {
 		logger.Debugf("%s logging level from the config: %v", logModule, loggingLevelString)
 		var err error

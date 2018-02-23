@@ -19,7 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/loglevel"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
@@ -168,7 +168,7 @@ func verify(t *testing.T, service fab.SelectionService, expectedPeerGroups []pgr
 	// Set the log level to WARNING since the following spits out too much info in DEBUG
 	module := "pg-resolver"
 	level := logging.GetLevel(module)
-	logging.SetLevel(module, api.WARNING)
+	logging.SetLevel(module, loglevel.WARNING)
 	defer logging.SetLevel(module, level)
 
 	for i := 0; i < len(expectedPeerGroups); i++ {

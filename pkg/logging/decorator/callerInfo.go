@@ -7,12 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package decorator
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/loglevel"
 )
 
 type callerInfoKey struct {
 	module string
-	level  api.Level
+	level  loglevel.Level
 }
 
 //CallerInfo maintains module-level based information to toggle caller info
@@ -21,7 +21,7 @@ type CallerInfo struct {
 }
 
 //ShowCallerInfo enables caller info for given module and level
-func (l *CallerInfo) ShowCallerInfo(module string, level api.Level) {
+func (l *CallerInfo) ShowCallerInfo(module string, level loglevel.Level) {
 	if l.showcaller == nil {
 		l.showcaller = l.getDefaultCallerInfoSetting()
 	}
@@ -29,7 +29,7 @@ func (l *CallerInfo) ShowCallerInfo(module string, level api.Level) {
 }
 
 //HideCallerInfo disables caller info for given module and level
-func (l *CallerInfo) HideCallerInfo(module string, level api.Level) {
+func (l *CallerInfo) HideCallerInfo(module string, level loglevel.Level) {
 	if l.showcaller == nil {
 		l.showcaller = l.getDefaultCallerInfoSetting()
 	}
@@ -37,7 +37,7 @@ func (l *CallerInfo) HideCallerInfo(module string, level api.Level) {
 }
 
 //IsCallerInfoEnabled returns if callerinfo enabled for given module and level
-func (l *CallerInfo) IsCallerInfoEnabled(module string, level api.Level) bool {
+func (l *CallerInfo) IsCallerInfoEnabled(module string, level loglevel.Level) bool {
 	showcaller, exists := l.showcaller[callerInfoKey{module, level}]
 	if exists == false {
 		//If no callerinfo setting exists, then look for default
@@ -52,10 +52,10 @@ func (l *CallerInfo) IsCallerInfoEnabled(module string, level api.Level) bool {
 //getDefaultCallerInfoSetting default setting for callerinfo
 func (l *CallerInfo) getDefaultCallerInfoSetting() map[callerInfoKey]bool {
 	return map[callerInfoKey]bool{
-		callerInfoKey{"", api.CRITICAL}: true,
-		callerInfoKey{"", api.ERROR}:    true,
-		callerInfoKey{"", api.WARNING}:  true,
-		callerInfoKey{"", api.INFO}:     true,
-		callerInfoKey{"", api.DEBUG}:    true,
+		callerInfoKey{"", loglevel.CRITICAL}: true,
+		callerInfoKey{"", loglevel.ERROR}:    true,
+		callerInfoKey{"", loglevel.WARNING}:  true,
+		callerInfoKey{"", loglevel.INFO}:     true,
+		callerInfoKey{"", loglevel.DEBUG}:    true,
 	}
 }

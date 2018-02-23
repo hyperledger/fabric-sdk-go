@@ -12,8 +12,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
-	utils "github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/loglevel"
+	utils "github.com/hyperledger/fabric-sdk-go/pkg/logging/testutils"
 )
 
 const (
@@ -29,7 +29,7 @@ type fn func(...interface{})
 type fnf func(string, ...interface{})
 
 //VerifyCriticalLoggings utility func which does job calling and verifying CRITICAL log level functions - PANIC
-func VerifyCriticalLoggings(t *testing.T, level api.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer) {
+func VerifyCriticalLoggings(t *testing.T, level loglevel.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer) {
 	//Handling panic as well as checking log output
 	defer func() {
 		if r := recover(); r == nil {
@@ -39,10 +39,10 @@ func VerifyCriticalLoggings(t *testing.T, level api.Level, loggerFunc fn, logger
 		opts := getLoggerOpts(moduleName, level)
 		if opts.callerInfoEnabled {
 			//with caller info
-			regex = fmt.Sprintf(basicLevelOutputWithCallerInfoExpectedRegex, moduleName, utils.LogLevelString(level))
+			regex = fmt.Sprintf(basicLevelOutputWithCallerInfoExpectedRegex, moduleName, loglevel.ParseString(level))
 		} else {
 			//without caller info
-			regex = fmt.Sprintf(basicLevelOutputExpectedRegex, moduleName, utils.LogLevelString(level))
+			regex = fmt.Sprintf(basicLevelOutputExpectedRegex, moduleName, loglevel.ParseString(level))
 		}
 		match, err := regexp.MatchString(regex, buf.String())
 		utils.VerifyEmpty(t, err, "error while matching regex with logoutput wasnt expected")
@@ -59,7 +59,7 @@ func VerifyCriticalLoggings(t *testing.T, level api.Level, loggerFunc fn, logger
 }
 
 //VerifyBasicLogging utility func which does job calling and verifying basic log level functions - DEBUG, INFO, ERROR, WARNING
-func VerifyBasicLogging(t *testing.T, level api.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer, verifyCustom bool, moduleName string) {
+func VerifyBasicLogging(t *testing.T, level loglevel.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer, verifyCustom bool, moduleName string) {
 
 	//Call logger func
 	if loggerFunc != nil {
@@ -73,10 +73,10 @@ func VerifyBasicLogging(t *testing.T, level api.Level, loggerFunc fn, loggerFunc
 	levelName := "print"
 
 	if verifyCustom {
-		levelName = utils.LogLevelString(level)
+		levelName = loglevel.ParseString(level)
 		regex = fmt.Sprintf(customLevelOutputExpectedRegex, moduleName)
 	} else if level > 0 && !verifyCustom {
-		levelName = utils.LogLevelString(level)
+		levelName = loglevel.ParseString(level)
 		opts := getLoggerOpts(moduleName, level)
 		if opts.callerInfoEnabled {
 			//with caller info

@@ -22,11 +22,11 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/decorator"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/loglevel"
 )
 
 var rwmutex = &sync.RWMutex{}
-var moduleLevels = &decorator.ModuleLevels{}
+var moduleLevels = &loglevel.ModuleLevels{}
 var callerInfos = &decorator.CallerInfo{}
 var useCustomLogger int32
 
@@ -80,42 +80,42 @@ const (
 )
 
 //SetLevel - setting log level for given module
-func SetLevel(module string, level api.Level) {
+func SetLevel(module string, level loglevel.Level) {
 	rwmutex.Lock()
 	defer rwmutex.Unlock()
 	moduleLevels.SetLevel(module, level)
 }
 
 //GetLevel - getting log level for given module
-func GetLevel(module string) api.Level {
+func GetLevel(module string) loglevel.Level {
 	rwmutex.RLock()
 	defer rwmutex.RUnlock()
 	return moduleLevels.GetLevel(module)
 }
 
 //IsEnabledFor - Check if given log level is enabled for given module
-func IsEnabledFor(module string, level api.Level) bool {
+func IsEnabledFor(module string, level loglevel.Level) bool {
 	rwmutex.RLock()
 	defer rwmutex.RUnlock()
 	return moduleLevels.IsEnabledFor(module, level)
 }
 
 //ShowCallerInfo - Show caller info in log lines for given log level
-func ShowCallerInfo(module string, level api.Level) {
+func ShowCallerInfo(module string, level loglevel.Level) {
 	rwmutex.Lock()
 	defer rwmutex.Unlock()
 	callerInfos.ShowCallerInfo(module, level)
 }
 
 //HideCallerInfo - Do not show caller info in log lines for given log level
-func HideCallerInfo(module string, level api.Level) {
+func HideCallerInfo(module string, level loglevel.Level) {
 	rwmutex.Lock()
 	defer rwmutex.Unlock()
 	callerInfos.HideCallerInfo(module, level)
 }
 
 //getLoggerOpts - returns LoggerOpts which can be used for customization
-func getLoggerOpts(module string, level api.Level) *loggerOpts {
+func getLoggerOpts(module string, level loglevel.Level) *loggerOpts {
 	rwmutex.RLock()
 	defer rwmutex.RUnlock()
 	return &loggerOpts{
@@ -126,67 +126,67 @@ func getLoggerOpts(module string, level api.Level) *loggerOpts {
 
 // Fatal is CRITICAL log followed by a call to os.Exit(1).
 func (l *Log) Fatal(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.CRITICAL)
+	opts := getLoggerOpts(l.module, loglevel.CRITICAL)
 	if l.loadCustomLogger() {
 		l.customLogger.Fatal(args...)
 		return
 	}
-	l.log(opts, api.CRITICAL, args...)
+	l.log(opts, loglevel.CRITICAL, args...)
 	l.deflogger.Fatal(args...)
 }
 
 // Fatalf is CRITICAL log formatted followed by a call to os.Exit(1).
 func (l *Log) Fatalf(format string, args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.CRITICAL)
+	opts := getLoggerOpts(l.module, loglevel.CRITICAL)
 	if l.loadCustomLogger() {
 		l.customLogger.Fatalf(format, args...)
 		return
 	}
-	l.logf(opts, api.CRITICAL, format, args...)
+	l.logf(opts, loglevel.CRITICAL, format, args...)
 	l.deflogger.Fatalf(format, args...)
 }
 
 // Fatalln is CRITICAL log ln followed by a call to os.Exit(1).
 func (l *Log) Fatalln(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.CRITICAL)
+	opts := getLoggerOpts(l.module, loglevel.CRITICAL)
 	if l.loadCustomLogger() {
 		l.customLogger.Fatalln(args...)
 		return
 	}
-	l.logln(opts, api.CRITICAL, args...)
+	l.logln(opts, loglevel.CRITICAL, args...)
 	l.deflogger.Fatalln(args...)
 }
 
 // Panic is CRITICAL log followed by a call to panic()
 func (l *Log) Panic(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.CRITICAL)
+	opts := getLoggerOpts(l.module, loglevel.CRITICAL)
 	if l.loadCustomLogger() {
 		l.customLogger.Panic(args...)
 		return
 	}
-	l.log(opts, api.CRITICAL, args...)
+	l.log(opts, loglevel.CRITICAL, args...)
 	l.deflogger.Panic(args...)
 }
 
 // Panicf is CRITICAL log formatted followed by a call to panic()
 func (l *Log) Panicf(format string, args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.CRITICAL)
+	opts := getLoggerOpts(l.module, loglevel.CRITICAL)
 	if l.loadCustomLogger() {
 		l.customLogger.Panicf(format, args...)
 		return
 	}
-	l.logf(opts, api.CRITICAL, format, args...)
+	l.logf(opts, loglevel.CRITICAL, format, args...)
 	l.deflogger.Panicf(format, args...)
 }
 
 // Panicln is CRITICAL log ln followed by a call to panic()
 func (l *Log) Panicln(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.CRITICAL)
+	opts := getLoggerOpts(l.module, loglevel.CRITICAL)
 	if l.loadCustomLogger() {
 		l.customLogger.Panicln(args...)
 		return
 	}
-	l.logln(opts, api.CRITICAL, args...)
+	l.logln(opts, loglevel.CRITICAL, args...)
 	l.deflogger.Panicln(args...)
 }
 
@@ -223,7 +223,7 @@ func (l *Log) Println(args ...interface{}) {
 // Debug calls go log.Output.
 // Arguments are handled in the manner of fmt.Print.
 func (l *Log) Debug(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.DEBUG)
+	opts := getLoggerOpts(l.module, loglevel.DEBUG)
 	if !opts.levelEnabled {
 		return
 	}
@@ -231,13 +231,13 @@ func (l *Log) Debug(args ...interface{}) {
 		l.customLogger.Debug(args...)
 		return
 	}
-	l.log(opts, api.DEBUG, args...)
+	l.log(opts, loglevel.DEBUG, args...)
 }
 
 // Debugf calls go log.Output.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Log) Debugf(format string, args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.DEBUG)
+	opts := getLoggerOpts(l.module, loglevel.DEBUG)
 	if !opts.levelEnabled {
 		return
 	}
@@ -245,13 +245,13 @@ func (l *Log) Debugf(format string, args ...interface{}) {
 		l.customLogger.Debugf(format, args...)
 		return
 	}
-	l.logf(opts, api.DEBUG, format, args...)
+	l.logf(opts, loglevel.DEBUG, format, args...)
 }
 
 // Debugln calls go log.Output.
 // Arguments are handled in the manner of fmt.Println.
 func (l *Log) Debugln(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.DEBUG)
+	opts := getLoggerOpts(l.module, loglevel.DEBUG)
 	if !opts.levelEnabled {
 		return
 	}
@@ -259,13 +259,13 @@ func (l *Log) Debugln(args ...interface{}) {
 		l.customLogger.Debugln(args...)
 		return
 	}
-	l.logln(opts, api.DEBUG, args...)
+	l.logln(opts, loglevel.DEBUG, args...)
 }
 
 // Info calls go log.Output.
 // Arguments are handled in the manner of fmt.Print.
 func (l *Log) Info(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.INFO)
+	opts := getLoggerOpts(l.module, loglevel.INFO)
 	if !opts.levelEnabled {
 		return
 	}
@@ -273,13 +273,13 @@ func (l *Log) Info(args ...interface{}) {
 		l.customLogger.Info(args...)
 		return
 	}
-	l.log(opts, api.INFO, args...)
+	l.log(opts, loglevel.INFO, args...)
 }
 
 // Infof calls go log.Output.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Log) Infof(format string, args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.INFO)
+	opts := getLoggerOpts(l.module, loglevel.INFO)
 	if !opts.levelEnabled {
 		return
 	}
@@ -287,13 +287,13 @@ func (l *Log) Infof(format string, args ...interface{}) {
 		l.customLogger.Infof(format, args...)
 		return
 	}
-	l.logf(opts, api.INFO, format, args...)
+	l.logf(opts, loglevel.INFO, format, args...)
 }
 
 // Infoln calls go log.Output.
 // Arguments are handled in the manner of fmt.Println.
 func (l *Log) Infoln(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.INFO)
+	opts := getLoggerOpts(l.module, loglevel.INFO)
 	if !opts.levelEnabled {
 		return
 	}
@@ -301,13 +301,13 @@ func (l *Log) Infoln(args ...interface{}) {
 		l.customLogger.Infoln(args...)
 		return
 	}
-	l.logln(opts, api.INFO, args...)
+	l.logln(opts, loglevel.INFO, args...)
 }
 
 // Warn calls go log.Output.
 // Arguments are handled in the manner of fmt.Print.
 func (l *Log) Warn(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.WARNING)
+	opts := getLoggerOpts(l.module, loglevel.WARNING)
 	if !opts.levelEnabled {
 		return
 	}
@@ -315,13 +315,13 @@ func (l *Log) Warn(args ...interface{}) {
 		l.customLogger.Warn(args...)
 		return
 	}
-	l.log(opts, api.WARNING, args...)
+	l.log(opts, loglevel.WARNING, args...)
 }
 
 // Warnf calls go log.Output.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Log) Warnf(format string, args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.WARNING)
+	opts := getLoggerOpts(l.module, loglevel.WARNING)
 	if !opts.levelEnabled {
 		return
 	}
@@ -329,13 +329,13 @@ func (l *Log) Warnf(format string, args ...interface{}) {
 		l.customLogger.Warnf(format, args...)
 		return
 	}
-	l.logf(opts, api.WARNING, format, args...)
+	l.logf(opts, loglevel.WARNING, format, args...)
 }
 
 // Warnln calls go log.Output.
 // Arguments are handled in the manner of fmt.Println.
 func (l *Log) Warnln(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.WARNING)
+	opts := getLoggerOpts(l.module, loglevel.WARNING)
 	if !opts.levelEnabled {
 		return
 	}
@@ -343,13 +343,13 @@ func (l *Log) Warnln(args ...interface{}) {
 		l.customLogger.Warnln(args...)
 		return
 	}
-	l.logln(opts, api.WARNING, args...)
+	l.logln(opts, loglevel.WARNING, args...)
 }
 
 // Error calls go log.Output.
 // Arguments are handled in the manner of fmt.Print.
 func (l *Log) Error(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.ERROR)
+	opts := getLoggerOpts(l.module, loglevel.ERROR)
 	if !opts.levelEnabled {
 		return
 	}
@@ -357,13 +357,13 @@ func (l *Log) Error(args ...interface{}) {
 		l.customLogger.Error(args...)
 		return
 	}
-	l.log(opts, api.ERROR, args...)
+	l.log(opts, loglevel.ERROR, args...)
 }
 
 // Errorf calls go log.Output.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Log) Errorf(format string, args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.ERROR)
+	opts := getLoggerOpts(l.module, loglevel.ERROR)
 	if !opts.levelEnabled {
 		return
 	}
@@ -371,13 +371,13 @@ func (l *Log) Errorf(format string, args ...interface{}) {
 		l.customLogger.Errorf(format, args...)
 		return
 	}
-	l.logf(opts, api.ERROR, format, args...)
+	l.logf(opts, loglevel.ERROR, format, args...)
 }
 
 // Errorln calls go log.Output.
 // Arguments are handled in the manner of fmt.Println.
 func (l *Log) Errorln(args ...interface{}) {
-	opts := getLoggerOpts(l.module, api.ERROR)
+	opts := getLoggerOpts(l.module, loglevel.ERROR)
 	if !opts.levelEnabled {
 		return
 	}
@@ -385,7 +385,7 @@ func (l *Log) Errorln(args ...interface{}) {
 		l.customLogger.Errorln(args...)
 		return
 	}
-	l.logln(opts, api.ERROR, args...)
+	l.logln(opts, loglevel.ERROR, args...)
 }
 
 //ChangeOutput for changing output destination for the logger.
@@ -393,21 +393,21 @@ func (l *Log) ChangeOutput(output io.Writer) {
 	l.deflogger.SetOutput(output)
 }
 
-func (l *Log) logf(opts *loggerOpts, level api.Level, format string, args ...interface{}) {
+func (l *Log) logf(opts *loggerOpts, level loglevel.Level, format string, args ...interface{}) {
 	//Format prefix to show function name and log level and to indicate that timezone used is UTC
-	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(opts), utils.LogLevelString(level))
+	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(opts), loglevel.ParseString(level))
 	l.deflogger.Output(2, customPrefix+fmt.Sprintf(format, args...))
 }
 
-func (l *Log) log(opts *loggerOpts, level api.Level, args ...interface{}) {
+func (l *Log) log(opts *loggerOpts, level loglevel.Level, args ...interface{}) {
 	//Format prefix to show function name and log level and to indicate that timezone used is UTC
-	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(opts), utils.LogLevelString(level))
+	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(opts), loglevel.ParseString(level))
 	l.deflogger.Output(2, customPrefix+fmt.Sprint(args...))
 }
 
-func (l *Log) logln(opts *loggerOpts, level api.Level, args ...interface{}) {
+func (l *Log) logln(opts *loggerOpts, level loglevel.Level, args ...interface{}) {
 	//Format prefix to show function name and log level and to indicate that timezone used is UTC
-	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(opts), utils.LogLevelString(level))
+	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(opts), loglevel.ParseString(level))
 	l.deflogger.Output(2, customPrefix+fmt.Sprintln(args...))
 }
 

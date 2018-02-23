@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/loglevel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
 //Logger basic implementation of api.Logger interface
@@ -77,23 +77,23 @@ func InitLogger(l api.LoggerProvider) {
 }
 
 //SetLevel - setting log level for given module
-func SetLevel(module string, level api.Level) {
+func SetLevel(module string, level loglevel.Level) {
 	modlog.SetLevel(module, level)
 }
 
 //GetLevel - getting log level for given module
-func GetLevel(module string) api.Level {
+func GetLevel(module string) loglevel.Level {
 	return modlog.GetLevel(module)
 }
 
 //IsEnabledFor - Check if given log level is enabled for given module
-func IsEnabledFor(module string, level api.Level) bool {
+func IsEnabledFor(module string, level loglevel.Level) bool {
 	return modlog.IsEnabledFor(module, level)
 }
 
 // LogLevel returns the log level from a string representation.
-func LogLevel(level string) (api.Level, error) {
-	return utils.LogLevel(level)
+func LogLevel(level string) (loglevel.Level, error) {
+	return loglevel.ParseLevel(level)
 }
 
 //Fatal calls Fatal function of underlying logger

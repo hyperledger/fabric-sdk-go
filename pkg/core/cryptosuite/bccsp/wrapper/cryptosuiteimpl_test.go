@@ -17,7 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/testutils"
 )
 
 const (
@@ -58,12 +58,12 @@ func TestCryptoSuiteByConfig(t *testing.T) {
 
 	//Get cryptosuite using config
 	samplecryptoSuite, err := getSuiteByConfig(mockConfig)
-	utils.VerifyEmpty(t, err, "Not supposed to get error on GetSuiteByConfig call : %s", err)
-	utils.VerifyNotEmpty(t, samplecryptoSuite, "Supposed to get valid cryptosuite")
+	testutils.VerifyEmpty(t, err, "Not supposed to get error on GetSuiteByConfig call : %s", err)
+	testutils.VerifyNotEmpty(t, samplecryptoSuite, "Supposed to get valid cryptosuite")
 
 	hashbytes, err := samplecryptoSuite.Hash([]byte(hashMessage), &bccsp.SHAOpts{})
-	utils.VerifyEmpty(t, err, "Not supposed to get error on GetSuiteByConfig call : %s", err)
-	utils.VerifyNotEmpty(t, hashbytes, "Supposed to get valid hash from sample cryptosuite")
+	testutils.VerifyEmpty(t, err, "Not supposed to get error on GetSuiteByConfig call : %s", err)
+	testutils.VerifyNotEmpty(t, hashbytes, "Supposed to get valid hash from sample cryptosuite")
 
 }
 
@@ -81,8 +81,8 @@ func TestCryptoSuiteByConfigFailures(t *testing.T) {
 
 	//Get cryptosuite using config
 	samplecryptoSuite, err := getSuiteByConfig(mockConfig)
-	utils.VerifyNotEmpty(t, err, "Supposed to get error on GetSuiteByConfig call : %s", err)
-	utils.VerifyEmpty(t, samplecryptoSuite, "Not supposed to get valid cryptosuite")
+	testutils.VerifyNotEmpty(t, err, "Supposed to get error on GetSuiteByConfig call : %s", err)
+	testutils.VerifyEmpty(t, samplecryptoSuite, "Not supposed to get valid cryptosuite")
 
 	if !strings.HasPrefix(err.Error(), "Failed initializing configuration") {
 		t.Fatalf("Didn't get expected failure, got %s instead", err)
@@ -150,80 +150,80 @@ func TestCreateInvalidSecurityProviderPanic(t *testing.T) {
 func verifyCryptoSuite(t *testing.T, samplecryptoSuite core.CryptoSuite) {
 	//Test cryptosuite.Sign
 	signedBytes, err := samplecryptoSuite.Sign(GetKey(getMockKey(signingKey)), nil, nil)
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey : %s", err)
-	utils.VerifyTrue(t, string(signedBytes) == mockIdentifier+signedIdentifier, "Got unexpected result from samplecryptoSuite.Sign")
+	testutils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey : %s", err)
+	testutils.VerifyTrue(t, string(signedBytes) == mockIdentifier+signedIdentifier, "Got unexpected result from samplecryptoSuite.Sign")
 
 	//Test cryptosuite.Hash
 	hashBytes, err := samplecryptoSuite.Hash([]byte(hashMessage), &bccsp.SHAOpts{})
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey")
-	utils.VerifyTrue(t, string(hashBytes) == mockIdentifier+hashMessage, "Got unexpected result from samplecryptoSuite.Hash")
+	testutils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey")
+	testutils.VerifyTrue(t, string(hashBytes) == mockIdentifier+hashMessage, "Got unexpected result from samplecryptoSuite.Hash")
 
 	//Test cryptosuite.GetKey
 	key, err := samplecryptoSuite.GetKey([]byte(sampleKey))
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey")
-	utils.VerifyNotEmpty(t, key, "Not supposed to get empty key for samplecryptoSuite.GetKey")
+	testutils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey")
+	testutils.VerifyNotEmpty(t, key, "Not supposed to get empty key for samplecryptoSuite.GetKey")
 
 	keyBytes, err := key.Bytes()
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey().GetBytes()")
-	utils.VerifyTrue(t, string(keyBytes) == sampleKey+getKey, "Not supposed to get empty bytes for samplecryptoSuite.GetKey().GetBytes()")
+	testutils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey().GetBytes()")
+	testutils.VerifyTrue(t, string(keyBytes) == sampleKey+getKey, "Not supposed to get empty bytes for samplecryptoSuite.GetKey().GetBytes()")
 
 	skiBytes := key.SKI()
-	utils.VerifyTrue(t, string(skiBytes) == sampleKey+getKey, "Not supposed to get empty bytes for samplecryptoSuite.GetKey().GetSKI()")
+	testutils.VerifyTrue(t, string(skiBytes) == sampleKey+getKey, "Not supposed to get empty bytes for samplecryptoSuite.GetKey().GetSKI()")
 
-	utils.VerifyTrue(t, key.Private(), "Not supposed to get false for samplecryptoSuite.GetKey().Private()")
-	utils.VerifyTrue(t, key.Symmetric(), "Not supposed to get false for samplecryptoSuite.GetKey().Symmetric()")
+	testutils.VerifyTrue(t, key.Private(), "Not supposed to get false for samplecryptoSuite.GetKey().Private()")
+	testutils.VerifyTrue(t, key.Symmetric(), "Not supposed to get false for samplecryptoSuite.GetKey().Symmetric()")
 
 	publikey, err := key.PublicKey()
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey().PublicKey()")
-	utils.VerifyNotEmpty(t, publikey, "Not supposed to get empty key for samplecryptoSuite.GetKey().PublicKey()")
+	testutils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey().PublicKey()")
+	testutils.VerifyNotEmpty(t, publikey, "Not supposed to get empty key for samplecryptoSuite.GetKey().PublicKey()")
 
 	//Test cryptosuite.KeyImport
 	key, err = samplecryptoSuite.KeyImport(nil, &bccsp.X509PublicKeyImportOpts{Temporary: true})
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyImport")
-	utils.VerifyNotEmpty(t, key, "Not supposed to get empty key for samplecryptoSuite.KeyImport")
+	testutils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyImport")
+	testutils.VerifyNotEmpty(t, key, "Not supposed to get empty key for samplecryptoSuite.KeyImport")
 
 	keyBytes, err = key.Bytes()
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyImport().GetBytes()")
-	utils.VerifyTrue(t, string(keyBytes) == mockIdentifier+keyImport, "Unexpected bytes for samplecryptoSuite.KeyImport().GetBytes()")
+	testutils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyImport().GetBytes()")
+	testutils.VerifyTrue(t, string(keyBytes) == mockIdentifier+keyImport, "Unexpected bytes for samplecryptoSuite.KeyImport().GetBytes()")
 
 	skiBytes = key.SKI()
-	utils.VerifyTrue(t, string(skiBytes) == mockIdentifier+keyImport, "Unexpected bytes for samplecryptoSuite.KeyImport().GetSKI()")
+	testutils.VerifyTrue(t, string(skiBytes) == mockIdentifier+keyImport, "Unexpected bytes for samplecryptoSuite.KeyImport().GetSKI()")
 
-	utils.VerifyTrue(t, key.Private(), "Not supposed to get false for samplecryptoSuite.KeyImport().Private()")
-	utils.VerifyTrue(t, key.Symmetric(), "Not supposed to get false for samplecryptoSuite.KeyImport().Symmetric()")
+	testutils.VerifyTrue(t, key.Private(), "Not supposed to get false for samplecryptoSuite.KeyImport().Private()")
+	testutils.VerifyTrue(t, key.Symmetric(), "Not supposed to get false for samplecryptoSuite.KeyImport().Symmetric()")
 
 	publikey, err = key.PublicKey()
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyImport().PublicKey()")
-	utils.VerifyNotEmpty(t, publikey, "Not supposed to get empty key for samplecryptoSuite.KeyImport().PublicKey()")
+	testutils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyImport().PublicKey()")
+	testutils.VerifyNotEmpty(t, publikey, "Not supposed to get empty key for samplecryptoSuite.KeyImport().PublicKey()")
 
 	//Test cryptosuite.KeyGen
 	key, err = samplecryptoSuite.KeyGen(nil)
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyGen")
-	utils.VerifyNotEmpty(t, key, "Not supposed to get empty key for samplecryptoSuite.KeyGen")
+	testutils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyGen")
+	testutils.VerifyNotEmpty(t, key, "Not supposed to get empty key for samplecryptoSuite.KeyGen")
 
 	keyBytes, err = key.Bytes()
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyGen().GetBytes()")
-	utils.VerifyTrue(t, string(keyBytes) == mockIdentifier+keyGen, "Unexpected bytes for samplecryptoSuite.KeyGen().GetBytes()")
+	testutils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyGen().GetBytes()")
+	testutils.VerifyTrue(t, string(keyBytes) == mockIdentifier+keyGen, "Unexpected bytes for samplecryptoSuite.KeyGen().GetBytes()")
 
 	skiBytes = key.SKI()
-	utils.VerifyTrue(t, string(skiBytes) == mockIdentifier+keyGen, "Unexpected bytes for samplecryptoSuite.KeyGen().GetSKI()")
+	testutils.VerifyTrue(t, string(skiBytes) == mockIdentifier+keyGen, "Unexpected bytes for samplecryptoSuite.KeyGen().GetSKI()")
 
-	utils.VerifyTrue(t, key.Private(), "Not supposed to get false for samplecryptoSuite.KeyGen().Private()")
-	utils.VerifyTrue(t, key.Symmetric(), "Not supposed to get false for samplecryptoSuite.KeyGen().Symmetric()")
+	testutils.VerifyTrue(t, key.Private(), "Not supposed to get false for samplecryptoSuite.KeyGen().Private()")
+	testutils.VerifyTrue(t, key.Symmetric(), "Not supposed to get false for samplecryptoSuite.KeyGen().Symmetric()")
 
 	publikey, err = key.PublicKey()
-	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyGen().PublicKey()")
-	utils.VerifyNotEmpty(t, publikey, "Not supposed to get empty key for samplecryptoSuite.KeyGen().PublicKey()")
+	testutils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.KeyGen().PublicKey()")
+	testutils.VerifyNotEmpty(t, publikey, "Not supposed to get empty key for samplecryptoSuite.KeyGen().PublicKey()")
 
 	//Test cryptosuite.GetHash
 	hash, err := samplecryptoSuite.GetHash(&bccsp.SHA256Opts{})
-	utils.VerifyNotEmpty(t, err, "Supposed to get error for samplecryptoSuite.GetHash")
-	utils.VerifyEmpty(t, hash, "Supposed to get empty hash for samplecryptoSuite.GetHash")
+	testutils.VerifyNotEmpty(t, err, "Supposed to get error for samplecryptoSuite.GetHash")
+	testutils.VerifyEmpty(t, hash, "Supposed to get empty hash for samplecryptoSuite.GetHash")
 
 	//Test cryptosuite.GetHash
 	valid, err := samplecryptoSuite.Verify(GetKey(getMockKey(signingKey)), nil, nil, nil)
-	utils.VerifyEmpty(t, err, "Not supposed to get error for samplecryptoSuite.Verify")
-	utils.VerifyTrue(t, valid, "Supposed to get true for samplecryptoSuite.Verify")
+	testutils.VerifyEmpty(t, err, "Not supposed to get error for samplecryptoSuite.Verify")
+	testutils.VerifyTrue(t, valid, "Supposed to get true for samplecryptoSuite.Verify")
 }
 
 /*
