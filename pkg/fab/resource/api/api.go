@@ -16,7 +16,7 @@ import (
 // Resource is a client that provides access to fabric resources such as chaincode.
 type Resource interface {
 	CreateChannel(request CreateChannelRequest) (fab.TransactionID, error)
-	InstallChaincode(request InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error)
+	InstallChaincode(request InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, fab.TransactionID, error)
 	QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error)
 	QueryChannels(peer fab.ProposalProcessor) (*pb.ChannelQueryResponse, error)
 	GenesisBlockFromOrderer(channelName string, orderer fab.Orderer) (*common.Block, error)

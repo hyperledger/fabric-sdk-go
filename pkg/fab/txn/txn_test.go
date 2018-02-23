@@ -15,13 +15,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-
-	"github.com/pkg/errors"
 )
 
 func TestNewTransaction(t *testing.T) {
@@ -39,12 +39,12 @@ func TestNewTransaction(t *testing.T) {
 
 	//Test invalid proposal header scenario
 
-	txid := fab.TransactionID{
-		ID: "1234",
+	th := TransactionHeader{
+		id: "1234",
 	}
 
 	proposal := fab.TransactionProposal{
-		TxnID:    txid,
+		TxnID:    fab.TransactionID(th.id),
 		Proposal: &pb.Proposal{Header: []byte("TEST"), Extension: []byte(""), Payload: []byte("")},
 	}
 
@@ -65,7 +65,7 @@ func TestNewTransaction(t *testing.T) {
 
 	//Test invalid proposal payload scenario
 	proposal = fab.TransactionProposal{
-		TxnID:    txid,
+		TxnID:    fab.TransactionID(th.id),
 		Proposal: &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("TEST")},
 	}
 
@@ -85,7 +85,7 @@ func TestNewTransaction(t *testing.T) {
 
 	//Test proposal response
 	proposal = fab.TransactionProposal{
-		TxnID:    txid,
+		TxnID:    fab.TransactionID(th.id),
 		Proposal: &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
 	}
 
@@ -105,7 +105,7 @@ func TestNewTransaction(t *testing.T) {
 
 	//Test repeated field header nil scenario
 	proposal = fab.TransactionProposal{
-		TxnID:    txid,
+		TxnID:    fab.TransactionID(th.id),
 		Proposal: &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
 	}
 
@@ -289,11 +289,16 @@ func TestSendTransaction(t *testing.T) {
 }
 
 func TestBuildChannelHeader(t *testing.T) {
+	user := mocks.NewMockUserWithMSPID("test", "1234")
+	ctx := mocks.NewMockContext(user)
+
+	txnid, err := NewHeader(ctx, "test")
+	assert.Nil(t, err, "NewID failed")
 
 	o := ChannelHeaderOpts{
-		ChannelID:   "test",
 		Epoch:       1,
 		ChaincodeID: "1234",
+		TxnHeader:   txnid,
 	}
 	header, err := CreateChannelHeader(common.HeaderType_CHAINCODE_PACKAGE, o)
 

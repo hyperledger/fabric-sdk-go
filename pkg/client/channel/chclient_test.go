@@ -24,6 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
@@ -640,9 +641,15 @@ func createAndSendTestTransactionProposal(sender fab.ProposalSender, chrequest *
 		Args:         chrequest.Args,
 		TransientMap: chrequest.TransientMap,
 	}
-	tpreq, err := sender.CreateChaincodeInvokeProposal(request)
+
+	txh, err := sender.CreateTransactionHeader()
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of transaction proposal failed")
+		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "creation of transaction header failed")
+	}
+
+	tpreq, err := txn.CreateChaincodeInvokeProposal(txh, request)
+	if err != nil {
+		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "creation of transaction proposal failed")
 	}
 
 	tpr, err := sender.SendTransactionProposal(tpreq, targets)

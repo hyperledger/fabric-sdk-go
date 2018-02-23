@@ -157,7 +157,7 @@ func createCommonBlock(tpr *fab.TransactionProposalResponse) (*common.Block, err
 // QueryTransaction queries the ledger for Transaction by number.
 // This query will be made to specified targets.
 // Returns the ProcessedTransaction information containing the transaction.
-func (c *Ledger) QueryTransaction(transactionID string, targets []fab.ProposalProcessor) ([]*pb.ProcessedTransaction, error) {
+func (c *Ledger) QueryTransaction(transactionID fab.TransactionID, targets []fab.ProposalProcessor) ([]*pb.ProcessedTransaction, error) {
 
 	// prepare arguments to call qscc GetTransactionByID function
 	var args [][]byte
@@ -289,13 +289,13 @@ func collectProposalResponses(tprs []*fab.TransactionProposalResponse) [][]byte 
 	return responses
 }
 
-func queryChaincode(ctx context.Context, channel string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
-	txid, err := txn.NewID(ctx)
+func queryChaincode(ctx context.Context, channelID string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+	txh, err := txn.NewHeader(ctx, channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "creation of transaction ID failed")
 	}
 
-	tp, err := txn.CreateChaincodeInvokeProposal(txid, channel, request)
+	tp, err := txn.CreateChaincodeInvokeProposal(txh, request)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewProposal failed")
 	}

@@ -54,39 +54,40 @@ func TestDeadlock(t *testing.T) {
 	// create a flood of TX events
 	txCompletion := newMultiCompletionHandler(eventsSent, timeout)
 	go flood(eventsPerThread, threads, func() {
-		transactionID, err := mocks.NewMockTxnID()
+		txh, err := mocks.NewMockTransactionHeader(channelID)
 		if err != nil {
-			t.Fatalf("mock txn ID failed: %s", err)
+			t.Fatalf("mock txn header failed: %s", err)
 		}
 
 		received := newCompletionHandler(timeout)
-		eventHub.RegisterTxEvent(transactionID, func(txID string, code pb.TxValidationCode, err error) {
+		eventHub.RegisterTxEvent(txh.TransactionID(), func(txID fab.TransactionID, code pb.TxValidationCode, err error) {
 			txCompletion.done()
 			received.done()
 		})
 
 		go client.MockEvent(&pb.Event{
 			Event: (&MockTxEventBuilder{
-				TxID:      transactionID.ID,
+				TxID:      string(txh.TransactionID()),
 				ChannelID: channelID,
 			}).Build(),
 		})
 
 		// Wait for the TX event and then unregister
 		received.wait()
-		eventHub.UnregisterTxEvent(transactionID)
+		eventHub.UnregisterTxEvent(txh.TransactionID())
 	})
 
 	// create a flood of CC events
 	ccCompletion := newMultiCompletionHandler(eventsSent, timeout)
 	go flood(eventsPerThread, threads, func() {
-		eventName, err := mocks.NewMockTxnID()
+		txh, err := mocks.NewMockTransactionHeader(channelID)
 		if err != nil {
-			t.Fatalf("mock txn ID failed: %s", err)
+			t.Fatalf("mock txn header failed: %s", err)
 		}
 
+		eventName := string(txh.TransactionID())
 		received := newCompletionHandler(timeout)
-		registration := eventHub.RegisterChaincodeEvent(ccID, eventName.ID, func(event *fab.ChaincodeEvent) {
+		registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *fab.ChaincodeEvent) {
 			ccCompletion.done()
 			received.done()
 		})
@@ -94,7 +95,7 @@ func TestDeadlock(t *testing.T) {
 		go client.MockEvent(&pb.Event{
 			Event: (&MockCCEventBuilder{
 				CCID:      ccID,
-				EventName: eventName.ID,
+				EventName: eventName,
 			}).Build(),
 		})
 
@@ -173,9 +174,10 @@ func TestChaincodeBlockEvent(t *testing.T) {
 	channelID := "somechannelid"
 	ccID := "someccid"
 	eventName := "someevent"
-	txID, err := mocks.NewMockTxnID()
+
+	txh, err := mocks.NewMockTransactionHeader(channelID)
 	if err != nil {
-		t.Fatalf("mock txn ID failed: %s", err)
+		t.Fatalf("mock txn header failed: %s", err)
 	}
 
 	eventHub, clientFactory, err := createMockedEventHub()
@@ -201,7 +203,7 @@ func TestChaincodeBlockEvent(t *testing.T) {
 			CCID:      ccID,
 			EventName: eventName,
 			ChannelID: channelID,
-			TxID:      txID.ID,
+			TxID:      string(txh.TransactionID()),
 		}).Build(),
 	})
 
@@ -225,7 +227,7 @@ func TestChaincodeBlockEvent(t *testing.T) {
 		t.Fatalf("Expecting event name [%s] but got [%s]", eventName, event.EventName)
 	}
 	if event.TxID == "" {
-		t.Fatalf("Expecting TxID [%s] but got [%s]", txID, event.TxID)
+		t.Fatalf("Expecting TxID [%s] but got [%s]", txh.TransactionID(), event.TxID)
 	}
 }
 
@@ -233,9 +235,10 @@ func TestChaincodeBlockEventWithInvalidTx(t *testing.T) {
 	channelID := "somechannelid"
 	ccID := "someccid"
 	eventName := "someevent"
-	txID, err := mocks.NewMockTxnID()
+
+	txh, err := mocks.NewMockTransactionHeader(channelID)
 	if err != nil {
-		t.Fatalf("mock txn ID failed: %s", err)
+		t.Fatalf("mock txn header failed: %s", err)
 	}
 
 	eventHub, clientFactory, err := createMockedEventHub()
@@ -261,7 +264,7 @@ func TestChaincodeBlockEventWithInvalidTx(t *testing.T) {
 			CCID:      ccID,
 			EventName: eventName,
 			ChannelID: channelID,
-			TxID:      txID.ID,
+			TxID:      string(txh.TransactionID()),
 		}).BuildWithTxValidationFlag(false),
 	})
 
@@ -284,9 +287,9 @@ func TestChaincodeBlockEventWithInvalidTx(t *testing.T) {
 func TestInvalidTxStatusError(t *testing.T) {
 	validationCode := pb.TxValidationCode_ILLEGAL_WRITESET
 	channelID := "somechannelid"
-	txID, err := mocks.NewMockTxnID()
+	txh, err := mocks.NewMockTransactionHeader(channelID)
 	if err != nil {
-		t.Fatalf("mock txn ID failed: %s", err)
+		t.Fatalf("mock txn header failed: %s", err)
 	}
 
 	eventHub, clientFactory, err := createMockedEventHub()
@@ -300,7 +303,7 @@ func TestInvalidTxStatusError(t *testing.T) {
 	txReceived := make(chan error)
 
 	// Register for tx event
-	eventHub.RegisterTxEvent(txID, func(txID string, c pb.TxValidationCode, e error) {
+	eventHub.RegisterTxEvent(txh.TransactionID(), func(txID fab.TransactionID, c pb.TxValidationCode, e error) {
 		txReceived <- e
 	})
 
@@ -308,7 +311,7 @@ func TestInvalidTxStatusError(t *testing.T) {
 	go client.MockEvent(&pb.Event{
 		Event: (&MockTxEventBuilder{
 			ChannelID: channelID,
-			TxID:      txID.ID,
+			TxID:      string(txh.TransactionID()),
 		}).BuildWithTxValidationCode(validationCode),
 	})
 

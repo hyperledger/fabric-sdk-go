@@ -6,7 +6,9 @@ SPDX-License-Identifier: Apache-2.0
 
 package fab
 
-import pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+import (
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+)
 
 // ProposalProcessor simulates transaction proposal, so that a client can submit the result for ordering.
 type ProposalProcessor interface {
@@ -14,25 +16,29 @@ type ProposalProcessor interface {
 }
 
 // ProposalSender provides the ability for a transaction proposal to be created and sent.
-//
-// TODO: CreateChaincodeInvokeProposal should be refactored as it is mostly a factory method.
 type ProposalSender interface {
-	CreateTransactionID() (TransactionID, error)
-	CreateChaincodeInvokeProposal(ChaincodeInvokeRequest) (*TransactionProposal, error)
+	CreateTransactionHeader() (TransactionHeader, error)
 	SendTransactionProposal(*TransactionProposal, []ProposalProcessor) ([]*TransactionProposalResponse, error)
 }
 
-// TransactionID contains the ID of a Fabric Transaction Proposal
-// TODO: change to interface?
-type TransactionID struct {
-	ID      string
-	Creator []byte
-	Nonce   []byte
+// TransactionID provides the identifier of a Fabric transaction proposal.
+type TransactionID string
+
+// EmptyTransactionID represents a non-existing transaction (usually due to error).
+const EmptyTransactionID = TransactionID("")
+
+// SystemChannel is the Fabric channel for managaing resources.
+const SystemChannel = ""
+
+// TransactionHeader provides a handle to transaction metadata.
+type TransactionHeader interface {
+	TransactionID() TransactionID
+	Creator() []byte
+	Nonce() []byte
+	ChannelID() string
 }
 
 // ChaincodeInvokeRequest contains the parameters for sending a transaction proposal.
-//
-// Deprecated: this struct has been replaced by ChaincodeInvokeProposal.
 type ChaincodeInvokeRequest struct {
 	Targets      []ProposalProcessor // Deprecated: this parameter is ignored in the new codes and will be removed shortly.
 	ChaincodeID  string
@@ -43,7 +49,7 @@ type ChaincodeInvokeRequest struct {
 
 // TransactionProposal contains a marashalled transaction proposal.
 type TransactionProposal struct {
-	TxnID TransactionID // TODO: remove?
+	TxnID TransactionID
 	*pb.Proposal
 }
 

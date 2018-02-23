@@ -44,10 +44,10 @@ func (c *MockResource) SignChannelConfig(config []byte, signer context.IdentityC
 // CreateChannel ...
 func (c *MockResource) CreateChannel(request api.CreateChannelRequest) (fab.TransactionID, error) {
 	if c.errorScenario {
-		return fab.TransactionID{}, errors.New("Create Channel Error")
+		return "", errors.New("Create Channel Error")
 	}
 
-	return fab.TransactionID{}, nil
+	return "", nil
 }
 
 //QueryChannels mocks query channels
@@ -85,7 +85,7 @@ func (c *MockResource) QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb
 }
 
 // InstallChaincode mocks install chaincode
-func (c *MockResource) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
+func (c *MockResource) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 	if req.Name == "error" {
 		return nil, "", errors.New("Generate Error")
 	}

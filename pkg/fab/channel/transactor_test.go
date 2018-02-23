@@ -55,7 +55,7 @@ func TestTransactionBadStatus(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func createTransactor(t *testing.T) fab.Transactor {
+func createTransactor(t *testing.T) *Transactor {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
 	orderer := mocks.NewMockOrderer("", nil)
@@ -68,25 +68,24 @@ func createTransactor(t *testing.T) fab.Transactor {
 	return transactor
 }
 
-func createTxnID(t *testing.T, transactor fab.Transactor) fab.TransactionID {
-	txid, err := transactor.CreateTransactionID()
+func createTxnID(t *testing.T, transactor *Transactor) fab.TransactionHeader {
+	txh, err := transactor.CreateTransactionHeader()
 	assert.Nil(t, err, "creation of transaction ID failed")
 
-	return txid
+	return txh
 }
 
-func createTransactionProposal(t *testing.T, transactor fab.Transactor) *fab.TransactionProposal {
+func createTransactionProposal(t *testing.T, transactor *Transactor) *fab.TransactionProposal {
 	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "example",
 		Fcn:         "fcn",
 	}
 
-	txid := createTxnID(t, transactor)
-	tp, err := txn.CreateChaincodeInvokeProposal(txid, "testChannel", request)
+	txh := createTxnID(t, transactor)
+	tp, err := txn.CreateChaincodeInvokeProposal(txh, request)
 	assert.Nil(t, err)
 
-	assert.NotEmpty(t, tp.TxnID.ID)
-	assert.NotEmpty(t, tp.TxnID.Nonce)
+	assert.NotEmpty(t, tp.TxnID)
 
 	return tp
 }

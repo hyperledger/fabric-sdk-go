@@ -381,7 +381,7 @@ func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
 // This query will be made to the primary peer.
 // Returns the ProcessedTransaction information containing the transaction.
 // TODO: add optional target
-func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error) {
+func (c *Channel) QueryTransaction(transactionID fab.TransactionID) (*pb.ProcessedTransaction, error) {
 	l, err := NewLedger(c.clientContext, c.name)
 	if err != nil {
 		return nil, errors.WithMessage(err, "ledger client creation failed")
@@ -456,19 +456,19 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 	collConfig []*common.CollectionConfig, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	if chaincodeName == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeName is required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincodeName is required")
 	}
 	if chaincodePath == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodePath is required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincodePath is required")
 	}
 	if chaincodeVersion == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeVersion is required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincodeVersion is required")
 	}
 	if chaincodePolicy == nil {
-		return nil, fab.TransactionID{}, errors.New("chaincodePolicy is required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincodePolicy is required")
 	}
 	if len(targets) == 0 {
-		return nil, fab.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
+		return nil, fab.EmptyTransactionID, errors.New("missing peer objects for chaincode proposal")
 	}
 
 	cp := ChaincodeDeployRequest{
@@ -480,14 +480,14 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 		CollConfig: collConfig,
 	}
 
-	txid, err := txn.NewID(c.clientContext)
+	txh, err := txn.NewHeader(c.clientContext, c.name)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "create transaction ID failed")
+		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "create transaction ID failed")
 	}
 
-	tp, err := CreateChaincodeDeployProposal(txid, InstantiateChaincode, c.name, cp)
+	tp, err := CreateChaincodeDeployProposal(txh, InstantiateChaincode, c.name, cp)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
+		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "creation of chaincode proposal failed")
 	}
 
 	tpr, err := txn.SendProposal(c.clientContext, tp, targets)
@@ -500,19 +500,19 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 	chaincodePolicy *common.SignaturePolicyEnvelope, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	if chaincodeName == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeName is required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincodeName is required")
 	}
 	if chaincodePath == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodePath is required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincodePath is required")
 	}
 	if chaincodeVersion == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeVersion is required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincodeVersion is required")
 	}
 	if chaincodePolicy == nil {
-		return nil, fab.TransactionID{}, errors.New("chaincodePolicy is required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincodePolicy is required")
 	}
 	if len(targets) == 0 {
-		return nil, fab.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
+		return nil, fab.EmptyTransactionID, errors.New("missing peer objects for chaincode proposal")
 	}
 
 	cp := ChaincodeDeployRequest{
@@ -523,14 +523,14 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 		Policy:  chaincodePolicy,
 	}
 
-	txid, err := txn.NewID(c.clientContext)
+	txh, err := txn.NewHeader(c.clientContext, c.name)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "create transaction ID failed")
+		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "create transaction ID failed")
 	}
 
-	tp, err := CreateChaincodeDeployProposal(txid, UpgradeChaincode, c.name, cp)
+	tp, err := CreateChaincodeDeployProposal(txh, UpgradeChaincode, c.name, cp)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
+		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "creation of chaincode proposal failed")
 	}
 
 	tpr, err := txn.SendProposal(c.clientContext, tp, targets)

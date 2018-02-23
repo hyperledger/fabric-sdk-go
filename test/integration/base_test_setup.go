@@ -19,6 +19,7 @@ import (
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -220,7 +221,12 @@ func CreateAndSendTransactionProposal(transactor fab.ProposalSender, chainCodeID
 		ChaincodeID:  chainCodeID,
 	}
 
-	tp, err := transactor.CreateChaincodeInvokeProposal(propReq)
+	txh, err := transactor.CreateTransactionHeader()
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "creating transaction header failed")
+	}
+
+	tp, err := txn.CreateChaincodeInvokeProposal(txh, propReq)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "creating transaction proposal failed")
 	}
@@ -262,7 +268,7 @@ func RegisterTxEvent(t *testing.T, txID fab.TransactionID, eventHub fab.EventHub
 	done := make(chan bool)
 	fail := make(chan error)
 
-	eventHub.RegisterTxEvent(txID, func(txId string, errorCode pb.TxValidationCode, err error) {
+	eventHub.RegisterTxEvent(txID, func(txId fab.TransactionID, errorCode pb.TxValidationCode, err error) {
 		if err != nil {
 			t.Logf("Received error event for txid(%s)", txId)
 			fail <- err

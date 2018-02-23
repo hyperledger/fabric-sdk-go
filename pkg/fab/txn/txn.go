@@ -292,7 +292,7 @@ type Status struct {
 func RegisterStatus(txID fab.TransactionID, eventHub fab.EventHub) chan Status {
 	statusNotifier := make(chan Status)
 
-	eventHub.RegisterTxEvent(txID, func(txId string, code pb.TxValidationCode, err error) {
+	eventHub.RegisterTxEvent(txID, func(txId fab.TransactionID, code pb.TxValidationCode, err error) {
 		logger.Debugf("Received code(%s) for txid(%s) and err(%s)\n", code, txId, err)
 		statusNotifier <- Status{Code: code, Error: err}
 	})

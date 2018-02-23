@@ -50,7 +50,7 @@ type Channel interface {
 	QueryInfo() (*common.BlockchainInfo, error)
 	QueryBlock(blockNumber int) (*common.Block, error)
 	QueryBlockByHash(blockHash []byte) (*common.Block, error)
-	QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error)
+	QueryTransaction(transactionID TransactionID) (*pb.ProcessedTransaction, error)
 	QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error)
 	QueryByChaincode(request ChaincodeInvokeRequest) ([][]byte, error)
 	QueryBySystemChaincode(request ChaincodeInvokeRequest) ([][]byte, error)
@@ -62,7 +62,7 @@ type ChannelLedger interface {
 	QueryInfo(targets []ProposalProcessor) ([]*common.BlockchainInfo, error)
 	QueryBlock(blockNumber int, targets []ProposalProcessor) ([]*common.Block, error)
 	QueryBlockByHash(blockHash []byte, targets []ProposalProcessor) ([]*common.Block, error)
-	QueryTransaction(transactionID string, targets []ProposalProcessor) ([]*pb.ProcessedTransaction, error)
+	QueryTransaction(transactionID TransactionID, targets []ProposalProcessor) ([]*pb.ProcessedTransaction, error)
 	QueryInstantiatedChaincodes(targets []ProposalProcessor) ([]*pb.ChaincodeQueryResponse, error)
 	QueryConfigBlock(targets []ProposalProcessor, minResponses int) (*common.ConfigEnvelope, error) // TODO: generalize minResponses
 }

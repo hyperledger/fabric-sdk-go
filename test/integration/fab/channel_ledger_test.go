@@ -111,7 +111,7 @@ func TestLedgerQueries(t *testing.T) {
 	testQueryConfigBlock(t, ledger, targets)
 }
 
-func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) (string, error) {
+func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) (fab.TransactionID, error) {
 
 	req := channel.Request{
 		ChaincodeID: chaincodeID,
@@ -147,7 +147,7 @@ func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) 
 	return txID, nil
 }
 
-func testQueryTransaction(t *testing.T, ledger fab.ChannelLedger, txID string, targets []fab.ProposalProcessor) {
+func testQueryTransaction(t *testing.T, ledger fab.ChannelLedger, txID fab.TransactionID, targets []fab.ProposalProcessor) {
 
 	// Test Query Transaction -- verify that valid transaction has been processed
 	processedTransactions, err := ledger.QueryTransaction(txID, targets)
@@ -236,7 +236,7 @@ func testInstantiatedChaincodes(t *testing.T, ccID string, ledger fab.ChannelLed
 }
 
 // MoveFundsAndGetTxID ...
-func moveFundsAndGetTxID(t *testing.T, client *channel.Client, chaincodeID string) (string, error) {
+func moveFundsAndGetTxID(t *testing.T, client *channel.Client, chaincodeID string) (fab.TransactionID, error) {
 
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
@@ -252,7 +252,7 @@ func moveFundsAndGetTxID(t *testing.T, client *channel.Client, chaincodeID strin
 		return "", errors.WithMessage(err, "execute move funds failed")
 	}
 
-	return resp.TransactionID.ID, nil
+	return resp.TransactionID, nil
 }
 
 func testQueryConfigBlock(t *testing.T, ledger fab.ChannelLedger, targets []fab.ProposalProcessor) {

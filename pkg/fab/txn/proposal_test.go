@@ -35,12 +35,12 @@ func TestNewTransactionProposal(t *testing.T) {
 		Fcn:         "Hello",
 	}
 
-	txid, err := NewID(ctx)
+	txh, err := NewHeader(ctx, testChannel)
 	if err != nil {
 		t.Fatalf("create transaction ID failed: %s", err)
 	}
 
-	tp, err := CreateChaincodeInvokeProposal(txid, testChannel, request)
+	tp, err := CreateChaincodeInvokeProposal(txh, request)
 	if err != nil {
 		t.Fatalf("Create Transaction Proposal Failed: %s", err)
 	}
@@ -71,12 +71,12 @@ func TestSendTransactionProposal(t *testing.T) {
 		Args:        [][]byte{[]byte{1, 2, 3}},
 	}
 
-	txid, err := NewID(ctx)
+	txh, err := NewHeader(ctx, testChannel)
 	if err != nil {
 		t.Fatalf("create transaction ID failed: %s", err)
 	}
 
-	tp, err := CreateChaincodeInvokeProposal(txid, testChannel, request)
+	tp, err := CreateChaincodeInvokeProposal(txh, request)
 	if err != nil {
 		t.Fatalf("new transaction proposal failed: %s", err)
 	}
@@ -102,12 +102,12 @@ func TestNewTransactionProposalParams(t *testing.T) {
 		Fcn:         "Hello",
 	}
 
-	txid, err := NewID(ctx)
+	txh, err := NewHeader(ctx, testChannel)
 	if err != nil {
 		t.Fatalf("create transaction ID failed: %s", err)
 	}
 
-	tp, err := CreateChaincodeInvokeProposal(txid, testChannel, request)
+	tp, err := CreateChaincodeInvokeProposal(txh, request)
 	if err != nil {
 		t.Fatalf("new transaction proposal failed: %s", err)
 	}
@@ -121,7 +121,7 @@ func TestNewTransactionProposalParams(t *testing.T) {
 		Fcn: "Hello",
 	}
 
-	tp, err = CreateChaincodeInvokeProposal(txid, testChannel, request)
+	tp, err = CreateChaincodeInvokeProposal(txh, request)
 	if err == nil {
 		t.Fatalf("Expected error")
 	}
@@ -130,7 +130,7 @@ func TestNewTransactionProposalParams(t *testing.T) {
 		ChaincodeID: "cc",
 	}
 
-	tp, err = CreateChaincodeInvokeProposal(txid, testChannel, request)
+	tp, err = CreateChaincodeInvokeProposal(txh, request)
 	if err == nil {
 		t.Fatalf("Expected error")
 	}
@@ -139,7 +139,7 @@ func TestNewTransactionProposalParams(t *testing.T) {
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
-	tp, err = CreateChaincodeInvokeProposal(txid, testChannel, request)
+	tp, err = CreateChaincodeInvokeProposal(txh, request)
 	if err != nil {
 		t.Fatalf("new transaction proposal failed: %s", err)
 	}

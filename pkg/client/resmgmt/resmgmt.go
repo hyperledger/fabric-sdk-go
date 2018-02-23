@@ -470,7 +470,7 @@ func (rc *Client) sendCCProposal(ccProposalType channel.ChaincodeProposalType, c
 		IdentityContext: rc.identity,
 	}
 
-	txid, err := txn.NewID(&deployCtx)
+	txid, err := txn.NewHeader(&deployCtx, channelID)
 	if err != nil {
 		return errors.WithMessage(err, "create transaction ID failed")
 	}

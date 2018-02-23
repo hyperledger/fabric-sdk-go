@@ -11,8 +11,6 @@ import (
 	"hash"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
@@ -20,43 +18,72 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-// NewID computes a TransactionID for the current user context
-//
-// TODO: Determine if this function should be exported after refactoring is completed.
-func NewID(ctx contextApi.Context) (fab.TransactionID, error) {
+// TransactionHeader contains metadata for a transaction created by the SDK.
+type TransactionHeader struct {
+	id        fab.TransactionID
+	creator   []byte
+	nonce     []byte
+	channelID string
+}
+
+// TransactionID returns the transaction's computed identifier.
+func (th *TransactionHeader) TransactionID() fab.TransactionID {
+	return th.id
+}
+
+// Creator returns the transaction creator's identity bytes.
+func (th *TransactionHeader) Creator() []byte {
+	return th.creator
+}
+
+// Nonce returns the transaction's generated nonce.
+func (th *TransactionHeader) Nonce() []byte {
+	return th.nonce
+}
+
+// ChannelID returns the transaction's target channel identifier.
+func (th *TransactionHeader) ChannelID() string {
+	return th.channelID
+}
+
+// NewHeader computes a TransactionID from the current user context and holds
+// metadata to create transaction proposals.
+func NewHeader(ctx contextApi.Context, channelID string) (*TransactionHeader, error) {
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "nonce creation failed")
+		return nil, errors.WithMessage(err, "nonce creation failed")
 	}
 
 	creator, err := ctx.Identity()
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "identity from context failed")
+		return nil, errors.WithMessage(err, "identity from context failed")
 	}
 
 	ho := cryptosuite.GetSHA256Opts() // TODO: make configurable
 	h, err := ctx.CryptoSuite().GetHash(ho)
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "hash function creation failed")
+		return nil, errors.WithMessage(err, "hash function creation failed")
 	}
 
 	id, err := computeTxnID(nonce, creator, h)
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "txn ID computation failed")
+		return nil, errors.WithMessage(err, "txn ID computation failed")
 	}
 
-	txnID := fab.TransactionID{
-		ID:      id,
-		Creator: creator,
-		Nonce:   nonce,
+	txnID := TransactionHeader{
+		id:        fab.TransactionID(id),
+		creator:   creator,
+		nonce:     nonce,
+		channelID: channelID,
 	}
 
-	return txnID, nil
+	return &txnID, nil
 }
 
 func computeTxnID(nonce, creator []byte, h hash.Hash) (string, error) {
@@ -89,8 +116,7 @@ func signPayload(ctx context, payload *common.Payload) (*fab.SignedEnvelope, err
 
 // ChannelHeaderOpts holds the parameters to create a ChannelHeader.
 type ChannelHeaderOpts struct {
-	ChannelID   string
-	TxnID       fab.TransactionID
+	TxnHeader   *TransactionHeader
 	Epoch       uint64
 	ChaincodeID string
 	Timestamp   time.Time
@@ -101,11 +127,11 @@ type ChannelHeaderOpts struct {
 //
 // TODO: Determine if this function should be exported after refactoring is completed.
 func CreateChannelHeader(headerType common.HeaderType, opts ChannelHeaderOpts) (*common.ChannelHeader, error) {
-	logger.Debugf("buildChannelHeader - headerType: %s channelID: %s txID: %d epoch: % chaincodeID: %s timestamp: %v", headerType, opts.ChannelID, opts.TxnID.ID, opts.Epoch, opts.ChaincodeID, opts.Timestamp)
+	logger.Debugf("buildChannelHeader - headerType: %s channelID: %s txID: %d epoch: % chaincodeID: %s timestamp: %v", headerType, opts.TxnHeader.channelID, opts.TxnHeader.id, opts.Epoch, opts.ChaincodeID, opts.Timestamp)
 	channelHeader := &common.ChannelHeader{
 		Type:        int32(headerType),
-		ChannelId:   opts.ChannelID,
-		TxId:        opts.TxnID.ID,
+		ChannelId:   opts.TxnHeader.channelID,
+		TxId:        string(opts.TxnHeader.id),
 		Epoch:       opts.Epoch,
 		TlsCertHash: opts.TLSCertHash,
 	}
@@ -137,11 +163,11 @@ func CreateChannelHeader(headerType common.HeaderType, opts ChannelHeaderOpts) (
 }
 
 // createHeader creates a Header from a ChannelHeader.
-func createHeader(txnID fab.TransactionID, channelHeader *common.ChannelHeader) (*common.Header, error) {
+func createHeader(th *TransactionHeader, channelHeader *common.ChannelHeader) (*common.Header, error) {
 
 	signatureHeader := &common.SignatureHeader{
-		Creator: txnID.Creator,
-		Nonce:   txnID.Nonce,
+		Creator: th.creator,
+		Nonce:   th.nonce,
 	}
 	sh, err := proto.Marshal(signatureHeader)
 	if err != nil {
@@ -159,8 +185,8 @@ func createHeader(txnID fab.TransactionID, channelHeader *common.ChannelHeader) 
 }
 
 // CreatePayload creates a slice of payload bytes from a ChannelHeader and a data slice.
-func CreatePayload(txnID fab.TransactionID, channelHeader *common.ChannelHeader, data []byte) (*common.Payload, error) {
-	header, err := createHeader(txnID, channelHeader)
+func CreatePayload(txh *TransactionHeader, channelHeader *common.ChannelHeader, data []byte) (*common.Payload, error) {
+	header, err := createHeader(txh, channelHeader)
 	if err != nil {
 		return nil, errors.Wrap(err, "header creation failed")
 	}
@@ -171,4 +197,15 @@ func CreatePayload(txnID fab.TransactionID, channelHeader *common.ChannelHeader,
 	}
 
 	return &payload, nil
+}
+
+// CreateSignatureHeader creates a SignatureHeader based on the nonce and creator of the transaction header.
+func CreateSignatureHeader(txh *TransactionHeader) (*common.SignatureHeader, error) {
+
+	signatureHeader := common.SignatureHeader{
+		Creator: txh.creator,
+		Nonce:   txh.nonce,
+	}
+
+	return &signatureHeader, nil
 }
