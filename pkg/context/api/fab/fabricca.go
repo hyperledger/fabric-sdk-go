@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
-	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
@@ -15,11 +14,17 @@ import (
 // FabricCAClient is the client interface for fabric-ca
 type FabricCAClient interface {
 	CAName() string
-	Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error)
 	// Reenroll to renew user's enrollment certificate
+	Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error)
 	Reenroll(user contextApi.User) (core.Key, []byte, error)
-	Register(registrar contextApi.User, request *RegistrationRequest) (string, error)
-	Revoke(registrar contextApi.User, request *RevocationRequest) (*api.RevocationResponse, error)
+	Register(request *RegistrationRequest) (string, error)
+	Revoke(request *RevocationRequest) (*RevocationResponse, error)
+}
+
+// AttributeRequest is a request for an attribute.
+type AttributeRequest struct {
+	Name     string
+	Optional bool
 }
 
 // RegistrationRequest defines the attributes required to register a user with the CA
@@ -43,6 +48,13 @@ type RegistrationRequest struct {
 	Secret string
 }
 
+// Attribute defines additional attributes that may be passed along during registration
+type Attribute struct {
+	Name  string
+	Key   string
+	Value string
+}
+
 // RevocationRequest defines the attributes required to revoke credentials with the CA
 type RevocationRequest struct {
 	// Name of the identity whose certificates should be revoked
@@ -60,8 +72,18 @@ type RevocationRequest struct {
 	CAName string
 }
 
-// Attribute defines additional attributes that may be passed along during registration
-type Attribute struct {
-	Key   string
-	Value string
+// RevocationResponse represents response from the server for a revocation request
+type RevocationResponse struct {
+	// RevokedCerts is an array of certificates that were revoked
+	RevokedCerts []RevokedCert
+	// CRL is PEM-encoded certificate revocation list (CRL) that contains all unexpired revoked certificates
+	CRL []byte
+}
+
+// RevokedCert represents a revoked certificate
+type RevokedCert struct {
+	// Serial number of the revoked certificate
+	Serial string
+	// AKI of the revoked certificate
+	AKI string
 }

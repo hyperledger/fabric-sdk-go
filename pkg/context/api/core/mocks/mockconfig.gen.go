@@ -192,6 +192,18 @@ func (mr *MockConfigMockRecorder) Client() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Client", reflect.TypeOf((*MockConfig)(nil).Client))
 }
 
+// CredentialStorePath mocks base method
+func (m *MockConfig) CredentialStorePath() string {
+	ret := m.ctrl.Call(m, "CredentialStorePath")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// CredentialStorePath indicates an expected call of CredentialStorePath
+func (mr *MockConfigMockRecorder) CredentialStorePath() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CredentialStorePath", reflect.TypeOf((*MockConfig)(nil).CredentialStorePath))
+}
+
 // CryptoConfigPath mocks base method
 func (m *MockConfig) CryptoConfigPath() string {
 	ret := m.ctrl.Call(m, "CryptoConfigPath")

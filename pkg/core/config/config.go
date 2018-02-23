@@ -884,6 +884,11 @@ func (c *Config) SecurityProviderLabel() string {
 	return c.configViper.GetString("client.BCCSP.security.label")
 }
 
+// CredentialStorePath returns the user store path
+func (c *Config) CredentialStorePath() string {
+	return substPathVars(c.configViper.GetString("client.credentialStore.path"))
+}
+
 // KeyStorePath returns the keystore path used by BCCSP
 func (c *Config) KeyStorePath() string {
 	keystorePath := substPathVars(c.configViper.GetString("client.credentialStore.cryptoStore.path"))

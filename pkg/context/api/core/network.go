@@ -125,11 +125,14 @@ type CAConfig struct {
 	URL         string
 	HTTPOptions map[string]interface{}
 	TLSCACerts  MutualTLSConfig
-	Registrar   struct {
-		EnrollID     string
-		EnrollSecret string
-	}
-	CAName string
+	Registrar   EnrollCredentials
+	CAName      string
+}
+
+// EnrollCredentials holds credentials used for enrollment
+type EnrollCredentials struct {
+	EnrollID     string
+	EnrollSecret string
 }
 
 // TLSConfig TLS configurations

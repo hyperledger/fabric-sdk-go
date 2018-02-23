@@ -50,6 +50,7 @@ type Config interface {
 	CAKeyStorePath() string
 	CryptoConfigPath() string
 	TLSClientCerts() ([]tls.Certificate, error)
+	CredentialStorePath() string
 }
 
 // ConfigProvider enables creation of a Config instance
