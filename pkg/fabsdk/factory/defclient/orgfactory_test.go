@@ -9,7 +9,7 @@ package defclient
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	credentialMgr "github.com/hyperledger/fabric-sdk-go/pkg/fab/credentialmgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 )

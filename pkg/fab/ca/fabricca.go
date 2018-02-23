@@ -11,8 +11,8 @@ import (
 
 	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	fabric_ca "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"

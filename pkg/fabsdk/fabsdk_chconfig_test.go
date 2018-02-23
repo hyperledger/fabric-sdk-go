@@ -11,7 +11,7 @@ package fabsdk
 import (
 	"testing"
 
-	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
+	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 

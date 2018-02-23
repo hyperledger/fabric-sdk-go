@@ -16,8 +16,8 @@ import (
 	camocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 )
 
 func TestCredentialManagerWithEnrollment(t *testing.T) {

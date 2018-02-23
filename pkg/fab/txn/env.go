@@ -11,7 +11,7 @@ import (
 	"hash"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"

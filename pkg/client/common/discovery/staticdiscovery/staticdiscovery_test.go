@@ -9,7 +9,7 @@ package staticdiscovery
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 )
 
 func TestStaticDiscovery(t *testing.T) {

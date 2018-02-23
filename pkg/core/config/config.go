@@ -21,15 +21,15 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 	lu "github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 	"github.com/pkg/errors"
 
-	cs "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
+	cs "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 )
 
 var logger = logging.NewLogger(logModule)

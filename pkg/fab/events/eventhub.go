@@ -22,10 +22,10 @@ import (
 	"crypto/x509"
 
 	cnsmr "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"

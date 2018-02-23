@@ -19,7 +19,7 @@ FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
 
 REPO="github.com/hyperledger/fabric-sdk-go"
 
-PKGS="$PKGS $REPO/pkg/cryptosuite/bccsp/pkcs11 $REPO/pkg/cryptosuite/bccsp/multisuite"
+PKGS="$PKGS $REPO/pkg/core/cryptosuite/bccsp/pkcs11 $REPO/pkg/core/cryptosuite/bccsp/multisuite"
 echo "Running PKCS11 unit tests (libltdl and softhsm required)..."
 
 RACEFLAG=""

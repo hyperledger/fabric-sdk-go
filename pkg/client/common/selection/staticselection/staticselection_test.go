@@ -9,7 +9,7 @@ package staticselection
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 )
 
 func TestStaticSelection(t *testing.T) {

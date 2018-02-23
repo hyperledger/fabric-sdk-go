@@ -9,7 +9,7 @@ package fabsdk
 import (
 	"testing"
 
-	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
+	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 )
 
 const (

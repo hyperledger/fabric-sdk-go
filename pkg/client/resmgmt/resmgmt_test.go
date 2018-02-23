@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"

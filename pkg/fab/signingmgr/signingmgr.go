@@ -9,7 +9,7 @@ package signingmgr
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/pkg/errors"
 )
 

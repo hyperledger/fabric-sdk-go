@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package identity
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"

@@ -15,9 +15,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"

@@ -30,10 +30,10 @@ var configImpl *Config
 const (
 	org0                            = "org0"
 	org1                            = "Org1"
-	configTestFilePath              = "../../test/fixtures/config/config_test.yaml"
+	configTestFilePath              = "../../../test/fixtures/config/config_test.yaml"
 	configEmptyTestFilePath         = "testdata/empty.yaml"
 	configPemTestFilePath           = "testdata/config_test_pem.yaml"
-	configEmbeddedUsersTestFilePath = "../../test/fixtures/config/config_test_embedded_pems.yaml"
+	configEmbeddedUsersTestFilePath = "../../../test/fixtures/config/config_test_embedded_pems.yaml"
 	configType                      = "yaml"
 	defaultConfigPath               = "testdata/template"
 )
@@ -1013,8 +1013,8 @@ func TestInitConfigFromRawWrongType(t *testing.T) {
 }
 
 func TestTLSClientCertsFromFiles(t *testing.T) {
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = "../../test/fixtures/config/mutual_tls/client_sdk_go.pem"
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = "../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
 	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Pem = ""
 	configImpl.networkConfig.Client.TLSCerts.Client.Key.Pem = ""
 
@@ -1099,7 +1099,7 @@ YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
 
 func TestTLSClientCertFromPemAndKeyFromFile(t *testing.T) {
 	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = ""
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = "../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
 
 	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
 MIIC5TCCAkagAwIBAgIUMYhiY5MS3jEmQ7Fz4X/e1Dx33J0wCgYIKoZIzj0EAwQw
@@ -1139,7 +1139,7 @@ gw2rrxqbW67ulwmMQzp6EJbm/28T2pIoYWWyIwpzrquypI7BOuf8is5b7Jcgn9oz
 }
 
 func TestTLSClientCertFromFileAndKeyFromPem(t *testing.T) {
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = "../../test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"
 	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = ""
 
 	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Pem = ""
@@ -1237,7 +1237,7 @@ func TestTLSClientCertsNoCerts(t *testing.T) {
 }
 
 func TestNewGoodOpt(t *testing.T) {
-	_, err := FromFile("../../test/fixtures/config/config_test.yaml", goodOpt())()
+	_, err := FromFile("../../../test/fixtures/config/config_test.yaml", goodOpt())()
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -1280,7 +1280,7 @@ func goodOpt() Option {
 }
 
 func TestNewBadOpt(t *testing.T) {
-	_, err := FromFile("../../test/fixtures/config/config_test.yaml", badOpt())()
+	_, err := FromFile("../../../test/fixtures/config/config_test.yaml", badOpt())()
 	if err == nil {
 		t.Fatalf("Expected error from FromFile")
 	}

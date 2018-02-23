@@ -9,9 +9,9 @@ package peer
 import (
 	"crypto/x509"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 	"google.golang.org/grpc/keepalive"
 )
 

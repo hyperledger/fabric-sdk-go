@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
 
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"

@@ -19,11 +19,11 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"github.com/golang/protobuf/ptypes"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
-	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
+	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
