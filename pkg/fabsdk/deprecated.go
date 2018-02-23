@@ -40,10 +40,10 @@ type ResourceMgmtClientOpts struct {
 	ConfigProvider core.Config
 }
 
-// NewChannelClientWithOpts returns a new client for a channel (user has to be pre-enrolled)
+// CreateChannelClientWithOpts returns a new client for a channel (user has to be pre-enrolled)
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string, opt *ChannelClientOpts) (*channel.Client, error) {
+func (sdk *FabricSDK) CreateChannelClientWithOpts(channelID string, userName string, opt *ChannelClientOpts) (*channel.Client, error) {
 	o := []ContextOption{}
 	if opt.OrgName != "" {
 		o = append(o, WithOrg(opt.OrgName))
@@ -56,10 +56,10 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 	return c.Channel(channelID)
 }
 
-// NewChannelClient returns a new client for a channel
+// CreateChannelClient returns a new client for a channel
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelClient(channelID string, userName string, opts ...ContextOption) (*channel.Client, error) {
+func (sdk *FabricSDK) CreateChannelClient(channelID string, userName string, opts ...ContextOption) (*channel.Client, error) {
 	c := sdk.NewClient(WithUser(userName), opts...)
 	return c.Channel(channelID)
 }

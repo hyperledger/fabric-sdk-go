@@ -32,5 +32,5 @@ func NewFileKeyStore(cryptoConfogMspPath string) (api.KVStore, error) {
 			return path.Join(keyDir, hex.EncodeToString(pkk.SKI)+"_sk"), nil
 		},
 	}
-	return keyvaluestore.NewFileKeyValueStore(opts)
+	return keyvaluestore.New(opts)
 }

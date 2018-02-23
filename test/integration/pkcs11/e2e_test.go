@@ -30,7 +30,7 @@ type CustomCryptoSuiteProviderFactory struct {
 	defcore.ProviderFactory
 }
 
-// NewCryptoSuiteProvider returns a new default implementation of BCCSP
-func (f *CustomCryptoSuiteProviderFactory) NewCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
+// CreateCryptoSuiteProvider returns a new default implementation of BCCSP
+func (f *CustomCryptoSuiteProviderFactory) CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
 	return cryptosuite.GetSuiteByConfig(config)
 }

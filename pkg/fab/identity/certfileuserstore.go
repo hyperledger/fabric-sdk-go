@@ -42,7 +42,7 @@ func NewCertFileUserStore(path string, cryptoSuite core.CryptoSuite) (*CertFileU
 	if cryptoSuite == nil {
 		return nil, errors.New("cryptoSuite is nil")
 	}
-	store, err := keyvaluestore.NewFileKeyValueStore(&keyvaluestore.FileKeyValueStoreOptions{
+	store, err := keyvaluestore.New(&keyvaluestore.FileKeyValueStoreOptions{
 		Path: path,
 	})
 	if err != nil {

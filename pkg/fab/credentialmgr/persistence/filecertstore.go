@@ -33,5 +33,5 @@ func NewFileCertStore(cryptoConfogMspPath string) (api.KVStore, error) {
 			return path.Join(certDir, fmt.Sprintf("%s@%s-cert.pem", ck.UserName, orgName)), nil
 		},
 	}
-	return keyvaluestore.NewFileKeyValueStore(opts)
+	return keyvaluestore.New(opts)
 }

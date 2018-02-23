@@ -34,8 +34,8 @@ type SelectionProvider struct {
 	sdk    *fabsdk.FabricSDK
 }
 
-// NewSelectionProvider returns dynamic selection provider
-func NewSelectionProvider(config core.Config, users []ChannelUser, lbp pgresolver.LoadBalancePolicy) (*SelectionProvider, error) {
+// New returns dynamic selection provider
+func New(config core.Config, users []ChannelUser, lbp pgresolver.LoadBalancePolicy) (*SelectionProvider, error) {
 	lbPolicy := lbp
 	if lbPolicy == nil {
 		lbPolicy = pgresolver.NewRandomLBP()

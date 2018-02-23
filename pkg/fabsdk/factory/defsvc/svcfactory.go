@@ -23,12 +23,12 @@ func NewProviderFactory() *ProviderFactory {
 	return &f
 }
 
-// NewDiscoveryProvider returns a new default implementation of discovery provider
-func (f *ProviderFactory) NewDiscoveryProvider(config core.Config) (fab.DiscoveryProvider, error) {
-	return discovery.NewDiscoveryProvider(config)
+// CreateDiscoveryProvider returns a new default implementation of discovery provider
+func (f *ProviderFactory) CreateDiscoveryProvider(config core.Config) (fab.DiscoveryProvider, error) {
+	return discovery.New(config)
 }
 
-// NewSelectionProvider returns a new default implementation of selection service
-func (f *ProviderFactory) NewSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
-	return selection.NewSelectionProvider(config)
+// CreateSelectionProvider returns a new default implementation of selection service
+func (f *ProviderFactory) CreateSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
+	return selection.New(config)
 }

@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func TestNewChannelClient(t *testing.T) {
+func TestCreateChannelClient(t *testing.T) {
 	p := newMockProviders(t)
 
 	mockCtrl := gomock.NewController(t)
@@ -43,14 +43,14 @@ func TestNewChannelClient(t *testing.T) {
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	_, err := factory.NewChannelClient(mockSDK, session, "mychannel", nil)
+	_, err := factory.CreateChannelClient(mockSDK, session, "mychannel", nil)
 	if err != nil {
 		t.Fatalf("Unexpected error creating channel client: %v", err)
 	}
 
 }
 
-func TestNewChannelClientBadChannel(t *testing.T) {
+func TestCreateChannelClientBadChannel(t *testing.T) {
 	p := newMockProviders(t)
 
 	mockCtrl := gomock.NewController(t)
@@ -62,7 +62,7 @@ func TestNewChannelClientBadChannel(t *testing.T) {
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	_, err := factory.NewChannelClient(mockSDK, session, "badchannel", nil)
+	_, err := factory.CreateChannelClient(mockSDK, session, "badchannel", nil)
 	if err == nil {
 		t.Fatalf("Expected error creating channel client")
 	}
@@ -87,33 +87,33 @@ func newMockProviders(t *testing.T) *mockProviders {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	cryptosuite, err := coreFactory.NewCryptoSuiteProvider(config)
+	cryptosuite, err := coreFactory.CreateCryptoSuiteProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	stateStore, err := coreFactory.NewStateStoreProvider(config)
+	stateStore, err := coreFactory.CreateStateStoreProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	signer, err := coreFactory.NewSigningManager(cryptosuite, config)
+	signer, err := coreFactory.CreateSigningManager(cryptosuite, config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating signing manager %v", err)
 	}
 
 	ctx := fabmocks.NewMockProviderContextCustom(config, cryptosuite, signer)
-	fabricProvider, err := coreFactory.NewFabricProvider(ctx)
+	fabricProvider, err := coreFactory.CreateFabricProvider(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error creating fabric provider %v", err)
 	}
 
-	dp, err := svcFactory.NewDiscoveryProvider(config)
+	dp, err := svcFactory.CreateDiscoveryProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating discovery provider %v", err)
 	}
 
-	sp, err := svcFactory.NewSelectionProvider(config)
+	sp, err := svcFactory.CreateSelectionProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating discovery provider %v", err)
 	}

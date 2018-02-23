@@ -24,11 +24,11 @@ func NewSessionClientFactory() *SessionClientFactory {
 	return &f
 }
 
-// NewChannelClient returns a client that can execute transactions on specified channel
-func (f *SessionClientFactory) NewChannelClient(providers api.Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error) {
+// CreateChannelClient returns a client that can execute transactions on specified channel
+func (f *SessionClientFactory) CreateChannelClient(providers api.Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error) {
 
 	chProvider := providers.ChannelProvider()
-	chService, err := chProvider.NewChannelService(session, channelID)
+	chService, err := chProvider.ChannelService(session, channelID)
 	if err != nil {
 		return &channel.Client{}, errors.WithMessage(err, "create channel service failed")
 	}

@@ -189,7 +189,7 @@ func (c *ClientContext) Channel(id string, opts ...ClientOption) (*channel.Clien
 		return &channel.Client{}, errors.WithMessage(err, "unable to retrieve client options")
 	}
 	session := newSession(p.identity, p.providers.ChannelProvider())
-	client, err := p.clientFactory.NewChannelClient(p.providers, session, id, o.targetFilter)
+	client, err := p.clientFactory.CreateChannelClient(p.providers, session, id, o.targetFilter)
 	if err != nil {
 		return &channel.Client{}, errors.WithMessage(err, "failed to created new channel client")
 	}
@@ -205,7 +205,7 @@ func (c *ClientContext) ChannelService(id string) (fab.ChannelService, error) {
 	}
 
 	channelProvider := p.providers.ChannelProvider()
-	return channelProvider.NewChannelService(p.identity, id)
+	return channelProvider.ChannelService(p.identity, id)
 }
 
 // Session returns the underlying identity of the client.

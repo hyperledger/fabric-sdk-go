@@ -77,8 +77,8 @@ func (fkvs *FileKeyValueStore) GetPath() string {
 	return fkvs.path
 }
 
-// NewFileKeyValueStore creates a new instance of FileKeyValueStore using provided options
-func NewFileKeyValueStore(opts *FileKeyValueStoreOptions) (*FileKeyValueStore, error) {
+// New creates a new instance of FileKeyValueStore using provided options
+func New(opts *FileKeyValueStoreOptions) (*FileKeyValueStore, error) {
 	if opts == nil {
 		return nil, errors.New("FileKeyValueStoreOptions is nil")
 	}

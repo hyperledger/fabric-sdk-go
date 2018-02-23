@@ -25,5 +25,5 @@ type Transactor interface {
 
 // ChannelProvider supplies Channel related-objects for the named channel.
 type ChannelProvider interface {
-	NewChannelService(ic context.IdentityContext, channelID string) (ChannelService, error)
+	ChannelService(ic context.IdentityContext, channelID string) (ChannelService, error)
 }

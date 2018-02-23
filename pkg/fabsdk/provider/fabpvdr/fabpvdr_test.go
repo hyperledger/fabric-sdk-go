@@ -19,7 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 )
 
-func TestNewFabricProvider(t *testing.T) {
+func TestCreateFabricProvider(t *testing.T) {
 	newMockFabricProvider(t)
 }
 

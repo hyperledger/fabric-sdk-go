@@ -332,7 +332,7 @@ func TestDynamicSelection(t *testing.T) {
 
 	mychannelUser := ChannelUser{ChannelID: "mychannel", UserName: "User1", OrgName: "Org1"}
 
-	selectionProvider, err := NewSelectionProvider(c, []ChannelUser{mychannelUser}, nil)
+	selectionProvider, err := New(c, []ChannelUser{mychannelUser}, nil)
 	if err != nil {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}
@@ -395,7 +395,7 @@ func TestDynamicSelection(t *testing.T) {
 	}
 
 	// Test custom load balancer
-	selectionProvider, err = NewSelectionProvider(c, []ChannelUser{mychannelUser}, newCustomLBP())
+	selectionProvider, err = New(c, []ChannelUser{mychannelUser}, newCustomLBP())
 	if err != nil {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}
@@ -430,8 +430,8 @@ type DynamicSelectionProviderFactory struct {
 	selectionProvider fab.SelectionProvider
 }
 
-// NewSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) NewSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
+// CreateSelectionProvider returns a new implementation of dynamic selection provider
+func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
 	return f.selectionProvider, nil
 }
 

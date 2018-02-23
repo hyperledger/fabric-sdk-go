@@ -32,8 +32,8 @@ func New(fabricProvider api.FabricProvider) (*ChannelProvider, error) {
 	return &cp, nil
 }
 
-// NewChannelService creates a ChannelService for an identity
-func (cp *ChannelProvider) NewChannelService(ic context.IdentityContext, channelID string) (fab.ChannelService, error) {
+// ChannelService creates a ChannelService for an identity
+func (cp *ChannelProvider) ChannelService(ic context.IdentityContext, channelID string) (fab.ChannelService, error) {
 
 	var cfg fab.ChannelCfg
 	if channelID != "" {

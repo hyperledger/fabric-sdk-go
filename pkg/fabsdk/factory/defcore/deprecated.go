@@ -11,8 +11,8 @@ type StateStoreOptsDeprecated struct {
 	Path string
 }
 
-// NewProviderFactoryDeprecated returns the default SDK provider factory.
-func NewProviderFactoryDeprecated(stateStoreOpts StateStoreOptsDeprecated) *ProviderFactory {
+// CreateProviderFactoryDeprecated returns the default SDK provider factory.
+func CreateProviderFactoryDeprecated(stateStoreOpts StateStoreOptsDeprecated) *ProviderFactory {
 	f := ProviderFactory{
 		stateStoreOpts,
 	}

@@ -31,7 +31,7 @@ func TestDiscoveryFilter(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	discoveryProvider, err := staticdiscovery.NewDiscoveryProvider(config)
+	discoveryProvider, err := staticdiscovery.New(config)
 	if err != nil {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}

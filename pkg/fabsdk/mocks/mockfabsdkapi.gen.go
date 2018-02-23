@@ -300,56 +300,56 @@ func (m *MockCoreProviderFactory) EXPECT() *MockCoreProviderFactoryMockRecorder 
 	return m.recorder
 }
 
-// NewCryptoSuiteProvider mocks base method
-func (m *MockCoreProviderFactory) NewCryptoSuiteProvider(arg0 core.Config) (core.CryptoSuite, error) {
-	ret := m.ctrl.Call(m, "NewCryptoSuiteProvider", arg0)
+// CreateCryptoSuiteProvider mocks base method
+func (m *MockCoreProviderFactory) CreateCryptoSuiteProvider(arg0 core.Config) (core.CryptoSuite, error) {
+	ret := m.ctrl.Call(m, "CreateCryptoSuiteProvider", arg0)
 	ret0, _ := ret[0].(core.CryptoSuite)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// NewCryptoSuiteProvider indicates an expected call of NewCryptoSuiteProvider
-func (mr *MockCoreProviderFactoryMockRecorder) NewCryptoSuiteProvider(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewCryptoSuiteProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).NewCryptoSuiteProvider), arg0)
+// CreateCryptoSuiteProvider indicates an expected call of CreateCryptoSuiteProvider
+func (mr *MockCoreProviderFactoryMockRecorder) CreateCryptoSuiteProvider(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCryptoSuiteProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateCryptoSuiteProvider), arg0)
 }
 
-// NewFabricProvider mocks base method
-func (m *MockCoreProviderFactory) NewFabricProvider(arg0 context.ProviderContext) (api0.FabricProvider, error) {
-	ret := m.ctrl.Call(m, "NewFabricProvider", arg0)
+// CreateFabricProvider mocks base method
+func (m *MockCoreProviderFactory) CreateFabricProvider(arg0 context.ProviderContext) (api0.FabricProvider, error) {
+	ret := m.ctrl.Call(m, "CreateFabricProvider", arg0)
 	ret0, _ := ret[0].(api0.FabricProvider)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// NewFabricProvider indicates an expected call of NewFabricProvider
-func (mr *MockCoreProviderFactoryMockRecorder) NewFabricProvider(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewFabricProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).NewFabricProvider), arg0)
+// CreateFabricProvider indicates an expected call of CreateFabricProvider
+func (mr *MockCoreProviderFactoryMockRecorder) CreateFabricProvider(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFabricProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateFabricProvider), arg0)
 }
 
-// NewSigningManager mocks base method
-func (m *MockCoreProviderFactory) NewSigningManager(arg0 core.CryptoSuite, arg1 core.Config) (api.SigningManager, error) {
-	ret := m.ctrl.Call(m, "NewSigningManager", arg0, arg1)
+// CreateSigningManager mocks base method
+func (m *MockCoreProviderFactory) CreateSigningManager(arg0 core.CryptoSuite, arg1 core.Config) (api.SigningManager, error) {
+	ret := m.ctrl.Call(m, "CreateSigningManager", arg0, arg1)
 	ret0, _ := ret[0].(api.SigningManager)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// NewSigningManager indicates an expected call of NewSigningManager
-func (mr *MockCoreProviderFactoryMockRecorder) NewSigningManager(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewSigningManager", reflect.TypeOf((*MockCoreProviderFactory)(nil).NewSigningManager), arg0, arg1)
+// CreateSigningManager indicates an expected call of CreateSigningManager
+func (mr *MockCoreProviderFactoryMockRecorder) CreateSigningManager(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSigningManager", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateSigningManager), arg0, arg1)
 }
 
-// NewStateStoreProvider mocks base method
-func (m *MockCoreProviderFactory) NewStateStoreProvider(arg0 core.Config) (api.KVStore, error) {
-	ret := m.ctrl.Call(m, "NewStateStoreProvider", arg0)
+// CreateStateStoreProvider mocks base method
+func (m *MockCoreProviderFactory) CreateStateStoreProvider(arg0 core.Config) (api.KVStore, error) {
+	ret := m.ctrl.Call(m, "CreateStateStoreProvider", arg0)
 	ret0, _ := ret[0].(api.KVStore)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// NewStateStoreProvider indicates an expected call of NewStateStoreProvider
-func (mr *MockCoreProviderFactoryMockRecorder) NewStateStoreProvider(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewStateStoreProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).NewStateStoreProvider), arg0)
+// CreateStateStoreProvider indicates an expected call of CreateStateStoreProvider
+func (mr *MockCoreProviderFactoryMockRecorder) CreateStateStoreProvider(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStateStoreProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateStateStoreProvider), arg0)
 }
 
 // MockServiceProviderFactory is a mock of ServiceProviderFactory interface
@@ -375,30 +375,30 @@ func (m *MockServiceProviderFactory) EXPECT() *MockServiceProviderFactoryMockRec
 	return m.recorder
 }
 
-// NewDiscoveryProvider mocks base method
-func (m *MockServiceProviderFactory) NewDiscoveryProvider(arg0 core.Config) (fab.DiscoveryProvider, error) {
-	ret := m.ctrl.Call(m, "NewDiscoveryProvider", arg0)
+// CreateDiscoveryProvider mocks base method
+func (m *MockServiceProviderFactory) CreateDiscoveryProvider(arg0 core.Config) (fab.DiscoveryProvider, error) {
+	ret := m.ctrl.Call(m, "CreateDiscoveryProvider", arg0)
 	ret0, _ := ret[0].(fab.DiscoveryProvider)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// NewDiscoveryProvider indicates an expected call of NewDiscoveryProvider
-func (mr *MockServiceProviderFactoryMockRecorder) NewDiscoveryProvider(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewDiscoveryProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).NewDiscoveryProvider), arg0)
+// CreateDiscoveryProvider indicates an expected call of CreateDiscoveryProvider
+func (mr *MockServiceProviderFactoryMockRecorder) CreateDiscoveryProvider(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDiscoveryProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).CreateDiscoveryProvider), arg0)
 }
 
-// NewSelectionProvider mocks base method
-func (m *MockServiceProviderFactory) NewSelectionProvider(arg0 core.Config) (fab.SelectionProvider, error) {
-	ret := m.ctrl.Call(m, "NewSelectionProvider", arg0)
+// CreateSelectionProvider mocks base method
+func (m *MockServiceProviderFactory) CreateSelectionProvider(arg0 core.Config) (fab.SelectionProvider, error) {
+	ret := m.ctrl.Call(m, "CreateSelectionProvider", arg0)
 	ret0, _ := ret[0].(fab.SelectionProvider)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// NewSelectionProvider indicates an expected call of NewSelectionProvider
-func (mr *MockServiceProviderFactoryMockRecorder) NewSelectionProvider(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewSelectionProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).NewSelectionProvider), arg0)
+// CreateSelectionProvider indicates an expected call of CreateSelectionProvider
+func (mr *MockServiceProviderFactoryMockRecorder) CreateSelectionProvider(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSelectionProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).CreateSelectionProvider), arg0)
 }
 
 // MockOrgClientFactory is a mock of OrgClientFactory interface
@@ -424,17 +424,17 @@ func (m *MockOrgClientFactory) EXPECT() *MockOrgClientFactoryMockRecorder {
 	return m.recorder
 }
 
-// NewCredentialManager mocks base method
-func (m *MockOrgClientFactory) NewCredentialManager(arg0 string, arg1 core.Config, arg2 core.CryptoSuite) (api.CredentialManager, error) {
-	ret := m.ctrl.Call(m, "NewCredentialManager", arg0, arg1, arg2)
+// CreateCredentialManager mocks base method
+func (m *MockOrgClientFactory) CreateCredentialManager(arg0 string, arg1 core.Config, arg2 core.CryptoSuite) (api.CredentialManager, error) {
+	ret := m.ctrl.Call(m, "CreateCredentialManager", arg0, arg1, arg2)
 	ret0, _ := ret[0].(api.CredentialManager)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// NewCredentialManager indicates an expected call of NewCredentialManager
-func (mr *MockOrgClientFactoryMockRecorder) NewCredentialManager(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewCredentialManager", reflect.TypeOf((*MockOrgClientFactory)(nil).NewCredentialManager), arg0, arg1, arg2)
+// CreateCredentialManager indicates an expected call of CreateCredentialManager
+func (mr *MockOrgClientFactoryMockRecorder) CreateCredentialManager(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCredentialManager", reflect.TypeOf((*MockOrgClientFactory)(nil).CreateCredentialManager), arg0, arg1, arg2)
 }
 
 // MockSessionClientFactory is a mock of SessionClientFactory interface
@@ -460,15 +460,15 @@ func (m *MockSessionClientFactory) EXPECT() *MockSessionClientFactoryMockRecorde
 	return m.recorder
 }
 
-// NewChannelClient mocks base method
-func (m *MockSessionClientFactory) NewChannelClient(arg0 api0.Providers, arg1 context.SessionContext, arg2 string, arg3 fab.TargetFilter) (*channel.Client, error) {
-	ret := m.ctrl.Call(m, "NewChannelClient", arg0, arg1, arg2, arg3)
+// CreateChannelClient mocks base method
+func (m *MockSessionClientFactory) CreateChannelClient(arg0 api0.Providers, arg1 context.SessionContext, arg2 string, arg3 fab.TargetFilter) (*channel.Client, error) {
+	ret := m.ctrl.Call(m, "CreateChannelClient", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*channel.Client)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// NewChannelClient indicates an expected call of NewChannelClient
-func (mr *MockSessionClientFactoryMockRecorder) NewChannelClient(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewChannelClient", reflect.TypeOf((*MockSessionClientFactory)(nil).NewChannelClient), arg0, arg1, arg2, arg3)
+// CreateChannelClient indicates an expected call of CreateChannelClient
+func (mr *MockSessionClientFactoryMockRecorder) CreateChannelClient(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateChannelClient", reflect.TypeOf((*MockSessionClientFactory)(nil).CreateChannelClient), arg0, arg1, arg2, arg3)
 }

@@ -14,12 +14,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 
-func TestNewDiscoveryProvider(t *testing.T) {
+func TestCreateDiscoveryProvider(t *testing.T) {
 	factory := NewProviderFactory()
 
 	config := mocks.NewMockConfig()
 
-	dp, err := factory.NewDiscoveryProvider(config)
+	dp, err := factory.CreateDiscoveryProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating discovery provider %v", err)
 	}
@@ -30,12 +30,12 @@ func TestNewDiscoveryProvider(t *testing.T) {
 	}
 }
 
-func TestNewSelectionProvider(t *testing.T) {
+func TestCreateSelectionProvider(t *testing.T) {
 	factory := NewProviderFactory()
 
 	config := mocks.NewMockConfig()
 
-	dp, err := factory.NewSelectionProvider(config)
+	dp, err := factory.CreateSelectionProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating discovery provider %v", err)
 	}

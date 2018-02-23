@@ -19,7 +19,7 @@ func TestStaticDiscovery(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	discoveryProvider, err := NewDiscoveryProvider(config)
+	discoveryProvider, err := New(config)
 	if err != nil {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}

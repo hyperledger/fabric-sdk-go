@@ -96,7 +96,7 @@ type DynamicSelectionProviderFactory struct {
 	ChannelUsers []selection.ChannelUser
 }
 
-// NewSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) NewSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
-	return selection.NewSelectionProvider(config, f.ChannelUsers, nil)
+// CreateSelectionProvider returns a new implementation of dynamic selection provider
+func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
+	return selection.New(config, f.ChannelUsers, nil)
 }

@@ -29,8 +29,8 @@ type discoveryService struct {
 	peers  []fab.Peer
 }
 
-// NewDiscoveryProvider returns discovery provider
-func NewDiscoveryProvider(config core.Config) (*DiscoveryProvider, error) {
+// New returns discovery provider
+func New(config core.Config) (*DiscoveryProvider, error) {
 	return &DiscoveryProvider{config: config}, nil
 }
 

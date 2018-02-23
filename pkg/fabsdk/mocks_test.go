@@ -34,21 +34,21 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	if err != nil {
 		return nil, err
 	}
-	stateStore, err := core.NewStateStoreProvider(config)
+	stateStore, err := core.CreateStateStoreProvider(config)
 	if err != nil {
 		return nil, err
 	}
-	cs, err := core.NewCryptoSuiteProvider(config)
+	cs, err := core.CreateCryptoSuiteProvider(config)
 	if err != nil {
 		return nil, err
 	}
-	sm, err := core.NewSigningManager(cs, config)
+	sm, err := core.CreateSigningManager(cs, config)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx := mocks.NewMockProviderContextCustom(config, cs, sm)
-	fp, err := core.NewFabricProvider(ctx)
+	fp, err := core.CreateFabricProvider(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -63,19 +63,19 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	return &c, nil
 }
 
-func (mc *mockCorePkg) NewStateStoreProvider(config core.Config) (contextApi.KVStore, error) {
+func (mc *mockCorePkg) CreateStateStoreProvider(config core.Config) (contextApi.KVStore, error) {
 	return mc.stateStore, nil
 }
 
-func (mc *mockCorePkg) NewCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
+func (mc *mockCorePkg) CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
 	return mc.cryptoSuite, nil
 }
 
-func (mc *mockCorePkg) NewSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (contextApi.SigningManager, error) {
+func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (contextApi.SigningManager, error) {
 	return mc.signingManager, nil
 }
 
-func (mc *mockCorePkg) NewFabricProvider(ctx context.ProviderContext) (sdkApi.FabricProvider, error) {
+func (mc *mockCorePkg) CreateFabricProvider(ctx context.ProviderContext) (sdkApi.FabricProvider, error) {
 	return mc.fabricProvider, nil
 }
 

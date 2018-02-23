@@ -516,7 +516,7 @@ func setupTestChannelService(ctx context.Context, orderers []fab.Orderer) (fab.C
 	}
 	chProvider.SetChannel(channelName, testChannel)
 
-	chService, err := chProvider.NewChannelService(ctx, channelName)
+	chService, err := chProvider.ChannelService(ctx, channelName)
 	if err != nil {
 		return nil, errors.WithMessage(err, "mock channel service creation failed")
 	}

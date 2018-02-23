@@ -85,7 +85,7 @@ func TestCredentialManager(t *testing.T) {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
 
-	credentialMgr, err := NewCredentialManager(msp, config, cryptoSuite)
+	credentialMgr, err := New(msp, config, cryptoSuite)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -157,7 +157,7 @@ func TestInvalidOrgCredentialManager(t *testing.T) {
 	}
 
 	// Invalid Org
-	_, err = NewCredentialManager("invalidOrg", config, &fcmocks.MockCryptoSuite{})
+	_, err = New("invalidOrg", config, &fcmocks.MockCryptoSuite{})
 	if err == nil {
 		t.Fatalf("Should have failed to setup manager for invalid org")
 	}
@@ -171,7 +171,7 @@ func TestCredentialManagerFromEmbeddedCryptoConfig(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	credentialMgr, err := NewCredentialManager(msp, config, cryptosuite.GetDefault())
+	credentialMgr, err := New(msp, config, cryptosuite.GetDefault())
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

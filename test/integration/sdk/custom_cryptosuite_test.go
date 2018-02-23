@@ -91,8 +91,8 @@ type CustomCryptoSuiteProviderFactory struct {
 	bccspProvider bccsp.BCCSP
 }
 
-// NewCryptoSuiteProvider returns a new default implementation of BCCSP
-func (f *CustomCryptoSuiteProviderFactory) NewCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
+// CreateCryptoSuiteProvider returns a new default implementation of BCCSP
+func (f *CustomCryptoSuiteProviderFactory) CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
 	c := wrapper.NewCryptoSuite(f.bccspProvider)
 	return c, nil
 }

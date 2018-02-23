@@ -38,13 +38,13 @@ func TestFKVSWithCustomKeySerializer(t *testing.T) {
 func testFKVS(t *testing.T, KeySerializer KeySerializer) {
 	var store api.KVStore
 	var err error
-	store, err = NewFileKeyValueStore(
+	store, err = New(
 		&FileKeyValueStoreOptions{
 			Path:          storePath,
 			KeySerializer: KeySerializer,
 		})
 	if err != nil {
-		t.Fatalf("NewFileKeyValueStore failed [%s]", err)
+		t.Fatalf("New failed [%s]", err)
 	}
 	if err := cleanup(storePath); err != nil {
 		t.Fatalf("%s", err)
@@ -113,7 +113,7 @@ func testFKVS(t *testing.T, KeySerializer KeySerializer) {
 
 func TestCreateNewFileKeyValueStore(t *testing.T) {
 
-	_, err := NewFileKeyValueStore(
+	_, err := New(
 		&FileKeyValueStoreOptions{
 			Path: "",
 		})
@@ -121,13 +121,13 @@ func TestCreateNewFileKeyValueStore(t *testing.T) {
 		t.Fatal("File path validation on NewFileKeyValueStore is not working as expected")
 	}
 
-	_, err = NewFileKeyValueStore(nil)
+	_, err = New(nil)
 	if err == nil || err.Error() != "FileKeyValueStoreOptions is nil" {
 		t.Fatal("File path validation on NewFileKeyValueStore is not working as expected")
 	}
 
 	var store api.KVStore
-	store, err = NewFileKeyValueStore(
+	store, err = New(
 		&FileKeyValueStoreOptions{
 			Path: storePath,
 		})

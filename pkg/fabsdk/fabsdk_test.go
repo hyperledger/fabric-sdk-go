@@ -67,10 +67,10 @@ func TestWithCorePkg(t *testing.T) {
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockCoreProviderFactory(mockCtrl)
 
-	factory.EXPECT().NewCryptoSuiteProvider(c).Return(nil, nil)
-	factory.EXPECT().NewStateStoreProvider(c).Return(nil, nil)
-	factory.EXPECT().NewSigningManager(nil, c).Return(nil, nil)
-	factory.EXPECT().NewFabricProvider(gomock.Any()).Return(nil, nil)
+	factory.EXPECT().CreateCryptoSuiteProvider(c).Return(nil, nil)
+	factory.EXPECT().CreateStateStoreProvider(c).Return(nil, nil)
+	factory.EXPECT().CreateSigningManager(nil, c).Return(nil, nil)
+	factory.EXPECT().CreateFabricProvider(gomock.Any()).Return(nil, nil)
 
 	_, err = New(WithConfig(c), WithCorePkg(factory))
 	if err != nil {
@@ -94,8 +94,8 @@ func TestWithServicePkg(t *testing.T) {
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockServiceProviderFactory(mockCtrl)
 
-	factory.EXPECT().NewDiscoveryProvider(c).Return(nil, nil)
-	factory.EXPECT().NewSelectionProvider(c).Return(nil, nil)
+	factory.EXPECT().CreateDiscoveryProvider(c).Return(nil, nil)
+	factory.EXPECT().CreateSelectionProvider(c).Return(nil, nil)
 
 	_, err = New(WithConfig(c), WithServicePkg(factory))
 	if err != nil {
@@ -127,7 +127,7 @@ func TestWithContextPkg(t *testing.T) {
 		t.Fatalf("Unexpected error getting context: %s", err)
 	}
 
-	cm, err := ctx.NewCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite)
+	cm, err := ctx.CreateCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite)
 	if err != nil {
 		t.Fatalf("Unexpected error getting credential manager: %s", err)
 	}
@@ -137,7 +137,7 @@ func TestWithContextPkg(t *testing.T) {
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockOrgClientFactory(mockCtrl)
 
-	factory.EXPECT().NewCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite).Return(cm, nil)
+	factory.EXPECT().CreateCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite).Return(cm, nil)
 
 	sdk, err = New(WithConfig(c), WithCorePkg(core), WithContextPkg(factory))
 	if err != nil {

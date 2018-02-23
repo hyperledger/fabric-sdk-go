@@ -34,8 +34,8 @@ func NewProviderFactory() *ProviderFactory {
 	return &f
 }
 
-// NewStateStoreProvider creates a KeyValueStore using the SDK's default implementation
-func (f *ProviderFactory) NewStateStoreProvider(config core.Config) (contextApi.KVStore, error) {
+// CreateStateStoreProvider creates a KeyValueStore using the SDK's default implementation
+func (f *ProviderFactory) CreateStateStoreProvider(config core.Config) (contextApi.KVStore, error) {
 
 	var stateStorePath = f.stateStoreOpts.Path
 	if stateStorePath == "" {
@@ -46,26 +46,26 @@ func (f *ProviderFactory) NewStateStoreProvider(config core.Config) (contextApi.
 		stateStorePath = clientCofig.CredentialStore.Path
 	}
 
-	stateStore, err := kvs.NewFileKeyValueStore(&kvs.FileKeyValueStoreOptions{Path: stateStorePath})
+	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: stateStorePath})
 	if err != nil {
 		return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
 	}
 	return stateStore, nil
 }
 
-// NewCryptoSuiteProvider returns a new default implementation of BCCSP
-func (f *ProviderFactory) NewCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
+// CreateCryptoSuiteProvider returns a new default implementation of BCCSP
+func (f *ProviderFactory) CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
 	cryptoSuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(config)
 	return cryptoSuiteProvider, err
 }
 
-// NewSigningManager returns a new default implementation of signing manager
-func (f *ProviderFactory) NewSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (contextApi.SigningManager, error) {
-	return signingMgr.NewSigningManager(cryptoProvider, config)
+// CreateSigningManager returns a new default implementation of signing manager
+func (f *ProviderFactory) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (contextApi.SigningManager, error) {
+	return signingMgr.New(cryptoProvider, config)
 }
 
-// NewFabricProvider returns a new default implementation of fabric primitives
-func (f *ProviderFactory) NewFabricProvider(context context.ProviderContext) (sdkApi.FabricProvider, error) {
+// CreateFabricProvider returns a new default implementation of fabric primitives
+func (f *ProviderFactory) CreateFabricProvider(context context.ProviderContext) (sdkApi.FabricProvider, error) {
 	return fabpvdr.New(context), nil
 }
 

@@ -83,7 +83,7 @@ func sdkOptionsFromDeprecatedOptions(options Options) []fabsdk.Option {
 		stateStoreOpts := defcore.StateStoreOptsDeprecated{
 			Path: options.StateStoreOpts.Path,
 		}
-		core := defcore.NewProviderFactoryDeprecated(stateStoreOpts)
+		core := defcore.CreateProviderFactoryDeprecated(stateStoreOpts)
 		opts = append(opts, fabsdk.WithCorePkg(core))
 	}
 

@@ -57,7 +57,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 	client.SetStateStore(stateStore)
 
-	caClient, err := fabricCAClient.NewFabricCAClient(org1Name, testFabricConfig, cryptoSuiteProvider)
+	caClient, err := fabricCAClient.New(org1Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestEnrollOrg2(t *testing.T) {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
 
-	caClient, err := fabricCAClient.NewFabricCAClient(org2Name, testFabricConfig, cryptoSuiteProvider)
+	caClient, err := fabricCAClient.New(org2Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
@@ -147,12 +147,12 @@ func TestEnrollAndTransact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
-	signingManager, err := signingmgr.NewSigningManager(cryptoSuiteProvider, testFabricConfig)
+	signingManager, err := signingmgr.New(cryptoSuiteProvider, testFabricConfig)
 	if err != nil {
 		t.Fatalf("Could not create signing manager: %s", err)
 	}
 
-	caClient, err := fabricCAClient.NewFabricCAClient(org1Name, testFabricConfig, cryptoSuiteProvider)
+	caClient, err := fabricCAClient.New(org1Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
 	}

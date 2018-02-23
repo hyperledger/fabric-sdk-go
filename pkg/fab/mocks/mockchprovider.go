@@ -48,8 +48,8 @@ func (cp *MockChannelProvider) SetTransactor(transactor fab.Transactor) {
 	cp.transactor = transactor
 }
 
-// NewChannelService returns a mock ChannelService
-func (cp *MockChannelProvider) NewChannelService(ic context.IdentityContext, channelID string) (fab.ChannelService, error) {
+// ChannelService returns a mock ChannelService
+func (cp *MockChannelProvider) ChannelService(ic context.IdentityContext, channelID string) (fab.ChannelService, error) {
 	cs := MockChannelService{
 		provider:   cp,
 		channelID:  channelID,

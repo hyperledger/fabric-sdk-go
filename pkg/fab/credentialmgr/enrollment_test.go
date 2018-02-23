@@ -49,7 +49,7 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 
 	cs, err := sw.GetSuiteByConfig(config)
 
-	credentialMgr, err := NewCredentialManager(orgName, config, cs)
+	credentialMgr, err := New(orgName, config, cs)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

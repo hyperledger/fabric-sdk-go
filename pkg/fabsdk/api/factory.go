@@ -16,27 +16,27 @@ import (
 
 // CoreProviderFactory allows overriding of primitives and the fabric core object provider
 type CoreProviderFactory interface {
-	NewStateStoreProvider(config core.Config) (api.KVStore, error)
-	NewCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error)
-	NewSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (api.SigningManager, error)
-	NewFabricProvider(context context.ProviderContext) (FabricProvider, error)
+	CreateStateStoreProvider(config core.Config) (api.KVStore, error)
+	CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error)
+	CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (api.SigningManager, error)
+	CreateFabricProvider(context context.ProviderContext) (FabricProvider, error)
 }
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)
 type ServiceProviderFactory interface {
-	NewDiscoveryProvider(config core.Config) (fab.DiscoveryProvider, error)
-	NewSelectionProvider(config core.Config) (fab.SelectionProvider, error)
-	//	NewChannelProvider(ctx Context, channelID string) (ChannelProvider, error)
+	CreateDiscoveryProvider(config core.Config) (fab.DiscoveryProvider, error)
+	CreateSelectionProvider(config core.Config) (fab.SelectionProvider, error)
+	//CreateChannelProvider(ctx Context, channelID string) (ChannelProvider, error)
 }
 
 // OrgClientFactory allows overriding default clients and providers of an organization
 // Currently, a context is created for each organization that the client app needs.
 type OrgClientFactory interface {
-	//NewMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error)
-	NewCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error)
+	//CreateMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error)
+	CreateCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error)
 }
 
 // SessionClientFactory allows overriding default clients and providers of a session
 type SessionClientFactory interface {
-	NewChannelClient(sdk Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error)
+	CreateChannelClient(sdk Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error)
 }

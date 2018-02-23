@@ -26,7 +26,7 @@ func TestBasicValidChannel(t *testing.T) {
 
 	user := mocks.NewMockUser("user")
 
-	fp, err := pf.NewFabricProvider(ctx)
+	fp, err := pf.CreateFabricProvider(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error creating Fabric Provider: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestBasicValidChannel(t *testing.T) {
 		t.Fatalf("Unexpected error creating Channel Provider: %v", err)
 	}
 
-	channelService, err := cp.NewChannelService(user, "mychannel")
+	channelService, err := cp.ChannelService(user, "mychannel")
 	if err != nil {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}
@@ -47,7 +47,7 @@ func TestBasicValidChannel(t *testing.T) {
 	}
 
 	// System channel
-	channelService, err = cp.NewChannelService(user, "")
+	channelService, err = cp.ChannelService(user, "")
 	if err != nil {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}
@@ -95,8 +95,8 @@ func (f *MockFabricProvider) CreateChannelClient(ic context.IdentityContext, cfg
 	return channel, nil
 }
 
-// NewFabricProvider mocks new default implementation of fabric primitives
-func (f *MockProviderFactory) NewFabricProvider(context context.ProviderContext) (api.FabricProvider, error) {
+// CreateFabricProvider mocks new default implementation of fabric primitives
+func (f *MockProviderFactory) CreateFabricProvider(context context.ProviderContext) (api.FabricProvider, error) {
 	fabProvider := fabpvdr.New(context)
 
 	cfp := MockFabricProvider{

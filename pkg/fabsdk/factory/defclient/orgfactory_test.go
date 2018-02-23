@@ -15,18 +15,18 @@ import (
 )
 
 /*
-func TestNewMSPClient(t *testing.T) {
+func TestCreateMSPClient(t *testing.T) {
 	factory := NewOrgClientFactory()
 
 	config := mocks.NewMockConfig()
 
-	coreFactory := defcore.NewProviderFactory()
-	cryptosuite, err := coreFactory.NewCryptoSuiteProvider(config)
+	coreFactory := defcore.CreateProviderFactory()
+	cryptosuite, err := coreFactory.CreateCryptoSuiteProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	mspClient, err := factory.NewMSPClient("org1", config, cryptosuite)
+	mspClient, err := factory.CreateMSPClient("org1", config, cryptosuite)
 	if err != nil {
 		t.Fatalf("Unexpected error creating MSP client %v", err)
 	}
@@ -38,7 +38,7 @@ func TestNewMSPClient(t *testing.T) {
 }
 */
 
-func TestNewCredentialManager(t *testing.T) {
+func TestCreateCredentialManager(t *testing.T) {
 	factory := NewOrgClientFactory()
 
 	config, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
@@ -47,12 +47,12 @@ func TestNewCredentialManager(t *testing.T) {
 	}
 
 	coreFactory := defcore.NewProviderFactory()
-	cryptosuite, err := coreFactory.NewCryptoSuiteProvider(config)
+	cryptosuite, err := coreFactory.CreateCryptoSuiteProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	mspClient, err := factory.NewCredentialManager("org1", config, cryptosuite)
+	mspClient, err := factory.CreateCredentialManager("org1", config, cryptosuite)
 	if err != nil {
 		t.Fatalf("Unexpected error creating credential manager %v", err)
 	}

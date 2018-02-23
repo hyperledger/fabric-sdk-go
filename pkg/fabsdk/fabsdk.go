@@ -177,7 +177,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	logging.InitLogger(sdk.opts.Logger)
 
 	// Initialize crypto provider
-	cs, err := sdk.opts.Core.NewCryptoSuiteProvider(sdk.config)
+	cs, err := sdk.opts.Core.CreateCryptoSuiteProvider(sdk.config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize crypto suite")
 	}
@@ -191,28 +191,28 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	cryptosuite.SetDefault(cs)
 
 	// Initialize state store
-	store, err := sdk.opts.Core.NewStateStoreProvider(sdk.config)
+	store, err := sdk.opts.Core.CreateStateStoreProvider(sdk.config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize state store")
 	}
 	sdk.stateStore = store
 
 	// Initialize Signing Manager
-	signingMgr, err := sdk.opts.Core.NewSigningManager(sdk.cryptoSuite, sdk.config)
+	signingMgr, err := sdk.opts.Core.CreateSigningManager(sdk.cryptoSuite, sdk.config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize signing manager")
 	}
 	sdk.signingManager = signingMgr
 
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.opts.Core.NewFabricProvider(sdk.fabContext())
+	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(sdk.fabContext())
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
 	sdk.fabricProvider = fabricProvider
 
 	// Initialize discovery provider
-	discoveryProvider, err := sdk.opts.Service.NewDiscoveryProvider(sdk.config)
+	discoveryProvider, err := sdk.opts.Service.CreateDiscoveryProvider(sdk.config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize discovery provider")
 	}
@@ -222,7 +222,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.discoveryProvider = discoveryProvider
 
 	// Initialize selection provider (for selecting endorsing peers)
-	selectionProvider, err := sdk.opts.Service.NewSelectionProvider(sdk.config)
+	selectionProvider, err := sdk.opts.Service.CreateSelectionProvider(sdk.config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize selection provider")
 	}
@@ -261,7 +261,7 @@ func (sdk *FabricSDK) context() *sdkContext {
 
 func (sdk *FabricSDK) newUser(orgID string, userName string) (context.IdentityContext, error) {
 
-	credentialMgr, err := sdk.opts.Context.NewCredentialManager(orgID, sdk.config, sdk.cryptoSuite)
+	credentialMgr, err := sdk.opts.Context.CreateCredentialManager(orgID, sdk.config, sdk.cryptoSuite)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get credential manager")
 	}

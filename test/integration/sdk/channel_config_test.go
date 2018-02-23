@@ -146,8 +146,8 @@ func (f *CustomFabricProvider) CreateChannelConfig(ic context.IdentityContext, c
 	return chconfig.New(ctx, channelID, chconfig.WithOrderer(f.orderer))
 }
 
-// NewFabricProvider returns a new default implementation of fabric primitives
-func (f *ChannelConfigFromOrdererProviderFactory) NewFabricProvider(context context.ProviderContext) (api.FabricProvider, error) {
+// CreateFabricProvider returns a new default implementation of fabric primitives
+func (f *ChannelConfigFromOrdererProviderFactory) CreateFabricProvider(context context.ProviderContext) (api.FabricProvider, error) {
 
 	fabProvider := fabpvdr.New(context)
 

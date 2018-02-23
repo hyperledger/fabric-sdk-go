@@ -454,7 +454,7 @@ func (rc *Client) sendCCProposal(ccProposalType channel.ChaincodeProposalType, c
 	}
 
 	// Get transactor on the channel to create and send the deploy proposal
-	channelService, err := rc.channelProvider.NewChannelService(rc.identity, channelID)
+	channelService, err := rc.channelProvider.ChannelService(rc.identity, channelID)
 	if err != nil {
 		return errors.WithMessage(err, "Unable to get channel service")
 	}

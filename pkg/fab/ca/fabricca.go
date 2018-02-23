@@ -33,12 +33,12 @@ type FabricCA struct {
 	registrar   config.EnrollCredentials
 }
 
-// NewFabricCAClient creates a new fabric-ca client
+// New creates a new fabric-ca client
 // @param {string} organization for this CA
 // @param {Config} client config for fabric-ca services
 // @returns {FabricCA} FabricCA implementation
 // @returns {error} error, if any
-func NewFabricCAClient(org string, config config.Config, cryptoSuite core.CryptoSuite) (*FabricCA, error) {
+func New(org string, config config.Config, cryptoSuite core.CryptoSuite) (*FabricCA, error) {
 
 	userStorePath := config.CredentialStorePath()
 	userStore, err := identity.NewCertFileUserStore(userStorePath, cryptoSuite)

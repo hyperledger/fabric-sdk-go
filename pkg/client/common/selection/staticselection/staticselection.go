@@ -20,8 +20,8 @@ type SelectionProvider struct {
 	config core.Config
 }
 
-// NewSelectionProvider returns static selection provider
-func NewSelectionProvider(config core.Config) (*SelectionProvider, error) {
+// New returns static selection provider
+func New(config core.Config) (*SelectionProvider, error) {
 	return &SelectionProvider{config: config}, nil
 }
 

@@ -20,11 +20,11 @@ type SigningManager struct {
 	signerOpts     core.SignerOpts
 }
 
-// NewSigningManager Constructor for a signing manager.
+// New Constructor for a signing manager.
 // @param {BCCSP} cryptoProvider - crypto provider
 // @param {Config} config - configuration provider
 // @returns {SigningManager} new signing manager
-func NewSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (*SigningManager, error) {
+func New(cryptoProvider core.CryptoSuite, config core.Config) (*SigningManager, error) {
 	return &SigningManager{cryptoProvider: cryptoProvider, hashOpts: cryptosuite.GetSHAOpts()}, nil
 }
 

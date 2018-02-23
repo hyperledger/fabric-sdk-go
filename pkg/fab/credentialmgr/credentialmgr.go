@@ -38,10 +38,10 @@ type CredentialManager struct {
 	userStore       api.UserStore
 }
 
-// NewCredentialManager Constructor for a credential manager.
+// New Constructor for a credential manager.
 // @param {string} orgName - organisation id
 // @returns {CredentialManager} new credential manager
-func NewCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error) {
+func New(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (*CredentialManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {

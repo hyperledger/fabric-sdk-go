@@ -22,12 +22,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
-func TestNewStateStoreProvider(t *testing.T) {
+func TestCreateStateStoreProvider(t *testing.T) {
 	factory := NewProviderFactory()
 
 	config := mocks.NewMockConfig()
 
-	stateStore, err := factory.NewStateStoreProvider(config)
+	stateStore, err := factory.CreateStateStoreProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating state store provider %v", err)
 	}
@@ -52,13 +52,13 @@ func newMockStateStore(t *testing.T) api.KVStore {
 	}
 	mockConfig.EXPECT().Client().Return(&mockClientConfig, nil)
 
-	stateStore, err := factory.NewStateStoreProvider(mockConfig)
+	stateStore, err := factory.CreateStateStoreProvider(mockConfig)
 	if err != nil {
 		t.Fatalf("Unexpected error creating state store provider %v", err)
 	}
 	return stateStore
 }
-func TestNewStateStoreProviderByConfig(t *testing.T) {
+func TestCreateStateStoreProviderByConfig(t *testing.T) {
 	stateStore := newMockStateStore(t)
 
 	_, ok := stateStore.(*kvs.FileKeyValueStore)
@@ -67,7 +67,7 @@ func TestNewStateStoreProviderByConfig(t *testing.T) {
 	}
 }
 
-func TestNewStateStoreProviderEmptyConfig(t *testing.T) {
+func TestCreateStateStoreProviderEmptyConfig(t *testing.T) {
 	factory := NewProviderFactory()
 
 	mockCtrl := gomock.NewController(t)
@@ -77,13 +77,13 @@ func TestNewStateStoreProviderEmptyConfig(t *testing.T) {
 	mockClientConfig := core.ClientConfig{}
 	mockConfig.EXPECT().Client().Return(&mockClientConfig, nil)
 
-	_, err := factory.NewStateStoreProvider(mockConfig)
+	_, err := factory.CreateStateStoreProvider(mockConfig)
 	if err == nil {
 		t.Fatal("Expected error creating state store provider")
 	}
 }
 
-func TestNewStateStoreProviderFailConfig(t *testing.T) {
+func TestCreateStateStoreProviderFailConfig(t *testing.T) {
 	factory := NewProviderFactory()
 
 	mockCtrl := gomock.NewController(t)
@@ -92,17 +92,17 @@ func TestNewStateStoreProviderFailConfig(t *testing.T) {
 
 	mockConfig.EXPECT().Client().Return(nil, errors.New("error"))
 
-	_, err := factory.NewStateStoreProvider(mockConfig)
+	_, err := factory.CreateStateStoreProvider(mockConfig)
 	if err == nil {
 		t.Fatal("Expected error creating state store provider")
 	}
 }
 
-func TestNewCryptoSuiteProvider(t *testing.T) {
+func TestCreateCryptoSuiteProvider(t *testing.T) {
 	factory := NewProviderFactory()
 	config := mocks.NewMockConfig()
 
-	cryptosuite, err := factory.NewCryptoSuiteProvider(config)
+	cryptosuite, err := factory.CreateCryptoSuiteProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
@@ -113,16 +113,16 @@ func TestNewCryptoSuiteProvider(t *testing.T) {
 	}
 }
 
-func TestNewSigningManager(t *testing.T) {
+func TestCreateSigningManager(t *testing.T) {
 	factory := NewProviderFactory()
 	config := mocks.NewMockConfig()
 
-	cryptosuite, err := factory.NewCryptoSuiteProvider(config)
+	cryptosuite, err := factory.CreateCryptoSuiteProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	signer, err := factory.NewSigningManager(cryptosuite, config)
+	signer, err := factory.CreateSigningManager(cryptosuite, config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating signing manager %v", err)
 	}
@@ -137,7 +137,7 @@ func TestNewFactoryFabricProvider(t *testing.T) {
 	factory := NewProviderFactory()
 	ctx := mocks.NewMockProviderContext()
 
-	fabricProvider, err := factory.NewFabricProvider(ctx)
+	fabricProvider, err := factory.CreateFabricProvider(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error creating fabric provider %v", err)
 	}
