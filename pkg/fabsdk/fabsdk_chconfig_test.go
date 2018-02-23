@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 
 func TestNewDefaultSDK(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/discovery/staticdiscovery"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/selection/staticselection"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 
 func TestNewDiscoveryProvider(t *testing.T) {

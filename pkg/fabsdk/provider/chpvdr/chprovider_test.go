@@ -11,9 +11,9 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"

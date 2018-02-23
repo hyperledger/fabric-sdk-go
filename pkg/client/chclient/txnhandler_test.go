@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
@@ -20,7 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/mocks"
-	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 
 const (

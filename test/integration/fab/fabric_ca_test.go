@@ -17,14 +17,14 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
-	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
+	client "github.com/hyperledger/fabric-sdk-go/pkg/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/signingmgr"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
+	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fab/ca"
 )
 
 const (

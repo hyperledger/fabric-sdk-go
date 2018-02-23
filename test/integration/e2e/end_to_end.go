@@ -22,7 +22,7 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
-	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
+	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 

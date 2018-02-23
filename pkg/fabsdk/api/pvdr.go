@@ -11,7 +11,7 @@ import (
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 )
 
 // FabricProvider enables access to fabric objects such as peer and user based on config or

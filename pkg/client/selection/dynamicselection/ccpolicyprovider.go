@@ -22,7 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
-	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")

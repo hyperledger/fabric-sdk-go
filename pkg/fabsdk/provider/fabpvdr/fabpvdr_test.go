@@ -11,12 +11,12 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
-	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
-	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource"
+	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fab/ca"
+	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
+	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 )
 
 func TestNewFabricProvider(t *testing.T) {

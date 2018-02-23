@@ -15,7 +15,7 @@ import (
 
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/stretchr/testify/assert"
 )
 

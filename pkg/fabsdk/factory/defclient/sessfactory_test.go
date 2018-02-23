@@ -18,7 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"

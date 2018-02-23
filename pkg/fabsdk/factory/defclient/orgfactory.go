@@ -9,7 +9,7 @@ package defclient
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	credentialMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/credentialmgr"
+	credentialMgr "github.com/hyperledger/fabric-sdk-go/pkg/fab/credentialmgr"
 )
 
 // OrgClientFactory represents the default org provider factory.
