@@ -100,8 +100,6 @@ func (ed *Dispatcher) Start() error {
 		return errors.New("cannot start dispatcher since it's not in its initial state")
 	}
 
-	logger.Info("Started event dispatcher")
-
 	ed.RegisterHandlers()
 
 	go func() {
@@ -384,7 +382,9 @@ func (ed *Dispatcher) publishFilteredBlockEvents(fblock *pb.FilteredBlock) {
 		logger.Warnf("Filtered block is nil. Event will not be published")
 		return
 	}
-	logger.Warnf("Publishing filtered block event: %#v", fblock)
+
+	logger.Debugf("Publishing filtered block event: %#v", fblock)
+
 	for _, reg := range ed.filteredBlockRegistrations {
 		if ed.eventConsumerTimeout < 0 {
 			select {
@@ -496,11 +496,9 @@ func toFilteredBlock(block *cb.Block) *pb.FilteredBlock {
 			continue
 		}
 		channelID = chID
-		logger.Warnf("setting channel ID [%s]", channelID)
 		filteredTxs = append(filteredTxs, filteredTx)
 	}
 
-	logger.Warnf("channel ID is [%s]", channelID)
 	return &pb.FilteredBlock{
 		ChannelId:  channelID,
 		Number:     block.Header.Number,

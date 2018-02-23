@@ -314,7 +314,7 @@ func (c *Client) monitorConnection() {
 				logger.Warnf("Reconnect already in progress. Setting state to disconnected")
 			}
 		} else {
-			logger.Warnf("Event client has disconnected. Terminating: %s", event.Err)
+			logger.Debugf("Event client has disconnected. Terminating: %s", event.Err)
 			go c.Close()
 			break
 		}
