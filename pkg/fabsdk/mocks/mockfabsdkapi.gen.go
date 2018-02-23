@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	chclient "github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
+	channel "github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	context "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	core "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -461,9 +461,9 @@ func (m *MockSessionClientFactory) EXPECT() *MockSessionClientFactoryMockRecorde
 }
 
 // NewChannelClient mocks base method
-func (m *MockSessionClientFactory) NewChannelClient(arg0 api0.Providers, arg1 context.SessionContext, arg2 string, arg3 fab.TargetFilter) (*chclient.ChannelClient, error) {
+func (m *MockSessionClientFactory) NewChannelClient(arg0 api0.Providers, arg1 context.SessionContext, arg2 string, arg3 fab.TargetFilter) (*channel.Client, error) {
 	ret := m.ctrl.Call(m, "NewChannelClient", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*chclient.ChannelClient)
+	ret0, _ := ret[0].(*channel.Client)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

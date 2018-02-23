@@ -11,7 +11,7 @@ import (
 	"path"
 	"testing"
 
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"

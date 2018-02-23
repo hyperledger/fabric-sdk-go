@@ -19,8 +19,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/selection/dynamicselection"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
@@ -64,20 +64,20 @@ func TestDynamicSelection(t *testing.T) {
 	// Release all channel client resources
 	defer chClient.Close()
 
-	response, err := chClient.Query(chclient.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
 	value := response.Payload
 
 	// Move funds
-	response, err = chClient.Execute(chclient.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err = chClient.Execute(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
 
 	// Verify move funds transaction result
-	response, err = chClient.Query(chclient.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err = chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds after transaction: %s", err)
 	}

@@ -10,7 +10,7 @@ import (
 	"math/rand"
 	"time"
 
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"

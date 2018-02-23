@@ -11,12 +11,12 @@ import (
 	"strconv"
 	"testing"
 
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
@@ -111,26 +111,26 @@ func TestLedgerQueries(t *testing.T) {
 	testQueryConfigBlock(t, ledger, targets)
 }
 
-func changeBlockState(t *testing.T, channel *chclient.ChannelClient, chaincodeID string) (string, error) {
+func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) (string, error) {
 
-	req := chclient.Request{
+	req := channel.Request{
 		ChaincodeID: chaincodeID,
 		Fcn:         "invoke",
 		Args:        integration.ExampleCCQueryArgs(),
 	}
-	resp, err := channel.Query(req)
+	resp, err := client.Query(req)
 	if err != nil {
 		return "", errors.WithMessage(err, "query funds failed")
 	}
 	value := resp.Payload
 
 	// Start transaction that will change block state
-	txID, err := moveFundsAndGetTxID(t, channel, chaincodeID)
+	txID, err := moveFundsAndGetTxID(t, client, chaincodeID)
 	if err != nil {
 		return "", errors.WithMessage(err, "move funds failed")
 	}
 
-	resp, err = channel.Query(req)
+	resp, err = client.Query(req)
 	if err != nil {
 		return "", errors.WithMessage(err, "query funds failed")
 	}
@@ -236,18 +236,18 @@ func testInstantiatedChaincodes(t *testing.T, ccID string, ledger fab.ChannelLed
 }
 
 // MoveFundsAndGetTxID ...
-func moveFundsAndGetTxID(t *testing.T, channel *chclient.ChannelClient, chaincodeID string) (string, error) {
+func moveFundsAndGetTxID(t *testing.T, client *channel.Client, chaincodeID string) (string, error) {
 
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	req := chclient.Request{
+	req := channel.Request{
 		ChaincodeID:  chaincodeID,
 		Fcn:          "invoke",
 		Args:         integration.ExampleCCTxArgs(),
 		TransientMap: transientDataMap,
 	}
-	resp, err := channel.Execute(req)
+	resp, err := client.Execute(req)
 	if err != nil {
 		return "", errors.WithMessage(err, "execute move funds failed")
 	}

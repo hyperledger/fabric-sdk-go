@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -143,7 +143,7 @@ func newClientOptions(options []ClientOption) (*clientOptions, error) {
 }
 
 // ResourceMgmt returns a client API for managing system resources.
-func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.ResourceMgmtClient, error) {
+func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.Client, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
@@ -179,19 +179,19 @@ func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.ResourceMgm
 }
 
 // Channel returns a client API for transacting on a channel.
-func (c *ClientContext) Channel(id string, opts ...ClientOption) (*chclient.ChannelClient, error) {
+func (c *ClientContext) Channel(id string, opts ...ClientOption) (*channel.Client, error) {
 	p, err := c.provider()
 	if err != nil {
-		return &chclient.ChannelClient{}, errors.WithMessage(err, "unable to get client provider context")
+		return &channel.Client{}, errors.WithMessage(err, "unable to get client provider context")
 	}
 	o, err := newClientOptions(opts)
 	if err != nil {
-		return &chclient.ChannelClient{}, errors.WithMessage(err, "unable to retrieve client options")
+		return &channel.Client{}, errors.WithMessage(err, "unable to retrieve client options")
 	}
 	session := newSession(p.identity, p.providers.ChannelProvider())
 	client, err := p.clientFactory.NewChannelClient(p.providers, session, id, o.targetFilter)
 	if err != nil {
-		return &chclient.ChannelClient{}, errors.WithMessage(err, "failed to created new channel client")
+		return &channel.Client{}, errors.WithMessage(err, "failed to created new channel client")
 	}
 
 	return client, nil

@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package defclient
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/discovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -25,31 +25,31 @@ func NewSessionClientFactory() *SessionClientFactory {
 }
 
 // NewChannelClient returns a client that can execute transactions on specified channel
-func (f *SessionClientFactory) NewChannelClient(providers api.Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*chclient.ChannelClient, error) {
+func (f *SessionClientFactory) NewChannelClient(providers api.Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error) {
 
 	chProvider := providers.ChannelProvider()
 	chService, err := chProvider.NewChannelService(session, channelID)
 	if err != nil {
-		return &chclient.ChannelClient{}, errors.WithMessage(err, "create channel service failed")
+		return &channel.Client{}, errors.WithMessage(err, "create channel service failed")
 	}
 
 	discoveryService, err := providers.DiscoveryProvider().NewDiscoveryService(channelID)
 	if err != nil {
-		return &chclient.ChannelClient{}, errors.WithMessage(err, "create discovery service failed")
+		return &channel.Client{}, errors.WithMessage(err, "create discovery service failed")
 	}
 
 	discoveryService = discovery.NewDiscoveryFilterService(discoveryService, targetFilter)
 
 	selection, err := providers.SelectionProvider().NewSelectionService(channelID)
 	if err != nil {
-		return &chclient.ChannelClient{}, errors.WithMessage(err, "create selection service failed")
+		return &channel.Client{}, errors.WithMessage(err, "create selection service failed")
 	}
 
-	ctx := chclient.Context{
+	ctx := channel.Context{
 		ProviderContext:  providers,
 		DiscoveryService: discoveryService,
 		SelectionService: selection,
 		ChannelService:   chService,
 	}
-	return chclient.New(ctx)
+	return channel.New(ctx)
 }

@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package api
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -38,5 +38,5 @@ type OrgClientFactory interface {
 
 // SessionClientFactory allows overriding default clients and providers of a session
 type SessionClientFactory interface {
-	NewChannelClient(sdk Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*chclient.ChannelClient, error)
+	NewChannelClient(sdk Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error)
 }

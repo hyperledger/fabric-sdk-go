@@ -10,7 +10,7 @@ import (
 	"path"
 	"testing"
 
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -56,7 +56,7 @@ func TestResMgmtClientQueries(t *testing.T) {
 
 }
 
-func testInstalledChaincodes(t *testing.T, ccID string, target fab.ProposalProcessor, client *resmgmt.ResourceMgmtClient) {
+func testInstalledChaincodes(t *testing.T, ccID string, target fab.ProposalProcessor, client *resmgmt.Client) {
 
 	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(target)
 	if err != nil {

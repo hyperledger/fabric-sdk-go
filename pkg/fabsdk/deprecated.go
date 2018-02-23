@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
@@ -43,7 +43,7 @@ type ResourceMgmtClientOpts struct {
 // NewChannelClientWithOpts returns a new client for a channel (user has to be pre-enrolled)
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string, opt *ChannelClientOpts) (*chclient.ChannelClient, error) {
+func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string, opt *ChannelClientOpts) (*channel.Client, error) {
 	o := []ContextOption{}
 	if opt.OrgName != "" {
 		o = append(o, WithOrg(opt.OrgName))
@@ -59,7 +59,7 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 // NewChannelClient returns a new client for a channel
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelClient(channelID string, userName string, opts ...ContextOption) (*chclient.ChannelClient, error) {
+func (sdk *FabricSDK) NewChannelClient(channelID string, userName string, opts ...ContextOption) (*channel.Client, error) {
 	c := sdk.NewClient(WithUser(userName), opts...)
 	return c.Channel(channelID)
 }

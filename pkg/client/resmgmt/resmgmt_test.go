@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package resmgmtclient
+package resmgmt
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/pkg/errors"
 
-	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/mocks"
+	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
@@ -1098,14 +1098,14 @@ func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryProvider,
 	return mockDiscovery, nil
 }
 
-func setupDefaultResMgmtClient(t *testing.T) *ResourceMgmtClient {
+func setupDefaultResMgmtClient(t *testing.T) *Client {
 	ctx := setupTestContext("test", "Org1MSP")
 	network := getNetworkConfig(t)
 	ctx.SetConfig(network)
 	return setupResMgmtClient(ctx, nil, t, getDefaultTargetFilterOption())
 }
 
-func setupResMgmtClient(fabCtx context.Context, discErr error, t *testing.T, opts ...ClientOption) *ResourceMgmtClient {
+func setupResMgmtClient(fabCtx context.Context, discErr error, t *testing.T, opts ...ClientOption) *Client {
 
 	fabProvider := fabpvdr.New(fabCtx)
 

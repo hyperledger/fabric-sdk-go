@@ -9,7 +9,7 @@ package discovery
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/discovery/staticdiscovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
@@ -26,7 +26,7 @@ func (df *mockFilter) Accept(peer fab.Peer) bool {
 
 func TestDiscoveryFilter(t *testing.T) {
 
-	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
+	config, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

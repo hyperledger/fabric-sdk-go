@@ -13,16 +13,15 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -117,7 +116,7 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 	var queryErrors []string
 	var response []byte
 
-	channel, err := dp.client.Channel(dp.channelID)
+	client, err := dp.client.Channel(dp.channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to create channel client")
 	}
@@ -131,13 +130,13 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 		}
 
 		// Send query to channel peer
-		request := chclient.Request{
+		request := channel.Request{
 			ChaincodeID: ccID,
 			Fcn:         ccFcn,
 			Args:        ccArgs,
 		}
 
-		resp, err := channel.Query(request, chclient.WithProposalProcessor(peer))
+		resp, err := client.Query(request, channel.WithProposalProcessor(peer))
 		if err != nil {
 			queryErrors = append(queryErrors, err.Error())
 			continue

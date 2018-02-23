@@ -15,7 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/selection/dynamicselection/pgresolver"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection/pgresolver"
 )
 
 // ChannelUser contains user(identity) info to be used for specific channel

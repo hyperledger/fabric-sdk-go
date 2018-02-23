@@ -9,8 +9,8 @@ package defsvc
 import (
 	"testing"
 
-	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/discovery/staticdiscovery"
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/selection/staticselection"
+	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
+	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 

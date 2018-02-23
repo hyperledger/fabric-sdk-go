@@ -4,8 +4,8 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package chclient enables channel client
-package chclient
+// Package channel enables access to a channel on a Fabric network.
+package channel
 
 import (
 	"reflect"
@@ -13,8 +13,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/discovery"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/discovery/greylist"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
@@ -30,17 +30,12 @@ const (
 	defaultHandlerTimeout = time.Second * 10
 )
 
-// ChannelClient enables access to a Fabric network.
-/*
- * A channel client instance provides a handler to interact with peers on specified channel.
- * An application that requires interaction with multiple channels should create a separate
- * instance of the channel client for each channel. Channel client supports non-admin functions only.
- *
- * Each Client instance maintains {@link Channel} instance representing channel and the associated
- * private ledgers.
- *
- */
-type ChannelClient struct {
+// Client enables access to a channel on a Fabric network.
+//
+// A channel client instance provides a handler to interact with peers on specified channel.
+// An application that requires interaction with multiple channels should create a separate
+// instance of the channel client for each channel. Channel client supports non-admin functions only.
+type Client struct {
 	context    context.ProviderContext
 	discovery  fab.DiscoveryService
 	selection  fab.SelectionService
@@ -50,7 +45,7 @@ type ChannelClient struct {
 	greylist   *greylist.Filter
 }
 
-// Context holds the providers and services needed to create a ChannelClient.
+// Context holds the providers and services needed to create a Client.
 type Context struct {
 	context.ProviderContext
 	DiscoveryService fab.DiscoveryService
@@ -58,8 +53,8 @@ type Context struct {
 	ChannelService   fab.ChannelService
 }
 
-// New returns a ChannelClient instance.
-func New(c Context) (*ChannelClient, error) {
+// New returns a Client instance.
+func New(c Context) (*Client, error) {
 	greylistProvider := greylist.New(c.Config().TimeoutOrDefault(core.DiscoveryGreylistExpiry))
 
 	eventHub, err := c.ChannelService.EventHub()
@@ -78,7 +73,7 @@ func New(c Context) (*ChannelClient, error) {
 		return nil, errors.WithMessage(err, "channel client creation failed")
 	}
 
-	channelClient := ChannelClient{
+	channelClient := Client{
 		greylist:   greylistProvider,
 		context:    c,
 		discovery:  discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
@@ -92,17 +87,17 @@ func New(c Context) (*ChannelClient, error) {
 }
 
 // Query chaincode using request and optional options provided
-func (cc *ChannelClient) Query(request Request, options ...Option) (Response, error) {
+func (cc *Client) Query(request Request, options ...Option) (Response, error) {
 	return cc.InvokeHandler(NewQueryHandler(), request, cc.addDefaultTimeout(core.Query, options...)...)
 }
 
 // Execute prepares and executes transaction using request and optional options provided
-func (cc *ChannelClient) Execute(request Request, options ...Option) (Response, error) {
+func (cc *Client) Execute(request Request, options ...Option) (Response, error) {
 	return cc.InvokeHandler(NewExecuteHandler(), request, cc.addDefaultTimeout(core.Execute, options...)...)
 }
 
 //InvokeHandler invokes handler using request and options provided
-func (cc *ChannelClient) InvokeHandler(handler Handler, request Request, options ...Option) (Response, error) {
+func (cc *Client) InvokeHandler(handler Handler, request Request, options ...Option) (Response, error) {
 	//Read execute tx options
 	txnOpts, err := cc.prepareOptsFromOptions(options...)
 	if err != nil {
@@ -135,7 +130,7 @@ func (cc *ChannelClient) InvokeHandler(handler Handler, request Request, options
 	}
 }
 
-func (cc *ChannelClient) resolveRetry(ctx *RequestContext, opts Opts) bool {
+func (cc *Client) resolveRetry(ctx *RequestContext, opts Opts) bool {
 	errs, ok := ctx.Error.(multi.Errors)
 	if !ok {
 		errs = append(errs, ctx.Error)
@@ -157,7 +152,7 @@ func (cc *ChannelClient) resolveRetry(ctx *RequestContext, opts Opts) bool {
 }
 
 //prepareHandlerContexts prepares context objects for handlers
-func (cc *ChannelClient) prepareHandlerContexts(request Request, options Opts) (*RequestContext, *ClientContext, error) {
+func (cc *Client) prepareHandlerContexts(request Request, options Opts) (*RequestContext, *ClientContext, error) {
 
 	if request.ChaincodeID == "" || request.Fcn == "" {
 		return nil, nil, errors.New("ChaincodeID and Fcn are required")
@@ -186,7 +181,7 @@ func (cc *ChannelClient) prepareHandlerContexts(request Request, options Opts) (
 }
 
 //prepareOptsFromOptions Reads apitxn.Opts from Option array
-func (cc *ChannelClient) prepareOptsFromOptions(options ...Option) (Opts, error) {
+func (cc *Client) prepareOptsFromOptions(options ...Option) (Opts, error) {
 	txnOpts := Opts{}
 	for _, option := range options {
 		err := option(&txnOpts)
@@ -198,7 +193,7 @@ func (cc *ChannelClient) prepareOptsFromOptions(options ...Option) (Opts, error)
 }
 
 //addDefaultTimeout adds given default timeout if it is missing in options
-func (cc *ChannelClient) addDefaultTimeout(timeOutType core.TimeoutType, options ...Option) []Option {
+func (cc *Client) addDefaultTimeout(timeOutType core.TimeoutType, options ...Option) []Option {
 	txnOpts := Opts{}
 	for _, option := range options {
 		option(&txnOpts)
@@ -211,7 +206,7 @@ func (cc *ChannelClient) addDefaultTimeout(timeOutType core.TimeoutType, options
 }
 
 // Close releases channel client resources (disconnects event hub etc.)
-func (cc *ChannelClient) Close() error {
+func (cc *Client) Close() error {
 	if cc.eventHub.IsConnected() == true {
 		return cc.eventHub.Disconnect()
 	}
@@ -222,7 +217,7 @@ func (cc *ChannelClient) Close() error {
 // RegisterChaincodeEvent registers chain code event
 // @param {chan bool} channel which receives event details when the event is complete
 // @returns {object} object handle that should be used to unregister
-func (cc *ChannelClient) RegisterChaincodeEvent(notify chan<- *CCEvent, chainCodeID string, eventID string) (Registration, error) {
+func (cc *Client) RegisterChaincodeEvent(notify chan<- *CCEvent, chainCodeID string, eventID string) (Registration, error) {
 
 	if cc.eventHub.IsConnected() == false {
 		if err := cc.eventHub.Connect(); err != nil {
@@ -239,7 +234,7 @@ func (cc *ChannelClient) RegisterChaincodeEvent(notify chan<- *CCEvent, chainCod
 }
 
 // UnregisterChaincodeEvent removes chain code event registration
-func (cc *ChannelClient) UnregisterChaincodeEvent(registration Registration) error {
+func (cc *Client) UnregisterChaincodeEvent(registration Registration) error {
 
 	switch regType := registration.(type) {
 

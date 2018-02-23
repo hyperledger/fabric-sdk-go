@@ -10,8 +10,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
-	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/discovery/staticdiscovery"
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/selection/staticselection"
+	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
+	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
 )
 
 // ProviderFactory represents the default SDK provider factory for services.

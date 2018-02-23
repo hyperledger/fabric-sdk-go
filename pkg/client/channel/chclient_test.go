@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package chclient
+package channel
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/stretchr/testify/assert"
 
-	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/mocks"
+	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
@@ -572,12 +572,12 @@ func setupTestSelection(discErr error, peers []fab.Peer) (*txnmocks.MockSelectio
 	return mockSelection.NewSelectionService("mychannel")
 }
 
-func setupChannelClient(peers []fab.Peer, t *testing.T) *ChannelClient {
+func setupChannelClient(peers []fab.Peer, t *testing.T) *Client {
 
 	return setupChannelClientWithError(nil, nil, peers, t)
 }
 
-func setupChannelClientWithError(discErr error, selectionErr error, peers []fab.Peer, t *testing.T) *ChannelClient {
+func setupChannelClientWithError(discErr error, selectionErr error, peers []fab.Peer, t *testing.T) *Client {
 
 	fabCtx := setupTestContext()
 	orderer := fcmocks.NewMockOrderer("", nil)
@@ -609,7 +609,7 @@ func setupChannelClientWithError(discErr error, selectionErr error, peers []fab.
 }
 
 func setupChannelClientWithNodes(peers []fab.Peer,
-	orderers []fab.Orderer, t *testing.T) *ChannelClient {
+	orderers []fab.Orderer, t *testing.T) *Client {
 
 	fabCtx := setupTestContext()
 	testChannelSvc, err := setupTestChannelService(fabCtx, orderers)

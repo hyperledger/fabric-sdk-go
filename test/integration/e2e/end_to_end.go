@@ -18,8 +18,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
@@ -104,15 +104,15 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	// ************ Test setup complete ************** //
 
 	// Channel client is used to query and execute transactions (Org1 is default org)
-	chClient, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(channelID)
+	client, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(channelID)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
 	// Release all channel client resources
-	defer chClient.Close()
+	defer client.Close()
 
-	response, err := chClient.Query(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
@@ -121,14 +121,14 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	eventID := "test([a-zA-Z]+)"
 
 	// Register chaincode event (pass in channel which receives event details when the event is complete)
-	notifier := make(chan *chclient.CCEvent)
-	rce, err := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
+	notifier := make(chan *channel.CCEvent)
+	rce, err := client.RegisterChaincodeEvent(notifier, ccID, eventID)
 	if err != nil {
 		t.Fatalf("Failed to register cc event: %s", err)
 	}
 
 	// Move funds
-	response, err = chClient.Execute(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -141,13 +141,13 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	}
 
 	// Unregister chain code event using registration handle
-	err = chClient.UnregisterChaincodeEvent(rce)
+	err = client.UnregisterChaincodeEvent(rce)
 	if err != nil {
 		t.Fatalf("Unregister cc event failed: %s", err)
 	}
 
 	// Verify move funds transaction result
-	response, err = chClient.Query(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err = client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds after transaction: %s", err)
 	}

@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/selection/dynamicselection/pgresolver"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection/pgresolver"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -325,7 +325,7 @@ func toString(peers []fab.Peer) string {
 
 func TestDynamicSelection(t *testing.T) {
 
-	c, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	c, err := config.FromFile("../../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -354,7 +354,7 @@ func TestDynamicSelection(t *testing.T) {
 	// Create SDK setup for channel client with dynamic selection
 	// This step is performed during the test to allow normal SDK-based initialized of the selection provider
 	_, err = fabsdk.New(
-		config.FromFile("../../../../test/fixtures/config/config_test.yaml"),
+		config.FromFile("../../../../../test/fixtures/config/config_test.yaml"),
 		fabsdk.WithServicePkg(&factory))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
@@ -407,7 +407,7 @@ func TestDynamicSelection(t *testing.T) {
 	// Create SDK setup for channel client with dynamic selection
 	// This step is performed during the test to allow normal SDK-based initialized of the selection provider
 	_, err = fabsdk.New(
-		config.FromFile("../../../../test/fixtures/config/config_test.yaml"),
+		config.FromFile("../../../../../test/fixtures/config/config_test.yaml"),
 		fabsdk.WithServicePkg(&factory))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)

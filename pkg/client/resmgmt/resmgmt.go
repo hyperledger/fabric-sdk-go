@@ -4,8 +4,8 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package resmgmtclient enables resource management client
-package resmgmtclient
+// Package resmgmt enables ability to update resources in a Fabric network.
+package resmgmt
 
 import (
 	"io/ioutil"
@@ -93,8 +93,8 @@ type Option func(opts *Opts) error
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
-// ResourceMgmtClient enables managing resources in Fabric network.
-type ResourceMgmtClient struct {
+// Client enables managing resources in Fabric network.
+type Client struct {
 	provider          context.ProviderContext
 	identity          context.IdentityContext
 	discoveryProvider fab.DiscoveryProvider // used to get per channel discovery service(s)
@@ -131,20 +131,20 @@ type fabContext struct {
 }
 
 // ClientOption describes a functional parameter for the New constructor
-type ClientOption func(*ResourceMgmtClient) error
+type ClientOption func(*Client) error
 
 // WithDefaultTargetFilter option to configure new
 func WithDefaultTargetFilter(filter TargetFilter) ClientOption {
-	return func(rmc *ResourceMgmtClient) error {
+	return func(rmc *Client) error {
 		rmc.filter = filter
 		return nil
 	}
 }
 
 // New returns a ResourceMgmtClient instance
-func New(ctx Context, opts ...ClientOption) (*ResourceMgmtClient, error) {
+func New(ctx Context, opts ...ClientOption) (*Client, error) {
 
-	resourceClient := &ResourceMgmtClient{
+	resourceClient := &Client{
 		provider:          ctx,
 		identity:          ctx,
 		discoveryProvider: ctx.DiscoveryProvider,
@@ -178,7 +178,7 @@ func New(ctx Context, opts ...ClientOption) (*ResourceMgmtClient, error) {
 }
 
 // JoinChannel allows for peers to join existing channel with optional custom options (specific peers, filtered peers)
-func (rc *ResourceMgmtClient) JoinChannel(channelID string, options ...Option) error {
+func (rc *Client) JoinChannel(channelID string, options ...Option) error {
 
 	if channelID == "" {
 		return errors.New("must provide channel ID")
@@ -249,7 +249,7 @@ func filterTargets(peers []fab.Peer, filter TargetFilter) []fab.Peer {
 }
 
 // helper method for calculating default targets
-func (rc *ResourceMgmtClient) getDefaultTargets(discovery fab.DiscoveryService) ([]fab.Peer, error) {
+func (rc *Client) getDefaultTargets(discovery fab.DiscoveryService) ([]fab.Peer, error) {
 
 	// Default targets are discovery peers
 	peers, err := discovery.GetPeers()
@@ -265,7 +265,7 @@ func (rc *ResourceMgmtClient) getDefaultTargets(discovery fab.DiscoveryService) 
 }
 
 // calculateTargets calculates targets based on targets and filter
-func (rc *ResourceMgmtClient) calculateTargets(discovery fab.DiscoveryService, peers []fab.Peer, filter TargetFilter) ([]fab.Peer, error) {
+func (rc *Client) calculateTargets(discovery fab.DiscoveryService, peers []fab.Peer, filter TargetFilter) ([]fab.Peer, error) {
 
 	if peers != nil && filter != nil {
 		return nil, errors.New("If targets are provided, filter cannot be provided")
@@ -295,7 +295,7 @@ func (rc *ResourceMgmtClient) calculateTargets(discovery fab.DiscoveryService, p
 }
 
 // isChaincodeInstalled verify if chaincode is installed on peer
-func (rc *ResourceMgmtClient) isChaincodeInstalled(req InstallCCRequest, peer fab.Peer) (bool, error) {
+func (rc *Client) isChaincodeInstalled(req InstallCCRequest, peer fab.Peer) (bool, error) {
 	chaincodeQueryResponse, err := rc.resource.QueryInstalledChaincodes(peer)
 	if err != nil {
 		return false, err
@@ -313,7 +313,7 @@ func (rc *ResourceMgmtClient) isChaincodeInstalled(req InstallCCRequest, peer fa
 }
 
 // InstallCC installs chaincode with optional custom options (specific peers, filtered peers)
-func (rc *ResourceMgmtClient) InstallCC(req InstallCCRequest, options ...Option) ([]InstallCCResponse, error) {
+func (rc *Client) InstallCC(req InstallCCRequest, options ...Option) ([]InstallCCResponse, error) {
 
 	// For each peer query if chaincode installed. If cc is installed treat as success with message 'already installed'.
 	// If cc is not installed try to install, and if that fails add to the list with error and peer name.
@@ -397,14 +397,14 @@ func checkRequiredInstallCCParams(req InstallCCRequest) error {
 }
 
 // InstantiateCC instantiates chaincode using default settings
-func (rc *ResourceMgmtClient) InstantiateCC(channelID string, req InstantiateCCRequest, options ...Option) error {
+func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, options ...Option) error {
 
 	return rc.sendCCProposal(channel.InstantiateChaincode, channelID, req, options...)
 
 }
 
 // UpgradeCC upgrades chaincode  with optional custom options (specific peers, filtered peers, timeout)
-func (rc *ResourceMgmtClient) UpgradeCC(channelID string, req UpgradeCCRequest, options ...Option) error {
+func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...Option) error {
 
 	return rc.sendCCProposal(channel.UpgradeChaincode, channelID, InstantiateCCRequest(req), options...)
 
@@ -412,12 +412,12 @@ func (rc *ResourceMgmtClient) UpgradeCC(channelID string, req UpgradeCCRequest, 
 
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
 // Returns the details of all chaincodes installed on a peer.
-func (rc *ResourceMgmtClient) QueryInstalledChaincodes(proposalProcessor fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
+func (rc *Client) QueryInstalledChaincodes(proposalProcessor fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
 	return rc.resource.QueryInstalledChaincodes(proposalProcessor)
 }
 
 // sendCCProposal sends proposal for type  Instantiate, Upgrade
-func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType channel.ChaincodeProposalType, channelID string, req InstantiateCCRequest, options ...Option) error {
+func (rc *Client) sendCCProposal(ccProposalType channel.ChaincodeProposalType, channelID string, req InstantiateCCRequest, options ...Option) error {
 
 	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
 		return err
@@ -536,7 +536,7 @@ func checkRequiredCCProposalParams(channelID string, req InstantiateCCRequest) e
 }
 
 //prepareResmgmtOpts Reads Opts from Option array
-func (rc *ResourceMgmtClient) prepareResmgmtOpts(options ...Option) (Opts, error) {
+func (rc *Client) prepareResmgmtOpts(options ...Option) (Opts, error) {
 	resmgmtOpts := Opts{}
 	for _, option := range options {
 		err := option(&resmgmtOpts)
@@ -578,7 +578,7 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 }
 
 // SaveChannel creates or updates channel
-func (rc *ResourceMgmtClient) SaveChannel(req SaveChannelRequest, options ...Option) error {
+func (rc *Client) SaveChannel(req SaveChannelRequest, options ...Option) error {
 
 	opts, err := rc.prepareSaveChannelOpts(options...)
 	if err != nil {
@@ -660,7 +660,7 @@ func (rc *ResourceMgmtClient) SaveChannel(req SaveChannelRequest, options ...Opt
 }
 
 //prepareSaveChannelOpts Reads chmgmt.Opts from chmgmt.Option array
-func (rc *ResourceMgmtClient) prepareSaveChannelOpts(options ...Option) (Opts, error) {
+func (rc *Client) prepareSaveChannelOpts(options ...Option) (Opts, error) {
 	saveChannelOpts := Opts{}
 	for _, option := range options {
 		err := option(&saveChannelOpts)
