@@ -47,15 +47,17 @@ EDAKBggqhkjOPQQDAgNHADBEAiAHp5Rbp9Em1G/UmKn8WsCbqDfWecVbZPQj3RK4
 oG5kQQIgQAe4OOKYhJdh3f7URaKfGTf492/nmRmtK+ySKjpHSrU=
 -----END CERTIFICATE-----`
 
-func TestSendDeliver(t *testing.T) {
+func TestSendDeliverHappy(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
-	mockServer, addr := startMockServer(t, grpcServer)
+	_, addr := startMockServer(t, grpcServer)
 	ordererConfig := getGRPCOpts(addr, true, false)
 
 	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), FromOrdererConfig(ordererConfig))
 	// Test deliver happy path
-	blocks, errs := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
+
 	select {
 	case block := <-blocks:
 		if string(block.Data.Data[0]) != "test" {
@@ -66,24 +68,21 @@ func TestSendDeliver(t *testing.T) {
 	case <-time.After(time.Second * 5):
 		t.Fatalf("Did not receive block or error from SendDeliver")
 	}
+}
 
-	// Test deliver without valid envelope
-	blocks, errs = orderer.SendDeliver(nil)
-	select {
-	case block := <-blocks:
-		t.Fatalf("Expected error got block: %#v", block)
-	case err := <-errs:
-		if err == nil {
-			t.Fatalf("Expected error with nil envelope")
-		}
-	case <-time.After(time.Second * 5):
-		t.Fatalf("Did not receive block or error from SendDeliver")
-	}
+func TestSendDeliverErr(t *testing.T) {
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	mockServer, addr := startMockServer(t, grpcServer)
+	ordererConfig := getGRPCOpts(addr, true, false)
 
+	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), FromOrdererConfig(ordererConfig))
 	// Test deliver with deliver error from OS
 	testError := errors.New("test error")
 	mockServer.DeliverError = testError
-	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
+
 	select {
 	case block := <-blocks:
 		t.Fatalf("Expected error got block: %#v", block)
@@ -94,10 +93,15 @@ func TestSendDeliver(t *testing.T) {
 	case <-time.After(time.Second * 5):
 		t.Fatalf("Did not receive block or error from SendDeliver")
 	}
+}
 
-	orderer, _ = New(mocks.NewMockConfig(), WithURL(testOrdererURL+"invalid-test"), FromOrdererConfig(ordererConfig))
+func TestSendDeliver(t *testing.T) {
+	orderer, _ := New(mocks.NewMockConfig(), WithURL(testOrdererURL+"invalid-test"))
+
 	// Test deliver happy path
-	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
+
 	select {
 	case block := <-blocks:
 		t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
@@ -225,7 +229,8 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
 
 	select {
 	case block := <-blocks:
@@ -255,7 +260,8 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
 
 	select {
 	case block := <-blocks:
@@ -280,7 +286,8 @@ func TestSendDeliverFailure(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
 
 	select {
 	case block := <-blocks:
@@ -357,16 +364,6 @@ func TestBroadcastBadDial(t *testing.T) {
 		t.Fatal("Expected connection issues, but got ", err)
 	}
 
-}
-
-func TestInterfaces(t *testing.T) {
-	var apiOrderer fab.Orderer
-	var orderer Orderer
-
-	apiOrderer = &orderer
-	if apiOrderer == nil {
-		t.Fatalf("this shouldn't happen.")
-	}
 }
 
 func TestGetKeepAliveOptions(t *testing.T) {
@@ -463,7 +460,9 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 	orderer, _ = New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 	orderer.dialTimeout = 5 * time.Second
 	// Test deliver happy path
-	blocks, errs := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
+
 	select {
 	case block := <-blocks:
 		if string(block.Data.Data[0]) != "test" {

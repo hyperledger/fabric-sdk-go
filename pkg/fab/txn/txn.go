@@ -227,7 +227,9 @@ func sendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orde
 		go func(orderer fab.Orderer) {
 			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
 
-			blocks, errs := orderer.SendDeliver(envelope)
+			blocks, errs, cancel := orderer.SendDeliver(envelope)
+			defer cancel()
+
 			select {
 			case block := <-blocks:
 				mutex.Lock()

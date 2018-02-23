@@ -14,7 +14,8 @@ import common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyper
 import google_protobuf1 "github.com/golang/protobuf/ptypes/timestamp"
 
 import (
-	context "golang.org/x/net/context"
+	context "context"
+
 	grpc "google.golang.org/grpc"
 )
 

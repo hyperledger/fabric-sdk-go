@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	"context"
+
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
@@ -15,7 +17,7 @@ import (
 type Orderer interface {
 	URL() string
 	SendBroadcast(envelope *SignedEnvelope) (*common.Status, error)
-	SendDeliver(envelope *SignedEnvelope) (chan *common.Block, chan error)
+	SendDeliver(envelope *SignedEnvelope) (chan *common.Block, chan error, context.CancelFunc)
 }
 
 // A SignedEnvelope can can be sent to an orderer for broadcasting

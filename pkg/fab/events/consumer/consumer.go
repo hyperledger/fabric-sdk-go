@@ -7,32 +7,29 @@ SPDX-License-Identifier: Apache-2.0
 package consumer
 
 import (
+	grpcContext "context"
+	"crypto/x509"
 	"io"
 	"sync"
 	"time"
 
-	grpcContext "golang.org/x/net/context"
-
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/golang/protobuf/ptypes"
+	consumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-
-	"crypto/x509"
-
-	consumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -111,7 +108,9 @@ func newEventsClientConnectionWithAddress(peerAddress string, cert *x509.Certifi
 	opts = append(opts, grpc.WithDefaultCallOptions(grpc.FailFast(failFast)))
 
 	ctx := grpcContext.Background()
-	ctx, _ = grpcContext.WithTimeout(ctx, config.TimeoutOrDefault(core.EventHubConnection))
+	ctx, cancel := grpcContext.WithTimeout(ctx, config.TimeoutOrDefault(core.EventHubConnection))
+	defer cancel()
+
 	conn, err := grpc.DialContext(ctx, urlutil.ToAddress(peerAddress), opts...)
 	if err != nil {
 		return nil, err

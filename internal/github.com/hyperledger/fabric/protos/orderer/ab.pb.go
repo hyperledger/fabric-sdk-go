@@ -40,7 +40,8 @@ import math "math"
 import common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 import (
-	context "golang.org/x/net/context"
+	context "context"
+
 	grpc "google.golang.org/grpc"
 )
 

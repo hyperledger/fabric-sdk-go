@@ -7,10 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
+	grpccontext "context"
+	"crypto/x509"
 	"time"
 
-	grpccontext "golang.org/x/net/context"
-
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -18,14 +19,10 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-
-	"crypto/x509"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
-	"github.com/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 // peerEndorser enables access to a GRPC-based endorser for running transaction proposal simulations
@@ -108,7 +105,8 @@ func (p *peerEndorser) conn(secured bool) (*grpc.ClientConn, error) {
 	}
 
 	ctx := grpccontext.Background()
-	ctx, _ = grpccontext.WithTimeout(ctx, p.dialTimeout)
+	ctx, cancel := grpccontext.WithTimeout(ctx, p.dialTimeout)
+	defer cancel()
 
 	return grpc.DialContext(ctx, p.target, grpcOpts...)
 }

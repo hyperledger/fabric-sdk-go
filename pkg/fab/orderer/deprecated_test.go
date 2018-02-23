@@ -26,14 +26,15 @@ import (
 
 var kap keepalive.ClientParameters
 
-func TestDeprecatedSendDeliver(t *testing.T) {
+func TestDeprecatedSendDeliverHappy(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
-	mockServer, addr := startMockServer(t, grpcServer)
+	_, addr := startMockServer(t, grpcServer)
 
 	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
-	// Test deliver happy path
-	blocks, errs := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
+
 	select {
 	case block := <-blocks:
 		if string(block.Data.Data[0]) != "test" {
@@ -44,24 +45,21 @@ func TestDeprecatedSendDeliver(t *testing.T) {
 	case <-time.After(time.Second * 5):
 		t.Fatalf("Did not receive block or error from SendDeliver")
 	}
+}
 
-	// Test deliver without valid envelope
-	blocks, errs = orderer.SendDeliver(nil)
-	select {
-	case block := <-blocks:
-		t.Fatalf("Expected error got block: %#v", block)
-	case err := <-errs:
-		if err == nil {
-			t.Fatalf("Expected error with nil envelope")
-		}
-	case <-time.After(time.Second * 5):
-		t.Fatalf("Did not receive block or error from SendDeliver")
-	}
+func TestDeprecatedSendDeliverError(t *testing.T) {
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	mockServer, addr := startMockServer(t, grpcServer)
+
+	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
 	// Test deliver with deliver error from OS
 	testError := errors.New("test error")
 	mockServer.DeliverError = testError
-	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
+
 	select {
 	case block := <-blocks:
 		t.Fatalf("Expected error got block: %#v", block)
@@ -72,10 +70,14 @@ func TestDeprecatedSendDeliver(t *testing.T) {
 	case <-time.After(time.Second * 5):
 		t.Fatalf("Did not receive block or error from SendDeliver")
 	}
+}
 
-	orderer, _ = NewOrderer(testOrdererURL+"invalid-test", "", "", mocks.NewMockConfig(), kap)
+func TestDeprecatedSendDeliverBadURL(t *testing.T) {
+	orderer, _ := NewOrderer(testOrdererURL+"invalid-test", "", "", mocks.NewMockConfig(), kap)
 	// Test deliver happy path
-	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
+
 	select {
 	case block := <-blocks:
 		t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
@@ -84,7 +86,6 @@ func TestDeprecatedSendDeliver(t *testing.T) {
 	case <-time.After(time.Second * 5):
 		t.Fatalf("Did not receive error from SendDeliver")
 	}
-
 }
 
 func TestDeprecatedNewOrdererWithTLS(t *testing.T) {
@@ -150,7 +151,8 @@ func TestDeprecatedSendDeliverServerBadResponse(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
 
 	select {
 	case block := <-blocks:
@@ -180,7 +182,8 @@ func TestDeprecatedSendDeliverServerSuccessResponse(t *testing.T) {
 
 	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
 
 	select {
 	case block := <-blocks:
@@ -205,7 +208,8 @@ func TestDeprecatedSendDeliverFailure(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	defer cancel()
 
 	select {
 	case block := <-blocks:
@@ -258,14 +262,4 @@ func TestDeprecatedSendBroadcastError(t *testing.T) {
 		t.Fatalf("expected Send Broadcast to fail with error, but got %s", err)
 	}
 
-}
-
-func TestDeprecatedInterfaces(t *testing.T) {
-	var apiOrderer fab.Orderer
-	var orderer Orderer
-
-	apiOrderer = &orderer
-	if apiOrderer == nil {
-		t.Fatalf("this shouldn't happen.")
-	}
 }

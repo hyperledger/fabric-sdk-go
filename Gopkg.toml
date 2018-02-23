@@ -21,10 +21,6 @@
   version = "1.0.0"
 
 [[constraint]]
-  name = "golang.org/x/net"
-  branch = "master"
-
-[[constraint]]
   name = "github.com/cloudflare/cfssl"
   branch = "master"
 

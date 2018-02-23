@@ -76,10 +76,10 @@ FILTER_FN+=",getURL,NormalizeURL,initHTTPClient,net2LocalServerInfo,NewIdentity,
 gofilter
 sed -i'' -e 's/util.GetServerPort()/\"\"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/log "github.com\// a\
-"github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"\
+"github.com\/hyperledger\/fabric-sdk-go\/pkg\/context\/api\/core"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/\/\/ Initialize BCCSP (the crypto layer)/c.csp = cfg.CSP/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 START_LINE=`grep -n "c.csp, err = util.InitBCCSP(&cfg.CSP, mspDir, c.HomeDir)" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
 for i in {1..4}
@@ -92,23 +92,23 @@ FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,Ge
 gofilter
 sed -i'' -e 's/util.GetDefaultBCCSP()/nil/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/log "github.com\// a\
-"github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"\
+"github.com\/hyperledger\/fabric-sdk-go\/pkg\/context\/api\/core"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="lib/signer.go"
 FILTER_FN="newSigner,Key,Cert"
 gofilter
 sed -i'' -e '/"github.com\/cloudflare/ a\
-"github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"\
+"github.com\/hyperledger\/fabric-sdk-go\/pkg\/context\/api\/core"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="lib/clientconfig.go"
 FILTER_FN=
 gofilter
-sed -i'' -e 's/*factory.FactoryOpts/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/*factory.FactoryOpts/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 
 FILTER_FILENAME="lib/util.go"
@@ -119,9 +119,9 @@ FILTER_FILENAME="lib/tls/tls.go"
 FILTER_FN="GetClientTLSConfig,AbsTLSClient,checkCertDates"
 gofilter
 sed -i'' -e '/log "github.com\// a\
-"github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"\
+"github.com\/hyperledger\/fabric-sdk-go\/pkg\/context\/api\/core"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 
 FILTER_FILENAME="util/csp.go"
@@ -131,10 +131,10 @@ sed -i'' -e '/_.\"time\"/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/\"github.com\/cloudflare\/cfssl\/cli\"/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/\"github.com\/cloudflare\/cfssl\/ocsp\"/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/log "github.com\// a\
-"github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"\
+"github.com\/hyperledger\/fabric-sdk-go\/pkg\/context\/api\/core"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/&factory.SwOpts{}/factory.NewSwOpts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/&factory.FileKeystoreOpts{}/factory.NewFileKeystoreOpts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/&bccsp.ECDSAKeyGenOpts{Temporary: ephemeral}/factory.GetECDSAKeyGenOpts(ephemeral)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
@@ -157,7 +157,7 @@ sed -i'' -e '/key, err := factory.PEMtoPrivateKey(keyBuff, nil)/ i\
 	return key, nil \
 } \
 \/\/ ImportBCCSPKeyFromPEMBytes attempts to create a private BCCSP key from a pem byte slice \
-func ImportBCCSPKeyFromPEMBytes(keyBuff []byte, myCSP apicryptosuite.CryptoSuite, temporary bool) (apicryptosuite.Key, error) { \
+func ImportBCCSPKeyFromPEMBytes(keyBuff []byte, myCSP core.CryptoSuite, temporary bool) (core.Key, error) { \
 keyFile := "pem bytes" \
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
@@ -170,13 +170,13 @@ FILTER_FN+=",GenECDSAToken,GetEnrollmentIDFromX509Certificate,B64Encode,B64Decod
 FILTER_FN+=",GetMaskedURL"
 gofilter
 sed -i'' -e '/log "golang.org\/x/ a\
-"github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"\
+"github.com\/hyperledger\/fabric-sdk-go\/pkg\/context\/api\/core"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/mrand "math\// a\
 factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca\/sdkpatch\/cryptosuitebridge"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/&bccsp.SHAOpts{}/factory.GetSHAOpts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="lib/serverrevoke.go"

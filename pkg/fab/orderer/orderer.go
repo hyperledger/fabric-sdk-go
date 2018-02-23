@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
+	grpcContext "context"
 	"time"
 
-	grpcContext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -212,14 +212,6 @@ func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, e
 	return o.sendBroadcast(envelope, o.secured)
 }
 
-// SendDeliver sends a deliver request to the ordering service and returns the
-// blocks requested
-// envelope: contains the seek request for blocks
-func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
-	chan error) {
-	return o.sendDeliver(envelope, o.secured)
-}
-
 // SendBroadcast Send the created transaction to Orderer.
 func (o *Orderer) sendBroadcast(envelope *fab.SignedEnvelope, secured bool) (*common.Status, error) {
 	var grpcOpts []grpc.DialOption
@@ -231,7 +223,9 @@ func (o *Orderer) sendBroadcast(envelope *fab.SignedEnvelope, secured bool) (*co
 	}
 
 	ctx := grpcContext.Background()
-	ctx, _ = grpcContext.WithTimeout(ctx, o.dialTimeout)
+	ctx, cancel := grpcContext.WithTimeout(ctx, o.dialTimeout)
+	defer cancel()
+
 	conn, err := grpc.DialContext(ctx, o.url, grpcOpts...)
 
 	if err != nil {
@@ -295,15 +289,16 @@ func (o *Orderer) sendBroadcast(envelope *fab.SignedEnvelope, secured bool) (*co
 // SendDeliver sends a deliver request to the ordering service and returns the
 // blocks requested
 // envelope: contains the seek request for blocks
-func (o *Orderer) sendDeliver(envelope *fab.SignedEnvelope, secured bool) (chan *common.Block,
-	chan error) {
+func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block, chan error, grpcContext.CancelFunc) {
+	return o.sendDeliver(envelope, o.secured)
+}
+
+// SendDeliver sends a deliver request to the ordering service and returns the
+// blocks requested
+// envelope: contains the seek request for blocks
+func (o *Orderer) sendDeliver(envelope *fab.SignedEnvelope, secured bool) (chan *common.Block, chan error, grpcContext.CancelFunc) {
 	responses := make(chan *common.Block)
 	errs := make(chan error, 1)
-	// Validate envelope
-	if envelope == nil {
-		errs <- errors.New("envelope is nil")
-		return responses, errs
-	}
 
 	// Establish connection to Ordering Service
 	var grpcOpts []grpc.DialOption
@@ -315,25 +310,27 @@ func (o *Orderer) sendDeliver(envelope *fab.SignedEnvelope, secured bool) (chan 
 	}
 
 	ctx := grpcContext.Background()
-	ctx, _ = grpcContext.WithTimeout(ctx, o.dialTimeout)
+	ctx, cancel := grpcContext.WithTimeout(ctx, o.dialTimeout)
+
 	conn, err := grpc.DialContext(ctx, o.url, grpcOpts...)
 	if err != nil {
 		errs <- err
-		return responses, errs
+		return responses, errs, cancel
 	}
 
 	// Create atomic broadcast client
-	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).
-		Deliver(ctx)
+	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Deliver(ctx)
 	if err != nil {
 		logger.Error("NewAtomicBroadcastClient failed, cause : ", err)
 		if secured && o.allowInsecure {
 			//If secured mode failed and allow insecure is enabled then retry in insecure mode
 			logger.Debug("Secured sendBroadcast failed, attempting insecured")
+
+			cancel()
 			return o.sendDeliver(envelope, false)
 		}
 		errs <- errors.Wrap(err, "NewAtomicBroadcastClient failed")
-		return responses, errs
+		return responses, errs, cancel
 	}
 	// Send block request envelope
 	logger.Debugf("Requesting blocks from ordering service")
@@ -342,7 +339,7 @@ func (o *Orderer) sendDeliver(envelope *fab.SignedEnvelope, secured bool) (chan 
 		Signature: envelope.Signature,
 	}); err != nil {
 		errs <- errors.Wrap(err, "failed to send block request to orderer")
-		return responses, errs
+		return responses, errs, cancel
 	}
 
 	// Receive blocks from the GRPC stream and put them on the channel
@@ -379,5 +376,5 @@ func (o *Orderer) sendDeliver(envelope *fab.SignedEnvelope, secured bool) (chan 
 			}
 		}
 	}()
-	return responses, errs
+	return responses, errs, cancel
 }
