@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package headertypefilter
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
@@ -17,7 +17,7 @@ var logger = logging.NewLogger("eventservice/blockfilter")
 
 // New returns a block filter that filters out blocks that
 // don't contain envelopes of the given type(s)
-func New(headerTypes ...cb.HeaderType) apifabclient.BlockFilter {
+func New(headerTypes ...cb.HeaderType) fab.BlockFilter {
 	return func(block *cb.Block) bool {
 		return hasType(block, headerTypes...)
 	}

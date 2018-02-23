@@ -9,18 +9,18 @@ package dispatcher
 import (
 	"regexp"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
 
 // BlockReg contains the data for a block registration
 type BlockReg struct {
-	Filter  apifabclient.BlockFilter
-	Eventch chan<- *apifabclient.BlockEvent
+	Filter  fab.BlockFilter
+	Eventch chan<- *fab.BlockEvent
 }
 
 // FilteredBlockReg contains the data for a filtered block registration
 type FilteredBlockReg struct {
-	Eventch chan<- *apifabclient.FilteredBlockEvent
+	Eventch chan<- *fab.FilteredBlockEvent
 }
 
 // ChaincodeReg contains the data for a chaincode registration
@@ -28,11 +28,11 @@ type ChaincodeReg struct {
 	ChaincodeID string
 	EventFilter string
 	EventRegExp *regexp.Regexp
-	Eventch     chan<- *apifabclient.CCEvent
+	Eventch     chan<- *fab.CCEvent
 }
 
 // TxStatusReg contains the data for a transaction status registration
 type TxStatusReg struct {
 	TxID    string
-	Eventch chan<- *apifabclient.TxStatusEvent
+	Eventch chan<- *fab.TxStatusEvent
 }

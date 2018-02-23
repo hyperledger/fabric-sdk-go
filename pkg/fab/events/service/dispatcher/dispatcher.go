@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/options"
 	ledgerutil "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/util"
@@ -363,15 +363,15 @@ func (ed *Dispatcher) publishBlockEvents(block *cb.Block) {
 
 		if ed.eventConsumerTimeout < 0 {
 			select {
-			case reg.Eventch <- &apifabclient.BlockEvent{Block: block}:
+			case reg.Eventch <- &fab.BlockEvent{Block: block}:
 			default:
 				logger.Warnf("Unable to send to block event channel.")
 			}
 		} else if ed.eventConsumerTimeout == 0 {
-			reg.Eventch <- &apifabclient.BlockEvent{Block: block}
+			reg.Eventch <- &fab.BlockEvent{Block: block}
 		} else {
 			select {
-			case reg.Eventch <- &apifabclient.BlockEvent{Block: block}:
+			case reg.Eventch <- &fab.BlockEvent{Block: block}:
 			case <-time.After(ed.eventConsumerTimeout):
 				logger.Warnf("Timed out sending block event.")
 			}
@@ -388,15 +388,15 @@ func (ed *Dispatcher) publishFilteredBlockEvents(fblock *pb.FilteredBlock) {
 	for _, reg := range ed.filteredBlockRegistrations {
 		if ed.eventConsumerTimeout < 0 {
 			select {
-			case reg.Eventch <- &apifabclient.FilteredBlockEvent{FilteredBlock: fblock}:
+			case reg.Eventch <- &fab.FilteredBlockEvent{FilteredBlock: fblock}:
 			default:
 				logger.Warnf("Unable to send to filtered block event channel.")
 			}
 		} else if ed.eventConsumerTimeout == 0 {
-			reg.Eventch <- &apifabclient.FilteredBlockEvent{FilteredBlock: fblock}
+			reg.Eventch <- &fab.FilteredBlockEvent{FilteredBlock: fblock}
 		} else {
 			select {
-			case reg.Eventch <- &apifabclient.FilteredBlockEvent{FilteredBlock: fblock}:
+			case reg.Eventch <- &fab.FilteredBlockEvent{FilteredBlock: fblock}:
 			case <-time.After(ed.eventConsumerTimeout):
 				logger.Warnf("Timed out sending filtered block event.")
 			}

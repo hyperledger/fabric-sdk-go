@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/service/blockfilter"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/service/dispatcher"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/blockfilter"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	logging "github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/options"
 	"github.com/pkg/errors"
@@ -118,9 +118,9 @@ func (s *Service) Dispatcher() Dispatcher {
 
 // RegisterBlockEvent registers for block events. If the client is not authorized to receive
 // block events then an error is returned.
-func (s *Service) RegisterBlockEvent(filter ...apifabclient.BlockFilter) (apifabclient.Registration, <-chan *apifabclient.BlockEvent, error) {
-	eventch := make(chan *apifabclient.BlockEvent, s.eventConsumerBufferSize)
-	regch := make(chan apifabclient.Registration)
+func (s *Service) RegisterBlockEvent(filter ...fab.BlockFilter) (fab.Registration, <-chan *fab.BlockEvent, error) {
+	eventch := make(chan *fab.BlockEvent, s.eventConsumerBufferSize)
+	regch := make(chan fab.Registration)
 	errch := make(chan error)
 
 	blockFilter := blockfilter.AcceptAny
@@ -146,9 +146,9 @@ func (s *Service) RegisterBlockEvent(filter ...apifabclient.BlockFilter) (apifab
 
 // RegisterFilteredBlockEvent registers for filtered block events. If the client is not authorized to receive
 // filtered block events then an error is returned.
-func (s *Service) RegisterFilteredBlockEvent() (apifabclient.Registration, <-chan *apifabclient.FilteredBlockEvent, error) {
-	eventch := make(chan *apifabclient.FilteredBlockEvent, s.eventConsumerBufferSize)
-	regch := make(chan apifabclient.Registration)
+func (s *Service) RegisterFilteredBlockEvent() (fab.Registration, <-chan *fab.FilteredBlockEvent, error) {
+	eventch := make(chan *fab.FilteredBlockEvent, s.eventConsumerBufferSize)
+	regch := make(chan fab.Registration)
 	errch := make(chan error)
 
 	if err := s.Submit(dispatcher.NewRegisterFilteredBlockEvent(eventch, regch, errch)); err != nil {
@@ -167,7 +167,7 @@ func (s *Service) RegisterFilteredBlockEvent() (apifabclient.Registration, <-cha
 // chaincode events then an error is returned.
 // - ccID is the chaincode ID for which events are to be received
 // - eventFilter is the chaincode event name for which events are to be received
-func (s *Service) RegisterChaincodeEvent(ccID, eventFilter string) (apifabclient.Registration, <-chan *apifabclient.CCEvent, error) {
+func (s *Service) RegisterChaincodeEvent(ccID, eventFilter string) (fab.Registration, <-chan *fab.CCEvent, error) {
 	if ccID == "" {
 		return nil, nil, errors.New("chaincode ID is required")
 	}
@@ -175,8 +175,8 @@ func (s *Service) RegisterChaincodeEvent(ccID, eventFilter string) (apifabclient
 		return nil, nil, errors.New("event filter is required")
 	}
 
-	eventch := make(chan *apifabclient.CCEvent, s.eventConsumerBufferSize)
-	regch := make(chan apifabclient.Registration)
+	eventch := make(chan *fab.CCEvent, s.eventConsumerBufferSize)
+	regch := make(chan fab.Registration)
 	errch := make(chan error)
 
 	if err := s.Submit(dispatcher.NewRegisterChaincodeEvent(ccID, eventFilter, eventch, regch, errch)); err != nil {
@@ -194,13 +194,13 @@ func (s *Service) RegisterChaincodeEvent(ccID, eventFilter string) (apifabclient
 // RegisterTxStatusEvent registers for transaction status events. If the client is not authorized to receive
 // transaction status events then an error is returned.
 // - txID is the transaction ID for which events are to be received
-func (s *Service) RegisterTxStatusEvent(txID string) (apifabclient.Registration, <-chan *apifabclient.TxStatusEvent, error) {
+func (s *Service) RegisterTxStatusEvent(txID string) (fab.Registration, <-chan *fab.TxStatusEvent, error) {
 	if txID == "" {
 		return nil, nil, errors.New("txID must be provided")
 	}
 
-	eventch := make(chan *apifabclient.TxStatusEvent, s.eventConsumerBufferSize)
-	regch := make(chan apifabclient.Registration)
+	eventch := make(chan *fab.TxStatusEvent, s.eventConsumerBufferSize)
+	regch := make(chan fab.Registration)
 	errch := make(chan error)
 
 	if err := s.Submit(dispatcher.NewRegisterTxStatusEvent(txID, eventch, regch, errch)); err != nil {
@@ -217,7 +217,7 @@ func (s *Service) RegisterTxStatusEvent(txID string) (apifabclient.Registration,
 
 // Unregister unregisters the given registration.
 // - reg is the registration handle that was returned from one of the RegisterXXX functions
-func (s *Service) Unregister(reg apifabclient.Registration) {
+func (s *Service) Unregister(reg fab.Registration) {
 	if err := s.Submit(dispatcher.NewUnregisterEvent(reg)); err != nil {
 		logger.Warnf("Error unregistering: %s", err)
 	}

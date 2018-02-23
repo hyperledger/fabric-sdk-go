@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package apifabclient
+package fab
 
 import (
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -79,6 +79,16 @@ type EventService interface {
 	Unregister(reg Registration)
 }
 
+// ConnectionEvent is sent when the client disconnects from or
+// reconnects to the event server. Connected == true means that the
+// client has connected, whereas Connected == false means that the
+// client has disconnected. In the disconnected case, Err contains
+// the disconnect error.
+type ConnectionEvent struct {
+	Connected bool
+	Err       error
+}
+
 // EventClient is a client that connects to a peer and receives channel events
 // such as block, filtered block, chaincode, and transaction status events.
 type EventClient interface {
@@ -90,4 +100,9 @@ type EventClient interface {
 	// Close closes the connection to the event server and releases all resources.
 	// Once this function is invoked the client may no longer be used.
 	Close()
+
+	// RegisterConnectionEvent registers a connection event. The returned
+	// ConnectionEvent channel is called whenever the client clients to
+	// or disconnects from the event server
+	RegisterConnectionEvent() (Registration, chan ConnectionEvent, error)
 }

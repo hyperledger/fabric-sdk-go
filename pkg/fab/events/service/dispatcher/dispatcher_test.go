@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/service/blockfilter"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/service/blockfilter/headertypefilter"
-	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/service/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/blockfilter"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/blockfilter/headertypefilter"
+	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -48,13 +48,13 @@ func TestBlockEvents(t *testing.T) {
 		t.Fatalf("Error getting event channel from dispatcher: %s", err)
 	}
 
-	eventch := make(chan *apifabclient.BlockEvent, 10)
-	regch := make(chan apifabclient.Registration)
+	eventch := make(chan *fab.BlockEvent, 10)
+	regch := make(chan fab.Registration)
 	errch := make(chan error)
 
 	dispatcherEventch <- NewRegisterBlockEvent(blockfilter.AcceptAny, eventch, regch, errch)
 
-	var reg apifabclient.Registration
+	var reg fab.Registration
 	select {
 	case reg = <-regch:
 	case err := <-errch:
@@ -93,23 +93,23 @@ func TestBlockEventsWithFilter(t *testing.T) {
 		t.Fatalf("Error getting event channel from dispatcher: %s", err)
 	}
 
-	regch := make(chan apifabclient.Registration)
+	regch := make(chan fab.Registration)
 	errch := make(chan error)
 
-	beventch := make(chan *apifabclient.BlockEvent, 10)
+	beventch := make(chan *fab.BlockEvent, 10)
 	dispatcherEventch <- NewRegisterBlockEvent(headertypefilter.New(cb.HeaderType_CONFIG, cb.HeaderType_CONFIG_UPDATE), beventch, regch, errch)
 
-	var breg apifabclient.Registration
+	var breg fab.Registration
 	select {
 	case breg = <-regch:
 	case err := <-errch:
 		t.Fatalf("Error registering for block events: %s", err)
 	}
 
-	fbeventch := make(chan *apifabclient.FilteredBlockEvent, 10)
+	fbeventch := make(chan *fab.FilteredBlockEvent, 10)
 	dispatcherEventch <- NewRegisterFilteredBlockEvent(fbeventch, regch, errch)
 
-	var fbreg apifabclient.Registration
+	var fbreg fab.Registration
 	select {
 	case breg = <-regch:
 	case err := <-errch:
@@ -184,12 +184,12 @@ func TestFilteredBlockEvents(t *testing.T) {
 		t.Fatalf("Error getting event channel from dispatcher: %s", err)
 	}
 
-	regch := make(chan apifabclient.Registration)
+	regch := make(chan fab.Registration)
 	errch := make(chan error)
-	fbeventch := make(chan *apifabclient.FilteredBlockEvent, 10)
+	fbeventch := make(chan *fab.FilteredBlockEvent, 10)
 	dispatcherEventch <- NewRegisterFilteredBlockEvent(fbeventch, regch, errch)
 
-	var reg apifabclient.Registration
+	var reg fab.Registration
 	select {
 	case reg = <-regch:
 	case err := <-errch:
@@ -244,22 +244,22 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 	}
 
 	errch := make(chan error)
-	regch := make(chan apifabclient.Registration)
+	regch := make(chan fab.Registration)
 
-	beventch := make(chan *apifabclient.BlockEvent, 10)
+	beventch := make(chan *fab.BlockEvent, 10)
 	dispatcherEventch <- NewRegisterBlockEvent(blockfilter.AcceptAny, beventch, regch, errch)
 
-	var breg apifabclient.Registration
+	var breg fab.Registration
 	select {
 	case breg = <-regch:
 	case err := <-errch:
 		t.Fatalf("Error registering for block events: %s", err)
 	}
 
-	fbeventch := make(chan *apifabclient.FilteredBlockEvent, 10)
+	fbeventch := make(chan *fab.FilteredBlockEvent, 10)
 	dispatcherEventch <- NewRegisterFilteredBlockEvent(fbeventch, regch, errch)
 
-	var fbreg apifabclient.Registration
+	var fbreg fab.Registration
 	select {
 	case fbreg = <-regch:
 	case err := <-errch:
@@ -333,20 +333,20 @@ func TestTxStatusEvents(t *testing.T) {
 	txID2 := "5678"
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
-	regch := make(chan apifabclient.Registration)
+	regch := make(chan fab.Registration)
 	errch := make(chan error)
 
-	eventch := make(chan *apifabclient.TxStatusEvent, 10)
+	eventch := make(chan *fab.TxStatusEvent, 10)
 	dispatcherEventch <- NewRegisterTxStatusEvent(txID1, eventch, regch, errch)
 
-	var reg1 apifabclient.Registration
+	var reg1 fab.Registration
 	select {
 	case reg1 = <-regch:
 	case err := <-errch:
 		t.Fatalf("error registering for TxStatus events: %s", err)
 	}
 
-	eventch = make(chan *apifabclient.TxStatusEvent, 10)
+	eventch = make(chan *fab.TxStatusEvent, 10)
 	dispatcherEventch <- NewRegisterTxStatusEvent(txID1, eventch, regch, errch)
 
 	select {
@@ -362,7 +362,7 @@ func TestTxStatusEvents(t *testing.T) {
 	dispatcherEventch <- NewUnregisterEvent(reg1)
 	time.Sleep(100 * time.Millisecond)
 
-	eventch1 := make(chan *apifabclient.TxStatusEvent, 10)
+	eventch1 := make(chan *fab.TxStatusEvent, 10)
 	dispatcherEventch <- NewRegisterTxStatusEvent(txID1, eventch1, regch, errch)
 
 	select {
@@ -371,10 +371,10 @@ func TestTxStatusEvents(t *testing.T) {
 		t.Fatalf("error registering for TxStatus events: %s", err)
 	}
 
-	eventch2 := make(chan *apifabclient.TxStatusEvent, 10)
+	eventch2 := make(chan *fab.TxStatusEvent, 10)
 	dispatcherEventch <- NewRegisterTxStatusEvent(txID2, eventch2, regch, errch)
 
-	var reg2 apifabclient.Registration
+	var reg2 fab.Registration
 	select {
 	case reg2 = <-regch:
 	case err := <-errch:
@@ -446,18 +446,18 @@ func TestCCEvents(t *testing.T) {
 	event3 := "event3"
 
 	errch := make(chan error)
-	fbrespch := make(chan apifabclient.Registration)
-	eventch := make(chan *apifabclient.CCEvent, 10)
+	fbrespch := make(chan fab.Registration)
+	eventch := make(chan *fab.CCEvent, 10)
 	dispatcherEventch <- NewRegisterChaincodeEvent(ccID1, ccFilter1, eventch, fbrespch, errch)
 
-	var reg1 apifabclient.Registration
+	var reg1 fab.Registration
 	select {
 	case reg1 = <-fbrespch:
 	case err := <-errch:
 		t.Fatalf("error registering for chaincode events: %s", err)
 	}
 
-	eventch = make(chan *apifabclient.CCEvent, 10)
+	eventch = make(chan *fab.CCEvent, 10)
 	dispatcherEventch <- NewRegisterChaincodeEvent(ccID1, ccFilter1, eventch, fbrespch, errch)
 
 	select {
@@ -472,7 +472,7 @@ func TestCCEvents(t *testing.T) {
 
 	dispatcherEventch <- NewUnregisterEvent(reg1)
 
-	eventch1 := make(chan *apifabclient.CCEvent, 10)
+	eventch1 := make(chan *fab.CCEvent, 10)
 	dispatcherEventch <- NewRegisterChaincodeEvent(ccID1, ccFilter1, eventch1, fbrespch, errch)
 
 	select {
@@ -481,10 +481,10 @@ func TestCCEvents(t *testing.T) {
 		t.Fatalf("error registering for chaincode events: %s", err)
 	}
 
-	eventch2 := make(chan *apifabclient.CCEvent, 10)
+	eventch2 := make(chan *fab.CCEvent, 10)
 	dispatcherEventch <- NewRegisterChaincodeEvent(ccID2, ccFilter2, eventch2, fbrespch, errch)
 
-	var reg2 apifabclient.Registration
+	var reg2 fab.Registration
 	select {
 	case reg2 = <-fbrespch:
 	case err := <-errch:
@@ -536,7 +536,7 @@ func TestCCEvents(t *testing.T) {
 	}
 }
 
-func checkTxStatusEvent(t *testing.T, event *apifabclient.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {
+func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {
 	if event.TxID != expectedTxID {
 		t.Fatalf("expecting event for TxID [%s] but received event for TxID [%s]", expectedTxID, event.TxID)
 	}
@@ -545,7 +545,7 @@ func checkTxStatusEvent(t *testing.T, event *apifabclient.TxStatusEvent, expecte
 	}
 }
 
-func checkCCEvent(t *testing.T, event *apifabclient.CCEvent, expectedCCID string, expectedEventNames ...string) {
+func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expectedEventNames ...string) {
 	if event.ChaincodeID != expectedCCID {
 		t.Fatalf("expecting event for CC [%s] but received event for CC [%s]", expectedCCID, event.ChaincodeID)
 	}

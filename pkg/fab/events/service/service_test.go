@@ -12,13 +12,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/options"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/service/dispatcher"
-	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/service/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
+	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/service/blockfilter/headertypefilter"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/blockfilter/headertypefilter"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -454,7 +454,7 @@ func TestConcurrentEvents(t *testing.T) {
 	})
 }
 
-func testConcurrentBlockEvents(channelID string, numEvents uint, eventService apifabclient.EventService, eventProducer *servicemocks.MockProducer) error {
+func testConcurrentBlockEvents(channelID string, numEvents uint, eventService fab.EventService, eventProducer *servicemocks.MockProducer) error {
 	registration, eventch, err := eventService.RegisterBlockEvent()
 	if err != nil {
 		return errors.Errorf("error registering for block events: %s", err)
@@ -495,7 +495,7 @@ func testConcurrentBlockEvents(channelID string, numEvents uint, eventService ap
 	return nil
 }
 
-func testConcurrentFilteredBlockEvents(channelID string, numEvents uint, eventService apifabclient.EventService, conn *servicemocks.MockProducer) error {
+func testConcurrentFilteredBlockEvents(channelID string, numEvents uint, eventService fab.EventService, conn *servicemocks.MockProducer) error {
 	registration, eventch, err := eventService.RegisterFilteredBlockEvent()
 	if err != nil {
 		return errors.Errorf("error registering for filtered block events: %s", err)
@@ -544,7 +544,7 @@ func testConcurrentFilteredBlockEvents(channelID string, numEvents uint, eventSe
 	return nil
 }
 
-func testConcurrentCCEvents(channelID string, numEvents uint, eventService apifabclient.EventService, conn *servicemocks.MockProducer) error {
+func testConcurrentCCEvents(channelID string, numEvents uint, eventService fab.EventService, conn *servicemocks.MockProducer) error {
 	ccID := "mycc1"
 	ccFilter := "event.*"
 	event1 := "event1"
@@ -588,7 +588,7 @@ func testConcurrentCCEvents(channelID string, numEvents uint, eventService apifa
 	return nil
 }
 
-func testConcurrentTxStatusEvents(channelID string, numEvents uint, eventService apifabclient.EventService, conn *servicemocks.MockProducer) error {
+func testConcurrentTxStatusEvents(channelID string, numEvents uint, eventService fab.EventService, conn *servicemocks.MockProducer) error {
 	var wg sync.WaitGroup
 
 	wg.Add(int(numEvents))
@@ -640,7 +640,7 @@ func testConcurrentTxStatusEvents(channelID string, numEvents uint, eventService
 	return nil
 }
 
-func listenEvents(blockch <-chan *apifabclient.BlockEvent, ccch <-chan *apifabclient.CCEvent, waitDuration time.Duration, numEventsCh chan EventsReceived, expectedBlockEvents NumBlockEvents, expectedCCEvents NumCCEvents) {
+func listenEvents(blockch <-chan *fab.BlockEvent, ccch <-chan *fab.CCEvent, waitDuration time.Duration, numEventsCh chan EventsReceived, expectedBlockEvents NumBlockEvents, expectedCCEvents NumCCEvents) {
 	var numBlockEventsReceived NumBlockEvents
 	var numCCEventsReceived NumCCEvents
 
@@ -652,7 +652,7 @@ func listenEvents(blockch <-chan *apifabclient.BlockEvent, ccch <-chan *apifabcl
 			} else {
 				// The channel was closed by the event client. Make a new channel so
 				// that we don't get into a tight loop
-				blockch = make(chan *apifabclient.BlockEvent)
+				blockch = make(chan *fab.BlockEvent)
 			}
 		case _, ok := <-ccch:
 			if ok {
@@ -660,7 +660,7 @@ func listenEvents(blockch <-chan *apifabclient.BlockEvent, ccch <-chan *apifabcl
 			} else {
 				// The channel was closed by the event client. Make a new channel so
 				// that we don't get into a tight loop
-				ccch = make(chan *apifabclient.CCEvent)
+				ccch = make(chan *fab.CCEvent)
 			}
 		case <-time.After(waitDuration):
 			numEventsCh <- EventsReceived{BlockEvents: numBlockEventsReceived, CCEvents: numCCEventsReceived}
@@ -673,7 +673,7 @@ func listenEvents(blockch <-chan *apifabclient.BlockEvent, ccch <-chan *apifabcl
 	}
 }
 
-func checkTxStatusEvent(t *testing.T, event *apifabclient.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {
+func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {
 	if event.TxID != expectedTxID {
 		t.Fatalf("expecting event for TxID [%s] but received event for TxID [%s]", expectedTxID, event.TxID)
 	}
@@ -682,7 +682,7 @@ func checkTxStatusEvent(t *testing.T, event *apifabclient.TxStatusEvent, expecte
 	}
 }
 
-func checkCCEvent(t *testing.T, event *apifabclient.CCEvent, expectedCCID string, expectedEventNames ...string) {
+func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expectedEventNames ...string) {
 	if event.ChaincodeID != expectedCCID {
 		t.Fatalf("expecting event for CC [%s] but received event for CC [%s]", expectedCCID, event.ChaincodeID)
 	}
