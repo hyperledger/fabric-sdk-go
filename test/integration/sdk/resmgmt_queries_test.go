@@ -54,6 +54,8 @@ func TestResMgmtClientQueries(t *testing.T) {
 
 	testInstalledChaincodes(t, ccID, target, client)
 
+	testQueryChannels(t, testSetup.ChannelID, target, client)
+
 }
 
 func testInstalledChaincodes(t *testing.T, ccID string, target fab.ProposalProcessor, client *resmgmt.Client) {
@@ -74,4 +76,25 @@ func testInstalledChaincodes(t *testing.T, ccID string, target fab.ProposalProce
 	if !found {
 		t.Fatalf("QueryInstalledChaincodes failed to find installed %s chaincode", ccID)
 	}
+}
+
+func testQueryChannels(t *testing.T, channelID string, target fab.ProposalProcessor, client *resmgmt.Client) {
+
+	channelQueryResponse, err := client.QueryChannels(target)
+	if err != nil {
+		t.Fatalf("QueryChannels return error: %v", err)
+	}
+
+	found := false
+	for _, channel := range channelQueryResponse.Channels {
+		t.Logf("**Channel: %s", channel)
+		if channel.ChannelId == channelID {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Fatalf("QueryChannels failed, peer did not join '%s' channel", channelID)
+	}
+
 }

@@ -88,8 +88,8 @@ type SaveChannelRequest struct {
 	SigningIdentity context.IdentityContext
 }
 
-//Option func for each Opts argument
-type Option func(opts *Opts) error
+//RequestOption func for each Opts argument
+type RequestOption func(opts *Opts) error
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
@@ -178,7 +178,7 @@ func New(ctx Context, opts ...ClientOption) (*Client, error) {
 }
 
 // JoinChannel allows for peers to join existing channel with optional custom options (specific peers, filtered peers)
-func (rc *Client) JoinChannel(channelID string, options ...Option) error {
+func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error {
 
 	if channelID == "" {
 		return errors.New("must provide channel ID")
@@ -313,7 +313,7 @@ func (rc *Client) isChaincodeInstalled(req InstallCCRequest, peer fab.Peer) (boo
 }
 
 // InstallCC installs chaincode with optional custom options (specific peers, filtered peers)
-func (rc *Client) InstallCC(req InstallCCRequest, options ...Option) ([]InstallCCResponse, error) {
+func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]InstallCCResponse, error) {
 
 	// For each peer query if chaincode installed. If cc is installed treat as success with message 'already installed'.
 	// If cc is not installed try to install, and if that fails add to the list with error and peer name.
@@ -397,17 +397,13 @@ func checkRequiredInstallCCParams(req InstallCCRequest) error {
 }
 
 // InstantiateCC instantiates chaincode using default settings
-func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, options ...Option) error {
-
+func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, options ...RequestOption) error {
 	return rc.sendCCProposal(channel.InstantiateChaincode, channelID, req, options...)
-
 }
 
 // UpgradeCC upgrades chaincode  with optional custom options (specific peers, filtered peers, timeout)
-func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...Option) error {
-
+func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...RequestOption) error {
 	return rc.sendCCProposal(channel.UpgradeChaincode, channelID, InstantiateCCRequest(req), options...)
-
 }
 
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
@@ -416,8 +412,14 @@ func (rc *Client) QueryInstalledChaincodes(proposalProcessor fab.ProposalProcess
 	return rc.resource.QueryInstalledChaincodes(proposalProcessor)
 }
 
+// QueryChannels queries the names of all the channels that a peer has joined.
+// Returns the details of all channels that peer has joined.
+func (rc *Client) QueryChannels(proposalProcessor fab.ProposalProcessor) (*pb.ChannelQueryResponse, error) {
+	return rc.resource.QueryChannels(proposalProcessor)
+}
+
 // sendCCProposal sends proposal for type  Instantiate, Upgrade
-func (rc *Client) sendCCProposal(ccProposalType channel.ChaincodeProposalType, channelID string, req InstantiateCCRequest, options ...Option) error {
+func (rc *Client) sendCCProposal(ccProposalType channel.ChaincodeProposalType, channelID string, req InstantiateCCRequest, options ...RequestOption) error {
 
 	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
 		return err
@@ -536,7 +538,7 @@ func checkRequiredCCProposalParams(channelID string, req InstantiateCCRequest) e
 }
 
 //prepareResmgmtOpts Reads Opts from Option array
-func (rc *Client) prepareResmgmtOpts(options ...Option) (Opts, error) {
+func (rc *Client) prepareResmgmtOpts(options ...RequestOption) (Opts, error) {
 	resmgmtOpts := Opts{}
 	for _, option := range options {
 		err := option(&resmgmtOpts)
@@ -578,7 +580,7 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 }
 
 // SaveChannel creates or updates channel
-func (rc *Client) SaveChannel(req SaveChannelRequest, options ...Option) error {
+func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) error {
 
 	opts, err := rc.prepareSaveChannelOpts(options...)
 	if err != nil {
@@ -660,7 +662,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...Option) error {
 }
 
 //prepareSaveChannelOpts Reads chmgmt.Opts from chmgmt.Option array
-func (rc *Client) prepareSaveChannelOpts(options ...Option) (Opts, error) {
+func (rc *Client) prepareSaveChannelOpts(options ...RequestOption) (Opts, error) {
 	saveChannelOpts := Opts{}
 	for _, option := range options {
 		err := option(&saveChannelOpts)

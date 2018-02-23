@@ -362,6 +362,36 @@ func TestQueryInstalledChaincodes(t *testing.T) {
 
 }
 
+func TestQueryChannels(t *testing.T) {
+
+	rc := setupDefaultResMgmtClient(t)
+
+	// Test error
+	_, err := rc.QueryChannels(nil)
+	if err == nil {
+		t.Fatalf("QueryChannels: peer cannot be nil")
+	}
+
+	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
+
+	// Test success (valid peer)
+	found := false
+	response, err := rc.QueryChannels(peer)
+	if err != nil {
+		t.Fatalf("failed to query channel for peer: %s", err)
+	}
+	for _, responseChannel := range response.Channels {
+		if responseChannel.ChannelId == "test" {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Fatal("Peer has not joined 'test' channel")
+	}
+
+}
+
 func TestInstallCCWithOpts(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)
