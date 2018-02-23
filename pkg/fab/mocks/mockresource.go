@@ -50,9 +50,14 @@ func (c *MockResource) CreateChannel(request api.CreateChannelRequest) (fab.Tran
 	return fab.TransactionID{}, nil
 }
 
-//QueryChannels ...
+//QueryChannels mocks query channels
 func (c *MockResource) QueryChannels(peer fab.ProposalProcessor) (*pb.ChannelQueryResponse, error) {
-	return nil, errors.New("Not implemented yet")
+	if peer == nil {
+		return nil, errors.New("Generate Error")
+	}
+	ci := &pb.ChannelInfo{ChannelId: "test"}
+	response := &pb.ChannelQueryResponse{Channels: []*pb.ChannelInfo{ci}}
+	return response, nil
 }
 
 // GenesisBlockFromOrderer returns the genesis block from the defined orderer that may be
