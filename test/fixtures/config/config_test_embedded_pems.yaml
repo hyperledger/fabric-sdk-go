@@ -443,6 +443,7 @@ peers:
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
       grpc.http2.keepalive_time: 15
+      fail-fast: false
       #will be taken into consideration if address has no protocol defined and secured connection fails
       allow-insecure: false
 
@@ -473,6 +474,7 @@ peers:
     #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
+      fail-fast: false
       #will be taken into consideration if address has no protocol defined and secured connection fails
       allow-insecure: false
     tlsCACerts:

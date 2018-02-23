@@ -248,7 +248,7 @@ orderers:
       keep-alive-time: 0s
       keep-alive-timeout: 20s
       keep-alive-permit: false
-      fail-fast: true
+      fail-fast: false
       #will be taken into consideration if address has no protocol defined and secured connection fails
       allow-insecure: false
 
@@ -278,7 +278,7 @@ peers:
       keep-alive-time: 0s
       keep-alive-timeout: 20s
       keep-alive-permit: false
-      fail-fast: true
+      fail-fast: false
       #will be taken into consideration if address has no protocol defined and secured connection fails
       allow-insecure: false
 
@@ -298,7 +298,7 @@ peers:
       keep-alive-time: 0s
       keep-alive-timeout: 20s
       keep-alive-permit: false
-      fail-fast: true
+      fail-fast: false
       #will be taken into consideration if address has no protocol defined and secured connection fails
       allow-insecure: false
 
