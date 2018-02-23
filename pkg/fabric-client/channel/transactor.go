@@ -9,8 +9,9 @@ package channel
 import (
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
@@ -19,13 +20,13 @@ import (
 
 // Transactor enables sending transactions and transaction proposals on the channel.
 type Transactor struct {
-	ctx       fab.Context
+	ctx       context.Context
 	ChannelID string
 	orderers  []fab.Orderer
 }
 
 // NewTransactor returns a Transactor for the current context and channel config.
-func NewTransactor(ctx fab.Context, cfg fab.ChannelCfg) (*Transactor, error) {
+func NewTransactor(ctx context.Context, cfg fab.ChannelCfg) (*Transactor, error) {
 	orderers, err := orderersFromChannelCfg(ctx, cfg)
 	if err != nil {
 		return nil, errors.WithMessage(err, "reading orderers from channel config failed")
@@ -43,7 +44,7 @@ func NewTransactor(ctx fab.Context, cfg fab.ChannelCfg) (*Transactor, error) {
 	return &t, nil
 }
 
-func orderersFromChannelCfg(ctx fab.Context, cfg fab.ChannelCfg) ([]fab.Orderer, error) {
+func orderersFromChannelCfg(ctx context.Context, cfg fab.ChannelCfg) ([]fab.Orderer, error) {
 	orderers := []fab.Orderer{}
 	ordererDict, err := orderersByTarget(ctx)
 	if err != nil {
@@ -77,8 +78,8 @@ func orderersFromChannelCfg(ctx fab.Context, cfg fab.ChannelCfg) ([]fab.Orderer,
 	return orderers, nil
 }
 
-func orderersByTarget(ctx fab.Context) (map[string]apiconfig.OrdererConfig, error) {
-	ordererDict := map[string]apiconfig.OrdererConfig{}
+func orderersByTarget(ctx context.Context) (map[string]core.OrdererConfig, error) {
+	ordererDict := map[string]core.OrdererConfig{}
 	orderersConfig, err := ctx.Config().OrderersConfig()
 	if err != nil {
 		return nil, errors.WithMessage(err, "loading orderers config failed")

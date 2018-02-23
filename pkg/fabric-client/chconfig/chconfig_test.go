@@ -9,7 +9,8 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
@@ -76,7 +77,7 @@ func setupTestChannel(name string) (*channel.Channel, error) {
 	return channel.New(ctx, mocks.NewMockChannelCfg(name))
 }
 
-func setupTestContext() fab.Context {
+func setupTestContext() context.Context {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
 	return ctx

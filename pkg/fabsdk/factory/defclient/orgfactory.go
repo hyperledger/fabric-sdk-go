@@ -7,9 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package defclient
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	credentialMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/credentialmgr"
 )
 
@@ -31,6 +30,6 @@ func (f *OrgClientFactory) NewMSPClient(orgName string, config apiconfig.Config,
 */
 
 // NewCredentialManager returns a new default implementation of the credential manager
-func (f *OrgClientFactory) NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fab.CredentialManager, error) {
+func (f *OrgClientFactory) NewCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error) {
 	return credentialMgr.NewCredentialManager(orgName, config, cryptoProvider)
 }

@@ -15,9 +15,10 @@ import (
 	"testing"
 	"time"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -56,7 +57,7 @@ func TestCreateChannel(t *testing.T) {
 	orderer := mocks.NewMockOrderer(fmt.Sprintf("0.0.0.0:1234"), verifyBroadcast)
 
 	// Create channel without envelope
-	_, err = client.CreateChannel(fab.CreateChannelRequest{
+	_, err = client.CreateChannel(api.CreateChannelRequest{
 		Orderer: orderer,
 		Name:    "mychannel",
 	})
@@ -65,7 +66,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without orderer
-	_, err = client.CreateChannel(fab.CreateChannelRequest{
+	_, err = client.CreateChannel(api.CreateChannelRequest{
 		Envelope: configTx,
 		Name:     "mychannel",
 	})
@@ -74,7 +75,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without name
-	_, err = client.CreateChannel(fab.CreateChannelRequest{
+	_, err = client.CreateChannel(api.CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 	})
@@ -83,7 +84,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Test with valid cofiguration
-	request := fab.CreateChannelRequest{
+	request := api.CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 		Name:     "mychannel",
@@ -116,7 +117,7 @@ func TestJoinChannel(t *testing.T) {
 
 	genesisBlock := mocks.NewSimpleMockBlock()
 
-	request := fab.JoinChannelRequest{
+	request := api.JoinChannelRequest{
 		Targets: peers,
 		//GenesisBlock: genesisBlock,
 	}
@@ -125,7 +126,7 @@ func TestJoinChannel(t *testing.T) {
 		t.Fatalf("Should not have been able to join channel because of missing GenesisBlock parameter")
 	}
 
-	request = fab.JoinChannelRequest{
+	request = api.JoinChannelRequest{
 		Targets:      peers,
 		GenesisBlock: genesisBlock,
 	}
@@ -141,7 +142,7 @@ func TestJoinChannel(t *testing.T) {
 
 	// Test failed proposal error handling
 	endorserServer.ProposalError = errors.New("Test Error")
-	request = fab.JoinChannelRequest{
+	request = api.JoinChannelRequest{
 		Targets: peers,
 	}
 	err = client.JoinChannel(request)

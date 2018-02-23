@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
@@ -103,7 +103,7 @@ func TestCredentialManager(t *testing.T) {
 	testUserName := createRandomName()
 
 	// Should not find the user
-	if err := checkSigningIdentity(credentialMgr, testUserName); err != apifabclient.ErrUserNotFound {
+	if err := checkSigningIdentity(credentialMgr, testUserName); err != api.ErrUserNotFound {
 		t.Fatalf("expected ErrUserNotFound, got: %s", err)
 	}
 
@@ -125,9 +125,9 @@ func TestCredentialManager(t *testing.T) {
 	}
 }
 
-func checkSigningIdentity(credentialMgr apifabclient.CredentialManager, user string) error {
+func checkSigningIdentity(credentialMgr api.CredentialManager, user string) error {
 	id, err := credentialMgr.GetSigningIdentity(user)
-	if err == apifabclient.ErrUserNotFound {
+	if err == api.ErrUserNotFound {
 		return err
 	}
 	if err != nil {
@@ -182,7 +182,7 @@ func TestCredentialManagerFromEmbeddedCryptoConfig(t *testing.T) {
 	}
 
 	_, err = credentialMgr.GetSigningIdentity("Non-Existent")
-	if err != apifabclient.ErrUserNotFound {
+	if err != api.ErrUserNotFound {
 		t.Fatalf("Should get ErrUserNotFound for non-existent user, got %v", err)
 	}
 

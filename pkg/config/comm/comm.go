@@ -11,14 +11,14 @@ import (
 
 	"crypto/x509"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	cutil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/pkg/errors"
 )
 
 // TLSConfig returns the appropriate config for TLS including the root CAs,
 // certs for mutual TLS, and server host override. Works with certs loaded either from a path or embedded pem.
-func TLSConfig(cert *x509.Certificate, serverName string, config apiconfig.Config) (*tls.Config, error) {
+func TLSConfig(cert *x509.Certificate, serverName string, config core.Config) (*tls.Config, error) {
 	certPool, err := config.TLSCACertPool()
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func TLSConfig(cert *x509.Certificate, serverName string, config apiconfig.Confi
 }
 
 // TLSCertHash is a utility method to calculate the SHA256 hash of the configured certificate (for usage in channel headers)
-func TLSCertHash(config apiconfig.Config) []byte {
+func TLSCertHash(config core.Config) []byte {
 	certs, err := config.TLSClientCerts()
 	if err != nil || len(certs) == 0 {
 		return nil

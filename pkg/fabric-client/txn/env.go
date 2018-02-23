@@ -17,9 +17,9 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -27,7 +27,7 @@ import (
 // NewID computes a TransactionID for the current user context
 //
 // TODO: Determine if this function should be exported after refactoring is completed.
-func NewID(ctx fab.Context) (fab.TransactionID, error) {
+func NewID(ctx contextApi.Context) (fab.TransactionID, error) {
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {

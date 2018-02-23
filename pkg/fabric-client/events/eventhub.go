@@ -16,8 +16,6 @@ import (
 	"github.com/spf13/cast"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -25,6 +23,9 @@ import (
 
 	cnsmr "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -60,8 +61,8 @@ type EventHub struct {
 	// Factory that creates EventsClient
 	eventsClientFactory eventClientFactory
 	// FabricClient
-	provider      fab.ProviderContext
-	identity      fab.IdentityContext
+	provider      context.ProviderContext
+	identity      context.IdentityContext
 	kap           keepalive.ClientParameters
 	failFast      bool
 	allowInsecure bool
@@ -69,21 +70,21 @@ type EventHub struct {
 
 // eventClientFactory creates an EventsClient instance
 type eventClientFactory interface {
-	newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error)
+	newEventsClient(provider context.ProviderContext, identity context.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error)
 }
 
 // consumerClientFactory is the default implementation oif the eventClientFactory
 type consumerClientFactory struct{}
 
-func (ccf *consumerClientFactory) newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string,
+func (ccf *consumerClientFactory) newEventsClient(provider context.ProviderContext, identity context.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string,
 	regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error) {
 	return consumer.NewEventsClient(provider, identity, peerAddress, certificate, serverHostOverride, regTimeout, adapter, kap, failFast, allowInsecure)
 }
 
 // Context holds the providers and services needed to create an EventHub.
 type Context struct {
-	fab.ProviderContext
-	fab.IdentityContext
+	context.ProviderContext
+	context.IdentityContext
 }
 
 // New creates an EventHub from context.
@@ -102,7 +103,7 @@ func New(ctx Context) (*EventHub, error) {
 }
 
 // FromConfig creates new event hub from context and peer config.
-func FromConfig(ctx Context, peerCfg *apiconfig.PeerConfig) (*EventHub, error) {
+func FromConfig(ctx Context, peerCfg *core.PeerConfig) (*EventHub, error) {
 
 	eventHub, err := New(ctx)
 	if err != nil {
@@ -132,7 +133,7 @@ func FromConfig(ctx Context, peerCfg *apiconfig.PeerConfig) (*EventHub, error) {
 	return eventHub, nil
 }
 
-func getFailFast(peerCfg *apiconfig.PeerConfig) bool {
+func getFailFast(peerCfg *core.PeerConfig) bool {
 	var failFast = true //the default
 	if ff, ok := peerCfg.GRPCOptions["fail-fast"].(bool); ok {
 		failFast = cast.ToBool(ff)
@@ -141,7 +142,7 @@ func getFailFast(peerCfg *apiconfig.PeerConfig) bool {
 	return failFast
 }
 
-func getKeepAliveOptions(peerCfg *apiconfig.PeerConfig) keepalive.ClientParameters {
+func getKeepAliveOptions(peerCfg *core.PeerConfig) keepalive.ClientParameters {
 
 	var kap keepalive.ClientParameters
 	if kaTime, ok := peerCfg.GRPCOptions["keep-alive-time"]; ok {
@@ -317,7 +318,7 @@ func (eventHub *EventHub) Connect() error {
 	if eventHub.grpcClient == nil {
 		eventsClient, _ := eventHub.eventsClientFactory.newEventsClient(eventHub.provider, eventHub.identity,
 			eventHub.peerAddr, eventHub.peerTLSCertificate, eventHub.peerTLSServerHostOverride,
-			eventHub.provider.Config().TimeoutOrDefault(apiconfig.EventReg), eventHub, eventHub.kap, eventHub.failFast, eventHub.allowInsecure)
+			eventHub.provider.Config().TimeoutOrDefault(core.EventReg), eventHub, eventHub.kap, eventHub.failFast, eventHub.allowInsecure)
 		eventHub.grpcClient = eventsClient
 	}
 
@@ -608,7 +609,7 @@ func (eventHub *EventHub) notifyChaincodeRegistrants(channelID string, ccEvent *
 	}
 }
 
-func isInsecureConnectionAllowed(peerCfg *apiconfig.PeerConfig) bool {
+func isInsecureConnectionAllowed(peerCfg *core.PeerConfig) bool {
 	//allowInsecure used only when protocol is missing from URL
 	allowInsecure := !urlutil.HasProtocol(peerCfg.URL)
 	boolVal, ok := peerCfg.GRPCOptions["allow-insecure"].(bool)

@@ -11,9 +11,9 @@ package fabsdk
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
@@ -82,7 +82,7 @@ func TestOptLoggerFactory(t *testing.T) {
 // MockLoggerFactory records the modules that have loggers
 type MockLoggerFactory struct {
 	ActiveModules map[string]bool
-	logger        apilogging.LoggerProvider
+	logger        api.LoggerProvider
 }
 
 func NewMockLoggerFactory() *MockLoggerFactory {
@@ -93,7 +93,7 @@ func NewMockLoggerFactory() *MockLoggerFactory {
 	return &lf
 }
 
-func (lf *MockLoggerFactory) GetLogger(module string) apilogging.Logger {
+func (lf *MockLoggerFactory) GetLogger(module string) api.Logger {
 	lf.ActiveModules[module] = true
 	return lf.logger.GetLogger(module)
 }

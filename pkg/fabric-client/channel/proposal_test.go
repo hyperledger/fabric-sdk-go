@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/golang/mock/gomock"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	mock_fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	mock_fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"

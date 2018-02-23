@@ -15,7 +15,7 @@ import (
 	"encoding/pem"
 	"io"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 
@@ -25,7 +25,7 @@ import (
 var logger = logging.NewLogger("fabric_sdk_go")
 
 // GetPrivateKeyFromCert will return private key represented by SKI in cert's public key
-func GetPrivateKeyFromCert(cert []byte, cs apicryptosuite.CryptoSuite) (apicryptosuite.Key, error) {
+func GetPrivateKeyFromCert(cert []byte, cs core.CryptoSuite) (core.Key, error) {
 
 	// get the public key in the right format
 	certPubK, err := GetPublicKeyFromCert(cert, cs)
@@ -51,7 +51,7 @@ func GetPrivateKeyFromCert(cert []byte, cs apicryptosuite.CryptoSuite) (apicrypt
 }
 
 // GetPublicKeyFromCert will return public key the from cert
-func GetPublicKeyFromCert(cert []byte, cs apicryptosuite.CryptoSuite) (apicryptosuite.Key, error) {
+func GetPublicKeyFromCert(cert []byte, cs core.CryptoSuite) (core.Key, error) {
 
 	dcert, _ := pem.Decode(cert)
 	if dcert == nil {
@@ -73,7 +73,7 @@ func GetPublicKeyFromCert(cert []byte, cs apicryptosuite.CryptoSuite) (apicrypto
 }
 
 // X509KeyPair will return cer/key pair used for mutual TLS
-func X509KeyPair(certPEMBlock []byte, pk apicryptosuite.Key, cs apicryptosuite.CryptoSuite) (tls.Certificate, error) {
+func X509KeyPair(certPEMBlock []byte, pk core.Key, cs core.CryptoSuite) (tls.Certificate, error) {
 
 	fail := func(err error) (tls.Certificate, error) { return tls.Certificate{}, err }
 
@@ -115,8 +115,8 @@ func X509KeyPair(certPEMBlock []byte, pk apicryptosuite.Key, cs apicryptosuite.C
 
 //PrivateKey is signer implementation for golang client TLS
 type PrivateKey struct {
-	cryptoSuite apicryptosuite.CryptoSuite
-	key         apicryptosuite.Key
+	cryptoSuite core.CryptoSuite
+	key         core.Key
 	publicKey   crypto.PublicKey
 }
 

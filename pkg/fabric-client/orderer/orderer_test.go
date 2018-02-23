@@ -18,10 +18,10 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 
 	"github.com/golang/mock/gomock"
-	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -141,7 +141,7 @@ func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.
 }
 
 func TestNewOrdererWithTLS(t *testing.T) {
-	tlsConfig := apiconfig.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+	tlsConfig := core.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
 
 	cert, err := tlsConfig.TLSCert()
 
@@ -164,7 +164,7 @@ func TestNewOrdererWithTLS(t *testing.T) {
 
 func TestNewOrdererWithMutualTLS(t *testing.T) {
 	//Positive Test case
-	tlsConfig := apiconfig.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+	tlsConfig := core.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
 
 	cert, err := tlsConfig.TLSCert()
 
@@ -341,9 +341,9 @@ func TestSendBroadcastError(t *testing.T) {
 func TestBroadcastBadDial(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config := mock_core.NewMockConfig(mockCtrl)
 
-	config.EXPECT().TimeoutOrDefault(apiconfig.OrdererConnection).Return(time.Second * 1)
+	config.EXPECT().TimeoutOrDefault(core.OrdererConnection).Return(time.Second * 1)
 	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("error adding cert to pool")).AnyTimes()
 
 	orderer, _ := NewOrderer("grpc://127.0.0.1:0", "", "", config, kap)
@@ -376,7 +376,7 @@ func TestGetKeepAliveOptions(t *testing.T) {
 	grpcOpts["keep-alive-timeout"] = 2 * time.Second
 	grpcOpts["keep-alive-permit"] = false
 	//orderer config with GRPC opts
-	ordererConfig := &apiconfig.OrdererConfig{
+	ordererConfig := &core.OrdererConfig{
 		GRPCOptions: grpcOpts,
 	}
 	kap := getKeepAliveOptions(ordererConfig)
@@ -394,21 +394,21 @@ func TestGetKeepAliveOptions(t *testing.T) {
 
 func TestFailFast(t *testing.T) {
 	grpcOpts := make(map[string]interface{})
-	ordererConfig := &apiconfig.OrdererConfig{
+	ordererConfig := &core.OrdererConfig{
 		GRPCOptions: grpcOpts,
 	}
 	failFast := getFailFast(ordererConfig)
 	assert.EqualValues(t, failFast, true)
 
 	grpcOpts["fail-fast"] = false
-	ordererConfig = &apiconfig.OrdererConfig{
+	ordererConfig = &core.OrdererConfig{
 		GRPCOptions: grpcOpts,
 	}
 	failFast = getFailFast(ordererConfig)
 	assert.EqualValues(t, failFast, false)
 }
 
-func getGRPCOpts(addr string, failFast bool, keepAliveOptions bool) *apiconfig.OrdererConfig {
+func getGRPCOpts(addr string, failFast bool, keepAliveOptions bool) *core.OrdererConfig {
 	grpcOpts := make(map[string]interface{})
 	//fail fast
 	grpcOpts["fail-fast"] = failFast
@@ -425,7 +425,7 @@ func getGRPCOpts(addr string, failFast bool, keepAliveOptions bool) *apiconfig.O
 	grpcOpts["allow-insecure"] = true
 
 	//orderer config with GRPC opts
-	ordererConfig := &apiconfig.OrdererConfig{
+	ordererConfig := &core.OrdererConfig{
 		URL:         addr,
 		GRPCOptions: grpcOpts,
 	}
@@ -516,13 +516,13 @@ func TestNewOrdererFromConfig(t *testing.T) {
 	grpcOpts["keep-alive-timeout"] = 2 * time.Second
 	grpcOpts["keep-alive-permit"] = false
 	//orderer config with GRPC opts
-	ordererConfig := &apiconfig.OrdererConfig{
+	ordererConfig := &core.OrdererConfig{
 		URL:         "",
 		GRPCOptions: grpcOpts,
 	}
 	_, err := NewOrdererFromConfig(ordererConfig, mocks.NewMockConfig())
 	if err != nil {
-		t.Fatalf("Failed to get new orderer from config %v", err)
+		t.Fatalf("Failed to get new orderer from config%v", err)
 	}
 }
 
@@ -531,8 +531,8 @@ func TestNewOrdererSecured(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(apiconfig.OrdererConnection).Return(time.Second * 1).AnyTimes()
+	config := mock_core.DefaultMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(core.OrdererConnection).Return(time.Second * 1).AnyTimes()
 
 	//Test grpc URL
 	url := "grpc://0.0.0.0:1234"

@@ -7,10 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package sw
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspSw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
@@ -19,7 +18,7 @@ import (
 var logger = logging.NewLogger("fabric_sdk_go")
 
 //GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
-func GetSuiteByConfig(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
+func GetSuiteByConfig(config core.Config) (core.CryptoSuite, error) {
 	// TODO: delete this check?
 	if config.SecurityProvider() != "SW" {
 		return nil, errors.Errorf("Unsupported BCCSP Provider: %s", config.SecurityProvider())
@@ -34,7 +33,7 @@ func GetSuiteByConfig(config apiconfig.Config) (apicryptosuite.CryptoSuite, erro
 }
 
 //GetSuiteWithDefaultEphemeral returns cryptosuite adaptor for bccsp with default ephemeral options (intended to aid testing)
-func GetSuiteWithDefaultEphemeral() (apicryptosuite.CryptoSuite, error) {
+func GetSuiteWithDefaultEphemeral() (core.CryptoSuite, error) {
 	opts := getEphemeralOpts()
 
 	bccsp, err := getBCCSPFromOpts(opts)
@@ -55,7 +54,7 @@ func getBCCSPFromOpts(config *bccspSw.SwOpts) (bccsp.BCCSP, error) {
 }
 
 //GetOptsByConfig Returns Factory opts for given SDK config
-func getOptsByConfig(c apiconfig.Config) *bccspSw.SwOpts {
+func getOptsByConfig(c core.Config) *bccspSw.SwOpts {
 	opts := &bccspSw.SwOpts{
 		HashFamily: c.SecurityAlgorithm(),
 		SecLevel:   c.SecurityLevel(),

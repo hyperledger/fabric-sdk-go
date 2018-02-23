@@ -9,14 +9,13 @@ package wrapper
 import (
 	"fmt"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspSw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
 //getSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
-func getSuiteByConfig(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
+func getSuiteByConfig(config core.Config) (core.CryptoSuite, error) {
 	opts := getOptsByConfig(config)
 	bccsp, err := getBCCSPFromOpts(opts)
 
@@ -33,7 +32,7 @@ func getBCCSPFromOpts(config *bccspSw.SwOpts) (bccsp.BCCSP, error) {
 }
 
 //getOptsByConfig Returns Factory opts for given SDK config
-func getOptsByConfig(c apiconfig.Config) *bccspSw.SwOpts {
+func getOptsByConfig(c core.Config) *bccspSw.SwOpts {
 	// TODO: delete this check
 	if c.SecurityProvider() != "SW" {
 		panic(fmt.Sprintf("Unsupported BCCSP Provider: %s", c.SecurityProvider()))

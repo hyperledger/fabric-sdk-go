@@ -11,14 +11,14 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
-	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
@@ -28,22 +28,22 @@ import (
 type FabricSDK struct {
 	opts options
 
-	config            apiconfig.Config
-	stateStore        kvstore.KVStore
-	cryptoSuite       apicryptosuite.CryptoSuite
-	discoveryProvider apifabclient.DiscoveryProvider
-	selectionProvider apifabclient.SelectionProvider
-	signingManager    apifabclient.SigningManager
-	fabricProvider    apisdk.FabricProvider
+	config            core.Config
+	stateStore        contextApi.KVStore
+	cryptoSuite       core.CryptoSuite
+	discoveryProvider fab.DiscoveryProvider
+	selectionProvider fab.SelectionProvider
+	signingManager    contextApi.SigningManager
+	fabricProvider    sdkApi.FabricProvider
 	channelProvider   *chpvdr.ChannelProvider
 }
 
 type options struct {
-	Core    apisdk.CoreProviderFactory
-	Service apisdk.ServiceProviderFactory
-	Context apisdk.OrgClientFactory
-	Session apisdk.SessionClientFactory
-	Logger  apilogging.LoggerProvider
+	Core    sdkApi.CoreProviderFactory
+	Service sdkApi.ServiceProviderFactory
+	Context sdkApi.OrgClientFactory
+	Session sdkApi.SessionClientFactory
+	Logger  api.LoggerProvider
 }
 
 // Option configures the SDK.
@@ -51,7 +51,7 @@ type Option func(opts *options) error
 
 // New initializes the SDK based on the set of options provided.
 // configProvider provides the application configuration.
-func New(cp apiconfig.ConfigProvider, opts ...Option) (*FabricSDK, error) {
+func New(cp core.ConfigProvider, opts ...Option) (*FabricSDK, error) {
 	pkgSuite := defPkgSuite{}
 	config, err := cp()
 	if err != nil {
@@ -63,15 +63,15 @@ func New(cp apiconfig.ConfigProvider, opts ...Option) (*FabricSDK, error) {
 // WithConfig converts a Config interface to a ConfigProvider.
 // This is a helper function for those who already loaded the config
 // prior to instantiating the SDK.
-func WithConfig(config apiconfig.Config) apiconfig.ConfigProvider {
-	return func() (apiconfig.Config, error) {
+func WithConfig(config core.Config) core.ConfigProvider {
+	return func() (core.Config, error) {
 		return config, nil
 	}
 }
 
 // fromPkgSuite creates an SDK based on the implementations in the provided pkg suite.
 // TODO: For now leaving this method as private until we have more usage.
-func fromPkgSuite(config apiconfig.Config, pkgSuite apisdk.PkgSuite, opts ...Option) (*FabricSDK, error) {
+func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*FabricSDK, error) {
 	core, err := pkgSuite.Core()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to initialize core pkg")
@@ -117,7 +117,7 @@ func fromPkgSuite(config apiconfig.Config, pkgSuite apisdk.PkgSuite, opts ...Opt
 }
 
 // WithCorePkg injects the core implementation into the SDK.
-func WithCorePkg(core apisdk.CoreProviderFactory) Option {
+func WithCorePkg(core sdkApi.CoreProviderFactory) Option {
 	return func(opts *options) error {
 		opts.Core = core
 		return nil
@@ -125,7 +125,7 @@ func WithCorePkg(core apisdk.CoreProviderFactory) Option {
 }
 
 // WithServicePkg injects the service implementation into the SDK.
-func WithServicePkg(service apisdk.ServiceProviderFactory) Option {
+func WithServicePkg(service sdkApi.ServiceProviderFactory) Option {
 	return func(opts *options) error {
 		opts.Service = service
 		return nil
@@ -133,7 +133,7 @@ func WithServicePkg(service apisdk.ServiceProviderFactory) Option {
 }
 
 // WithContextPkg injects the context implementation into the SDK.
-func WithContextPkg(context apisdk.OrgClientFactory) Option {
+func WithContextPkg(context sdkApi.OrgClientFactory) Option {
 	return func(opts *options) error {
 		opts.Context = context
 		return nil
@@ -141,7 +141,7 @@ func WithContextPkg(context apisdk.OrgClientFactory) Option {
 }
 
 // WithSessionPkg injects the session implementation into the SDK.
-func WithSessionPkg(session apisdk.SessionClientFactory) Option {
+func WithSessionPkg(session sdkApi.SessionClientFactory) Option {
 	return func(opts *options) error {
 		opts.Session = session
 		return nil
@@ -149,7 +149,7 @@ func WithSessionPkg(session apisdk.SessionClientFactory) Option {
 }
 
 // WithLoggerPkg injects the logger implementation into the SDK.
-func WithLoggerPkg(logger apilogging.LoggerProvider) Option {
+func WithLoggerPkg(logger api.LoggerProvider) Option {
 	return func(opts *options) error {
 		opts.Logger = logger
 		return nil
@@ -241,7 +241,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 }
 
 // Config returns the SDK's configuration.
-func (sdk *FabricSDK) Config() apiconfig.Config {
+func (sdk *FabricSDK) Config() core.Config {
 	return sdk.config
 }
 
@@ -259,7 +259,7 @@ func (sdk *FabricSDK) context() *sdkContext {
 	return &c
 }
 
-func (sdk *FabricSDK) newUser(orgID string, userName string) (apifabclient.IdentityContext, error) {
+func (sdk *FabricSDK) newUser(orgID string, userName string) (context.IdentityContext, error) {
 
 	credentialMgr, err := sdk.opts.Context.NewCredentialManager(orgID, sdk.config, sdk.cryptoSuite)
 	if err != nil {

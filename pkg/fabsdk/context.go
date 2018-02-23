@@ -7,10 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
@@ -24,32 +24,32 @@ type sdkContext struct {
 }
 
 // Config returns the Config provider of sdk.
-func (c *fabContext) Config() apiconfig.Config {
+func (c *fabContext) Config() core.Config {
 	return c.sdk.config
 }
 
 // CryptoSuite returns the BCCSP provider of sdk.
-func (c *fabContext) CryptoSuite() apicryptosuite.CryptoSuite {
+func (c *fabContext) CryptoSuite() core.CryptoSuite {
 	return c.sdk.cryptoSuite
 }
 
 // SigningManager returns signing manager
-func (c *fabContext) SigningManager() apifabclient.SigningManager {
+func (c *fabContext) SigningManager() contextApi.SigningManager {
 	return c.sdk.signingManager
 }
 
 // StateStore returns state store
-func (c *sdkContext) StateStore() kvstore.KVStore {
+func (c *sdkContext) StateStore() contextApi.KVStore {
 	return c.sdk.stateStore
 }
 
 // DiscoveryProvider returns discovery provider
-func (c *sdkContext) DiscoveryProvider() apifabclient.DiscoveryProvider {
+func (c *sdkContext) DiscoveryProvider() fab.DiscoveryProvider {
 	return c.sdk.discoveryProvider
 }
 
 // SelectionProvider returns selection provider
-func (c *sdkContext) SelectionProvider() apifabclient.SelectionProvider {
+func (c *sdkContext) SelectionProvider() fab.SelectionProvider {
 	return c.sdk.selectionProvider
 }
 
@@ -59,12 +59,12 @@ func (c *sdkContext) FabricProvider() api.FabricProvider {
 }
 
 // ChannelProvider provides channel services.
-func (c *sdkContext) ChannelProvider() apifabclient.ChannelProvider {
+func (c *sdkContext) ChannelProvider() fab.ChannelProvider {
 	return c.sdk.channelProvider
 }
 
 type identityOptions struct {
-	identity apifabclient.IdentityContext
+	identity context.IdentityContext
 	ok       bool
 }
 
@@ -90,7 +90,7 @@ func WithUser(name string) IdentityOption {
 }
 
 // WithIdentity uses a pre-constructed identity object as the credential for the session
-func WithIdentity(identity apifabclient.IdentityContext) IdentityOption {
+func WithIdentity(identity context.IdentityContext) IdentityOption {
 	return func(o *identityOptions, sdk *FabricSDK, orgName string) error {
 		if o.ok {
 			return errors.New("Identity already determined")
@@ -101,7 +101,7 @@ func WithIdentity(identity apifabclient.IdentityContext) IdentityOption {
 	}
 }
 
-func (sdk *FabricSDK) newIdentity(orgName string, options ...IdentityOption) (apifabclient.IdentityContext, error) {
+func (sdk *FabricSDK) newIdentity(orgName string, options ...IdentityOption) (context.IdentityContext, error) {
 	opts := identityOptions{}
 
 	for _, option := range options {
@@ -121,11 +121,11 @@ func (sdk *FabricSDK) newIdentity(orgName string, options ...IdentityOption) (ap
 // session represents an identity being used with clients along with services
 // that associate with that identity (particularly the channel service).
 type session struct {
-	apifabclient.IdentityContext
+	context.IdentityContext
 }
 
 // newSession creates a session from a context and a user (TODO)
-func newSession(ic apifabclient.IdentityContext, cp apifabclient.ChannelProvider) *session {
+func newSession(ic context.IdentityContext, cp fab.ChannelProvider) *session {
 	s := session{
 		IdentityContext: ic,
 	}

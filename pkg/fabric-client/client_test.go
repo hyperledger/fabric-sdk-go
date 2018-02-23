@@ -13,10 +13,10 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -49,11 +49,11 @@ AiaiI2BjxnL3/TetJ8iFJYZyWvK//an13WV/AiARBJd/pI5A7KZgQxJhXmmR8bie
 XdsmTcdRvJ3TS/6HCA==
 -----END CERTIFICATE-----`
 
-func crypto(t *testing.T) apicryptosuite.CryptoSuite {
+func crypto(t *testing.T) core.CryptoSuite {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
@@ -143,14 +143,14 @@ func TestClientMethods(t *testing.T) {
 
 	// Load unknown user
 	_, err = client.LoadUserFromStateStore("nonexistant", "nonexistant")
-	if err != fab.ErrUserNotFound {
+	if err != api.ErrUserNotFound {
 		t.Fatalf("should return ErrUserNotFound, got: %v", err)
 	}
 
 	saveUser := identity.NewUser("myname", "mymsp")
 	saveUser.SetEnrollmentCertificate([]byte(testCert1))
 	client.StateStore().Store(saveUser)
-	retrievedUser, err := client.StateStore().Load(fab.UserKey{MspID: saveUser.MspID(), Name: saveUser.Name()})
+	retrievedUser, err := client.StateStore().Load(api.UserKey{MspID: saveUser.MspID(), Name: saveUser.Name()})
 	if err != nil {
 		t.Fatalf("client.StateStore().Load() return error[%s]", err)
 	}

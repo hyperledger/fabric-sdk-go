@@ -11,12 +11,12 @@ import (
 	"strconv"
 	"testing"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
@@ -111,7 +111,7 @@ func TestLedgerQueries(t *testing.T) {
 	testQueryConfigBlock(t, ledger, targets)
 }
 
-func changeBlockState(t *testing.T, channel chclient.ChannelClient, chaincodeID string) (string, error) {
+func changeBlockState(t *testing.T, channel *chclient.ChannelClient, chaincodeID string) (string, error) {
 
 	req := chclient.Request{
 		ChaincodeID: chaincodeID,
@@ -236,7 +236,7 @@ func testInstantiatedChaincodes(t *testing.T, ccID string, ledger fab.ChannelLed
 }
 
 // MoveFundsAndGetTxID ...
-func moveFundsAndGetTxID(t *testing.T, channel chclient.ChannelClient, chaincodeID string) (string, error) {
+func moveFundsAndGetTxID(t *testing.T, channel *chclient.ChannelClient, chaincodeID string) (string, error) {
 
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")

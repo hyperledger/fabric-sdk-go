@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/net/context"
+	grpcContext "golang.org/x/net/context"
 
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
@@ -19,17 +19,18 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"github.com/golang/protobuf/ptypes"
-	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	"crypto/x509"
 
 	consumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -48,8 +49,8 @@ type eventsClient struct {
 	TLSServerHostOverride  string
 	tlsCertHash            []byte
 	clientConn             *grpc.ClientConn
-	provider               fab.ProviderContext
-	identity               fab.IdentityContext
+	provider               context.ProviderContext
+	identity               context.IdentityContext
 	processEventsCompleted chan struct{}
 	kap                    keepalive.ClientParameters
 	failFast               bool
@@ -58,7 +59,7 @@ type eventsClient struct {
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
-func NewEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate,
+func NewEventsClient(provider context.ProviderContext, identity context.IdentityContext, peerAddress string, certificate *x509.Certificate,
 	serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter,
 	kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error) {
 
@@ -90,9 +91,9 @@ func NewEventsClient(provider fab.ProviderContext, identity fab.IdentityContext,
 
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
 func newEventsClientConnectionWithAddress(peerAddress string, cert *x509.Certificate, serverHostOverride string,
-	config apiconfig.Config, kap keepalive.ClientParameters, failFast bool, secured bool) (*grpc.ClientConn, error) {
+	config core.Config, kap keepalive.ClientParameters, failFast bool, secured bool) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.EventHub)))
+	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(core.EventHubConnection)))
 	if secured {
 		tlsConfig, err := comm.TLSConfig(cert, serverHostOverride, config)
 		if err != nil {
@@ -109,8 +110,8 @@ func newEventsClientConnectionWithAddress(peerAddress string, cert *x509.Certifi
 	}
 	opts = append(opts, grpc.WithDefaultCallOptions(grpc.FailFast(failFast)))
 
-	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, config.TimeoutOrDefault(apiconfig.EventHub))
+	ctx := grpcContext.Background()
+	ctx, _ = grpcContext.WithTimeout(ctx, config.TimeoutOrDefault(core.EventHubConnection))
 	conn, err := grpc.DialContext(ctx, urlutil.ToAddress(peerAddress), opts...)
 	if err != nil {
 		return nil, err
@@ -329,7 +330,7 @@ func (ec *eventsClient) establishConnectionAndRegister(secured bool) error {
 	}
 
 	serverClient := ehpb.NewEventsClient(conn)
-	ec.stream, err = serverClient.Chat(context.Background())
+	ec.stream, err = serverClient.Chat(grpcContext.Background())
 	if err != nil {
 		logger.Error("events connection failed, cause: ", err)
 		if secured && ec.allowInsecure {
@@ -369,7 +370,7 @@ func (ec *eventsClient) Stop() error {
 	// Server ended its send stream in response to CloseSend()
 	case <-ec.processEventsCompleted:
 		// Timeout waiting for server to end stream
-	case <-time.After(ec.provider.Config().TimeoutOrDefault(apiconfig.EventHub)):
+	case <-time.After(ec.provider.Config().TimeoutOrDefault(core.EventHubConnection)):
 		timeoutErr = errors.New("close event stream timeout")
 	}
 

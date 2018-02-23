@@ -12,7 +12,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
-	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
+	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/mocks"
 	"github.com/pkg/errors"
 )
 

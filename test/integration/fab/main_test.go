@@ -11,7 +11,7 @@ import (
 	"path"
 	"testing"
 
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"

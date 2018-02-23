@@ -10,7 +10,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 )
 
 //Log level names in string
@@ -23,16 +23,16 @@ var levelNames = []string{
 }
 
 // LogLevel returns the log level from a string representation.
-func LogLevel(level string) (apilogging.Level, error) {
+func LogLevel(level string) (api.Level, error) {
 	for i, name := range levelNames {
 		if strings.EqualFold(name, level) {
-			return apilogging.Level(i), nil
+			return api.Level(i), nil
 		}
 	}
-	return apilogging.ERROR, errors.New("logger: invalid log level")
+	return api.ERROR, errors.New("logger: invalid log level")
 }
 
 //LogLevelString returns String repressentation of given log level
-func LogLevelString(level apilogging.Level) string {
+func LogLevelString(level api.Level) string {
 	return levelNames[level]
 }

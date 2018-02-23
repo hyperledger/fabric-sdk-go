@@ -9,11 +9,10 @@ package mocks
 import (
 	"crypto"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	msp_protos "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 )
 
@@ -75,7 +74,7 @@ func (id *MockIdentity) Serialize() ([]byte, error) {
 	return nil, nil
 }
 
-func (id *MockIdentity) getHashOpt(hashFamily string) (apicryptosuite.HashOpts, error) {
+func (id *MockIdentity) getHashOpt(hashFamily string) (core.HashOpts, error) {
 
 	return nil, nil
 }

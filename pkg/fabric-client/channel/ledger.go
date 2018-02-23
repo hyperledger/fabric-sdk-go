@@ -13,7 +13,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -26,12 +27,12 @@ const (
 
 // Ledger is a client that provides access to the underlying ledger of a channel.
 type Ledger struct {
-	ctx    fab.Context
+	ctx    context.Context
 	chName string
 }
 
 // NewLedger constructs a Ledger client for the current context and named channel.
-func NewLedger(ctx fab.Context, chName string) (*Ledger, error) {
+func NewLedger(ctx context.Context, chName string) (*Ledger, error) {
 	l := Ledger{
 		ctx:    ctx,
 		chName: chName,
@@ -288,7 +289,7 @@ func collectProposalResponses(tprs []*fab.TransactionProposalResponse) [][]byte 
 	return responses
 }
 
-func queryChaincode(ctx fab.Context, channel string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+func queryChaincode(ctx context.Context, channel string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
 	txid, err := txn.NewID(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "creation of transaction ID failed")

@@ -14,22 +14,23 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/dynamicselection"
+	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/selection/dynamicselection"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
 
@@ -224,7 +225,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 }
 
-func verifyValue(t *testing.T, chClient chclient.ChannelClient, expected int) {
+func verifyValue(t *testing.T, chClient *chclient.ChannelClient, expected int) {
 
 	// Assert that funds have changed value on org1 peer
 	var valueInt int
@@ -250,7 +251,7 @@ func verifyValue(t *testing.T, chClient chclient.ChannelClient, expected int) {
 
 }
 
-func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) fab.IdentityContext {
+func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) context.IdentityContext {
 
 	session, err := sdk.NewClient(fabsdk.WithUser(userName), fabsdk.WithOrg(orgName)).Session()
 	if err != nil {
@@ -271,12 +272,12 @@ func loadOrgPeers(t *testing.T, sdk *fabsdk.FabricSDK) {
 		t.Fatal(err)
 	}
 
-	orgTestPeer0, err = peer.New(sdk.Config(), peer.FromPeerConfig(&apiconfig.NetworkPeer{PeerConfig: org1Peers[0]}))
+	orgTestPeer0, err = peer.New(sdk.Config(), peer.FromPeerConfig(&core.NetworkPeer{PeerConfig: org1Peers[0]}))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	orgTestPeer1, err = peer.New(sdk.Config(), peer.FromPeerConfig(&apiconfig.NetworkPeer{PeerConfig: org2Peers[0]}))
+	orgTestPeer1, err = peer.New(sdk.Config(), peer.FromPeerConfig(&core.NetworkPeer{PeerConfig: org2Peers[0]}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,6 +290,6 @@ type DynamicSelectionProviderFactory struct {
 }
 
 // NewSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) NewSelectionProvider(config apiconfig.Config) (fab.SelectionProvider, error) {
+func (f *DynamicSelectionProviderFactory) NewSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
 	return selection.NewSelectionProvider(config, f.ChannelUsers, nil)
 }

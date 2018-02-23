@@ -9,15 +9,15 @@ package fabricca
 import (
 	"github.com/pkg/errors"
 
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	sdkApi "github.com/hyperledger/fabric-sdk-go/api/apifabca"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	fabric_ca "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -32,7 +32,7 @@ type FabricCA struct {
 // @param {api.Config} client config for fabric-ca services
 // @returns {api.FabricCAClient} FabricCAClient implementation
 // @returns {error} error, if any
-func NewFabricCAClient(org string, config config.Config, cryptoSuite apicryptosuite.CryptoSuite) (*FabricCA, error) {
+func NewFabricCAClient(org string, config config.Config, cryptoSuite core.CryptoSuite) (*FabricCA, error) {
 	if org == "" || config == nil || cryptoSuite == nil {
 		return nil, errors.New("organization, config and cryptoSuite are required to load CA config")
 	}
@@ -104,7 +104,7 @@ func (fabricCAServices *FabricCA) CAName() string {
 // enrollmentID The registered ID to use for enrollment
 // enrollmentSecret The secret associated with the enrollment ID
 // Returns X509 certificate
-func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret string) (apicryptosuite.Key, []byte, error) {
+func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error) {
 	if enrollmentID == "" {
 		return nil, nil, errors.New("enrollmentID required")
 	}
@@ -125,7 +125,7 @@ func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret s
 
 // Reenroll an enrolled user in order to receive a signed X509 certificate
 // Returns X509 certificate
-func (fabricCAServices *FabricCA) Reenroll(user apifabclient.User) (apicryptosuite.Key, []byte, error) {
+func (fabricCAServices *FabricCA) Reenroll(user contextApi.User) (core.Key, []byte, error) {
 	if user == nil {
 		return nil, nil, errors.New("user required")
 	}
@@ -154,8 +154,8 @@ func (fabricCAServices *FabricCA) Reenroll(user apifabclient.User) (apicryptosui
 // registrar: The User that is initiating the registration
 // request: Registration Request
 // Returns Enrolment Secret
-func (fabricCAServices *FabricCA) Register(registrar apifabclient.User,
-	request *sdkApi.RegistrationRequest) (string, error) {
+func (fabricCAServices *FabricCA) Register(registrar contextApi.User,
+	request *fab.RegistrationRequest) (string, error) {
 	// Validate registration request
 	if request == nil {
 		return "", errors.New("registration request required")
@@ -191,8 +191,8 @@ func (fabricCAServices *FabricCA) Register(registrar apifabclient.User,
 // Revoke a User with the Fabric CA
 // registrar: The User that is initiating the revocation
 // request: Revocation Request
-func (fabricCAServices *FabricCA) Revoke(registrar apifabclient.User,
-	request *sdkApi.RevocationRequest) (*api.RevocationResponse, error) {
+func (fabricCAServices *FabricCA) Revoke(registrar contextApi.User,
+	request *fab.RevocationRequest) (*api.RevocationResponse, error) {
 	// Validate revocation request
 	if request == nil {
 		return nil, errors.New("revocation request required")
@@ -213,7 +213,7 @@ func (fabricCAServices *FabricCA) Revoke(registrar apifabclient.User,
 }
 
 // createSigningIdentity creates an identity to sign Fabric CA requests with
-func (fabricCAServices *FabricCA) createSigningIdentity(user apifabclient.User) (*fabric_ca.Identity, error) {
+func (fabricCAServices *FabricCA) createSigningIdentity(user contextApi.User) (*fabric_ca.Identity, error) {
 	// Validate user
 	if user == nil {
 		return nil, errors.New("user required")

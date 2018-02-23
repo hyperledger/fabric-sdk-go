@@ -13,14 +13,14 @@ import (
 //VerifyTrue verifies if boolean input is true, if false then fails test
 func VerifyTrue(t *testing.T, input bool, msgAndArgs ...interface{}) {
 	if !input {
-		failTest(t, msgAndArgs)
+		failTest(t, msgAndArgs...)
 	}
 }
 
 //VerifyFalse verifies if boolean input is false, if true then fails test
 func VerifyFalse(t *testing.T, input bool, msgAndArgs ...interface{}) {
 	if input {
-		failTest(t, msgAndArgs)
+		failTest(t, msgAndArgs...)
 	}
 }
 

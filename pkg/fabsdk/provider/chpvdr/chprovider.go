@@ -9,7 +9,8 @@ package chpvdr
 import (
 	"sync"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
@@ -32,9 +33,9 @@ func New(fabricProvider api.FabricProvider) (*ChannelProvider, error) {
 }
 
 // NewChannelService creates a ChannelService for an identity
-func (cp *ChannelProvider) NewChannelService(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelService, error) {
+func (cp *ChannelProvider) NewChannelService(ic context.IdentityContext, channelID string) (fab.ChannelService, error) {
 
-	var cfg apifabclient.ChannelCfg
+	var cfg fab.ChannelCfg
 	if channelID != "" {
 		v, ok := cp.chCfgMap.Load(channelID)
 		if !ok {
@@ -50,7 +51,7 @@ func (cp *ChannelProvider) NewChannelService(ic apifabclient.IdentityContext, ch
 
 			cp.chCfgMap.Store(channelID, cfg)
 		} else {
-			cfg = v.(apifabclient.ChannelCfg)
+			cfg = v.(fab.ChannelCfg)
 		}
 	} else {
 		// System channel
@@ -74,31 +75,31 @@ func (cp *ChannelProvider) NewChannelService(ic apifabclient.IdentityContext, ch
 type ChannelService struct {
 	provider        *ChannelProvider
 	fabricProvider  api.FabricProvider
-	identityContext apifabclient.IdentityContext
-	cfg             apifabclient.ChannelCfg
+	identityContext context.IdentityContext
+	cfg             fab.ChannelCfg
 }
 
 // Channel returns the named Channel client.
-func (cs *ChannelService) Channel() (apifabclient.Channel, error) {
+func (cs *ChannelService) Channel() (fab.Channel, error) {
 	return cs.fabricProvider.CreateChannelClient(cs.identityContext, cs.cfg)
 }
 
 // EventHub returns the EventHub for the named channel.
-func (cs *ChannelService) EventHub() (apifabclient.EventHub, error) {
+func (cs *ChannelService) EventHub() (fab.EventHub, error) {
 	return cs.fabricProvider.CreateEventHub(cs.identityContext, cs.cfg.Name())
 }
 
 // Config returns the Config for the named channel
-func (cs *ChannelService) Config() (apifabclient.ChannelConfig, error) {
+func (cs *ChannelService) Config() (fab.ChannelConfig, error) {
 	return cs.fabricProvider.CreateChannelConfig(cs.identityContext, cs.cfg.Name())
 }
 
 // Ledger returns a ChannelLedger client for the current context and named channel.
-func (cs *ChannelService) Ledger() (apifabclient.ChannelLedger, error) {
+func (cs *ChannelService) Ledger() (fab.ChannelLedger, error) {
 	return cs.fabricProvider.CreateChannelLedger(cs.identityContext, cs.cfg.Name())
 }
 
 // Transactor returns a transaction client for the current context and named channel.
-func (cs *ChannelService) Transactor() (apifabclient.Transactor, error) {
+func (cs *ChannelService) Transactor() (fab.Transactor, error) {
 	return cs.fabricProvider.CreateChannelTransactor(cs.identityContext, cs.cfg)
 }

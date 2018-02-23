@@ -11,12 +11,14 @@ import (
 	"path"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -26,8 +28,8 @@ import (
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
 	SDK             *fabsdk.FabricSDK
-	Identity        fab.IdentityContext
-	Client          fab.Resource
+	Identity        context.IdentityContext
+	Client          api.Resource
 	Transactor      fab.Transactor
 	Targets         []fab.ProposalProcessor
 	EventHub        fab.EventHub
@@ -133,7 +135,7 @@ func (setup *BaseSetupImpl) Initialize() error {
 	return nil
 }
 
-func getOrgTargets(config apiconfig.Config, org string) ([]fab.ProposalProcessor, error) {
+func getOrgTargets(config core.Config, org string) ([]fab.ProposalProcessor, error) {
 	targets := []fab.ProposalProcessor{}
 
 	peerConfig, err := config.PeersConfig(org)
@@ -141,7 +143,7 @@ func getOrgTargets(config apiconfig.Config, org string) ([]fab.ProposalProcessor
 		return nil, errors.WithMessage(err, "reading peer config failed")
 	}
 	for _, p := range peerConfig {
-		target, err := peer.New(config, peer.FromPeerConfig(&apiconfig.NetworkPeer{PeerConfig: p}))
+		target, err := peer.New(config, peer.FromPeerConfig(&core.NetworkPeer{PeerConfig: p}))
 		if err != nil {
 			return nil, errors.WithMessage(err, "NewPeer failed")
 		}
@@ -151,14 +153,14 @@ func getOrgTargets(config apiconfig.Config, org string) ([]fab.ProposalProcessor
 }
 
 // InitConfig ...
-func (setup *BaseSetupImpl) InitConfig() apiconfig.ConfigProvider {
+func (setup *BaseSetupImpl) InitConfig() core.ConfigProvider {
 	return config.FromFile(setup.ConfigFile)
 }
 
 // InstallCC use low level client to install chaincode
-func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, ccPackage *fab.CCPackage, targets []fab.ProposalProcessor) error {
+func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, ccPackage *api.CCPackage, targets []fab.ProposalProcessor) error {
 
-	icr := fab.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: targets}
+	icr := api.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: targets}
 
 	_, _, err := setup.Client.InstallChaincode(icr)
 	if err != nil {

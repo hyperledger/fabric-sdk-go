@@ -12,12 +12,12 @@ import (
 
 	"bytes"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 )
 
 var logPrefixFormatter = " [%s] "
 
-func GetSampleLoggingProvider(output *bytes.Buffer) apilogging.LoggerProvider {
+func GetSampleLoggingProvider(output *bytes.Buffer) api.LoggerProvider {
 	return &sampleLoggingProvider{output}
 }
 
@@ -29,7 +29,7 @@ type sampleLoggingProvider struct {
 }
 
 //GetLogger returns default logger implementation
-func (p *sampleLoggingProvider) GetLogger(module string) apilogging.Logger {
+func (p *sampleLoggingProvider) GetLogger(module string) api.Logger {
 	sampleLogger := log.New(p.buf, fmt.Sprintf(logPrefixFormatter, module), log.Ldate|log.Ltime|log.LUTC)
 	return &SampleLogger{customLogger: sampleLogger, module: module}
 }

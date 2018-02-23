@@ -8,14 +8,14 @@ SPDX-License-Identifier: Apache-2.0
 package fabapi
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
+	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
 
@@ -33,11 +33,11 @@ type Options struct {
 	StateStoreOpts StateStoreOpts
 
 	// Factories to create clients and providers
-	CoreFactory    apisdk.CoreProviderFactory
-	ServiceFactory apisdk.ServiceProviderFactory
-	ContextFactory apisdk.OrgClientFactory
-	SessionFactory apisdk.SessionClientFactory
-	LoggerFactory  apilogging.LoggerProvider
+	CoreFactory    sdkApi.CoreProviderFactory
+	ServiceFactory sdkApi.ServiceProviderFactory
+	ContextFactory sdkApi.OrgClientFactory
+	SessionFactory sdkApi.SessionClientFactory
+	LoggerFactory  api.LoggerProvider
 }
 
 // StateStoreOpts provides setup parameters for KeyValueStore
@@ -45,7 +45,7 @@ type StateStoreOpts struct {
 	Path string
 }
 
-func configFromOptions(options *Options) apiconfig.ConfigProvider {
+func configFromOptions(options *Options) core.ConfigProvider {
 	if options.ConfigByte != nil {
 		return config.FromRaw(options.ConfigByte, options.ConfigType)
 	}
@@ -54,7 +54,7 @@ func configFromOptions(options *Options) apiconfig.ConfigProvider {
 		return config.FromFile(options.ConfigFile)
 	}
 
-	return func() (apiconfig.Config, error) {
+	return func() (core.Config, error) {
 		return nil, errors.New("No configuration provided")
 	}
 }

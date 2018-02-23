@@ -13,8 +13,8 @@ import (
 
 	"sync"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
@@ -22,10 +22,10 @@ import (
 var logger = logging.NewLogger("fabric_sdk_go")
 
 var initOnce sync.Once
-var defaultCryptoSuite apicryptosuite.CryptoSuite
+var defaultCryptoSuite core.CryptoSuite
 var initialized int32
 
-func initSuite(defaultSuite apicryptosuite.CryptoSuite) error {
+func initSuite(defaultSuite core.CryptoSuite) error {
 	if defaultSuite == nil {
 		return errors.New("attempting to set invalid default suite")
 	}
@@ -36,8 +36,8 @@ func initSuite(defaultSuite apicryptosuite.CryptoSuite) error {
 	return nil
 }
 
-//GetDefault returns default apicryptosuite
-func GetDefault() apicryptosuite.CryptoSuite {
+//GetDefault returns default core
+func GetDefault() core.CryptoSuite {
 	if atomic.LoadInt32(&initialized) > 0 {
 		return defaultCryptoSuite
 	}
@@ -60,7 +60,7 @@ func GetDefault() apicryptosuite.CryptoSuite {
 //SetDefault sets default suite if one is not already set or created
 //Make sure you set default suite before very first call to GetDefault(),
 //otherwise this function will return an error
-func SetDefault(newDefaultSuite apicryptosuite.CryptoSuite) error {
+func SetDefault(newDefaultSuite core.CryptoSuite) error {
 	if atomic.LoadInt32(&initialized) > 0 {
 		return errors.New("default crypto suite is already set")
 	}
@@ -68,16 +68,16 @@ func SetDefault(newDefaultSuite apicryptosuite.CryptoSuite) error {
 }
 
 //GetSHA256Opts returns options relating to SHA-256.
-func GetSHA256Opts() apicryptosuite.HashOpts {
+func GetSHA256Opts() core.HashOpts {
 	return &bccsp.SHA256Opts{}
 }
 
 //GetSHAOpts returns options for computing SHA.
-func GetSHAOpts() apicryptosuite.HashOpts {
+func GetSHAOpts() core.HashOpts {
 	return &bccsp.SHAOpts{}
 }
 
 //GetECDSAP256KeyGenOpts returns options for ECDSA key generation with curve P-256.
-func GetECDSAP256KeyGenOpts(ephemeral bool) apicryptosuite.KeyGenOpts {
+func GetECDSAP256KeyGenOpts(ephemeral bool) core.KeyGenOpts {
 	return &bccsp.ECDSAP256KeyGenOpts{Temporary: ephemeral}
 }

@@ -7,11 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package defsvc
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
-	discovery "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery/staticdiscovery"
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/staticselection"
+	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/discovery/staticdiscovery"
+	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/selection/staticselection"
 )
 
 // ProviderFactory represents the default SDK provider factory for services.
@@ -24,11 +24,11 @@ func NewProviderFactory() *ProviderFactory {
 }
 
 // NewDiscoveryProvider returns a new default implementation of discovery provider
-func (f *ProviderFactory) NewDiscoveryProvider(config apiconfig.Config) (fab.DiscoveryProvider, error) {
+func (f *ProviderFactory) NewDiscoveryProvider(config core.Config) (fab.DiscoveryProvider, error) {
 	return discovery.NewDiscoveryProvider(config)
 }
 
 // NewSelectionProvider returns a new default implementation of selection service
-func (f *ProviderFactory) NewSelectionProvider(config apiconfig.Config) (fab.SelectionProvider, error) {
+func (f *ProviderFactory) NewSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
 	return selection.NewSelectionProvider(config)
 }

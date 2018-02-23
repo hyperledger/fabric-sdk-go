@@ -14,10 +14,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
@@ -25,6 +22,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 )
 
@@ -69,7 +68,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	// Admin user is used to register, enroll and revoke a test user
 	adminUser, err := client.LoadUserFromStateStore(mspID, "admin")
 	if err != nil {
-		if err != apifabclient.ErrUserNotFound {
+		if err != api.ErrUserNotFound {
 			t.Fatalf("client.LoadUserFromStateStore return error: %v", err)
 		}
 
@@ -111,7 +110,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 	// Register a random user
 	userName := createRandomName()
-	registerRequest := ca.RegistrationRequest{
+	registerRequest := fab.RegistrationRequest{
 		Name:        userName,
 		Type:        "user",
 		Affiliation: "org1.department1",
@@ -143,7 +142,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		t.Fatalf("Error Reenroling user. Enrollmet and Reenrollment certificates are the same.")
 	}
 
-	revokeRequest := ca.RevocationRequest{Name: userName, CAName: "ca.org1.example.com"}
+	revokeRequest := fab.RevocationRequest{Name: userName, CAName: "ca.org1.example.com"}
 	_, err = caClient.Revoke(adminUser, &revokeRequest)
 	if err != nil {
 		t.Fatalf("Error from Revoke: %s", err)
@@ -184,7 +183,7 @@ func TestEnrollAndTransact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get peer config : %s", err)
 	}
-	networkPeer := &apiconfig.NetworkPeer{PeerConfig: peers[0], MspID: mspID}
+	networkPeer := &core.NetworkPeer{PeerConfig: peers[0], MspID: mspID}
 	testPeer, err := peer.New(testFabricConfig, peer.FromPeerConfig(networkPeer))
 	if err != nil {
 		t.Fatalf("Failed to create peer from config : %s", err)

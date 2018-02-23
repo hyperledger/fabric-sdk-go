@@ -18,22 +18,22 @@ import (
 	"reflect"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 )
 
 func TestTLSConfigErrorAddingCertificate(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
-	_, err := TLSConfig(mock_apiconfig.BadCert, "", config)
+	_, err := TLSConfig(mock_core.BadCert, "", config)
 	if err == nil {
 		t.Fatal("Expected failure adding invalid certificate")
 	}
 
-	if !strings.Contains(err.Error(), mock_apiconfig.ErrorMessage) {
-		t.Fatalf("Expected error: %s", mock_apiconfig.ErrorMessage)
+	if !strings.Contains(err.Error(), mock_core.ErrorMessage) {
+		t.Fatalf("Expected error: %s", mock_core.ErrorMessage)
 	}
 }
 
@@ -41,16 +41,16 @@ func TestTLSConfigErrorFromClientCerts(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.BadTLSClientMockConfig(mockCtrl)
+	config := mock_core.BadTLSClientMockConfig(mockCtrl)
 
-	_, err := TLSConfig(mock_apiconfig.GoodCert, "", config)
+	_, err := TLSConfig(mock_core.GoodCert, "", config)
 
 	if err == nil {
 		t.Fatal("Expected failure from loading client certs")
 	}
 
-	if !strings.Contains(err.Error(), mock_apiconfig.ErrorMessage) {
-		t.Fatalf("Expected error: %s", mock_apiconfig.ErrorMessage)
+	if !strings.Contains(err.Error(), mock_core.ErrorMessage) {
+		t.Fatalf("Expected error: %s", mock_core.ErrorMessage)
 	}
 }
 
@@ -58,11 +58,11 @@ func TestTLSConfigHappyPath(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	serverHostOverride := "servernamebeingoverriden"
 
-	tlsConfig, err := TLSConfig(mock_apiconfig.GoodCert, serverHostOverride, config)
+	tlsConfig, err := TLSConfig(mock_core.GoodCert, serverHostOverride, config)
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
@@ -71,7 +71,7 @@ func TestTLSConfigHappyPath(t *testing.T) {
 		t.Fatal("Incorrect server name!")
 	}
 
-	if tlsConfig.RootCAs != mock_apiconfig.CertPool {
+	if tlsConfig.RootCAs != mock_core.CertPool {
 		t.Fatal("Incorrect cert pool")
 	}
 
@@ -79,7 +79,7 @@ func TestTLSConfigHappyPath(t *testing.T) {
 		t.Fatal("Incorrect number of certs")
 	}
 
-	if !reflect.DeepEqual(tlsConfig.Certificates[0], mock_apiconfig.TLSCert) {
+	if !reflect.DeepEqual(tlsConfig.Certificates[0], mock_core.TLSCert) {
 		t.Fatal("Certs do not match")
 	}
 }
@@ -87,7 +87,7 @@ func TestTLSConfigHappyPath(t *testing.T) {
 func TestNoTlsCertHash(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config := mock_core.NewMockConfig(mockCtrl)
 
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{}, nil)
 
@@ -101,7 +101,7 @@ func TestNoTlsCertHash(t *testing.T) {
 func TestEmptyTlsCertHash(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config := mock_core.NewMockConfig(mockCtrl)
 
 	emptyCert := tls.Certificate{}
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{emptyCert}, nil)
@@ -116,7 +116,7 @@ func TestEmptyTlsCertHash(t *testing.T) {
 func TestTlsCertHash(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config := mock_core.NewMockConfig(mockCtrl)
 
 	cert, err := tls.LoadX509KeyPair("testdata/server.crt", "testdata/server.key")
 	if err != nil {

@@ -14,10 +14,11 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	mock_fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	mock_fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/pkg/errors"
 )
@@ -27,9 +28,9 @@ func TestDeprecatedNewPeerWithCertNoTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	url := "http://example.com"
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
-	config.EXPECT().TLSCACertPool(gomock.Any()).Return(mock_apiconfig.CertPool, nil).AnyTimes()
+	config := mock_core.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(core.Endorser).Return(time.Second * 5)
+	config.EXPECT().TLSCACertPool(gomock.Any()).Return(mock_core.CertPool, nil).AnyTimes()
 
 	p, err := NewPeer(url, config)
 
@@ -47,15 +48,15 @@ func TestDeprecatedNewPeerTLSFromCert(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	tlsConfig := apiconfig.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+	tlsConfig := core.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
 	cert, err := tlsConfig.TLSCert()
 
 	if err != nil {
 		t.Fatalf("Failed to load cert: %v", err)
 	}
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
-	config.EXPECT().TLSCACertPool(cert).Return(mock_apiconfig.CertPool, nil).AnyTimes()
+	config := mock_core.DefaultMockConfig(mockCtrl)
+	config.EXPECT().TLSCACertPool(cert).Return(mock_core.CertPool, nil).AnyTimes()
 
 	url := "grpcs://0.0.0.0:1234"
 
@@ -71,7 +72,7 @@ func TestDeprecatedNewPeerTLSFromCert(t *testing.T) {
 func TestDeprecatedNewPeerWithCertBadParams(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config := mock_core.NewMockConfig(mockCtrl)
 
 	_, err := NewPeer("", config)
 
@@ -84,7 +85,7 @@ func TestDeprecatedNewPeerWithCertBadParams(t *testing.T) {
 func TestDeprecatedNewPeerTLSFromCertBad(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
+	config := mock_core.NewMockConfig(mockCtrl)
 	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("failed to get certpool")).AnyTimes()
 
 	url := "grpcs://0.0.0.0:1234"
@@ -99,9 +100,9 @@ func TestDeprecatedNewPeerTLSFromCertBad(t *testing.T) {
 func TestDeprecatedEnrollmentCert(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
-	config.EXPECT().TLSCACertPool(gomock.Any()).Return(mock_apiconfig.CertPool, nil).AnyTimes()
+	config := mock_core.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(core.Endorser).Return(time.Second * 5)
+	config.EXPECT().TLSCACertPool(gomock.Any()).Return(mock_core.CertPool, nil).AnyTimes()
 
 	peer, err := NewPeer(peer1URL, config)
 	if err != nil {
@@ -130,9 +131,9 @@ func TestDeprecatedEnrollmentCert(t *testing.T) {
 func TestDeprecatedRoles(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
-	config.EXPECT().TLSCACertPool(gomock.Any()).Return(mock_apiconfig.CertPool, nil).AnyTimes()
+	config := mock_core.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(core.Endorser).Return(time.Second * 5)
+	config.EXPECT().TLSCACertPool(gomock.Any()).Return(mock_core.CertPool, nil).AnyTimes()
 
 	peer, err := NewPeer(peer1URL, config)
 	if err != nil {
@@ -157,9 +158,9 @@ func TestDeprecatedRoles(t *testing.T) {
 func TestDeprecatedNames(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
-	config.EXPECT().TLSCACertPool(gomock.Any()).Return(mock_apiconfig.CertPool, nil).AnyTimes()
+	config := mock_core.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(core.Endorser).Return(time.Second * 5)
+	config.EXPECT().TLSCACertPool(gomock.Any()).Return(mock_core.CertPool, nil).AnyTimes()
 
 	peer, err := NewPeer(peer1URL, config)
 	if err != nil {
@@ -200,16 +201,16 @@ func TestDeprecatedProposalProcessorSendProposal(t *testing.T) {
 func TestDeprecatedPeersToTxnProcessors(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
-	config.EXPECT().TLSCACertPool(gomock.Any()).Return(mock_apiconfig.CertPool, nil).AnyTimes()
+	config := mock_core.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(core.Endorser).Return(time.Second * 5)
+	config.EXPECT().TLSCACertPool(gomock.Any()).Return(mock_core.CertPool, nil).AnyTimes()
 
 	peer1, err := NewPeer(peer1URL, config)
 	if err != nil {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
 
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	config.EXPECT().TimeoutOrDefault(core.Endorser).Return(time.Second * 5)
 	peer2, err := NewPeer(peer2URL, config)
 	if err != nil {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
@@ -239,12 +240,12 @@ func TestNewPeerFromConfig(t *testing.T) {
 
 	grpcOpts := make(map[string]interface{})
 
-	peerConfig := apiconfig.PeerConfig{
+	peerConfig := core.PeerConfig{
 		URL:         "abc.com",
 		GRPCOptions: grpcOpts,
 	}
 
-	networkPeer := &apiconfig.NetworkPeer{
+	networkPeer := &core.NetworkPeer{
 		PeerConfig: peerConfig,
 		MspID:      "Org1MSP",
 	}

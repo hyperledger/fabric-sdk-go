@@ -12,16 +12,16 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 )
 
 func TestBadConfig(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 
@@ -36,7 +36,7 @@ func TestCryptoSuiteByConfigSW(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
@@ -56,7 +56,7 @@ func TestCryptoSuiteByBadConfigSW(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA0")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
@@ -78,7 +78,7 @@ func TestCryptoSuiteDefaultEphemeral(t *testing.T) {
 	verifyHashFn(t, c)
 }
 
-func verifyHashFn(t *testing.T, c apicryptosuite.CryptoSuite) {
+func verifyHashFn(t *testing.T, c core.CryptoSuite) {
 	msg := []byte("Hello")
 	e := sha256.Sum256(msg)
 	a, err := c.Hash(msg, &bccsp.SHA256Opts{})

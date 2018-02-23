@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	m "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	"github.com/pkg/errors"
 )
@@ -69,7 +69,7 @@ type bccspmsp struct {
 	admins []Identity
 
 	// the crypto provider
-	bccsp apicryptosuite.CryptoSuite
+	bccsp core.CryptoSuite
 
 	// the provider identifier for this MSP
 	name string
@@ -97,7 +97,7 @@ type bccspmsp struct {
 // crypto provider. It handles x.509 certificates and can
 // generate identities and signing identities backed by
 // certificates and keypairs
-func NewBccspMsp(version MSPVersion, cryptoSuite apicryptosuite.CryptoSuite) (MSP, error) {
+func NewBccspMsp(version MSPVersion, cryptoSuite core.CryptoSuite) (MSP, error) {
 	mspLogger.Debugf("Creating BCCSP-based MSP instance")
 
 	theMsp := &bccspmsp{}
@@ -138,7 +138,7 @@ func (msp *bccspmsp) getCertFromPem(idBytes []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, apicryptosuite.Key, error) {
+func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, core.Key, error) {
 	// get a cert
 	cert, err := msp.getCertFromPem(idBytes)
 	if err != nil {

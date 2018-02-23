@@ -9,14 +9,12 @@ package orderer
 import (
 	"time"
 
-	"golang.org/x/net/context"
+	grpcContext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 	grpcstatus "google.golang.org/grpc/status"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
@@ -26,6 +24,8 @@ import (
 	"crypto/x509"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -34,7 +34,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // Orderer allows a client to broadcast a transaction.
 type Orderer struct {
-	config               apiconfig.Config
+	config               core.Config
 	url                  string
 	tlsCACert            *x509.Certificate
 	serverName           string
@@ -51,7 +51,7 @@ type Orderer struct {
 type Option func(*Orderer) error
 
 // New Returns a Orderer instance
-func New(config apiconfig.Config, opts ...Option) (*Orderer, error) {
+func New(config core.Config, opts ...Option) (*Orderer, error) {
 	orderer := &Orderer{config: config}
 
 	for _, opt := range opts {
@@ -66,7 +66,7 @@ func New(config apiconfig.Config, opts ...Option) (*Orderer, error) {
 		grpcOpts = append(grpcOpts, grpc.WithKeepaliveParams(orderer.kap))
 	}
 	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.FailFast(orderer.failFast)))
-	orderer.dialTimeout = config.TimeoutOrDefault(apiconfig.OrdererConnection)
+	orderer.dialTimeout = config.TimeoutOrDefault(core.OrdererConnection)
 
 	//tls config
 	tlsConfig, err := comm.TLSConfig(orderer.tlsCACert, orderer.serverName, config)
@@ -120,7 +120,7 @@ func WithInsecure() Option {
 
 // FromOrdererConfig is a functional option for the orderer.New constructor that configures a new orderer
 // from a apiconfig.OrdererConfig struct
-func FromOrdererConfig(ordererCfg *apiconfig.OrdererConfig) Option {
+func FromOrdererConfig(ordererCfg *core.OrdererConfig) Option {
 	return func(o *Orderer) error {
 		o.url = ordererCfg.URL
 
@@ -159,7 +159,7 @@ func FromOrdererName(name string) Option {
 	}
 }
 
-func getServerNameOverride(ordererCfg *apiconfig.OrdererConfig) string {
+func getServerNameOverride(ordererCfg *core.OrdererConfig) string {
 	serverNameOverride := ""
 	if str, ok := ordererCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
 		serverNameOverride = str
@@ -167,7 +167,7 @@ func getServerNameOverride(ordererCfg *apiconfig.OrdererConfig) string {
 	return serverNameOverride
 }
 
-func getFailFast(ordererCfg *apiconfig.OrdererConfig) bool {
+func getFailFast(ordererCfg *core.OrdererConfig) bool {
 
 	var failFast = true
 	if ff, ok := ordererCfg.GRPCOptions["fail-fast"].(bool); ok {
@@ -176,7 +176,7 @@ func getFailFast(ordererCfg *apiconfig.OrdererConfig) bool {
 	return failFast
 }
 
-func getKeepAliveOptions(ordererCfg *apiconfig.OrdererConfig) keepalive.ClientParameters {
+func getKeepAliveOptions(ordererCfg *core.OrdererConfig) keepalive.ClientParameters {
 
 	var kap keepalive.ClientParameters
 	if kaTime, ok := ordererCfg.GRPCOptions["keep-alive-time"].(time.Duration); ok {
@@ -191,7 +191,7 @@ func getKeepAliveOptions(ordererCfg *apiconfig.OrdererConfig) keepalive.ClientPa
 	return kap
 }
 
-func isInsecureConnectionAllowed(ordererCfg *apiconfig.OrdererConfig) bool {
+func isInsecureConnectionAllowed(ordererCfg *core.OrdererConfig) bool {
 	//allowInsecure used only when protocol is missing from URL
 	allowInsecure := !urlutil.HasProtocol(ordererCfg.URL)
 	boolVal, ok := ordererCfg.GRPCOptions["allow-insecure"].(bool)
@@ -230,8 +230,8 @@ func (o *Orderer) sendBroadcast(envelope *fab.SignedEnvelope, secured bool) (*co
 		grpcOpts = append(grpcOpts, grpc.WithInsecure())
 	}
 
-	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, o.dialTimeout)
+	ctx := grpcContext.Background()
+	ctx, _ = grpcContext.WithTimeout(ctx, o.dialTimeout)
 	conn, err := grpc.DialContext(ctx, o.url, grpcOpts...)
 
 	if err != nil {
@@ -314,8 +314,8 @@ func (o *Orderer) sendDeliver(envelope *fab.SignedEnvelope, secured bool) (chan 
 		grpcOpts = append(o.grpcDialOption, grpc.WithInsecure())
 	}
 
-	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, o.dialTimeout)
+	ctx := grpcContext.Background()
+	ctx, _ = grpcContext.WithTimeout(ctx, o.dialTimeout)
 	conn, err := grpc.DialContext(ctx, o.url, grpcOpts...)
 	if err != nil {
 		errs <- err

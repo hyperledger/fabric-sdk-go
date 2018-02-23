@@ -21,12 +21,11 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 	lu "github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 	"github.com/pkg/errors"
 
@@ -44,7 +43,7 @@ const (
 // Config represents the configuration for the client
 type Config struct {
 	tlsCertPool         *x509.CertPool
-	networkConfig       *apiconfig.NetworkConfig
+	networkConfig       *core.NetworkConfig
 	networkConfigCached bool
 	configViper         *viper.Viper
 	opts                options
@@ -61,8 +60,8 @@ type Option func(opts *options) error
 
 // FromReader loads configuration from in.
 // configType can be "json" or "yaml".
-func FromReader(in io.Reader, configType string, opts ...Option) apiconfig.ConfigProvider {
-	return func() (apiconfig.Config, error) {
+func FromReader(in io.Reader, configType string, opts ...Option) core.ConfigProvider {
+	return func() (core.Config, error) {
 		c, err := newConfig(opts...)
 		if err != nil {
 			return nil, err
@@ -82,8 +81,8 @@ func FromReader(in io.Reader, configType string, opts ...Option) apiconfig.Confi
 }
 
 // FromFile reads from named config file
-func FromFile(name string, opts ...Option) apiconfig.ConfigProvider {
-	return func() (apiconfig.Config, error) {
+func FromFile(name string, opts ...Option) core.ConfigProvider {
+	return func() (core.Config, error) {
 		c, err := newConfig(opts...)
 		if err != nil {
 			return nil, err
@@ -109,7 +108,7 @@ func FromFile(name string, opts ...Option) apiconfig.ConfigProvider {
 }
 
 // FromRaw will initialize the configs from a byte array
-func FromRaw(configBytes []byte, configType string, opts ...Option) apiconfig.ConfigProvider {
+func FromRaw(configBytes []byte, configType string, opts ...Option) core.ConfigProvider {
 	buf := bytes.NewBuffer(configBytes)
 	logger.Debugf("config.FromRaw buf Len is %d, Cap is %d: %s", buf.Len(), buf.Cap(), buf)
 
@@ -230,7 +229,7 @@ func getCertPool(myViper *viper.Viper) (*x509.CertPool, error) {
 // setLogLevel will set the log level of the client
 func setLogLevel(myViper *viper.Viper) {
 	loggingLevelString := myViper.GetString("client.logging.level")
-	logLevel := apilogging.INFO
+	logLevel := api.INFO
 	if loggingLevelString != "" {
 		logger.Debugf("%s logging level from the config: %v", logModule, loggingLevelString)
 		var err error
@@ -260,7 +259,7 @@ func (c *Config) loadTemplateConfig() error {
 }
 
 // Client returns the Client config
-func (c *Config) Client() (*apiconfig.ClientConfig, error) {
+func (c *Config) Client() (*core.ClientConfig, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -275,7 +274,7 @@ func (c *Config) Client() (*apiconfig.ClientConfig, error) {
 }
 
 // CAConfig returns the CA configuration.
-func (c *Config) CAConfig(org string) (*apiconfig.CAConfig, error) {
+func (c *Config) CAConfig(org string) (*core.CAConfig, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -441,24 +440,24 @@ func (c *Config) CAClientCertPem(org string) (string, error) {
 }
 
 // TimeoutOrDefault reads connection timeouts for the given connection type
-func (c *Config) TimeoutOrDefault(conn apiconfig.TimeoutType) time.Duration {
+func (c *Config) TimeoutOrDefault(conn core.TimeoutType) time.Duration {
 	var timeout time.Duration
 	switch conn {
-	case apiconfig.Endorser:
+	case core.Endorser:
 		timeout = c.configViper.GetDuration("client.peer.timeout.connection")
-	case apiconfig.Query:
+	case core.Query:
 		timeout = c.configViper.GetDuration("client.peer.timeout.queryResponse")
-	case apiconfig.Execute:
+	case core.Execute:
 		timeout = c.configViper.GetDuration("client.peer.timeout.executeTxResponse")
-	case apiconfig.DiscoveryGreylistExpiry:
+	case core.DiscoveryGreylistExpiry:
 		timeout = c.configViper.GetDuration("client.peer.timeout.discovery.greylistExpiry")
-	case apiconfig.EventHub:
+	case core.EventHubConnection:
 		timeout = c.configViper.GetDuration("client.eventService.timeout.connection")
-	case apiconfig.EventReg:
+	case core.EventReg:
 		timeout = c.configViper.GetDuration("client.eventService.timeout.registrationResponse")
-	case apiconfig.OrdererConnection:
+	case core.OrdererConnection:
 		timeout = c.configViper.GetDuration("client.orderer.timeout.connection")
-	case apiconfig.OrdererResponse:
+	case core.OrdererResponse:
 		timeout = c.configViper.GetDuration("client.orderer.timeout.response")
 
 	}
@@ -485,7 +484,7 @@ func (c *Config) MspID(org string) (string, error) {
 }
 
 func (c *Config) cacheNetworkConfiguration() error {
-	networkConfig := apiconfig.NetworkConfig{}
+	networkConfig := core.NetworkConfig{}
 	networkConfig.Name = c.configViper.GetString("name")
 	networkConfig.Xtype = c.configViper.GetString("x-type")
 	networkConfig.Description = c.configViper.GetString("description")
@@ -528,8 +527,8 @@ func (c *Config) cacheNetworkConfiguration() error {
 }
 
 // OrderersConfig returns a list of defined orderers
-func (c *Config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
-	orderers := []apiconfig.OrdererConfig{}
+func (c *Config) OrderersConfig() ([]core.OrdererConfig, error) {
+	orderers := []core.OrdererConfig{}
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -550,7 +549,7 @@ func (c *Config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
 }
 
 // RandomOrdererConfig returns a pseudo-random orderer from the network config
-func (c *Config) RandomOrdererConfig() (*apiconfig.OrdererConfig, error) {
+func (c *Config) RandomOrdererConfig() (*core.OrdererConfig, error) {
 	orderers, err := c.OrderersConfig()
 	if err != nil {
 		return nil, err
@@ -560,7 +559,7 @@ func (c *Config) RandomOrdererConfig() (*apiconfig.OrdererConfig, error) {
 }
 
 // randomOrdererConfig returns a pseudo-random orderer from the list of orderers
-func randomOrdererConfig(orderers []apiconfig.OrdererConfig) (*apiconfig.OrdererConfig, error) {
+func randomOrdererConfig(orderers []core.OrdererConfig) (*core.OrdererConfig, error) {
 
 	rs := rand.NewSource(time.Now().Unix())
 	r := rand.New(rs)
@@ -570,7 +569,7 @@ func randomOrdererConfig(orderers []apiconfig.OrdererConfig) (*apiconfig.Orderer
 }
 
 // OrdererConfig returns the requested orderer
-func (c *Config) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
+func (c *Config) OrdererConfig(name string) (*core.OrdererConfig, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -589,14 +588,14 @@ func (c *Config) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
 
 // PeersConfig Retrieves the fabric peers for the specified org from the
 // config file provided
-func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
+func (c *Config) PeersConfig(org string) ([]core.PeerConfig, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	peersConfig := config.Organizations[strings.ToLower(org)].Peers
-	peers := []apiconfig.PeerConfig{}
+	peers := []core.PeerConfig{}
 
 	for _, peerName := range peersConfig {
 		p := config.Peers[strings.ToLower(peerName)]
@@ -613,7 +612,7 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 }
 
 // PeerConfig Retrieves a specific peer from the configuration by org and name
-func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, error) {
+func (c *Config) PeerConfig(org string, name string) (*core.PeerConfig, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -642,7 +641,7 @@ func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, err
 }
 
 // NetworkConfig returns the network configuration defined in the config file
-func (c *Config) NetworkConfig() (*apiconfig.NetworkConfig, error) {
+func (c *Config) NetworkConfig() (*core.NetworkConfig, error) {
 	if c.networkConfigCached {
 		return c.networkConfig, nil
 	}
@@ -654,7 +653,7 @@ func (c *Config) NetworkConfig() (*apiconfig.NetworkConfig, error) {
 }
 
 // ChannelConfig returns the channel configuration
-func (c *Config) ChannelConfig(name string) (*apiconfig.ChannelConfig, error) {
+func (c *Config) ChannelConfig(name string) (*core.ChannelConfig, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -670,8 +669,8 @@ func (c *Config) ChannelConfig(name string) (*apiconfig.ChannelConfig, error) {
 }
 
 // ChannelOrderers returns a list of channel orderers
-func (c *Config) ChannelOrderers(name string) ([]apiconfig.OrdererConfig, error) {
-	orderers := []apiconfig.OrdererConfig{}
+func (c *Config) ChannelOrderers(name string) ([]core.OrdererConfig, error) {
+	orderers := []core.OrdererConfig{}
 	channel, err := c.ChannelConfig(name)
 	if err != nil || channel == nil {
 		return nil, errors.Errorf("Unable to retrieve channel config: %s", err)
@@ -690,7 +689,7 @@ func (c *Config) ChannelOrderers(name string) ([]apiconfig.OrdererConfig, error)
 }
 
 // ChannelPeers returns the channel peers configuration
-func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
+func (c *Config) ChannelPeers(name string) ([]core.ChannelPeer, error) {
 	netConfig, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
@@ -702,7 +701,7 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 		return nil, errors.Errorf("channel config not found for %s", name)
 	}
 
-	peers := []apiconfig.ChannelPeer{}
+	peers := []core.ChannelPeer{}
 
 	for peerName, chPeerConfig := range chConfig.Peers {
 
@@ -725,9 +724,9 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 			return nil, errors.Errorf("failed to retrieve msp id for peer %s", peerName)
 		}
 
-		networkPeer := apiconfig.NetworkPeer{PeerConfig: p, MspID: mspID}
+		networkPeer := core.NetworkPeer{PeerConfig: p, MspID: mspID}
 
-		peer := apiconfig.ChannelPeer{PeerChannelConfig: chPeerConfig, NetworkPeer: networkPeer}
+		peer := core.ChannelPeer{PeerChannelConfig: chPeerConfig, NetworkPeer: networkPeer}
 
 		peers = append(peers, peer)
 	}
@@ -737,13 +736,13 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 }
 
 // NetworkPeers returns the network peers configuration
-func (c *Config) NetworkPeers() ([]apiconfig.NetworkPeer, error) {
+func (c *Config) NetworkPeers() ([]core.NetworkPeer, error) {
 	netConfig, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	netPeers := []apiconfig.NetworkPeer{}
+	netPeers := []core.NetworkPeer{}
 
 	for name, p := range netConfig.Peers {
 
@@ -760,7 +759,7 @@ func (c *Config) NetworkPeers() ([]apiconfig.NetworkPeer, error) {
 			return nil, errors.Errorf("failed to retrieve msp id for peer %s", name)
 		}
 
-		netPeer := apiconfig.NetworkPeer{PeerConfig: p, MspID: mspID}
+		netPeer := core.NetworkPeer{PeerConfig: p, MspID: mspID}
 		netPeers = append(netPeers, netPeer)
 	}
 
@@ -791,7 +790,7 @@ func (c *Config) PeerMspID(name string) (string, error) {
 
 }
 
-func (c *Config) verifyPeerConfig(p apiconfig.PeerConfig, peerName string, tlsEnabled bool) error {
+func (c *Config) verifyPeerConfig(p core.PeerConfig, peerName string, tlsEnabled bool) error {
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
@@ -959,7 +958,7 @@ func (c *Config) TLSClientCerts() ([]tls.Certificate, error) {
 	return []tls.Certificate{clientCerts}, nil
 }
 
-func loadByteKeyOrCertFromFile(c *apiconfig.ClientConfig, isKey bool) ([]byte, error) {
+func loadByteKeyOrCertFromFile(c *core.ClientConfig, isKey bool) ([]byte, error) {
 	var path string
 	a := "key"
 	if isKey {

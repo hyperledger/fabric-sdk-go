@@ -14,14 +14,14 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
+	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/selection/dynamicselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/dynamicselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
@@ -97,6 +97,6 @@ type DynamicSelectionProviderFactory struct {
 }
 
 // NewSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) NewSelectionProvider(config apiconfig.Config) (fab.SelectionProvider, error) {
+func (f *DynamicSelectionProviderFactory) NewSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
 	return selection.NewSelectionProvider(config, f.ChannelUsers, nil)
 }

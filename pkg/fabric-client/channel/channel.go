@@ -13,9 +13,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
@@ -32,7 +33,7 @@ type Channel struct {
 	name          string // aka channel ID
 	peers         map[string]fab.Peer
 	orderers      map[string]fab.Orderer
-	clientContext fab.Context
+	clientContext context.Context
 	primaryPeer   fab.Peer
 	mspManager    msp.MSPManager
 	anchorPeers   []*fab.OrgAnchorPeer
@@ -44,7 +45,7 @@ type Channel struct {
 // name: used to identify different channel instances. The naming of channel instances
 // is enforced by the ordering service and must be unique within the blockchain network.
 // client: Provides operational context such as submitting User etc.
-func New(ctx fab.Context, cfg fab.ChannelCfg) (*Channel, error) {
+func New(ctx context.Context, cfg fab.ChannelCfg) (*Channel, error) {
 	if ctx == nil {
 		return nil, errors.Errorf("client is required")
 	}
@@ -294,7 +295,7 @@ func (c *Channel) IsInitialized() bool {
 }
 
 //addCertsToConfig adds cert bytes to config TLSCACertPool
-func addCertsToConfig(config apiconfig.Config, pemCerts []byte) {
+func addCertsToConfig(config core.Config, pemCerts []byte) {
 	for len(pemCerts) > 0 {
 		var block *pem.Block
 		block, pemCerts = pem.Decode(pemCerts)
@@ -314,7 +315,7 @@ func addCertsToConfig(config apiconfig.Config, pemCerts []byte) {
 }
 
 // getOrdererConfig returns ordererconfig for given ordererAddress (ports will be ignored)
-func getOrdererConfig(config apiconfig.Config, ordererAddress string) (*apiconfig.OrdererConfig, error) {
+func getOrdererConfig(config core.Config, ordererAddress string) (*core.OrdererConfig, error) {
 	return config.OrdererConfig(resolveOrdererAddress(ordererAddress))
 }
 

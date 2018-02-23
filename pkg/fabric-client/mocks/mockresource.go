@@ -9,7 +9,9 @@ package mocks
 import (
 	"bytes"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -32,7 +34,7 @@ func NewMockResource() *MockResource {
 }
 
 // SignChannelConfig ...
-func (c *MockResource) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
+func (c *MockResource) SignChannelConfig(config []byte, signer context.IdentityContext) (*common.ConfigSignature, error) {
 	if bytes.Compare(config, []byte("SignChannelConfigError")) == 0 {
 		return nil, errors.New("Mock sign channel config error")
 	}
@@ -40,7 +42,7 @@ func (c *MockResource) SignChannelConfig(config []byte, signer fab.IdentityConte
 }
 
 // CreateChannel ...
-func (c *MockResource) CreateChannel(request fab.CreateChannelRequest) (fab.TransactionID, error) {
+func (c *MockResource) CreateChannel(request api.CreateChannelRequest) (fab.TransactionID, error) {
 	if c.errorScenario {
 		return fab.TransactionID{}, errors.New("Create Channel Error")
 	}
@@ -60,7 +62,7 @@ func (c *MockResource) GenesisBlockFromOrderer(channelName string, orderer fab.O
 }
 
 // JoinChannel sends a join channel proposal to the target peer.
-func (c *MockResource) JoinChannel(request fab.JoinChannelRequest) error {
+func (c *MockResource) JoinChannel(request api.JoinChannelRequest) error {
 	if c.errorScenario {
 		return errors.New("error")
 	}
@@ -78,7 +80,7 @@ func (c *MockResource) QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb
 }
 
 // InstallChaincode mocks install chaincode
-func (c *MockResource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
+func (c *MockResource) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
 	if req.Name == "error" {
 		return nil, "", errors.New("Generate Error")
 	}

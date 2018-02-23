@@ -12,8 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/test/integration/e2e"
@@ -32,6 +31,6 @@ type CustomCryptoSuiteProviderFactory struct {
 }
 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
-func (f *CustomCryptoSuiteProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
+func (f *CustomCryptoSuiteProviderFactory) NewCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
 	return cryptosuite.GetSuiteByConfig(config)
 }

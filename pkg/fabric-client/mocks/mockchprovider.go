@@ -7,13 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/pkg/errors"
 )
 
 // MockChannelProvider holds a mock channel provider.
 type MockChannelProvider struct {
-	ctx        fab.ProviderContext
+	ctx        context.ProviderContext
 	channels   map[string]fab.Channel
 	transactor fab.Transactor
 }
@@ -26,7 +27,7 @@ type MockChannelService struct {
 }
 
 // NewMockChannelProvider returns a mock ChannelProvider
-func NewMockChannelProvider(ctx fab.Context) (*MockChannelProvider, error) {
+func NewMockChannelProvider(ctx context.Context) (*MockChannelProvider, error) {
 	channels := make(map[string]fab.Channel)
 
 	// Create a mock client with the mock channel
@@ -48,7 +49,7 @@ func (cp *MockChannelProvider) SetTransactor(transactor fab.Transactor) {
 }
 
 // NewChannelService returns a mock ChannelService
-func (cp *MockChannelProvider) NewChannelService(ic fab.IdentityContext, channelID string) (fab.ChannelService, error) {
+func (cp *MockChannelProvider) NewChannelService(ic context.IdentityContext, channelID string) (fab.ChannelService, error) {
 	cs := MockChannelService{
 		provider:   cp,
 		channelID:  channelID,

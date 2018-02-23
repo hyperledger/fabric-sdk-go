@@ -9,7 +9,7 @@ package identity
 import (
 	"github.com/golang/protobuf/proto"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	pb_msp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	"github.com/pkg/errors"
 )
@@ -19,7 +19,7 @@ type User struct {
 	name                  string
 	mspID                 string
 	roles                 []string
-	privateKey            apicryptosuite.Key
+	privateKey            core.Key
 	enrollmentCertificate []byte
 }
 
@@ -61,12 +61,12 @@ func (u *User) SetEnrollmentCertificate(cert []byte) {
 
 // SetPrivateKey sets the crypto suite representation of the private key
 // for this user
-func (u *User) SetPrivateKey(privateKey apicryptosuite.Key) {
+func (u *User) SetPrivateKey(privateKey core.Key) {
 	u.privateKey = privateKey
 }
 
 // PrivateKey returns the crypto suite representation of the private key
-func (u *User) PrivateKey() apicryptosuite.Key {
+func (u *User) PrivateKey() core.Key {
 	return u.privateKey
 }
 

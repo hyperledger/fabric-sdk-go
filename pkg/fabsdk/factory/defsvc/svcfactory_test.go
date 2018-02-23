@@ -9,9 +9,9 @@ package defsvc
 import (
 	"testing"
 
+	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/discovery/staticdiscovery"
+	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/selection/staticselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-	discovery "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery/staticdiscovery"
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/staticselection"
 )
 
 func TestNewDiscoveryProvider(t *testing.T) {

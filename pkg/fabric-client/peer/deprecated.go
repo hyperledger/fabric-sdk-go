@@ -9,9 +9,9 @@ package peer
 import (
 	"crypto/x509"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"google.golang.org/grpc/keepalive"
 )
 
@@ -20,12 +20,12 @@ import (
 // certificate is ...
 // serverNameOverride is passed to NewClientTLSFromCert in grpc/credentials.
 // Deprecated: use peer.New() instead
-func NewPeerTLSFromCert(url string, certPath string, serverHostOverride string, config apiconfig.Config) (*Peer, error) {
+func NewPeerTLSFromCert(url string, certPath string, serverHostOverride string, config core.Config) (*Peer, error) {
 	var certificate *x509.Certificate
 	var err error
 
 	if urlutil.IsTLSEnabled(url) {
-		certConfig := apiconfig.TLSConfig{Path: certPath}
+		certConfig := core.TLSConfig{Path: certPath}
 		certificate, err = certConfig.TLSCert()
 
 		if err != nil {
@@ -56,7 +56,7 @@ func NewPeerTLSFromCert(url string, certPath string, serverHostOverride string, 
 
 // NewPeerFromConfig constructs a Peer from given peer configuration and global configuration setting.
 // Deprecated: use peer.New() instead
-func NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer, config apiconfig.Config) (*Peer, error) {
+func NewPeerFromConfig(peerCfg *core.NetworkPeer, config core.Config) (*Peer, error) {
 
 	serverHostOverride := ""
 	if str, ok := peerCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
@@ -110,7 +110,7 @@ func NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer, config apiconfig.Config) 
 // NewPeer constructs a Peer given its endpoint configuration settings.
 // url is the URL with format of "host:port".
 // Deprecated: use peer.New() instead
-func NewPeer(url string, config apiconfig.Config) (*Peer, error) {
+func NewPeer(url string, config core.Config) (*Peer, error) {
 	var kap keepalive.ClientParameters
 	endorseRequest := peerEndorserRequest{
 		target:             url,
@@ -132,6 +132,6 @@ func NewPeer(url string, config apiconfig.Config) (*Peer, error) {
 
 // NewPeerFromProcessor constructs a Peer with a ProposalProcessor to simulate transactions.
 // Deprecated: use peer.New() instead
-func NewPeerFromProcessor(url string, processor apifabclient.ProposalProcessor, config apiconfig.Config) (*Peer, error) {
+func NewPeerFromProcessor(url string, processor fab.ProposalProcessor, config core.Config) (*Peer, error) {
 	return &Peer{url: url, processor: processor}, nil
 }

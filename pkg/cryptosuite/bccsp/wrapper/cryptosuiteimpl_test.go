@@ -14,9 +14,9 @@ import (
 	"strings"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
@@ -49,7 +49,7 @@ func TestCryptoSuiteByConfig(t *testing.T) {
 	//Prepare Config
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
@@ -72,7 +72,7 @@ func TestCryptoSuiteByConfigFailures(t *testing.T) {
 	//Prepare Config
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(100)
@@ -94,7 +94,7 @@ func TestCryptoSuiteByConfigFailures(t *testing.T) {
 func TestCreateInvalidBCCSPSecurityLevel(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
@@ -113,7 +113,7 @@ func TestCreateInvalidBCCSPSecurityLevel(t *testing.T) {
 func TestCreateInvalidBCCSPHashFamily(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("ABC")
@@ -138,7 +138,7 @@ func TestCreateInvalidSecurityProviderPanic(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 
 	mockConfig.EXPECT().SecurityProvider().Return("XYZ")
 	mockConfig.EXPECT().SecurityProvider().Return("XYZ")
@@ -147,7 +147,7 @@ func TestCreateInvalidSecurityProviderPanic(t *testing.T) {
 	t.Fatalf("Getting cryptosuite with invalid security provider supposed to panic")
 }
 
-func verifyCryptoSuite(t *testing.T, samplecryptoSuite apicryptosuite.CryptoSuite) {
+func verifyCryptoSuite(t *testing.T, samplecryptoSuite core.CryptoSuite) {
 	//Test cryptosuite.Sign
 	signedBytes, err := samplecryptoSuite.Sign(GetKey(getMockKey(signingKey)), nil, nil)
 	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey : %s", err)

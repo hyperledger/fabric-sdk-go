@@ -13,9 +13,10 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -66,7 +67,7 @@ func CreateChaincodeInstallProposal(txid fab.TransactionID, request ChaincodeIns
 }
 
 // CreateConfigSignature creates a ConfigSignature for the current context.
-func CreateConfigSignature(ctx fab.Context, config []byte) (*common.ConfigSignature, error) {
+func CreateConfigSignature(ctx context.Context, config []byte) (*common.ConfigSignature, error) {
 
 	creator, err := ctx.Identity()
 	if err != nil {

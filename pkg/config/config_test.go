@@ -19,7 +19,7 @@ import (
 
 	"reflect"
 
-	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	api "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -379,7 +379,7 @@ func TestTimeouts(t *testing.T) {
 	if t1 != time.Second*2 {
 		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}
-	t1 = configImpl.TimeoutOrDefault(api.EventHub)
+	t1 = configImpl.TimeoutOrDefault(api.EventHubConnection)
 	if t1 != time.Minute*2 {
 		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}
@@ -755,7 +755,7 @@ func TestInterfaces(t *testing.T) {
 
 	apiConfig = &config
 	if apiConfig == nil {
-		t.Fatalf("this shouldn't happen. apiConfig should not be nil.")
+		t.Fatalf("this shouldn't happen. Config should not be nil.")
 	}
 }
 

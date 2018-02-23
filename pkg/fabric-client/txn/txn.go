@@ -15,9 +15,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -36,8 +36,8 @@ const (
 )
 
 type context interface {
-	fab.ProviderContext
-	fab.IdentityContext
+	contextApi.ProviderContext
+	contextApi.IdentityContext
 }
 
 // New create a transaction with proposal response, following the endorsement policy.
@@ -248,7 +248,7 @@ func sendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orde
 				}
 				mutex.Unlock()
 
-			case <-time.After(ctx.Config().TimeoutOrDefault(apiconfig.OrdererResponse)):
+			case <-time.After(ctx.Config().TimeoutOrDefault(core.OrdererResponse)):
 				mutex.Lock()
 				if errorResponse == nil {
 					errorResponse = errors.New("timeout waiting for response from orderer")

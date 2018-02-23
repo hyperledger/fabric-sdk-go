@@ -7,15 +7,18 @@ SPDX-License-Identifier: Apache-2.0
 package fabricclient
 
 import (
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	channel "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -25,16 +28,16 @@ var logger = logging.NewLogger("fabric_sdk_go")
 // Client enables access to a Fabric network.
 type Client struct {
 	channels        map[string]fab.Channel
-	cryptoSuite     apicryptosuite.CryptoSuite
-	stateStore      fab.UserStore
-	signingIdentity fab.IdentityContext
+	cryptoSuite     core.CryptoSuite
+	stateStore      contextApi.UserStore
+	signingIdentity context.IdentityContext
 	config          config.Config
-	signingManager  fab.SigningManager
+	signingManager  contextApi.SigningManager
 }
 
 type fabContext struct {
-	fab.ProviderContext
-	fab.IdentityContext
+	context.ProviderContext
+	context.IdentityContext
 }
 
 // NewClient returns a Client instance.
@@ -95,36 +98,36 @@ func (c *Client) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, e
  * so that multiple app instances can share app state via the database (note that this doesn’t necessarily make the app stateful).
  * This API makes this pluggable so that different store implementations can be selected by the application.
  */
-func (c *Client) SetStateStore(stateStore fab.UserStore) {
+func (c *Client) SetStateStore(stateStore contextApi.UserStore) {
 	c.stateStore = stateStore
 }
 
 // StateStore is a convenience method for obtaining the state store object in use for this client.
-func (c *Client) StateStore() fab.UserStore {
+func (c *Client) StateStore() contextApi.UserStore {
 	return c.stateStore
 }
 
 // SetCryptoSuite is a convenience method for obtaining the state store object in use for this client.
 //
 // Deprecated: see fabsdk package.
-func (c *Client) SetCryptoSuite(cryptoSuite apicryptosuite.CryptoSuite) {
+func (c *Client) SetCryptoSuite(cryptoSuite core.CryptoSuite) {
 	c.cryptoSuite = cryptoSuite
 }
 
 // CryptoSuite is a convenience method for obtaining the CryptoSuite object in use for this client.
-func (c *Client) CryptoSuite() apicryptosuite.CryptoSuite {
+func (c *Client) CryptoSuite() core.CryptoSuite {
 	return c.cryptoSuite
 }
 
 // SigningManager returns the signing manager
-func (c *Client) SigningManager() fab.SigningManager {
+func (c *Client) SigningManager() contextApi.SigningManager {
 	return c.signingManager
 }
 
 // SetSigningManager is a convenience method to set signing manager
 //
 // Deprecated: see fabsdk package.
-func (c *Client) SetSigningManager(signingMgr fab.SigningManager) {
+func (c *Client) SetSigningManager(signingMgr contextApi.SigningManager) {
 	c.signingManager = signingMgr
 }
 
@@ -136,7 +139,7 @@ func (c *Client) SetSigningManager(signingMgr fab.SigningManager) {
  * this cache will not be established and the application is responsible for setting the user context again when the application
  * crashed and is recovered.
  */
-func (c *Client) SaveUserToStateStore(user fab.User) error {
+func (c *Client) SaveUserToStateStore(user contextApi.User) error {
 	if user == nil {
 		return errors.New("user required")
 	}
@@ -157,7 +160,7 @@ func (c *Client) SaveUserToStateStore(user fab.User) error {
 
 // LoadUserFromStateStore loads a user from user store.
 // If user is not found, returns ErrUserNotFound
-func (c *Client) LoadUserFromStateStore(mspID string, name string) (fab.User, error) {
+func (c *Client) LoadUserFromStateStore(mspID string, name string) (contextApi.User, error) {
 	if mspID == "" || name == "" {
 		return nil, errors.New("Invalid user key")
 	}
@@ -167,7 +170,7 @@ func (c *Client) LoadUserFromStateStore(mspID string, name string) (fab.User, er
 	if c.cryptoSuite == nil {
 		return nil, errors.New("cryptoSuite required")
 	}
-	user, err := c.stateStore.Load(fab.UserKey{MspID: mspID, Name: name})
+	user, err := c.stateStore.Load(contextApi.UserKey{MspID: mspID, Name: name})
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +197,7 @@ func (c *Client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
  * @param {byte[]} config - The Configuration Update in byte form
  * @return {ConfigSignature} - The signature of the current user on the config bytes
  */
-func (c *Client) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
+func (c *Client) SignChannelConfig(config []byte, signer context.IdentityContext) (*common.ConfigSignature, error) {
 	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
 	return resource.CreateConfigSignature(ctx, config)
 }
@@ -220,7 +223,7 @@ func (c *Client) SignChannelConfig(config []byte, signer fab.IdentityContext) (*
  *                         required by the channel create policy when using the `config` parameter.
  * @returns {Result} Result Object with status on the create process.
  */
-func (c *Client) CreateChannel(request fab.CreateChannelRequest) (fab.TransactionID, error) {
+func (c *Client) CreateChannel(request api.CreateChannelRequest) (fab.TransactionID, error) {
 	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
 	rc := resource.New(ctx)
 	return rc.CreateChannel(request)
@@ -242,18 +245,18 @@ func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
-func (c *Client) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
+func (c *Client) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
 	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
 	rc := resource.New(ctx)
 	return rc.InstallChaincode(req)
 }
 
 // IdentityContext returns the current identity for signing.
-func (c *Client) IdentityContext() fab.IdentityContext {
+func (c *Client) IdentityContext() context.IdentityContext {
 	return c.signingIdentity
 }
 
 // SetIdentityContext sets the identity for signing
-func (c *Client) SetIdentityContext(user fab.IdentityContext) {
+func (c *Client) SetIdentityContext(user context.IdentityContext) {
 	c.signingIdentity = user
 }

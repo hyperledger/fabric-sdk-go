@@ -14,12 +14,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	pkcsFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	api "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
@@ -34,7 +34,7 @@ func TestBadConfig(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 
@@ -52,7 +52,7 @@ func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 	//Prepare Config
 	providerLib, softHSMPin, softHSMTokenLabel := pkcs11.FindPKCS11Lib()
 
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
@@ -78,7 +78,7 @@ func TestCryptoSuiteByConfigPKCS11Failure(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	//Prepare Config
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
@@ -163,7 +163,7 @@ func configurePKCS11Options(hashFamily string, securityLevel int) *pkcs11.PKCS11
 
 }
 
-func verifyHashFn(t *testing.T, c apicryptosuite.CryptoSuite) {
+func verifyHashFn(t *testing.T, c core.CryptoSuite) {
 	msg := []byte("Hello")
 	e := sha256.Sum256(msg)
 	a, err := c.Hash(msg, &bccsp.SHA256Opts{})

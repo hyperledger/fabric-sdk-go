@@ -7,19 +7,18 @@ SPDX-License-Identifier: Apache-2.0
 package defcore
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
 
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
@@ -36,7 +35,7 @@ func NewProviderFactory() *ProviderFactory {
 }
 
 // NewStateStoreProvider creates a KeyValueStore using the SDK's default implementation
-func (f *ProviderFactory) NewStateStoreProvider(config apiconfig.Config) (kvstore.KVStore, error) {
+func (f *ProviderFactory) NewStateStoreProvider(config core.Config) (contextApi.KVStore, error) {
 
 	var stateStorePath = f.stateStoreOpts.Path
 	if stateStorePath == "" {
@@ -55,23 +54,23 @@ func (f *ProviderFactory) NewStateStoreProvider(config apiconfig.Config) (kvstor
 }
 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
-func (f *ProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
+func (f *ProviderFactory) NewCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
 	cryptoSuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(config)
 	return cryptoSuiteProvider, err
 }
 
 // NewSigningManager returns a new default implementation of signing manager
-func (f *ProviderFactory) NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error) {
+func (f *ProviderFactory) NewSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (contextApi.SigningManager, error) {
 	return signingMgr.NewSigningManager(cryptoProvider, config)
 }
 
 // NewFabricProvider returns a new default implementation of fabric primitives
-func (f *ProviderFactory) NewFabricProvider(context fab.ProviderContext) (api.FabricProvider, error) {
+func (f *ProviderFactory) NewFabricProvider(context context.ProviderContext) (sdkApi.FabricProvider, error) {
 	return fabpvdr.New(context), nil
 }
 
 // NewLoggerProvider returns a new default implementation of a logger backend
 // This function is separated from the factory to allow logger creation first.
-func NewLoggerProvider() apilogging.LoggerProvider {
+func NewLoggerProvider() api.LoggerProvider {
 	return modlog.LoggerProvider()
 }

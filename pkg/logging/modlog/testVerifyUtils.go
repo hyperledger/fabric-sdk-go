@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 	utils "github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
@@ -29,7 +29,7 @@ type fn func(...interface{})
 type fnf func(string, ...interface{})
 
 //VerifyCriticalLoggings utility func which does job calling and verifying CRITICAL log level functions - PANIC
-func VerifyCriticalLoggings(t *testing.T, level apilogging.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer) {
+func VerifyCriticalLoggings(t *testing.T, level api.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer) {
 	//Handling panic as well as checking log output
 	defer func() {
 		if r := recover(); r == nil {
@@ -59,7 +59,7 @@ func VerifyCriticalLoggings(t *testing.T, level apilogging.Level, loggerFunc fn,
 }
 
 //VerifyBasicLogging utility func which does job calling and verifying basic log level functions - DEBUG, INFO, ERROR, WARNING
-func VerifyBasicLogging(t *testing.T, level apilogging.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer, verifyCustom bool, moduleName string) {
+func VerifyBasicLogging(t *testing.T, level api.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer, verifyCustom bool, moduleName string) {
 
 	//Call logger func
 	if loggerFunc != nil {

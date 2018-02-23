@@ -16,7 +16,6 @@ GOIMPORTS_CMD=goimports
 PROJECT_PATH=$GOPATH/src/github.com/hyperledger/fabric-sdk-go
 
 declare -a arr=(
-"./api"
 "./def"
 "./pkg"
 "./test"

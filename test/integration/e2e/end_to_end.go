@@ -12,14 +12,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
@@ -38,7 +38,7 @@ func runWithConfigFixture(t *testing.T) {
 }
 
 // Run enables testing an end-to-end scenario against the supplied SDK options
-func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Option) {
+func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
 
 	sdk, err := fabsdk.New(configOpt, sdkOpts...)
 	if err != nil {

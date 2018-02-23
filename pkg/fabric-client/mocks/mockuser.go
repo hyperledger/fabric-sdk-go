@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
 // MockUser ...
@@ -16,7 +16,7 @@ type MockUser struct {
 	name                  string
 	mspID                 string
 	roles                 []string
-	privateKey            apicryptosuite.Key
+	privateKey            core.Key
 	enrollmentCertificate []byte
 }
 
@@ -26,12 +26,12 @@ type MockUser struct {
  *
  * @param {string} name - The user name
  */
-func NewMockUser(name string) apifabclient.User {
+func NewMockUser(name string) api.User {
 	return &MockUser{name: name}
 }
 
 //NewMockUserWithMSPID to return mock user with MSP ids
-func NewMockUserWithMSPID(name string, mspid string) apifabclient.User {
+func NewMockUserWithMSPID(name string, mspid string) api.User {
 	return &MockUser{name: name, mspID: mspid}
 }
 
@@ -82,7 +82,7 @@ func (u *MockUser) SetEnrollmentCertificate(cert []byte) {
 /**
  * deprecated.
  */
-func (u *MockUser) SetPrivateKey(privateKey apicryptosuite.Key) {
+func (u *MockUser) SetPrivateKey(privateKey core.Key) {
 	u.privateKey = privateKey
 }
 
@@ -90,7 +90,7 @@ func (u *MockUser) SetPrivateKey(privateKey apicryptosuite.Key) {
 /**
  * deprecated.
  */
-func (u *MockUser) PrivateKey() apicryptosuite.Key {
+func (u *MockUser) PrivateKey() core.Key {
 	return u.privateKey
 }
 

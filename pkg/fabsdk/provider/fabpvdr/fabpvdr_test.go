@@ -9,8 +9,8 @@ package fabpvdr
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
@@ -82,7 +82,7 @@ func TestCreateCAClient(t *testing.T) {
 	}
 }
 
-func verifyPeer(t *testing.T, peer apifabclient.Peer, url string) {
+func verifyPeer(t *testing.T, peer fab.Peer, url string) {
 	_, ok := peer.(*peerImpl.Peer)
 	if !ok {
 		t.Fatalf("Unexpected peer impl created")
@@ -101,8 +101,8 @@ func TestCreatePeerFromConfig(t *testing.T) {
 
 	url := "grpc://localhost:8080"
 
-	peerCfg := apiconfig.NetworkPeer{
-		PeerConfig: apiconfig.PeerConfig{
+	peerCfg := core.NetworkPeer{
+		PeerConfig: core.PeerConfig{
 			URL: url,
 		},
 	}
@@ -147,7 +147,7 @@ func newMockFabricProvider(t *testing.T) *FabricProvider {
 }
 
 /*
-config := mocks.NewMockConfig()
+apiconfig := mocks.NewMockConfig()
 cryptosuite, err := sw.GetSuiteWithDefaultEphemeral()
 if err != nil {
 	t.Fatalf("Unexpected error getting cryptosuite %v", err)

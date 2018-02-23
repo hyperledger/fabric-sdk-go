@@ -9,7 +9,7 @@ package chconfig
 import (
 	"github.com/golang/protobuf/proto"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -22,6 +22,7 @@ import (
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -42,14 +43,14 @@ type Option func(opts *Opts) error
 
 // Context holds the providers and identity
 type Context struct {
-	fab.ProviderContext
-	fab.IdentityContext
+	context.ProviderContext
+	context.IdentityContext
 }
 
 // ChannelConfig implements query channel configuration
 type ChannelConfig struct {
 	channelID string
-	ctx       fab.Context
+	ctx       context.Context
 	opts      Opts
 }
 
@@ -94,7 +95,7 @@ func (cfg *ChannelCfg) Versions() *fab.Versions {
 }
 
 // New channel config implementation
-func New(ctx fab.Context, channelID string, options ...Option) (*ChannelConfig, error) {
+func New(ctx context.Context, channelID string, options ...Option) (*ChannelConfig, error) {
 	opts, err := prepareOpts(options...)
 	if err != nil {
 		return nil, err

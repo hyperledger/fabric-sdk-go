@@ -9,8 +9,7 @@ package mocks
 import (
 	"fmt"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 

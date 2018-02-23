@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	mock_fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	mock_fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
 	"github.com/pkg/errors"
 )
 
@@ -27,7 +27,7 @@ func TestNewPeerWithCertNoTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	url := "http://example.com"
 
@@ -47,12 +47,12 @@ func TestNewPeerTLSFromCert(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	url := "grpcs://0.0.0.0:1234"
 
 	// TODO - test actual parameters and test server name override
-	_, err := New(config, WithURL(url), WithTLSCert(mock_apiconfig.GoodCert))
+	_, err := New(config, WithURL(url), WithTLSCert(mock_core.GoodCert))
 
 	if err != nil {
 		t.Fatalf("Expected peer to be constructed")
@@ -64,7 +64,7 @@ func TestNewPeerWithCertBadParams(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	_, err := New(config)
 
@@ -78,9 +78,9 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	//config := mock_apiconfig.DefaultMockConfig(mockCtrl)
-	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	//apiconfig := mock_core.DefaultMockConfig(mockCtrl)
+	config := mock_core.NewMockConfig(mockCtrl)
+	config.EXPECT().TimeoutOrDefault(core.Endorser).Return(time.Second * 5)
 	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("failed to get certpool")).AnyTimes()
 
 	url := "grpcs://0.0.0.0:1234"
@@ -96,7 +96,7 @@ func TestEnrollmentCert(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	peer, err := New(config, WithURL(peer1URL))
 	if err != nil {
@@ -126,7 +126,7 @@ func TestRoles(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	peer, err := New(config, WithURL(peer1URL))
 	if err != nil {
@@ -152,7 +152,7 @@ func TestNames(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	peer, err := New(config, WithURL(peer1URL))
 	if err != nil {
@@ -175,7 +175,7 @@ func TestMSPIDs(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	peer, err := New(config, WithURL(peer1URL))
 
@@ -213,7 +213,7 @@ func TestPeersToTxnProcessors(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	peer1, err := New(config, WithURL(peer1URL))
 
@@ -265,19 +265,19 @@ func TestPeerOptions(t *testing.T) {
 	grpcOpts["keep-alive-permit"] = false
 	grpcOpts["ssl-target-name-override"] = "mnq"
 	grpcOpts["allow-insecure"] = true
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
-	tlsConfig := apiconfig.TLSConfig{
+	tlsConfig := core.TLSConfig{
 		Path: "",
 		Pem:  "",
 	}
-	peerConfig := apiconfig.PeerConfig{
+	peerConfig := core.PeerConfig{
 		URL:         "abc.com",
 		GRPCOptions: grpcOpts,
 		TLSCACerts:  tlsConfig,
 	}
 
-	networkPeer := &apiconfig.NetworkPeer{
+	networkPeer := &core.NetworkPeer{
 		PeerConfig: peerConfig,
 		MspID:      "Org1MSP",
 	}
@@ -305,7 +305,7 @@ func TestNewPeerSecured(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	url := "grpc://0.0.0.0:1234"
 

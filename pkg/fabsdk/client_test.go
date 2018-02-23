@@ -9,8 +9,8 @@ package fabsdk
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/pkg/errors"
 )
 
@@ -157,6 +157,6 @@ func noopIdentityOpt() IdentityOption {
 
 type mockTargetFilter struct{}
 
-func (f *mockTargetFilter) Accept(peer apifabclient.Peer) bool {
+func (f *mockTargetFilter) Accept(peer fab.Peer) bool {
 	return false
 }

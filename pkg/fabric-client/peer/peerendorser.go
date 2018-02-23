@@ -9,15 +9,15 @@ package peer
 import (
 	"time"
 
-	"golang.org/x/net/context"
+	grpccontext "golang.org/x/net/context"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 	grpcstatus "google.golang.org/grpc/status"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -44,7 +44,7 @@ type peerEndorserRequest struct {
 	certificate        *x509.Certificate
 	serverHostOverride string
 	dialBlocking       bool
-	config             apiconfig.Config
+	config             core.Config
 	kap                keepalive.ClientParameters
 	failFast           bool
 	allowInsecure      bool
@@ -62,7 +62,7 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 	}
 	opts = append(opts, grpc.WithDefaultCallOptions(grpc.FailFast(endorseReq.failFast)))
 
-	timeout := endorseReq.config.TimeoutOrDefault(apiconfig.Endorser)
+	timeout := endorseReq.config.TimeoutOrDefault(core.Endorser)
 
 	if endorseReq.dialBlocking { // TODO: configurable?
 		opts = append(opts, grpc.WithBlock())
@@ -81,16 +81,16 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 }
 
 // ProcessTransactionProposal sends the transaction proposal to a peer and returns the response.
-func (p *peerEndorser) ProcessTransactionProposal(request apifabclient.ProcessProposalRequest) (*apifabclient.TransactionProposalResponse, error) {
+func (p *peerEndorser) ProcessTransactionProposal(request fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
 	logger.Debugf("Processing proposal using endorser: %s", p.target)
 
 	proposalResponse, err := p.sendProposal(request, p.secured)
 	if err != nil {
-		tpr := apifabclient.TransactionProposalResponse{Endorser: p.target}
+		tpr := fab.TransactionProposalResponse{Endorser: p.target}
 		return &tpr, errors.Wrapf(err, "Transaction processing for endorser [%s]", p.target)
 	}
 
-	tpr := apifabclient.TransactionProposalResponse{
+	tpr := fab.TransactionProposalResponse{
 		ProposalResponse: proposalResponse,
 		Endorser:         p.target,
 		Status:           proposalResponse.GetResponse().Status,
@@ -107,8 +107,8 @@ func (p *peerEndorser) conn(secured bool) (*grpc.ClientConn, error) {
 		grpcOpts = append(p.grpcDialOption, grpc.WithInsecure())
 	}
 
-	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, p.dialTimeout)
+	ctx := grpccontext.Background()
+	ctx, _ = grpccontext.WithTimeout(ctx, p.dialTimeout)
 
 	return grpc.DialContext(ctx, p.target, grpcOpts...)
 }
@@ -117,7 +117,7 @@ func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {
 	conn.Close()
 }
 
-func (p *peerEndorser) sendProposal(proposal apifabclient.ProcessProposalRequest, secured bool) (*pb.ProposalResponse, error) {
+func (p *peerEndorser) sendProposal(proposal fab.ProcessProposalRequest, secured bool) (*pb.ProposalResponse, error) {
 	conn, err := p.conn(secured)
 	if err != nil {
 		if secured && p.allowInsecure {
@@ -130,7 +130,7 @@ func (p *peerEndorser) sendProposal(proposal apifabclient.ProcessProposalRequest
 	defer p.releaseConn(conn)
 
 	endorserClient := pb.NewEndorserClient(conn)
-	resp, err := endorserClient.ProcessProposal(context.Background(), proposal.SignedProposal)
+	resp, err := endorserClient.ProcessProposal(grpccontext.Background(), proposal.SignedProposal)
 	if err != nil {
 		logger.Error("NewEndorserClient failed, cause : ", err)
 		if secured && p.allowInsecure {

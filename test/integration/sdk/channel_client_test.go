@@ -11,12 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -117,7 +116,7 @@ func TestChannelClient(t *testing.T) {
 
 }
 
-func testQuery(expected string, ccID string, chClient chclient.ChannelClient, t *testing.T) {
+func testQuery(expected string, ccID string, chClient *chclient.ChannelClient, t *testing.T) {
 
 	response, err := chClient.Query(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
@@ -129,7 +128,7 @@ func testQuery(expected string, ccID string, chClient chclient.ChannelClient, t 
 	}
 }
 
-func testQueryWithOpts(expected string, ccID string, chClient chclient.ChannelClient, t *testing.T) {
+func testQueryWithOpts(expected string, ccID string, chClient *chclient.ChannelClient, t *testing.T) {
 	response, err := chClient.Query(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Query returned error: %s", err)
@@ -139,7 +138,7 @@ func testQueryWithOpts(expected string, ccID string, chClient chclient.ChannelCl
 	}
 }
 
-func testTransaction(ccID string, chClient chclient.ChannelClient, t *testing.T) {
+func testTransaction(ccID string, chClient *chclient.ChannelClient, t *testing.T) {
 	response, err := chClient.Execute(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
@@ -176,7 +175,7 @@ func (h *testHandler) Handle(requestContext *chclient.RequestContext, clientCont
 	}
 }
 
-func testInvokeHandler(ccID string, chClient chclient.ChannelClient, t *testing.T) {
+func testInvokeHandler(ccID string, chClient *chclient.ChannelClient, t *testing.T) {
 	// Insert a custom handler before and after the commit.
 	// Ensure that the handlers are being called by writing out some data
 	// and comparing with response.
@@ -186,14 +185,14 @@ func testInvokeHandler(ccID string, chClient chclient.ChannelClient, t *testing.
 	txValidationCode := pb.TxValidationCode(-1)
 
 	response, err := chClient.InvokeHandler(
-		txnhandler.NewProposalProcessorHandler(
-			txnhandler.NewEndorsementHandler(
-				txnhandler.NewEndorsementValidationHandler(
+		chclient.NewProposalProcessorHandler(
+			chclient.NewEndorsementHandler(
+				chclient.NewEndorsementValidationHandler(
 					&testHandler{
 						t:        t,
 						txID:     &txID,
 						endorser: &endorser,
-						next: txnhandler.NewCommitHandler(
+						next: chclient.NewCommitHandler(
 							&testHandler{
 								t:                t,
 								txValidationCode: &txValidationCode,
@@ -232,12 +231,12 @@ type TestTxFilter struct {
 	errResponses error
 }
 
-func (tf *TestTxFilter) ProcessTxProposalResponse(txProposalResponse []*apifabclient.TransactionProposalResponse) ([]*apifabclient.TransactionProposalResponse, error) {
+func (tf *TestTxFilter) ProcessTxProposalResponse(txProposalResponse []*fab.TransactionProposalResponse) ([]*fab.TransactionProposalResponse, error) {
 	if tf.err != nil {
 		return nil, tf.err
 	}
 
-	var newResponses []*apifabclient.TransactionProposalResponse
+	var newResponses []*fab.TransactionProposalResponse
 
 	if tf.errResponses != nil {
 		// 404 will cause transaction commit error
@@ -248,7 +247,7 @@ func (tf *TestTxFilter) ProcessTxProposalResponse(txProposalResponse []*apifabcl
 	return newResponses, nil
 }
 
-func testChaincodeEvent(ccID string, chClient chclient.ChannelClient, t *testing.T) {
+func testChaincodeEvent(ccID string, chClient *chclient.ChannelClient, t *testing.T) {
 
 	eventID := "test([a-zA-Z]+)"
 
@@ -282,7 +281,7 @@ func testChaincodeEvent(ccID string, chClient chclient.ChannelClient, t *testing
 
 }
 
-func testChaincodeEventListener(ccID string, chClient chclient.ChannelClient, listener chclient.ChannelClient, t *testing.T) {
+func testChaincodeEventListener(ccID string, chClient *chclient.ChannelClient, listener *chclient.ChannelClient, t *testing.T) {
 
 	eventID := "test([a-zA-Z]+)"
 

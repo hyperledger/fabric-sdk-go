@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	cryptosuitewrapper "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -38,15 +38,15 @@ func TestNewStateStoreProvider(t *testing.T) {
 	}
 }
 
-func newMockStateStore(t *testing.T) kvstore.KVStore {
+func newMockStateStore(t *testing.T) api.KVStore {
 	factory := NewProviderFactory()
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 
-	mockClientConfig := apiconfig.ClientConfig{
-		CredentialStore: apiconfig.CredentialStoreType{
+	mockClientConfig := core.ClientConfig{
+		CredentialStore: core.CredentialStoreType{
 			Path: "/tmp/fabsdkgo_test/store",
 		},
 	}
@@ -72,9 +72,9 @@ func TestNewStateStoreProviderEmptyConfig(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 
-	mockClientConfig := apiconfig.ClientConfig{}
+	mockClientConfig := core.ClientConfig{}
 	mockConfig.EXPECT().Client().Return(&mockClientConfig, nil)
 
 	_, err := factory.NewStateStoreProvider(mockConfig)
@@ -88,7 +88,7 @@ func TestNewStateStoreProviderFailConfig(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
+	mockConfig := mock_core.NewMockConfig(mockCtrl)
 
 	mockConfig.EXPECT().Client().Return(nil, errors.New("error"))
 

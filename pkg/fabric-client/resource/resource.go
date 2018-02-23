@@ -13,10 +13,12 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -27,22 +29,22 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // Resource is a client that provides access to fabric network resource management.
 type Resource struct {
-	clientContext fab.Context
+	clientContext context.Context
 }
 
 // New returns a Client instance with the SDK context.
-func New(ctx fab.Context) *Resource {
+func New(ctx context.Context) *Resource {
 	c := Resource{clientContext: ctx}
 	return &c
 }
 
 type fabCtx struct {
-	fab.ProviderContext
-	fab.IdentityContext
+	context.ProviderContext
+	context.IdentityContext
 }
 
 // SignChannelConfig signs a configuration.
-func (c *Resource) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
+func (c *Resource) SignChannelConfig(config []byte, signer context.IdentityContext) (*common.ConfigSignature, error) {
 	logger.Debug("SignChannelConfig - start")
 
 	if config == nil {
@@ -68,7 +70,7 @@ func (c *Resource) SignChannelConfig(config []byte, signer fab.IdentityContext) 
 }
 
 // CreateChannel calls the orderer to start building the new channel.
-func (c *Resource) CreateChannel(request fab.CreateChannelRequest) (fab.TransactionID, error) {
+func (c *Resource) CreateChannel(request api.CreateChannelRequest) (fab.TransactionID, error) {
 	if request.Orderer == nil {
 		return fab.TransactionID{}, errors.New("missing orderer request parameter for the initialize channel")
 	}
@@ -98,7 +100,7 @@ func (c *Resource) CreateChannel(request fab.CreateChannelRequest) (fab.Transact
 }
 
 // TODO: this function was extracted from createOrUpdateChannel, but needs a closer examination.
-func (c *Resource) createChannelFromEnvelope(request fab.CreateChannelRequest) (fab.TransactionID, error) {
+func (c *Resource) createChannelFromEnvelope(request api.CreateChannelRequest) (fab.TransactionID, error) {
 	env, err := c.extractSignedEnvelope(request.Envelope)
 	if err != nil {
 		return fab.TransactionID{}, errors.WithMessage(err, "signed envelope not valid")
@@ -163,7 +165,7 @@ func (c *Resource) GenesisBlockFromOrderer(channelName string, orderer fab.Order
 // JoinChannel sends a join channel proposal to the target peer.
 //
 // TODO extract targets from request into parameter.
-func (c *Resource) JoinChannel(request fab.JoinChannelRequest) error {
+func (c *Resource) JoinChannel(request api.JoinChannelRequest) error {
 
 	if request.GenesisBlock == nil {
 		return errors.New("missing block input parameter with the required genesis block")
@@ -202,7 +204,7 @@ func (c *Resource) extractSignedEnvelope(reqEnvelope []byte) (*fab.SignedEnvelop
 }
 
 // createOrUpdateChannel creates a new channel or updates an existing channel.
-func (c *Resource) createOrUpdateChannel(txnID fab.TransactionID, request fab.CreateChannelRequest) error {
+func (c *Resource) createOrUpdateChannel(txnID fab.TransactionID, request api.CreateChannelRequest) error {
 
 	configUpdateEnvelope := &common.ConfigUpdateEnvelope{
 		ConfigUpdate: request.Config,
@@ -286,7 +288,7 @@ func (c *Resource) QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb.Cha
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
-func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
+func (c *Resource) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
 
 	if req.Name == "" {
 		return nil, "", errors.New("chaincode name required")

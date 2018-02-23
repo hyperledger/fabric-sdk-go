@@ -14,9 +14,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
-
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	mock_context "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -172,7 +171,7 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	proc := mock_apifabclient.NewMockProposalProcessor(mockCtrl)
+	proc := mock_context.NewMockProposalProcessor(mockCtrl)
 
 	stp, err := signProposal(ctx, &pb.Proposal{})
 	if err != nil {
@@ -218,8 +217,8 @@ func TestProposalResponseError(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	proc := mock_apifabclient.NewMockProposalProcessor(mockCtrl)
-	proc2 := mock_apifabclient.NewMockProposalProcessor(mockCtrl)
+	proc := mock_context.NewMockProposalProcessor(mockCtrl)
+	proc2 := mock_context.NewMockProposalProcessor(mockCtrl)
 
 	stp, err := signProposal(ctx, &pb.Proposal{})
 	if err != nil {

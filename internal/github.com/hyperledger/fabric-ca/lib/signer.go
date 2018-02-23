@@ -21,10 +21,10 @@ Please review third_party pinning scripts and patches for more details.
 package lib
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
-func newSigner(key apicryptosuite.Key, cert []byte, id *Identity) *Signer {
+func newSigner(key core.Key, cert []byte, id *Identity) *Signer {
 	return &Signer{
 		key:    key,
 		cert:   cert,
@@ -36,14 +36,14 @@ func newSigner(key apicryptosuite.Key, cert []byte, id *Identity) *Signer {
 // Signer represents a signer
 // Each identity may have multiple signers, currently one ecert and multiple tcerts
 type Signer struct {
-	key    apicryptosuite.Key
+	key    core.Key
 	cert   []byte
 	id     *Identity
 	client *Client
 }
 
 // Key returns the key bytes of this signer
-func (s *Signer) Key() apicryptosuite.Key {
+func (s *Signer) Key() core.Key {
 	return s.key
 }
 

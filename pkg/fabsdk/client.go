@@ -7,11 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
-	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
 
@@ -25,27 +26,27 @@ type ContextOption func(opts *contextOptions) error
 
 type contextOptions struct {
 	orgID  string
-	config apiconfig.Config
+	config core.Config
 }
 
 // ClientOption configures the clients created by the SDK.
 type ClientOption func(opts *clientOptions) error
 
 type clientOptions struct {
-	targetFilter apifabclient.TargetFilter
+	targetFilter fab.TargetFilter
 }
 
 type clientProvider func() (*clientContext, error)
 
 type clientContext struct {
 	opts          *contextOptions
-	identity      apifabclient.IdentityContext
+	identity      context.IdentityContext
 	providers     providers
-	clientFactory apisdk.SessionClientFactory
+	clientFactory api.SessionClientFactory
 }
 
 type providers interface {
-	apisdk.Providers
+	api.Providers
 }
 
 // WithOrg uses the configuration and users from the named organization.
@@ -57,7 +58,7 @@ func WithOrg(name string) ContextOption {
 }
 
 // WithTargetFilter allows for filtering target peers.
-func WithTargetFilter(targetFilter apifabclient.TargetFilter) ClientOption {
+func WithTargetFilter(targetFilter fab.TargetFilter) ClientOption {
 	return func(opts *clientOptions) error {
 		opts.targetFilter = targetFilter
 		return nil
@@ -66,7 +67,7 @@ func WithTargetFilter(targetFilter apifabclient.TargetFilter) ClientOption {
 
 // withConfig allows for overriding the configuration of the client.
 // TODO: This should be removed once the depreacted functions are removed.
-func withConfig(config apiconfig.Config) ContextOption {
+func withConfig(config core.Config) ContextOption {
 	return func(opts *contextOptions) error {
 		opts.config = config
 		return nil
@@ -102,7 +103,7 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ContextOptio
 	return &client
 }
 
-func newContextOptions(config apiconfig.Config, options []ContextOption) (*contextOptions, error) {
+func newContextOptions(config core.Config, options []ContextOption) (*contextOptions, error) {
 	// Read default org name from configuration
 	client, err := config.Client()
 	if err != nil {
@@ -178,26 +179,26 @@ func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.ResourceMgm
 }
 
 // Channel returns a client API for transacting on a channel.
-func (c *ClientContext) Channel(id string, opts ...ClientOption) (chclient.ChannelClient, error) {
+func (c *ClientContext) Channel(id string, opts ...ClientOption) (*chclient.ChannelClient, error) {
 	p, err := c.provider()
 	if err != nil {
-		return nil, errors.WithMessage(err, "unable to get client provider context")
+		return &chclient.ChannelClient{}, errors.WithMessage(err, "unable to get client provider context")
 	}
 	o, err := newClientOptions(opts)
 	if err != nil {
-		return nil, errors.WithMessage(err, "unable to retrieve client options")
+		return &chclient.ChannelClient{}, errors.WithMessage(err, "unable to retrieve client options")
 	}
 	session := newSession(p.identity, p.providers.ChannelProvider())
 	client, err := p.clientFactory.NewChannelClient(p.providers, session, id, o.targetFilter)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to created new channel client")
+		return &chclient.ChannelClient{}, errors.WithMessage(err, "failed to created new channel client")
 	}
 
 	return client, nil
 }
 
 // ChannelService returns a client API for interacting with a channel.
-func (c *ClientContext) ChannelService(id string) (apifabclient.ChannelService, error) {
+func (c *ClientContext) ChannelService(id string) (fab.ChannelService, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
@@ -210,7 +211,7 @@ func (c *ClientContext) ChannelService(id string) (apifabclient.ChannelService, 
 // Session returns the underlying identity of the client.
 //
 // Deprecated: this method is temporary.
-func (c *ClientContext) Session() (apisdk.SessionContext, error) {
+func (c *ClientContext) Session() (context.SessionContext, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")

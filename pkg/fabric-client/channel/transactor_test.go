@@ -9,8 +9,7 @@ package channel
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +31,7 @@ func TestTransaction(t *testing.T) {
 	tp := createTransactionProposal(t, transactor)
 	tpr := createTransactionProposalResponse(t, transactor, tp)
 
-	request := apifabclient.TransactionRequest{
+	request := fab.TransactionRequest{
 		Proposal:          tp,
 		ProposalResponses: tpr,
 	}
@@ -48,7 +47,7 @@ func TestTransactionBadStatus(t *testing.T) {
 	tp := createTransactionProposal(t, transactor)
 	tpr := createTransactionProposalResponseBadStatus(t, transactor, tp)
 
-	request := apifabclient.TransactionRequest{
+	request := fab.TransactionRequest{
 		Proposal:          tp,
 		ProposalResponses: tpr,
 	}
@@ -56,28 +55,28 @@ func TestTransactionBadStatus(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func createTransactor(t *testing.T) apifabclient.Transactor {
+func createTransactor(t *testing.T) fab.Transactor {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
 	orderer := mocks.NewMockOrderer("", nil)
 	chConfig := mocks.NewMockChannelCfg("testChannel")
 
 	transactor, err := NewTransactor(ctx, chConfig)
-	transactor.orderers = []apifabclient.Orderer{orderer}
+	transactor.orderers = []fab.Orderer{orderer}
 	assert.Nil(t, err)
 
 	return transactor
 }
 
-func createTxnID(t *testing.T, transactor apifabclient.Transactor) apifabclient.TransactionID {
+func createTxnID(t *testing.T, transactor fab.Transactor) fab.TransactionID {
 	txid, err := transactor.CreateTransactionID()
 	assert.Nil(t, err, "creation of transaction ID failed")
 
 	return txid
 }
 
-func createTransactionProposal(t *testing.T, transactor apifabclient.Transactor) *apifabclient.TransactionProposal {
-	request := apifabclient.ChaincodeInvokeRequest{
+func createTransactionProposal(t *testing.T, transactor fab.Transactor) *fab.TransactionProposal {
+	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "example",
 		Fcn:         "fcn",
 	}
@@ -92,19 +91,19 @@ func createTransactionProposal(t *testing.T, transactor apifabclient.Transactor)
 	return tp
 }
 
-func createTransactionProposalResponse(t *testing.T, transactor apifabclient.Transactor, tp *apifabclient.TransactionProposal) []*apifabclient.TransactionProposalResponse {
+func createTransactionProposalResponse(t *testing.T, transactor fab.Transactor, tp *fab.TransactionProposal) []*fab.TransactionProposalResponse {
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, Status: 200}
-	tpr, err := transactor.SendTransactionProposal(tp, []apifabclient.ProposalProcessor{&peer})
+	tpr, err := transactor.SendTransactionProposal(tp, []fab.ProposalProcessor{&peer})
 	assert.Nil(t, err)
 
 	return tpr
 }
 
-func createTransactionProposalResponseBadStatus(t *testing.T, transactor apifabclient.Transactor, tp *apifabclient.TransactionProposal) []*apifabclient.TransactionProposalResponse {
+func createTransactionProposalResponseBadStatus(t *testing.T, transactor fab.Transactor, tp *fab.TransactionProposal) []*fab.TransactionProposalResponse {
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, Status: 500}
-	tpr, err := transactor.SendTransactionProposal(tp, []apifabclient.ProposalProcessor{&peer})
+	tpr, err := transactor.SendTransactionProposal(tp, []fab.ProposalProcessor{&peer})
 	assert.Nil(t, err)
 
 	return tpr

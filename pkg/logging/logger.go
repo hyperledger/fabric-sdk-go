@@ -9,20 +9,20 @@ package logging
 import (
 	"sync"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
 //Logger basic implementation of api.Logger interface
 type Logger struct {
-	instance apilogging.Logger // access only via Logger.logger()
+	instance api.Logger // access only via Logger.logger()
 	module   string
 	once     sync.Once
 }
 
 // logger factory singleton - access only via loggerProvider()
-var loggerProviderInstance apilogging.LoggerProvider
+var loggerProviderInstance api.LoggerProvider
 var loggerProviderOnce sync.Once
 
 // TODO: enable leveler to redirect to loggerProvider
@@ -49,7 +49,7 @@ func NewLogger(module string) *Logger {
 	return logger
 }
 
-func loggerProvider() apilogging.LoggerProvider {
+func loggerProvider() api.LoggerProvider {
 	loggerProviderOnce.Do(func() {
 		// A custom logger must be initialized prior to the first log output
 		// Otherwise the built-in logger is used
@@ -62,7 +62,7 @@ func loggerProvider() apilogging.LoggerProvider {
 
 //InitLogger sets new logger which takes over logging operations.
 //It is required to call this function before making any loggings.
-func InitLogger(l apilogging.LoggerProvider) {
+func InitLogger(l api.LoggerProvider) {
 	loggerProviderOnce.Do(func() {
 		loggerProviderInstance = l
 		logger := loggerProviderInstance.GetLogger(loggerModule)
@@ -77,22 +77,22 @@ func InitLogger(l apilogging.LoggerProvider) {
 }
 
 //SetLevel - setting log level for given module
-func SetLevel(module string, level apilogging.Level) {
+func SetLevel(module string, level api.Level) {
 	modlog.SetLevel(module, level)
 }
 
 //GetLevel - getting log level for given module
-func GetLevel(module string) apilogging.Level {
+func GetLevel(module string) api.Level {
 	return modlog.GetLevel(module)
 }
 
 //IsEnabledFor - Check if given log level is enabled for given module
-func IsEnabledFor(module string, level apilogging.Level) bool {
+func IsEnabledFor(module string, level api.Level) bool {
 	return modlog.IsEnabledFor(module, level)
 }
 
 // LogLevel returns the log level from a string representation.
-func LogLevel(level string) (apilogging.Level, error) {
+func LogLevel(level string) (api.Level, error) {
 	return utils.LogLevel(level)
 }
 
@@ -201,7 +201,7 @@ func (l *Logger) Errorln(args ...interface{}) {
 	l.logger().Errorln(args...)
 }
 
-func (l *Logger) logger() apilogging.Logger {
+func (l *Logger) logger() api.Logger {
 	l.once.Do(func() {
 		l.instance = loggerProvider().GetLogger(l.module)
 	})

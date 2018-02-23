@@ -12,12 +12,11 @@ import (
 
 	"fmt"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspSw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
@@ -93,12 +92,12 @@ type CustomCryptoSuiteProviderFactory struct {
 }
 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
-func (f *CustomCryptoSuiteProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
+func (f *CustomCryptoSuiteProviderFactory) NewCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
 	c := wrapper.NewCryptoSuite(f.bccspProvider)
 	return c, nil
 }
 
-func getTestBCCSP(config apiconfig.Config) bccsp.BCCSP {
+func getTestBCCSP(config core.Config) bccsp.BCCSP {
 	opts := getOptsByConfig(config)
 	s, err := getBCCSPFromOpts(opts)
 	if err != nil {
@@ -114,7 +113,7 @@ func getBCCSPFromOpts(config *bccspSw.SwOpts) (bccsp.BCCSP, error) {
 	return f.Get(config)
 }
 
-func getOptsByConfig(c apiconfig.Config) *bccspSw.SwOpts {
+func getOptsByConfig(c core.Config) *bccspSw.SwOpts {
 	opts := &bccspSw.SwOpts{
 		HashFamily: c.SecurityAlgorithm(),
 		SecLevel:   c.SecurityLevel(),

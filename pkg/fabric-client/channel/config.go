@@ -9,7 +9,7 @@ package channel
 import (
 	"github.com/golang/protobuf/proto"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 
@@ -48,7 +48,7 @@ func (c *Channel) ChannelConfig() (*common.ConfigEnvelope, error) {
 	logger.Debugf("channelConfig - Last config block number %d, Number of tx: %d", block.Header.Number, len(block.Data.Data))
 
 	if len(block.Data.Data) != 1 {
-		return nil, errors.New("config block must contain one transaction")
+		return nil, errors.New("apiconfig block must contain one transaction")
 	}
 
 	return createConfigEnvelope(block.Data.Data[0])
@@ -80,7 +80,7 @@ func createConfigEnvelope(data []byte) (*common.ConfigEnvelope, error) {
 	return configEnvelope, nil
 }
 
-func loadMSPs(mspConfigs []*mb.MSPConfig, cs apicryptosuite.CryptoSuite) ([]msp.MSP, error) {
+func loadMSPs(mspConfigs []*mb.MSPConfig, cs core.CryptoSuite) ([]msp.MSP, error) {
 	logger.Debugf("loadMSPs - start number of msps=%d", len(mspConfigs))
 
 	msps := []msp.MSP{}

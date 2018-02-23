@@ -11,8 +11,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
-
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -118,14 +117,14 @@ func (fkvs *FileKeyValueStore) Load(key interface{}) (interface{}, error) {
 		return nil, err
 	}
 	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return nil, kvstore.ErrNotFound
+		return nil, api.ErrNotFound
 	}
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
 	if bytes == nil {
-		return nil, kvstore.ErrNotFound
+		return nil, api.ErrNotFound
 	}
 	return fkvs.unmarshaller(bytes)
 }

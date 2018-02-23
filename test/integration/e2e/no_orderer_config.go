@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
@@ -24,7 +24,7 @@ func runWithNoOrdererConfigFixture(t *testing.T) {
 }
 
 // RunWithNoOrdererConfig enables chclient scenarios using config and sdk options provided
-func runWithNoOrdererConfig(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Option) {
+func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
 
 	sdk, err := fabsdk.New(configOpt, sdkOpts...)
 	if err != nil {
@@ -101,7 +101,7 @@ type mockDiscoveryFilter struct {
 }
 
 // Accept returns true if this peer is to be included in the target list
-func (df *mockDiscoveryFilter) Accept(peer apifabclient.Peer) bool {
+func (df *mockDiscoveryFilter) Accept(peer fab.Peer) bool {
 	df.called = true
 	return true
 }

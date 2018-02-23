@@ -10,10 +10,11 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 )
@@ -113,7 +114,7 @@ func JoinChannel(sdk *fabsdk.FabricSDK, name string) (bool, error) {
 }
 
 // CreateProposalProcessors initializes target peers based on config
-func CreateProposalProcessors(config apiconfig.Config, orgs []string) ([]fab.ProposalProcessor, error) {
+func CreateProposalProcessors(config core.Config, orgs []string) ([]fab.ProposalProcessor, error) {
 	peers := []fab.ProposalProcessor{}
 	for _, org := range orgs {
 		peerConfig, err := config.PeersConfig(org)
@@ -121,7 +122,7 @@ func CreateProposalProcessors(config apiconfig.Config, orgs []string) ([]fab.Pro
 			return nil, errors.WithMessage(err, "reading peer config failed")
 		}
 		for _, p := range peerConfig {
-			endorser, err := peer.New(config, peer.FromPeerConfig(&apiconfig.NetworkPeer{PeerConfig: p}))
+			endorser, err := peer.New(config, peer.FromPeerConfig(&core.NetworkPeer{PeerConfig: p}))
 			if err != nil {
 				return nil, errors.WithMessage(err, "NewPeer failed")
 			}
@@ -136,7 +137,7 @@ func CreateProposalProcessors(config apiconfig.Config, orgs []string) ([]fab.Pro
 
 // HasPeerJoinedChannel checks whether the peer has already joined the channel.
 // It returns true if it has, false otherwise, or an error
-func HasPeerJoinedChannel(client fab.Resource, peer fab.ProposalProcessor, channel string) (bool, error) {
+func HasPeerJoinedChannel(client api.Resource, peer fab.ProposalProcessor, channel string) (bool, error) {
 	foundChannel := false
 	response, err := client.QueryChannels(peer)
 	if err != nil {

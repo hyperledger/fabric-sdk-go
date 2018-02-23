@@ -11,7 +11,7 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
 // MockConfig ...
@@ -20,18 +20,18 @@ type MockConfig struct {
 }
 
 // NewMockConfig ...
-func NewMockConfig(CAServerURL string) apiconfig.Config {
+func NewMockConfig(CAServerURL string) core.Config {
 	return &MockConfig{CAServerURL: CAServerURL}
 }
 
 // Client returns the Client config
-func (c *MockConfig) Client() (*apiconfig.ClientConfig, error) {
+func (c *MockConfig) Client() (*core.ClientConfig, error) {
 	return nil, nil
 }
 
 // CAConfig return ca configuration
-func (c *MockConfig) CAConfig(org string) (*apiconfig.CAConfig, error) {
-	return &apiconfig.CAConfig{URL: c.CAServerURL, CAName: "test", TLSCACerts: apiconfig.MutualTLSConfig{}}, nil
+func (c *MockConfig) CAConfig(org string) (*core.CAConfig, error) {
+	return &core.CAConfig{URL: c.CAServerURL, CAName: "test", TLSCACerts: core.MutualTLSConfig{}}, nil
 }
 
 //CAServerCertPems Read configuration option for the server certificate embedded pems
@@ -65,27 +65,27 @@ func (c *MockConfig) CAClientCertPath(org string) (string, error) {
 }
 
 //TimeoutOrDefault not implemented
-func (c *MockConfig) TimeoutOrDefault(apiconfig.TimeoutType) time.Duration {
+func (c *MockConfig) TimeoutOrDefault(core.TimeoutType) time.Duration {
 	return 0
 }
 
 // NetworkPeers returns the mock network peers configuration
-func (c *MockConfig) NetworkPeers() ([]apiconfig.NetworkPeer, error) {
+func (c *MockConfig) NetworkPeers() ([]core.NetworkPeer, error) {
 	return nil, nil
 }
 
 // PeersConfig Retrieves the fabric peers from the config file provided
-func (c *MockConfig) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
+func (c *MockConfig) PeersConfig(org string) ([]core.PeerConfig, error) {
 	return nil, nil
 }
 
 // PeerConfig Retrieves a specific peer from the configuration by org and name
-func (c *MockConfig) PeerConfig(org string, name string) (*apiconfig.PeerConfig, error) {
+func (c *MockConfig) PeerConfig(org string, name string) (*core.PeerConfig, error) {
 	return nil, nil
 }
 
 // ChannelOrderers returns a list of channel orderers
-func (c *MockConfig) ChannelOrderers(name string) ([]apiconfig.OrdererConfig, error) {
+func (c *MockConfig) ChannelOrderers(name string) ([]core.OrdererConfig, error) {
 	return nil, nil
 }
 
@@ -114,17 +114,17 @@ func (c *MockConfig) SecurityLevel() int {
 }
 
 // OrderersConfig returns a list of defined orderers
-func (c *MockConfig) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
+func (c *MockConfig) OrderersConfig() ([]core.OrdererConfig, error) {
 	return nil, nil
 }
 
 // RandomOrdererConfig not implemented
-func (c *MockConfig) RandomOrdererConfig() (*apiconfig.OrdererConfig, error) {
+func (c *MockConfig) RandomOrdererConfig() (*core.OrdererConfig, error) {
 	return nil, nil
 }
 
 // OrdererConfig not implemented
-func (c *MockConfig) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
+func (c *MockConfig) OrdererConfig(name string) (*core.OrdererConfig, error) {
 	return nil, nil
 }
 
@@ -154,17 +154,17 @@ func (c *MockConfig) CryptoConfigPath() string {
 }
 
 // NetworkConfig not implemented
-func (c *MockConfig) NetworkConfig() (*apiconfig.NetworkConfig, error) {
+func (c *MockConfig) NetworkConfig() (*core.NetworkConfig, error) {
 	return nil, nil
 }
 
 // ChannelConfig returns the channel configuration
-func (c *MockConfig) ChannelConfig(name string) (*apiconfig.ChannelConfig, error) {
+func (c *MockConfig) ChannelConfig(name string) (*core.ChannelConfig, error) {
 	return nil, nil
 }
 
 // ChannelPeers returns the channel peers configuration
-func (c *MockConfig) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
+func (c *MockConfig) ChannelPeers(name string) ([]core.ChannelPeer, error) {
 	return nil, nil
 }
 
