@@ -181,12 +181,16 @@ func (c *Client) connect() error {
 			logger.Warnf("Error invoking afterConnect handler: %s. Disconnecting...", err)
 
 			c.Submit(dispatcher.NewDisconnectEvent(errch))
-			disconnErr := <-errch
 
-			if disconnErr != nil {
-				logger.Warnf("Received error from disconnect request: %s", disconnErr)
-			} else {
-				logger.Debugf("Received success from disconnect request")
+			select {
+			case disconnErr := <-errch:
+				if disconnErr != nil {
+					logger.Warnf("Received error from disconnect request: %s", disconnErr)
+				} else {
+					logger.Debugf("Received success from disconnect request")
+				}
+			case <-time.After(c.respTimeout):
+				logger.Warnf("Timed out waiting for disconnect response")
 			}
 
 			c.setConnectionState(Connecting, Disconnected)

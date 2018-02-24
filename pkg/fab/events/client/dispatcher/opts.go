@@ -26,16 +26,16 @@ func defaultParams() *params {
 func WithLoadBalancePolicy(value lbp.LoadBalancePolicy) options.Opt {
 	return func(p options.Params) {
 		if setter, ok := p.(loadBalancePolicySetter); ok {
-			setter.SetBalancePolicy(value)
+			setter.SetLoadBalancePolicy(value)
 		}
 	}
 }
 
 type loadBalancePolicySetter interface {
-	SetBalancePolicy(value lbp.LoadBalancePolicy)
+	SetLoadBalancePolicy(value lbp.LoadBalancePolicy)
 }
 
-func (p *params) SetBalancePolicy(value lbp.LoadBalancePolicy) {
+func (p *params) SetLoadBalancePolicy(value lbp.LoadBalancePolicy) {
 	logger.Debugf("LoadBalancePolicy: %#v", value)
 	p.loadBalancePolicy = value
 }
