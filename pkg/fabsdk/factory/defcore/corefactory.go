@@ -24,8 +24,6 @@ import (
 
 // ProviderFactory represents the default SDK provider factory.
 type ProviderFactory struct {
-	// stateStoreOpts is deprecated
-	stateStoreOpts StateStoreOptsDeprecated
 }
 
 // NewProviderFactory returns the default SDK provider factory.
@@ -37,14 +35,11 @@ func NewProviderFactory() *ProviderFactory {
 // CreateStateStoreProvider creates a KeyValueStore using the SDK's default implementation
 func (f *ProviderFactory) CreateStateStoreProvider(config core.Config) (contextApi.KVStore, error) {
 
-	var stateStorePath = f.stateStoreOpts.Path
-	if stateStorePath == "" {
-		clientCofig, err := config.Client()
-		if err != nil {
-			return nil, errors.WithMessage(err, "Unable to retrieve client config")
-		}
-		stateStorePath = clientCofig.CredentialStore.Path
+	clientCofig, err := config.Client()
+	if err != nil {
+		return nil, errors.WithMessage(err, "Unable to retrieve client config")
 	}
+	stateStorePath := clientCofig.CredentialStore.Path
 
 	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: stateStorePath})
 	if err != nil {
