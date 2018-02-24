@@ -11,10 +11,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
-// FabricCAClient is the client interface for fabric-ca
-type FabricCAClient interface {
+// IdentityManager provides management of identities in a Fabric network
+type IdentityManager interface {
 	CAName() string
-	// Reenroll to renew user's enrollment certificate
 	Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error)
 	Reenroll(user contextApi.User) (core.Key, []byte, error)
 	Register(request *RegistrationRequest) (string, error)

@@ -14,30 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 )
 
-/*
-func TestCreateMSPClient(t *testing.T) {
-	factory := NewOrgClientFactory()
-
-	config := mocks.NewMockConfig()
-
-	coreFactory := defcore.CreateProviderFactory()
-	cryptosuite, err := coreFactory.CreateCryptoSuiteProvider(config)
-	if err != nil {
-		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
-	}
-
-	mspClient, err := factory.CreateMSPClient("org1", config, cryptosuite)
-	if err != nil {
-		t.Fatalf("Unexpected error creating MSP client %v", err)
-	}
-
-	_, ok := mspClient.(*fabricCAClient.FabricCA)
-	if !ok {
-		t.Fatalf("Unexpected selection provider created")
-	}
-}
-*/
-
 func TestCreateCredentialManager(t *testing.T) {
 	factory := NewOrgClientFactory()
 

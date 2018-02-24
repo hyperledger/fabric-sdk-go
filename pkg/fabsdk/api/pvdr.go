@@ -22,7 +22,7 @@ type FabricProvider interface {
 	CreateResourceClient(user context.IdentityContext) (api.Resource, error)
 	CreateChannelTransactor(ic context.IdentityContext, cfg fab.ChannelCfg) (fab.Transactor, error)
 	CreateEventHub(ic context.IdentityContext, name string) (fab.EventHub, error)
-	CreateCAClient(orgID string) (fab.FabricCAClient, error)
+	CreateIdentityManager(orgID string) (fab.IdentityManager, error)
 
 	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error)
 	CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Orderer, error)

@@ -21,7 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/signingmgr"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fab/ca"
+	ca "github.com/hyperledger/fabric-sdk-go/pkg/fab/ca"
 )
 
 const (
@@ -57,7 +57,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 	client.SetStateStore(stateStore)
 
-	caClient, err := fabricCAClient.New(org1Name, testFabricConfig, cryptoSuiteProvider)
+	idmgr, err := ca.New(org1Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
@@ -70,13 +70,13 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		Affiliation: "org1.department1",
 		CAName:      caConfig.CAName,
 	}
-	enrolmentSecret, err := caClient.Register(&registerRequest)
+	enrolmentSecret, err := idmgr.Register(&registerRequest)
 	if err != nil {
 		t.Fatalf("Error from Register: %s", err)
 	}
 	t.Logf("Registered User: %s, Secret: %s", userName, enrolmentSecret)
 	// Enrol the previously registered user
-	ekey, ecert, err := caClient.Enroll(userName, enrolmentSecret)
+	ekey, ecert, err := idmgr.Enroll(userName, enrolmentSecret)
 	if err != nil {
 		t.Fatalf("Error enroling user: %s", err.Error())
 	}
@@ -87,7 +87,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	enrolleduser.SetEnrollmentCertificate(ecert)
 	enrolleduser.SetPrivateKey(ekey)
 	//reenroll
-	_, reenrollCert, err := caClient.Reenroll(enrolleduser)
+	_, reenrollCert, err := idmgr.Reenroll(enrolleduser)
 	if err != nil {
 		t.Fatalf("Error Reenroling user: %s", err.Error())
 	}
@@ -97,7 +97,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 
 	revokeRequest := fab.RevocationRequest{Name: userName, CAName: "ca.org1.example.com"}
-	_, err = caClient.Revoke(&revokeRequest)
+	_, err = idmgr.Revoke(&revokeRequest)
 	if err != nil {
 		t.Fatalf("Error from Revoke: %s", err)
 	}
@@ -111,7 +111,7 @@ func TestEnrollOrg2(t *testing.T) {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
 
-	caClient, err := fabricCAClient.New(org2Name, testFabricConfig, cryptoSuiteProvider)
+	caClient, err := ca.New(org2Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestEnrollAndTransact(t *testing.T) {
 		t.Fatalf("Could not create signing manager: %s", err)
 	}
 
-	caClient, err := fabricCAClient.New(org1Name, testFabricConfig, cryptoSuiteProvider)
+	caClient, err := ca.New(org1Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
 	}

@@ -11,7 +11,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fab/ca"
+	ca "github.com/hyperledger/fabric-sdk-go/pkg/fab/ca"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -58,12 +58,12 @@ func TestCreateCAClient(t *testing.T) {
 
 	org := "org1"
 
-	client, err := p.CreateCAClient(org)
+	client, err := p.CreateIdentityManager(org)
 	if err != nil {
 		t.Fatalf("Unexpected error creating client %v", err)
 	}
 
-	_, ok := client.(*fabricCAClient.FabricCA)
+	_, ok := client.(*ca.IdentityManager)
 	if !ok {
 		t.Fatalf("Unexpected client impl created")
 	}
@@ -145,17 +145,3 @@ func newMockFabricProvider(t *testing.T) *FabricProvider {
 	ctx := mocks.NewMockProviderContext()
 	return New(ctx)
 }
-
-/*
-apiconfig := mocks.NewMockConfig()
-cryptosuite, err := sw.GetSuiteWithDefaultEphemeral()
-if err != nil {
-	t.Fatalf("Unexpected error getting cryptosuite %v", err)
-}
-signer := mocks.NewMockSigningManager()
-
-ctx := mocks.MockProviderContext{
-	Config: mocks.NewMockConfig(),
-
-}
-*/

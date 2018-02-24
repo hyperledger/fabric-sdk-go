@@ -74,7 +74,7 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	caClient := camocks.NewMockFabricCAClient(ctrl)
+	caClient := camocks.NewMockIdentityManager(ctrl)
 	prepareForEnroll(t, caClient, cs)
 
 	_, certBytes, err := caClient.Enroll(userToEnroll, "enrollmentSecret")
@@ -97,7 +97,7 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 }
 
 // Simulate caClient.Enroll()
-func prepareForEnroll(t *testing.T, mc *camocks.MockFabricCAClient, cs core.CryptoSuite) {
+func prepareForEnroll(t *testing.T, mc *camocks.MockIdentityManager, cs core.CryptoSuite) {
 	// A real caClient.Enroll() generates a CSR. In the process, a crypto suite generates
 	// a new key pair, and the private key is stored into crypto suite private key storage.
 

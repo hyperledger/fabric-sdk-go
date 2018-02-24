@@ -11,7 +11,7 @@ import (
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fab/ca"
+	ca "github.com/hyperledger/fabric-sdk-go/pkg/fab/ca"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events"
@@ -129,9 +129,9 @@ func (f *FabricProvider) CreateChannelTransactor(ic context.IdentityContext, cfg
 	return channelImpl.NewTransactor(ctx, cfg)
 }
 
-// CreateCAClient returns a new FabricCAClient initialized for the current instance of the SDK.
-func (f *FabricProvider) CreateCAClient(orgID string) (fab.FabricCAClient, error) {
-	return fabricCAClient.New(orgID, f.providerContext.Config(), f.providerContext.CryptoSuite())
+// CreateIdentityManager returns a new IdentityManager for an organization
+func (f *FabricProvider) CreateIdentityManager(orgID string) (fab.IdentityManager, error) {
+	return ca.New(orgID, f.providerContext.Config(), f.providerContext.CryptoSuite())
 }
 
 // CreateUser returns a new default implementation of a User.

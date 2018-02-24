@@ -21,14 +21,6 @@ func NewOrgClientFactory() *OrgClientFactory {
 	return &f
 }
 
-/*
-// CreateMSPClient returns a new default implementation of the MSP client
-// TODO: duplicate of core factory method (remove one) or at least call the core one like in sessfactory
-func (f *OrgClientFactory) CreateMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error) {
-	return fabricCAClient.New(orgName, config, cryptoProvider)
-}
-*/
-
 // CreateCredentialManager returns a new default implementation of the credential manager
 func (f *OrgClientFactory) CreateCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error) {
 	return credentialMgr.New(orgName, config, cryptoProvider)

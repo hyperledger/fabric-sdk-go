@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
-	fabric_ca "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
+	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
@@ -23,22 +23,22 @@ import (
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
-// FabricCA represents a client to Fabric CA.
-type FabricCA struct {
+// IdentityManager implements fab/IdentityManager
+type IdentityManager struct {
 	mspID       string
 	config      config.Config
 	cryptoSuite core.CryptoSuite
 	userStore   contextApi.UserStore
-	caClient    *fabric_ca.Client
+	caClient    *calib.Client
 	registrar   config.EnrollCredentials
 }
 
-// New creates a new fabric-ca client
+// New creates a new instance of IdentityManager
 // @param {string} organization for this CA
 // @param {Config} client config for fabric-ca services
-// @returns {FabricCA} FabricCA implementation
+// @returns {IdentityManager} IdentityManager instance
 // @returns {error} error, if any
-func New(org string, config config.Config, cryptoSuite core.CryptoSuite) (*FabricCA, error) {
+func New(org string, config config.Config, cryptoSuite core.CryptoSuite) (*IdentityManager, error) {
 
 	userStorePath := config.CredentialStorePath()
 	userStore, err := identity.NewCertFileUserStore(userStorePath, cryptoSuite)
@@ -54,7 +54,7 @@ func New(org string, config config.Config, cryptoSuite core.CryptoSuite) (*Fabri
 		return nil, errors.Wrapf(err, "failed to get CA configurtion for msp: %s", org)
 	}
 	registrar := orgConfig.Registrar
-	client := &FabricCA{
+	client := &IdentityManager{
 		mspID:       org,
 		config:      config,
 		cryptoSuite: cryptoSuite,
@@ -65,11 +65,11 @@ func New(org string, config config.Config, cryptoSuite core.CryptoSuite) (*Fabri
 	return client, nil
 }
 
-func newClient(org string, config config.Config, cryptoSuite core.CryptoSuite) (*fabric_ca.Client, error) {
+func newClient(org string, config config.Config, cryptoSuite core.CryptoSuite) (*calib.Client, error) {
 
 	// Create new Fabric-ca client without configs
-	c := &fabric_ca.Client{
-		Config: &fabric_ca.ClientConfig{},
+	c := &calib.Client{
+		Config: &calib.ClientConfig{},
 	}
 
 	conf, err := config.CAConfig(org)
@@ -124,7 +124,7 @@ func newClient(org string, config config.Config, cryptoSuite core.CryptoSuite) (
 }
 
 // CAName returns the CA name.
-func (im *FabricCA) CAName() string {
+func (im *IdentityManager) CAName() string {
 	return im.caClient.Config.CAName
 }
 
@@ -132,7 +132,7 @@ func (im *FabricCA) CAName() string {
 // enrollmentID The registered ID to use for enrollment
 // enrollmentSecret The secret associated with the enrollment ID
 // Returns X509 certificate
-func (im *FabricCA) Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error) {
+func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error) {
 	if enrollmentID == "" {
 		return nil, nil, errors.New("enrollmentID is required")
 	}
@@ -161,7 +161,7 @@ func (im *FabricCA) Enroll(enrollmentID string, enrollmentSecret string) (core.K
 
 // Reenroll an enrolled user in order to receive a signed X509 certificate
 // Returns X509 certificate
-func (im *FabricCA) Reenroll(user contextApi.User) (core.Key, []byte, error) {
+func (im *IdentityManager) Reenroll(user contextApi.User) (core.Key, []byte, error) {
 	if user == nil {
 		return nil, nil, errors.New("user required")
 	}
@@ -189,7 +189,7 @@ func (im *FabricCA) Reenroll(user contextApi.User) (core.Key, []byte, error) {
 // Register a User with the Fabric CA
 // request: Registration Request
 // Returns Enrolment Secret
-func (im *FabricCA) Register(request *fab.RegistrationRequest) (string, error) {
+func (im *IdentityManager) Register(request *fab.RegistrationRequest) (string, error) {
 	// Validate registration request
 	if request == nil {
 		return "", errors.New("registration request is required")
@@ -232,7 +232,7 @@ func (im *FabricCA) Register(request *fab.RegistrationRequest) (string, error) {
 // Revoke a User with the Fabric CA
 // registrar: The User that is initiating the revocation
 // request: Revocation Request
-func (im *FabricCA) Revoke(request *fab.RevocationRequest) (*fab.RevocationResponse, error) {
+func (im *IdentityManager) Revoke(request *fab.RevocationRequest) (*fab.RevocationResponse, error) {
 	// Validate revocation request
 	if request == nil {
 		return nil, errors.New("revocation request is required")
@@ -276,7 +276,7 @@ func (im *FabricCA) Revoke(request *fab.RevocationRequest) (*fab.RevocationRespo
 	}, nil
 }
 
-func (im *FabricCA) getRegistrar() (contextApi.User, error) {
+func (im *IdentityManager) getRegistrar() (contextApi.User, error) {
 	user, err := im.userStore.Load(contextApi.UserKey{MspID: im.mspID, Name: im.registrar.EnrollID})
 	if err != nil {
 		if err != contextApi.ErrUserNotFound {
@@ -295,7 +295,7 @@ func (im *FabricCA) getRegistrar() (contextApi.User, error) {
 }
 
 // createSigningIdentity creates an identity to sign Fabric CA requests with
-func (im *FabricCA) createSigningIdentity(user contextApi.User) (*fabric_ca.Identity, error) {
+func (im *IdentityManager) createSigningIdentity(user contextApi.User) (*calib.Identity, error) {
 	// Validate user
 	if user == nil {
 		return nil, errors.New("user required")
