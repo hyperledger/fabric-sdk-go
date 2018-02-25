@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package credentialmgr
+package identitymgr
 
 import (
 	"strings"
@@ -42,14 +42,14 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 	// Delete all private keys from the crypto suite store
 	// and users from the user store
 	keyStorePath := config.KeyStorePath()
-	cleanup(t, keyStorePath)
-	defer cleanup(t, keyStorePath)
-	cleanup(t, clientCofig.CredentialStore.Path)
-	defer cleanup(t, clientCofig.CredentialStore.Path)
+	cleanupTestPath(t, keyStorePath)
+	defer cleanupTestPath(t, keyStorePath)
+	cleanupTestPath(t, clientCofig.CredentialStore.Path)
+	defer cleanupTestPath(t, clientCofig.CredentialStore.Path)
 
 	cs, err := sw.GetSuiteByConfig(config)
 
-	credentialMgr, err := New(orgName, config, cs)
+	credentialMgr, err := NewCredentialManager(orgName, config, cs)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

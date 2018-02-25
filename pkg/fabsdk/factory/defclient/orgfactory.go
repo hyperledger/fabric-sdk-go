@@ -9,7 +9,7 @@ package defclient
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	credentialMgr "github.com/hyperledger/fabric-sdk-go/pkg/fab/credentialmgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr"
 )
 
 // OrgClientFactory represents the default org provider factory.
@@ -23,5 +23,5 @@ func NewOrgClientFactory() *OrgClientFactory {
 
 // CreateCredentialManager returns a new default implementation of the credential manager
 func (f *OrgClientFactory) CreateCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error) {
-	return credentialMgr.New(orgName, config, cryptoProvider)
+	return identitymgr.NewCredentialManager(orgName, config, cryptoProvider)
 }

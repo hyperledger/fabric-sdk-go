@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	credentialMgr "github.com/hyperledger/fabric-sdk-go/pkg/fab/credentialmgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 )
 
@@ -33,7 +33,7 @@ func TestCreateCredentialManager(t *testing.T) {
 		t.Fatalf("Unexpected error creating credential manager %v", err)
 	}
 
-	_, ok := mspClient.(*credentialMgr.CredentialManager)
+	_, ok := mspClient.(*identitymgr.CredentialManager)
 	if !ok {
 		t.Fatalf("Unexpected credential manager created")
 	}

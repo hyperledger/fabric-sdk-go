@@ -11,9 +11,9 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	ca "github.com/hyperledger/fabric-sdk-go/pkg/fab/ca"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
@@ -63,7 +63,7 @@ func TestCreateCAClient(t *testing.T) {
 		t.Fatalf("Unexpected error creating client %v", err)
 	}
 
-	_, ok := client.(*ca.IdentityManager)
+	_, ok := client.(*identitymgr.IdentityManager)
 	if !ok {
 		t.Fatalf("Unexpected client impl created")
 	}

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package credentialmgr
+package identitymgr
 
 import (
 	"fmt"
@@ -18,13 +18,10 @@ import (
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/credentialmgr/persistence"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr/persistence"
 	"github.com/pkg/errors"
 )
-
-var logger = logging.NewLogger("fabric_sdk_go")
 
 // CredentialManager is used for retriving user's signing identity (ecert + private key)
 type CredentialManager struct {
@@ -38,10 +35,14 @@ type CredentialManager struct {
 	userStore       api.UserStore
 }
 
-// New Constructor for a credential manager.
+// NewCredentialManager Constructor for a credential manager.
+// **** NOTE The naming convention for the constructors is temporarily
+// **** broken, as this package already has a New() function for creating
+// **** an IdentityManager. CredentialManager will be merged soon into
+// **** IdentityManager.
 // @param {string} orgName - organisation id
 // @returns {CredentialManager} new credential manager
-func New(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (*CredentialManager, error) {
+func NewCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (*CredentialManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {

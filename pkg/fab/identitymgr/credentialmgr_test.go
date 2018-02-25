@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package credentialmgr
+package identitymgr
 
 import (
 	"math/rand"
@@ -68,10 +68,10 @@ func TestCredentialManager(t *testing.T) {
 	}
 
 	// Cleanup key store and user store
-	cleanup(t, config.KeyStorePath())
-	defer cleanup(t, config.KeyStorePath())
-	cleanup(t, clientCofig.CredentialStore.Path)
-	defer cleanup(t, clientCofig.CredentialStore.Path)
+	cleanupTestPath(t, config.KeyStorePath())
+	defer cleanupTestPath(t, config.KeyStorePath())
+	cleanupTestPath(t, clientCofig.CredentialStore.Path)
+	defer cleanupTestPath(t, clientCofig.CredentialStore.Path)
 
 	cryptoSuite, err := sw.GetSuiteByConfig(config)
 	if err != nil {
@@ -85,7 +85,7 @@ func TestCredentialManager(t *testing.T) {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
 
-	credentialMgr, err := New(msp, config, cryptoSuite)
+	credentialMgr, err := NewCredentialManager(msp, config, cryptoSuite)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -171,7 +171,7 @@ func TestCredentialManagerFromEmbeddedCryptoConfig(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	credentialMgr, err := New(msp, config, cryptosuite.GetDefault())
+	credentialMgr, err := NewCredentialManager(msp, config, cryptosuite.GetDefault())
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -207,7 +207,7 @@ func createRandomName() string {
 	return "user" + strconv.Itoa(rand.Intn(500000))
 }
 
-func cleanup(t *testing.T, storePath string) {
+func cleanupTestPath(t *testing.T, storePath string) {
 	err := os.RemoveAll(storePath)
 	if err != nil {
 		t.Fatalf("Cleaning up directory '%s' failed: %v", storePath, err)

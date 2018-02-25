@@ -12,7 +12,7 @@ import (
 	"io/ioutil"
 
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/ca/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr/mocks"
 )
 
 func TestUserMethods(t *testing.T) {

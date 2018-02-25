@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package fabricca
+package identitymgr
 
 import (
 	"github.com/pkg/errors"
