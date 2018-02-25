@@ -16,7 +16,6 @@ import (
 	fcConsumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	client "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	ledger_util "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/util"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -109,10 +108,11 @@ func (mec *mockEventClient) Stop() error {
 }
 
 func createMockedEventHub() (*EventHub, *mockEventClientFactory, error) {
-	client := client.NewClient(mocks.NewMockConfig())
+	user := mocks.NewMockUser("user")
+	fabCtx := mocks.NewMockContext(user)
 	ctx := Context{
-		ProviderContext: client,
-		IdentityContext: client.IdentityContext(),
+		ProviderContext: fabCtx,
+		IdentityContext: fabCtx,
 	}
 	eventHub, err := New(ctx)
 	if err != nil {

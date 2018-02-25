@@ -1,3 +1,5 @@
+// +build deprecated
+
 /*
 Copyright SecureKey Technologies Inc., Unchain B.V. All Rights Reserved.
 
