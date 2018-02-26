@@ -13,6 +13,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -88,16 +89,16 @@ func New(c Context) (*Client, error) {
 
 // Query chaincode using request and optional options provided
 func (cc *Client) Query(request Request, options ...Option) (Response, error) {
-	return cc.InvokeHandler(NewQueryHandler(), request, cc.addDefaultTimeout(core.Query, options...)...)
+	return cc.InvokeHandler(invoke.NewQueryHandler(), request, cc.addDefaultTimeout(core.Query, options...)...)
 }
 
 // Execute prepares and executes transaction using request and optional options provided
 func (cc *Client) Execute(request Request, options ...Option) (Response, error) {
-	return cc.InvokeHandler(NewExecuteHandler(), request, cc.addDefaultTimeout(core.Execute, options...)...)
+	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, cc.addDefaultTimeout(core.Execute, options...)...)
 }
 
 //InvokeHandler invokes handler using request and options provided
-func (cc *Client) InvokeHandler(handler Handler, request Request, options ...Option) (Response, error) {
+func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options ...Option) (Response, error) {
 	//Read execute tx options
 	txnOpts, err := cc.prepareOptsFromOptions(options...)
 	if err != nil {
@@ -123,14 +124,14 @@ func (cc *Client) InvokeHandler(handler Handler, request Request, options ...Opt
 	}()
 	select {
 	case <-complete:
-		return requestContext.Response, requestContext.Error
+		return Response(requestContext.Response), requestContext.Error
 	case <-time.After(requestContext.Opts.Timeout):
 		return Response{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
 			"request timed out", nil)
 	}
 }
 
-func (cc *Client) resolveRetry(ctx *RequestContext, opts Opts) bool {
+func (cc *Client) resolveRetry(ctx *invoke.RequestContext, o opts) bool {
 	errs, ok := ctx.Error.(multi.Errors)
 	if !ok {
 		errs = append(errs, ctx.Error)
@@ -141,9 +142,9 @@ func (cc *Client) resolveRetry(ctx *RequestContext, opts Opts) bool {
 			cc.greylist.Greylist(e)
 
 			// Reset context parameters
-			ctx.Opts.ProposalProcessors = opts.ProposalProcessors
+			ctx.Opts.ProposalProcessors = o.ProposalProcessors
 			ctx.Error = nil
-			ctx.Response = Response{}
+			ctx.Response = invoke.Response{}
 
 			return true
 		}
@@ -152,13 +153,13 @@ func (cc *Client) resolveRetry(ctx *RequestContext, opts Opts) bool {
 }
 
 //prepareHandlerContexts prepares context objects for handlers
-func (cc *Client) prepareHandlerContexts(request Request, options Opts) (*RequestContext, *ClientContext, error) {
+func (cc *Client) prepareHandlerContexts(request Request, o opts) (*invoke.RequestContext, *invoke.ClientContext, error) {
 
 	if request.ChaincodeID == "" || request.Fcn == "" {
 		return nil, nil, errors.New("ChaincodeID and Fcn are required")
 	}
 
-	clientContext := &ClientContext{
+	clientContext := &invoke.ClientContext{
 		Selection:  cc.selection,
 		Discovery:  cc.discovery,
 		Channel:    cc.channel,
@@ -166,11 +167,11 @@ func (cc *Client) prepareHandlerContexts(request Request, options Opts) (*Reques
 		EventHub:   cc.eventHub,
 	}
 
-	requestContext := &RequestContext{
-		Request:      request,
-		Opts:         options,
-		Response:     Response{},
-		RetryHandler: retry.New(options.Retry),
+	requestContext := &invoke.RequestContext{
+		Request:      invoke.Request(request),
+		Opts:         invoke.Opts(o),
+		Response:     invoke.Response{},
+		RetryHandler: retry.New(o.Retry),
 	}
 
 	if requestContext.Opts.Timeout == 0 {
@@ -181,8 +182,8 @@ func (cc *Client) prepareHandlerContexts(request Request, options Opts) (*Reques
 }
 
 //prepareOptsFromOptions Reads apitxn.Opts from Option array
-func (cc *Client) prepareOptsFromOptions(options ...Option) (Opts, error) {
-	txnOpts := Opts{}
+func (cc *Client) prepareOptsFromOptions(options ...Option) (opts, error) {
+	txnOpts := opts{}
 	for _, option := range options {
 		err := option(&txnOpts)
 		if err != nil {
@@ -194,7 +195,7 @@ func (cc *Client) prepareOptsFromOptions(options ...Option) (Opts, error) {
 
 //addDefaultTimeout adds given default timeout if it is missing in options
 func (cc *Client) addDefaultTimeout(timeOutType core.TimeoutType, options ...Option) []Option {
-	txnOpts := Opts{}
+	txnOpts := opts{}
 	for _, option := range options {
 		option(&txnOpts)
 	}

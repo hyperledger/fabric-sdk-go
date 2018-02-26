@@ -11,13 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
@@ -25,8 +26,8 @@ import (
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -225,7 +226,7 @@ type customHandler struct {
 	expectedPayload []byte
 }
 
-func (c *customHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
+func (c *customHandler) Handle(requestContext *invoke.RequestContext, clientContext *invoke.ClientContext) {
 	requestContext.Response.Payload = c.expectedPayload
 }
 
@@ -248,10 +249,10 @@ func TestInvokeHandler(t *testing.T) {
 // and instead sends the proposal to the given channel
 type customEndorsementHandler struct {
 	transactor fab.Transactor
-	next       Handler
+	next       invoke.Handler
 }
 
-func (h *customEndorsementHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
+func (h *customEndorsementHandler) Handle(requestContext *invoke.RequestContext, clientContext *invoke.ClientContext) {
 	transactionProposalResponses, txnID, err := createAndSendTestTransactionProposal(h.transactor, &requestContext.Request, requestContext.Opts.ProposalProcessors)
 
 	requestContext.Response.TransactionID = txnID
@@ -285,10 +286,10 @@ func TestQueryWithCustomEndorser(t *testing.T) {
 	}
 
 	response, err := chClient.InvokeHandler(
-		NewProposalProcessorHandler(
+		invoke.NewProposalProcessorHandler(
 			&customEndorsementHandler{
 				transactor: &transactor,
-				next:       NewEndorsementValidationHandler(),
+				next:       invoke.NewEndorsementValidationHandler(),
 			},
 		),
 		Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}},
@@ -634,7 +635,7 @@ func setupChannelClientWithNodes(peers []fab.Peer,
 	return ch
 }
 
-func createAndSendTestTransactionProposal(sender fab.ProposalSender, chrequest *Request, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+func createAndSendTestTransactionProposal(sender fab.ProposalSender, chrequest *invoke.Request, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID:  chrequest.ChaincodeID,
 		Fcn:          chrequest.Fcn,

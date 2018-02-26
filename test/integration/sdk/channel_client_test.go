@@ -14,6 +14,7 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -153,10 +154,10 @@ type testHandler struct {
 	txID             *string
 	endorser         *string
 	txValidationCode *pb.TxValidationCode
-	next             channel.Handler
+	next             invoke.Handler
 }
 
-func (h *testHandler) Handle(requestContext *channel.RequestContext, clientContext *channel.ClientContext) {
+func (h *testHandler) Handle(requestContext *invoke.RequestContext, clientContext *invoke.ClientContext) {
 	if h.txID != nil {
 		*h.txID = string(requestContext.Response.TransactionID)
 		h.t.Logf("Custom handler writing TxID [%s]", *h.txID)
@@ -185,14 +186,14 @@ func testInvokeHandler(ccID string, chClient *channel.Client, t *testing.T) {
 	txValidationCode := pb.TxValidationCode(-1)
 
 	response, err := chClient.InvokeHandler(
-		channel.NewProposalProcessorHandler(
-			channel.NewEndorsementHandler(
-				channel.NewEndorsementValidationHandler(
+		invoke.NewProposalProcessorHandler(
+			invoke.NewEndorsementHandler(
+				invoke.NewEndorsementValidationHandler(
 					&testHandler{
 						t:        t,
 						txID:     &txID,
 						endorser: &endorser,
-						next: channel.NewCommitHandler(
+						next: invoke.NewCommitHandler(
 							&testHandler{
 								t:                t,
 								txValidationCode: &txValidationCode,

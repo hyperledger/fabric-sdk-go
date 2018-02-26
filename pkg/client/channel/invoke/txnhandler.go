@@ -4,21 +4,23 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package channel
+package invoke
 
 import (
+	"bytes"
 	"time"
 
-	"bytes"
+	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
-
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	"github.com/pkg/errors"
 )
+
+var logger = logging.NewLogger("fabric_sdk_go")
 
 //EndorsementHandler for handling endorse transactions
 type EndorsementHandler struct {
