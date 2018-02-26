@@ -19,7 +19,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/eventhubclient/dispatcher"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/options"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
 
@@ -40,20 +39,10 @@ var ehConnProvider = func(channelID string, context context.Context, peer fab.Pe
 type Client struct {
 	client.Client
 	params
-	interests []*pb.Interest
 }
 
-// New returns a new block event event hub client
+// New returns a new event hub client
 func New(context context.Context, channelID string, discoveryService fab.DiscoveryService, opts ...options.Opt) (*Client, error) {
-	return newClient(context, channelID, ehConnProvider, discoveryService, []*pb.Interest{&pb.Interest{EventType: pb.EventType_BLOCK}}, true, opts...)
-}
-
-// NewFiltered returns a new filtered block event hub client
-func NewFiltered(context context.Context, channelID string, discoveryService fab.DiscoveryService, opts ...options.Opt) (*Client, error) {
-	return newClient(context, channelID, ehConnProvider, discoveryService, []*pb.Interest{&pb.Interest{EventType: pb.EventType_FILTEREDBLOCK}}, false, opts...)
-}
-
-func newClient(context context.Context, channelID string, connProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, interests []*pb.Interest, permitBlockEvents bool, opts ...options.Opt) (*Client, error) {
 	if channelID == "" {
 		return nil, errors.New("expecting channel ID")
 	}
@@ -63,12 +52,11 @@ func newClient(context context.Context, channelID string, connProvider api.Conne
 
 	client := &Client{
 		Client: *client.New(
-			permitBlockEvents,
-			dispatcher.New(context, channelID, connProvider, discoveryService, opts...),
+			params.permitBlockEvents,
+			dispatcher.New(context, channelID, params.connProvider, discoveryService, opts...),
 			opts...,
 		),
-		params:    *params,
-		interests: interests,
+		params: *params,
 	}
 	client.SetAfterConnectHandler(client.registerInterests)
 

@@ -80,9 +80,9 @@ type fromBlockSetter interface {
 	SetFromBlock(value uint64)
 }
 
-func (p *params) SetConnectionProvider(value api.ConnectionProvider, permitBlockEvents bool) {
-	logger.Debugf("ConnectionProvider: %#v", value)
-	p.connProvider = value
+func (p *params) SetConnectionProvider(connProvider api.ConnectionProvider, permitBlockEvents bool) {
+	logger.Debugf("ConnectionProvider: %#v, PermitBlockEvents: %t", connProvider, permitBlockEvents)
+	p.connProvider = connProvider
 	p.permitBlockEvents = permitBlockEvents
 }
 

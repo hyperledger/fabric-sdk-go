@@ -46,13 +46,13 @@ func TestOptionsInNewClient(t *testing.T) {
 		WithBlockEvents(),
 	)
 	if err != nil {
-		t.Fatalf("expecting error with no channel ID but got none")
+		t.Fatalf("error creating deliver client: %s", err)
 	}
 	client.Close()
 }
 
 func TestClientConnect(t *testing.T) {
-	eventClient, err := newClient(
+	eventClient, err := New(
 		newMockContext(), "mychannel",
 		clientmocks.NewDiscoveryService(peer1, peer2),
 		withConnectionProvider(
@@ -179,7 +179,7 @@ func TestReconnectRegistration(t *testing.T) {
 func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmocks.Outcome, connAttemptResult clientmocks.ConnectAttemptResults) {
 	cp := clientmocks.NewProviderFactory()
 
-	eventClient, err := newClient(
+	eventClient, err := New(
 		newMockContext(), "mychannel",
 		clientmocks.NewDiscoveryService(peer1, peer2),
 		withConnectionProvider(
@@ -218,7 +218,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 	connectch := make(chan *fab.ConnectionEvent)
 	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
 
-	eventClient, err := newClient(
+	eventClient, err := New(
 		newMockContext(), "mychannel",
 		clientmocks.NewDiscoveryService(peer1, peer2),
 		withConnectionProvider(
@@ -288,7 +288,7 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 
 	cp := clientmocks.NewProviderFactory()
 
-	eventClient, err := newClient(
+	eventClient, err := New(
 		newMockContext(), channelID,
 		clientmocks.NewDiscoveryService(peer1, peer2),
 		withConnectionProvider(

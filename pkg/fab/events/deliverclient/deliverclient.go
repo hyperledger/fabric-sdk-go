@@ -50,10 +50,6 @@ type Client struct {
 
 // New returns a new deliver event client
 func New(context fabcontext.Context, channelID string, discoveryService fab.DiscoveryService, opts ...options.Opt) (*Client, error) {
-	return newClient(context, channelID, discoveryService, opts...)
-}
-
-func newClient(context fabcontext.Context, channelID string, discoveryService fab.DiscoveryService, opts ...options.Opt) (*Client, error) {
 	if channelID == "" {
 		return nil, errors.New("expecting channel ID")
 	}

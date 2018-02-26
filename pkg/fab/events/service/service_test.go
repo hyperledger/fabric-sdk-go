@@ -9,6 +9,7 @@ package service
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -596,7 +597,7 @@ func testConcurrentTxStatusEvents(channelID string, numEvents uint, eventService
 	var errs []error
 	var mutex sync.Mutex
 
-	var receivedEvents uint
+	var receivedEvents uint32
 	for i := 0; i < int(numEvents); i++ {
 		txID := fmt.Sprintf("txid_tx_%d", i)
 		go func() {
@@ -617,13 +618,13 @@ func testConcurrentTxStatusEvents(channelID string, numEvents uint, eventService
 
 			select {
 			case _, ok := <-eventch:
-				mutex.Lock()
 				if !ok {
+					mutex.Lock()
 					errs = append(errs, errors.New("unexpected closed channel"))
+					mutex.Unlock()
 				} else {
-					receivedEvents++
+					atomic.AddUint32(&receivedEvents, 1)
 				}
-				mutex.Unlock()
 			case <-time.After(5 * time.Second):
 				mutex.Lock()
 				errs = append(errs, errors.New("timed out waiting for TxStatus event"))
