@@ -170,22 +170,12 @@ func (c *Resource) JoinChannel(request api.JoinChannelRequest) error {
 		return errors.New("missing block input parameter with the required genesis block")
 	}
 
-	genesisBlockBytes, err := proto.Marshal(request.GenesisBlock)
+	cir, err := createJoinChannelInvokeRequest(request.GenesisBlock)
 	if err != nil {
-		return errors.Wrap(err, "marshal genesis block failed")
+		return errors.WithMessage(err, "creation of join channel invoke request failed")
 	}
 
-	// Create join channel transaction proposal for target peers
-	var args [][]byte
-	args = append(args, genesisBlockBytes)
-
-	pr := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "cscc",
-		Fcn:         "JoinChain",
-		Args:        args,
-	}
-
-	_, err = c.queryChaincode(pr, request.Targets)
+	_, err = c.queryChaincode(cir, request.Targets)
 	return err
 }
 
@@ -235,53 +225,6 @@ func (c *Resource) createOrUpdateChannel(txh *txn.TransactionHeader, request api
 	return nil
 }
 
-/*
-// CreateConfigUpdateEnvelope ...
-func CreateConfigUpdateEnvelope(ctx fab.Context, request fab.CreateChannelRequest) (common.ConfigUpdateEnvelope, error) {
-	configUpdateEnvelope := &common.ConfigUpdateEnvelope{
-		ConfigUpdate: request.Config,
-		Signatures:   request.Signatures,
-	}
-
-	txh, err := txn.NewHeader(ctx, fab.SystemChannel)
-	if err != nil {
-		return nil, errors.WithMessage(err, "creation of transaction header failed")
-	}
-
-	// TODO: Move
-	channelHeaderOpts := txn.ChannelHeaderOpts{
-		TxnHeader:   request.TransactionHeader,
-		TLSCertHash: ccomm.TLSCertHash(c.clientContext.Config()),
-	}
-	channelHeader, err := txn.CreateChannelHeader(common.HeaderType_CONFIG_UPDATE, channelHeaderOpts)
-	if err != nil {
-		return errors.WithMessage(err, "BuildChannelHeader failed")
-	}
-
-	header, err := txn.CreateHeader(request.TxnID, channelHeader)
-	if err != nil {
-		return errors.Wrap(err, "BuildHeader failed")
-	}
-	configUpdateEnvelopeBytes, err := proto.Marshal(configUpdateEnvelope)
-	if err != nil {
-		return errors.Wrap(err, "marshal configUpdateEnvelope failed")
-	}
-	payload := &common.Payload{
-		Header: header,
-		Data:   configUpdateEnvelopeBytes,
-	}
-	payloadBytes, err = proto.Marshal(payload)
-	if err != nil {
-		return errors.Wrap(err, "marshal payload failed")
-	}
-
-	signature, err = ctx.SigningManager().Sign(payloadBytes, c.clientContext.PrivateKey())
-	if err != nil {
-		return errors.WithMessage(err, "signing payload failed")
-	}
-}
-*/
-
 // QueryChannels queries the names of all the channels that a peer has joined.
 func (c *Resource) QueryChannels(peer fab.ProposalProcessor) (*pb.ChannelQueryResponse, error) {
 
@@ -289,11 +232,8 @@ func (c *Resource) QueryChannels(peer fab.ProposalProcessor) (*pb.ChannelQueryRe
 		return nil, errors.New("peer required")
 	}
 
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "cscc",
-		Fcn:         "GetChannels",
-	}
-	payload, err := c.queryChaincodeWithTarget(request, peer)
+	cir := createChannelsInvokeRequest()
+	payload, err := c.queryChaincodeWithTarget(cir, peer)
 	if err != nil {
 		return nil, errors.WithMessage(err, "cscc.GetChannels failed")
 	}
@@ -314,11 +254,8 @@ func (c *Resource) QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb.Cha
 		return nil, errors.New("peer required")
 	}
 
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "lscc",
-		Fcn:         "getinstalledchaincodes",
-	}
-	payload, err := c.queryChaincodeWithTarget(request, peer)
+	cir := createInstalledChaincodesInvokeRequest()
+	payload, err := c.queryChaincodeWithTarget(cir, peer)
 	if err != nil {
 		return nil, errors.WithMessage(err, "lscc.getinstalledchaincodes failed")
 	}
@@ -336,16 +273,16 @@ func (c *Resource) QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb.Cha
 func (c *Resource) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	if req.Name == "" {
-		return nil, "", errors.New("chaincode name required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincode name required")
 	}
 	if req.Path == "" {
-		return nil, "", errors.New("chaincode path required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincode path required")
 	}
 	if req.Version == "" {
-		return nil, "", errors.New("chaincode version required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincode version required")
 	}
 	if req.Package == nil {
-		return nil, "", errors.New("chaincode package is required")
+		return nil, fab.EmptyTransactionID, errors.New("chaincode package is required")
 	}
 
 	propReq := ChaincodeInstallRequest{
@@ -358,14 +295,14 @@ func (c *Resource) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.Tra
 		},
 	}
 
-	txid, err := txn.NewHeader(c.clientContext, fab.SystemChannel)
+	txh, err := txn.NewHeader(c.clientContext, fab.SystemChannel)
 	if err != nil {
-		return nil, "", errors.WithMessage(err, "create transaction ID failed")
+		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "create transaction ID failed")
 	}
 
-	prop, err := CreateChaincodeInstallProposal(txid, propReq)
+	prop, err := CreateChaincodeInstallProposal(txh, propReq)
 	if err != nil {
-		return nil, "", errors.WithMessage(err, "creation of install chaincode proposal failed")
+		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "creation of install chaincode proposal failed")
 	}
 
 	transactionProposalResponse, err := txn.SendProposal(c.clientContext, prop, req.Targets)
@@ -389,7 +326,6 @@ func (c *Resource) queryChaincode(request fab.ChaincodeInvokeRequest, targets []
 }
 
 func (c *Resource) queryChaincodeWithTarget(request fab.ChaincodeInvokeRequest, target fab.ProposalProcessor) ([]byte, error) {
-	const systemChannel = ""
 
 	targets := []fab.ProposalProcessor{target}
 

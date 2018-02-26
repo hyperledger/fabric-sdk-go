@@ -158,7 +158,7 @@ func TestPrimaryPeer(t *testing.T) {
 }
 
 func TestQueryOnSystemChannel(t *testing.T) {
-	channel, _ := setupChannel(systemChannel)
+	channel, _ := setupChannel(fab.SystemChannel)
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200}
 	err := channel.AddPeer(&peer)
 	if err != nil {

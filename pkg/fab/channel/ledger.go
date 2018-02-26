@@ -8,7 +8,6 @@ package channel
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -19,10 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-)
-
-const (
-	systemChannel = ""
 )
 
 // Ledger is a client that provides access to the underlying ledger of a channel.
@@ -45,16 +40,8 @@ func NewLedger(ctx context.Context, chName string) (*Ledger, error) {
 func (c *Ledger) QueryInfo(targets []fab.ProposalProcessor) ([]*common.BlockchainInfo, error) {
 	logger.Debug("queryInfo - start")
 
-	// prepare arguments to call qscc GetChainInfo function
-	var args [][]byte
-	args = append(args, []byte(c.chName))
-
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "qscc",
-		Fcn:         "GetChainInfo",
-		Args:        args,
-	}
-	tprs, errs := queryChaincode(c.ctx, systemChannel, request, targets)
+	cir := createChannelInfoInvokeRequest(c.chName)
+	tprs, errs := queryChaincode(c.ctx, fab.SystemChannel, cir, targets)
 
 	responses := []*common.BlockchainInfo{}
 	for _, tpr := range tprs {
@@ -86,17 +73,8 @@ func (c *Ledger) QueryBlockByHash(blockHash []byte, targets []fab.ProposalProces
 		return nil, errors.New("blockHash is required")
 	}
 
-	// prepare arguments to call qscc GetBlockByNumber function
-	var args [][]byte
-	args = append(args, []byte(c.chName))
-	args = append(args, blockHash[:len(blockHash)])
-
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "qscc",
-		Fcn:         "GetBlockByHash",
-		Args:        args,
-	}
-	tprs, errs := queryChaincode(c.ctx, systemChannel, request, targets)
+	cir := createBlockByHashInvokeRequest(c.chName, blockHash)
+	tprs, errs := queryChaincode(c.ctx, fab.SystemChannel, cir, targets)
 
 	responses := []*common.Block{}
 	for _, tpr := range tprs {
@@ -120,18 +98,8 @@ func (c *Ledger) QueryBlock(blockNumber int, targets []fab.ProposalProcessor) ([
 		return nil, errors.New("blockNumber must be a positive integer")
 	}
 
-	// prepare arguments to call qscc GetBlockByNumber function
-	var args [][]byte
-	args = append(args, []byte(c.chName))
-	args = append(args, []byte(strconv.Itoa(blockNumber)))
-
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "qscc",
-		Fcn:         "GetBlockByNumber",
-		Args:        args,
-	}
-
-	tprs, errs := queryChaincode(c.ctx, systemChannel, request, targets)
+	cir := createBlockByNumberInvokeRequest(c.chName, blockNumber)
+	tprs, errs := queryChaincode(c.ctx, fab.SystemChannel, cir, targets)
 
 	responses := []*common.Block{}
 	for _, tpr := range tprs {
@@ -159,18 +127,8 @@ func createCommonBlock(tpr *fab.TransactionProposalResponse) (*common.Block, err
 // Returns the ProcessedTransaction information containing the transaction.
 func (c *Ledger) QueryTransaction(transactionID fab.TransactionID, targets []fab.ProposalProcessor) ([]*pb.ProcessedTransaction, error) {
 
-	// prepare arguments to call qscc GetTransactionByID function
-	var args [][]byte
-	args = append(args, []byte(c.chName))
-	args = append(args, []byte(transactionID))
-
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "qscc",
-		Fcn:         "GetTransactionByID",
-		Args:        args,
-	}
-
-	tprs, errs := queryChaincode(c.ctx, systemChannel, request, targets)
+	cir := createTransactionByIDInvokeRequest(c.chName, transactionID)
+	tprs, errs := queryChaincode(c.ctx, fab.SystemChannel, cir, targets)
 
 	responses := []*pb.ProcessedTransaction{}
 	for _, tpr := range tprs {
@@ -197,12 +155,8 @@ func createProcessedTransaction(tpr *fab.TransactionProposalResponse) (*pb.Proce
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on this channel.
 // This query will be made to specified targets.
 func (c *Ledger) QueryInstantiatedChaincodes(targets []fab.ProposalProcessor) ([]*pb.ChaincodeQueryResponse, error) {
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "lscc",
-		Fcn:         "getchaincodes",
-	}
-
-	tprs, errs := queryChaincode(c.ctx, c.chName, request, targets)
+	cir := createChaincodesInvokeRequest()
+	tprs, errs := queryChaincode(c.ctx, c.chName, cir, targets)
 
 	responses := []*pb.ChaincodeQueryResponse{}
 	for _, tpr := range tprs {
@@ -237,12 +191,8 @@ func (c *Ledger) QueryConfigBlock(targets []fab.ProposalProcessor, minResponses 
 		return nil, errors.New("Minimum endorser has to be greater than zero")
 	}
 
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "cscc",
-		Fcn:         "GetConfigBlock",
-		Args:        [][]byte{[]byte(c.chName)},
-	}
-	tprs, err := queryChaincode(c.ctx, c.chName, request, targets)
+	cir := createConfigBlockInvokeRequest(c.chName)
+	tprs, err := queryChaincode(c.ctx, c.chName, cir, targets)
 	if err != nil && len(tprs) == 0 {
 		return nil, errors.WithMessage(err, "queryChaincode failed")
 	}

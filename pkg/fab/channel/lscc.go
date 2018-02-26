@@ -17,6 +17,15 @@ import (
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
 
+const (
+	lscc           = "lscc"
+	lsccDeploy     = "deploy"
+	lsccUpgrade    = "upgrade"
+	lsccChaincodes = "getchaincodes"
+	escc           = "escc"
+	vscc           = "vscc"
+)
+
 // ChaincodeProposalType reflects transitions in the chaincode lifecycle
 type ChaincodeProposalType int
 
@@ -58,8 +67,8 @@ func CreateChaincodeDeployProposal(txh fab.TransactionHeader, deploy ChaincodePr
 	}
 	args = append(args, chaincodePolicyBytes)
 
-	args = append(args, []byte("escc"))
-	args = append(args, []byte("vscc"))
+	args = append(args, []byte(escc))
+	args = append(args, []byte(vscc))
 
 	if chaincode.CollConfig != nil {
 		var err error
@@ -74,18 +83,26 @@ func CreateChaincodeDeployProposal(txh fab.TransactionHeader, deploy ChaincodePr
 	fcn := ""
 	switch deploy {
 	case InstantiateChaincode:
-		fcn = "deploy"
+		fcn = lsccDeploy
 	case UpgradeChaincode:
-		fcn = "upgrade"
+		fcn = lsccUpgrade
 	default:
 		return nil, errors.WithMessage(err, "chaincode deployment type unknown")
 	}
 
 	cir := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "lscc",
+		ChaincodeID: lscc,
 		Fcn:         fcn,
 		Args:        args,
 	}
 
 	return txn.CreateChaincodeInvokeProposal(txh, cir)
+}
+
+func createChaincodesInvokeRequest() fab.ChaincodeInvokeRequest {
+	cir := fab.ChaincodeInvokeRequest{
+		ChaincodeID: lscc,
+		Fcn:         lsccChaincodes,
+	}
+	return cir
 }

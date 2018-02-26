@@ -445,7 +445,7 @@ func (c *Channel) QueryBySystemChaincode(request fab.ChaincodeInvokeRequest) ([]
 		return nil, err
 	}
 
-	resps, err := queryChaincode(c.clientContext, systemChannel, request, targets)
+	resps, err := queryChaincode(c.clientContext, fab.SystemChannel, request, targets)
 	return collectProposalResponses(resps), err
 }
 
