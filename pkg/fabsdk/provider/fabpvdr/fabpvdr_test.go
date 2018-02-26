@@ -7,10 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package fabpvdr
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr"
@@ -142,6 +145,14 @@ func TestCreateUser(t *testing.T) {
 }
 
 func newMockFabricProvider(t *testing.T) *FabricProvider {
-	ctx := mocks.NewMockProviderContext()
+	cfg, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	if err != nil {
+		t.Fatalf("config.FromFile failed: %v", err)
+	}
+	cryptoSuite, err := sw.GetSuiteByConfig(cfg)
+	if err != nil {
+		panic(fmt.Sprintf("cryptosuiteimpl.GetSuiteByConfig: %v", err))
+	}
+	ctx := mocks.NewMockProviderContextCustom(cfg, cryptoSuite, mocks.NewMockSigningManager())
 	return New(ctx)
 }

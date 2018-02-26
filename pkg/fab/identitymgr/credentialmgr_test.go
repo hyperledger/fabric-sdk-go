@@ -8,7 +8,6 @@ package identitymgr
 
 import (
 	"math/rand"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -85,7 +84,7 @@ func TestCredentialManager(t *testing.T) {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
 
-	credentialMgr, err := NewCredentialManager(msp, config, cryptoSuite)
+	credentialMgr, err := New(msp, config, cryptoSuite)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -171,7 +170,7 @@ func TestCredentialManagerFromEmbeddedCryptoConfig(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	credentialMgr, err := NewCredentialManager(msp, config, cryptosuite.GetDefault())
+	credentialMgr, err := New(msp, config, cryptosuite.GetDefault())
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -205,11 +204,4 @@ func TestCredentialManagerFromEmbeddedCryptoConfig(t *testing.T) {
 
 func createRandomName() string {
 	return "user" + strconv.Itoa(rand.Intn(500000))
-}
-
-func cleanupTestPath(t *testing.T, storePath string) {
-	err := os.RemoveAll(storePath)
-	if err != nil {
-		t.Fatalf("Cleaning up directory '%s' failed: %v", storePath, err)
-	}
 }

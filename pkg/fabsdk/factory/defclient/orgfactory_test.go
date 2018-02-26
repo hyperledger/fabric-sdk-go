@@ -33,7 +33,7 @@ func TestCreateCredentialManager(t *testing.T) {
 		t.Fatalf("Unexpected error creating credential manager %v", err)
 	}
 
-	_, ok := mspClient.(*identitymgr.CredentialManager)
+	_, ok := mspClient.(*identitymgr.IdentityManager)
 	if !ok {
 		t.Fatalf("Unexpected credential manager created")
 	}
