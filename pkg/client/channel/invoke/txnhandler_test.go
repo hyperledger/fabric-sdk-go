@@ -4,22 +4,21 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package channel
+package invoke
 
 import (
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"strings"
-
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 
@@ -268,4 +267,30 @@ func setupChannelClientContext(discErr error, selectionErr error, peers []fab.Pe
 		Transactor: &transactor,
 	}
 
+}
+
+func setupTestContext() context.Context {
+	user := fcmocks.NewMockUser("test")
+	ctx := fcmocks.NewMockContext(user)
+	return ctx
+}
+
+func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryService, error) {
+
+	mockDiscovery, err := txnmocks.NewMockDiscoveryProvider(discErr, peers)
+	if err != nil {
+		return nil, errors.WithMessage(err, "NewMockDiscoveryProvider failed")
+	}
+
+	return mockDiscovery.NewDiscoveryService("mychannel")
+}
+
+func setupTestSelection(discErr error, peers []fab.Peer) (*txnmocks.MockSelectionService, error) {
+
+	mockSelection, err := txnmocks.NewMockSelectionProvider(discErr, peers)
+	if err != nil {
+		return nil, errors.WithMessage(err, "NewMockSelectinProvider failed")
+	}
+
+	return mockSelection.NewSelectionService("mychannel")
 }
