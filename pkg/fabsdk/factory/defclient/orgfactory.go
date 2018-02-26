@@ -23,5 +23,5 @@ func NewOrgClientFactory() *OrgClientFactory {
 
 // CreateCredentialManager returns a new default implementation of the credential manager
 func (f *OrgClientFactory) CreateCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error) {
-	return identitymgr.NewCredentialManager(orgName, config, cryptoProvider)
+	return identitymgr.New(orgName, config, cryptoProvider)
 }

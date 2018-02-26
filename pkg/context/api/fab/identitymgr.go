@@ -13,6 +13,7 @@ import (
 
 // IdentityManager provides management of identities in a Fabric network
 type IdentityManager interface {
+	contextApi.CredentialManager
 	CAName() string
 	Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error)
 	Reenroll(user contextApi.User) (core.Key, []byte, error)

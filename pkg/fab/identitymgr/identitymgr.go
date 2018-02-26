@@ -7,13 +7,16 @@ SPDX-License-Identifier: Apache-2.0
 package identitymgr
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/pkg/errors"
 
-	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
+	caapi "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr/persistence"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
@@ -25,12 +28,19 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // IdentityManager implements fab/IdentityManager
 type IdentityManager struct {
-	mspID       string
-	config      config.Config
-	cryptoSuite core.CryptoSuite
-	userStore   contextApi.UserStore
-	caClient    *calib.Client
-	registrar   config.EnrollCredentials
+	orgName         string
+	orgMspID        string
+	caName          string
+	config          core.Config
+	cryptoSuite     core.CryptoSuite
+	embeddedUsers   map[string]core.TLSKeyPair
+	mspPrivKeyStore contextApi.KVStore
+	mspCertStore    contextApi.KVStore
+	userStore       contextApi.UserStore
+
+	// CA Client state
+	caClient  *calib.Client
+	registrar config.EnrollCredentials
 }
 
 // New creates a new instance of IdentityManager
@@ -38,94 +48,75 @@ type IdentityManager struct {
 // @param {Config} client config for fabric-ca services
 // @returns {IdentityManager} IdentityManager instance
 // @returns {error} error, if any
-func New(org string, config config.Config, cryptoSuite core.CryptoSuite) (*IdentityManager, error) {
+func New(orgName string, config config.Config, cryptoSuite core.CryptoSuite) (*IdentityManager, error) {
 
-	userStorePath := config.CredentialStorePath()
-	userStore, err := identity.NewCertFileUserStore(userStorePath, cryptoSuite)
+	netConfig, err := config.NetworkConfig()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get user store")
-	}
-	caClient, err := newClient(org, config, cryptoSuite)
-	if err != nil {
-		return nil, err
-	}
-	orgConfig, err := config.CAConfig(org)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get CA configurtion for msp: %s", org)
-	}
-	registrar := orgConfig.Registrar
-	client := &IdentityManager{
-		mspID:       org,
-		config:      config,
-		cryptoSuite: cryptoSuite,
-		caClient:    caClient,
-		userStore:   userStore,
-		registrar:   registrar,
-	}
-	return client, nil
-}
-
-func newClient(org string, config config.Config, cryptoSuite core.CryptoSuite) (*calib.Client, error) {
-
-	// Create new Fabric-ca client without configs
-	c := &calib.Client{
-		Config: &calib.ClientConfig{},
+		return nil, errors.Wrapf(err, "network config retrieval failed")
 	}
 
-	conf, err := config.CAConfig(org)
-	if err != nil {
-		return nil, err
+	// viper keys are case insensitive
+	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
+	if !ok {
+		return nil, errors.New("org config retrieval failed")
 	}
 
-	if conf == nil {
-		return nil, errors.Errorf("Orgnization %s have no corresponding CA in the configs", org)
+	if orgConfig.CryptoPath == "" && len(orgConfig.Users) == 0 {
+		return nil, errors.New("Either a cryptopath or an embedded list of users is required")
 	}
 
-	//set server CAName
-	c.Config.CAName = conf.CAName
-	//set server URL
-	c.Config.URL = urlutil.ToAddress(conf.URL)
-	//certs file list
-	c.Config.TLS.CertFiles, err = config.CAServerCertPaths(org)
-	if err != nil {
-		return nil, err
+	var mspPrivKeyStore contextApi.KVStore
+	var mspCertStore contextApi.KVStore
+
+	orgCryptoPathTemplate := orgConfig.CryptoPath
+	if orgCryptoPathTemplate != "" {
+		if !filepath.IsAbs(orgCryptoPathTemplate) {
+			orgCryptoPathTemplate = filepath.Join(config.CryptoConfigPath(), orgCryptoPathTemplate)
+		}
+		mspPrivKeyStore, err = persistence.NewFileKeyStore(orgCryptoPathTemplate)
+		if err != nil {
+			return nil, errors.Wrapf(err, "creating a private key store failed")
+		}
+		mspCertStore, err = persistence.NewFileCertStore(orgCryptoPathTemplate)
+		if err != nil {
+			return nil, errors.Wrapf(err, "creating a cert store failed")
+		}
+	} else {
+		logger.Warnf("Cryptopath not provided for organization [%s], MSP stores not created", orgName)
 	}
 
-	// set key file and cert file
-	c.Config.TLS.Client.CertFile, err = config.CAClientCertPath(org)
-	if err != nil {
-		return nil, err
+	// In the future, shared UserStore from the SDK context will be used
+	var userStore contextApi.UserStore
+	if config.CredentialStorePath() != "" {
+		userStore, err = identity.NewCertFileUserStore(config.CredentialStorePath(), cryptoSuite)
+		if err != nil {
+			return nil, errors.Wrapf(err, "creating a user store failed")
+		}
 	}
 
-	c.Config.TLS.Client.KeyFile, err = config.CAClientKeyPath(org)
-	if err != nil {
-		return nil, err
+	var caName string
+	if len(orgConfig.CertificateAuthorities) > 0 {
+		caName = orgConfig.CertificateAuthorities[0]
 	}
 
-	// get Client configs
-	_, err = config.Client()
-	if err != nil {
-		return nil, err
+	mgr := &IdentityManager{
+		orgName:         orgName,
+		orgMspID:        orgConfig.MspID,
+		caName:          caName,
+		config:          config,
+		cryptoSuite:     cryptoSuite,
+		mspPrivKeyStore: mspPrivKeyStore,
+		mspCertStore:    mspCertStore,
+		embeddedUsers:   orgConfig.Users,
+		userStore:       userStore,
+		// CA Client state is created lazily, when (if) needed
 	}
-
-	//TLS flag enabled/disabled
-	c.Config.TLS.Enabled = urlutil.IsTLSEnabled(conf.URL)
-	c.Config.MSPDir = config.CAKeyStorePath()
-
-	//Factory opts
-	c.Config.CSP = cryptoSuite
-
-	err = c.Init()
-	if err != nil {
-		return nil, errors.Wrap(err, "init failed")
-	}
-
-	return c, nil
+	return mgr, nil
 }
 
 // CAName returns the CA name.
 func (im *IdentityManager) CAName() string {
-	return im.caClient.Config.CAName
+	return im.caName
 }
 
 // Enroll a registered user in order to receive a signed X509 certificate.
@@ -133,6 +124,9 @@ func (im *IdentityManager) CAName() string {
 // enrollmentSecret The secret associated with the enrollment ID
 // Returns X509 certificate
 func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error) {
+	if err := im.initCAClient(); err != nil {
+		return nil, nil, err
+	}
 	if enrollmentID == "" {
 		return nil, nil, errors.New("enrollmentID is required")
 	}
@@ -140,7 +134,7 @@ func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) 
 		return nil, nil, errors.New("enrollmentSecret is required")
 	}
 	// TODO add attributes
-	careq := &api.EnrollmentRequest{
+	careq := &caapi.EnrollmentRequest{
 		CAName: im.caClient.Config.CAName,
 		Name:   enrollmentID,
 		Secret: enrollmentSecret,
@@ -149,7 +143,7 @@ func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) 
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "enroll failed")
 	}
-	user := identity.NewUser(im.mspID, enrollmentID)
+	user := identity.NewUser(im.orgMspID, enrollmentID)
 	user.SetEnrollmentCertificate(caresp.Identity.GetECert().Cert())
 	user.SetPrivateKey(caresp.Identity.GetECert().Key())
 	err = im.userStore.Store(user)
@@ -162,6 +156,9 @@ func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) 
 // Reenroll an enrolled user in order to receive a signed X509 certificate
 // Returns X509 certificate
 func (im *IdentityManager) Reenroll(user contextApi.User) (core.Key, []byte, error) {
+	if err := im.initCAClient(); err != nil {
+		return nil, nil, err
+	}
 	if user == nil {
 		return nil, nil, errors.New("user required")
 	}
@@ -169,7 +166,7 @@ func (im *IdentityManager) Reenroll(user contextApi.User) (core.Key, []byte, err
 		logger.Infof("Invalid re-enroll request, missing argument user")
 		return nil, nil, errors.New("user name missing")
 	}
-	req := &api.ReenrollmentRequest{
+	req := &caapi.ReenrollmentRequest{
 		CAName: im.caClient.Config.CAName,
 	}
 	// Create signing identity
@@ -190,6 +187,9 @@ func (im *IdentityManager) Reenroll(user contextApi.User) (core.Key, []byte, err
 // request: Registration Request
 // Returns Enrolment Secret
 func (im *IdentityManager) Register(request *fab.RegistrationRequest) (string, error) {
+	if err := im.initCAClient(); err != nil {
+		return "", err
+	}
 	// Validate registration request
 	if request == nil {
 		return "", errors.New("registration request is required")
@@ -207,12 +207,12 @@ func (im *IdentityManager) Register(request *fab.RegistrationRequest) (string, e
 		return "", errors.Wrap(err, "failed to create request for signing identity")
 	}
 	// Contruct request for Fabric CA client
-	var attributes []api.Attribute
+	var attributes []caapi.Attribute
 	for i := range request.Attributes {
-		attributes = append(attributes, api.Attribute{Name: request.
+		attributes = append(attributes, caapi.Attribute{Name: request.
 			Attributes[i].Key, Value: request.Attributes[i].Value})
 	}
-	var req = api.RegistrationRequest{
+	var req = caapi.RegistrationRequest{
 		CAName:         request.CAName,
 		Name:           request.Name,
 		Type:           request.Type,
@@ -221,6 +221,7 @@ func (im *IdentityManager) Register(request *fab.RegistrationRequest) (string, e
 		Secret:         request.Secret,
 		Attributes:     attributes}
 	// Make registration request
+
 	response, err := identity.Register(&req)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to register user")
@@ -233,6 +234,9 @@ func (im *IdentityManager) Register(request *fab.RegistrationRequest) (string, e
 // registrar: The User that is initiating the revocation
 // request: Revocation Request
 func (im *IdentityManager) Revoke(request *fab.RevocationRequest) (*fab.RevocationResponse, error) {
+	if err := im.initCAClient(); err != nil {
+		return nil, err
+	}
 	// Validate revocation request
 	if request == nil {
 		return nil, errors.New("revocation request is required")
@@ -247,7 +251,7 @@ func (im *IdentityManager) Revoke(request *fab.RevocationRequest) (*fab.Revocati
 		return nil, errors.Wrap(err, "failed to create request for signing identity")
 	}
 	// Create revocation request
-	var req = api.RevocationRequest{
+	var req = caapi.RevocationRequest{
 		CAName: request.CAName,
 		Name:   request.Name,
 		Serial: request.Serial,
@@ -277,7 +281,7 @@ func (im *IdentityManager) Revoke(request *fab.RevocationRequest) (*fab.Revocati
 }
 
 func (im *IdentityManager) getRegistrar() (contextApi.User, error) {
-	user, err := im.userStore.Load(contextApi.UserKey{MspID: im.mspID, Name: im.registrar.EnrollID})
+	user, err := im.userStore.Load(contextApi.UserKey{MspID: im.orgMspID, Name: im.registrar.EnrollID})
 	if err != nil {
 		if err != contextApi.ErrUserNotFound {
 			return nil, err
@@ -289,7 +293,7 @@ func (im *IdentityManager) getRegistrar() (contextApi.User, error) {
 		if err != nil {
 			return nil, err
 		}
-		user, err = im.userStore.Load(contextApi.UserKey{MspID: im.mspID, Name: im.registrar.EnrollID})
+		user, err = im.userStore.Load(contextApi.UserKey{MspID: im.orgMspID, Name: im.registrar.EnrollID})
 	}
 	return user, err
 }
