@@ -79,11 +79,6 @@ type ChannelService struct {
 	cfg             fab.ChannelCfg
 }
 
-// Channel returns the named Channel client.
-func (cs *ChannelService) Channel() (fab.Channel, error) {
-	return cs.fabricProvider.CreateChannelClient(cs.identityContext, cs.cfg)
-}
-
 // EventHub returns the EventHub for the named channel.
 func (cs *ChannelService) EventHub() (fab.EventHub, error) {
 	return cs.fabricProvider.CreateEventHub(cs.identityContext, cs.cfg.Name())

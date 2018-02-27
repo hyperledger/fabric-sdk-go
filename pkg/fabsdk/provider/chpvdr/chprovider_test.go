@@ -42,18 +42,8 @@ func TestBasicValidChannel(t *testing.T) {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}
 
-	_, err = channelService.Channel()
-	if err != nil {
-		t.Fatalf("Unexpected error creating Channel Service: %v", err)
-	}
-
 	// System channel
 	channelService, err = cp.ChannelService(user, "")
-	if err != nil {
-		t.Fatalf("Unexpected error creating Channel Service: %v", err)
-	}
-
-	_, err = channelService.Channel()
 	if err != nil {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}

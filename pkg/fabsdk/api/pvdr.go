@@ -16,7 +16,6 @@ import (
 
 // FabricProvider enables access to fabric objects such as peer and user based on config or
 type FabricProvider interface {
-	CreateChannelClient(user context.IdentityContext, cfg fab.ChannelCfg) (fab.Channel, error)
 	CreateChannelLedger(ic context.IdentityContext, name string) (fab.ChannelLedger, error)
 	CreateChannelConfig(user context.IdentityContext, name string) (fab.ChannelConfig, error)
 	CreateResourceClient(user context.IdentityContext) (api.Resource, error)

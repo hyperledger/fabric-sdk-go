@@ -53,20 +53,6 @@ func (f *FabricProvider) CreateResourceClient(ic context.IdentityContext) (api.R
 	return client, nil
 }
 
-// CreateChannelClient returns a new client initialized for the current instance of the SDK.
-func (f *FabricProvider) CreateChannelClient(ic context.IdentityContext, cfg fab.ChannelCfg) (fab.Channel, error) {
-	ctx := &fabContext{
-		ProviderContext: f.providerContext,
-		IdentityContext: ic,
-	}
-	channel, err := channelImpl.New(ctx, cfg)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewChannel failed")
-	}
-
-	return channel, nil
-}
-
 // CreateChannelLedger returns a new client initialized for the current instance of the SDK.
 func (f *FabricProvider) CreateChannelLedger(ic context.IdentityContext, channelName string) (fab.ChannelLedger, error) {
 	ctx := &fabContext{

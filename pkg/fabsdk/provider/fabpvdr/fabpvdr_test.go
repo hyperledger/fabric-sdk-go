@@ -14,7 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -25,21 +24,6 @@ import (
 
 func TestCreateFabricProvider(t *testing.T) {
 	newMockFabricProvider(t)
-}
-
-func TestCreateChannelClient(t *testing.T) {
-	p := newMockFabricProvider(t)
-
-	user := mocks.NewMockUser("user")
-	client, err := p.CreateChannelClient(user, mocks.NewMockChannelCfg("mychannel"))
-	if err != nil {
-		t.Fatalf("Unexpected error creating client %v", err)
-	}
-
-	_, ok := client.(*channelImpl.Channel)
-	if !ok {
-		t.Fatalf("Unexpected client impl created: %v", client)
-	}
 }
 
 func TestCreateResourceClient(t *testing.T) {
