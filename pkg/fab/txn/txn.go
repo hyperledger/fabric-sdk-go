@@ -174,28 +174,27 @@ func broadcastEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab
 	}
 
 	// Iterate them in a random order and try broadcasting 1 by 1
-	var errResp *fab.TransactionResponse
+	var errResp error
 	for _, i := range rand.Perm(len(randOrderers)) {
-		resp := sendBroadcast(envelope, randOrderers[i])
-		if resp.Err != nil {
-			errResp = resp
+		resp, err := sendBroadcast(envelope, randOrderers[i])
+		if err != nil {
+			errResp = err
 		} else {
 			return resp, nil
 		}
 	}
-	return errResp, nil
+	return nil, errResp
 }
 
-func sendBroadcast(envelope *fab.SignedEnvelope, orderer fab.Orderer) *fab.TransactionResponse {
+func sendBroadcast(envelope *fab.SignedEnvelope, orderer fab.Orderer) (*fab.TransactionResponse, error) {
 	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
 	if _, err := orderer.SendBroadcast(envelope); err != nil {
 		logger.Debugf("Receive Error Response from orderer :%v\n", err)
-		return &fab.TransactionResponse{Orderer: orderer.URL(),
-			Err: errors.Wrapf(err, "calling orderer '%s' failed", orderer.URL())}
+		return nil, errors.Wrapf(err, "calling orderer '%s' failed", orderer.URL())
 	}
 
 	logger.Debugf("Receive Success Response from orderer\n")
-	return &fab.TransactionResponse{Orderer: orderer.URL(), Err: nil}
+	return &fab.TransactionResponse{Orderer: orderer.URL()}, nil
 }
 
 // SendPayload sends the given payload to each orderer and returns a block response

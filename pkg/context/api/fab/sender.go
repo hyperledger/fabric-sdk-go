@@ -33,5 +33,4 @@ type Transaction struct {
 // TransactionResponse contains information returned by the orderer.
 type TransactionResponse struct {
 	Orderer string
-	Err     error
 }

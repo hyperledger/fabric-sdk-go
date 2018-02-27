@@ -253,10 +253,6 @@ func CreateAndSendTransaction(transactor fab.Sender, proposal *fab.TransactionPr
 
 	}
 
-	if transactionResponse.Err != nil {
-		return nil, errors.Wrapf(transactionResponse.Err, "orderer %s failed", transactionResponse.Orderer)
-	}
-
 	return transactionResponse, nil
 }
 

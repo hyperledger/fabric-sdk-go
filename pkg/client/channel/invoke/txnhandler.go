@@ -243,10 +243,6 @@ func createAndSendTransaction(sender fab.Sender, proposal *fab.TransactionPropos
 		return nil, errors.WithMessage(err, "SendTransaction failed")
 
 	}
-	if transactionResponse.Err != nil {
-		logger.Debugf("orderer %s failed (%s)", transactionResponse.Orderer, transactionResponse.Err.Error())
-		return nil, errors.Wrap(transactionResponse.Err, "orderer failed")
-	}
 
 	return transactionResponse, nil
 }
@@ -260,6 +256,9 @@ func createAndSendTransactionProposal(transactor fab.Transactor, chrequest *Requ
 	}
 
 	txh, err := transactor.CreateTransactionHeader()
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "creating transaction header failed")
+	}
 
 	proposal, err := txn.CreateChaincodeInvokeProposal(txh, request)
 	if err != nil {
