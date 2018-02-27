@@ -123,7 +123,7 @@ func TestCreateUser(t *testing.T) {
 	org := "org1"
 
 	p := newMockFabricProvider(t)
-	cm, err := mocks.NewMockCredentialManager(org, p.providerContext.Config(), p.providerContext.CryptoSuite())
+	cm, err := mocks.NewMockIdentityManager(org, p.providerContext.Config(), p.providerContext.CryptoSuite())
 	if err != nil {
 		t.Fatalf("Unexpected error creating credential manager %v", err)
 	}

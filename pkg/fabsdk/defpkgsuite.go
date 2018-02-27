@@ -25,10 +25,6 @@ func (ps *defPkgSuite) Service() (sdkApi.ServiceProviderFactory, error) {
 	return defsvc.NewProviderFactory(), nil
 }
 
-func (ps *defPkgSuite) Context() (sdkApi.OrgClientFactory, error) {
-	return defclient.NewOrgClientFactory(), nil
-}
-
 func (ps *defPkgSuite) Session() (sdkApi.SessionClientFactory, error) {
 	return defclient.NewSessionClientFactory(), nil
 }

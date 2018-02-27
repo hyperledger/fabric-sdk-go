@@ -103,54 +103,6 @@ func TestWithServicePkg(t *testing.T) {
 	}
 }
 
-func TestWithContextPkg(t *testing.T) {
-	// Test New SDK with valid config file
-	c, err := configImpl.FromFile(sdkConfigFile)()
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	core, err := newMockCorePkg(c)
-	if err != nil {
-		t.Fatalf("Error initializing core factory: %s", err)
-	}
-
-	sdk, err := New(WithConfig(c))
-	if err != nil {
-		t.Fatalf("Error initializing SDK: %s", err)
-	}
-
-	// Use real implementation of credential manager to provide in later response
-	pkgSuite := defPkgSuite{}
-	ctx, err := pkgSuite.Context()
-	if err != nil {
-		t.Fatalf("Unexpected error getting context: %s", err)
-	}
-
-	cm, err := ctx.CreateCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite)
-	if err != nil {
-		t.Fatalf("Unexpected error getting credential manager: %s", err)
-	}
-
-	// Create mock to ensure the provided factory is called.
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	factory := mockapisdk.NewMockOrgClientFactory(mockCtrl)
-
-	factory.EXPECT().CreateCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite).Return(cm, nil)
-
-	sdk, err = New(WithConfig(c), WithCorePkg(core), WithContextPkg(factory))
-	if err != nil {
-		t.Fatalf("Error initializing SDK: %s", err)
-	}
-
-	// Use a method that invokes credential manager (e.g., new user)
-	_, err = sdk.newUser(sdkValidClientOrg1, sdkValidClientUser)
-	if err != nil {
-		t.Fatalf("Unexpected error getting user: %s", err)
-	}
-}
-
 func TestWithSessionPkg(t *testing.T) {
 	// Test New SDK with valid config file
 	c, err := configImpl.FromFile(sdkConfigFile)()
@@ -211,13 +163,6 @@ func TestErrPkgSuite(t *testing.T) {
 		t.Fatalf("Expected error initializing SDK")
 	}
 	ps.errOnService = false
-
-	ps.errOnContext = true
-	_, err = fromPkgSuite(c, &ps)
-	if err == nil {
-		t.Fatalf("Expected error initializing SDK")
-	}
-	ps.errOnContext = false
 
 	ps.errOnSession = true
 	_, err = fromPkgSuite(c, &ps)

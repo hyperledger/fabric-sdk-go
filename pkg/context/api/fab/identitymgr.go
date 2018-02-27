@@ -13,12 +13,12 @@ import (
 
 // IdentityManager provides management of identities in a Fabric network
 type IdentityManager interface {
-	contextApi.CredentialManager
-	CAName() string
+	GetSigningIdentity(name string) (*contextApi.SigningIdentity, error)
 	Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error)
 	Reenroll(user contextApi.User) (core.Key, []byte, error)
 	Register(request *RegistrationRequest) (string, error)
 	Revoke(request *RevocationRequest) (*RevocationResponse, error)
+	CAName() string
 }
 
 // AttributeRequest is a request for an attribute.
