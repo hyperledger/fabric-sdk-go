@@ -341,7 +341,7 @@ func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	return resps[0], err
+	return resps[0].BCI, err
 }
 
 // QueryBlockByHash queries the ledger for Block by block hash.

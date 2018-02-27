@@ -10,6 +10,7 @@ import (
 	"math"
 	"path"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -144,6 +146,38 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 	initial, _ := strconv.Atoi(string(response.Payload))
 
+	// Ledger client will verify blockchain info
+	ledgerClient, err := sdk.NewClient(fabsdk.WithUser("Admin")).Ledger("orgchannel")
+	if err != nil {
+		t.Fatalf("Failed to create new ledger client: %s", err)
+	}
+
+	channelCfg, err := ledgerClient.QueryConfig(ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	if err != nil {
+		t.Fatalf("QueryConfig return error: %v", err)
+	}
+	if len(channelCfg.Orderers()) == 0 {
+		t.Fatalf("Failed to retrieve channel orderers")
+	}
+	expectedOrderer := "orderer.example.com"
+	if !strings.Contains(channelCfg.Orderers()[0], expectedOrderer) {
+		t.Fatalf("Expecting %s, got %s", expectedOrderer, channelCfg.Orderers()[0])
+	}
+
+	ledgerInfoBefore, err := ledgerClient.QueryInfo(ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2), ledger.WithMaxTargets(3))
+	if err != nil {
+		t.Fatalf("QueryInfo return error: %v", err)
+	}
+
+	// Test Query Block by Hash - retrieve current block by hash
+	block, err := ledgerClient.QueryBlockByHash(ledgerInfoBefore.BCI.CurrentBlockHash, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	if err != nil {
+		t.Fatalf("QueryBlockByHash return error: %v", err)
+	}
+	if block == nil {
+		t.Fatalf("Block info not available")
+	}
+
 	// Org2 user moves funds on org2 peer
 	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithProposalProcessor(orgTestPeer1))
 	if err != nil {
@@ -152,6 +186,34 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 	// Assert that funds have changed value on org1 peer
 	verifyValue(t, chClientOrg1User, initial+1)
+
+	// Get latest block chain info
+	ledgerInfoAfter, err := ledgerClient.QueryInfo(ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	if err != nil {
+		t.Fatalf("QueryInfo return error: %v", err)
+	}
+
+	if ledgerInfoAfter.BCI.Height-ledgerInfoBefore.BCI.Height <= 0 {
+		t.Fatalf("Block size did not increase after transaction")
+	}
+
+	// Test Query Block by Hash - retrieve current block by number
+	block, err = ledgerClient.QueryBlock(int(ledgerInfoAfter.BCI.Height)-1, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	if err != nil {
+		t.Fatalf("QueryBlock return error: %v", err)
+	}
+	if block == nil {
+		t.Fatalf("Block info not available")
+	}
+
+	// Get transaction info
+	transactionInfo, err := ledgerClient.QueryTransaction(response.TransactionID, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	if err != nil {
+		t.Fatalf("QueryTransaction return error: %v", err)
+	}
+	if transactionInfo.TransactionEnvelope == nil {
+		t.Fatalf("Transaction info missing")
+	}
 
 	// Start chaincode upgrade process (install and instantiate new version of exampleCC)
 	installCCReq = resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Package: ccPkg}

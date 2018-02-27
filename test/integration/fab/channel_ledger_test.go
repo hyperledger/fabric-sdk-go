@@ -98,7 +98,7 @@ func TestLedgerQueries(t *testing.T) {
 	}
 
 	// Test Query Info -- verify block size changed after transaction
-	if (bciAfterTx[0].Height - bciBeforeTx[0].Height) <= 0 {
+	if (bciAfterTx[0].BCI.Height - bciBeforeTx[0].BCI.Height) <= 0 {
 		t.Fatalf("Block size did not increase after transaction")
 	}
 
@@ -178,7 +178,7 @@ func testQueryBlock(t *testing.T, ledger fab.ChannelLedger, targets []fab.Propos
 
 	for i, bci := range bcis {
 		// Test Query Block by Hash - retrieve current block by hash
-		block, err := ledger.QueryBlockByHash(bci.CurrentBlockHash, targets[i:i+1])
+		block, err := ledger.QueryBlockByHash(bci.BCI.CurrentBlockHash, targets[i:i+1])
 		if err != nil {
 			t.Fatalf("QueryBlockByHash return error: %v", err)
 		}

@@ -8,6 +8,7 @@ package fabsdk
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -175,6 +176,34 @@ func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.Client, err
 	}
 
 	return resmgmt.New(ctx, resmgmt.WithDefaultTargetFilter(o.targetFilter))
+
+}
+
+// Ledger returns a client API for querying ledger
+func (c *ClientContext) Ledger(id string, opts ...ClientOption) (*ledger.Client, error) {
+	p, err := c.provider()
+	if err != nil {
+		return &ledger.Client{}, errors.WithMessage(err, "unable to get client provider context")
+	}
+	o, err := newClientOptions(opts)
+	if err != nil {
+		return &ledger.Client{}, errors.WithMessage(err, "unable to retrieve client options")
+	}
+	session := newSession(p.identity, p.providers.ChannelProvider())
+
+	discovery := p.providers.DiscoveryProvider()
+	discService, err := discovery.NewDiscoveryService(id)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := ledger.Context{
+		ProviderContext:  p.providers,
+		IdentityContext:  session,
+		DiscoveryService: discService,
+	}
+
+	return ledger.New(ctx, id, ledger.WithDefaultTargetFilter(o.targetFilter))
 
 }
 

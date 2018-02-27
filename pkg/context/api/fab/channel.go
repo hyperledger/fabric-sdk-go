@@ -59,7 +59,7 @@ type Channel interface {
 
 // ChannelLedger provides access to the underlying ledger for a channel.
 type ChannelLedger interface {
-	QueryInfo(targets []ProposalProcessor) ([]*common.BlockchainInfo, error)
+	QueryInfo(targets []ProposalProcessor) ([]*BlockchainInfoResponse, error)
 	QueryBlock(blockNumber int, targets []ProposalProcessor) ([]*common.Block, error)
 	QueryBlockByHash(blockHash []byte, targets []ProposalProcessor) ([]*common.Block, error)
 	QueryTransaction(transactionID TransactionID, targets []ProposalProcessor) ([]*pb.ProcessedTransaction, error)
@@ -103,4 +103,11 @@ type Versions struct {
 	ReadSet  *common.ConfigGroup
 	WriteSet *common.ConfigGroup
 	Channel  *common.ConfigGroup
+}
+
+// BlockchainInfoResponse wraps blockchain info with endorser info
+type BlockchainInfoResponse struct {
+	BCI      *common.BlockchainInfo
+	Endorser string
+	Status   int32
 }

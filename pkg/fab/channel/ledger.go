@@ -37,19 +37,19 @@ func NewLedger(ctx context.Context, chName string) (*Ledger, error) {
 
 // QueryInfo queries for various useful information on the state of the channel
 // (height, known peers).
-func (c *Ledger) QueryInfo(targets []fab.ProposalProcessor) ([]*common.BlockchainInfo, error) {
+func (c *Ledger) QueryInfo(targets []fab.ProposalProcessor) ([]*fab.BlockchainInfoResponse, error) {
 	logger.Debug("queryInfo - start")
 
 	cir := createChannelInfoInvokeRequest(c.chName)
-	tprs, errs := queryChaincode(c.ctx, fab.SystemChannel, cir, targets)
+	tprs, errs := queryChaincode(c.ctx, c.chName, cir, targets)
 
-	responses := []*common.BlockchainInfo{}
+	responses := []*fab.BlockchainInfoResponse{}
 	for _, tpr := range tprs {
 		r, err := createBlockchainInfo(tpr)
 		if err != nil {
 			errs = multi.Append(errs, errors.WithMessage(err, "From target: "+tpr.Endorser))
 		} else {
-			responses = append(responses, r)
+			responses = append(responses, &fab.BlockchainInfoResponse{Endorser: tpr.Endorser, Status: tpr.Status, BCI: r})
 		}
 	}
 	return responses, errs
@@ -74,7 +74,7 @@ func (c *Ledger) QueryBlockByHash(blockHash []byte, targets []fab.ProposalProces
 	}
 
 	cir := createBlockByHashInvokeRequest(c.chName, blockHash)
-	tprs, errs := queryChaincode(c.ctx, fab.SystemChannel, cir, targets)
+	tprs, errs := queryChaincode(c.ctx, c.chName, cir, targets)
 
 	responses := []*common.Block{}
 	for _, tpr := range tprs {
@@ -99,7 +99,7 @@ func (c *Ledger) QueryBlock(blockNumber int, targets []fab.ProposalProcessor) ([
 	}
 
 	cir := createBlockByNumberInvokeRequest(c.chName, blockNumber)
-	tprs, errs := queryChaincode(c.ctx, fab.SystemChannel, cir, targets)
+	tprs, errs := queryChaincode(c.ctx, c.chName, cir, targets)
 
 	responses := []*common.Block{}
 	for _, tpr := range tprs {
@@ -128,7 +128,7 @@ func createCommonBlock(tpr *fab.TransactionProposalResponse) (*common.Block, err
 func (c *Ledger) QueryTransaction(transactionID fab.TransactionID, targets []fab.ProposalProcessor) ([]*pb.ProcessedTransaction, error) {
 
 	cir := createTransactionByIDInvokeRequest(c.chName, transactionID)
-	tprs, errs := queryChaincode(c.ctx, fab.SystemChannel, cir, targets)
+	tprs, errs := queryChaincode(c.ctx, c.chName, cir, targets)
 
 	responses := []*pb.ProcessedTransaction{}
 	for _, tpr := range tprs {
