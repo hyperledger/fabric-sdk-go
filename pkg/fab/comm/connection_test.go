@@ -8,9 +8,6 @@ package comm
 
 import (
 	"context"
-	"fmt"
-	"net"
-	"os"
 	"testing"
 	"time"
 
@@ -24,11 +21,6 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-)
-
-const (
-	peerAddress = "localhost:9999"
-	peerURL     = "grpc://" + peerAddress
 )
 
 var testStream = func(grpcconn *grpc.ClientConn) (grpc.ClientStream, error) {
@@ -93,25 +85,7 @@ func TestConnection(t *testing.T) {
 
 // Use the Deliver server for testing
 var testServer *eventmocks.MockEventhubServer
-
-func TestMain(m *testing.M) {
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-
-	lis, err := net.Listen("tcp", peerAddress)
-	if err != nil {
-		panic(fmt.Sprintf("Error starting events listener %s", err))
-	}
-
-	testServer = eventmocks.NewMockEventhubServer()
-
-	pb.RegisterEventsServer(grpcServer, testServer)
-
-	go grpcServer.Serve(lis)
-
-	time.Sleep(2 * time.Second)
-	os.Exit(m.Run())
-}
+var endorserAddr []string
 
 func newPeerConfig(peerURL string) *core.PeerConfig {
 	return &core.PeerConfig{

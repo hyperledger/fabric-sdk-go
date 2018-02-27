@@ -62,6 +62,9 @@ client:
     timeout:
       connection: 3s
       response: 5s
+  cache:
+    timeout:
+      connectionIdle: 30s
 
 
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"

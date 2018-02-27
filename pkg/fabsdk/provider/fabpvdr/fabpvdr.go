@@ -13,6 +13,7 @@ import (
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/membership"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -24,6 +25,7 @@ import (
 // FabricProvider represents the default implementation of Fabric objects.
 type FabricProvider struct {
 	providerContext core.Providers
+	connector       *comm.CachingConnector
 }
 
 type fabContext struct {
@@ -33,10 +35,21 @@ type fabContext struct {
 
 // New creates a FabricProvider enabling access to core Fabric objects and functionality.
 func New(ctx core.Providers) *FabricProvider {
+	idleTime := ctx.Config().TimeoutOrDefault(core.ConnectionIdle)
+	sweepTime := ctx.Config().TimeoutOrDefault(core.CacheSweepInterval)
+
+	cc := comm.NewCachingConnector(sweepTime, idleTime)
+
 	f := FabricProvider{
 		providerContext: ctx,
+		connector:       cc,
 	}
 	return &f
+}
+
+// Close frees resources and caches.
+func (f *FabricProvider) Close() {
+	f.connector.Close()
 }
 
 // CreateResourceClient returns a new client initialized for the current instance of the SDK.
@@ -120,7 +133,7 @@ func (f *FabricProvider) CreateChannelTransactor(ic fab.IdentityContext, cfg fab
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration
 func (f *FabricProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
-	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg))
+	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg), peerImpl.WithConnProvider(f.connector))
 }
 
 // CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.

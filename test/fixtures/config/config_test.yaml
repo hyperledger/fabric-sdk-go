@@ -63,6 +63,10 @@ client:
     timeout:
       connection: 3s
       response: 5s
+  cache:
+    timeout:
+      connectionIdle: 30s
+
 
   # Root of the MSP directories with keys and certs.
   cryptoconfig:

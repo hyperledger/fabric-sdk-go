@@ -241,7 +241,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 
 // Close frees up caches and connections being maintained by the SDK
 func (sdk *FabricSDK) Close() {
-	// TODO: upcoming changes will have Close funcs being called from here.
+	sdk.fabricProvider.Close()
 }
 
 // Config returns the SDK's configuration.
@@ -272,7 +272,7 @@ func (sdk *FabricSDK) context() context.Providers {
 		context.WithFabricProvider(sdk.fabricProvider),
 		context.WithChannelProvider(sdk.channelProvider))
 	c := context.SDKContext{
-		*fabContext,
+		FabContext: *fabContext,
 	}
 	return &c
 }

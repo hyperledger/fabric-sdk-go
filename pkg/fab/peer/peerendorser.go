@@ -34,6 +34,7 @@ type peerEndorser struct {
 	transportCredentials credentials.TransportCredentials
 	secured              bool
 	allowInsecure        bool
+	connector            connProvider
 }
 
 type peerEndorserRequest struct {
@@ -45,6 +46,7 @@ type peerEndorserRequest struct {
 	kap                keepalive.ClientParameters
 	failFast           bool
 	allowInsecure      bool
+	connector          connProvider
 }
 
 func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
@@ -72,7 +74,7 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 
 	pc := &peerEndorser{grpcDialOption: opts, target: urlutil.ToAddress(endorseReq.target), dialTimeout: timeout,
 		transportCredentials: credentials.NewTLS(tlsConfig), secured: urlutil.AttemptSecured(endorseReq.target),
-		allowInsecure: endorseReq.allowInsecure}
+		allowInsecure: endorseReq.allowInsecure, connector: endorseReq.connector}
 
 	return pc, nil
 }
@@ -108,11 +110,11 @@ func (p *peerEndorser) conn(secured bool) (*grpc.ClientConn, error) {
 	ctx, cancel := grpccontext.WithTimeout(ctx, p.dialTimeout)
 	defer cancel()
 
-	return grpc.DialContext(ctx, p.target, grpcOpts...)
+	return p.connector.DialContext(ctx, p.target, grpcOpts...)
 }
 
 func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {
-	conn.Close()
+	p.connector.ReleaseConn(conn)
 }
 
 func (p *peerEndorser) sendProposal(proposal fab.ProcessProposalRequest, secured bool) (*pb.ProposalResponse, error) {

@@ -39,12 +39,11 @@ func goodOpt() Option {
 }
 
 func TestNewBadOpt(t *testing.T) {
-	sdk, err := New(configImpl.FromFile(sdkConfigFile),
+	_, err := New(configImpl.FromFile(sdkConfigFile),
 		badOpt())
 	if err == nil {
 		t.Fatalf("Expected error from New")
 	}
-	sdk.Close()
 }
 
 func badOpt() Option {

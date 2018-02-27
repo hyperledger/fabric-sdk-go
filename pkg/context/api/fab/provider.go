@@ -19,6 +19,7 @@ type InfraProvider interface {
 	CreateEventHub(ic IdentityContext, name string) (EventHub, error)
 	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (Peer, error)
 	CreateOrdererFromConfig(cfg *core.OrdererConfig) (Orderer, error)
+	Close()
 }
 
 // SelectionProvider is used to select peers for endorsement

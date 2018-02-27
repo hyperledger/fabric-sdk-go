@@ -34,9 +34,11 @@ import (
 var logger = logging.NewLogger(logModule)
 
 const (
-	cmdRoot        = "FABRIC_SDK"
-	logModule      = "fabric_sdk_go"
-	defaultTimeout = time.Second * 5
+	cmdRoot                   = "FABRIC_SDK"
+	logModule                 = "fabric_sdk_go"
+	defaultTimeout            = time.Second * 5
+	defaultConnIdleTimeout    = time.Second * 30
+	defaultCacheSweepInterval = time.Second * 15
 )
 
 // Config represents the configuration for the client
@@ -458,7 +460,16 @@ func (c *Config) TimeoutOrDefault(conn core.TimeoutType) time.Duration {
 		timeout = c.configViper.GetDuration("client.orderer.timeout.connection")
 	case core.OrdererResponse:
 		timeout = c.configViper.GetDuration("client.orderer.timeout.response")
-
+	case core.CacheSweepInterval: // EXPERIMENTAL - do we need this to be configurable?
+		timeout = c.configViper.GetDuration("client.cache.interval.sweep")
+		if timeout == 0 {
+			timeout = defaultCacheSweepInterval
+		}
+	case core.ConnectionIdle:
+		timeout = c.configViper.GetDuration("client.cache.timeout.connectionIdle")
+		if timeout == 0 {
+			timeout = defaultConnIdleTimeout
+		}
 	}
 	if timeout == 0 {
 		timeout = defaultTimeout
