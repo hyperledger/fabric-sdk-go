@@ -29,12 +29,6 @@ type ServiceProviderFactory interface {
 	//CreateChannelProvider(ctx Context, channelID string) (ChannelProvider, error)
 }
 
-// OrgClientFactory allows overriding default clients and providers of an organization
-// Currently, a context is created for each organization that the client app needs.
-type OrgClientFactory interface {
-	CreateCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error)
-}
-
 // SessionClientFactory allows overriding default clients and providers of a session
 type SessionClientFactory interface {
 	CreateChannelClient(sdk Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error)

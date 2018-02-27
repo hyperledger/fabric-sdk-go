@@ -82,7 +82,6 @@ func (mc *mockCorePkg) CreateFabricProvider(ctx context.ProviderContext) (sdkApi
 type mockPkgSuite struct {
 	errOnCore    bool
 	errOnService bool
-	errOnContext bool
 	errOnSession bool
 	errOnLogger  bool
 }
@@ -99,13 +98,6 @@ func (ps *mockPkgSuite) Service() (sdkApi.ServiceProviderFactory, error) {
 		return nil, errors.New("Error")
 	}
 	return defsvc.NewProviderFactory(), nil
-}
-
-func (ps *mockPkgSuite) Context() (sdkApi.OrgClientFactory, error) {
-	if ps.errOnContext {
-		return nil, errors.New("Error")
-	}
-	return defclient.NewOrgClientFactory(), nil
 }
 
 func (ps *mockPkgSuite) Session() (sdkApi.SessionClientFactory, error) {

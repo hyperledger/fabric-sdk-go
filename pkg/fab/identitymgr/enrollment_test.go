@@ -20,7 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 )
 
-func TestCredentialManagerWithEnrollment(t *testing.T) {
+func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -58,7 +58,7 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 		t.Fatalf("checkSigningIdentity failed: %s", err)
 	}
 
-	// Refers to the same location used by the CredentialManager
+	// Refers to the same location used by the IdentityManager
 	userStore, err := identity.NewCertFileUserStore(clientCofig.CredentialStore.Path, cs)
 	if err != nil {
 		t.Fatalf("Failed to setup userStore: %s", err)

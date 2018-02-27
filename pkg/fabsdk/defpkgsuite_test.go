@@ -19,14 +19,6 @@ func TestNewPkgSuite(t *testing.T) {
 		t.Fatalf("Core is nil")
 	}
 
-	context, err := pkgsuite.Context()
-	if err != nil {
-		t.Fatalf("Unexpected error getting default context factory")
-	}
-	if context == nil {
-		t.Fatalf("Context is nil")
-	}
-
 	session, err := pkgsuite.Session()
 	if err != nil {
 		t.Fatalf("Unexpected error getting default session factory")

@@ -15,8 +15,3 @@ type SigningIdentity struct {
 	EnrollmentCert []byte
 	PrivateKey     core.Key
 }
-
-// CredentialManager retrieves user's signing identity
-type CredentialManager interface {
-	GetSigningIdentity(name string) (*SigningIdentity, error)
-}

@@ -41,7 +41,6 @@ type FabricSDK struct {
 type options struct {
 	Core    sdkApi.CoreProviderFactory
 	Service sdkApi.ServiceProviderFactory
-	Context sdkApi.OrgClientFactory
 	Session sdkApi.SessionClientFactory
 	Logger  api.LoggerProvider
 }
@@ -82,11 +81,6 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 		return nil, errors.WithMessage(err, "Unable to initialize service pkg")
 	}
 
-	ctx, err := pkgSuite.Context()
-	if err != nil {
-		return nil, errors.WithMessage(err, "Unable to initialize context pkg")
-	}
-
 	sess, err := pkgSuite.Session()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to initialize session pkg")
@@ -101,7 +95,6 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 		opts: options{
 			Core:    core,
 			Service: svc,
-			Context: ctx,
 			Session: sess,
 			Logger:  lg,
 		},
@@ -128,14 +121,6 @@ func WithCorePkg(core sdkApi.CoreProviderFactory) Option {
 func WithServicePkg(service sdkApi.ServiceProviderFactory) Option {
 	return func(opts *options) error {
 		opts.Service = service
-		return nil
-	}
-}
-
-// WithContextPkg injects the context implementation into the SDK.
-func WithContextPkg(context sdkApi.OrgClientFactory) Option {
-	return func(opts *options) error {
-		opts.Context = context
 		return nil
 	}
 }
@@ -261,12 +246,12 @@ func (sdk *FabricSDK) context() *sdkContext {
 
 func (sdk *FabricSDK) newUser(orgID string, userName string) (context.IdentityContext, error) {
 
-	credentialMgr, err := sdk.opts.Context.CreateCredentialManager(orgID, sdk.config, sdk.cryptoSuite)
+	identityMgr, err := sdk.FabricProvider().CreateIdentityManager(orgID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get credential manager")
 	}
 
-	signingIdentity, err := credentialMgr.GetSigningIdentity(userName)
+	signingIdentity, err := identityMgr.GetSigningIdentity(userName)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get signing identity")
 	}
