@@ -157,7 +157,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 	res, err := broadcastEnvelope(ctx, sigEnvelope, orderers)
 
-	if err != nil || res.Err != nil {
+	if err != nil {
 		t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
 	}
 
@@ -185,7 +185,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 	// It should always succeed even though one of them has failed
 	for i := 0; i < broadcastCount; i++ {
-		if res, err := broadcastEnvelope(ctx, sigEnvelope, orderers); err != nil || res.Err != nil {
+		if res, err := broadcastEnvelope(ctx, sigEnvelope, orderers); err != nil {
 			t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
 		}
 	}
@@ -197,14 +197,8 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 
 	for i := 0; i < broadcastCount; i++ {
-		res, err := broadcastEnvelope(ctx, sigEnvelope, orderers)
-		if err != nil {
-			t.Fatalf("Test Broadcast sending failed, cause %v", err)
-		}
-		if res.Err == nil {
-			t.Fatal("Test Broadcast succeeded, but it should have failed")
-		}
-		if !strings.Contains(res.Err.Error(), "Service Unavailable") {
+		_, err := broadcastEnvelope(ctx, sigEnvelope, orderers)
+		if !strings.Contains(err.Error(), "Service Unavailable") {
 			t.Fatal("Test Broadcast failed but didn't return the correct reason(should contain 'Service Unavailable')")
 		}
 	}

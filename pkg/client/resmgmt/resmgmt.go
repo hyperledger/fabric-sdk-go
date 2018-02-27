@@ -561,10 +561,6 @@ func createAndSendTransaction(sender fab.Sender, request fab.TransactionRequest)
 		return nil, errors.WithMessage(err, "SendTransaction failed")
 
 	}
-	if transactionResponse.Err != nil {
-		logger.Debugf("orderer %s failed (%s)", transactionResponse.Orderer, transactionResponse.Err.Error())
-		return nil, errors.Wrap(transactionResponse.Err, "orderer failed")
-	}
 
 	return transactionResponse, nil
 }
