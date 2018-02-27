@@ -86,17 +86,17 @@ func (ed *Dispatcher) RegisterHandlers() {
 
 // EventCh returns the channel to which events may be posted
 func (ed *Dispatcher) EventCh() (chan<- interface{}, error) {
-	state := atomic.LoadInt32(&ed.state)
+	state := ed.getState()
 	if state == dispatcherStateStarted {
 		return ed.eventch, nil
 	}
-	return nil, errors.Errorf("dispatcher not started - state [%d]", ed.state)
+	return nil, errors.Errorf("dispatcher not started - Current state [%d]", state)
 }
 
 // Start starts dispatching events as they arrive. All events are processed in
 // a single Go routine in order to avoid any race conditions
 func (ed *Dispatcher) Start() error {
-	if !atomic.CompareAndSwapInt32(&ed.state, dispatcherStateInitial, dispatcherStateStarted) {
+	if !ed.setState(dispatcherStateInitial, dispatcherStateStarted) {
 		return errors.New("cannot start dispatcher since it's not in its initial state")
 	}
 
@@ -104,6 +104,10 @@ func (ed *Dispatcher) Start() error {
 
 	go func() {
 		for {
+			if ed.getState() == dispatcherStateStopped {
+				break
+			}
+
 			logger.Debug("Listening for events...")
 			e, ok := <-ed.eventch
 			if !ok {
@@ -186,7 +190,7 @@ func (ed *Dispatcher) HandleStopEvent(e Event) {
 	event := e.(*StopEvent)
 
 	logger.Debugf("Stopping dispatcher...")
-	if !atomic.CompareAndSwapInt32(&ed.state, dispatcherStateStarted, dispatcherStateStopped) {
+	if !ed.setState(dispatcherStateStarted, dispatcherStateStopped) {
 		logger.Warn("Cannot stop event dispatcher since it's already stopped.")
 		return
 	}
@@ -198,10 +202,7 @@ func (ed *Dispatcher) HandleStopEvent(e Event) {
 	ed.clearTxRegistrations()
 	ed.clearChaincodeRegistrations()
 
-	logger.Debugf("Closing dispatcher event channel.")
-	close(ed.eventch)
-
-	event.RegCh <- nil
+	event.ErrCh <- nil
 }
 
 func (ed *Dispatcher) handleRegisterBlockEvent(e Event) {
@@ -570,4 +571,12 @@ func getFilteredTransactionActions(data []byte) (*pb.FilteredTransaction_Transac
 		actions.TransactionActions.ChaincodeActions = append(actions.TransactionActions.ChaincodeActions, &pb.FilteredChaincodeAction{CcEvent: ccEvent})
 	}
 	return actions, nil
+}
+
+func (ed *Dispatcher) getState() int32 {
+	return atomic.LoadInt32(&ed.state)
+}
+
+func (ed *Dispatcher) setState(expectedState, newState int32) bool {
+	return atomic.CompareAndSwapInt32(&ed.state, expectedState, newState)
 }

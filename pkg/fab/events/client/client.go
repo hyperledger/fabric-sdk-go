@@ -195,7 +195,7 @@ func (c *Client) connect() error {
 
 			c.setConnectionState(Connecting, Disconnected)
 
-			return errors.Errorf("unable to register for events: %s", err)
+			return errors.WithMessage(err, "error invoking afterConnect handler")
 		}
 	}
 

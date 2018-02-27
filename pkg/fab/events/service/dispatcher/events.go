@@ -23,7 +23,7 @@ type RegisterEvent struct {
 
 // StopEvent tells the dispatcher to stop processing
 type StopEvent struct {
-	RegCh chan<- error
+	ErrCh chan<- error
 }
 
 // RegisterBlockEvent registers for block events
@@ -124,8 +124,8 @@ func NewTxStatusEvent(txID string, txValidationCode pb.TxValidationCode) *fab.Tx
 }
 
 // NewStopEvent creates a new StopEvent
-func NewStopEvent(respch chan<- error) *StopEvent {
+func NewStopEvent(errch chan<- error) *StopEvent {
 	return &StopEvent{
-		RegCh: respch,
+		ErrCh: errch,
 	}
 }
