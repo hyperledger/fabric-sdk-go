@@ -258,7 +258,7 @@ func (sdk *FabricSDK) newUser(orgID string, userName string) (context.IdentityCo
 
 	user, err := sdk.fabricProvider.CreateUser(userName, signingIdentity)
 	if err != nil {
-		return nil, errors.WithMessage(err, "NewPreEnrolledUser returned error")
+		return nil, errors.WithMessage(err, "create User returned error")
 	}
 
 	return user, nil
