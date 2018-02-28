@@ -23,13 +23,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-var testPrivKey = `-----BEGIN PRIVATE KEY-----
+var (
+	testPrivKey = `-----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB
 5Ul+GpjM1P5rqc6RhjD5OkTgl5OhRANCAATyFT0voXX7cA4PPtNstWleaTpwjvbS
 J3+tMGTG67f+TdCfDxWYMpQYxLlE8VkbEzKWDwCYvDZRMKCQfv2ErNvb
 -----END PRIVATE KEY-----`
 
-var testCert = `-----BEGIN CERTIFICATE-----
+	testCert = `-----BEGIN CERTIFICATE-----
 MIICGTCCAcCgAwIBAgIRALR/1GXtEud5GQL2CZykkOkwCgYIKoZIzj0EAwIwczEL
 MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
 cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
@@ -44,7 +45,8 @@ AiaiI2BjxnL3/TetJ8iFJYZyWvK//an13WV/AiARBJd/pI5A7KZgQxJhXmmR8bie
 XdsmTcdRvJ3TS/6HCA==
 -----END CERTIFICATE-----`
 
-var msp = "Org1"
+	msp = "Org1"
+)
 
 func TestGetSigningIdentity(t *testing.T) {
 

@@ -22,7 +22,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
@@ -37,10 +36,12 @@ const (
 )
 
 var (
-	fullConfig     core.Config
-	cryptoSuite    core.CryptoSuite
-	wrongURLConfig core.Config
-	userStore      contextApi.UserStore
+	fullConfig              core.Config
+	noRegistrarConfig       core.Config
+	embeddedRegistrarConfig core.Config
+	cryptoSuite             core.CryptoSuite
+	wrongURLConfig          core.Config
+	userStore               contextApi.UserStore
 )
 
 // TestMain Load testing config
@@ -48,6 +49,16 @@ func TestMain(m *testing.M) {
 
 	var err error
 	fullConfig, err = config.FromFile("testdata/config_test.yaml")()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read full config: %v", err))
+	}
+
+	noRegistrarConfig, err = config.FromFile("testdata/config_no_registrar.yaml")()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read full config: %v", err))
+	}
+
+	embeddedRegistrarConfig, err = config.FromFile("testdata/config_embedded_registrar.yaml")()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read full config: %v", err))
 	}
@@ -90,20 +101,35 @@ func TestEnrollAndReenroll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient return error: %v", err)
 	}
+	orgMspID := mspIDByOrgName(t, fullConfig, org1)
+
+	// Empty enrollment ID
 	_, _, err = identityManager.Enroll("", "user1")
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
-	_, _, err = identityManager.Enroll("test", "")
+
+	// Empty enrollment secret
+	_, _, err = identityManager.Enroll("enrolledUserName", "")
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
-	_, _, err = identityManager.Enroll("enrollmentID", "enrollmentSecret")
+
+	// Successful enrollment
+	enrollUserName := createRandomName()
+	enrolledUser, err := userStore.Load(contextApi.UserKey{MspID: orgMspID, Name: enrollUserName})
+	if err != contextApi.ErrUserNotFound {
+		t.Fatalf("Expected to not find user in user store")
+	}
+	_, _, err = identityManager.Enroll(enrollUserName, "enrollmentSecret")
 	if err != nil {
 		t.Fatalf("identityManager Enroll return error %v", err)
 	}
+	enrolledUser, err = userStore.Load(contextApi.UserKey{MspID: orgMspID, Name: enrollUserName})
+	if err != nil {
+		t.Fatalf("Expected to load user from user store")
+	}
 
-	user := mocks.NewMockUser("")
 	// Reenroll with nil user
 	_, _, err = identityManager.Reenroll(nil)
 	if err == nil {
@@ -114,6 +140,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	}
 
 	// Reenroll with user.Name is empty
+	user := mocks.NewMockUser("")
 	_, _, err = identityManager.Reenroll(user)
 	if err == nil {
 		t.Fatalf("Expected error with user.Name is empty")
@@ -122,24 +149,8 @@ func TestEnrollAndReenroll(t *testing.T) {
 		t.Fatalf("Expected error user name missing. Got: %s", err.Error())
 	}
 
-	// Reenroll with user.EnrollmentCertificate is empty
-	user = mocks.NewMockUser("testUser")
-	_, _, err = identityManager.Reenroll(user)
-	if err == nil {
-		t.Fatalf("Expected error with user.EnrollmentCertificate is empty")
-	}
-	if !strings.Contains(err.Error(), "createSigningIdentity failed") {
-		t.Fatalf("Expected error createSigningIdentity failed. Got: %s", err.Error())
-	}
-
 	// Reenroll with appropriate user
-	user.SetEnrollmentCertificate(readCert(t))
-	key, err := cryptosuite.GetDefault().KeyGen(cryptosuite.GetECDSAP256KeyGenOpts(true))
-	if err != nil {
-		t.Fatalf("KeyGen return error %v", err)
-	}
-	user.SetPrivateKey(key)
-	_, _, err = identityManager.Reenroll(user)
+	_, _, err = identityManager.Reenroll(enrolledUser)
 	if err != nil {
 		t.Fatalf("Reenroll return error %v", err)
 	}
@@ -186,6 +197,57 @@ func TestRegister(t *testing.T) {
 	}
 	if secret != "mockSecretValue" {
 		t.Fatalf("identityManager Register return wrong value %s", secret)
+	}
+}
+
+// TestEmbeddedRegister tests registration with embedded registrar idenityt
+func TestEmbeddedRegister(t *testing.T) {
+
+	identityManager, err := New(org1, embeddedRegistrarConfig, cryptoSuite)
+	if err != nil {
+		t.Fatalf("NewidentityManagerClient returned error: %v", err)
+	}
+
+	// Register with valid request
+	var attributes []fab.Attribute
+	attributes = append(attributes, fab.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, fab.Attribute{Key: "test2", Value: "test3"})
+	secret, err := identityManager.Register(&fab.RegistrationRequest{Name: "withEmbeddedRegistrar", Affiliation: "test", Attributes: attributes})
+	if err != nil {
+		t.Fatalf("identityManager Register return error %v", err)
+	}
+	if secret != "mockSecretValue" {
+		t.Fatalf("identityManager Register return wrong value %s", secret)
+	}
+}
+
+// TestRegisterNoRegistrar tests registration with no configured registrar identity
+func TestRegisterNoRegistrar(t *testing.T) {
+
+	identityManager, err := New(org1, noRegistrarConfig, cryptoSuite)
+	if err != nil {
+		t.Fatalf("NewidentityManagerClient returned error: %v", err)
+	}
+
+	// Register with nil request
+	_, err = identityManager.Register(nil)
+	if err != fab.ErrCARegistrarNotFound {
+		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
+	}
+
+	// Register without registration name parameter
+	_, err = identityManager.Register(&fab.RegistrationRequest{})
+	if err != fab.ErrCARegistrarNotFound {
+		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
+	}
+
+	// Register with valid request
+	var attributes []fab.Attribute
+	attributes = append(attributes, fab.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, fab.Attribute{Key: "test2", Value: "test3"})
+	_, err = identityManager.Register(&fab.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
+	if err != fab.ErrCARegistrarNotFound {
+		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
 }
 
@@ -375,4 +437,18 @@ func cleanupTestPath(t *testing.T, storePath string) {
 	if err != nil {
 		t.Fatalf("Cleaning up directory '%s' failed: %v", storePath, err)
 	}
+}
+
+func mspIDByOrgName(t *testing.T, c core.Config, orgName string) string {
+	netConfig, err := c.NetworkConfig()
+	if err != nil {
+		t.Fatalf("network config retrieval failed: %v", err)
+	}
+
+	// viper keys are case insensitive
+	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
+	if !ok {
+		t.Fatalf("org config retrieval failed: %v", err)
+	}
+	return orgConfig.MspID
 }

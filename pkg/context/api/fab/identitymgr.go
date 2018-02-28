@@ -7,8 +7,15 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	"errors"
+
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+)
+
+var (
+	// ErrCARegistrarNotFound indicates the CA registrar was not found
+	ErrCARegistrarNotFound = errors.New("CA registrar not found")
 )
 
 // IdentityManager provides management of identities in a Fabric network

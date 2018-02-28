@@ -40,7 +40,7 @@ type IdentityManager struct {
 
 	// CA Client state
 	caClient  *calib.Client
-	registrar config.EnrollCredentials
+	registrar core.EnrollCredentials
 }
 
 // New creates a new instance of IdentityManager
@@ -124,6 +124,7 @@ func (im *IdentityManager) CAName() string {
 // enrollmentSecret The secret associated with the enrollment ID
 // Returns X509 certificate
 func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error) {
+
 	if err := im.initCAClient(); err != nil {
 		return nil, nil, err
 	}
@@ -156,6 +157,7 @@ func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) 
 // Reenroll an enrolled user in order to receive a signed X509 certificate
 // Returns X509 certificate
 func (im *IdentityManager) Reenroll(user contextApi.User) (core.Key, []byte, error) {
+
 	if err := im.initCAClient(); err != nil {
 		return nil, nil, err
 	}
@@ -169,18 +171,24 @@ func (im *IdentityManager) Reenroll(user contextApi.User) (core.Key, []byte, err
 	req := &caapi.ReenrollmentRequest{
 		CAName: im.caClient.Config.CAName,
 	}
-	// Create signing identity
-	identity, err := im.createSigningIdentity(user)
+	caidentity, err := im.caClient.NewIdentity(user.PrivateKey(), user.EnrollmentCertificate())
 	if err != nil {
-		logger.Debugf("Invalid re-enroll request, %s is not a valid user  %s\n", user.Name(), err)
-		return nil, nil, errors.Wrap(err, "createSigningIdentity failed")
+		return nil, nil, errors.Wrap(err, "failed to create CA signing identity")
 	}
 
-	reenrollmentResponse, err := identity.Reenroll(req)
+	caresp, err := caidentity.Reenroll(req)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "reenroll failed")
 	}
-	return reenrollmentResponse.Identity.GetECert().Key(), reenrollmentResponse.Identity.GetECert().Cert(), nil
+	newUser := identity.NewUser(im.orgMspID, user.Name())
+	newUser.SetEnrollmentCertificate(caresp.Identity.GetECert().Cert())
+	newUser.SetPrivateKey(caresp.Identity.GetECert().Key())
+	err = im.userStore.Store(newUser)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "reenroll failed")
+	}
+
+	return caresp.Identity.GetECert().Key(), caresp.Identity.GetECert().Cert(), nil
 }
 
 // Register a User with the Fabric CA
@@ -190,21 +198,15 @@ func (im *IdentityManager) Register(request *fab.RegistrationRequest) (string, e
 	if err := im.initCAClient(); err != nil {
 		return "", err
 	}
+	if im.registrar.EnrollID == "" {
+		return "", fab.ErrCARegistrarNotFound
+	}
 	// Validate registration request
 	if request == nil {
 		return "", errors.New("registration request is required")
 	}
 	if request.Name == "" {
 		return "", errors.New("request.Name is required")
-	}
-	registrar, err := im.getRegistrar()
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get registrar")
-	}
-	// Create request signing identity
-	identity, err := im.createSigningIdentity(registrar)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create request for signing identity")
 	}
 	// Contruct request for Fabric CA client
 	var attributes []caapi.Attribute
@@ -220,9 +222,13 @@ func (im *IdentityManager) Register(request *fab.RegistrationRequest) (string, e
 		Affiliation:    request.Affiliation,
 		Secret:         request.Secret,
 		Attributes:     attributes}
-	// Make registration request
 
-	response, err := identity.Register(&req)
+	registrar, err := im.getRegistrarSI(im.registrar.EnrollID, im.registrar.EnrollSecret)
+	if err != nil {
+		return "", err
+	}
+
+	response, err := registrar.Register(&req)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to register user")
 	}
@@ -237,18 +243,12 @@ func (im *IdentityManager) Revoke(request *fab.RevocationRequest) (*fab.Revocati
 	if err := im.initCAClient(); err != nil {
 		return nil, err
 	}
+	if im.registrar.EnrollID == "" {
+		return nil, fab.ErrCARegistrarNotFound
+	}
 	// Validate revocation request
 	if request == nil {
 		return nil, errors.New("revocation request is required")
-	}
-	registrar, err := im.getRegistrar()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to ret registrar")
-	}
-	// Create request signing identity
-	identity, err := im.createSigningIdentity(registrar)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create request for signing identity")
 	}
 	// Create revocation request
 	var req = caapi.RevocationRequest{
@@ -259,7 +259,12 @@ func (im *IdentityManager) Revoke(request *fab.RevocationRequest) (*fab.Revocati
 		Reason: request.Reason,
 	}
 
-	resp, err := identity.Revoke(&req)
+	registrar, err := im.getRegistrarSI(im.registrar.EnrollID, im.registrar.EnrollSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := registrar.Revoke(&req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to revoke")
 	}
@@ -278,38 +283,4 @@ func (im *IdentityManager) Revoke(request *fab.RevocationRequest) (*fab.Revocati
 		RevokedCerts: revokedCerts,
 		CRL:          resp.CRL,
 	}, nil
-}
-
-func (im *IdentityManager) getRegistrar() (contextApi.User, error) {
-	user, err := im.userStore.Load(contextApi.UserKey{MspID: im.orgMspID, Name: im.registrar.EnrollID})
-	if err != nil {
-		if err != contextApi.ErrUserNotFound {
-			return nil, err
-		}
-		if im.registrar.EnrollSecret == "" {
-			return nil, errors.New("registrar not found and cannot be enrolled because enrollment secret is not present")
-		}
-		_, _, err = im.Enroll(im.registrar.EnrollID, im.registrar.EnrollSecret)
-		if err != nil {
-			return nil, err
-		}
-		user, err = im.userStore.Load(contextApi.UserKey{MspID: im.orgMspID, Name: im.registrar.EnrollID})
-	}
-	return user, err
-}
-
-// createSigningIdentity creates an identity to sign Fabric CA requests with
-func (im *IdentityManager) createSigningIdentity(user contextApi.User) (*calib.Identity, error) {
-	// Validate user
-	if user == nil {
-		return nil, errors.New("user required")
-	}
-	// Validate enrolment information
-	cert := user.EnrollmentCertificate()
-	key := user.PrivateKey()
-	if key == nil || cert == nil {
-		return nil, errors.New(
-			"Unable to read user enrolment information to create signing identity")
-	}
-	return im.caClient.NewIdentity(key, cert)
 }

@@ -10,7 +10,9 @@ import (
 	"github.com/pkg/errors"
 
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -20,19 +22,57 @@ import (
 // Initialization is lazy, so the client is not required to connect to CA
 // in order to transact with Fabric.
 func (im *IdentityManager) initCAClient() error {
+
 	if im.caClient == nil {
-		caClient, err := newCAClient(im.orgName, im.config, im.cryptoSuite)
-		if err != nil {
-			return errors.Wrapf(err, "failed to initialie Fabric CA client")
-		}
-		im.caClient = caClient
+
+		// Read CA configuration
 		caConfig, err := im.config.CAConfig(im.orgName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get CA configurtion for msp: %s", im.orgName)
 		}
 		im.registrar = caConfig.Registrar
+
+		// Initialize CA client
+		caClient, err := newCAClient(im.orgName, im.config, im.cryptoSuite)
+		if err != nil {
+			return errors.Wrapf(err, "failed to initialie Fabric CA client")
+		}
+		im.caClient = caClient
 	}
+
 	return nil
+}
+
+func (im *IdentityManager) getRegistrarSI(enrollID string, enrollSecret string) (*calib.Identity, error) {
+
+	if enrollID == "" {
+		return nil, fab.ErrCARegistrarNotFound
+	}
+
+	si, err := im.GetSigningIdentity(enrollID)
+	if err != nil {
+		if err != contextApi.ErrUserNotFound {
+			return nil, err
+		}
+		if enrollSecret == "" {
+			return nil, fab.ErrCARegistrarNotFound
+		}
+
+		// Attempt to enroll the registrar
+		_, _, err = im.Enroll(enrollID, enrollSecret)
+		if err != nil {
+			return nil, err
+		}
+		si, err = im.GetSigningIdentity(enrollID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	registrar, err := im.caClient.NewIdentity(si.PrivateKey, si.EnrollmentCert)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create CA signing identity")
+	}
+	return registrar, nil
 }
 
 func newCAClient(org string, config config.Config, cryptoSuite core.CryptoSuite) (*calib.Client, error) {
