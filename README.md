@@ -125,7 +125,7 @@ You need:
 #### Enable local hostnames
 
 You will need to set the following hosts to 127.0.0.1 (typically in /etc/hosts):
-ca.org1.example.com ca.org2.example.com peer0.org1.example.com peer1.org1.example.com peer0.org2.example.com peer1.org2.example.com orderer.example.com
+ca.org1.example.com ca.org2.example.com
 
 #### Testing with Fabric Images at Docker Hub
 

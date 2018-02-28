@@ -25,11 +25,12 @@ import (
 )
 
 const (
-	sdkConfigFile     = "../" + integration.ConfigTestFile
 	channelConfigFile = "mychannel.tx"
 	channelID         = "mychannel"
 	orgName           = org1Name
 )
+
+var sdkConfigFile = "../" + integration.ConfigTestFile
 
 func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.Peer) {
 	sdk, err := fabsdk.New(config.FromFile(sdkConfigFile))

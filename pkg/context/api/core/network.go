@@ -27,6 +27,7 @@ type NetworkConfig struct {
 	Orderers               map[string]OrdererConfig
 	Peers                  map[string]PeerConfig
 	CertificateAuthorities map[string]CAConfig
+	EntityMatchers         map[string][]MatchConfig
 }
 
 // ClientConfig provides the definition of the client configuration
@@ -206,4 +207,14 @@ type MutualTLSConfig struct {
 type TLSKeyPair struct {
 	Key  TLSConfig
 	Cert TLSConfig
+}
+
+// MatchConfig contains match pattern and substitution pattern
+// for pattern matching of network configured hostnames with static config
+type MatchConfig struct {
+	Pattern                             string
+	URLSubstitutionExp                  string
+	EventURLSubstitutionExp             string
+	SSLTargetOverrideURLSubstitutionExp string
+	MappedHost                          string
 }

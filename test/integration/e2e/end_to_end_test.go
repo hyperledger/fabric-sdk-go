@@ -11,6 +11,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
+
 	//End to End testing
 	runWithConfigFixture(t)
 

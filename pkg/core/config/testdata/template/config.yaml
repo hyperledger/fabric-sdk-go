@@ -275,3 +275,59 @@ certificateAuthorities:
 #      enrollSecret: adminpasswd
     # [Optional] The optional name of the CA.
 #    caName: ca.org1.example.com
+
+# EntityMatchers enable substitution of network hostnames with static configurations
+ # so that properties can be mapped. Regex can be used for this purpose
+# UrlSubstitutionExp can be empty which means the same network hostname will be used
+# UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
+# UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
+ # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
+# EventUrlSubstitutionExp and sslTargetOverrideUrlSubstitutionExp follow in the same lines as
+ # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
+# In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
+entityMatchers:
+  #peer:
+    #- pattern: (\w+).example.(\w+)
+      #urlSubstitutionExp: localhost:7051
+      #eventUrlSubstitutionExp: localhost:7053
+      #sslTargetOverrideUrlSubstitutionExp: localhost
+      #mappedHost: peer0.org1.example.com
+
+    #- pattern: (\w+).example2.(\w+):(\d+)
+      #urlSubstitutionExp: localhost:7051
+      #eventUrlSubstitutionExp: localhost:7053
+      #sslTargetOverrideUrlSubstitutionExp: localhost
+      #mappedHost: peer0.org2.example.com
+
+    #- pattern: (\w+).example3.(\w+)
+      #urlSubstitutionExp:
+      #eventUrlSubstitutionExp:
+      #sslTargetOverrideUrlSubstitutionExp:
+      #mappedHost: peer0.org1.example.com
+
+    #- pattern: (\w+).example4.(\w+):(\d+)
+      #urlSubstitutionExp: $1.org1.example.$2:$3
+      #eventUrlSubstitutionExp: $1.org1.example.$2:7053
+      #sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
+      #mappedHost: peer0.org1.example.com
+
+  #orderer:
+    #- pattern: (\w+).example2.(\w+)
+      #urlSubstitutionExp: localhost:7050
+      #sslTargetOverrideUrlSubstitutionExp: localhost
+      #mappedHost: orderer.example.com
+
+    #- pattern: (\w+).example.(\w+)
+      #urlSubstitutionExp: localhost:7050
+      #sslTargetOverrideUrlSubstitutionExp: localhost
+      #mappedHost: orderer.example.com
+
+    #- pattern: (\w+).example3.(\w+)
+      #urlSubstitutionExp:
+      #sslTargetOverrideUrlSubstitutionExp:
+      #mappedHost: orderer.example.com
+
+    #- pattern: (\w+).example4.(\w+):(\d+)
+      #urlSubstitutionExp: $1.example.$2:$3
+      #sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
+      #mappedHost: orderer.example.com

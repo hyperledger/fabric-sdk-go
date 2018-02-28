@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
@@ -58,7 +60,15 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 		oCfg, ok := ordererDict[target]
 
 		if !ok {
-			// TODO: need default options
+			// Try to find a match from entityMatchers config
+			matchingOrdererConfig, matchErr := ctx.Config().OrdererConfig(strings.ToLower(target))
+			if matchErr == nil && matchingOrdererConfig != nil {
+				oCfg = *matchingOrdererConfig
+				ok = true
+			}
+
+		}
+		if !ok {
 			o, err := orderer.New(ctx.Config(), orderer.WithURL(target))
 			// TODO: should we fail hard if we cannot configure a default orderer?
 			//if err != nil {
