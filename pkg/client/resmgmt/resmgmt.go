@@ -122,7 +122,6 @@ type Context struct {
 	DiscoveryProvider fab.DiscoveryProvider
 	ChannelProvider   fab.ChannelProvider
 	FabricProvider    sdkApi.FabricProvider
-	Resource          api.Resource
 }
 
 type fabContext struct {
@@ -144,14 +143,17 @@ func WithDefaultTargetFilter(filter TargetFilter) ClientOption {
 // New returns a ResourceMgmtClient instance
 func New(ctx Context, opts ...ClientOption) (*Client, error) {
 
+	resource := resource.New(ctx)
+
 	resourceClient := &Client{
 		provider:          ctx,
 		identity:          ctx,
 		discoveryProvider: ctx.DiscoveryProvider,
 		channelProvider:   ctx.ChannelProvider,
 		fabricProvider:    ctx.FabricProvider,
-		resource:          ctx.Resource,
+		resource:          resource,
 	}
+
 	for _, opt := range opts {
 		err := opt(resourceClient)
 		if err != nil {
