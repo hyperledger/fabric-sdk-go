@@ -80,6 +80,7 @@ func ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
 	return configUpdateEnvelope.ConfigUpdate, nil
 }
 
+// CreateConfigEnvelope creates configuration envelope proto
 func CreateConfigEnvelope(data []byte) (*common.ConfigEnvelope, error) {
 
 	envelope := &common.Envelope{}

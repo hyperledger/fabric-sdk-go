@@ -71,7 +71,7 @@ THIRDPARTY_FABRIC_COMMIT    ?= v1.1.0-alpha
 FIXTURE_DOCKER_REMOVE_FORCE ?= false
 
 # Options for exercising unit tests (overridable)
-FABRIC_DEPRECATED_UNITTEST   ?= false
+FABRIC_SDK_DEPRECATED_UNITTEST   ?= false
 
 # Code levels to exercise integration/e2e tests against (overridable)
 FABRIC_STABLE_INTTEST        ?= true
@@ -132,12 +132,12 @@ GO_DEP_COMMIT := v0.4.1
 ifdef JENKINS_URL
 export FABRIC_SDKGO_DEPEND_INSTALL=true
 
-FABRIC_DEPRECATED_UNITTEST   := true
-FABRIC_STABLE_INTTEST        := true
-FABRIC_STABLE_PKCS11_INTTEST := true
-FABRIC_PREV_INTTEST          := true
-FABRIC_PRERELEASE_INTTEST    := true
-FABRIC_DEVSTABLE_INTTEST     := false
+FABRIC_SDK_DEPRECATED_UNITTEST   := true
+FABRIC_STABLE_INTTEST            := true
+FABRIC_STABLE_PKCS11_INTTEST     := true
+FABRIC_PREV_INTTEST              := true
+FABRIC_PRERELEASE_INTTEST        := true
+FABRIC_DEVSTABLE_INTTEST         := false
 endif
 
 # Setup Go Tags
@@ -206,7 +206,7 @@ build-softhsm2-image:
 .PHONY: unit-test
 unit-test: checks depend populate
 	@FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
-ifeq ($(FABRIC_DEPRECATED_UNITTEST),true)
+ifeq ($(FABRIC_SDK_DEPRECATED_UNITTEST),true)
 	@GO_TAGS="$(GO_TAGS) deprecated" GO_TESTFLAGS="$(GO_TESTFLAGS) -count=1" FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
 endif
 
@@ -325,7 +325,7 @@ dockerenv-latest-up: clean
 mock-gen:
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/context/api IdentityManager | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/context/api/mocks/mockidmgr.gen.go
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/context/api/core Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/context/api/core/mocks/mockconfig.gen.go
-	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/context/api/fab/mocks/mockcontextapi.gen.go	
+	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/context/api/fab/mocks/mockcontextapi.gen.go
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api CoreProviders,SvcProviders,Providers,CoreProviderFactory,ServiceProviderFactory,SessionClientFactory | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/fabsdk/mocks/mockfabsdkapi.gen.go
 
 
@@ -403,4 +403,3 @@ temp-clean:
 clean: temp-clean
 	-$(GO_CMD) clean
 	-FIXTURE_PROJECT_NAME=$(FIXTURE_PROJECT_NAME) DOCKER_REMOVE_FORCE=$(FIXTURE_DOCKER_REMOVE_FORCE) $(TEST_SCRIPTS_PATH)/clean_integration.sh
-

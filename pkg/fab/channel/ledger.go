@@ -16,8 +16,16 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+)
+
+var logger = logging.NewLogger("fabric_sdk_go")
+
+const (
+	lscc           = "lscc"
+	lsccChaincodes = "getchaincodes"
 )
 
 // Ledger is a client that provides access to the underlying ledger of a channel.
@@ -155,7 +163,7 @@ func createProcessedTransaction(tpr *fab.TransactionProposalResponse) (*pb.Proce
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on this channel.
 // This query will be made to specified targets.
 func (c *Ledger) QueryInstantiatedChaincodes(targets []fab.ProposalProcessor) ([]*pb.ChaincodeQueryResponse, error) {
-	cir := createChaincodesInvokeRequest()
+	cir := createChaincodeInvokeRequest()
 	tprs, errs := queryChaincode(c.ctx, c.chName, cir, targets)
 
 	responses := []*pb.ChaincodeQueryResponse{}
@@ -265,4 +273,37 @@ func filterResponses(responses []*fab.TransactionProposalResponse, errs error) (
 	}
 
 	return filteredResponses, errs
+}
+
+func createChaincodeInvokeRequest() fab.ChaincodeInvokeRequest {
+	cir := fab.ChaincodeInvokeRequest{
+		ChaincodeID: lscc,
+		Fcn:         lsccChaincodes,
+	}
+	return cir
+}
+
+func createConfigEnvelope(data []byte) (*common.ConfigEnvelope, error) {
+
+	envelope := &common.Envelope{}
+	if err := proto.Unmarshal(data, envelope); err != nil {
+		return nil, errors.Wrap(err, "unmarshal envelope from config block failed")
+	}
+	payload := &common.Payload{}
+	if err := proto.Unmarshal(envelope.Payload, payload); err != nil {
+		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
+	}
+	channelHeader := &common.ChannelHeader{}
+	if err := proto.Unmarshal(payload.Header.ChannelHeader, channelHeader); err != nil {
+		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
+	}
+	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG {
+		return nil, errors.New("block must be of type 'CONFIG'")
+	}
+	configEnvelope := &common.ConfigEnvelope{}
+	if err := proto.Unmarshal(payload.Data, configEnvelope); err != nil {
+		return nil, errors.Wrap(err, "unmarshal config envelope failed")
+	}
+
+	return configEnvelope, nil
 }

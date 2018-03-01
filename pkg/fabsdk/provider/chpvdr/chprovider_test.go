@@ -11,13 +11,11 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -74,20 +72,6 @@ func (f *MockFabricProvider) CreateChannelConfig(ic context.IdentityContext, cha
 
 	return mocks.NewMockChannelConfig(ctx, "mychannel")
 
-}
-
-// CreateChannelClient overrides the default.
-func (f *MockFabricProvider) CreateChannelClient(ic context.IdentityContext, cfg fab.ChannelCfg) (fab.Channel, error) {
-	ctx := chconfig.Context{
-		ProviderContext: f.providerContext,
-		IdentityContext: ic,
-	}
-	channel, err := channelImpl.New(ctx, cfg)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewChannel failed")
-	}
-
-	return channel, nil
 }
 
 // CreateFabricProvider mocks new default implementation of fabric primitives
