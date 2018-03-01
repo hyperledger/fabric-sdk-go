@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -22,10 +24,11 @@ import (
 )
 
 type mockCorePkg struct {
-	stateStore     contextApi.KVStore
-	cryptoSuite    core.CryptoSuite
-	signingManager contextApi.SigningManager
-	fabricProvider sdkApi.FabricProvider
+	stateStore      contextApi.KVStore
+	cryptoSuite     core.CryptoSuite
+	signingManager  contextApi.SigningManager
+	identityManager map[string]contextApi.IdentityManager
+	fabricProvider  sdkApi.FabricProvider
 }
 
 func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
@@ -46,6 +49,18 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	if err != nil {
 		return nil, err
 	}
+	netConfig, err := config.NetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+	im := make(map[string]contextApi.IdentityManager)
+	for orgName := range netConfig.Organizations {
+		mgr, err := mocks.NewMockIdentityManager(orgName, cs, config)
+		if err != nil {
+			return nil, err
+		}
+		im[orgName] = mgr
+	}
 
 	ctx := mocks.NewMockProviderContextCustom(config, cs, sm)
 	fp, err := core.CreateFabricProvider(ctx)
@@ -54,10 +69,11 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	}
 
 	c := mockCorePkg{
-		stateStore:     stateStore,
-		cryptoSuite:    cs,
-		signingManager: sm,
-		fabricProvider: fp,
+		stateStore:      stateStore,
+		cryptoSuite:     cs,
+		signingManager:  sm,
+		identityManager: im,
+		fabricProvider:  fp,
 	}
 
 	return &c, nil
@@ -73,6 +89,14 @@ func (mc *mockCorePkg) CreateCryptoSuiteProvider(config core.Config) (core.Crypt
 
 func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (contextApi.SigningManager, error) {
 	return mc.signingManager, nil
+}
+
+func (mc *mockCorePkg) CreateIdentityManager(orgName string, cryptoProvider core.CryptoSuite, config core.Config) (contextApi.IdentityManager, error) {
+	mgr, ok := mc.identityManager[orgName]
+	if !ok {
+		return nil, fmt.Errorf("identity manager not found for organization: %s", orgName)
+	}
+	return mgr, nil
 }
 
 func (mc *mockCorePkg) CreateFabricProvider(ctx context.ProviderContext) (sdkApi.FabricProvider, error) {

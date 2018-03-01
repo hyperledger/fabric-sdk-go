@@ -4,12 +4,11 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package fab
+package api
 
 import (
 	"errors"
 
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
@@ -18,11 +17,19 @@ var (
 	ErrCARegistrarNotFound = errors.New("CA registrar not found")
 )
 
+// SigningIdentity is the identity object that encapsulates the user's private key for signing
+// and the user's enrollment certificate (identity)
+type SigningIdentity struct {
+	MspID          string
+	EnrollmentCert []byte
+	PrivateKey     core.Key
+}
+
 // IdentityManager provides management of identities in a Fabric network
 type IdentityManager interface {
-	GetSigningIdentity(name string) (*contextApi.SigningIdentity, error)
+	GetSigningIdentity(name string) (*SigningIdentity, error)
 	Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error)
-	Reenroll(user contextApi.User) (core.Key, []byte, error)
+	Reenroll(user User) (core.Key, []byte, error)
 	Register(request *RegistrationRequest) (string, error)
 	Revoke(request *RevocationRequest) (*RevocationResponse, error)
 	CAName() string

@@ -14,7 +14,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	cryptosuitewrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fab/signingmgr"
@@ -128,6 +130,29 @@ func TestCreateSigningManager(t *testing.T) {
 	}
 
 	_, ok := signer.(*signingMgr.SigningManager)
+	if !ok {
+		t.Fatalf("Unexpected signing manager created")
+	}
+}
+
+func TestCreateIdentityManager(t *testing.T) {
+	factory := NewProviderFactory()
+	config, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	cryptosuite, err := factory.CreateCryptoSuiteProvider(config)
+	if err != nil {
+		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
+	}
+
+	mgr, err := factory.CreateIdentityManager("Org1", cryptosuite, config)
+	if err != nil {
+		t.Fatalf("Unexpected error creating signing manager %v", err)
+	}
+
+	_, ok := mgr.(*identitymgr.IdentityManager)
 	if !ok {
 		t.Fatalf("Unexpected signing manager created")
 	}

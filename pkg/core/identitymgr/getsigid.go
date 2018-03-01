@@ -17,7 +17,7 @@ import (
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr/persistence"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/persistence"
 	"github.com/pkg/errors"
 )
 
@@ -73,7 +73,6 @@ func (mgr *IdentityManager) GetSigningIdentity(userName string) (*api.SigningIde
 		}
 		signingIdentity = &api.SigningIdentity{MspID: mspID, PrivateKey: privateKey, EnrollmentCert: certBytes}
 	}
-
 	return signingIdentity, nil
 }
 

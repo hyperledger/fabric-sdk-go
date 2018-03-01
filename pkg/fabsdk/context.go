@@ -38,6 +38,12 @@ func (c *fabContext) SigningManager() contextApi.SigningManager {
 	return c.sdk.signingManager
 }
 
+// IdentityManager returns identity manager for organization
+func (c *fabContext) IdentityManager(orgName string) (contextApi.IdentityManager, bool) {
+	mgr, ok := c.sdk.identityManager[orgName]
+	return mgr, ok
+}
+
 // StateStore returns state store
 func (c *sdkContext) StateStore() contextApi.KVStore {
 	return c.sdk.stateStore

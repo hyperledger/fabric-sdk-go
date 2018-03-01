@@ -12,7 +12,6 @@ import (
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -46,7 +45,7 @@ func (im *IdentityManager) initCAClient() error {
 func (im *IdentityManager) getRegistrarSI(enrollID string, enrollSecret string) (*calib.Identity, error) {
 
 	if enrollID == "" {
-		return nil, fab.ErrCARegistrarNotFound
+		return nil, contextApi.ErrCARegistrarNotFound
 	}
 
 	si, err := im.GetSigningIdentity(enrollID)
@@ -55,7 +54,7 @@ func (im *IdentityManager) getRegistrarSI(enrollID string, enrollSecret string) 
 			return nil, err
 		}
 		if enrollSecret == "" {
-			return nil, fab.ErrCARegistrarNotFound
+			return nil, contextApi.ErrCARegistrarNotFound
 		}
 
 		// Attempt to enroll the registrar

@@ -17,9 +17,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/signingmgr"
 )
@@ -52,7 +52,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 	client.SetStateStore(stateStore)
 
-	idmgr, err := identitymgr.New(org1Name, testFabricConfig, cryptoSuiteProvider)
+	idmgr, err := identitymgr.New(org1Name, cryptoSuiteProvider, testFabricConfig)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestEnrollAndTransact(t *testing.T) {
 		t.Fatalf("Could not create signing manager: %s", err)
 	}
 
-	caClient, err := identitymgr.New(org1Name, testFabricConfig, cryptoSuiteProvider)
+	caClient, err := identitymgr.New(org1Name, cryptoSuiteProvider, testFabricConfig)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
 	}

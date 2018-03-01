@@ -13,7 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	camocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
+	apimocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -49,7 +49,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 
 	cs, err := sw.GetSuiteByConfig(config)
 
-	credentialMgr, err := New(orgName, config, cs)
+	credentialMgr, err := New(orgName, cs, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -74,7 +74,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	caClient := camocks.NewMockIdentityManager(ctrl)
+	caClient := apimocks.NewMockIdentityManager(ctrl)
 	prepareForEnroll(t, caClient, cs)
 
 	_, certBytes, err := caClient.Enroll(userToEnroll, "enrollmentSecret")
@@ -97,7 +97,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 }
 
 // Simulate caClient.Enroll()
-func prepareForEnroll(t *testing.T, mc *camocks.MockIdentityManager, cs core.CryptoSuite) {
+func prepareForEnroll(t *testing.T, mc *apimocks.MockIdentityManager, cs core.CryptoSuite) {
 	// A real caClient.Enroll() generates a CSR. In the process, a crypto suite generates
 	// a new key pair, and the private key is stored into crypto suite private key storage.
 
