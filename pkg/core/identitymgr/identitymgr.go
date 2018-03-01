@@ -15,13 +15,12 @@ import (
 	caapi "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/persistence"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr/persistence"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -48,7 +47,7 @@ type IdentityManager struct {
 // @param {Config} client config for fabric-ca services
 // @returns {IdentityManager} IdentityManager instance
 // @returns {error} error, if any
-func New(orgName string, config config.Config, cryptoSuite core.CryptoSuite) (*IdentityManager, error) {
+func New(orgName string, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {
@@ -194,12 +193,12 @@ func (im *IdentityManager) Reenroll(user contextApi.User) (core.Key, []byte, err
 // Register a User with the Fabric CA
 // request: Registration Request
 // Returns Enrolment Secret
-func (im *IdentityManager) Register(request *fab.RegistrationRequest) (string, error) {
+func (im *IdentityManager) Register(request *contextApi.RegistrationRequest) (string, error) {
 	if err := im.initCAClient(); err != nil {
 		return "", err
 	}
 	if im.registrar.EnrollID == "" {
-		return "", fab.ErrCARegistrarNotFound
+		return "", contextApi.ErrCARegistrarNotFound
 	}
 	// Validate registration request
 	if request == nil {
@@ -239,12 +238,12 @@ func (im *IdentityManager) Register(request *fab.RegistrationRequest) (string, e
 // Revoke a User with the Fabric CA
 // registrar: The User that is initiating the revocation
 // request: Revocation Request
-func (im *IdentityManager) Revoke(request *fab.RevocationRequest) (*fab.RevocationResponse, error) {
+func (im *IdentityManager) Revoke(request *contextApi.RevocationRequest) (*contextApi.RevocationResponse, error) {
 	if err := im.initCAClient(); err != nil {
 		return nil, err
 	}
 	if im.registrar.EnrollID == "" {
-		return nil, fab.ErrCARegistrarNotFound
+		return nil, contextApi.ErrCARegistrarNotFound
 	}
 	// Validate revocation request
 	if request == nil {
@@ -268,18 +267,18 @@ func (im *IdentityManager) Revoke(request *fab.RevocationRequest) (*fab.Revocati
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to revoke")
 	}
-	var revokedCerts []fab.RevokedCert
+	var revokedCerts []contextApi.RevokedCert
 	for i := range resp.RevokedCerts {
 		revokedCerts = append(
 			revokedCerts,
-			fab.RevokedCert{
+			contextApi.RevokedCert{
 				Serial: resp.RevokedCerts[i].Serial,
 				AKI:    resp.RevokedCerts[i].AKI,
 			})
 	}
 
 	// TODO complete the response mapping
-	return &fab.RevocationResponse{
+	return &contextApi.RevocationResponse{
 		RevokedCerts: revokedCerts,
 		CRL:          resp.CRL,
 	}, nil

@@ -15,7 +15,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
@@ -38,35 +37,6 @@ func TestCreateResourceClient(t *testing.T) {
 	_, ok := client.(*resource.Resource)
 	if !ok {
 		t.Fatalf("Unexpected client impl created")
-	}
-}
-
-func TestCreateCAClient(t *testing.T) {
-	p := newMockFabricProvider(t)
-
-	org := "org1"
-
-	client, err := p.CreateIdentityManager(org)
-	if err != nil {
-		t.Fatalf("Unexpected error creating client %v", err)
-	}
-
-	_, ok := client.(*identitymgr.IdentityManager)
-	if !ok {
-		t.Fatalf("Unexpected client impl created")
-	}
-
-	conf, err := p.providerContext.Config().CAConfig(org)
-	if err != nil {
-		t.Fatalf("Unexpected error getting CA config %v", err)
-	}
-
-	// Brittle tests follow
-	e := conf.CAName
-	a := client.CAName()
-
-	if a != e {
-		t.Fatalf("Unexpected CA name %s", a)
 	}
 }
 
@@ -108,7 +78,7 @@ func TestCreateUser(t *testing.T) {
 	org := "org1"
 
 	p := newMockFabricProvider(t)
-	cm, err := mocks.NewMockIdentityManager(org, p.providerContext.Config(), p.providerContext.CryptoSuite())
+	cm, err := mocks.NewMockIdentityManager(org, p.providerContext.CryptoSuite(), p.providerContext.Config())
 	if err != nil {
 		t.Fatalf("Unexpected error creating credential manager %v", err)
 	}

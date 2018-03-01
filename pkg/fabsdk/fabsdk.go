@@ -8,7 +8,9 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
+	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -34,6 +36,7 @@ type FabricSDK struct {
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
 	signingManager    contextApi.SigningManager
+	identityManager   map[string]contextApi.IdentityManager
 	fabricProvider    sdkApi.FabricProvider
 	channelProvider   *chpvdr.ChannelProvider
 }
@@ -189,6 +192,20 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	}
 	sdk.signingManager = signingMgr
 
+	// Initialize Identity Managers
+	sdk.identityManager = make(map[string]contextApi.IdentityManager)
+	netConfig, err := sdk.config.NetworkConfig()
+	if err != nil {
+		return errors.Wrapf(err, "failed to retrieve network config")
+	}
+	for orgName := range netConfig.Organizations {
+		mgr, err := sdk.opts.Core.CreateIdentityManager(orgName, sdk.cryptoSuite, sdk.config)
+		if err != nil {
+			return errors.Wrapf(err, "failed to initialize identity manager for organization: %s", orgName)
+		}
+		sdk.identityManager[orgName] = mgr
+	}
+
 	// Initialize Fabric Provider
 	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(sdk.fabContext())
 	if err != nil {
@@ -244,11 +261,11 @@ func (sdk *FabricSDK) context() *sdkContext {
 	return &c
 }
 
-func (sdk *FabricSDK) newUser(orgID string, userName string) (context.IdentityContext, error) {
+func (sdk *FabricSDK) newUser(orgName string, userName string) (context.IdentityContext, error) {
 
-	identityMgr, err := sdk.FabricProvider().CreateIdentityManager(orgID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get credential manager")
+	identityMgr, ok := sdk.identityManager[strings.ToLower(orgName)]
+	if !ok {
+		return nil, fmt.Errorf("identity manager not found for org %s", orgName)
 	}
 
 	signingIdentity, err := identityMgr.GetSigningIdentity(userName)

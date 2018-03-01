@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
 )
 
 const (
@@ -25,7 +25,7 @@ func TestEnrollOrg2(t *testing.T) {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
 
-	caClient, err := identitymgr.New(org2Name, testFabricConfig, cryptoSuiteProvider)
+	caClient, err := identitymgr.New(org2Name, cryptoSuiteProvider, testFabricConfig)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}

@@ -9,7 +9,6 @@ package mocks
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/pkg/errors"
 )
 
@@ -18,7 +17,7 @@ type MockIdentityManager struct {
 }
 
 // NewMockIdentityManager Constructor for a identity manager.
-func NewMockIdentityManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (fab.IdentityManager, error) {
+func NewMockIdentityManager(orgName string, cryptoProvider core.CryptoSuite, config core.Config) (api.IdentityManager, error) {
 	mcm := MockIdentityManager{}
 	return &mcm, nil
 }
@@ -26,7 +25,9 @@ func NewMockIdentityManager(orgName string, config core.Config, cryptoProvider c
 // GetSigningIdentity will return an identity that can be used to cryptographically sign an object
 func (mgr *MockIdentityManager) GetSigningIdentity(userName string) (*api.SigningIdentity, error) {
 
-	si := api.SigningIdentity{}
+	si := api.SigningIdentity{
+		MspID: "Org1MSP",
+	}
 	return &si, nil
 }
 
@@ -41,12 +42,12 @@ func (mgr *MockIdentityManager) Reenroll(user api.User) (core.Key, []byte, error
 }
 
 // Register registers a user with a Fabric network
-func (mgr *MockIdentityManager) Register(request *fab.RegistrationRequest) (string, error) {
+func (mgr *MockIdentityManager) Register(request *api.RegistrationRequest) (string, error) {
 	return "", errors.New("not implemented")
 }
 
 // Revoke revokes a user
-func (mgr *MockIdentityManager) Revoke(request *fab.RevocationRequest) (*fab.RevocationResponse, error) {
+func (mgr *MockIdentityManager) Revoke(request *api.RevocationRequest) (*api.RevocationResponse, error) {
 	return nil, errors.New("not implemented")
 }
 

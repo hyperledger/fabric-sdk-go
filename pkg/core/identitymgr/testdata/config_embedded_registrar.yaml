@@ -306,7 +306,7 @@ certificateAuthorities:
     # needed to enroll and invoke new users.
     registrar:
       enrollId: EmbeddedRegistrar
-      # Absense of the enrillSecret requires that the registrar is embedded or already enrolled
+      # Absense of the enrollSecret requires that the registrar is embedded or already enrolled
       #enrollSecret: EmbeddedRegistrarPw
     # [Optional] The optional name of the CA.
     caName: ca.org1.example.com
