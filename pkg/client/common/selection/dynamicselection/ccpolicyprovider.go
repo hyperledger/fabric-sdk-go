@@ -17,7 +17,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
@@ -30,6 +30,10 @@ const (
 	ccDataProviderSCC      = "lscc"
 	ccDataProviderfunction = "getccdata"
 )
+
+type peerCreator interface {
+	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error)
+}
 
 // CCPolicyProvider retrieves policy for the given chaincode ID
 type CCPolicyProvider interface {
@@ -54,7 +58,15 @@ func newCCPolicyProvider(sdk *fabsdk.FabricSDK, channelID string, userName strin
 		return nil, errors.WithMessage(err, "unable to read configuration for channel peers")
 	}
 
-	return &ccPolicyProvider{config: sdk.Config(), client: client, channelID: channelID, targetPeers: targetPeers, ccDataMap: make(map[string]*ccprovider.ChaincodeData)}, nil
+	cpp := ccPolicyProvider{
+		config:      sdk.Config(),
+		client:      client,
+		channelID:   channelID,
+		targetPeers: targetPeers,
+		ccDataMap:   make(map[string]*ccprovider.ChaincodeData),
+		provider:    sdk.FabricProvider(),
+	}
+	return &cpp, nil
 }
 
 type ccPolicyProvider struct {
@@ -64,6 +76,7 @@ type ccPolicyProvider struct {
 	targetPeers []core.ChannelPeer
 	ccDataMap   map[string]*ccprovider.ChaincodeData // TODO: Add expiry and configurable timeout for map entries
 	mutex       sync.RWMutex
+	provider    peerCreator
 }
 
 func (dp *ccPolicyProvider) GetChaincodePolicy(chaincodeID string) (*common.SignaturePolicyEnvelope, error) {
@@ -123,7 +136,7 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 
 	for _, p := range dp.targetPeers {
 
-		peer, err := peerImpl.New(dp.config, peerImpl.FromPeerConfig(&p.NetworkPeer))
+		peer, err := dp.provider.CreatePeerFromConfig(&p.NetworkPeer)
 		if err != nil {
 			queryErrors = append(queryErrors, err.Error())
 			continue

@@ -108,7 +108,7 @@ func newMockProviders(t *testing.T) *mockProviders {
 		t.Fatalf("Unexpected error creating fabric provider %v", err)
 	}
 
-	dp, err := svcFactory.CreateDiscoveryProvider(config)
+	dp, err := svcFactory.CreateDiscoveryProvider(config, fabricProvider)
 	if err != nil {
 		t.Fatalf("Unexpected error creating discovery provider %v", err)
 	}

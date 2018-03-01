@@ -9,7 +9,10 @@ package staticdiscovery
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 )
 
 func TestStaticDiscovery(t *testing.T) {
@@ -19,7 +22,8 @@ func TestStaticDiscovery(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	discoveryProvider, err := New(config)
+	peerCreator := defPeerCreator{config: config}
+	discoveryProvider, err := New(config, &peerCreator)
 	if err != nil {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}
@@ -62,4 +66,12 @@ func TestStaticDiscovery(t *testing.T) {
 		t.Fatalf("Expecting %d, got %d peers", expectedNumOfPeeers, len(peers))
 	}
 
+}
+
+type defPeerCreator struct {
+	config core.Config
+}
+
+func (pc *defPeerCreator) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
+	return peer.New(pc.config, peer.FromPeerConfig(peerCfg))
 }

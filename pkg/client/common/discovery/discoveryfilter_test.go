@@ -10,8 +10,10 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 )
 
 type mockFilter struct {
@@ -31,7 +33,8 @@ func TestDiscoveryFilter(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	discoveryProvider, err := staticdiscovery.New(config)
+	peerCreator := defPeerCreator{config: config}
+	discoveryProvider, err := staticdiscovery.New(config, &peerCreator)
 	if err != nil {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}
@@ -60,4 +63,12 @@ func TestDiscoveryFilter(t *testing.T) {
 		t.Fatalf("Expecting true, got false")
 	}
 
+}
+
+type defPeerCreator struct {
+	config core.Config
+}
+
+func (pc *defPeerCreator) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
+	return peer.New(pc.config, peer.FromPeerConfig(peerCfg))
 }

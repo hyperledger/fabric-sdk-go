@@ -10,9 +10,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/pkg/errors"
 )
+
+type peerCreator interface {
+	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error)
+}
 
 /**
  * Discovery Provider is used to discover peers on the network
@@ -20,7 +23,8 @@ import (
 
 // DiscoveryProvider implements discovery provider
 type DiscoveryProvider struct {
-	config core.Config
+	config  core.Config
+	fabPvdr peerCreator
 }
 
 // discoveryService implements discovery service
@@ -30,8 +34,8 @@ type discoveryService struct {
 }
 
 // New returns discovery provider
-func New(config core.Config) (*DiscoveryProvider, error) {
-	return &DiscoveryProvider{config: config}, nil
+func New(config core.Config, fabPvdr peerCreator) (*DiscoveryProvider, error) {
+	return &DiscoveryProvider{config: config, fabPvdr: fabPvdr}, nil
 }
 
 // NewDiscoveryService return discovery service for specific channel
@@ -49,7 +53,7 @@ func (dp *DiscoveryProvider) NewDiscoveryService(channelID string) (fab.Discover
 
 		for _, p := range chPeers {
 
-			newPeer, err := peer.New(dp.config, peer.FromPeerConfig(&p.NetworkPeer))
+			newPeer, err := dp.fabPvdr.CreatePeerFromConfig(&p.NetworkPeer)
 			if err != nil || newPeer == nil {
 				return nil, errors.WithMessage(err, "NewPeer failed")
 			}
@@ -65,7 +69,7 @@ func (dp *DiscoveryProvider) NewDiscoveryService(channelID string) (fab.Discover
 		}
 
 		for _, p := range netPeers {
-			newPeer, err := peer.New(dp.config, peer.FromPeerConfig(&p))
+			newPeer, err := dp.fabPvdr.CreatePeerFromConfig(&p)
 			if err != nil {
 				return nil, errors.WithMessage(err, "NewPeerFromConfig failed")
 			}

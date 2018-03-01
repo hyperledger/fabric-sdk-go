@@ -11,15 +11,21 @@ import (
 
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 )
 
 func TestCreateDiscoveryProvider(t *testing.T) {
-	factory := NewProviderFactory()
+	ctx := mocks.NewMockContext(mocks.NewMockUser("testuser"))
+	fabPvdr := fabpvdr.New(ctx)
 
+	factory := NewProviderFactory()
 	config := mocks.NewMockConfig()
 
-	dp, err := factory.CreateDiscoveryProvider(config)
+	dp, err := factory.CreateDiscoveryProvider(config, fabPvdr)
 	if err != nil {
 		t.Fatalf("Unexpected error creating discovery provider %v", err)
 	}
@@ -44,4 +50,12 @@ func TestCreateSelectionProvider(t *testing.T) {
 	if !ok {
 		t.Fatalf("Unexpected selection provider created")
 	}
+}
+
+type defPeerCreator struct {
+	config core.Config
+}
+
+func (pc *defPeerCreator) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
+	return peer.New(pc.config, peer.FromPeerConfig(peerCfg))
 }
