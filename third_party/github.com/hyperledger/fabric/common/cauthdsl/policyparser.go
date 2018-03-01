@@ -32,7 +32,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
 
-var regex *regexp.Regexp = regexp.MustCompile("^([[:alnum:]]+)([.])(member|admin|client|peer|orderer)$")
+var regex *regexp.Regexp = regexp.MustCompile("^([[:alnum:].-]+)([.])(member|admin|client|peer|orderer)$")
 var regexErr *regexp.Regexp = regexp.MustCompile("^No parameter '([^']+)' found[.]$")
 
 // a stub function - it returns the same string as it's passed.
@@ -162,8 +162,6 @@ func secondPass(args ...interface{}) (interface{}, error) {
 				r = msp.MSPRole_CLIENT
 			case "peer":
 				r = msp.MSPRole_PEER
-			case "orderer":
-				r = msp.MSPRole_ORDERER
 			default:
 				return nil, fmt.Errorf("Error parsing role %s", t)
 			}

@@ -404,7 +404,7 @@ func (ed *Dispatcher) publishFilteredBlockEvents(fblock *pb.FilteredBlock) {
 		}
 	}
 
-	for _, tx := range fblock.FilteredTx {
+	for _, tx := range fblock.FilteredTransactions {
 		ed.publishTxStatusEvents(tx)
 
 		// Only send a chaincode event if the transaction has committed
@@ -414,8 +414,8 @@ func (ed *Dispatcher) publishFilteredBlockEvents(fblock *pb.FilteredBlock) {
 				continue
 			}
 			for _, action := range txActions.ChaincodeActions {
-				if action.CcEvent != nil {
-					ed.publishCCEvents(action.CcEvent)
+				if action.ChaincodeEvent != nil {
+					ed.publishCCEvents(action.ChaincodeEvent)
 				}
 			}
 		}
@@ -501,9 +501,9 @@ func toFilteredBlock(block *cb.Block) *pb.FilteredBlock {
 	}
 
 	return &pb.FilteredBlock{
-		ChannelId:  channelID,
-		Number:     block.Header.Number,
-		FilteredTx: filteredTxs,
+		ChannelId:            channelID,
+		Number:               block.Header.Number,
+		FilteredTransactions: filteredTxs,
 	}
 }
 
@@ -568,7 +568,7 @@ func getFilteredTransactionActions(data []byte) (*pb.FilteredTransaction_Transac
 		return nil, errors.Wrap(err, "error getting chaincode events")
 	}
 	if ccEvent != nil {
-		actions.TransactionActions.ChaincodeActions = append(actions.TransactionActions.ChaincodeActions, &pb.FilteredChaincodeAction{CcEvent: ccEvent})
+		actions.TransactionActions.ChaincodeActions = append(actions.TransactionActions.ChaincodeActions, &pb.FilteredChaincodeAction{ChaincodeEvent: ccEvent})
 	}
 	return actions, nil
 }

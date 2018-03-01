@@ -39,6 +39,15 @@ var localMsp msp.MSP
 var mspMap map[string]msp.MSPManager = make(map[string]msp.MSPManager)
 var mspLogger = flogging.MustGetLogger("msp")
 
+// TODO - this is a temporary solution to allow the peer to track whether the
+// MSPManager has been setup for a channel, which indicates whether the channel
+// exists or not
+type mspMgmtMgr struct {
+	msp.MSPManager
+	// track whether this MSPManager has been setup successfully
+	up bool
+}
+
 // GetLocalMSP returns the local msp (and creates it if it doesn't exist)
 func GetLocalMSP() msp.MSP {
 	var lclMsp msp.MSP

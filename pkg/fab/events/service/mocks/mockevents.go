@@ -69,8 +69,8 @@ func NewTransactionWithCCEvent(txID string, txValidationCode pb.TxValidationCode
 // and filtered transactions
 func NewFilteredBlock(channelID string, filteredTx ...*pb.FilteredTransaction) *pb.FilteredBlock {
 	return &pb.FilteredBlock{
-		ChannelId:  channelID,
-		FilteredTx: filteredTx,
+		ChannelId:            channelID,
+		FilteredTransactions: filteredTx,
 	}
 }
 
@@ -91,7 +91,7 @@ func NewFilteredTxWithCCEvent(txID, ccID, event string) *pb.FilteredTransaction 
 			TransactionActions: &pb.FilteredTransactionActions{
 				ChaincodeActions: []*pb.FilteredChaincodeAction{
 					&pb.FilteredChaincodeAction{
-						CcEvent: &pb.ChaincodeEvent{
+						ChaincodeEvent: &pb.ChaincodeEvent{
 							ChaincodeId: ccID,
 							EventName:   event,
 							TxId:        txID,

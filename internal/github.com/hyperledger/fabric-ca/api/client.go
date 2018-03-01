@@ -40,7 +40,7 @@ type RegistrationRequest struct {
 	Secret string `json:"secret,omitempty" mask:"password" help:"The enrollment secret for the identity being registered"`
 	// MaxEnrollments is the maximum number of times the secret can
 	// be reused to enroll.
-	MaxEnrollments int `json:"max_enrollments,omitempty" def:"-1" help:"The maximum number of times the secret can be reused to enroll."`
+	MaxEnrollments int `json:"max_enrollments,omitempty" help:"The maximum number of times the secret can be reused to enroll (default CA's Max Enrollment)"`
 	// is returned in the response.
 	// The identity's affiliation.
 	// For example, an affiliation of "org1.department1" associates the identity with "department1" in "org1".
@@ -204,7 +204,7 @@ type AddIdentityRequest struct {
 	Type           string      `json:"type" def:"user" help:"Type of identity being registered (e.g. 'peer, app, user')"`
 	Affiliation    string      `json:"affiliation" help:"The identity's affiliation"`
 	Attributes     []Attribute `json:"attrs" mapstructure:"attrs" `
-	MaxEnrollments int         `json:"max_enrollments" mapstructure:"max_enrollments"  def:"-1" help:"The maximum number of times the secret can be reused to enroll."`
+	MaxEnrollments int         `json:"max_enrollments" mapstructure:"max_enrollments" help:"The maximum number of times the secret can be reused to enroll (default CA's Max Enrollment)"`
 	// Secret is an optional password.  If not specified,
 	// a random secret is generated.  In both cases, the secret
 	// is returned in the RegistrationResponse.
@@ -216,10 +216,10 @@ type AddIdentityRequest struct {
 // fabric-ca-server
 type ModifyIdentityRequest struct {
 	ID             string      `skip:"true"`
-	Type           string      `json:"type" def:"user" help:"Type of identity being registered (e.g. 'peer, app, user')"`
+	Type           string      `json:"type" help:"Type of identity being registered (e.g. 'peer, app, user')"`
 	Affiliation    string      `json:"affiliation" help:"The identity's affiliation"`
 	Attributes     []Attribute `mapstructure:"attrs" json:"attrs"`
-	MaxEnrollments int         `mapstructure:"max_enrollments" json:"max_enrollments" def:"-1" help:"The maximum number of times the secret can be reused to enroll."`
+	MaxEnrollments int         `mapstructure:"max_enrollments" json:"max_enrollments" help:"The maximum number of times the secret can be reused to enroll"`
 	Secret         string      `json:"secret,omitempty" mask:"password" help:"The enrollment secret for the identity"`
 	CAName         string      `json:"caname,omitempty" skip:"true"`
 }

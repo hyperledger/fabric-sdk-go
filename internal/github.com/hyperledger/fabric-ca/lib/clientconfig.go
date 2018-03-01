@@ -28,7 +28,6 @@ import (
 
 // ClientConfig is the fabric-ca client's config
 type ClientConfig struct {
-	Debug      bool   `def:"false" opt:"d" help:"Enable debug level logging"`
 	URL        string `def:"http://localhost:7054" opt:"u" help:"URL of fabric-ca-server"`
 	MSPDir     string `def:"msp" opt:"M" help:"Membership Service Provider directory"`
 	TLS        tls.ClientTLSConfig

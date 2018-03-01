@@ -30,8 +30,6 @@ type NodeOUs struct {
 	ClientOUIdentifier *OrganizationalUnitIdentifiersConfiguration `yaml:"ClientOUIdentifier,omitempty"`
 	// PeerOUIdentifier specifies how to recognize peers by OU
 	PeerOUIdentifier *OrganizationalUnitIdentifiersConfiguration `yaml:"PeerOUIdentifier,omitempty"`
-	// OrdererOUIdentifier specifies how to recognize orderers by OU
-	OrdererOUIdentifier *OrganizationalUnitIdentifiersConfiguration `yaml:"OrdererOUIdentifier,omitempty"`
 }
 
 // Configuration represents the accessory configuration an MSP can be equipped with.

@@ -1214,13 +1214,13 @@ func checkFilteredBlock(t *testing.T, fblock *pb.FilteredBlock, expectedChannelI
 	if fblock.ChannelId != expectedChannelID {
 		t.Fatalf("Expecting channel [%s] but got [%s]", expectedChannelID, fblock.ChannelId)
 	}
-	if len(fblock.FilteredTx) != len(expectedFilteredTxs) {
-		t.Fatalf("Expecting %d filtered transactions but got %d", len(expectedFilteredTxs), len(fblock.FilteredTx))
+	if len(fblock.FilteredTransactions) != len(expectedFilteredTxs) {
+		t.Fatalf("Expecting %d filtered transactions but got %d", len(expectedFilteredTxs), len(fblock.FilteredTransactions))
 	}
 
 	for _, expectedTx := range expectedFilteredTxs {
 		found := false
-		for _, tx := range fblock.FilteredTx {
+		for _, tx := range fblock.FilteredTransactions {
 			if tx.Txid == expectedTx.Txid {
 				found = true
 				if tx.TxValidationCode != expectedTx.TxValidationCode {
