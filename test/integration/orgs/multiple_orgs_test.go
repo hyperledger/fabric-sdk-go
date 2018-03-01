@@ -50,12 +50,19 @@ var orgTestPeer1 fab.Peer
 // on each of them, and finally invokes a transaction on an org2 peer and queries
 // the result from an org1 peer
 func TestOrgsEndToEnd(t *testing.T) {
-
 	// Create SDK setup for the integration tests
 	sdk, err := fabsdk.New(config.FromFile("../" + integration.ConfigTestFile))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
+
+	expectedValue := testWithOrg1(t, sdk)
+	expectedValue = testWithOrg2(t, expectedValue)
+	verifyWithOrg1(t, sdk, expectedValue)
+}
+
+func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 
 	// Channel management client is responsible for managing channels (create/update channel)
 	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ResourceMgmt()
@@ -259,32 +266,46 @@ func TestOrgsEndToEnd(t *testing.T) {
 	expectedValue := beforeTxValue + 1
 	verifyValue(t, chClientOrg1User, expectedValue)
 
+	return expectedValue
+}
+
+func testWithOrg2(t *testing.T, expectedValue int) int {
 	// Specify user that will be used by dynamic selection service (to retrieve chanincode policy information)
 	// This user has to have privileges to query lscc for chaincode data
 	mychannelUser := selection.ChannelUser{ChannelID: "orgchannel", UserName: "User1", OrgName: "Org1"}
 
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err = fabsdk.New(config.FromFile("../"+integration.ConfigTestFile),
+	sdk, err := fabsdk.New(config.FromFile("../"+integration.ConfigTestFile),
 		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	// Create new client that will use dynamic selection
-	chClientOrg2User, err = sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org2)).Channel("orgchannel")
+	chClientOrg2User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org2)).Channel("orgchannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
 	}
 
 	// Org2 user moves funds (dynamic selection will inspect chaincode policy to determine endorsers)
-	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	_, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
 
 	expectedValue++
-	verifyValue(t, chClientOrg1User, expectedValue)
+	return expectedValue
+}
 
+func verifyWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, expectedValue int) {
+	// Org1 user connects to 'orgchannel'
+	chClientOrg1User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org1)).Channel("orgchannel")
+	if err != nil {
+		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
+	}
+
+	verifyValue(t, chClientOrg1User, expectedValue)
 }
 
 func verifyValue(t *testing.T, chClient *channel.Client, expected int) {

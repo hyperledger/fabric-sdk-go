@@ -24,11 +24,12 @@ const (
 )
 
 func TestNewGoodOpt(t *testing.T) {
-	_, err := New(configImpl.FromFile(sdkConfigFile),
+	sdk, err := New(configImpl.FromFile(sdkConfigFile),
 		goodOpt())
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
+	sdk.Close()
 }
 
 func goodOpt() Option {
@@ -38,17 +39,28 @@ func goodOpt() Option {
 }
 
 func TestNewBadOpt(t *testing.T) {
-	_, err := New(configImpl.FromFile(sdkConfigFile),
+	sdk, err := New(configImpl.FromFile(sdkConfigFile),
 		badOpt())
 	if err == nil {
 		t.Fatalf("Expected error from New")
 	}
+	sdk.Close()
 }
 
 func badOpt() Option {
 	return func(opts *options) error {
 		return errors.New("Bad Opt")
 	}
+}
+
+func TestDoubleClose(t *testing.T) {
+	sdk, err := New(configImpl.FromFile(sdkConfigFile),
+		goodOpt())
+	if err != nil {
+		t.Fatalf("Expected no error from New, but got %v", err)
+	}
+	sdk.Close()
+	sdk.Close()
 }
 
 func TestWithCorePkg(t *testing.T) {
@@ -58,10 +70,11 @@ func TestWithCorePkg(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	_, err = New(WithConfig(c))
+	sdk, err := New(WithConfig(c))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -86,10 +99,11 @@ func TestWithServicePkg(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	_, err = New(WithConfig(c))
+	sdk, err := New(WithConfig(c))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -116,20 +130,22 @@ func TestWithSessionPkg(t *testing.T) {
 		t.Fatalf("Error initializing core factory: %s", err)
 	}
 
-	_, err = New(WithConfig(c))
+	sdk, err := New(WithConfig(c))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
+	sdk.Close()
 
 	// Create mock to ensure the provided factory is called.
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockSessionClientFactory(mockCtrl)
 
-	sdk, err := New(WithConfig(c), WithCorePkg(core), WithSessionPkg(factory))
+	sdk, err = New(WithConfig(c), WithCorePkg(core), WithSessionPkg(factory))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	// Get resource management
 	_, err = sdk.NewClient(WithUser(sdkValidClientUser)).ResourceMgmt()
@@ -194,6 +210,7 @@ func TestNewDefaultSDKFromByte(t *testing.T) {
 	if sdk == nil {
 		t.Fatalf("SDK should not be empty when initialized")
 	}
+	sdk.Close()
 }
 
 func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
@@ -224,6 +241,7 @@ func TestWithConfigSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	client1, err := sdk.config.Client()
 	if err != nil {

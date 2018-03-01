@@ -26,6 +26,7 @@ func TestNewPreEnrolledUserSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	_, err = sdk.newSessionFromIdentityName("org1", txValidClientUser)
 	if err != nil {

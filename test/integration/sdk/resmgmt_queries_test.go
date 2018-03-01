@@ -42,6 +42,7 @@ func TestResMgmtClientQueries(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	// Resource management client
 	client, err := sdk.NewClient(fabsdk.WithUser("Admin")).ResourceMgmt()

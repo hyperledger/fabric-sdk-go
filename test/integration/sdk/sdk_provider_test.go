@@ -55,6 +55,7 @@ func TestDynamicSelection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	chClient, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(testSetup.ChannelID)
 	if err != nil {

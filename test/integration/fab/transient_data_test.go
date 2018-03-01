@@ -29,6 +29,7 @@ func TestTransient(t *testing.T) {
 	if err := testSetup.Initialize(); err != nil {
 		t.Fatalf(err.Error())
 	}
+	defer testSetup.SDK.Close()
 
 	chaincodeID := integration.GenerateRandomID()
 	if err := integration.InstallAndInstantiateExampleCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {

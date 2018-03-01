@@ -337,30 +337,36 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}
 
-	selectionService, err := selectionProvider.NewSelectionService("")
+	_, err = selectionProvider.NewSelectionService("")
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel name")
 	}
 
-	selectionService, err = selectionProvider.NewSelectionService("mychannel")
+	_, err = selectionProvider.NewSelectionService("mychannel")
 	if err == nil {
 		t.Fatalf("Should have failed since sdk not provided")
 	}
 
+	testLBPolicy(t, c, selectionProvider, mychannelUser)
+	testCustomLBPolicy(t, c, selectionProvider, mychannelUser)
+}
+
+func testLBPolicy(t *testing.T, c core.Config, selectionProvider *SelectionProvider, mychannelUser ChannelUser) {
 	factory := DynamicSelectionProviderFactory{
 		selectionProvider: selectionProvider,
 	}
 
 	// Create SDK setup for channel client with dynamic selection
 	// This step is performed during the test to allow normal SDK-based initialized of the selection provider
-	_, err = fabsdk.New(
+	sdk, err := fabsdk.New(
 		config.FromFile("../../../../../test/fixtures/config/config_test.yaml"),
 		fabsdk.WithServicePkg(&factory))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
-	selectionService, err = selectionProvider.NewSelectionService("mychannel")
+	selectionService, err := selectionProvider.NewSelectionService("mychannel")
 	if err != nil {
 		t.Fatalf("Failed to create new selection service for channel: %s", err)
 	}
@@ -394,24 +400,29 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatalf("Should have failed for non-existent cc ID")
 	}
 
+}
+
+func testCustomLBPolicy(t *testing.T, c core.Config, selectionProvider *SelectionProvider, mychannelUser ChannelUser) {
+
 	// Test custom load balancer
-	selectionProvider, err = New(c, []ChannelUser{mychannelUser}, newCustomLBP())
+	selectionProvider, err := New(c, []ChannelUser{mychannelUser}, newCustomLBP())
 	if err != nil {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}
 
-	factory = DynamicSelectionProviderFactory{
+	factory := DynamicSelectionProviderFactory{
 		selectionProvider: selectionProvider,
 	}
 
 	// Create SDK setup for channel client with dynamic selection
 	// This step is performed during the test to allow normal SDK-based initialized of the selection provider
-	_, err = fabsdk.New(
+	sdk, err := fabsdk.New(
 		config.FromFile("../../../../../test/fixtures/config/config_test.yaml"),
 		fabsdk.WithServicePkg(&factory))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	if selectionProvider.lbp == nil {
 		t.Fatalf("Failed to set load balancing policy")

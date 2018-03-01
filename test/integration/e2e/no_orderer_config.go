@@ -30,6 +30,7 @@ func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	// ************ Test setup complete ************** //
 

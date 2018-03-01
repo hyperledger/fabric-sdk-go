@@ -39,6 +39,7 @@ func TestLedgerClientQueries(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	// Ledger client
 	client, err := sdk.NewClient(fabsdk.WithUser("Admin")).Ledger(testSetup.ChannelID)

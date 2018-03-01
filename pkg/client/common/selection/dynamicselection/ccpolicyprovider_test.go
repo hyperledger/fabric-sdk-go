@@ -20,6 +20,7 @@ func TestCCPolicyProvider(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	// Nil sdk
 	ccPolicyProvider, err := newCCPolicyProvider(nil, "mychannel", "User1", "Org1")
@@ -76,6 +77,7 @@ func TestBadClient(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	// Non-existent user
 	ccPolicyProvider, err := newCCPolicyProvider(sdk, "mychannel", "Invalid", "Org1")

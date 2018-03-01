@@ -45,6 +45,7 @@ func TestChannelConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	cs, err := sdk.NewClient(fabsdk.WithUser("User1")).ChannelService(testSetup.ChannelID)
 	if err != nil {
@@ -97,6 +98,7 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	cs, err := sdk.NewClient(fabsdk.WithUser("User1")).ChannelService(testSetup.ChannelID)
 	if err != nil {

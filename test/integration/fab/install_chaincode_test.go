@@ -36,6 +36,7 @@ func TestChaincodeInstal(t *testing.T) {
 	if err := testSetup.Initialize(); err != nil {
 		t.Fatalf(err.Error())
 	}
+	defer testSetup.SDK.Close()
 
 	testChaincodeInstallUsingChaincodePath(t, testSetup)
 

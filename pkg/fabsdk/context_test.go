@@ -23,6 +23,7 @@ func TestWithUserValid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
+	defer sdk.Close()
 
 	opts := identityOptions{}
 	opt := WithUser(identityValidOptUser)
@@ -40,6 +41,7 @@ func TestWithUserInvalid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
+	defer sdk.Close()
 
 	opts := identityOptions{}
 	opt := WithUser("notarealuser")
@@ -57,6 +59,7 @@ func TestWithIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
+	defer sdk.Close()
 
 	identity, err := sdk.newUser(identityValidOptOrg, identityValidOptUser)
 	if err != nil {

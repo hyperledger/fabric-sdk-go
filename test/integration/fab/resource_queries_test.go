@@ -17,6 +17,7 @@ import (
 func TestChannelQueries(t *testing.T) {
 	chaincodeID := integration.GenerateRandomID()
 	testSetup := initializeTests(t, chaincodeID)
+	defer testSetup.SDK.Close()
 
 	testQueryChannels(t, testSetup.Client, testSetup.Targets[0])
 

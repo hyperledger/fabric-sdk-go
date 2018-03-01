@@ -62,6 +62,7 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	chClient, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(testSetup.ChannelID)
 	if err != nil {
@@ -148,6 +149,7 @@ func TestCustomCryptoSuite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	key, err := sdk.CryptoSuiteProvider().KeyGen(nil)
 	if err != nil {

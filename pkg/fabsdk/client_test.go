@@ -27,6 +27,7 @@ func TestNewGoodClientOpt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
+	defer sdk.Close()
 
 	_, err = sdk.NewClient(WithUser(clientValidUser), goodClientOpt()).ResourceMgmt()
 	if err != nil {
@@ -44,6 +45,7 @@ func TestFromConfigGoodClientOpt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
+	defer sdk.Close()
 
 	_, err = sdk.NewClient(WithUser(clientValidUser), goodClientOpt()).ResourceMgmt()
 	if err != nil {
@@ -62,6 +64,7 @@ func TestNewBadClientOpt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
+	defer sdk.Close()
 
 	_, err = sdk.NewClient(WithUser(clientValidUser), badClientOpt()).ResourceMgmt()
 	if err == nil {
@@ -80,6 +83,7 @@ func TestClient(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
+	defer sdk.Close()
 
 	_, err = sdk.NewClient(WithUser(clientValidUser)).ResourceMgmt()
 	if err != nil {
@@ -92,6 +96,7 @@ func TestWithOrg(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
+	defer sdk.Close()
 
 	_, err = sdk.NewClient(WithUser("notarealuser"), WithOrg(clientValidExtraOrg)).ResourceMgmt()
 	if err == nil {
@@ -142,6 +147,7 @@ func TestNoIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
+	defer sdk.Close()
 
 	_, err = sdk.NewClient(noopIdentityOpt(), goodClientOpt()).ResourceMgmt()
 	if err == nil {

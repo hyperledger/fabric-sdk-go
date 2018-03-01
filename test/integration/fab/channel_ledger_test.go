@@ -58,6 +58,8 @@ func TestLedgerQueries(t *testing.T) {
 
 	// Setup tests with a random chaincode ID.
 	sdk, targets := initializeLedgerTests(t)
+	defer sdk.Close()
+
 	chaincodeID := integration.GenerateRandomID()
 	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), orgName, chaincodeID); err != nil {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)

@@ -242,6 +242,11 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	return nil
 }
 
+// Close frees up caches and connections being maintained by the SDK
+func (sdk *FabricSDK) Close() {
+	// TODO: upcoming changes will have Close funcs being called from here.
+}
+
 // Config returns the SDK's configuration.
 func (sdk *FabricSDK) Config() core.Config {
 	return sdk.config
