@@ -17,7 +17,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/pkg/errors"
 )
@@ -79,14 +78,13 @@ func TestGetSigningIdentity(t *testing.T) {
 		t.Fatalf("Failed to setup cryptoSuite: %s", err)
 	}
 
-	// the same location used by credential manager.
-	// in the future all will use common user store instance from the SDK context
-	userStore, err := identity.NewCertFileUserStore(clientCofig.CredentialStore.Path, cryptoSuite)
+	stateStore := stateStoreFromConfig(t, config)
+	userStore, err := NewCertFileUserStore1(stateStore)
 	if err != nil {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
 
-	mgr, err := New(msp, cryptoSuite, config)
+	mgr, err := New(msp, stateStore, cryptoSuite, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -113,8 +111,11 @@ func TestGetSigningIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed [%s]", err)
 	}
-	user1 := identity.NewUser(mspID, testUserName)
-	user1.SetEnrollmentCertificate([]byte(testCert))
+	user1 := UserData{
+		MspID: mspID,
+		Name:  testUserName,
+		EnrollmentCertificate: []byte(testCert),
+	}
 	err = userStore.Store(user1)
 	if err != nil {
 		t.Fatalf("userStore.Store: %s", err)
@@ -156,9 +157,10 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
+	stateStore := stateStoreFromConfig(t, config)
 
 	// Invalid Org
-	_, err = New("invalidOrg", &fcmocks.MockCryptoSuite{}, config)
+	_, err = New("invalidOrg", stateStore, &fcmocks.MockCryptoSuite{}, config)
 	if err == nil {
 		t.Fatalf("Should have failed to setup manager for invalid org")
 	}
@@ -166,13 +168,14 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 }
 
 func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
-	config, err := config.FromFile("../../../test/fixtures/config/config_test_embedded_pems.yaml")()
 
+	config, err := config.FromFile("../../../test/fixtures/config/config_test_embedded_pems.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
+	stateStore := stateStoreFromConfig(t, config)
 
-	mgr, err := New(msp, cryptosuite.GetDefault(), config)
+	mgr, err := New(msp, stateStore, cryptosuite.GetDefault(), config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

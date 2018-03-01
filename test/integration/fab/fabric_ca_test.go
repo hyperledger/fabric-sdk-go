@@ -11,6 +11,7 @@ import (
 
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
+	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 )
 
 const (
@@ -25,7 +26,12 @@ func TestEnrollOrg2(t *testing.T) {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
 
-	caClient, err := identitymgr.New(org2Name, cryptoSuiteProvider, testFabricConfig)
+	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: testFabricConfig.CredentialStorePath()})
+	if err != nil {
+		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)
+	}
+
+	caClient, err := identitymgr.New(org2Name, stateStore, cryptoSuiteProvider, testFabricConfig)
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}

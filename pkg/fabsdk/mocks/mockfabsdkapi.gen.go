@@ -327,16 +327,16 @@ func (mr *MockCoreProviderFactoryMockRecorder) CreateFabricProvider(arg0 interfa
 }
 
 // CreateIdentityManager mocks base method
-func (m *MockCoreProviderFactory) CreateIdentityManager(arg0 string, arg1 core.CryptoSuite, arg2 core.Config) (api.IdentityManager, error) {
-	ret := m.ctrl.Call(m, "CreateIdentityManager", arg0, arg1, arg2)
+func (m *MockCoreProviderFactory) CreateIdentityManager(arg0 string, arg1 api.KVStore, arg2 core.CryptoSuite, arg3 core.Config) (api.IdentityManager, error) {
+	ret := m.ctrl.Call(m, "CreateIdentityManager", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(api.IdentityManager)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateIdentityManager indicates an expected call of CreateIdentityManager
-func (mr *MockCoreProviderFactoryMockRecorder) CreateIdentityManager(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentityManager", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateIdentityManager), arg0, arg1, arg2)
+func (mr *MockCoreProviderFactoryMockRecorder) CreateIdentityManager(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentityManager", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateIdentityManager), arg0, arg1, arg2, arg3)
 }
 
 // CreateSigningManager mocks base method

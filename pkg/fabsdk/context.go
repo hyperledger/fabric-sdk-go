@@ -7,6 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -40,7 +43,7 @@ func (c *fabContext) SigningManager() contextApi.SigningManager {
 
 // IdentityManager returns identity manager for organization
 func (c *fabContext) IdentityManager(orgName string) (contextApi.IdentityManager, bool) {
-	mgr, ok := c.sdk.identityManager[orgName]
+	mgr, ok := c.sdk.identityManager[strings.ToLower(orgName)]
 	return mgr, ok
 }
 
@@ -84,11 +87,15 @@ func WithUser(name string) IdentityOption {
 			return errors.New("Identity already determined")
 		}
 
-		identity, err := sdk.newUser(orgName, name)
-		if err != nil {
-			return errors.WithMessage(err, "Unable to load identity")
+		identityManager, ok := sdk.context().IdentityManager(orgName)
+		if !ok {
+			return fmt.Errorf("invalid org name: %s", orgName)
 		}
-		o.identity = identity
+		user, err := identityManager.GetUser(name)
+		if err != nil {
+			return err
+		}
+		o.identity = user
 		o.ok = true
 		return nil
 

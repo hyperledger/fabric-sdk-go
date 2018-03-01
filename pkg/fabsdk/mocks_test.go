@@ -55,7 +55,7 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	}
 	im := make(map[string]contextApi.IdentityManager)
 	for orgName := range netConfig.Organizations {
-		mgr, err := mocks.NewMockIdentityManager(orgName, cs, config)
+		mgr, err := core.CreateIdentityManager(orgName, stateStore, cs, config)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +91,7 @@ func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite, con
 	return mc.signingManager, nil
 }
 
-func (mc *mockCorePkg) CreateIdentityManager(orgName string, cryptoProvider core.CryptoSuite, config core.Config) (contextApi.IdentityManager, error) {
+func (mc *mockCorePkg) CreateIdentityManager(orgName string, stateStore contextApi.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (contextApi.IdentityManager, error) {
 	mgr, ok := mc.identityManager[orgName]
 	if !ok {
 		return nil, fmt.Errorf("identity manager not found for organization: %s", orgName)

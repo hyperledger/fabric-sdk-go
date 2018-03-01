@@ -61,8 +61,8 @@ func (f *ProviderFactory) CreateSigningManager(cryptoProvider core.CryptoSuite, 
 }
 
 // CreateIdentityManager returns a new default implementation of identity manager
-func (f *ProviderFactory) CreateIdentityManager(org string, cryptoProvider core.CryptoSuite, config core.Config) (contextApi.IdentityManager, error) {
-	return identitymgr.New(org, cryptoProvider, config)
+func (f *ProviderFactory) CreateIdentityManager(org string, stateStore contextApi.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (contextApi.IdentityManager, error) {
+	return identitymgr.New(org, stateStore, cryptoProvider, config)
 }
 
 // CreateFabricProvider returns a new default implementation of fabric primitives

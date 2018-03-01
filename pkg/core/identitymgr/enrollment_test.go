@@ -15,10 +15,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	apimocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
+	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 )
 
 var (
@@ -48,7 +47,7 @@ m1KOnMry/mOZcnXnTIh2ASV4ss8VluzBcyHGAv7BCmxXxDkjcV9eybv8
 	userToEnroll = "enrollmentID"
 
 	userToEnrollMspID       string
-	enrollmentTestUserStore api.UserStore
+	enrollmentTestUserStore UserStore
 )
 
 func TestGetSigningIdentityWithEnrollment(t *testing.T) {
@@ -74,14 +73,16 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	// Delete all private keys from the crypto suite store
 	// and users from the user store
 	keyStorePath := config.KeyStorePath()
+	credentialStorePath := config.CredentialStorePath()
 	cleanupTestPath(t, keyStorePath)
 	defer cleanupTestPath(t, keyStorePath)
-	cleanupTestPath(t, clientCofig.CredentialStore.Path)
-	defer cleanupTestPath(t, clientCofig.CredentialStore.Path)
+	cleanupTestPath(t, credentialStorePath)
+	defer cleanupTestPath(t, credentialStorePath)
 
 	cs, err := sw.GetSuiteByConfig(config)
+	stateStore := stateStoreFromConfig(t, config)
 
-	identityMgr, err := New(orgName, cs, config)
+	identityMgr, err := New(orgName, stateStore, cs, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -91,7 +92,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	}
 
 	// Refers to the same location used by the IdentityManager
-	enrollmentTestUserStore, err = identity.NewCertFileUserStore(clientCofig.CredentialStore.Path, cs)
+	enrollmentTestUserStore, err = NewCertFileUserStore(clientCofig.CredentialStore.Path)
 	if err != nil {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
@@ -134,12 +135,23 @@ func prepareForEnroll(t *testing.T, mc *apimocks.MockIdentityManager, cs core.Cr
 
 		// Save the "new" cert to user store
 		// This is done by IdentityManagement.Enroll()
-		user := identity.NewUser(userToEnrollMspID, userToEnroll)
-		user.SetEnrollmentCertificate([]byte(generatedCertBytes))
+		user := UserData{
+			MspID: userToEnrollMspID,
+			Name:  userToEnroll,
+			EnrollmentCertificate: []byte(generatedCertBytes),
+		}
 		err = enrollmentTestUserStore.Store(user)
 		if err != nil {
 			t.Fatalf("userStore.Store: %s", err)
 		}
 
 	}).Return(err)
+}
+
+func stateStoreFromConfig(t *testing.T, config core.Config) api.KVStore {
+	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: config.CredentialStorePath()})
+	if err != nil {
+		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)
+	}
+	return stateStore
 }

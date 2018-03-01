@@ -147,7 +147,15 @@ func TestCreateIdentityManager(t *testing.T) {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	mgr, err := factory.CreateIdentityManager("Org1", cryptosuite, config)
+	stateStore, err := kvs.New(
+		&kvs.FileKeyValueStoreOptions{
+			Path: config.CredentialStorePath(),
+		})
+	if err != nil {
+		t.Fatalf("creating a user store failed: %v", err)
+	}
+
+	mgr, err := factory.CreateIdentityManager("Org1", stateStore, cryptosuite, config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating signing manager %v", err)
 	}

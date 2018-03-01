@@ -32,21 +32,8 @@ var (
 // have access to the Peer identity’s private key.
 type User interface {
 	MspID() string
+	Name() string
 	Identity() ([]byte, error)
 	PrivateKey() core.Key
-	Name() string
 	EnrollmentCertificate() []byte
-	Roles() []string
-}
-
-// UserKey is a lookup key in UserStore
-type UserKey struct {
-	MspID string
-	Name  string
-}
-
-// UserStore is responsible for User persistence
-type UserStore interface {
-	Store(User) error
-	Load(UserKey) (User, error)
 }

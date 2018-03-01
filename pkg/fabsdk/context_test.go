@@ -61,7 +61,11 @@ func TestWithIdentity(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	identity, err := sdk.newUser(identityValidOptOrg, identityValidOptUser)
+	identityManager, ok := sdk.context().IdentityManager(identityValidOptOrg)
+	if !ok {
+		t.Fatalf("Invalid organization: %s", identityValidOptOrg)
+	}
+	identity, err := identityManager.GetUser(identityValidOptUser)
 	if err != nil {
 		t.Fatalf("Unexpected error loading identity: %v", err)
 	}
