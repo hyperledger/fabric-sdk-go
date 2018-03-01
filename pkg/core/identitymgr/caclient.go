@@ -58,7 +58,7 @@ func (im *IdentityManager) getRegistrarSI(enrollID string, enrollSecret string) 
 		}
 
 		// Attempt to enroll the registrar
-		_, _, err = im.Enroll(enrollID, enrollSecret)
+		err = im.Enroll(enrollID, enrollSecret)
 		if err != nil {
 			return nil, err
 		}

@@ -119,19 +119,22 @@ func (im *IdentityManager) CAName() string {
 }
 
 // Enroll a registered user in order to receive a signed X509 certificate.
+// A new key pair is generated for the user. The private key and the
+// enrollment certificate issued by the CA are stored in SDK stores.
+// They can be retrieved by calling IdentityManager.GetSigningIdentity().
+//
 // enrollmentID The registered ID to use for enrollment
 // enrollmentSecret The secret associated with the enrollment ID
-// Returns X509 certificate
-func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error) {
+func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) error {
 
 	if err := im.initCAClient(); err != nil {
-		return nil, nil, err
+		return err
 	}
 	if enrollmentID == "" {
-		return nil, nil, errors.New("enrollmentID is required")
+		return errors.New("enrollmentID is required")
 	}
 	if enrollmentSecret == "" {
-		return nil, nil, errors.New("enrollmentSecret is required")
+		return errors.New("enrollmentSecret is required")
 	}
 	// TODO add attributes
 	careq := &caapi.EnrollmentRequest{
@@ -141,53 +144,53 @@ func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) 
 	}
 	caresp, err := im.caClient.Enroll(careq)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "enroll failed")
+		return errors.Wrap(err, "enroll failed")
 	}
 	user := identity.NewUser(im.orgMspID, enrollmentID)
 	user.SetEnrollmentCertificate(caresp.Identity.GetECert().Cert())
 	user.SetPrivateKey(caresp.Identity.GetECert().Key())
 	err = im.userStore.Store(user)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "enroll failed")
+		return errors.Wrap(err, "enroll failed")
 	}
-	return caresp.Identity.GetECert().Key(), caresp.Identity.GetECert().Cert(), nil
+	return nil
 }
 
 // Reenroll an enrolled user in order to receive a signed X509 certificate
 // Returns X509 certificate
-func (im *IdentityManager) Reenroll(user contextApi.User) (core.Key, []byte, error) {
+func (im *IdentityManager) Reenroll(user contextApi.User) error {
 
 	if err := im.initCAClient(); err != nil {
-		return nil, nil, err
+		return err
 	}
 	if user == nil {
-		return nil, nil, errors.New("user required")
+		return errors.New("user required")
 	}
 	if user.Name() == "" {
 		logger.Infof("Invalid re-enroll request, missing argument user")
-		return nil, nil, errors.New("user name missing")
+		return errors.New("user name missing")
 	}
 	req := &caapi.ReenrollmentRequest{
 		CAName: im.caClient.Config.CAName,
 	}
 	caidentity, err := im.caClient.NewIdentity(user.PrivateKey(), user.EnrollmentCertificate())
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create CA signing identity")
+		return errors.Wrap(err, "failed to create CA signing identity")
 	}
 
 	caresp, err := caidentity.Reenroll(req)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "reenroll failed")
+		return errors.Wrap(err, "reenroll failed")
 	}
 	newUser := identity.NewUser(im.orgMspID, user.Name())
 	newUser.SetEnrollmentCertificate(caresp.Identity.GetECert().Cert())
 	newUser.SetPrivateKey(caresp.Identity.GetECert().Key())
 	err = im.userStore.Store(newUser)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "reenroll failed")
+		return errors.Wrap(err, "reenroll failed")
 	}
 
-	return caresp.Identity.GetECert().Key(), caresp.Identity.GetECert().Cert(), nil
+	return nil
 }
 
 // Register a User with the Fabric CA

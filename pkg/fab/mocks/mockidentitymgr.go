@@ -32,13 +32,13 @@ func (mgr *MockIdentityManager) GetSigningIdentity(userName string) (*api.Signin
 }
 
 // Enroll enrolls a user with a Fabric network
-func (mgr *MockIdentityManager) Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error) {
-	return nil, nil, errors.New("not implemented")
+func (mgr *MockIdentityManager) Enroll(enrollmentID string, enrollmentSecret string) error {
+	return errors.New("not implemented")
 }
 
 // Reenroll re-enrolls a user
-func (mgr *MockIdentityManager) Reenroll(user api.User) (core.Key, []byte, error) {
-	return nil, nil, errors.New("not implemented")
+func (mgr *MockIdentityManager) Reenroll(user api.User) error {
+	return errors.New("not implemented")
 }
 
 // Register registers a user with a Fabric network
