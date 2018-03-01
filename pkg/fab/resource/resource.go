@@ -13,7 +13,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -117,48 +116,40 @@ func (c *Resource) createChannelFromEnvelope(request api.CreateChannelRequest) (
 // GenesisBlockFromOrderer returns the genesis block from the defined orderer that may be
 // used in a join request
 func (c *Resource) GenesisBlockFromOrderer(channelName string, orderer fab.Orderer) (*common.Block, error) {
+	return c.block([]fab.Orderer{orderer}, channelName, newSpecificSeekPosition(0))
+}
 
-	orderers := []fab.Orderer{orderer}
+// LastConfigFromOrderer fetches the current configuration block for the specified channel
+// from the given orderer
+func (c *Resource) LastConfigFromOrderer(channelName string, orderer fab.Orderer) (*common.ConfigEnvelope, error) {
+	logger.Debugf("channelConfig - start for channel %s", channelName)
 
-	txh, err := txn.NewHeader(c.clientContext, channelName)
+	// Get the newest block
+	block, err := c.block([]fab.Orderer{orderer}, channelName, newNewestSeekPosition())
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to calculate transaction id")
+		return nil, err
+	}
+	logger.Debugf("channelConfig - Retrieved newest block number: %d\n", block.Header.Number)
+
+	// Get the index of the last config block
+	lastConfig, err := GetLastConfigFromBlock(block)
+	if err != nil {
+		return nil, errors.Wrap(err, "GetLastConfigFromBlock failed")
+	}
+	logger.Debugf("channelConfig - Last config index: %d\n", lastConfig.Index)
+
+	// Get the last config block
+	block, err = c.block([]fab.Orderer{orderer}, channelName, newSpecificSeekPosition(lastConfig.Index))
+	if err != nil {
+		return nil, errors.WithMessage(err, "retrieve block failed")
+	}
+	logger.Debugf("channelConfig - Last config block number %d, Number of tx: %d", block.Header.Number, len(block.Data.Data))
+
+	if len(block.Data.Data) != 1 {
+		return nil, errors.New("apiconfig block must contain one transaction")
 	}
 
-	// now build the seek info , will be used once the channel is created
-	// to get the genesis block back
-	seekStart := newSpecificSeekPosition(0)
-	seekStop := newSpecificSeekPosition(0)
-	seekInfo := &ab.SeekInfo{
-		Start:    seekStart,
-		Stop:     seekStop,
-		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
-	}
-	seekInfoBytes, err := proto.Marshal(seekInfo)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshaling of seek info header failed")
-	}
-
-	tlsCertHash := ccomm.TLSCertHash(c.clientContext.Config())
-	channelHeaderOpts := txn.ChannelHeaderOpts{
-		TxnHeader:   txh,
-		TLSCertHash: tlsCertHash,
-	}
-	seekInfoHeader, err := txn.CreateChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, channelHeaderOpts)
-	if err != nil {
-		return nil, errors.Wrap(err, "CreateChannelHeader failed")
-	}
-
-	payload, err := txn.CreatePayload(txh, seekInfoHeader, seekInfoBytes)
-	if err != nil {
-		return nil, errors.Wrap(err, "CreatePayload failed")
-	}
-
-	block, err := txn.SendPayload(c.clientContext, payload, orderers)
-	if err != nil {
-		return nil, errors.WithMessage(err, "SendEnvelope failed")
-	}
-	return block, nil
+	return CreateConfigEnvelope(block.Data.Data[0])
 }
 
 // JoinChannel sends a join channel proposal to the target peer.
@@ -358,9 +349,4 @@ func validateResponse(response *fab.TransactionProposalResponse) error {
 	}
 
 	return nil
-}
-
-// newSpecificSeekPosition returns a SeekPosition that requests the block at the given index
-func newSpecificSeekPosition(index uint64) *ab.SeekPosition {
-	return &ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: index}}}
 }

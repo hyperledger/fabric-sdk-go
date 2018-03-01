@@ -20,6 +20,7 @@ type Resource interface {
 	QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error)
 	QueryChannels(peer fab.ProposalProcessor) (*pb.ChannelQueryResponse, error)
 	GenesisBlockFromOrderer(channelName string, orderer fab.Orderer) (*common.Block, error)
+	LastConfigFromOrderer(channelName string, orderer fab.Orderer) (*common.ConfigEnvelope, error)
 	JoinChannel(request JoinChannelRequest) error
 	SignChannelConfig(config []byte, signer context.IdentityContext) (*common.ConfigSignature, error)
 }

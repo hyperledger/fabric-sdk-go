@@ -17,7 +17,6 @@ import (
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 
@@ -215,11 +214,6 @@ func prepareRequestContext(request Request, opts Opts, t *testing.T) *RequestCon
 	requestContext.Opts.Timeout = testTimeOut
 
 	return requestContext
-}
-
-func setupTestChannel() (*channel.Channel, error) {
-	ctx := setupTestContext()
-	return channel.New(ctx, fcmocks.NewMockChannelCfg("testChannel"))
 }
 
 func setupChannelClientContext(discErr error, selectionErr error, peers []fab.Peer, t *testing.T) *ClientContext {
