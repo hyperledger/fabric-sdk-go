@@ -55,8 +55,29 @@ func TestResMgmtClientQueries(t *testing.T) {
 
 	testInstalledChaincodes(t, ccID, target, client)
 
+	testInstantiatedChaincodes(t, testSetup.ChannelID, ccID, target, client)
+
 	testQueryChannels(t, testSetup.ChannelID, target, client)
 
+}
+func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, target fab.ProposalProcessor, client *resmgmt.Client) {
+
+	chaincodeQueryResponse, err := client.QueryInstantiatedChaincodes(channelID, resmgmt.WithTarget(target.(fab.Peer)))
+	if err != nil {
+		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
+	}
+
+	found := false
+	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+		t.Logf("**InstantiatedCC: %s", chaincode)
+		if chaincode.Name == ccID {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Fatalf("QueryInstantiatedChaincodes failed to find instantiated %s chaincode", ccID)
+	}
 }
 
 func testInstalledChaincodes(t *testing.T, ccID string, target fab.ProposalProcessor, client *resmgmt.Client) {

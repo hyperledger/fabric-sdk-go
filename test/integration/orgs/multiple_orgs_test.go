@@ -134,6 +134,23 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	// Load specific targets for move funds test
 	loadOrgPeers(t, sdk)
 
+	// Verify that example CC is instantiated on Org1 peer
+	chaincodeQueryResponse, err := org1ResMgmt.QueryInstantiatedChaincodes("orgchannel")
+	if err != nil {
+		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
+	}
+
+	found := false
+	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+		if chaincode.Name == "exampleCC" {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Fatalf("QueryInstantiatedChaincodes failed to find instantiated exampleCC chaincode")
+	}
+
 	// Org1 user connects to 'orgchannel'
 	chClientOrg1User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org1)).Channel("orgchannel")
 	if err != nil {

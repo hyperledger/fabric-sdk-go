@@ -9,10 +9,12 @@ package resmgmt
 
 import (
 	"io/ioutil"
+	"math/rand"
 	"time"
 
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -413,6 +415,54 @@ func (rc *Client) QueryInstalledChaincodes(proposalProcessor fab.ProposalProcess
 	return rc.resource.QueryInstalledChaincodes(proposalProcessor)
 }
 
+// QueryInstantiatedChaincodes queries the instantiated chaincodes on a peer for specific channel.
+// Valid option is WithTarget. If not specified it will query any peer on this channel
+func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...RequestOption) (*pb.ChaincodeQueryResponse, error) {
+
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := &fabContext{
+		ProviderContext: rc.provider,
+		IdentityContext: rc.identity,
+	}
+
+	var target fab.ProposalProcessor
+	if len(opts.Targets) >= 1 {
+		target = opts.Targets[0]
+	} else {
+		// discover peers on this channel
+		discovery, err := rc.discoveryProvider.NewDiscoveryService(channelID)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create channel discovery service")
+		}
+		// default filter will be applied (if any)
+		targets, err := rc.getDefaultTargets(discovery)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to get default target for query instantiated chaincodes")
+		}
+
+		// select random channel peer
+		r := rand.New(rand.NewSource(time.Now().Unix()))
+		randomNumber := r.Intn(len(targets))
+		target = targets[randomNumber]
+	}
+
+	l, err := channel.NewLedger(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+
+	responses, err := l.QueryInstantiatedChaincodes([]fab.ProposalProcessor{target})
+	if err != nil {
+		return nil, err
+	}
+
+	return responses[0], nil
+}
+
 // QueryChannels queries the names of all the channels that a peer has joined.
 // Returns the details of all channels that peer has joined.
 func (rc *Client) QueryChannels(proposalProcessor fab.ProposalProcessor) (*pb.ChannelQueryResponse, error) {
@@ -579,7 +629,7 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 // SaveChannel creates or updates channel
 func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) error {
 
-	opts, err := rc.prepareSaveChannelOpts(options...)
+	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
 		return err
 	}
@@ -658,14 +708,14 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	return nil
 }
 
-//prepareSaveChannelOpts Reads chmgmt.Opts from chmgmt.Option array
-func (rc *Client) prepareSaveChannelOpts(options ...RequestOption) (Opts, error) {
-	saveChannelOpts := Opts{}
+//prepareRequestOpts prepares rrequest options
+func (rc *Client) prepareRequestOpts(options ...RequestOption) (Opts, error) {
+	opts := Opts{}
 	for _, option := range options {
-		err := option(&saveChannelOpts)
+		err := option(&opts)
 		if err != nil {
-			return saveChannelOpts, errors.WithMessage(err, "Failed to read save channel opts")
+			return opts, errors.WithMessage(err, "Failed to read opts")
 		}
 	}
-	return saveChannelOpts, nil
+	return opts, nil
 }

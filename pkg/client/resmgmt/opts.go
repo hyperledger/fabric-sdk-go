@@ -20,6 +20,14 @@ func WithTargets(targets ...fab.Peer) RequestOption {
 	}
 }
 
+//WithTarget encapsulates fab.Peer target to RequestOption
+func WithTarget(target fab.Peer) RequestOption {
+	return func(opts *Opts) error {
+		opts.Targets = []fab.Peer{target}
+		return nil
+	}
+}
+
 //WithTargetFilter encapsulates  resmgmtclient TargetFilter targets to resmgmtclient RequestOption
 func WithTargetFilter(targetFilter TargetFilter) RequestOption {
 	return func(opts *Opts) error {
