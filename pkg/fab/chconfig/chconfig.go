@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	msp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
@@ -33,9 +34,9 @@ const (
 
 // Opts contains options for retrieving channel configuration
 type Opts struct {
-	Orderer      string     // if configured, channel config will be retrieved from this orderer
-	Targets      []fab.Peer // if configured, channel config will be retrieved from peers (targets)
-	MinResponses int        // used with targets option; min number of success responses (from targets/peers)
+	Orderer      fab.Orderer // if configured, channel config will be retrieved from this orderer
+	Targets      []fab.Peer  // if configured, channel config will be retrieved from peers (targets)
+	MinResponses int         // used with targets option; min number of success responses (from targets/peers)
 }
 
 // Option func for each Opts argument
@@ -107,7 +108,7 @@ func New(ctx context.Context, channelID string, options ...Option) (*ChannelConf
 // Query returns channel configuration
 func (c *ChannelConfig) Query() (fab.ChannelCfg, error) {
 
-	if c.opts.Orderer != "" {
+	if c.opts.Orderer != nil {
 		return c.queryOrderer()
 	}
 
@@ -116,9 +117,9 @@ func (c *ChannelConfig) Query() (fab.ChannelCfg, error) {
 
 func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 
-	ch, err := channel.New(c.ctx, &ChannelCfg{name: c.channelID})
+	l, err := channel.NewLedger(c.ctx, c.channelID)
 	if err != nil {
-		return nil, errors.WithMessage(err, "NewChannel failed")
+		return nil, errors.WithMessage(err, "ledger client creation failed")
 	}
 
 	targets := []fab.ProposalProcessor{}
@@ -148,7 +149,7 @@ func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 		minEndorsers = defaultMinResponses
 	}
 
-	configEnvelope, err := ch.QueryConfigBlock(targets, minEndorsers)
+	configEnvelope, err := l.QueryConfigBlock(targets, minEndorsers)
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryBlockConfig failed")
 	}
@@ -158,14 +159,10 @@ func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 
 func (c *ChannelConfig) queryOrderer() (*ChannelCfg, error) {
 
-	ch, err := channel.New(c.ctx, &ChannelCfg{name: c.channelID, orderers: []string{c.opts.Orderer}})
+	r := resource.New(c.ctx)
+	configEnvelope, err := r.LastConfigFromOrderer(c.channelID, c.opts.Orderer)
 	if err != nil {
-		return nil, errors.WithMessage(err, "NewChannel failed")
-	}
-
-	configEnvelope, err := ch.ChannelConfig()
-	if err != nil {
-		return nil, errors.WithMessage(err, "ChannelConfig() failed")
+		return nil, errors.WithMessage(err, "LastConfigFromOrderer failed")
 	}
 
 	return extractConfig(c.channelID, configEnvelope)
@@ -188,7 +185,7 @@ func WithMinResponses(min int) Option {
 }
 
 // WithOrderer encapsulates orderer to Option
-func WithOrderer(orderer string) Option {
+func WithOrderer(orderer fab.Orderer) Option {
 	return func(opts *Opts) error {
 		opts.Orderer = orderer
 		return nil

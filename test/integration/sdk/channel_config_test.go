@@ -8,18 +8,22 @@ package sdk
 
 import (
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestChannelConfig(t *testing.T) {
@@ -86,9 +90,10 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
+	confProvider := config.FromFile(testSetup.ConfigFile)
 	// Create SDK setup for channel client with retrieve channel configuration from orderer
-	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile),
-		fabsdk.WithCorePkg(&ChannelConfigFromOrdererProviderFactory{orderer: "orderer.example.com:7050"}))
+	sdk, err := fabsdk.New(confProvider,
+		fabsdk.WithCorePkg(&ChannelConfigFromOrdererProviderFactory{orderer: setupOrderer(t, confProvider, "orderer.example.com:7050")}))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -126,13 +131,13 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 // ChannelConfigFromOrdererProviderFactory is configured to retrieve channel config from orderer
 type ChannelConfigFromOrdererProviderFactory struct {
 	defcore.ProviderFactory
-	orderer string
+	orderer fab.Orderer
 }
 
 // CustomFabricProvider overrides channel config default implementation
 type CustomFabricProvider struct {
 	*fabpvdr.FabricProvider
-	orderer         string
+	orderer         fab.Orderer
 	providerContext context.ProviderContext
 }
 
@@ -157,4 +162,27 @@ func (f *ChannelConfigFromOrdererProviderFactory) CreateFabricProvider(context c
 		orderer:         f.orderer,
 	}
 	return &cfp, nil
+}
+
+func setupOrderer(t *testing.T, confProvider core.ConfigProvider, address string) fab.Orderer {
+	conf, err := confProvider()
+	assert.Nil(t, err)
+
+	//Get orderer config by orderer address
+	oCfg, err := conf.OrdererConfig(resolveOrdererAddress(address))
+	assert.Nil(t, err)
+
+	o, err := orderer.New(conf, orderer.FromOrdererConfig(oCfg))
+	assert.Nil(t, err)
+
+	return o
+}
+
+// resolveOrdererAddress resolves order address to remove port from address if present
+func resolveOrdererAddress(ordererAddress string) string {
+	s := strings.Split(ordererAddress, ":")
+	if len(s) > 1 {
+		return s[0]
+	}
+	return ordererAddress
 }

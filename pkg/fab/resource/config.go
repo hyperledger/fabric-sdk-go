@@ -79,3 +79,48 @@ func ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
 
 	return configUpdateEnvelope.ConfigUpdate, nil
 }
+
+func CreateConfigEnvelope(data []byte) (*common.ConfigEnvelope, error) {
+
+	envelope := &common.Envelope{}
+	if err := proto.Unmarshal(data, envelope); err != nil {
+		return nil, errors.Wrap(err, "unmarshal envelope from config block failed")
+	}
+	payload := &common.Payload{}
+	if err := proto.Unmarshal(envelope.Payload, payload); err != nil {
+		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
+	}
+	channelHeader := &common.ChannelHeader{}
+	if err := proto.Unmarshal(payload.Header.ChannelHeader, channelHeader); err != nil {
+		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
+	}
+	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG {
+		return nil, errors.New("block must be of type 'CONFIG'")
+	}
+	configEnvelope := &common.ConfigEnvelope{}
+	if err := proto.Unmarshal(payload.Data, configEnvelope); err != nil {
+		return nil, errors.Wrap(err, "unmarshal config envelope failed")
+	}
+
+	return configEnvelope, nil
+}
+
+// GetLastConfigFromBlock returns the LastConfig data from the given block
+func GetLastConfigFromBlock(block *common.Block) (*common.LastConfig, error) {
+	if block.Metadata == nil {
+		return nil, errors.New("block metadata is nil")
+	}
+	metadata := &common.Metadata{}
+	err := proto.Unmarshal(block.Metadata.Metadata[common.BlockMetadataIndex_LAST_CONFIG], metadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal block metadata failed")
+	}
+
+	lastConfig := &common.LastConfig{}
+	err = proto.Unmarshal(metadata.Value, lastConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal last config from metadata failed")
+	}
+
+	return lastConfig, err
+}

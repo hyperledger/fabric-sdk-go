@@ -11,8 +11,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -58,8 +59,9 @@ func TestChannelConfigWithPeerError(t *testing.T) {
 func TestChannelConfigWithOrdererError(t *testing.T) {
 
 	ctx := setupTestContext()
-
-	channelConfig, err := New(ctx, channelID, WithOrderer("localhost:7054"))
+	o, err := orderer.New(ctx.Config(), orderer.WithURL("localhost:7054"))
+	assert.Nil(t, err)
+	channelConfig, err := New(ctx, channelID, WithOrderer(o))
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -70,11 +72,6 @@ func TestChannelConfigWithOrdererError(t *testing.T) {
 		t.Fatalf("Should have failed since orderer is not available")
 	}
 
-}
-
-func setupTestChannel(name string) (*channel.Channel, error) {
-	ctx := setupTestContext()
-	return channel.New(ctx, mocks.NewMockChannelCfg(name))
 }
 
 func setupTestContext() context.Context {

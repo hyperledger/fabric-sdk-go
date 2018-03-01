@@ -66,6 +66,11 @@ func (c *MockResource) GenesisBlockFromOrderer(channelName string, orderer fab.O
 	return NewSimpleMockBlock(), nil
 }
 
+// LastConfigFromOrderer not implemented
+func (c *MockResource) LastConfigFromOrderer(channelName string, orderer fab.Orderer) (*common.ConfigEnvelope, error) {
+	return nil, nil
+}
+
 // JoinChannel sends a join channel proposal to the target peer.
 func (c *MockResource) JoinChannel(request api.JoinChannelRequest) error {
 	if c.errorScenario {

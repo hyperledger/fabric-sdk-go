@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -22,7 +21,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
@@ -509,13 +507,10 @@ func TestDiscoveryGreylist(t *testing.T) {
 
 func setupTestChannelService(ctx context.Context, orderers []fab.Orderer) (fab.ChannelService, error) {
 	const channelName = "testChannel"
-	testChannel, err := setupChannel(channelName)
-
 	chProvider, err := fcmocks.NewMockChannelProvider(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "mock channel provider creation failed")
 	}
-	chProvider.SetChannel(channelName, testChannel)
 
 	chService, err := chProvider.ChannelService(ctx, channelName)
 	if err != nil {
@@ -530,22 +525,6 @@ func setupTestChannelService(ctx context.Context, orderers []fab.Orderer) (fab.C
 	chService.(*fcmocks.MockChannelService).SetTransactor(&transactor)
 
 	return chService, nil
-}
-
-func setupChannel(channelID string) (*channel.Channel, error) {
-	ctx := setupTestContext()
-	channel, err := channel.New(ctx, fcmocks.NewMockChannelCfg(channelID))
-	if err != nil {
-		return nil, err
-	}
-	// Add mock msp to msp manager
-	msps := make(map[string]msp.MSP)
-	msps["Org1MSP"] = fcmocks.NewMockMSP(nil)
-	mspMgr := fcmocks.NewMockMSPManager(msps)
-
-	channel.SetMSPManager(mspMgr)
-
-	return channel, nil
 }
 
 func setupTestContext() context.Context {
