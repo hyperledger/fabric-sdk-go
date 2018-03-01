@@ -9,7 +9,6 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
-	core "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
 // MockIdentityManager is a mock of IdentityManager interface
@@ -48,12 +47,10 @@ func (mr *MockIdentityManagerMockRecorder) CAName() *gomock.Call {
 }
 
 // Enroll mocks base method
-func (m *MockIdentityManager) Enroll(arg0, arg1 string) (core.Key, []byte, error) {
+func (m *MockIdentityManager) Enroll(arg0, arg1 string) error {
 	ret := m.ctrl.Call(m, "Enroll", arg0, arg1)
-	ret0, _ := ret[0].(core.Key)
-	ret1, _ := ret[1].([]byte)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Enroll indicates an expected call of Enroll
@@ -75,12 +72,10 @@ func (mr *MockIdentityManagerMockRecorder) GetSigningIdentity(arg0 interface{}) 
 }
 
 // Reenroll mocks base method
-func (m *MockIdentityManager) Reenroll(arg0 api.User) (core.Key, []byte, error) {
+func (m *MockIdentityManager) Reenroll(arg0 api.User) error {
 	ret := m.ctrl.Call(m, "Reenroll", arg0)
-	ret0, _ := ret[0].(core.Key)
-	ret1, _ := ret[1].([]byte)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // Reenroll indicates an expected call of Reenroll

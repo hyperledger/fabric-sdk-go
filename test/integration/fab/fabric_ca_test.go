@@ -30,14 +30,8 @@ func TestEnrollOrg2(t *testing.T) {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
 	}
 
-	key, cert, err := caClient.Enroll("admin", "adminpw")
+	err = caClient.Enroll("admin", "adminpw")
 	if err != nil {
 		t.Fatalf("Enroll returned error: %v", err)
-	}
-	if key == nil {
-		t.Fatalf("Expected enrol to return a private key")
-	}
-	if cert == nil {
-		t.Fatalf("Expected enrol to return an enrolment cert")
 	}
 }

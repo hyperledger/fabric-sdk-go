@@ -103,13 +103,13 @@ func TestEnrollAndReenroll(t *testing.T) {
 	orgMspID := mspIDByOrgName(t, fullConfig, org1)
 
 	// Empty enrollment ID
-	_, _, err = identityManager.Enroll("", "user1")
+	err = identityManager.Enroll("", "user1")
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
 
 	// Empty enrollment secret
-	_, _, err = identityManager.Enroll("enrolledUserName", "")
+	err = identityManager.Enroll("enrolledUserName", "")
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
@@ -120,7 +120,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	if err != api.ErrUserNotFound {
 		t.Fatalf("Expected to not find user in user store")
 	}
-	_, _, err = identityManager.Enroll(enrollUserName, "enrollmentSecret")
+	err = identityManager.Enroll(enrollUserName, "enrollmentSecret")
 	if err != nil {
 		t.Fatalf("identityManager Enroll return error %v", err)
 	}
@@ -130,7 +130,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	}
 
 	// Reenroll with nil user
-	_, _, err = identityManager.Reenroll(nil)
+	err = identityManager.Reenroll(nil)
 	if err == nil {
 		t.Fatalf("Expected error with nil user")
 	}
@@ -140,7 +140,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 
 	// Reenroll with user.Name is empty
 	user := mocks.NewMockUser("")
-	_, _, err = identityManager.Reenroll(user)
+	err = identityManager.Reenroll(user)
 	if err == nil {
 		t.Fatalf("Expected error with user.Name is empty")
 	}
@@ -149,7 +149,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	}
 
 	// Reenroll with appropriate user
-	_, _, err = identityManager.Reenroll(enrolledUser)
+	err = identityManager.Reenroll(enrolledUser)
 	if err != nil {
 		t.Fatalf("Reenroll return error %v", err)
 	}
@@ -159,7 +159,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient return error: %v", err)
 	}
-	_, _, err = identityManager.Enroll("enrollmentID", "enrollmentSecret")
+	err = identityManager.Enroll("enrollmentID", "enrollmentSecret")
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
@@ -317,7 +317,7 @@ func TestCreateNewidentityManagerClientCAConfigMissingFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create IdentityManager: %v", err)
 	}
-	_, _, err = mgr.Enroll("a", "b")
+	err = mgr.Enroll("a", "b")
 	if err == nil || !strings.Contains(err.Error(), "CAConfig error") {
 		t.Fatalf("Expected error from CAConfig. Got: %v", err)
 	}
@@ -339,7 +339,7 @@ func TestCreateNewidentityManagerClientCertFilesMissingFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create IdentityManager: %v", err)
 	}
-	_, _, err = mgr.Enroll("a", "b")
+	err = mgr.Enroll("a", "b")
 	if err == nil || !strings.Contains(err.Error(), "CAServerCertPaths error") {
 		t.Fatalf("Expected error from CAServerCertPaths. Got: %v", err)
 	}
@@ -361,7 +361,7 @@ func TestCreateNewidentityManagerClientCertFileErrorFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create IdentityManager: %v", err)
 	}
-	_, _, err = mgr.Enroll("a", "b")
+	err = mgr.Enroll("a", "b")
 	if err == nil || !strings.Contains(err.Error(), "CAClientCertPath error") {
 		t.Fatalf("Expected error from CAClientCertPath. Got: %v", err)
 	}
@@ -384,7 +384,7 @@ func TestCreateNewidentityManagerClientKeyFileErrorFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create IdentityManager: %v", err)
 	}
-	_, _, err = mgr.Enroll("a", "b")
+	err = mgr.Enroll("a", "b")
 	if err == nil || !strings.Contains(err.Error(), "CAClientKeyPath error") {
 		t.Fatalf("Expected error from CAClientKeyPath. Got: %v", err)
 	}
