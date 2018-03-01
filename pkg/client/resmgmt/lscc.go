@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package channel
+package resmgmt
 
 import (
 	"github.com/golang/protobuf/proto"
@@ -26,17 +26,17 @@ const (
 	vscc           = "vscc"
 )
 
-// ChaincodeProposalType reflects transitions in the chaincode lifecycle
-type ChaincodeProposalType int
+// chaincodeProposalType reflects transitions in the chaincode lifecycle
+type chaincodeProposalType int
 
 // Define chaincode proposal types
 const (
-	InstantiateChaincode ChaincodeProposalType = iota
+	InstantiateChaincode chaincodeProposalType = iota
 	UpgradeChaincode
 )
 
-// ChaincodeDeployRequest holds parameters for creating an instantiate or upgrade chaincode proposal.
-type ChaincodeDeployRequest struct {
+// chaincodeDeployRequest holds parameters for creating an instantiate or upgrade chaincode proposal.
+type chaincodeDeployRequest struct {
 	Name       string
 	Path       string
 	Version    string
@@ -45,8 +45,8 @@ type ChaincodeDeployRequest struct {
 	CollConfig []*common.CollectionConfig
 }
 
-// CreateChaincodeDeployProposal creates an instantiate or upgrade chaincode proposal.
-func CreateChaincodeDeployProposal(txh fab.TransactionHeader, deploy ChaincodeProposalType, channelID string, chaincode ChaincodeDeployRequest) (*fab.TransactionProposal, error) {
+// createChaincodeDeployProposal creates an instantiate or upgrade chaincode proposal.
+func createChaincodeDeployProposal(txh fab.TransactionHeader, deploy chaincodeProposalType, channelID string, chaincode chaincodeDeployRequest) (*fab.TransactionProposal, error) {
 
 	// Generate arguments for deploy (channel, marshaled CCDS, marshaled chaincode policy, marshaled collection policy)
 	args := [][]byte{}
@@ -97,12 +97,4 @@ func CreateChaincodeDeployProposal(txh fab.TransactionHeader, deploy ChaincodePr
 	}
 
 	return txn.CreateChaincodeInvokeProposal(txh, cir)
-}
-
-func createChaincodesInvokeRequest() fab.ChaincodeInvokeRequest {
-	cir := fab.ChaincodeInvokeRequest{
-		ChaincodeID: lscc,
-		Fcn:         lsccChaincodes,
-	}
-	return cir
 }

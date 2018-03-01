@@ -158,13 +158,6 @@ func newMockSessionWithUser(username, mspID string) *mockSession {
 	return &session
 }
 
-func (s *mockSession) Channel(channelID string) (fab.Channel, error) {
-	if s.IsChError {
-		return nil, errors.New("error")
-	}
-	return nil, nil
-}
-
 func (s *mockSession) EventHub(channelID string) (fab.EventHub, error) {
 	if s.IsEHError {
 		return nil, errors.New("error")

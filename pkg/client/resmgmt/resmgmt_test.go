@@ -27,7 +27,6 @@ import (
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -67,23 +66,13 @@ func TestJoinChannel(t *testing.T) {
 	orderer.(fcmocks.MockOrderer).EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
 	rc := setupResMgmtClient(ctx, nil, t)
 
-	channel, err := channel.New(ctx, fcmocks.NewMockChannelCfg("mychannel"))
-	if err != nil {
-		t.Fatalf("Error setting up channel: %v", err)
-	}
-	err = channel.AddOrderer(orderer)
-	if err != nil {
-		t.Fatalf("Error adding orderer: %v", err)
-	}
-	rc.channelProvider.(*fcmocks.MockChannelProvider).SetChannel("mychannel", channel)
-
 	// Setup target peers
 	var peers []fab.Peer
 	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("example.com"))
 	peers = append(peers, peer1)
 
 	// Test valid join channel request (success)
-	err = rc.JoinChannel("mychannel", WithTargets(peer1))
+	err := rc.JoinChannel("mychannel", WithTargets(peer1))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,23 +98,13 @@ func TestJoinChannelWithFilter(t *testing.T) {
 	//the target filter ( client option) will be set
 	rc := setupResMgmtClient(ctx, nil, t)
 
-	channel, err := channel.New(ctx, fcmocks.NewMockChannelCfg("mychannel"))
-	if err != nil {
-		t.Fatalf("Error setting up channel: %v", err)
-	}
-	err = channel.AddOrderer(orderer)
-	if err != nil {
-		t.Fatalf("Error adding orderer: %v", err)
-	}
-	rc.channelProvider.(*fcmocks.MockChannelProvider).SetChannel("mychannel", channel)
-
 	// Setup target peers
 	var peers []fab.Peer
 	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("example.com"))
 	peers = append(peers, peer1)
 
 	// Test valid join channel request (success)
-	err = rc.JoinChannel("mychannel", WithTargets(peer1))
+	err := rc.JoinChannel("mychannel", WithTargets(peer1))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1037,15 +1016,6 @@ func TestCCProposal(t *testing.T) {
 	orderer := fcmocks.NewMockOrderer("", nil)
 	rc := setupResMgmtClient(ctx, nil, t)
 
-	channel, err := channel.New(ctx, fcmocks.NewMockChannelCfg("mychannel"))
-	if err != nil {
-		t.Fatalf("Error setting up channel: %v", err)
-	}
-	err = channel.AddOrderer(orderer)
-	if err != nil {
-		t.Fatalf("Error adding orderer: %v", err)
-	}
-	rc.channelProvider.(*fcmocks.MockChannelProvider).SetChannel("mychannel", channel)
 	transactor := txnmocks.MockTransactor{
 		Ctx:       ctx,
 		ChannelID: "mychannel",

@@ -17,7 +17,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
@@ -400,12 +399,12 @@ func checkRequiredInstallCCParams(req InstallCCRequest) error {
 
 // InstantiateCC instantiates chaincode using default settings
 func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, options ...RequestOption) error {
-	return rc.sendCCProposal(channel.InstantiateChaincode, channelID, req, options...)
+	return rc.sendCCProposal(InstantiateChaincode, channelID, req, options...)
 }
 
 // UpgradeCC upgrades chaincode  with optional custom options (specific peers, filtered peers, timeout)
 func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...RequestOption) error {
-	return rc.sendCCProposal(channel.UpgradeChaincode, channelID, InstantiateCCRequest(req), options...)
+	return rc.sendCCProposal(UpgradeChaincode, channelID, InstantiateCCRequest(req), options...)
 }
 
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
@@ -421,7 +420,7 @@ func (rc *Client) QueryChannels(proposalProcessor fab.ProposalProcessor) (*pb.Ch
 }
 
 // sendCCProposal sends proposal for type  Instantiate, Upgrade
-func (rc *Client) sendCCProposal(ccProposalType channel.ChaincodeProposalType, channelID string, req InstantiateCCRequest, options ...RequestOption) error {
+func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID string, req InstantiateCCRequest, options ...RequestOption) error {
 
 	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
 		return err
@@ -466,7 +465,7 @@ func (rc *Client) sendCCProposal(ccProposalType channel.ChaincodeProposalType, c
 	}
 
 	// create a transaction proposal for chaincode deployment
-	deployProposal := channel.ChaincodeDeployRequest(req)
+	deployProposal := chaincodeDeployRequest(req)
 	deployCtx := fabContext{
 		ProviderContext: rc.provider,
 		IdentityContext: rc.identity,
@@ -476,7 +475,7 @@ func (rc *Client) sendCCProposal(ccProposalType channel.ChaincodeProposalType, c
 	if err != nil {
 		return errors.WithMessage(err, "create transaction ID failed")
 	}
-	tp, err := channel.CreateChaincodeDeployProposal(txid, ccProposalType, channelID, deployProposal)
+	tp, err := createChaincodeDeployProposal(txid, ccProposalType, channelID, deployProposal)
 	if err != nil {
 		return errors.WithMessage(err, "creating chaincode deploy transaction proposal failed")
 	}

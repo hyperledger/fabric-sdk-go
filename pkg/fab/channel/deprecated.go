@@ -1,3 +1,5 @@
+// +build deprecated
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -11,21 +13,46 @@ import (
 	"encoding/pem"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+const (
+	lsccDeploy  = "deploy"
+	lsccUpgrade = "upgrade"
+	escc        = "escc"
+	vscc        = "vscc"
+
+	InstantiateChaincode ChaincodeProposalType = iota
+	UpgradeChaincode
+)
+
+// ChaincodeProposalType reflects transitions in the chaincode lifecycle
+type ChaincodeProposalType int
+
+// ChaincodeDeployRequest holds parameters for creating an instantiate or upgrade chaincode proposal.
+type ChaincodeDeployRequest struct {
+	Name       string
+	Path       string
+	Version    string
+	Args       [][]byte
+	Policy     *common.SignaturePolicyEnvelope
+	CollConfig []*common.CollectionConfig
+}
 
 // Channel  captures settings for a channel, which is created by
 // the orderers to isolate transactions delivery to peers participating on channel.
@@ -561,6 +588,189 @@ func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(targets []fab.ProposalPr
 	return targets, nil
 }
 
+// block retrieves the block at the given position
+func (c *Channel) block(pos *ab.SeekPosition) (*common.Block, error) {
+
+	th, err := txn.NewHeader(c.clientContext, c.name)
+	if err != nil {
+		return nil, errors.Wrap(err, "generating TX ID failed")
+	}
+
+	channelHeaderOpts := txn.ChannelHeaderOpts{
+		TxnHeader:   th,
+		TLSCertHash: ccomm.TLSCertHash(c.clientContext.Config()),
+	}
+	seekInfoHeader, err := txn.CreateChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, channelHeaderOpts)
+	if err != nil {
+		return nil, errors.Wrap(err, "CreateChannelHeader failed")
+	}
+
+	seekInfoHeaderBytes, err := proto.Marshal(seekInfoHeader)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal seek info failed")
+	}
+
+	signatureHeader, err := txn.CreateSignatureHeader(th)
+	if err != nil {
+		return nil, errors.Wrap(err, "CreateSignatureHeader failed")
+	}
+
+	signatureHeaderBytes, err := proto.Marshal(signatureHeader)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal signature header failed")
+	}
+
+	seekHeader := &common.Header{
+		ChannelHeader:   seekInfoHeaderBytes,
+		SignatureHeader: signatureHeaderBytes,
+	}
+
+	seekInfo := &ab.SeekInfo{
+		Start:    pos,
+		Stop:     pos,
+		Behavior: ab.SeekInfo_BLOCK_UNTIL_READY,
+	}
+
+	seekInfoBytes, err := proto.Marshal(seekInfo)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal seek info failed")
+	}
+
+	payload := common.Payload{
+		Header: seekHeader,
+		Data:   seekInfoBytes,
+	}
+
+	return txn.SendPayload(c.clientContext, &payload, c.Orderers())
+}
+
+// newNewestSeekPosition returns a SeekPosition that requests the newest block
+func newNewestSeekPosition() *ab.SeekPosition {
+	return &ab.SeekPosition{Type: &ab.SeekPosition_Newest{Newest: &ab.SeekNewest{}}}
+}
+
+// newSpecificSeekPosition returns a SeekPosition that requests the block at the given index
+func newSpecificSeekPosition(index uint64) *ab.SeekPosition {
+	return &ab.SeekPosition{Type: &ab.SeekPosition_Specified{Specified: &ab.SeekSpecified{Number: index}}}
+}
+
+// ChannelConfig queries for the current config block for this channel.
+// This transaction will be made to the orderer.
+// @returns {ConfigEnvelope} Object containing the configuration items.
+// @see /protos/orderer/ab.proto
+// @see /protos/common/configtx.proto
+func (c *Channel) ChannelConfig() (*common.ConfigEnvelope, error) {
+	logger.Debugf("channelConfig - start for channel %s", c.name)
+
+	// Get the newest block
+	block, err := c.block(newNewestSeekPosition())
+	if err != nil {
+		return nil, err
+	}
+	logger.Debugf("channelConfig - Retrieved newest block number: %d\n", block.Header.Number)
+
+	// Get the index of the last config block
+	lastConfig, err := getLastConfigFromBlock(block)
+	if err != nil {
+		return nil, errors.Wrap(err, "GetLastConfigFromBlock failed")
+	}
+	logger.Debugf("channelConfig - Last config index: %d\n", lastConfig.Index)
+
+	// Get the last config block
+	block, err = c.block(newSpecificSeekPosition(lastConfig.Index))
+
+	if err != nil {
+		return nil, errors.WithMessage(err, "retrieve block failed")
+	}
+	logger.Debugf("channelConfig - Last config block number %d, Number of tx: %d", block.Header.Number, len(block.Data.Data))
+
+	if len(block.Data.Data) != 1 {
+		return nil, errors.New("apiconfig block must contain one transaction")
+	}
+
+	return createConfigEnvelope(block.Data.Data[0])
+
+}
+
+func loadMSPs(mspConfigs []*mb.MSPConfig, cs core.CryptoSuite) ([]msp.MSP, error) {
+	logger.Debugf("loadMSPs - start number of msps=%d", len(mspConfigs))
+
+	msps := []msp.MSP{}
+	for _, config := range mspConfigs {
+		mspType := msp.ProviderType(config.Type)
+		if mspType != msp.FABRIC {
+			return nil, errors.Errorf("MSP type not supported: %v", mspType)
+		}
+		if len(config.Config) == 0 {
+			return nil, errors.Errorf("MSP configuration missing the payload in the 'Config' property")
+		}
+
+		fabricConfig := &mb.FabricMSPConfig{}
+		err := proto.Unmarshal(config.Config, fabricConfig)
+		if err != nil {
+			return nil, errors.Wrap(err, "unmarshal FabricMSPConfig from config failed")
+		}
+
+		if fabricConfig.Name == "" {
+			return nil, errors.New("MSP Configuration missing name")
+		}
+
+		// with this method we are only dealing with verifying MSPs, not local MSPs. Local MSPs are instantiated
+		// from user enrollment materials (see User class). For verifying MSPs the root certificates are always
+		// required
+		if len(fabricConfig.RootCerts) == 0 {
+			return nil, errors.New("MSP Configuration missing root certificates required for validating signing certificates")
+		}
+
+		// get the application org names
+		var orgs []string
+		orgUnits := fabricConfig.OrganizationalUnitIdentifiers
+		for _, orgUnit := range orgUnits {
+			logger.Debugf("loadMSPs - found org of :: %s", orgUnit.OrganizationalUnitIdentifier)
+			orgs = append(orgs, orgUnit.OrganizationalUnitIdentifier)
+		}
+
+		// TODO: Do something with orgs
+		// TODO: Configure MSP version (rather than MSP 1.0)
+		newMSP, err := msp.NewBccspMsp(msp.MSPv1_0, cs)
+		if err != nil {
+			return nil, errors.Wrap(err, "instantiate MSP failed")
+		}
+
+		if err := newMSP.Setup(config); err != nil {
+			return nil, errors.Wrap(err, "configure MSP failed")
+		}
+
+		mspID, _ := newMSP.GetIdentifier()
+		logger.Debugf("loadMSPs - adding msp=%s", mspID)
+
+		msps = append(msps, newMSP)
+	}
+
+	logger.Debugf("loadMSPs - loaded %d MSPs", len(msps))
+	return msps, nil
+}
+
+// getLastConfigFromBlock returns the LastConfig data from the given block
+func getLastConfigFromBlock(block *common.Block) (*common.LastConfig, error) {
+	if block.Metadata == nil {
+		return nil, errors.New("block metadata is nil")
+	}
+	metadata := &common.Metadata{}
+	err := proto.Unmarshal(block.Metadata.Metadata[common.BlockMetadataIndex_LAST_CONFIG], metadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal block metadata failed")
+	}
+
+	lastConfig := &common.LastConfig{}
+	err = proto.Unmarshal(metadata.Value, lastConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal last config from metadata failed")
+	}
+
+	return lastConfig, err
+}
+
 // peersToTxnProcessors converts a slice of Peers to a slice of ProposalProcessors
 func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 	tpp := make([]fab.ProposalProcessor, len(peers))
@@ -569,4 +779,58 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 		tpp[i] = peers[i]
 	}
 	return tpp
+}
+
+// CreateChaincodeDeployProposal creates an instantiate or upgrade chaincode proposal.
+func CreateChaincodeDeployProposal(txh fab.TransactionHeader, deploy ChaincodeProposalType, channelID string, chaincode ChaincodeDeployRequest) (*fab.TransactionProposal, error) {
+
+	// Generate arguments for deploy (channel, marshaled CCDS, marshaled chaincode policy, marshaled collection policy)
+	args := [][]byte{}
+	args = append(args, []byte(channelID))
+
+	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
+		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincode.Name, Path: chaincode.Path, Version: chaincode.Version},
+		Input: &pb.ChaincodeInput{Args: chaincode.Args}}}
+	ccdsBytes, err := protos_utils.Marshal(ccds)
+	if err != nil {
+		return nil, errors.WithMessage(err, "marshal of chaincode deployment spec failed")
+	}
+	args = append(args, ccdsBytes)
+
+	chaincodePolicyBytes, err := protos_utils.Marshal(chaincode.Policy)
+	if err != nil {
+		return nil, errors.WithMessage(err, "marshal of chaincode policy failed")
+	}
+	args = append(args, chaincodePolicyBytes)
+
+	args = append(args, []byte(escc))
+	args = append(args, []byte(vscc))
+
+	if chaincode.CollConfig != nil {
+		var err error
+		collConfigBytes, err := proto.Marshal(&common.CollectionConfigPackage{Config: chaincode.CollConfig})
+		if err != nil {
+			return nil, errors.WithMessage(err, "marshal of collection policy failed")
+		}
+		args = append(args, collConfigBytes)
+	}
+
+	// Fcn is deploy or upgrade
+	fcn := ""
+	switch deploy {
+	case InstantiateChaincode:
+		fcn = lsccDeploy
+	case UpgradeChaincode:
+		fcn = lsccUpgrade
+	default:
+		return nil, errors.WithMessage(err, "chaincode deployment type unknown")
+	}
+
+	cir := fab.ChaincodeInvokeRequest{
+		ChaincodeID: lscc,
+		Fcn:         fcn,
+		Args:        args,
+	}
+
+	return txn.CreateChaincodeInvokeProposal(txh, cir)
 }
