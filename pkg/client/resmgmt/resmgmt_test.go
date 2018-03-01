@@ -138,7 +138,6 @@ func TestNoSigningUserFailure(t *testing.T) {
 	fabCtx := fcmocks.NewMockContext(user)
 	config := getNetworkConfig(t)
 	fabCtx.SetConfig(config)
-	resource := fcmocks.NewMockResource()
 
 	discovery, err := setupTestDiscovery(nil, nil)
 	if err != nil {
@@ -153,7 +152,6 @@ func TestNoSigningUserFailure(t *testing.T) {
 	ctx := Context{
 		ProviderContext:   fabCtx,
 		IdentityContext:   fabCtx,
-		Resource:          resource,
 		ChannelProvider:   chProvider,
 		DiscoveryProvider: discovery,
 	}
@@ -1155,12 +1153,9 @@ func setupResMgmtClient(fabCtx context.Context, discErr error, t *testing.T, opt
 	}
 	chProvider.SetTransactor(&transactor)
 
-	resource := fcmocks.NewMockResource()
-
 	ctx := Context{
 		ProviderContext:   fabCtx,
 		IdentityContext:   fabCtx,
-		Resource:          resource,
 		ChannelProvider:   chProvider,
 		DiscoveryProvider: discovery,
 		FabricProvider:    fabProvider,
@@ -1170,6 +1165,11 @@ func setupResMgmtClient(fabCtx context.Context, discErr error, t *testing.T, opt
 	if err != nil {
 		t.Fatalf("Failed to create new client with options: %s %v", err, opts)
 	}
+
+	// Set mock resource
+	resource := fcmocks.NewMockResource()
+	resClient.resource = resource
+
 	return resClient
 
 }
@@ -1266,7 +1266,6 @@ func TestSaveChannelFailure(t *testing.T) {
 	ctx := Context{
 		ProviderContext:   errCtx,
 		IdentityContext:   fabCtx,
-		Resource:          resource,
 		ChannelProvider:   chProvider,
 		DiscoveryProvider: discovery,
 	}
@@ -1274,6 +1273,8 @@ func TestSaveChannelFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
+
+	cc.resource = resource
 
 	// Test create channel failure
 	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig})

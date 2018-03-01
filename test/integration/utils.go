@@ -14,7 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 )
@@ -58,19 +57,14 @@ func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChan
 // FilterTargetsJoinedChannel filters targets to those that have joined the named channel.
 func FilterTargetsJoinedChannel(sdk *fabsdk.FabricSDK, orgID string, channelID string, targets []fab.ProposalProcessor) ([]fab.ProposalProcessor, error) {
 	joinedTargets := []fab.ProposalProcessor{}
-	session, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgID)).Session()
+	rc, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgID)).ResourceMgmt()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed getting admin user session for org")
 	}
 
-	sc, err := sdk.FabricProvider().CreateResourceClient(session)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewResourceClient failed")
-	}
-
 	for _, target := range targets {
 		// Check if primary peer has joined channel
-		alreadyJoined, err := HasPeerJoinedChannel(sc, target, channelID)
+		alreadyJoined, err := HasPeerJoinedChannel(rc, target, channelID)
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed while checking if primary peer has already joined channel")
 		}
@@ -137,7 +131,7 @@ func CreateProposalProcessors(config core.Config, orgs []string) ([]fab.Proposal
 
 // HasPeerJoinedChannel checks whether the peer has already joined the channel.
 // It returns true if it has, false otherwise, or an error
-func HasPeerJoinedChannel(client api.Resource, peer fab.ProposalProcessor, channel string) (bool, error) {
+func HasPeerJoinedChannel(client *resmgmt.Client, peer fab.ProposalProcessor, channel string) (bool, error) {
 	foundChannel := false
 	response, err := client.QueryChannels(peer)
 	if err != nil {

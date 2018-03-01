@@ -158,10 +158,6 @@ func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.Client, err
 	session := newSession(p.identity, p.providers.ChannelProvider())
 
 	fabProvider := p.providers.FabricProvider()
-	resource, err := fabProvider.CreateResourceClient(session)
-	if err != nil {
-		return nil, err
-	}
 
 	discovery := p.providers.DiscoveryProvider()
 	chProvider := p.providers.ChannelProvider()
@@ -169,7 +165,6 @@ func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.Client, err
 	ctx := resmgmt.Context{
 		ProviderContext:   p.providers,
 		IdentityContext:   session,
-		Resource:          resource,
 		DiscoveryProvider: discovery,
 		ChannelProvider:   chProvider,
 		FabricProvider:    fabProvider,
