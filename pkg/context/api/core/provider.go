@@ -23,6 +23,7 @@ type Config interface {
 	CAClientCertPem(org string) (string, error)
 	CAClientCertPath(org string) (string, error)
 	TimeoutOrDefault(TimeoutType) time.Duration
+	Timeout(TimeoutType) time.Duration
 	MspID(org string) (string, error)
 	PeerMspID(name string) (string, error)
 	OrderersConfig() ([]OrdererConfig, error)

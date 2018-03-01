@@ -77,6 +77,11 @@ func (c *MockConfig) TimeoutOrDefault(core.TimeoutType) time.Duration {
 	return 0
 }
 
+//Timeout not implemented
+func (c *MockConfig) Timeout(core.TimeoutType) time.Duration {
+	return 0
+}
+
 // NetworkPeers returns the mock network peers configuration
 func (c *MockConfig) NetworkPeers() ([]core.NetworkPeer, error) {
 	return nil, nil

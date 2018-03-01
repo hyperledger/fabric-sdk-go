@@ -493,6 +493,18 @@ func (mr *MockConfigMockRecorder) TLSClientCerts() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TLSClientCerts", reflect.TypeOf((*MockConfig)(nil).TLSClientCerts))
 }
 
+// Timeout mocks base method
+func (m *MockConfig) Timeout(arg0 core.TimeoutType) time.Duration {
+	ret := m.ctrl.Call(m, "Timeout", arg0)
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// Timeout indicates an expected call of Timeout
+func (mr *MockConfigMockRecorder) Timeout(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Timeout", reflect.TypeOf((*MockConfig)(nil).Timeout), arg0)
+}
+
 // TimeoutOrDefault mocks base method
 func (m *MockConfig) TimeoutOrDefault(arg0 core.TimeoutType) time.Duration {
 	ret := m.ctrl.Call(m, "TimeoutOrDefault", arg0)
