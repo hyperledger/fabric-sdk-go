@@ -389,16 +389,16 @@ func (m *MockServiceProviderFactory) EXPECT() *MockServiceProviderFactoryMockRec
 }
 
 // CreateDiscoveryProvider mocks base method
-func (m *MockServiceProviderFactory) CreateDiscoveryProvider(arg0 core.Config) (fab.DiscoveryProvider, error) {
-	ret := m.ctrl.Call(m, "CreateDiscoveryProvider", arg0)
+func (m *MockServiceProviderFactory) CreateDiscoveryProvider(arg0 core.Config, arg1 api0.FabricProvider) (fab.DiscoveryProvider, error) {
+	ret := m.ctrl.Call(m, "CreateDiscoveryProvider", arg0, arg1)
 	ret0, _ := ret[0].(fab.DiscoveryProvider)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateDiscoveryProvider indicates an expected call of CreateDiscoveryProvider
-func (mr *MockServiceProviderFactoryMockRecorder) CreateDiscoveryProvider(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDiscoveryProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).CreateDiscoveryProvider), arg0)
+func (mr *MockServiceProviderFactoryMockRecorder) CreateDiscoveryProvider(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDiscoveryProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).CreateDiscoveryProvider), arg0, arg1)
 }
 
 // CreateSelectionProvider mocks base method
