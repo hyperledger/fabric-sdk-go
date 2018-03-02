@@ -25,7 +25,6 @@ type FabricProvider interface {
 
 	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error)
 	CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Orderer, error)
-	CreateUser(name string, signingIdentity *contextApi.SigningIdentity) (contextApi.User, error)
 }
 
 // Providers represents the SDK configured providers context.

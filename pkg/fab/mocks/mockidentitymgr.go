@@ -31,6 +31,11 @@ func (mgr *MockIdentityManager) GetSigningIdentity(userName string) (*api.Signin
 	return &si, nil
 }
 
+// GetUser will return a user for a given user name
+func (mgr *MockIdentityManager) GetUser(userName string) (api.User, error) {
+	return nil, nil
+}
+
 // Enroll enrolls a user with a Fabric network
 func (mgr *MockIdentityManager) Enroll(enrollmentID string, enrollmentSecret string) error {
 	return errors.New("not implemented")

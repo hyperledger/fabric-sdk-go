@@ -17,30 +17,69 @@ import (
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/persistence"
 	"github.com/pkg/errors"
 )
 
-// GetSigningIdentity will sign the given object with provided key,
+func newUser(userData UserData, cryptoSuite core.CryptoSuite) (*user, error) {
+	pubKey, err := cryptoutil.GetPublicKeyFromCert(userData.EnrollmentCertificate, cryptoSuite)
+	if err != nil {
+		return nil, errors.WithMessage(err, "fetching public key from cert failed")
+	}
+	pk, err := cryptoSuite.GetKey(pubKey.SKI())
+	if err != nil {
+		return nil, errors.WithMessage(err, "cryptoSuite GetKey failed")
+	}
+	u := &user{
+		mspID: userData.MspID,
+		name:  userData.Name,
+		enrollmentCertificate: userData.EnrollmentCertificate,
+		privateKey:            pk,
+	}
+	return u, nil
+}
+
+func (mgr *IdentityManager) newUser(userData UserData) (*user, error) {
+	return newUser(userData, mgr.cryptoSuite)
+}
+
+func (mgr *IdentityManager) loadUserFromStore(userName string) (api.User, error) {
+	if mgr.userStore == nil {
+		return nil, api.ErrUserNotFound
+	}
+	var user api.User
+	userData, err := mgr.userStore.Load(UserIdentifier{MspID: mgr.orgMspID, Name: userName})
+	if err != nil {
+		return nil, err
+	}
+	user, err = mgr.newUser(userData)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+// GetSigningIdentity returns a signing identity for the given user name
 func (mgr *IdentityManager) GetSigningIdentity(userName string) (*api.SigningIdentity, error) {
-	if userName == "" {
-		return nil, errors.New("username is required")
+	user, err := mgr.GetUser(userName)
+	if err != nil {
+		return nil, err
 	}
+	signingIdentity := &api.SigningIdentity{MspID: user.MspID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
+	return signingIdentity, nil
+}
 
-	var signingIdentity *api.SigningIdentity
+// GetUser returns a user for the given user name
+func (mgr *IdentityManager) GetUser(userName string) (api.User, error) {
 
-	if mgr.userStore != nil {
-		user, err := mgr.userStore.Load(api.UserKey{MspID: mgr.orgMspID, Name: userName})
-		if err == nil {
-			signingIdentity = &api.SigningIdentity{MspID: user.MspID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
-		} else {
-			if err != api.ErrUserNotFound {
-				return nil, errors.Wrapf(err, "getting private key from cert failed")
-			}
-			// Not found, continue
+	u, err := mgr.loadUserFromStore(userName)
+	if err != nil {
+		if err != api.ErrUserNotFound {
+			return nil, errors.WithMessage(err, "getting private key from cert failed")
 		}
+		// Not found, continue
 	}
-	if signingIdentity == nil {
+
+	if u == nil {
 		certBytes, err := mgr.getEmbeddedCertBytes(userName)
 		if err != nil && err != api.ErrUserNotFound {
 			return nil, errors.WithMessage(err, "fetching embedded cert failed")
@@ -61,7 +100,7 @@ func (mgr *IdentityManager) GetSigningIdentity(userName string) (*api.SigningIde
 		if privateKey == nil {
 			privateKey, err = mgr.getPrivateKeyFromCert(userName, certBytes)
 			if err != nil {
-				return nil, errors.Wrapf(err, "getting private key from cert failed")
+				return nil, errors.WithMessage(err, "getting private key from cert failed")
 			}
 		}
 		if privateKey == nil {
@@ -71,9 +110,14 @@ func (mgr *IdentityManager) GetSigningIdentity(userName string) (*api.SigningIde
 		if err != nil {
 			return nil, errors.WithMessage(err, "MSP ID config read failed")
 		}
-		signingIdentity = &api.SigningIdentity{MspID: mspID, PrivateKey: privateKey, EnrollmentCert: certBytes}
+		u = &user{
+			mspID: mspID,
+			name:  userName,
+			enrollmentCertificate: certBytes,
+			privateKey:            privateKey,
+		}
 	}
-	return signingIdentity, nil
+	return u, nil
 }
 
 func (mgr *IdentityManager) getEmbeddedCertBytes(userName string) ([]byte, error) {
@@ -92,7 +136,7 @@ func (mgr *IdentityManager) getEmbeddedCertBytes(userName string) ([]byte, error
 	} else if certPath != "" {
 		pemBytes, err = ioutil.ReadFile(certPath)
 		if err != nil {
-			return nil, errors.Wrapf(err, "reading cert from embedded path failed")
+			return nil, errors.WithMessage(err, "reading cert from embedded path failed")
 		}
 	}
 
@@ -115,14 +159,14 @@ func (mgr *IdentityManager) getEmbeddedPrivateKey(userName string) (core.Key, er
 		_, err := os.Stat(keyPath)
 		if err != nil {
 			if !os.IsNotExist(err) {
-				return nil, errors.Wrapf(err, "OS stat embedded path failed")
+				return nil, errors.WithMessage(err, "OS stat embedded path failed")
 			}
 			// file doesn't exist, continue
 		} else {
 			// file exists, try to read it
 			pemBytes, err = ioutil.ReadFile(keyPath)
 			if err != nil {
-				return nil, errors.Wrapf(err, "reading private key from embedded path failed")
+				return nil, errors.WithMessage(err, "reading private key from embedded path failed")
 			}
 		}
 	}
@@ -147,7 +191,7 @@ func (mgr *IdentityManager) getPrivateKeyPemFromKeyStore(userName string, ski []
 		return nil, nil
 	}
 	key, err := mgr.mspPrivKeyStore.Load(
-		&persistence.PrivKeyKey{
+		&PrivKeyKey{
 			MspID:    mgr.orgMspID,
 			UserName: userName,
 			SKI:      ski,
@@ -166,7 +210,7 @@ func (mgr *IdentityManager) getCertBytesFromCertStore(userName string) ([]byte, 
 	if mgr.mspCertStore == nil {
 		return nil, api.ErrUserNotFound
 	}
-	cert, err := mgr.mspCertStore.Load(&persistence.CertKey{
+	cert, err := mgr.mspCertStore.Load(&CertKey{
 		MspID:    mgr.orgMspID,
 		UserName: userName,
 	})

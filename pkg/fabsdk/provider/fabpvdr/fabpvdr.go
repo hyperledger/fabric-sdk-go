@@ -8,14 +8,12 @@ package fabpvdr
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/membership"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events"
-	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
@@ -118,17 +116,6 @@ func (f *FabricProvider) CreateChannelTransactor(ic context.IdentityContext, cfg
 	}
 
 	return channelImpl.NewTransactor(ctx, cfg)
-}
-
-// CreateUser returns a new default implementation of a User.
-func (f *FabricProvider) CreateUser(name string, signingIdentity *contextApi.SigningIdentity) (contextApi.User, error) {
-
-	user := identityImpl.NewUser(signingIdentity.MspID, name)
-
-	user.SetPrivateKey(signingIdentity.PrivateKey)
-	user.SetEnrollmentCertificate(signingIdentity.EnrollmentCert)
-
-	return user, nil
 }
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration

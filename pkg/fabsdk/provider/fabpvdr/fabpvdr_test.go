@@ -14,7 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
@@ -72,31 +71,6 @@ func TestCreatePeerFromConfig(t *testing.T) {
 	}
 
 	verifyPeer(t, peer, url)
-}
-
-func TestCreateUser(t *testing.T) {
-	org := "org1"
-
-	p := newMockFabricProvider(t)
-	cm, err := mocks.NewMockIdentityManager(org, p.providerContext.CryptoSuite(), p.providerContext.Config())
-	if err != nil {
-		t.Fatalf("Unexpected error creating credential manager %v", err)
-	}
-
-	signingIdentity, err := cm.GetSigningIdentity("user")
-	if err != nil {
-		t.Fatalf("Unexpected error getting signing identity %v", err)
-	}
-
-	user, err := p.CreateUser("user", signingIdentity)
-	if err != nil {
-		t.Fatalf("Unexpected error getting user %v", err)
-	}
-
-	_, ok := user.(*identityImpl.User)
-	if !ok {
-		t.Fatalf("Unexpected peer impl created")
-	}
 }
 
 func TestCreateMembership(t *testing.T) {

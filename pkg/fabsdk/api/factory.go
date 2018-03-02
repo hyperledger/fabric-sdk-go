@@ -19,7 +19,7 @@ type CoreProviderFactory interface {
 	CreateStateStoreProvider(config core.Config) (api.KVStore, error)
 	CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error)
 	CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (api.SigningManager, error)
-	CreateIdentityManager(orgName string, cryptoProvider core.CryptoSuite, config core.Config) (api.IdentityManager, error)
+	CreateIdentityManager(orgName string, stateStore api.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (api.IdentityManager, error)
 	CreateFabricProvider(context context.ProviderContext) (FabricProvider, error)
 }
 

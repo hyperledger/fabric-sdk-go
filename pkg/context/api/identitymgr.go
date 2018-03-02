@@ -28,6 +28,7 @@ type SigningIdentity struct {
 // IdentityManager provides management of identities in a Fabric network
 type IdentityManager interface {
 	GetSigningIdentity(name string) (*SigningIdentity, error)
+	GetUser(name string) (User, error)
 	Enroll(enrollmentID string, enrollmentSecret string) error
 	Reenroll(user User) error
 	Register(request *RegistrationRequest) (string, error)

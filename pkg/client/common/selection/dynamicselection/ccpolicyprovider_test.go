@@ -82,14 +82,14 @@ func TestBadClient(t *testing.T) {
 	// Non-existent user
 	ccPolicyProvider, err := newCCPolicyProvider(sdk, "mychannel", "Invalid", "Org1")
 	_, err = ccPolicyProvider.GetChaincodePolicy("mychannel")
-	if !strings.Contains(err.Error(), "Unable to load identity") {
+	if !strings.Contains(err.Error(), "user not found") {
 		t.Fatalf("Should have failed for invalid user name: %v", err)
 	}
 
 	// Invalid org
 	ccPolicyProvider, err = newCCPolicyProvider(sdk, "mychannel", "User1", "Invalid")
 	_, err = ccPolicyProvider.GetChaincodePolicy("mychannel")
-	if !strings.Contains(err.Error(), "Unable to load identity") {
+	if !strings.Contains(err.Error(), "invalid org name") {
 		t.Fatalf("Should have failed for invalid org name")
 	}
 }
