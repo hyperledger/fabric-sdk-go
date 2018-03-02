@@ -53,6 +53,8 @@ func TestResMgmtClientQueries(t *testing.T) {
 	// Our target for queries will be primary peer on this channel
 	target := testSetup.Targets[0]
 
+	testQueryConfigFromOrderer(t, testSetup.ChannelID, client)
+
 	testInstalledChaincodes(t, ccID, target, client)
 
 	testInstantiatedChaincodes(t, testSetup.ChannelID, ccID, target, client)
@@ -60,6 +62,7 @@ func TestResMgmtClientQueries(t *testing.T) {
 	testQueryChannels(t, testSetup.ChannelID, target, client)
 
 }
+
 func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, target fab.ProposalProcessor, client *resmgmt.Client) {
 
 	chaincodeQueryResponse, err := client.QueryInstantiatedChaincodes(channelID, resmgmt.WithTarget(target.(fab.Peer)))
@@ -119,4 +122,40 @@ func testQueryChannels(t *testing.T, channelID string, target fab.ProposalProces
 		t.Fatalf("QueryChannels failed, peer did not join '%s' channel", channelID)
 	}
 
+}
+
+func testQueryConfigFromOrderer(t *testing.T, channelID string, client *resmgmt.Client) {
+
+	channelCfg, err := client.QueryConfigFromOrderer(channelID)
+	if err != nil {
+		t.Fatalf("QueryConfig return error: %v", err)
+	}
+
+	expected := "orderer.example.com:7050"
+	if !contains(channelCfg.Orderers(), expected) {
+		t.Fatalf("Expected orderer %s, got %s", expected, channelCfg.Orderers())
+	}
+
+	channelCfg, err = client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererID("orderer.example.com"))
+	if err != nil {
+		t.Fatalf("QueryConfig return error: %v", err)
+	}
+	if !contains(channelCfg.Orderers(), expected) {
+		t.Fatalf("Expected orderer %s, got %s", expected, channelCfg.Orderers())
+	}
+
+	channelCfg, err = client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererID("non-existent"))
+	if err == nil {
+		t.Fatalf("QueryConfig should have failed for invalid orderer")
+	}
+
+}
+
+func contains(list []string, value string) bool {
+	for _, e := range list {
+		if e == value {
+			return true
+		}
+	}
+	return false
 }

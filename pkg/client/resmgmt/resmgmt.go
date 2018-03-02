@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -444,8 +445,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		}
 
 		// select random channel peer
-		r := rand.New(rand.NewSource(time.Now().Unix()))
-		randomNumber := r.Intn(len(targets))
+		randomNumber := rand.Intn(len(targets))
 		target = targets[randomNumber]
 	}
 
@@ -707,7 +707,64 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	return nil
 }
 
-//prepareRequestOpts prepares rrequest options
+// QueryConfigFromOrderer config returns channel configuration from orderer
+// Valid request option is WithOrdererID
+// If orderer id is not provided orderer will be defaulted to channel orderer (if configured) or random orderer from config
+func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOption) (fab.ChannelCfg, error) {
+
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, err
+	}
+
+	chCfg, err := rc.provider.Config().ChannelConfig(channelID)
+	if err != nil {
+		return nil, err
+	}
+
+	var ordererCfg *core.OrdererConfig
+
+	// Figure out orderer configuration (first try opts, then random channel orderer, then random orderer )
+	if opts.OrdererID != "" {
+
+		ordererCfg, err = rc.provider.Config().OrdererConfig(opts.OrdererID)
+
+	} else if chCfg != nil && len(chCfg.Orderers) > 0 {
+
+		// random channel orderer
+		randomNumber := rand.Intn(len(chCfg.Orderers))
+		ordererCfg, err = rc.provider.Config().OrdererConfig(chCfg.Orderers[randomNumber])
+
+	} else {
+		// random orderer from configuration
+		ordererCfg, err = rc.provider.Config().RandomOrdererConfig()
+	}
+
+	// Check if retrieving orderer configuration went ok
+	if err != nil || ordererCfg == nil {
+		return nil, errors.Errorf("failed to retrieve orderer config: %s", err)
+	}
+
+	orderer, err := orderer.New(rc.provider.Config(), orderer.FromOrdererConfig(ordererCfg))
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to resolve orderer")
+	}
+
+	ctx := &fabContext{
+		Providers: rc.provider,
+		Identity:  rc.identity,
+	}
+
+	channelConfig, err := chconfig.New(ctx, channelID, chconfig.WithOrderer(orderer))
+	if err != nil {
+		return nil, errors.WithMessage(err, "QueryConfig failed")
+	}
+
+	return channelConfig.Query()
+
+}
+
+// prepareRequestOpts prepares request options
 func (rc *Client) prepareRequestOpts(options ...RequestOption) (Opts, error) {
 	opts := Opts{}
 	for _, option := range options {
