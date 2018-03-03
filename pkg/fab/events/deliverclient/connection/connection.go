@@ -57,7 +57,7 @@ var (
 )
 
 // New returns a new Deliver Server connection
-func New(ctx fabcontext.Context, channelID string, streamProvider StreamProvider, url string, opts ...options.Opt) (*DeliverConnection, error) {
+func New(ctx fabcontext.Client, channelID string, streamProvider StreamProvider, url string, opts ...options.Opt) (*DeliverConnection, error) {
 	if channelID == "" {
 		return nil, errors.New("channel ID not provided")
 	}
@@ -152,7 +152,7 @@ func (c *DeliverConnection) createSignedEnvelope(msg proto.Message) (*cb.Envelop
 		return nil, err
 	}
 
-	identity, err := c.Context().Identity()
+	identity, err := c.Context().SerializedIdentity()
 	if err != nil {
 		return nil, err
 	}

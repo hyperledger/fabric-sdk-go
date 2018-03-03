@@ -4,12 +4,10 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package api
+package core
 
 import (
 	"errors"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
 var (
@@ -22,7 +20,7 @@ var (
 type SigningIdentity struct {
 	MspID          string
 	EnrollmentCert []byte
-	PrivateKey     core.Key
+	PrivateKey     Key
 }
 
 // IdentityManager provides management of identities in a Fabric network

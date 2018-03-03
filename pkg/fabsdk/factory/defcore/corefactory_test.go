@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -40,7 +39,7 @@ func TestCreateStateStoreProvider(t *testing.T) {
 	}
 }
 
-func newMockStateStore(t *testing.T) api.KVStore {
+func newMockStateStore(t *testing.T) core.KVStore {
 	factory := NewProviderFactory()
 
 	mockCtrl := gomock.NewController(t)

@@ -12,7 +12,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
 
 // ChannelProvider keeps context across ChannelService instances.
@@ -22,18 +21,18 @@ import (
 // TODO: add listener for channel config changes. Upon channel config change,
 // underlying channel services need to recreate their channel clients.
 type ChannelProvider struct {
-	fabricProvider api.FabricProvider
+	fabricProvider fab.InfraProvider
 	chCfgMap       sync.Map
 }
 
 // New creates a ChannelProvider based on a context
-func New(fabricProvider api.FabricProvider) (*ChannelProvider, error) {
+func New(fabricProvider fab.InfraProvider) (*ChannelProvider, error) {
 	cp := ChannelProvider{fabricProvider: fabricProvider}
 	return &cp, nil
 }
 
 // ChannelService creates a ChannelService for an identity
-func (cp *ChannelProvider) ChannelService(ic context.IdentityContext, channelID string) (fab.ChannelService, error) {
+func (cp *ChannelProvider) ChannelService(ic fab.IdentityContext, channelID string) (fab.ChannelService, error) {
 
 	var cfg fab.ChannelCfg
 	if channelID != "" {
@@ -74,8 +73,8 @@ func (cp *ChannelProvider) ChannelService(ic context.IdentityContext, channelID 
 // TODO: add cache for channel rather than reconstructing each time.
 type ChannelService struct {
 	provider        *ChannelProvider
-	fabricProvider  api.FabricProvider
-	identityContext context.IdentityContext
+	fabricProvider  fab.InfraProvider
+	identityContext context.Identity
 	cfg             fab.ChannelCfg
 }
 

@@ -34,7 +34,7 @@ func NewMockResource() *MockResource {
 }
 
 // SignChannelConfig ...
-func (c *MockResource) SignChannelConfig(config []byte, signer context.IdentityContext) (*common.ConfigSignature, error) {
+func (c *MockResource) SignChannelConfig(config []byte, signer context.Identity) (*common.ConfigSignature, error) {
 	if bytes.Compare(config, []byte("SignChannelConfigError")) == 0 {
 		return nil, errors.New("Mock sign channel config error")
 	}

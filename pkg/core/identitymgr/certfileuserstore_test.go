@@ -14,7 +14,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/pkg/errors"
 )
 
@@ -90,8 +90,8 @@ func TestStore(t *testing.T) {
 	if err := checkStoreValue(store, user2, user2.EnrollmentCertificate); err != nil {
 		t.Fatalf("checkStoreValue %s failed [%s]", user2.Name, err)
 	}
-	if err := checkStoreValue(store, user1, nil); err != api.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected api.ErrUserNotFound, got: %v", user1.Name, err)
+	if err := checkStoreValue(store, user1, nil); err != core.ErrUserNotFound {
+		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user1.Name, err)
 	}
 
 	// Check ke2, value2
@@ -101,8 +101,8 @@ func TestStore(t *testing.T) {
 	if err := store.Delete(userIdentifier(user2)); err != nil {
 		t.Fatalf("Delete %s failed [%s]", user2.Name, err)
 	}
-	if err := checkStoreValue(store, user2, nil); err != api.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected api.ErrUserNotFound, got: %v", user2.Name, err)
+	if err := checkStoreValue(store, user2, nil); err != core.ErrUserNotFound {
+		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user2.Name, err)
 	}
 
 	// Check non-existing key
@@ -111,7 +111,7 @@ func TestStore(t *testing.T) {
 		Name:  "userx",
 	}
 	_, err = store.Load(nonExistingKey)
-	if err == nil || err != api.ErrUserNotFound {
+	if err == nil || err != core.ErrUserNotFound {
 		t.Fatal("fetching value for non-existing key should return ErrUserNotFound")
 	}
 }

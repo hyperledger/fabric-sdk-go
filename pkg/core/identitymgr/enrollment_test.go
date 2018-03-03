@@ -12,9 +12,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	apimocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/mocks"
+	apimocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
@@ -148,7 +147,7 @@ func prepareForEnroll(t *testing.T, mc *apimocks.MockIdentityManager, cs core.Cr
 	}).Return(err)
 }
 
-func stateStoreFromConfig(t *testing.T, config core.Config) api.KVStore {
+func stateStoreFromConfig(t *testing.T, config core.Config) core.KVStore {
 	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: config.CredentialStorePath()})
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)

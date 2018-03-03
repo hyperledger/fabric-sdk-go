@@ -4,13 +4,13 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package api
+package core
 
 import "github.com/pkg/errors"
 
 var (
-	// ErrNotFound indicates that a value for the key does not exist
-	ErrNotFound = errors.New("value for key not found")
+	// ErrKeyValueNotFound indicates that a value for the key does not exist
+	ErrKeyValueNotFound = errors.New("value for key not found")
 )
 
 // KVStore is a generic key-value store interface.

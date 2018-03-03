@@ -13,6 +13,7 @@ import (
 
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 )
 
 func TestNewDefaultSDK(t *testing.T) {
@@ -28,8 +29,8 @@ func TestNewDefaultSDK(t *testing.T) {
 func verifySDK(t *testing.T, sdk *FabricSDK) {
 
 	// Mock channel provider cache
-	sdk.channelProvider.SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
-	sdk.channelProvider.SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
+	sdk.channelProvider.(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
+	sdk.channelProvider.(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	// Get a common client context for the following tests
 	c := sdk.NewClient(WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
@@ -69,8 +70,8 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	}
 
 	// Mock channel provider cache
-	sdk1.channelProvider.SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
-	sdk1.channelProvider.SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
+	sdk1.channelProvider.(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
+	sdk1.channelProvider.(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	sdk2, err := New(configImpl.FromFile("./testdata/test.yaml"))
 	if err != nil {
@@ -78,7 +79,7 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	}
 
 	// Mock channel provider cache
-	sdk2.channelProvider.SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
+	sdk2.channelProvider.(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	// Default sdk with two channels
 	client1, err := sdk1.config.Client()

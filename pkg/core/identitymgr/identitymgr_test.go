@@ -17,7 +17,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -117,7 +116,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	// Successful enrollment
 	enrollUserName := createRandomName()
 	enrolledUserData, err := userStore.Load(UserIdentifier{MspID: orgMspID, Name: enrollUserName})
-	if err != api.ErrUserNotFound {
+	if err != core.ErrUserNotFound {
 		t.Fatalf("Expected to not find user in user store")
 	}
 	err = identityManager.Enroll(enrollUserName, "enrollmentSecret")
@@ -186,16 +185,16 @@ func TestRegister(t *testing.T) {
 	}
 
 	// Register without registration name parameter
-	_, err = identityManager.Register(&api.RegistrationRequest{})
+	_, err = identityManager.Register(&core.RegistrationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error without registration name parameter")
 	}
 
 	// Register with valid request
-	var attributes []api.Attribute
-	attributes = append(attributes, api.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, api.Attribute{Key: "test2", Value: "test3"})
-	secret, err := identityManager.Register(&api.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
+	var attributes []core.Attribute
+	attributes = append(attributes, core.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, core.Attribute{Key: "test2", Value: "test3"})
+	secret, err := identityManager.Register(&core.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
 	if err != nil {
 		t.Fatalf("identityManager Register return error %v", err)
 	}
@@ -214,10 +213,10 @@ func TestEmbeddedRegister(t *testing.T) {
 	}
 
 	// Register with valid request
-	var attributes []api.Attribute
-	attributes = append(attributes, api.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, api.Attribute{Key: "test2", Value: "test3"})
-	secret, err := identityManager.Register(&api.RegistrationRequest{Name: "withEmbeddedRegistrar", Affiliation: "test", Attributes: attributes})
+	var attributes []core.Attribute
+	attributes = append(attributes, core.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, core.Attribute{Key: "test2", Value: "test3"})
+	secret, err := identityManager.Register(&core.RegistrationRequest{Name: "withEmbeddedRegistrar", Affiliation: "test", Attributes: attributes})
 	if err != nil {
 		t.Fatalf("identityManager Register return error %v", err)
 	}
@@ -237,22 +236,22 @@ func TestRegisterNoRegistrar(t *testing.T) {
 
 	// Register with nil request
 	_, err = identityManager.Register(nil)
-	if err != api.ErrCARegistrarNotFound {
+	if err != core.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
 
 	// Register without registration name parameter
-	_, err = identityManager.Register(&api.RegistrationRequest{})
-	if err != api.ErrCARegistrarNotFound {
+	_, err = identityManager.Register(&core.RegistrationRequest{})
+	if err != core.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
 
 	// Register with valid request
-	var attributes []api.Attribute
-	attributes = append(attributes, api.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, api.Attribute{Key: "test2", Value: "test3"})
-	_, err = identityManager.Register(&api.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
-	if err != api.ErrCARegistrarNotFound {
+	var attributes []core.Attribute
+	attributes = append(attributes, core.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, core.Attribute{Key: "test2", Value: "test3"})
+	_, err = identityManager.Register(&core.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
+	if err != core.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
 }
@@ -283,7 +282,7 @@ func TestRevoke(t *testing.T) {
 	user.SetEnrollmentCertificate(readCert(t))
 	user.SetPrivateKey(mockKey)
 
-	_, err = identityManager.Revoke(&api.RevocationRequest{})
+	_, err = identityManager.Revoke(&core.RevocationRequest{})
 	if err == nil {
 		t.Fatalf("Expected decoding error with test cert")
 	}
@@ -433,7 +432,7 @@ func readCert(t *testing.T) []byte {
 
 // TestInterfaces will test if the interface instantiation happens properly, ie no nil returned
 func TestInterfaces(t *testing.T) {
-	var apiIM api.IdentityManager
+	var apiIM core.IdentityManager
 	var im IdentityManager
 
 	apiIM = &im

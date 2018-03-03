@@ -11,7 +11,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
 
@@ -25,7 +24,7 @@ func NewSessionClientFactory() *SessionClientFactory {
 }
 
 // CreateChannelClient returns a client that can execute transactions on specified channel
-func (f *SessionClientFactory) CreateChannelClient(providers api.Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error) {
+func (f *SessionClientFactory) CreateChannelClient(providers context.Providers, session context.Session, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error) {
 
 	chProvider := providers.ChannelProvider()
 	chService, err := chProvider.ChannelService(session, channelID)
@@ -46,7 +45,7 @@ func (f *SessionClientFactory) CreateChannelClient(providers api.Providers, sess
 	}
 
 	ctx := channel.Context{
-		ProviderContext:  providers,
+		Providers:        providers,
 		DiscoveryService: discoveryService,
 		SelectionService: selection,
 		ChannelService:   chService,

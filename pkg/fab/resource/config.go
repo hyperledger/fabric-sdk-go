@@ -17,9 +17,9 @@ import (
 )
 
 // CreateConfigSignature creates a ConfigSignature for the current context.
-func CreateConfigSignature(ctx context.Context, config []byte) (*common.ConfigSignature, error) {
+func CreateConfigSignature(ctx context.Client, config []byte) (*common.ConfigSignature, error) {
 
-	creator, err := ctx.Identity()
+	creator, err := ctx.SerializedIdentity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get user context's identity")
 	}

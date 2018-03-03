@@ -89,6 +89,9 @@ func newMockFabricProvider(t *testing.T) *FabricProvider {
 	if err != nil {
 		panic(fmt.Sprintf("cryptosuiteimpl.GetSuiteByConfig: %v", err))
 	}
-	ctx := mocks.NewMockProviderContextCustom(cfg, cryptoSuite, mocks.NewMockSigningManager())
+	im := make(map[string]core.IdentityManager)
+	im[""] = &mocks.MockIdentityManager{}
+
+	ctx := mocks.NewMockProviderContextCustom(cfg, cryptoSuite, mocks.NewMockSigningManager(), mocks.NewMockStateStore(), im)
 	return New(ctx)
 }

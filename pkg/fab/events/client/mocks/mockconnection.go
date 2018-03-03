@@ -198,7 +198,7 @@ func (cp *ProviderFactory) Connection() Connection {
 
 // Provider returns a connection provider that always returns the given connection
 func (cp *ProviderFactory) Provider(conn Connection) api.ConnectionProvider {
-	return func(string, context.Context, fab.Peer) (api.Connection, error) {
+	return func(string, context.Client, fab.Peer) (api.Connection, error) {
 		return conn, nil
 	}
 }
@@ -208,7 +208,7 @@ func (cp *ProviderFactory) Provider(conn Connection) api.ConnectionProvider {
 // to return a connection, what authorization to give the connection, etc.
 func (cp *ProviderFactory) FlakeyProvider(connAttemptResults ConnectAttemptResults, opts ...Opt) api.ConnectionProvider {
 	var connectAttempt Attempt
-	return func(string, context.Context, fab.Peer) (api.Connection, error) {
+	return func(string, context.Client, fab.Peer) (api.Connection, error) {
 		connectAttempt++
 
 		_, ok := connAttemptResults[connectAttempt]

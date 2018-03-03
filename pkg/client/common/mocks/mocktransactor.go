@@ -15,7 +15,7 @@ import (
 
 // MockTransactor provides an implementation of Transactor that exposes all its context.
 type MockTransactor struct {
-	Ctx       context.Context
+	Ctx       context.Client
 	ChannelID string
 	Orderers  []fab.Orderer
 }

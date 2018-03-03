@@ -46,8 +46,8 @@ type eventsClient struct {
 	TLSServerHostOverride  string
 	tlsCertHash            []byte
 	clientConn             *grpc.ClientConn
-	provider               context.ProviderContext
-	identity               context.IdentityContext
+	provider               core.Providers
+	identity               context.Identity
 	processEventsCompleted chan struct{}
 	kap                    keepalive.ClientParameters
 	failFast               bool
@@ -56,7 +56,7 @@ type eventsClient struct {
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
-func NewEventsClient(provider context.ProviderContext, identity context.IdentityContext, peerAddress string, certificate *x509.Certificate,
+func NewEventsClient(provider core.Providers, identity context.Identity, peerAddress string, certificate *x509.Certificate,
 	serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter,
 	kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error) {
 
@@ -148,7 +148,7 @@ func (ec *eventsClient) RegisterAsync(ies []*ehpb.Interest) error {
 	if ec.identity == nil {
 		return errors.New("identity context is nil")
 	}
-	creator, err := ec.identity.Identity()
+	creator, err := ec.identity.SerializedIdentity()
 	if err != nil {
 		return errors.WithMessage(err, "identity context identity retrieval failed")
 	}
@@ -205,7 +205,7 @@ func (ec *eventsClient) UnregisterAsync(ies []*ehpb.Interest) error {
 	if ec.identity == nil {
 		return errors.New("identity context is required")
 	}
-	creator, err := ec.identity.Identity()
+	creator, err := ec.identity.SerializedIdentity()
 	if err != nil {
 		return errors.WithMessage(err, "user context identity retrieval failed")
 	}

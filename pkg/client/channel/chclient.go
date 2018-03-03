@@ -14,7 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
@@ -36,7 +35,7 @@ const (
 // An application that requires interaction with multiple channels should create a separate
 // instance of the channel client for each channel. Channel client supports non-admin functions only.
 type Client struct {
-	context    context.ProviderContext
+	context    core.Providers
 	discovery  fab.DiscoveryService
 	selection  fab.SelectionService
 	membership fab.ChannelMembership
@@ -47,7 +46,7 @@ type Client struct {
 
 // Context holds the providers and services needed to create a Client.
 type Context struct {
-	context.ProviderContext
+	core.Providers
 	DiscoveryService fab.DiscoveryService
 	SelectionService fab.SelectionService
 	ChannelService   fab.ChannelService

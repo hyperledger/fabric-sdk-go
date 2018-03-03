@@ -13,6 +13,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
@@ -35,8 +36,8 @@ const (
 // An application that requires interaction with multiple channels should create a separate
 // instance of the ledger client for each channel. Ledger client supports specific queries only.
 type Client struct {
-	provider  context.ProviderContext
-	identity  context.IdentityContext
+	provider  core.Providers
+	identity  context.Identity
 	discovery fab.DiscoveryService
 	ledger    *channel.Ledger
 	filter    TargetFilter
@@ -45,15 +46,15 @@ type Client struct {
 
 // Context holds the providers and services needed to create a Client.
 type Context struct {
-	context.ProviderContext
-	context.IdentityContext
+	core.Providers
+	context.Identity
 	DiscoveryService fab.DiscoveryService
 	ChannelService   fab.ChannelService
 }
 
 type fabContext struct {
-	context.ProviderContext
-	context.IdentityContext
+	core.Providers
+	context.Identity
 }
 
 // MSPFilter is default filter
@@ -284,8 +285,8 @@ func (c *Client) QueryConfig(options ...RequestOption) (fab.ChannelCfg, error) {
 	}
 
 	ctx := fabContext{
-		ProviderContext: c.provider,
-		IdentityContext: c.identity,
+		Providers: c.provider,
+		Identity:  c.identity,
 	}
 
 	channelConfig, err := chconfig.New(ctx, c.chName, chconfig.WithPeers(targets), chconfig.WithMinResponses(opts.MinTargets))

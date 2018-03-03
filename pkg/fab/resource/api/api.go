@@ -22,7 +22,7 @@ type Resource interface {
 	GenesisBlockFromOrderer(channelName string, orderer fab.Orderer) (*common.Block, error)
 	LastConfigFromOrderer(channelName string, orderer fab.Orderer) (*common.ConfigEnvelope, error)
 	JoinChannel(request JoinChannelRequest) error
-	SignChannelConfig(config []byte, signer context.IdentityContext) (*common.ConfigSignature, error)
+	SignChannelConfig(config []byte, signer context.Identity) (*common.ConfigSignature, error)
 }
 
 // CreateChannelRequest requests channel creation on the network

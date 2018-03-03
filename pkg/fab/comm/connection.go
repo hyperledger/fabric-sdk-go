@@ -32,13 +32,13 @@ type GRPCConnection struct {
 	channelID   string
 	conn        *grpc.ClientConn
 	stream      grpc.ClientStream
-	context     fabcontext.Context
+	context     fabcontext.Client
 	tlsCertHash []byte
 	done        int32
 }
 
 // NewConnection creates a new connection
-func NewConnection(ctx fabcontext.Context, channelID string, streamProvider StreamProvider, url string, opts ...options.Opt) (*GRPCConnection, error) {
+func NewConnection(ctx fabcontext.Client, channelID string, streamProvider StreamProvider, url string, opts ...options.Opt) (*GRPCConnection, error) {
 	if url == "" {
 		return nil, errors.New("server URL not specified")
 	}
@@ -124,7 +124,7 @@ func (c *GRPCConnection) TLSCertHash() []byte {
 }
 
 // Context returns the context of the client establishing the connection
-func (c *GRPCConnection) Context() fabcontext.Context {
+func (c *GRPCConnection) Context() fabcontext.Client {
 	return c.context
 }
 

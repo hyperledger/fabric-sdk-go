@@ -12,7 +12,7 @@ import (
 	"math/rand"
 	"time"
 
-	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -24,7 +24,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
-	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -86,7 +85,7 @@ type SaveChannelRequest struct {
 	// Path to channel configuration file
 	ChannelConfig string
 	// User that signs channel configuration
-	SigningIdentity context.IdentityContext
+	SigningIdentity context.Identity
 }
 
 //RequestOption func for each Opts argument
@@ -96,11 +95,11 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // Client enables managing resources in Fabric network.
 type Client struct {
-	provider          context.ProviderContext
-	identity          context.IdentityContext
+	provider          core.Providers
+	identity          context.Identity
 	discoveryProvider fab.DiscoveryProvider // used to get per channel discovery service(s)
 	channelProvider   fab.ChannelProvider
-	fabricProvider    sdkApi.FabricProvider
+	fabricProvider    fab.InfraProvider
 	discovery         fab.DiscoveryService // global discovery service (detects all peers on the network)
 	resource          api.Resource
 	filter            TargetFilter
@@ -118,16 +117,16 @@ func (f *MSPFilter) Accept(peer fab.Peer) bool {
 
 // Context holds the providers and services needed to create a ChannelClient.
 type Context struct {
-	context.ProviderContext
-	context.IdentityContext
+	core.Providers
+	context.Identity
 	DiscoveryProvider fab.DiscoveryProvider
 	ChannelProvider   fab.ChannelProvider
-	FabricProvider    sdkApi.FabricProvider
+	FabricProvider    fab.InfraProvider
 }
 
 type fabContext struct {
-	context.ProviderContext
-	context.IdentityContext
+	core.Providers
+	context.Identity
 }
 
 // ClientOption describes a functional parameter for the New constructor
@@ -425,8 +424,8 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 	}
 
 	ctx := &fabContext{
-		ProviderContext: rc.provider,
-		IdentityContext: rc.identity,
+		Providers: rc.provider,
+		Identity:  rc.identity,
 	}
 
 	var target fab.ProposalProcessor
@@ -517,8 +516,8 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 	// create a transaction proposal for chaincode deployment
 	deployProposal := chaincodeDeployRequest(req)
 	deployCtx := fabContext{
-		ProviderContext: rc.provider,
-		IdentityContext: rc.identity,
+		Providers: rc.provider,
+		Identity:  rc.identity,
 	}
 
 	txid, err := txn.NewHeader(&deployCtx, channelID)
@@ -559,7 +558,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
-	timeout := rc.provider.Config().TimeoutOrDefault(config.Execute)
+	timeout := rc.provider.Config().TimeoutOrDefault(core.Execute)
 	if opts.Timeout != 0 {
 		timeout = opts.Timeout
 	}
@@ -663,8 +662,8 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	}
 
 	sigCtx := Context{
-		IdentityContext: signer,
-		ProviderContext: rc.provider,
+		Identity:  signer,
+		Providers: rc.provider,
 	}
 	configSignature, err := resource.CreateConfigSignature(&sigCtx, chConfig)
 	if err != nil {
@@ -675,7 +674,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	configSignatures = append(configSignatures, configSignature)
 
 	// Figure out orderer configuration
-	var ordererCfg *config.OrdererConfig
+	var ordererCfg *core.OrdererConfig
 	if opts.OrdererID != "" {
 		ordererCfg, err = rc.provider.Config().OrdererConfig(opts.OrdererID)
 	} else {

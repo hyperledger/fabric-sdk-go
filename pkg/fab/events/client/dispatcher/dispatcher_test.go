@@ -241,6 +241,6 @@ func TestConnectionEvent(t *testing.T) {
 	}
 }
 
-func newMockContext() context.Context {
+func newMockContext() context.Client {
 	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
 }

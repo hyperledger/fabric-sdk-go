@@ -53,14 +53,14 @@ func (th *TransactionHeader) ChannelID() string {
 
 // NewHeader computes a TransactionID from the current user context and holds
 // metadata to create transaction proposals.
-func NewHeader(ctx contextApi.Context, channelID string) (*TransactionHeader, error) {
+func NewHeader(ctx contextApi.Client, channelID string) (*TransactionHeader, error) {
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
 		return nil, errors.WithMessage(err, "nonce creation failed")
 	}
 
-	creator, err := ctx.Identity()
+	creator, err := ctx.SerializedIdentity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "identity from context failed")
 	}

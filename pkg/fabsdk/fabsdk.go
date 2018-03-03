@@ -11,10 +11,10 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -28,14 +28,14 @@ type FabricSDK struct {
 	opts options
 
 	config            core.Config
-	stateStore        contextApi.KVStore
+	stateStore        core.KVStore
 	cryptoSuite       core.CryptoSuite
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
-	signingManager    contextApi.SigningManager
-	identityManager   map[string]contextApi.IdentityManager
-	fabricProvider    sdkApi.FabricProvider
-	channelProvider   *chpvdr.ChannelProvider
+	signingManager    core.SigningManager
+	identityManager   map[string]core.IdentityManager
+	fabricProvider    fab.InfraProvider
+	channelProvider   fab.ChannelProvider
 }
 
 type options struct {
@@ -190,7 +190,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.signingManager = signingMgr
 
 	// Initialize Identity Managers
-	sdk.identityManager = make(map[string]contextApi.IdentityManager)
+	sdk.identityManager = make(map[string]core.IdentityManager)
 	netConfig, err := sdk.config.NetworkConfig()
 	if err != nil {
 		return errors.Wrapf(err, "failed to retrieve network config")
@@ -249,16 +249,30 @@ func (sdk *FabricSDK) Config() core.Config {
 	return sdk.config
 }
 
-func (sdk *FabricSDK) fabContext() *fabContext {
-	c := fabContext{
-		sdk: sdk,
-	}
-	return &c
+func (sdk *FabricSDK) fabContext() core.Providers {
+	return context.CreateFabContext(context.WithConfig(sdk.config),
+		context.WithCryptoSuite(sdk.cryptoSuite),
+		context.WithSigningManager(sdk.signingManager),
+		context.WithStateStore(sdk.stateStore),
+		context.WithDiscoveryProvider(sdk.discoveryProvider),
+		context.WithSelectionProvider(sdk.selectionProvider),
+		context.WithIdentityManager(sdk.identityManager),
+		context.WithFabricProvider(sdk.fabricProvider),
+		context.WithChannelProvider(sdk.channelProvider))
 }
 
-func (sdk *FabricSDK) context() *sdkContext {
-	c := sdkContext{
-		fabContext: fabContext{sdk},
+func (sdk *FabricSDK) context() context.Providers {
+	fabContext := context.CreateFabContext(context.WithConfig(sdk.config),
+		context.WithCryptoSuite(sdk.cryptoSuite),
+		context.WithSigningManager(sdk.signingManager),
+		context.WithStateStore(sdk.stateStore),
+		context.WithDiscoveryProvider(sdk.discoveryProvider),
+		context.WithSelectionProvider(sdk.selectionProvider),
+		context.WithIdentityManager(sdk.identityManager),
+		context.WithFabricProvider(sdk.fabricProvider),
+		context.WithChannelProvider(sdk.channelProvider))
+	c := context.SDKContext{
+		*fabContext,
 	}
 	return &c
 }

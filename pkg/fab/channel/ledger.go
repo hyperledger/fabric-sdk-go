@@ -30,12 +30,12 @@ const (
 
 // Ledger is a client that provides access to the underlying ledger of a channel.
 type Ledger struct {
-	ctx    context.Context
+	ctx    context.Client
 	chName string
 }
 
 // NewLedger constructs a Ledger client for the current context and named channel.
-func NewLedger(ctx context.Context, chName string) (*Ledger, error) {
+func NewLedger(ctx context.Client, chName string) (*Ledger, error) {
 	l := Ledger{
 		ctx:    ctx,
 		chName: chName,
@@ -247,7 +247,7 @@ func collectProposalResponses(tprs []*fab.TransactionProposalResponse) [][]byte 
 	return responses
 }
 
-func queryChaincode(ctx context.Context, channelID string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+func queryChaincode(ctx context.Client, channelID string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
 	txh, err := txn.NewHeader(ctx, channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "creation of transaction ID failed")

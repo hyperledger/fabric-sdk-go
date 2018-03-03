@@ -1137,9 +1137,9 @@ func listenEvents(blockch <-chan *fab.BlockEvent, ccch <-chan *fab.CCEvent, wait
 	}
 }
 
-type ClientProvider func(channelID string, context context.Context, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error)
+type ClientProvider func(channelID string, context context.Client, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error)
 
-var clientProvider = func(channelID string, context context.Context, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error) {
+var clientProvider = func(channelID string, context context.Client, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error) {
 	return newClient(channelID, context, connectionProvider, discoveryService, opts, true,
 		func() error {
 			fmt.Printf("AfterConnect called")
@@ -1151,7 +1151,7 @@ var clientProvider = func(channelID string, context context.Context, connectionP
 		})
 }
 
-var failAfterConnectClientProvider = func(channelID string, context context.Context, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error) {
+var failAfterConnectClientProvider = func(channelID string, context context.Client, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error) {
 	return newClient(channelID, context, connectionProvider, discoveryService, opts, true,
 		func() error {
 			return errors.New("simulated failure after connect")
@@ -1159,7 +1159,7 @@ var failAfterConnectClientProvider = func(channelID string, context context.Cont
 		nil)
 }
 
-var filteredClientProvider = func(channelID string, context context.Context, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error) {
+var filteredClientProvider = func(channelID string, context context.Client, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error) {
 	return newClient(channelID, context, connectionProvider, discoveryService, opts, false,
 		func() error {
 			fmt.Printf("AfterConnect called")
@@ -1171,7 +1171,7 @@ var filteredClientProvider = func(channelID string, context context.Context, con
 		})
 }
 
-func newClient(channelID string, context context.Context, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt, permitBlockEvents bool, afterConnect handler, beforeReconnect handler) (*Client, error) {
+func newClient(channelID string, context context.Client, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt, permitBlockEvents bool, afterConnect handler, beforeReconnect handler) (*Client, error) {
 	client := New(
 		permitBlockEvents,
 		dispatcher.New(
@@ -1191,13 +1191,13 @@ func newClient(channelID string, context context.Context, connectionProvider api
 	return client, nil
 }
 
-func newClientWithMockConn(channelID string, context context.Context, clientProvider ClientProvider, discoveryService fab.DiscoveryService, connOpts ...mockconn.Opt) (*Client, mockconn.Connection, error) {
+func newClientWithMockConn(channelID string, context context.Client, clientProvider ClientProvider, discoveryService fab.DiscoveryService, connOpts ...mockconn.Opt) (*Client, mockconn.Connection, error) {
 	conn := mockconn.NewMockConnection(connOpts...)
 	client, _, err := newClientWithMockConnAndOpts(channelID, context, mockconn.NewProviderFactory().Provider(conn), clientProvider, discoveryService, []options.Opt{})
 	return client, conn, err
 }
 
-func newClientWithMockConnAndOpts(channelID string, context context.Context, connectionProvider api.ConnectionProvider, clientProvider ClientProvider, discoveryService fab.DiscoveryService, opts []options.Opt, connOpts ...mockconn.Opt) (*Client, mockconn.Connection, error) {
+func newClientWithMockConnAndOpts(channelID string, context context.Client, connectionProvider api.ConnectionProvider, clientProvider ClientProvider, discoveryService fab.DiscoveryService, opts []options.Opt, connOpts ...mockconn.Opt) (*Client, mockconn.Connection, error) {
 	var conn mockconn.Connection
 	if connectionProvider == nil {
 		conn = mockconn.NewMockConnection(connOpts...)
@@ -1260,6 +1260,6 @@ func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expecte
 	}
 }
 
-func newMockContext() context.Context {
+func newMockContext() context.Client {
 	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
 }

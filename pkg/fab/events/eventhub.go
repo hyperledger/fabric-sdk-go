@@ -61,8 +61,8 @@ type EventHub struct {
 	// Factory that creates EventsClient
 	eventsClientFactory eventClientFactory
 	// FabricClient
-	provider      context.ProviderContext
-	identity      context.IdentityContext
+	provider      core.Providers
+	identity      context.Identity
 	kap           keepalive.ClientParameters
 	failFast      bool
 	allowInsecure bool
@@ -70,21 +70,21 @@ type EventHub struct {
 
 // eventClientFactory creates an EventsClient instance
 type eventClientFactory interface {
-	newEventsClient(provider context.ProviderContext, identity context.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error)
+	newEventsClient(provider core.Providers, identity context.Identity, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error)
 }
 
 // consumerClientFactory is the default implementation oif the eventClientFactory
 type consumerClientFactory struct{}
 
-func (ccf *consumerClientFactory) newEventsClient(provider context.ProviderContext, identity context.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string,
+func (ccf *consumerClientFactory) newEventsClient(provider core.Providers, identity context.Identity, peerAddress string, certificate *x509.Certificate, serverHostOverride string,
 	regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error) {
 	return consumer.NewEventsClient(provider, identity, peerAddress, certificate, serverHostOverride, regTimeout, adapter, kap, failFast, allowInsecure)
 }
 
 // Context holds the providers and services needed to create an EventHub.
 type Context struct {
-	context.ProviderContext
-	context.IdentityContext
+	core.Providers
+	context.Identity
 }
 
 // New creates an EventHub from context.
@@ -94,8 +94,8 @@ func New(ctx Context) (*EventHub, error) {
 		blockRegistrants:    nil,
 		interestedEvents:    nil,
 		eventsClientFactory: &consumerClientFactory{},
-		provider:            ctx.ProviderContext,
-		identity:            ctx.IdentityContext,
+		provider:            ctx.Providers,
+		identity:            ctx.Identity,
 	}
 	// register default transaction callback
 	eventHub.RegisterBlockEvent(eventHub.txCallback)

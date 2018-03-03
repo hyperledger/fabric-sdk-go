@@ -60,7 +60,7 @@ type Channel struct {
 	name          string // aka channel ID
 	peers         map[string]fab.Peer
 	orderers      map[string]fab.Orderer
-	clientContext context.Context
+	clientContext context.Client
 	primaryPeer   fab.Peer
 	mspManager    msp.MSPManager
 	anchorPeers   []*fab.OrgAnchorPeer
@@ -72,7 +72,7 @@ type Channel struct {
 // name: used to identify different channel instances. The naming of channel instances
 // is enforced by the ordering service and must be unique within the blockchain network.
 // client: Provides operational context such as submitting User etc.
-func New(ctx context.Context, cfg fab.ChannelCfg) (*Channel, error) {
+func New(ctx context.Client, cfg fab.ChannelCfg) (*Channel, error) {
 	if ctx == nil {
 		return nil, errors.Errorf("client is required")
 	}

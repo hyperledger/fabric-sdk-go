@@ -96,8 +96,8 @@ func (u *MockUser) MspID() string {
 	return u.mspID
 }
 
-// Identity returns MockUser's serialized identity
-func (u *MockUser) Identity() ([]byte, error) {
+// SerializedIdentity returns MockUser's serialized identity
+func (u *MockUser) SerializedIdentity() ([]byte, error) {
 	return []byte("test"), nil
 }
 

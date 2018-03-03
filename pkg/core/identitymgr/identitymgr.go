@@ -17,7 +17,6 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
@@ -31,10 +30,9 @@ type IdentityManager struct {
 	config          core.Config
 	cryptoSuite     core.CryptoSuite
 	embeddedUsers   map[string]core.TLSKeyPair
-	mspPrivKeyStore contextApi.KVStore
-	mspCertStore    contextApi.KVStore
+	mspPrivKeyStore core.KVStore
+	mspCertStore    core.KVStore
 	userStore       UserStore
-
 	// CA Client state
 	caClient  *calib.Client
 	registrar core.EnrollCredentials
@@ -45,7 +43,7 @@ type IdentityManager struct {
 // @param {Config} client config for fabric-ca services
 // @returns {IdentityManager} IdentityManager instance
 // @returns {error} error, if any
-func New(orgName string, stateStore contextApi.KVStore, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
+func New(orgName string, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {
@@ -62,8 +60,8 @@ func New(orgName string, stateStore contextApi.KVStore, cryptoSuite core.CryptoS
 		return nil, errors.New("Either a cryptopath or an embedded list of users is required")
 	}
 
-	var mspPrivKeyStore contextApi.KVStore
-	var mspCertStore contextApi.KVStore
+	var mspPrivKeyStore core.KVStore
+	var mspCertStore core.KVStore
 
 	orgCryptoPathTemplate := orgConfig.CryptoPath
 	if orgCryptoPathTemplate != "" {
@@ -154,7 +152,7 @@ func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) 
 
 // Reenroll an enrolled user in order to receive a signed X509 certificate
 // Returns X509 certificate
-func (im *IdentityManager) Reenroll(user contextApi.User) error {
+func (im *IdentityManager) Reenroll(user core.User) error {
 
 	if err := im.initCAClient(); err != nil {
 		return err
@@ -194,12 +192,12 @@ func (im *IdentityManager) Reenroll(user contextApi.User) error {
 // Register a User with the Fabric CA
 // request: Registration Request
 // Returns Enrolment Secret
-func (im *IdentityManager) Register(request *contextApi.RegistrationRequest) (string, error) {
+func (im *IdentityManager) Register(request *core.RegistrationRequest) (string, error) {
 	if err := im.initCAClient(); err != nil {
 		return "", err
 	}
 	if im.registrar.EnrollID == "" {
-		return "", contextApi.ErrCARegistrarNotFound
+		return "", core.ErrCARegistrarNotFound
 	}
 	// Validate registration request
 	if request == nil {
@@ -239,12 +237,12 @@ func (im *IdentityManager) Register(request *contextApi.RegistrationRequest) (st
 // Revoke a User with the Fabric CA
 // registrar: The User that is initiating the revocation
 // request: Revocation Request
-func (im *IdentityManager) Revoke(request *contextApi.RevocationRequest) (*contextApi.RevocationResponse, error) {
+func (im *IdentityManager) Revoke(request *core.RevocationRequest) (*core.RevocationResponse, error) {
 	if err := im.initCAClient(); err != nil {
 		return nil, err
 	}
 	if im.registrar.EnrollID == "" {
-		return nil, contextApi.ErrCARegistrarNotFound
+		return nil, core.ErrCARegistrarNotFound
 	}
 	// Validate revocation request
 	if request == nil {
@@ -268,18 +266,18 @@ func (im *IdentityManager) Revoke(request *contextApi.RevocationRequest) (*conte
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to revoke")
 	}
-	var revokedCerts []contextApi.RevokedCert
+	var revokedCerts []core.RevokedCert
 	for i := range resp.RevokedCerts {
 		revokedCerts = append(
 			revokedCerts,
-			contextApi.RevokedCert{
+			core.RevokedCert{
 				Serial: resp.RevokedCerts[i].Serial,
 				AKI:    resp.RevokedCerts[i].AKI,
 			})
 	}
 
 	// TODO complete the response mapping
-	return &contextApi.RevocationResponse{
+	return &core.RevocationResponse{
 		RevokedCerts: revokedCerts,
 		CRL:          resp.CRL,
 	}, nil

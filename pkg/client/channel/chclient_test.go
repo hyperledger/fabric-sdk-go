@@ -467,7 +467,7 @@ func TestDiscoveryGreylist(t *testing.T) {
 	selectionService.SelectAll = true
 
 	ctx := Context{
-		ProviderContext:  fabCtx,
+		Providers:        fabCtx,
 		DiscoveryService: discoveryService,
 		SelectionService: selectionService,
 		ChannelService:   testChannelSvc,
@@ -505,7 +505,7 @@ func TestDiscoveryGreylist(t *testing.T) {
 
 }
 
-func setupTestChannelService(ctx context.Context, orderers []fab.Orderer) (fab.ChannelService, error) {
+func setupTestChannelService(ctx context.Client, orderers []fab.Orderer) (fab.ChannelService, error) {
 	const channelName = "testChannel"
 	chProvider, err := fcmocks.NewMockChannelProvider(ctx)
 	if err != nil {
@@ -527,7 +527,7 @@ func setupTestChannelService(ctx context.Context, orderers []fab.Orderer) (fab.C
 	return chService, nil
 }
 
-func setupTestContext() context.Context {
+func setupTestContext() context.Client {
 	user := fcmocks.NewMockUser("test")
 	ctx := fcmocks.NewMockContext(user)
 	return ctx
@@ -576,7 +576,7 @@ func setupChannelClientWithError(discErr error, selectionErr error, peers []fab.
 	}
 
 	ctx := Context{
-		ProviderContext:  fabCtx,
+		Providers:        fabCtx,
 		DiscoveryService: discoveryService,
 		SelectionService: selectionService,
 		ChannelService:   testChannelSvc,
@@ -603,7 +603,7 @@ func setupChannelClientWithNodes(peers []fab.Peer,
 	assert.Nil(t, err, "Failed to setup discovery service")
 
 	ctx := Context{
-		ProviderContext:  fabCtx,
+		Providers:        fabCtx,
 		DiscoveryService: discoveryService,
 		SelectionService: selectionService,
 		ChannelService:   testChannelSvc,

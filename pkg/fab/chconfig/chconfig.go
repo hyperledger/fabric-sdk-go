@@ -9,6 +9,7 @@ package chconfig
 import (
 	"github.com/golang/protobuf/proto"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -44,14 +45,14 @@ type Option func(opts *Opts) error
 
 // Context holds the providers and identity
 type Context struct {
-	context.ProviderContext
-	context.IdentityContext
+	core.Providers
+	context.Identity
 }
 
 // ChannelConfig implements query channel configuration
 type ChannelConfig struct {
 	channelID string
-	ctx       context.Context
+	ctx       context.Client
 	opts      Opts
 }
 
@@ -96,7 +97,7 @@ func (cfg *ChannelCfg) Versions() *fab.Versions {
 }
 
 // New channel config implementation
-func New(ctx context.Context, channelID string, options ...Option) (*ChannelConfig, error) {
+func New(ctx context.Client, channelID string, options ...Option) (*ChannelConfig, error) {
 	opts, err := prepareOpts(options...)
 	if err != nil {
 		return nil, err

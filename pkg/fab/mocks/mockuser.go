@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
@@ -26,12 +25,12 @@ type MockUser struct {
  *
  * @param {string} name - The user name
  */
-func NewMockUser(name string) api.User {
+func NewMockUser(name string) core.User {
 	return &MockUser{name: name}
 }
 
 //NewMockUserWithMSPID to return mock user with MSP ids
-func NewMockUserWithMSPID(name string, mspid string) api.User {
+func NewMockUserWithMSPID(name string, mspid string) core.User {
 	return &MockUser{name: name, mspID: mspid}
 }
 
@@ -104,8 +103,8 @@ func (u *MockUser) MspID() string {
 	return u.mspID
 }
 
-// Identity returns MockUser's serialized identity
-func (u *MockUser) Identity() ([]byte, error) {
+// SerializedIdentity returns MockUser's serialized identity
+func (u *MockUser) SerializedIdentity() ([]byte, error) {
 	return []byte("test"), nil
 }
 

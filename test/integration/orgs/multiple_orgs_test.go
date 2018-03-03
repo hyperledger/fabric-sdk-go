@@ -351,7 +351,7 @@ func verifyValue(t *testing.T, chClient *channel.Client, expected int) {
 
 }
 
-func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) context.IdentityContext {
+func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) context.Identity {
 
 	session, err := sdk.NewClient(fabsdk.WithUser(userName), fabsdk.WithOrg(orgName)).Session()
 	if err != nil {

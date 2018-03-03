@@ -11,13 +11,13 @@ import (
 	"path"
 	"strings"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	"github.com/pkg/errors"
 )
 
 // NewFileCertStore ...
-func NewFileCertStore(cryptoConfogMspPath string) (api.KVStore, error) {
+func NewFileCertStore(cryptoConfogMspPath string) (core.KVStore, error) {
 	_, orgName := path.Split(path.Dir(path.Dir(path.Dir(cryptoConfogMspPath))))
 	opts := &keyvaluestore.FileKeyValueStoreOptions{
 		Path: cryptoConfogMspPath,

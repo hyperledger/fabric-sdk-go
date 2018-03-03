@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
@@ -102,7 +102,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	testUserName := createRandomName()
 
 	// Should not find the user
-	if err := checkSigningIdentity(mgr, testUserName); err != api.ErrUserNotFound {
+	if err := checkSigningIdentity(mgr, testUserName); err != core.ErrUserNotFound {
 		t.Fatalf("expected ErrUserNotFound, got: %s", err)
 	}
 
@@ -127,9 +127,9 @@ func TestGetSigningIdentity(t *testing.T) {
 	}
 }
 
-func checkSigningIdentity(mgr api.IdentityManager, user string) error {
+func checkSigningIdentity(mgr core.IdentityManager, user string) error {
 	id, err := mgr.GetSigningIdentity(user)
-	if err == api.ErrUserNotFound {
+	if err == core.ErrUserNotFound {
 		return err
 	}
 	if err != nil {
@@ -186,7 +186,7 @@ func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 	}
 
 	_, err = mgr.GetSigningIdentity("Non-Existent")
-	if err != api.ErrUserNotFound {
+	if err != core.ErrUserNotFound {
 		t.Fatalf("Should get ErrUserNotFound for non-existent user, got %v", err)
 	}
 

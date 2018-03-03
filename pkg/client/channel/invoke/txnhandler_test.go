@@ -246,7 +246,7 @@ func setupChannelClientContext(discErr error, selectionErr error, peers []fab.Pe
 
 }
 
-func setupTestContext() context.Context {
+func setupTestContext() context.Client {
 	user := fcmocks.NewMockUser("test")
 	ctx := fcmocks.NewMockContext(user)
 	return ctx

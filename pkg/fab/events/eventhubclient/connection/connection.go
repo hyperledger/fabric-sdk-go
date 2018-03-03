@@ -35,7 +35,7 @@ type EventHubConnection struct {
 }
 
 // New returns a new Connection to the event hub.
-func New(ctx fabcontext.Context, channelID string, url string, opts ...options.Opt) (*EventHubConnection, error) {
+func New(ctx fabcontext.Client, channelID string, url string, opts ...options.Opt) (*EventHubConnection, error) {
 	if channelID == "" {
 		return nil, errors.New("channel ID not provided")
 	}
@@ -70,7 +70,7 @@ func (c *EventHubConnection) EventHubStream() pb.Events_ChatClient {
 
 // Send sends an event to the event hub server
 func (c *EventHubConnection) Send(emsg *pb.Event) error {
-	creator, err := c.Context().Identity()
+	creator, err := c.Context().SerializedIdentity()
 	if err != nil {
 		return errors.WithMessage(err, "error getting creator identity")
 	}

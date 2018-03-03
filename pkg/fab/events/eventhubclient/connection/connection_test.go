@@ -201,6 +201,6 @@ func newPeerConfig(eventURL string) *core.PeerConfig {
 	}
 }
 
-func newMockContext() fabcontext.Context {
+func newMockContext() fabcontext.Client {
 	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
 }

@@ -4,10 +4,9 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package api
+package core
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/pkg/errors"
 )
 
@@ -33,7 +32,7 @@ var (
 type User interface {
 	MspID() string
 	Name() string
-	Identity() ([]byte, error)
-	PrivateKey() core.Key
+	SerializedIdentity() ([]byte, error)
+	PrivateKey() Key
 	EnrollmentCertificate() []byte
 }

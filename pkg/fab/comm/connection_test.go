@@ -76,7 +76,7 @@ func TestConnection(t *testing.T) {
 	if conn.Stream() == nil {
 		t.Fatalf("got invalid stream")
 	}
-	if _, err := context.Identity(); err != nil {
+	if _, err := context.SerializedIdentity(); err != nil {
 		t.Fatalf("error getting identity")
 	}
 
@@ -120,6 +120,6 @@ func newPeerConfig(peerURL string) *core.PeerConfig {
 	}
 }
 
-func newMockContext() fabcontext.Context {
+func newMockContext() fabcontext.Client {
 	return fabmocks.NewMockContext(fabmocks.NewMockUser("test"))
 }

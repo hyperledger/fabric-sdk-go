@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
@@ -28,22 +29,22 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // Resource is a client that provides access to fabric network resource management.
 type Resource struct {
-	clientContext context.Context
+	clientContext context.Client
 }
 
 // New returns a Client instance with the SDK context.
-func New(ctx context.Context) *Resource {
+func New(ctx context.Client) *Resource {
 	c := Resource{clientContext: ctx}
 	return &c
 }
 
 type fabCtx struct {
-	context.ProviderContext
-	context.IdentityContext
+	core.Providers
+	context.Identity
 }
 
 // SignChannelConfig signs a configuration.
-func (c *Resource) SignChannelConfig(config []byte, signer context.IdentityContext) (*common.ConfigSignature, error) {
+func (c *Resource) SignChannelConfig(config []byte, signer context.Identity) (*common.ConfigSignature, error) {
 	logger.Debug("SignChannelConfig - start")
 
 	if config == nil {
@@ -61,8 +62,8 @@ func (c *Resource) SignChannelConfig(config []byte, signer context.IdentityConte
 	}
 
 	ctx := fabCtx{
-		ProviderContext: c.clientContext,
-		IdentityContext: signingUser,
+		Providers: c.clientContext,
+		Identity:  signingUser,
 	}
 
 	return CreateConfigSignature(ctx, config)

@@ -22,4 +22,4 @@ type Connection interface {
 }
 
 // ConnectionProvider creates a Connection.
-type ConnectionProvider func(channelID string, context context.Context, peer fab.Peer) (Connection, error)
+type ConnectionProvider func(channelID string, context context.Client, peer fab.Peer) (Connection, error)

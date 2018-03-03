@@ -41,13 +41,13 @@ type clientProvider func() (*clientContext, error)
 
 type clientContext struct {
 	opts          *contextOptions
-	identity      context.IdentityContext
+	identity      context.Identity
 	providers     providers
 	clientFactory api.SessionClientFactory
 }
 
 type providers interface {
-	api.Providers
+	context.Providers
 }
 
 // WithOrg uses the configuration and users from the named organization.
@@ -163,8 +163,8 @@ func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.Client, err
 	chProvider := p.providers.ChannelProvider()
 
 	ctx := resmgmt.Context{
-		ProviderContext:   p.providers,
-		IdentityContext:   session,
+		Providers:         p.providers,
+		Identity:          session,
 		DiscoveryProvider: discovery,
 		ChannelProvider:   chProvider,
 		FabricProvider:    fabProvider,
@@ -193,8 +193,8 @@ func (c *ClientContext) Ledger(id string, opts ...ClientOption) (*ledger.Client,
 	}
 
 	ctx := ledger.Context{
-		ProviderContext:  p.providers,
-		IdentityContext:  session,
+		Providers:        p.providers,
+		Identity:         session,
 		DiscoveryService: discService,
 	}
 
@@ -235,7 +235,7 @@ func (c *ClientContext) ChannelService(id string) (fab.ChannelService, error) {
 // Session returns the underlying identity of the client.
 //
 // Deprecated: this method is temporary.
-func (c *ClientContext) Session() (context.SessionContext, error) {
+func (c *ClientContext) Session() (context.Session, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")

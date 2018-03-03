@@ -9,11 +9,10 @@ package chpvdr
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/stretchr/testify/assert"
@@ -59,15 +58,15 @@ type MockProviderFactory struct {
 // CustomFabricProvider overrides channel config default implementation
 type MockFabricProvider struct {
 	*fabpvdr.FabricProvider
-	providerContext context.ProviderContext
+	providerContext core.Providers
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *MockFabricProvider) CreateChannelConfig(ic context.IdentityContext, channelID string) (fab.ChannelConfig, error) {
+func (f *MockFabricProvider) CreateChannelConfig(ic fab.IdentityContext, channelID string) (fab.ChannelConfig, error) {
 
 	ctx := chconfig.Context{
-		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Providers: f.providerContext,
+		Identity:  ic,
 	}
 
 	return mocks.NewMockChannelConfig(ctx, "mychannel")
@@ -75,7 +74,7 @@ func (f *MockFabricProvider) CreateChannelConfig(ic context.IdentityContext, cha
 }
 
 // CreateFabricProvider mocks new default implementation of fabric primitives
-func (f *MockProviderFactory) CreateFabricProvider(context context.ProviderContext) (api.FabricProvider, error) {
+func (f *MockProviderFactory) CreateFabricProvider(context core.Providers) (fab.InfraProvider, error) {
 	fabProvider := fabpvdr.New(context)
 
 	cfp := MockFabricProvider{

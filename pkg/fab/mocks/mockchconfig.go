@@ -55,11 +55,11 @@ func (cfg *MockChannelCfg) Versions() *fab.Versions {
 // MockChannelConfig mocks query channel configuration
 type MockChannelConfig struct {
 	channelID string
-	ctx       context.Context
+	ctx       context.Client
 }
 
 // NewMockChannelConfig mocks channel config implementation
-func NewMockChannelConfig(ctx context.Context, channelID string) (*MockChannelConfig, error) {
+func NewMockChannelConfig(ctx context.Client, channelID string) (*MockChannelConfig, error) {
 	return &MockChannelConfig{channelID: channelID, ctx: ctx}, nil
 }
 

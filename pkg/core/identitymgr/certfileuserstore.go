@@ -9,7 +9,7 @@ package identitymgr
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/pkg/errors"
 )
 
@@ -17,7 +17,7 @@ import (
 // Only user's enrollment cert is stored, in pem format.
 // File naming is <user>@<org>-cert.pem
 type CertFileUserStore struct {
-	store api.KVStore
+	store core.KVStore
 }
 
 func userIdentifierFromUser(user UserData) UserIdentifier {
@@ -32,7 +32,7 @@ func storeKeyFromUserIdentifier(key UserIdentifier) string {
 }
 
 // NewCertFileUserStore1 creates a new instance of CertFileUserStore
-func NewCertFileUserStore1(store api.KVStore) (*CertFileUserStore, error) {
+func NewCertFileUserStore1(store core.KVStore) (*CertFileUserStore, error) {
 	return &CertFileUserStore{
 		store: store,
 	}, nil
@@ -57,8 +57,8 @@ func (s *CertFileUserStore) Load(key UserIdentifier) (UserData, error) {
 	var userData UserData
 	cert, err := s.store.Load(storeKeyFromUserIdentifier(key))
 	if err != nil {
-		if err == api.ErrNotFound {
-			return userData, api.ErrUserNotFound
+		if err == core.ErrKeyValueNotFound {
+			return userData, core.ErrUserNotFound
 		}
 		return userData, err
 	}

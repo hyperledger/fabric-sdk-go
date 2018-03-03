@@ -9,12 +9,11 @@ package fabsdk
 import (
 	"fmt"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
@@ -24,28 +23,28 @@ import (
 )
 
 type mockCorePkg struct {
-	stateStore      contextApi.KVStore
+	stateStore      core.KVStore
 	cryptoSuite     core.CryptoSuite
-	signingManager  contextApi.SigningManager
-	identityManager map[string]contextApi.IdentityManager
-	fabricProvider  sdkApi.FabricProvider
+	signingManager  core.SigningManager
+	identityManager map[string]core.IdentityManager
+	fabricProvider  fab.InfraProvider
 }
 
 func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	pkgSuite := defPkgSuite{}
-	core, err := pkgSuite.Core()
+	sdkcore, err := pkgSuite.Core()
 	if err != nil {
 		return nil, err
 	}
-	stateStore, err := core.CreateStateStoreProvider(config)
+	stateStore, err := sdkcore.CreateStateStoreProvider(config)
 	if err != nil {
 		return nil, err
 	}
-	cs, err := core.CreateCryptoSuiteProvider(config)
+	cs, err := sdkcore.CreateCryptoSuiteProvider(config)
 	if err != nil {
 		return nil, err
 	}
-	sm, err := core.CreateSigningManager(cs, config)
+	sm, err := sdkcore.CreateSigningManager(cs, config)
 	if err != nil {
 		return nil, err
 	}
@@ -53,17 +52,17 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	if err != nil {
 		return nil, err
 	}
-	im := make(map[string]contextApi.IdentityManager)
+	im := make(map[string]core.IdentityManager)
 	for orgName := range netConfig.Organizations {
-		mgr, err := core.CreateIdentityManager(orgName, stateStore, cs, config)
+		mgr, err := sdkcore.CreateIdentityManager(orgName, stateStore, cs, config)
 		if err != nil {
 			return nil, err
 		}
 		im[orgName] = mgr
 	}
 
-	ctx := mocks.NewMockProviderContextCustom(config, cs, sm)
-	fp, err := core.CreateFabricProvider(ctx)
+	ctx := mocks.NewMockProviderContextCustom(config, cs, sm, stateStore, im)
+	fp, err := sdkcore.CreateFabricProvider(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +78,7 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	return &c, nil
 }
 
-func (mc *mockCorePkg) CreateStateStoreProvider(config core.Config) (contextApi.KVStore, error) {
+func (mc *mockCorePkg) CreateStateStoreProvider(config core.Config) (core.KVStore, error) {
 	return mc.stateStore, nil
 }
 
@@ -87,11 +86,11 @@ func (mc *mockCorePkg) CreateCryptoSuiteProvider(config core.Config) (core.Crypt
 	return mc.cryptoSuite, nil
 }
 
-func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (contextApi.SigningManager, error) {
+func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error) {
 	return mc.signingManager, nil
 }
 
-func (mc *mockCorePkg) CreateIdentityManager(orgName string, stateStore contextApi.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (contextApi.IdentityManager, error) {
+func (mc *mockCorePkg) CreateIdentityManager(orgName string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (core.IdentityManager, error) {
 	mgr, ok := mc.identityManager[orgName]
 	if !ok {
 		return nil, fmt.Errorf("identity manager not found for organization: %s", orgName)
@@ -99,7 +98,7 @@ func (mc *mockCorePkg) CreateIdentityManager(orgName string, stateStore contextA
 	return mgr, nil
 }
 
-func (mc *mockCorePkg) CreateFabricProvider(ctx context.ProviderContext) (sdkApi.FabricProvider, error) {
+func (mc *mockCorePkg) CreateFabricProvider(ctx core.Providers) (fab.InfraProvider, error) {
 	return mc.fabricProvider, nil
 }
 

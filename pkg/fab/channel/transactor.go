@@ -20,13 +20,13 @@ import (
 
 // Transactor enables sending transactions and transaction proposals on the channel.
 type Transactor struct {
-	ctx       context.Context
+	ctx       context.Client
 	ChannelID string
 	orderers  []fab.Orderer
 }
 
 // NewTransactor returns a Transactor for the current context and channel config.
-func NewTransactor(ctx context.Context, cfg fab.ChannelCfg) (*Transactor, error) {
+func NewTransactor(ctx context.Client, cfg fab.ChannelCfg) (*Transactor, error) {
 	orderers, err := orderersFromChannelCfg(ctx, cfg)
 	if err != nil {
 		return nil, errors.WithMessage(err, "reading orderers from channel config failed")
@@ -44,7 +44,7 @@ func NewTransactor(ctx context.Context, cfg fab.ChannelCfg) (*Transactor, error)
 	return &t, nil
 }
 
-func orderersFromChannelCfg(ctx context.Context, cfg fab.ChannelCfg) ([]fab.Orderer, error) {
+func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Orderer, error) {
 	orderers := []fab.Orderer{}
 	ordererDict, err := orderersByTarget(ctx)
 	if err != nil {
@@ -78,7 +78,7 @@ func orderersFromChannelCfg(ctx context.Context, cfg fab.ChannelCfg) ([]fab.Orde
 	return orderers, nil
 }
 
-func orderersByTarget(ctx context.Context) (map[string]core.OrdererConfig, error) {
+func orderersByTarget(ctx context.Client) (map[string]core.OrdererConfig, error) {
 	ordererDict := map[string]core.OrdererConfig{}
 	orderersConfig, err := ctx.Config().OrderersConfig()
 	if err != nil {

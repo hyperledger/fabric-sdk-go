@@ -129,8 +129,8 @@ func TestNoSigningUserFailure(t *testing.T) {
 	}
 
 	ctx := Context{
-		ProviderContext:   fabCtx,
-		IdentityContext:   fabCtx,
+		Providers:         fabCtx,
+		Identity:          fabCtx,
 		ChannelProvider:   chProvider,
 		DiscoveryProvider: discovery,
 	}
@@ -1103,7 +1103,7 @@ func setupDefaultResMgmtClient(t *testing.T) *Client {
 	return setupResMgmtClient(ctx, nil, t, getDefaultTargetFilterOption())
 }
 
-func setupResMgmtClient(fabCtx context.Context, discErr error, t *testing.T, opts ...ClientOption) *Client {
+func setupResMgmtClient(fabCtx context.Client, discErr error, t *testing.T, opts ...ClientOption) *Client {
 
 	fabProvider := fabpvdr.New(fabCtx)
 
@@ -1124,8 +1124,8 @@ func setupResMgmtClient(fabCtx context.Context, discErr error, t *testing.T, opt
 	chProvider.SetTransactor(&transactor)
 
 	ctx := Context{
-		ProviderContext:   fabCtx,
-		IdentityContext:   fabCtx,
+		Providers:         fabCtx,
+		Identity:          fabCtx,
 		ChannelProvider:   chProvider,
 		DiscoveryProvider: discovery,
 		FabricProvider:    fabProvider,
@@ -1234,8 +1234,8 @@ func TestSaveChannelFailure(t *testing.T) {
 		t.Fatalf("Failed to setup channel provider: %s", err)
 	}
 	ctx := Context{
-		ProviderContext:   errCtx,
-		IdentityContext:   fabCtx,
+		Providers:         errCtx,
+		Identity:          fabCtx,
 		ChannelProvider:   chProvider,
 		DiscoveryProvider: discovery,
 	}

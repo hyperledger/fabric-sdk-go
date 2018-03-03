@@ -14,7 +14,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/pkg/errors"
 )
 
@@ -36,7 +36,7 @@ func TestFKVSWithCustomKeySerializer(t *testing.T) {
 }
 
 func testFKVS(t *testing.T, KeySerializer KeySerializer) {
-	var store api.KVStore
+	var store core.KVStore
 	var err error
 	store, err = New(
 		&FileKeyValueStoreOptions{
@@ -95,7 +95,7 @@ func testFKVS(t *testing.T, KeySerializer KeySerializer) {
 
 	// Check non-existing key
 	_, err = store.Load("non-existing")
-	if err == nil || err != api.ErrNotFound {
+	if err == nil || err != core.ErrKeyValueNotFound {
 		t.Fatal("fetching value for non-existing key should return ErrNotFound")
 	}
 
@@ -126,7 +126,7 @@ func TestCreateNewFileKeyValueStore(t *testing.T) {
 		t.Fatal("File path validation on NewFileKeyValueStore is not working as expected")
 	}
 
-	var store api.KVStore
+	var store core.KVStore
 	store, err = New(
 		&FileKeyValueStoreOptions{
 			Path: storePath,
@@ -147,10 +147,10 @@ func cleanup(storePath string) error {
 	return nil
 }
 
-func checkStoreValue(store api.KVStore, key interface{}, expected []byte) error {
+func checkStoreValue(store core.KVStore, key interface{}, expected []byte) error {
 	v, err := store.Load(key)
 	if err != nil {
-		if err == api.ErrNotFound && expected == nil {
+		if err == core.ErrKeyValueNotFound && expected == nil {
 			return nil
 		}
 		return err

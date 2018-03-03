@@ -12,7 +12,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -28,7 +27,7 @@ type identityImpl struct {
 
 // Context holds the providers
 type Context struct {
-	context.ProviderContext
+	core.Providers
 }
 
 // New member identity

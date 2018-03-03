@@ -10,9 +10,9 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
-	contextapi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	esdispatcher "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -30,9 +30,9 @@ type Dispatcher struct {
 	esdispatcher.Dispatcher
 	params
 	channelID              string
-	context                context.Context
+	context                context.Client
 	discoveryService       fab.DiscoveryService
-	signingMgr             contextapi.SigningManager
+	signingMgr             core.SigningManager
 	connection             api.Connection
 	connectionRegistration *ConnectionReg
 	connectionProvider     api.ConnectionProvider
@@ -41,7 +41,7 @@ type Dispatcher struct {
 type handler func(esdispatcher.Event)
 
 // New creates a new dispatcher
-func New(context context.Context, channelID string, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts ...options.Opt) *Dispatcher {
+func New(context context.Client, channelID string, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts ...options.Opt) *Dispatcher {
 	params := defaultParams()
 	options.Apply(params, opts)
 

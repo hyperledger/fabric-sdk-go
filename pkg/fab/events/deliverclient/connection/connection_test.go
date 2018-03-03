@@ -231,6 +231,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func newMockContext() fabcontext.Context {
+func newMockContext() fabcontext.Client {
 	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
 }

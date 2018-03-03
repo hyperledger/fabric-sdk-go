@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -29,7 +30,7 @@ import (
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
 	SDK             *fabsdk.FabricSDK
-	Identity        context.IdentityContext
+	Identity        context.Identity
 	Client          api.Resource
 	Transactor      fab.Transactor
 	Targets         []fab.ProposalProcessor
@@ -93,7 +94,8 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 	setup.Identity = session
 
-	rc, err := sdk.FabricProvider().CreateResourceClient(setup.Identity)
+	//TODO - Below line needs to be replaced with resmgtmt.New once sdk contexts are available
+	rc, err := sdk.FabricProvider().(*fabpvdr.FabricProvider).CreateResourceClient(setup.Identity)
 	if err != nil {
 		return errors.WithMessage(err, "NewResourceClient failed")
 	}

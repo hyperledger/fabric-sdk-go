@@ -52,8 +52,8 @@ func (u *user) MspID() string {
 	return u.mspID
 }
 
-// Identity returns client's serialized identity
-func (u *user) Identity() ([]byte, error) {
+// SerializedIdentity returns client's serialized identity
+func (u *user) SerializedIdentity() ([]byte, error) {
 	serializedIdentity := &pb_msp.SerializedIdentity{Mspid: u.MspID(),
 		IdBytes: u.EnrollmentCertificate()}
 	identity, err := proto.Marshal(serializedIdentity)

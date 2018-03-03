@@ -320,6 +320,6 @@ func TestFilteredBlockEvents(t *testing.T) {
 	}
 }
 
-func newMockContext() fabcontext.Context {
+func newMockContext() fabcontext.Client {
 	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
 }

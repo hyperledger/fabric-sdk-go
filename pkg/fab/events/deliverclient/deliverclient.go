@@ -27,12 +27,12 @@ import (
 var logger = logging.NewLogger("fabric_sdk_go")
 
 // deliverProvider is the connection provider used for connecting to the Deliver service
-var deliverProvider = func(channelID string, context fabcontext.Context, peer fab.Peer) (api.Connection, error) {
+var deliverProvider = func(channelID string, context fabcontext.Client, peer fab.Peer) (api.Connection, error) {
 	return deliverconn.New(context, channelID, deliverconn.Deliver, peer.URL())
 }
 
 // deliverFilteredProvider is the connection provider used for connecting to the DeliverFiltered service
-var deliverFilteredProvider = func(channelID string, context fabcontext.Context, peer fab.Peer) (api.Connection, error) {
+var deliverFilteredProvider = func(channelID string, context fabcontext.Client, peer fab.Peer) (api.Connection, error) {
 	return deliverconn.New(context, channelID, deliverconn.DeliverFiltered, peer.URL())
 }
 
@@ -49,7 +49,7 @@ type Client struct {
 }
 
 // New returns a new deliver event client
-func New(context fabcontext.Context, channelID string, discoveryService fab.DiscoveryService, opts ...options.Opt) (*Client, error) {
+func New(context fabcontext.Client, channelID string, discoveryService fab.DiscoveryService, opts ...options.Opt) (*Client, error) {
 	if channelID == "" {
 		return nil, errors.New("expecting channel ID")
 	}

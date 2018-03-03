@@ -8,12 +8,13 @@ package mocks
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
 
 // MockChannelProvider holds a mock channel provider.
 type MockChannelProvider struct {
-	ctx        context.ProviderContext
+	ctx        core.Providers
 	transactor fab.Transactor
 }
 
@@ -25,7 +26,7 @@ type MockChannelService struct {
 }
 
 // NewMockChannelProvider returns a mock ChannelProvider
-func NewMockChannelProvider(ctx context.Context) (*MockChannelProvider, error) {
+func NewMockChannelProvider(ctx context.Client) (*MockChannelProvider, error) {
 	// Create a mock client with the mock channel
 	cp := MockChannelProvider{
 		ctx: ctx,
@@ -39,7 +40,7 @@ func (cp *MockChannelProvider) SetTransactor(transactor fab.Transactor) {
 }
 
 // ChannelService returns a mock ChannelService
-func (cp *MockChannelProvider) ChannelService(ic context.IdentityContext, channelID string) (fab.ChannelService, error) {
+func (cp *MockChannelProvider) ChannelService(ic fab.IdentityContext, channelID string) (fab.ChannelService, error) {
 	cs := MockChannelService{
 		provider:   cp,
 		channelID:  channelID,

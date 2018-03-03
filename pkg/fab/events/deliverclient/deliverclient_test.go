@@ -435,6 +435,6 @@ func listenEvents(blockch <-chan *fab.BlockEvent, ccch <-chan *fab.CCEvent, wait
 	}
 }
 
-func newMockContext() fabcontext.Context {
+func newMockContext() fabcontext.Client {
 	return fabclientmocks.NewMockContext(fabclientmocks.NewMockUser("user1"))
 }

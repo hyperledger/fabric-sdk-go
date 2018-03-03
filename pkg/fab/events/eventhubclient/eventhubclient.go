@@ -24,7 +24,7 @@ import (
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
-var ehConnProvider = func(channelID string, context context.Context, peer fab.Peer) (api.Connection, error) {
+var ehConnProvider = func(channelID string, context context.Client, peer fab.Peer) (api.Connection, error) {
 	eventEndpoint, ok := peer.(api.EventEndpoint)
 	if !ok {
 		panic("peer is not an EventEndpoint")
@@ -42,7 +42,7 @@ type Client struct {
 }
 
 // New returns a new event hub client
-func New(context context.Context, channelID string, discoveryService fab.DiscoveryService, opts ...options.Opt) (*Client, error) {
+func New(context context.Client, channelID string, discoveryService fab.DiscoveryService, opts ...options.Opt) (*Client, error) {
 	if channelID == "" {
 		return nil, errors.New("expecting channel ID")
 	}

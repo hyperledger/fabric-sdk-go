@@ -74,7 +74,7 @@ func TestChannelConfigWithOrdererError(t *testing.T) {
 
 }
 
-func setupTestContext() context.Context {
+func setupTestContext() context.Client {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
 	return ctx
