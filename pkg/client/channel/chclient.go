@@ -139,7 +139,7 @@ func (cc *Client) resolveRetry(ctx *invoke.RequestContext, o opts) bool {
 			cc.greylist.Greylist(e)
 
 			// Reset context parameters
-			ctx.Opts.ProposalProcessors = o.ProposalProcessors
+			ctx.Opts.Targets = o.Targets
 			ctx.Error = nil
 			ctx.Response = invoke.Response{}
 

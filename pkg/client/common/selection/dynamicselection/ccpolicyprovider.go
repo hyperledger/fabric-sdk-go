@@ -149,7 +149,7 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 			Args:        ccArgs,
 		}
 
-		resp, err := client.Query(request, channel.WithProposalProcessor(peer))
+		resp, err := client.Query(request, channel.WithTargets([]fab.Peer{peer}))
 		if err != nil {
 			queryErrors = append(queryErrors, err.Error())
 			continue

@@ -18,9 +18,9 @@ import (
 
 // Opts allows the user to specify more advanced options
 type Opts struct {
-	ProposalProcessors []fab.ProposalProcessor // targets
-	Timeout            time.Duration
-	Retry              retry.Opts
+	Targets []fab.Peer // targets
+	Timeout time.Duration
+	Retry   retry.Opts
 }
 
 // Request contains the parameters to execute transaction

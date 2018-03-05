@@ -30,13 +30,13 @@ type EndorsementHandler struct {
 //Handle for endorsing transactions
 func (e *EndorsementHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
 
-	if len(requestContext.Opts.ProposalProcessors) == 0 {
+	if len(requestContext.Opts.Targets) == 0 {
 		requestContext.Error = status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), "targets were not provided", nil)
 		return
 	}
 
 	// Endorse Tx
-	transactionProposalResponses, proposal, err := createAndSendTransactionProposal(clientContext.Transactor, &requestContext.Request, requestContext.Opts.ProposalProcessors)
+	transactionProposalResponses, proposal, err := createAndSendTransactionProposal(clientContext.Transactor, &requestContext.Request, peer.PeersToTxnProcessors(requestContext.Opts.Targets))
 
 	requestContext.Response.Proposal = proposal
 	requestContext.Response.TransactionID = proposal.TxnID // TODO: still needed?
@@ -66,7 +66,7 @@ type ProposalProcessorHandler struct {
 func (h *ProposalProcessorHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
 	//Get proposal processor, if not supplied then use discovery service to get available peers as endorser
 	//If selection service available then get endorser peers for this chaincode
-	if len(requestContext.Opts.ProposalProcessors) == 0 {
+	if len(requestContext.Opts.Targets) == 0 {
 		// Use discovery service to figure out proposal processors
 		peers, err := clientContext.Discovery.GetPeers()
 		if err != nil {
@@ -81,7 +81,7 @@ func (h *ProposalProcessorHandler) Handle(requestContext *RequestContext, client
 				return
 			}
 		}
-		requestContext.Opts.ProposalProcessors = peer.PeersToTxnProcessors(endorsers)
+		requestContext.Opts.Targets = endorsers
 	}
 
 	//Delegate to next step if any

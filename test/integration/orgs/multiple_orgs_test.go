@@ -176,7 +176,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 		t.Fatalf("Failed to create new ledger client: %s", err)
 	}
 
-	channelCfg, err := ledgerClient.QueryConfig(ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	channelCfg, err := ledgerClient.QueryConfig(ledger.WithTargets(orgTestPeer0, orgTestPeer1), ledger.WithMinTargets(2))
 	if err != nil {
 		t.Fatalf("QueryConfig return error: %v", err)
 	}
@@ -188,7 +188,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 		t.Fatalf("Expecting %s, got %s", expectedOrderer, channelCfg.Orderers()[0])
 	}
 
-	ledgerInfoBefore, err := ledgerClient.QueryInfo(ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2), ledger.WithMaxTargets(3))
+	ledgerInfoBefore, err := ledgerClient.QueryInfo(ledger.WithTargets(orgTestPeer0, orgTestPeer1), ledger.WithMinTargets(2), ledger.WithMaxTargets(3))
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
@@ -203,7 +203,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Org2 user moves funds on org2 peer
-	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithProposalProcessor(orgTestPeer1))
+	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets([]fab.Peer{orgTestPeer1}))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -267,13 +267,13 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
-	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithProposalProcessor(orgTestPeer1))
+	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets([]fab.Peer{orgTestPeer1}))
 	if err == nil {
 		t.Fatalf("Should have failed to move funds due to cc policy")
 	}
 
 	// Org2 user moves funds (cc policy ok since we have provided peers for both Orgs)
-	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithProposalProcessor(orgTestPeer0, orgTestPeer1))
+	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets([]fab.Peer{orgTestPeer0, orgTestPeer1}))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -331,7 +331,7 @@ func verifyValue(t *testing.T, chClient *channel.Client, expected int) {
 	var valueInt int
 	for i := 0; i < pollRetries; i++ {
 		// Query final value on org1 peer
-		response, err := chClient.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, channel.WithProposalProcessor(orgTestPeer0))
+		response, err := chClient.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, channel.WithTargets([]fab.Peer{orgTestPeer0}))
 		if err != nil {
 			t.Fatalf("Failed to query funds after transaction: %s", err)
 		}

@@ -29,9 +29,9 @@ type Registration interface {
 
 // opts allows the user to specify more advanced options
 type opts struct {
-	ProposalProcessors []fab.ProposalProcessor // targets
-	Timeout            time.Duration
-	Retry              retry.Opts
+	Targets []fab.Peer // targets
+	Timeout time.Duration
+	Retry   retry.Opts
 }
 
 //Option func for each Opts argument
@@ -62,10 +62,10 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
-//WithProposalProcessor encapsulates ProposalProcessors to Option
-func WithProposalProcessor(proposalProcessors ...fab.ProposalProcessor) Option {
+//WithTargets encapsulates ProposalProcessors to Option
+func WithTargets(targets []fab.Peer) Option {
 	return func(o *opts) error {
-		o.ProposalProcessors = proposalProcessors
+		o.Targets = targets
 		return nil
 	}
 }

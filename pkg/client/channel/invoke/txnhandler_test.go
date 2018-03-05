@@ -153,7 +153,7 @@ func TestExecuteTxHandlerErrors(t *testing.T) {
 func TestEndorsementHandler(t *testing.T) {
 	request := Request{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}}
 
-	requestContext := prepareRequestContext(request, Opts{ProposalProcessors: []fab.ProposalProcessor{fcmocks.NewMockPeer("p2", "")}}, t)
+	requestContext := prepareRequestContext(request, Opts{Targets: []fab.Peer{fcmocks.NewMockPeer("p2", "")}}, t)
 	clientContext := setupChannelClientContext(nil, nil, nil, t)
 
 	handler := NewEndorsementHandler()
@@ -183,23 +183,23 @@ func TestProposalProcessorHandler(t *testing.T) {
 	if requestContext.Error != nil {
 		t.Fatalf("Got error: %s", requestContext.Error)
 	}
-	if len(requestContext.Opts.ProposalProcessors) != len(discoveryPeers) {
-		t.Fatalf("Expecting %d proposal processors but got %d", len(discoveryPeers), len(requestContext.Opts.ProposalProcessors))
+	if len(requestContext.Opts.Targets) != len(discoveryPeers) {
+		t.Fatalf("Expecting %d proposal processors but got %d", len(discoveryPeers), len(requestContext.Opts.Targets))
 	}
-	if requestContext.Opts.ProposalProcessors[0] != peer1 || requestContext.Opts.ProposalProcessors[1] != peer2 {
+	if requestContext.Opts.Targets[0] != peer1 || requestContext.Opts.Targets[1] != peer2 {
 		t.Fatalf("Didn't get expected peers")
 	}
 
 	// Directly pass in the proposal processors. In this case it should use those directly
-	requestContext = prepareRequestContext(request, Opts{ProposalProcessors: []fab.ProposalProcessor{peer2}}, t)
+	requestContext = prepareRequestContext(request, Opts{Targets: []fab.Peer{peer2}}, t)
 	handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
 	if requestContext.Error != nil {
 		t.Fatalf("Got error: %s", requestContext.Error)
 	}
-	if len(requestContext.Opts.ProposalProcessors) != 1 {
-		t.Fatalf("Expecting 1 proposal processor but got %d", len(requestContext.Opts.ProposalProcessors))
+	if len(requestContext.Opts.Targets) != 1 {
+		t.Fatalf("Expecting 1 proposal processor but got %d", len(requestContext.Opts.Targets))
 	}
-	if requestContext.Opts.ProposalProcessors[0] != peer2 {
+	if requestContext.Opts.Targets[0] != peer2 {
 		t.Fatalf("Didn't get expected peers")
 	}
 }

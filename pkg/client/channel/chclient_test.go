@@ -171,10 +171,8 @@ func TestQueryWithOptTarget(t *testing.T) {
 
 	peers := []fab.Peer{testPeer}
 
-	targets := peer.PeersToTxnProcessors(peers)
-
 	response, err := chClient.Query(Request{ChaincodeID: "testCC", Fcn: "invoke",
-		Args: [][]byte{[]byte("query"), []byte("b")}}, WithProposalProcessor(targets...))
+		Args: [][]byte{[]byte("query"), []byte("b")}}, WithTargets(peers))
 	if err != nil {
 		t.Fatalf("Failed to invoke test cc: %s", err)
 	}
@@ -251,7 +249,7 @@ type customEndorsementHandler struct {
 }
 
 func (h *customEndorsementHandler) Handle(requestContext *invoke.RequestContext, clientContext *invoke.ClientContext) {
-	transactionProposalResponses, txnID, err := createAndSendTestTransactionProposal(h.transactor, &requestContext.Request, requestContext.Opts.ProposalProcessors)
+	transactionProposalResponses, txnID, err := createAndSendTestTransactionProposal(h.transactor, &requestContext.Request, peer.PeersToTxnProcessors(requestContext.Opts.Targets))
 
 	requestContext.Response.TransactionID = txnID
 
