@@ -40,7 +40,9 @@ type TransactionHeader interface {
 
 // ChaincodeInvokeRequest contains the parameters for sending a transaction proposal.
 type ChaincodeInvokeRequest struct {
-	Targets      []ProposalProcessor // Deprecated: this parameter is ignored in the new codes and will be removed shortly.
+	// Deprecated: this parameter is ignored in the new codes and will be removed shortly.
+	// The depricated Targets should be removed after deprecated channel was removed
+	Targets      []ProposalProcessor
 	ChaincodeID  string
 	TransientMap map[string][]byte
 	Fcn          string

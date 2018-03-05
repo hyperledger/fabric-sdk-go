@@ -21,7 +21,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/mocks"
 )
 
@@ -270,17 +269,12 @@ func TestRevoke(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient returned error: %v", err)
 	}
-	mockKey := bccspwrapper.GetKey(&mocks.MockKey{})
 
 	// Revoke with nil request
 	_, err = identityManager.Revoke(nil)
 	if err == nil {
 		t.Fatalf("Expected error with nil request")
 	}
-
-	user := mocks.NewMockUser("test")
-	user.SetEnrollmentCertificate(readCert(t))
-	user.SetPrivateKey(mockKey)
 
 	_, err = identityManager.Revoke(&core.RevocationRequest{})
 	if err == nil {
