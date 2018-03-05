@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 // deliverProvider is the connection provider used for connecting to the Deliver service
 var deliverProvider = func(channelID string, context fabcontext.Client, peer fab.Peer) (api.Connection, error) {

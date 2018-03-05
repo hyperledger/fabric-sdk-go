@@ -31,15 +31,16 @@ import (
 	cs "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 )
 
-var logger = logging.NewLogger(logModule)
+var logger = logging.NewLogger("fabsdk/core")
 
 const (
 	cmdRoot                   = "FABRIC_SDK"
-	logModule                 = "fabric_sdk_go"
 	defaultTimeout            = time.Second * 5
 	defaultConnIdleTimeout    = time.Second * 30
 	defaultCacheSweepInterval = time.Second * 15
 )
+
+var logModules = [...]string{"fabsdk/client", "fabsdk/core", "fabsdk/fab"}
 
 // Config represents the configuration for the client
 type Config struct {
@@ -211,7 +212,9 @@ func initConfig(c *Config) (*Config, error) {
 		return nil, errors.WithMessage(err, "network configuration load failed")
 	}
 
-	logger.Infof("config %s logging level is set to: %s", logModule, loglevel.ParseString(logging.GetLevel(logModule)))
+	for _, logModule := range logModules {
+		logger.Infof("config %s logging level is set to: %s", logModule, loglevel.ParseString(logging.GetLevel(logModule)))
+	}
 	return c, nil
 }
 
@@ -232,6 +235,7 @@ func setLogLevel(myViper *viper.Viper) {
 	loggingLevelString := myViper.GetString("client.logging.level")
 	logLevel := loglevel.INFO
 	if loggingLevelString != "" {
+		const logModule = "fabsdk" // TODO: allow more flexability in setting levels for different modules
 		logger.Debugf("%s logging level from the config: %v", logModule, loggingLevelString)
 		var err error
 		logLevel, err = logging.LogLevel(loggingLevelString)
@@ -239,7 +243,11 @@ func setLogLevel(myViper *viper.Viper) {
 			panic(err)
 		}
 	}
-	logging.SetLevel(logModule, logLevel)
+
+	// TODO: allow seperate settings for each
+	for _, logModule := range logModules {
+		logging.SetLevel(logModule, logLevel)
+	}
 }
 
 // load Default config

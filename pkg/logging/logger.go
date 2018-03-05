@@ -31,7 +31,7 @@ var loggerProviderOnce sync.Once
 const (
 	//loggerNotInitializedMsg is used when a logger is not initialized before logging
 	loggerNotInitializedMsg = "Default logger initialized (please call logging.InitLogger if you wish to use a custom logger)"
-	loggerModule            = "fabric_sdk_go"
+	loggerModule            = "fabsdk/core"
 )
 
 // GetLogger creates and returns a Logger object based on the module name.

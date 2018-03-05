@@ -27,7 +27,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 const (
 	defaultMinResponses = 1

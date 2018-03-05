@@ -24,7 +24,7 @@ import (
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 // CCProposalType reflects transitions in the chaincode lifecycle
 type CCProposalType int

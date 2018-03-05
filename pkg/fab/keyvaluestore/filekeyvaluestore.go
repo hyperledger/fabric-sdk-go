@@ -21,7 +21,7 @@ const (
 	newFileMode = 0600
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 // KeySerializer converts a key to a unique fila path
 type KeySerializer func(key interface{}) (string, error)

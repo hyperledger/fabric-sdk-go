@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 // Dispatcher is responsible for handling all events, including connection and registration events originating from the client,
 // and events originating from the event server. All events are processed in a single Go routine

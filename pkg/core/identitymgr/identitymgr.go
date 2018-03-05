@@ -20,7 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/core")
 
 // IdentityManager implements fab/IdentityManager
 type IdentityManager struct {

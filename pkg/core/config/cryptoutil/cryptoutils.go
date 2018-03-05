@@ -22,7 +22,7 @@ import (
 	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/core")
 
 // GetPrivateKeyFromCert will return private key represented by SKI in cert's public key
 func GetPrivateKeyFromCert(cert []byte, cs core.CryptoSuite) (core.Key, error) {

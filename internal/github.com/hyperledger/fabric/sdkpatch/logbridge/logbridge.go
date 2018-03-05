@@ -32,7 +32,7 @@ type Logger struct {
 
 // MustGetLogger bridges calls the Go SDK NewLogger
 func MustGetLogger(module string) *Logger {
-	fabModule := "fabric_sdk_go"
+	fabModule := "fabsdk/fab"
 	logger := logging.NewLogger(fabModule)
 	return &Logger{
 		Logger: logger,

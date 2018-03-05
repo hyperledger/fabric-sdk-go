@@ -20,7 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/client")
 
 //EndorsementHandler for handling endorse transactions
 type EndorsementHandler struct {

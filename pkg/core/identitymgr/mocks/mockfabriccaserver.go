@@ -18,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/core")
 
 // Matching key-cert pair. On enroll, the key will be
 // imported into the key store, and the cert will be

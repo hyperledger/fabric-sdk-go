@@ -35,7 +35,7 @@ type Descriptor struct {
 // of the install payload.
 var keep = []string{".go", ".c", ".h"}
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 // NewCCPackage creates new go lang chaincode package
 func NewCCPackage(chaincodePath string, goPath string) (*api.CCPackage, error) {

@@ -92,7 +92,7 @@ type SaveChannelRequest struct {
 //RequestOption func for each Opts argument
 type RequestOption func(opts *Opts) error
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/client")
 
 // Client enables managing resources in Fabric network.
 type Client struct {

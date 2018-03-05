@@ -16,7 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/client")
 
 // Filter is a discovery filter that greylists certain peers that are
 // known to be down for the configured amount of time

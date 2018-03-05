@@ -19,7 +19,7 @@ var logger *logging.Logger
 var cfLogBridge *cLogger
 
 func init() {
-	logger = logging.NewLogger("fabric_sdk_go")
+	logger = logging.NewLogger("fabsdk/fab")
 	cfLogBridge = &cLogger{}
 	clog.SetLogger(cfLogBridge)
 }
