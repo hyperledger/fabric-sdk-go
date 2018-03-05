@@ -105,6 +105,11 @@ func (c *MockConfig) TimeoutOrDefault(arg config.TimeoutType) time.Duration {
 	return time.Second * 5
 }
 
+//Timeout not implemented
+func (c *MockConfig) Timeout(arg config.TimeoutType) time.Duration {
+	return time.Second * 10
+}
+
 // PeersConfig Retrieves the fabric peers from the config file provided
 func (c *MockConfig) PeersConfig(org string) ([]config.PeerConfig, error) {
 	return nil, nil
