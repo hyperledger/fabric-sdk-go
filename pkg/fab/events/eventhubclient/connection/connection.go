@@ -18,10 +18,10 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	comm "github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	logging "github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/options"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )

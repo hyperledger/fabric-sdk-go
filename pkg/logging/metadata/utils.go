@@ -4,11 +4,13 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package loglevel
+package metadata
 
 import (
 	"errors"
 	"strings"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 )
 
 //Log level names in string
@@ -21,16 +23,16 @@ var levelNames = []string{
 }
 
 // ParseLevel returns the log level from a string representation.
-func ParseLevel(level string) (Level, error) {
+func ParseLevel(level string) (api.Level, error) {
 	for i, name := range levelNames {
 		if strings.EqualFold(name, level) {
-			return Level(i), nil
+			return api.Level(i), nil
 		}
 	}
-	return ERROR, errors.New("logger: invalid log level")
+	return api.ERROR, errors.New("logger: invalid log level")
 }
 
 //ParseString returns String repressentation of given log level
-func ParseString(level Level) string {
+func ParseString(level api.Level) string {
 	return levelNames[level]
 }

@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/blockfilter"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	logging "github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/options"
 	"github.com/pkg/errors"
 )
 

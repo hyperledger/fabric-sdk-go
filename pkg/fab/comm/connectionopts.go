@@ -10,7 +10,7 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"google.golang.org/grpc/keepalive"
 )
 

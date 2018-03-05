@@ -12,12 +12,11 @@ package logbridge
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/loglevel"
 )
 
 // Log levels (from fabric-sdk-go/pkg/logging/level.go).
 const (
-	CRITICAL loglevel.Level = iota
+	CRITICAL logging.Level = iota
 	ERROR
 	WARNING
 	INFO
@@ -51,6 +50,6 @@ func (l *Logger) Warning(args ...interface{}) {
 }
 
 // IsEnabledFor bridges calls to the Go SDK logger's IsEnabledFor.
-func (l *Logger) IsEnabledFor(level loglevel.Level) bool {
+func (l *Logger) IsEnabledFor(level logging.Level) bool {
 	return logging.IsEnabledFor(l.module, level)
 }

@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package dispatcher
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/options"
 )
 
 type params struct {

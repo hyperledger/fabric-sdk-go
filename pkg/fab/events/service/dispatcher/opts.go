@@ -9,7 +9,7 @@ package dispatcher
 import (
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 )
 
 type params struct {

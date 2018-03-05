@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/loglevel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/metadata"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
@@ -24,6 +24,18 @@ type Logger struct {
 // logger factory singleton - access only via loggerProvider()
 var loggerProviderInstance api.LoggerProvider
 var loggerProviderOnce sync.Once
+
+// Level defines all available log levels for log messages.
+type Level int
+
+// Log levels.
+const (
+	CRITICAL Level = iota
+	ERROR
+	WARNING
+	INFO
+	DEBUG
+)
 
 // TODO: enable leveler to redirect to loggerProvider
 //var levelerProvider apilogging.Leveler
@@ -77,23 +89,24 @@ func InitLogger(l api.LoggerProvider) {
 }
 
 //SetLevel - setting log level for given module
-func SetLevel(module string, level loglevel.Level) {
-	modlog.SetLevel(module, level)
+func SetLevel(module string, level Level) {
+	modlog.SetLevel(module, api.Level(level))
 }
 
 //GetLevel - getting log level for given module
-func GetLevel(module string) loglevel.Level {
-	return modlog.GetLevel(module)
+func GetLevel(module string) Level {
+	return Level(modlog.GetLevel(module))
 }
 
 //IsEnabledFor - Check if given log level is enabled for given module
-func IsEnabledFor(module string, level loglevel.Level) bool {
-	return modlog.IsEnabledFor(module, level)
+func IsEnabledFor(module string, level Level) bool {
+	return modlog.IsEnabledFor(module, api.Level(level))
 }
 
 // LogLevel returns the log level from a string representation.
-func LogLevel(level string) (loglevel.Level, error) {
-	return loglevel.ParseLevel(level)
+func LogLevel(level string) (Level, error) {
+	l, err := metadata.ParseLevel(level)
+	return Level(l), err
 }
 
 //Fatal calls Fatal function of underlying logger
@@ -206,4 +219,15 @@ func (l *Logger) logger() api.Logger {
 		l.instance = loggerProvider().GetLogger(l.module)
 	})
 	return l.instance
+}
+
+// ParseLevel returns the log level from a string representation.
+func ParseLevel(level string) (Level, error) {
+	l, err := metadata.ParseLevel(level)
+	return Level(l), err
+}
+
+//ParseString returns String repressentation of given log level
+func ParseString(level Level) string {
+	return metadata.ParseString(api.Level(level))
 }

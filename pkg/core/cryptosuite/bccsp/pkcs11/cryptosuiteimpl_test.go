@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	pkcsFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/pkcs11"
@@ -20,7 +21,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/testutils"
 )
 
 var configImpl api.Config
@@ -91,8 +91,8 @@ func TestCryptoSuiteByConfigPKCS11Failure(t *testing.T) {
 
 	//Get cryptosuite using config
 	samplecryptoSuite, err := GetSuiteByConfig(mockConfig)
-	testutils.VerifyNotEmpty(t, err, "Supposed to get error on GetSuiteByConfig call : %s", err)
-	testutils.VerifyEmpty(t, samplecryptoSuite, "Not supposed to get valid cryptosuite")
+	assert.NotEmpty(t, err, "Supposed to get error on GetSuiteByConfig call : %s", err)
+	assert.Empty(t, samplecryptoSuite, "Not supposed to get valid cryptosuite")
 }
 
 func TestPKCS11CSPConfigWithValidOptions(t *testing.T) {

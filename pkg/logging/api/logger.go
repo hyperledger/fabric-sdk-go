@@ -6,6 +6,18 @@ SPDX-License-Identifier: Apache-2.0
 
 package api
 
+// Level defines all available log levels for log messages.
+type Level int
+
+// Log levels.
+const (
+	CRITICAL Level = iota
+	ERROR
+	WARNING
+	INFO
+	DEBUG
+)
+
 //Logger - Standard logger interface
 type Logger interface {
 	Fatal(v ...interface{})
