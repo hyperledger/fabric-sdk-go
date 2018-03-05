@@ -25,7 +25,7 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 // Resource is a client that provides access to fabric network resource management.
 type Resource struct {

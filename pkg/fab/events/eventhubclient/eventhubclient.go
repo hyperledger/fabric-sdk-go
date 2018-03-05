@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 var ehConnProvider = func(channelID string, context context.Client, peer fab.Peer) (api.Connection, error) {
 	eventEndpoint, ok := peer.(api.EventEndpoint)

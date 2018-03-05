@@ -34,7 +34,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 // EventHub allows a client to listen to event at a peer.
 type EventHub struct {

@@ -589,7 +589,7 @@ func TestInitConfigWithCmdRoot(t *testing.T) {
 	TestInitConfigSuccess(t)
 	fileLoc := configTestFilePath
 	cmdRoot := "fabric_sdk"
-	var logger = logging.NewLogger("fabric_sdk_go")
+	var logger = logging.NewLogger("fabsdk/core")
 	logger.Infof("fileLoc is %s", fileLoc)
 
 	logger.Infof("fileLoc right before calling InitConfigWithCmdRoot is %s", fileLoc)

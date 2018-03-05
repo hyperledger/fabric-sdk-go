@@ -18,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 type ehConnection interface {
 	api.Connection

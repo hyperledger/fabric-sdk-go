@@ -14,7 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/core")
 
 // IsTLSEnabled is a generic function that expects a URL and verifies if it has
 // a prefix HTTPS or GRPCS to return true for TLS Enabled URLs or false otherwise

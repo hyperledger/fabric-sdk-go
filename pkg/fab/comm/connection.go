@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 // StreamProvider creates a GRPC stream
 type StreamProvider func(conn *grpc.ClientConn) (grpc.ClientStream, error)

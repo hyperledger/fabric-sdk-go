@@ -19,7 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/core")
 
 var initOnce sync.Once
 var defaultCryptoSuite core.CryptoSuite

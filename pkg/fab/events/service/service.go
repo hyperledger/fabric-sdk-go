@@ -26,7 +26,7 @@ const (
 	stopTimeout = 5 * time.Second
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 // EventProducer produces events which are dispatched to clients
 type EventProducer interface {

@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 // EventHubConnection manages the connection and client stream
 // to the event hub server

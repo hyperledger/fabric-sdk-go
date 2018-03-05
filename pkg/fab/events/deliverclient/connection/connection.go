@@ -28,7 +28,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 type deliverStream interface {
 	grpc.ClientStream

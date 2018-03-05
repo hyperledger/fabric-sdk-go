@@ -14,7 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/core")
 
 //NewCryptoSuite returns cryptosuite adaptor for given bccsp.BCCSP implementation
 func NewCryptoSuite(bccsp bccsp.BCCSP) core.CryptoSuite {

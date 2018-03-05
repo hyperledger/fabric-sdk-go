@@ -30,7 +30,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logger = logging.NewLogger("fabric_sdk_go")
+var logger = logging.NewLogger("fabsdk/fab")
 
 // Orderer allows a client to broadcast a transaction.
 type Orderer struct {
