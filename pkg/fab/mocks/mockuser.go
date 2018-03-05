@@ -78,17 +78,11 @@ func (u *MockUser) SetEnrollmentCertificate(cert []byte) {
 }
 
 // SetPrivateKey ...
-/**
- * deprecated.
- */
 func (u *MockUser) SetPrivateKey(privateKey core.Key) {
 	u.privateKey = privateKey
 }
 
 // PrivateKey ...
-/**
- * deprecated.
- */
 func (u *MockUser) PrivateKey() core.Key {
 	return u.privateKey
 }

@@ -33,7 +33,6 @@ type Channel interface {
 	SendUpgradeProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []ProposalProcessor) ([]*TransactionProposalResponse, TransactionID, error)
 
 	// Network
-	// Deprecated: getters/setters are deprecated from interface.
 	AddPeer(peer Peer) error
 	RemovePeer(peer Peer)
 	Peers() []Peer
@@ -43,6 +42,7 @@ type Channel interface {
 	AddOrderer(orderer Orderer) error
 	RemoveOrderer(orderer Orderer)
 	Orderers() []Orderer
+	// Deprecated: SetMSPManager should be removed after deprecated channel was removed.
 	SetMSPManager(mspManager msp.MSPManager)
 	MSPManager() msp.MSPManager
 	OrganizationUnits() ([]string, error)
