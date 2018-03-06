@@ -134,7 +134,7 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 	if sdk.opts.Logger == nil {
 		return errors.New("Missing logger from pkg suite")
 	}
-	logging.InitLogger(sdk.opts.Logger)
+	logging.Initialize(sdk.opts.Logger)
 
 	// Initialize crypto provider
 	cryptoSuite, err := sdk.opts.Core.CreateCryptoSuiteProvider(config)

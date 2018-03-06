@@ -46,19 +46,10 @@ const (
 	loggerModule            = "fabsdk/core"
 )
 
-// GetLogger creates and returns a Logger object based on the module name.
-func GetLogger(module string) (*Logger, error) {
-	// note: the underlying logger instance is lazy initialized on first use
-	return &Logger{module: module}, nil
-}
-
-// NewLogger is like GetLogger but panics if the logger can't be created.
+// NewLogger creates and returns a Logger object based on the module name.
 func NewLogger(module string) *Logger {
-	logger, err := GetLogger(module)
-	if err != nil {
-		panic("logger: " + module + ": " + err.Error())
-	}
-	return logger
+	// note: the underlying logger instance is lazy initialized on first use
+	return &Logger{module: module}
 }
 
 func loggerProvider() api.LoggerProvider {
@@ -72,9 +63,9 @@ func loggerProvider() api.LoggerProvider {
 	return loggerProviderInstance
 }
 
-//InitLogger sets new logger which takes over logging operations.
+//Initialize sets new logger which takes over logging operations.
 //It is required to call this function before making any loggings.
-func InitLogger(l api.LoggerProvider) {
+func Initialize(l api.LoggerProvider) {
 	loggerProviderOnce.Do(func() {
 		loggerProviderInstance = l
 		logger := loggerProviderInstance.GetLogger(loggerModule)

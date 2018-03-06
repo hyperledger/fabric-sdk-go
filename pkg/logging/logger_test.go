@@ -25,7 +25,7 @@ func TestLoggingForCustomLogger(t *testing.T) {
 
 	//Now add sample logger
 	resetLoggerInstance()
-	InitLogger(testdata.GetSampleLoggingProvider(&buf))
+	Initialize(testdata.GetSampleLoggingProvider(&buf))
 	//Create new logger
 	logger := NewLogger(moduleName)
 
@@ -73,7 +73,7 @@ func TestDefaultModulledLoggingBehavior(t *testing.T) {
 
 	//Init logger with default logger
 	resetLoggerInstance()
-	InitLogger(modlog.LoggerProvider())
+	Initialize(modlog.LoggerProvider())
 	//Get new logger
 	dlogger := NewLogger(moduleName)
 	// force initialization
@@ -137,7 +137,7 @@ func TestLoggerSetting(t *testing.T) {
 	logger.Info("brown fox jumps over the lazy dog")
 	assert.True(t, loggerProviderInstance != nil, "Logger is supposed to be initialized now")
 	resetLoggerInstance()
-	InitLogger(modlog.LoggerProvider())
+	Initialize(modlog.LoggerProvider())
 	assert.True(t, loggerProviderInstance != nil, "Logger is supposed to be initialized now")
 }
 
