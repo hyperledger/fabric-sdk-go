@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"context"
+	reqContext "context"
 	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -81,7 +81,7 @@ func (o *mockOrderer) URL() string {
 
 // SendBroadcast accepts client broadcast calls and reports them to the listener channel
 // Returns the first enqueued error, or nil if there are no enqueued errors
-func (o *mockOrderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, error) {
+func (o *mockOrderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnvelope) (*common.Status, error) {
 	// Report this call to the listener
 	if o.BroadcastListener != nil {
 		o.BroadcastQueue <- envelope
@@ -95,8 +95,8 @@ func (o *mockOrderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Statu
 }
 
 // SendDeliver returns the channels for delivery of prepared mock values and errors (if any)
-func (o *mockOrderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block, chan error, context.CancelFunc) {
-	return o.Deliveries, o.DeliveryErrors, func() {}
+func (o *mockOrderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelope) (chan *common.Block, chan error) {
+	return o.Deliveries, o.DeliveryErrors
 }
 
 func (o *mockOrderer) EnqueueSendBroadcastError(err error) {
