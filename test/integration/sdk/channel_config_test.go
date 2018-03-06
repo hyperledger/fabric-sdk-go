@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -138,7 +139,7 @@ type ChannelConfigFromOrdererProviderFactory struct {
 type CustomFabricProvider struct {
 	*fabpvdr.FabricProvider
 	orderer         fab.Orderer
-	providerContext core.Providers
+	providerContext context.Providers
 }
 
 // CreateChannelConfig initializes the channel config
@@ -152,7 +153,7 @@ func (f *CustomFabricProvider) CreateChannelConfig(ic fab.IdentityContext, chann
 }
 
 // CreateFabricProvider returns a new default implementation of fabric primitives
-func (f *ChannelConfigFromOrdererProviderFactory) CreateFabricProvider(context core.Providers) (fab.InfraProvider, error) {
+func (f *ChannelConfigFromOrdererProviderFactory) CreateFabricProvider(context context.Providers) (fab.InfraProvider, error) {
 
 	fabProvider := fabpvdr.New(context)
 

@@ -18,7 +18,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -96,14 +97,10 @@ var logger = logging.NewLogger("fabsdk/client")
 
 // Client enables managing resources in Fabric network.
 type Client struct {
-	provider          core.Providers
-	identity          context.Identity
-	discoveryProvider fab.DiscoveryProvider // used to get per channel discovery service(s)
-	channelProvider   fab.ChannelProvider
-	fabricProvider    fab.InfraProvider
-	discovery         fab.DiscoveryService // global discovery service (detects all peers on the network)
-	resource          api.Resource
-	filter            TargetFilter
+	context   context.Client
+	discovery fab.DiscoveryService // global discovery service (detects all peers on the network)
+	resource  api.Resource
+	filter    TargetFilter
 }
 
 // MSPFilter is default filter
@@ -114,20 +111,6 @@ type MSPFilter struct {
 // Accept returns true if this peer is to be included in the target list
 func (f *MSPFilter) Accept(peer fab.Peer) bool {
 	return peer.MSPID() == f.mspID
-}
-
-// Context holds the providers and services needed to create a ChannelClient.
-type Context struct {
-	core.Providers
-	context.Identity
-	DiscoveryProvider fab.DiscoveryProvider
-	ChannelProvider   fab.ChannelProvider
-	FabricProvider    fab.InfraProvider
-}
-
-type fabContext struct {
-	core.Providers
-	context.Identity
 }
 
 // ClientOption describes a functional parameter for the New constructor
@@ -142,17 +125,13 @@ func WithDefaultTargetFilter(filter TargetFilter) ClientOption {
 }
 
 // New returns a ResourceMgmtClient instance
-func New(ctx Context, opts ...ClientOption) (*Client, error) {
+func New(ctx context.Client, opts ...ClientOption) (*Client, error) {
 
 	resource := resource.New(ctx)
 
 	resourceClient := &Client{
-		provider:          ctx,
-		identity:          ctx,
-		discoveryProvider: ctx.DiscoveryProvider,
-		channelProvider:   ctx.ChannelProvider,
-		fabricProvider:    ctx.FabricProvider,
-		resource:          resource,
+		context:  ctx,
+		resource: resource,
 	}
 
 	for _, opt := range opts {
@@ -163,7 +142,7 @@ func New(ctx Context, opts ...ClientOption) (*Client, error) {
 	}
 
 	// setup global discovery service
-	discovery, err := ctx.DiscoveryProvider.NewDiscoveryService("")
+	discovery, err := ctx.DiscoveryProvider().NewDiscoveryService("")
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create global discovery service")
 	}
@@ -202,7 +181,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 	}
 
 	// TODO: should the code to get orderers from sdk config be part of channel service?
-	oConfig, err := rc.provider.Config().ChannelOrderers(channelID)
+	oConfig, err := rc.context.Config().ChannelOrderers(channelID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load orderer config")
 	}
@@ -211,7 +190,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 	}
 
 	// TODO: handle more than the first orderer.
-	orderer, err := rc.fabricProvider.CreateOrdererFromConfig(&oConfig[0])
+	orderer, err := rc.context.FabricProvider().CreateOrdererFromConfig(&oConfig[0])
 	if err != nil {
 		return errors.WithMessage(err, "failed to create orderers from config")
 	}
@@ -424,17 +403,12 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		return nil, err
 	}
 
-	ctx := &fabContext{
-		Providers: rc.provider,
-		Identity:  rc.identity,
-	}
-
 	var target fab.ProposalProcessor
 	if len(opts.Targets) >= 1 {
 		target = opts.Targets[0]
 	} else {
 		// discover peers on this channel
-		discovery, err := rc.discoveryProvider.NewDiscoveryService(channelID)
+		discovery, err := rc.context.DiscoveryProvider().NewDiscoveryService(channelID)
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to create channel discovery service")
 		}
@@ -449,7 +423,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		target = targets[randomNumber]
 	}
 
-	l, err := channel.NewLedger(ctx, channelID)
+	l, err := channel.NewLedger(rc.context, channelID)
 	if err != nil {
 		return nil, err
 	}
@@ -481,7 +455,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 	}
 
 	// per channel discovery service
-	discovery, err := rc.discoveryProvider.NewDiscoveryService(channelID)
+	discovery, err := rc.context.DiscoveryProvider().NewDiscoveryService(channelID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create channel discovery service")
 	}
@@ -504,7 +478,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 	}
 
 	// Get transactor on the channel to create and send the deploy proposal
-	channelService, err := rc.channelProvider.ChannelService(rc.identity, channelID)
+	channelService, err := rc.context.ChannelProvider().ChannelService(rc.context, channelID)
 	if err != nil {
 		return errors.WithMessage(err, "Unable to get channel service")
 	}
@@ -515,12 +489,8 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 
 	// create a transaction proposal for chaincode deployment
 	deployProposal := chaincodeDeployRequest(req)
-	deployCtx := fabContext{
-		Providers: rc.provider,
-		Identity:  rc.identity,
-	}
 
-	txid, err := txn.NewHeader(&deployCtx, channelID)
+	txid, err := txn.NewHeader(rc.context, channelID)
 	if err != nil {
 		return errors.WithMessage(err, "create transaction ID failed")
 	}
@@ -558,7 +528,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
-	timeout := rc.provider.Config().TimeoutOrDefault(core.Execute)
+	timeout := rc.context.Config().TimeoutOrDefault(core.Execute)
 	if opts.Timeout != 0 {
 		timeout = opts.Timeout
 	}
@@ -641,7 +611,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 
 	// Signing user has to belong to one of configured channel organisations
 	// In case that order org is one of channel orgs we can use context user
-	signer := rc.identity
+	var signer context.Identity = rc.context
 	if req.SigningIdentity != nil {
 		// Retrieve custom signing identity here
 		signer = req.SigningIdentity
@@ -661,10 +631,11 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		return errors.WithMessage(err, "extracting channel config failed")
 	}
 
-	sigCtx := Context{
+	sigCtx := contextImpl.Client{
 		Identity:  signer,
-		Providers: rc.provider,
+		Providers: rc.context,
 	}
+
 	configSignature, err := resource.CreateConfigSignature(&sigCtx, chConfig)
 	if err != nil {
 		return errors.WithMessage(err, "signing configuration failed")
@@ -676,10 +647,10 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	// Figure out orderer configuration
 	var ordererCfg *core.OrdererConfig
 	if opts.OrdererID != "" {
-		ordererCfg, err = rc.provider.Config().OrdererConfig(opts.OrdererID)
+		ordererCfg, err = rc.context.Config().OrdererConfig(opts.OrdererID)
 	} else {
 		// Default is random orderer from configuration
-		ordererCfg, err = rc.provider.Config().RandomOrdererConfig()
+		ordererCfg, err = rc.context.Config().RandomOrdererConfig()
 	}
 
 	// Check if retrieving orderer configuration went ok
@@ -687,7 +658,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		return errors.Errorf("failed to retrieve orderer config: %s", err)
 	}
 
-	orderer, err := orderer.New(rc.provider.Config(), orderer.FromOrdererConfig(ordererCfg))
+	orderer, err := orderer.New(rc.context.Config(), orderer.FromOrdererConfig(ordererCfg))
 	if err != nil {
 		return errors.WithMessage(err, "failed to create new orderer from config")
 	}
@@ -717,7 +688,7 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 		return nil, err
 	}
 
-	chCfg, err := rc.provider.Config().ChannelConfig(channelID)
+	chCfg, err := rc.context.Config().ChannelConfig(channelID)
 	if err != nil {
 		return nil, err
 	}
@@ -727,17 +698,17 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 	// Figure out orderer configuration (first try opts, then random channel orderer, then random orderer )
 	if opts.OrdererID != "" {
 
-		ordererCfg, err = rc.provider.Config().OrdererConfig(opts.OrdererID)
+		ordererCfg, err = rc.context.Config().OrdererConfig(opts.OrdererID)
 
 	} else if chCfg != nil && len(chCfg.Orderers) > 0 {
 
 		// random channel orderer
 		randomNumber := rand.Intn(len(chCfg.Orderers))
-		ordererCfg, err = rc.provider.Config().OrdererConfig(chCfg.Orderers[randomNumber])
+		ordererCfg, err = rc.context.Config().OrdererConfig(chCfg.Orderers[randomNumber])
 
 	} else {
 		// random orderer from configuration
-		ordererCfg, err = rc.provider.Config().RandomOrdererConfig()
+		ordererCfg, err = rc.context.Config().RandomOrdererConfig()
 	}
 
 	// Check if retrieving orderer configuration went ok
@@ -745,17 +716,12 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 		return nil, errors.Errorf("failed to retrieve orderer config: %s", err)
 	}
 
-	orderer, err := orderer.New(rc.provider.Config(), orderer.FromOrdererConfig(ordererCfg))
+	orderer, err := orderer.New(rc.context.Config(), orderer.FromOrdererConfig(ordererCfg))
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to resolve orderer")
 	}
 
-	ctx := &fabContext{
-		Providers: rc.provider,
-		Identity:  rc.identity,
-	}
-
-	channelConfig, err := chconfig.New(ctx, channelID, chconfig.WithOrderer(orderer))
+	channelConfig, err := chconfig.New(rc.context, channelID, chconfig.WithOrderer(orderer))
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryConfig failed")
 	}

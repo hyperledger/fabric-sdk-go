@@ -156,7 +156,7 @@ func TestNoIdentity(t *testing.T) {
 }
 
 func noopIdentityOpt() IdentityOption {
-	return func(o *identityOptions, sdk *FabricSDK, orgName string) error {
+	return func(o *identityOptions) error {
 		return nil
 	}
 }

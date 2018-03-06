@@ -9,8 +9,7 @@ package mocks
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
-	"github.com/pkg/errors"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 // MockTransactor provides an implementation of Transactor that exposes all its context.
@@ -22,25 +21,31 @@ type MockTransactor struct {
 
 // CreateTransactionHeader creates a Transaction Header based on the current context.
 func (t *MockTransactor) CreateTransactionHeader() (fab.TransactionHeader, error) {
-	txh, err := txn.NewHeader(t.Ctx, t.ChannelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "new transaction ID failed")
-	}
-
-	return txh, nil
+	return &MockTransactionHeader{}, nil
 }
 
 // SendTransactionProposal sends a TransactionProposal to the target peers.
 func (t *MockTransactor) SendTransactionProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
-	return txn.SendProposal(t.Ctx, proposal, targets)
+	response := make([]*fab.TransactionProposalResponse, 1, 1)
+	response[0] = &fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, ProposalResponse: nil}
+	return response, nil
 }
 
 // CreateTransaction create a transaction with proposal response.
 func (t *MockTransactor) CreateTransaction(request fab.TransactionRequest) (*fab.Transaction, error) {
-	return txn.New(request)
+	response := &fab.Transaction{
+		Proposal: &fab.TransactionProposal{
+			Proposal: &pb.Proposal{},
+		},
+		Transaction: &pb.Transaction{},
+	}
+	return response, nil
 }
 
 // SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
 func (t *MockTransactor) SendTransaction(tx *fab.Transaction) (*fab.TransactionResponse, error) {
-	return txn.Send(t.Ctx, tx, t.Orderers)
+	response := &fab.TransactionResponse{
+		Orderer: "example.com",
+	}
+	return response, nil
 }

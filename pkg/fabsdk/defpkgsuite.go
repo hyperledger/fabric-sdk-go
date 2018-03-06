@@ -8,7 +8,6 @@ package fabsdk
 
 import (
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
@@ -23,10 +22,6 @@ func (ps *defPkgSuite) Core() (sdkApi.CoreProviderFactory, error) {
 
 func (ps *defPkgSuite) Service() (sdkApi.ServiceProviderFactory, error) {
 	return defsvc.NewProviderFactory(), nil
-}
-
-func (ps *defPkgSuite) Session() (sdkApi.SessionClientFactory, error) {
-	return defclient.NewSessionClientFactory(), nil
 }
 
 func (ps *defPkgSuite) Logger() (api.LoggerProvider, error) {

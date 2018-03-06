@@ -15,6 +15,5 @@ import (
 type PkgSuite interface {
 	Core() (sdkApi.CoreProviderFactory, error)
 	Service() (sdkApi.ServiceProviderFactory, error)
-	Session() (sdkApi.SessionClientFactory, error)
 	Logger() (api.LoggerProvider, error)
 }

@@ -9,13 +9,13 @@ package fabsdk
 import (
 	"fmt"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
@@ -98,7 +98,7 @@ func (mc *mockCorePkg) CreateIdentityManager(orgName string, stateStore core.KVS
 	return mgr, nil
 }
 
-func (mc *mockCorePkg) CreateFabricProvider(ctx core.Providers) (fab.InfraProvider, error) {
+func (mc *mockCorePkg) CreateFabricProvider(ctx context.Providers) (fab.InfraProvider, error) {
 	return mc.fabricProvider, nil
 }
 
@@ -121,13 +121,6 @@ func (ps *mockPkgSuite) Service() (sdkApi.ServiceProviderFactory, error) {
 		return nil, errors.New("Error")
 	}
 	return defsvc.NewProviderFactory(), nil
-}
-
-func (ps *mockPkgSuite) Session() (sdkApi.SessionClientFactory, error) {
-	if ps.errOnSession {
-		return nil, errors.New("Error")
-	}
-	return defclient.NewSessionClientFactory(), nil
 }
 
 func (ps *mockPkgSuite) Logger() (api.LoggerProvider, error) {

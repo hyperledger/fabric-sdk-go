@@ -16,7 +16,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
@@ -30,6 +31,7 @@ import (
 
 const (
 	testAddress = "127.0.0.1:47882"
+	channelID   = "testChannel"
 )
 
 func TestTxProposalResponseFilter(t *testing.T) {
@@ -447,29 +449,21 @@ func TestMultiErrorPropogation(t *testing.T) {
 }
 
 func TestDiscoveryGreylist(t *testing.T) {
+
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
 	testPeer1.Error = status.New(status.EndorserClientStatus,
 		status.ConnectionFailed.ToInt32(), "test", []interface{}{testPeer1.URL()})
-
-	fabCtx := setupTestContext()
-
-	orderer := fcmocks.NewMockOrderer("", nil)
-	testChannelSvc, err := setupTestChannelService(fabCtx, []fab.Orderer{orderer})
-	assert.Nil(t, err, "Got error %s", err)
-
-	discoveryService, err := setupTestDiscovery(nil, []fab.Peer{testPeer1})
-	assert.Nil(t, err, "Got error %s", err)
 
 	selectionService, err := setupTestSelection(nil, nil)
 	assert.Nil(t, err, "Got error %s", err)
 	selectionService.SelectAll = true
 
-	ctx := Context{
-		Providers:        fabCtx,
-		DiscoveryService: discoveryService,
-		SelectionService: selectionService,
-		ChannelService:   testChannelSvc,
-	}
+	discoveryService, err := setupTestDiscovery(nil, []fab.Peer{testPeer1})
+	assert.Nil(t, err, "Got error %s", err)
+
+	fabCtx := setupCustomTestContext(t, selectionService, discoveryService, nil)
+	ctx := contextImpl.NewChannel(fabCtx, channelID)
+
 	chClient, err := New(ctx)
 	assert.Nil(t, err, "Got error %s", err)
 
@@ -489,7 +483,7 @@ func TestDiscoveryGreylist(t *testing.T) {
 	assert.EqualValues(t, status.NoPeersFound.ToInt32(), s.Code, "expected No Peers Found status on greylist")
 	assert.Equal(t, 1, testPeer1.ProcessProposalCalls, "expected peer 1 to be greylisted")
 	// Wait for greylist expiry
-	time.Sleep(ctx.Config().TimeoutOrDefault(core.DiscoveryGreylistExpiry))
+	time.Sleep(ctx.Providers().Config().TimeoutOrDefault(core.DiscoveryGreylistExpiry))
 	testPeer1.ProcessProposalCalls = 0
 	testPeer1.Error = status.New(status.EndorserServerStatus, int32(common.Status_SERVICE_UNAVAILABLE), "test", nil)
 	// Try again
@@ -504,20 +498,19 @@ func TestDiscoveryGreylist(t *testing.T) {
 }
 
 func setupTestChannelService(ctx context.Client, orderers []fab.Orderer) (fab.ChannelService, error) {
-	const channelName = "testChannel"
 	chProvider, err := fcmocks.NewMockChannelProvider(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "mock channel provider creation failed")
 	}
 
-	chService, err := chProvider.ChannelService(ctx, channelName)
+	chService, err := chProvider.ChannelService(ctx, channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "mock channel service creation failed")
 	}
 
 	transactor := txnmocks.MockTransactor{
 		Ctx:       ctx,
-		ChannelID: channelName,
+		ChannelID: channelID,
 		Orderers:  orderers,
 	}
 	chService.(*fcmocks.MockChannelService).SetTransactor(&transactor)
@@ -528,6 +521,31 @@ func setupTestChannelService(ctx context.Client, orderers []fab.Orderer) (fab.Ch
 func setupTestContext() context.Client {
 	user := fcmocks.NewMockUser("test")
 	ctx := fcmocks.NewMockContext(user)
+	return ctx
+}
+
+func setupCustomTestContext(t *testing.T, selectionService fab.SelectionService, discoveryService fab.DiscoveryService, orderers []fab.Orderer) context.Client {
+	user := fcmocks.NewMockUser("test")
+	ctx := fcmocks.NewMockContext(user)
+
+	if orderers == nil {
+		orderer := fcmocks.NewMockOrderer("", nil)
+		orderers = []fab.Orderer{orderer}
+	}
+
+	testChannelSvc, err := setupTestChannelService(ctx, orderers)
+	assert.Nil(t, err, "Got error %s", err)
+
+	//Modify for custom mocks to test scenarios
+	selectionProvider := ctx.MockProviderContext.SelectionProvider()
+	selectionProvider.(*fcmocks.MockSelectionProvider).SetCustomSelectionService(selectionService)
+
+	channelProvider := ctx.MockProviderContext.ChannelProvider()
+	channelProvider.(*fcmocks.MockChannelProvider).SetCustomChannelService(testChannelSvc)
+
+	discoveryProvider := ctx.MockProviderContext.DiscoveryProvider()
+	discoveryProvider.(*fcmocks.MockStaticDiscoveryProvider).SetCustomDiscoveryService(discoveryService)
+
 	return ctx
 }
 
@@ -558,11 +576,6 @@ func setupChannelClient(peers []fab.Peer, t *testing.T) *Client {
 
 func setupChannelClientWithError(discErr error, selectionErr error, peers []fab.Peer, t *testing.T) *Client {
 
-	fabCtx := setupTestContext()
-	orderer := fcmocks.NewMockOrderer("", nil)
-	testChannelSvc, err := setupTestChannelService(fabCtx, []fab.Orderer{orderer})
-	assert.Nil(t, err, "Got error %s", err)
-
 	discoveryService, err := setupTestDiscovery(discErr, nil)
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
@@ -573,12 +586,10 @@ func setupChannelClientWithError(discErr error, selectionErr error, peers []fab.
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	ctx := Context{
-		Providers:        fabCtx,
-		DiscoveryService: discoveryService,
-		SelectionService: selectionService,
-		ChannelService:   testChannelSvc,
-	}
+	fabCtx := setupCustomTestContext(t, selectionService, discoveryService, nil)
+
+	ctx := contextImpl.NewChannel(fabCtx, channelID)
+
 	ch, err := New(ctx)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
@@ -590,22 +601,16 @@ func setupChannelClientWithError(discErr error, selectionErr error, peers []fab.
 func setupChannelClientWithNodes(peers []fab.Peer,
 	orderers []fab.Orderer, t *testing.T) *Client {
 
-	fabCtx := setupTestContext()
-	testChannelSvc, err := setupTestChannelService(fabCtx, orderers)
-	assert.Nil(t, err, "Got error %s", err)
-
 	discoveryService, err := setupTestDiscovery(nil, nil)
 	assert.Nil(t, err, "Failed to setup discovery service")
 
 	selectionService, err := setupTestSelection(nil, peers)
 	assert.Nil(t, err, "Failed to setup discovery service")
 
-	ctx := Context{
-		Providers:        fabCtx,
-		DiscoveryService: discoveryService,
-		SelectionService: selectionService,
-		ChannelService:   testChannelSvc,
-	}
+	fabCtx := setupCustomTestContext(t, selectionService, discoveryService, orderers)
+
+	ctx := contextImpl.NewChannel(fabCtx, channelID)
+
 	ch, err := New(ctx)
 	assert.Nil(t, err, "Failed to create new channel client")
 

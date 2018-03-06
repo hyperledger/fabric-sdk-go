@@ -12,7 +12,7 @@ import (
 	"io"
 	"time"
 
-	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 
 	"google.golang.org/grpc"
 

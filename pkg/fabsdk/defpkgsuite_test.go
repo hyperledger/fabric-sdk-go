@@ -19,14 +19,6 @@ func TestNewPkgSuite(t *testing.T) {
 		t.Fatalf("Core is nil")
 	}
 
-	session, err := pkgsuite.Session()
-	if err != nil {
-		t.Fatalf("Unexpected error getting default session factory")
-	}
-	if session == nil {
-		t.Fatalf("session is nil")
-	}
-
 	service, err := pkgsuite.Service()
 	if err != nil {
 		t.Fatalf("Unexpected error getting default service factory")

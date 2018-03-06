@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
