@@ -7,15 +7,16 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
 
 // MockChannelProvider holds a mock channel provider.
 type MockChannelProvider struct {
-	ctx        core.Providers
-	transactor fab.Transactor
+	ctx                    core.Providers
+	transactor             fab.Transactor
+	customSelectionService fab.ChannelService
 }
 
 // MockChannelService holds a mock channel service.
@@ -41,12 +42,22 @@ func (cp *MockChannelProvider) SetTransactor(transactor fab.Transactor) {
 
 // ChannelService returns a mock ChannelService
 func (cp *MockChannelProvider) ChannelService(ic fab.IdentityContext, channelID string) (fab.ChannelService, error) {
+
+	if cp.customSelectionService != nil {
+		return cp.customSelectionService, nil
+	}
+
 	cs := MockChannelService{
 		provider:   cp,
 		channelID:  channelID,
 		transactor: cp.transactor,
 	}
 	return &cs, nil
+}
+
+// SetCustomChannelService sets custom channel service for unit-test purposes
+func (cp *MockChannelProvider) SetCustomChannelService(customSelectionService fab.ChannelService) {
+	cp.customSelectionService = customSelectionService
 }
 
 // EventHub ...

@@ -27,30 +27,9 @@ func TestWithUserValid(t *testing.T) {
 
 	opts := identityOptions{}
 	opt := WithUser(identityValidOptUser)
-	err = opt(&opts, sdk, identityValidOptOrg)
+	err = opt(&opts)
 	if err != nil {
 		t.Fatalf("Expected no error from opt, but got %v", err)
-	}
-	if opts.identity == nil {
-		t.Fatal("Expected identity to be populated")
-	}
-}
-
-func TestWithUserInvalid(t *testing.T) {
-	sdk, err := New(configImpl.FromFile(identityOptConfigFile))
-	if err != nil {
-		t.Fatalf("Expected no error from New, but got %v", err)
-	}
-	defer sdk.Close()
-
-	opts := identityOptions{}
-	opt := WithUser("notarealuser")
-	err = opt(&opts, sdk, identityValidOptOrg)
-	if err == nil {
-		t.Fatal("Expected error from opt")
-	}
-	if opts.identity != nil {
-		t.Fatal("Expected identity to not be populated")
 	}
 }
 
@@ -61,7 +40,7 @@ func TestWithIdentity(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	identityManager, ok := sdk.context().IdentityManager(identityValidOptOrg)
+	identityManager, ok := sdk.Context().IdentityManager(identityValidOptOrg)
 	if !ok {
 		t.Fatalf("Invalid organization: %s", identityValidOptOrg)
 	}
@@ -72,11 +51,33 @@ func TestWithIdentity(t *testing.T) {
 
 	opts := identityOptions{}
 	opt := WithIdentity(identity)
-	err = opt(&opts, sdk, identityValidOptOrg)
+	err = opt(&opts)
 	if err != nil {
 		t.Fatalf("Expected no error from opt, but got %v", err)
 	}
 	if opts.identity != identity {
 		t.Fatal("Expected identity to be populated")
 	}
+}
+
+func TestFabricSDKContext(t *testing.T) {
+
+	sdk, err := New(configImpl.FromFile(identityOptConfigFile))
+	if err != nil {
+		t.Fatalf("Expected no error from New, but got %v", err)
+	}
+	defer sdk.Close()
+
+	client := sdk.Context()
+
+	if client == nil {
+		t.Fatal("context client supposed to be not empty")
+	}
+
+	client = sdk.Context(WithUser("INVALID_USER"), WithOrgName("INVALID_ORG_NAME"))
+
+	if client == nil {
+		t.Fatal("context client supposed to be not empty, even with invalid identity options")
+	}
+
 }

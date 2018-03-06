@@ -135,12 +135,7 @@ func TestWithSessionPkg(t *testing.T) {
 	}
 	sdk.Close()
 
-	// Create mock to ensure the provided factory is called.
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	factory := mockapisdk.NewMockSessionClientFactory(mockCtrl)
-
-	sdk, err = New(WithConfig(c), WithCorePkg(core), WithSessionPkg(factory))
+	sdk, err = New(WithConfig(c), WithCorePkg(core))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -179,13 +174,6 @@ func TestErrPkgSuite(t *testing.T) {
 		t.Fatalf("Expected error initializing SDK")
 	}
 	ps.errOnService = false
-
-	ps.errOnSession = true
-	_, err = fromPkgSuite(c, &ps)
-	if err == nil {
-		t.Fatalf("Expected error initializing SDK")
-	}
-	ps.errOnSession = false
 
 	ps.errOnLogger = true
 	_, err = fromPkgSuite(c, &ps)
@@ -242,7 +230,7 @@ func TestWithConfigSuccess(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	client1, err := sdk.config.Client()
+	client1, err := sdk.Config().Client()
 	if err != nil {
 		t.Fatalf("Error getting client from config: %s", err)
 	}

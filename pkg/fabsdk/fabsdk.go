@@ -11,8 +11,8 @@ import (
 	"math/rand"
 	"time"
 
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -25,23 +25,13 @@ import (
 
 // FabricSDK provides access (and context) to clients being managed by the SDK.
 type FabricSDK struct {
-	opts options
-
-	config            core.Config
-	stateStore        core.KVStore
-	cryptoSuite       core.CryptoSuite
-	discoveryProvider fab.DiscoveryProvider
-	selectionProvider fab.SelectionProvider
-	signingManager    core.SigningManager
-	identityManager   map[string]core.IdentityManager
-	fabricProvider    fab.InfraProvider
-	channelProvider   fab.ChannelProvider
+	opts     options
+	provider context.Provider
 }
 
 type options struct {
 	Core    sdkApi.CoreProviderFactory
 	Service sdkApi.ServiceProviderFactory
-	Session sdkApi.SessionClientFactory
 	Logger  api.LoggerProvider
 }
 
@@ -81,11 +71,6 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 		return nil, errors.WithMessage(err, "Unable to initialize service pkg")
 	}
 
-	sess, err := pkgSuite.Session()
-	if err != nil {
-		return nil, errors.WithMessage(err, "Unable to initialize session pkg")
-	}
-
 	lg, err := pkgSuite.Logger()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to initialize logger pkg")
@@ -95,13 +80,11 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 		opts: options{
 			Core:    core,
 			Service: svc,
-			Session: sess,
 			Logger:  lg,
 		},
-		config: config,
 	}
 
-	err = initSDK(&sdk, opts)
+	err = initSDK(&sdk, config, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -125,14 +108,6 @@ func WithServicePkg(service sdkApi.ServiceProviderFactory) Option {
 	}
 }
 
-// WithSessionPkg injects the session implementation into the SDK.
-func WithSessionPkg(session sdkApi.SessionClientFactory) Option {
-	return func(opts *options) error {
-		opts.Session = session
-		return nil
-	}
-}
-
 // WithLoggerPkg injects the logger implementation into the SDK.
 func WithLoggerPkg(logger api.LoggerProvider) Option {
 	return func(opts *options) error {
@@ -147,7 +122,7 @@ type providerInit interface {
 	Initialize(sdk *FabricSDK) error
 }
 
-func initSDK(sdk *FabricSDK, opts []Option) error {
+func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 	for _, option := range opts {
 		err := option(&sdk.opts)
 		if err != nil {
@@ -162,117 +137,111 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	logging.InitLogger(sdk.opts.Logger)
 
 	// Initialize crypto provider
-	cs, err := sdk.opts.Core.CreateCryptoSuiteProvider(sdk.config)
+	cryptoSuite, err := sdk.opts.Core.CreateCryptoSuiteProvider(config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize crypto suite")
 	}
-
-	sdk.cryptoSuite = cs
 
 	// Initialize rand (TODO: should probably be optional)
 	rand.Seed(time.Now().UnixNano())
 
 	// Setting this cryptosuite as the factory default
-	cryptosuite.SetDefault(cs)
+	cryptosuite.SetDefault(cryptoSuite)
 
 	// Initialize state store
-	store, err := sdk.opts.Core.CreateStateStoreProvider(sdk.config)
+	stateStore, err := sdk.opts.Core.CreateStateStoreProvider(config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize state store")
 	}
-	sdk.stateStore = store
 
 	// Initialize Signing Manager
-	signingMgr, err := sdk.opts.Core.CreateSigningManager(sdk.cryptoSuite, sdk.config)
+	signingManager, err := sdk.opts.Core.CreateSigningManager(cryptoSuite, config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize signing manager")
 	}
-	sdk.signingManager = signingMgr
 
 	// Initialize Identity Managers
-	sdk.identityManager = make(map[string]core.IdentityManager)
-	netConfig, err := sdk.config.NetworkConfig()
+	identityManager := make(map[string]core.IdentityManager)
+	netConfig, err := config.NetworkConfig()
 	if err != nil {
 		return errors.Wrapf(err, "failed to retrieve network config")
 	}
 	for orgName := range netConfig.Organizations {
-		mgr, err := sdk.opts.Core.CreateIdentityManager(orgName, sdk.stateStore, sdk.cryptoSuite, sdk.config)
+		mgr, err := sdk.opts.Core.CreateIdentityManager(orgName, stateStore, cryptoSuite, config)
 		if err != nil {
 			return errors.Wrapf(err, "failed to initialize identity manager for organization: %s", orgName)
 		}
-		sdk.identityManager[orgName] = mgr
+		identityManager[orgName] = mgr
 	}
 
+	//Initialize sdk provider
+	sdk.provider = *context.NewProvider(context.WithConfig(config),
+		context.WithCryptoSuite(cryptoSuite),
+		context.WithSigningManager(signingManager),
+		context.WithStateStore(stateStore),
+		context.WithIdentityManager(identityManager))
+
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(sdk.fabContext())
+	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(sdk.Context())
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
-	sdk.fabricProvider = fabricProvider
 
 	// Initialize discovery provider
-	discoveryProvider, err := sdk.opts.Service.CreateDiscoveryProvider(sdk.config, fabricProvider)
+	discoveryProvider, err := sdk.opts.Service.CreateDiscoveryProvider(config, fabricProvider)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize discovery provider")
 	}
 	if pi, ok := discoveryProvider.(providerInit); ok {
 		pi.Initialize(sdk)
 	}
-	sdk.discoveryProvider = discoveryProvider
 
 	// Initialize selection provider (for selecting endorsing peers)
-	selectionProvider, err := sdk.opts.Service.CreateSelectionProvider(sdk.config)
+	selectionProvider, err := sdk.opts.Service.CreateSelectionProvider(config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize selection provider")
 	}
 	if pi, ok := selectionProvider.(providerInit); ok {
 		pi.Initialize(sdk)
 	}
-	sdk.selectionProvider = selectionProvider
 
 	channelProvider, err := chpvdr.New(fabricProvider)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize channel provider")
 	}
-	sdk.channelProvider = channelProvider
+
+	//update sdk providers list since all required providers are initialized
+	sdk.provider = *context.NewProvider(context.WithConfig(config),
+		context.WithCryptoSuite(cryptoSuite),
+		context.WithSigningManager(signingManager),
+		context.WithStateStore(stateStore),
+		context.WithDiscoveryProvider(discoveryProvider),
+		context.WithSelectionProvider(selectionProvider),
+		context.WithIdentityManager(identityManager),
+		context.WithFabricProvider(fabricProvider),
+		context.WithChannelProvider(channelProvider))
 
 	return nil
 }
 
 // Close frees up caches and connections being maintained by the SDK
 func (sdk *FabricSDK) Close() {
-	sdk.fabricProvider.Close()
+	sdk.FabricProvider().Close()
 }
 
 // Config returns the SDK's configuration.
 func (sdk *FabricSDK) Config() core.Config {
-	return sdk.config
+	return sdk.provider.Config()
 }
 
-func (sdk *FabricSDK) fabContext() core.Providers {
-	return context.CreateFabContext(context.WithConfig(sdk.config),
-		context.WithCryptoSuite(sdk.cryptoSuite),
-		context.WithSigningManager(sdk.signingManager),
-		context.WithStateStore(sdk.stateStore),
-		context.WithDiscoveryProvider(sdk.discoveryProvider),
-		context.WithSelectionProvider(sdk.selectionProvider),
-		context.WithIdentityManager(sdk.identityManager),
-		context.WithFabricProvider(sdk.fabricProvider),
-		context.WithChannelProvider(sdk.channelProvider))
+//Context creates and returns context client which has all the necessary providers
+func (sdk *FabricSDK) Context(options ...IdentityOption) contextApi.Client {
+	//ignore error, set nil identity in case of error
+	identity, _ := sdk.newIdentity(options...)
+	return &context.Client{Providers: &sdk.provider, Identity: identity}
 }
 
-func (sdk *FabricSDK) context() context.Providers {
-	fabContext := context.CreateFabContext(context.WithConfig(sdk.config),
-		context.WithCryptoSuite(sdk.cryptoSuite),
-		context.WithSigningManager(sdk.signingManager),
-		context.WithStateStore(sdk.stateStore),
-		context.WithDiscoveryProvider(sdk.discoveryProvider),
-		context.WithSelectionProvider(sdk.selectionProvider),
-		context.WithIdentityManager(sdk.identityManager),
-		context.WithFabricProvider(sdk.fabricProvider),
-		context.WithChannelProvider(sdk.channelProvider))
-	c := context.SDKContext{
-		FabContext: *fabContext,
-	}
-	return &c
+//NewChannelContext creates and returns channel context
+func NewChannelContext(client contextApi.Client, channelID string) *context.Channel {
+	return context.NewChannel(client, channelID)
 }

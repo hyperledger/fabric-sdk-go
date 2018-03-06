@@ -325,8 +325,8 @@ dockerenv-latest-up: clean
 mock-gen:
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/context/api/core Config,Providers,IdentityManager | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/context/api/core/mocks/mockcoreapi.gen.go
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab ProposalProcessor,Providers | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/context/api/fab/mocks/mockfabapi.gen.go
-	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/context Providers | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/context/mocks/mockcontext.gen.go
-	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api CoreProviderFactory,ServiceProviderFactory,SessionClientFactory | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/fabsdk/mocks/mockfabsdkapi.gen.go
+	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/common/context Providers,Client | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/common/context/mocks/mockcontext.gen.go
+	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api CoreProviderFactory,ServiceProviderFactory | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/fabsdk/mocks/mockfabsdkapi.gen.go
 
 # TODO - Add cryptogen
 .PHONY: channel-config-gen

@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
@@ -35,50 +36,54 @@ const (
 // An application that requires interaction with multiple channels should create a separate
 // instance of the channel client for each channel. Channel client supports non-admin functions only.
 type Client struct {
-	context    core.Providers
-	discovery  fab.DiscoveryService
-	selection  fab.SelectionService
+	context    context.Channel
 	membership fab.ChannelMembership
 	transactor fab.Transactor
 	eventHub   fab.EventHub
 	greylist   *greylist.Filter
 }
 
-// Context holds the providers and services needed to create a Client.
-type Context struct {
-	core.Providers
-	DiscoveryService fab.DiscoveryService
-	SelectionService fab.SelectionService
-	ChannelService   fab.ChannelService
+type customChannelContext struct {
+	context.Channel
+	discoveryService fab.DiscoveryService
+}
+
+func (ccc *customChannelContext) DiscoveryService() fab.DiscoveryService {
+	return ccc.discoveryService
 }
 
 // New returns a Client instance.
-func New(c Context) (*Client, error) {
+func New(c context.Channel) (*Client, error) {
+
 	greylistProvider := greylist.New(c.Config().TimeoutOrDefault(core.DiscoveryGreylistExpiry))
 
-	eventHub, err := c.ChannelService.EventHub()
+	if c.ChannelService() == nil {
+		return nil, errors.New("channel service not initialized")
+	}
+
+	eventHub, err := c.ChannelService().EventHub()
 	if err != nil {
 		return nil, errors.WithMessage(err, "event hub creation failed")
 	}
 
-	transactor, err := c.ChannelService.Transactor()
+	transactor, err := c.ChannelService().Transactor()
 	if err != nil {
 		return nil, errors.WithMessage(err, "transactor creation failed")
 	}
 
-	membership, err := c.ChannelService.Membership()
+	membership, err := c.ChannelService().Membership()
 	if err != nil {
 		return nil, errors.WithMessage(err, "membership creation failed")
 	}
 
+	customDiscoveryService := discovery.NewDiscoveryFilterService(c.DiscoveryService(), greylistProvider)
+
 	channelClient := Client{
-		greylist:   greylistProvider,
-		context:    c,
-		discovery:  discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
-		selection:  c.SelectionService,
+		context:    &customChannelContext{Channel: c, discoveryService: customDiscoveryService},
 		membership: membership,
 		transactor: transactor,
 		eventHub:   eventHub,
+		greylist:   greylistProvider,
 	}
 
 	return &channelClient, nil
@@ -157,8 +162,8 @@ func (cc *Client) prepareHandlerContexts(request Request, o opts) (*invoke.Reque
 	}
 
 	clientContext := &invoke.ClientContext{
-		Selection:  cc.selection,
-		Discovery:  cc.discovery,
+		Selection:  cc.context.SelectionService(),
+		Discovery:  cc.context.DiscoveryService(),
 		Membership: cc.membership,
 		Transactor: cc.transactor,
 		EventHub:   cc.eventHub,

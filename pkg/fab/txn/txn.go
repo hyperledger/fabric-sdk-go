@@ -15,7 +15,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"

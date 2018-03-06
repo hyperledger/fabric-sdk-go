@@ -13,7 +13,7 @@ import (
 
 	"google.golang.org/grpc/keepalive"
 
-	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"

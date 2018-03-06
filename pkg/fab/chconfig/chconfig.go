@@ -9,7 +9,6 @@ package chconfig
 import (
 	"github.com/golang/protobuf/proto"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -24,7 +23,7 @@ import (
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -45,7 +44,7 @@ type Option func(opts *Opts) error
 
 // Context holds the providers and identity
 type Context struct {
-	core.Providers
+	context.Providers
 	context.Identity
 }
 

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
-	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"

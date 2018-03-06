@@ -29,8 +29,8 @@ func TestNewDefaultSDK(t *testing.T) {
 func verifySDK(t *testing.T, sdk *FabricSDK) {
 
 	// Mock channel provider cache
-	sdk.channelProvider.(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
-	sdk.channelProvider.(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
+	sdk.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
+	sdk.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	// Get a common client context for the following tests
 	c := sdk.NewClient(WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
@@ -70,8 +70,8 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	}
 
 	// Mock channel provider cache
-	sdk1.channelProvider.(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
-	sdk1.channelProvider.(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
+	sdk1.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
+	sdk1.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	sdk2, err := New(configImpl.FromFile("./testdata/test.yaml"))
 	if err != nil {
@@ -79,10 +79,10 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	}
 
 	// Mock channel provider cache
-	sdk2.channelProvider.(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
+	sdk2.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	// Default sdk with two channels
-	client1, err := sdk1.config.Client()
+	client1, err := sdk1.Config().Client()
 	if err != nil {
 		t.Fatalf("Error getting client from config: %s", err)
 	}
@@ -91,7 +91,7 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 		t.Fatalf("Unexpected org in config: %s", client1.Organization)
 	}
 
-	client2, err := sdk2.config.Client()
+	client2, err := sdk2.Config().Client()
 	if err != nil {
 		t.Fatalf("Error getting client from config: %s", err)
 	}

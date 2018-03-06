@@ -12,7 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"

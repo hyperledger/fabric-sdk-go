@@ -9,7 +9,7 @@ package chpvdr
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -58,7 +58,7 @@ type MockProviderFactory struct {
 // CustomFabricProvider overrides channel config default implementation
 type MockFabricProvider struct {
 	*fabpvdr.FabricProvider
-	providerContext core.Providers
+	providerContext context.Providers
 }
 
 // CreateChannelConfig initializes the channel config
@@ -74,7 +74,7 @@ func (f *MockFabricProvider) CreateChannelConfig(ic fab.IdentityContext, channel
 }
 
 // CreateFabricProvider mocks new default implementation of fabric primitives
-func (f *MockProviderFactory) CreateFabricProvider(context core.Providers) (fab.InfraProvider, error) {
+func (f *MockProviderFactory) CreateFabricProvider(context context.Providers) (fab.InfraProvider, error) {
 	fabProvider := fabpvdr.New(context)
 
 	cfp := MockFabricProvider{

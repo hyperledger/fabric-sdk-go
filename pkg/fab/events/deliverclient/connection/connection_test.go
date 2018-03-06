@@ -15,7 +15,7 @@ import (
 
 	"google.golang.org/grpc/keepalive"
 
-	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
