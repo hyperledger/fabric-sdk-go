@@ -107,9 +107,17 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 	setup.Targets = targets
 
+	// Get signing identity that is used to sign create channel request
+	si, err := GetSigningIdentity(sdk, setup.OrgID, "Admin")
+	if err != nil {
+		return errors.Wrapf(err, "failed to load signing identity")
+	}
+
 	// Create channel for tests
-	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session}
-	InitializeChannel(sdk, setup.OrgID, req, targets)
+	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentities: []context.Identity{si}}
+	if err = InitializeChannel(sdk, setup.OrgID, req, targets); err != nil {
+		return errors.Wrapf(err, "failed to initalize channel")
+	}
 
 	// Create the channel transactor
 	chService, err := client.ChannelService(setup.ChannelID)
@@ -277,4 +285,9 @@ func RegisterTxEvent(t *testing.T, txID fab.TransactionID, eventHub fab.EventHub
 	})
 
 	return done, fail
+}
+
+// GetSigningIdentity returns signing identity
+func GetSigningIdentity(sdk *fabsdk.FabricSDK, orgID string, user string) (context.Identity, error) {
+	return sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrgName(orgID)), nil
 }

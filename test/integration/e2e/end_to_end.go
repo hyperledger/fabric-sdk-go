@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -53,15 +54,14 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 		t.Fatalf("Failed to create channel management client: %s", err)
 	}
 
-	// Org admin user is signing user for creating channel
-	session, err := sdk.NewClient(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName)).Session()
+	// Get signing identity that is used to sign create channel request
+	si, err := integration.GetSigningIdentity(sdk, orgName, orgAdmin)
 	if err != nil {
-		t.Fatalf("Failed to get session for %s, %s: %s", orgName, orgAdmin, err)
+		t.Fatalf("failed to load signing identity: %s", err)
 	}
-	orgAdminUser := session
 
 	// Create channel
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"), SigningIdentity: orgAdminUser}
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"), SigningIdentities: []context.Identity{si}}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -34,10 +35,10 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.ProposalProce
 	if err != nil {
 		t.Fatalf("SDK init failed: %v", err)
 	}
-
-	session, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName)).Session()
+	// Get signing identity that is used to sign create channel request
+	si, err := integration.GetSigningIdentity(sdk, orgName, "Admin")
 	if err != nil {
-		t.Fatalf("failed getting admin user session for org: %s", err)
+		t.Fatalf("failed to load signing identity: %s", err)
 	}
 
 	targets, err := integration.CreateProposalProcessors(sdk.Config(), []string{orgName})
@@ -46,7 +47,7 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.ProposalProce
 	}
 
 	channelConfig := path.Join("../../../", metadata.ChannelConfigPath, channelConfigFile)
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: channelConfig, SigningIdentity: session}
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: channelConfig, SigningIdentities: []context.Identity{si}}
 	err = integration.InitializeChannel(sdk, orgName, req, targets)
 	if err != nil {
 		t.Fatalf("failed to ensure channel has been initialized: %s", err)

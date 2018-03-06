@@ -86,7 +86,7 @@ func CreateChannel(sdk *fabsdk.FabricSDK, req resmgmt.SaveChannelRequest) (bool,
 
 	// Create channel (or update if it already exists)
 	if err = resMgmtClient.SaveChannel(req); err != nil {
-		return false, nil
+		return false, err
 	}
 
 	time.Sleep(time.Second * 5)

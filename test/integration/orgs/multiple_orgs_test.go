@@ -19,7 +19,6 @@ import (
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
@@ -70,9 +69,19 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 		t.Fatal(err)
 	}
 
+	// Get signing identity that is used to sign create channel request
+	siOrg1, err := integration.GetSigningIdentity(sdk, org1, "Admin")
+	if err != nil {
+		t.Fatalf("failed to load signing identity: %s", err)
+	}
+
+	siOrg2, err := integration.GetSigningIdentity(sdk, org2, "Admin")
+	if err != nil {
+		t.Fatalf("failed to load signing identity: %s", err)
+	}
+
 	// Create channel (or update if it already exists)
-	org1AdminUser := loadOrgUser(t, sdk, org1, "Admin")
-	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"), SigningIdentity: org1AdminUser}
+	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"), SigningIdentities: []context.Identity{siOrg1, siOrg2}}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
@@ -349,15 +358,6 @@ func verifyValue(t *testing.T, chClient *channel.Client, expected int) {
 			(expected), valueInt)
 	}
 
-}
-
-func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) context.Identity {
-
-	session, err := sdk.NewClient(fabsdk.WithUser(userName), fabsdk.WithOrg(orgName)).Session()
-	if err != nil {
-		t.Fatal(errors.Wrapf(err, "Session failed, %s, %s", orgName, userName))
-	}
-	return session
 }
 
 func loadOrgPeers(t *testing.T, sdk *fabsdk.FabricSDK) {
