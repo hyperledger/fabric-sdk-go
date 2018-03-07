@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
+	reqContext "context"
 	"crypto/x509"
 	"fmt"
 	"net"
@@ -236,7 +237,9 @@ func testProcessProposal(t *testing.T, url string) (*fab.TransactionProposalResp
 		t.Fatalf("Peer conn construction error (%v)", err)
 	}
 
-	return conn.ProcessTransactionProposal(mockProcessProposalRequest())
+	ctx, cancel := reqContext.WithTimeout(reqContext.Background(), normalTimeout)
+	defer cancel()
+	return conn.ProcessTransactionProposal(ctx, mockProcessProposalRequest())
 }
 
 func getPeerEndorserRequest(url string, cert *x509.Certificate, serverHostOverride string,

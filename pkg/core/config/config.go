@@ -465,7 +465,7 @@ func (c *Config) Timeout(conn core.TimeoutType) time.Duration {
 func (c *Config) getTimeout(conn core.TimeoutType) time.Duration {
 	var timeout time.Duration
 	switch conn {
-	case core.Endorser:
+	case core.EndorserConnection:
 		timeout = c.configViper.GetDuration("client.peer.timeout.connection")
 	case core.Query:
 		timeout = c.configViper.GetDuration("client.peer.timeout.queryResponse")

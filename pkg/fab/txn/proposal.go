@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package txn
 
 import (
+	reqContext "context"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -102,7 +103,8 @@ func SendProposal(ctx context, proposal *fab.TransactionProposal, targets []fab.
 		go func(processor fab.ProposalProcessor) {
 			defer wg.Done()
 
-			resp, err := processor.ProcessTransactionProposal(request)
+			// TODO: The RPC should be timed-out.
+			resp, err := processor.ProcessTransactionProposal(reqContext.Background(), request)
 			if err != nil {
 				logger.Debugf("Received error response from txn proposal processing: %v", err)
 				responseMtx.Lock()
