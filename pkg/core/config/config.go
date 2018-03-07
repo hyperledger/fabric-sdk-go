@@ -447,9 +447,9 @@ func (c *Config) CAClientCertPem(org string) (string, error) {
 	return ca.TLSCACerts.Client.Cert.Pem, nil
 }
 
-// TimeoutOrDefault reads connection timeouts for the given timeout type, if not found, defaultTimeout is returned
-func (c *Config) TimeoutOrDefault(conn core.TimeoutType) time.Duration {
-	timeout := c.getTimeout(conn)
+// TimeoutOrDefault reads timeouts for the given timeout type, if not found, defaultTimeout is returned
+func (c *Config) TimeoutOrDefault(tType core.TimeoutType) time.Duration {
+	timeout := c.getTimeout(tType)
 	if timeout == 0 {
 		timeout = defaultTimeout
 	}
@@ -457,20 +457,20 @@ func (c *Config) TimeoutOrDefault(conn core.TimeoutType) time.Duration {
 	return timeout
 }
 
-// Timeout reads connection timeouts for the given timeout type, the default is 0 if type is not found in config
-func (c *Config) Timeout(conn core.TimeoutType) time.Duration {
-	return c.getTimeout(conn)
+// Timeout reads timeouts for the given timeout type, the default is 0 if type is not found in config
+func (c *Config) Timeout(tType core.TimeoutType) time.Duration {
+	return c.getTimeout(tType)
 }
 
-func (c *Config) getTimeout(conn core.TimeoutType) time.Duration {
+func (c *Config) getTimeout(tType core.TimeoutType) time.Duration {
 	var timeout time.Duration
-	switch conn {
+	switch tType {
 	case core.EndorserConnection:
 		timeout = c.configViper.GetDuration("client.peer.timeout.connection")
 	case core.Query:
-		timeout = c.configViper.GetDuration("client.peer.timeout.queryResponse")
+		timeout = c.configViper.GetDuration("client.global.timeout.query")
 	case core.Execute:
-		timeout = c.configViper.GetDuration("client.peer.timeout.executeTxResponse")
+		timeout = c.configViper.GetDuration("client.global.timeout.execute")
 	case core.DiscoveryGreylistExpiry:
 		timeout = c.configViper.GetDuration("client.peer.timeout.discovery.greylistExpiry")
 	case core.EventHubConnection:
@@ -487,7 +487,7 @@ func (c *Config) getTimeout(conn core.TimeoutType) time.Duration {
 			timeout = defaultCacheSweepInterval
 		}
 	case core.ConnectionIdle:
-		timeout = c.configViper.GetDuration("client.cache.timeout.connectionIdle")
+		timeout = c.configViper.GetDuration("client.global.timeout.cache.connectionIdle")
 		if timeout == 0 {
 			timeout = defaultConnIdleTimeout
 		}
