@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
+	reqContext "context"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -22,11 +23,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	normalTimeout = 5 * time.Second
+)
+
 // TestNewPeerWithCertNoTLS tests that a peer can be constructed without using a cert
 func TestNewPeerWithCertNoTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-
 	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	url := "http://example.com"
@@ -80,7 +84,7 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 
 	//apiconfig := mock_core.DefaultMockConfig(mockCtrl)
 	config := mock_core.NewMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(core.Endorser).Return(time.Second * 5)
+	config.EXPECT().TimeoutOrDefault(core.EndorserConnection).Return(time.Second * 5)
 	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("failed to get certpool")).AnyTimes()
 
 	url := "grpcs://0.0.0.0:1234"
@@ -199,10 +203,12 @@ func TestProposalProcessorSendProposal(t *testing.T) {
 	tp := mockProcessProposalRequest()
 	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, ProposalResponse: nil}
 
-	proc.EXPECT().ProcessTransactionProposal(tp).Return(&tpr, nil)
+	proc.EXPECT().ProcessTransactionProposal(gomock.Any(), tp).Return(&tpr, nil)
 
 	p := Peer{processor: proc, name: "", roles: nil}
-	tpr1, err := p.ProcessTransactionProposal(tp)
+	ctx, cancel := reqContext.WithTimeout(reqContext.Background(), normalTimeout)
+	defer cancel()
+	tpr1, err := p.ProcessTransactionProposal(ctx, tp)
 
 	if err != nil || !reflect.DeepEqual(&tpr, tpr1) {
 		t.Fatalf("Peer didn't proxy proposal processing")

@@ -60,7 +60,7 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 	}
 	opts = append(opts, grpc.WithDefaultCallOptions(grpc.FailFast(endorseReq.failFast)))
 
-	timeout := endorseReq.config.TimeoutOrDefault(core.Endorser)
+	timeout := endorseReq.config.TimeoutOrDefault(core.EndorserConnection)
 
 	tlsConfig, err := comm.TLSConfig(endorseReq.certificate, endorseReq.serverHostOverride, endorseReq.config)
 	if err != nil {
@@ -75,10 +75,10 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 }
 
 // ProcessTransactionProposal sends the transaction proposal to a peer and returns the response.
-func (p *peerEndorser) ProcessTransactionProposal(request fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
+func (p *peerEndorser) ProcessTransactionProposal(ctx reqContext.Context, request fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
 	logger.Debugf("Processing proposal using endorser: %s", p.target)
 
-	proposalResponse, err := p.sendProposal(request, p.secured)
+	proposalResponse, err := p.sendProposal(ctx, request, p.secured)
 	if err != nil {
 		tpr := fab.TransactionProposalResponse{Endorser: p.target}
 		return &tpr, errors.Wrapf(err, "Transaction processing for endorser [%s]", p.target)
@@ -107,13 +107,13 @@ func (p *peerEndorser) conn(ctx reqContext.Context, secured bool) (*grpc.ClientC
 	return p.connector.DialContext(ctx, p.target, grpcOpts...)
 }
 
-func (p *peerEndorser) sendProposal(proposal fab.ProcessProposalRequest, secured bool) (*pb.ProposalResponse, error) {
-	conn, err := p.conn(reqContext.Background(), secured)
+func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.ProcessProposalRequest, secured bool) (*pb.ProposalResponse, error) {
+	conn, err := p.conn(ctx, secured)
 	if err != nil {
 		if secured && p.allowInsecure {
 			//If secured mode failed and allow insecure is enabled then retry in insecure mode
 			logger.Debug("Secured NewEndorserClient failed, attempting insecured")
-			return p.sendProposal(proposal, false)
+			return p.sendProposal(ctx, proposal, false)
 		}
 		rpcStatus, ok := grpcstatus.FromError(err)
 		if ok {
@@ -124,15 +124,9 @@ func (p *peerEndorser) sendProposal(proposal fab.ProcessProposalRequest, secured
 	defer p.connector.ReleaseConn(conn)
 
 	endorserClient := pb.NewEndorserClient(conn)
-	resp, err := endorserClient.ProcessProposal(reqContext.Background(), proposal.SignedProposal)
+	resp, err := endorserClient.ProcessProposal(ctx, proposal.SignedProposal)
 	if err != nil {
-		logger.Error("NewEndorserClient failed, cause : ", err)
-		if secured && p.allowInsecure {
-			//If secured mode failed and allow insecure is enabled then retry in insecure mode
-			logger.Debug("Secured NewEndorserClient failed, attempting insecured")
-			return p.sendProposal(proposal, false)
-		}
-
+		logger.Errorf("process proposal failed [%s]", err)
 		rpcStatus, ok := grpcstatus.FromError(err)
 		if ok {
 			err = status.NewFromGRPCStatus(rpcStatus)

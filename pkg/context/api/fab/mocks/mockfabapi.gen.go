@@ -5,6 +5,7 @@
 package mock_fab
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -35,16 +36,16 @@ func (m *MockProposalProcessor) EXPECT() *MockProposalProcessorMockRecorder {
 }
 
 // ProcessTransactionProposal mocks base method
-func (m *MockProposalProcessor) ProcessTransactionProposal(arg0 fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
-	ret := m.ctrl.Call(m, "ProcessTransactionProposal", arg0)
+func (m *MockProposalProcessor) ProcessTransactionProposal(arg0 context.Context, arg1 fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
+	ret := m.ctrl.Call(m, "ProcessTransactionProposal", arg0, arg1)
 	ret0, _ := ret[0].(*fab.TransactionProposalResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ProcessTransactionProposal indicates an expected call of ProcessTransactionProposal
-func (mr *MockProposalProcessorMockRecorder) ProcessTransactionProposal(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessTransactionProposal", reflect.TypeOf((*MockProposalProcessor)(nil).ProcessTransactionProposal), arg0)
+func (mr *MockProposalProcessorMockRecorder) ProcessTransactionProposal(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessTransactionProposal", reflect.TypeOf((*MockProposalProcessor)(nil).ProcessTransactionProposal), arg0, arg1)
 }
 
 // MockProviders is a mock of Providers interface

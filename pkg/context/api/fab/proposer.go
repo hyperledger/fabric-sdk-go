@@ -7,12 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	reqContext "context"
+
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 // ProposalProcessor simulates transaction proposal, so that a client can submit the result for ordering.
 type ProposalProcessor interface {
-	ProcessTransactionProposal(ProcessProposalRequest) (*TransactionProposalResponse, error)
+	ProcessTransactionProposal(reqContext.Context, ProcessProposalRequest) (*TransactionProposalResponse, error)
 }
 
 // ProposalSender provides the ability for a transaction proposal to be created and sent.

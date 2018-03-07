@@ -108,7 +108,7 @@ func TestJoinChannel(t *testing.T) {
 	defer grpcServer.Stop()
 
 	endorserServer, addr := startEndorserServer(t, grpcServer)
-	peer, _ := peer.New(mocks.NewMockConfig(), peer.WithURL(addr), peer.WithInsecure())
+	peer, _ := peer.New(mocks.NewMockConfig(), peer.WithURL("grpc://"+addr), peer.WithInsecure())
 	peers = append(peers, peer)
 	orderer := mocks.NewMockOrderer("", nil)
 	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockBlock())

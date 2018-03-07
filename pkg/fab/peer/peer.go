@@ -267,8 +267,8 @@ func (p *Peer) URL() string {
 }
 
 // ProcessTransactionProposal sends the created proposal to peer for endorsement.
-func (p *Peer) ProcessTransactionProposal(proposal fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
-	return p.processor.ProcessTransactionProposal(proposal)
+func (p *Peer) ProcessTransactionProposal(ctx reqContext.Context, proposal fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
+	return p.processor.ProcessTransactionProposal(ctx, proposal)
 }
 
 func (p *Peer) String() string {

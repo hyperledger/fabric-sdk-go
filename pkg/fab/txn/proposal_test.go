@@ -182,7 +182,7 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 	}
 
 	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99}
-	proc.EXPECT().ProcessTransactionProposal(tp).Return(&tpr, nil)
+	proc.EXPECT().ProcessTransactionProposal(gomock.Any(), tp).Return(&tpr, nil)
 	targets := []fab.ProposalProcessor{proc}
 
 	result, err := SendProposal(ctx, &fab.TransactionProposal{
@@ -230,8 +230,8 @@ func TestProposalResponseError(t *testing.T) {
 
 	// Test with error from lower layer
 	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 200}
-	proc.EXPECT().ProcessTransactionProposal(tp).Return(&tpr, testError)
-	proc2.EXPECT().ProcessTransactionProposal(tp).Return(&tpr, testError)
+	proc.EXPECT().ProcessTransactionProposal(gomock.Any(), tp).Return(&tpr, testError)
+	proc2.EXPECT().ProcessTransactionProposal(gomock.Any(), tp).Return(&tpr, testError)
 
 	targets := []fab.ProposalProcessor{proc, proc2}
 	_, err = SendProposal(ctx, &fab.TransactionProposal{

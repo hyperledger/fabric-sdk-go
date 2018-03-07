@@ -8,6 +8,7 @@ package mocks
 
 // TODO: Move protos to this library
 import (
+	reqContext "context"
 	"encoding/pem"
 	"sync"
 
@@ -83,7 +84,7 @@ func (p *MockPeer) URL() string {
 }
 
 // ProcessTransactionProposal does not send anything anywhere but returns an empty mock ProposalResponse
-func (p *MockPeer) ProcessTransactionProposal(tp fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
+func (p *MockPeer) ProcessTransactionProposal(ctx reqContext.Context, tp fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
 	if p.RWLock != nil {
 		p.RWLock.Lock()
 		defer p.RWLock.Unlock()

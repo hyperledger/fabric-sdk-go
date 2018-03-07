@@ -380,7 +380,7 @@ func TestTimeouts(t *testing.T) {
 	configImpl.configViper.Set("client.peer.timeout.executeTxResponse", "8h")
 	configImpl.configViper.Set("client.orderer.timeout.response", "6s")
 
-	t1 := configImpl.TimeoutOrDefault(api.Endorser)
+	t1 := configImpl.TimeoutOrDefault(api.EndorserConnection)
 	if t1 != time.Second*2 {
 		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}

@@ -61,8 +61,8 @@ type ConfigProvider func() (Config, error)
 type TimeoutType int
 
 const (
-	// Endorser connection timeout
-	Endorser TimeoutType = iota
+	// EndorserConnection connection timeout
+	EndorserConnection TimeoutType = iota
 	// EventHubConnection connection timeout
 	EventHubConnection
 	// EventReg connection timeout

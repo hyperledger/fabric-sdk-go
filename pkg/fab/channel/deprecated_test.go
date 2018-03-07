@@ -279,8 +279,8 @@ func TestSendInstantiateProposal(t *testing.T) {
 
 	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99}
 
-	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(&tpr, nil)
-	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(&tpr, nil)
+	proc.EXPECT().ProcessTransactionProposal(gomock.Any(), gomock.Any()).Return(&tpr, nil)
+	proc.EXPECT().ProcessTransactionProposal(gomock.Any(), gomock.Any()).Return(&tpr, nil)
 	targets := []fab.ProposalProcessor{proc}
 
 	//Add a Peer
@@ -354,7 +354,7 @@ func TestSendUpgradeProposal(t *testing.T) {
 
 	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, ProposalResponse: nil}
 
-	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(&tpr, nil)
+	proc.EXPECT().ProcessTransactionProposal(gomock.Any(), gomock.Any()).Return(&tpr, nil)
 	targets := []fab.ProposalProcessor{proc}
 
 	//Add a Peer
