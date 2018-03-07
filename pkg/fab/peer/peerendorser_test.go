@@ -49,7 +49,7 @@ func TestNewPeerEndorserTLS(t *testing.T) {
 
 	url := "grpcs://0.0.0.0:1234"
 
-	conn, err := newPeerEndorser(getPeerEndorserRequest(url, mock_core.GoodCert, "", true, config, kap, false, false))
+	conn, err := newPeerEndorser(getPeerEndorserRequest(url, mock_core.GoodCert, "", config, kap, false, false))
 
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
@@ -81,7 +81,7 @@ func TestNewPeerEndorserMutualTLS(t *testing.T) {
 	//}
 
 	url := "grpcs://0.0.0.0:1234"
-	conn, err := newPeerEndorser(getPeerEndorserRequest(url, mock_core.GoodCert, "", true, config, kap, false, false))
+	conn, err := newPeerEndorser(getPeerEndorserRequest(url, mock_core.GoodCert, "", config, kap, false, false))
 
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed: %v", err)
@@ -104,7 +104,7 @@ func TestNewPeerEndorserMutualTLSNoClientCerts(t *testing.T) {
 	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	url := "grpcs://0.0.0.0:1234"
-	_, err := newPeerEndorser(getPeerEndorserRequest(url, mock_core.GoodCert, "", true, config, kap, false, false))
+	_, err := newPeerEndorser(getPeerEndorserRequest(url, mock_core.GoodCert, "", config, kap, false, false))
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	url := "grpcs://0.0.0.0:1234"
-	_, err := newPeerEndorser(getPeerEndorserRequest(url, mock_core.BadCert, "", true, config, kap, false, false))
+	_, err := newPeerEndorser(getPeerEndorserRequest(url, mock_core.BadCert, "", config, kap, false, false))
 	if err == nil {
 		t.Fatalf("Peer conn construction should have failed")
 	}
@@ -133,7 +133,7 @@ func TestNewPeerEndorserSecured(t *testing.T) {
 	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	url := "grpc://0.0.0.0:1234"
-	conn, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", true, config, kap, false, false))
+	conn, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, false))
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
 	}
@@ -148,7 +148,7 @@ func TestNewPeerEndorserSecured(t *testing.T) {
 
 	url = "grpcs://0.0.0.0:1234"
 
-	conn, err = newPeerEndorser(getPeerEndorserRequest(url, nil, "", true, config, kap, false, true))
+	conn, err = newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, true))
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
 	}
@@ -162,7 +162,7 @@ func TestNewPeerEndorserSecured(t *testing.T) {
 
 	url = "0.0.0.0:1234"
 
-	conn, err = newPeerEndorser(getPeerEndorserRequest(url, nil, "", true, config, kap, false, true))
+	conn, err = newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, true))
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
 	}
@@ -176,60 +176,6 @@ func TestNewPeerEndorserSecured(t *testing.T) {
 
 }
 
-// TestNewPeerEndorserBlocking validates that a client configured with blocking
-// creates the correct dial options.
-func TestNewPeerEndorserBlocking(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	config := mock_core.DefaultMockConfig(mockCtrl)
-
-	url := "0.0.0.0:1234"
-	conn, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", true, config, kap, false, true))
-	if err != nil {
-		t.Fatalf("Peer conn should be constructed")
-	}
-
-	optBlocking := reflect.ValueOf(grpc.WithBlock())
-	optBlockingFound := false
-
-	for _, opt := range conn.grpcDialOption {
-		optr := reflect.ValueOf(opt)
-		if optr.Pointer() == optBlocking.Pointer() {
-			optBlockingFound = true
-		}
-	}
-
-	if !optBlockingFound {
-		t.Fatalf("Expected blocking to be found")
-	}
-}
-
-// TestNewPeerEndorserNonBlocking validates that a client configured without blocking
-// creates the correct dial options.
-func TestNewPeerEndorserNonBlocking(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	config := mock_core.DefaultMockConfig(mockCtrl)
-
-	url := "0.0.0.0:1234"
-
-	conn, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", false, config, kap, false, true))
-	if err != nil {
-		t.Fatalf("Peer conn should be constructed")
-	}
-
-	optBlocking := reflect.ValueOf(grpc.WithBlock())
-
-	for _, opt := range conn.grpcDialOption {
-		optr := reflect.ValueOf(opt)
-		if optr.Pointer() == optBlocking.Pointer() {
-			t.Fatalf("Blocking opt found when not expected")
-		}
-	}
-}
-
 // TestNewPeerEndorserBadParams validates that a client configured without
 // params fails
 func TestNewPeerEndorserBadParams(t *testing.T) {
@@ -239,7 +185,7 @@ func TestNewPeerEndorserBadParams(t *testing.T) {
 	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	url := ""
-	_, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", true, config, kap, false, false))
+	_, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, false))
 	if err == nil {
 		t.Fatalf("Peer conn should not be constructed - bad params")
 	}
@@ -251,7 +197,7 @@ func TestNewPeerEndorserTLSBad(t *testing.T) {
 	config := mocks.NewMockConfigCustomized(true, false, true)
 	url := "grpcs://0.0.0.0:1234"
 
-	_, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", true, config, kap, false, false))
+	_, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, false))
 	if err == nil {
 		t.Fatalf("Peer conn should not be constructed - bad cert pool")
 	}
@@ -285,7 +231,7 @@ func testProcessProposal(t *testing.T, url string) (*fab.TransactionProposalResp
 	config := mock_core.DefaultMockConfig(mockCtrl)
 	config.EXPECT().TimeoutOrDefault(gomock.Any()).Return(time.Second * 1).AnyTimes()
 
-	conn, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", true, config, kap, false, true))
+	conn, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, true))
 	if err != nil {
 		t.Fatalf("Peer conn construction error (%v)", err)
 	}
@@ -294,12 +240,11 @@ func testProcessProposal(t *testing.T, url string) (*fab.TransactionProposalResp
 }
 
 func getPeerEndorserRequest(url string, cert *x509.Certificate, serverHostOverride string,
-	dialBlocking bool, config core.Config, kap keepalive.ClientParameters, failFast bool, allowInsecure bool) *peerEndorserRequest {
+	config core.Config, kap keepalive.ClientParameters, failFast bool, allowInsecure bool) *peerEndorserRequest {
 	return &peerEndorserRequest{
 		target:             url,
 		certificate:        cert,
 		serverHostOverride: serverHostOverride,
-		dialBlocking:       dialBlocking,
 		config:             config,
 		kap:                kap,
 		failFast:           false,

@@ -8,12 +8,14 @@ SPDX-License-Identifier: Apache-2.0
 package resource
 
 import (
+	reqContext "context"
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
@@ -106,7 +108,9 @@ func (c *Resource) createChannelFromEnvelope(request api.CreateChannelRequest) (
 	}
 
 	// Send request
-	_, err = request.Orderer.SendBroadcast(env)
+	reqCtx, cancel := reqContext.WithTimeout(reqContext.Background(), c.clientContext.Config().TimeoutOrDefault(core.OrdererResponse))
+	defer cancel()
+	_, err = request.Orderer.SendBroadcast(reqCtx, env)
 	if err != nil {
 		return fab.EmptyTransactionID, errors.WithMessage(err, "failed broadcast to orderer")
 	}

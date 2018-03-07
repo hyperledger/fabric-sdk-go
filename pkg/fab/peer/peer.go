@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
-	"context"
+	reqContext "context"
 	"encoding/pem"
 	"fmt"
 
@@ -26,12 +26,8 @@ import (
 
 var logger = logging.NewLogger("fabsdk/fab")
 
-const (
-	connBlocking = false
-)
-
 type connProvider interface {
-	DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error)
+	DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error)
 	ReleaseConn(conn *grpc.ClientConn)
 }
 
@@ -78,7 +74,6 @@ func New(config core.Config, opts ...Option) (*Peer, error) {
 			target:             peer.url,
 			certificate:        peer.certificate,
 			serverHostOverride: peer.serverName,
-			dialBlocking:       connBlocking,
 			config:             peer.config,
 			kap:                peer.kap,
 			failFast:           peer.failFast,
@@ -292,7 +287,7 @@ func PeersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 
 type defConnector struct{}
 
-func (*defConnector) DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+func (*defConnector) DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
 	opts = append(opts, grpc.WithBlock())
 	return grpc.DialContext(ctx, target, opts...)
 }

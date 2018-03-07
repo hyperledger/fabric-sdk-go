@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
-	grpccontext "context"
+	reqContext "context"
 	"crypto/x509"
 	"time"
 
@@ -41,7 +41,6 @@ type peerEndorserRequest struct {
 	target             string
 	certificate        *x509.Certificate
 	serverHostOverride string
-	dialBlocking       bool
 	config             core.Config
 	kap                keepalive.ClientParameters
 	failFast           bool
@@ -62,10 +61,6 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 	opts = append(opts, grpc.WithDefaultCallOptions(grpc.FailFast(endorseReq.failFast)))
 
 	timeout := endorseReq.config.TimeoutOrDefault(core.Endorser)
-
-	if endorseReq.dialBlocking { // TODO: configurable?
-		opts = append(opts, grpc.WithBlock())
-	}
 
 	tlsConfig, err := comm.TLSConfig(endorseReq.certificate, endorseReq.serverHostOverride, endorseReq.config)
 	if err != nil {
@@ -97,7 +92,7 @@ func (p *peerEndorser) ProcessTransactionProposal(request fab.ProcessProposalReq
 	return &tpr, nil
 }
 
-func (p *peerEndorser) conn(secured bool) (*grpc.ClientConn, error) {
+func (p *peerEndorser) conn(ctx reqContext.Context, secured bool) (*grpc.ClientConn, error) {
 	// Establish connection to Ordering Service
 	var grpcOpts []grpc.DialOption
 	if secured {
@@ -106,31 +101,30 @@ func (p *peerEndorser) conn(secured bool) (*grpc.ClientConn, error) {
 		grpcOpts = append(p.grpcDialOption, grpc.WithInsecure())
 	}
 
-	ctx := grpccontext.Background()
-	ctx, cancel := grpccontext.WithTimeout(ctx, p.dialTimeout)
+	ctx, cancel := reqContext.WithTimeout(ctx, p.dialTimeout)
 	defer cancel()
 
 	return p.connector.DialContext(ctx, p.target, grpcOpts...)
 }
 
-func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {
-	p.connector.ReleaseConn(conn)
-}
-
 func (p *peerEndorser) sendProposal(proposal fab.ProcessProposalRequest, secured bool) (*pb.ProposalResponse, error) {
-	conn, err := p.conn(secured)
+	conn, err := p.conn(reqContext.Background(), secured)
 	if err != nil {
 		if secured && p.allowInsecure {
 			//If secured mode failed and allow insecure is enabled then retry in insecure mode
 			logger.Debug("Secured NewEndorserClient failed, attempting insecured")
 			return p.sendProposal(proposal, false)
 		}
+		rpcStatus, ok := grpcstatus.FromError(err)
+		if ok {
+			return nil, errors.WithMessage(status.NewFromGRPCStatus(rpcStatus), "connection failed")
+		}
 		return nil, status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), []interface{}{p.target})
 	}
-	defer p.releaseConn(conn)
+	defer p.connector.ReleaseConn(conn)
 
 	endorserClient := pb.NewEndorserClient(conn)
-	resp, err := endorserClient.ProcessProposal(grpccontext.Background(), proposal.SignedProposal)
+	resp, err := endorserClient.ProcessProposal(reqContext.Background(), proposal.SignedProposal)
 	if err != nil {
 		logger.Error("NewEndorserClient failed, cause : ", err)
 		if secured && p.allowInsecure {
