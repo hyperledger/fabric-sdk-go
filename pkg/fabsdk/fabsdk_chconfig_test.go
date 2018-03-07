@@ -11,6 +11,7 @@ package fabsdk
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
@@ -33,16 +34,17 @@ func verifySDK(t *testing.T, sdk *FabricSDK) {
 	sdk.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	// Get a common client context for the following tests
-	c := sdk.NewClient(WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
+	chCtx1 := sdk.ChannelContext("mychannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg2))
+	chCtx2 := sdk.ChannelContext("orgchannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg2))
 
 	// Test configuration failure for channel client (mychannel does't have event source configured for Org2)
-	_, err := c.Channel("mychannel")
+	_, err := channel.New(chCtx1)
 	if err == nil {
 		t.Fatalf("Should have failed to create channel client since event source not configured for Org2")
 	}
 
 	// Test new channel client with options
-	_, err = c.Channel("orgchannel")
+	_, err = channel.New(chCtx2)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -101,30 +103,34 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	}
 
 	// Get a common client context for the following tests
-	cc1 := sdk1.NewClient(WithUser(sdkValidClientUser))
+	//cc1 := sdk1.NewClient(WithUser(sdkValidClientUser))
+
+	cc1CtxC1 := sdk1.ChannelContext("mychannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg1))
+	cc1CtxC2 := sdk1.ChannelContext("orgchannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg1))
 
 	// Test SDK1 channel clients ('mychannel', 'orgchannel')
-	_, err = cc1.Channel("mychannel")
+	_, err = channel.New(cc1CtxC1)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	_, err = cc1.Channel("orgchannel")
+	_, err = channel.New(cc1CtxC2)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
 	// Get a common client context for the following tests
-	cc2 := sdk2.NewClient(WithUser(sdkValidClientUser))
+	cc2CtxC1 := sdk1.ChannelContext("mychannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg2))
+	cc2CtxC2 := sdk1.ChannelContext("orgchannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg2))
 
 	// SDK 2 doesn't have 'mychannel' configured
-	_, err = cc2.Channel("mychannel")
+	_, err = channel.New(cc2CtxC1)
 	if err == nil {
 		t.Fatalf("Should have failed to create channel that is not configured")
 	}
 
 	// SDK 2 has 'orgchannel' configured
-	_, err = cc2.Channel("orgchannel")
+	_, err = channel.New(cc2CtxC2)
 	if err != nil {
 		t.Fatalf("Failed to create new 'orgchannel' channel client: %s", err)
 	}

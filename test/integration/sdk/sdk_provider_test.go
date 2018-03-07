@@ -57,7 +57,10 @@ func TestDynamicSelection(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	chClient, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(testSetup.ChannelID)
+	//prepare contexts
+	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithChannelUser(org1User), fabsdk.WithChannelOrgName(org1Name))
+
+	chClient, err := channel.New(org1ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}

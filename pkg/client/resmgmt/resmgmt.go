@@ -125,7 +125,12 @@ func WithDefaultTargetFilter(filter TargetFilter) ClientOption {
 }
 
 // New returns a ResourceMgmtClient instance
-func New(ctx context.Client, opts ...ClientOption) (*Client, error) {
+func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, error) {
+
+	ctx, err := clientProvider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to create resmgmt client")
+	}
 
 	resource := resource.New(ctx)
 

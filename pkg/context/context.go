@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/pkg/errors"
 )
 
 // Client supplies the configuration and signing identity to client objects.
@@ -174,6 +175,7 @@ func WithChannelProvider(channelProvider fab.ChannelProvider) SDKContextParams {
 }
 
 //NewProvider creates new context client provider
+// Not be used by end developers, fabsdk package use only
 func NewProvider(params ...SDKContextParams) *Provider {
 	ctxProvider := Provider{}
 	for _, param := range params {
@@ -183,21 +185,27 @@ func NewProvider(params ...SDKContextParams) *Provider {
 }
 
 //NewChannel creates new channel context client
-func NewChannel(client context.Client, channelID string) *Channel {
+// Not be used by end developers, fabsdk package use only
+func NewChannel(clientProvider context.ClientProvider, channelID string) (*Channel, error) {
+
+	client, err := clientProvider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get client context to create channel client")
+	}
 
 	channelService, err := client.ChannelProvider().ChannelService(client, channelID)
 	if err != nil {
-		return &Channel{Client: client}
+		return nil, errors.WithMessage(err, "failed to get channel service to create channel client")
 	}
 
 	discoveryService, err := client.DiscoveryProvider().NewDiscoveryService(channelID)
 	if err != nil {
-		return &Channel{Client: client}
+		return nil, errors.WithMessage(err, "failed to get discovery service to create channel client")
 	}
 
 	selectionService, err := client.SelectionProvider().NewSelectionService(channelID)
 	if err != nil {
-		return &Channel{Client: client}
+		return nil, errors.WithMessage(err, "failed to get selection service to create channel client")
 	}
 
 	return &Channel{
@@ -205,5 +213,5 @@ func NewChannel(client context.Client, channelID string) *Channel {
 		selection:      selectionService,
 		discovery:      discoveryService,
 		channelService: channelService,
-	}
+	}, nil
 }

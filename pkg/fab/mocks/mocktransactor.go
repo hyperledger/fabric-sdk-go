@@ -27,7 +27,9 @@ func (t *MockTransactor) CreateTransactionHeader() (fab.TransactionHeader, error
 // SendTransactionProposal sends a TransactionProposal to the target peers.
 func (t *MockTransactor) SendTransactionProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
 	response := make([]*fab.TransactionProposalResponse, 1, 1)
-	response[0] = &fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, ProposalResponse: nil}
+	response[0] = &fab.TransactionProposalResponse{Endorser: "example.com", Status: 99,
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Payload: []byte("abc")}},
+	}
 	return response, nil
 }
 

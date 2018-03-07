@@ -23,7 +23,9 @@ import (
 )
 
 const (
-	org1Name = "Org1"
+	org1Name      = "Org1"
+	org1User      = "User1"
+	org1AdminUser = "Admin"
 )
 
 func TestChannelClient(t *testing.T) {
@@ -52,7 +54,11 @@ func TestChannelClient(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	chClient, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(testSetup.ChannelID)
+	//prepare context
+	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithChannelUser(org1User), fabsdk.WithChannelOrgName(org1Name))
+
+	//get channel client
+	chClient, err := channel.New(org1ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -102,7 +108,7 @@ func TestChannelClient(t *testing.T) {
 	testInvokeHandler(chainCodeID, chClient, t)
 
 	// Test receive event using separate client
-	listener, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(testSetup.ChannelID)
+	listener, err := channel.New(org1ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}

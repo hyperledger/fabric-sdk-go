@@ -53,23 +53,28 @@ func (f *MSPFilter) Accept(peer fab.Peer) bool {
 }
 
 // New returns a Client instance.
-func New(c context.Client, chName string, opts ...ClientOption) (*Client, error) {
+func New(clientProvider context.ClientProvider, channelID string, opts ...ClientOption) (*Client, error) {
 
-	l, err := channel.NewLedger(c, chName)
+	clientContext, err := clientProvider()
 	if err != nil {
 		return nil, err
 	}
 
-	discoveryService, err := c.DiscoveryProvider().NewDiscoveryService(chName)
+	l, err := channel.NewLedger(clientContext, channelID)
+	if err != nil {
+		return nil, err
+	}
+
+	discoveryService, err := clientContext.DiscoveryProvider().NewDiscoveryService(channelID)
 	if err != nil {
 		return nil, err
 	}
 
 	ledgerClient := Client{
-		context:   c,
+		context:   clientContext,
 		discovery: discoveryService,
 		ledger:    l,
-		chName:    chName,
+		chName:    channelID,
 	}
 
 	for _, opt := range opts {
@@ -82,10 +87,10 @@ func New(c context.Client, chName string, opts ...ClientOption) (*Client, error)
 	// check if target filter was set - if not set the default
 	if ledgerClient.filter == nil {
 		// Default target filter is based on user msp
-		if c.MspID() == "" {
+		if clientContext.MspID() == "" {
 			return nil, errors.New("mspID not available in user context")
 		}
-		filter := &MSPFilter{mspID: c.MspID()}
+		filter := &MSPFilter{mspID: clientContext.MspID()}
 		ledgerClient.filter = filter
 	}
 

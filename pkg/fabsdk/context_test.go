@@ -40,7 +40,7 @@ func TestWithIdentity(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	identityManager, ok := sdk.Context().IdentityManager(identityValidOptOrg)
+	identityManager, ok := sdk.provider.IdentityManager(identityValidOptOrg)
 	if !ok {
 		t.Fatalf("Invalid organization: %s", identityValidOptOrg)
 	}
@@ -68,16 +68,44 @@ func TestFabricSDKContext(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	client := sdk.Context()
+	ctxProvider := sdk.Context()
 
-	if client == nil {
+	if ctxProvider == nil {
 		t.Fatal("context client supposed to be not empty")
 	}
 
-	client = sdk.Context(WithUser("INVALID_USER"), WithOrgName("INVALID_ORG_NAME"))
+	ctx, err := ctxProvider()
 
-	if client == nil {
-		t.Fatal("context client supposed to be not empty, even with invalid identity options")
+	if err == nil || err.Error() != "invalid options to create identity" {
+		t.Fatalf("getting context client supposed to fail with idenity error, err: %v", err)
+	}
+
+	if ctx == nil {
+		t.Fatal("context client will have providers even if idenity fails")
+	}
+
+	ctxProvider = sdk.Context(WithUser("INVALID_USER"), WithOrgName("INVALID_ORG_NAME"))
+
+	ctx, err = ctxProvider()
+
+	if err == nil || err.Error() != "invalid options to create identity, invalid org name" {
+		t.Fatalf("getting context client supposed to fail with idenity error, err: %v", err)
+	}
+
+	if ctx == nil {
+		t.Fatal("context client will have providers even if idenity fails")
+	}
+
+	ctxProvider = sdk.Context(WithUser(identityValidOptUser), WithOrgName(identityValidOptOrg))
+
+	ctx, err = ctxProvider()
+
+	if err != nil {
+		t.Fatalf("getting context supposed to succeed")
+	}
+
+	if ctx == nil || ctx.MspID() == "" {
+		t.Fatalf("supposed to get valid context")
 	}
 
 }

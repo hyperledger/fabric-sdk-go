@@ -34,9 +34,15 @@ func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts
 
 	// ************ Test setup complete ************** //
 
+	//TODO : discovery filter should be fixed
 	discoveryFilter := &mockDiscoveryFilter{called: false}
+
+	//prepare channel client context using client context
+	clientChannelContext := sdk.ChannelContext(channelID, fabsdk.WithChannelUser("User1"), fabsdk.WithChannelOrgName(orgName))
+
 	// Channel client is used to query and execute transactions (Org1 is default org)
-	client, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(channelID, fabsdk.WithTargetFilter(discoveryFilter))
+	client, err := channel.New(clientChannelContext, channel.WithTargetFilter(discoveryFilter))
+
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -50,11 +56,10 @@ func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts
 	}
 	value := response.Payload
 
-	//TODO: discovery filter should be fixed
-	////Test if discovery filter is being called
-	//if !discoveryFilter.called {
-	//	t.Fatalf("discoveryFilter not called")
-	//}
+	//Test if discovery filter is being called
+	if !discoveryFilter.called {
+		t.Fatalf("discoveryFilter not called")
+	}
 
 	eventID := "test([a-zA-Z]+)"
 

@@ -44,8 +44,11 @@ func TestResMgmtClientQueries(t *testing.T) {
 	}
 	defer sdk.Close()
 
+	//prepare contexts
+	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrgName(org1Name))
+
 	// Resource management client
-	client, err := sdk.NewClient(fabsdk.WithUser("Admin")).ResourceMgmt()
+	client, err := resmgmt.New(org1AdminClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}

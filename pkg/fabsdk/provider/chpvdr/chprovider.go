@@ -88,11 +88,6 @@ func (cs *ChannelService) Config() (fab.ChannelConfig, error) {
 	return cs.fabricProvider.CreateChannelConfig(cs.identityContext, cs.cfg.Name())
 }
 
-// Ledger returns a ChannelLedger client for the current context and named channel.
-func (cs *ChannelService) Ledger() (fab.ChannelLedger, error) {
-	return cs.fabricProvider.CreateChannelLedger(cs.identityContext, cs.cfg.Name())
-}
-
 // Transactor returns a transaction client for the current context and named channel.
 func (cs *ChannelService) Transactor() (fab.Transactor, error) {
 	return cs.fabricProvider.CreateChannelTransactor(cs.identityContext, cs.cfg)
