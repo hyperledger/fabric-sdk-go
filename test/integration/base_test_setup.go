@@ -9,7 +9,6 @@ package integration
 import (
 	"os"
 	"path"
-	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
@@ -18,29 +17,20 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
-	SDK             *fabsdk.FabricSDK
-	Identity        context.Identity
-	Client          api.Resource
-	Transactor      fab.Transactor
-	Targets         []fab.ProposalProcessor
-	EventHub        fab.EventHub
-	ConnectEventHub bool
-	ConfigFile      string
-	OrgID           string
-	ChannelID       string
-	Initialized     bool
-	ChannelConfig   string
+	SDK           *fabsdk.FabricSDK
+	Identity      context.Identity
+	Targets       []fab.ProposalProcessor
+	ConfigFile    string
+	OrgID         string
+	ChannelID     string
+	ChannelConfig string
 }
 
 // Initial B values for ExampleCC
@@ -95,13 +85,6 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 	setup.Identity = clientContext
 
-	//TODO - Below line needs to be replaced with resmgtmt.New once sdk contexts are available
-	rc, err := sdk.FabricProvider().(*fabpvdr.FabricProvider).CreateResourceClient(setup.Identity)
-	if err != nil {
-		return errors.WithMessage(err, "NewResourceClient failed")
-	}
-	setup.Client = rc
-
 	targets, err := getOrgTargets(sdk.Config(), setup.OrgID)
 	if err != nil {
 		return errors.Wrapf(err, "loading target peers from config failed")
@@ -111,34 +94,8 @@ func (setup *BaseSetupImpl) Initialize() error {
 	// Create channel for tests
 	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentities: []context.Identity{clientContext}}
 	if err = InitializeChannel(sdk, setup.OrgID, req, targets); err != nil {
-		return errors.Wrapf(err, "failed to initialize channel")
+		return errors.WithMessage(err, "failed to initialize channel")
 	}
-
-	// Create the channel transactor
-	channelContext, err := clientChannelContextProvider()
-	if err != nil {
-		return errors.WithMessage(err, "channel service creation failed")
-	}
-	chService := channelContext.ChannelService()
-
-	transactor, err := chService.Transactor()
-	if err != nil {
-		return errors.WithMessage(err, "transactor client creation failed")
-	}
-	setup.Transactor = transactor
-
-	eventHub, err := chService.EventHub()
-	if err != nil {
-		return errors.WithMessage(err, "eventhub client creation failed")
-	}
-	if setup.ConnectEventHub {
-		if err := eventHub.Connect(); err != nil {
-			return errors.WithMessage(err, "eventHub connect failed")
-		}
-	}
-	setup.EventHub = eventHub
-
-	setup.Initialized = true
 
 	return nil
 }
@@ -163,19 +120,6 @@ func getOrgTargets(config core.Config, org string) ([]fab.ProposalProcessor, err
 // InitConfig ...
 func (setup *BaseSetupImpl) InitConfig() core.ConfigProvider {
 	return config.FromFile(setup.ConfigFile)
-}
-
-// InstallCC use low level client to install chaincode
-func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, ccPackage *api.CCPackage, targets []fab.ProposalProcessor) error {
-
-	icr := api.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: targets}
-
-	_, _, err := setup.Client.InstallChaincode(icr)
-	if err != nil {
-		return errors.WithMessage(err, "InstallChaincode failed")
-	}
-
-	return nil
 }
 
 // GetDeployPath ..
@@ -218,71 +162,4 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.IdentityOption, 
 
 	ccPolicy := cauthdsl.SignedByMspMember(mspID)
 	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy})
-}
-
-// CreateAndSendTransactionProposal ... TODO duplicate
-func CreateAndSendTransactionProposal(transactor fab.ProposalSender, chainCodeID string,
-	fcn string, args [][]byte, targets []fab.ProposalProcessor, transientData map[string][]byte) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, error) {
-
-	propReq := fab.ChaincodeInvokeRequest{
-		Fcn:          fcn,
-		Args:         args,
-		TransientMap: transientData,
-		ChaincodeID:  chainCodeID,
-	}
-
-	txh, err := transactor.CreateTransactionHeader()
-	if err != nil {
-		return nil, nil, errors.WithMessage(err, "creating transaction header failed")
-	}
-
-	tp, err := txn.CreateChaincodeInvokeProposal(txh, propReq)
-	if err != nil {
-		return nil, nil, errors.WithMessage(err, "creating transaction proposal failed")
-	}
-
-	tpr, err := transactor.SendTransactionProposal(tp, targets)
-	return tpr, tp, err
-}
-
-// CreateAndSendTransaction ...
-func CreateAndSendTransaction(transactor fab.Sender, proposal *fab.TransactionProposal, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
-
-	txRequest := fab.TransactionRequest{
-		Proposal:          proposal,
-		ProposalResponses: resps,
-	}
-	tx, err := transactor.CreateTransaction(txRequest)
-	if err != nil {
-		return nil, errors.WithMessage(err, "CreateTransaction failed")
-	}
-
-	transactionResponse, err := transactor.SendTransaction(tx)
-	if err != nil {
-		return nil, errors.WithMessage(err, "SendTransaction failed")
-
-	}
-
-	return transactionResponse, nil
-}
-
-// RegisterTxEvent registers on the given eventhub for the give transaction
-// returns a boolean channel which receives true when the event is complete
-// and an error channel for errors
-// TODO - Duplicate
-func RegisterTxEvent(t *testing.T, txID fab.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
-	done := make(chan bool)
-	fail := make(chan error)
-
-	eventHub.RegisterTxEvent(txID, func(txId fab.TransactionID, errorCode pb.TxValidationCode, err error) {
-		if err != nil {
-			t.Logf("Received error event for txid(%s)", txId)
-			fail <- err
-		} else {
-			t.Logf("Received success event for txid(%s)", txId)
-			done <- true
-		}
-	})
-
-	return done, fail
 }

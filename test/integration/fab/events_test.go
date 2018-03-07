@@ -12,6 +12,9 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
@@ -30,13 +33,23 @@ func TestEvents(t *testing.T) {
 	chainCodeID := integration.GenerateRandomID()
 	testSetup := initializeTests(t, chainCodeID)
 
-	testReconnectEventHub(t, testSetup)
-	testFailedTx(t, testSetup, chainCodeID)
-	testFailedTxErrorCode(t, testSetup, chainCodeID)
-	testMultipleBlockEventCallbacks(t, testSetup, chainCodeID)
+	transactor, err := getTransactor(testSetup.SDK, testSetup.ChannelID, "Admin", testSetup.OrgID)
+	if err != nil {
+		t.Fatalf("Failed to get channel transactor: %s", err)
+	}
+
+	eventHub, err := getEventHub(testSetup.SDK, testSetup.ChannelID, "Admin", testSetup.OrgID)
+	if err != nil {
+		t.Fatalf("Failed to get channel event hub: %s", err)
+	}
+
+	testReconnectEventHub(t, eventHub)
+	testFailedTx(t, transactor, eventHub, testSetup, chainCodeID)
+	testFailedTxErrorCode(t, transactor, eventHub, testSetup, chainCodeID)
+	testMultipleBlockEventCallbacks(t, transactor, eventHub, testSetup, chainCodeID)
 }
 
-func testFailedTx(t *testing.T, testSetup integration.BaseSetupImpl, chainCodeID string) {
+func testFailedTx(t *testing.T, transactor fab.Transactor, eventHub fab.EventHub, testSetup integration.BaseSetupImpl, chainCodeID string) {
 	fcn := "invoke"
 
 	// Arguments for events CC
@@ -44,22 +57,22 @@ func testFailedTx(t *testing.T, testSetup integration.BaseSetupImpl, chainCodeID
 	args = append(args, []byte("invoke"))
 	args = append(args, []byte("SEVERE"))
 
-	tpResponses1, prop1, err := integration.CreateAndSendTransactionProposal(testSetup.Transactor, chainCodeID, fcn, args, testSetup.Targets[:1], nil)
+	tpResponses1, prop1, err := createAndSendTransactionProposal(transactor, chainCodeID, fcn, args, testSetup.Targets[:1], nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
-	tpResponses2, prop2, err := integration.CreateAndSendTransactionProposal(testSetup.Transactor, chainCodeID, fcn, args, testSetup.Targets[:1], nil)
+	tpResponses2, prop2, err := createAndSendTransactionProposal(transactor, chainCodeID, fcn, args, testSetup.Targets[:1], nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
 	// Register tx1 and tx2 for commit/block event(s)
-	done1, fail1 := integration.RegisterTxEvent(t, prop1.TxnID, testSetup.EventHub)
-	defer testSetup.EventHub.UnregisterTxEvent(prop1.TxnID)
+	done1, fail1 := registerTxEvent(t, prop1.TxnID, eventHub)
+	defer eventHub.UnregisterTxEvent(prop1.TxnID)
 
-	done2, fail2 := integration.RegisterTxEvent(t, prop2.TxnID, testSetup.EventHub)
-	defer testSetup.EventHub.UnregisterTxEvent(prop2.TxnID)
+	done2, fail2 := registerTxEvent(t, prop2.TxnID, eventHub)
+	defer eventHub.UnregisterTxEvent(prop2.TxnID)
 
 	// Setup monitoring of events
 	var wg sync.WaitGroup
@@ -71,11 +84,11 @@ func testFailedTx(t *testing.T, testSetup integration.BaseSetupImpl, chainCodeID
 
 	// Test invalid transaction: create 2 invoke requests in quick succession that modify
 	// the same state variable which should cause one invoke to be invalid
-	_, err = integration.CreateAndSendTransaction(testSetup.Transactor, prop1, tpResponses1)
+	_, err = createAndSendTransaction(transactor, prop1, tpResponses1)
 	if err != nil {
 		t.Fatalf("First invoke failed err: %v", err)
 	}
-	_, err = integration.CreateAndSendTransaction(testSetup.Transactor, prop2, tpResponses2)
+	_, err = createAndSendTransaction(transactor, prop2, tpResponses2)
 	if err != nil {
 		t.Fatalf("Second invoke failed err: %v", err)
 	}
@@ -110,16 +123,16 @@ Loop:
 	}
 }
 
-func testFailedTxErrorCode(t *testing.T, testSetup integration.BaseSetupImpl, chainCodeID string) {
+func testFailedTxErrorCode(t *testing.T, transactor fab.Transactor, eventHub fab.EventHub, testSetup integration.BaseSetupImpl, chainCodeID string) {
 	fcn := "invoke"
 
-	tpResponses1, prop1, err := integration.CreateAndSendTransactionProposal(testSetup.Transactor, chainCodeID, fcn, eventCCArgs, testSetup.Targets[:1], nil)
+	tpResponses1, prop1, err := createAndSendTransactionProposal(transactor, chainCodeID, fcn, eventCCArgs, testSetup.Targets[:1], nil)
 
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
-	tpResponses2, prop2, err := integration.CreateAndSendTransactionProposal(testSetup.Transactor, chainCodeID, fcn, eventCCArgs, testSetup.Targets[:1], nil)
+	tpResponses2, prop2, err := createAndSendTransactionProposal(transactor, chainCodeID, fcn, eventCCArgs, testSetup.Targets[:1], nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
@@ -127,7 +140,7 @@ func testFailedTxErrorCode(t *testing.T, testSetup integration.BaseSetupImpl, ch
 	done := make(chan bool)
 	fail := make(chan pb.TxValidationCode)
 
-	testSetup.EventHub.RegisterTxEvent(prop1.TxnID, func(txId fab.TransactionID, errorCode pb.TxValidationCode, err error) {
+	eventHub.RegisterTxEvent(prop1.TxnID, func(txId fab.TransactionID, errorCode pb.TxValidationCode, err error) {
 		if err != nil {
 			fail <- errorCode
 		} else {
@@ -135,12 +148,12 @@ func testFailedTxErrorCode(t *testing.T, testSetup integration.BaseSetupImpl, ch
 		}
 	})
 
-	defer testSetup.EventHub.UnregisterTxEvent(prop1.TxnID)
+	defer eventHub.UnregisterTxEvent(prop1.TxnID)
 
 	done2 := make(chan bool)
 	fail2 := make(chan pb.TxValidationCode)
 
-	testSetup.EventHub.RegisterTxEvent(prop2.TxnID, func(txId fab.TransactionID, errorCode pb.TxValidationCode, err error) {
+	eventHub.RegisterTxEvent(prop2.TxnID, func(txId fab.TransactionID, errorCode pb.TxValidationCode, err error) {
 		if err != nil {
 			fail2 <- errorCode
 		} else {
@@ -148,7 +161,7 @@ func testFailedTxErrorCode(t *testing.T, testSetup integration.BaseSetupImpl, ch
 		}
 	})
 
-	defer testSetup.EventHub.UnregisterTxEvent(prop2.TxnID)
+	defer eventHub.UnregisterTxEvent(prop2.TxnID)
 
 	// Setup monitoring of events
 	var wg sync.WaitGroup
@@ -160,11 +173,11 @@ func testFailedTxErrorCode(t *testing.T, testSetup integration.BaseSetupImpl, ch
 
 	// Test invalid transaction: create 2 invoke requests in quick succession that modify
 	// the same state variable which should cause one invoke to be invalid
-	_, err = integration.CreateAndSendTransaction(testSetup.Transactor, prop1, tpResponses1)
+	_, err = createAndSendTransaction(transactor, prop1, tpResponses1)
 	if err != nil {
 		t.Fatalf("First invoke failed err: %v", err)
 	}
-	_, err = integration.CreateAndSendTransaction(testSetup.Transactor, prop2, tpResponses2)
+	_, err = createAndSendTransaction(transactor, prop2, tpResponses2)
 	if err != nil {
 		t.Fatalf("Second invoke failed err: %v", err)
 	}
@@ -202,39 +215,39 @@ Loop:
 	}
 }
 
-func testReconnectEventHub(t *testing.T, testSetup integration.BaseSetupImpl) {
+func testReconnectEventHub(t *testing.T, eventHub fab.EventHub) {
 	// Test disconnect event hub
-	err := testSetup.EventHub.Disconnect()
+	err := eventHub.Disconnect()
 	if err != nil {
 		t.Fatalf("Error disconnecting event hub: %s", err)
 	}
-	if testSetup.EventHub.IsConnected() {
+	if eventHub.IsConnected() {
 		t.Fatalf("Failed to disconnect event hub")
 	}
 	// Reconnect event hub
-	if err := testSetup.EventHub.Connect(); err != nil {
+	if err := eventHub.Connect(); err != nil {
 		t.Fatalf("Failed to connect event hub")
 	}
 }
 
-func testMultipleBlockEventCallbacks(t *testing.T, testSetup integration.BaseSetupImpl, chainCodeID string) {
+func testMultipleBlockEventCallbacks(t *testing.T, transactor fab.Transactor, eventHub fab.EventHub, testSetup integration.BaseSetupImpl, chainCodeID string) {
 	fcn := "invoke"
 
 	// Create and register test callback that will be invoked upon block event
 	test := make(chan bool)
-	testSetup.EventHub.RegisterBlockEvent(func(block *common.Block) {
+	eventHub.RegisterBlockEvent(func(block *common.Block) {
 		t.Logf("Received test callback on block event")
 		test <- true
 	})
 
-	tpResponses, prop, err := integration.CreateAndSendTransactionProposal(testSetup.Transactor, chainCodeID, fcn, eventCCArgs, testSetup.Targets[:1], nil)
+	tpResponses, prop, err := createAndSendTransactionProposal(transactor, chainCodeID, fcn, eventCCArgs, testSetup.Targets[:1], nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal returned error: %v", err)
 	}
 
 	// Register tx for commit/block event(s)
-	done, fail := integration.RegisterTxEvent(t, prop.TxnID, testSetup.EventHub)
-	defer testSetup.EventHub.UnregisterTxEvent(prop.TxnID)
+	done, fail := registerTxEvent(t, prop.TxnID, eventHub)
+	defer eventHub.UnregisterTxEvent(prop.TxnID)
 
 	// Setup monitoring of events
 	var wg sync.WaitGroup
@@ -244,7 +257,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup integration.BaseSet
 		monitorMultipleBlockEventCallbacks(t, testSetup, done, fail, test)
 	}()
 
-	_, err = integration.CreateAndSendTransaction(testSetup.Transactor, prop, tpResponses)
+	_, err = createAndSendTransaction(transactor, prop, tpResponses)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransaction failed with error: %v", err)
 	}
@@ -275,4 +288,93 @@ Loop:
 	if !rcvTxDone || !rcvTxEvent {
 		t.Fatalf("Didn't receive events (tx event: %t; tx done %t)", rcvTxEvent, rcvTxDone)
 	}
+}
+
+// createAndSendTransaction uses transactor to create and send transaction
+func createAndSendTransaction(transactor fab.Sender, proposal *fab.TransactionProposal, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
+
+	txRequest := fab.TransactionRequest{
+		Proposal:          proposal,
+		ProposalResponses: resps,
+	}
+	tx, err := transactor.CreateTransaction(txRequest)
+	if err != nil {
+		return nil, errors.WithMessage(err, "CreateTransaction failed")
+	}
+
+	transactionResponse, err := transactor.SendTransaction(tx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "SendTransaction failed")
+
+	}
+
+	return transactionResponse, nil
+}
+
+// registerTxEvent registers on the given eventhub for the give transaction
+// returns a boolean channel which receives true when the event is complete
+// and an error channel for errors
+func registerTxEvent(t *testing.T, txID fab.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
+	done := make(chan bool)
+	fail := make(chan error)
+
+	eventHub.RegisterTxEvent(txID, func(txId fab.TransactionID, errorCode pb.TxValidationCode, err error) {
+		if err != nil {
+			t.Logf("Received error event for txid(%s)", txId)
+			fail <- err
+		} else {
+			t.Logf("Received success event for txid(%s)", txId)
+			done <- true
+		}
+	})
+
+	return done, fail
+}
+
+func getTransactor(sdk *fabsdk.FabricSDK, channelID string, user string, orgName string) (fab.Transactor, error) {
+
+	clientChannelContextProvider := sdk.ChannelContext(channelID, fabsdk.WithChannelUser(user), fabsdk.WithChannelOrgName(orgName))
+
+	channelContext, err := clientChannelContextProvider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "channel service creation failed")
+	}
+	chService := channelContext.ChannelService()
+
+	return chService.Transactor()
+}
+
+func getEventHub(sdk *fabsdk.FabricSDK, channelID string, user string, orgName string) (fab.EventHub, error) {
+
+	clientChannelContextProvider := sdk.ChannelContext(channelID, fabsdk.WithChannelUser(user), fabsdk.WithChannelOrgName(orgName))
+
+	channelContext, err := clientChannelContextProvider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "channel service creation failed")
+	}
+	chService := channelContext.ChannelService()
+
+	eventHub, err := chService.EventHub()
+	if err != nil {
+		return nil, errors.WithMessage(err, "eventhub client creation failed")
+	}
+
+	if err := eventHub.Connect(); err != nil {
+		return nil, errors.WithMessage(err, "eventHub connect failed")
+	}
+
+	return eventHub, nil
+}
+
+func getResource(sdk *fabsdk.FabricSDK, user string, orgName string) (*resource.Resource, error) {
+
+	ctx := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrgName(orgName))
+
+	clientContext, err := ctx()
+	if err != nil {
+		return nil, errors.WithMessage(err, "create context failed")
+	}
+
+	return resource.New(clientContext), nil
+
 }

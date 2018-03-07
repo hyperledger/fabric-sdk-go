@@ -250,7 +250,7 @@ func (o *Orderer) sendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 
 	conn, err := o.conn(ctx, secured)
 	if err != nil {
-		logger.Error("connecting to orderer failed [%s]", err)
+		logger.Errorf("connecting to orderer failed [%s]", err)
 		if secured && o.allowInsecure {
 			//If secured mode failed and allow insecure is enabled then retry in insecure mode
 			logger.Debug("Secured sendBroadcast failed, attempting insecured")

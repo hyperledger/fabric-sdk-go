@@ -19,9 +19,15 @@ func TestChannelQueries(t *testing.T) {
 	testSetup := initializeTests(t, chaincodeID)
 	defer testSetup.SDK.Close()
 
-	testQueryChannels(t, testSetup.Client, testSetup.Targets[0])
+	// Low level resource
+	client, err := getResource(testSetup.SDK, "Admin", orgName)
+	if err != nil {
+		t.Fatalf("Failed to get resource: %s", err)
+	}
 
-	testInstalledChaincodes(t, chaincodeID, testSetup.Client, testSetup.Targets[0])
+	testQueryChannels(t, client, testSetup.Targets[0])
+
+	testInstalledChaincodes(t, chaincodeID, client, testSetup.Targets[0])
 
 }
 

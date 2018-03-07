@@ -50,10 +50,9 @@ func initializeTests(t *testing.T, chainCodeID string) integration.BaseSetupImpl
 	testSetup := integration.BaseSetupImpl{
 		ConfigFile: "../" + integration.ConfigTestFile,
 
-		ChannelID:       "mychannel",
-		OrgID:           org1Name,
-		ChannelConfig:   path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
-		ConnectEventHub: true,
+		ChannelID:     "mychannel",
+		OrgID:         org1Name,
+		ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
 	if err := testSetup.Initialize(); err != nil {

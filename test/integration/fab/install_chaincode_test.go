@@ -13,9 +13,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -26,16 +29,16 @@ const (
 func TestChaincodeInstal(t *testing.T) {
 
 	testSetup := &integration.BaseSetupImpl{
-		ConfigFile:      "../" + integration.ConfigTestFile,
-		ChannelID:       "mychannel",
-		OrgID:           org1Name,
-		ChannelConfig:   path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-		ConnectEventHub: true,
+		ConfigFile:    "../" + integration.ConfigTestFile,
+		ChannelID:     "mychannel",
+		OrgID:         org1Name,
+		ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
 	if err := testSetup.Initialize(); err != nil {
 		t.Fatalf(err.Error())
 	}
+
 	defer testSetup.SDK.Close()
 
 	testChaincodeInstallUsingChaincodePath(t, testSetup)
@@ -47,16 +50,18 @@ func TestChaincodeInstal(t *testing.T) {
 func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *integration.BaseSetupImpl) {
 	chainCodeVersion := getRandomCCVersion()
 
-	// Install and Instantiate Events CC
-	// Retrieve installed chaincodes
-	client := testSetup.Client
-
 	ccPkg, err := packager.NewCCPackage(chainCodePath, integration.GetDeployPath())
 	if err != nil {
 		t.Fatalf("Failed to package chaincode")
 	}
 
-	if err := testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets); err != nil {
+	// Low level resource
+	client, err := getResource(testSetup.SDK, "Admin", orgName)
+	if err != nil {
+		t.Fatalf("Failed to get resource: %s", err)
+	}
+
+	if err := installCC(client, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
@@ -76,7 +81,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *integration
 		t.Fatalf("Failed to retrieve installed chaincode.")
 	}
 	//Install same chaincode again, should fail
-	err = testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
+	err = installCC(client, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
@@ -95,19 +100,38 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *integrat
 		t.Fatalf("PackageCC return error: %s", err)
 	}
 
-	err = testSetup.InstallCC("install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg, testSetup.Targets)
+	// Low level resource
+	client, err := getResource(testSetup.SDK, "Admin", orgName)
+	if err != nil {
+		t.Fatalf("Failed to get resource: %s", err)
+	}
+
+	err = installCC(client, "install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg, testSetup.Targets)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
 	//Install same chaincode again, should fail
-	err = testSetup.InstallCC("install", chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
+	err = installCC(client, "install", chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
 	if strings.Contains(err.Error(), "chaincodes/install.v"+chainCodeVersion+" exists") {
 		t.Fatalf("install same chaincode didn't return the correct error")
 	}
+}
+
+// installCC use low level client to install chaincode
+func installCC(client api.Resource, name string, path string, version string, ccPackage *api.CCPackage, targets []fab.ProposalProcessor) error {
+
+	icr := api.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: targets}
+
+	_, _, err := client.InstallChaincode(icr)
+	if err != nil {
+		return errors.WithMessage(err, "InstallChaincode failed")
+	}
+
+	return nil
 }
 
 func getRandomCCVersion() string {

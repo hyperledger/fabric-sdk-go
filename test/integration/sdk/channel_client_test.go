@@ -31,11 +31,10 @@ const (
 func TestChannelClient(t *testing.T) {
 
 	testSetup := integration.BaseSetupImpl{
-		ConfigFile:      "../" + integration.ConfigTestFile,
-		ChannelID:       "mychannel",
-		OrgID:           org1Name,
-		ChannelConfig:   path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-		ConnectEventHub: true,
+		ConfigFile:    "../" + integration.ConfigTestFile,
+		ChannelID:     "mychannel",
+		OrgID:         org1Name,
+		ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
 	if err := testSetup.Initialize(); err != nil {
