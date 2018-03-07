@@ -86,8 +86,8 @@ type SaveChannelRequest struct {
 	ChannelID string
 	// Path to channel configuration file
 	ChannelConfig string
-	// User that signs channel configuration
-	SigningIdentity context.Identity
+	// Users that sign channel configuration
+	SigningIdentities []context.Identity
 }
 
 //RequestOption func for each Opts argument
@@ -611,13 +611,17 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 
 	// Signing user has to belong to one of configured channel organisations
 	// In case that order org is one of channel orgs we can use context user
-	var signer context.Identity = rc.context
-	if req.SigningIdentity != nil {
-		// Retrieve custom signing identity here
-		signer = req.SigningIdentity
-	}
+	var signers []context.Identity
 
-	if signer == nil {
+	if len(req.SigningIdentities) > 0 {
+		for _, id := range req.SigningIdentities {
+			if id != nil {
+				signers = append(signers, id)
+			}
+		}
+	} else if rc.context != nil {
+		signers = append(signers, rc.context)
+	} else {
 		return errors.New("must provide signing user")
 	}
 
@@ -631,18 +635,20 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		return errors.WithMessage(err, "extracting channel config failed")
 	}
 
-	sigCtx := contextImpl.Client{
-		Identity:  signer,
-		Providers: rc.context,
-	}
-
-	configSignature, err := resource.CreateConfigSignature(&sigCtx, chConfig)
-	if err != nil {
-		return errors.WithMessage(err, "signing configuration failed")
-	}
-
 	var configSignatures []*common.ConfigSignature
-	configSignatures = append(configSignatures, configSignature)
+	for _, signer := range signers {
+
+		sigCtx := contextImpl.Client{
+			Identity:  signer,
+			Providers: rc.context,
+		}
+
+		configSignature, err := resource.CreateConfigSignature(&sigCtx, chConfig)
+		if err != nil {
+			return errors.WithMessage(err, "signing configuration failed")
+		}
+		configSignatures = append(configSignatures, configSignature)
+	}
 
 	// Figure out orderer configuration
 	var ordererCfg *core.OrdererConfig

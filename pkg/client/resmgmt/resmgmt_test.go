@@ -1295,3 +1295,22 @@ func TestSaveChannelWithOpts(t *testing.T) {
 		t.Fatal("Should have failed for invalid orderer ID")
 	}
 }
+
+func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
+	cc := setupDefaultResMgmtClient(t)
+
+	// empty list of signing identities (defaults to context user)
+	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []context.Identity{}}
+	err := cc.SaveChannel(req, WithOrdererID(""))
+	if err != nil {
+		t.Fatalf("Failed to save channel with default signing identity: %s", err)
+	}
+
+	// multiple signing identities
+	secondCtx := fcmocks.NewMockContext(fcmocks.NewMockUser("second"))
+	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []context.Identity{cc.context, secondCtx}}
+	err = cc.SaveChannel(req, WithOrdererID(""))
+	if err != nil {
+		t.Fatalf("Failed to save channel with multiple signing identities: %s", err)
+	}
+}
