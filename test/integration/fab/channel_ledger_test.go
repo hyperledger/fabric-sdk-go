@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -30,13 +31,15 @@ const (
 	orgName           = org1Name
 )
 
-func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.ProposalProcessor) {
+func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.Peer) {
 	sdk, err := fabsdk.New(config.FromFile(sdkConfigFile))
 	if err != nil {
 		t.Fatalf("SDK init failed: %v", err)
 	}
 	// Get signing identity that is used to sign create channel request
-	si, err := integration.GetSigningIdentity(sdk, orgName, "Admin")
+	adminContext := sdk.Context(fabsdk.WithUser("Admin"), fabsdk.WithOrgName(orgName))
+	adminSession, err := adminContext()
+
 	if err != nil {
 		t.Fatalf("failed to load signing identity: %s", err)
 	}
@@ -47,8 +50,8 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.ProposalProce
 	}
 
 	channelConfig := path.Join("../../../", metadata.ChannelConfigPath, channelConfigFile)
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: channelConfig, SigningIdentities: []context.Identity{si}}
-	err = integration.InitializeChannel(sdk, orgName, req, targets)
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: channelConfig, SigningIdentities: []context.Identity{adminSession}}
+	err = integration.InitializeChannel(sdk, orgName, req, integration.ProposalProcessors(targets))
 	if err != nil {
 		t.Fatalf("failed to ensure channel has been initialized: %s", err)
 	}
@@ -66,52 +69,51 @@ func TestLedgerQueries(t *testing.T) {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
+	//prepare required contexts
+	clientCtx := sdk.Context(fabsdk.WithUser("Admin"), fabsdk.WithOrgName(orgName))
+	channelClientCtx := sdk.ChannelContext(channelID, fabsdk.WithChannelUser("Admin"), fabsdk.WithChannelOrgName(orgName))
+
 	// Get a ledger client.
-	client := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
-	channelSvc, err := client.ChannelService(channelID)
-	if err != nil {
-		t.Fatalf("creating channel service failed: %v", err)
-	}
-	ledger, err := channelSvc.Ledger()
-	if err != nil {
-		t.Fatalf("creating channel ledger client failed: %v", err)
-	}
+	ledgerClient, err := ledger.New(clientCtx, channelID)
 
 	// Test Query Info - retrieve values before transaction
-	bciBeforeTx, err := ledger.QueryInfo(targets[0:1])
+	testTargets := targets[0:1]
+	bciBeforeTx, err := ledgerClient.QueryInfo(ledger.WithTargets(testTargets...))
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
 	// Invoke transaction that changes block state
-	channel, err := client.Channel(channelID)
+	channelClient, err := channel.New(channelClientCtx)
 	if err != nil {
 		t.Fatalf("creating channel failed: %v", err)
 	}
 
-	txID, err := changeBlockState(t, channel, chaincodeID)
+	txID, err := changeBlockState(t, channelClient, chaincodeID)
 	if err != nil {
 		t.Fatalf("Failed to change block state (invoke transaction). Return error: %v", err)
 	}
 
 	// Test Query Info - retrieve values after transaction
-	bciAfterTx, err := ledger.QueryInfo(targets[0:1])
+	bciAfterTx, err := ledgerClient.QueryInfo(ledger.WithTargets(testTargets...))
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
 	// Test Query Info -- verify block size changed after transaction
-	if (bciAfterTx[0].BCI.Height - bciBeforeTx[0].BCI.Height) <= 0 {
+	if (bciAfterTx.BCI.Height - bciBeforeTx.BCI.Height) <= 0 {
 		t.Fatalf("Block size did not increase after transaction")
 	}
 
-	testQueryTransaction(t, ledger, txID, targets)
+	testQueryTransaction(t, ledgerClient, txID, targets)
 
-	testQueryBlock(t, ledger, targets)
+	testQueryBlock(t, ledgerClient, targets)
 
-	testInstantiatedChaincodes(t, chaincodeID, ledger, targets)
+	resmgmtClient, err := resmgmt.New(clientCtx)
 
-	testQueryConfigBlock(t, ledger, targets)
+	testInstantiatedChaincodes(t, chaincodeID, channelID, resmgmtClient, targets)
+
+	testQueryConfigBlock(t, ledgerClient, targets)
 }
 
 func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) (fab.TransactionID, error) {
@@ -150,86 +152,79 @@ func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) 
 	return txID, nil
 }
 
-func testQueryTransaction(t *testing.T, ledger fab.ChannelLedger, txID fab.TransactionID, targets []fab.ProposalProcessor) {
+func testQueryTransaction(t *testing.T, ledgerClient *ledger.Client, txID fab.TransactionID, targets []fab.Peer) {
 
 	// Test Query Transaction -- verify that valid transaction has been processed
-	processedTransactions, err := ledger.QueryTransaction(txID, targets)
+	processedTransaction, err := ledgerClient.QueryTransaction(txID, ledger.WithTargets(targets...))
 	if err != nil {
 		t.Fatalf("QueryTransaction return error: %v", err)
 	}
 
-	for _, processedTransaction := range processedTransactions {
-		if processedTransaction.TransactionEnvelope == nil {
-			t.Fatalf("QueryTransaction failed to return transaction envelope")
-		}
+	if processedTransaction.TransactionEnvelope == nil {
+		t.Fatalf("QueryTransaction failed to return transaction envelope")
 	}
 
 	// Test Query Transaction -- Retrieve non existing transaction
-	_, err = ledger.QueryTransaction("123ABC", targets)
+	_, err = ledgerClient.QueryTransaction("123ABC", ledger.WithTargets(targets...))
 	if err == nil {
 		t.Fatalf("QueryTransaction non-existing didn't return an error")
 	}
 }
 
-func testQueryBlock(t *testing.T, ledger fab.ChannelLedger, targets []fab.ProposalProcessor) {
+func testQueryBlock(t *testing.T, ledgerClient *ledger.Client, targets []fab.Peer) {
 
 	// Retrieve current blockchain info
-	bcis, err := ledger.QueryInfo(targets)
+	bci, err := ledgerClient.QueryInfo(ledger.WithTargets(targets...))
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
-	for i, bci := range bcis {
-		// Test Query Block by Hash - retrieve current block by hash
-		block, err := ledger.QueryBlockByHash(bci.BCI.CurrentBlockHash, targets[i:i+1])
-		if err != nil {
-			t.Fatalf("QueryBlockByHash return error: %v", err)
-		}
+	// Test Query Block by Hash - retrieve current block by hash
+	block, err := ledgerClient.QueryBlockByHash(bci.BCI.CurrentBlockHash, ledger.WithTargets(targets...))
+	if err != nil {
+		t.Fatalf("QueryBlockByHash return error: %v", err)
+	}
 
-		if block[0].Data == nil {
-			t.Fatalf("QueryBlockByHash block data is nil")
-		}
+	if block.Data == nil {
+		t.Fatalf("QueryBlockByHash block data is nil")
 	}
 
 	// Test Query Block by Hash - retrieve block by non-existent hash
-	_, err = ledger.QueryBlockByHash([]byte("non-existent"), targets)
+	_, err = ledgerClient.QueryBlockByHash([]byte("non-existent"), ledger.WithTargets(targets...))
 	if err == nil {
 		t.Fatalf("QueryBlockByHash non-existent didn't return an error")
 	}
 
 	// Test Query Block - retrieve block by number
-	blocks, err := ledger.QueryBlock(1, targets)
+	block, err = ledgerClient.QueryBlock(1, ledger.WithTargets(targets...))
 	if err != nil {
 		t.Fatalf("QueryBlock return error: %v", err)
 	}
-	for _, block := range blocks {
-		if block.Data == nil {
-			t.Fatalf("QueryBlock block data is nil")
-		}
+	if block.Data == nil {
+		t.Fatalf("QueryBlock block data is nil")
 	}
 
 	// Test Query Block - retrieve block by non-existent number
-	_, err = ledger.QueryBlock(2147483647, targets)
+	_, err = ledgerClient.QueryBlock(2147483647, ledger.WithTargets(targets...))
 	if err == nil {
 		t.Fatalf("QueryBlock non-existent didn't return an error")
 	}
 }
 
-func testInstantiatedChaincodes(t *testing.T, ccID string, ledger fab.ChannelLedger, targets []fab.ProposalProcessor) {
+func testInstantiatedChaincodes(t *testing.T, ccID string, channelID string, resmgmtClient *resmgmt.Client, targets []fab.Peer) {
+
+	found := false
 
 	// Test Query Instantiated chaincodes
-	chaincodeQueryResponses, err := ledger.QueryInstantiatedChaincodes(targets)
+	chaincodeQueryResponse, err := resmgmtClient.QueryInstantiatedChaincodes(channelID, resmgmt.WithTargets(targets...))
 	if err != nil {
 		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
 	}
 
-	found := false
-	for _, chaincodeQueryResponse := range chaincodeQueryResponses {
-		for _, chaincode := range chaincodeQueryResponse.Chaincodes {
-			t.Logf("**InstantiatedCC: %s", chaincode)
-			if chaincode.Name == ccID {
-				found = true
-			}
+	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+		t.Logf("**InstantiatedCC: %s", chaincode)
+		if chaincode.Name == ccID {
+			found = true
 		}
 	}
 
@@ -258,15 +253,15 @@ func moveFundsAndGetTxID(t *testing.T, client *channel.Client, chaincodeID strin
 	return resp.TransactionID, nil
 }
 
-func testQueryConfigBlock(t *testing.T, ledger fab.ChannelLedger, targets []fab.ProposalProcessor) {
+func testQueryConfigBlock(t *testing.T, ledgerClient *ledger.Client, targets []fab.Peer) {
 
 	// Retrieve current channel configuration
-	cfgEnvelope, err := ledger.QueryConfigBlock(targets, 1)
+	cfgEnvelope, err := ledgerClient.QueryConfig(ledger.WithTargets(targets...))
 	if err != nil {
 		t.Fatalf("QueryConfig return error: %v", err)
 	}
 
-	if cfgEnvelope.Config == nil {
+	if cfgEnvelope == nil {
 		t.Fatalf("QueryConfig config data is nil")
 	}
 

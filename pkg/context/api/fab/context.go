@@ -20,7 +20,6 @@ type IdentityContext interface {
 // ChannelService supplies services related to a channel.
 type ChannelService interface {
 	Config() (ChannelConfig, error)
-	Ledger() (ChannelLedger, error)
 	Transactor() (Transactor, error)
 	EventHub() (EventHub, error) // TODO support new event delivery
 	Membership() (ChannelMembership, error)

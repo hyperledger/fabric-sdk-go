@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/mocks"
 	"github.com/pkg/errors"
@@ -142,7 +143,8 @@ func TestWithSessionPkg(t *testing.T) {
 	defer sdk.Close()
 
 	// Get resource management
-	_, err = sdk.NewClient(WithUser(sdkValidClientUser)).ResourceMgmt()
+	ctx := sdk.Context(WithUser(sdkValidClientUser), WithOrgName(sdkValidClientOrg1))
+	_, err = resmgmt.New(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error getting channel management client: %s", err)
 	}

@@ -18,6 +18,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	adminUser      = "Admin"
+	ordererOrgName = "ordererorg"
+)
+
 // GenerateRandomID generates random ID
 func GenerateRandomID() string {
 	return randomString(10)
@@ -35,6 +40,7 @@ func randomString(strlen int) string {
 
 // InitializeChannel ...
 func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChannelRequest, targets []fab.ProposalProcessor) error {
+
 	joinedTargets, err := FilterTargetsJoinedChannel(sdk, orgID, req.ChannelID, targets)
 	if err != nil {
 		return errors.WithMessage(err, "checking for joined targets failed")
@@ -46,7 +52,7 @@ func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChan
 			return errors.Wrapf(err, "create channel failed")
 		}
 
-		_, err = JoinChannel(sdk, req.ChannelID)
+		_, err = JoinChannel(sdk, req.ChannelID, orgID)
 		if err != nil {
 			return errors.Wrapf(err, "join channel failed")
 		}
@@ -57,7 +63,11 @@ func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChan
 // FilterTargetsJoinedChannel filters targets to those that have joined the named channel.
 func FilterTargetsJoinedChannel(sdk *fabsdk.FabricSDK, orgID string, channelID string, targets []fab.ProposalProcessor) ([]fab.ProposalProcessor, error) {
 	joinedTargets := []fab.ProposalProcessor{}
-	rc, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgID)).ResourceMgmt()
+
+	//prepare context
+	clientContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrgName(orgID))
+
+	rc, err := resmgmt.New(clientContext)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed getting admin user session for org")
 	}
@@ -78,8 +88,11 @@ func FilterTargetsJoinedChannel(sdk *fabsdk.FabricSDK, orgID string, channelID s
 // CreateChannel attempts to save the named channel.
 func CreateChannel(sdk *fabsdk.FabricSDK, req resmgmt.SaveChannelRequest) (bool, error) {
 
+	//prepare context
+	clientContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrgName(ordererOrgName))
+
 	// Channel management client is responsible for managing channels (create/update)
-	resMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ResourceMgmt()
+	resMgmtClient, err := resmgmt.New(clientContext)
 	if err != nil {
 		return false, errors.WithMessage(err, "Failed to create new channel management client")
 	}
@@ -94,9 +107,12 @@ func CreateChannel(sdk *fabsdk.FabricSDK, req resmgmt.SaveChannelRequest) (bool,
 }
 
 // JoinChannel attempts to save the named channel.
-func JoinChannel(sdk *fabsdk.FabricSDK, name string) (bool, error) {
+func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string) (bool, error) {
+	//prepare context
+	clientContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrgName(orgID))
+
 	// Resource management client is responsible for managing resources (joining channels, install/instantiate/upgrade chaincodes)
-	resMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin")).ResourceMgmt()
+	resMgmtClient, err := resmgmt.New(clientContext)
 	if err != nil {
 		return false, errors.WithMessage(err, "Failed to create new resource management client")
 	}
@@ -108,8 +124,8 @@ func JoinChannel(sdk *fabsdk.FabricSDK, name string) (bool, error) {
 }
 
 // CreateProposalProcessors initializes target peers based on config
-func CreateProposalProcessors(config core.Config, orgs []string) ([]fab.ProposalProcessor, error) {
-	peers := []fab.ProposalProcessor{}
+func CreateProposalProcessors(config core.Config, orgs []string) ([]fab.Peer, error) {
+	peers := []fab.Peer{}
 	for _, org := range orgs {
 		peerConfig, err := config.PeersConfig(org)
 		if err != nil {
@@ -144,4 +160,13 @@ func HasPeerJoinedChannel(client *resmgmt.Client, peer fab.ProposalProcessor, ch
 	}
 
 	return foundChannel, nil
+}
+
+//ProposalProcessors utility to convert []fab.Peer to []fab.ProposalProcessor
+func ProposalProcessors(targets []fab.Peer) []fab.ProposalProcessor {
+	proposalProcessors := []fab.ProposalProcessor{}
+	for _, peer := range targets {
+		proposalProcessors = append(proposalProcessors, peer)
+	}
+	return proposalProcessors
 }

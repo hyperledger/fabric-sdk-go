@@ -46,6 +46,39 @@ func WithOrgName(org string) IdentityOption {
 	}
 }
 
+type channelContextOptions struct {
+	identity contextApi.Identity
+	orgName  string
+	user     string
+}
+
+// ChannelContextOption provides parameters for creating a channel context
+type ChannelContextOption func(s *channelContextOptions) error
+
+// WithChannelUser uses the named user to load the identity
+func WithChannelUser(user string) ChannelContextOption {
+	return func(o *channelContextOptions) error {
+		o.user = user
+		return nil
+	}
+}
+
+// WithChannelIdentity uses orgName to load identity
+func WithChannelIdentity(identity contextApi.Identity) ChannelContextOption {
+	return func(o *channelContextOptions) error {
+		o.identity = identity
+		return nil
+	}
+}
+
+// WithChannelOrgName uses a pre-constructed identity object as the credential for the session
+func WithChannelOrgName(org string) ChannelContextOption {
+	return func(o *channelContextOptions) error {
+		o.orgName = org
+		return nil
+	}
+}
+
 func (sdk *FabricSDK) newIdentity(options ...IdentityOption) (contextApi.Identity, error) {
 	opts := identityOptions{}
 

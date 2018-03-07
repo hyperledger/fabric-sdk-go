@@ -11,11 +11,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
 
-// Session primarily represents the session and identity context
-type Session interface {
-	Identity
-}
-
 // Identity supplies the serialized identity and key reference.
 type Identity interface {
 	MspID() string
@@ -42,3 +37,9 @@ type Channel interface {
 	SelectionService() fab.SelectionService
 	ChannelService() fab.ChannelService
 }
+
+//ClientProvider returns client context
+type ClientProvider func() (Client, error)
+
+//ChannelProvider returns channel client context
+type ChannelProvider func() (Channel, error)
