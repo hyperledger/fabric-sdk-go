@@ -46,7 +46,7 @@ func TestConnect(t *testing.T) {
 		),
 	)
 
-	discoveryService := clientmocks.NewDiscoveryService(peer1, peer2)
+	discoveryService := clientmocks.CreateDiscoveryService(peer1, peer2)
 	eventClient, _, err := newClientWithMockConnAndOpts("mychannel", newMockContext(), connectionProvider, filteredClientProvider, discoveryService, []options.Opt{})
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -82,7 +82,7 @@ func TestFailConnect(t *testing.T) {
 			),
 		),
 		failAfterConnectClientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		[]options.Opt{},
 	)
 	if err != nil {
@@ -97,7 +97,7 @@ func TestCallsOnClosedClient(t *testing.T) {
 	eventClient, _, err := newClientWithMockConn(
 		"mychannel", newMockContext(),
 		filteredClientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -140,7 +140,7 @@ func TestInvalidUnregister(t *testing.T) {
 	eventClient, _, err := newClientWithMockConn(
 		channelID, newMockContext(),
 		filteredClientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -160,7 +160,7 @@ func TestUnauthorizedBlockEvents(t *testing.T) {
 	eventClient, _, err := newClientWithMockConn(
 		channelID, newMockContext(),
 		filteredClientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -181,7 +181,7 @@ func TestBlockEvents(t *testing.T) {
 	eventClient, conn, err := newClientWithMockConn(
 		channelID, newMockContext(),
 		clientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
 	)
 	if err != nil {
@@ -236,7 +236,7 @@ func TestFilteredBlockEvents(t *testing.T) {
 	eventClient, conn, err := newClientWithMockConn(
 		channelID, newMockContext(),
 		filteredClientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -310,7 +310,7 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 	eventClient, conn, err := newClientWithMockConn(
 		channelID, newMockContext(),
 		clientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
 	)
 	if err != nil {
@@ -385,7 +385,7 @@ func TestTxStatusEvents(t *testing.T) {
 	eventClient, conn, err := newClientWithMockConn(
 		channelID, newMockContext(),
 		filteredClientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -466,7 +466,7 @@ func TestCCEvents(t *testing.T) {
 	eventClient, conn, err := newClientWithMockConn(
 		channelID, newMockContext(),
 		filteredClientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -660,7 +660,7 @@ func TestConcurrentEvents(t *testing.T) {
 	eventClient, conn, err := newClientWithMockConnAndOpts(
 		channelID, newMockContext(),
 		nil, clientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		[]options.Opt{
 			esdispatcher.WithEventConsumerBufferSize(uint(numEvents) * 4),
 		},
@@ -902,7 +902,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome mockconn
 		"mychannel", newMockContext(),
 		cp.FlakeyProvider(connAttemptResult, mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory))),
 		clientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		[]options.Opt{
 			esdispatcher.WithEventConsumerTimeout(time.Second),
 			WithMaxConnectAttempts(maxConnectAttempts),
@@ -936,7 +936,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 		"mychannel", newMockContext(),
 		cp.FlakeyProvider(connAttemptResult, mockconn.WithLedger(ledger)),
 		clientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		[]options.Opt{
 			esdispatcher.WithEventConsumerTimeout(3 * time.Second),
 			WithMaxConnectAttempts(1),
@@ -990,7 +990,7 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents mockconn.NumBlo
 		channelID, newMockContext(),
 		cp.FlakeyProvider(connectResults, mockconn.WithLedger(ledger)),
 		clientProvider,
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		[]options.Opt{
 			esdispatcher.WithEventConsumerTimeout(3 * time.Second),
 			WithMaxConnectAttempts(1),

@@ -42,11 +42,11 @@ var (
 )
 
 func TestOptionsInNewClient(t *testing.T) {
-	if _, err := New(newMockContext(), "", clientmocks.NewDiscoveryService(endpoint1, endpoint2)); err == nil {
+	if _, err := New(newMockContext(), "", clientmocks.CreateDiscoveryService(endpoint1, endpoint2)); err == nil {
 		t.Fatalf("expecting error with no channel ID but got none")
 	}
 
-	client, err := New(newMockContext(), "mychannel", clientmocks.NewDiscoveryService(endpoint1, endpoint2),
+	client, err := New(newMockContext(), "mychannel", clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 		WithBlockEvents(),
 	)
 	if err != nil {
@@ -58,7 +58,7 @@ func TestOptionsInNewClient(t *testing.T) {
 func TestClientConnect(t *testing.T) {
 	eventClient, err := New(
 		newMockContext(), "mychannel",
-		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
+		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 		withConnectionProviderAndInterests(
 			clientmocks.NewProviderFactory().Provider(
 				ehclientmocks.NewConnection(
@@ -90,7 +90,7 @@ func TestClientConnect(t *testing.T) {
 func TestTimeoutClientConnect(t *testing.T) {
 	eventClient, err := New(
 		newMockContext(), "mychannel",
-		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
+		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 		withConnectionProviderAndInterests(
 			clientmocks.NewProviderFactory().Provider(
 				ehclientmocks.NewConnection(
@@ -203,7 +203,7 @@ func TestReconnectRegistration(t *testing.T) {
 func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmocks.Outcome, connAttemptResult clientmocks.ConnectAttemptResults) {
 	eventClient, err := New(
 		newMockContext(), "mychannel",
-		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
+		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 		withConnectionProviderAndInterests(
 			clientmocks.NewProviderFactory().FlakeyProvider(
 				connAttemptResult,
@@ -242,7 +242,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 
 	eventClient, err := New(
 		newMockContext(), "mychannel",
-		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
+		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 		withConnectionProviderAndInterests(
 			cp.FlakeyProvider(
 				connAttemptResult,
@@ -301,7 +301,7 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 
 	eventClient, err := New(
 		newMockContext(), channelID,
-		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
+		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 		withConnectionProviderAndInterests(
 			cp.FlakeyProvider(
 				connectResults,

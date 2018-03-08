@@ -39,7 +39,7 @@ func TestDiscoveryFilter(t *testing.T) {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}
 
-	discoveryService, err := discoveryProvider.NewDiscoveryService("mychannel")
+	discoveryService, err := discoveryProvider.CreateDiscoveryService("mychannel")
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}

@@ -24,7 +24,7 @@ func TestStaticSelection(t *testing.T) {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}
 
-	selectionService, err := selectionProvider.NewSelectionService("")
+	selectionService, err := selectionProvider.CreateSelectionService("")
 	if err != nil {
 		t.Fatalf("Failed to setup selection service: %s", err)
 	}

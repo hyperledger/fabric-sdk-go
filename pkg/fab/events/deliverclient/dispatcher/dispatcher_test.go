@@ -38,7 +38,7 @@ func TestSeek(t *testing.T) {
 				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
 			),
 		),
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -99,7 +99,7 @@ func TestTimedOutSeek(t *testing.T) {
 				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
 			),
 		),
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -151,7 +151,7 @@ func TestUnauthorized(t *testing.T) {
 				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
 			),
 		),
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -199,7 +199,7 @@ func TestBlockEvents(t *testing.T) {
 				clientmocks.WithLedger(ledger),
 			),
 		),
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -264,7 +264,7 @@ func TestFilteredBlockEvents(t *testing.T) {
 				clientmocks.WithLedger(ledger),
 			),
 		),
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)

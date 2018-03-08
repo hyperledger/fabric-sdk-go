@@ -29,8 +29,8 @@ func NewMockSelectionProvider(err error, peers []fab.Peer) (*MockSelectionProvid
 	return &MockSelectionProvider{Error: err, Peers: peers}, nil
 }
 
-// NewSelectionService returns mock selection service
-func (dp *MockSelectionProvider) NewSelectionService(channelID string) (*MockSelectionService, error) {
+// CreateSelectionService returns mock selection service
+func (dp *MockSelectionProvider) CreateSelectionService(channelID string) (*MockSelectionService, error) {
 	return &MockSelectionService{Error: dp.Error, Peers: dp.Peers}, nil
 }
 

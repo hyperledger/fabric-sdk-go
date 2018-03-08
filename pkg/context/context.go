@@ -198,12 +198,12 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 		return nil, errors.WithMessage(err, "failed to get channel service to create channel client")
 	}
 
-	discoveryService, err := client.DiscoveryProvider().NewDiscoveryService(channelID)
+	discoveryService, err := client.DiscoveryProvider().CreateDiscoveryService(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get discovery service to create channel client")
 	}
 
-	selectionService, err := client.SelectionProvider().NewSelectionService(channelID)
+	selectionService, err := client.SelectionProvider().CreateSelectionService(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get selection service to create channel client")
 	}

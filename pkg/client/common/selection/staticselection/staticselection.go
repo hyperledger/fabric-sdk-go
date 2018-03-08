@@ -29,8 +29,8 @@ func New(config core.Config) (*SelectionProvider, error) {
 type selectionService struct {
 }
 
-// NewSelectionService creates a static selection service
-func (p *SelectionProvider) NewSelectionService(channelID string) (fab.SelectionService, error) {
+// CreateSelectionService creates a static selection service
+func (p *SelectionProvider) CreateSelectionService(channelID string) (fab.SelectionService, error) {
 	return &selectionService{}, nil
 }
 

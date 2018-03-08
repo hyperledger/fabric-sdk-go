@@ -38,8 +38,8 @@ func New(config core.Config, fabPvdr peerCreator) (*DiscoveryProvider, error) {
 	return &DiscoveryProvider{config: config, fabPvdr: fabPvdr}, nil
 }
 
-// NewDiscoveryService return discovery service for specific channel
-func (dp *DiscoveryProvider) NewDiscoveryService(channelID string) (fab.DiscoveryService, error) {
+// CreateDiscoveryService return discovery service for specific channel
+func (dp *DiscoveryProvider) CreateDiscoveryService(channelID string) (fab.DiscoveryService, error) {
 
 	peers := []fab.Peer{}
 

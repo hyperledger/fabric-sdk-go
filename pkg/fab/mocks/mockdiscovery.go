@@ -34,8 +34,8 @@ func NewMockDiscoveryProvider(err error, peers []fab.Peer) (*MockStaticDiscovery
 	return &MockStaticDiscoveryProvider{Error: err, Peers: peers}, nil
 }
 
-// NewDiscoveryService return discovery service for specific channel
-func (dp *MockStaticDiscoveryProvider) NewDiscoveryService(channelID string) (fab.DiscoveryService, error) {
+// CreateDiscoveryService return discovery service for specific channel
+func (dp *MockStaticDiscoveryProvider) CreateDiscoveryService(channelID string) (fab.DiscoveryService, error) {
 
 	if dp.customDiscoveryService != nil {
 		return dp.customDiscoveryService, nil

@@ -259,7 +259,7 @@ func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryService, 
 		return nil, errors.WithMessage(err, "NewMockDiscoveryProvider failed")
 	}
 
-	return mockDiscovery.NewDiscoveryService("mychannel")
+	return mockDiscovery.CreateDiscoveryService("mychannel")
 }
 
 func setupTestSelection(discErr error, peers []fab.Peer) (*txnmocks.MockSelectionService, error) {
@@ -269,5 +269,5 @@ func setupTestSelection(discErr error, peers []fab.Peer) (*txnmocks.MockSelectio
 		return nil, errors.WithMessage(err, "NewMockSelectinProvider failed")
 	}
 
-	return mockSelection.NewSelectionService("mychannel")
+	return mockSelection.CreateSelectionService("mychannel")
 }

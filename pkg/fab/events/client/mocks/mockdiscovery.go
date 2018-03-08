@@ -15,8 +15,8 @@ type MockDiscoveryService struct {
 	peers []fab.Peer
 }
 
-// NewDiscoveryService returns a new mock discovery service
-func NewDiscoveryService(peers ...fab.Peer) fab.DiscoveryService {
+// CreateDiscoveryService returns a new mock discovery service
+func CreateDiscoveryService(peers ...fab.Peer) fab.DiscoveryService {
 	return &MockDiscoveryService{
 		peers: peers,
 	}

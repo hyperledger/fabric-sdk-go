@@ -336,12 +336,12 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}
 
-	_, err = selectionProvider.NewSelectionService("")
+	_, err = selectionProvider.CreateSelectionService("")
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel name")
 	}
 
-	_, err = selectionProvider.NewSelectionService("mychannel")
+	_, err = selectionProvider.CreateSelectionService("mychannel")
 	if err == nil {
 		t.Fatalf("Should have failed since sdk not provided")
 	}
@@ -365,7 +365,7 @@ func testLBPolicy(t *testing.T, c core.Config, selectionProvider *SelectionProvi
 	}
 	defer sdk.Close()
 
-	selectionService, err := selectionProvider.NewSelectionService("mychannel")
+	selectionService, err := selectionProvider.CreateSelectionService("mychannel")
 	if err != nil {
 		t.Fatalf("Failed to create new selection service for channel: %s", err)
 	}
