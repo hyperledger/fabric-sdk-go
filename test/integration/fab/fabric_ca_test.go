@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	"os"
 	"testing"
 
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
@@ -39,5 +40,11 @@ func TestEnrollOrg2(t *testing.T) {
 	err = caClient.Enroll("admin", "adminpw")
 	if err != nil {
 		t.Fatalf("Enroll returned error: %v", err)
+	}
+
+	//clean up the Keystore file, as its affecting other tests
+	err = os.RemoveAll(testFabricConfig.CredentialStorePath())
+	if err != nil {
+		t.Fatalf("Error deleting keyvalue store file: %v", err)
 	}
 }

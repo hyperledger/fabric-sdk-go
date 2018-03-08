@@ -47,7 +47,13 @@ client:
   peer:
     timeout:
       connection: 3s
+      queryResponse: 45s
+      executeTxResponse: 60s
       discovery:
+        # Expiry period for discovery service greylist filter
+        # The channel client will greylist peers that are found to be offline
+        # to prevent re-selecting them in subsequent retries.
+        # This interval will define how long a peer is greylisted
         greylistExpiry: 5s
   eventService:
     timeout:
@@ -57,15 +63,8 @@ client:
     timeout:
       connection: 3s
       response: 5s
-  global:
-    timeout:
-      query: 45s
-      execute: 60s
-    cache:
-      connectionIdle: 30s
 
-
-  # Needed to load users crypto keys and certs.
+  # Root of the MSP directories with keys and certs.
   cryptoconfig:
     path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}
 
@@ -74,7 +73,7 @@ client:
   credentialStore:
     # [Optional]. Used by user store. Not needed if all credentials are embedded in configuration
     # and enrollments are performed elswhere.
-    path: "/tmp/hfc-kvs"
+    path: "/tmp/state-store"
 
     # [Optional]. Specific to the CryptoSuite implementation used by GO SDK. Software-based implementations
     # requiring a key store. PKCS#11 based implementations does not.
@@ -83,7 +82,7 @@ client:
       path: /tmp/msp
 
     # [Optional]. Specific to Composer environment. Not used by SDK Go.
-    wallet: wallet-name
+    #wallet: wallet-name
 
    # BCCSP config for the client. Used by GO SDK.
   BCCSP:
@@ -98,7 +97,12 @@ client:
 
   tlsCerts:
     # [Optional]. Use system certificate pool when connecting to peers, orderers (for negotiating TLS) Default: false
-    systemCertPool: true
+    systemCertPool: false
+
+    # [Optional]. Client key and cert for TLS handshake with peers and orderers
+    client:
+      keyfile: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go-key.pem
+      certfile: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go.pem
 
 #
 # [Optional]. But most apps would have this section so that channel objects can be constructed
@@ -137,12 +141,6 @@ channels:
         # Default: true
         eventSource: true
 
-      peer0.org2.example.com:
-        endorsingPeer: true
-        chaincodeQuery: true
-        ledgerQuery: true
-        eventSource: true
-
     # [Optional]. what chaincodes are expected to exist on this channel? The application can use
     # this information to validate that the target peers are in the expected state by comparing
     # this list with the query results of getInstalledChaincodes() and getInstantiatedChaincodes()
@@ -177,7 +175,7 @@ organizations:
   Org1:
     mspid: Org1MSP
 
-    # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
     cryptoPath:  peerOrganizations/org1.example.com/users/{userName}@org1.example.com/msp
 
     peers:
@@ -211,7 +209,7 @@ organizations:
   Org2:
     mspid: Org2MSP
 
-    # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
     cryptoPath:  peerOrganizations/org2.example.com/users/{userName}@org2.example.com/msp
 
     peers:
@@ -235,85 +233,77 @@ organizations:
 # SDK is implementation specific. Consult each SDK's documentation for its handling of orderers.
 #
 orderers:
-  orderer.example.com:
-    url: grpcs://orderer.example.com:7050
+  local.orderer.example.com:
+    url: localhost:7050
 
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
+    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: orderer.example.com
       grpc-max-send-message-length: 15
+#     These parameters should be set in coordination with the keepalive policy on the server,
+#     as incompatible settings can result in closing of connection.
+#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      #will be taken into consideration if address has no protocol defined and secured connection fails
       allow-insecure: false
 
     tlsCACerts:
-      # pem supersedes path
-      pem: |
-        -----BEGIN CERTIFICATE-----
-        MIICNjCCAdygAwIBAgIRAILSPmMB3BzoLIQGsFxwZr8wCgYIKoZIzj0EAwIwbDEL
-        MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
-        cmFuY2lzY28xFDASBgNVBAoTC2V4YW1wbGUuY29tMRowGAYDVQQDExF0bHNjYS5l
-        eGFtcGxlLmNvbTAeFw0xNzA3MjgxNDI3MjBaFw0yNzA3MjYxNDI3MjBaMGwxCzAJ
-        BgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJh
-        bmNpc2NvMRQwEgYDVQQKEwtleGFtcGxlLmNvbTEaMBgGA1UEAxMRdGxzY2EuZXhh
-        bXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQfgKb4db53odNzdMXn
-        P5FZTZTFztOO1yLvCHDofSNfTPq/guw+YYk7ZNmhlhj8JHFG6dTybc9Qb/HOh9hh
-        gYpXo18wXTAOBgNVHQ8BAf8EBAMCAaYwDwYDVR0lBAgwBgYEVR0lADAPBgNVHRMB
-        Af8EBTADAQH/MCkGA1UdDgQiBCBxaEP3nVHQx4r7tC+WO//vrPRM1t86SKN0s6XB
-        8LWbHTAKBggqhkjOPQQDAgNIADBFAiEA96HXwCsuMr7tti8lpcv1oVnXg0FlTxR/
-        SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
-        -----END CERTIFICATE-----
       # Certificate location absolute path
-      path:
-      #path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
 
 #
 # List of peers to send various requests to, including endorsement, query
 # and event listener registration.
 #
 peers:
-  peer0.org1.example.com:
+  local.peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
-    url: grpcs://peer0.org1.example.com:7051
+    url: localhost:7051
 
     # this URL is used to connect the EventHub and registering event listeners
-    eventUrl: grpcs://peer0.org1.example.com:7053
+    eventUrl: localhost:7053
 
+    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
       grpc.http2.keepalive_time: 15
+#     These parameters should be set in coordination with the keepalive policy on the server,
+#     as incompatible settings can result in closing of connection.
+#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      #will be taken into consideration if address has no protocol defined and secured connection fails
       allow-insecure: false
 
     tlsCACerts:
-      pem: |
-        -----BEGIN CERTIFICATE-----
-        MIICSTCCAfCgAwIBAgIRAPQIzfkrCZjcpGwVhMSKd0AwCgYIKoZIzj0EAwIwdjEL
-        MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
-        cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHzAdBgNVBAMTFnRs
-        c2NhLm9yZzEuZXhhbXBsZS5jb20wHhcNMTcwNzI4MTQyNzIwWhcNMjcwNzI2MTQy
-        NzIwWjB2MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UE
-        BxMNU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEfMB0G
-        A1UEAxMWdGxzY2Eub3JnMS5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49
-        AwEHA0IABMOiG8UplWTs898zZ99+PhDHPbKjZIDHVG+zQXopw8SqNdX3NAmZUKUU
-        sJ8JZ3M49Jq4Ms8EHSEwQf0Ifx3ICHujXzBdMA4GA1UdDwEB/wQEAwIBpjAPBgNV
-        HSUECDAGBgRVHSUAMA8GA1UdEwEB/wQFMAMBAf8wKQYDVR0OBCIEID9qJz7xhZko
-        V842OVjxCYYQwCjPIY+5e9ORR+8pxVzcMAoGCCqGSM49BAMCA0cAMEQCIGZ+KTfS
-        eezqv0ml1VeQEmnAEt5sJ2RJA58+LegUYMd6AiAfEe6BKqdY03qFUgEYmtKG+3Dr
-        O94CDp7l2k7hMQI0zQ==
-        -----END CERTIFICATE-----
       # Certificate location absolute path
-      path:
-      #path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
-  peer0.org2.example.com:
-    url: grpcs://peer0.org2.example.com:7051
-    eventUrl: grpcs://peer0.org2.example.com:7053
+  local.peer0.org2.example.com:
+    url: localhost:8051
+    eventUrl: localhost:8053
+    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
+#     These parameters should be set in coordination with the keepalive policy on the server,
+#     as incompatible settings can result in closing of connection.      
+#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      #will be taken into consideration if address has no protocol defined and secured connection fails
       allow-insecure: false
+
     tlsCACerts:
-      pem:
-      path:
-      #path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
 
 #
 # Fabric-CA is a special kind of Certificate Authority provided by Hyperledger Fabric which allows
@@ -322,67 +312,20 @@ peers:
 #
 certificateAuthorities:
   ca.org1.example.com:
-    url: https://ca_peerOrg1:7054
+    url: https://ca.org1.example.com:7054
     # the properties specified under this object are passed to the 'http' client verbatim when
     # making the request to the Fabric-CA server
     httpOptions:
       verify: true
     tlsCACerts:
-      pem:
-        - |
-          -----BEGIN CERTIFICATE-----
-          MIIC5TCCAkegAwIBAgIUOZ3VsFt7bN0zFKu96MZPVuwcFlswCgYIKoZIzj0EAwQw
-          gYwxCzAJBgNVBAYTAkNBMRAwDgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3Jv
-          bnRvMREwDwYDVQQKEwhsaW51eGN0bDEMMAoGA1UECxMDTGFiMTgwNgYDVQQDEy9s
-          aW51eGN0bCBFQ0MgUm9vdCBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eSAoTGFiKTAe
-          Fw0xNzA3MTkxOTUxMDBaFw00NzA3MTIxOTUxMDBaMIGMMQswCQYDVQQGEwJDQTEQ
-          MA4GA1UECBMHT250YXJpbzEQMA4GA1UEBxMHVG9yb250bzERMA8GA1UEChMIbGlu
-          dXhjdGwxDDAKBgNVBAsTA0xhYjE4MDYGA1UEAxMvbGludXhjdGwgRUNDIFJvb3Qg
-          Q2VydGlmaWNhdGlvbiBBdXRob3JpdHkgKExhYikwgZswEAYHKoZIzj0CAQYFK4EE
-          ACMDgYYABAC+EyelOCNoDqOdNwrt5/8K/1VpzVX7p6a8RcTrPbkYRAMOwax625fa
-          WX7hgzgfyi1aQLgBSbwoBr+DBix8kcMR/gBl9Z+W8OeFWC2ZqFxC05qJxq8Cm1pe
-          4YV70ughp9H/rnZVsJ3t5taQur01hPlRok/HXLwsbh/fINyYEDOdckhbQ6NCMEAw
-          DgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFBRwn4eb
-          3CN8w7iOHQTssEhcEBMPMAoGCCqGSM49BAMEA4GLADCBhwJCARgr4jiAH8Pymi3Y
-          RINmArZEzCcAGPnu5kBuGjsugs/AHqvv0UxTZZE5R/jMt7TpqLk6HaUkvaK2L4Gn
-          ALv3KBYxAkFjCPgwG9KRdaHpeYEUj5vrbam6UlslOafb4VKMXJABKTN9UPodEdPP
-          oxwVKDzoWzRq5LruKZYYYmNzCuuUMoAzUQ==
-          -----END CERTIFICATE-----
       # Comma-Separated list of paths
-      path:
-      #path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
       # Client key and cert for SSL handshake with Fabric CA
       client:
         key:
-          pem: |
-            -----BEGIN EC PRIVATE KEY-----
-            MIGkAgEBBDAeWRhdAl+olgpLiI9mXHwcgJ1g4NNgPrYFSkkukISeAGfvK348izwG
-            0Aub948H5IygBwYFK4EEACKhZANiAATJb6oe7bpmnuJwjYMaQX7D2YQ0vLHmRWKs
-            QSn674xQJ5N8rMHAA/DXtpIMKI5uulot0jJ5xFkpikLGd8+6soQp8pd5tkMqZB0a
-            nFoUptdom8LjgRus6rnHbXxGqcIN6oA=
-            -----END EC PRIVATE KEY-----
-#          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem
         cert:
-          pem: |
-            -----BEGIN CERTIFICATE-----
-            MIIC5TCCAkegAwIBAgIUBzAG7MTjO4n9GFkYTkJBnvCInRIwCgYIKoZIzj0EAwQw
-            gYwxCzAJBgNVBAYTAkNBMRAwDgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3Jv
-            bnRvMREwDwYDVQQKEwhsaW51eGN0bDEMMAoGA1UECxMDTGFiMTgwNgYDVQQDEy9s
-            aW51eGN0bCBFQ0MgUm9vdCBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eSAoTGFiKTAe
-            Fw0xNzA3MTkxOTUyMDBaFw0xODA3MTkxOTUyMDBaMGoxCzAJBgNVBAYTAkNBMRAw
-            DgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3JvbnRvMREwDwYDVQQKEwhsaW51
-            eGN0bDEMMAoGA1UECxMDTGFiMRYwFAYDVQQDDA1mYWJyaWNfY2xpZW50MHYwEAYH
-            KoZIzj0CAQYFK4EEACIDYgAEyW+qHu26Zp7icI2DGkF+w9mENLyx5kVirEEp+u+M
-            UCeTfKzBwAPw17aSDCiObrpaLdIyecRZKYpCxnfPurKEKfKXebZDKmQdGpxaFKbX
-            aJvC44EbrOq5x218RqnCDeqAo4GKMIGHMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUE
-            DDAKBggrBgEFBQcDAjAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBRBA9pDyeovnjWP
-            uvftCfEagM/wKjAfBgNVHSMEGDAWgBQUcJ+Hm9wjfMO4jh0E7LBIXBATDzASBgNV
-            HREECzAJggd0ZXN0aW5nMAoGCCqGSM49BAMEA4GLADCBhwJCATMHAs0T6yZFDByA
-            XNzhG5LwkITa+GcMJNR9qXlFBG18P+LM/2cdT6Y2+Fz9ZEvGjYMC+c+yg4nyRwu3
-            rIYog3WBAkECntF217dk3VCZHXfl+rik6wm+ijzYk+k336UERiSJRu09YHHEh7x6
-            NRCHI3uXUJ5/3zDZM3qtV8UYHou4KDS35Q==
-            -----END CERTIFICATE-----
-#          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem
 
     # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
     # needed to enroll and invoke new users.
@@ -392,7 +335,7 @@ certificateAuthorities:
     # [Optional] The optional name of the CA.
     caName: ca.org1.example.com
   ca.org2.example.com:
-    url: https://ca_peerOrg2:7054
+    url: https://ca.org2.example.com:8054
     # the properties specified under this object are passed to the 'http' client verbatim when
     # making the request to the Fabric-CA server
     httpOptions:
@@ -426,53 +369,70 @@ certificateAuthorities:
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 entityMatchers:
   peer:
+    - pattern: (\w+).org1.example.(\w+)
+      urlSubstitutionExp: localhost:7051
+      eventUrlSubstitutionExp: localhost:7053
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
+      mappedHost: local.peer0.org1.example.com
+
+    - pattern: (\w+).org2.example.(\w+)
+      urlSubstitutionExp: localhost:8051
+      eventUrlSubstitutionExp: localhost:8053
+      sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
+      mappedHost: local.peer0.org2.example.com
+
     - pattern: (\w+).example.(\w+)
       urlSubstitutionExp: localhost:7051
       eventUrlSubstitutionExp: localhost:7053
       sslTargetOverrideUrlSubstitutionExp: localhost
-      mappedHost: peer0.org1.example.com
+      mappedHost: local.peer0.org1.example.com
 
     - pattern: (\w+).example2.(\w+):(\d+)
       urlSubstitutionExp: localhost:7051
       eventUrlSubstitutionExp: localhost:7053
       sslTargetOverrideUrlSubstitutionExp: localhost
-      mappedHost: peer0.org2.example.com
+      mappedHost: local.peer0.org2.example.com
 
     - pattern: (\w+).example3.(\w+)
       urlSubstitutionExp:
       eventUrlSubstitutionExp:
       sslTargetOverrideUrlSubstitutionExp:
-      mappedHost: peer0.org1.example.com
+      mappedHost: local.peer0.org1.example.com
 
     - pattern: (\w+).example4.(\w+):(\d+)
       urlSubstitutionExp: $1.org1.example.$2:$3
       eventUrlSubstitutionExp: $1.org1.example.$2:7053
       sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
-      mappedHost: peer0.org1.example.com
+      mappedHost: local.peer0.org1.example.com
 
     - pattern: (\w+).example2.com:(\d+)
       urlSubstitutionExp: peer0.org2.example.com:7051
       eventUrlSubstitutionExp:
       sslTargetOverrideUrlSubstitutionExp:
-      mappedHost: peer0.org2.example.com
+      mappedHost: local.peer0.org2.example.com
 
   orderer:
     - pattern: (\w+).example2.(\w+)
       urlSubstitutionExp: localhost:7050
       sslTargetOverrideUrlSubstitutionExp: localhost
-      mappedHost: orderer.example.com
+      mappedHost: local.orderer.example.com
 
     - pattern: (\w+).example.(\w+)
       urlSubstitutionExp: localhost:7050
-      sslTargetOverrideUrlSubstitutionExp: localhost
-      mappedHost: orderer.example.com
+      sslTargetOverrideUrlSubstitutionExp: orderer.example.com
+      mappedHost: local.orderer.example.com
+
+    - pattern: (\w+).example.(\w+):(\d+)
+      urlSubstitutionExp: localhost:7050
+      sslTargetOverrideUrlSubstitutionExp: orderer.example.com
+      mappedHost: local.orderer.example.com
 
     - pattern: (\w+).example3.(\w+)
       urlSubstitutionExp:
       sslTargetOverrideUrlSubstitutionExp:
-      mappedHost: orderer.example.com
+      mappedHost: local.orderer.example.com
 
     - pattern: (\w+).example4.(\w+):(\d+)
       urlSubstitutionExp: $1.example.$2:$3
       sslTargetOverrideUrlSubstitutionExp: $1.example.$2
-      mappedHost: orderer.example.com
+      mappedHost: local.orderer.example.com

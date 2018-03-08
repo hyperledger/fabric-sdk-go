@@ -432,7 +432,7 @@ func TestOrdererConfig(t *testing.T) {
 
 	oConfig, err = configImpl.OrdererConfig("invalid")
 
-	if oConfig != nil || err != nil {
+	if oConfig != nil || err == nil {
 		t.Fatal("Testing non-existing OrdererConfig failed")
 	}
 
@@ -466,6 +466,97 @@ func TestChannelOrderers(t *testing.T) {
 		}
 	} else if len(orderers[0].TLSCACerts.Pem) == 0 {
 		t.Fatalf("Orderer %v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
+	}
+}
+
+func testCommonConfigPeerByURL(t *testing.T, expectedConfigURL string, fetchedConfigURL string) {
+	expectedConfig, err := configImpl.peerConfig(expectedConfigURL)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	fetchedConfig, err := configImpl.PeerConfigByURL(fetchedConfigURL)
+
+	if fetchedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+
+	if len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) || fetchedConfig.TLSCACerts.Pem != expectedConfig.TLSCACerts.Pem {
+		t.Fatalf("Expected Config and fetched config differ")
+	}
+
+	if fetchedConfig.URL != expectedConfig.URL || fetchedConfig.EventURL != expectedConfig.EventURL || fetchedConfig.GRPCOptions["ssl-target-name-override"] != expectedConfig.GRPCOptions["ssl-target-name-override"] {
+		t.Fatalf("Expected Config and fetched config differ")
+	}
+}
+
+func TestPeerConfigByUrl_directMatching(t *testing.T) {
+	testCommonConfigPeerByURL(t, "peer0.org1.example.com", "peer0.org1.example.com:7051")
+}
+
+func TestPeerConfigByUrl_entityMatchers(t *testing.T) {
+	testCommonConfigPeerByURL(t, "peer0.org1.example.com", "peer1.org1.example.com:7051")
+}
+
+func testCommonConfigOrderer(t *testing.T, expectedConfigHost string, fetchedConfigHost string) (expectedConfig *api.OrdererConfig, fetchedConfig *api.OrdererConfig) {
+
+	expectedConfig, err := configImpl.OrdererConfig(expectedConfigHost)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	fetchedConfig, err = configImpl.OrdererConfig(fetchedConfigHost)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if expectedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+	if fetchedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+
+	if len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) || fetchedConfig.TLSCACerts.Pem != expectedConfig.TLSCACerts.Pem {
+		t.Fatalf("Expected Config and fetched config differ")
+	}
+
+	return expectedConfig, fetchedConfig
+}
+
+func TestOrdererWithSubstitutedConfig_WithADifferentSubstituteUrl(t *testing.T) {
+	expectedConfig, fetchedConfig := testCommonConfigOrderer(t, "orderer.example.com", "orderer.example2.com")
+
+	if fetchedConfig.URL == "orderer.example2.com:7050" || fetchedConfig.URL == expectedConfig.URL {
+		t.Fatalf("Expected Config should have url that is given in urlSubstitutionExp of match pattern")
+	}
+
+	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "localhost" {
+		t.Fatalf("Config should have got localhost as its ssl-target-name-override url as per the matched config")
+	}
+}
+
+func TestOrdererWithSubstitutedConfig_WithEmptySubstituteUrl(t *testing.T) {
+	_, fetchedConfig := testCommonConfigOrderer(t, "orderer.example.com", "orderer.example3.com")
+
+	if fetchedConfig.URL != "orderer.example3.com:7050" {
+		t.Fatalf("Fetched Config should have the same url")
+	}
+
+	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "orderer.example3.com" {
+		t.Fatalf("Fetched config should have the same ssl-target-name-override as its hostname")
+	}
+}
+
+func TestOrdererWithSubstitutedConfig_WithSubstituteUrlExpression(t *testing.T) {
+	expectedConfig, fetchedConfig := testCommonConfigOrderer(t, "orderer.example.com", "orderer.example4.com:7050")
+
+	if fetchedConfig.URL != expectedConfig.URL {
+		t.Fatalf("fetched Config url should be same as expected config url as given in the substituteexp in yaml file")
+	}
+
+	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "orderer.example.com" {
+		t.Fatalf("Fetched config should have the ssl-target-name-override as per sslTargetOverrideUrlSubstitutionExp in yaml file")
 	}
 }
 
@@ -518,6 +609,97 @@ func TestPeerConfig(t *testing.T) {
 	}
 	if len(pc.GRPCOptions) == 0 || pc.GRPCOptions["ssl-target-name-override"] != "peer0.org1.example.com" {
 		t.Fatalf("Peer %s must have grpcOptions set in config_test.yaml", "peer0")
+	}
+}
+
+func testCommonConfigPeer(t *testing.T, expectedConfigHost string, fetchedConfigHost string) (expectedConfig *api.PeerConfig, fetchedConfig *api.PeerConfig) {
+
+	expectedConfig, err := configImpl.peerConfig(expectedConfigHost)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	fetchedConfig, err = configImpl.peerConfig(fetchedConfigHost)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if expectedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+	if fetchedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+
+	if fetchedConfig.TLSCACerts.Path != expectedConfig.TLSCACerts.Path || len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) {
+		t.Fatalf("Expected Config and fetched config differ")
+	}
+
+	return expectedConfig, fetchedConfig
+}
+
+func TestPeerWithSubstitutedConfig_WithADifferentSubstituteUrl(t *testing.T) {
+	expectedConfig, fetchedConfig := testCommonConfigPeer(t, "peer0.org1.example.com", "peer3.org1.example5.com")
+
+	if fetchedConfig.URL == "peer3.org1.example5.com:7051" || fetchedConfig.URL == expectedConfig.URL {
+		t.Fatalf("Expected Config should have url that is given in urlSubstitutionExp of match pattern")
+	}
+
+	if fetchedConfig.EventURL == "peer3.org1.example5.com:7053" || fetchedConfig.EventURL == expectedConfig.EventURL {
+		t.Fatalf("Expected Config should have event url that is given in eventUrlSubstitutionExp of match pattern")
+	}
+
+	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "localhost" {
+		t.Fatalf("Config should have got localhost as its ssl-target-name-override url as per the matched config")
+	}
+}
+
+func TestPeerWithSubstitutedConfig_WithEmptySubstituteUrl(t *testing.T) {
+	_, fetchedConfig := testCommonConfigPeer(t, "peer0.org1.example.com", "peer4.org1.example3.com")
+
+	if fetchedConfig.URL != "peer4.org1.example3.com:7051" {
+		t.Fatalf("Fetched Config should have the same url")
+	}
+
+	if fetchedConfig.EventURL != "peer4.org1.example3.com:7053" {
+		t.Fatalf("Fetched Config should have the same event url")
+	}
+
+	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "peer4.org1.example3.com" {
+		t.Fatalf("Fetched config should have the same ssl-target-name-override as its hostname")
+	}
+}
+
+func TestPeerWithSubstitutedConfig_WithSubstituteUrlExpression(t *testing.T) {
+	_, fetchedConfig := testCommonConfigPeer(t, "peer0.org1.example.com", "peer5.example4.com:1234")
+
+	if fetchedConfig.URL != "peer5.org1.example.com:1234" {
+		t.Fatalf("fetched Config url should change to include org1 as given in the substituteexp in yaml file")
+	}
+
+	if fetchedConfig.EventURL != "peer5.org1.example.com:7053" {
+		t.Fatalf("fetched Config event url should change to include org1 as given in the eventsubstituteexp in yaml file")
+	}
+
+	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "peer5.org1.example.com" {
+		t.Fatalf("Fetched config should have the ssl-target-name-override as per sslTargetOverrideUrlSubstitutionExp in yaml file")
+	}
+}
+
+func TestPeerWithSubstitutedConfig_WithMultipleMatchings(t *testing.T) {
+	_, fetchedConfig := testCommonConfigPeer(t, "peer0.org2.example.com", "peer2.example2.com:1234")
+
+	//Both 2nd and 5th entityMatchers match, however we are only taking 2nd one as its the first one to match
+	if fetchedConfig.URL == "peer0.org2.example.com:7051" {
+		t.Fatalf("fetched Config url should be matched with the first suitable matcher")
+	}
+
+	if fetchedConfig.EventURL != "localhost:7053" {
+		t.Fatalf("fetched Config event url should have the config from first suitable matcher")
+	}
+
+	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "localhost" {
+		t.Fatalf("Fetched config should have the ssl-target-name-override as per first suitable matcher in yaml file")
 	}
 }
 

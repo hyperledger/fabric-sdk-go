@@ -54,9 +54,13 @@ func TestLedgerClientQueries(t *testing.T) {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
-	expected := "peer0.org1.example.com"
-	if !strings.Contains(ledgerInfo.Endorser, expected) {
-		t.Fatalf("Expecting %s, got %s", expected, ledgerInfo.Endorser)
+	expectedPeerConfig, err := sdk.Config().PeerConfig(org1Name, "peer0.org1.example.com")
+	if err != nil {
+		t.Fatalf("Unable to fetch Peer config for %s", "peer0.org1.example.com")
+	}
+
+	if !strings.Contains(ledgerInfo.Endorser, expectedPeerConfig.URL) {
+		t.Fatalf("Expecting %s, got %s", expectedPeerConfig.URL, ledgerInfo.Endorser)
 	}
 
 	// Same query with target
