@@ -16,9 +16,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -41,38 +43,46 @@ type CCPolicyProvider interface {
 }
 
 // NewCCPolicyProvider creates new chaincode policy data provider
-func newCCPolicyProvider(sdk *fabsdk.FabricSDK, channelID string, userName string, orgName string) (CCPolicyProvider, error) {
-	if channelID == "" || userName == "" || orgName == "" {
-		return nil, errors.New("Must provide channel ID, user name and organisation for cc policy provider")
+func newCCPolicyProvider(providers api.Providers, channelID string, userName string, orgName string) (CCPolicyProvider, error) {
+	if providers == nil || channelID == "" || userName == "" || orgName == "" {
+		return nil, errors.New("Must provide providers, channel ID, user name and organisation for cc policy provider")
 	}
-
-	if sdk == nil {
-		return nil, errors.New("Must provide sdk")
-	}
-
-	client := sdk.NewClient(fabsdk.WithUser(userName), fabsdk.WithOrg(orgName))
 
 	// TODO: Add option to use anchor peers instead of config
-	targetPeers, err := sdk.Config().ChannelPeers(channelID)
+	targetPeers, err := providers.Config().ChannelPeers(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to read configuration for channel peers")
 	}
 
+	//Get identity
+	mgr, ok := providers.IdentityManager(orgName)
+	if !ok {
+		return nil, errors.New("invalid options to create identity, invalid org name")
+	}
+
+	identity, err := mgr.GetUser(userName)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to create identity for ccl policy provider")
+	}
+
 	cpp := ccPolicyProvider{
-		config:      sdk.Config(),
-		client:      client,
+		config:      providers.Config(),
+		providers:   providers,
 		channelID:   channelID,
+		identity:    identity,
 		targetPeers: targetPeers,
 		ccDataMap:   make(map[string]*ccprovider.ChaincodeData),
-		provider:    sdk.FabricProvider(),
+		provider:    providers.InfraProvider(),
 	}
+
 	return &cpp, nil
 }
 
 type ccPolicyProvider struct {
 	config      core.Config
-	client      *fabsdk.ClientContext
+	providers   context.Providers
 	channelID   string
+	identity    context.Identity
 	targetPeers []core.ChannelPeer
 	ccDataMap   map[string]*ccprovider.ChaincodeData // TODO: Add expiry and configurable timeout for map entries
 	mutex       sync.RWMutex
@@ -129,7 +139,11 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 	var queryErrors []string
 	var response []byte
 
-	client, err := dp.client.Channel(dp.channelID)
+	//prepare channel context
+	channelContext := dp.getChannelContext()
+
+	//get channel client
+	client, err := channel.New(channelContext)
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to create channel client")
 	}
@@ -192,4 +206,16 @@ func newResolverKey(channelID string, chaincodeIDs ...string) *resolverKey {
 		}
 	}
 	return &resolverKey{channelID: channelID, chaincodeIDs: arr, key: key}
+}
+
+func (dp *ccPolicyProvider) getChannelContext() context.ChannelProvider {
+	//Get Channel Context
+	return func() (context.Channel, error) {
+		//Get Client Context
+		clientProvider := func() (context.Client, error) {
+			return &contextImpl.Client{Providers: dp.providers, Identity: dp.identity}, nil
+		}
+
+		return contextImpl.NewChannel(clientProvider, dp.channelID)
+	}
 }

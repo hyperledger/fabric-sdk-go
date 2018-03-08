@@ -20,12 +20,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateFabricProvider(t *testing.T) {
-	newMockFabricProvider(t)
+func TestCreateInfraProvider(t *testing.T) {
+	newMockInfraProvider(t)
 }
 
 func TestCreateResourceClient(t *testing.T) {
-	p := newMockFabricProvider(t)
+	p := newMockInfraProvider(t)
 
 	user := mocks.NewMockUser("user")
 	client, err := p.CreateResourceClient(user)
@@ -54,7 +54,7 @@ func verifyPeer(t *testing.T, peer fab.Peer, url string) {
 }
 
 func TestCreatePeerFromConfig(t *testing.T) {
-	p := newMockFabricProvider(t)
+	p := newMockInfraProvider(t)
 
 	url := "grpc://localhost:8080"
 
@@ -74,13 +74,13 @@ func TestCreatePeerFromConfig(t *testing.T) {
 }
 
 func TestCreateMembership(t *testing.T) {
-	p := newMockFabricProvider(t)
+	p := newMockInfraProvider(t)
 	m, err := p.CreateChannelMembership(mocks.NewMockChannelCfg(""))
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 }
 
-func newMockFabricProvider(t *testing.T) *FabricProvider {
+func newMockInfraProvider(t *testing.T) *InfraProvider {
 	cfg, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf("config.FromFile failed: %v", err)

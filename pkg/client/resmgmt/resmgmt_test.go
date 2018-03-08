@@ -264,7 +264,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	}
 	ctx.SetConfig(invalidOrdererConfig)
 	customFabProvider := fabpvdr.New(ctx)
-	ctx.SetCustomFabricProvider(customFabProvider)
+	ctx.SetCustomInfraProvider(customFabProvider)
 
 	rc = setupResMgmtClient(ctx, nil, t)
 
@@ -1299,7 +1299,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	cc := setupDefaultResMgmtClient(t)
 
 	// empty list of signing identities (defaults to context user)
-	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []context.Identity{}}
+	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []fab.IdentityContext{}}
 	err := cc.SaveChannel(req, WithOrdererID(""))
 	if err != nil {
 		t.Fatalf("Failed to save channel with default signing identity: %s", err)
@@ -1307,7 +1307,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 
 	// multiple signing identities
 	secondCtx := fcmocks.NewMockContext(fcmocks.NewMockUser("second"))
-	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []context.Identity{cc.context, secondCtx}}
+	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []fab.IdentityContext{cc.context, secondCtx}}
 	err = cc.SaveChannel(req, WithOrdererID(""))
 	if err != nil {
 		t.Fatalf("Failed to save channel with multiple signing identities: %s", err)

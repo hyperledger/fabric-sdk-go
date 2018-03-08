@@ -9,7 +9,6 @@ package fabsdk
 import (
 	"fmt"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
@@ -27,7 +26,7 @@ type mockCorePkg struct {
 	cryptoSuite     core.CryptoSuite
 	signingManager  core.SigningManager
 	identityManager map[string]core.IdentityManager
-	fabricProvider  fab.InfraProvider
+	infraProvider   fab.InfraProvider
 }
 
 func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
@@ -62,7 +61,7 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	}
 
 	ctx := mocks.NewMockProviderContextCustom(config, cs, sm, stateStore, im)
-	fp, err := sdkcore.CreateFabricProvider(ctx)
+	fp, err := sdkcore.CreateInfraProvider(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +71,7 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 		cryptoSuite:     cs,
 		signingManager:  sm,
 		identityManager: im,
-		fabricProvider:  fp,
+		infraProvider:   fp,
 	}
 
 	return &c, nil
@@ -98,8 +97,8 @@ func (mc *mockCorePkg) CreateIdentityManager(orgName string, stateStore core.KVS
 	return mgr, nil
 }
 
-func (mc *mockCorePkg) CreateFabricProvider(ctx context.Providers) (fab.InfraProvider, error) {
-	return mc.fabricProvider, nil
+func (mc *mockCorePkg) CreateInfraProvider(ctx sdkApi.Providers) (fab.InfraProvider, error) {
+	return mc.infraProvider, nil
 }
 
 type mockPkgSuite struct {

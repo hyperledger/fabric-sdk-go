@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -84,12 +83,12 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Get signing identity that is used to sign create channel request
-	org1AdminUser, err := org1AdminClientContext()
+	org1AdminUser, err := integration.GetSigningIdentity(sdk, org1AdminUser, org1)
 	if err != nil {
 		t.Fatalf("failed to get org1AdminUser, err : %v", err)
 	}
 
-	org2AdminUser, err := org2AdminClientContext()
+	org2AdminUser, err := integration.GetSigningIdentity(sdk, org2AdminUser, org2)
 	if err != nil {
 		t.Fatalf("failed to get org2AdminUser, err : %v", err)
 	}
@@ -97,7 +96,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	// Create channel (or update if it already exists)
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
 		ChannelConfig:     path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
-		SigningIdentities: []context.Identity{org1AdminUser, org2AdminUser}}
+		SigningIdentities: []fab.IdentityContext{org1AdminUser, org2AdminUser}}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}

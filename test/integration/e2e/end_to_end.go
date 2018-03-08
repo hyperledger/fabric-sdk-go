@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -22,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -61,21 +61,24 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	// Create channel
 
 	// Org admin user is signing user for creating channel
-	adminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName))
-	adminSession, err := adminContext()
+
+	adminIdentity, err := integration.GetSigningIdentity(sdk, orgAdmin, orgName)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
 		ChannelConfig:     path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-		SigningIdentities: []context.Identity{adminSession}}
+		SigningIdentities: []fab.IdentityContext{adminIdentity}}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
 
 	// Allow orderer to process channel creation
 	time.Sleep(time.Second * 5)
+
+	//prepare context
+	adminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName))
 
 	// Org resource management client
 	orgResMgmt, err := resmgmt.New(adminContext)

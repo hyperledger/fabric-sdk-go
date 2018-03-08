@@ -11,7 +11,6 @@ import (
 	"path"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -25,7 +24,7 @@ import (
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
 	SDK           *fabsdk.FabricSDK
-	Identity      context.Identity
+	Identity      fab.IdentityContext
 	Targets       []fab.ProposalProcessor
 	ConfigFile    string
 	OrgID         string
@@ -77,13 +76,11 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 	setup.SDK = sdk
 
-	clientChannelContextProvider := sdk.ChannelContext(setup.ChannelID, fabsdk.WithUser(AdminUser), fabsdk.WithOrg(setup.OrgID))
-
-	clientContext, err := clientChannelContextProvider()
+	adminIdentity, err := GetSigningIdentity(sdk, AdminUser, setup.OrgID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get client context")
 	}
-	setup.Identity = clientContext
+	setup.Identity = adminIdentity
 
 	targets, err := getOrgTargets(sdk.Config(), setup.OrgID)
 	if err != nil {
@@ -92,7 +89,7 @@ func (setup *BaseSetupImpl) Initialize() error {
 	setup.Targets = targets
 
 	// Create channel for tests
-	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentities: []context.Identity{clientContext}}
+	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentities: []fab.IdentityContext{adminIdentity}}
 	if err = InitializeChannel(sdk, setup.OrgID, req, targets); err != nil {
 		return errors.WithMessage(err, "failed to initialize channel")
 	}
@@ -162,4 +159,11 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 
 	ccPolicy := cauthdsl.SignedByMspMember(mspID)
 	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy})
+}
+
+// GetSigningIdentity returns signing identity
+//TODO : not a recommended way to get idenity, will be replaced
+func GetSigningIdentity(sdk *fabsdk.FabricSDK, user, orgID string) (fab.IdentityContext, error) {
+	idenityContext := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrg(orgID))
+	return idenityContext()
 }

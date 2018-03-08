@@ -206,9 +206,9 @@ func (c *clientCtx) ChannelProvider() fab.ChannelProvider {
 	return c.providers.ChannelProvider()
 }
 
-// FabricProvider provides fabric objects such as peer and user
-func (c *clientCtx) FabricProvider() fab.InfraProvider {
-	return c.providers.FabricProvider()
+// InfraProvider provides fabric objects such as peer and user
+func (c *clientCtx) InfraProvider() fab.InfraProvider {
+	return c.providers.InfraProvider()
 }
 
 //MspID returns MSPID

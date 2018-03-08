@@ -8,9 +8,9 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	context "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	core "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	api "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
 
 // MockCoreProviderFactory is a mock of CoreProviderFactory interface
@@ -49,19 +49,6 @@ func (mr *MockCoreProviderFactoryMockRecorder) CreateCryptoSuiteProvider(arg0 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCryptoSuiteProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateCryptoSuiteProvider), arg0)
 }
 
-// CreateFabricProvider mocks base method
-func (m *MockCoreProviderFactory) CreateFabricProvider(arg0 context.Providers) (fab.InfraProvider, error) {
-	ret := m.ctrl.Call(m, "CreateFabricProvider", arg0)
-	ret0, _ := ret[0].(fab.InfraProvider)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateFabricProvider indicates an expected call of CreateFabricProvider
-func (mr *MockCoreProviderFactoryMockRecorder) CreateFabricProvider(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFabricProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateFabricProvider), arg0)
-}
-
 // CreateIdentityManager mocks base method
 func (m *MockCoreProviderFactory) CreateIdentityManager(arg0 string, arg1 core.KVStore, arg2 core.CryptoSuite, arg3 core.Config) (core.IdentityManager, error) {
 	ret := m.ctrl.Call(m, "CreateIdentityManager", arg0, arg1, arg2, arg3)
@@ -73,6 +60,19 @@ func (m *MockCoreProviderFactory) CreateIdentityManager(arg0 string, arg1 core.K
 // CreateIdentityManager indicates an expected call of CreateIdentityManager
 func (mr *MockCoreProviderFactoryMockRecorder) CreateIdentityManager(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentityManager", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateIdentityManager), arg0, arg1, arg2, arg3)
+}
+
+// CreateInfraProvider mocks base method
+func (m *MockCoreProviderFactory) CreateInfraProvider(arg0 api.Providers) (fab.InfraProvider, error) {
+	ret := m.ctrl.Call(m, "CreateInfraProvider", arg0)
+	ret0, _ := ret[0].(fab.InfraProvider)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateInfraProvider indicates an expected call of CreateInfraProvider
+func (mr *MockCoreProviderFactoryMockRecorder) CreateInfraProvider(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInfraProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateInfraProvider), arg0)
 }
 
 // CreateSigningManager mocks base method

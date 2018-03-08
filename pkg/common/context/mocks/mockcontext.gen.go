@@ -83,18 +83,6 @@ func (mr *MockProvidersMockRecorder) DiscoveryProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoveryProvider", reflect.TypeOf((*MockProviders)(nil).DiscoveryProvider))
 }
 
-// FabricProvider mocks base method
-func (m *MockProviders) FabricProvider() fab.InfraProvider {
-	ret := m.ctrl.Call(m, "FabricProvider")
-	ret0, _ := ret[0].(fab.InfraProvider)
-	return ret0
-}
-
-// FabricProvider indicates an expected call of FabricProvider
-func (mr *MockProvidersMockRecorder) FabricProvider() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FabricProvider", reflect.TypeOf((*MockProviders)(nil).FabricProvider))
-}
-
 // IdentityManager mocks base method
 func (m *MockProviders) IdentityManager(arg0 string) (core.IdentityManager, bool) {
 	ret := m.ctrl.Call(m, "IdentityManager", arg0)
@@ -106,6 +94,18 @@ func (m *MockProviders) IdentityManager(arg0 string) (core.IdentityManager, bool
 // IdentityManager indicates an expected call of IdentityManager
 func (mr *MockProvidersMockRecorder) IdentityManager(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityManager", reflect.TypeOf((*MockProviders)(nil).IdentityManager), arg0)
+}
+
+// InfraProvider mocks base method
+func (m *MockProviders) InfraProvider() fab.InfraProvider {
+	ret := m.ctrl.Call(m, "InfraProvider")
+	ret0, _ := ret[0].(fab.InfraProvider)
+	return ret0
+}
+
+// InfraProvider indicates an expected call of InfraProvider
+func (mr *MockProvidersMockRecorder) InfraProvider() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InfraProvider", reflect.TypeOf((*MockProviders)(nil).InfraProvider))
 }
 
 // SelectionProvider mocks base method
@@ -215,18 +215,6 @@ func (mr *MockClientMockRecorder) DiscoveryProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoveryProvider", reflect.TypeOf((*MockClient)(nil).DiscoveryProvider))
 }
 
-// FabricProvider mocks base method
-func (m *MockClient) FabricProvider() fab.InfraProvider {
-	ret := m.ctrl.Call(m, "FabricProvider")
-	ret0, _ := ret[0].(fab.InfraProvider)
-	return ret0
-}
-
-// FabricProvider indicates an expected call of FabricProvider
-func (mr *MockClientMockRecorder) FabricProvider() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FabricProvider", reflect.TypeOf((*MockClient)(nil).FabricProvider))
-}
-
 // IdentityManager mocks base method
 func (m *MockClient) IdentityManager(arg0 string) (core.IdentityManager, bool) {
 	ret := m.ctrl.Call(m, "IdentityManager", arg0)
@@ -238,6 +226,18 @@ func (m *MockClient) IdentityManager(arg0 string) (core.IdentityManager, bool) {
 // IdentityManager indicates an expected call of IdentityManager
 func (mr *MockClientMockRecorder) IdentityManager(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityManager", reflect.TypeOf((*MockClient)(nil).IdentityManager), arg0)
+}
+
+// InfraProvider mocks base method
+func (m *MockClient) InfraProvider() fab.InfraProvider {
+	ret := m.ctrl.Call(m, "InfraProvider")
+	ret0, _ := ret[0].(fab.InfraProvider)
+	return ret0
+}
+
+// InfraProvider indicates an expected call of InfraProvider
+func (mr *MockClientMockRecorder) InfraProvider() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InfraProvider", reflect.TypeOf((*MockClient)(nil).InfraProvider))
 }
 
 // MspID mocks base method

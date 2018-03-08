@@ -30,7 +30,7 @@ type MockProviderContext struct {
 	identityManager   map[string]core.IdentityManager
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
-	fabricProvider    fab.InfraProvider
+	infraProvider     fab.InfraProvider
 	channelProvider   fab.ChannelProvider
 }
 
@@ -48,7 +48,7 @@ func NewMockProviderContext() *MockProviderContext {
 		identityManager:   im,
 		discoveryProvider: &MockStaticDiscoveryProvider{},
 		selectionProvider: &MockSelectionProvider{},
-		fabricProvider:    &MockFabricProvider{},
+		infraProvider:     &MockInfraProvider{},
 		channelProvider:   &MockChannelProvider{},
 	}
 	return &context
@@ -112,14 +112,14 @@ func (pc *MockProviderContext) ChannelProvider() fab.ChannelProvider {
 	return pc.channelProvider
 }
 
-//FabricProvider returns fabric provider
-func (pc *MockProviderContext) FabricProvider() fab.InfraProvider {
-	return pc.fabricProvider
+//InfraProvider returns fabric provider
+func (pc *MockProviderContext) InfraProvider() fab.InfraProvider {
+	return pc.infraProvider
 }
 
-//SetCustomFabricProvider sets custom fabric provider for unit-test purposes
-func (pc *MockProviderContext) SetCustomFabricProvider(customFabricProvider fab.InfraProvider) {
-	pc.fabricProvider = customFabricProvider
+//SetCustomInfraProvider sets custom fabric provider for unit-test purposes
+func (pc *MockProviderContext) SetCustomInfraProvider(customInfraProvider fab.InfraProvider) {
+	pc.infraProvider = customInfraProvider
 }
 
 // MockContext holds core providers and identity to enable mocking.

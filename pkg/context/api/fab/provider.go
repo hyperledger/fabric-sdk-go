@@ -55,5 +55,5 @@ type Providers interface {
 	DiscoveryProvider() DiscoveryProvider
 	SelectionProvider() SelectionProvider
 	ChannelProvider() ChannelProvider
-	FabricProvider() InfraProvider
+	InfraProvider() InfraProvider
 }

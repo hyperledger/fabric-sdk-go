@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection/pgresolver"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -324,33 +325,44 @@ func toString(peers []fab.Peer) string {
 
 func TestDynamicSelection(t *testing.T) {
 
-	c, err := config.FromFile("../../../../../test/fixtures/config/config_test.yaml")()
+	// Create SDK setup for channel client with dynamic selection
+	sdk, err := fabsdk.New(config.FromFile("../../../../../test/fixtures/config/config_test.yaml"))
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+	defer sdk.Close()
+
+	clientContext := sdk.Context(fabsdk.WithUser("User1"), fabsdk.WithOrg("Org1"))
+	ctx, err := clientContext()
+	if err != nil {
+		t.Fatalf("Failed to to get client context: %s", err)
 	}
 
 	mychannelUser := ChannelUser{ChannelID: "mychannel", UserName: "User1", OrgName: "Org1"}
 
-	selectionProvider, err := New(c, []ChannelUser{mychannelUser}, nil)
+	selectionProvider, err := New(ctx.Config(), []ChannelUser{mychannelUser}, nil)
 	if err != nil {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}
 
+	selectionProvider.providers = ctx
 	_, err = selectionProvider.CreateSelectionService("")
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel name")
 	}
 
+	selectionProvider.providers = nil
 	_, err = selectionProvider.CreateSelectionService("mychannel")
 	if err == nil {
 		t.Fatalf("Should have failed since sdk not provided")
 	}
 
-	testLBPolicy(t, c, selectionProvider, mychannelUser)
-	testCustomLBPolicy(t, c, selectionProvider, mychannelUser)
+	selectionProvider.providers = ctx
+	testLBPolicy(t, selectionProvider)
+	testCustomLBPolicy(t, ctx.Config(), selectionProvider, mychannelUser)
 }
 
-func testLBPolicy(t *testing.T, c core.Config, selectionProvider *SelectionProvider, mychannelUser ChannelUser) {
+func testLBPolicy(t *testing.T, selectionProvider *SelectionProvider) {
 	factory := DynamicSelectionProviderFactory{
 		selectionProvider: selectionProvider,
 	}
@@ -458,4 +470,10 @@ func (lbp *customLBP) Choose(peerGroups []pgresolver.PeerGroup) pgresolver.PeerG
 		return pgresolver.NewPeerGroup()
 	}
 	return peerGroups[0]
+}
+
+func setupMockContext(userName, orgName string) context.Providers {
+	user := mocks.NewMockUserWithMSPID(userName, orgName)
+	ctx := mocks.NewMockContext(user)
+	return ctx
 }

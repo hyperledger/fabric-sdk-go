@@ -165,16 +165,16 @@ func TestCreateIdentityManager(t *testing.T) {
 	}
 }
 
-func TestNewFactoryFabricProvider(t *testing.T) {
+func TestNewFactoryInfraProvider(t *testing.T) {
 	factory := NewProviderFactory()
 	ctx := mocks.NewMockProviderContext()
 
-	fabricProvider, err := factory.CreateFabricProvider(ctx)
+	infraProvider, err := factory.CreateInfraProvider(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error creating fabric provider %v", err)
 	}
 
-	_, ok := fabricProvider.(*fabpvdr.FabricProvider)
+	_, ok := infraProvider.(*fabpvdr.InfraProvider)
 	if !ok {
 		t.Fatalf("Unexpected fabric provider created")
 	}

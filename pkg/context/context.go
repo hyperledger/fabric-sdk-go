@@ -58,7 +58,7 @@ type Provider struct {
 	selectionProvider fab.SelectionProvider
 	signingManager    core.SigningManager
 	identityManager   map[string]core.IdentityManager
-	fabricProvider    fab.InfraProvider
+	infraProvider     fab.InfraProvider
 	channelProvider   fab.ChannelProvider
 }
 
@@ -103,9 +103,9 @@ func (c *Provider) ChannelProvider() fab.ChannelProvider {
 	return c.channelProvider
 }
 
-// FabricProvider provides fabric objects such as peer and user
-func (c *Provider) FabricProvider() fab.InfraProvider {
-	return c.fabricProvider
+// InfraProvider provides fabric objects such as peer and user
+func (c *Provider) InfraProvider() fab.InfraProvider {
+	return c.infraProvider
 }
 
 //SDKContextParams parameter for creating FabContext
@@ -160,10 +160,10 @@ func WithIdentityManager(identityManagers map[string]core.IdentityManager) SDKCo
 	}
 }
 
-//WithFabricProvider sets fabricProvider maps to FabContext
-func WithFabricProvider(fabricProvider fab.InfraProvider) SDKContextParams {
+//WithInfraProvider sets infraProvider maps to FabContext
+func WithInfraProvider(infraProvider fab.InfraProvider) SDKContextParams {
 	return func(ctx *Provider) {
-		ctx.fabricProvider = fabricProvider
+		ctx.infraProvider = infraProvider
 	}
 }
 

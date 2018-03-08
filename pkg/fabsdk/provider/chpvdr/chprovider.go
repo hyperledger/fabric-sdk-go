@@ -21,13 +21,13 @@ import (
 // TODO: add listener for channel config changes. Upon channel config change,
 // underlying channel services need to recreate their channel clients.
 type ChannelProvider struct {
-	fabricProvider fab.InfraProvider
-	chCfgMap       sync.Map
+	infraProvider fab.InfraProvider
+	chCfgMap      sync.Map
 }
 
 // New creates a ChannelProvider based on a context
-func New(fabricProvider fab.InfraProvider) (*ChannelProvider, error) {
-	cp := ChannelProvider{fabricProvider: fabricProvider}
+func New(infraProvider fab.InfraProvider) (*ChannelProvider, error) {
+	cp := ChannelProvider{infraProvider: infraProvider}
 	return &cp, nil
 }
 
@@ -38,7 +38,7 @@ func (cp *ChannelProvider) ChannelService(ic fab.IdentityContext, channelID stri
 	if channelID != "" {
 		v, ok := cp.chCfgMap.Load(channelID)
 		if !ok {
-			p, err := cp.fabricProvider.CreateChannelConfig(ic, channelID)
+			p, err := cp.infraProvider.CreateChannelConfig(ic, channelID)
 			if err != nil {
 				return nil, err
 			}
@@ -59,7 +59,7 @@ func (cp *ChannelProvider) ChannelService(ic fab.IdentityContext, channelID stri
 
 	cs := ChannelService{
 		provider:        cp,
-		fabricProvider:  cp.fabricProvider,
+		infraProvider:   cp.infraProvider,
 		identityContext: ic,
 		cfg:             cfg,
 	}
@@ -73,27 +73,27 @@ func (cp *ChannelProvider) ChannelService(ic fab.IdentityContext, channelID stri
 // TODO: add cache for channel rather than reconstructing each time.
 type ChannelService struct {
 	provider        *ChannelProvider
-	fabricProvider  fab.InfraProvider
+	infraProvider   fab.InfraProvider
 	identityContext context.Identity
 	cfg             fab.ChannelCfg
 }
 
 // EventHub returns the EventHub for the named channel.
 func (cs *ChannelService) EventHub() (fab.EventHub, error) {
-	return cs.fabricProvider.CreateEventHub(cs.identityContext, cs.cfg.Name())
+	return cs.infraProvider.CreateEventHub(cs.identityContext, cs.cfg.Name())
 }
 
 // Config returns the Config for the named channel
 func (cs *ChannelService) Config() (fab.ChannelConfig, error) {
-	return cs.fabricProvider.CreateChannelConfig(cs.identityContext, cs.cfg.Name())
+	return cs.infraProvider.CreateChannelConfig(cs.identityContext, cs.cfg.Name())
 }
 
 // Transactor returns a transaction client for the current context and named channel.
 func (cs *ChannelService) Transactor() (fab.Transactor, error) {
-	return cs.fabricProvider.CreateChannelTransactor(cs.identityContext, cs.cfg)
+	return cs.infraProvider.CreateChannelTransactor(cs.identityContext, cs.cfg)
 }
 
 // Membership returns the member identifier for this channel
 func (cs *ChannelService) Membership() (fab.ChannelMembership, error) {
-	return cs.fabricProvider.CreateChannelMembership(cs.cfg)
+	return cs.infraProvider.CreateChannelMembership(cs.cfg)
 }

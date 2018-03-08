@@ -87,7 +87,7 @@ type SaveChannelRequest struct {
 	// Path to channel configuration file
 	ChannelConfig string
 	// Users that sign channel configuration
-	SigningIdentities []context.Identity
+	SigningIdentities []fab.IdentityContext
 }
 
 //RequestOption func for each Opts argument
@@ -195,7 +195,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 	}
 
 	// TODO: handle more than the first orderer.
-	orderer, err := rc.context.FabricProvider().CreateOrdererFromConfig(&oConfig[0])
+	orderer, err := rc.context.InfraProvider().CreateOrdererFromConfig(&oConfig[0])
 	if err != nil {
 		return errors.WithMessage(err, "failed to create orderers from config")
 	}

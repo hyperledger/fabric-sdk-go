@@ -95,16 +95,16 @@ func (mr *MockProvidersMockRecorder) DiscoveryProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoveryProvider", reflect.TypeOf((*MockProviders)(nil).DiscoveryProvider))
 }
 
-// FabricProvider mocks base method
-func (m *MockProviders) FabricProvider() fab.InfraProvider {
-	ret := m.ctrl.Call(m, "FabricProvider")
+// InfraProvider mocks base method
+func (m *MockProviders) InfraProvider() fab.InfraProvider {
+	ret := m.ctrl.Call(m, "InfraProvider")
 	ret0, _ := ret[0].(fab.InfraProvider)
 	return ret0
 }
 
-// FabricProvider indicates an expected call of FabricProvider
-func (mr *MockProvidersMockRecorder) FabricProvider() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FabricProvider", reflect.TypeOf((*MockProviders)(nil).FabricProvider))
+// InfraProvider indicates an expected call of InfraProvider
+func (mr *MockProvidersMockRecorder) InfraProvider() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InfraProvider", reflect.TypeOf((*MockProviders)(nil).InfraProvider))
 }
 
 // SelectionProvider mocks base method

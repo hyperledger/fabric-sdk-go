@@ -98,10 +98,3 @@ func newSession(ic contextApi.Identity, cp fab.ChannelProvider) *session {
 
 	return &s
 }
-
-// FabricProvider provides fabric objects such as peer and user
-//
-// TODO: move under Providers()
-func (sdk *FabricSDK) FabricProvider() fab.InfraProvider {
-	return sdk.provider.FabricProvider()
-}

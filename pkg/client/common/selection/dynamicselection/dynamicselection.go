@@ -10,12 +10,13 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection/pgresolver"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
 
 // ChannelUser contains user(identity) info to be used for specific channel
@@ -28,10 +29,10 @@ type ChannelUser struct {
 // SelectionProvider implements selection provider
 // TODO: refactor users into client contexts
 type SelectionProvider struct {
-	config core.Config
-	users  []ChannelUser
-	lbp    pgresolver.LoadBalancePolicy
-	sdk    *fabsdk.FabricSDK
+	config    core.Config
+	users     []ChannelUser
+	lbp       pgresolver.LoadBalancePolicy
+	providers api.Providers
 }
 
 // New returns dynamic selection provider
@@ -52,8 +53,8 @@ type selectionService struct {
 }
 
 // Initialize allow for initializing providers
-func (p *SelectionProvider) Initialize(sdk *fabsdk.FabricSDK) error {
-	p.sdk = sdk
+func (p *SelectionProvider) Initialize(providers *context.Provider) error {
+	p.providers = providers
 	return nil
 }
 
@@ -75,7 +76,7 @@ func (p *SelectionProvider) CreateSelectionService(channelID string) (fab.Select
 		return nil, errors.New("Must provide user for channel")
 	}
 
-	ccPolicyProvider, err := newCCPolicyProvider(p.sdk, channelID, channelUser.UserName, channelUser.OrgName)
+	ccPolicyProvider, err := newCCPolicyProvider(p.providers, channelID, channelUser.UserName, channelUser.OrgName)
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to create cc policy provider")
 	}

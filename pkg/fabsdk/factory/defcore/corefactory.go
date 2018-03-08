@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package defcore
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
@@ -19,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
 
+	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
@@ -64,8 +64,8 @@ func (f *ProviderFactory) CreateIdentityManager(org string, stateStore core.KVSt
 	return identitymgr.New(org, stateStore, cryptoProvider, config)
 }
 
-// CreateFabricProvider returns a new default implementation of fabric primitives
-func (f *ProviderFactory) CreateFabricProvider(context context.Providers) (fab.InfraProvider, error) {
+// CreateInfraProvider returns a new default implementation of fabric primitives
+func (f *ProviderFactory) CreateInfraProvider(context sdkApi.Providers) (fab.InfraProvider, error) {
 	return fabpvdr.New(context), nil
 }
 
