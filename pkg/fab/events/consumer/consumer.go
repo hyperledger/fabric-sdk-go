@@ -26,7 +26,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	ehpb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -89,7 +89,7 @@ func newEventsClientConnectionWithAddress(peerAddress string, cert *x509.Certifi
 	config core.Config, kap keepalive.ClientParameters, failFast bool, allowInSecure bool) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(core.EventHubConnection)))
-	if urlutil.AttemptSecured(peerAddress, allowInSecure) {
+	if endpoint.AttemptSecured(peerAddress, allowInSecure) {
 		tlsConfig, err := comm.TLSConfig(cert, serverHostOverride, config)
 		if err != nil {
 			return nil, err
@@ -109,7 +109,7 @@ func newEventsClientConnectionWithAddress(peerAddress string, cert *x509.Certifi
 	ctx, cancel := grpcContext.WithTimeout(ctx, config.TimeoutOrDefault(core.EventHubConnection))
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx, urlutil.ToAddress(peerAddress), opts...)
+	conn, err := grpc.DialContext(ctx, endpoint.ToAddress(peerAddress), opts...)
 	if err != nil {
 		return nil, err
 	}

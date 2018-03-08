@@ -17,7 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -56,7 +56,7 @@ func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvide
 	grpcctx, cancel := context.WithTimeout(grpcctx, params.connectTimeout)
 	defer cancel()
 
-	grpcconn, err := grpc.DialContext(grpcctx, urlutil.ToAddress(url), dialOpts...)
+	grpcconn, err := grpc.DialContext(grpcctx, endpoint.ToAddress(url), dialOpts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not connect to %s", url)
 	}
@@ -138,7 +138,7 @@ func newDialOpts(config core.Config, url string, params *params) ([]grpc.DialOpt
 
 	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.FailFast(params.failFast)))
 
-	if urlutil.AttemptSecured(url, params.insecure) {
+	if endpoint.AttemptSecured(url, params.insecure) {
 		tlsConfig, err := comm.TLSConfig(params.certificate, params.hostOverride, config)
 		if err != nil {
 			return nil, err

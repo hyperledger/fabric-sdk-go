@@ -12,6 +12,7 @@ import (
 	"time"
 
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 
 	"github.com/pkg/errors"
 )
@@ -47,11 +48,11 @@ func (c *MockConfig) Client() (*config.ClientConfig, error) {
 		mutualTLSCerts := config.MutualTLSConfig{
 
 			Client: config.TLSKeyPair{
-				Key: config.TLSConfig{
+				Key: endpoint.TLSConfig{
 					Path: "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem",
 					Pem:  "",
 				},
-				Cert: config.TLSConfig{
+				Cert: endpoint.TLSConfig{
 					Path: "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem",
 					Pem:  "",
 				},

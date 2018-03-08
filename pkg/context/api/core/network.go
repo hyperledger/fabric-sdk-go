@@ -7,12 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package core
 
 import (
-	"crypto/x509"
-	"encoding/pem"
-	"io/ioutil"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
-	"github.com/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
 
 // NetworkConfig provides a static definition of a Hyperledger Fabric network
@@ -102,15 +97,15 @@ type OrganizationConfig struct {
 	Users                  map[string]TLSKeyPair
 	Peers                  []string
 	CertificateAuthorities []string
-	AdminPrivateKey        TLSConfig
-	SignedCert             TLSConfig
+	AdminPrivateKey        endpoint.TLSConfig
+	SignedCert             endpoint.TLSConfig
 }
 
 // OrdererConfig defines an orderer configuration
 type OrdererConfig struct {
 	URL         string
 	GRPCOptions map[string]interface{}
-	TLSCACerts  TLSConfig
+	TLSCACerts  endpoint.TLSConfig
 }
 
 // PeerConfig defines a peer configuration
@@ -118,7 +113,7 @@ type PeerConfig struct {
 	URL         string
 	EventURL    string
 	GRPCOptions map[string]interface{}
-	TLSCACerts  TLSConfig
+	TLSCACerts  endpoint.TLSConfig
 }
 
 // CAConfig defines a CA configuration
@@ -136,63 +131,6 @@ type EnrollCredentials struct {
 	EnrollSecret string
 }
 
-// TLSConfig TLS configurations
-type TLSConfig struct {
-	// the following two fields are interchangeable.
-	// If Path is available, then it will be used to load the cert
-	// if Pem is available, then it has the raw data of the cert it will be used as-is
-	// Certificate root certificate path
-	Path string
-	// Certificate actual content
-	Pem string
-}
-
-// Bytes returns the tls certificate as a byte array by loading it either from the embedded Pem or Path
-func (cfg TLSConfig) Bytes() ([]byte, error) {
-	var bytes []byte
-	var err error
-
-	if cfg.Pem != "" {
-		bytes = []byte(cfg.Pem)
-	} else if cfg.Path != "" {
-		bytes, err = ioutil.ReadFile(cfg.Path)
-
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to load pem bytes from path %s", cfg.Path)
-		}
-	}
-
-	return bytes, nil
-}
-
-// TLSCert returns the tls certificate as a *x509.Certificate by loading it either from the embedded Pem or Path
-func (cfg TLSConfig) TLSCert() (*x509.Certificate, error) {
-	bytes, err := cfg.Bytes()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return loadCert(bytes)
-}
-
-// loadCAKey
-func loadCert(rawData []byte) (*x509.Certificate, error) {
-	block, _ := pem.Decode(rawData)
-
-	if block != nil {
-		pub, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			return nil, errors.Wrap(err, "certificate parsing failed")
-		}
-
-		return pub, nil
-	}
-
-	// return an error with an error code for clients to test against status.EmptyCert code
-	return nil, status.New(status.ClientStatus, status.EmptyCert.ToInt32(), "pem data missing", nil)
-}
-
 // MutualTLSConfig Mutual TLS configurations
 type MutualTLSConfig struct {
 	Pem []string
@@ -205,8 +143,8 @@ type MutualTLSConfig struct {
 
 // TLSKeyPair contains the private key and certificate for TLS encryption
 type TLSKeyPair struct {
-	Key  TLSConfig
-	Cert TLSConfig
+	Key  endpoint.TLSConfig
+	Cert endpoint.TLSConfig
 }
 
 // MatchConfig contains match pattern and substitution pattern

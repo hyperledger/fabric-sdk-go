@@ -23,7 +23,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -68,7 +68,7 @@ func New(config core.Config, opts ...Option) (*Orderer, error) {
 		grpcOpts = append(grpcOpts, grpc.WithKeepaliveParams(orderer.kap))
 	}
 	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.FailFast(orderer.failFast)))
-	if urlutil.AttemptSecured(orderer.url, orderer.allowInsecure) {
+	if endpoint.AttemptSecured(orderer.url, orderer.allowInsecure) {
 		//tls config
 		tlsConfig, err := comm.TLSConfig(orderer.tlsCACert, orderer.serverName, config)
 		if err != nil {
@@ -80,7 +80,7 @@ func New(config core.Config, opts ...Option) (*Orderer, error) {
 	}
 
 	orderer.dialTimeout = config.TimeoutOrDefault(core.OrdererConnection)
-	orderer.url = urlutil.ToAddress(orderer.url)
+	orderer.url = endpoint.ToAddress(orderer.url)
 	orderer.grpcDialOption = grpcOpts
 
 	return orderer, nil

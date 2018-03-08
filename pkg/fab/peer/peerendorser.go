@@ -21,7 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -58,7 +58,7 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 	}
 	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.FailFast(endorseReq.failFast)))
 
-	if urlutil.AttemptSecured(endorseReq.target, endorseReq.allowInsecure) {
+	if endpoint.AttemptSecured(endorseReq.target, endorseReq.allowInsecure) {
 		tlsConfig, err := comm.TLSConfig(endorseReq.certificate, endorseReq.serverHostOverride, endorseReq.config)
 		if err != nil {
 			return nil, err
@@ -72,7 +72,7 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 
 	pc := &peerEndorser{
 		grpcDialOption: grpcOpts,
-		target:         urlutil.ToAddress(endorseReq.target),
+		target:         endpoint.ToAddress(endorseReq.target),
 		dialTimeout:    timeout,
 		commManager:    endorseReq.commManager,
 	}

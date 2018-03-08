@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
@@ -34,7 +34,7 @@ func New(expire time.Duration) *Filter {
 
 // Accept returns whether or not to Accept a peer as a canditate for endorsement
 func (b *Filter) Accept(peer fab.Peer) bool {
-	peerAddress := urlutil.ToAddress(peer.URL())
+	peerAddress := endpoint.ToAddress(peer.URL())
 	value, ok := b.greylistURLs.Load(peerAddress)
 	if ok {
 		timeAdded, ok := value.(time.Time)
@@ -75,7 +75,7 @@ func peerURLFromConnectionFailedStatus(details []interface{}) string {
 	if len(details) != 0 {
 		url, ok := details[0].(string)
 		if ok {
-			return urlutil.ToAddress(url)
+			return endpoint.ToAddress(url)
 		}
 	}
 	return ""

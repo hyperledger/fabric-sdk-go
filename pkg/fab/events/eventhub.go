@@ -25,7 +25,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -117,7 +117,7 @@ func FromConfig(ctx Context, peerCfg *core.PeerConfig) (*EventHub, error) {
 
 	eventHub.peerAddr = peerCfg.EventURL
 
-	if urlutil.IsTLSEnabled(eventHub.peerAddr) {
+	if endpoint.IsTLSEnabled(eventHub.peerAddr) {
 		eventHub.peerTLSCertificate, err = peerCfg.TLSCACerts.TLSCert()
 
 		if err != nil {

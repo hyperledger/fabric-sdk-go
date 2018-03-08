@@ -11,7 +11,7 @@ import (
 
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
@@ -92,7 +92,7 @@ func newCAClient(org string, config config.Config, cryptoSuite core.CryptoSuite)
 	//set server CAName
 	c.Config.CAName = conf.CAName
 	//set server URL
-	c.Config.URL = urlutil.ToAddress(conf.URL)
+	c.Config.URL = endpoint.ToAddress(conf.URL)
 	//certs file list
 	c.Config.TLS.CertFiles, err = config.CAServerCertPaths(org)
 	if err != nil {
@@ -117,7 +117,7 @@ func newCAClient(org string, config config.Config, cryptoSuite core.CryptoSuite)
 	}
 
 	//TLS flag enabled/disabled
-	c.Config.TLS.Enabled = urlutil.IsTLSEnabled(conf.URL)
+	c.Config.TLS.Enabled = endpoint.IsTLSEnabled(conf.URL)
 	c.Config.MSPDir = config.CAKeyStorePath()
 
 	//Factory opts

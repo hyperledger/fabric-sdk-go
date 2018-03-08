@@ -24,7 +24,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 
@@ -652,7 +652,7 @@ func (c *Config) PeersConfig(org string) ([]core.PeerConfig, error) {
 
 	for _, peerName := range peersConfig {
 		p := config.Peers[strings.ToLower(peerName)]
-		if err = c.verifyPeerConfig(p, peerName, urlutil.IsTLSEnabled(p.URL)); err != nil {
+		if err = c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
 			matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(peerName)
 			if matchErr != nil {
 				return nil, errors.WithMessage(err, "unable to find Peer Config")
@@ -1046,7 +1046,7 @@ func (c *Config) ChannelPeers(name string) ([]core.ChannelPeer, error) {
 			p = *matchingPeerConfig
 		}
 
-		if err = c.verifyPeerConfig(p, peerName, urlutil.IsTLSEnabled(p.URL)); err != nil {
+		if err = c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
 			return nil, err
 		}
 
@@ -1081,7 +1081,7 @@ func (c *Config) NetworkPeers() ([]core.NetworkPeer, error) {
 
 	for name, p := range netConfig.Peers {
 
-		if err = c.verifyPeerConfig(p, name, urlutil.IsTLSEnabled(p.URL)); err != nil {
+		if err = c.verifyPeerConfig(p, name, endpoint.IsTLSEnabled(p.URL)); err != nil {
 			return nil, err
 		}
 

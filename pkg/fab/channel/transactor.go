@@ -15,7 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 )
@@ -96,7 +96,7 @@ func orderersByTarget(ctx context.Client) (map[string]core.OrdererConfig, error)
 	}
 
 	for _, oc := range orderersConfig {
-		address := urlutil.ToAddress(oc.URL)
+		address := endpoint.ToAddress(oc.URL)
 		ordererDict[address] = oc
 	}
 	return ordererDict, nil

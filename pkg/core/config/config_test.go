@@ -20,6 +20,7 @@ import (
 	"reflect"
 
 	api "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -286,7 +287,7 @@ func TestTLSCAConfig(t *testing.T) {
 	//Test TLSCA Cert Pool (Positive test case)
 
 	certFile, _ := configImpl.CAClientCertPath(org1)
-	certConfig := api.TLSConfig{Path: certFile}
+	certConfig := endpoint.TLSConfig{Path: certFile}
 
 	cert, err := certConfig.TLSCert()
 
@@ -301,7 +302,7 @@ func TestTLSCAConfig(t *testing.T) {
 	}
 	//Test TLSCA Cert Pool (Negative test case)
 
-	badCertConfig := api.TLSConfig{Path: "some random invalid path"}
+	badCertConfig := endpoint.TLSConfig{Path: "some random invalid path"}
 
 	badCert, err := badCertConfig.TLSCert()
 
@@ -313,7 +314,7 @@ func TestTLSCAConfig(t *testing.T) {
 
 	keyFile, _ := configImpl.CAClientKeyPath(org1)
 
-	keyConfig := api.TLSConfig{Path: keyFile}
+	keyConfig := endpoint.TLSConfig{Path: keyFile}
 
 	key, err := keyConfig.TLSCert()
 
@@ -333,7 +334,7 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	//Test TLSCA Cert Pool (Positive test case)
 
 	certPem, _ := c.CAClientCertPem(org1)
-	certConfig := api.TLSConfig{Pem: certPem}
+	certConfig := endpoint.TLSConfig{Pem: certPem}
 
 	cert, err := certConfig.TLSCert()
 
@@ -348,7 +349,7 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	}
 	//Test TLSCA Cert Pool (Negative test case)
 
-	badCertConfig := api.TLSConfig{Pem: "some random invalid pem"}
+	badCertConfig := endpoint.TLSConfig{Pem: "some random invalid pem"}
 
 	badCert, err := badCertConfig.TLSCert()
 
@@ -360,7 +361,7 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 
 	keyPem, _ := configImpl.CAClientKeyPem(org1)
 
-	keyConfig := api.TLSConfig{Pem: keyPem}
+	keyConfig := endpoint.TLSConfig{Pem: keyPem}
 
 	key, err := keyConfig.TLSCert()
 
