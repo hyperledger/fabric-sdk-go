@@ -16,71 +16,45 @@ import (
 type identityOptions struct {
 	identity contextApi.Identity
 	orgName  string
-	user     string
+	userName string
 }
 
-// IdentityOption provides parameters for creating a session (primarily from a fabric identity/user)
-type IdentityOption func(s *identityOptions) error
+// ContextOption provides parameters for creating a session (primarily from a fabric identity/user)
+type ContextOption func(s *identityOptions) error
 
 // WithUser uses the named user to load the identity
-func WithUser(user string) IdentityOption {
+func WithUser(userName string) ContextOption {
 	return func(o *identityOptions) error {
-		o.user = user
+		o.userName = userName
 		return nil
 	}
 }
 
 // WithIdentity uses a pre-constructed identity object as the credential for the session
-func WithIdentity(identity contextApi.Identity) IdentityOption {
+func WithIdentity(identity contextApi.Identity) ContextOption {
 	return func(o *identityOptions) error {
 		o.identity = identity
 		return nil
 	}
 }
 
-// WithOrgName uses a pre-constructed identity object as the credential for the session
-func WithOrgName(org string) IdentityOption {
+// WithOrg uses the named organization
+func WithOrg(org string) ContextOption {
 	return func(o *identityOptions) error {
 		o.orgName = org
 		return nil
 	}
 }
 
-type channelContextOptions struct {
-	identity contextApi.Identity
-	orgName  string
-	user     string
-}
-
-// ChannelContextOption provides parameters for creating a channel context
-type ChannelContextOption func(s *channelContextOptions) error
-
-// WithChannelUser uses the named user to load the identity
-func WithChannelUser(user string) ChannelContextOption {
-	return func(o *channelContextOptions) error {
-		o.user = user
-		return nil
+func (sdk *FabricSDK) newIdentity(options ...ContextOption) (contextApi.Identity, error) {
+	clientConfig, err := sdk.Config().Client()
+	if err != nil {
+		return nil, errors.WithMessage(err, "retrieving client configuration failed")
 	}
-}
 
-// WithChannelIdentity uses orgName to load identity
-func WithChannelIdentity(identity contextApi.Identity) ChannelContextOption {
-	return func(o *channelContextOptions) error {
-		o.identity = identity
-		return nil
+	opts := identityOptions{
+		orgName: clientConfig.Organization,
 	}
-}
-
-// WithChannelOrgName uses a pre-constructed identity object as the credential for the session
-func WithChannelOrgName(org string) ChannelContextOption {
-	return func(o *channelContextOptions) error {
-		o.orgName = org
-		return nil
-	}
-}
-
-func (sdk *FabricSDK) newIdentity(options ...IdentityOption) (contextApi.Identity, error) {
-	opts := identityOptions{}
 
 	for _, option := range options {
 		err := option(&opts)
@@ -93,7 +67,7 @@ func (sdk *FabricSDK) newIdentity(options ...IdentityOption) (contextApi.Identit
 		return opts.identity, nil
 	}
 
-	if opts.user == "" || opts.orgName == "" {
+	if opts.userName == "" || opts.orgName == "" {
 		return nil, errors.New("invalid options to create identity")
 	}
 
@@ -102,7 +76,7 @@ func (sdk *FabricSDK) newIdentity(options ...IdentityOption) (contextApi.Identit
 		return nil, errors.New("invalid options to create identity, invalid org name")
 	}
 
-	user, err := mgr.GetUser(opts.user)
+	user, err := mgr.GetUser(opts.userName)
 	if err != nil {
 		return nil, err
 	}

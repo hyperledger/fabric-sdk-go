@@ -333,7 +333,7 @@ func registerTxEvent(t *testing.T, txID fab.TransactionID, eventHub fab.EventHub
 
 func getTransactor(sdk *fabsdk.FabricSDK, channelID string, user string, orgName string) (fab.Transactor, error) {
 
-	clientChannelContextProvider := sdk.ChannelContext(channelID, fabsdk.WithChannelUser(user), fabsdk.WithChannelOrgName(orgName))
+	clientChannelContextProvider := sdk.ChannelContext(channelID, fabsdk.WithUser(user), fabsdk.WithOrg(orgName))
 
 	channelContext, err := clientChannelContextProvider()
 	if err != nil {
@@ -346,7 +346,7 @@ func getTransactor(sdk *fabsdk.FabricSDK, channelID string, user string, orgName
 
 func getEventHub(sdk *fabsdk.FabricSDK, channelID string, user string, orgName string) (fab.EventHub, error) {
 
-	clientChannelContextProvider := sdk.ChannelContext(channelID, fabsdk.WithChannelUser(user), fabsdk.WithChannelOrgName(orgName))
+	clientChannelContextProvider := sdk.ChannelContext(channelID, fabsdk.WithUser(user), fabsdk.WithOrg(orgName))
 
 	channelContext, err := clientChannelContextProvider()
 	if err != nil {
@@ -368,7 +368,7 @@ func getEventHub(sdk *fabsdk.FabricSDK, channelID string, user string, orgName s
 
 func getResource(sdk *fabsdk.FabricSDK, user string, orgName string) (*resource.Resource, error) {
 
-	ctx := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrgName(orgName))
+	ctx := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrg(orgName))
 
 	clientContext, err := ctx()
 	if err != nil {

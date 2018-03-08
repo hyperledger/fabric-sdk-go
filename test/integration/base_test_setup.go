@@ -77,7 +77,7 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 	setup.SDK = sdk
 
-	clientChannelContextProvider := sdk.ChannelContext(setup.ChannelID, fabsdk.WithChannelUser(AdminUser), fabsdk.WithChannelOrgName(setup.OrgID))
+	clientChannelContextProvider := sdk.ChannelContext(setup.ChannelID, fabsdk.WithUser(AdminUser), fabsdk.WithOrg(setup.OrgID))
 
 	clientContext, err := clientChannelContextProvider()
 	if err != nil {
@@ -129,12 +129,12 @@ func GetDeployPath() string {
 }
 
 // InstallAndInstantiateExampleCC install and instantiate using resource management client
-func InstallAndInstantiateExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.IdentityOption, orgName string, chainCodeID string) error {
+func InstallAndInstantiateExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, chainCodeID string) error {
 	return InstallAndInstantiateCC(sdk, user, orgName, chainCodeID, "github.com/example_cc", "v0", GetDeployPath(), initArgs)
 }
 
 // InstallAndInstantiateCC install and instantiate using resource management client
-func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.IdentityOption, orgName string, ccName, ccPath, ccVersion, goPath string, ccArgs [][]byte) error {
+func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, ccName, ccPath, ccVersion, goPath string, ccArgs [][]byte) error {
 
 	ccPkg, err := packager.NewCCPackage(ccPath, goPath)
 	if err != nil {
@@ -147,7 +147,7 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.IdentityOption, 
 	}
 
 	//prepare context
-	clientContext := sdk.Context(user, fabsdk.WithOrgName(orgName))
+	clientContext := sdk.Context(user, fabsdk.WithOrg(orgName))
 
 	// Resource management client is responsible for managing resources (joining channels, install/instantiate/upgrade chaincodes)
 	resMgmtClient, err := resmgmt.New(clientContext)

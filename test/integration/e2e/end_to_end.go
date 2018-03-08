@@ -49,7 +49,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	defer sdk.Close()
 
 	//clientContext allows creation of transactions using the supplied identity as the credential.
-	clientContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrgName(ordererOrgName))
+	clientContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(ordererOrgName))
 
 	// Channel management client is responsible for managing channels (create/update channel)
 	// Supply user that has privileges to create channel (in this case orderer admin)
@@ -61,7 +61,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	// Create channel
 
 	// Org admin user is signing user for creating channel
-	adminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrgName(orgName))
+	adminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName))
 	adminSession, err := adminContext()
 	if err != nil {
 		t.Fatal(err)
@@ -113,7 +113,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	// ************ Test setup complete ************** //
 
 	//prepare channel client context using client context
-	clientChannelContext := sdk.ChannelContext(channelID, fabsdk.WithChannelUser("User1"), fabsdk.WithChannelOrgName(orgName))
+	clientChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser("User1"), fabsdk.WithOrg(orgName))
 	// Channel client is used to query and execute transactions (Org1 is default org)
 	client, err := channel.New(clientChannelContext)
 	if err != nil {

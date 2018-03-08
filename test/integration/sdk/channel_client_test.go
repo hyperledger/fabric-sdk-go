@@ -54,7 +54,7 @@ func TestChannelClient(t *testing.T) {
 	defer sdk.Close()
 
 	//prepare context
-	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithChannelUser(org1User), fabsdk.WithChannelOrgName(org1Name))
+	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
 
 	//get channel client
 	chClient, err := channel.New(org1ChannelClientContext)

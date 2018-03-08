@@ -26,7 +26,7 @@ import (
 // FabricSDK provides access (and context) to clients being managed by the SDK.
 type FabricSDK struct {
 	opts     options
-	provider context.Provider
+	provider *context.Provider
 }
 
 type options struct {
@@ -175,14 +175,14 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 	}
 
 	//Initialize sdk provider
-	sdk.provider = *context.NewProvider(context.WithConfig(config),
+	sdk.provider = context.NewProvider(context.WithConfig(config),
 		context.WithCryptoSuite(cryptoSuite),
 		context.WithSigningManager(signingManager),
 		context.WithStateStore(stateStore),
 		context.WithIdentityManager(identityManager))
 
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(&sdk.provider)
+	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(sdk.provider)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
@@ -211,7 +211,7 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 	}
 
 	//update sdk providers list since all required providers are initialized
-	sdk.provider = *context.NewProvider(context.WithConfig(config),
+	sdk.provider = context.NewProvider(context.WithConfig(config),
 		context.WithCryptoSuite(cryptoSuite),
 		context.WithSigningManager(signingManager),
 		context.WithStateStore(stateStore),
@@ -235,36 +235,22 @@ func (sdk *FabricSDK) Config() core.Config {
 }
 
 //Context creates and returns context client which has all the necessary providers
-func (sdk *FabricSDK) Context(options ...IdentityOption) contextApi.ClientProvider {
+func (sdk *FabricSDK) Context(options ...ContextOption) contextApi.ClientProvider {
 
 	clientProvider := func() (contextApi.Client, error) {
 		identity, err := sdk.newIdentity(options...)
-		return &context.Client{Providers: &sdk.provider, Identity: identity}, err
+		return &context.Client{Providers: sdk.provider, Identity: identity}, err
 	}
 
 	return clientProvider
 }
 
 //ChannelContext creates and returns channel context
-func (sdk *FabricSDK) ChannelContext(channelID string, options ...ChannelContextOption) contextApi.ChannelProvider {
+func (sdk *FabricSDK) ChannelContext(channelID string, options ...ContextOption) contextApi.ChannelProvider {
 
 	channelProvider := func() (contextApi.Channel, error) {
 
-		channelCtxOpts := channelContextOptions{}
-		for _, param := range options {
-			param(&channelCtxOpts)
-		}
-
-		var identityOpts []IdentityOption
-		if channelCtxOpts.identity != nil {
-			identityOpts = append(identityOpts, WithIdentity(channelCtxOpts.identity))
-		} else {
-			identityOpts = append(identityOpts, WithUser(channelCtxOpts.user))
-			identityOpts = append(identityOpts, WithOrgName(channelCtxOpts.orgName))
-		}
-
-		clientCtxProvider := sdk.Context(identityOpts...)
-
+		clientCtxProvider := sdk.Context(options...)
 		return context.NewChannel(clientCtxProvider, channelID)
 
 	}

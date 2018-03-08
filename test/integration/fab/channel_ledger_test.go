@@ -37,7 +37,7 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.Peer) {
 		t.Fatalf("SDK init failed: %v", err)
 	}
 	// Get signing identity that is used to sign create channel request
-	adminContext := sdk.Context(fabsdk.WithUser("Admin"), fabsdk.WithOrgName(orgName))
+	adminContext := sdk.Context(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
 	adminSession, err := adminContext()
 
 	if err != nil {
@@ -70,8 +70,8 @@ func TestLedgerQueries(t *testing.T) {
 	}
 
 	//prepare required contexts
-	clientCtx := sdk.Context(fabsdk.WithUser("Admin"), fabsdk.WithOrgName(orgName))
-	channelClientCtx := sdk.ChannelContext(channelID, fabsdk.WithChannelUser("Admin"), fabsdk.WithChannelOrgName(orgName))
+	clientCtx := sdk.Context(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
+	channelClientCtx := sdk.ChannelContext(channelID, fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
 
 	// Get a ledger client.
 	ledgerClient, err := ledger.New(clientCtx, channelID)

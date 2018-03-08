@@ -34,8 +34,8 @@ func verifySDK(t *testing.T, sdk *FabricSDK) {
 	sdk.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	// Get a common client context for the following tests
-	chCtx1 := sdk.ChannelContext("mychannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg2))
-	chCtx2 := sdk.ChannelContext("orgchannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg2))
+	chCtx1 := sdk.ChannelContext("mychannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
+	chCtx2 := sdk.ChannelContext("orgchannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
 
 	// Test configuration failure for channel client (mychannel does't have event source configured for Org2)
 	_, err := channel.New(chCtx1)
@@ -105,8 +105,8 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	// Get a common client context for the following tests
 	//cc1 := sdk1.NewClient(WithUser(sdkValidClientUser))
 
-	cc1CtxC1 := sdk1.ChannelContext("mychannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg1))
-	cc1CtxC2 := sdk1.ChannelContext("orgchannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg1))
+	cc1CtxC1 := sdk1.ChannelContext("mychannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg1))
+	cc1CtxC2 := sdk1.ChannelContext("orgchannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg1))
 
 	// Test SDK1 channel clients ('mychannel', 'orgchannel')
 	_, err = channel.New(cc1CtxC1)
@@ -120,8 +120,8 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	}
 
 	// Get a common client context for the following tests
-	cc2CtxC1 := sdk1.ChannelContext("mychannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg2))
-	cc2CtxC2 := sdk1.ChannelContext("orgchannel", WithChannelUser(sdkValidClientUser), WithChannelOrgName(sdkValidClientOrg2))
+	cc2CtxC1 := sdk1.ChannelContext("mychannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
+	cc2CtxC2 := sdk1.ChannelContext("orgchannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
 
 	// SDK 2 doesn't have 'mychannel' configured
 	_, err = channel.New(cc2CtxC1)

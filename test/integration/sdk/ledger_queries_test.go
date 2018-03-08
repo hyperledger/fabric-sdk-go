@@ -41,7 +41,7 @@ func TestLedgerClientQueries(t *testing.T) {
 	defer sdk.Close()
 
 	//prepare contexts
-	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrgName(org1Name))
+	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
 
 	// Ledger client
 	client, err := ledger.New(org1AdminClientContext, testSetup.ChannelID)

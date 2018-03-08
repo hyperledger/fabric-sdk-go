@@ -71,11 +71,11 @@ func TestOrgsEndToEnd(t *testing.T) {
 func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 
 	//prepare contexts
-	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrgName(ordererOrgName))
-	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrgName(org1))
-	org2AdminClientContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrgName(org2))
-	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithChannelUser(org1User), fabsdk.WithChannelOrgName(org1))
-	org2ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithChannelUser(org2User), fabsdk.WithChannelOrgName(org2))
+	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
+	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
+	org2AdminClientContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
+	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
+	org2ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
 
 	// Channel management client is responsible for managing channels (create/update channel)
 	chMgmtClient, err := resmgmt.New(ordererClientContext)
@@ -327,7 +327,7 @@ func testWithOrg2(t *testing.T, expectedValue int) int {
 	defer sdk.Close()
 
 	//prepare contexts
-	org2ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithChannelUser(org2User), fabsdk.WithChannelOrgName(org2))
+	org2ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
 
 	// Create new client that will use dynamic selection
 	chClientOrg2User, err := channel.New(org2ChannelClientContext)
@@ -347,7 +347,7 @@ func testWithOrg2(t *testing.T, expectedValue int) int {
 
 func verifyWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, expectedValue int) {
 	//prepare context
-	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithChannelUser(org1User), fabsdk.WithChannelOrgName(org1))
+	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 
 	// Org1 user connects to 'orgchannel'
 	chClientOrg1User, err := channel.New(org1ChannelClientContext)

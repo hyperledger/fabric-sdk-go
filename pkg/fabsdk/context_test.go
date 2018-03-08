@@ -84,7 +84,7 @@ func TestFabricSDKContext(t *testing.T) {
 		t.Fatal("context client will have providers even if idenity fails")
 	}
 
-	ctxProvider = sdk.Context(WithUser("INVALID_USER"), WithOrgName("INVALID_ORG_NAME"))
+	ctxProvider = sdk.Context(WithUser("INVALID_USER"), WithOrg("INVALID_ORG_NAME"))
 
 	ctx, err = ctxProvider()
 
@@ -96,7 +96,7 @@ func TestFabricSDKContext(t *testing.T) {
 		t.Fatal("context client will have providers even if idenity fails")
 	}
 
-	ctxProvider = sdk.Context(WithUser(identityValidOptUser), WithOrgName(identityValidOptOrg))
+	ctxProvider = sdk.Context(WithUser(identityValidOptUser), WithOrg(identityValidOptOrg))
 
 	ctx, err = ctxProvider()
 

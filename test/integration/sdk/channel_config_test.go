@@ -46,7 +46,7 @@ func TestChannelConfig(t *testing.T) {
 	defer sdk.Close()
 
 	//prepare contexts
-	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithChannelUser(org1User), fabsdk.WithChannelOrgName(org1Name))
+	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
 
 	channelCtx, err := org1ChannelClientContext()
 	if err != nil {
@@ -103,7 +103,7 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 	defer sdk.Close()
 
 	//prepare contexts
-	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithChannelUser(org1User), fabsdk.WithChannelOrgName(org1Name))
+	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
 
 	channelCtx, err := org1ChannelClientContext()
 	if err != nil {

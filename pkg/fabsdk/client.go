@@ -23,9 +23,6 @@ type ClientContext struct {
 	provider clientProvider
 }
 
-// ContextOption configures the client context created by the SDK.
-type ContextOption func(opts *contextOptions) error
-
 type contextOptions struct {
 	orgID  string
 	config core.Config
@@ -41,21 +38,12 @@ type clientOptions struct {
 type clientProvider func() (*clientContext, error)
 
 type clientContext struct {
-	opts      *contextOptions
 	identity  contextApi.Identity
 	providers providers
 }
 
 type providers interface {
 	contextApi.Providers
-}
-
-// WithOrg uses the configuration and users from the named organization.
-func WithOrg(name string) ContextOption {
-	return func(opts *contextOptions) error {
-		opts.orgID = name
-		return nil
-	}
 }
 
 // WithTargetFilter allows for filtering target peers.
@@ -66,35 +54,21 @@ func WithTargetFilter(targetFilter fab.TargetFilter) ClientOption {
 	}
 }
 
-// withConfig allows for overriding the configuration of the client.
-// TODO: This should be removed once the depreacted functions are removed.
-func withConfig(config core.Config) ContextOption {
-	return func(opts *contextOptions) error {
-		opts.config = config
-		return nil
-	}
-}
-
 // NewClient allows creation of transactions using the supplied identity as the credential.
 //Deprecated: use sdk.Context() or sdk.ChannelContext() instead
-func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ContextOption) *ClientContext {
+func (sdk *FabricSDK) NewClient(opts ...ContextOption) *ClientContext {
 	// delay execution of the following logic to avoid error return from this function.
 	// this is done to allow a cleaner API - i.e., client, err := sdk.NewClient(args).<Desired Interface>(extra args)
 	provider := func() (*clientContext, error) {
-		o, err := newContextOptions(sdk.provider.Config(), opts)
-		if err != nil {
-			return nil, errors.WithMessage(err, "unable to retrieve configuration from SDK")
-		}
 
-		identity, err := sdk.newIdentity(identityOpt, WithOrgName(o.orgID))
+		identity, err := sdk.newIdentity(opts...)
 		if err != nil {
 			return nil, errors.WithMessage(err, "unable to create client context")
 		}
 
 		cc := clientContext{
-			opts:      o,
 			identity:  identity,
-			providers: &context.Client{Providers: &sdk.provider, Identity: identity},
+			providers: &context.Client{Providers: sdk.provider, Identity: identity},
 		}
 		return &cc, nil
 	}
@@ -102,32 +76,6 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ContextOptio
 		provider: provider,
 	}
 	return &client
-}
-
-func newContextOptions(config core.Config, options []ContextOption) (*contextOptions, error) {
-	// Read default org name from configuration
-	client, err := config.Client()
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to retrieve client from network config")
-	}
-
-	opts := contextOptions{
-		orgID:  client.Organization,
-		config: config,
-	}
-
-	for _, option := range options {
-		err := option(&opts)
-		if err != nil {
-			return nil, errors.WithMessage(err, "error in option passed to client")
-		}
-	}
-
-	if opts.orgID == "" {
-		return nil, errors.New("must provide default organisation name in configuration")
-	}
-
-	return &opts, nil
 }
 
 func newClientOptions(options []ClientOption) (*clientOptions, error) {

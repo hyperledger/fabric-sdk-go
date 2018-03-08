@@ -54,7 +54,7 @@ func TestFromConfigGoodClientOpt(t *testing.T) {
 }
 
 func goodClientOpt() ContextOption {
-	return func(opts *contextOptions) error {
+	return func(opts *identityOptions) error {
 		return nil
 	}
 }
@@ -73,7 +73,7 @@ func TestNewBadClientOpt(t *testing.T) {
 }
 
 func badClientOpt() ContextOption {
-	return func(opts *contextOptions) error {
+	return func(opts *identityOptions) error {
 		return errors.New("Bad Opt")
 	}
 }
@@ -124,24 +124,6 @@ func TestWithFilter(t *testing.T) {
 	}
 }
 
-func TestWithConfig(t *testing.T) {
-	c, err := configImpl.FromFile(clientConfigFile)()
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-	opt := withConfig(c)
-
-	opts := contextOptions{}
-	err = opt(&opts)
-	if err != nil {
-		t.Fatalf("Expected no error from option, but got %v", err)
-	}
-
-	if opts.config != c {
-		t.Fatalf("Expected config to be set in opts")
-	}
-}
-
 func TestNoIdentity(t *testing.T) {
 	sdk, err := New(configImpl.FromFile(clientConfigFile))
 	if err != nil {
@@ -155,7 +137,7 @@ func TestNoIdentity(t *testing.T) {
 	}
 }
 
-func noopIdentityOpt() IdentityOption {
+func noopIdentityOpt() ContextOption {
 	return func(o *identityOptions) error {
 		return nil
 	}

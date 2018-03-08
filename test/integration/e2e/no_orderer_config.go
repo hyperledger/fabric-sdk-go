@@ -38,7 +38,7 @@ func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts
 	discoveryFilter := &mockDiscoveryFilter{called: false}
 
 	//prepare channel client context using client context
-	clientChannelContext := sdk.ChannelContext(channelID, fabsdk.WithChannelUser("User1"), fabsdk.WithChannelOrgName(orgName))
+	clientChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser("User1"), fabsdk.WithOrg(orgName))
 
 	// Channel client is used to query and execute transactions (Org1 is default org)
 	client, err := channel.New(clientChannelContext, channel.WithTargetFilter(discoveryFilter))

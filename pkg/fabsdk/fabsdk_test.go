@@ -143,7 +143,7 @@ func TestWithSessionPkg(t *testing.T) {
 	defer sdk.Close()
 
 	// Get resource management
-	ctx := sdk.Context(WithUser(sdkValidClientUser), WithOrgName(sdkValidClientOrg1))
+	ctx := sdk.Context(WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg1))
 	_, err = resmgmt.New(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error getting channel management client: %s", err)
