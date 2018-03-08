@@ -48,8 +48,6 @@ client:
   peer:
     timeout:
       connection: 3s
-      queryResponse: 20s
-      executeTxResponse: 60s
       discovery:
         greylistExpiry: 5s
   eventService:
@@ -60,6 +58,12 @@ client:
     timeout:
       connection: 3s
       response: 5s
+  global:
+    timeout:
+      query: 45s
+      execute: 60s
+    cache:
+      connectionIdle: 30s
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:

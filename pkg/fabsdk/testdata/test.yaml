@@ -22,8 +22,6 @@ client:
   peer:
     timeout:
       connection: 3s
-      queryResponse: 20s
-      executeTxResponse: 30s
       discovery:
         greylistExpiry: 5s
   eventService:
@@ -34,6 +32,12 @@ client:
     timeout:
       connection: 3s
       response: 5s
+  global:
+    timeout:
+      query: 20s
+      execute: 30s
+    cache:
+      connectionIdle: 30s
 
   cryptoconfig:
     path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}
