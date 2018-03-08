@@ -10,7 +10,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	core "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	api "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
 
 // MockCoreProviderFactory is a mock of CoreProviderFactory interface
@@ -63,7 +62,7 @@ func (mr *MockCoreProviderFactoryMockRecorder) CreateIdentityManager(arg0, arg1,
 }
 
 // CreateInfraProvider mocks base method
-func (m *MockCoreProviderFactory) CreateInfraProvider(arg0 api.Providers) (fab.InfraProvider, error) {
+func (m *MockCoreProviderFactory) CreateInfraProvider(arg0 core.Config) (fab.InfraProvider, error) {
 	ret := m.ctrl.Call(m, "CreateInfraProvider", arg0)
 	ret0, _ := ret[0].(fab.InfraProvider)
 	ret1, _ := ret[1].(error)

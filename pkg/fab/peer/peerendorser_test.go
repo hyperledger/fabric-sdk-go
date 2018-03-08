@@ -230,7 +230,7 @@ func getPeerEndorserRequest(url string, cert *x509.Certificate, serverHostOverri
 		kap:                kap,
 		failFast:           false,
 		allowInsecure:      allowInsecure,
-		connector:          &defConnector{},
+		commManager:        &defCommManager{},
 	}
 
 }

@@ -23,7 +23,7 @@ type CoreProviderFactory interface {
 	CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error)
 	CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error)
 	CreateIdentityManager(orgName string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (core.IdentityManager, error)
-	CreateInfraProvider(context Providers) (fab.InfraProvider, error)
+	CreateInfraProvider(config core.Config) (fab.InfraProvider, error)
 }
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)

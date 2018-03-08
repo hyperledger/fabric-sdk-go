@@ -7,12 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package txn
 
 import (
-	reqContext "context"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -56,7 +57,7 @@ func CreateChaincodeInvokeProposal(txh fab.TransactionHeader, request fab.Chainc
 }
 
 // signProposal creates a SignedProposal based on the current context.
-func signProposal(ctx context, proposal *pb.Proposal) (*pb.SignedProposal, error) {
+func signProposal(ctx contextApi.Client, proposal *pb.Proposal) (*pb.SignedProposal, error) {
 	proposalBytes, err := proto.Marshal(proposal)
 	if err != nil {
 		return nil, errors.Wrap(err, "mashal proposal failed")
@@ -76,7 +77,7 @@ func signProposal(ctx context, proposal *pb.Proposal) (*pb.SignedProposal, error
 }
 
 // SendProposal sends a TransactionProposal to ProposalProcessor.
-func SendProposal(ctx context, proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+func SendProposal(ctx contextApi.Client, proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
 
 	if proposal == nil {
 		return nil, errors.New("proposal is required")
@@ -104,7 +105,7 @@ func SendProposal(ctx context, proposal *fab.TransactionProposal, targets []fab.
 			defer wg.Done()
 
 			// TODO: The RPC should be timed-out.
-			resp, err := processor.ProcessTransactionProposal(reqContext.Background(), request)
+			resp, err := processor.ProcessTransactionProposal(context.NewRequest(ctx), request)
 			if err != nil {
 				logger.Debugf("Received error response from txn proposal processing: %v", err)
 				responseMtx.Lock()

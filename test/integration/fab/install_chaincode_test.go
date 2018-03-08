@@ -14,8 +14,10 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/pkg/errors"
@@ -35,19 +37,23 @@ func TestChaincodeInstal(t *testing.T) {
 		ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
-	if err := testSetup.Initialize(); err != nil {
+	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+	defer sdk.Close()
+
+	if err := testSetup.Initialize(sdk); err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	defer testSetup.SDK.Close()
+	testChaincodeInstallUsingChaincodePath(t, sdk, testSetup)
 
-	testChaincodeInstallUsingChaincodePath(t, testSetup)
-
-	testChaincodeInstallUsingChaincodePackage(t, testSetup)
+	testChaincodeInstallUsingChaincodePackage(t, sdk, testSetup)
 }
 
 // Test chaincode install using chaincodePath to create chaincodePackage
-func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *integration.BaseSetupImpl) {
+func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK, testSetup *integration.BaseSetupImpl) {
 	chainCodeVersion := getRandomCCVersion()
 
 	ccPkg, err := packager.NewCCPackage(chainCodePath, integration.GetDeployPath())
@@ -56,7 +62,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *integration
 	}
 
 	// Low level resource
-	client, err := getResource(testSetup.SDK, "Admin", orgName)
+	client, err := getResource(sdk, "Admin", orgName)
 	if err != nil {
 		t.Fatalf("Failed to get resource: %s", err)
 	}
@@ -91,7 +97,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *integration
 }
 
 // Test chaincode install using chaincodePackage[byte]
-func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *integration.BaseSetupImpl) {
+func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricSDK, testSetup *integration.BaseSetupImpl) {
 
 	chainCodeVersion := getRandomCCVersion()
 
@@ -101,7 +107,7 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *integrat
 	}
 
 	// Low level resource
-	client, err := getResource(testSetup.SDK, "Admin", orgName)
+	client, err := getResource(sdk, "Admin", orgName)
 	if err != nil {
 		t.Fatalf("Failed to get resource: %s", err)
 	}

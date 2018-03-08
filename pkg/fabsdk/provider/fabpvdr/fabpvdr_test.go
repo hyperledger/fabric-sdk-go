@@ -93,5 +93,8 @@ func newMockInfraProvider(t *testing.T) *InfraProvider {
 	im[""] = &mocks.MockIdentityManager{}
 
 	ctx := mocks.NewMockProviderContextCustom(cfg, cryptoSuite, mocks.NewMockSigningManager(), mocks.NewMockStateStore(), im)
-	return New(ctx)
+	ip := New(cfg)
+	ip.Initialize(ctx)
+
+	return ip
 }

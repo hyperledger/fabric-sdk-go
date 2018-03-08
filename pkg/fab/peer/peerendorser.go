@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	grpcstatus "google.golang.org/grpc/status"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -31,7 +32,7 @@ type peerEndorser struct {
 	target         string
 	dialTimeout    time.Duration
 	failFast       bool
-	connector      connProvider
+	commManager    fab.CommManager
 }
 
 type peerEndorserRequest struct {
@@ -42,7 +43,7 @@ type peerEndorserRequest struct {
 	kap                keepalive.ClientParameters
 	failFast           bool
 	allowInsecure      bool
-	connector          connProvider
+	commManager        fab.CommManager
 }
 
 func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
@@ -52,7 +53,7 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 
 	// Construct dialer options for the connection
 	var grpcOpts []grpc.DialOption
-	if endorseReq.kap.Time > 0 || endorseReq.kap.Timeout > 0 {
+	if endorseReq.kap.Time > 0 {
 		grpcOpts = append(grpcOpts, grpc.WithKeepaliveParams(endorseReq.kap))
 	}
 	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.FailFast(endorseReq.failFast)))
@@ -73,7 +74,7 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 		grpcDialOption: grpcOpts,
 		target:         urlutil.ToAddress(endorseReq.target),
 		dialTimeout:    timeout,
-		connector:      endorseReq.connector,
+		commManager:    endorseReq.commManager,
 	}
 
 	return pc, nil
@@ -98,11 +99,24 @@ func (p *peerEndorser) ProcessTransactionProposal(ctx reqContext.Context, reques
 }
 
 func (p *peerEndorser) conn(ctx reqContext.Context) (*grpc.ClientConn, error) {
-	// Establish connection to Ordering Service
+	commManager, ok := context.RequestCommManager(ctx)
+	if !ok {
+		commManager = p.commManager
+	}
+
 	ctx, cancel := reqContext.WithTimeout(ctx, p.dialTimeout)
 	defer cancel()
 
-	return p.connector.DialContext(ctx, p.target, p.grpcDialOption...)
+	return commManager.DialContext(ctx, p.target, p.grpcDialOption...)
+}
+
+func (p *peerEndorser) releaseConn(ctx reqContext.Context, conn *grpc.ClientConn) {
+	commManager, ok := context.RequestCommManager(ctx)
+	if !ok {
+		commManager = p.commManager
+	}
+
+	commManager.ReleaseConn(conn)
 }
 
 func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.ProcessProposalRequest) (*pb.ProposalResponse, error) {
@@ -114,7 +128,7 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 		}
 		return nil, status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), []interface{}{p.target})
 	}
-	defer p.connector.ReleaseConn(conn)
+	defer p.releaseConn(ctx, conn)
 
 	endorserClient := pb.NewEndorserClient(conn)
 	resp, err := endorserClient.ProcessProposal(ctx, proposal.SignedProposal)

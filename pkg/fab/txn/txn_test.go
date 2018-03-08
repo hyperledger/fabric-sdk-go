@@ -181,7 +181,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	// Now make 1 of them fail and repeatedly broadcast
 	broadcastCount := 50
 	for i := 0; i < broadcastCount; i++ {
-		orderer1.(mocks.MockOrderer).EnqueueSendBroadcastError(errors.New("Service Unavailable"))
+		orderer1.EnqueueSendBroadcastError(errors.New("Service Unavailable"))
 	}
 	// It should always succeed even though one of them has failed
 	for i := 0; i < broadcastCount; i++ {
@@ -192,8 +192,8 @@ func TestBroadcastEnvelope(t *testing.T) {
 
 	// Now, fail both and ensure any attempt fails
 	for i := 0; i < broadcastCount; i++ {
-		orderer1.(mocks.MockOrderer).EnqueueSendBroadcastError(errors.New("Service Unavailable"))
-		orderer2.(mocks.MockOrderer).EnqueueSendBroadcastError(errors.New("Service Unavailable"))
+		orderer1.EnqueueSendBroadcastError(errors.New("Service Unavailable"))
+		orderer2.EnqueueSendBroadcastError(errors.New("Service Unavailable"))
 	}
 
 	for i := 0; i < broadcastCount; i++ {

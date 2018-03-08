@@ -14,7 +14,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -30,22 +31,22 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 // Resource is a client that provides access to fabric network resource management.
 type Resource struct {
-	clientContext context.Client
+	clientContext contextAPI.Client
 }
 
 // New returns a Client instance with the SDK context.
-func New(ctx context.Client) *Resource {
+func New(ctx contextAPI.Client) *Resource {
 	c := Resource{clientContext: ctx}
 	return &c
 }
 
 type fabCtx struct {
-	context.Providers
-	context.Identity
+	contextAPI.Providers
+	contextAPI.Identity
 }
 
 // SignChannelConfig signs a configuration.
-func (c *Resource) SignChannelConfig(config []byte, signer context.Identity) (*common.ConfigSignature, error) {
+func (c *Resource) SignChannelConfig(config []byte, signer contextAPI.Identity) (*common.ConfigSignature, error) {
 	logger.Debug("SignChannelConfig - start")
 
 	if config == nil {
@@ -108,7 +109,7 @@ func (c *Resource) createChannelFromEnvelope(request api.CreateChannelRequest) (
 	}
 
 	// Send request
-	reqCtx, cancel := reqContext.WithTimeout(reqContext.Background(), c.clientContext.Config().TimeoutOrDefault(core.OrdererResponse))
+	reqCtx, cancel := reqContext.WithTimeout(context.NewRequest(c.clientContext), c.clientContext.Config().TimeoutOrDefault(core.OrdererResponse))
 	defer cancel()
 	_, err = request.Orderer.SendBroadcast(reqCtx, env)
 	if err != nil {

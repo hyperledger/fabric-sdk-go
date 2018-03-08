@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -28,13 +29,18 @@ func TestTransient(t *testing.T) {
 		ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
-	if err := testSetup.Initialize(); err != nil {
+	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+	defer sdk.Close()
+
+	if err := testSetup.Initialize(sdk); err != nil {
 		t.Fatalf(err.Error())
 	}
-	defer testSetup.SDK.Close()
 
 	chaincodeID := integration.GenerateRandomID()
-	if err := integration.InstallAndInstantiateExampleCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
+	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
@@ -44,7 +50,7 @@ func TestTransient(t *testing.T) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte(transientData)
 
-	transactor, err := getTransactor(testSetup.SDK, testSetup.ChannelID, "Admin", testSetup.OrgID)
+	transactor, err := getTransactor(sdk, testSetup.ChannelID, "Admin", testSetup.OrgID)
 	if err != nil {
 		t.Fatalf("Failed to get channel transactor: %s", err)
 	}

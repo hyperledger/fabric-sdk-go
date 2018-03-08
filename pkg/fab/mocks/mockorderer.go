@@ -18,14 +18,7 @@ import (
 // Nothe that calling broadcast doesn't deliver anythng. This implies
 // that the broadcast side and the deliver side are totally
 // independent from the mocking point of view.
-type MockOrderer interface {
-	fab.Orderer
-	// Enqueues a mock error to be returned to the client calling SendBroadcast
-	EnqueueSendBroadcastError(err error)
-	// Enqueues a mock value (block or error) for delivery
-	EnqueueForSendDeliver(value interface{})
-}
-type mockOrderer struct {
+type MockOrderer struct {
 	OrdererURL        string
 	BroadcastListener chan *fab.SignedEnvelope
 	BroadcastErrors   chan error
@@ -37,8 +30,8 @@ type mockOrderer struct {
 }
 
 // NewMockOrderer ...
-func NewMockOrderer(url string, broadcastListener chan *fab.SignedEnvelope) fab.Orderer {
-	o := &mockOrderer{
+func NewMockOrderer(url string, broadcastListener chan *fab.SignedEnvelope) *MockOrderer {
+	o := &MockOrderer{
 		OrdererURL:        url,
 		BroadcastListener: broadcastListener,
 		BroadcastErrors:   make(chan error, 100),
@@ -48,22 +41,35 @@ func NewMockOrderer(url string, broadcastListener chan *fab.SignedEnvelope) fab.
 		DeliveryQueue:     make(chan interface{}, 100),
 	}
 
-	go broadcast(o)
+	if broadcastListener != nil {
+		go broadcast(o)
+	}
 	go delivery(o)
 	return o
 }
 
-func broadcast(o *mockOrderer) {
+func broadcast(o *MockOrderer) {
 	for {
-		value := <-o.BroadcastQueue
+		value, ok := <-o.BroadcastQueue
+		if !ok {
+			close(o.BroadcastListener)
+			return
+		}
 		o.BroadcastListener <- value
 	}
 }
 
-func delivery(o *mockOrderer) {
+func delivery(o *MockOrderer) {
 	for {
-		value := <-o.DeliveryQueue
+		value, ok := <-o.DeliveryQueue
+		if !ok {
+			close(o.Deliveries)
+			return
+		}
 		switch value.(type) {
+		case common.Status:
+			close(o.Deliveries)
+			return
 		case *common.Block:
 			o.Deliveries <- value.(*common.Block)
 		case error:
@@ -75,13 +81,13 @@ func delivery(o *mockOrderer) {
 }
 
 // URL returns the URL of the mock Orderer
-func (o *mockOrderer) URL() string {
+func (o *MockOrderer) URL() string {
 	return o.OrdererURL
 }
 
 // SendBroadcast accepts client broadcast calls and reports them to the listener channel
 // Returns the first enqueued error, or nil if there are no enqueued errors
-func (o *mockOrderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnvelope) (*common.Status, error) {
+func (o *MockOrderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnvelope) (*common.Status, error) {
 	// Report this call to the listener
 	if o.BroadcastListener != nil {
 		o.BroadcastQueue <- envelope
@@ -95,21 +101,30 @@ func (o *mockOrderer) SendBroadcast(ctx reqContext.Context, envelope *fab.Signed
 }
 
 // SendDeliver returns the channels for delivery of prepared mock values and errors (if any)
-func (o *mockOrderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelope) (chan *common.Block, chan error) {
+func (o *MockOrderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelope) (chan *common.Block, chan error) {
 	return o.Deliveries, o.DeliveryErrors
 }
 
-func (o *mockOrderer) EnqueueSendBroadcastError(err error) {
+// Close cleans up the instance and ends goroutines
+func (o *MockOrderer) Close() {
+	close(o.BroadcastQueue)
+	close(o.DeliveryQueue)
+}
+
+// EnqueueSendBroadcastError enqueues error
+func (o *MockOrderer) EnqueueSendBroadcastError(err error) {
 	o.BroadcastErrors <- err
 }
 
 // EnqueueForSendDeliver enqueues a mock value (block or error) for delivery
-func (o *mockOrderer) EnqueueForSendDeliver(value interface{}) {
+func (o *MockOrderer) EnqueueForSendDeliver(value interface{}) {
 	switch value.(type) {
+	case common.Status:
+		o.DeliveryQueue <- value
 	case *common.Block:
-		o.DeliveryQueue <- value.(*common.Block)
+		o.DeliveryQueue <- value
 	case error:
-		o.DeliveryQueue <- value.(error)
+		o.DeliveryQueue <- value
 	default:
 		panic(fmt.Sprintf("Value not *common.Block nor error: %v", value))
 	}

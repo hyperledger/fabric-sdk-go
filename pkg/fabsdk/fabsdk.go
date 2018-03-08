@@ -119,7 +119,7 @@ func WithLoggerPkg(logger api.LoggerProvider) Option {
 // providerInit interface allows for initializing providers
 // TODO: minimize interface
 type providerInit interface {
-	Initialize(providers *context.Provider) error
+	Initialize(providers contextApi.Providers) error
 }
 
 func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
@@ -174,14 +174,8 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		identityManager[orgName] = mgr
 	}
 
-	//prepare basic providers needed for initialzing rest of the providers
-	basicProviders := context.NewProvider(context.WithConfig(config),
-		context.WithCryptoSuite(cryptoSuite),
-		context.WithSigningManager(signingManager),
-	)
-
 	// Initialize Fabric Provider
-	infraProvider, err := sdk.opts.Core.CreateInfraProvider(basicProviders)
+	infraProvider, err := sdk.opts.Core.CreateInfraProvider(config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
@@ -215,6 +209,10 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		context.WithChannelProvider(channelProvider))
 
 	//initialize
+	if pi, ok := infraProvider.(providerInit); ok {
+		pi.Initialize(sdk.provider)
+	}
+
 	if pi, ok := discoveryProvider.(providerInit); ok {
 		pi.Initialize(sdk.provider)
 	}
