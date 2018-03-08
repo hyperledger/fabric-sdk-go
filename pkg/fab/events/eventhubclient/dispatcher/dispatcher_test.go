@@ -42,7 +42,7 @@ func TestRegisterInterests(t *testing.T) {
 				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
 			),
 		),
-		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
+		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -139,7 +139,7 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 				),
 			),
 		),
-		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
+		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -235,7 +235,7 @@ func TestTimedOutRegister(t *testing.T) {
 				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
 			),
 		),
-		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
+		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -289,7 +289,7 @@ func TestBlockEvents(t *testing.T) {
 				clientmocks.WithLedger(ledger),
 			),
 		),
-		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
+		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -358,7 +358,7 @@ func TestFilteredBlockEvents(t *testing.T) {
 				clientmocks.WithLedger(ledger),
 			),
 		),
-		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
+		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)

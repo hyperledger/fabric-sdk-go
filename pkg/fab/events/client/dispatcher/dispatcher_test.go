@@ -38,7 +38,7 @@ func TestConnect(t *testing.T) {
 				),
 			),
 		),
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 		WithLoadBalancePolicy(lbp.NewRandom()),
 	)
 
@@ -114,7 +114,7 @@ func TestConnectNoPeers(t *testing.T) {
 				),
 			),
 		),
-		clientmocks.NewDiscoveryService(), // Add no peers to discovery service
+		clientmocks.CreateDiscoveryService(), // Add no peers to discovery service
 	)
 
 	if err := dispatcher.Start(); err != nil {
@@ -154,7 +154,7 @@ func TestConnectionEvent(t *testing.T) {
 				),
 			),
 		),
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.CreateDiscoveryService(peer1, peer2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)

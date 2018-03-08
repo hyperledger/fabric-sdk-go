@@ -147,7 +147,7 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 	}
 
 	// setup global discovery service
-	discovery, err := ctx.DiscoveryProvider().NewDiscoveryService("")
+	discovery, err := ctx.DiscoveryProvider().CreateDiscoveryService("")
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create global discovery service")
 	}
@@ -413,7 +413,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		target = opts.Targets[0]
 	} else {
 		// discover peers on this channel
-		discovery, err := rc.context.DiscoveryProvider().NewDiscoveryService(channelID)
+		discovery, err := rc.context.DiscoveryProvider().CreateDiscoveryService(channelID)
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to create channel discovery service")
 		}
@@ -460,7 +460,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 	}
 
 	// per channel discovery service
-	discovery, err := rc.context.DiscoveryProvider().NewDiscoveryService(channelID)
+	discovery, err := rc.context.DiscoveryProvider().CreateDiscoveryService(channelID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create channel discovery service")
 	}

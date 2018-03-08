@@ -65,7 +65,7 @@ func New(clientProvider context.ClientProvider, channelID string, opts ...Client
 		return nil, err
 	}
 
-	discoveryService, err := clientContext.DiscoveryProvider().NewDiscoveryService(channelID)
+	discoveryService, err := clientContext.DiscoveryProvider().CreateDiscoveryService(channelID)
 	if err != nil {
 		return nil, err
 	}

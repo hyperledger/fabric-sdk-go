@@ -57,8 +57,8 @@ func (p *SelectionProvider) Initialize(sdk *fabsdk.FabricSDK) error {
 	return nil
 }
 
-// NewSelectionService creates a selection service
-func (p *SelectionProvider) NewSelectionService(channelID string) (fab.SelectionService, error) {
+// CreateSelectionService creates a selection service
+func (p *SelectionProvider) CreateSelectionService(channelID string) (fab.SelectionService, error) {
 	if channelID == "" {
 		return nil, errors.New("Must provide channel ID")
 	}

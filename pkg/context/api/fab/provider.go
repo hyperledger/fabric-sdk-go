@@ -24,7 +24,7 @@ type InfraProvider interface {
 
 // SelectionProvider is used to select peers for endorsement
 type SelectionProvider interface {
-	NewSelectionService(channelID string) (SelectionService, error)
+	CreateSelectionService(channelID string) (SelectionService, error)
 }
 
 // SelectionService selects peers for endorsement and commit events
@@ -36,7 +36,7 @@ type SelectionService interface {
 
 // DiscoveryProvider is used to discover peers on the network
 type DiscoveryProvider interface {
-	NewDiscoveryService(channelID string) (DiscoveryService, error)
+	CreateDiscoveryService(channelID string) (DiscoveryService, error)
 }
 
 // DiscoveryService is used to discover eligible peers on specific channel

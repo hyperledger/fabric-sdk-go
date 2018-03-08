@@ -28,12 +28,12 @@ func TestStaticDiscovery(t *testing.T) {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}
 
-	discoveryService, err := discoveryProvider.NewDiscoveryService("invalidChannel")
+	discoveryService, err := discoveryProvider.CreateDiscoveryService("invalidChannel")
 	if err == nil {
 		t.Fatalf("Should have failed to setup discovery service for non-configured channel")
 	}
 
-	discoveryService, err = discoveryProvider.NewDiscoveryService("mychannel")
+	discoveryService, err = discoveryProvider.CreateDiscoveryService("mychannel")
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
@@ -50,7 +50,7 @@ func TestStaticDiscovery(t *testing.T) {
 	}
 
 	// If channel is empty discovery service will return all configured network peers
-	discoveryService, err = discoveryProvider.NewDiscoveryService("")
+	discoveryService, err = discoveryProvider.CreateDiscoveryService("")
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
