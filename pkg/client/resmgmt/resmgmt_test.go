@@ -14,24 +14,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
+	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	"github.com/pkg/errors"
-
-	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-
-	"github.com/golang/protobuf/proto"
-	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
-	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -166,12 +165,6 @@ func TestJoinChannelRequiredParameters(t *testing.T) {
 		t.Fatalf("Should have failed for empty channel name")
 	}
 
-	// Test error when creating channel from configuration
-	err = rc.JoinChannel("error")
-	if err == nil {
-		t.Fatalf("Should have failed with generated error in NewChannel")
-	}
-
 	// Setup test client with different msp (default targets cannot be calculated)
 	ctx := setupTestContext("test", "otherMSP")
 	config := getNetworkConfig(t)
@@ -278,6 +271,40 @@ func TestJoinChannelDiscoveryError(t *testing.T) {
 
 }
 
+func TestOrdererConfigFail(t *testing.T) {
+
+	ctx := setupTestContext("test", "Org1MSP")
+
+	// No channel orderer, no global orderer
+	noOrdererConfig, err := config.FromFile("./testdata/noorderer_test.yaml")()
+	assert.Nil(t, err)
+
+	ctx.SetConfig(noOrdererConfig)
+	rc := setupResMgmtClient(ctx, nil, t)
+
+	opts := Opts{}
+	orderer, err := rc.ordererConfig(&opts, "mychannel")
+	assert.Nil(t, orderer)
+	assert.NotNil(t, err, "should fail since no orderer has been configured")
+}
+
+/*
+func TestOrdererConfigFromOpts(t *testing.T) {
+	ctx := setupTestContext("test", "Org1MSP")
+
+	// No channel orderer, no global orderer
+	noOrdererConfig, err := config.FromFile("./testdata/ccproposal_test.yaml")()
+	assert.Nil(t, err)
+
+	ctx.SetConfig(noOrdererConfig)
+	rc := setupResMgmtClient(ctx, nil, t)
+
+	opts := Opts{}
+	orderer, err := rc.ordererConfig(&opts, "mychannel")
+	assert.Nil(t, orderer)
+	assert.NotNil(t, err, "should fail since no orderer has been configured")
+}*/
+
 func TestJoinChannelNoOrdererConfig(t *testing.T) {
 
 	ctx := setupTestContext("test", "Org1MSP")
@@ -291,9 +318,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	err = rc.JoinChannel("mychannel")
-	if err == nil {
-		t.Fatalf("Should have failed to join channel since no orderer has been configured")
-	}
+	assert.NotNil(t, err, "Should have failed to join channel since no orderer has been configured")
 
 	// Misconfigured channel orderer
 	invalidChOrdererConfig, err := config.FromFile("./testdata/invalidchorderer_test.yaml")()
@@ -1432,6 +1457,17 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	}
 }
 
+func TestJoinChannelWithInvalidOpts(t *testing.T) {
+
+	cc := setupDefaultResMgmtClient(t)
+	opts := WithOrdererID("Invalid")
+	err := cc.JoinChannel("mychannel", opts)
+	if err == nil {
+		t.Fatal("Should have failed for invalid orderer ID")
+	}
+
+}
+
 func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
@@ -1447,6 +1483,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 		GRPCOptions: grpcOpts,
 	}
 	mockConfig.SetCustomRandomOrdererCfg(oConfig)
+	mockConfig.SetCustomOrdererCfg(oConfig)
 	ctx.SetConfig(mockConfig)
 
 	cc := setupResMgmtClient(ctx, nil, t)

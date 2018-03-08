@@ -168,7 +168,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		return errors.New("must provide channel ID")
 	}
 
-	opts, err := rc.prepareResmgmtOpts(options...)
+	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get opts for JoinChannel")
 	}
@@ -182,17 +182,12 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		return errors.New("No targets available")
 	}
 
-	// TODO: should the code to get orderers from sdk config be part of channel service?
-	oConfig, err := rc.ctx.Config().ChannelOrderers(channelID)
+	ordererCfg, err := rc.ordererConfig(&opts, channelID)
 	if err != nil {
-		return errors.WithMessage(err, "failed to load orderer config")
-	}
-	if len(oConfig) == 0 {
-		return errors.Errorf("no orderers are configured for channel %s", channelID)
+		return errors.WithMessage(err, "failed to find orderer config")
 	}
 
-	// TODO: handle more than the first orderer.
-	orderer, err := rc.ctx.InfraProvider().CreateOrdererFromConfig(&oConfig[0])
+	orderer, err := rc.ctx.InfraProvider().CreateOrdererFromConfig(ordererCfg)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create orderers from config")
 	}
@@ -306,7 +301,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		return nil, err
 	}
 
-	opts, err := rc.prepareResmgmtOpts(options...)
+	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get opts for InstallCC")
 	}
@@ -450,7 +445,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 		return err
 	}
 
-	opts, err := rc.prepareResmgmtOpts(options...)
+	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get opts for cc proposal")
 	}
@@ -555,18 +550,6 @@ func checkRequiredCCProposalParams(channelID string, req InstantiateCCRequest) e
 	return nil
 }
 
-//prepareResmgmtOpts Reads Opts from Option array
-func (rc *Client) prepareResmgmtOpts(options ...RequestOption) (Opts, error) {
-	resmgmtOpts := Opts{}
-	for _, option := range options {
-		err := option(&resmgmtOpts)
-		if err != nil {
-			return resmgmtOpts, errors.WithMessage(err, "Failed to read resource management opts")
-		}
-	}
-	return resmgmtOpts, nil
-}
-
 func createAndSendTransaction(sender fab.Sender, request fab.TransactionRequest) (*fab.TransactionResponse, error) {
 
 	tx, err := sender.CreateTransaction(request)
@@ -648,18 +631,9 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		configSignatures = append(configSignatures, configSignature)
 	}
 
-	// Figure out orderer configuration
-	var ordererCfg *core.OrdererConfig
-	if opts.OrdererID != "" {
-		ordererCfg, err = rc.ctx.Config().OrdererConfig(opts.OrdererID)
-	} else {
-		// Default is random orderer from configuration
-		ordererCfg, err = rc.ctx.Config().RandomOrdererConfig()
-	}
-
-	// Check if retrieving orderer configuration went ok
-	if err != nil || ordererCfg == nil {
-		return errors.Errorf("failed to retrieve orderer config: %s", err)
+	ordererCfg, err := rc.ordererConfig(&opts, req.ChannelID)
+	if err != nil {
+		return errors.WithMessage(err, "failed to find orderer config")
 	}
 
 	orderer, err := orderer.New(rc.ctx.Config(), orderer.FromOrdererConfig(ordererCfg))
@@ -692,32 +666,9 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 		return nil, err
 	}
 
-	chCfg, err := rc.ctx.Config().ChannelConfig(channelID)
+	ordererCfg, err := rc.ordererConfig(&opts, channelID)
 	if err != nil {
-		return nil, err
-	}
-
-	var ordererCfg *core.OrdererConfig
-
-	// Figure out orderer configuration (first try opts, then random channel orderer, then random orderer )
-	if opts.OrdererID != "" {
-
-		ordererCfg, err = rc.ctx.Config().OrdererConfig(opts.OrdererID)
-
-	} else if chCfg != nil && len(chCfg.Orderers) > 0 {
-
-		// random channel orderer
-		randomNumber := rand.Intn(len(chCfg.Orderers))
-		ordererCfg, err = rc.ctx.Config().OrdererConfig(chCfg.Orderers[randomNumber])
-
-	} else {
-		// random orderer from configuration
-		ordererCfg, err = rc.ctx.Config().RandomOrdererConfig()
-	}
-
-	// Check if retrieving orderer configuration went ok
-	if err != nil || ordererCfg == nil {
-		return nil, errors.Errorf("failed to retrieve orderer config: %s", err)
+		return nil, errors.WithMessage(err, "failed to find orderer config")
 	}
 
 	orderer, err := orderer.New(rc.ctx.Config(), orderer.FromOrdererConfig(ordererCfg))
@@ -732,6 +683,38 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 
 	return channelConfig.Query()
 
+}
+
+func (rc *Client) ordererConfig(opts *Opts, channelID string) (*core.OrdererConfig, error) {
+	if opts.OrdererID != "" {
+		ordererCfg, err := rc.ctx.Config().OrdererConfig(opts.OrdererID)
+		if err != nil {
+			return nil, errors.WithMessage(err, "orderer not found")
+		}
+		if ordererCfg == nil {
+			return nil, errors.New("orderer not found")
+		}
+		return ordererCfg, nil
+	}
+
+	orderers, err := rc.ctx.Config().ChannelOrderers(channelID)
+
+	// TODO: Not sure that we should fallback to global orderers section.
+	// For now - not doing so.
+	//if err != nil || len(orderers) == 0 {
+	//	orderers, err = rc.ctx.Config().OrderersConfig()
+	//}
+
+	if err != nil {
+		return nil, errors.WithMessage(err, "orderers lookup failed")
+	}
+	if len(orderers) == 0 {
+		return nil, errors.New("no orderers found")
+	}
+
+	// random channel orderer
+	randomNumber := rand.Intn(len(orderers))
+	return &orderers[randomNumber], nil
 }
 
 // prepareRequestOpts prepares request options

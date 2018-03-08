@@ -245,11 +245,9 @@ func (c *MockConfig) ChannelPeers(name string) ([]config.ChannelPeer, error) {
 
 // ChannelOrderers returns a list of channel orderers
 func (c *MockConfig) ChannelOrderers(name string) ([]config.OrdererConfig, error) {
-	oConfig := config.OrdererConfig{
-		URL: "example.com",
-	}
+	oConfig, err := c.OrdererConfig("")
 
-	return []config.OrdererConfig{oConfig}, nil
+	return []config.OrdererConfig{*oConfig}, err
 }
 
 // NetworkPeers returns the mock network peers configuration
