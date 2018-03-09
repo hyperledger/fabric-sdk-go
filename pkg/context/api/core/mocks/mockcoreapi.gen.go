@@ -356,6 +356,19 @@ func (mr *MockConfigMockRecorder) PeersConfig(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeersConfig", reflect.TypeOf((*MockConfig)(nil).PeersConfig), arg0)
 }
 
+// PeerConfigByURL mocks base method
+func (m *MockConfig) PeerConfigByURL(arg0 string) (*core.PeerConfig, error) {
+	ret := m.ctrl.Call(m, "PeerConfigByURL", arg0)
+	ret0, _ := ret[0].(*core.PeerConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PeerConfigByURL indicates an expected call of PeerConfigByURL
+func (mr *MockConfigMockRecorder) PeerConfigByURL(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerConfigByURL", reflect.TypeOf((*MockConfig)(nil).PeerConfigByURL), arg0)
+}
+
 // RandomOrdererConfig mocks base method
 func (m *MockConfig) RandomOrdererConfig() (*core.OrdererConfig, error) {
 	ret := m.ctrl.Call(m, "RandomOrdererConfig")

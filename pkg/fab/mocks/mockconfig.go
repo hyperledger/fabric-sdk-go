@@ -120,6 +120,11 @@ func (c *MockConfig) PeerConfig(org string, name string) (*config.PeerConfig, er
 	return nil, nil
 }
 
+// PeerConfigByURL retrieves PeerConfig by URL
+func (c *MockConfig) PeerConfigByURL(url string) (*config.PeerConfig, error) {
+	return nil, nil
+}
+
 // TLSCACertPool ...
 func (c *MockConfig) TLSCACertPool(cert ...*x509.Certificate) (*x509.CertPool, error) {
 	if c.errorCase {
