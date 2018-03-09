@@ -100,4 +100,11 @@ type EventClient interface {
 	// Close closes the connection to the event server and releases all resources.
 	// Once this function is invoked the client may no longer be used.
 	Close()
+
+	// CloseIfIdle closes the connection to the event server only if there are no outstanding
+	// registrations.
+	// Returns true if the client was closed. In this case the client may no longer be used.
+	// A return value of false indicates that the client could not be closed since
+	// there was at least one registration.
+	CloseIfIdle() bool
 }

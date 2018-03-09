@@ -55,6 +55,20 @@ type UnregisterEvent struct {
 	Reg fab.Registration
 }
 
+// RegistrationInfo contains a snapshot of the current event registrations
+type RegistrationInfo struct {
+	TotalRegistrations            int
+	NumBlockRegistrations         int
+	NumFilteredBlockRegistrations int
+	NumCCRegistrations            int
+	NumTxStatusRegistrations      int
+}
+
+// RegistrationInfoEvent requests registration information
+type RegistrationInfoEvent struct {
+	RegInfoCh chan<- *RegistrationInfo
+}
+
 // NewRegisterBlockEvent creates a new RegisterBlockEvent
 func NewRegisterBlockEvent(filter fab.BlockFilter, eventch chan<- *fab.BlockEvent, respch chan<- fab.Registration, errCh chan<- error) *RegisterBlockEvent {
 	return &RegisterBlockEvent{
@@ -128,4 +142,9 @@ func NewStopEvent(errch chan<- error) *StopEvent {
 	return &StopEvent{
 		ErrCh: errch,
 	}
+}
+
+// NewRegistrationInfoEvent returns a new RegistrationInfoEvent
+func NewRegistrationInfoEvent(regInfoCh chan<- *RegistrationInfo) *RegistrationInfoEvent {
+	return &RegistrationInfoEvent{RegInfoCh: regInfoCh}
 }

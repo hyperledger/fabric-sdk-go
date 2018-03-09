@@ -91,9 +91,23 @@ func TestForbiddenConnection(t *testing.T) {
 		t.Fatalf("error creating new connection: %s", err)
 	}
 
-	conn.Close()
+	eventch := make(chan interface{})
 
-	// Calling close again should be ignored
+	go conn.Receive(eventch)
+
+	select {
+	case e, ok := <-eventch:
+		if !ok {
+			t.Fatalf("unexpected closed connection")
+		}
+		statusResponse := e.(*pb.DeliverResponse).Type.(*pb.DeliverResponse_Status)
+		if statusResponse.Status != expectedStatus {
+			t.Fatalf("expecting status %s but got %s", expectedStatus, statusResponse.Status)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatalf("timed out waiting for event")
+	}
+
 	conn.Close()
 }
 

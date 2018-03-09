@@ -142,6 +142,40 @@ func TestCallsOnClosedClient(t *testing.T) {
 	eventClient.Unregister(nil)
 }
 
+func TestCloseIfIdle(t *testing.T) {
+	channelID := "mychannel"
+	eventClient, _, err := newClientWithMockConn(
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
+		clientProvider,
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+	)
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err != nil {
+		t.Fatalf("error connecting channel event client: %s", err)
+	}
+
+	reg, _, err := eventClient.RegisterBlockEvent()
+	if err != nil {
+		t.Fatalf("error registering for block events: %s", err)
+	}
+
+	if eventClient.CloseIfIdle() {
+		t.Fatalf("expecting client to not close since there's an outstanding registration")
+	}
+
+	eventClient.Unregister(reg)
+
+	if !eventClient.CloseIfIdle() {
+		t.Fatalf("expecting client to close since there are no outstanding registrations")
+	}
+}
+
 func TestInvalidUnregister(t *testing.T) {
 	channelID := "mychannel"
 	eventClient, _, err := newClientWithMockConn(
