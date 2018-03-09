@@ -36,9 +36,9 @@ type Dispatcher struct {
 }
 
 // New returns a new deliver dispatcher
-func New(context fabcontext.Client, channelID string, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts ...options.Opt) *Dispatcher {
+func New(context fabcontext.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {
 	return &Dispatcher{
-		Dispatcher: *clientdisp.New(context, channelID, connectionProvider, discoveryService, opts...),
+		Dispatcher: *clientdisp.New(context, chConfig, connectionProvider, opts...),
 	}
 }
 
@@ -64,7 +64,7 @@ func (ed *Dispatcher) handleSeekEvent(e esdispatcher.Event) {
 	}
 
 	if err := ed.connection().Send(evt.SeekInfo); err != nil {
-		evt.ErrCh <- errors.Wrapf(err, "error sending seek info for channel [%s]", ed.ChannelID())
+		evt.ErrCh <- errors.Wrapf(err, "error sending seek info for channel [%s]", ed.ChannelConfig().Name())
 	} else {
 		evt.ErrCh <- nil
 	}

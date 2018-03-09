@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package dispatcher
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
@@ -35,9 +35,9 @@ type Dispatcher struct {
 }
 
 // New creates a new event hub dispatcher
-func New(context context.Client, channelID string, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts ...options.Opt) *Dispatcher {
+func New(context fabcontext.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {
 	return &Dispatcher{
-		Dispatcher: *clientdisp.New(context, channelID, connectionProvider, discoveryService, opts...),
+		Dispatcher: *clientdisp.New(context, chConfig, connectionProvider, opts...),
 	}
 }
 

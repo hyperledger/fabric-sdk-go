@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 )
 
 type params struct {
@@ -20,7 +20,7 @@ type params struct {
 	maxReconnAttempts       uint
 	reconnInitialDelay      time.Duration
 	timeBetweenConnAttempts time.Duration
-	connEventCh             chan *fab.ConnectionEvent
+	connEventCh             chan *dispatcher.ConnectionEvent
 	respTimeout             time.Duration
 }
 
@@ -78,7 +78,7 @@ func WithReconnectInitialDelay(value time.Duration) options.Opt {
 
 // WithConnectionEvent sets the channel that is to receive connection events, i.e. when the client connects and/or
 // disconnects from the channel event service.
-func WithConnectionEvent(value chan *fab.ConnectionEvent) options.Opt {
+func WithConnectionEvent(value chan *dispatcher.ConnectionEvent) options.Opt {
 	return func(p options.Params) {
 		if setter, ok := p.(connectEventChSetter); ok {
 			setter.SetConnectEventCh(value)
@@ -133,7 +133,7 @@ func (p *params) SetTimeBetweenConnectAttempts(value time.Duration) {
 	p.timeBetweenConnAttempts = value
 }
 
-func (p *params) SetConnectEventCh(value chan *fab.ConnectionEvent) {
+func (p *params) SetConnectEventCh(value chan *dispatcher.ConnectionEvent) {
 	logger.Debugf("ConnectEventCh: %#v", value)
 	p.connEventCh = value
 }
@@ -160,7 +160,7 @@ type reconnectInitialDelaySetter interface {
 }
 
 type connectEventChSetter interface {
-	SetConnectEventCh(value chan *fab.ConnectionEvent)
+	SetConnectEventCh(value chan *dispatcher.ConnectionEvent)
 }
 
 type timeBetweenConnectAttemptsSetter interface {

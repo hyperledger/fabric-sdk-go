@@ -36,13 +36,16 @@ var (
 func TestRegisterInterests(t *testing.T) {
 	channelID := "testchannel"
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
 				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
 			),
 		),
-		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -129,7 +132,11 @@ func TestRegisterInterests(t *testing.T) {
 func TestRegisterInterestsInvalid(t *testing.T) {
 	channelID := "testchannel"
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
 				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
@@ -139,7 +146,6 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 				),
 			),
 		),
-		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -226,7 +232,11 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 func TestTimedOutRegister(t *testing.T) {
 	channelID := "testchannel"
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
 				clientmocks.WithResults(
@@ -235,7 +245,6 @@ func TestTimedOutRegister(t *testing.T) {
 				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
 			),
 		),
-		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -283,13 +292,16 @@ func TestBlockEvents(t *testing.T) {
 	channelID := "testchannel"
 	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory)
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
 				clientmocks.WithLedger(ledger),
 			),
 		),
-		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -352,13 +364,16 @@ func TestFilteredBlockEvents(t *testing.T) {
 	channelID := "testchannel"
 	ledger := servicemocks.NewMockLedger(ehmocks.FilteredBlockEventFactory)
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
 				clientmocks.WithLedger(ledger),
 			),
 		),
-		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)

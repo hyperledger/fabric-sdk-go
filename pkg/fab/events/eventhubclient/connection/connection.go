@@ -13,6 +13,7 @@ import (
 	"time"
 
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
 	"google.golang.org/grpc"
 
@@ -35,13 +36,9 @@ type EventHubConnection struct {
 }
 
 // New returns a new Connection to the event hub.
-func New(ctx fabcontext.Client, channelID string, url string, opts ...options.Opt) (*EventHubConnection, error) {
-	if channelID == "" {
-		return nil, errors.New("channel ID not provided")
-	}
-
+func New(ctx fabcontext.Client, chConfig fab.ChannelCfg, url string, opts ...options.Opt) (*EventHubConnection, error) {
 	connect, err := comm.NewConnection(
-		ctx, channelID,
+		ctx, chConfig,
 		func(grpcconn *grpc.ClientConn) (grpc.ClientStream, error) {
 			return pb.NewEventsClient(grpcconn).Chat(context.Background())
 		},

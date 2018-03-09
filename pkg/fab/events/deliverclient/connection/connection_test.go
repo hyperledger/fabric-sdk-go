@@ -42,17 +42,14 @@ var (
 )
 
 func TestInvalidConnectionOpts(t *testing.T) {
-	if _, err := New(newMockContext(), "", Deliver, peerURL); err == nil {
-		t.Fatalf("expecting error creating new connection without channel but got none")
-	}
-	if _, err := New(newMockContext(), "channelid", Deliver, "grpcs://invalidhost:7051"); err == nil {
+	if _, err := New(newMockContext(), fabmocks.NewMockChannelCfg("mychannel"), Deliver, "grpcs://invalidhost:7051"); err == nil {
 		t.Fatalf("expecting error creating new connection with invaid address but got none")
 	}
 }
 
 func TestConnection(t *testing.T) {
 	channelID := "mychannel"
-	conn, err := New(newMockContext(), channelID, Deliver, peerURL,
+	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), Deliver, peerURL,
 		comm.WithConnectTimeout(3*time.Second),
 		comm.WithFailFast(true),
 		comm.WithKeepAliveParams(
@@ -79,7 +76,7 @@ func TestForbiddenConnection(t *testing.T) {
 	defer deliverServer.SetStatus(cb.Status_UNKNOWN)
 
 	channelID := "mychannel"
-	conn, err := New(newMockContext(), channelID, Deliver, peerURL,
+	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), Deliver, peerURL,
 		comm.WithConnectTimeout(3*time.Second),
 		comm.WithFailFast(true),
 		comm.WithKeepAliveParams(
@@ -94,23 +91,9 @@ func TestForbiddenConnection(t *testing.T) {
 		t.Fatalf("error creating new connection: %s", err)
 	}
 
-	eventch := make(chan interface{})
+	conn.Close()
 
-	go conn.Receive(eventch)
-
-	select {
-	case e, ok := <-eventch:
-		if !ok {
-			t.Fatalf("unexpected closed connection")
-		}
-		statusResponse := e.(*pb.DeliverResponse).Type.(*pb.DeliverResponse_Status)
-		if statusResponse.Status != expectedStatus {
-			t.Fatalf("expecting status %s but got %s", expectedStatus, statusResponse.Status)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for event")
-	}
-
+	// Calling close again should be ignored
 	conn.Close()
 }
 
@@ -125,7 +108,7 @@ func TestSend(t *testing.T) {
 
 func TestDisconnected(t *testing.T) {
 	channelID := "mychannel"
-	conn, err := New(newMockContext(), channelID, Deliver, peerURL)
+	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), Deliver, peerURL)
 	if err != nil {
 		t.Fatalf("error creating new connection: %s", err)
 	}
@@ -165,7 +148,7 @@ func getStreamProvider(streamType streamType) StreamProvider {
 
 func testSend(t *testing.T, streamType streamType) {
 	channelID := "mychannel"
-	conn, err := New(newMockContext(), channelID, getStreamProvider(streamType), peerURL)
+	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), getStreamProvider(streamType), peerURL)
 	if err != nil {
 		t.Fatalf("error creating new connection: %s", err)
 	}

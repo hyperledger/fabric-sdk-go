@@ -29,17 +29,14 @@ const (
 )
 
 func TestInvalidConnectionOpts(t *testing.T) {
-	if _, err := New(newMockContext(), "", eventURL); err == nil {
-		t.Fatalf("expecting error creating new connection without channel but got none")
-	}
-	if _, err := New(newMockContext(), "channelid", "grpcs://invalidhost:7053"); err == nil {
+	if _, err := New(newMockContext(), fabmocks.NewMockChannelCfg("channelid"), "grpcs://invalidhost:7053"); err == nil {
 		t.Fatalf("expecting error creating new connection with invaid address but got none")
 	}
 }
 
 func TestConnection(t *testing.T) {
 	channelID := "mychannel"
-	conn, err := New(newMockContext(), channelID, eventURL)
+	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), eventURL)
 	if err != nil {
 		t.Fatalf("error creating new connection: %s", err)
 	}
@@ -52,7 +49,7 @@ func TestConnection(t *testing.T) {
 
 func TestSend(t *testing.T) {
 	channelID := "mychannel"
-	conn, err := New(newMockContext(), channelID, eventURL)
+	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), eventURL)
 	if err != nil {
 		t.Fatalf("error creating new connection: %s", err)
 	}
@@ -132,7 +129,7 @@ func TestSend(t *testing.T) {
 
 func TestDisconnected(t *testing.T) {
 	channelID := "mychannel"
-	conn, err := New(newMockContext(), channelID, eventURL)
+	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), eventURL)
 	if err != nil {
 		t.Fatalf("error creating new connection: %s", err)
 	}

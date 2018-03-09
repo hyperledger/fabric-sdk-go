@@ -100,9 +100,4 @@ type EventClient interface {
 	// Close closes the connection to the event server and releases all resources.
 	// Once this function is invoked the client may no longer be used.
 	Close()
-
-	// RegisterConnectionEvent registers a connection event. The returned
-	// ConnectionEvent channel is called whenever the client clients to
-	// or disconnects from the event server
-	RegisterConnectionEvent() (Registration, chan ConnectionEvent, error)
 }
