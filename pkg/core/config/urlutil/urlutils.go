@@ -39,18 +39,16 @@ func ToAddress(url string) string {
 }
 
 //AttemptSecured is a utility function which verifies URL and returns if secured connections needs to established
-func AttemptSecured(url string) bool {
+// for protocol 'grpcs' in URL returns true
+// for protocol 'grpc' in URL returns false
+// for no protocol mentioned, returns !allowInSecure
+func AttemptSecured(url string, allowInSecure bool) bool {
 	ok, err := regexp.MatchString(".*(?i)s://", url)
 	if ok && err == nil {
 		return true
-	} else if !strings.Contains(url, "://") {
-		return true
-	} else {
+	} else if strings.Contains(url, "://") {
 		return false
+	} else {
+		return !allowInSecure
 	}
-}
-
-//HasProtocol is a utility function which verifies if protocol is provided in URL
-func HasProtocol(url string) bool {
-	return strings.Contains(url, "://")
 }

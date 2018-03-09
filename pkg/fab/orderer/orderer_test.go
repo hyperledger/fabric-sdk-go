@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -61,7 +60,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestSendDeliverHappy(t *testing.T) {
-	ordererConfig := getGRPCOpts(ordererAddr, true, false)
+	ordererConfig := getGRPCOpts(ordererAddr, true, false, true)
 
 	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig))
 	ctx, cancel := reqContext.WithTimeout(reqContext.Background(), 15*time.Second)
@@ -81,7 +80,7 @@ func TestSendDeliverHappy(t *testing.T) {
 }
 
 func TestSendDeliverErr(t *testing.T) {
-	ordererConfig := getGRPCOpts(ordererAddr, true, false)
+	ordererConfig := getGRPCOpts(ordererAddr, true, false, true)
 
 	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig))
 	// Test deliver with deliver error from OS
@@ -201,7 +200,7 @@ func TestNewOrdererWithMutualTLS(t *testing.T) {
 
 func TestSendBroadcastHappy(t *testing.T) {
 
-	ordererConfig := getGRPCOpts(ordererAddr, true, false)
+	ordererConfig := getGRPCOpts(ordererAddr, true, false, true)
 	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig))
 
 	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
@@ -210,7 +209,7 @@ func TestSendBroadcastHappy(t *testing.T) {
 
 func TestSendBroadcastTimeout(t *testing.T) {
 
-	ordererConfig := getGRPCOpts(testOrdererURL+"Test", true, false)
+	ordererConfig := getGRPCOpts(testOrdererURL+"Test", true, false, true)
 	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig))
 	orderer.dialTimeout = 15
 
@@ -369,7 +368,6 @@ func TestBroadcastBadDial(t *testing.T) {
 	orderer, err := New(config, WithURL("grpc://127.0.0.1:0"))
 	assert.Nil(t, err)
 	orderer.grpcDialOption = append(orderer.grpcDialOption, grpc.WithBlock())
-	orderer.secured = true
 	orderer.allowInsecure = true
 	_, err = orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
 	assert.NotNil(t, err)
@@ -419,7 +417,7 @@ func TestFailFast(t *testing.T) {
 	assert.EqualValues(t, failFast, false)
 }
 
-func getGRPCOpts(addr string, failFast bool, keepAliveOptions bool) *core.OrdererConfig {
+func getGRPCOpts(addr string, failFast bool, keepAliveOptions bool, allowInSecure bool) *core.OrdererConfig {
 	grpcOpts := make(map[string]interface{})
 	//fail fast
 	grpcOpts["fail-fast"] = failFast
@@ -433,7 +431,7 @@ func getGRPCOpts(addr string, failFast bool, keepAliveOptions bool) *core.Ordere
 	}
 
 	//allow in secure
-	grpcOpts["allow-insecure"] = true
+	grpcOpts["allow-insecure"] = allowInSecure
 
 	//orderer config with GRPC opts
 	ordererConfig := &core.OrdererConfig{
@@ -457,11 +455,6 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 	//keep alive option is not set and fail fast is false - invalid URL
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+testOrdererURL+"Test"), WithInsecure())
 	orderer.dialTimeout = 5 * time.Second
-	t.Logf("GRPC opts%v \n", orderer.grpcDialOption)
-	for i, v := range orderer.grpcDialOption {
-		t.Logf("%v %v %v\n", i, &v, reflect.TypeOf(v))
-
-	}
 	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
 	if err == nil {
 		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded' %v", err)
@@ -508,7 +501,7 @@ func TestForGRPCErrorsWithKeepAliveOptsFailFast(t *testing.T) {
 
 func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
 	//expect here GRPC deadline exceeded since fail fast is set to false
-	ordererConfig := getGRPCOpts(testOrdererURL+"Test", false, true)
+	ordererConfig := getGRPCOpts(testOrdererURL+"Test", false, true, true)
 	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig))
 	orderer.dialTimeout = 2 * time.Second
 	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
@@ -551,38 +544,23 @@ func TestNewOrdererSecured(t *testing.T) {
 
 	//Test grpc URL
 	url := "grpc://0.0.0.0:1234"
-
-	conn, err := New(config, WithURL(url), WithInsecure())
+	_, err := New(config, WithURL(url), WithInsecure())
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
-	}
-
-	if conn.secured {
-		t.Fatalf("Expected insecure to be false")
 	}
 
 	//Test grpcs URL
 	url = "grpcs://0.0.0.0:1234"
-
-	conn, err = New(config, WithURL(url), WithInsecure())
+	_, err = New(config, WithURL(url), WithInsecure())
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
-	}
-
-	if !conn.secured {
-		t.Fatalf("Expected insecure to be true")
 	}
 
 	//Test URL without protocol
 	url = "0.0.0.0:1234"
-
-	conn, err = New(config, WithURL(url), WithInsecure())
+	_, err = New(config, WithURL(url), WithInsecure())
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
-	}
-
-	if !conn.secured {
-		t.Fatalf("Expected insecure to be true")
 	}
 
 }
@@ -590,7 +568,7 @@ func TestNewOrdererSecured(t *testing.T) {
 func TestNewOrdererCustomConnector(t *testing.T) {
 	mc := &mockConnector{}
 
-	ordererConfig := getGRPCOpts(ordererAddr, true, false)
+	ordererConfig := getGRPCOpts(ordererAddr, true, false, true)
 	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig), WithConnProvider(mc))
 
 	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})

@@ -51,7 +51,6 @@ type eventsClient struct {
 	processEventsCompleted chan struct{}
 	kap                    keepalive.ClientParameters
 	failFast               bool
-	secured                bool
 	allowInsecure          bool
 }
 
@@ -81,17 +80,16 @@ func NewEventsClient(provider core.Providers, identity context.Identity, peerAdd
 		tlsCertHash:           ccomm.TLSCertHash(provider.Config()),
 		kap:                   kap,
 		failFast:              failFast,
-		secured:               urlutil.AttemptSecured(peerAddress),
 		allowInsecure:         allowInsecure,
 	}, err
 }
 
 //newEventsClientConnectionWithAddress Returns a new grpc.ClientConn to the configured local PEER.
 func newEventsClientConnectionWithAddress(peerAddress string, cert *x509.Certificate, serverHostOverride string,
-	config core.Config, kap keepalive.ClientParameters, failFast bool, secured bool) (*grpc.ClientConn, error) {
+	config core.Config, kap keepalive.ClientParameters, failFast bool, allowInSecure bool) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(core.EventHubConnection)))
-	if secured {
+	if urlutil.AttemptSecured(peerAddress, allowInSecure) {
 		tlsConfig, err := comm.TLSConfig(cert, serverHostOverride, config)
 		if err != nil {
 			return nil, err
@@ -307,12 +305,12 @@ func (ec *eventsClient) processEvents() error {
 
 //Start establishes connection with Event hub and registers interested events with it
 func (ec *eventsClient) Start() error {
-	return ec.establishConnectionAndRegister(ec.secured)
+	return ec.establishConnectionAndRegister()
 }
 
-func (ec *eventsClient) establishConnectionAndRegister(secured bool) error {
+func (ec *eventsClient) establishConnectionAndRegister() error {
 	conn, err := newEventsClientConnectionWithAddress(ec.peerAddress, ec.TLSCertificate, ec.TLSServerHostOverride,
-		ec.provider.Config(), ec.kap, ec.failFast, secured)
+		ec.provider.Config(), ec.kap, ec.failFast, ec.allowInsecure)
 
 	if err != nil {
 		return errors.WithMessage(err, "events connection failed")
@@ -331,12 +329,6 @@ func (ec *eventsClient) establishConnectionAndRegister(secured bool) error {
 	serverClient := ehpb.NewEventsClient(conn)
 	ec.stream, err = serverClient.Chat(grpcContext.Background())
 	if err != nil {
-		logger.Error("events connection failed, cause: ", err)
-		if secured && ec.allowInsecure {
-			//If secured mode failed and allow insecure is enabled then retry in insecure mode
-			logger.Debug("Secured establishConnectionAndRegister failed, attempting insecured")
-			return ec.establishConnectionAndRegister(false)
-		}
 		return errors.Wrap(err, "events connection failed")
 	}
 

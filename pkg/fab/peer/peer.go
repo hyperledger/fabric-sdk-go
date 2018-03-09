@@ -19,7 +19,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
@@ -186,12 +185,11 @@ func getKeepAliveOptions(peerCfg *core.NetworkPeer) keepalive.ClientParameters {
 	}
 	return kap
 }
+
 func isInsecureConnectionAllowed(peerCfg *core.NetworkPeer) bool {
-	//allowInsecure used only when protocol is missing from URL
-	allowInsecure := !urlutil.HasProtocol(peerCfg.URL)
-	boolVal, ok := peerCfg.GRPCOptions["allow-insecure"].(bool)
+	allowInsecure, ok := peerCfg.GRPCOptions["allow-insecure"].(bool)
 	if ok {
-		return allowInsecure && boolVal
+		return allowInsecure
 	}
 	return false
 }

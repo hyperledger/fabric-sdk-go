@@ -134,45 +134,23 @@ func TestNewPeerEndorserSecured(t *testing.T) {
 	config := mock_core.DefaultMockConfig(mockCtrl)
 
 	url := "grpc://0.0.0.0:1234"
-	conn, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, false))
+	_, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, false))
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
-	}
-
-	if conn.secured {
-		t.Fatalf("Expected insecure to be found")
-	}
-
-	if conn.allowInsecure {
-		t.Fatalf("Expected allow insecure to be false")
 	}
 
 	url = "grpcs://0.0.0.0:1234"
 
-	conn, err = newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, true))
+	_, err = newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, true))
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
-	}
-
-	if !conn.secured {
-		t.Fatalf("Expected secure to be found")
-	}
-	if !conn.allowInsecure {
-		t.Fatalf("Expected allow insecure to be true")
 	}
 
 	url = "0.0.0.0:1234"
 
-	conn, err = newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, true))
+	_, err = newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, true))
 	if err != nil {
 		t.Fatalf("Peer conn should be constructed")
-	}
-
-	if !conn.secured {
-		t.Fatalf("Expected secure to be found")
-	}
-	if !conn.allowInsecure {
-		t.Fatalf("Expected allow insecure to be true")
 	}
 
 }

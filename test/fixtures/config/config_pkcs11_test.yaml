@@ -347,7 +347,7 @@ orderers:
       grpc-max-send-message-length: 15
       fail-fast: false
 
-      #will be taken into consideration if address has no protocol defined and secured connection fails
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
     tlsCACerts:
@@ -372,7 +372,7 @@ peers:
       grpc.http2.keepalive_time: 15
       fail-fast: false
 
-      #will be taken into consideration if address has no protocol defined and secured connection fails
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
     tlsCACerts:
@@ -387,7 +387,7 @@ peers:
       ssl-target-name-override: peer0.org2.example.com
       fail-fast: false
 
-      #will be taken into consideration if address has no protocol defined and secured connection fails
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
     tlsCACerts:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem

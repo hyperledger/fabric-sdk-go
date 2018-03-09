@@ -46,7 +46,6 @@ type Orderer struct {
 	dialTimeout          time.Duration
 	failFast             bool
 	transportCredentials credentials.TransportCredentials
-	secured              bool
 	allowInsecure        bool
 	connector            connProvider
 }
@@ -73,19 +72,20 @@ func New(config core.Config, opts ...Option) (*Orderer, error) {
 		grpcOpts = append(grpcOpts, grpc.WithKeepaliveParams(orderer.kap))
 	}
 	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.FailFast(orderer.failFast)))
-	orderer.dialTimeout = config.TimeoutOrDefault(core.OrdererConnection)
-
-	//tls config
-	tlsConfig, err := comm.TLSConfig(orderer.tlsCACert, orderer.serverName, config)
-	if err != nil {
-		return nil, err
+	if urlutil.AttemptSecured(orderer.url, orderer.allowInsecure) {
+		//tls config
+		tlsConfig, err := comm.TLSConfig(orderer.tlsCACert, orderer.serverName, config)
+		if err != nil {
+			return nil, err
+		}
+		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	} else {
+		grpcOpts = append(grpcOpts, grpc.WithInsecure())
 	}
 
-	orderer.grpcDialOption = grpcOpts
-	orderer.transportCredentials = credentials.NewTLS(tlsConfig)
-	logger.Errorf("orderer.url [%s]", orderer.url)
-	orderer.secured = urlutil.AttemptSecured(orderer.url)
+	orderer.dialTimeout = config.TimeoutOrDefault(core.OrdererConnection)
 	orderer.url = urlutil.ToAddress(orderer.url)
+	orderer.grpcDialOption = grpcOpts
 
 	return orderer, nil
 }
@@ -210,28 +210,19 @@ func getKeepAliveOptions(ordererCfg *core.OrdererConfig) keepalive.ClientParamet
 }
 
 func isInsecureConnectionAllowed(ordererCfg *core.OrdererConfig) bool {
-	//allowInsecure used only when protocol is missing from URL
-	allowInsecure := !urlutil.HasProtocol(ordererCfg.URL)
-	boolVal, ok := ordererCfg.GRPCOptions["allow-insecure"].(bool)
+	allowInsecure, ok := ordererCfg.GRPCOptions["allow-insecure"].(bool)
 	if ok {
-		return allowInsecure && boolVal
+		return allowInsecure
 	}
 	return false
 }
 
-func (o *Orderer) conn(ctx reqContext.Context, secured bool) (*grpc.ClientConn, error) {
+func (o *Orderer) conn(ctx reqContext.Context) (*grpc.ClientConn, error) {
 	// Establish connection to Ordering Service
-	var grpcOpts []grpc.DialOption
-	if secured {
-		grpcOpts = append(o.grpcDialOption, grpc.WithTransportCredentials(o.transportCredentials))
-	} else {
-		grpcOpts = append(o.grpcDialOption, grpc.WithInsecure())
-	}
-
 	ctx, cancel := reqContext.WithTimeout(ctx, o.dialTimeout)
 	defer cancel()
 
-	return o.connector.DialContext(ctx, o.url, grpcOpts...)
+	return o.connector.DialContext(ctx, o.url, o.grpcDialOption...)
 }
 
 // URL Get the Orderer url. Required property for the instance objects.
@@ -242,20 +233,8 @@ func (o *Orderer) URL() string {
 
 // SendBroadcast Send the created transaction to Orderer.
 func (o *Orderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnvelope) (*common.Status, error) {
-	return o.sendBroadcast(ctx, envelope, o.secured)
-}
-
-// SendBroadcast Send the created transaction to Orderer.
-func (o *Orderer) sendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnvelope, secured bool) (*common.Status, error) {
-
-	conn, err := o.conn(ctx, secured)
+	conn, err := o.conn(ctx)
 	if err != nil {
-		logger.Errorf("connecting to orderer failed [%s]", err)
-		if secured && o.allowInsecure {
-			//If secured mode failed and allow insecure is enabled then retry in insecure mode
-			logger.Debug("Secured sendBroadcast failed, attempting insecured")
-			return o.sendBroadcast(ctx, envelope, false)
-		}
 		rpcStatus, ok := grpcstatus.FromError(err)
 		if ok {
 			return nil, errors.WithMessage(status.NewFromGRPCStatus(rpcStatus), "connection failed")
@@ -317,24 +296,12 @@ func (o *Orderer) sendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 // blocks requested
 // envelope: contains the seek request for blocks
 func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelope) (chan *common.Block, chan error) {
-	return o.sendDeliver(ctx, envelope, o.secured)
-}
 
-// SendDeliver sends a deliver request to the ordering service and returns the
-// blocks requested
-// envelope: contains the seek request for blocks
-func (o *Orderer) sendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelope, secured bool) (chan *common.Block, chan error) {
 	responses := make(chan *common.Block)
 	errs := make(chan error, 1)
 
-	conn, err := o.conn(ctx, secured)
+	conn, err := o.conn(ctx)
 	if err != nil {
-		logger.Errorf("connecting to orderer failed [%s]", err)
-		if secured && o.allowInsecure {
-			//If secured mode failed and allow insecure is enabled then retry in insecure mode
-			logger.Errorf("Secured sendBroadcast failed, attempting insecured")
-			return o.sendDeliver(ctx, envelope, false)
-		}
 		rpcStatus, ok := grpcstatus.FromError(err)
 		if ok {
 			errs <- errors.WithMessage(status.NewFromGRPCStatus(rpcStatus), "connection failed")

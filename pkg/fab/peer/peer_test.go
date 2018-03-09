@@ -82,9 +82,7 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	//apiconfig := mock_core.DefaultMockConfig(mockCtrl)
 	config := mock_core.NewMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(core.EndorserConnection).Return(time.Second * 5)
 	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("failed to get certpool")).AnyTimes()
 
 	url := "grpcs://0.0.0.0:1234"

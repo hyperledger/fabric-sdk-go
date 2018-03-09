@@ -287,7 +287,7 @@ func (eventHub *EventHub) SetPeerAddr(peerURL string, peerTLSCertificate *x509.C
 	eventHub.peerAddr = peerURL
 	eventHub.peerTLSCertificate = peerTLSCertificate
 	eventHub.peerTLSServerHostOverride = peerTLSServerHostOverride
-	eventHub.allowInsecure = allowInsecure && !urlutil.HasProtocol(peerURL)
+	eventHub.allowInsecure = allowInsecure
 }
 
 // IsConnected gets connected state of eventhub
@@ -612,11 +612,9 @@ func (eventHub *EventHub) notifyChaincodeRegistrants(channelID string, ccEvent *
 }
 
 func isInsecureConnectionAllowed(peerCfg *core.PeerConfig) bool {
-	//allowInsecure used only when protocol is missing from URL
-	allowInsecure := !urlutil.HasProtocol(peerCfg.URL)
-	boolVal, ok := peerCfg.GRPCOptions["allow-insecure"].(bool)
+	allowInsecure, ok := peerCfg.GRPCOptions["allow-insecure"].(bool)
 	if ok {
-		return allowInsecure && boolVal
+		return allowInsecure
 	}
 	return false
 }

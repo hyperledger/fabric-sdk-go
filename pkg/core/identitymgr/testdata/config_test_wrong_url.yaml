@@ -253,7 +253,7 @@ orderers:
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      #will be taken into consideration if address has no protocol defined and secured connection fails
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
     tlsCACerts:
@@ -283,7 +283,7 @@ peers:
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      #will be taken into consideration if address has no protocol defined and secured connection fails
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
     tlsCACerts:
@@ -303,7 +303,7 @@ peers:
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      #will be taken into consideration if address has no protocol defined and secured connection fails
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
     tlsCACerts:
