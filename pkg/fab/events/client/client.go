@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	eventservice "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service"
+	esdispatcher "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -103,15 +104,40 @@ func (c *Client) Connect() error {
 	return c.connectWithRetry(c.maxConnAttempts, c.timeBetweenConnAttempts)
 }
 
-// Close closes the connection to the event server and deallocates all resources.
+// CloseIfIdle closes the connection to the event server only if there are no outstanding
+// registrations.
+// Returns true if the client was closed. In this case the client may no longer be used.
+// A return value of false indicates that the client could not be closed since
+// there was at least one registration.
+func (c *Client) CloseIfIdle() bool {
+	return c.close(false)
+}
+
+// Close closes the connection to the event server and releases all resources.
 // Once this function is invoked the client may no longer be used.
 func (c *Client) Close() {
+	c.close(true)
+}
+
+func (c *Client) close(force bool) bool {
 	logger.Debugf("Attempting to close event client...")
 
 	if !c.setStoppped() {
 		// Already stopped
 		logger.Debugf("Client already stopped")
-		return
+		return true
+	}
+
+	if !force {
+		// Check if there are any outstanding registrations
+		regInfoCh := make(chan *esdispatcher.RegistrationInfo)
+		c.Submit(esdispatcher.NewRegistrationInfoEvent(regInfoCh))
+		regInfo := <-regInfoCh
+
+		if regInfo.TotalRegistrations > 0 {
+			logger.Debugf("Cannot stop client since there are %d outstanding registrations", regInfo.TotalRegistrations)
+			return false
+		}
 	}
 
 	logger.Debugf("Stopping client...")
@@ -137,6 +163,8 @@ func (c *Client) Close() {
 	c.mustSetConnectionState(Disconnected)
 
 	logger.Debugf("... event client is stopped")
+
+	return true
 }
 
 func (c *Client) connect() error {

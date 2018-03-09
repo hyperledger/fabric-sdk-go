@@ -536,6 +536,107 @@ func TestCCEvents(t *testing.T) {
 	}
 }
 
+func TestRegistrationInfo(t *testing.T) {
+	dispatcher := New()
+	if err := dispatcher.Start(); err != nil {
+		t.Fatalf("Error starting dispatcher: %s", err)
+	}
+
+	dispatcherEventch, err := dispatcher.EventCh()
+	if err != nil {
+		t.Fatalf("Error getting event channel from dispatcher: %s", err)
+	}
+
+	errch := make(chan error)
+
+	regch := make(chan fab.Registration)
+	fbeventch := make(chan *fab.FilteredBlockEvent, 10)
+	dispatcherEventch <- NewRegisterFilteredBlockEvent(fbeventch, regch, errch)
+
+	var fbreg fab.Registration
+	select {
+	case fbreg = <-regch:
+	case err := <-errch:
+		t.Fatalf("Error registering for filtered block events: %s", err)
+	}
+
+	beventch := make(chan *fab.BlockEvent, 10)
+	dispatcherEventch <- NewRegisterBlockEvent(headertypefilter.New(cb.HeaderType_CONFIG, cb.HeaderType_CONFIG_UPDATE), beventch, regch, errch)
+
+	var breg fab.Registration
+	select {
+	case breg = <-regch:
+	case err := <-errch:
+		t.Fatalf("Error registering for block events: %s", err)
+	}
+
+	eventch := make(chan *RegistrationInfo, 1)
+	dispatcherEventch <- NewRegistrationInfoEvent(eventch)
+
+	select {
+	case regInfo, ok := <-eventch:
+		if !ok {
+			t.Fatalf("unexpected closed channel")
+		}
+		if regInfo.TotalRegistrations != 2 {
+			t.Fatalf("expecting total registrations to be [%d] but received [%d]", 2, regInfo.TotalRegistrations)
+		}
+		if regInfo.NumBlockRegistrations != 1 {
+			t.Fatalf("expecting number of block registrations to be [%d] but received [%d]", 1, regInfo.NumBlockRegistrations)
+		}
+		if regInfo.NumFilteredBlockRegistrations != 1 {
+			t.Fatalf("expecting number of filtered block registrations to be [%d] but received [%d]", 1, regInfo.NumFilteredBlockRegistrations)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatalf("timed out waiting for registration info")
+	}
+
+	dispatcherEventch <- NewUnregisterEvent(fbreg)
+	dispatcherEventch <- NewRegistrationInfoEvent(eventch)
+
+	select {
+	case regInfo, ok := <-eventch:
+		if !ok {
+			t.Fatalf("unexpected closed channel")
+		}
+		if regInfo.NumBlockRegistrations != 1 {
+			t.Fatalf("expecting number of block registrations to be [%d] but received [%d]", 1, regInfo.NumBlockRegistrations)
+		}
+		if regInfo.NumFilteredBlockRegistrations != 0 {
+			t.Fatalf("expecting number of filtered block registrations to be [%d] but received [%d]", 0, regInfo.NumFilteredBlockRegistrations)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatalf("timed out waiting for registration info")
+	}
+
+	dispatcherEventch <- NewUnregisterEvent(breg)
+	dispatcherEventch <- NewRegistrationInfoEvent(eventch)
+
+	select {
+	case regInfo, ok := <-eventch:
+		if !ok {
+			t.Fatalf("unexpected closed channel")
+		}
+		if regInfo.TotalRegistrations != 0 {
+			t.Fatalf("expecting total registrations to be [%d] but received [%d]", 1, regInfo.TotalRegistrations)
+		}
+		if regInfo.NumBlockRegistrations != 0 {
+			t.Fatalf("expecting number of block registrations to be [%d] but received [%d]", 0, regInfo.NumBlockRegistrations)
+		}
+		if regInfo.NumFilteredBlockRegistrations != 0 {
+			t.Fatalf("expecting number of filtered block registrations to be [%d] but received [%d]", 0, regInfo.NumFilteredBlockRegistrations)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatalf("timed out waiting for registration info")
+	}
+
+	stopResp := make(chan error)
+	dispatcherEventch <- NewStopEvent(stopResp)
+	if err := <-stopResp; err != nil {
+		t.Fatalf("Error stopping dispatcher: %s", err)
+	}
+}
+
 func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {
 	if event.TxID != expectedTxID {
 		t.Fatalf("expecting event for TxID [%s] but received event for TxID [%s]", expectedTxID, event.TxID)

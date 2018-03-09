@@ -127,7 +127,7 @@ func (c *DeliverConnection) Receive(eventch chan<- interface{}) {
 		}
 
 		if err != nil {
-			logger.Errorf("Received error from stream: [%s]. Sending disconnected event.", err)
+			logger.Warnf("Received error from stream: [%s]. Sending disconnected event.", err)
 			eventch <- clientdisp.NewDisconnectedEvent(err)
 			break
 		}

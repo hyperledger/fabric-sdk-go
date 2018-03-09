@@ -82,6 +82,7 @@ func (ed *Dispatcher) RegisterHandlers() {
 	ed.RegisterHandler(&StopEvent{}, ed.HandleStopEvent)
 	ed.RegisterHandler(&cb.Block{}, ed.handleBlockEvent)
 	ed.RegisterHandler(&pb.FilteredBlock{}, ed.handleFilteredBlockEvent)
+	ed.RegisterHandler(&RegistrationInfoEvent{}, ed.handleRegistrationInfoEvent)
 }
 
 // EventCh returns the channel to which events may be posted
@@ -274,6 +275,22 @@ func (ed *Dispatcher) handleBlockEvent(e Event) {
 
 func (ed *Dispatcher) handleFilteredBlockEvent(e Event) {
 	ed.HandleFilteredBlock(e.(*pb.FilteredBlock))
+}
+
+func (ed *Dispatcher) handleRegistrationInfoEvent(e Event) {
+	evt := e.(*RegistrationInfoEvent)
+
+	regInfo := &RegistrationInfo{
+		NumBlockRegistrations:         len(ed.blockRegistrations),
+		NumFilteredBlockRegistrations: len(ed.filteredBlockRegistrations),
+		NumCCRegistrations:            len(ed.ccRegistrations),
+		NumTxStatusRegistrations:      len(ed.txRegistrations),
+	}
+
+	regInfo.TotalRegistrations =
+		regInfo.NumBlockRegistrations + regInfo.NumFilteredBlockRegistrations + regInfo.NumCCRegistrations + regInfo.NumTxStatusRegistrations
+
+	evt.RegInfoCh <- regInfo
 }
 
 // HandleBlock handles a block event
