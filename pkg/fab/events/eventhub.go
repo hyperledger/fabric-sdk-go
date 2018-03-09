@@ -183,7 +183,8 @@ func (eventHub *EventHub) Disconnect() error {
 	// Unregister interests with server and stop the stream
 	err := eventHub.grpcClient.UnregisterAsync(eventHub.interestedEvents)
 	if err != nil {
-		return errors.WithMessage(err, "event client UnregisterAsync failed")
+		logger.Warnf("eventhub failed to unregister interests with server: %v", err)
+		// continue to attempt to stop stream and close connection
 	}
 	err = eventHub.grpcClient.Stop()
 	if err != nil {
