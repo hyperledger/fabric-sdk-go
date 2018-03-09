@@ -97,6 +97,11 @@ func (c *MockConfig) PeerConfig(org string, name string) (*core.PeerConfig, erro
 	return nil, nil
 }
 
+// PeerConfigByURL retrieves PeerConfig by URL
+func (c *MockConfig) PeerConfigByURL(url string) (*core.PeerConfig, error) {
+	return nil, nil
+}
+
 // ChannelOrderers returns a list of channel orderers
 func (c *MockConfig) ChannelOrderers(name string) ([]core.OrdererConfig, error) {
 	return nil, nil
