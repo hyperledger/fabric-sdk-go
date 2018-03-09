@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newUser(userData UserData, cryptoSuite core.CryptoSuite) (*user, error) {
+func newUser(userData UserData, cryptoSuite core.CryptoSuite) (*User, error) {
 	pubKey, err := cryptoutil.GetPublicKeyFromCert(userData.EnrollmentCertificate, cryptoSuite)
 	if err != nil {
 		return nil, errors.WithMessage(err, "fetching public key from cert failed")
@@ -28,7 +28,7 @@ func newUser(userData UserData, cryptoSuite core.CryptoSuite) (*user, error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "cryptoSuite GetKey failed")
 	}
-	u := &user{
+	u := &User{
 		mspID: userData.MspID,
 		name:  userData.Name,
 		enrollmentCertificate: userData.EnrollmentCertificate,
@@ -37,7 +37,8 @@ func newUser(userData UserData, cryptoSuite core.CryptoSuite) (*user, error) {
 	return u, nil
 }
 
-func (mgr *IdentityManager) newUser(userData UserData) (*user, error) {
+// NewUser creates a User instance
+func (mgr *IdentityManager) NewUser(userData UserData) (*User, error) {
 	return newUser(userData, mgr.cryptoSuite)
 }
 
@@ -50,7 +51,7 @@ func (mgr *IdentityManager) loadUserFromStore(userName string) (core.User, error
 	if err != nil {
 		return nil, err
 	}
-	user, err = mgr.newUser(userData)
+	user, err = mgr.NewUser(userData)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +110,7 @@ func (mgr *IdentityManager) GetUser(userName string) (core.User, error) {
 		if err != nil {
 			return nil, errors.WithMessage(err, "MSP ID config read failed")
 		}
-		u = &user{
+		u = &User{
 			mspID: mspID,
 			name:  userName,
 			enrollmentCertificate: certBytes,

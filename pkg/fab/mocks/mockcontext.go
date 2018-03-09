@@ -41,7 +41,7 @@ func NewMockProviderContext() *MockProviderContext {
 	im := make(map[string]core.IdentityManager)
 	im[""] = &MockIdentityManager{}
 
-	ca := make(map[string]msp.Client)
+	ca := make(map[string]msp.CAClient)
 	ca[""] = &MockCAClient{}
 
 	context := MockProviderContext{
