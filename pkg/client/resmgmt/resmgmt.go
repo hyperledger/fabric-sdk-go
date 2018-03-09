@@ -97,9 +97,8 @@ var logger = logging.NewLogger("fabsdk/client")
 
 // Client enables managing resources in Fabric network.
 type Client struct {
-	context   context.Client
+	ctx       context.Client
 	discovery fab.DiscoveryService // global discovery service (detects all peers on the network)
-	resource  api.Resource
 	filter    TargetFilter
 }
 
@@ -132,11 +131,8 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 		return nil, errors.WithMessage(err, "failed to create resmgmt client")
 	}
 
-	resource := resource.New(ctx)
-
 	resourceClient := &Client{
-		context:  ctx,
-		resource: resource,
+		ctx: ctx,
 	}
 
 	for _, opt := range opts {
@@ -186,7 +182,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 	}
 
 	// TODO: should the code to get orderers from sdk config be part of channel service?
-	oConfig, err := rc.context.Config().ChannelOrderers(channelID)
+	oConfig, err := rc.ctx.Config().ChannelOrderers(channelID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load orderer config")
 	}
@@ -195,12 +191,12 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 	}
 
 	// TODO: handle more than the first orderer.
-	orderer, err := rc.context.InfraProvider().CreateOrdererFromConfig(&oConfig[0])
+	orderer, err := rc.ctx.InfraProvider().CreateOrdererFromConfig(&oConfig[0])
 	if err != nil {
 		return errors.WithMessage(err, "failed to create orderers from config")
 	}
 
-	genesisBlock, err := rc.resource.GenesisBlockFromOrderer(channelID, orderer)
+	genesisBlock, err := resource.GenesisBlockFromOrderer(rc.ctx, channelID, orderer)
 	if err != nil {
 		return errors.WithMessage(err, "genesis block retrieval failed")
 	}
@@ -210,7 +206,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		GenesisBlock: genesisBlock,
 	}
 
-	err = rc.resource.JoinChannel(joinChannelRequest)
+	err = resource.JoinChannel(rc.ctx, joinChannelRequest)
 	if err != nil {
 		return errors.WithMessage(err, "join channel failed")
 	}
@@ -283,7 +279,7 @@ func (rc *Client) calculateTargets(discovery fab.DiscoveryService, peers []fab.P
 
 // isChaincodeInstalled verify if chaincode is installed on peer
 func (rc *Client) isChaincodeInstalled(req InstallCCRequest, peer fab.Peer) (bool, error) {
-	chaincodeQueryResponse, err := rc.resource.QueryInstalledChaincodes(peer)
+	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(rc.ctx, peer)
 	if err != nil {
 		return false, err
 	}
@@ -361,7 +357,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	}
 
 	icr := api.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package, Targets: peer.PeersToTxnProcessors(newTargets)}
-	transactionProposalResponse, _, err := rc.resource.InstallChaincode(icr)
+	transactionProposalResponse, _, err := resource.InstallChaincode(rc.ctx, icr)
 	for _, v := range transactionProposalResponse {
 		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v", req.Name, v.Endorser, v.Status)
 
@@ -396,7 +392,7 @@ func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...R
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
 // Returns the details of all chaincodes installed on a peer.
 func (rc *Client) QueryInstalledChaincodes(proposalProcessor fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
-	return rc.resource.QueryInstalledChaincodes(proposalProcessor)
+	return resource.QueryInstalledChaincodes(rc.ctx, proposalProcessor)
 }
 
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on a peer for specific channel.
@@ -413,7 +409,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		target = opts.Targets[0]
 	} else {
 		// discover peers on this channel
-		discovery, err := rc.context.DiscoveryProvider().CreateDiscoveryService(channelID)
+		discovery, err := rc.ctx.DiscoveryProvider().CreateDiscoveryService(channelID)
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to create channel discovery service")
 		}
@@ -428,7 +424,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		target = targets[randomNumber]
 	}
 
-	l, err := channel.NewLedger(rc.context, channelID)
+	l, err := channel.NewLedger(rc.ctx, channelID)
 	if err != nil {
 		return nil, err
 	}
@@ -444,7 +440,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 // QueryChannels queries the names of all the channels that a peer has joined.
 // Returns the details of all channels that peer has joined.
 func (rc *Client) QueryChannels(proposalProcessor fab.ProposalProcessor) (*pb.ChannelQueryResponse, error) {
-	return rc.resource.QueryChannels(proposalProcessor)
+	return resource.QueryChannels(rc.ctx, proposalProcessor)
 }
 
 // sendCCProposal sends proposal for type  Instantiate, Upgrade
@@ -460,7 +456,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 	}
 
 	// per channel discovery service
-	discovery, err := rc.context.DiscoveryProvider().CreateDiscoveryService(channelID)
+	discovery, err := rc.ctx.DiscoveryProvider().CreateDiscoveryService(channelID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create channel discovery service")
 	}
@@ -483,7 +479,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 	}
 
 	// Get transactor on the channel to create and send the deploy proposal
-	channelService, err := rc.context.ChannelProvider().ChannelService(rc.context, channelID)
+	channelService, err := rc.ctx.ChannelProvider().ChannelService(rc.ctx, channelID)
 	if err != nil {
 		return errors.WithMessage(err, "Unable to get channel service")
 	}
@@ -495,7 +491,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 	// create a transaction proposal for chaincode deployment
 	deployProposal := chaincodeDeployRequest(req)
 
-	txid, err := txn.NewHeader(rc.context, channelID)
+	txid, err := txn.NewHeader(rc.ctx, channelID)
 	if err != nil {
 		return errors.WithMessage(err, "create transaction ID failed")
 	}
@@ -533,7 +529,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
-	timeout := rc.context.Config().TimeoutOrDefault(core.Execute)
+	timeout := rc.ctx.Config().TimeoutOrDefault(core.Execute)
 	if opts.Timeout != 0 {
 		timeout = opts.Timeout
 	}
@@ -624,8 +620,8 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 				signers = append(signers, id)
 			}
 		}
-	} else if rc.context != nil {
-		signers = append(signers, rc.context)
+	} else if rc.ctx != nil {
+		signers = append(signers, rc.ctx)
 	} else {
 		return errors.New("must provide signing user")
 	}
@@ -645,7 +641,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 
 		sigCtx := contextImpl.Client{
 			Identity:  signer,
-			Providers: rc.context,
+			Providers: rc.ctx,
 		}
 
 		configSignature, err := resource.CreateConfigSignature(&sigCtx, chConfig)
@@ -658,10 +654,10 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	// Figure out orderer configuration
 	var ordererCfg *core.OrdererConfig
 	if opts.OrdererID != "" {
-		ordererCfg, err = rc.context.Config().OrdererConfig(opts.OrdererID)
+		ordererCfg, err = rc.ctx.Config().OrdererConfig(opts.OrdererID)
 	} else {
 		// Default is random orderer from configuration
-		ordererCfg, err = rc.context.Config().RandomOrdererConfig()
+		ordererCfg, err = rc.ctx.Config().RandomOrdererConfig()
 	}
 
 	// Check if retrieving orderer configuration went ok
@@ -669,7 +665,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		return errors.Errorf("failed to retrieve orderer config: %s", err)
 	}
 
-	orderer, err := orderer.New(rc.context.Config(), orderer.FromOrdererConfig(ordererCfg))
+	orderer, err := orderer.New(rc.ctx.Config(), orderer.FromOrdererConfig(ordererCfg))
 	if err != nil {
 		return errors.WithMessage(err, "failed to create new orderer from config")
 	}
@@ -681,7 +677,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		Signatures: configSignatures,
 	}
 
-	_, err = rc.resource.CreateChannel(request)
+	_, err = resource.CreateChannel(rc.ctx, request)
 	if err != nil {
 		return errors.WithMessage(err, "create channel failed")
 	}
@@ -699,7 +695,7 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 		return nil, err
 	}
 
-	chCfg, err := rc.context.Config().ChannelConfig(channelID)
+	chCfg, err := rc.ctx.Config().ChannelConfig(channelID)
 	if err != nil {
 		return nil, err
 	}
@@ -709,17 +705,17 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 	// Figure out orderer configuration (first try opts, then random channel orderer, then random orderer )
 	if opts.OrdererID != "" {
 
-		ordererCfg, err = rc.context.Config().OrdererConfig(opts.OrdererID)
+		ordererCfg, err = rc.ctx.Config().OrdererConfig(opts.OrdererID)
 
 	} else if chCfg != nil && len(chCfg.Orderers) > 0 {
 
 		// random channel orderer
 		randomNumber := rand.Intn(len(chCfg.Orderers))
-		ordererCfg, err = rc.context.Config().OrdererConfig(chCfg.Orderers[randomNumber])
+		ordererCfg, err = rc.ctx.Config().OrdererConfig(chCfg.Orderers[randomNumber])
 
 	} else {
 		// random orderer from configuration
-		ordererCfg, err = rc.context.Config().RandomOrdererConfig()
+		ordererCfg, err = rc.ctx.Config().RandomOrdererConfig()
 	}
 
 	// Check if retrieving orderer configuration went ok
@@ -727,12 +723,12 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 		return nil, errors.Errorf("failed to retrieve orderer config: %s", err)
 	}
 
-	orderer, err := orderer.New(rc.context.Config(), orderer.FromOrdererConfig(ordererCfg))
+	orderer, err := orderer.New(rc.ctx.Config(), orderer.FromOrdererConfig(ordererCfg))
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to resolve orderer")
 	}
 
-	channelConfig, err := chconfig.New(rc.context, channelID, chconfig.WithOrderer(orderer))
+	channelConfig, err := chconfig.New(rc.ctx, channelID, chconfig.WithOrderer(orderer))
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryConfig failed")
 	}

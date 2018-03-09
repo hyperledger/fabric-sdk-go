@@ -9,8 +9,9 @@ package fab
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
@@ -20,7 +21,7 @@ func TestChannelQueries(t *testing.T) {
 	defer sdk.Close()
 
 	// Low level resource
-	client, err := getResource(sdk, "Admin", orgName)
+	client, err := getContext(sdk, "Admin", orgName)
 	if err != nil {
 		t.Fatalf("Failed to get resource: %s", err)
 	}
@@ -31,11 +32,11 @@ func TestChannelQueries(t *testing.T) {
 
 }
 
-func testQueryChannels(t *testing.T, client api.Resource, target fab.ProposalProcessor) {
+func testQueryChannels(t *testing.T, client *context.Client, target fab.ProposalProcessor) {
 
 	// Our target will be primary peer on this channel
 	t.Logf("****QueryChannels for %s", target)
-	channelQueryResponse, err := client.QueryChannels(target)
+	channelQueryResponse, err := resource.QueryChannels(client, target)
 	if err != nil {
 		t.Fatalf("QueryChannels return error: %v", err)
 	}
@@ -46,12 +47,12 @@ func testQueryChannels(t *testing.T, client api.Resource, target fab.ProposalPro
 
 }
 
-func testInstalledChaincodes(t *testing.T, ccID string, client api.Resource, target fab.ProposalProcessor) {
+func testInstalledChaincodes(t *testing.T, ccID string, client *context.Client, target fab.ProposalProcessor) {
 
 	// Our target will be primary peer on this channel
 	t.Logf("****QueryInstalledChaincodes for %s", target)
 
-	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(target)
+	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(client, target)
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}

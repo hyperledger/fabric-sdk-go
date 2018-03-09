@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -27,26 +28,26 @@ import (
 )
 
 func TestSignChannelConfig(t *testing.T) {
-	client := setupTestClient()
+	ctx := setupContext()
 
 	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	_, err = client.SignChannelConfig(nil, nil)
+	_, err = SignChannelConfig(ctx, nil, nil)
 	if err == nil {
 		t.Fatalf("Expected 'channel configuration required")
 	}
 
-	_, err = client.SignChannelConfig(configTx, nil)
+	_, err = SignChannelConfig(ctx, configTx, nil)
 	if err != nil {
 		t.Fatalf("Expected 'channel configuration required %v", err)
 	}
 }
 
 func TestCreateChannel(t *testing.T) {
-	client := setupTestClient()
+	ctx := setupContext()
 
 	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
 	if err != nil {
@@ -58,7 +59,7 @@ func TestCreateChannel(t *testing.T) {
 	orderer := mocks.NewMockOrderer(fmt.Sprintf("0.0.0.0:1234"), verifyBroadcast)
 
 	// Create channel without envelope
-	_, err = client.CreateChannel(api.CreateChannelRequest{
+	_, err = CreateChannel(ctx, api.CreateChannelRequest{
 		Orderer: orderer,
 		Name:    "mychannel",
 	})
@@ -67,7 +68,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without orderer
-	_, err = client.CreateChannel(api.CreateChannelRequest{
+	_, err = CreateChannel(ctx, api.CreateChannelRequest{
 		Envelope: configTx,
 		Name:     "mychannel",
 	})
@@ -76,7 +77,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without name
-	_, err = client.CreateChannel(api.CreateChannelRequest{
+	_, err = CreateChannel(ctx, api.CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 	})
@@ -90,7 +91,7 @@ func TestCreateChannel(t *testing.T) {
 		Orderer:  orderer,
 		Name:     "mychannel",
 	}
-	_, err = client.CreateChannel(request)
+	_, err = CreateChannel(ctx, request)
 	if err != nil {
 		t.Fatalf("Did not expect error from create channel. Got error: %v", err)
 	}
@@ -117,7 +118,7 @@ func TestJoinChannel(t *testing.T) {
 	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
 	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
 
-	client := setupTestClient()
+	ctx := setupContext()
 
 	genesisBlock := mocks.NewSimpleMockBlock()
 
@@ -125,7 +126,7 @@ func TestJoinChannel(t *testing.T) {
 		Targets: peers,
 		//GenesisBlock: genesisBlock,
 	}
-	err := client.JoinChannel(request)
+	err := JoinChannel(ctx, request)
 	if err == nil {
 		t.Fatalf("Should not have been able to join channel because of missing GenesisBlock parameter")
 	}
@@ -139,7 +140,7 @@ func TestJoinChannel(t *testing.T) {
 	}
 
 	// Test join channel with valid arguments
-	err = client.JoinChannel(request)
+	err = JoinChannel(ctx, request)
 	if err != nil {
 		t.Fatalf("Did not expect error from join channel. Got: %s", err)
 	}
@@ -149,20 +150,20 @@ func TestJoinChannel(t *testing.T) {
 	request = api.JoinChannelRequest{
 		Targets: peers,
 	}
-	err = client.JoinChannel(request)
+	err = JoinChannel(ctx, request)
 	if err == nil {
 		t.Fatalf("Expected error")
 	}
 }
 
-func setupTestClient() *Resource {
+func setupContext() context.Client {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
-	return New(ctx)
+	return ctx
 }
 
 func TestQueryByChaincode(t *testing.T) {
-	c := setupTestClient()
+	ctx := setupContext()
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "peer1.example.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A"), Status: 200}
 
@@ -170,7 +171,7 @@ func TestQueryByChaincode(t *testing.T) {
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
-	resp, err := c.queryChaincodeWithTarget(request, &peer)
+	resp, err := queryChaincodeWithTarget(ctx, request, &peer)
 	if err != nil {
 		t.Fatalf("Failed to query: %s", err)
 	}
@@ -182,7 +183,7 @@ func TestQueryByChaincode(t *testing.T) {
 }
 
 func TestQueryByChaincodeBadStatus(t *testing.T) {
-	c := setupTestClient()
+	ctx := setupContext()
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A"), Status: 99}
 
@@ -190,14 +191,14 @@ func TestQueryByChaincodeBadStatus(t *testing.T) {
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
-	_, err := c.queryChaincodeWithTarget(request, &peer)
+	_, err := queryChaincodeWithTarget(ctx, request, &peer)
 	if err == nil {
 		t.Fatalf("expected failure due to bad status")
 	}
 }
 
 func TestQueryByChaincodeError(t *testing.T) {
-	c := setupTestClient()
+	ctx := setupContext()
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A"), Error: errors.New("error")}
 
@@ -205,7 +206,7 @@ func TestQueryByChaincodeError(t *testing.T) {
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
-	_, err := c.queryChaincodeWithTarget(request, &peer)
+	_, err := queryChaincodeWithTarget(ctx, request, &peer)
 	if err == nil {
 		t.Fatalf("expected failure due to error")
 	}
@@ -213,13 +214,13 @@ func TestQueryByChaincodeError(t *testing.T) {
 
 func TestGenesisBlockOrdererErr(t *testing.T) {
 	const channelName = "testchannel"
-	client := setupTestClient()
+	ctx := setupContext()
 
 	orderer := mocks.NewMockOrderer("", nil)
 	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockError())
 
-	_, err := client.GenesisBlockFromOrderer(channelName, orderer)
+	_, err := GenesisBlockFromOrderer(ctx, channelName, orderer)
 
 	if err == nil {
 		t.Fatal("GenesisBlock Test supposed to fail with error")
@@ -228,14 +229,14 @@ func TestGenesisBlockOrdererErr(t *testing.T) {
 
 func TestGenesisBlock(t *testing.T) {
 	const channelName = "testchannel"
-	client := setupTestClient()
+	ctx := setupContext()
 
 	orderer := mocks.NewMockOrderer("", nil)
 	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
 	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
 
-	_, err := client.GenesisBlockFromOrderer(channelName, orderer)
+	_, err := GenesisBlockFromOrderer(ctx, channelName, orderer)
 
 	if err != nil {
 		t.Fatalf("GenesisBlock failed: %s", err)
@@ -247,10 +248,10 @@ func TestGenesisBlock(t *testing.T) {
 func TestGenesisBlockOrdererTimeout(t *testing.T) {
 	const channelName = "testchannel"
 
-	client := setupTestClient()
+	ctx := setupContext()
 	orderer := mocks.NewMockOrderer("", nil)
 
-	_, err := client.GenesisBlockFromOrderer(channelName, orderer)
+	_, err := GenesisBlockFromOrderer(ctx, channelName, orderer)
 
 	//It should fail with timeout
 	if err == nil || !strings.HasSuffix(err.Error(), "timeout waiting for response from orderer") {
@@ -260,14 +261,14 @@ func TestGenesisBlockOrdererTimeout(t *testing.T) {
 
 func TestGenesisBlockOrderer(t *testing.T) {
 	const channelName = "testchannel"
-	client := setupTestClient()
+	ctx := setupContext()
 
 	orderer := mocks.NewMockOrderer("", nil)
 	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockError())
 
 	//Call get Genesis block
-	_, err := client.GenesisBlockFromOrderer(channelName, orderer)
+	_, err := GenesisBlockFromOrderer(ctx, channelName, orderer)
 
 	//Expecting error
 	if err == nil {

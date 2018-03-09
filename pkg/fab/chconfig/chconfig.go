@@ -159,8 +159,7 @@ func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 
 func (c *ChannelConfig) queryOrderer() (*ChannelCfg, error) {
 
-	r := resource.New(c.ctx)
-	configEnvelope, err := r.LastConfigFromOrderer(c.channelID, c.opts.Orderer)
+	configEnvelope, err := resource.LastConfigFromOrderer(c.ctx, c.channelID, c.opts.Orderer)
 	if err != nil {
 		return nil, errors.WithMessage(err, "LastConfigFromOrderer failed")
 	}

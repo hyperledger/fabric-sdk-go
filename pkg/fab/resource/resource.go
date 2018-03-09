@@ -14,8 +14,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -29,24 +29,13 @@ import (
 
 var logger = logging.NewLogger("fabsdk/fab")
 
-// Resource is a client that provides access to fabric network resource management.
-type Resource struct {
-	clientContext contextAPI.Client
-}
-
-// New returns a Client instance with the SDK context.
-func New(ctx contextAPI.Client) *Resource {
-	c := Resource{clientContext: ctx}
-	return &c
-}
-
 type fabCtx struct {
-	contextAPI.Providers
-	contextAPI.Identity
+	context.Providers
+	context.Identity
 }
 
 // SignChannelConfig signs a configuration.
-func (c *Resource) SignChannelConfig(config []byte, signer contextAPI.Identity) (*common.ConfigSignature, error) {
+func SignChannelConfig(ctx context.Client, config []byte, signer context.Identity) (*common.ConfigSignature, error) {
 	logger.Debug("SignChannelConfig - start")
 
 	if config == nil {
@@ -56,23 +45,23 @@ func (c *Resource) SignChannelConfig(config []byte, signer contextAPI.Identity) 
 	signingUser := signer
 	// If signing user is not provided default to client's user context
 	if signingUser == nil {
-		signingUser = c.clientContext
+		signingUser = ctx
 	}
 
 	if signingUser == nil {
 		return nil, errors.New("user context required")
 	}
 
-	ctx := fabCtx{
-		Providers: c.clientContext,
+	sigCtx := fabCtx{
+		Providers: ctx,
 		Identity:  signingUser,
 	}
 
-	return CreateConfigSignature(ctx, config)
+	return CreateConfigSignature(sigCtx, config)
 }
 
 // CreateChannel calls the orderer to start building the new channel.
-func (c *Resource) CreateChannel(request api.CreateChannelRequest) (fab.TransactionID, error) {
+func CreateChannel(ctx context.Client, request api.CreateChannelRequest) (fab.TransactionID, error) {
 	if request.Orderer == nil {
 		return fab.EmptyTransactionID, errors.New("missing orderer request parameter for the initialize channel")
 	}
@@ -82,7 +71,7 @@ func (c *Resource) CreateChannel(request api.CreateChannelRequest) (fab.Transact
 	}
 
 	if request.Envelope != nil {
-		return c.createChannelFromEnvelope(request)
+		return createChannelFromEnvelope(ctx, request)
 	}
 
 	if request.Config == nil {
@@ -93,23 +82,24 @@ func (c *Resource) CreateChannel(request api.CreateChannelRequest) (fab.Transact
 		return fab.EmptyTransactionID, errors.New("missing signatures request parameter for the new channel")
 	}
 
-	txh, err := txn.NewHeader(c.clientContext, request.Name)
+	txh, err := txn.NewHeader(ctx, request.Name)
 	if err != nil {
 		return fab.EmptyTransactionID, errors.WithMessage(err, "creation of transaction header failed")
 	}
 
-	return txh.TransactionID(), c.createOrUpdateChannel(txh, request)
+	return txh.TransactionID(), createOrUpdateChannel(ctx, txh, request)
 }
 
 // TODO: this function was extracted from createOrUpdateChannel, but needs a closer examination.
-func (c *Resource) createChannelFromEnvelope(request api.CreateChannelRequest) (fab.TransactionID, error) {
-	env, err := c.extractSignedEnvelope(request.Envelope)
+func createChannelFromEnvelope(ctx context.Client, request api.CreateChannelRequest) (fab.TransactionID, error) {
+	env, err := extractSignedEnvelope(request.Envelope)
 	if err != nil {
 		return fab.EmptyTransactionID, errors.WithMessage(err, "signed envelope not valid")
 	}
 
 	// Send request
-	reqCtx, cancel := reqContext.WithTimeout(context.NewRequest(c.clientContext), c.clientContext.Config().TimeoutOrDefault(core.OrdererResponse))
+	reqCtx, cancel := reqContext.WithTimeout(contextImpl.NewRequest(ctx), ctx.Config().TimeoutOrDefault(core.OrdererResponse))
+
 	defer cancel()
 	_, err = request.Orderer.SendBroadcast(reqCtx, env)
 	if err != nil {
@@ -120,17 +110,17 @@ func (c *Resource) createChannelFromEnvelope(request api.CreateChannelRequest) (
 
 // GenesisBlockFromOrderer returns the genesis block from the defined orderer that may be
 // used in a join request
-func (c *Resource) GenesisBlockFromOrderer(channelName string, orderer fab.Orderer) (*common.Block, error) {
-	return c.block([]fab.Orderer{orderer}, channelName, newSpecificSeekPosition(0))
+func GenesisBlockFromOrderer(ctx context.Client, channelName string, orderer fab.Orderer) (*common.Block, error) {
+	return retrieveBlock(ctx, []fab.Orderer{orderer}, channelName, newSpecificSeekPosition(0))
 }
 
 // LastConfigFromOrderer fetches the current configuration block for the specified channel
 // from the given orderer
-func (c *Resource) LastConfigFromOrderer(channelName string, orderer fab.Orderer) (*common.ConfigEnvelope, error) {
+func LastConfigFromOrderer(ctx context.Client, channelName string, orderer fab.Orderer) (*common.ConfigEnvelope, error) {
 	logger.Debugf("channelConfig - start for channel %s", channelName)
 
 	// Get the newest block
-	block, err := c.block([]fab.Orderer{orderer}, channelName, newNewestSeekPosition())
+	block, err := retrieveBlock(ctx, []fab.Orderer{orderer}, channelName, newNewestSeekPosition())
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +134,7 @@ func (c *Resource) LastConfigFromOrderer(channelName string, orderer fab.Orderer
 	logger.Debugf("channelConfig - Last config index: %d\n", lastConfig.Index)
 
 	// Get the last config block
-	block, err = c.block([]fab.Orderer{orderer}, channelName, newSpecificSeekPosition(lastConfig.Index))
+	block, err = retrieveBlock(ctx, []fab.Orderer{orderer}, channelName, newSpecificSeekPosition(lastConfig.Index))
 	if err != nil {
 		return nil, errors.WithMessage(err, "retrieve block failed")
 	}
@@ -160,7 +150,7 @@ func (c *Resource) LastConfigFromOrderer(channelName string, orderer fab.Orderer
 // JoinChannel sends a join channel proposal to the target peer.
 //
 // TODO extract targets from request into parameter.
-func (c *Resource) JoinChannel(request api.JoinChannelRequest) error {
+func JoinChannel(ctx context.Client, request api.JoinChannelRequest) error {
 
 	if request.GenesisBlock == nil {
 		return errors.New("missing block input parameter with the required genesis block")
@@ -171,11 +161,11 @@ func (c *Resource) JoinChannel(request api.JoinChannelRequest) error {
 		return errors.WithMessage(err, "creation of join channel invoke request failed")
 	}
 
-	_, err = c.queryChaincode(cir, request.Targets)
+	_, err = queryChaincode(ctx, cir, request.Targets)
 	return err
 }
 
-func (c *Resource) extractSignedEnvelope(reqEnvelope []byte) (*fab.SignedEnvelope, error) {
+func extractSignedEnvelope(reqEnvelope []byte) (*fab.SignedEnvelope, error) {
 	envelope := &common.Envelope{}
 	err := proto.Unmarshal(reqEnvelope, envelope)
 	if err != nil {
@@ -189,7 +179,7 @@ func (c *Resource) extractSignedEnvelope(reqEnvelope []byte) (*fab.SignedEnvelop
 }
 
 // createOrUpdateChannel creates a new channel or updates an existing channel.
-func (c *Resource) createOrUpdateChannel(txh *txn.TransactionHeader, request api.CreateChannelRequest) error {
+func createOrUpdateChannel(ctx context.Client, txh *txn.TransactionHeader, request api.CreateChannelRequest) error {
 
 	configUpdateEnvelope := &common.ConfigUpdateEnvelope{
 		ConfigUpdate: request.Config,
@@ -202,7 +192,7 @@ func (c *Resource) createOrUpdateChannel(txh *txn.TransactionHeader, request api
 
 	channelHeaderOpts := txn.ChannelHeaderOpts{
 		TxnHeader:   txh,
-		TLSCertHash: ccomm.TLSCertHash(c.clientContext.Config()),
+		TLSCertHash: ccomm.TLSCertHash(ctx.Config()),
 	}
 	channelHeader, err := txn.CreateChannelHeader(common.HeaderType_CONFIG_UPDATE, channelHeaderOpts)
 	if err != nil {
@@ -214,7 +204,7 @@ func (c *Resource) createOrUpdateChannel(txh *txn.TransactionHeader, request api
 		return errors.WithMessage(err, "CreatePayload failed")
 	}
 
-	_, err = txn.BroadcastPayload(c.clientContext, payload, []fab.Orderer{request.Orderer})
+	_, err = txn.BroadcastPayload(ctx, payload, []fab.Orderer{request.Orderer})
 	if err != nil {
 		return errors.WithMessage(err, "SendEnvelope failed")
 	}
@@ -222,14 +212,14 @@ func (c *Resource) createOrUpdateChannel(txh *txn.TransactionHeader, request api
 }
 
 // QueryChannels queries the names of all the channels that a peer has joined.
-func (c *Resource) QueryChannels(peer fab.ProposalProcessor) (*pb.ChannelQueryResponse, error) {
+func QueryChannels(ctx context.Client, peer fab.ProposalProcessor) (*pb.ChannelQueryResponse, error) {
 
 	if peer == nil {
 		return nil, errors.New("peer required")
 	}
 
 	cir := createChannelsInvokeRequest()
-	payload, err := c.queryChaincodeWithTarget(cir, peer)
+	payload, err := queryChaincodeWithTarget(ctx, cir, peer)
 	if err != nil {
 		return nil, errors.WithMessage(err, "cscc.GetChannels failed")
 	}
@@ -244,14 +234,14 @@ func (c *Resource) QueryChannels(peer fab.ProposalProcessor) (*pb.ChannelQueryRe
 
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
 // Returns the details of all chaincodes installed on a peer.
-func (c *Resource) QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
+func QueryInstalledChaincodes(ctx context.Client, peer fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
 
 	if peer == nil {
 		return nil, errors.New("peer required")
 	}
 
 	cir := createInstalledChaincodesInvokeRequest()
-	payload, err := c.queryChaincodeWithTarget(cir, peer)
+	payload, err := queryChaincodeWithTarget(ctx, cir, peer)
 	if err != nil {
 		return nil, errors.WithMessage(err, "lscc.getinstalledchaincodes failed")
 	}
@@ -266,7 +256,7 @@ func (c *Resource) QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb.Cha
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
-func (c *Resource) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+func InstallChaincode(ctx context.Client, req api.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	if req.Name == "" {
 		return nil, fab.EmptyTransactionID, errors.New("chaincode name required")
@@ -291,7 +281,7 @@ func (c *Resource) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.Tra
 		},
 	}
 
-	txh, err := txn.NewHeader(c.clientContext, fab.SystemChannel)
+	txh, err := txn.NewHeader(ctx, fab.SystemChannel)
 	if err != nil {
 		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "create transaction ID failed")
 	}
@@ -301,17 +291,17 @@ func (c *Resource) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.Tra
 		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "creation of install chaincode proposal failed")
 	}
 
-	transactionProposalResponse, err := txn.SendProposal(c.clientContext, prop, req.Targets)
+	transactionProposalResponse, err := txn.SendProposal(ctx, prop, req.Targets)
 
 	return transactionProposalResponse, prop.TxnID, err
 }
 
-func (c *Resource) queryChaincode(request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([][]byte, error) {
+func queryChaincode(ctx context.Client, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([][]byte, error) {
 	var errors multi.Errors
 	responses := [][]byte{}
 
 	for _, target := range targets {
-		resp, err := c.queryChaincodeWithTarget(request, target)
+		resp, err := queryChaincodeWithTarget(ctx, request, target)
 		responses = append(responses, resp)
 		if err != nil {
 			errors = append(errors, err)
@@ -321,11 +311,11 @@ func (c *Resource) queryChaincode(request fab.ChaincodeInvokeRequest, targets []
 	return responses, errors.ToError()
 }
 
-func (c *Resource) queryChaincodeWithTarget(request fab.ChaincodeInvokeRequest, target fab.ProposalProcessor) ([]byte, error) {
+func queryChaincodeWithTarget(ctx context.Client, request fab.ChaincodeInvokeRequest, target fab.ProposalProcessor) ([]byte, error) {
 
 	targets := []fab.ProposalProcessor{target}
 
-	txh, err := txn.NewHeader(c.clientContext, fab.SystemChannel)
+	txh, err := txn.NewHeader(ctx, fab.SystemChannel)
 	if err != nil {
 		return nil, errors.WithMessage(err, "create transaction ID failed")
 	}
@@ -335,7 +325,7 @@ func (c *Resource) queryChaincodeWithTarget(request fab.ChaincodeInvokeRequest, 
 		return nil, errors.WithMessage(err, "NewProposal failed")
 	}
 
-	tpr, err := txn.SendProposal(c.clientContext, tp, targets)
+	tpr, err := txn.SendProposal(ctx, tp, targets)
 	if err != nil {
 		return nil, errors.WithMessage(err, "SendProposal failed")
 	}

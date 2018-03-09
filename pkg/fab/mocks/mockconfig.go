@@ -18,9 +18,11 @@ import (
 
 // MockConfig ...
 type MockConfig struct {
-	tlsEnabled       bool
-	mutualTLSEnabled bool
-	errorCase        bool
+	tlsEnabled             bool
+	mutualTLSEnabled       bool
+	errorCase              bool
+	customOrdererCfg       *config.OrdererConfig
+	customRandomOrdererCfg *config.OrdererConfig
 }
 
 // NewMockConfig ...
@@ -167,11 +169,27 @@ func (c *MockConfig) OrderersConfig() ([]config.OrdererConfig, error) {
 
 // RandomOrdererConfig not implemented
 func (c *MockConfig) RandomOrdererConfig() (*config.OrdererConfig, error) {
+	if c.customRandomOrdererCfg != nil {
+		return c.customRandomOrdererCfg, nil
+	}
 	return nil, nil
+}
+
+//SetCustomOrdererCfg sets custom orderer config for unit-tests
+func (c *MockConfig) SetCustomOrdererCfg(customOrdererCfg *config.OrdererConfig) {
+	c.customOrdererCfg = customOrdererCfg
+}
+
+//SetCustomRandomOrdererCfg sets custom random orderer config for unit-tests
+func (c *MockConfig) SetCustomRandomOrdererCfg(customRandomOrdererCfg *config.OrdererConfig) {
+	c.customRandomOrdererCfg = customRandomOrdererCfg
 }
 
 // OrdererConfig not implemented
 func (c *MockConfig) OrdererConfig(name string) (*config.OrdererConfig, error) {
+	if c.customOrdererCfg != nil {
+		return c.customOrdererCfg, nil
+	}
 	oConfig := config.OrdererConfig{
 		URL: "example.com",
 	}
