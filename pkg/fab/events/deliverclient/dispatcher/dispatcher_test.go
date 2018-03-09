@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
@@ -32,13 +31,16 @@ func TestSeek(t *testing.T) {
 	channelID := "testchannel"
 
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			delivermocks.NewConnection(
 				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory)),
 			),
 		),
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -90,7 +92,11 @@ func TestUnauthorized(t *testing.T) {
 	channelID := "testchannel"
 
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			delivermocks.NewConnection(
 				clientmocks.WithResults(
@@ -99,7 +105,6 @@ func TestUnauthorized(t *testing.T) {
 				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory)),
 			),
 		),
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -113,7 +118,7 @@ func TestUnauthorized(t *testing.T) {
 	// Register connection event
 	errch := make(chan error)
 	regch := make(chan fab.Registration)
-	conneventch := make(chan *fab.ConnectionEvent, 5)
+	conneventch := make(chan *clientdisp.ConnectionEvent, 5)
 	dispatcherEventch <- clientdisp.NewRegisterConnectionEvent(conneventch, regch, errch)
 
 	select {
@@ -150,13 +155,16 @@ func TestBlockEvents(t *testing.T) {
 	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory)
 
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			delivermocks.NewConnection(
 				clientmocks.WithLedger(ledger),
 			),
 		),
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -215,13 +223,16 @@ func TestFilteredBlockEvents(t *testing.T) {
 	ledger := servicemocks.NewMockLedger(delivermocks.FilteredBlockEventFactory)
 
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			delivermocks.NewConnection(
 				clientmocks.WithLedger(ledger),
 			),
 		),
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -275,8 +286,4 @@ func TestFilteredBlockEvents(t *testing.T) {
 	if err := <-stopResp; err != nil {
 		t.Fatalf("Error stopping dispatcher: %s", err)
 	}
-}
-
-func newMockContext() fabcontext.Client {
-	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
 }

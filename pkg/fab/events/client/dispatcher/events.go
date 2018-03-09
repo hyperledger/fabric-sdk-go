@@ -18,7 +18,7 @@ type RegisterConnectionEvent struct {
 }
 
 // NewRegisterConnectionEvent creates a new RegisterConnectionEvent
-func NewRegisterConnectionEvent(eventch chan<- *fab.ConnectionEvent, regch chan<- fab.Registration, errch chan<- error) *RegisterConnectionEvent {
+func NewRegisterConnectionEvent(eventch chan<- *ConnectionEvent, regch chan<- fab.Registration, errch chan<- error) *RegisterConnectionEvent {
 	return &RegisterConnectionEvent{
 		Reg:           &ConnectionReg{Eventch: eventch},
 		RegisterEvent: esdispatcher.NewRegisterEvent(regch, errch),
@@ -63,4 +63,19 @@ type DisconnectEvent struct {
 // NewDisconnectEvent creates a new DisconnectEvent
 func NewDisconnectEvent(errch chan<- error) *DisconnectEvent {
 	return &DisconnectEvent{Errch: errch}
+}
+
+// ConnectionEvent is sent when the client disconnects from or
+// reconnects to the event server. Connected == true means that the
+// client has connected, whereas Connected == false means that the
+// client has disconnected. In the disconnected case, Err contains
+// the disconnect error.
+type ConnectionEvent struct {
+	Connected bool
+	Err       error
+}
+
+// NewConnectionEvent returns a new ConnectionEvent
+func NewConnectionEvent(connected bool, err error) *ConnectionEvent {
+	return &ConnectionEvent{Connected: connected, Err: err}
 }

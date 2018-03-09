@@ -15,6 +15,7 @@ import (
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -29,16 +30,16 @@ type StreamProvider func(conn *grpc.ClientConn) (grpc.ClientStream, error)
 
 // GRPCConnection manages the GRPC connection and client stream
 type GRPCConnection struct {
-	channelID   string
+	context     fabcontext.Client
+	chConfig    fab.ChannelCfg
 	conn        *grpc.ClientConn
 	stream      grpc.ClientStream
-	context     fabcontext.Client
 	tlsCertHash []byte
 	done        int32
 }
 
 // NewConnection creates a new connection
-func NewConnection(ctx fabcontext.Client, channelID string, streamProvider StreamProvider, url string, opts ...options.Opt) (*GRPCConnection, error) {
+func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvider StreamProvider, url string, opts ...options.Opt) (*GRPCConnection, error) {
 	if url == "" {
 		return nil, errors.New("server URL not specified")
 	}
@@ -73,17 +74,17 @@ func NewConnection(ctx fabcontext.Client, channelID string, streamProvider Strea
 	}
 
 	return &GRPCConnection{
-		channelID:   channelID,
+		context:     ctx,
+		chConfig:    chConfig,
 		conn:        grpcconn,
 		stream:      stream,
-		context:     ctx,
 		tlsCertHash: comm.TLSCertHash(ctx.Config()),
 	}, nil
 }
 
-// ChannelID returns the ID of the channel
-func (c *GRPCConnection) ChannelID() string {
-	return c.channelID
+// ChannelConfig returns the channel configuration
+func (c *GRPCConnection) ChannelConfig() fab.ChannelCfg {
+	return c.chConfig
 }
 
 // Close closes the connection

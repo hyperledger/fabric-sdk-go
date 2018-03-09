@@ -40,7 +40,7 @@ type Client struct {
 	eventservice.Service
 	params
 	sync.RWMutex
-	connEvent         chan *fab.ConnectionEvent
+	connEvent         chan *dispatcher.ConnectionEvent
 	connectionState   int32
 	stopped           int32
 	registerOnce      sync.Once
@@ -163,7 +163,7 @@ func (c *Client) connect() error {
 
 	c.registerOnce.Do(func() {
 		logger.Debugf("Submitting connection event registration...")
-		_, eventch, err := c.RegisterConnectionEvent()
+		_, eventch, err := c.registerConnectionEvent()
 		if err != nil {
 			logger.Errorf("Error registering for connection events: %s", err)
 			c.Close()
@@ -239,15 +239,15 @@ func (c *Client) RegisterBlockEvent(filter ...fab.BlockFilter) (fab.Registration
 	return c.Service.RegisterBlockEvent(filter...)
 }
 
-// RegisterConnectionEvent registers a connection event. The returned
+// registerConnectionEvent registers a connection event. The returned
 // ConnectionEvent channel will be called whenever the client clients or disconnects
 // from the event server
-func (c *Client) RegisterConnectionEvent() (fab.Registration, chan *fab.ConnectionEvent, error) {
+func (c *Client) registerConnectionEvent() (fab.Registration, chan *dispatcher.ConnectionEvent, error) {
 	if c.Stopped() {
 		return nil, nil, errors.New("event client is closed")
 	}
 
-	eventch := make(chan *fab.ConnectionEvent, c.eventConsumerBufferSize)
+	eventch := make(chan *dispatcher.ConnectionEvent, c.eventConsumerBufferSize)
 	errch := make(chan error)
 	regch := make(chan fab.Registration)
 	c.Submit(dispatcher.NewRegisterConnectionEvent(eventch, regch, errch))
@@ -348,13 +348,13 @@ func (c *Client) closeConnectEventChan() {
 	}
 }
 
-func (c *Client) connectEventChan() chan *fab.ConnectionEvent {
+func (c *Client) connectEventChan() chan *dispatcher.ConnectionEvent {
 	c.RLock()
 	defer c.RUnlock()
 	return c.connEventCh
 }
 
-func (c *Client) notifyConnectEventChan(event *fab.ConnectionEvent) {
+func (c *Client) notifyConnectEventChan(event *dispatcher.ConnectionEvent) {
 	c.RLock()
 	defer c.RUnlock()
 	if c.connEventCh != nil {

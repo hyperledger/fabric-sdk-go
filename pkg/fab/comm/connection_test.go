@@ -35,12 +35,13 @@ func TestConnection(t *testing.T) {
 	channelID := "testchannel"
 
 	context := newMockContext()
+	chConfig := fabmocks.NewMockChannelCfg(channelID)
 
-	conn, err := NewConnection(context, channelID, testStream, "")
+	conn, err := NewConnection(context, chConfig, testStream, "")
 	if err == nil {
 		t.Fatalf("expected error creating new connection with empty URL")
 	}
-	conn, err = NewConnection(context, channelID, testStream, "invalidhost:0000",
+	conn, err = NewConnection(context, chConfig, testStream, "invalidhost:0000",
 		WithFailFast(true),
 		WithCertificate(nil),
 		WithHostOverride(""),
@@ -50,20 +51,17 @@ func TestConnection(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error creating new connection with invalid URL")
 	}
-	conn, err = NewConnection(context, channelID, invalidStream, peerURL)
+	conn, err = NewConnection(context, chConfig, invalidStream, peerURL)
 	if err == nil {
 		t.Fatalf("expected error creating new connection with invalid stream but got none")
 	}
 
-	conn, err = NewConnection(context, channelID, testStream, peerURL)
+	conn, err = NewConnection(context, chConfig, testStream, peerURL)
 	if err != nil {
 		t.Fatalf("error creating new connection: %s", err)
 	}
 	if conn.Closed() {
 		t.Fatalf("expected connection to be open")
-	}
-	if conn.ChannelID() != channelID {
-		t.Fatalf("expected channel ID [%s] but got [%s]", channelID, conn.ChannelID())
 	}
 	if conn.Stream() == nil {
 		t.Fatalf("got invalid stream")

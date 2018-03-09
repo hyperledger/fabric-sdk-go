@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
 
@@ -30,7 +29,11 @@ func TestConnect(t *testing.T) {
 	channelID := "testchannel"
 
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			clientmocks.NewMockConnection(
 				clientmocks.WithLedger(
@@ -38,12 +41,11 @@ func TestConnect(t *testing.T) {
 				),
 			),
 		),
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		WithLoadBalancePolicy(lbp.NewRandom()),
 	)
 
-	if dispatcher.ChannelID() != channelID {
-		t.Fatalf("Expecting channel ID [%s] but got [%s]", channelID, dispatcher.ChannelID())
+	if dispatcher.ChannelConfig().Name() != channelID {
+		t.Fatalf("Expecting channel ID [%s] but got [%s]", channelID, dispatcher.ChannelConfig().Name())
 	}
 
 	if err := dispatcher.Start(); err != nil {
@@ -106,7 +108,11 @@ func TestConnectNoPeers(t *testing.T) {
 	channelID := "testchannel"
 
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(), // Add no peers to discovery service
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			clientmocks.NewMockConnection(
 				clientmocks.WithLedger(
@@ -114,7 +120,6 @@ func TestConnectNoPeers(t *testing.T) {
 				),
 			),
 		),
-		clientmocks.CreateDiscoveryService(), // Add no peers to discovery service
 	)
 
 	if err := dispatcher.Start(); err != nil {
@@ -146,7 +151,11 @@ func TestConnectionEvent(t *testing.T) {
 	channelID := "testchannel"
 
 	dispatcher := New(
-		newMockContext(), channelID,
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			clientmocks.NewMockConnection(
 				clientmocks.WithLedger(
@@ -154,7 +163,6 @@ func TestConnectionEvent(t *testing.T) {
 				),
 			),
 		),
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 	)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
@@ -168,7 +176,7 @@ func TestConnectionEvent(t *testing.T) {
 	expectedDisconnectErr := "simulated disconnect error"
 
 	// Register connection event
-	connch := make(chan *fab.ConnectionEvent, 10)
+	connch := make(chan *ConnectionEvent, 10)
 	errch := make(chan error)
 	state := ""
 	go func() {
@@ -239,8 +247,4 @@ func TestConnectionEvent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-}
-
-func newMockContext() context.Client {
-	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
 }

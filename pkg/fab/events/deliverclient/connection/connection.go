@@ -16,6 +16,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -57,13 +58,9 @@ var (
 )
 
 // New returns a new Deliver Server connection
-func New(ctx fabcontext.Client, channelID string, streamProvider StreamProvider, url string, opts ...options.Opt) (*DeliverConnection, error) {
-	if channelID == "" {
-		return nil, errors.New("channel ID not provided")
-	}
-
+func New(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvider StreamProvider, url string, opts ...options.Opt) (*DeliverConnection, error) {
 	connect, err := comm.NewConnection(
-		ctx, channelID,
+		ctx, chConfig,
 		func(grpcconn *grpc.ClientConn) (grpc.ClientStream, error) {
 			return streamProvider(pb.NewDeliverClient(grpcconn))
 		},
@@ -145,7 +142,7 @@ func (c *DeliverConnection) createSignedEnvelope(msg proto.Message) (*cb.Envelop
 	var msgVersion int32
 	var epoch uint64
 
-	payloadChannelHeader := utils.MakeChannelHeader(cb.HeaderType_DELIVER_SEEK_INFO, msgVersion, c.ChannelID(), epoch)
+	payloadChannelHeader := utils.MakeChannelHeader(cb.HeaderType_DELIVER_SEEK_INFO, msgVersion, c.ChannelConfig().Name(), epoch)
 	payloadChannelHeader.TlsCertHash = c.TLSCertHash()
 
 	data, err := proto.Marshal(msg)

@@ -26,13 +26,13 @@ import (
 var logger = logging.NewLogger("fabsdk/fab")
 
 // deliverProvider is the connection provider used for connecting to the Deliver service
-var deliverProvider = func(channelID string, context fabcontext.Client, peer fab.Peer) (api.Connection, error) {
-	return deliverconn.New(context, channelID, deliverconn.Deliver, peer.URL())
+var deliverProvider = func(context fabcontext.Client, chConfig fab.ChannelCfg, peer fab.Peer) (api.Connection, error) {
+	return deliverconn.New(context, chConfig, deliverconn.Deliver, peer.URL())
 }
 
 // deliverFilteredProvider is the connection provider used for connecting to the DeliverFiltered service
-var deliverFilteredProvider = func(channelID string, context fabcontext.Client, peer fab.Peer) (api.Connection, error) {
-	return deliverconn.New(context, channelID, deliverconn.DeliverFiltered, peer.URL())
+var deliverFilteredProvider = func(context fabcontext.Client, chConfig fab.ChannelCfg, peer fab.Peer) (api.Connection, error) {
+	return deliverconn.New(context, chConfig, deliverconn.DeliverFiltered, peer.URL())
 }
 
 // Client connects to a peer and receives channel events, such as bock, filtered block, chaincode, and transaction status events.
@@ -42,18 +42,14 @@ type Client struct {
 }
 
 // New returns a new deliver event client
-func New(context fabcontext.Client, channelID string, discoveryService fab.DiscoveryService, opts ...options.Opt) (*Client, error) {
-	if channelID == "" {
-		return nil, errors.New("expecting channel ID")
-	}
-
+func New(context fabcontext.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (*Client, error) {
 	params := defaultParams()
 	options.Apply(params, opts)
 
 	client := &Client{
 		Client: *client.New(
 			params.permitBlockEvents,
-			dispatcher.New(context, channelID, params.connProvider, discoveryService, opts...),
+			dispatcher.New(context, chConfig, params.connProvider, opts...),
 			opts...,
 		),
 		params: *params,

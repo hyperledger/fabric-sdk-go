@@ -46,8 +46,14 @@ func TestConnect(t *testing.T) {
 		),
 	)
 
-	discoveryService := clientmocks.CreateDiscoveryService(peer1, peer2)
-	eventClient, _, err := newClientWithMockConnAndOpts("mychannel", newMockContext(), connectionProvider, filteredClientProvider, discoveryService, []options.Opt{})
+	eventClient, _, err := newClientWithMockConnAndOpts(
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg("mychannel"),
+		connectionProvider, filteredClientProvider, []options.Opt{},
+	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
@@ -75,15 +81,17 @@ func TestConnect(t *testing.T) {
 
 func TestFailConnect(t *testing.T) {
 	eventClient, _, err := newClientWithMockConnAndOpts(
-		"mychannel", newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg("mychannel"),
 		mockconn.NewProviderFactory().Provider(
 			mockconn.NewMockConnection(
 				mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 			),
 		),
-		failAfterConnectClientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
-		[]options.Opt{},
+		failAfterConnectClientProvider, []options.Opt{},
 	)
 	if err != nil {
 		t.Fatalf("error creating client: %s", err)
@@ -95,9 +103,12 @@ func TestFailConnect(t *testing.T) {
 
 func TestCallsOnClosedClient(t *testing.T) {
 	eventClient, _, err := newClientWithMockConn(
-		"mychannel", newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg("mychannel"),
 		filteredClientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -113,10 +124,6 @@ func TestCallsOnClosedClient(t *testing.T) {
 
 	if err := eventClient.Connect(); err == nil {
 		t.Fatalf("expecting error connecting to closed channel event client but got none")
-	}
-
-	if _, _, err := eventClient.RegisterConnectionEvent(); err == nil {
-		t.Fatalf("expecting error registering for connection events on closed channel event client but got none")
 	}
 
 	if _, _, err := eventClient.RegisterFilteredBlockEvent(); err == nil {
@@ -138,9 +145,12 @@ func TestCallsOnClosedClient(t *testing.T) {
 func TestInvalidUnregister(t *testing.T) {
 	channelID := "mychannel"
 	eventClient, _, err := newClientWithMockConn(
-		channelID, newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		filteredClientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -158,9 +168,12 @@ func TestInvalidUnregister(t *testing.T) {
 func TestUnauthorizedBlockEvents(t *testing.T) {
 	channelID := "mychannel"
 	eventClient, _, err := newClientWithMockConn(
-		channelID, newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		filteredClientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -179,9 +192,12 @@ func TestUnauthorizedBlockEvents(t *testing.T) {
 func TestBlockEvents(t *testing.T) {
 	channelID := "mychannel"
 	eventClient, conn, err := newClientWithMockConn(
-		channelID, newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
 	)
 	if err != nil {
@@ -234,9 +250,12 @@ func TestBlockEvents(t *testing.T) {
 func TestFilteredBlockEvents(t *testing.T) {
 	channelID := "mychannel"
 	eventClient, conn, err := newClientWithMockConn(
-		channelID, newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		filteredClientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -308,9 +327,12 @@ func TestFilteredBlockEvents(t *testing.T) {
 func TestBlockAndFilteredBlockEvents(t *testing.T) {
 	channelID := "mychannel"
 	eventClient, conn, err := newClientWithMockConn(
-		channelID, newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		clientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
 	)
 	if err != nil {
@@ -383,9 +405,12 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 func TestTxStatusEvents(t *testing.T) {
 	channelID := "mychannel"
 	eventClient, conn, err := newClientWithMockConn(
-		channelID, newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		filteredClientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -464,9 +489,12 @@ func TestTxStatusEvents(t *testing.T) {
 func TestCCEvents(t *testing.T) {
 	channelID := "mychannel"
 	eventClient, conn, err := newClientWithMockConn(
-		channelID, newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
 		filteredClientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
 	)
 	if err != nil {
@@ -658,9 +686,12 @@ func TestConcurrentEvents(t *testing.T) {
 	ccFilter := "event.*"
 
 	eventClient, conn, err := newClientWithMockConnAndOpts(
-		channelID, newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg("mychannel"),
 		nil, clientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		[]options.Opt{
 			esdispatcher.WithEventConsumerBufferSize(uint(numEvents) * 4),
 		},
@@ -869,14 +900,13 @@ func txStatusTest(eventClient *Client, ledger servicemocks.Ledger, channelID str
 			)
 
 			select {
-			case txStatus, ok := <-txeventch:
+			case _, ok := <-txeventch:
 				mutex.Lock()
 				if !ok {
 					errs = append(errs, errors.New("unexpected closed channel"))
 				} else {
 					receivedEvents++
 				}
-				fmt.Printf("received TxStatus %#v\n", txStatus)
 				mutex.Unlock()
 			case <-time.After(5 * time.Second):
 				mutex.Lock()
@@ -899,10 +929,13 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome mockconn
 	cp := mockconn.NewProviderFactory()
 
 	eventClient, _, err := newClientWithMockConnAndOpts(
-		"mychannel", newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg("mychannel"),
 		cp.FlakeyProvider(connAttemptResult, mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory))),
 		clientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		[]options.Opt{
 			esdispatcher.WithEventConsumerTimeout(time.Second),
 			WithMaxConnectAttempts(maxConnectAttempts),
@@ -928,15 +961,18 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome mockconn
 func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expectedOutcome mockconn.Outcome, connAttemptResult mockconn.ConnectAttemptResults) {
 	cp := mockconn.NewProviderFactory()
 
-	connectch := make(chan *fab.ConnectionEvent)
+	connectch := make(chan *dispatcher.ConnectionEvent)
 
 	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
 
 	eventClient, _, err := newClientWithMockConnAndOpts(
-		"mychannel", newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg("mychannel"),
 		cp.FlakeyProvider(connAttemptResult, mockconn.WithLedger(ledger)),
 		clientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		[]options.Opt{
 			esdispatcher.WithEventConsumerTimeout(3 * time.Second),
 			WithMaxConnectAttempts(1),
@@ -987,10 +1023,13 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents mockconn.NumBlo
 	cp := mockconn.NewProviderFactory()
 
 	eventClient, _, err := newClientWithMockConnAndOpts(
-		channelID, newMockContext(),
+		fabmocks.NewMockContextWithCustomDiscovery(
+			fabmocks.NewMockUser("user1"),
+			clientmocks.NewDiscoveryProvider(peer1, peer2),
+		),
+		fabmocks.NewMockChannelCfg("mychannel"),
 		cp.FlakeyProvider(connectResults, mockconn.WithLedger(ledger)),
 		clientProvider,
-		clientmocks.CreateDiscoveryService(peer1, peer2),
 		[]options.Opt{
 			esdispatcher.WithEventConsumerTimeout(3 * time.Second),
 			WithMaxConnectAttempts(1),
@@ -1080,7 +1119,7 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents mockconn.NumBlo
 	}
 }
 
-func listenConnection(eventch chan *fab.ConnectionEvent, outcome chan mockconn.Outcome) {
+func listenConnection(eventch chan *dispatcher.ConnectionEvent, outcome chan mockconn.Outcome) {
 	state := InitialState
 
 	for {
@@ -1136,10 +1175,10 @@ func listenEvents(blockch <-chan *fab.BlockEvent, ccch <-chan *fab.CCEvent, wait
 	}
 }
 
-type ClientProvider func(channelID string, context context.Client, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error)
+type ClientProvider func(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts []options.Opt) (*Client, error)
 
-var clientProvider = func(channelID string, context context.Client, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error) {
-	return newClient(channelID, context, connectionProvider, discoveryService, opts, true,
+var clientProvider = func(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts []options.Opt) (*Client, error) {
+	return newClient(context, chConfig, connectionProvider, opts, true,
 		func() error {
 			fmt.Printf("AfterConnect called")
 			return nil
@@ -1150,16 +1189,16 @@ var clientProvider = func(channelID string, context context.Client, connectionPr
 		})
 }
 
-var failAfterConnectClientProvider = func(channelID string, context context.Client, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error) {
-	return newClient(channelID, context, connectionProvider, discoveryService, opts, true,
+var failAfterConnectClientProvider = func(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts []options.Opt) (*Client, error) {
+	return newClient(context, chConfig, connectionProvider, opts, true,
 		func() error {
 			return errors.New("simulated failure after connect")
 		},
 		nil)
 }
 
-var filteredClientProvider = func(channelID string, context context.Client, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt) (*Client, error) {
-	return newClient(channelID, context, connectionProvider, discoveryService, opts, false,
+var filteredClientProvider = func(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts []options.Opt) (*Client, error) {
+	return newClient(context, chConfig, connectionProvider, opts, false,
 		func() error {
 			fmt.Printf("AfterConnect called")
 			return nil
@@ -1170,13 +1209,12 @@ var filteredClientProvider = func(channelID string, context context.Client, conn
 		})
 }
 
-func newClient(channelID string, context context.Client, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts []options.Opt, permitBlockEvents bool, afterConnect handler, beforeReconnect handler) (*Client, error) {
+func newClient(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts []options.Opt, permitBlockEvents bool, afterConnect handler, beforeReconnect handler) (*Client, error) {
 	client := New(
 		permitBlockEvents,
 		dispatcher.New(
-			context, channelID,
+			context, chConfig,
 			connectionProvider,
-			discoveryService,
 			opts...,
 		),
 		opts...,
@@ -1190,19 +1228,19 @@ func newClient(channelID string, context context.Client, connectionProvider api.
 	return client, nil
 }
 
-func newClientWithMockConn(channelID string, context context.Client, clientProvider ClientProvider, discoveryService fab.DiscoveryService, connOpts ...mockconn.Opt) (*Client, mockconn.Connection, error) {
+func newClientWithMockConn(context context.Client, chConfig fab.ChannelCfg, clientProvider ClientProvider, connOpts ...mockconn.Opt) (*Client, mockconn.Connection, error) {
 	conn := mockconn.NewMockConnection(connOpts...)
-	client, _, err := newClientWithMockConnAndOpts(channelID, context, mockconn.NewProviderFactory().Provider(conn), clientProvider, discoveryService, []options.Opt{})
+	client, _, err := newClientWithMockConnAndOpts(context, chConfig, mockconn.NewProviderFactory().Provider(conn), clientProvider, []options.Opt{})
 	return client, conn, err
 }
 
-func newClientWithMockConnAndOpts(channelID string, context context.Client, connectionProvider api.ConnectionProvider, clientProvider ClientProvider, discoveryService fab.DiscoveryService, opts []options.Opt, connOpts ...mockconn.Opt) (*Client, mockconn.Connection, error) {
+func newClientWithMockConnAndOpts(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, clientProvider ClientProvider, opts []options.Opt, connOpts ...mockconn.Opt) (*Client, mockconn.Connection, error) {
 	var conn mockconn.Connection
 	if connectionProvider == nil {
 		conn = mockconn.NewMockConnection(connOpts...)
 		connectionProvider = mockconn.NewProviderFactory().Provider(conn)
 	}
-	client, err := clientProvider(channelID, context, connectionProvider, discoveryService, opts)
+	client, err := clientProvider(context, chConfig, connectionProvider, opts)
 	return client, conn, err
 }
 
@@ -1257,8 +1295,4 @@ func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expecte
 	if !found {
 		t.Fatalf("expecting one of [%v] but received [%s]", expectedEventNames, event.EventName)
 	}
-}
-
-func newMockContext() context.Client {
-	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
 }

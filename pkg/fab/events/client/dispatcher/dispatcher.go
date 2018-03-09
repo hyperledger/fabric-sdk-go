@@ -29,9 +29,8 @@ var logger = logging.NewLogger("fabsdk/fab")
 type Dispatcher struct {
 	esdispatcher.Dispatcher
 	params
-	channelID              string
 	context                context.Client
-	discoveryService       fab.DiscoveryService
+	chConfig               fab.ChannelCfg
 	signingMgr             core.SigningManager
 	connection             api.Connection
 	connectionRegistration *ConnectionReg
@@ -41,7 +40,7 @@ type Dispatcher struct {
 type handler func(esdispatcher.Event)
 
 // New creates a new dispatcher
-func New(context context.Client, channelID string, connectionProvider api.ConnectionProvider, discoveryService fab.DiscoveryService, opts ...options.Opt) *Dispatcher {
+func New(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {
 	params := defaultParams()
 	options.Apply(params, opts)
 
@@ -49,8 +48,7 @@ func New(context context.Client, channelID string, connectionProvider api.Connec
 		Dispatcher:         *esdispatcher.New(opts...),
 		params:             *params,
 		context:            context,
-		discoveryService:   discoveryService,
-		channelID:          channelID,
+		chConfig:           chConfig,
 		connectionProvider: connectionProvider,
 	}
 }
@@ -65,9 +63,9 @@ func (ed *Dispatcher) Start() error {
 	return nil
 }
 
-// ChannelID returns the channel ID
-func (ed *Dispatcher) ChannelID() string {
-	return ed.channelID
+// ChannelConfig returns the channel configuration
+func (ed *Dispatcher) ChannelConfig() fab.ChannelCfg {
+	return ed.chConfig
 }
 
 // Connection returns the connection to the event server
@@ -101,7 +99,13 @@ func (ed *Dispatcher) HandleConnectEvent(e esdispatcher.Event) {
 		return
 	}
 
-	peers, err := ed.discoveryService.GetPeers()
+	discoveryService, err := ed.context.DiscoveryProvider().CreateDiscoveryService(ed.chConfig.Name())
+	if err != nil {
+		evt.ErrCh <- nil
+		return
+	}
+
+	peers, err := discoveryService.GetPeers()
 	if err != nil {
 		evt.ErrCh <- err
 		return
@@ -118,7 +122,7 @@ func (ed *Dispatcher) HandleConnectEvent(e esdispatcher.Event) {
 		return
 	}
 
-	conn, err := ed.connectionProvider(ed.channelID, ed.context, peer)
+	conn, err := ed.connectionProvider(ed.context, ed.chConfig, peer)
 	if err != nil {
 		logger.Warnf("error creating connection: %s", err)
 		evt.ErrCh <- errors.WithMessage(err, fmt.Sprintf("could not create client conn"))
@@ -170,7 +174,7 @@ func (ed *Dispatcher) HandleConnectedEvent(e esdispatcher.Event) {
 
 	if ed.connectionRegistration != nil && ed.connectionRegistration.Eventch != nil {
 		select {
-		case ed.connectionRegistration.Eventch <- &fab.ConnectionEvent{Connected: true}:
+		case ed.connectionRegistration.Eventch <- NewConnectionEvent(true, nil):
 		default:
 			logger.Warnf("Unable to send to connection event channel.")
 		}
@@ -191,7 +195,7 @@ func (ed *Dispatcher) HandleDisconnectedEvent(e esdispatcher.Event) {
 	if ed.connectionRegistration != nil {
 		logger.Debugf("Disconnected from event server: %s", evt.Err)
 		select {
-		case ed.connectionRegistration.Eventch <- &fab.ConnectionEvent{Connected: false, Err: evt.Err}:
+		case ed.connectionRegistration.Eventch <- NewConnectionEvent(false, evt.Err):
 		default:
 			logger.Warnf("Unable to send to connection event channel.")
 		}

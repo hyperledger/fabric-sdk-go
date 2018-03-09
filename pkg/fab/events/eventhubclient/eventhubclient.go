@@ -24,14 +24,14 @@ import (
 
 var logger = logging.NewLogger("fabsdk/fab")
 
-var ehConnProvider = func(channelID string, context context.Client, peer fab.Peer) (api.Connection, error) {
+var ehConnProvider = func(context context.Client, chConfig fab.ChannelCfg, peer fab.Peer) (api.Connection, error) {
 	eventEndpoint, ok := peer.(api.EventEndpoint)
 	if !ok {
 		panic("peer is not an EventEndpoint")
 	}
 
 	return connection.New(
-		context, channelID, eventEndpoint.EventURL(),
+		context, chConfig, eventEndpoint.EventURL(),
 	)
 }
 
@@ -42,18 +42,18 @@ type Client struct {
 }
 
 // New returns a new event hub client
-func New(context context.Client, channelID string, discoveryService fab.DiscoveryService, opts ...options.Opt) (*Client, error) {
-	if channelID == "" {
-		return nil, errors.New("expecting channel ID")
-	}
-
+func New(context context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (*Client, error) {
 	params := defaultParams()
 	options.Apply(params, opts)
+
+	// The EventHub requires a custom Discovery Provider
+	// that produces EventEndpoints (which include the event URL).
+	ehCtx := newEventHubContext(context)
 
 	client := &Client{
 		Client: *client.New(
 			params.permitBlockEvents,
-			dispatcher.New(context, channelID, params.connProvider, discoveryService, opts...),
+			dispatcher.New(ehCtx, chConfig, params.connProvider, opts...),
 			opts...,
 		),
 		params: *params,
@@ -87,4 +87,21 @@ func (c *Client) registerInterests() error {
 
 	logger.Debugf("successfully sent register interests")
 	return nil
+}
+
+// ehContext overrides the DiscoveryProvider by returning
+// the event hub discovery provider
+type ehContext struct {
+	context.Client
+}
+
+func newEventHubContext(ctx context.Client) context.Client {
+	return &ehContext{
+		Client: ctx,
+	}
+}
+
+// DiscoveryProvider returns a custom discovery provider for the event hub
+func (ctx *ehContext) DiscoveryProvider() fab.DiscoveryProvider {
+	return newDiscoveryProvider(ctx.Client)
 }
