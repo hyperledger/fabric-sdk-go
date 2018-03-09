@@ -330,6 +330,19 @@ func (mr *MockConfigMockRecorder) PeerConfig(arg0, arg1 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerConfig", reflect.TypeOf((*MockConfig)(nil).PeerConfig), arg0, arg1)
 }
 
+// PeerConfigByURL mocks base method
+func (m *MockConfig) PeerConfigByURL(arg0 string) (*core.PeerConfig, error) {
+	ret := m.ctrl.Call(m, "PeerConfigByURL", arg0)
+	ret0, _ := ret[0].(*core.PeerConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PeerConfigByURL indicates an expected call of PeerConfigByURL
+func (mr *MockConfigMockRecorder) PeerConfigByURL(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerConfigByURL", reflect.TypeOf((*MockConfig)(nil).PeerConfigByURL), arg0)
+}
+
 // PeerMspID mocks base method
 func (m *MockConfig) PeerMspID(arg0 string) (string, error) {
 	ret := m.ctrl.Call(m, "PeerMspID", arg0)
@@ -354,19 +367,6 @@ func (m *MockConfig) PeersConfig(arg0 string) ([]core.PeerConfig, error) {
 // PeersConfig indicates an expected call of PeersConfig
 func (mr *MockConfigMockRecorder) PeersConfig(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeersConfig", reflect.TypeOf((*MockConfig)(nil).PeersConfig), arg0)
-}
-
-// PeerConfigByURL mocks base method
-func (m *MockConfig) PeerConfigByURL(arg0 string) (*core.PeerConfig, error) {
-	ret := m.ctrl.Call(m, "PeerConfigByURL", arg0)
-	ret0, _ := ret[0].(*core.PeerConfig)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// PeerConfigByURL indicates an expected call of PeerConfigByURL
-func (mr *MockConfigMockRecorder) PeerConfigByURL(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerConfigByURL", reflect.TypeOf((*MockConfig)(nil).PeerConfigByURL), arg0)
 }
 
 // RandomOrdererConfig mocks base method
@@ -637,30 +637,6 @@ func (m *MockIdentityManager) EXPECT() *MockIdentityManagerMockRecorder {
 	return m.recorder
 }
 
-// CAName mocks base method
-func (m *MockIdentityManager) CAName() string {
-	ret := m.ctrl.Call(m, "CAName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// CAName indicates an expected call of CAName
-func (mr *MockIdentityManagerMockRecorder) CAName() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAName", reflect.TypeOf((*MockIdentityManager)(nil).CAName))
-}
-
-// Enroll mocks base method
-func (m *MockIdentityManager) Enroll(arg0, arg1 string) error {
-	ret := m.ctrl.Call(m, "Enroll", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Enroll indicates an expected call of Enroll
-func (mr *MockIdentityManagerMockRecorder) Enroll(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enroll", reflect.TypeOf((*MockIdentityManager)(nil).Enroll), arg0, arg1)
-}
-
 // GetSigningIdentity mocks base method
 func (m *MockIdentityManager) GetSigningIdentity(arg0 string) (*core.SigningIdentity, error) {
 	ret := m.ctrl.Call(m, "GetSigningIdentity", arg0)
@@ -685,42 +661,4 @@ func (m *MockIdentityManager) GetUser(arg0 string) (core.User, error) {
 // GetUser indicates an expected call of GetUser
 func (mr *MockIdentityManagerMockRecorder) GetUser(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockIdentityManager)(nil).GetUser), arg0)
-}
-
-// Reenroll mocks base method
-func (m *MockIdentityManager) Reenroll(arg0 core.User) error {
-	ret := m.ctrl.Call(m, "Reenroll", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Reenroll indicates an expected call of Reenroll
-func (mr *MockIdentityManagerMockRecorder) Reenroll(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reenroll", reflect.TypeOf((*MockIdentityManager)(nil).Reenroll), arg0)
-}
-
-// Register mocks base method
-func (m *MockIdentityManager) Register(arg0 *core.RegistrationRequest) (string, error) {
-	ret := m.ctrl.Call(m, "Register", arg0)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Register indicates an expected call of Register
-func (mr *MockIdentityManagerMockRecorder) Register(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockIdentityManager)(nil).Register), arg0)
-}
-
-// Revoke mocks base method
-func (m *MockIdentityManager) Revoke(arg0 *core.RevocationRequest) (*core.RevocationResponse, error) {
-	ret := m.ctrl.Call(m, "Revoke", arg0)
-	ret0, _ := ret[0].(*core.RevocationResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Revoke indicates an expected call of Revoke
-func (mr *MockIdentityManagerMockRecorder) Revoke(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*MockIdentityManager)(nil).Revoke), arg0)
 }

@@ -43,7 +43,7 @@ AiaiI2BjxnL3/TetJ8iFJYZyWvK//an13WV/AiARBJd/pI5A7KZgQxJhXmmR8bie
 XdsmTcdRvJ3TS/6HCA==
 -----END CERTIFICATE-----`
 
-	msp = "Org1"
+	orgName = "Org1"
 )
 
 func TestGetSigningIdentity(t *testing.T) {
@@ -56,7 +56,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to setup netConfig: %s", err)
 	}
-	orgConfig, ok := netConfig.Organizations[strings.ToLower(msp)]
+	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
 	if !ok {
 		t.Fatalf("Failed to setup orgConfig: %s", err)
 	}
@@ -84,7 +84,7 @@ func TestGetSigningIdentity(t *testing.T) {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
 
-	mgr, err := New(msp, stateStore, cryptoSuite, config)
+	mgr, err := New(orgName, stateStore, cryptoSuite, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -175,7 +175,7 @@ func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 	}
 	stateStore := stateStoreFromConfig(t, config)
 
-	mgr, err := New(msp, stateStore, cryptosuite.GetDefault(), config)
+	mgr, err := New(orgName, stateStore, cryptosuite.GetDefault(), config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

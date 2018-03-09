@@ -160,7 +160,7 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		return errors.WithMessage(err, "failed to initialize signing manager")
 	}
 
-	// Initialize Identity Managers
+	// Initialize Identity Manager
 	identityManager := make(map[string]core.IdentityManager)
 	netConfig, err := config.NetworkConfig()
 	if err != nil {

@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 
 	"strings"
 
@@ -39,6 +40,9 @@ func NewMockProviderContext() *MockProviderContext {
 
 	im := make(map[string]core.IdentityManager)
 	im[""] = &MockIdentityManager{}
+
+	ca := make(map[string]msp.Client)
+	ca[""] = &MockCAClient{}
 
 	context := MockProviderContext{
 		config:            NewMockConfig(),
