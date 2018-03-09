@@ -8,7 +8,6 @@ package deliverclient
 
 import (
 	"math"
-	"sync"
 	"time"
 
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
@@ -38,14 +37,8 @@ var deliverFilteredProvider = func(channelID string, context fabcontext.Client, 
 
 // Client connects to a peer and receives channel events, such as bock, filtered block, chaincode, and transaction status events.
 type Client struct {
-	sync.RWMutex
 	client.Client
 	params
-	connEvent            chan *fab.ConnectionEvent
-	connectionState      int32
-	stopped              int32
-	registerOnce         sync.Once
-	blockEventsPermitted bool
 }
 
 // New returns a new deliver event client
@@ -76,7 +69,7 @@ func New(context fabcontext.Client, channelID string, discoveryService fab.Disco
 }
 
 func (c *Client) seek() error {
-	logger.Debugf("sending seek request....\n")
+	logger.Debugf("Sending seek request....")
 
 	seekInfo, err := c.seekInfo()
 	if err != nil {
@@ -93,11 +86,11 @@ func (c *Client) seek() error {
 	}
 
 	if err != nil {
-		logger.Errorf("unable to send seek request: %s\n", err)
+		logger.Errorf("Unable to send seek request: %s", err)
 		return err
 	}
 
-	logger.Debugf("successfully sent seek\n")
+	logger.Debugf("Successfully sent seek")
 	return nil
 }
 

@@ -33,7 +33,6 @@ type dsConnection interface {
 // This also avoids the need for synchronization.
 type Dispatcher struct {
 	clientdisp.Dispatcher
-	seekRequest *SeekEvent
 }
 
 // New returns a new deliver dispatcher
@@ -64,59 +63,51 @@ func (ed *Dispatcher) handleSeekEvent(e esdispatcher.Event) {
 		return
 	}
 
-	ed.seekRequest = evt
-
 	if err := ed.connection().Send(evt.SeekInfo); err != nil {
 		evt.ErrCh <- errors.Wrapf(err, "error sending seek info for channel [%s]", ed.ChannelID())
-		ed.seekRequest = nil
+	} else {
+		evt.ErrCh <- nil
 	}
 }
 
-func (ed *Dispatcher) handleDeliverResponseStatus(e esdispatcher.Event) {
-	evt := e.(*pb.DeliverResponse_Status)
+func (ed *Dispatcher) handleDeliverResponse(e esdispatcher.Event) {
+	evt := e.(*pb.DeliverResponse)
+	switch response := evt.Type.(type) {
+	case *pb.DeliverResponse_Status:
+		ed.handleDeliverResponseStatus(response)
+	case *pb.DeliverResponse_Block:
+		ed.HandleBlock(response.Block)
+	case *pb.DeliverResponse_FilteredBlock:
+		ed.HandleFilteredBlock(response.FilteredBlock)
+	default:
+		logger.Errorf("handler not found for deliver response type %T", response)
+	}
+}
 
-	if ed.seekRequest == nil {
+func (ed *Dispatcher) handleDeliverResponseStatus(evt *pb.DeliverResponse_Status) {
+	logger.Debugf("Got deliver response status event: %#v", evt)
+
+	if evt.Status == cb.Status_SUCCESS {
 		return
 	}
 
-	if ed.seekRequest.ErrCh != nil {
-		if evt.Status != cb.Status_SUCCESS {
-			ed.seekRequest.ErrCh <- errors.Errorf("received error status from seek info request: %s", evt.Status)
-		} else {
-			ed.seekRequest.ErrCh <- nil
-		}
+	logger.Warnf("Got deliver response status event: %#v. Disconnecting...", evt)
+
+	errch := make(chan error, 1)
+	ed.Dispatcher.HandleDisconnectEvent(&clientdisp.DisconnectEvent{
+		Errch: errch,
+	})
+	err := <-errch
+	if err != nil {
+		logger.Warnf("Error disconnecting: %s", err)
 	}
 
-	ed.seekRequest = nil
-}
-
-func (ed *Dispatcher) handleDeliverResponseBlock(e esdispatcher.Event) {
-	ed.HandleBlock(e.(*pb.DeliverResponse_Block).Block)
-}
-
-func (ed *Dispatcher) handleDeliverResponseFilteredBlock(e esdispatcher.Event) {
-	ed.HandleFilteredBlock(e.(*pb.DeliverResponse_FilteredBlock).FilteredBlock)
-}
-
-func (ed *Dispatcher) handleDisconnectedEvent(e esdispatcher.Event) {
-	logger.Debug("Handling disconnected event...")
-
-	if ed.seekRequest != nil && ed.seekRequest.ErrCh != nil {
-		// We're in the middle of a seek request. Send an error response to the caller.
-		ed.seekRequest.ErrCh <- errors.New("connection terminated")
-	}
-	ed.seekRequest = nil
-
-	ed.Dispatcher.HandleDisconnectedEvent(e)
+	ed.Dispatcher.HandleDisconnectedEvent(&clientdisp.DisconnectedEvent{
+		Err: errors.Errorf("got error status from deliver server: %s", evt.Status),
+	})
 }
 
 func (ed *Dispatcher) registerHandlers() {
-	// Override Handlers
-	ed.RegisterHandler(&clientdisp.DisconnectedEvent{}, ed.handleDisconnectedEvent)
-
-	// Register handlers
 	ed.RegisterHandler(&SeekEvent{}, ed.handleSeekEvent)
-	ed.RegisterHandler(&pb.DeliverResponse_Status{}, ed.handleDeliverResponseStatus)
-	ed.RegisterHandler(&pb.DeliverResponse_Block{}, ed.handleDeliverResponseBlock)
-	ed.RegisterHandler(&pb.DeliverResponse_FilteredBlock{}, ed.handleDeliverResponseFilteredBlock)
+	ed.RegisterHandler(&pb.DeliverResponse{}, ed.handleDeliverResponse)
 }

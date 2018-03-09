@@ -39,7 +39,7 @@ func TestRegisterInterests(t *testing.T) {
 		newMockContext(), channelID,
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
-				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
 			),
 		),
 		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
@@ -132,7 +132,7 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 		newMockContext(), channelID,
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
-				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
 				clientmocks.WithResults(
 					clientmocks.NewResult(ehmocks.RegInterests, clientmocks.FailResult),
 					clientmocks.NewResult(ehmocks.UnregInterests, clientmocks.FailResult),
@@ -232,7 +232,7 @@ func TestTimedOutRegister(t *testing.T) {
 				clientmocks.WithResults(
 					clientmocks.NewResult(ehmocks.RegInterests, clientmocks.NoOpResult),
 				),
-				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
 			),
 		),
 		clientmocks.CreateDiscoveryService(endpoint1, endpoint2),
@@ -281,7 +281,7 @@ func TestTimedOutRegister(t *testing.T) {
 
 func TestBlockEvents(t *testing.T) {
 	channelID := "testchannel"
-	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory)
 	dispatcher := New(
 		newMockContext(), channelID,
 		clientmocks.NewProviderFactory().Provider(
@@ -350,7 +350,7 @@ func TestBlockEvents(t *testing.T) {
 
 func TestFilteredBlockEvents(t *testing.T) {
 	channelID := "testchannel"
-	ledger := servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)
+	ledger := servicemocks.NewMockLedger(ehmocks.FilteredBlockEventFactory)
 	dispatcher := New(
 		newMockContext(), channelID,
 		clientmocks.NewProviderFactory().Provider(

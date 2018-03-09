@@ -15,7 +15,6 @@ import (
 
 	"google.golang.org/grpc/keepalive"
 
-	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
@@ -68,6 +67,33 @@ func TestConnection(t *testing.T) {
 		t.Fatalf("error creating new connection: %s", err)
 	}
 
+	conn.Close()
+
+	// Calling close again should be ignored
+	conn.Close()
+}
+
+func TestForbiddenConnection(t *testing.T) {
+	expectedStatus := cb.Status_FORBIDDEN
+	deliverServer.SetStatus(expectedStatus)
+	defer deliverServer.SetStatus(cb.Status_UNKNOWN)
+
+	channelID := "mychannel"
+	conn, err := New(newMockContext(), channelID, Deliver, peerURL,
+		comm.WithConnectTimeout(3*time.Second),
+		comm.WithFailFast(true),
+		comm.WithKeepAliveParams(
+			keepalive.ClientParameters{
+				Time:                10 * time.Second,
+				Timeout:             10 * time.Second,
+				PermitWithoutStream: true,
+			},
+		),
+	)
+	if err != nil {
+		t.Fatalf("error creating new connection: %s", err)
+	}
+
 	eventch := make(chan interface{})
 
 	go conn.Receive(eventch)
@@ -77,20 +103,14 @@ func TestConnection(t *testing.T) {
 		if !ok {
 			t.Fatalf("unexpected closed connection")
 		}
-		deliverResponse, ok := e.(*pb.DeliverResponse)
-		if !ok {
-			t.Fatalf("expected deliver response but got %T", e)
-		}
-		if deliverResponse.GetStatus() != cb.Status_SUCCESS {
-			t.Fatalf("expected deliver response status [%s] but got [%s]", cb.Status_SUCCESS, deliverResponse.GetStatus())
+		statusResponse := e.(*pb.DeliverResponse).Type.(*pb.DeliverResponse_Status)
+		if statusResponse.Status != expectedStatus {
+			t.Fatalf("expecting status %s but got %s", expectedStatus, statusResponse.Status)
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatalf("timed out waiting for event")
 	}
 
-	conn.Close()
-
-	// Calling close again should be ignored
 	conn.Close()
 }
 
@@ -115,19 +135,6 @@ func TestDisconnected(t *testing.T) {
 	go conn.Receive(eventch)
 
 	deliverServer.Disconnect(errors.New("simulating disconnect"))
-
-	select {
-	case e, ok := <-eventch:
-		if !ok {
-			t.Fatalf("unexpected closed connection")
-		}
-		statusResponse := e.(*pb.DeliverResponse).Type.(*pb.DeliverResponse_Status)
-		if statusResponse.Status != cb.Status_SUCCESS {
-			t.Fatalf("expecting status %s but got %s", cb.Status_SUCCESS, statusResponse.Status)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for event")
-	}
 
 	if err := conn.Send(seek.InfoNewest()); err != nil {
 		t.Fatalf("error sending seek request for channel [%s]: err", err)
@@ -166,22 +173,6 @@ func testSend(t *testing.T, streamType streamType) {
 	eventch := make(chan interface{})
 
 	go conn.Receive(eventch)
-
-	select {
-	case e, ok := <-eventch:
-		if !ok {
-			t.Fatalf("unexpected closed connection")
-		}
-		deliverResponse, ok := e.(*pb.DeliverResponse)
-		if !ok {
-			t.Fatalf("expected deliver response but got %T", e)
-		}
-		if deliverResponse.GetStatus() != cb.Status_SUCCESS {
-			t.Fatalf("expected deliver response status [%s] but got [%s]", cb.Status_SUCCESS, deliverResponse.GetStatus())
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for event")
-	}
 
 	if err := conn.Send(seek.InfoNewest()); err != nil {
 		t.Fatalf("error sending seek request for channel [%s]: err", err)
@@ -231,6 +222,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func newMockContext() fabcontext.Client {
+func newMockContext() *fabmocks.MockContext {
 	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
 }

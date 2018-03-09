@@ -68,7 +68,7 @@ func New(context context.Client, channelID string, discoveryService fab.Discover
 }
 
 func (c *Client) registerInterests() error {
-	logger.Debugf("sending register interests request....\n")
+	logger.Debugf("sending register interests request....")
 
 	errch := make(chan error)
 	c.Submit(dispatcher.NewRegisterInterestsEvent(c.interests, errch))
@@ -81,10 +81,10 @@ func (c *Client) registerInterests() error {
 	}
 
 	if err != nil {
-		logger.Errorf("unable to send register interests request: %s\n", err)
+		logger.Errorf("unable to send register interests request: %s", err)
 		return err
 	}
 
-	logger.Debugf("successfully sent register interests\n")
+	logger.Debugf("successfully sent register interests")
 	return nil
 }

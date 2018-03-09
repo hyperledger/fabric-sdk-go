@@ -59,7 +59,6 @@ func New(permitBlockEvents bool, dispatcher eventservice.Dispatcher, opts ...opt
 	return &Client{
 		Service:           *eventservice.New(dispatcher, opts...),
 		params:            *params,
-		connEvent:         make(chan *fab.ConnectionEvent),
 		connectionState:   int32(Disconnected),
 		permitBlockEvents: permitBlockEvents,
 	}
@@ -117,9 +116,7 @@ func (c *Client) Close() {
 
 	logger.Debugf("Stopping client...")
 
-	if c.connEventCh != nil {
-		close(c.connEventCh)
-	}
+	c.closeConnectEventChan()
 
 	logger.Debugf("Sending disconnect request...")
 
@@ -302,10 +299,7 @@ func (c *Client) monitorConnection() {
 			break
 		}
 
-		if c.connEventCh != nil {
-			logger.Debugln("Sending connection event to subscriber.")
-			c.connEventCh <- event
-		}
+		c.notifyConnectEventChan(event)
 
 		if event.Connected {
 			logger.Debugf("Event client has connected")
@@ -343,6 +337,29 @@ func (c *Client) reconnect() {
 	if err := c.connectWithRetry(c.maxReconnAttempts, c.timeBetweenConnAttempts); err != nil {
 		logger.Warnf("Could not reconnect event client: %s. Closing.", err)
 		c.Close()
+	}
+}
+
+func (c *Client) closeConnectEventChan() {
+	c.Lock()
+	defer c.Unlock()
+	if c.connEventCh != nil {
+		close(c.connEventCh)
+	}
+}
+
+func (c *Client) connectEventChan() chan *fab.ConnectionEvent {
+	c.RLock()
+	defer c.RUnlock()
+	return c.connEventCh
+}
+
+func (c *Client) notifyConnectEventChan(event *fab.ConnectionEvent) {
+	c.RLock()
+	defer c.RUnlock()
+	if c.connEventCh != nil {
+		logger.Debugln("Sending connection event to subscriber.")
+		c.connEventCh <- event
 	}
 }
 

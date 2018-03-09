@@ -12,17 +12,35 @@ import (
 
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
 )
 
 // MockDeliverServer is a mock deliver server
 type MockDeliverServer struct {
 	sync.RWMutex
+	status     cb.Status
 	disconnErr error
 }
 
 // NewMockDeliverServer returns a new MockDeliverServer
 func NewMockDeliverServer() *MockDeliverServer {
-	return new(MockDeliverServer)
+	return &MockDeliverServer{
+		status: cb.Status_UNKNOWN,
+	}
+}
+
+// SetStatus sets the status to return when calling Deliver or DeliverFiltered
+func (s *MockDeliverServer) SetStatus(status cb.Status) {
+	s.Lock()
+	defer s.Unlock()
+	s.status = status
+}
+
+// Status returns the status that's returned when calling Deliver or DeliverFiltered
+func (s *MockDeliverServer) Status() cb.Status {
+	s.RLock()
+	defer s.RUnlock()
+	return s.status
 }
 
 // Disconnect terminates the stream and returns the given error to the client
@@ -40,11 +58,15 @@ func (s *MockDeliverServer) disconnectErr() error {
 
 // Deliver delivers a stream of blocks
 func (s *MockDeliverServer) Deliver(srv pb.Deliver_DeliverServer) error {
-	srv.Send(&pb.DeliverResponse{
-		Type: &pb.DeliverResponse_Status{
-			Status: cb.Status_SUCCESS,
-		},
-	})
+	status := s.Status()
+	if status != cb.Status_UNKNOWN {
+		srv.Send(&pb.DeliverResponse{
+			Type: &pb.DeliverResponse_Status{
+				Status: status,
+			},
+		})
+		return errors.Errorf("returning error status: %s", status)
+	}
 
 	for {
 		envelope, err := srv.Recv()
@@ -68,11 +90,15 @@ func (s *MockDeliverServer) Deliver(srv pb.Deliver_DeliverServer) error {
 
 // DeliverFiltered delivers a stream of filtered blocks
 func (s *MockDeliverServer) DeliverFiltered(srv pb.Deliver_DeliverFilteredServer) error {
-	srv.Send(&pb.DeliverResponse{
-		Type: &pb.DeliverResponse_Status{
-			Status: cb.Status_SUCCESS,
-		},
-	})
+	if s.status != cb.Status_UNKNOWN {
+		srv.Send(&pb.DeliverResponse{
+			Type: &pb.DeliverResponse_Status{
+				Status: s.status,
+			},
+		})
+		return errors.Errorf("returning error status: %s", s.status)
+	}
+
 	for {
 		envelope, err := srv.Recv()
 		if err == io.EOF || envelope == nil {

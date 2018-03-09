@@ -35,7 +35,7 @@ func TestSeek(t *testing.T) {
 		newMockContext(), channelID,
 		clientmocks.NewProviderFactory().Provider(
 			delivermocks.NewConnection(
-				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory)),
 			),
 		),
 		clientmocks.CreateDiscoveryService(peer1, peer2),
@@ -86,58 +86,6 @@ func TestSeek(t *testing.T) {
 	}
 }
 
-func TestTimedOutSeek(t *testing.T) {
-	channelID := "testchannel"
-
-	dispatcher := New(
-		newMockContext(), channelID,
-		clientmocks.NewProviderFactory().Provider(
-			delivermocks.NewConnection(
-				clientmocks.WithResults(
-					clientmocks.NewResult(delivermocks.Seek, clientmocks.NoOpResult),
-				),
-				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
-			),
-		),
-		clientmocks.CreateDiscoveryService(peer1, peer2),
-	)
-	if err := dispatcher.Start(); err != nil {
-		t.Fatalf("Error starting dispatcher: %s", err)
-	}
-
-	dispatcherEventch, err := dispatcher.EventCh()
-	if err != nil {
-		t.Fatalf("Error getting event channel from dispatcher: %s", err)
-	}
-
-	// Connect
-	errch := make(chan error)
-	dispatcherEventch <- clientdisp.NewConnectEvent(errch)
-	if err := <-errch; err != nil {
-		t.Fatalf("Error connecting: %s", err)
-	}
-
-	dispatcherEventch <- NewSeekEvent(seek.InfoNewest(), errch)
-
-	select {
-	case err := <-errch:
-		if err != nil {
-			t.Fatalf("expecting timeout connecting due to no response from seek but got error: %s", err)
-		} else {
-			t.Fatalf("expecting timeout connecting due to no response from seek but got success")
-		}
-	case <-time.After(2 * time.Second):
-		// Expecting timeout
-	}
-
-	// Stop
-	stopResp := make(chan error)
-	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
-	if err := <-stopResp; err != nil {
-		t.Fatalf("Error stopping dispatcher: %s", err)
-	}
-}
-
 func TestUnauthorized(t *testing.T) {
 	channelID := "testchannel"
 
@@ -146,9 +94,9 @@ func TestUnauthorized(t *testing.T) {
 		clientmocks.NewProviderFactory().Provider(
 			delivermocks.NewConnection(
 				clientmocks.WithResults(
-					clientmocks.NewResult(delivermocks.Seek, delivermocks.ForbiddenResult),
+					clientmocks.NewResult(delivermocks.Connect, delivermocks.ForbiddenResult),
 				),
-				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory)),
 			),
 		),
 		clientmocks.CreateDiscoveryService(peer1, peer2),
@@ -162,35 +110,44 @@ func TestUnauthorized(t *testing.T) {
 		t.Fatalf("Error getting event channel from dispatcher: %s", err)
 	}
 
-	// Connect
+	// Register connection event
 	errch := make(chan error)
+	regch := make(chan fab.Registration)
+	conneventch := make(chan *fab.ConnectionEvent, 5)
+	dispatcherEventch <- clientdisp.NewRegisterConnectionEvent(conneventch, regch, errch)
+
+	select {
+	case err := <-errch:
+		if err != nil {
+			t.Fatalf("Error registering for connection events: %s", err)
+		}
+	case <-regch:
+	}
+
+	// Connect
 	dispatcherEventch <- clientdisp.NewConnectEvent(errch)
 	if err := <-errch; err != nil {
 		t.Fatalf("Error connecting: %s", err)
 	}
 
-	dispatcherEventch <- NewSeekEvent(seek.InfoNewest(), errch)
-
-	select {
-	case err := <-errch:
-		if err == nil {
-			t.Fatalf("expecting error connecting due to insufficient permissions but got success")
+	for {
+		select {
+		case event := <-conneventch:
+			if event.Connected {
+				t.Logf("Got connected event")
+			} else {
+				t.Logf("Got disconnected event with error [%s]", event.Err)
+				return
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatalf("timed out waiting for disconnected event")
 		}
-	case <-time.After(2 * time.Second):
-		t.Fatalf("timed out waiting for seek response")
-	}
-
-	// Stop
-	stopResp := make(chan error)
-	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
-	if err := <-stopResp; err != nil {
-		t.Fatalf("Error stopping dispatcher: %s", err)
 	}
 }
 
 func TestBlockEvents(t *testing.T) {
 	channelID := "testchannel"
-	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory)
 
 	dispatcher := New(
 		newMockContext(), channelID,
@@ -255,7 +212,7 @@ func TestBlockEvents(t *testing.T) {
 func TestFilteredBlockEvents(t *testing.T) {
 	channelID := "testchannel"
 
-	ledger := servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)
+	ledger := servicemocks.NewMockLedger(delivermocks.FilteredBlockEventFactory)
 
 	dispatcher := New(
 		newMockContext(), channelID,

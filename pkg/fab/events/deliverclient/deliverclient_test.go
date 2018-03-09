@@ -58,7 +58,7 @@ func TestClientConnect(t *testing.T) {
 		withConnectionProvider(
 			clientmocks.NewProviderFactory().Provider(
 				delivermocks.NewConnection(
-					clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+					clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory)),
 				),
 			),
 			true,
@@ -185,7 +185,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 		withConnectionProvider(
 			cp.FlakeyProvider(
 				connAttemptResult,
-				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory)),
 				clientmocks.WithFactory(func(opts ...clientmocks.Opt) clientmocks.Connection {
 					return delivermocks.NewConnection(opts...)
 				}),
@@ -216,7 +216,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 	cp := clientmocks.NewProviderFactory()
 
 	connectch := make(chan *fab.ConnectionEvent)
-	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory)
 
 	eventClient, err := New(
 		newMockContext(), "mychannel",
@@ -276,7 +276,7 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 	channelID := "mychannel"
 	ccID := "mycc"
 
-	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory)
 
 	// Add 2 blocks to the ledger befor the client has connected
 	ledger.NewBlock(channelID,

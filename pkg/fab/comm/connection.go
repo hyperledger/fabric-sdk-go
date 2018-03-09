@@ -137,7 +137,7 @@ func newDialOpts(config core.Config, url string, params *params) ([]grpc.DialOpt
 
 	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.FailFast(params.failFast)))
 
-	if urlutil.IsTLSEnabled(url) {
+	if urlutil.AttemptSecured(url, params.insecure) {
 		tlsConfig, err := comm.TLSConfig(params.certificate, params.hostOverride, config)
 		if err != nil {
 			return nil, err

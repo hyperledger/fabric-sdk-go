@@ -19,6 +19,7 @@ type params struct {
 	certificate     *x509.Certificate
 	keepAliveParams keepalive.ClientParameters
 	failFast        bool
+	insecure        bool
 	connectTimeout  time.Duration
 }
 
@@ -74,6 +75,16 @@ func WithConnectTimeout(value time.Duration) options.Opt {
 	}
 }
 
+// WithInsecure indicates to fall back to an insecure connection if the
+// connection URL does not specify a protocol
+func WithInsecure() options.Opt {
+	return func(p options.Params) {
+		if setter, ok := p.(insecureSetter); ok {
+			setter.SetInsecure(true)
+		}
+	}
+}
+
 func (p *params) SetHostOverride(value string) {
 	logger.Debugf("HostOverride: %s", value)
 	p.hostOverride = value
@@ -99,6 +110,11 @@ func (p *params) SetConnectTimeout(value time.Duration) {
 	p.connectTimeout = value
 }
 
+func (p *params) SetInsecure(value bool) {
+	logger.Debugf("Insecure: %t", value)
+	p.insecure = value
+}
+
 type hostOverrideSetter interface {
 	SetHostOverride(value string)
 }
@@ -113,6 +129,10 @@ type keepAliveParamsSetter interface {
 
 type failFastSetter interface {
 	SetFailFast(value bool)
+}
+
+type insecureSetter interface {
+	SetInsecure(value bool)
 }
 
 type connectTimeoutSetter interface {
