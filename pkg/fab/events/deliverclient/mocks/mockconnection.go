@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	// Seek is the Seek operation (used in the OperationMap)
-	Seek clientmocks.Operation = "seek"
+	// Connect is the Connect operation (used in the OperationMap)
+	Connect clientmocks.Operation = "connect"
 
 	// BadRequestResult indicates that the operation should use invalid seek info
 	BadRequestResult clientmocks.Result = "bad-request"
@@ -37,30 +37,27 @@ func NewConnection(opts ...clientmocks.Opt) *MockConnection {
 	}
 }
 
+// Receive implements the MockConnection interface
+func (c *MockConnection) Receive(eventch chan<- interface{}) {
+	result, ok := c.Result(Connect)
+	if ok {
+		switch result.Result {
+		case BadRequestResult:
+			eventch <- newDeliverStatusResponse(cb.Status_BAD_REQUEST)
+			return
+		case ForbiddenResult:
+			eventch <- newDeliverStatusResponse(cb.Status_FORBIDDEN)
+			return
+		}
+	}
+	c.MockConnection.Receive(eventch)
+}
+
 // Send mocks sending seek info to the deliver server
 func (c *MockConnection) Send(sinfo *ab.SeekInfo) error {
 	if c.Closed() {
 		return errors.New("mock connection is closed")
 	}
-
-	result, ok := c.Result(Seek)
-	if ok && result.Result == clientmocks.NoOpResult {
-		// Don't send a response
-		return nil
-	}
-
-	if ok {
-		switch result.Result {
-		case BadRequestResult:
-			c.ProduceEvent(newDeliverStatusResponse(cb.Status_BAD_REQUEST))
-			return nil
-		case ForbiddenResult:
-			c.ProduceEvent(newDeliverStatusResponse(cb.Status_FORBIDDEN))
-			return nil
-		}
-	}
-
-	c.ProduceEvent(newDeliverStatusResponse(cb.Status_SUCCESS))
 
 	switch seek := sinfo.Start.Type.(type) {
 	case *ab.SeekPosition_Specified:
@@ -75,8 +72,10 @@ func (c *MockConnection) Send(sinfo *ab.SeekInfo) error {
 	return nil
 }
 
-func newDeliverStatusResponse(status cb.Status) *pb.DeliverResponse_Status {
-	return &pb.DeliverResponse_Status{
-		Status: status,
+func newDeliverStatusResponse(status cb.Status) *pb.DeliverResponse {
+	return &pb.DeliverResponse{
+		Type: &pb.DeliverResponse_Status{
+			Status: status,
+		},
 	}
 }

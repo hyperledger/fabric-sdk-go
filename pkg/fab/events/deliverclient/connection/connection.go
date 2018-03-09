@@ -95,7 +95,7 @@ func (c *DeliverConnection) Send(seekInfo *ab.SeekInfo) error {
 		return errors.New("connection is closed")
 	}
 
-	logger.Debugf("Sending %v\n", seekInfo)
+	logger.Debugf("Sending %#v", seekInfo)
 
 	env, err := c.createSignedEnvelope(seekInfo)
 	if err != nil {
@@ -110,32 +110,34 @@ func (c *DeliverConnection) Receive(eventch chan<- interface{}) {
 	for {
 		stream := c.deliverStream()
 		if stream == nil {
-			logger.Warnf("The stream has closed. Terminating loop.\n")
+			logger.Warnf("The stream has closed. Terminating loop.")
 			break
 		}
 
 		in, err := stream.Recv()
 
+		logger.Debugf("Got deliver response: %#v", in)
+
 		if c.Closed() {
-			logger.Debugf("The connection has closed. Terminating loop.\n")
+			logger.Debugf("The connection has closed with error [%s]. Terminating loop.", err)
 			break
 		}
 
 		if err == io.EOF {
 			// This signifies that the stream has been terminated at the client-side. No need to send an event.
-			logger.Debugf("Received EOF from stream.\n")
+			logger.Debugf("Received EOF from stream.")
 			break
 		}
 
 		if err != nil {
-			logger.Errorf("Received error from stream: [%s]. Sending disconnected event.\n", err)
+			logger.Errorf("Received error from stream: [%s]. Sending disconnected event.", err)
 			eventch <- clientdisp.NewDisconnectedEvent(err)
 			break
 		}
 
 		eventch <- in
 	}
-	logger.Debugf("Exiting stream listener\n")
+	logger.Debugf("Exiting stream listener")
 }
 
 func (c *DeliverConnection) createSignedEnvelope(msg proto.Message) (*cb.Envelope, error) {
@@ -145,7 +147,6 @@ func (c *DeliverConnection) createSignedEnvelope(msg proto.Message) (*cb.Envelop
 
 	payloadChannelHeader := utils.MakeChannelHeader(cb.HeaderType_DELIVER_SEEK_INFO, msgVersion, c.ChannelID(), epoch)
 	payloadChannelHeader.TlsCertHash = c.TLSCertHash()
-	var err error
 
 	data, err := proto.Marshal(msg)
 	if err != nil {
@@ -172,7 +173,7 @@ func (c *DeliverConnection) createSignedEnvelope(msg proto.Message) (*cb.Envelop
 		Data:   data,
 	})
 
-	signature, err := c.Context().SigningManager().Sign(data, c.Context().PrivateKey())
+	signature, err := c.Context().SigningManager().Sign(paylBytes, c.Context().PrivateKey())
 	if err != nil {
 		return nil, err
 	}

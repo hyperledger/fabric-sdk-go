@@ -62,7 +62,7 @@ func TestClientConnect(t *testing.T) {
 		withConnectionProviderAndInterests(
 			clientmocks.NewProviderFactory().Provider(
 				ehclientmocks.NewConnection(
-					clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+					clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
 				)),
 			filteredBlockInterests, false,
 		),
@@ -94,7 +94,7 @@ func TestTimeoutClientConnect(t *testing.T) {
 		withConnectionProviderAndInterests(
 			clientmocks.NewProviderFactory().Provider(
 				ehclientmocks.NewConnection(
-					clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+					clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
 					clientmocks.WithResults(
 						clientmocks.NewResult(ehmocks.RegInterests, clientmocks.NoOpResult),
 					),
@@ -207,7 +207,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 		withConnectionProviderAndInterests(
 			clientmocks.NewProviderFactory().FlakeyProvider(
 				connAttemptResult,
-				clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
 				clientmocks.WithFactory(func(opts ...clientmocks.Opt) clientmocks.Connection {
 					return ehclientmocks.NewConnection(opts...)
 				}),
@@ -238,7 +238,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 	cp := clientmocks.NewProviderFactory()
 
 	connectch := make(chan *fab.ConnectionEvent)
-	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory)
 
 	eventClient, err := New(
 		newMockContext(), "mychannel",
@@ -296,7 +296,7 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 	channelID := "mychannel"
 	ccID := "mycc"
 
-	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory)
 	cp := clientmocks.NewProviderFactory()
 
 	eventClient, err := New(

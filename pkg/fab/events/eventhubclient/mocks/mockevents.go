@@ -7,7 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/ptypes/timestamp"
+	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -32,4 +35,22 @@ func NewFilteredBlockEvent(fblock *pb.FilteredBlock) *pb.Event {
 			FilteredBlock: fblock,
 		},
 	}
+}
+
+// BlockEventFactory creates block events
+var BlockEventFactory = func(block servicemocks.Block) servicemocks.BlockEvent {
+	b, ok := block.(*servicemocks.BlockWrapper)
+	if !ok {
+		panic(fmt.Sprintf("Invalid block type: %T", block))
+	}
+	return NewBlockEvent(b.Block())
+}
+
+// FilteredBlockEventFactory creates filtered block events
+var FilteredBlockEventFactory = func(block servicemocks.Block) servicemocks.BlockEvent {
+	b, ok := block.(*servicemocks.FilteredBlockWrapper)
+	if !ok {
+		panic(fmt.Sprintf("Invalid block type: %T", block))
+	}
+	return NewFilteredBlockEvent(b.Block())
 }
