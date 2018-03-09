@@ -17,8 +17,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
-	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/pkg/errors"
 )
 
@@ -60,17 +58,6 @@ func (f *InfraProvider) Close() {
 // CommManager provides comm support such as GRPC onnections
 func (f *InfraProvider) CommManager() fab.CommManager {
 	return f.commManager
-}
-
-// CreateResourceClient returns a new client initialized for the current instance of the SDK.
-func (f *InfraProvider) CreateResourceClient(ic fab.IdentityContext) (api.Resource, error) {
-	ctx := &fabContext{
-		Providers: f.providerContext,
-		Identity:  ic,
-	}
-	client := clientImpl.New(ctx)
-
-	return client, nil
 }
 
 // CreateChannelLedger returns a new client initialized for the current instance of the SDK.

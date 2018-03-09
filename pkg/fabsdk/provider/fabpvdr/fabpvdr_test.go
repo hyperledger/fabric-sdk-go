@@ -16,27 +16,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateInfraProvider(t *testing.T) {
 	newMockInfraProvider(t)
-}
-
-func TestCreateResourceClient(t *testing.T) {
-	p := newMockInfraProvider(t)
-
-	user := mocks.NewMockUser("user")
-	client, err := p.CreateResourceClient(user)
-	if err != nil {
-		t.Fatalf("Unexpected error creating client %v", err)
-	}
-
-	_, ok := client.(*resource.Resource)
-	if !ok {
-		t.Fatalf("Unexpected client impl created")
-	}
 }
 
 func verifyPeer(t *testing.T, peer fab.Peer, url string) {

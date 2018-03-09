@@ -13,9 +13,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -62,7 +64,8 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 	}
 
 	// Low level resource
-	client, err := getResource(sdk, "Admin", orgName)
+	client, err := getContext(sdk, "Admin", orgName)
+
 	if err != nil {
 		t.Fatalf("Failed to get resource: %s", err)
 	}
@@ -71,7 +74,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 		t.Fatalf("installCC return error: %v", err)
 	}
 
-	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(testSetup.Targets[0])
+	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(client, testSetup.Targets[0])
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
@@ -107,7 +110,7 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricS
 	}
 
 	// Low level resource
-	client, err := getResource(sdk, "Admin", orgName)
+	client, err := getContext(sdk, "Admin", orgName)
 	if err != nil {
 		t.Fatalf("Failed to get resource: %s", err)
 	}
@@ -128,11 +131,11 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricS
 }
 
 // installCC use low level client to install chaincode
-func installCC(client api.Resource, name string, path string, version string, ccPackage *api.CCPackage, targets []fab.ProposalProcessor) error {
+func installCC(client *context.Client, name string, path string, version string, ccPackage *api.CCPackage, targets []fab.ProposalProcessor) error {
 
 	icr := api.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: targets}
 
-	_, _, err := client.InstallChaincode(icr)
+	_, _, err := resource.InstallChaincode(client, icr)
 	if err != nil {
 		return errors.WithMessage(err, "InstallChaincode failed")
 	}

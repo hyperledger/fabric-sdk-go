@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 
@@ -367,7 +367,7 @@ func getEventHub(sdk *fabsdk.FabricSDK, channelID string, user string, orgName s
 	return eventHub, nil
 }
 
-func getResource(sdk *fabsdk.FabricSDK, user string, orgName string) (*resource.Resource, error) {
+func getContext(sdk *fabsdk.FabricSDK, user string, orgName string) (*context.Client, error) {
 
 	ctx := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrg(orgName))
 
@@ -376,6 +376,6 @@ func getResource(sdk *fabsdk.FabricSDK, user string, orgName string) (*resource.
 		return nil, errors.WithMessage(err, "create context failed")
 	}
 
-	return resource.New(clientContext), nil
+	return &context.Client{Providers: clientContext, Identity: clientContext}, nil
 
 }

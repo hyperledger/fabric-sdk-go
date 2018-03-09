@@ -12,17 +12,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 )
 
 // MockInfraProvider represents the default implementation of Fabric objects.
 type MockInfraProvider struct {
 	providerContext context.Providers
-}
-
-// CreateResourceClient returns a new client initialized for the current instance of the SDK.
-func (f *MockInfraProvider) CreateResourceClient(ic fab.IdentityContext) (api.Resource, error) {
-	return NewMockInvalidResource(), nil
+	customOrderer   fab.Orderer
 }
 
 // CreateChannelLedger returns a new client initialized for the current instance of the SDK.
@@ -69,12 +64,21 @@ func (f *MockInfraProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab
 
 // CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.
 func (f *MockInfraProvider) CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Orderer, error) {
+	if f.customOrderer != nil {
+		return f.customOrderer, nil
+	}
+
 	return &MockOrderer{}, nil
 }
 
 //CommManager returns comm provider
 func (f *MockInfraProvider) CommManager() fab.CommManager {
 	return nil
+}
+
+// SetCustomOrderer creates a default implementation of Orderer based on configuration.
+func (f *MockInfraProvider) SetCustomOrderer(customOrderer fab.Orderer) {
+	f.customOrderer = customOrderer
 }
 
 //Close mock close function

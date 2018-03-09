@@ -10,6 +10,7 @@ package resource
 import (
 	"github.com/golang/protobuf/proto"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
@@ -18,15 +19,15 @@ import (
 )
 
 // block retrieves the block at the given position
-func (r *Resource) block(orderers []fab.Orderer, channel string, pos *ab.SeekPosition) (*common.Block, error) {
-	th, err := txn.NewHeader(r.clientContext, channel)
+func retrieveBlock(ctx context.Client, orderers []fab.Orderer, channel string, pos *ab.SeekPosition) (*common.Block, error) {
+	th, err := txn.NewHeader(ctx, channel)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating TX ID failed")
 	}
 
 	channelHeaderOpts := txn.ChannelHeaderOpts{
 		TxnHeader:   th,
-		TLSCertHash: ccomm.TLSCertHash(r.clientContext.Config()),
+		TLSCertHash: ccomm.TLSCertHash(ctx.Config()),
 	}
 	seekInfoHeader, err := txn.CreateChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, channelHeaderOpts)
 	if err != nil {
@@ -69,7 +70,7 @@ func (r *Resource) block(orderers []fab.Orderer, channel string, pos *ab.SeekPos
 		Data:   seekInfoBytes,
 	}
 
-	return txn.SendPayload(r.clientContext, &payload, orderers)
+	return txn.SendPayload(ctx, &payload, orderers)
 }
 
 // newNewestSeekPosition returns a SeekPosition that requests the newest block

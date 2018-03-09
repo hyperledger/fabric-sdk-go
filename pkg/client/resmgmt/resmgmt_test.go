@@ -9,6 +9,7 @@ package resmgmt
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -21,55 +22,73 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 
+	"github.com/golang/protobuf/proto"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-const channelConfig = "./testdata/test.tx"
+const channelConfig = "../../../test/fixtures/fabric/v1.0/channel/mychannel.tx"
 const networkCfg = "../../../test/fixtures/config/config_test.yaml"
 
 func TestJoinChannelFail(t *testing.T) {
 
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+
+	endorserServer, addr := startEndorserServer(t, grpcServer)
 	ctx := setupTestContext("test", "Org1MSP")
 
-	// Setup resource management client
-	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	// Create mock orderer with simple mock block
+	orderer := fcmocks.NewMockOrderer("", nil)
+	defer orderer.Close()
+	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
+	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+
+	setupCustomOrderer(ctx, orderer)
+
 	rc := setupResMgmtClient(ctx, nil, t)
-	rc.resource = fcmocks.NewMockInvalidResource()
 
 	// Setup target peers
-	peer1, _ := peer.New(fcmocks.NewMockConfig())
+	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr))
 
-	// Test fail genesis block retrieval (no orderer)
+	// Test fail with send proposal error
+	endorserServer.ProposalError = errors.New("Test Error")
 	err := rc.JoinChannel("mychannel", WithTargets(peer1))
+
 	if err == nil {
 		t.Fatal("Should have failed to get genesis block")
 	}
 
 }
 
-func TestJoinChannel(t *testing.T) {
+func TestJoinChannelSuccess(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 
+	_, addr := startEndorserServer(t, grpcServer)
 	ctx := setupTestContext("test", "Org1MSP")
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
+	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
+	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+
+	setupCustomOrderer(ctx, orderer)
+
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	// Setup target peers
 	var peers []fab.Peer
-	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("example.com"))
+	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr))
 	peers = append(peers, peer1)
 
 	// Test valid join channel request (success)
@@ -87,21 +106,27 @@ func TestWithFilterOption(t *testing.T) {
 		t.Fatal("Expected Resource Management Client to be set")
 	}
 }
+
 func TestJoinChannelWithFilter(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 
+	_, addr := startEndorserServer(t, grpcServer)
 	ctx := setupTestContext("test", "Org1MSP")
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
+	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
+	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	setupCustomOrderer(ctx, orderer)
+
 	//the target filter ( client option) will be set
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	// Setup target peers
 	var peers []fab.Peer
-	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("example.com"))
+	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr))
 	peers = append(peers, peer1)
 
 	// Test valid join channel request (success)
@@ -165,7 +190,23 @@ func TestJoinChannelRequiredParameters(t *testing.T) {
 
 func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
-	rc := setupDefaultResMgmtClient(t)
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+
+	_, addr := startEndorserServer(t, grpcServer)
+
+	ctx := setupTestContextWithDiscoveryError("test", "Org1MSP", nil)
+	network := getNetworkConfig(t)
+	ctx.SetConfig(network)
+
+	// Create mock orderer with simple mock block
+	orderer := fcmocks.NewMockOrderer("", nil)
+	defer orderer.Close()
+	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
+	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	setupCustomOrderer(ctx, orderer)
+
+	rc := setupResMgmtClient(ctx, nil, t, getDefaultTargetFilterOption())
 
 	// Test empty channel name for request with no opts
 	err := rc.JoinChannel("")
@@ -174,8 +215,9 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	}
 
 	var peers []fab.Peer
-	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
-	peers = append(peers, &peer)
+	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr))
+	peer1.SetMSPID("Org1MSP")
+	peers = append(peers, peer1)
 
 	// Test both targets and filter provided (error condition)
 	err = rc.JoinChannel("mychannel", WithTargets(peers...), WithTargetFilter(&MSPFilter{mspID: "MspID"}))
@@ -194,6 +236,17 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "No targets available") {
 		t.Fatalf("InstallCC should have failed with no targets error")
 	}
+
+	//Some cleanup before further test
+	orderer = fcmocks.NewMockOrderer("", nil)
+	defer orderer.Close()
+	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
+	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	setupCustomOrderer(ctx, orderer)
+
+	rc = setupResMgmtClient(ctx, nil, t, getDefaultTargetFilterOption())
+	disProvider, _ := fcmocks.NewMockDiscoveryProvider(nil, peers)
+	rc.discovery, _ = disProvider.CreateDiscoveryService("mychannel")
 
 	// Test filter only (filter has a match)
 	err = rc.JoinChannel("mychannel", WithTargetFilter(&MSPFilter{mspID: "Org1MSP"}))
@@ -279,13 +332,23 @@ func TestIsChaincodeInstalled(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)
 
-	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
+	//prepare sample response
+	response := new(pb.ChaincodeQueryResponse)
+	chaincodes := make([]*pb.ChaincodeInfo, 1)
+	chaincodes[0] = &pb.ChaincodeInfo{Name: "test-name", Path: "test-path", Version: "test-version"}
+	response.Chaincodes = chaincodes
+	responseBytes, err := proto.Marshal(response)
+	if err != nil {
+		t.Fatal("failed to marshal sample response")
+	}
+
+	peer1 := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "grpc://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: http.StatusOK, Payload: responseBytes}
 
 	// Chaincode found request
-	req := InstallCCRequest{Name: "name", Version: "version", Path: "path"}
+	req := InstallCCRequest{Name: "test-name", Path: "test-path", Version: "test-version"}
 
 	// Test chaincode installed (valid peer)
-	installed, err := rc.isChaincodeInstalled(req, peer)
+	installed, err := rc.isChaincodeInstalled(req, peer1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -297,7 +360,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	req = InstallCCRequest{Name: "ID", Version: "v0", Path: "path"}
 
 	// Test chaincode installed
-	installed, err = rc.isChaincodeInstalled(req, peer)
+	installed, err = rc.isChaincodeInstalled(req, peer1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,7 +386,7 @@ func TestQueryInstalledChaincodes(t *testing.T) {
 		t.Fatalf("QueryInstalledChaincodes: peer cannot be nil")
 	}
 
-	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
+	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: http.StatusOK}
 
 	// Test success (valid peer)
 	_, err = rc.QueryInstalledChaincodes(peer)
@@ -337,17 +400,28 @@ func TestQueryChannels(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)
 
+	//prepare sample response
+	response := new(pb.ChannelQueryResponse)
+	channels := make([]*pb.ChannelInfo, 1)
+	channels[0] = &pb.ChannelInfo{ChannelId: "test"}
+	response.Channels = channels
+
+	responseBytes, err := proto.Marshal(response)
+	if err != nil {
+		t.Fatal("failed to marshal sample response")
+	}
+
 	// Test error
-	_, err := rc.QueryChannels(nil)
+	_, err = rc.QueryChannels(nil)
 	if err == nil {
 		t.Fatalf("QueryChannels: peer cannot be nil")
 	}
 
-	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
+	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: http.StatusOK, Payload: responseBytes}
 
 	// Test success (valid peer)
 	found := false
-	response, err := rc.QueryChannels(peer)
+	response, err = rc.QueryChannels(peer)
 	if err != nil {
 		t.Fatalf("failed to query channel for peer: %s", err)
 	}
@@ -367,10 +441,17 @@ func TestInstallCCWithOpts(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)
 
+	//prepare sample response
+	response := new(pb.ChaincodeQueryResponse)
+	chaincodes := make([]*pb.ChaincodeInfo, 1)
+	chaincodes[0] = &pb.ChaincodeInfo{Name: "name", Path: "path", Version: "version"}
+	response.Chaincodes = chaincodes
+	responseBytes, err := proto.Marshal(response)
+
 	// Setup targets
 	var peers []fab.Peer
 	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
-		Status: 200, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
+		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Payload: responseBytes}
 	peers = append(peers, &peer)
 
 	// Already installed chaincode request
@@ -408,8 +489,21 @@ func TestInstallCCWithOpts(t *testing.T) {
 	}
 
 	// Chaincode that causes generic (system) error in installed chaincodes
-	req = InstallCCRequest{Name: "error", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	_, err = rc.InstallCC(req, WithTargets(peers...))
+
+	//prepare sample response
+
+	//prepare sample response
+	response = new(pb.ChaincodeQueryResponse)
+	chaincodes = make([]*pb.ChaincodeInfo, 1)
+	chaincodes[0] = &pb.ChaincodeInfo{Name: "name1", Path: "path1", Version: "version1"}
+	response.Chaincodes = chaincodes
+	responseBytes, _ = proto.Marshal(response)
+
+	peer = fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
+		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Payload: responseBytes}
+
+	req = InstallCCRequest{Name: "error", Version: "v0", Path: "", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+	_, err = rc.InstallCC(req, WithTarget(&peer))
 	if err == nil {
 		t.Fatalf("Should have failed since install cc returns an error in the client")
 	}
@@ -419,9 +513,12 @@ func TestInstallCC(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)
 
+	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
+		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
+
 	// Chaincode that is not installed already (it will be installed)
 	req := InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	responses, err := rc.InstallCC(req)
+	responses, err := rc.InstallCC(req, WithTarget(&peer))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -434,12 +531,12 @@ func TestInstallCC(t *testing.T) {
 		t.Fatalf("Expecting %s target URL, got %s", expected, responses[0].Target)
 	}
 
-	if responses[0].Status != 0 {
+	if responses[0].Status != http.StatusOK {
 		t.Fatalf("Expecting %d status, got %d", 0, responses[0].Status)
 	}
 
 	// Chaincode that causes generic (system) error in installed chaincodes
-	req = InstallCCRequest{Name: "error", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+	req = InstallCCRequest{Name: "error", Version: "v0", Path: "", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
 	_, err = rc.InstallCC(req)
 	if err == nil {
 		t.Fatalf("Should have failed since install cc returns an error in the client")
@@ -769,7 +866,7 @@ func TestInstantiateCCDiscoveryError(t *testing.T) {
 		ChannelID: "mychannel",
 		Orderers:  []fab.Orderer{orderer},
 	}
-	rc.context.ChannelProvider().(*fcmocks.MockChannelProvider).SetTransactor(&transactor)
+	rc.ctx.ChannelProvider().(*fcmocks.MockChannelProvider).SetTransactor(&transactor)
 
 	// Start mock event hub
 	eventServer, err := fcmocks.StartMockEventServer(fmt.Sprintf("%s:%d", "127.0.0.1", 7053))
@@ -961,7 +1058,7 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 func TestUpgradeCCDiscoveryError(t *testing.T) {
 
 	// Setup test client and config
-	ctx := setupTestContext("test", "Org1MSP")
+	ctx := setupTestContextWithDiscoveryError("test", "Org1MSP", nil)
 	config := getNetworkConfig(t)
 	ctx.SetConfig(config)
 
@@ -974,7 +1071,7 @@ func TestUpgradeCCDiscoveryError(t *testing.T) {
 		ChannelID: "mychannel",
 		Orderers:  []fab.Orderer{orderer},
 	}
-	rc.context.ChannelProvider().(*fcmocks.MockChannelProvider).SetTransactor(&transactor)
+	rc.ctx.ChannelProvider().(*fcmocks.MockChannelProvider).SetTransactor(&transactor)
 
 	// Start mock event hub
 	eventServer, err := fcmocks.StartMockEventServer(fmt.Sprintf("%s:%d", "127.0.0.1", 7053))
@@ -1046,7 +1143,7 @@ func TestCCProposal(t *testing.T) {
 		ChannelID: "mychannel",
 		Orderers:  []fab.Orderer{orderer},
 	}
-	rc.context.ChannelProvider().(*fcmocks.MockChannelProvider).SetTransactor(&transactor)
+	rc.ctx.ChannelProvider().(*fcmocks.MockChannelProvider).SetTransactor(&transactor)
 
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
 	instantiateReq := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
@@ -1148,10 +1245,6 @@ func setupResMgmtClient(fabCtx context.Client, discErr error, t *testing.T, opts
 		t.Fatalf("Failed to create new client with options: %s %v", err, opts)
 	}
 
-	// Set mock resource
-	resource := fcmocks.NewMockResource()
-	resClient.resource = resource
-
 	return resClient
 
 }
@@ -1162,12 +1255,18 @@ func setupTestContext(userName string, mspID string) *fcmocks.MockContext {
 	return ctx
 }
 
+func setupCustomOrderer(ctx *fcmocks.MockContext, mockOrderer fab.Orderer) *fcmocks.MockContext {
+	mockInfraProvider := &fcmocks.MockInfraProvider{}
+	mockInfraProvider.SetCustomOrderer(mockOrderer)
+	ctx.SetCustomInfraProvider(mockInfraProvider)
+	return ctx
+}
+
 func setupTestContextWithDiscoveryError(userName string, mspID string, discErr error) *fcmocks.MockContext {
 	user := fcmocks.NewMockUserWithMSPID(userName, mspID)
 	dscPvdr, _ := setupTestDiscovery(discErr, nil)
 	//ignore err and set whatever you get in dscPvdr
 	ctx := fcmocks.NewMockContextWithCustomDiscovery(user, dscPvdr)
-
 	return ctx
 }
 
@@ -1195,9 +1294,26 @@ func getNetworkConfig(t *testing.T) core.Config {
 	return config
 }
 
-func TestSaveChannel(t *testing.T) {
+func TestSaveChannelSuccess(t *testing.T) {
 
-	cc := setupDefaultResMgmtClient(t)
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	fcmocks.StartMockBroadcastServer("127.0.0.1:7050", grpcServer)
+
+	ctx := setupTestContext("test", "Org1MSP")
+
+	mockConfig := &fcmocks.MockConfig{}
+	grpcOpts := make(map[string]interface{})
+	grpcOpts["allow-insecure"] = true
+
+	oConfig := &core.OrdererConfig{
+		URL:         "127.0.0.1:7050",
+		GRPCOptions: grpcOpts,
+	}
+	mockConfig.SetCustomOrdererCfg(oConfig)
+	ctx.SetConfig(mockConfig)
+
+	cc := setupResMgmtClient(ctx, nil, t)
 
 	// Test empty channel request
 	err := cc.SaveChannel(SaveChannelRequest{})
@@ -1230,7 +1346,7 @@ func TestSaveChannel(t *testing.T) {
 	}
 
 	// Test valid Save Channel request (success)
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig})
+	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig}, WithOrdererID("example.com"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1244,7 +1360,6 @@ func TestSaveChannelFailure(t *testing.T) {
 	errCtx := fcmocks.NewMockContext(user)
 	network := getNetworkConfig(t)
 	errCtx.SetConfig(network)
-	resource := fcmocks.NewMockInvalidResource()
 	fabCtx := setupTestContext("user", "Org1Msp1")
 
 	clientCtx := createClientContext(contextImpl.Client{
@@ -1257,8 +1372,6 @@ func TestSaveChannelFailure(t *testing.T) {
 		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
 
-	cc.resource = resource
-
 	// Test create channel failure
 	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig})
 	if err == nil {
@@ -1269,7 +1382,25 @@ func TestSaveChannelFailure(t *testing.T) {
 
 func TestSaveChannelWithOpts(t *testing.T) {
 
-	cc := setupDefaultResMgmtClient(t)
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	fcmocks.StartMockBroadcastServer("127.0.0.1:7050", grpcServer)
+
+	ctx := setupTestContext("test", "Org1MSP")
+
+	mockConfig := &fcmocks.MockConfig{}
+	grpcOpts := make(map[string]interface{})
+	grpcOpts["allow-insecure"] = true
+
+	oConfig := &core.OrdererConfig{
+		URL:         "127.0.0.1:7050",
+		GRPCOptions: grpcOpts,
+	}
+	mockConfig.SetCustomOrdererCfg(oConfig)
+	mockConfig.SetCustomRandomOrdererCfg(oConfig)
+	ctx.SetConfig(mockConfig)
+
+	cc := setupResMgmtClient(ctx, nil, t)
 
 	// Valid request (same for all options)
 	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig}
@@ -1289,6 +1420,12 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	}
 
 	// Test invalid orderer ID
+
+	mockConfig = &fcmocks.MockConfig{}
+	ctx.SetConfig(mockConfig)
+
+	cc = setupResMgmtClient(ctx, nil, t)
+
 	opts = WithOrdererID("Invalid")
 	err = cc.SaveChannel(req, opts)
 	if err == nil {
@@ -1297,7 +1434,23 @@ func TestSaveChannelWithOpts(t *testing.T) {
 }
 
 func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
-	cc := setupDefaultResMgmtClient(t)
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+	fcmocks.StartMockBroadcastServer("127.0.0.1:7050", grpcServer)
+	ctx := setupTestContext("test", "Org1MSP")
+
+	mockConfig := &fcmocks.MockConfig{}
+	grpcOpts := make(map[string]interface{})
+	grpcOpts["allow-insecure"] = true
+
+	oConfig := &core.OrdererConfig{
+		URL:         "127.0.0.1:7050",
+		GRPCOptions: grpcOpts,
+	}
+	mockConfig.SetCustomRandomOrdererCfg(oConfig)
+	ctx.SetConfig(mockConfig)
+
+	cc := setupResMgmtClient(ctx, nil, t)
 
 	// empty list of signing identities (defaults to context user)
 	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []fab.IdentityContext{}}
@@ -1308,7 +1461,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 
 	// multiple signing identities
 	secondCtx := fcmocks.NewMockContext(fcmocks.NewMockUser("second"))
-	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []fab.IdentityContext{cc.context, secondCtx}}
+	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []fab.IdentityContext{cc.ctx, secondCtx}}
 	err = cc.SaveChannel(req, WithOrdererID(""))
 	if err != nil {
 		t.Fatalf("Failed to save channel with multiple signing identities: %s", err)

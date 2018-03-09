@@ -7,23 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package api
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
-
-// Resource is a client that provides access to fabric resources such as chaincode.
-type Resource interface {
-	CreateChannel(request CreateChannelRequest) (fab.TransactionID, error)
-	InstallChaincode(request InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, fab.TransactionID, error)
-	QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error)
-	QueryChannels(peer fab.ProposalProcessor) (*pb.ChannelQueryResponse, error)
-	GenesisBlockFromOrderer(channelName string, orderer fab.Orderer) (*common.Block, error)
-	LastConfigFromOrderer(channelName string, orderer fab.Orderer) (*common.ConfigEnvelope, error)
-	JoinChannel(request JoinChannelRequest) error
-	SignChannelConfig(config []byte, signer context.Identity) (*common.ConfigSignature, error)
-}
 
 // CreateChannelRequest requests channel creation on the network
 type CreateChannelRequest struct {

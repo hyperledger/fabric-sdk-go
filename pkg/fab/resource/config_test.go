@@ -27,14 +27,14 @@ func TestExtractChannelConfig(t *testing.T) {
 }
 
 func TestCreateConfigSignature(t *testing.T) {
-	client := setupTestClient()
+	ctx := setupContext()
 
 	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	_, err = CreateConfigSignature(client.clientContext, configTx)
+	_, err = CreateConfigSignature(ctx, configTx)
 	if err != nil {
 		t.Fatalf("Expected 'channel configuration required %v", err)
 	}
