@@ -69,10 +69,14 @@ func (f *MockInfraProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab
 
 // CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.
 func (f *MockInfraProvider) CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Orderer, error) {
-	return &mockOrderer{}, nil
+	return &MockOrderer{}, nil
+}
+
+//CommManager returns comm provider
+func (f *MockInfraProvider) CommManager() fab.CommManager {
+	return nil
 }
 
 //Close mock close function
 func (f *MockInfraProvider) Close() {
-	return
 }

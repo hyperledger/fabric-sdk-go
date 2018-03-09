@@ -20,7 +20,7 @@ import (
 
 func TestCreateDiscoveryProvider(t *testing.T) {
 	ctx := mocks.NewMockContext(mocks.NewMockUser("testuser"))
-	fabPvdr := fabpvdr.New(ctx)
+	fabPvdr := fabpvdr.New(ctx.Config())
 
 	factory := NewProviderFactory()
 	config := mocks.NewMockConfig()

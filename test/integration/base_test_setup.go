@@ -23,7 +23,6 @@ import (
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
-	SDK           *fabsdk.FabricSDK
 	Identity      fab.IdentityContext
 	Targets       []fab.ProposalProcessor
 	ConfigFile    string
@@ -68,13 +67,7 @@ func ExampleCCUpgradeArgs() [][]byte {
 }
 
 // Initialize reads configuration from file and sets up client, channel and event hub
-func (setup *BaseSetupImpl) Initialize() error {
-	// Create SDK setup for the integration tests
-	sdk, err := fabsdk.New(config.FromFile(setup.ConfigFile))
-	if err != nil {
-		return errors.WithMessage(err, "SDK init failed")
-	}
-	setup.SDK = sdk
+func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 
 	adminIdentity, err := GetSigningIdentity(sdk, AdminUser, setup.OrgID)
 	if err != nil {

@@ -31,14 +31,15 @@ var eventCCArgs = [][]byte{[]byte("invoke"), []byte("SEVERE")}
 
 func TestEvents(t *testing.T) {
 	chainCodeID := integration.GenerateRandomID()
-	testSetup := initializeTests(t, chainCodeID)
+	testSetup, sdk := initializeTests(t, chainCodeID)
+	defer sdk.Close()
 
-	transactor, err := getTransactor(testSetup.SDK, testSetup.ChannelID, "Admin", testSetup.OrgID)
+	transactor, err := getTransactor(sdk, testSetup.ChannelID, "Admin", testSetup.OrgID)
 	if err != nil {
 		t.Fatalf("Failed to get channel transactor: %s", err)
 	}
 
-	eventHub, err := getEventHub(testSetup.SDK, testSetup.ChannelID, "Admin", testSetup.OrgID)
+	eventHub, err := getEventHub(sdk, testSetup.ChannelID, "Admin", testSetup.OrgID)
 	if err != nil {
 		t.Fatalf("Failed to get channel event hub: %s", err)
 	}

@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/pkg/errors"
@@ -53,7 +53,7 @@ type selectionService struct {
 }
 
 // Initialize allow for initializing providers
-func (p *SelectionProvider) Initialize(providers *context.Provider) error {
+func (p *SelectionProvider) Initialize(providers contextAPI.Providers) error {
 	p.providers = providers
 	return nil
 }

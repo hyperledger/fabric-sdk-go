@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -33,11 +34,6 @@ const (
 	Instantiate CCProposalType = iota
 	Upgrade
 )
-
-type context interface {
-	core.Providers
-	contextApi.Identity
-}
 
 // New create a transaction with proposal response, following the endorsement policy.
 func New(request fab.TransactionRequest) (*fab.Transaction, error) {
@@ -109,7 +105,7 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 }
 
 // Send send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
-func Send(ctx context, tx *fab.Transaction, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func Send(ctx contextApi.Client, tx *fab.Transaction, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
 	if orderers == nil || len(orderers) == 0 {
 		return nil, errors.New("orderers is nil")
 	}
@@ -144,7 +140,7 @@ func Send(ctx context, tx *fab.Transaction, orderers []fab.Orderer) (*fab.Transa
 
 // BroadcastPayload will send the given payload to some orderer, picking random endpoints
 // until all are exhausted
-func BroadcastPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func BroadcastPayload(ctx contextApi.Client, payload *common.Payload, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
 	// Check if orderers are defined
 	if len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
@@ -160,7 +156,7 @@ func BroadcastPayload(ctx context, payload *common.Payload, orderers []fab.Order
 
 // broadcastEnvelope will send the given envelope to some orderer, picking random endpoints
 // until all are exhausted
-func broadcastEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func broadcastEnvelope(ctx contextApi.Client, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
 	// Check if orderers are defined
 	if len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
@@ -185,9 +181,9 @@ func broadcastEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab
 	return nil, errResp
 }
 
-func sendBroadcast(ctx context, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*fab.TransactionResponse, error) {
+func sendBroadcast(ctx contextApi.Client, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*fab.TransactionResponse, error) {
 	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
-	reqCtx, cancel := reqContext.WithTimeout(reqContext.Background(), ctx.Config().TimeoutOrDefault(core.OrdererResponse))
+	reqCtx, cancel := reqContext.WithTimeout(context.NewRequest(ctx), ctx.Config().TimeoutOrDefault(core.OrdererResponse))
 	defer cancel()
 	if _, err := orderer.SendBroadcast(reqCtx, envelope); err != nil {
 		logger.Debugf("Receive Error Response from orderer :%v\n", err)
@@ -199,7 +195,7 @@ func sendBroadcast(ctx context, envelope *fab.SignedEnvelope, orderer fab.Ordere
 }
 
 // SendPayload sends the given payload to each orderer and returns a block response
-func SendPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (*common.Block, error) {
+func SendPayload(ctx contextApi.Client, payload *common.Payload, orderers []fab.Orderer) (*common.Block, error) {
 	if orderers == nil || len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
 	}
@@ -229,20 +225,28 @@ func SendPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (
 }
 
 // sendEnvelope sends the given envelope to each orderer and returns a block response
-func sendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*common.Block, error) {
+func sendEnvelope(ctx contextApi.Client, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*common.Block, error) {
 
 	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
-	reqCtx, cancel := reqContext.WithTimeout(reqContext.Background(), ctx.Config().TimeoutOrDefault(core.OrdererResponse))
+	reqCtx, cancel := reqContext.WithTimeout(context.NewRequest(ctx), ctx.Config().TimeoutOrDefault(core.OrdererResponse))
 	defer cancel()
 	blocks, errs := orderer.SendDeliver(reqCtx, envelope)
 
-	select {
-	case block := <-blocks:
-		return block, nil
-	case err := <-errs:
-		return nil, errors.Wrapf(err, "error from orderer")
+	var block *common.Block
+	for {
+		select {
+		case b, ok := <-blocks:
+			// We need to block until SendDeliver releases the connection. Currently
+			// this is trigged by the go chan closing.
+			// TODO: we may want to refactor (e.g., adding a synchronous SendDeliver)
+			if !ok {
+				return block, nil
+			}
+			block = b
+		case err := <-errs:
+			return nil, errors.Wrapf(err, "error from orderer")
+		}
 	}
-
 }
 
 // Status is the transaction status returned from eventhub tx events

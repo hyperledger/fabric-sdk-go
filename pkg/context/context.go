@@ -7,12 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package context
 
 import (
+	reqContext "context"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/pkg/errors"
 )
 
 // Client supplies the configuration and signing identity to client objects.
@@ -214,4 +216,20 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 		discovery:      discoveryService,
 		channelService: channelService,
 	}, nil
+}
+
+type reqContextKey string
+
+var reqContextCommManager = reqContextKey("commManager")
+
+// NewRequest creates a request-scoped context.
+func NewRequest(client context.Client) reqContext.Context {
+	ctx := reqContext.WithValue(reqContext.Background(), reqContextCommManager, client.InfraProvider().CommManager())
+	return ctx
+}
+
+// RequestCommManager extracts the CommManager from the request-scoped context.
+func RequestCommManager(ctx reqContext.Context) (fab.CommManager, bool) {
+	commManager, ok := ctx.Value(reqContextCommManager).(fab.CommManager)
+	return commManager, ok
 }

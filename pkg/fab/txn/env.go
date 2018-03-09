@@ -100,7 +100,7 @@ func computeTxnID(nonce, creator []byte, h hash.Hash) (string, error) {
 }
 
 // signPayload signs payload
-func signPayload(ctx context, payload *common.Payload) (*fab.SignedEnvelope, error) {
+func signPayload(ctx contextApi.Client, payload *common.Payload) (*fab.SignedEnvelope, error) {
 	payloadBytes, err := proto.Marshal(payload)
 	if err != nil {
 		return nil, errors.WithMessage(err, "marshaling of payload failed")

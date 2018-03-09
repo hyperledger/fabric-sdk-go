@@ -26,8 +26,7 @@ import (
 
 const samplekey = "sample-key"
 
-func TestEndToEndForCustomCryptoSuite(t *testing.T) {
-
+func customCryptoSuiteInit(t *testing.T) (*integration.BaseSetupImpl, string) {
 	testSetup := integration.BaseSetupImpl{
 		ConfigFile:    "../" + integration.ConfigTestFile,
 		ChannelID:     "mychannel",
@@ -35,14 +34,28 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 		ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
-	if err := testSetup.Initialize(); err != nil {
+	// Create SDK setup for the integration tests
+	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+	defer sdk.Close()
+
+	if err := testSetup.Initialize(sdk); err != nil {
 		t.Fatalf(err.Error())
 	}
 
 	chainCodeID := integration.GenerateRandomID()
-	if err := integration.InstallAndInstantiateExampleCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
+	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
+
+	return &testSetup, chainCodeID
+}
+
+func TestEndToEndForCustomCryptoSuite(t *testing.T) {
+
+	testSetup, chainCodeID := customCryptoSuiteInit(t)
 
 	defaultConfig, err := testSetup.InitConfig()()
 

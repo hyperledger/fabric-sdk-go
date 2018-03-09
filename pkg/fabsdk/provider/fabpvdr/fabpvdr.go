@@ -25,7 +25,7 @@ import (
 // InfraProvider represents the default implementation of Fabric objects.
 type InfraProvider struct {
 	providerContext context.Providers
-	connector       *comm.CachingConnector
+	commManager     *comm.CachingConnector
 }
 
 type fabContext struct {
@@ -34,22 +34,32 @@ type fabContext struct {
 }
 
 // New creates a InfraProvider enabling access to core Fabric objects and functionality.
-func New(ctx context.Providers) *InfraProvider {
-	idleTime := ctx.Config().TimeoutOrDefault(core.ConnectionIdle)
-	sweepTime := ctx.Config().TimeoutOrDefault(core.CacheSweepInterval)
+func New(config core.Config) *InfraProvider {
+	idleTime := config.TimeoutOrDefault(core.ConnectionIdle)
+	sweepTime := config.TimeoutOrDefault(core.CacheSweepInterval)
 
 	cc := comm.NewCachingConnector(sweepTime, idleTime)
 
 	f := InfraProvider{
-		providerContext: ctx,
-		connector:       cc,
+		commManager: cc,
 	}
 	return &f
 }
 
+// Initialize sets the provider context
+func (f *InfraProvider) Initialize(providers context.Providers) error {
+	f.providerContext = providers
+	return nil
+}
+
 // Close frees resources and caches.
 func (f *InfraProvider) Close() {
-	f.connector.Close()
+	f.commManager.Close()
+}
+
+// CommManager provides comm support such as GRPC onnections
+func (f *InfraProvider) CommManager() fab.CommManager {
+	return f.commManager
 }
 
 // CreateResourceClient returns a new client initialized for the current instance of the SDK.
@@ -133,7 +143,7 @@ func (f *InfraProvider) CreateChannelTransactor(ic fab.IdentityContext, cfg fab.
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration
 func (f *InfraProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
-	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg), peerImpl.WithConnProvider(f.connector))
+	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg))
 }
 
 // CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.

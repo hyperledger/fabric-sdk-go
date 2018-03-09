@@ -34,15 +34,6 @@ func TestDynamicSelection(t *testing.T) {
 		ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
-	if err := testSetup.Initialize(); err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	chainCodeID := integration.GenerateRandomID()
-	if err := integration.InstallAndInstantiateExampleCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
-		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
-	}
-
 	// Specify user that will be used by dynamic selection service (to retrieve chanincode policy information)
 	// This user has to have privileges to query lscc for chaincode data
 	mychannelUser := selection.ChannelUser{ChannelID: testSetup.ChannelID, UserName: "User1", OrgName: "Org1"}
@@ -55,6 +46,15 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
 	defer sdk.Close()
+
+	if err := testSetup.Initialize(sdk); err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	chainCodeID := integration.GenerateRandomID()
+	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
+		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
+	}
 
 	//prepare contexts
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))

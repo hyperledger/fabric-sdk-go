@@ -37,21 +37,21 @@ func TestChannelClient(t *testing.T) {
 		ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
-	if err := testSetup.Initialize(); err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	chainCodeID := integration.GenerateRandomID()
-	if err := integration.InstallAndInstantiateExampleCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
-		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
-	}
-
 	// Create SDK setup for the integration tests
 	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
 	defer sdk.Close()
+
+	if err := testSetup.Initialize(sdk); err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	chainCodeID := integration.GenerateRandomID()
+	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
+		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
+	}
 
 	//prepare context
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))

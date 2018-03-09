@@ -16,11 +16,11 @@ import (
 
 func TestChannelQueries(t *testing.T) {
 	chaincodeID := integration.GenerateRandomID()
-	testSetup := initializeTests(t, chaincodeID)
-	defer testSetup.SDK.Close()
+	testSetup, sdk := initializeTests(t, chaincodeID)
+	defer sdk.Close()
 
 	// Low level resource
-	client, err := getResource(testSetup.SDK, "Admin", orgName)
+	client, err := getResource(sdk, "Admin", orgName)
 	if err != nil {
 		t.Fatalf("Failed to get resource: %s", err)
 	}

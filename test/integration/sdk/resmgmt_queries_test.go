@@ -27,21 +27,21 @@ func TestResMgmtClientQueries(t *testing.T) {
 		ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
-	if err := testSetup.Initialize(); err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	ccID := integration.GenerateRandomID()
-	if err := integration.InstallAndInstantiateExampleCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, ccID); err != nil {
-		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
-	}
-
 	// Create SDK setup for the integration tests
 	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
 	defer sdk.Close()
+
+	if err := testSetup.Initialize(sdk); err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	ccID := integration.GenerateRandomID()
+	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, ccID); err != nil {
+		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
+	}
 
 	//prepare contexts
 	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))

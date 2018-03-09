@@ -64,7 +64,7 @@ func TestJoinChannel(t *testing.T) {
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
-	orderer.(fcmocks.MockOrderer).EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
+	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	// Setup target peers
@@ -95,7 +95,7 @@ func TestJoinChannelWithFilter(t *testing.T) {
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
-	orderer.(fcmocks.MockOrderer).EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
+	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
 	//the target filter ( client option) will be set
 	rc := setupResMgmtClient(ctx, nil, t)
 
@@ -263,7 +263,8 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx.SetConfig(invalidOrdererConfig)
-	customFabProvider := fabpvdr.New(ctx)
+	customFabProvider := fabpvdr.New(ctx.Config())
+	customFabProvider.Initialize(ctx)
 	ctx.SetCustomInfraProvider(customFabProvider)
 
 	rc = setupResMgmtClient(ctx, nil, t)

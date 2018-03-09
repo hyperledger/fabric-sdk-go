@@ -49,18 +49,18 @@ client:
       connection: 3s
       discovery:
         # Expiry period for discovery service greylist filter
-        # The channel client will lock peers that are found to be offline
+        # The channel client will greylist peers that are found to be offline
         # to prevent re-selecting them in subsequent retries.
         # This interval will define how long a peer is greylisted
         greylistExpiry: 5s
   eventService:
     timeout:
       connection: 3s
-      registrationResponse: 3s
+      registrationResponse: 10s
   orderer:
     timeout:
       connection: 3s
-      response: 5s
+      response: 10s
   global:
     timeout:
       query: 45s

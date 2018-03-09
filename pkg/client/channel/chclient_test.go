@@ -355,9 +355,7 @@ func TestOrdererStatusError(t *testing.T) {
 	chClient := setupChannelClientWithNodes(peers, orderers, t)
 	chClient.eventHub = fcmocks.NewMockEventHub()
 
-	mockOrderer, ok := testOrderer1.(fcmocks.MockOrderer)
-	assert.True(t, ok, "Expected object to be mock orderer")
-	mockOrderer.EnqueueSendBroadcastError(status.New(status.OrdererClientStatus,
+	testOrderer1.EnqueueSendBroadcastError(status.New(status.OrdererClientStatus,
 		status.ConnectionFailed.ToInt32(), testErrorMessage, nil))
 
 	_, err := chClient.Execute(Request{ChaincodeID: "test", Fcn: "invoke",

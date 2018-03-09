@@ -18,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
 
-	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
@@ -65,8 +64,8 @@ func (f *ProviderFactory) CreateIdentityManager(org string, stateStore core.KVSt
 }
 
 // CreateInfraProvider returns a new default implementation of fabric primitives
-func (f *ProviderFactory) CreateInfraProvider(context sdkApi.Providers) (fab.InfraProvider, error) {
-	return fabpvdr.New(context), nil
+func (f *ProviderFactory) CreateInfraProvider(config core.Config) (fab.InfraProvider, error) {
+	return fabpvdr.New(config), nil
 }
 
 // NewLoggerProvider returns a new default implementation of a logger backend

@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -110,8 +111,11 @@ func TestJoinChannel(t *testing.T) {
 	endorserServer, addr := startEndorserServer(t, grpcServer)
 	peer, _ := peer.New(mocks.NewMockConfig(), peer.WithURL("grpc://"+addr), peer.WithInsecure())
 	peers = append(peers, peer)
+
 	orderer := mocks.NewMockOrderer("", nil)
-	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
+	defer orderer.Close()
+	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
+	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
 
 	client := setupTestClient()
 
@@ -212,7 +216,8 @@ func TestGenesisBlockOrdererErr(t *testing.T) {
 	client := setupTestClient()
 
 	orderer := mocks.NewMockOrderer("", nil)
-	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockError())
+	defer orderer.Close()
+	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockError())
 
 	_, err := client.GenesisBlockFromOrderer(channelName, orderer)
 
@@ -226,7 +231,9 @@ func TestGenesisBlock(t *testing.T) {
 	client := setupTestClient()
 
 	orderer := mocks.NewMockOrderer("", nil)
-	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
+	defer orderer.Close()
+	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
+	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
 
 	_, err := client.GenesisBlockFromOrderer(channelName, orderer)
 
@@ -256,7 +263,8 @@ func TestGenesisBlockOrderer(t *testing.T) {
 	client := setupTestClient()
 
 	orderer := mocks.NewMockOrderer("", nil)
-	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockError())
+	defer orderer.Close()
+	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockError())
 
 	//Call get Genesis block
 	_, err := client.GenesisBlockFromOrderer(channelName, orderer)

@@ -11,13 +11,14 @@ import (
 	"path"
 	"testing"
 
-	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
-var testFabricConfig config.Config
+var testFabricConfig core.Config
 
 func TestMain(m *testing.M) {
 	setup()
@@ -46,7 +47,7 @@ func teardown() {
 	testFabricConfig = nil
 }
 
-func initializeTests(t *testing.T, chainCodeID string) integration.BaseSetupImpl {
+func initializeTests(t *testing.T, chainCodeID string) (integration.BaseSetupImpl, *fabsdk.FabricSDK) {
 	testSetup := integration.BaseSetupImpl{
 		ConfigFile: "../" + integration.ConfigTestFile,
 
@@ -55,13 +56,18 @@ func initializeTests(t *testing.T, chainCodeID string) integration.BaseSetupImpl
 		ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
-	if err := testSetup.Initialize(); err != nil {
+	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+
+	if err := testSetup.Initialize(sdk); err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	if err := integration.InstallAndInstantiateCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID, "github.com/events_cc", "v0", integration.GetDeployPath(), nil); err != nil {
+	if err := integration.InstallAndInstantiateCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID, "github.com/events_cc", "v0", integration.GetDeployPath(), nil); err != nil {
 		t.Fatalf("InstallAndInstantiateCC return error: %v", err)
 	}
 
-	return testSetup
+	return testSetup, sdk
 }
