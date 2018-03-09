@@ -92,7 +92,6 @@ declare -a PROTOS_IMPORT_SUBSTS=(
     's/\"github.com\/hyperledger\/fabric\/protos\/utils/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/utils/g'
     's/\"github.com\/hyperledger\/fabric\/protos\//\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\//g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
-    's/\"golang.org\/x\/net\/context\"/\"context\"/g'
 )
 eval "INTERNAL_PATH=$THIRDPARTY_FABRIC_API_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS=\"${PROTOS_IMPORT_SUBSTS[*]}\" $SCRIPTS_PATH/apply_fabric_protos.sh"
 
@@ -110,7 +109,6 @@ declare -a PROTOS_INTERNAL_IMPORT_SUBSTS=(
     's/\"github.com\/hyperledger\/fabric\/protos\/utils/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos\/utils/g'
     's/\"github.com\/hyperledger\/fabric\/protos/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/protos/g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
-    's/\"golang.org\/x\/net\/context\"/\"context\"/g'
 )
 eval "INTERNAL_PATH=$THIRDPARTY_INTERNAL_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS=\"${PROTOS_INTERNAL_IMPORT_SUBSTS[*]}\" $SCRIPTS_PATH/apply_fabric_protos_internal.sh"
 

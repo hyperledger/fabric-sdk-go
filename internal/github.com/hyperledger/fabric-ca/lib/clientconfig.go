@@ -33,7 +33,7 @@ type ClientConfig struct {
 	TLS        tls.ClientTLSConfig
 	Enrollment api.EnrollmentRequest
 	CSR        api.CSRInfo
-	ID         core.RegistrationRequest
+	ID         api.RegistrationRequest
 	Revoke     api.RevocationRequest
 	CAInfo     api.GetCAInfoRequest
 	CAName     string           `help:"Name of CA"`
