@@ -496,7 +496,7 @@ peers:
 # Certificate Authority instead of Fabric-CA, in which case this section would not be specified.
 #
 certificateAuthorities:
-  ca-org1:
+  local.ca-org1:
     url: https://ca_peerOrg1:7054
     # the properties specified under this object are passed to the 'http' client verbatim when
     # making the request to the Fabric-CA server
@@ -566,7 +566,7 @@ certificateAuthorities:
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
     caName: ca-org1
-  ca-org2:
+  local.ca-org2:
     url: https://ca_peerOrg2:7054
     # the properties specified under this object are passed to the 'http' client verbatim when
     # making the request to the Fabric-CA server
@@ -669,3 +669,12 @@ entityMatchers:
       urlSubstitutionExp: $1.example.$2:$3
       sslTargetOverrideUrlSubstitutionExp: $1.example.$2
       mappedHost: local.orderer.example.com
+
+  certificateAuthorities:
+    - pattern: (\w+)-org1
+      urlSubstitutionExp:
+      mappedHost: local.ca-org1
+
+    - pattern: (\w+)-org2
+      urlSubstitutionExp:
+      mappedHost: local.ca-org2

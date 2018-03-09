@@ -11,12 +11,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -53,6 +55,7 @@ type Config struct {
 	configViper         *viper.Viper
 	peerMatchers        map[int]*regexp.Regexp
 	ordererMatchers     map[int]*regexp.Regexp
+	caMatchers          map[int]*regexp.Regexp
 	opts                options
 }
 
@@ -224,6 +227,7 @@ func initConfig(c *Config) (*Config, error) {
 	//Compile the entityMatchers
 	c.peerMatchers = make(map[int]*regexp.Regexp)
 	c.ordererMatchers = make(map[int]*regexp.Regexp)
+	c.caMatchers = make(map[int]*regexp.Regexp)
 
 	matchError := c.compileMatchers()
 	if matchError != nil {
@@ -379,6 +383,15 @@ func (c *Config) getCAName(org string) (string, error) {
 	if certAuthorityName == "" {
 		return "", errors.Errorf("certificate authority empty for %s. Make sure each org has at least 1 non empty certificate authority name", org)
 	}
+
+	if _, ok := config.CertificateAuthorities[strings.ToLower(certAuthorityName)]; !ok {
+		_, mappedHost, err := c.tryMatchingCAConfig(strings.ToLower(certAuthorityName))
+		if err != nil {
+			return "", errors.WithMessage(err, fmt.Sprintf("CA Server Name %s not found", certAuthorityName))
+		}
+		return mappedHost, nil
+	}
+
 	return certAuthorityName, nil
 }
 
@@ -434,9 +447,64 @@ func (c *Config) CAClientCertPath(org string) (string, error) {
 		return "", err
 	}
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
-		return "", errors.Errorf("CA Server Name '%s' not found", caName)
+		return "", errors.Errorf("CA Server Name %s not found", caName)
 	}
 	return SubstPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Cert.Path), nil
+}
+
+func (c *Config) tryMatchingCAConfig(caName string) (*core.CAConfig, string, error) {
+	networkConfig, err := c.NetworkConfig()
+	if err != nil {
+		return nil, "", err
+	}
+	//Return if no caMatchers are configured
+	if len(c.caMatchers) == 0 {
+		return nil, "", errors.New("no CertAuthority entityMatchers are found")
+	}
+
+	//sort the keys
+	var keys []int
+	for k := range c.caMatchers {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
+	//loop over certAuthorityEntityMatchers to find the matching Cert
+	for _, k := range keys {
+		v := c.caMatchers[k]
+		if v.MatchString(caName) {
+			// get the matching Config from the index number
+			certAuthorityMatchConfig := networkConfig.EntityMatchers["certificateauthorities"][k]
+			//Get the certAuthorityMatchConfig from mapped host
+			caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityMatchConfig.MappedHost)]
+			if !ok {
+				return nil, certAuthorityMatchConfig.MappedHost, errors.WithMessage(err, "failed to load config from matched CertAuthority")
+			}
+			_, isPortPresentInCAName := c.getPortIfPresent(caName)
+			//if substitution url is empty, use the same network certAuthority url
+			if certAuthorityMatchConfig.URLSubstitutionExp == "" {
+				port, isPortPresent := c.getPortIfPresent(caConfig.URL)
+
+				caConfig.URL = caName
+				//append port of matched config
+				if isPortPresent && !isPortPresentInCAName {
+					caConfig.URL += ":" + strconv.Itoa(port)
+				}
+			} else {
+				//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
+				if strings.Index(certAuthorityMatchConfig.URLSubstitutionExp, "$") < 0 {
+					caConfig.URL = certAuthorityMatchConfig.URLSubstitutionExp
+				} else {
+					//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
+					caConfig.URL = v.ReplaceAllString(caName, certAuthorityMatchConfig.URLSubstitutionExp)
+				}
+			}
+
+			return &caConfig, certAuthorityMatchConfig.MappedHost, nil
+		}
+	}
+	return nil, "", errors.New("no matching certAuthority config found")
+
 }
 
 // CAClientCertPem Read configuration option for the fabric CA client cert pem embedded in the client config
@@ -685,6 +753,16 @@ func (c *Config) PeersConfig(org string) ([]core.PeerConfig, error) {
 	return peers, nil
 }
 
+func (c *Config) getPortIfPresent(url string) (int, bool) {
+	s := strings.Split(url, ":")
+	if len(s) > 1 {
+		if port, err := strconv.Atoi(s[len(s)-1]); err == nil {
+			return port, true
+		}
+	}
+	return 0, false
+}
+
 func (c *Config) tryMatchingPeerConfig(peerName string) (*core.PeerConfig, error) {
 	networkConfig, err := c.NetworkConfig()
 	if err != nil {
@@ -713,13 +791,14 @@ func (c *Config) tryMatchingPeerConfig(peerName string) (*core.PeerConfig, error
 			if !ok {
 				return nil, errors.WithMessage(err, "failed to load config from matched Peer")
 			}
+			_, isPortPresentInPeerName := c.getPortIfPresent(peerName)
 			//if substitution url is empty, use the same network peer url
 			if peerMatchConfig.URLSubstitutionExp == "" {
-				s := strings.Split(peerConfig.URL, ":")
+				port, isPortPresent := c.getPortIfPresent(peerConfig.URL)
 				peerConfig.URL = peerName
 				//append port of matched config
-				if s[1] != "" && strings.Index(peerName, ":") < 0 {
-					peerConfig.URL += ":" + s[1]
+				if isPortPresent && !isPortPresentInPeerName {
+					peerConfig.URL += ":" + strconv.Itoa(port)
 				}
 			} else {
 				//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
@@ -734,11 +813,11 @@ func (c *Config) tryMatchingPeerConfig(peerName string) (*core.PeerConfig, error
 
 			//if eventSubstitution url is empty, use the same network peer url
 			if peerMatchConfig.EventURLSubstitutionExp == "" {
-				s := strings.Split(peerConfig.EventURL, ":")
+				port, isPortPresent := c.getPortIfPresent(peerConfig.EventURL)
 				peerConfig.EventURL = peerName
 				//append port of matched config
-				if s[1] != "" && strings.Index(peerName, ":") < 0 {
-					peerConfig.EventURL += ":" + s[1]
+				if isPortPresent && !isPortPresentInPeerName {
+					peerConfig.EventURL += ":" + strconv.Itoa(port)
 				}
 			} else {
 				//else, replace url with eventUrlSubstitutionExp if it doesnt have any variable declarations like $
@@ -756,9 +835,13 @@ func (c *Config) tryMatchingPeerConfig(peerName string) (*core.PeerConfig, error
 				if strings.Index(peerName, ":") < 0 {
 					peerConfig.GRPCOptions["ssl-target-name-override"] = peerName
 				} else {
-					//Remove port of the peerName
+					//Remove port and protocol of the peerName
 					s := strings.Split(peerName, ":")
-					peerConfig.GRPCOptions["ssl-target-name-override"] = s[0]
+					if isPortPresentInPeerName {
+						peerConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-2]
+					} else {
+						peerConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-1]
+					}
 				}
 
 			} else {
@@ -805,13 +888,15 @@ func (c *Config) tryMatchingOrdererConfig(ordererName string) (*core.OrdererConf
 			if !ok {
 				return nil, errors.WithMessage(err, "failed to load config from matched Orderer")
 			}
+			_, isPortPresentInOrdererName := c.getPortIfPresent(ordererName)
 			//if substitution url is empty, use the same network orderer url
 			if ordererMatchConfig.URLSubstitutionExp == "" {
-				s := strings.Split(ordererConfig.URL, ":")
+				port, isPortPresent := c.getPortIfPresent(ordererConfig.URL)
 				ordererConfig.URL = ordererName
+
 				//append port of matched config
-				if s[1] != "" && strings.Index(ordererName, ":") < 0 {
-					ordererConfig.URL += ":" + s[1]
+				if isPortPresent && !isPortPresentInOrdererName {
+					ordererConfig.URL += ":" + strconv.Itoa(port)
 				}
 			} else {
 				//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
@@ -828,9 +913,13 @@ func (c *Config) tryMatchingOrdererConfig(ordererName string) (*core.OrdererConf
 				if strings.Index(ordererName, ":") < 0 {
 					ordererConfig.GRPCOptions["ssl-target-name-override"] = ordererName
 				} else {
-					//Remove port of the peerName
+					//Remove port and protocol of the ordererName
 					s := strings.Split(ordererName, ":")
-					ordererConfig.GRPCOptions["ssl-target-name-override"] = s[0]
+					if isPortPresentInOrdererName {
+						ordererConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-2]
+					} else {
+						ordererConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-1]
+					}
 				}
 
 			} else {
@@ -904,6 +993,17 @@ func (c *Config) compileMatchers() error {
 		for i := 0; i < len(ordererMatchersConfig); i++ {
 			if ordererMatchersConfig[i].Pattern != "" {
 				c.ordererMatchers[i], err = regexp.Compile(ordererMatchersConfig[i].Pattern)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	if networkConfig.EntityMatchers["certificateauthorities"] != nil {
+		certMatchersConfig := networkConfig.EntityMatchers["certificateauthorities"]
+		for i := 0; i < len(certMatchersConfig); i++ {
+			if certMatchersConfig[i].Pattern != "" {
+				c.caMatchers[i], err = regexp.Compile(certMatchersConfig[i].Pattern)
 				if err != nil {
 					return err
 				}

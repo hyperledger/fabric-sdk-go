@@ -61,18 +61,18 @@ client:
     type: eventhub
     timeout:
       connection: 3s
-      registrationResponse: 3s
+      registrationResponse: 10s
   orderer:
     timeout:
       connection: 3s
-      response: 5s
+      response: 10s
   global:
     timeout:
       query: 45s
       execute: 60s
     cache:
       connectionIdle: 30s
-      eventServiceIdle: 30s
+      eventServiceIdle: 500ms
 
   # Root of the MSP directories with keys and certs.
   cryptoconfig:
@@ -323,8 +323,8 @@ peers:
 # Certificate Authority instead of Fabric-CA, in which case this section would not be specified.
 #
 certificateAuthorities:
-  ca.org1.example.com:
-    url: https://ca.org1.example.com:7054
+  local.ca.org1.example.com:
+    url: https://localhost:7054
     # the properties specified under this object are passed to the 'http' client verbatim when
     # making the request to the Fabric-CA server
     httpOptions:
@@ -346,8 +346,8 @@ certificateAuthorities:
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
     caName: ca.org1.example.com
-  ca.org2.example.com:
-    url: https://ca.org2.example.com:8054
+  local.ca.org2.example.com:
+    url: https://localhost:8054
     # the properties specified under this object are passed to the 'http' client verbatim when
     # making the request to the Fabric-CA server
     httpOptions:
@@ -448,3 +448,12 @@ entityMatchers:
       urlSubstitutionExp: $1.example.$2:$3
       sslTargetOverrideUrlSubstitutionExp: $1.example.$2
       mappedHost: local.orderer.example.com
+
+  certificateAuthorities:
+    - pattern: (\w+).org1.example.(\w+)
+      urlSubstitutionExp: https://localhost:7054
+      mappedHost: local.ca.org1.example.com
+
+    - pattern: (\w+).org2.example.(\w+)
+      urlSubstitutionExp: https://localhost:8054
+      mappedHost: local.ca.org2.example.com

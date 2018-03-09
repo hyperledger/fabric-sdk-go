@@ -331,3 +331,12 @@ entityMatchers:
       #urlSubstitutionExp: $1.example.$2:$3
       #sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
       #mappedHost: orderer.example.com
+
+  #certificateAuthorities:
+    #- pattern: (\w+).org1.example.(\w+)
+      #urlSubstitutionExp:
+      #mappedHost: ca.org1.example.com
+
+    #- pattern: (\w+).org2.example.(\w+)
+      #urlSubstitutionExp:
+      #mappedHost: ca.org2.example.com

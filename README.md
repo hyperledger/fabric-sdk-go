@@ -122,11 +122,6 @@ You need:
 - A working fabric and fabric-ca set up. It is recommended that you use the docker-compose file provided in `test/fixtures/dockerenv`. It is also recommended that you use the default .env settings provided in `test/fixtures/dockerenv`. See steps below.
 - Customized settings in the `test/fixtures/config/config_test.yaml` in case your Hyperledger Fabric network is not running on `localhost` or is using different ports.
 
-#### Enable local hostnames
-
-You will need to set the following hosts to 127.0.0.1 (typically in /etc/hosts):
-ca.org1.example.com ca.org2.example.com
-
 #### Testing with Fabric Images at Docker Hub
 
 The test suite defaults to the latest compatible tag of fabric images at Docker Hub.
