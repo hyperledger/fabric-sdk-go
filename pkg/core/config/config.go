@@ -1268,12 +1268,10 @@ func (c *Config) CryptoConfigPath() string {
 // TLSClientCerts loads the client's certs for mutual TLS
 // It checks the config for embedded pem files before looking for cert files
 func (c *Config) TLSClientCerts() ([]tls.Certificate, error) {
-	config, err := c.NetworkConfig()
+	clientConfig, err := c.Client()
 	if err != nil {
 		return nil, err
 	}
-
-	clientConfig := config.Client
 	var clientCerts tls.Certificate
 	var cb, kb []byte
 	cb, err = clientConfig.TLSCerts.Client.Cert.Bytes()
@@ -1296,7 +1294,7 @@ func (c *Config) TLSClientCerts() ([]tls.Certificate, error) {
 		if clientConfig.TLSCerts.Client.Key.Pem != "" {
 			kb = []byte(clientConfig.TLSCerts.Client.Key.Pem)
 		} else if clientConfig.TLSCerts.Client.Key.Path != "" {
-			kb, err = loadByteKeyOrCertFromFile(&clientConfig, true)
+			kb, err = loadByteKeyOrCertFromFile(clientConfig, true)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to load key from file path '%s'", clientConfig.TLSCerts.Client.Key.Path)
 			}
