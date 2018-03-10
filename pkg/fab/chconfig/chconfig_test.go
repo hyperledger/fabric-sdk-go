@@ -35,8 +35,8 @@ func TestChannelConfigWithPeer(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	if cfg.Name() != channelID {
-		t.Fatalf("Channel name error. Expecting %s, got %s ", channelID, cfg.Name())
+	if cfg.ID() != channelID {
+		t.Fatalf("Channel name error. Expecting %s, got %s ", channelID, cfg.ID())
 	}
 }
 

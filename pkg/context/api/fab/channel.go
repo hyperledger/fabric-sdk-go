@@ -38,8 +38,8 @@ type ChannelConfig interface {
 
 // ChannelCfg contains channel configuration
 type ChannelCfg interface {
-	Name() string
-	Msps() []*mspCfg.MSPConfig
+	ID() string
+	MSPs() []*mspCfg.MSPConfig
 	AnchorPeers() []*OrgAnchorPeer
 	Orderers() []string
 	Versions() *Versions

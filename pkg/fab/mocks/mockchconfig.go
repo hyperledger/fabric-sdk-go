@@ -14,8 +14,8 @@ import (
 
 // MockChannelCfg contains mock channel configuration
 type MockChannelCfg struct {
-	MockName        string
-	MockMsps        []*msp.MSPConfig
+	MockID          string
+	MockMSPs        []*msp.MSPConfig
 	MockAnchorPeers []*fab.OrgAnchorPeer
 	MockOrderers    []string
 	MockVersions    *fab.Versions
@@ -23,18 +23,18 @@ type MockChannelCfg struct {
 }
 
 // NewMockChannelCfg ...
-func NewMockChannelCfg(name string) *MockChannelCfg {
-	return &MockChannelCfg{MockName: name}
+func NewMockChannelCfg(id string) *MockChannelCfg {
+	return &MockChannelCfg{MockID: id}
 }
 
-// Name returns name
-func (cfg *MockChannelCfg) Name() string {
-	return cfg.MockName
+// ID returns name
+func (cfg *MockChannelCfg) ID() string {
+	return cfg.MockID
 }
 
-// Msps returns msps
-func (cfg *MockChannelCfg) Msps() []*msp.MSPConfig {
-	return cfg.MockMsps
+// MSPs returns msps
+func (cfg *MockChannelCfg) MSPs() []*msp.MSPConfig {
+	return cfg.MockMSPs
 }
 
 // AnchorPeers returns anchor peers

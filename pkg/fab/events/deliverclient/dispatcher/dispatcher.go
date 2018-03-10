@@ -64,7 +64,7 @@ func (ed *Dispatcher) handleSeekEvent(e esdispatcher.Event) {
 	}
 
 	if err := ed.connection().Send(evt.SeekInfo); err != nil {
-		evt.ErrCh <- errors.Wrapf(err, "error sending seek info for channel [%s]", ed.ChannelConfig().Name())
+		evt.ErrCh <- errors.Wrapf(err, "error sending seek info for channel [%s]", ed.ChannelConfig().ID())
 	} else {
 		evt.ErrCh <- nil
 	}

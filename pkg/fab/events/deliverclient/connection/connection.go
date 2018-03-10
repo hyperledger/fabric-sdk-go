@@ -142,7 +142,7 @@ func (c *DeliverConnection) createSignedEnvelope(msg proto.Message) (*cb.Envelop
 	var msgVersion int32
 	var epoch uint64
 
-	payloadChannelHeader := utils.MakeChannelHeader(cb.HeaderType_DELIVER_SEEK_INFO, msgVersion, c.ChannelConfig().Name(), epoch)
+	payloadChannelHeader := utils.MakeChannelHeader(cb.HeaderType_DELIVER_SEEK_INFO, msgVersion, c.ChannelConfig().ID(), epoch)
 	payloadChannelHeader.TlsCertHash = c.TLSCertHash()
 
 	data, err := proto.Marshal(msg)

@@ -23,13 +23,13 @@ func TestNewMembership(t *testing.T) {
 	cfg := mocks.NewMockChannelCfg("")
 
 	// Test bad config input
-	cfg.MockMsps = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte("invalid"))}
+	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte("invalid"))}
 	m, err := New(Context{Providers: ctx}, cfg)
 	assert.NotNil(t, err)
 	assert.Nil(t, m)
 
 	// Test good config input
-	cfg.MockMsps = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte(validRootCA))}
+	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte(validRootCA))}
 	m, err = New(Context{Providers: ctx}, cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)

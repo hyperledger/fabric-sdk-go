@@ -40,7 +40,7 @@ func NewTransactor(ctx context.Client, cfg fab.ChannelCfg) (*Transactor, error) 
 
 	t := Transactor{
 		ctx:       ctx,
-		ChannelID: cfg.Name(),
+		ChannelID: cfg.ID(),
 		orderers:  orderers,
 	}
 	return &t, nil

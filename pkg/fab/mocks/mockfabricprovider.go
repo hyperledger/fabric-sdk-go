@@ -48,9 +48,9 @@ func (f *MockInfraProvider) CreateChannelTransactor(ic fab.IdentityContext, cfg 
 	if cfg == nil {
 		return &MockTransactor{}, nil
 	} else if ic == nil {
-		return &MockTransactor{ChannelID: cfg.Name()}, nil
+		return &MockTransactor{ChannelID: cfg.ID()}, nil
 	}
-	return &MockTransactor{ChannelID: cfg.Name(), Ctx: NewMockContext(ic)}, nil
+	return &MockTransactor{ChannelID: cfg.ID(), Ctx: NewMockContext(ic)}, nil
 }
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration
