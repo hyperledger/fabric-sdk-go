@@ -8,9 +8,7 @@ package peer
 
 import (
 	reqContext "context"
-	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"reflect"
 	"testing"
 	"time"
@@ -94,99 +92,18 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	}
 }
 
-// TestEnrollmentCert tests the enrollment certificate getter/setters
-func TestEnrollmentCert(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	config := mock_core.DefaultMockConfig(mockCtrl)
-
-	peer, err := New(config, WithURL(peer1URL))
-	if err != nil {
-		t.Fatalf("Failed to create NewPeerWithCert error(%v)", err)
-	}
-
-	if peer.EnrollmentCertificate() != nil {
-		t.Fatalf("Expected empty peer enrollment certs")
-	}
-
-	pemBuffer, err := ioutil.ReadFile(ecertPath)
-	if err != nil {
-		t.Fatalf("ecert fixture missing")
-	}
-
-	cert, _ := pem.Decode(pemBuffer)
-	peer.SetEnrollmentCertificate(cert)
-
-	fetchedCert := peer.EnrollmentCertificate()
-	if !reflect.DeepEqual(cert, fetchedCert) {
-		t.Fatalf("Enrollment certificate mismatch")
-	}
-}
-
-// TestRoles tests the roles certificate getter/setters
-func TestRoles(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	config := mock_core.DefaultMockConfig(mockCtrl)
-
-	peer, err := New(config, WithURL(peer1URL))
-	if err != nil {
-		t.Fatalf("Failed to create NewPeer error(%v)", err)
-	}
-
-	if len(peer.Roles()) != 0 {
-		t.Fatalf("Expected empty peer roles")
-	}
-
-	roles := []string{"role1", "role2"}
-	peer.SetRoles(roles)
-
-	fetchedRoles := peer.Roles()
-	if !reflect.DeepEqual(roles, fetchedRoles) {
-		t.Fatalf("Unexpected roles")
-	}
-}
-
-// TestRoles tests the name certificate getter/setters
-
-func TestNames(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	config := mock_core.DefaultMockConfig(mockCtrl)
-
-	peer, err := New(config, WithURL(peer1URL))
-	if err != nil {
-		t.Fatalf("Failed to create NewPeer error(%v)", err)
-	}
-
-	if peer.Name() != "" {
-		t.Fatalf("Expected empty peer name")
-	}
-
-	const peerName = "I am Peer"
-	peer.SetName(peerName)
-
-	if peer.Name() != peerName {
-		t.Fatalf("Unexpected peer name")
-	}
-}
-
 func TestMSPIDs(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	config := mock_core.DefaultMockConfig(mockCtrl)
 
-	peer, err := New(config, WithURL(peer1URL))
+	testMSP := "orgN"
+	peer, err := New(config, WithURL(peer1URL), WithMSPID(testMSP))
 
 	if err != nil {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
-	testMSP := "orgN"
-	peer.SetMSPID(testMSP)
 
 	if peer.MSPID() != testMSP {
 		t.Fatalf("Unexpected peer msp id")
@@ -204,7 +121,7 @@ func TestProposalProcessorSendProposal(t *testing.T) {
 
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any(), tp).Return(&tpr, nil)
 
-	p := Peer{processor: proc, name: "", roles: nil}
+	p := Peer{processor: proc}
 	ctx, cancel := reqContext.WithTimeout(reqContext.Background(), normalTimeout)
 	defer cancel()
 	tpr1, err := p.ProcessTransactionProposal(ctx, tp)

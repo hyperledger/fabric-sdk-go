@@ -43,11 +43,6 @@ func (u *User) PrivateKey() core.Key {
 	return u.privateKey
 }
 
-// SetMspID sets the MSP for this user
-func (u *User) SetMspID(mspID string) {
-	u.mspID = mspID
-}
-
 // MspID returns the MSP for this user
 func (u *User) MspID() string {
 	return u.mspID

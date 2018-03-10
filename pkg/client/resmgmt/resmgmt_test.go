@@ -215,8 +215,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	}
 
 	var peers []fab.Peer
-	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr))
-	peer1.SetMSPID("Org1MSP")
+	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr), peer.WithMSPID("Org1MSP"))
 	peers = append(peers, peer1)
 
 	// Test both targets and filter provided (error condition)

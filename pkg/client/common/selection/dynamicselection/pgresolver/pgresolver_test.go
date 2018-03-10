@@ -358,7 +358,7 @@ func containsAllPeers(pg1 PeerGroup, pg2 PeerGroup) bool {
 
 func containsPeer(pg []fab.Peer, p fab.Peer) bool {
 	for _, peer := range pg {
-		if peer.Name() == p.Name() {
+		if peer.URL() == p.URL() {
 			return true
 		}
 	}

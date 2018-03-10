@@ -8,7 +8,6 @@ package peer
 
 import (
 	reqContext "context"
-	"encoding/pem"
 	"fmt"
 
 	"crypto/x509"
@@ -28,19 +27,16 @@ var logger = logging.NewLogger("fabsdk/fab")
 // Peer represents a node in the target blockchain network to which
 // HFC sends endorsement proposals, transaction ordering or query requests.
 type Peer struct {
-	config                core.Config
-	certificate           *x509.Certificate
-	serverName            string
-	processor             fab.ProposalProcessor
-	name                  string
-	mspID                 string
-	roles                 []string
-	enrollmentCertificate *pem.Block
-	url                   string
-	kap                   keepalive.ClientParameters
-	failFast              bool
-	inSecure              bool
-	commManager           fab.CommManager
+	config      core.Config
+	certificate *x509.Certificate
+	serverName  string
+	processor   fab.ProposalProcessor
+	mspID       string
+	url         string
+	kap         keepalive.ClientParameters
+	failFast    bool
+	inSecure    bool
+	commManager fab.CommManager
 }
 
 // Option describes a functional parameter for the New constructor
@@ -115,6 +111,15 @@ func WithServerName(serverName string) Option {
 func WithInsecure() Option {
 	return func(p *Peer) error {
 		p.inSecure = true
+
+		return nil
+	}
+}
+
+// WithMSPID is a functional option for the peer.New constructor that configures the peer's msp ID
+func WithMSPID(mspID string) Option {
+	return func(p *Peer) error {
+		p.mspID = mspID
 
 		return nil
 	}
@@ -198,50 +203,9 @@ func WithPeerProcessor(processor fab.ProposalProcessor) Option {
 	}
 }
 
-// Name gets the Peer name.
-func (p *Peer) Name() string {
-	return p.name
-}
-
-// SetName sets the Peer name / id.
-func (p *Peer) SetName(name string) {
-	p.name = name
-}
-
 // MSPID gets the Peer mspID.
 func (p *Peer) MSPID() string {
 	return p.mspID
-}
-
-// SetMSPID sets the Peer mspID.
-func (p *Peer) SetMSPID(mspID string) {
-	p.mspID = mspID
-}
-
-// Roles gets the user’s roles the Peer participates in. It’s an array of possible values
-// in “client”, and “auditor”. The member service defines two more roles reserved
-// for peer membership: “peer” and “validator”, which are not exposed to the applications.
-// It returns the roles for this user.
-func (p *Peer) Roles() []string {
-	return p.roles
-}
-
-// SetRoles sets the user’s roles the Peer participates in. See getRoles() for legitimate values.
-// roles is the list of roles for the user.
-func (p *Peer) SetRoles(roles []string) {
-	p.roles = roles
-}
-
-// EnrollmentCertificate returns the Peer's enrollment certificate.
-// It returns the certificate in PEM format signed by the trusted CA.
-func (p *Peer) EnrollmentCertificate() *pem.Block {
-	return p.enrollmentCertificate
-}
-
-// SetEnrollmentCertificate set the Peer’s enrollment certificate.
-// pem is the enrollment Certificate in PEM format signed by the trusted CA.
-func (p *Peer) SetEnrollmentCertificate(pem *pem.Block) {
-	p.enrollmentCertificate = pem
 }
 
 // URL gets the Peer URL. Required property for the instance objects.
@@ -256,7 +220,7 @@ func (p *Peer) ProcessTransactionProposal(ctx reqContext.Context, proposal fab.P
 }
 
 func (p *Peer) String() string {
-	return fmt.Sprintf("%s (%s)", p.name, p.url)
+	return fmt.Sprintf("%s", p.url)
 }
 
 // PeersToTxnProcessors converts a slice of Peers to a slice of TxnProposalProcessors

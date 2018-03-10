@@ -205,9 +205,6 @@ type peerWrapper struct {
 }
 
 func (pw *peerWrapper) String() string {
-	if pw.target.Name() != "" {
-		return pw.target.Name()
-	}
 	return pw.target.URL()
 }
 
