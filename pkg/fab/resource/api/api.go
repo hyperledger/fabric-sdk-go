@@ -42,8 +42,6 @@ type InstallChaincodeRequest struct {
 	Version string
 	// required - package (chaincode package type and bytes)
 	Package *CCPackage
-	// required - proposal processor list
-	Targets []fab.ProposalProcessor
 }
 
 // JoinChannelRequest allows a set of peers to transact on a channel on the network
@@ -51,7 +49,6 @@ type JoinChannelRequest struct {
 	// The name of the channel to be joined.
 	Name         string
 	GenesisBlock *common.Block
-	Targets      []fab.ProposalProcessor
 }
 
 // CCPackage contains package type and bytes required to create CDS
