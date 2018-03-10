@@ -203,11 +203,10 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 	}
 
 	joinChannelRequest := api.JoinChannelRequest{
-		Targets:      peersToTxnProcessors(targets),
 		GenesisBlock: genesisBlock,
 	}
 
-	err = resource.JoinChannel(rc.ctx, joinChannelRequest)
+	err = resource.JoinChannel(rc.ctx, joinChannelRequest, peersToTxnProcessors(targets))
 	if err != nil {
 		return errors.WithMessage(err, "join channel failed")
 	}
@@ -357,8 +356,8 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		return responses, nil
 	}
 
-	icr := api.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package, Targets: peer.PeersToTxnProcessors(newTargets)}
-	transactionProposalResponse, _, err := resource.InstallChaincode(rc.ctx, icr)
+	icr := api.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package}
+	transactionProposalResponse, _, err := resource.InstallChaincode(rc.ctx, icr, peer.PeersToTxnProcessors(newTargets))
 	for _, v := range transactionProposalResponse {
 		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v", req.Name, v.Endorser, v.Status)
 

@@ -150,7 +150,7 @@ func LastConfigFromOrderer(ctx context.Client, channelName string, orderer fab.O
 // JoinChannel sends a join channel proposal to the target peer.
 //
 // TODO extract targets from request into parameter.
-func JoinChannel(ctx context.Client, request api.JoinChannelRequest) error {
+func JoinChannel(ctx context.Client, request api.JoinChannelRequest, targets []fab.ProposalProcessor) error {
 
 	if request.GenesisBlock == nil {
 		return errors.New("missing block input parameter with the required genesis block")
@@ -161,7 +161,7 @@ func JoinChannel(ctx context.Client, request api.JoinChannelRequest) error {
 		return errors.WithMessage(err, "creation of join channel invoke request failed")
 	}
 
-	_, err = queryChaincode(ctx, cir, request.Targets)
+	_, err = queryChaincode(ctx, cir, targets)
 	return err
 }
 
@@ -256,7 +256,7 @@ func QueryInstalledChaincodes(ctx context.Client, peer fab.ProposalProcessor) (*
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
-func InstallChaincode(ctx context.Client, req api.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+func InstallChaincode(ctx context.Client, req api.InstallChaincodeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	if req.Name == "" {
 		return nil, fab.EmptyTransactionID, errors.New("chaincode name required")
@@ -291,7 +291,7 @@ func InstallChaincode(ctx context.Client, req api.InstallChaincodeRequest) ([]*f
 		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "creation of install chaincode proposal failed")
 	}
 
-	transactionProposalResponse, err := txn.SendProposal(ctx, prop, req.Targets)
+	transactionProposalResponse, err := txn.SendProposal(ctx, prop, targets)
 
 	return transactionProposalResponse, prop.TxnID, err
 }

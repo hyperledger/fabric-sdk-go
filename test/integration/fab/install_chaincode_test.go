@@ -133,9 +133,9 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricS
 // installCC use low level client to install chaincode
 func installCC(client *context.Client, name string, path string, version string, ccPackage *api.CCPackage, targets []fab.ProposalProcessor) error {
 
-	icr := api.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: targets}
+	icr := api.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage}
 
-	_, _, err := resource.InstallChaincode(client, icr)
+	_, _, err := resource.InstallChaincode(client, icr, targets)
 	if err != nil {
 		return errors.WithMessage(err, "InstallChaincode failed")
 	}
