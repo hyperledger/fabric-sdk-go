@@ -7,41 +7,42 @@ SPDX-License-Identifier: Apache-2.0
 package sdk
 
 import (
-	"path"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 func TestResMgmtClientQueries(t *testing.T) {
 
-	testSetup := integration.BaseSetupImpl{
-		ConfigFile:    "../" + integration.ConfigTestFile,
-		ChannelID:     "mychannel",
-		OrgID:         org1Name,
-		ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	}
+	// Using shared SDK instance to increase test speed.
+	sdk := mainSDK
+	testSetup := mainTestSetup
+	chaincodeID := mainChaincodeID
+
+	//testSetup := integration.BaseSetupImpl{
+	//	ConfigFile:    "../" + integration.ConfigTestFile,
+	//	ChannelID:     "mychannel",
+	//	OrgID:         org1Name,
+	//	ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+	//}
 
 	// Create SDK setup for the integration tests
-	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
+	//sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
+	//if err != nil {
+	//	t.Fatalf("Failed to create new SDK: %s", err)
+	//}
+	//defer sdk.Close()
 
-	if err := testSetup.Initialize(sdk); err != nil {
-		t.Fatalf(err.Error())
-	}
+	//if err := testSetup.Initialize(sdk); err != nil {
+	//	t.Fatalf(err.Error())
+	//}
 
-	ccID := integration.GenerateRandomID()
-	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, ccID); err != nil {
-		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
-	}
+	//ccID := integration.GenerateRandomID()
+	//if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, ccID); err != nil {
+	//	t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
+	//}
 
 	//prepare contexts
 	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
@@ -57,9 +58,9 @@ func TestResMgmtClientQueries(t *testing.T) {
 
 	testQueryConfigFromOrderer(t, testSetup.ChannelID, client)
 
-	testInstalledChaincodes(t, ccID, target, client)
+	testInstalledChaincodes(t, chaincodeID, target, client)
 
-	testInstantiatedChaincodes(t, testSetup.ChannelID, ccID, target, client)
+	testInstantiatedChaincodes(t, testSetup.ChannelID, chaincodeID, target, client)
 
 	testQueryChannels(t, testSetup.ChannelID, target, client)
 

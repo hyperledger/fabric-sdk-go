@@ -8,20 +8,17 @@ package fab
 
 import (
 	"math/rand"
-	"path"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/pkg/errors"
 )
 
@@ -32,22 +29,26 @@ const (
 
 func TestChaincodeInstal(t *testing.T) {
 
-	testSetup := &integration.BaseSetupImpl{
-		ConfigFile:    "../" + integration.ConfigTestFile,
-		ChannelID:     "mychannel",
-		OrgID:         org1Name,
-		ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	}
+	// Using shared SDK instance to increase test speed.
+	sdk := mainSDK
+	testSetup := mainTestSetup
 
-	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
+	//testSetup := &integration.BaseSetupImpl{
+	//	ConfigFile:    "../" + integration.ConfigTestFile,
+	//	ChannelID:     "mychannel",
+	//	OrgID:         org1Name,
+	//	ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+	//}
 
-	if err := testSetup.Initialize(sdk); err != nil {
-		t.Fatalf(err.Error())
-	}
+	//sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
+	//if err != nil {
+	//	t.Fatalf("Failed to create new SDK: %s", err)
+	//}
+	//defer sdk.Close()
+
+	//if err := testSetup.Initialize(sdk); err != nil {
+	//	t.Fatalf(err.Error())
+	//}
 
 	testChaincodeInstallUsingChaincodePath(t, sdk, testSetup)
 

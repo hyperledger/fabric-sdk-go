@@ -193,10 +193,10 @@ func getEventClient(ctx context.Client, chConfig fab.ChannelCfg) (fab.EventClien
 	// look at the EventServiceType specified in the config file.
 	switch ctx.Config().EventServiceType() {
 	case core.DeliverEventServiceType:
-		logger.Infof("Using deliver events")
+		logger.Debugf("Using deliver events")
 		return deliverclient.New(ctx, chConfig)
 	case core.EventHubEventServiceType:
-		logger.Infof("Using event hub events")
+		logger.Debugf("Using event hub events")
 		return eventhubclient.New(ctx, chConfig, eventhubclient.WithBlockEvents())
 	default:
 		return nil, errors.Errorf("unsupported event service type: %d", ctx.Config().EventServiceType())

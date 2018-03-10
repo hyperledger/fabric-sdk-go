@@ -47,9 +47,6 @@ func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	// Release all channel client resources
-	defer client.Close()
-
 	response, err := client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)

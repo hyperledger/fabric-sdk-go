@@ -51,9 +51,9 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	//clientContext allows creation of transactions using the supplied identity as the credential.
 	clientContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(ordererOrgName))
 
-	// Channel management client is responsible for managing channels (create/update channel)
+	// Resource management client is responsible for managing channels (create/update channel)
 	// Supply user that has privileges to create channel (in this case orderer admin)
-	chMgmtClient, err := resmgmt.New(clientContext)
+	resMgmtClient, err := resmgmt.New(clientContext)
 	if err != nil {
 		t.Fatalf("Failed to create channel management client: %s", err)
 	}
@@ -70,7 +70,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
 		ChannelConfig:     path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		SigningIdentities: []fab.IdentityContext{adminIdentity}}
-	if err = chMgmtClient.SaveChannel(req); err != nil {
+	if err = resMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
 
@@ -122,9 +122,6 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
-
-	// Release all channel client resources
-	defer client.Close()
 
 	response, err := client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {

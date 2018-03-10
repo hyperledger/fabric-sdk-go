@@ -12,13 +12,15 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
-	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
 func TestChannelQueries(t *testing.T) {
-	chaincodeID := integration.GenerateRandomID()
-	testSetup, sdk := initializeTests(t, chaincodeID)
-	defer sdk.Close()
+	// Using shared SDK instance to increase test speed.
+	sdk := mainSDK
+	testSetup := mainTestSetup
+	chaincodeID := mainChaincodeID
+
+	//chaincodeID := integration.GenerateRandomID()
 
 	// Low level resource
 	client, err := getContext(sdk, "Admin", orgName)

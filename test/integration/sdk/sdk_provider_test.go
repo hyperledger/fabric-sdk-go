@@ -7,12 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package sdk
 
 import (
-	"path"
 	"strconv"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -27,12 +25,16 @@ import (
 
 func TestDynamicSelection(t *testing.T) {
 
-	testSetup := integration.BaseSetupImpl{
-		ConfigFile:    "../" + integration.ConfigTestFile,
-		ChannelID:     "mychannel",
-		OrgID:         org1Name,
-		ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	}
+	// Using shared SDK instance to increase test speed.
+	sdk := mainSDK
+	testSetup := mainTestSetup
+
+	//testSetup := integration.BaseSetupImpl{
+	//	ConfigFile:    "../" + integration.ConfigTestFile,
+	//	ChannelID:     "mychannel",
+	//	OrgID:         org1Name,
+	//	ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
+	//}
 
 	// Specify user that will be used by dynamic selection service (to retrieve chanincode policy information)
 	// This user has to have privileges to query lscc for chaincode data
@@ -63,9 +65,6 @@ func TestDynamicSelection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
-
-	// Release all channel client resources
-	defer chClient.Close()
 
 	response, err := chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {

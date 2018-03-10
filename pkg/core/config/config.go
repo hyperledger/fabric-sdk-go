@@ -218,7 +218,7 @@ func initConfig(c *Config) (*Config, error) {
 	}
 
 	for _, logModule := range logModules {
-		logger.Infof("config %s logging level is set to: %s", logModule, logging.ParseString(logging.GetLevel(logModule)))
+		logger.Debugf("config %s logging level is set to: %s", logModule, logging.ParseString(logging.GetLevel(logModule)))
 	}
 
 	//Compile the entityMatchers

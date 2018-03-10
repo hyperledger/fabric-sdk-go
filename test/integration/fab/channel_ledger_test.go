@@ -18,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 )
@@ -29,20 +28,18 @@ const (
 	orgName           = org1Name
 )
 
-var sdkConfigFile = "../" + integration.ConfigTestFile
-
 func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.Peer) {
-	sdk, err := fabsdk.New(config.FromFile(sdkConfigFile))
-	if err != nil {
-		t.Fatalf("SDK init failed: %v", err)
-	}
+	// Using shared SDK instance to increase test speed.
+	sdk := mainSDK
+
+	//var sdkConfigFile = "../" + integration.ConfigTestFile
+	//	sdk, err := fabsdk.New(config.FromFile(sdkConfigFile))
+	//	if err != nil {
+	//		t.Fatalf("SDK init failed: %v", err)
+	//	}
 	// Get signing identity that is used to sign create channel request
 
 	adminIdentity, err := integration.GetSigningIdentity(sdk, "Admin", orgName)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	if err != nil {
 		t.Fatalf("failed to load signing identity: %s", err)
 	}
@@ -65,7 +62,9 @@ func TestLedgerQueries(t *testing.T) {
 
 	// Setup tests with a random chaincode ID.
 	sdk, targets := initializeLedgerTests(t)
-	defer sdk.Close()
+
+	// Using shared SDK instance to increase test speed.
+	//defer sdk.Close()
 
 	chaincodeID := integration.GenerateRandomID()
 	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), orgName, chaincodeID); err != nil {

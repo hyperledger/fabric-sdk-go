@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package sdk
 
 import (
-	"path"
 	"testing"
 
 	"fmt"
@@ -21,36 +20,40 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 const samplekey = "sample-key"
 
 func customCryptoSuiteInit(t *testing.T) (*integration.BaseSetupImpl, string) {
-	testSetup := integration.BaseSetupImpl{
-		ConfigFile:    "../" + integration.ConfigTestFile,
-		ChannelID:     "mychannel",
-		OrgID:         org1Name,
-		ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	}
+
+	// Using shared SDK instance to increase test speed.
+	sdk := mainSDK
+	testSetup := mainTestSetup
+
+	//testSetup := integration.BaseSetupImpl{
+	//	ConfigFile:    "../" + integration.ConfigTestFile,
+	//	ChannelID:     "mychannel",
+	//	OrgID:         org1Name,
+	//	ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
+	//}
 
 	// Create SDK setup for the integration tests
-	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
+	//sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
+	//if err != nil {
+	//	t.Fatalf("Failed to create new SDK: %s", err)
+	//}
+	//defer sdk.Close()
 
-	if err := testSetup.Initialize(sdk); err != nil {
-		t.Fatalf(err.Error())
-	}
+	//if err := testSetup.Initialize(sdk); err != nil {
+	//	t.Fatalf(err.Error())
+	//}
 
-	chainCodeID := integration.GenerateRandomID()
-	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
+	chaincodeID := integration.GenerateRandomID()
+	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
-	return &testSetup, chainCodeID
+	return testSetup, chaincodeID
 }
 
 func TestEndToEndForCustomCryptoSuite(t *testing.T) {
@@ -95,9 +98,6 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 	if string(response.Payload) != "200" {
 		t.Fatalf("channel client query operation failed, upexpected query value")
 	}
-
-	// Release all channel client resources
-	chClient.Close()
 
 }
 

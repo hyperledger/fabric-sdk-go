@@ -7,42 +7,43 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
-	"path"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/pkg/errors"
 )
 
 // TestTransient ...
 func TestTransient(t *testing.T) {
+	// Using shared SDK instance to increase test speed.
+	sdk := mainSDK
+	testSetup := mainTestSetup
+	chaincodeID := mainChaincodeID
 
-	testSetup := integration.BaseSetupImpl{
-		ConfigFile:    "../" + integration.ConfigTestFile,
-		ChannelID:     "mychannel",
-		OrgID:         org1Name,
-		ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	}
+	//testSetup := integration.BaseSetupImpl{
+	//	ConfigFile:    "../" + integration.ConfigTestFile,
+	//	ChannelID:     "mychannel",
+	//	OrgID:         org1Name,
+	//	ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+	//}
 
-	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
+	//sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
+	//if err != nil {
+	//	t.Fatalf("Failed to create new SDK: %s", err)
+	//}
+	//defer sdk.Close()
 
-	if err := testSetup.Initialize(sdk); err != nil {
-		t.Fatalf(err.Error())
-	}
+	//if err := testSetup.Initialize(sdk); err != nil {
+	//	t.Fatalf(err.Error())
+	//}
 
-	chaincodeID := integration.GenerateRandomID()
-	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
-		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
-	}
+	//chaincodeID := integration.GenerateRandomID()
+	//if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
+	//	t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
+	//}
 
 	fcn := "invoke"
 	transientData := "Transient data test..."

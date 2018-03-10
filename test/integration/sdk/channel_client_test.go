@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package sdk
 
 import (
-	"path"
 	"testing"
 	"time"
 
@@ -16,10 +15,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 const (
@@ -30,28 +27,33 @@ const (
 
 func TestChannelClient(t *testing.T) {
 
-	testSetup := integration.BaseSetupImpl{
-		ConfigFile:    "../" + integration.ConfigTestFile,
-		ChannelID:     "mychannel",
-		OrgID:         org1Name,
-		ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	}
+	// Using shared SDK instance to increase test speed.
+	sdk := mainSDK
+	testSetup := mainTestSetup
+	chaincodeID := mainChaincodeID
+
+	//testSetup := integration.BaseSetupImpl{
+	//	ConfigFile:    "../" + integration.ConfigTestFile,
+	//	ChannelID:     "mychannel",
+	//	OrgID:         org1Name,
+	//	ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+	//}
 
 	// Create SDK setup for the integration tests
-	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
+	//sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
+	//if err != nil {
+	//	t.Fatalf("Failed to create new SDK: %s", err)
+	//}
+	//defer sdk.Close()
 
-	if err := testSetup.Initialize(sdk); err != nil {
-		t.Fatalf(err.Error())
-	}
+	//if err := testSetup.Initialize(sdk); err != nil {
+	//	t.Fatalf(err.Error())
+	//}
 
-	chainCodeID := integration.GenerateRandomID()
-	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
-		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
-	}
+	//chainCodeID := integration.GenerateRandomID()
+	//if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
+	//	t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
+	//}
 
 	//prepare context
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
@@ -63,7 +65,7 @@ func TestChannelClient(t *testing.T) {
 	}
 
 	// Synchronous query
-	testQuery("200", chainCodeID, chClient, t)
+	testQuery("200", chaincodeID, chClient, t)
 
 	transientData := "Some data"
 	transientDataMap := make(map[string][]byte)
@@ -72,7 +74,7 @@ func TestChannelClient(t *testing.T) {
 	// Synchronous transaction
 	response, err := chClient.Execute(
 		channel.Request{
-			ChaincodeID:  chainCodeID,
+			ChaincodeID:  chaincodeID,
 			Fcn:          "invoke",
 			Args:         integration.ExampleCCTxArgs(),
 			TransientMap: transientDataMap,
@@ -86,41 +88,33 @@ func TestChannelClient(t *testing.T) {
 	}
 
 	// Verify transaction using query
-	testQueryWithOpts("201", chainCodeID, chClient, t)
+	testQueryWithOpts("201", chaincodeID, chClient, t)
 
 	// transaction
-	testTransaction(chainCodeID, chClient, t)
+	testTransaction(chaincodeID, chClient, t)
 
 	// Verify transaction
-	testQuery("202", chainCodeID, chClient, t)
+	testQuery("202", chaincodeID, chClient, t)
 
 	// Verify that filter error and commit error did not modify value
-	testQuery("202", chainCodeID, chClient, t)
+	testQuery("202", chaincodeID, chClient, t)
 
 	// Test register and receive chaincode event
-	testChaincodeEvent(chainCodeID, chClient, t)
+	testChaincodeEvent(chaincodeID, chClient, t)
 
 	// Verify transaction with chain code event completed
-	testQuery("203", chainCodeID, chClient, t)
+	testQuery("203", chaincodeID, chClient, t)
 
 	// Test invocation of custom handler
-	testInvokeHandler(chainCodeID, chClient, t)
+	testInvokeHandler(chaincodeID, chClient, t)
 
 	// Test receive event using separate client
 	listener, err := channel.New(org1ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
-	defer listener.Close()
 
-	testChaincodeEventListener(chainCodeID, chClient, listener, t)
-
-	// Release channel client resources
-	err = chClient.Close()
-	if err != nil {
-		t.Fatalf("Failed to close channel client: %v", err)
-	}
-
+	testChaincodeEventListener(chaincodeID, chClient, listener, t)
 }
 
 func testQuery(expected string, ccID string, chClient *channel.Client, t *testing.T) {
