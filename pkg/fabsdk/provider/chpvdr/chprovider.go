@@ -85,7 +85,7 @@ func (cs *ChannelService) EventService() (fab.EventService, error) {
 
 // Config returns the Config for the named channel
 func (cs *ChannelService) Config() (fab.ChannelConfig, error) {
-	return cs.infraProvider.CreateChannelConfig(cs.context, cs.cfg.Name())
+	return cs.infraProvider.CreateChannelConfig(cs.context, cs.cfg.ID())
 }
 
 // Transactor returns a transaction client for the current context and named channel.

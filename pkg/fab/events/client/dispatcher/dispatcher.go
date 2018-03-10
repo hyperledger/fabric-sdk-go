@@ -99,7 +99,7 @@ func (ed *Dispatcher) HandleConnectEvent(e esdispatcher.Event) {
 		return
 	}
 
-	discoveryService, err := ed.context.DiscoveryProvider().CreateDiscoveryService(ed.chConfig.Name())
+	discoveryService, err := ed.context.DiscoveryProvider().CreateDiscoveryService(ed.chConfig.ID())
 	if err != nil {
 		evt.ErrCh <- nil
 		return

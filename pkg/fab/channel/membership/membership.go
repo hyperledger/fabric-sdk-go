@@ -59,8 +59,8 @@ func (i *identityImpl) Verify(serializedID []byte, msg []byte, sig []byte) error
 
 func createMSPManager(ctx Context, cfg fab.ChannelCfg) (msp.MSPManager, error) {
 	mspManager := msp.NewMSPManager()
-	if len(cfg.Msps()) > 0 {
-		msps, err := loadMSPs(cfg.Msps(), ctx.CryptoSuite())
+	if len(cfg.MSPs()) > 0 {
+		msps, err := loadMSPs(cfg.MSPs(), ctx.CryptoSuite())
 		if err != nil {
 			return nil, errors.WithMessage(err, "load MSPs from config failed")
 		}

@@ -57,7 +57,7 @@ type ChannelConfig struct {
 
 // ChannelCfg contains channel configuration
 type ChannelCfg struct {
-	name        string
+	id          string
 	msps        []*msp.MSPConfig
 	anchorPeers []*fab.OrgAnchorPeer
 	orderers    []string
@@ -66,17 +66,17 @@ type ChannelCfg struct {
 
 // NewChannelCfg creates channel cfg
 // TODO: This is temporary, Remove once we have config injected in sdk
-func NewChannelCfg(name string) fab.ChannelCfg {
-	return &ChannelCfg{name: name}
+func NewChannelCfg(channelID string) *ChannelCfg {
+	return &ChannelCfg{id: channelID}
 }
 
-// Name returns name
-func (cfg *ChannelCfg) Name() string {
-	return cfg.name
+// ID returns the channel ID
+func (cfg *ChannelCfg) ID() string {
+	return cfg.id
 }
 
-// Msps returns msps
-func (cfg *ChannelCfg) Msps() []*msp.MSPConfig {
+// MSPs returns msps
+func (cfg *ChannelCfg) MSPs() []*msp.MSPConfig {
 	return cfg.msps
 }
 
@@ -203,7 +203,7 @@ func prepareOpts(options ...Option) (Opts, error) {
 	return opts, nil
 }
 
-func extractConfig(channel string, configEnvelope *common.ConfigEnvelope) (*ChannelCfg, error) {
+func extractConfig(channelID string, configEnvelope *common.ConfigEnvelope) (*ChannelCfg, error) {
 
 	group := configEnvelope.Config.ChannelGroup
 
@@ -212,7 +212,7 @@ func extractConfig(channel string, configEnvelope *common.ConfigEnvelope) (*Chan
 	}
 
 	config := &ChannelCfg{
-		name:        channel,
+		id:          channelID,
 		msps:        []*msp.MSPConfig{},
 		anchorPeers: []*fab.OrgAnchorPeer{},
 		orderers:    []string{},

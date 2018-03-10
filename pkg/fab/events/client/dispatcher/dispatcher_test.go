@@ -44,8 +44,8 @@ func TestConnect(t *testing.T) {
 		WithLoadBalancePolicy(lbp.NewRandom()),
 	)
 
-	if dispatcher.ChannelConfig().Name() != channelID {
-		t.Fatalf("Expecting channel ID [%s] but got [%s]", channelID, dispatcher.ChannelConfig().Name())
+	if dispatcher.ChannelConfig().ID() != channelID {
+		t.Fatalf("Expecting channel ID [%s] but got [%s]", channelID, dispatcher.ChannelConfig().ID())
 	}
 
 	if err := dispatcher.Start(); err != nil {
