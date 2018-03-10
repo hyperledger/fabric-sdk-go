@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
 // Client supplies the configuration and signing identity to client objects.
@@ -59,7 +60,7 @@ type Provider struct {
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
 	signingManager    core.SigningManager
-	identityManager   map[string]core.IdentityManager
+	identityManager   map[string]msp.IdentityManager
 	infraProvider     fab.InfraProvider
 	channelProvider   fab.ChannelProvider
 }
@@ -75,7 +76,7 @@ func (c *Provider) CryptoSuite() core.CryptoSuite {
 }
 
 // IdentityManager returns identity manager for organization
-func (c *Provider) IdentityManager(orgName string) (core.IdentityManager, bool) {
+func (c *Provider) IdentityManager(orgName string) (msp.IdentityManager, bool) {
 	mgr, ok := c.identityManager[strings.ToLower(orgName)]
 	return mgr, ok
 }
@@ -155,8 +156,8 @@ func WithSigningManager(signingManager core.SigningManager) SDKContextParams {
 	}
 }
 
-//WithIdentityManager sets identityManagers maps to FabContext
-func WithIdentityManager(identityManagers map[string]core.IdentityManager) SDKContextParams {
+//WithIdentityManager sets identityManagers maps to context
+func WithIdentityManager(identityManagers map[string]msp.IdentityManager) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.identityManager = identityManagers
 	}

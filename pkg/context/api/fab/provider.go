@@ -10,6 +10,7 @@ import (
 	reqContext "context"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"google.golang.org/grpc"
 )
 
@@ -18,6 +19,7 @@ import (
 // a circular import error. This problem should be addressed in a future patch.
 type ClientContext interface {
 	core.Providers
+	msp.Providers
 	Providers
 	MspID() string
 	SerializedIdentity() ([]byte, error)

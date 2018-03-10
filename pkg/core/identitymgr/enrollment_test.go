@@ -13,6 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	camocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
@@ -46,7 +47,7 @@ m1KOnMry/mOZcnXnTIh2ASV4ss8VluzBcyHGAv7BCmxXxDkjcV9eybv8
 	userToEnroll = "enrollmentID"
 
 	userToEnrollMspID       string
-	enrollmentTestUserStore UserStore
+	enrollmentTestUserStore msp.UserStore
 )
 
 func TestGetSigningIdentityWithEnrollment(t *testing.T) {
@@ -134,7 +135,7 @@ func prepareForEnroll(t *testing.T, mc *camocks.MockCAClient, cs core.CryptoSuit
 
 		// Save the "new" cert to user store
 		// This is done by IdentityManagement.Enroll()
-		user := UserData{
+		user := msp.UserData{
 			MspID: userToEnrollMspID,
 			Name:  userToEnroll,
 			EnrollmentCertificate: []byte(generatedCertBytes),

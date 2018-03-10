@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
@@ -31,6 +32,7 @@ type FabricSDK struct {
 
 type options struct {
 	Core    sdkApi.CoreProviderFactory
+	Msp     sdkApi.MspProviderFactory
 	Service sdkApi.ServiceProviderFactory
 	Logger  api.LoggerProvider
 }
@@ -66,6 +68,11 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 		return nil, errors.WithMessage(err, "Unable to initialize core pkg")
 	}
 
+	msp, err := pkgSuite.MSP()
+	if err != nil {
+		return nil, errors.WithMessage(err, "Unable to initialize core pkg")
+	}
+
 	svc, err := pkgSuite.Service()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to initialize service pkg")
@@ -79,6 +86,7 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 	sdk := FabricSDK{
 		opts: options{
 			Core:    core,
+			Msp:     msp,
 			Service: svc,
 			Logger:  lg,
 		},
@@ -161,13 +169,13 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 	}
 
 	// Initialize Identity Manager
-	identityManager := make(map[string]core.IdentityManager)
+	identityManager := make(map[string]msp.IdentityManager)
 	netConfig, err := config.NetworkConfig()
 	if err != nil {
 		return errors.Wrapf(err, "failed to retrieve network config")
 	}
 	for orgName := range netConfig.Organizations {
-		mgr, err := sdk.opts.Core.CreateIdentityManager(orgName, stateStore, cryptoSuite, config)
+		mgr, err := sdk.opts.Msp.CreateIdentityManager(orgName, stateStore, cryptoSuite, config)
 		if err != nil {
 			return errors.Wrapf(err, "failed to initialize identity manager for organization: %s", orgName)
 		}

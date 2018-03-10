@@ -4,9 +4,10 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package core
+package msp
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/pkg/errors"
 )
 
@@ -33,6 +34,39 @@ type User interface {
 	MspID() string
 	Name() string
 	SerializedIdentity() ([]byte, error)
-	PrivateKey() Key
+	PrivateKey() core.Key
 	EnrollmentCertificate() []byte
+}
+
+// UserData is the representation of User in UserStore
+// PrivateKey is stored separately, in the crypto store
+type UserData struct {
+	Name                  string
+	MspID                 string
+	EnrollmentCertificate []byte
+}
+
+// UserStore is responsible for UserData persistence
+type UserStore interface {
+	Store(UserData) error
+	Load(UserIdentifier) (UserData, error)
+}
+
+// UserIdentifier is the User's unique identifier
+type UserIdentifier struct {
+	MspID string
+	Name  string
+}
+
+// PrivKeyKey is a composite key for accessing a private key in the key store
+type PrivKeyKey struct {
+	MspID    string
+	UserName string
+	SKI      []byte
+}
+
+// CertKey is a composite key for accessing a cert in the cert store
+type CertKey struct {
+	MspID    string
+	UserName string
 }

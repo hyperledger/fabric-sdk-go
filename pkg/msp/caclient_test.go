@@ -42,7 +42,7 @@ var (
 	cryptoSuite             core.CryptoSuite
 	wrongURLConfig          core.Config
 	stateStore              core.KVStore
-	userStore               identitymgr.UserStore
+	userStore               msp.UserStore
 	identityManager         *identitymgr.IdentityManager
 )
 
@@ -125,15 +125,15 @@ func TestEnrollAndReenroll(t *testing.T) {
 
 	// Successful enrollment
 	enrollUserName := createRandomName()
-	enrolledUserData, err := userStore.Load(identitymgr.UserIdentifier{MspID: orgMspID, Name: enrollUserName})
-	if err != core.ErrUserNotFound {
+	enrolledUserData, err := userStore.Load(msp.UserIdentifier{MspID: orgMspID, Name: enrollUserName})
+	if err != msp.ErrUserNotFound {
 		t.Fatalf("Expected to not find user in user store")
 	}
 	err = caManager.Enroll(enrollUserName, "enrollmentSecret")
 	if err != nil {
 		t.Fatalf("identityManager Enroll return error %v", err)
 	}
-	enrolledUserData, err = userStore.Load(identitymgr.UserIdentifier{MspID: orgMspID, Name: enrollUserName})
+	enrolledUserData, err = userStore.Load(msp.UserIdentifier{MspID: orgMspID, Name: enrollUserName})
 	if err != nil {
 		t.Fatalf("Expected to load user from user store")
 	}

@@ -12,7 +12,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fab/signingmgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
@@ -56,11 +55,6 @@ func (f *ProviderFactory) CreateCryptoSuiteProvider(config core.Config) (core.Cr
 // CreateSigningManager returns a new default implementation of signing manager
 func (f *ProviderFactory) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error) {
 	return signingMgr.New(cryptoProvider, config)
-}
-
-// CreateIdentityManager returns a new default implementation of identity manager
-func (f *ProviderFactory) CreateIdentityManager(org string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (core.IdentityManager, error) {
-	return identitymgr.New(org, stateStore, cryptoProvider, config)
 }
 
 // CreateInfraProvider returns a new default implementation of fabric primitives

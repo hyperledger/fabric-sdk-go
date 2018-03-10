@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 )
@@ -37,7 +38,7 @@ func TestUserMethods(t *testing.T) {
 	}
 
 	// Missing enrollment cert
-	userData := UserData{
+	userData := msp.UserData{
 		MspID: testUserMspID,
 		Name:  testUserName,
 	}

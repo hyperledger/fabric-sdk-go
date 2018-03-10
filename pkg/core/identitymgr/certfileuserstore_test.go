@@ -14,7 +14,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/pkg/errors"
 )
 
@@ -62,12 +62,12 @@ func TestStore(t *testing.T) {
 	}
 	cleanupTestPath(t, storePath)
 
-	user1 := UserData{
+	user1 := msp.UserData{
 		MspID: "Org1",
 		Name:  "user1",
 		EnrollmentCertificate: []byte(testCert1),
 	}
-	user2 := UserData{
+	user2 := msp.UserData{
 		MspID: "Org2",
 		Name:  "user2",
 		EnrollmentCertificate: []byte(testCert2),
@@ -90,7 +90,7 @@ func TestStore(t *testing.T) {
 	if err := checkStoreValue(store, user2, user2.EnrollmentCertificate); err != nil {
 		t.Fatalf("checkStoreValue %s failed [%s]", user2.Name, err)
 	}
-	if err := checkStoreValue(store, user1, nil); err != core.ErrUserNotFound {
+	if err := checkStoreValue(store, user1, nil); err != msp.ErrUserNotFound {
 		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user1.Name, err)
 	}
 
@@ -101,17 +101,17 @@ func TestStore(t *testing.T) {
 	if err := store.Delete(userIdentifier(user2)); err != nil {
 		t.Fatalf("Delete %s failed [%s]", user2.Name, err)
 	}
-	if err := checkStoreValue(store, user2, nil); err != core.ErrUserNotFound {
+	if err := checkStoreValue(store, user2, nil); err != msp.ErrUserNotFound {
 		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user2.Name, err)
 	}
 
 	// Check non-existing key
-	nonExistingKey := UserIdentifier{
+	nonExistingKey := msp.UserIdentifier{
 		MspID: "Orgx",
 		Name:  "userx",
 	}
 	_, err = store.Load(nonExistingKey)
-	if err == nil || err != core.ErrUserNotFound {
+	if err == nil || err != msp.ErrUserNotFound {
 		t.Fatal("fetching value for non-existing key should return ErrUserNotFound")
 	}
 }
@@ -124,7 +124,7 @@ func TestCreateNewStore(t *testing.T) {
 	}
 }
 
-func checkStoreValue(store *CertFileUserStore, user UserData, expected []byte) error {
+func checkStoreValue(store *CertFileUserStore, user msp.UserData, expected []byte) error {
 	userIdentifier := userIdentifier(user)
 	storeKey := storeKeyFromUserIdentifier(userIdentifier)
 	v, err := store.Load(userIdentifier)

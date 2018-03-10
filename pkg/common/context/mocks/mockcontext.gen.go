@@ -10,6 +10,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	core "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	msp "github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
 // MockProviders is a mock of Providers interface
@@ -84,9 +85,9 @@ func (mr *MockProvidersMockRecorder) DiscoveryProvider() *gomock.Call {
 }
 
 // IdentityManager mocks base method
-func (m *MockProviders) IdentityManager(arg0 string) (core.IdentityManager, bool) {
+func (m *MockProviders) IdentityManager(arg0 string) (msp.IdentityManager, bool) {
 	ret := m.ctrl.Call(m, "IdentityManager", arg0)
-	ret0, _ := ret[0].(core.IdentityManager)
+	ret0, _ := ret[0].(msp.IdentityManager)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -216,9 +217,9 @@ func (mr *MockClientMockRecorder) DiscoveryProvider() *gomock.Call {
 }
 
 // IdentityManager mocks base method
-func (m *MockClient) IdentityManager(arg0 string) (core.IdentityManager, bool) {
+func (m *MockClient) IdentityManager(arg0 string) (msp.IdentityManager, bool) {
 	ret := m.ctrl.Call(m, "IdentityManager", arg0)
-	ret0, _ := ret[0].(core.IdentityManager)
+	ret0, _ := ret[0].(msp.IdentityManager)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }

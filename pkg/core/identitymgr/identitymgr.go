@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
 var logger = logging.NewLogger("fabsdk/core")
@@ -29,7 +30,7 @@ type IdentityManager struct {
 	embeddedUsers   map[string]core.TLSKeyPair
 	mspPrivKeyStore core.KVStore
 	mspCertStore    core.KVStore
-	userStore       UserStore
+	userStore       msp.UserStore
 }
 
 // New creates a new instance of IdentityManager

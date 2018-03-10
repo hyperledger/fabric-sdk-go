@@ -10,11 +10,13 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defmsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 	"github.com/pkg/errors"
@@ -24,13 +26,17 @@ type mockCorePkg struct {
 	stateStore      core.KVStore
 	cryptoSuite     core.CryptoSuite
 	signingManager  core.SigningManager
-	identityManager map[string]core.IdentityManager
+	identityManager map[string]msp.IdentityManager
 	infraProvider   fab.InfraProvider
 }
 
 func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	pkgSuite := defPkgSuite{}
 	sdkcore, err := pkgSuite.Core()
+	if err != nil {
+		return nil, err
+	}
+	sdkmsp, err := pkgSuite.MSP()
 	if err != nil {
 		return nil, err
 	}
@@ -50,9 +56,9 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	if err != nil {
 		return nil, err
 	}
-	im := make(map[string]core.IdentityManager)
+	im := make(map[string]msp.IdentityManager)
 	for orgName := range netConfig.Organizations {
-		mgr, err := sdkcore.CreateIdentityManager(orgName, stateStore, cs, config)
+		mgr, err := sdkmsp.CreateIdentityManager(orgName, stateStore, cs, config)
 		if err != nil {
 			return nil, err
 		}
@@ -87,7 +93,7 @@ func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite, con
 	return mc.signingManager, nil
 }
 
-func (mc *mockCorePkg) CreateIdentityManager(orgName string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (core.IdentityManager, error) {
+func (mc *mockCorePkg) CreateIdentityManager(orgName string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (msp.IdentityManager, error) {
 	mgr, ok := mc.identityManager[orgName]
 	if !ok {
 		return nil, fmt.Errorf("identity manager not found for organization: %s", orgName)
@@ -101,6 +107,7 @@ func (mc *mockCorePkg) CreateInfraProvider(config core.Config) (fab.InfraProvide
 
 type mockPkgSuite struct {
 	errOnCore    bool
+	errOnMsp     bool
 	errOnService bool
 	errOnSession bool
 	errOnLogger  bool
@@ -111,6 +118,13 @@ func (ps *mockPkgSuite) Core() (sdkApi.CoreProviderFactory, error) {
 		return nil, errors.New("Error")
 	}
 	return defcore.NewProviderFactory(), nil
+}
+
+func (ps *mockPkgSuite) MSP() (sdkApi.MspProviderFactory, error) {
+	if ps.errOnMsp {
+		return nil, errors.New("Error")
+	}
+	return defmsp.NewProviderFactory(), nil
 }
 
 func (ps *mockPkgSuite) Service() (sdkApi.ServiceProviderFactory, error) {

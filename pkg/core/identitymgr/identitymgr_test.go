@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 )
@@ -24,7 +25,7 @@ const (
 var (
 	fullConfig  core.Config
 	cryptoSuite core.CryptoSuite
-	userStore   UserStore
+	userStore   msp.UserStore
 )
 
 // TestMain Load testing config
@@ -74,7 +75,7 @@ func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 
 // TestInterfaces will test if the interface instantiation happens properly, ie no nil returned
 func TestInterfaces(t *testing.T) {
-	var apiIM core.IdentityManager
+	var apiIM msp.IdentityManager
 	var im IdentityManager
 
 	apiIM = &im

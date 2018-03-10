@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	"github.com/pkg/errors"
 )
@@ -21,7 +22,7 @@ func NewFileKeyStore(cryptoConfogMspPath string) (core.KVStore, error) {
 	opts := &keyvaluestore.FileKeyValueStoreOptions{
 		Path: cryptoConfogMspPath,
 		KeySerializer: func(key interface{}) (string, error) {
-			pkk, ok := key.(*PrivKeyKey)
+			pkk, ok := key.(*msp.PrivKeyKey)
 			if !ok {
 				return "", errors.New("converting key to PrivKeyKey failed")
 			}

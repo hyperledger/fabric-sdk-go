@@ -9,6 +9,7 @@ package context
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
 // Identity supplies the serialized identity and key reference.
@@ -27,6 +28,7 @@ type Client interface {
 // Providers represents the SDK configured providers context.
 type Providers interface {
 	core.Providers
+	msp.Providers
 	fab.Providers
 }
 

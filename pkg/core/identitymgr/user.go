@@ -10,6 +10,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	pb_msp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	"github.com/pkg/errors"
 )
@@ -22,8 +23,8 @@ type User struct {
 	privateKey            core.Key
 }
 
-func userIdentifier(userData UserData) UserIdentifier {
-	return UserIdentifier{MspID: userData.MspID, Name: userData.Name}
+func userIdentifier(userData msp.UserData) msp.UserIdentifier {
+	return msp.UserIdentifier{MspID: userData.MspID, Name: userData.Name}
 }
 
 // Name Get the user name.
@@ -61,10 +62,4 @@ func (u *User) SerializedIdentity() ([]byte, error) {
 		return nil, errors.Wrap(err, "marshal serializedIdentity failed")
 	}
 	return identity, nil
-}
-
-// UserStore is responsible for UserData persistence
-type UserStore interface {
-	Store(UserData) error
-	Load(UserIdentifier) (UserData, error)
 }

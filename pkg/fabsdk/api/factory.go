@@ -9,11 +9,13 @@ package api
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
 // Providers represents the SDK configured providers context.
 type Providers interface {
 	core.Providers
+	msp.Providers
 	fab.Providers
 }
 
@@ -22,8 +24,12 @@ type CoreProviderFactory interface {
 	CreateStateStoreProvider(config core.Config) (core.KVStore, error)
 	CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error)
 	CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error)
-	CreateIdentityManager(orgName string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (core.IdentityManager, error)
 	CreateInfraProvider(config core.Config) (fab.InfraProvider, error)
+}
+
+// MspProviderFactory allows overriding providers of MSP services
+type MspProviderFactory interface {
+	CreateIdentityManager(orgName string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (msp.IdentityManager, error)
 }
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)

@@ -28,7 +28,7 @@ type MockProviderContext struct {
 	cryptoSuite       core.CryptoSuite
 	signingManager    core.SigningManager
 	stateStore        core.KVStore
-	identityManager   map[string]core.IdentityManager
+	identityManager   map[string]msp.IdentityManager
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
 	infraProvider     fab.InfraProvider
@@ -38,7 +38,7 @@ type MockProviderContext struct {
 // NewMockProviderContext creates a MockProviderContext consisting of defaults
 func NewMockProviderContext() *MockProviderContext {
 
-	im := make(map[string]core.IdentityManager)
+	im := make(map[string]msp.IdentityManager)
 	im[""] = &MockIdentityManager{}
 
 	ca := make(map[string]msp.CAClient)
@@ -59,7 +59,7 @@ func NewMockProviderContext() *MockProviderContext {
 }
 
 // NewMockProviderContextCustom creates a MockProviderContext consisting of the arguments
-func NewMockProviderContextCustom(config config.Config, cryptoSuite core.CryptoSuite, signer core.SigningManager, stateStore core.KVStore, identityManager map[string]core.IdentityManager) *MockProviderContext {
+func NewMockProviderContextCustom(config config.Config, cryptoSuite core.CryptoSuite, signer core.SigningManager, stateStore core.KVStore, identityManager map[string]msp.IdentityManager) *MockProviderContext {
 	context := MockProviderContext{
 		config:          config,
 		signingManager:  signer,
@@ -96,7 +96,7 @@ func (pc *MockProviderContext) StateStore() core.KVStore {
 }
 
 // IdentityManager returns the identity manager
-func (pc *MockProviderContext) IdentityManager(orgName string) (core.IdentityManager, bool) {
+func (pc *MockProviderContext) IdentityManager(orgName string) (msp.IdentityManager, bool) {
 	mgr, ok := pc.identityManager[strings.ToLower(orgName)]
 	return mgr, ok
 }

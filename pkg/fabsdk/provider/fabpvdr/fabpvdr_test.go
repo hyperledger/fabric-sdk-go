@@ -12,6 +12,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -73,7 +74,7 @@ func newMockInfraProvider(t *testing.T) *InfraProvider {
 	if err != nil {
 		panic(fmt.Sprintf("cryptosuiteimpl.GetSuiteByConfig: %v", err))
 	}
-	im := make(map[string]core.IdentityManager)
+	im := make(map[string]msp.IdentityManager)
 	im[""] = &mocks.MockIdentityManager{}
 
 	ctx := mocks.NewMockProviderContextCustom(cfg, cryptoSuite, mocks.NewMockSigningManager(), mocks.NewMockStateStore(), im)

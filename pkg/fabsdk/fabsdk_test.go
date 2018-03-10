@@ -79,11 +79,12 @@ func TestWithCorePkg(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockCoreProviderFactory(mockCtrl)
+	mspFactory := mockapisdk.NewMockMspProviderFactory(mockCtrl)
 
 	factory.EXPECT().CreateCryptoSuiteProvider(c).Return(nil, nil)
 	factory.EXPECT().CreateStateStoreProvider(c).Return(nil, nil)
 	factory.EXPECT().CreateSigningManager(nil, c).Return(nil, nil)
-	factory.EXPECT().CreateIdentityManager(gomock.Any(), gomock.Any(), nil, c).Return(nil, nil).AnyTimes()
+	mspFactory.EXPECT().CreateIdentityManager(gomock.Any(), gomock.Any(), nil, c).Return(nil, nil).AnyTimes()
 	factory.EXPECT().CreateInfraProvider(gomock.Any()).Return(nil, nil)
 
 	_, err = New(WithConfig(c), WithCorePkg(factory))

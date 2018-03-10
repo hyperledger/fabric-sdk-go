@@ -8,6 +8,7 @@ package mocks
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
 // MockUser ...
@@ -25,12 +26,12 @@ type MockUser struct {
  *
  * @param {string} name - The user name
  */
-func NewMockUser(name string) core.User {
+func NewMockUser(name string) msp.User {
 	return &MockUser{name: name}
 }
 
 //NewMockUserWithMSPID to return mock user with MSP ids
-func NewMockUserWithMSPID(name string, mspid string) core.User {
+func NewMockUserWithMSPID(name string, mspid string) msp.User {
 	return &MockUser{name: name, mspID: mspid}
 }
 

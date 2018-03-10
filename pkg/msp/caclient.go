@@ -28,14 +28,14 @@ type CAClient struct {
 	caName          string
 	config          core.Config
 	cryptoSuite     core.CryptoSuite
-	identityManager core.IdentityManager
-	userStore       identitymgr.UserStore
+	identityManager msp.IdentityManager
+	userStore       msp.UserStore
 	adapter         *FabricCAAdapter
 	registrar       core.EnrollCredentials
 }
 
 // New creates a new CA CAClient instance
-func New(orgName string, identityManager core.IdentityManager, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config core.Config) (*CAClient, error) {
+func New(orgName string, identityManager msp.IdentityManager, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config core.Config) (*CAClient, error) {
 
 	userStore, err := identitymgr.NewCertFileUserStore1(stateStore)
 	if err != nil {
@@ -134,7 +134,7 @@ func (c *CAClient) Enroll(enrollmentID string, enrollmentSecret string) error {
 	if err != nil {
 		return errors.Wrap(err, "enroll failed")
 	}
-	userData := identitymgr.UserData{
+	userData := msp.UserData{
 		MspID: c.orgMspID,
 		Name:  enrollmentID,
 		EnrollmentCertificate: cert,
@@ -169,7 +169,7 @@ func (c *CAClient) Reenroll(enrollmentID string) error {
 	if err != nil {
 		return errors.Wrap(err, "reenroll failed")
 	}
-	userData := identitymgr.UserData{
+	userData := msp.UserData{
 		MspID: c.orgMspID,
 		Name:  user.Name(),
 		EnrollmentCertificate: cert,
@@ -240,7 +240,7 @@ func (c *CAClient) Revoke(request *msp.RevocationRequest) (*msp.RevocationRespon
 	return resp, nil
 }
 
-func (c *CAClient) getRegistrar(enrollID string, enrollSecret string) (*core.SigningIdentity, error) {
+func (c *CAClient) getRegistrar(enrollID string, enrollSecret string) (*msp.SigningIdentity, error) {
 
 	if enrollID == "" {
 		return nil, msp.ErrCARegistrarNotFound
@@ -248,7 +248,7 @@ func (c *CAClient) getRegistrar(enrollID string, enrollSecret string) (*core.Sig
 
 	registrar, err := c.identityManager.GetSigningIdentity(enrollID)
 	if err != nil {
-		if err != core.ErrUserNotFound {
+		if err != msp.ErrUserNotFound {
 			return nil, err
 		}
 		if enrollSecret == "" {

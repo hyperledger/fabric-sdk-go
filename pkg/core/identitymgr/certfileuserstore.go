@@ -10,6 +10,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/pkg/errors"
 )
 
@@ -20,14 +21,14 @@ type CertFileUserStore struct {
 	store core.KVStore
 }
 
-func userIdentifierFromUser(user UserData) UserIdentifier {
-	return UserIdentifier{
+func userIdentifierFromUser(user msp.UserData) msp.UserIdentifier {
+	return msp.UserIdentifier{
 		MspID: user.MspID,
 		Name:  user.Name,
 	}
 }
 
-func storeKeyFromUserIdentifier(key UserIdentifier) string {
+func storeKeyFromUserIdentifier(key msp.UserIdentifier) string {
 	return key.Name + "@" + key.MspID + "-cert.pem"
 }
 
@@ -53,12 +54,12 @@ func NewCertFileUserStore(path string) (*CertFileUserStore, error) {
 }
 
 // Load returns the User stored in the store for a key.
-func (s *CertFileUserStore) Load(key UserIdentifier) (UserData, error) {
-	var userData UserData
+func (s *CertFileUserStore) Load(key msp.UserIdentifier) (msp.UserData, error) {
+	var userData msp.UserData
 	cert, err := s.store.Load(storeKeyFromUserIdentifier(key))
 	if err != nil {
 		if err == core.ErrKeyValueNotFound {
-			return userData, core.ErrUserNotFound
+			return userData, msp.ErrUserNotFound
 		}
 		return userData, err
 	}
@@ -66,7 +67,7 @@ func (s *CertFileUserStore) Load(key UserIdentifier) (UserData, error) {
 	if !ok {
 		return userData, errors.New("user is not of proper type")
 	}
-	userData = UserData{
+	userData = msp.UserData{
 		MspID: key.MspID,
 		Name:  key.Name,
 		EnrollmentCertificate: certBytes,
@@ -75,12 +76,12 @@ func (s *CertFileUserStore) Load(key UserIdentifier) (UserData, error) {
 }
 
 // Store stores a User into store
-func (s *CertFileUserStore) Store(user UserData) error {
-	key := storeKeyFromUserIdentifier(UserIdentifier{MspID: user.MspID, Name: user.Name})
+func (s *CertFileUserStore) Store(user msp.UserData) error {
+	key := storeKeyFromUserIdentifier(msp.UserIdentifier{MspID: user.MspID, Name: user.Name})
 	return s.store.Store(key, user.EnrollmentCertificate)
 }
 
 // Delete deletes a User from store
-func (s *CertFileUserStore) Delete(key UserIdentifier) error {
+func (s *CertFileUserStore) Delete(key msp.UserIdentifier) error {
 	return s.store.Delete(storeKeyFromUserIdentifier(key))
 }

@@ -14,6 +14,7 @@ import (
 // PkgSuite provides the package factories that create clients and providers
 type PkgSuite interface {
 	Core() (sdkApi.CoreProviderFactory, error)
+	MSP() (sdkApi.MspProviderFactory, error)
 	Service() (sdkApi.ServiceProviderFactory, error)
 	Logger() (api.LoggerProvider, error)
 }
