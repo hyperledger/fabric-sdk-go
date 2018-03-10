@@ -9,6 +9,7 @@ package fabpvdr
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/lazycache"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
@@ -50,7 +51,7 @@ type fabContext struct {
 }
 
 // New creates a InfraProvider enabling access to core Fabric objects and functionality.
-func New(config core.Config) *InfraProvider {
+func New(config core.Config, opts ...options.Opt) *InfraProvider {
 	idleTime := config.TimeoutOrDefault(core.ConnectionIdle)
 	sweepTime := config.TimeoutOrDefault(core.CacheSweepInterval)
 	eventIdleTime := config.TimeoutOrDefault(core.EventServiceIdle)
@@ -66,7 +67,7 @@ func New(config core.Config) *InfraProvider {
 				return NewEventClientRef(
 					eventIdleTime,
 					func() (fab.EventClient, error) {
-						return getEventClient(cacheKey.Context(), cacheKey.ChannelConfig())
+						return getEventClient(cacheKey.Context(), cacheKey.ChannelConfig(), opts...)
 					},
 				), nil
 			},
@@ -188,16 +189,15 @@ func (f *InfraProvider) CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Or
 	return newOrderer, nil
 }
 
-func getEventClient(ctx context.Client, chConfig fab.ChannelCfg) (fab.EventClient, error) {
+func getEventClient(ctx context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (fab.EventClient, error) {
 	// TODO: This logic should be based on the channel capabilities. For now,
 	// look at the EventServiceType specified in the config file.
 	switch ctx.Config().EventServiceType() {
 	case core.DeliverEventServiceType:
-		logger.Debugf("Using deliver events")
-		return deliverclient.New(ctx, chConfig)
+		return deliverclient.New(ctx, chConfig, opts...)
 	case core.EventHubEventServiceType:
 		logger.Debugf("Using event hub events")
-		return eventhubclient.New(ctx, chConfig, eventhubclient.WithBlockEvents())
+		return eventhubclient.New(ctx, chConfig, opts...)
 	default:
 		return nil, errors.Errorf("unsupported event service type: %d", ctx.Config().EventServiceType())
 	}

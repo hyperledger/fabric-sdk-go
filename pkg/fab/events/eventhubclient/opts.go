@@ -26,9 +26,10 @@ type params struct {
 
 func defaultParams() *params {
 	return &params{
-		connProvider: ehConnProvider,
-		interests:    filteredBlockInterests,
-		respTimeout:  5 * time.Second,
+		connProvider:      ehConnProvider,
+		interests:         blockInterests,
+		respTimeout:       5 * time.Second,
+		permitBlockEvents: true,
 	}
 }
 
