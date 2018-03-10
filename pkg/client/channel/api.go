@@ -15,6 +15,7 @@ import (
 )
 
 // CCEvent contains the data for a chaincocde event
+// Deprecated since EventHub is replaced with EventService
 type CCEvent struct {
 	TxID        string
 	ChaincodeID string
@@ -24,6 +25,7 @@ type CCEvent struct {
 
 // Registration is a handle that is returned from a successful Register Chaincode Event.
 // This handle should be used in Unregister in order to unregister the event.
+// Deprecated since EventHub is replaced with EventService
 type Registration interface {
 }
 

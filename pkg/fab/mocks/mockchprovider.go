@@ -41,7 +41,7 @@ func (cp *MockChannelProvider) SetTransactor(transactor fab.Transactor) {
 }
 
 // ChannelService returns a mock ChannelService
-func (cp *MockChannelProvider) ChannelService(ic fab.IdentityContext, channelID string) (fab.ChannelService, error) {
+func (cp *MockChannelProvider) ChannelService(ctx fab.ClientContext, channelID string) (fab.ChannelService, error) {
 
 	if cp.customSelectionService != nil {
 		return cp.customSelectionService, nil
@@ -63,6 +63,11 @@ func (cp *MockChannelProvider) SetCustomChannelService(customSelectionService fa
 // EventHub ...
 func (cs *MockChannelService) EventHub() (fab.EventHub, error) {
 	return NewMockEventHub(), nil
+}
+
+// EventService returns a mock event service
+func (cs *MockChannelService) EventService() (fab.EventService, error) {
+	return NewMockEventService(), nil
 }
 
 // Transactor ...

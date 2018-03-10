@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
@@ -506,20 +507,17 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 		return errors.WithMessage(err, "sending deploy transaction proposal failed")
 	}
 
-	eventHub, err := channelService.EventHub()
+	eventService, err := channelService.EventService()
 	if err != nil {
-		return errors.WithMessage(err, "Unable to get EventHub")
-	}
-	if eventHub.IsConnected() == false {
-		err := eventHub.Connect()
-		if err != nil {
-			return err
-		}
-		defer eventHub.Disconnect()
+		return errors.WithMessage(err, "unable to get event service")
 	}
 
 	// Register for commit event
-	statusNotifier := txn.RegisterStatus(tp.TxnID, eventHub)
+	reg, statusNotifier, err := eventService.RegisterTxStatusEvent(string(tp.TxnID))
+	if err != nil {
+		return errors.WithMessage(err, "error registering for TxStatus event")
+	}
+	defer eventService.Unregister(reg)
 
 	transactionRequest := fab.TransactionRequest{
 		Proposal:          tp,
@@ -535,11 +533,11 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 	}
 
 	select {
-	case result := <-statusNotifier:
-		if result.Error == nil {
+	case txStatus := <-statusNotifier:
+		if txStatus.TxValidationCode == pb.TxValidationCode_VALID {
 			return nil
 		}
-		return errors.WithMessage(result.Error, "instantiateOrUpgradeCC failed")
+		return status.New(status.EventServerStatus, int32(txStatus.TxValidationCode), "instantiateOrUpgradeCC failed", nil)
 	case <-time.After(timeout):
 		return errors.New("instantiateOrUpgradeCC timeout")
 	}

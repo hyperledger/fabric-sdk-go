@@ -228,6 +228,18 @@ func (mr *MockConfigMockRecorder) Ephemeral() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ephemeral", reflect.TypeOf((*MockConfig)(nil).Ephemeral))
 }
 
+// EventServiceType mocks base method
+func (m *MockConfig) EventServiceType() core.EventServiceType {
+	ret := m.ctrl.Call(m, "EventServiceType")
+	ret0, _ := ret[0].(core.EventServiceType)
+	return ret0
+}
+
+// EventServiceType indicates an expected call of EventServiceType
+func (mr *MockConfigMockRecorder) EventServiceType() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EventServiceType", reflect.TypeOf((*MockConfig)(nil).EventServiceType))
+}
+
 // IsSecurityEnabled mocks base method
 func (m *MockConfig) IsSecurityEnabled() bool {
 	ret := m.ctrl.Call(m, "IsSecurityEnabled")

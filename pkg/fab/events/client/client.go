@@ -134,6 +134,8 @@ func (c *Client) close(force bool) bool {
 		c.Submit(esdispatcher.NewRegistrationInfoEvent(regInfoCh))
 		regInfo := <-regInfoCh
 
+		logger.Debugf("Outstanding registrations: %d", regInfo.TotalRegistrations)
+
 		if regInfo.TotalRegistrations > 0 {
 			logger.Debugf("Cannot stop client since there are %d outstanding registrations", regInfo.TotalRegistrations)
 			return false

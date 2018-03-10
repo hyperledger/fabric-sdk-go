@@ -36,13 +36,14 @@ import (
 var logger = logging.NewLogger("fabsdk/core")
 
 const (
-	cmdRoot                   = "FABRIC_SDK"
-	defaultTimeout            = time.Second * 5
-	defaultConnIdleTimeout    = time.Second * 30
-	defaultCacheSweepInterval = time.Second * 15
+	cmdRoot                        = "FABRIC_SDK"
+	defaultTimeout                 = time.Second * 5
+	defaultConnIdleTimeout         = time.Second * 30
+	defaultCacheSweepInterval      = time.Second * 15
+	defaultEventServiceIdleTimeout = time.Minute * 2
 )
 
-var logModules = [...]string{"fabsdk/client", "fabsdk/core", "fabsdk/fab"}
+var logModules = [...]string{"fabsdk", "fabsdk/client", "fabsdk/core", "fabsdk/fab", "fabsdk/common"}
 
 // Config represents the configuration for the client
 type Config struct {
@@ -477,6 +478,17 @@ func (c *Config) Timeout(tType core.TimeoutType) time.Duration {
 	return c.getTimeout(tType)
 }
 
+// EventServiceType returns the type of event service client to use
+func (c *Config) EventServiceType() core.EventServiceType {
+	etype := c.configViper.GetString("client.eventService.type")
+	switch etype {
+	case "deliver":
+		return core.DeliverEventServiceType
+	default:
+		return core.EventHubEventServiceType
+	}
+}
+
 func (c *Config) getTimeout(tType core.TimeoutType) time.Duration {
 	var timeout time.Duration
 	switch tType {
@@ -505,6 +517,11 @@ func (c *Config) getTimeout(tType core.TimeoutType) time.Duration {
 		timeout = c.configViper.GetDuration("client.global.timeout.cache.connectionIdle")
 		if timeout == 0 {
 			timeout = defaultConnIdleTimeout
+		}
+	case core.EventServiceIdle:
+		timeout = c.configViper.GetDuration("client.global.timeout.cache.eventServiceIdle")
+		if timeout == 0 {
+			timeout = defaultEventServiceIdleTimeout
 		}
 	}
 

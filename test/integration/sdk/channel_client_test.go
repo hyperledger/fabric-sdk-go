@@ -259,11 +259,11 @@ func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T) {
 	eventID := "test([a-zA-Z]+)"
 
 	// Register chaincode event (pass in channel which receives event details when the event is complete)
-	notifier := make(chan *channel.CCEvent)
-	rce, err := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
+	reg, notifier, err := chClient.RegisterChaincodeEvent(ccID, eventID)
 	if err != nil {
 		t.Fatalf("Failed to register cc event: %s", err)
 	}
+	defer chClient.UnregisterChaincodeEvent(reg)
 
 	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
@@ -279,13 +279,6 @@ func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T) {
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive CC for eventId(%s)\n", eventID)
 	}
-
-	// Unregister chain code event using registration handle
-	err = chClient.UnregisterChaincodeEvent(rce)
-	if err != nil {
-		t.Fatalf("Unregister cc event failed: %s", err)
-	}
-
 }
 
 func testChaincodeEventListener(ccID string, chClient *channel.Client, listener *channel.Client, t *testing.T) {
@@ -293,11 +286,11 @@ func testChaincodeEventListener(ccID string, chClient *channel.Client, listener 
 	eventID := "test([a-zA-Z]+)"
 
 	// Register chaincode event (pass in channel which receives event details when the event is complete)
-	notifier := make(chan *channel.CCEvent)
-	rce, err := listener.RegisterChaincodeEvent(notifier, ccID, eventID)
+	reg, notifier, err := listener.RegisterChaincodeEvent(ccID, eventID)
 	if err != nil {
 		t.Fatalf("Failed to register cc event: %s", err)
 	}
+	defer chClient.UnregisterChaincodeEvent(reg)
 
 	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
@@ -312,12 +305,6 @@ func testChaincodeEventListener(ccID string, chClient *channel.Client, listener 
 		}
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive CC for eventId(%s)\n", eventID)
-	}
-
-	// Unregister chain code event using registration handle
-	err = listener.UnregisterChaincodeEvent(rce)
-	if err != nil {
-		t.Fatalf("Unregister cc event failed: %s", err)
 	}
 
 }

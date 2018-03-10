@@ -107,3 +107,16 @@ func createAndSendTransactionProposal(transactor fab.ProposalSender, chainCodeID
 	tpr, err := transactor.SendTransactionProposal(tp, targets)
 	return tpr, tp, err
 }
+
+func getTransactor(sdk *fabsdk.FabricSDK, channelID string, user string, orgName string) (fab.Transactor, error) {
+
+	clientChannelContextProvider := sdk.ChannelContext(channelID, fabsdk.WithUser(user), fabsdk.WithOrg(orgName))
+
+	channelContext, err := clientChannelContextProvider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "channel service creation failed")
+	}
+	chService := channelContext.ChannelService()
+
+	return chService.Transactor()
+}

@@ -8,6 +8,7 @@ package fabpvdr
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/lazycache"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
@@ -15,15 +16,32 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/eventhubclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
 
+var logger = logging.NewLogger("fabsdk")
+
+type cacheKey interface {
+	lazycache.Key
+	Context() fab.ClientContext
+	ChannelConfig() fab.ChannelCfg
+}
+
+type cache interface {
+	Get(lazycache.Key) (interface{}, error)
+	Close()
+}
+
 // InfraProvider represents the default implementation of Fabric objects.
 type InfraProvider struct {
-	providerContext context.Providers
-	commManager     *comm.CachingConnector
+	providerContext   context.Providers
+	commManager       *comm.CachingConnector
+	eventServiceCache cache
 }
 
 type fabContext struct {
@@ -35,13 +53,25 @@ type fabContext struct {
 func New(config core.Config) *InfraProvider {
 	idleTime := config.TimeoutOrDefault(core.ConnectionIdle)
 	sweepTime := config.TimeoutOrDefault(core.CacheSweepInterval)
+	eventIdleTime := config.TimeoutOrDefault(core.EventServiceIdle)
 
 	cc := comm.NewCachingConnector(sweepTime, idleTime)
 
-	f := InfraProvider{
+	return &InfraProvider{
 		commManager: cc,
+		eventServiceCache: lazycache.New(
+			"Event_Service_Cache",
+			func(key lazycache.Key) (interface{}, error) {
+				cacheKey := key.(cacheKey)
+				return NewEventClientRef(
+					eventIdleTime,
+					func() (fab.EventClient, error) {
+						return getEventClient(cacheKey.Context(), cacheKey.ChannelConfig())
+					},
+				), nil
+			},
+		),
 	}
-	return &f
 }
 
 // Initialize sets the provider context
@@ -52,7 +82,10 @@ func (f *InfraProvider) Initialize(providers context.Providers) error {
 
 // Close frees resources and caches.
 func (f *InfraProvider) Close() {
+	logger.Debug("Closing comm manager...")
 	f.commManager.Close()
+	logger.Debug("Closing event service cache...")
+	f.eventServiceCache.Close()
 }
 
 // CommManager provides comm support such as GRPC onnections
@@ -101,6 +134,19 @@ func (f *InfraProvider) CreateEventHub(ic fab.IdentityContext, channelID string)
 	return events.FromConfig(eventCtx, &eventSource.PeerConfig)
 }
 
+// CreateEventService creates the event service.
+func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, chConfig fab.ChannelCfg) (fab.EventService, error) {
+	key, err := NewCacheKey(ctx, chConfig)
+	if err != nil {
+		return nil, err
+	}
+	eventService, err := f.eventServiceCache.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	return eventService.(fab.EventService), nil
+}
+
 // CreateChannelConfig initializes the channel config
 func (f *InfraProvider) CreateChannelConfig(ic fab.IdentityContext, channelID string) (fab.ChannelConfig, error) {
 
@@ -140,4 +186,19 @@ func (f *InfraProvider) CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Or
 		return nil, errors.WithMessage(err, "creating orderer failed")
 	}
 	return newOrderer, nil
+}
+
+func getEventClient(ctx context.Client, chConfig fab.ChannelCfg) (fab.EventClient, error) {
+	// TODO: This logic should be based on the channel capabilities. For now,
+	// look at the EventServiceType specified in the config file.
+	switch ctx.Config().EventServiceType() {
+	case core.DeliverEventServiceType:
+		logger.Infof("Using deliver events")
+		return deliverclient.New(ctx, chConfig)
+	case core.EventHubEventServiceType:
+		logger.Infof("Using event hub events")
+		return eventhubclient.New(ctx, chConfig, eventhubclient.WithBlockEvents())
+	default:
+		return nil, errors.Errorf("unsupported event service type: %d", ctx.Config().EventServiceType())
+	}
 }

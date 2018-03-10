@@ -135,11 +135,11 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	eventID := "test([a-zA-Z]+)"
 
 	// Register chaincode event (pass in channel which receives event details when the event is complete)
-	notifier := make(chan *channel.CCEvent)
-	rce, err := client.RegisterChaincodeEvent(notifier, ccID, eventID)
+	reg, notifier, err := client.RegisterChaincodeEvent(ccID, eventID)
 	if err != nil {
 		t.Fatalf("Failed to register cc event: %s", err)
 	}
+	defer client.UnregisterChaincodeEvent(reg)
 
 	// Move funds
 	response, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
@@ -152,12 +152,6 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 		t.Logf("Received CC event: %s\n", ccEvent)
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
-	}
-
-	// Unregister chain code event using registration handle
-	err = client.UnregisterChaincodeEvent(rce)
-	if err != nil {
-		t.Fatalf("Unregister cc event failed: %s", err)
 	}
 
 	// Verify move funds transaction result

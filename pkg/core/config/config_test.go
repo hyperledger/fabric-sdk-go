@@ -380,6 +380,7 @@ func TestTimeouts(t *testing.T) {
 	configImpl.configViper.Set("client.global.timeout.query", "7h")
 	configImpl.configViper.Set("client.global.timeout.execute", "8h")
 	configImpl.configViper.Set("client.global.timeout.cache.connectionIdle", "1m")
+	configImpl.configViper.Set("client.global.timeout.cache.eventServiceIdle", "2m")
 	configImpl.configViper.Set("client.orderer.timeout.response", "6s")
 
 	t1 := configImpl.TimeoutOrDefault(api.EndorserConnection)
@@ -412,6 +413,10 @@ func TestTimeouts(t *testing.T) {
 	}
 	t1 = configImpl.TimeoutOrDefault(api.ConnectionIdle)
 	if t1 != time.Minute*1 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	}
+	t1 = configImpl.TimeoutOrDefault(api.EventServiceIdle)
+	if t1 != time.Minute*2 {
 		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}
 

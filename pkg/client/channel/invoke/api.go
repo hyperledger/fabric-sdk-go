@@ -47,12 +47,12 @@ type Handler interface {
 
 //ClientContext contains context parameters for handler execution
 type ClientContext struct {
-	CryptoSuite core.CryptoSuite
-	Discovery   fab.DiscoveryService
-	Selection   fab.SelectionService
-	Membership  fab.ChannelMembership
-	Transactor  fab.Transactor
-	EventHub    fab.EventHub
+	CryptoSuite  core.CryptoSuite
+	Discovery    fab.DiscoveryService
+	Selection    fab.SelectionService
+	Membership   fab.ChannelMembership
+	Transactor   fab.Transactor
+	EventService fab.EventService
 }
 
 //RequestContext contains request, opts, response parameters for handler execution

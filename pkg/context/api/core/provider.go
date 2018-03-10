@@ -53,6 +53,7 @@ type Config interface {
 	CryptoConfigPath() string
 	TLSClientCerts() ([]tls.Certificate, error)
 	CredentialStorePath() string
+	EventServiceType() EventServiceType
 }
 
 // ConfigProvider enables creation of a Config instance
@@ -82,6 +83,18 @@ const (
 	ConnectionIdle
 	// CacheSweepInterval is the duration between cache sweeps
 	CacheSweepInterval
+	// EventServiceIdle is the timeout for closing the event service connection
+	EventServiceIdle
+)
+
+// EventServiceType specifies the type of event service to use
+type EventServiceType int
+
+const (
+	// DeliverEventServiceType uses the Deliver Service for block and filtered-block events
+	DeliverEventServiceType EventServiceType = iota
+	// EventHubEventServiceType uses the Event Hub for block events
+	EventHubEventServiceType
 )
 
 // Providers represents the SDK configured core providers context.

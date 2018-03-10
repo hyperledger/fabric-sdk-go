@@ -13,13 +13,24 @@ import (
 	"google.golang.org/grpc"
 )
 
-// InfraProvider enables access to fabric objects such as peer based on config
+// ClientContext contains the client context
+// TODO: This is a duplicate of context.Client since importing context.Client causes
+// a circular import error. This problem should be addressed in a future patch.
+type ClientContext interface {
+	core.Providers
+	Providers
+	MspID() string
+	SerializedIdentity() ([]byte, error)
+	PrivateKey() core.Key
+}
+
+// InfraProvider enables access to fabric objects such as peer and user based on config or
 type InfraProvider interface {
 	CreateChannelLedger(ic IdentityContext, name string) (ChannelLedger, error)
 	CreateChannelConfig(user IdentityContext, name string) (ChannelConfig, error)
 	CreateChannelTransactor(ic IdentityContext, cfg ChannelCfg) (Transactor, error)
 	CreateChannelMembership(cfg ChannelCfg) (ChannelMembership, error)
-	CreateEventHub(ic IdentityContext, name string) (EventHub, error)
+	CreateEventService(ctx ClientContext, chConfig ChannelCfg) (EventService, error)
 	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (Peer, error)
 	CreateOrdererFromConfig(cfg *core.OrdererConfig) (Orderer, error)
 	CommManager() CommManager

@@ -8,7 +8,6 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"reflect"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
@@ -39,7 +38,7 @@ type Client struct {
 	context         context.Channel
 	membership      fab.ChannelMembership
 	transactor      fab.Transactor
-	eventHub        fab.EventHub
+	eventService    fab.EventService
 	greylist        *greylist.Filter
 	discoveryFilter fab.TargetFilter
 }
@@ -78,9 +77,9 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, errors.New("channel service not initialized")
 	}
 
-	eventHub, err := channelContext.ChannelService().EventHub()
+	eventService, err := channelContext.ChannelService().EventService()
 	if err != nil {
-		return nil, errors.WithMessage(err, "event hub creation failed")
+		return nil, errors.WithMessage(err, "event service creation failed")
 	}
 
 	transactor, err := channelContext.ChannelService().Transactor()
@@ -94,10 +93,10 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 	}
 
 	channelClient := Client{
-		membership: membership,
-		transactor: transactor,
-		eventHub:   eventHub,
-		greylist:   greylistProvider,
+		membership:   membership,
+		transactor:   transactor,
+		eventService: eventService,
+		greylist:     greylistProvider,
 	}
 
 	for _, param := range opts {
@@ -189,11 +188,11 @@ func (cc *Client) prepareHandlerContexts(request Request, o opts) (*invoke.Reque
 	}
 
 	clientContext := &invoke.ClientContext{
-		Selection:  cc.context.SelectionService(),
-		Discovery:  cc.context.DiscoveryService(),
-		Membership: cc.membership,
-		Transactor: cc.transactor,
-		EventHub:   cc.eventHub,
+		Selection:    cc.context.SelectionService(),
+		Discovery:    cc.context.DiscoveryService(),
+		Membership:   cc.membership,
+		Transactor:   cc.transactor,
+		EventService: cc.eventService,
 	}
 
 	requestContext := &invoke.RequestContext{
@@ -240,45 +239,23 @@ func (cc *Client) addDefaultTimeout(timeOutType core.TimeoutType, options ...Opt
 	return options
 }
 
-// Close releases channel client resources (disconnects event hub etc.)
+// Close ...
+// TODO: This function should probably be deprecated since all
+// resources (including caches) are on the providers and will
+// be freed when Close() is called on the SDK.
 func (cc *Client) Close() error {
-	if cc.eventHub.IsConnected() == true {
-		return cc.eventHub.Disconnect()
-	}
-
 	return nil
 }
 
 // RegisterChaincodeEvent registers chain code event
 // @param {chan bool} channel which receives event details when the event is complete
 // @returns {object} object handle that should be used to unregister
-func (cc *Client) RegisterChaincodeEvent(notify chan<- *CCEvent, chainCodeID string, eventID string) (Registration, error) {
-
-	if cc.eventHub.IsConnected() == false {
-		if err := cc.eventHub.Connect(); err != nil {
-			return nil, errors.WithMessage(err, "Event hub failed to connect")
-		}
-	}
-
+func (cc *Client) RegisterChaincodeEvent(chainCodeID string, eventFilter string) (fab.Registration, <-chan *fab.CCEvent, error) {
 	// Register callback for CE
-	rce := cc.eventHub.RegisterChaincodeEvent(chainCodeID, eventID, func(ce *fab.ChaincodeEvent) {
-		notify <- &CCEvent{ChaincodeID: ce.ChaincodeID, EventName: ce.EventName, TxID: ce.TxID, Payload: ce.Payload}
-	})
-
-	return rce, nil
+	return cc.eventService.RegisterChaincodeEvent(chainCodeID, eventFilter)
 }
 
 // UnregisterChaincodeEvent removes chain code event registration
-func (cc *Client) UnregisterChaincodeEvent(registration Registration) error {
-
-	switch regType := registration.(type) {
-
-	case *fab.ChainCodeCBE:
-		cc.eventHub.UnregisterChaincodeEvent(regType)
-	default:
-		return errors.Errorf("Unsupported registration type: %v", reflect.TypeOf(registration))
-	}
-
-	return nil
-
+func (cc *Client) UnregisterChaincodeEvent(registration fab.Registration) {
+	cc.eventService.Unregister(registration)
 }

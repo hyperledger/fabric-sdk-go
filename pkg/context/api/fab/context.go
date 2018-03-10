@@ -6,7 +6,9 @@ SPDX-License-Identifier: Apache-2.0
 
 package fab
 
-import "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+)
 
 // IdentityContext supplies the serialized identity and key reference.
 //
@@ -21,7 +23,7 @@ type IdentityContext interface {
 type ChannelService interface {
 	Config() (ChannelConfig, error)
 	Transactor() (Transactor, error)
-	EventHub() (EventHub, error) // TODO support new event delivery
+	EventService() (EventService, error)
 	Membership() (ChannelMembership, error)
 }
 
@@ -33,5 +35,5 @@ type Transactor interface {
 
 // ChannelProvider supplies Channel related-objects for the named channel.
 type ChannelProvider interface {
-	ChannelService(ic IdentityContext, channelID string) (ChannelService, error)
+	ChannelService(ctx ClientContext, channelID string) (ChannelService, error)
 }

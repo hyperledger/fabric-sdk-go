@@ -34,17 +34,10 @@ func verifySDK(t *testing.T, sdk *FabricSDK) {
 	sdk.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	// Get a common client context for the following tests
-	chCtx1 := sdk.ChannelContext("mychannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
-	chCtx2 := sdk.ChannelContext("orgchannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
-
-	// Test configuration failure for channel client (mychannel does't have event source configured for Org2)
-	_, err := channel.New(chCtx1)
-	if err == nil {
-		t.Fatalf("Should have failed to create channel client since event source not configured for Org2")
-	}
+	chCtx := sdk.ChannelContext("orgchannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
 
 	// Test new channel client with options
-	_, err = channel.New(chCtx2)
+	_, err := channel.New(chCtx)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -120,17 +113,10 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	}
 
 	// Get a common client context for the following tests
-	cc2CtxC1 := sdk1.ChannelContext("mychannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
-	cc2CtxC2 := sdk1.ChannelContext("orgchannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
-
-	// SDK 2 doesn't have 'mychannel' configured
-	_, err = channel.New(cc2CtxC1)
-	if err == nil {
-		t.Fatalf("Should have failed to create channel that is not configured")
-	}
+	cc2CtxC := sdk1.ChannelContext("orgchannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
 
 	// SDK 2 has 'orgchannel' configured
-	_, err = channel.New(cc2CtxC2)
+	_, err = channel.New(cc2CtxC)
 	if err != nil {
 		t.Fatalf("Failed to create new 'orgchannel' channel client: %s", err)
 	}

@@ -25,10 +25,9 @@ func (f *MockInfraProvider) CreateChannelLedger(ic fab.IdentityContext, channelN
 	return nil, nil
 }
 
-// CreateEventHub initilizes the event hub.
-func (f *MockInfraProvider) CreateEventHub(ic fab.IdentityContext, channelID string) (fab.EventHub, error) {
-
-	return NewMockEventHub(), nil
+// CreateEventService creates the event service.
+func (f *MockInfraProvider) CreateEventService(ic fab.ClientContext, chConfig fab.ChannelCfg) (fab.EventService, error) {
+	panic("not implemented")
 }
 
 // CreateChannelConfig initializes the channel config

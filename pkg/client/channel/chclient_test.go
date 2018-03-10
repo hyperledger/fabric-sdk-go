@@ -353,7 +353,7 @@ func TestOrdererStatusError(t *testing.T) {
 	testOrderer1 := fcmocks.NewMockOrderer("", make(chan *fab.SignedEnvelope))
 	orderers := []fab.Orderer{testOrderer1}
 	chClient := setupChannelClientWithNodes(peers, orderers, t)
-	chClient.eventHub = fcmocks.NewMockEventHub()
+	chClient.eventService = fcmocks.NewMockEventService()
 
 	testOrderer1.EnqueueSendBroadcastError(status.New(status.OrdererClientStatus,
 		status.ConnectionFailed.ToInt32(), testErrorMessage, nil))
@@ -371,22 +371,21 @@ func TestOrdererStatusError(t *testing.T) {
 
 func TestTransactionValidationError(t *testing.T) {
 	validationCode := pb.TxValidationCode_BAD_RWSET
-	mockEventHub := fcmocks.NewMockEventHub()
+	mockEventService := fcmocks.NewMockEventService()
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
 	peers := []fab.Peer{testPeer1}
 
 	go func() {
 		select {
-		case callback := <-mockEventHub.RegisteredTxCallbacks:
-			callback("txid", validationCode,
-				status.New(status.EventServerStatus, int32(validationCode), "test", nil))
+		case txStatusReg := <-mockEventService.TxStatusRegCh:
+			txStatusReg.Eventch <- &fab.TxStatusEvent{TxID: txStatusReg.TxID, TxValidationCode: validationCode}
 		case <-time.After(time.Second * 5):
 			t.Fatal("Timed out waiting for execute Tx to register event callback")
 		}
 	}()
 
 	chClient := setupChannelClient(peers, t)
-	chClient.eventHub = mockEventHub
+	chClient.eventService = mockEventService
 	response, err := chClient.Execute(Request{ChaincodeID: "test", Fcn: "invoke",
 		Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
 	assert.Nil(t, response.Payload, "Expected nil result on failed execute operation")

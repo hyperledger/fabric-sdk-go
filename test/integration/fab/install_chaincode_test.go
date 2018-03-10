@@ -146,3 +146,16 @@ func installCC(client *context.Client, name string, path string, version string,
 func getRandomCCVersion() string {
 	return "v0" + strconv.Itoa(rand.Intn(10000000))
 }
+
+func getContext(sdk *fabsdk.FabricSDK, user string, orgName string) (*context.Client, error) {
+
+	ctx := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrg(orgName))
+
+	clientContext, err := ctx()
+	if err != nil {
+		return nil, errors.WithMessage(err, "create context failed")
+	}
+
+	return &context.Client{Providers: clientContext, Identity: clientContext}, nil
+
+}

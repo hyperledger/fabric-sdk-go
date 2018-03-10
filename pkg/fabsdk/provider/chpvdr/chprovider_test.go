@@ -19,11 +19,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type mockClientContext struct {
+	context.Providers
+	context.Identity
+}
+
 func TestBasicValidChannel(t *testing.T) {
 	ctx := mocks.NewMockProviderContext()
+
 	pf := &MockProviderFactory{}
 
 	user := mocks.NewMockUser("user")
+
+	clientCtx := &mockClientContext{
+		Providers: ctx,
+		Identity:  user,
+	}
 
 	fp, err := pf.CreateInfraProvider(ctx.Config())
 	if err != nil {
@@ -35,13 +46,13 @@ func TestBasicValidChannel(t *testing.T) {
 		t.Fatalf("Unexpected error creating Channel Provider: %v", err)
 	}
 
-	channelService, err := cp.ChannelService(user, "mychannel")
+	channelService, err := cp.ChannelService(clientCtx, "mychannel")
 	if err != nil {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}
 
 	// System channel
-	channelService, err = cp.ChannelService(user, "")
+	channelService, err = cp.ChannelService(clientCtx, "")
 	if err != nil {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}

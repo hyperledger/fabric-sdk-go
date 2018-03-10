@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 const (
@@ -65,13 +66,13 @@ func TestExecuteTxHandlerSuccess(t *testing.T) {
 	clientContext := setupChannelClientContext(nil, nil, []fab.Peer{mockPeer1, mockPeer2}, t)
 
 	//Prepare mock eventhub
-	mockEventHub := fcmocks.NewMockEventHub()
-	clientContext.EventHub = mockEventHub
+	mockEventService := fcmocks.NewMockEventService()
+	clientContext.EventService = mockEventService
 
 	go func() {
 		select {
-		case callback := <-mockEventHub.RegisteredTxCallbacks:
-			callback("txid", 0, nil)
+		case txStatusReg := <-mockEventService.TxStatusRegCh:
+			txStatusReg.Eventch <- &fab.TxStatusEvent{TxID: txStatusReg.TxID, TxValidationCode: pb.TxValidationCode_VALID}
 		case <-time.After(requestContext.Opts.Timeout):
 			t.Fatal("Execute handler : time out not expected")
 		}

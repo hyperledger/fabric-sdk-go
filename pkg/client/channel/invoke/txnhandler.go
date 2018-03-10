@@ -10,14 +10,15 @@ import (
 	"bytes"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 var logger = logging.NewLogger("fabsdk/client")
@@ -138,32 +139,28 @@ type CommitTxHandler struct {
 
 //Handle handles commit tx
 func (c *CommitTxHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
-
-	//Connect to Event hub if not yet connected
-	if clientContext.EventHub.IsConnected() == false {
-		err := clientContext.EventHub.Connect()
-		if err != nil {
-			requestContext.Error = err
-			return
-		}
-	}
-
 	txnID := requestContext.Response.TransactionID
 
 	//Register Tx event
-	statusNotifier := txn.RegisterStatus(txnID, clientContext.EventHub)
-	_, err := createAndSendTransaction(clientContext.Transactor, requestContext.Response.Proposal, requestContext.Response.Responses)
+	reg, statusNotifier, err := clientContext.EventService.RegisterTxStatusEvent(string(txnID)) // TODO: Change func to use TransactionID instead of string
+	if err != nil {
+		requestContext.Error = errors.Wrap(err, "error registering for TxStatus event")
+		return
+	}
+	defer clientContext.EventService.Unregister(reg)
+
+	_, err = createAndSendTransaction(clientContext.Transactor, requestContext.Response.Proposal, requestContext.Response.Responses)
 	if err != nil {
 		requestContext.Error = errors.Wrap(err, "CreateAndSendTransaction failed")
 		return
 	}
 
 	select {
-	case result := <-statusNotifier:
-		requestContext.Response.TxValidationCode = result.Code
+	case txStatus := <-statusNotifier:
+		requestContext.Response.TxValidationCode = txStatus.TxValidationCode
 
-		if result.Error != nil {
-			requestContext.Error = result.Error
+		if txStatus.TxValidationCode != pb.TxValidationCode_VALID {
+			requestContext.Error = status.New(status.EventServerStatus, int32(txStatus.TxValidationCode), "received invalid transaction", nil)
 			return
 		}
 	case <-time.After(requestContext.Opts.Timeout):
