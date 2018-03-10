@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package msp
 
 import (
 	"fmt"
@@ -17,6 +17,7 @@ import (
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/pkg/errors"
 )
 
@@ -75,7 +76,7 @@ func (mgr *IdentityManager) GetUser(userName string) (msp.User, error) {
 	u, err := mgr.loadUserFromStore(userName)
 	if err != nil {
 		if err != msp.ErrUserNotFound {
-			return nil, errors.WithMessage(err, "getting private key from cert failed")
+			return nil, errors.WithMessage(err, "loading user from store failed")
 		}
 		// Not found, continue
 	}
@@ -123,7 +124,7 @@ func (mgr *IdentityManager) GetUser(userName string) (msp.User, error) {
 
 func (mgr *IdentityManager) getEmbeddedCertBytes(userName string) ([]byte, error) {
 	certPem := mgr.embeddedUsers[strings.ToLower(userName)].Cert.Pem
-	certPath := mgr.embeddedUsers[strings.ToLower(userName)].Cert.Path
+	certPath := config.SubstPathVars(mgr.embeddedUsers[strings.ToLower(userName)].Cert.Path)
 
 	if certPem == "" && certPath == "" {
 		return nil, msp.ErrUserNotFound
@@ -146,7 +147,7 @@ func (mgr *IdentityManager) getEmbeddedCertBytes(userName string) ([]byte, error
 
 func (mgr *IdentityManager) getEmbeddedPrivateKey(userName string) (core.Key, error) {
 	keyPem := mgr.embeddedUsers[strings.ToLower(userName)].Key.Pem
-	keyPath := mgr.embeddedUsers[strings.ToLower(userName)].Key.Path
+	keyPath := config.SubstPathVars(mgr.embeddedUsers[strings.ToLower(userName)].Key.Path)
 
 	var privateKey core.Key
 	var pemBytes []byte

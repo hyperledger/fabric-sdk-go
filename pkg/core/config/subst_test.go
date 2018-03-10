@@ -14,7 +14,7 @@ import (
 
 func TestSubstOff(t *testing.T) {
 	o := "foo${CRYPTOCONFIG_FIXTURES_PATH}${GOPATH}foo"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := "foo${CRYPTOCONFIG_FIXTURES_PATH}${GOPATH}foo"
 
 	if s != e {
@@ -24,7 +24,7 @@ func TestSubstOff(t *testing.T) {
 
 func TestSubstCryptoConfigMiddle(t *testing.T) {
 	o := "$foo${CRYPTOCONFIG_FIXTURES_PATH}foo"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := "$foo" + metadata.CryptoConfigPath + "foo"
 
 	if s != e {
@@ -34,7 +34,7 @@ func TestSubstCryptoConfigMiddle(t *testing.T) {
 
 func TestSubstCryptoConfigPrefix(t *testing.T) {
 	o := "$foo${CRYPTOCONFIG_FIXTURES_PATH}"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := "$foo" + metadata.CryptoConfigPath
 
 	if s != e {
@@ -43,7 +43,7 @@ func TestSubstCryptoConfigPrefix(t *testing.T) {
 }
 func TestSubstCryptoConfigWithPostfix(t *testing.T) {
 	o := "${CRYPTOCONFIG_FIXTURES_PATH}foo"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := metadata.CryptoConfigPath + "foo"
 
 	if s != e {
@@ -53,7 +53,7 @@ func TestSubstCryptoConfigWithPostfix(t *testing.T) {
 
 func TestSubstCryptoConfigOnly(t *testing.T) {
 	o := "${CRYPTOCONFIG_FIXTURES_PATH}"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := metadata.CryptoConfigPath
 
 	if s != e {
@@ -63,7 +63,7 @@ func TestSubstCryptoConfigOnly(t *testing.T) {
 
 func TestSubstAlmostVar1(t *testing.T) {
 	o := "${FOO}"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := o
 
 	if s != e {
@@ -73,7 +73,7 @@ func TestSubstAlmostVar1(t *testing.T) {
 
 func TestSubstAlmostVar2(t *testing.T) {
 	o := "${FOO${}${}$"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := o
 
 	if s != e {
@@ -83,7 +83,7 @@ func TestSubstAlmostVar2(t *testing.T) {
 
 func TestSubstNoVar(t *testing.T) {
 	o := "foo"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := o
 
 	if s != e {
@@ -93,7 +93,7 @@ func TestSubstNoVar(t *testing.T) {
 
 func TestSubstEmptyVar(t *testing.T) {
 	o := ""
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := o
 
 	if s != e {
@@ -103,7 +103,7 @@ func TestSubstEmptyVar(t *testing.T) {
 
 func TestSubstGoPath1(t *testing.T) {
 	o := "$foo${GOPATH}foo"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := "$foo" + goPath() + "foo"
 
 	if s != e {
@@ -113,7 +113,7 @@ func TestSubstGoPath1(t *testing.T) {
 
 func TestSubstGoPath2(t *testing.T) {
 	o := "$foo${GOPATH}foo"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := "$foo" + goPath() + "foo"
 
 	if s != e {
@@ -123,7 +123,7 @@ func TestSubstGoPath2(t *testing.T) {
 
 func TestSubstGoPathAndVar(t *testing.T) {
 	o := "$foo${GOPATH}foo${CRYPTOCONFIG_FIXTURES_PATH}"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := "$foo" + goPath() + "foo" + metadata.CryptoConfigPath
 
 	if s != e {
@@ -133,7 +133,7 @@ func TestSubstGoPathAndVar(t *testing.T) {
 
 func TestSubstGoPathOldStyle(t *testing.T) {
 	o := "$foo$GOPATHfoo"
-	s := substPathVars(o)
+	s := SubstPathVars(o)
 	e := "$foo" + goPath() + "foo"
 
 	if s != e {

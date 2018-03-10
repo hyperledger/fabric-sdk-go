@@ -9,29 +9,29 @@ package msp
 import (
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	caapi "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
 
-// FabricCAAdapter translates between SDK lingo to native Fabric CA API
-type FabricCAAdapter struct {
+// fabricCAAdapter translates between SDK lingo and native Fabric CA API
+type fabricCAAdapter struct {
 	caName      string
 	config      core.Config
 	cryptoSuite core.CryptoSuite
 	caClient    *calib.Client
 }
 
-func newFabricCAAdapter(orgName string, caName string, cryptoSuite core.CryptoSuite, config core.Config) (*FabricCAAdapter, error) {
+func newFabricCAAdapter(orgName string, caName string, cryptoSuite core.CryptoSuite, config core.Config) (*fabricCAAdapter, error) {
 
 	caClient, err := createFabricCAClient(orgName, cryptoSuite, config)
 	if err != nil {
 		return nil, err
 	}
 
-	a := &FabricCAAdapter{
+	a := &fabricCAAdapter{
 		caName:      caName,
 		config:      config,
 		cryptoSuite: cryptoSuite,
@@ -41,20 +41,20 @@ func newFabricCAAdapter(orgName string, caName string, cryptoSuite core.CryptoSu
 }
 
 // CAName returns the CA name.
-func (c *FabricCAAdapter) CAName() string {
+func (c *fabricCAAdapter) CAName() string {
 	return c.caName
 }
 
 // Enroll handles enrollment.
-func (c *FabricCAAdapter) Enroll(req *api.EnrollmentRequest) ([]byte, error) {
+func (c *fabricCAAdapter) Enroll(enrollmentID string, enrollmentSecret string) ([]byte, error) {
 
-	logger.Debugf("Enrolling user [%s]", req.Name)
+	logger.Debugf("Enrolling user [%s]", enrollmentID)
 
 	// TODO add attributes
 	careq := &caapi.EnrollmentRequest{
 		CAName: c.caClient.Config.CAName,
-		Name:   req.Name,
-		Secret: req.Secret,
+		Name:   enrollmentID,
+		Secret: enrollmentSecret,
 	}
 	caresp, err := c.caClient.Enroll(careq)
 	if err != nil {
@@ -64,7 +64,7 @@ func (c *FabricCAAdapter) Enroll(req *api.EnrollmentRequest) ([]byte, error) {
 }
 
 // Reenroll handles re-enrollment
-func (c *FabricCAAdapter) Reenroll(key core.Key, cert []byte, req *api.ReenrollmentRequest) ([]byte, error) {
+func (c *fabricCAAdapter) Reenroll(key core.Key, cert []byte) ([]byte, error) {
 
 	logger.Debugf("Enrolling user [%s]")
 
@@ -89,7 +89,7 @@ func (c *FabricCAAdapter) Reenroll(key core.Key, cert []byte, req *api.Reenrollm
 // cert: registrar enrollment certificate
 // request: Registration Request
 // Returns Enrolment Secret
-func (c *FabricCAAdapter) Register(key core.Key, cert []byte, request *msp.RegistrationRequest) (string, error) {
+func (c *fabricCAAdapter) Register(key core.Key, cert []byte, request *msp.RegistrationRequest) (string, error) {
 	// Contruct request for Fabric CA client
 	var attributes []caapi.Attribute
 	for i := range request.Attributes {
@@ -122,7 +122,7 @@ func (c *FabricCAAdapter) Register(key core.Key, cert []byte, request *msp.Regis
 // key: registrar private key
 // cert: registrar enrollment certificate
 // request: Revocation Request
-func (c *FabricCAAdapter) Revoke(key core.Key, cert []byte, request *msp.RevocationRequest) (*msp.RevocationResponse, error) {
+func (c *fabricCAAdapter) Revoke(key core.Key, cert []byte, request *msp.RevocationRequest) (*msp.RevocationResponse, error) {
 	// Create revocation request
 	var req = caapi.RevocationRequest{
 		CAName: request.CAName,
@@ -155,4 +155,62 @@ func (c *FabricCAAdapter) Revoke(key core.Key, cert []byte, request *msp.Revocat
 		RevokedCerts: revokedCerts,
 		CRL:          resp.CRL,
 	}, nil
+}
+
+func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config core.Config) (*calib.Client, error) {
+
+	// Create new Fabric-ca client without configs
+	c := &calib.Client{
+		Config: &calib.ClientConfig{},
+	}
+
+	conf, err := config.CAConfig(org)
+	if err != nil {
+		return nil, err
+	}
+
+	if conf == nil {
+		return nil, errors.Errorf("Orgnization %s have no corresponding CA in the configs", org)
+	}
+
+	//set server CAName
+	c.Config.CAName = conf.CAName
+	//set server URL
+	c.Config.URL = endpoint.ToAddress(conf.URL)
+	//certs file list
+	c.Config.TLS.CertFiles, err = config.CAServerCertPaths(org)
+	if err != nil {
+		return nil, err
+	}
+
+	// set key file and cert file
+	c.Config.TLS.Client.CertFile, err = config.CAClientCertPath(org)
+	if err != nil {
+		return nil, err
+	}
+
+	c.Config.TLS.Client.KeyFile, err = config.CAClientKeyPath(org)
+	if err != nil {
+		return nil, err
+	}
+
+	// get CAClient configs
+	_, err = config.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	//TLS flag enabled/disabled
+	c.Config.TLS.Enabled = endpoint.IsTLSEnabled(conf.URL)
+	c.Config.MSPDir = config.CAKeyStorePath()
+
+	//Factory opts
+	c.Config.CSP = cryptoSuite
+
+	err = c.Init()
+	if err != nil {
+		return nil, errors.Wrap(err, "init failed")
+	}
+
+	return c, nil
 }

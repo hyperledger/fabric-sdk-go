@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package msp
 
 import (
 	"bytes"
@@ -21,7 +21,7 @@ func TestUserMethods(t *testing.T) {
 	testUserMspID := "testUserMspID"
 	testUserName := "testUserName"
 
-	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
+	config, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf("Failed to read config: %v", err)
 	}
@@ -32,7 +32,7 @@ func TestUserMethods(t *testing.T) {
 	cleanupTestPath(t, config.CredentialStorePath())
 	defer cleanupTestPath(t, config.CredentialStorePath())
 
-	cryptoSuite, err = cryptosuiteimpl.GetSuiteByConfig(config)
+	cryptoSuite, err := cryptosuiteimpl.GetSuiteByConfig(config)
 	if cryptoSuite == nil {
 		t.Fatalf("Failed initialize cryptoSuite: %v", err)
 	}

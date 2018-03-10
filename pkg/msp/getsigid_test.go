@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package msp
 
 import (
 	"math/rand"
@@ -48,7 +48,7 @@ XdsmTcdRvJ3TS/6HCA==
 
 func TestGetSigningIdentity(t *testing.T) {
 
-	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
+	config, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -84,7 +84,7 @@ func TestGetSigningIdentity(t *testing.T) {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
 
-	mgr, err := New(orgName, stateStore, cryptoSuite, config)
+	mgr, err := NewManager(orgName, stateStore, cryptoSuite, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -153,14 +153,14 @@ func checkSigningIdentity(mgr msp.IdentityManager, user string) error {
 
 func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 
-	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
+	config, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	stateStore := stateStoreFromConfig(t, config)
 
 	// Invalid Org
-	_, err = New("invalidOrg", stateStore, &fcmocks.MockCryptoSuite{}, config)
+	_, err = NewManager("invalidOrg", stateStore, &fcmocks.MockCryptoSuite{}, config)
 	if err == nil {
 		t.Fatalf("Should have failed to setup manager for invalid org")
 	}
@@ -169,13 +169,13 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 
 func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 
-	config, err := config.FromFile("../../../test/fixtures/config/config_test_embedded_pems.yaml")()
+	config, err := config.FromFile("../../test/fixtures/config/config_test_embedded_pems.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	stateStore := stateStoreFromConfig(t, config)
 
-	mgr, err := New(orgName, stateStore, cryptosuite.GetDefault(), config)
+	mgr, err := NewManager(orgName, stateStore, cryptosuite.GetDefault(), config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

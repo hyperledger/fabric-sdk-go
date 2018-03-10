@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package msp
 
 import (
 	"path/filepath"
@@ -13,13 +13,10 @@ import (
 	"github.com/pkg/errors"
 
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
-
-var logger = logging.NewLogger("fabsdk/core")
 
 // IdentityManager implements fab/IdentityManager
 type IdentityManager struct {
@@ -33,12 +30,12 @@ type IdentityManager struct {
 	userStore       msp.UserStore
 }
 
-// New creates a new instance of IdentityManager
+// NewManager creates a new instance of IdentityManager
 // @param {string} organization
 // @param {Config} client config for fabric-ca services
 // @returns {IdentityManager} IdentityManager instance
 // @returns {error} error, if any
-func New(orgName string, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
+func NewManager(orgName string, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {

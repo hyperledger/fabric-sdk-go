@@ -24,11 +24,11 @@ func goPath() string {
 	return gps[0]
 }
 
-// substPathVars replaces instances of '${VARNAME}' (eg ${GOPATH}) with the variable.
+// SubstPathVars replaces instances of '${VARNAME}' (eg ${GOPATH}) with the variable.
 // As a special case, $GOPATH is also replaced.
 // NOTE: this function currently only performs substitution when the path string starts with $
 //       as the path variables are intended to assist with testing.
-func substPathVars(path string) string {
+func SubstPathVars(path string) string {
 	if !strings.HasPrefix(path, "$") {
 		return path
 	}

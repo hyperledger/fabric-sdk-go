@@ -237,12 +237,12 @@ organizations:
             -----END CERTIFICATE-----
       EmbeddedUserWithPaths:
         key:
-          path: ../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go-key.pem
         cert:
-          path: ../../../test/fixtures/config/mutual_tls/client_sdk_go.pem
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go.pem
       EmbeddedUserMixed:
         key:
-          path: ../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go-key.pem
         cert:
           pem: |
             -----BEGIN CERTIFICATE-----
@@ -268,7 +268,7 @@ organizations:
             J3+tMGTG67f+TdCfDxWYMpQYxLlE8VkbEzKWDwCYvDZRMKCQfv2ErNvb
             -----END PRIVATE KEY-----
         cert:
-          path: ../../../test/fixtures/config/mutual_tls/client_sdk_go.pem
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go.pem
 
 #    cryptoPath:  peerOrganizations/org2.example.com/users/{userName}@org2.example.com/msp
 

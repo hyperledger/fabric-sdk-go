@@ -4,10 +4,10 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package msp
 
 import (
-	"encoding/hex"
+	"fmt"
 	"path"
 	"strings"
 
@@ -17,20 +17,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NewFileKeyStore ...
-func NewFileKeyStore(cryptoConfogMspPath string) (core.KVStore, error) {
+// NewFileCertStore ...
+func NewFileCertStore(cryptoConfogMspPath string) (core.KVStore, error) {
+	_, orgName := path.Split(path.Dir(path.Dir(path.Dir(cryptoConfogMspPath))))
 	opts := &keyvaluestore.FileKeyValueStoreOptions{
 		Path: cryptoConfogMspPath,
 		KeySerializer: func(key interface{}) (string, error) {
-			pkk, ok := key.(*msp.PrivKeyKey)
+			ck, ok := key.(*msp.CertKey)
 			if !ok {
-				return "", errors.New("converting key to PrivKeyKey failed")
+				return "", errors.New("converting key to CertKey failed")
 			}
-			if pkk == nil || pkk.MspID == "" || pkk.UserName == "" || pkk.SKI == nil {
+			if ck == nil || ck.MspID == "" || ck.UserName == "" {
 				return "", errors.New("invalid key")
 			}
-			keyDir := path.Join(strings.Replace(cryptoConfogMspPath, "{userName}", pkk.UserName, -1), "keystore")
-			return path.Join(keyDir, hex.EncodeToString(pkk.SKI)+"_sk"), nil
+			certDir := path.Join(strings.Replace(cryptoConfogMspPath, "{userName}", ck.UserName, -1), "signcerts")
+			return path.Join(certDir, fmt.Sprintf("%s@%s-cert.pem", ck.UserName, orgName)), nil
 		},
 	}
 	return keyvaluestore.New(opts)

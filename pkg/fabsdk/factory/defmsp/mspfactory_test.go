@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 )
 
 func TestCreateIdentityManager(t *testing.T) {
@@ -44,7 +44,7 @@ func TestCreateIdentityManager(t *testing.T) {
 		t.Fatalf("Unexpected error creating signing manager %v", err)
 	}
 
-	_, ok := mgr.(*identitymgr.IdentityManager)
+	_, ok := mgr.(*msp.IdentityManager)
 	if !ok {
 		t.Fatalf("Unexpected signing manager created")
 	}
