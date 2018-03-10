@@ -60,11 +60,6 @@ func (cp *MockChannelProvider) SetCustomChannelService(customSelectionService fa
 	cp.customSelectionService = customSelectionService
 }
 
-// EventHub ...
-func (cs *MockChannelService) EventHub() (fab.EventHub, error) {
-	return NewMockEventHub(), nil
-}
-
 // EventService returns a mock event service
 func (cs *MockChannelService) EventService() (fab.EventService, error) {
 	return NewMockEventService(), nil

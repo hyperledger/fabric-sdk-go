@@ -16,7 +16,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/membership"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/eventhubclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
@@ -106,33 +105,6 @@ func (f *InfraProvider) CreateChannelLedger(ic fab.IdentityContext, channelName 
 	}
 
 	return ledger, nil
-}
-
-// CreateEventHub initilizes the event hub.
-func (f *InfraProvider) CreateEventHub(ic fab.IdentityContext, channelID string) (fab.EventHub, error) {
-	peerConfig, err := f.providerContext.Config().ChannelPeers(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "read configuration for channel peers failed")
-	}
-
-	var eventSource *core.ChannelPeer
-	for _, p := range peerConfig {
-		if p.EventSource && p.MspID == ic.MspID() {
-			eventSource = &p
-			break
-		}
-	}
-
-	if eventSource == nil {
-		return nil, errors.New("unable to find event source for channel")
-	}
-
-	// Event source found, create event hub
-	eventCtx := events.Context{
-		Providers: f.providerContext,
-		Identity:  ic,
-	}
-	return events.FromConfig(eventCtx, &eventSource.PeerConfig)
 }
 
 // CreateEventService creates the event service.

@@ -14,21 +14,6 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-// CCEvent contains the data for a chaincocde event
-// Deprecated since EventHub is replaced with EventService
-type CCEvent struct {
-	TxID        string
-	ChaincodeID string
-	EventName   string
-	Payload     []byte
-}
-
-// Registration is a handle that is returned from a successful Register Chaincode Event.
-// This handle should be used in Unregister in order to unregister the event.
-// Deprecated since EventHub is replaced with EventService
-type Registration interface {
-}
-
 // opts allows the user to specify more advanced options
 type opts struct {
 	Targets []fab.Peer // targets

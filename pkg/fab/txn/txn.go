@@ -248,25 +248,3 @@ func sendEnvelope(ctx contextApi.Client, envelope *fab.SignedEnvelope, orderer f
 		}
 	}
 }
-
-// Status is the transaction status returned from eventhub tx events
-type Status struct {
-	Code  pb.TxValidationCode
-	Error error
-}
-
-// RegisterStatus registers on the given eventhub for the given transaction id
-// returns a TxValidationCode channel which receives the validation code when the
-// transaction completes. If the code is TxValidationCode_VALID then
-// the transaction committed successfully, otherwise the code indicates the error
-// that occurred.
-func RegisterStatus(txID fab.TransactionID, eventHub fab.EventHub) chan Status {
-	statusNotifier := make(chan Status)
-
-	eventHub.RegisterTxEvent(txID, func(txId fab.TransactionID, code pb.TxValidationCode, err error) {
-		logger.Debugf("Received code(%s) for txid(%s) and err(%s)\n", code, txId, err)
-		statusNotifier <- Status{Code: code, Error: err}
-	})
-
-	return statusNotifier
-}
