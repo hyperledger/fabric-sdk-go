@@ -20,7 +20,7 @@ func TestUserMethods(t *testing.T) {
 	testUserMspID := "testUserMspID"
 	testUserName := "testUserName"
 
-	config, err := config.FromFile("testdata/config_test.yaml")()
+	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf("Failed to read config: %v", err)
 	}

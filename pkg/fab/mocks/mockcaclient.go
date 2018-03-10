@@ -17,7 +17,7 @@ type MockCAClient struct {
 }
 
 // NewMockCAClient Constructor for a CA client.
-func NewMockCAClient(orgName string, cryptoProvider core.CryptoSuite, config core.Config) (msp.Client, error) {
+func NewMockCAClient(orgName string, cryptoProvider core.CryptoSuite, config core.Config) (msp.CAClient, error) {
 	mcm := MockCAClient{}
 	return &mcm, nil
 }
@@ -28,7 +28,7 @@ func (mgr *MockCAClient) Enroll(enrollmentID string, enrollmentSecret string) er
 }
 
 // Reenroll re-enrolls a user
-func (mgr *MockCAClient) Reenroll(user core.User) error {
+func (mgr *MockCAClient) Reenroll(enrollmentID string) error {
 	return errors.New("not implemented")
 }
 

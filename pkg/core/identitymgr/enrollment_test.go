@@ -104,7 +104,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	caClient := camocks.NewMockClient(ctrl)
+	caClient := camocks.NewMockCAClient(ctrl)
 	prepareForEnroll(t, caClient, cs)
 
 	err = caClient.Enroll(userToEnroll, "enrollmentSecret")
@@ -118,7 +118,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 }
 
 // Simulate caClient.Enroll()
-func prepareForEnroll(t *testing.T, mc *camocks.MockClient, cs core.CryptoSuite) {
+func prepareForEnroll(t *testing.T, mc *camocks.MockCAClient, cs core.CryptoSuite) {
 	// A real caClient.Enroll() generates a CSR. In the process, a crypto suite generates
 	// a new key pair, and the private key is stored into crypto suite private key storage.
 

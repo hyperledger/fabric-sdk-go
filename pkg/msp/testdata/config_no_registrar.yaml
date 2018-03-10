@@ -265,7 +265,7 @@ peers:
 #
 certificateAuthorities:
   ca.org1.example.com:
-    url: "http://localhost:8090"
+    url: "http://localhost:7054"
     # the properties specified under this object are passed to the 'http' client verbatim when
     # making the request to the Fabric-CA server
     httpOptions:

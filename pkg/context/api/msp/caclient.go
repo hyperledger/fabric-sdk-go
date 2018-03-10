@@ -7,14 +7,19 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"errors"
 )
 
-// Client provides management of identities in a Fabric network
-type Client interface {
+var (
+	// ErrCARegistrarNotFound indicates the CA registrar was not found
+	ErrCARegistrarNotFound = errors.New("CA registrar not found")
+)
+
+// CAClient provides management of identities in a Fabric network
+type CAClient interface {
 	CAName() string
 	Enroll(enrollmentID string, enrollmentSecret string) error
-	Reenroll(user core.User) error
+	Reenroll(enrollmentID string) error
 	Register(request *RegistrationRequest) (string, error)
 	Revoke(request *RevocationRequest) (*RevocationResponse, error)
 }
