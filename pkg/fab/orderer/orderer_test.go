@@ -306,7 +306,7 @@ func TestSendDeliverFailure(t *testing.T) {
 	case block := <-blocks:
 		t.Fatalf("This usecase was not supposed to get valid block %v", block)
 	case err := <-errors:
-		if err == nil || !strings.HasPrefix(err.Error(), "unknown response from ordering service") {
+		if err == nil || !strings.HasPrefix(err.Error(), "unknown response type from ordering service") {
 			t.Fatalf("Error response is not working as expected : '%s' ", err.Error())
 		}
 	case <-time.After(time.Second * 5):
