@@ -81,7 +81,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	cs, err := sw.GetSuiteByConfig(config)
 	stateStore := stateStoreFromConfig(t, config)
 
-	identityMgr, err := NewManager(orgName, stateStore, cs, config)
+	identityMgr, err := NewIdentityManager(orgName, stateStore, cs, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

@@ -84,7 +84,7 @@ func TestGetSigningIdentity(t *testing.T) {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
 
-	mgr, err := NewManager(orgName, stateStore, cryptoSuite, config)
+	mgr, err := NewIdentityManager(orgName, stateStore, cryptoSuite, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -160,7 +160,7 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 	stateStore := stateStoreFromConfig(t, config)
 
 	// Invalid Org
-	_, err = NewManager("invalidOrg", stateStore, &fcmocks.MockCryptoSuite{}, config)
+	_, err = NewIdentityManager("invalidOrg", stateStore, &fcmocks.MockCryptoSuite{}, config)
 	if err == nil {
 		t.Fatalf("Should have failed to setup manager for invalid org")
 	}
@@ -175,7 +175,7 @@ func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 	}
 	stateStore := stateStoreFromConfig(t, config)
 
-	mgr, err := NewManager(orgName, stateStore, cryptosuite.GetDefault(), config)
+	mgr, err := NewIdentityManager(orgName, stateStore, cryptosuite.GetDefault(), config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

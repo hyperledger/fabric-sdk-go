@@ -34,14 +34,14 @@ func TestEnrollOrg2(t *testing.T) {
 		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)
 	}
 
-	identityManager, err := msp.NewManager(org2Name, stateStore, cryptoSuiteProvider, sdk.Config())
+	identityManager, err := msp.NewIdentityManager(org2Name, stateStore, cryptoSuiteProvider, sdk.Config())
 	if err != nil {
-		t.Fatalf("identitymgr.NewManager failed: %v", err)
+		t.Fatalf("msp.NewIdentityManager failed: %v", err)
 	}
 
 	caClient, err := msp.NewCAClient(org2Name, identityManager, stateStore, cryptoSuiteProvider, sdk.Config())
 	if err != nil {
-		t.Fatalf("caclient.NewManager failed: %v", err)
+		t.Fatalf("msp.NewCAClient failed: %v", err)
 	}
 
 	err = caClient.Enroll("admin", "adminpw")

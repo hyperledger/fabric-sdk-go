@@ -43,7 +43,7 @@ const (
 	defaultEventServiceIdleTimeout = time.Minute * 2
 )
 
-var logModules = [...]string{"fabsdk", "fabsdk/client", "fabsdk/core", "fabsdk/fab", "fabsdk/common"}
+var logModules = [...]string{"fabsdk", "fabsdk/client", "fabsdk/core", "fabsdk/fab", "fabsdk/common", "fabsdk/msp"}
 
 // Config represents the configuration for the client
 type Config struct {

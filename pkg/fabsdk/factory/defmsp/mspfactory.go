@@ -24,5 +24,5 @@ func NewProviderFactory() *ProviderFactory {
 
 // CreateIdentityManager returns a new default implementation of identity manager
 func (f *ProviderFactory) CreateIdentityManager(org string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (msp.IdentityManager, error) {
-	return mspimpl.NewManager(org, stateStore, cryptoProvider, config)
+	return mspimpl.NewIdentityManager(org, stateStore, cryptoProvider, config)
 }

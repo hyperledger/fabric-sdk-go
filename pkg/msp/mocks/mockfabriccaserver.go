@@ -62,14 +62,15 @@ type serverInfoResponseNet struct {
 	CAChain string
 }
 
-type MockFabricAServer struct {
+// MockFabricCAServer is a mock for FabricCAServer
+type MockFabricCAServer struct {
 	address     string
 	cryptoSuite core.CryptoSuite
 	running     bool
 }
 
-// StartFabricCAMockServer Start fabric ca mock server
-func (s *MockFabricAServer) Start(address string, cryptoSuite core.CryptoSuite) error {
+// Start fabric CA mock server
+func (s *MockFabricCAServer) Start(address string, cryptoSuite core.CryptoSuite) error {
 
 	if s.running {
 		return nil
@@ -102,7 +103,7 @@ func (s *MockFabricAServer) Start(address string, cryptoSuite core.CryptoSuite) 
 
 }
 
-func (s *MockFabricAServer) addKeyToKeyStore(privateKey []byte) error {
+func (s *MockFabricCAServer) addKeyToKeyStore(privateKey []byte) error {
 	// Import private key that matches the cert we will return
 	// from this mock service, so it can be looked up by SKI from the cert
 	_, err := util.ImportBCCSPKeyFromPEMBytes([]byte(privateKey), s.cryptoSuite, false)
@@ -113,13 +114,13 @@ func (s *MockFabricAServer) addKeyToKeyStore(privateKey []byte) error {
 }
 
 // Register user
-func (s *MockFabricAServer) register(w http.ResponseWriter, req *http.Request) {
+func (s *MockFabricCAServer) register(w http.ResponseWriter, req *http.Request) {
 	resp := &api.RegistrationResponseNet{RegistrationResponse: api.RegistrationResponse{Secret: "mockSecretValue"}}
 	cfsslapi.SendResponse(w, resp)
 }
 
 // Enroll user
-func (s *MockFabricAServer) enroll(w http.ResponseWriter, req *http.Request) {
+func (s *MockFabricCAServer) enroll(w http.ResponseWriter, req *http.Request) {
 	s.addKeyToKeyStore([]byte(privateKey))
 	resp := &enrollmentResponseNet{Cert: util.B64Encode([]byte(ecert))}
 	fillCAInfo(&resp.ServerInfo)

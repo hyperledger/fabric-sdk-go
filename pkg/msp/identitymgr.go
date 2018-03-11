@@ -30,12 +30,12 @@ type IdentityManager struct {
 	userStore       msp.UserStore
 }
 
-// NewManager creates a new instance of IdentityManager
+// NewIdentityManager creates a new instance of IdentityManager
 // @param {string} organization
 // @param {Config} client config for fabric-ca services
 // @returns {IdentityManager} IdentityManager instance
 // @returns {error} error, if any
-func NewManager(orgName string, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
+func NewIdentityManager(orgName string, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {

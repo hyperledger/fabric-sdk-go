@@ -41,7 +41,7 @@ type textFixture struct {
 	caClient        *CAClient
 }
 
-var caServer = &mocks.MockFabricAServer{}
+var caServer = &mocks.MockFabricCAServer{}
 
 func (f *textFixture) setup(configPath string) {
 
@@ -72,7 +72,7 @@ func (f *textFixture) setup(configPath string) {
 	}
 	f.stateStore = stateStoreFromConfig(nil, f.config)
 
-	f.identityManager, err = NewManager("org1", f.stateStore, f.cryptoSuite, f.config)
+	f.identityManager, err = NewIdentityManager("org1", f.stateStore, f.cryptoSuite, f.config)
 	if err != nil {
 		panic(fmt.Sprintf("manager.NewManager returned error: %v", err))
 	}
