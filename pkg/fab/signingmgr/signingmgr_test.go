@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/mocks"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 )
 
 func TestSigningManager(t *testing.T) {

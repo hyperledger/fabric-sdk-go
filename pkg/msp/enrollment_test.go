@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package msp
 
 import (
 	"strings"
@@ -17,7 +17,6 @@ import (
 	camocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 )
 
 var (
@@ -51,7 +50,7 @@ m1KOnMry/mOZcnXnTIh2ASV4ss8VluzBcyHGAv7BCmxXxDkjcV9eybv8
 )
 
 func TestGetSigningIdentityWithEnrollment(t *testing.T) {
-	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
+	config, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -82,7 +81,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	cs, err := sw.GetSuiteByConfig(config)
 	stateStore := stateStoreFromConfig(t, config)
 
-	identityMgr, err := New(orgName, stateStore, cs, config)
+	identityMgr, err := NewManager(orgName, stateStore, cs, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -146,12 +145,4 @@ func prepareForEnroll(t *testing.T, mc *camocks.MockCAClient, cs core.CryptoSuit
 		}
 
 	}).Return(err)
-}
-
-func stateStoreFromConfig(t *testing.T, config core.Config) core.KVStore {
-	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: config.CredentialStorePath()})
-	if err != nil {
-		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)
-	}
-	return stateStore
 }

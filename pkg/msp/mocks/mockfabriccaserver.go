@@ -9,13 +9,14 @@ package mocks
 import (
 	"net/http"
 
+	"time"
+
 	cfapi "github.com/cloudflare/cfssl/api"
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabsdk/core")
@@ -24,13 +25,13 @@ var logger = logging.NewLogger("fabsdk/core")
 // imported into the key store, and the cert will be
 // returned to the caller.
 
-var privateKey = `-----BEGIN PRIVATE KEY-----
+const privateKey = `-----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB
 5Ul+GpjM1P5rqc6RhjD5OkTgl5OhRANCAATyFT0voXX7cA4PPtNstWleaTpwjvbS
 J3+tMGTG67f+TdCfDxWYMpQYxLlE8VkbEzKWDwCYvDZRMKCQfv2ErNvb
 -----END PRIVATE KEY-----`
 
-var ecert = `-----BEGIN CERTIFICATE-----
+const ecert = `-----BEGIN CERTIFICATE-----
 MIICGTCCAcCgAwIBAgIRALR/1GXtEud5GQL2CZykkOkwCgYIKoZIzj0EAwIwczEL
 MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
 cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
@@ -61,50 +62,65 @@ type serverInfoResponseNet struct {
 	CAChain string
 }
 
-// StartFabricCAMockServer Start fabric ca mock server
-func StartFabricCAMockServer(address string, cs core.CryptoSuite) error {
+type MockFabricAServer struct {
+	address     string
+	cryptoSuite core.CryptoSuite
+	running     bool
+}
 
-	// Import private key so it can be looked up by SKI from the cert
-	_, err := util.ImportBCCSPKeyFromPEMBytes([]byte(privateKey), cs, false)
-	if err != nil {
-		return err
+// StartFabricCAMockServer Start fabric ca mock server
+func (s *MockFabricAServer) Start(address string, cryptoSuite core.CryptoSuite) error {
+
+	if s.running {
+		return nil
 	}
 
+	s.address = address
+	s.cryptoSuite = cryptoSuite
+
 	// Register request handlers
-	http.HandleFunc("/register", Register)
-	http.HandleFunc("/enroll", Enroll)
-	http.HandleFunc("/reenroll", Enroll)
+	http.HandleFunc("/register", s.register)
+	http.HandleFunc("/enroll", s.enroll)
+	http.HandleFunc("/reenroll", s.enroll)
 
 	server := &http.Server{
-		Addr:      address,
+		Addr:      s.address,
 		TLSConfig: nil,
 	}
 
-	err = server.ListenAndServe()
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			panic("HTTP Server: Failed to start")
+		}
+	}()
+	time.Sleep(1 * time.Second)
+	logger.Infof("HTTP Server started on %s", s.address)
 
-	if err != nil {
-		return errors.Wrap(err, "HTTP Server: Failed to start")
-	}
-	logger.Infof("HTTP Server started on %s", address)
+	s.running = true
 	return nil
 
 }
 
+func (s *MockFabricAServer) addKeyToKeyStore(privateKey []byte) error {
+	// Import private key that matches the cert we will return
+	// from this mock service, so it can be looked up by SKI from the cert
+	_, err := util.ImportBCCSPKeyFromPEMBytes([]byte(privateKey), s.cryptoSuite, false)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Register user
-func Register(w http.ResponseWriter, req *http.Request) {
+func (s *MockFabricAServer) register(w http.ResponseWriter, req *http.Request) {
 	resp := &api.RegistrationResponseNet{RegistrationResponse: api.RegistrationResponse{Secret: "mockSecretValue"}}
 	cfsslapi.SendResponse(w, resp)
 }
 
 // Enroll user
-func Enroll(w http.ResponseWriter, req *http.Request) {
-	resp := &enrollmentResponseNet{Cert: util.B64Encode([]byte(ecert))}
-	fillCAInfo(&resp.ServerInfo)
-	cfapi.SendResponse(w, resp)
-}
-
-// Reenroll user
-func Reenroll(w http.ResponseWriter, req *http.Request) {
+func (s *MockFabricAServer) enroll(w http.ResponseWriter, req *http.Request) {
+	s.addKeyToKeyStore([]byte(privateKey))
 	resp := &enrollmentResponseNet{Cert: util.B64Encode([]byte(ecert))}
 	fillCAInfo(&resp.ServerInfo)
 	cfapi.SendResponse(w, resp)

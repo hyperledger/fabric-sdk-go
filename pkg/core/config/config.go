@@ -274,7 +274,7 @@ func (c *Config) loadTemplateConfig() error {
 	}
 
 	// if set, use it to load default config
-	c.configViper.AddConfigPath(substPathVars(templatePath))
+	c.configViper.AddConfigPath(SubstPathVars(templatePath))
 	err := c.configViper.ReadInConfig() // Find and read the config file
 	if err != nil {                     // Handle errors reading the config file
 		return errors.Wrap(err, "loading config file failed")
@@ -290,9 +290,9 @@ func (c *Config) Client() (*core.ClientConfig, error) {
 	}
 	client := config.Client
 
-	client.TLSCerts.Path = substPathVars(client.TLSCerts.Path)
-	client.TLSCerts.Client.Key.Path = substPathVars(client.TLSCerts.Client.Key.Path)
-	client.TLSCerts.Client.Cert.Path = substPathVars(client.TLSCerts.Client.Cert.Path)
+	client.TLSCerts.Path = SubstPathVars(client.TLSCerts.Path)
+	client.TLSCerts.Client.Key.Path = SubstPathVars(client.TLSCerts.Client.Key.Path)
+	client.TLSCerts.Client.Cert.Path = SubstPathVars(client.TLSCerts.Client.Cert.Path)
 
 	return &client, nil
 }
@@ -355,7 +355,7 @@ func (c *Config) CAServerCertPaths(org string) ([]string, error) {
 
 	certFileModPath := make([]string, len(certFiles))
 	for i, v := range certFiles {
-		certFileModPath[i] = substPathVars(v)
+		certFileModPath[i] = SubstPathVars(v)
 	}
 
 	return certFileModPath, nil
@@ -396,7 +396,7 @@ func (c *Config) CAClientKeyPath(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return substPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Key.Path), nil
+	return SubstPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Key.Path), nil
 }
 
 // CAClientKeyPem Read configuration option for the fabric CA client key pem embedded in the client config
@@ -436,7 +436,7 @@ func (c *Config) CAClientCertPath(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return substPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Cert.Path), nil
+	return SubstPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Cert.Path), nil
 }
 
 // CAClientCertPem Read configuration option for the fabric CA client cert pem embedded in the client config
@@ -603,7 +603,7 @@ func (c *Config) OrderersConfig() ([]core.OrdererConfig, error) {
 	for _, orderer := range config.Orderers {
 
 		if orderer.TLSCACerts.Path != "" {
-			orderer.TLSCACerts.Path = substPathVars(orderer.TLSCACerts.Path)
+			orderer.TLSCACerts.Path = SubstPathVars(orderer.TLSCACerts.Path)
 		} else if len(orderer.TLSCACerts.Pem) == 0 && c.configViper.GetBool("client.tlsCerts.systemCertPool") == false {
 			errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
 		}
@@ -650,7 +650,7 @@ func (c *Config) OrdererConfig(name string) (*core.OrdererConfig, error) {
 	}
 
 	if orderer.TLSCACerts.Path != "" {
-		orderer.TLSCACerts.Path = substPathVars(orderer.TLSCACerts.Path)
+		orderer.TLSCACerts.Path = SubstPathVars(orderer.TLSCACerts.Path)
 	}
 
 	return &orderer, nil
@@ -677,7 +677,7 @@ func (c *Config) PeersConfig(org string) ([]core.PeerConfig, error) {
 			p = *matchingPeerConfig
 		}
 		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = substPathVars(p.TLSCACerts.Path)
+			p.TLSCACerts.Path = SubstPathVars(p.TLSCACerts.Path)
 		}
 
 		peers = append(peers, p)
@@ -962,7 +962,7 @@ func (c *Config) PeerConfig(org string, name string) (*core.PeerConfig, error) {
 	}
 
 	if peerConfig.TLSCACerts.Path != "" {
-		peerConfig.TLSCACerts.Path = substPathVars(peerConfig.TLSCACerts.Path)
+		peerConfig.TLSCACerts.Path = SubstPathVars(peerConfig.TLSCACerts.Path)
 	}
 	return &peerConfig, nil
 }
@@ -983,7 +983,7 @@ func (c *Config) peerConfig(name string) (*core.PeerConfig, error) {
 	}
 
 	if peerConfig.TLSCACerts.Path != "" {
-		peerConfig.TLSCACerts.Path = substPathVars(peerConfig.TLSCACerts.Path)
+		peerConfig.TLSCACerts.Path = SubstPathVars(peerConfig.TLSCACerts.Path)
 	}
 	return &peerConfig, nil
 }
@@ -1068,7 +1068,7 @@ func (c *Config) ChannelPeers(name string) ([]core.ChannelPeer, error) {
 		}
 
 		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = substPathVars(p.TLSCACerts.Path)
+			p.TLSCACerts.Path = SubstPathVars(p.TLSCACerts.Path)
 		}
 
 		mspID, err := c.PeerMspID(peerName)
@@ -1103,7 +1103,7 @@ func (c *Config) NetworkPeers() ([]core.NetworkPeer, error) {
 		}
 
 		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = substPathVars(p.TLSCACerts.Path)
+			p.TLSCACerts.Path = SubstPathVars(p.TLSCACerts.Path)
 		}
 
 		mspID, err := c.PeerMspID(name)
@@ -1244,12 +1244,12 @@ func (c *Config) SecurityProviderLabel() string {
 
 // CredentialStorePath returns the user store path
 func (c *Config) CredentialStorePath() string {
-	return substPathVars(c.configViper.GetString("client.credentialStore.path"))
+	return SubstPathVars(c.configViper.GetString("client.credentialStore.path"))
 }
 
 // KeyStorePath returns the keystore path used by BCCSP
 func (c *Config) KeyStorePath() string {
-	keystorePath := substPathVars(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
+	keystorePath := SubstPathVars(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
 	return path.Join(keystorePath, "keystore")
 }
 
@@ -1257,12 +1257,12 @@ func (c *Config) KeyStorePath() string {
 // 'keystore' directory added. This is done because the fabric-ca-client
 // adds this to the path
 func (c *Config) CAKeyStorePath() string {
-	return substPathVars(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
+	return SubstPathVars(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
 }
 
 // CryptoConfigPath ...
 func (c *Config) CryptoConfigPath() string {
-	return substPathVars(c.configViper.GetString("client.cryptoconfig.path"))
+	return SubstPathVars(c.configViper.GetString("client.cryptoconfig.path"))
 }
 
 // TLSClientCerts loads the client's certs for mutual TLS
@@ -1323,11 +1323,11 @@ func loadByteKeyOrCertFromFile(c *core.ClientConfig, isKey bool) ([]byte, error)
 	var path string
 	a := "key"
 	if isKey {
-		path = substPathVars(c.TLSCerts.Client.Key.Path)
+		path = SubstPathVars(c.TLSCerts.Client.Key.Path)
 		c.TLSCerts.Client.Key.Path = path
 	} else {
 		a = "cert"
-		path = substPathVars(c.TLSCerts.Client.Cert.Path)
+		path = SubstPathVars(c.TLSCerts.Client.Cert.Path)
 		c.TLSCerts.Client.Cert.Path = path
 	}
 	bts, err := ioutil.ReadFile(path)

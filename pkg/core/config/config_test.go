@@ -941,7 +941,7 @@ func teardown() {
 }
 
 func crossCheckWithViperConfig(expected string, actual string, message string, t *testing.T) {
-	expected = substPathVars(expected)
+	expected = SubstPathVars(expected)
 	if actual != expected {
 		t.Fatalf(message)
 	}
