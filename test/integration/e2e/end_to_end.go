@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -21,7 +22,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -69,7 +69,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
 		ChannelConfig:     path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-		SigningIdentities: []fab.IdentityContext{adminIdentity}}
+		SigningIdentities: []msp.Identity{adminIdentity}}
 	if err = resMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}

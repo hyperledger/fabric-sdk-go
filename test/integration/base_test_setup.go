@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -23,7 +24,7 @@ import (
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
-	Identity      fab.IdentityContext
+	Identity      msp.Identity
 	Targets       []fab.ProposalProcessor
 	ConfigFile    string
 	OrgID         string
@@ -82,7 +83,7 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	setup.Targets = targets
 
 	// Create channel for tests
-	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentities: []fab.IdentityContext{adminIdentity}}
+	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentities: []msp.Identity{adminIdentity}}
 	if err = InitializeChannel(sdk, setup.OrgID, req, targets); err != nil {
 		return errors.WithMessage(err, "failed to initialize channel")
 	}
@@ -156,7 +157,7 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 
 // GetSigningIdentity returns signing identity
 //TODO : not a recommended way to get idenity, will be replaced
-func GetSigningIdentity(sdk *fabsdk.FabricSDK, user, orgID string) (fab.IdentityContext, error) {
+func GetSigningIdentity(sdk *fabsdk.FabricSDK, user, orgID string) (msp.Identity, error) {
 	idenityContext := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrg(orgID))
 	return idenityContext()
 }

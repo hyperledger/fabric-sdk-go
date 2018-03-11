@@ -20,6 +20,7 @@ import (
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
@@ -82,7 +83,7 @@ type ccPolicyProvider struct {
 	config      core.Config
 	providers   context.Providers
 	channelID   string
-	identity    context.Identity
+	identity    msp.Identity
 	targetPeers []core.ChannelPeer
 	ccDataMap   map[string]*ccprovider.ChaincodeData // TODO: Add expiry and configurable timeout for map entries
 	mutex       sync.RWMutex

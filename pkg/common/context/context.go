@@ -12,17 +12,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
-// Identity supplies the serialized identity and key reference.
-type Identity interface {
-	MspID() string
-	SerializedIdentity() ([]byte, error)
-	PrivateKey() core.Key
-}
-
 // Client supplies the configuration and signing identity to client objects.
 type Client interface {
 	Providers
-	Identity
+	msp.Identity
 }
 
 // Providers represents the SDK configured providers context.

@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
 // MockInfraProvider represents the default implementation of Fabric objects.
@@ -21,7 +22,7 @@ type MockInfraProvider struct {
 }
 
 // CreateChannelLedger returns a new client initialized for the current instance of the SDK.
-func (f *MockInfraProvider) CreateChannelLedger(ic fab.IdentityContext, channelName string) (fab.ChannelLedger, error) {
+func (f *MockInfraProvider) CreateChannelLedger(ic msp.Identity, channelName string) (fab.ChannelLedger, error) {
 	return nil, nil
 }
 
@@ -31,7 +32,7 @@ func (f *MockInfraProvider) CreateEventService(ic fab.ClientContext, chConfig fa
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *MockInfraProvider) CreateChannelConfig(ic fab.IdentityContext, channelID string) (fab.ChannelConfig, error) {
+func (f *MockInfraProvider) CreateChannelConfig(ic msp.Identity, channelID string) (fab.ChannelConfig, error) {
 	if ic == nil {
 		return &MockChannelConfig{channelID: channelID}, nil
 	}
@@ -44,7 +45,7 @@ func (f *MockInfraProvider) CreateChannelMembership(cfg fab.ChannelCfg) (fab.Cha
 }
 
 // CreateChannelTransactor initializes the transactor
-func (f *MockInfraProvider) CreateChannelTransactor(ic fab.IdentityContext, cfg fab.ChannelCfg) (fab.Transactor, error) {
+func (f *MockInfraProvider) CreateChannelTransactor(ic msp.Identity, cfg fab.ChannelCfg) (fab.Transactor, error) {
 	if cfg == nil {
 		return &MockTransactor{}, nil
 	} else if ic == nil {

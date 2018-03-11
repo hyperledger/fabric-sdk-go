@@ -7,14 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/pkg/errors"
 )
 
 type identityOptions struct {
-	identity contextApi.Identity
+	identity msp.Identity
 	orgName  string
 	userName string
 }
@@ -31,7 +30,7 @@ func WithUser(userName string) ContextOption {
 }
 
 // WithIdentity uses a pre-constructed identity object as the credential for the session
-func WithIdentity(identity contextApi.Identity) ContextOption {
+func WithIdentity(identity msp.Identity) ContextOption {
 	return func(o *identityOptions) error {
 		o.identity = identity
 		return nil
@@ -46,7 +45,7 @@ func WithOrg(org string) ContextOption {
 	}
 }
 
-func (sdk *FabricSDK) newIdentity(options ...ContextOption) (contextApi.Identity, error) {
+func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.Identity, error) {
 	clientConfig, err := sdk.Config().Client()
 	if err != nil {
 		return nil, errors.WithMessage(err, "retrieving client configuration failed")
@@ -87,11 +86,11 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (contextApi.Identity
 // session represents an identity being used with clients along with services
 // that associate with that identity (particularly the channel service).
 type session struct {
-	contextApi.Identity
+	msp.Identity
 }
 
 // newSession creates a session from a context and a user (TODO)
-func newSession(ic contextApi.Identity, cp fab.ChannelProvider) *session {
+func newSession(ic msp.Identity, cp fab.ChannelProvider) *session {
 	s := session{
 		Identity: ic,
 	}

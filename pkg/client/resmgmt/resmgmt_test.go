@@ -24,6 +24,7 @@ import (
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -1489,7 +1490,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	cc := setupResMgmtClient(ctx, nil, t)
 
 	// empty list of signing identities (defaults to context user)
-	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []fab.IdentityContext{}}
+	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []msp.Identity{}}
 	err := cc.SaveChannel(req, WithOrdererID(""))
 	if err != nil {
 		t.Fatalf("Failed to save channel with default signing identity: %s", err)
@@ -1497,7 +1498,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 
 	// multiple signing identities
 	secondCtx := fcmocks.NewMockContext(fcmocks.NewMockUser("second"))
-	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []fab.IdentityContext{cc.ctx, secondCtx}}
+	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []msp.Identity{cc.ctx, secondCtx}}
 	err = cc.SaveChannel(req, WithOrdererID(""))
 	if err != nil {
 		t.Fatalf("Failed to save channel with multiple signing identities: %s", err)

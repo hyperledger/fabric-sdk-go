@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -96,7 +97,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	// Create channel (or update if it already exists)
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
 		ChannelConfig:     path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
-		SigningIdentities: []fab.IdentityContext{org1AdminUser, org2AdminUser}}
+		SigningIdentities: []msp.Identity{org1AdminUser, org2AdminUser}}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}

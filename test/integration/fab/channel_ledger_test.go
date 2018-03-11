@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
@@ -50,7 +51,7 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.Peer) {
 	}
 
 	channelConfig := path.Join("../../../", metadata.ChannelConfigPath, channelConfigFile)
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: channelConfig, SigningIdentities: []fab.IdentityContext{adminIdentity}}
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: channelConfig, SigningIdentities: []msp.Identity{adminIdentity}}
 	err = integration.InitializeChannel(sdk, orgName, req, integration.ProposalProcessors(targets))
 	if err != nil {
 		t.Fatalf("failed to ensure channel has been initialized: %s", err)

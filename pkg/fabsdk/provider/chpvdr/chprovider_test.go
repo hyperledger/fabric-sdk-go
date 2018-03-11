@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
@@ -21,7 +22,7 @@ import (
 
 type mockClientContext struct {
 	context.Providers
-	context.Identity
+	msp.Identity
 }
 
 func TestBasicValidChannel(t *testing.T) {
@@ -74,7 +75,7 @@ type MockInfraProvider struct {
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *MockInfraProvider) CreateChannelConfig(ic fab.IdentityContext, channelID string) (fab.ChannelConfig, error) {
+func (f *MockInfraProvider) CreateChannelConfig(ic msp.Identity, channelID string) (fab.ChannelConfig, error) {
 
 	ctx := chconfig.Context{
 		Providers: f.providerContext,

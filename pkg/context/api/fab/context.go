@@ -6,19 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 
 package fab
 
-import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-)
-
-// IdentityContext supplies the serialized identity and key reference.
-//
-// TODO - refactor SigningIdentity and this interface.
-type IdentityContext interface {
-	MspID() string
-	SerializedIdentity() ([]byte, error)
-	PrivateKey() core.Key
-}
-
 // ChannelService supplies services related to a channel.
 type ChannelService interface {
 	Config() (ChannelConfig, error)

@@ -14,6 +14,7 @@ import (
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
@@ -163,7 +164,7 @@ func (f *CustomInfraProvider) Initialize(providers contextAPI.Providers) error {
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *CustomInfraProvider) CreateChannelConfig(ic fab.IdentityContext, channelID string) (fab.ChannelConfig, error) {
+func (f *CustomInfraProvider) CreateChannelConfig(ic msp.Identity, channelID string) (fab.ChannelConfig, error) {
 	ctx := chconfig.Context{
 		Providers: f.providerContext,
 		Identity:  ic,

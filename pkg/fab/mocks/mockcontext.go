@@ -18,8 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 
 	"strings"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 )
 
 // MockProviderContext holds core providers to enable mocking.
@@ -129,11 +127,11 @@ func (pc *MockProviderContext) SetCustomInfraProvider(customInfraProvider fab.In
 // MockContext holds core providers and identity to enable mocking.
 type MockContext struct {
 	*MockProviderContext
-	context.Identity
+	msp.Identity
 }
 
 // NewMockContext creates a MockContext consisting of defaults and an identity
-func NewMockContext(ic context.Identity) *MockContext {
+func NewMockContext(ic msp.Identity) *MockContext {
 	ctx := MockContext{
 		MockProviderContext: NewMockProviderContext(),
 		Identity:            ic,
@@ -142,7 +140,7 @@ func NewMockContext(ic context.Identity) *MockContext {
 }
 
 // NewMockContextWithCustomDiscovery creates a MockContext consisting of defaults and an identity
-func NewMockContextWithCustomDiscovery(ic context.Identity, discPvdr fab.DiscoveryProvider) *MockContext {
+func NewMockContextWithCustomDiscovery(ic msp.Identity, discPvdr fab.DiscoveryProvider) *MockContext {
 	mockCtx := NewMockProviderContext()
 	mockCtx.discoveryProvider = discPvdr
 	ctx := MockContext{

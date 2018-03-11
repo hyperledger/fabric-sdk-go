@@ -10,6 +10,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
+// Identity supplies the serialized identity and key reference.
+type Identity interface {
+	MspID() string
+	SerializedIdentity() ([]byte, error)
+	PrivateKey() core.Key
+}
+
 // SigningIdentity is the identity object that encapsulates the user's private key for signing
 // and the user's enrollment certificate (identity)
 type SigningIdentity struct {

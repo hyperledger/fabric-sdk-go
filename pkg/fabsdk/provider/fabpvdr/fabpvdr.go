@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/membership"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
@@ -46,7 +47,7 @@ type InfraProvider struct {
 
 type fabContext struct {
 	context.Providers
-	context.Identity
+	msp.Identity
 }
 
 // New creates a InfraProvider enabling access to core Fabric objects and functionality.
@@ -94,7 +95,7 @@ func (f *InfraProvider) CommManager() fab.CommManager {
 }
 
 // CreateChannelLedger returns a new client initialized for the current instance of the SDK.
-func (f *InfraProvider) CreateChannelLedger(ic fab.IdentityContext, channelName string) (fab.ChannelLedger, error) {
+func (f *InfraProvider) CreateChannelLedger(ic msp.Identity, channelName string) (fab.ChannelLedger, error) {
 	ctx := &fabContext{
 		Providers: f.providerContext,
 		Identity:  ic,
@@ -121,7 +122,7 @@ func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, chConfig fab.C
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *InfraProvider) CreateChannelConfig(ic fab.IdentityContext, channelID string) (fab.ChannelConfig, error) {
+func (f *InfraProvider) CreateChannelConfig(ic msp.Identity, channelID string) (fab.ChannelConfig, error) {
 
 	ctx := chconfig.Context{
 		Providers: f.providerContext,
@@ -137,7 +138,7 @@ func (f *InfraProvider) CreateChannelMembership(cfg fab.ChannelCfg) (fab.Channel
 }
 
 // CreateChannelTransactor initializes the transactor
-func (f *InfraProvider) CreateChannelTransactor(ic fab.IdentityContext, cfg fab.ChannelCfg) (fab.Transactor, error) {
+func (f *InfraProvider) CreateChannelTransactor(ic msp.Identity, cfg fab.ChannelCfg) (fab.Transactor, error) {
 
 	ctx := chconfig.Context{
 		Providers: f.providerContext,

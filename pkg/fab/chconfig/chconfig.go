@@ -10,12 +10,13 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	msp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
+	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	ab "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/orderer"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -45,7 +46,7 @@ type Option func(opts *Opts) error
 // Context holds the providers and identity
 type Context struct {
 	context.Providers
-	context.Identity
+	msp.Identity
 }
 
 // ChannelConfig implements query channel configuration
@@ -58,7 +59,7 @@ type ChannelConfig struct {
 // ChannelCfg contains channel configuration
 type ChannelCfg struct {
 	id          string
-	msps        []*msp.MSPConfig
+	msps        []*mb.MSPConfig
 	anchorPeers []*fab.OrgAnchorPeer
 	orderers    []string
 	versions    *fab.Versions
@@ -76,7 +77,7 @@ func (cfg *ChannelCfg) ID() string {
 }
 
 // MSPs returns msps
-func (cfg *ChannelCfg) MSPs() []*msp.MSPConfig {
+func (cfg *ChannelCfg) MSPs() []*mb.MSPConfig {
 	return cfg.msps
 }
 
@@ -213,7 +214,7 @@ func extractConfig(channelID string, configEnvelope *common.ConfigEnvelope) (*Ch
 
 	config := &ChannelCfg{
 		id:          channelID,
-		msps:        []*msp.MSPConfig{},
+		msps:        []*mb.MSPConfig{},
 		anchorPeers: []*fab.OrgAnchorPeer{},
 		orderers:    []string{},
 		versions:    versions,
@@ -355,7 +356,7 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 		break
 
 	case channelConfig.MSPKey:
-		mspConfig := &msp.MSPConfig{}
+		mspConfig := &mb.MSPConfig{}
 		err := proto.Unmarshal(configValue.Value, mspConfig)
 		if err != nil {
 			return errors.Wrap(err, "unmarshal MSPConfig from config failed")

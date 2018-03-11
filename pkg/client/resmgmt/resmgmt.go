@@ -14,6 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -88,7 +89,7 @@ type SaveChannelRequest struct {
 	// Path to channel configuration file
 	ChannelConfig string
 	// Users that sign channel configuration
-	SigningIdentities []fab.IdentityContext
+	SigningIdentities []msp.Identity
 }
 
 //RequestOption func for each Opts argument
@@ -592,7 +593,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 
 	// Signing user has to belong to one of configured channel organisations
 	// In case that order org is one of channel orgs we can use context user
-	var signers []context.Identity
+	var signers []msp.Identity
 
 	if len(req.SigningIdentities) > 0 {
 		for _, id := range req.SigningIdentities {

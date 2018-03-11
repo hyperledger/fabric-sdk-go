@@ -18,6 +18,7 @@ import (
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
@@ -31,11 +32,11 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 type fabCtx struct {
 	context.Providers
-	context.Identity
+	msp.Identity
 }
 
 // SignChannelConfig signs a configuration.
-func SignChannelConfig(ctx context.Client, config []byte, signer context.Identity) (*common.ConfigSignature, error) {
+func SignChannelConfig(ctx context.Client, config []byte, signer msp.Identity) (*common.ConfigSignature, error) {
 	logger.Debug("SignChannelConfig - start")
 
 	if config == nil {
