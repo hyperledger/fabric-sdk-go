@@ -317,7 +317,7 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Deliver(ctx)
 	if err != nil {
 		logger.Errorf("deliver failed [%s]", err)
-		o.commManager.ReleaseConn(conn)
+		o.releaseConn(ctx, conn)
 
 		errs <- errors.Wrap(err, "deliver failed")
 		return responses, errs
@@ -325,9 +325,8 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 
 	// Receive blocks from the GRPC stream and put them on the channel
 	go func() {
-		defer o.commManager.ReleaseConn(conn)
 		blockStream(broadcastStream, responses, errs)
-
+		o.releaseConn(ctx, conn)
 	}()
 
 	// Send block request envelope
@@ -336,7 +335,7 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 		Payload:   envelope.Payload,
 		Signature: envelope.Signature,
 	}); err != nil {
-		o.commManager.ReleaseConn(conn)
+		o.releaseConn(ctx, conn)
 
 		errs <- errors.Wrap(err, "failed to send block request to orderer")
 		return responses, errs
@@ -362,10 +361,8 @@ func blockStream(broadcastStream ab.AtomicBroadcast_DeliverClient, responses cha
 				close(responses)
 				return
 			}
-			if t.Status != common.Status_SUCCESS {
-				errs <- errors.Errorf("error status from ordering service %s", t.Status)
-				return
-			}
+			errs <- errors.Errorf("error status from ordering service %s", t.Status)
+			return
 
 		// Response is a requested block
 		case *ab.DeliverResponse_Block:
@@ -382,10 +379,12 @@ func blockStream(broadcastStream ab.AtomicBroadcast_DeliverClient, responses cha
 type defCommManager struct{}
 
 func (*defCommManager) DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+	logger.Debugf("DialContext [%s]", target)
 	opts = append(opts, grpc.WithBlock())
 	return grpc.DialContext(ctx, target, opts...)
 }
 
 func (*defCommManager) ReleaseConn(conn *grpc.ClientConn) {
+	logger.Debugf("ReleaseConn [%p]", conn)
 	conn.Close()
 }
