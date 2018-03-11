@@ -94,20 +94,6 @@ func (f *InfraProvider) CommManager() fab.CommManager {
 	return f.commManager
 }
 
-// CreateChannelLedger returns a new client initialized for the current instance of the SDK.
-func (f *InfraProvider) CreateChannelLedger(ic msp.Identity, channelName string) (fab.ChannelLedger, error) {
-	ctx := &fabContext{
-		Providers: f.providerContext,
-		Identity:  ic,
-	}
-	ledger, err := channelImpl.NewLedger(ctx, channelName)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewLedger failed")
-	}
-
-	return ledger, nil
-}
-
 // CreateEventService creates the event service.
 func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, chConfig fab.ChannelCfg) (fab.EventService, error) {
 	key, err := NewCacheKey(ctx, chConfig)

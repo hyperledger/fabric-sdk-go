@@ -28,7 +28,6 @@ type ClientContext interface {
 
 // InfraProvider enables access to fabric objects such as peer and user based on config or
 type InfraProvider interface {
-	CreateChannelLedger(ic msp.Identity, name string) (ChannelLedger, error)
 	CreateChannelConfig(user msp.Identity, name string) (ChannelConfig, error)
 	CreateChannelTransactor(ic msp.Identity, cfg ChannelCfg) (Transactor, error)
 	CreateChannelMembership(cfg ChannelCfg) (ChannelMembership, error)

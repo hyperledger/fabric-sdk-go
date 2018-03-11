@@ -30,6 +30,7 @@ type Channel struct {
 	discovery      fab.DiscoveryService
 	selection      fab.SelectionService
 	channelService fab.ChannelService
+	channelID      string
 }
 
 //Providers returns core providers
@@ -50,6 +51,11 @@ func (c *Channel) SelectionService() fab.SelectionService {
 //ChannelService returns channel service
 func (c *Channel) ChannelService() fab.ChannelService {
 	return c.channelService
+}
+
+//ChannelID returns channel id
+func (c *Channel) ChannelID() string {
+	return c.channelID
 }
 
 //Provider implementation for Providers interface
@@ -216,6 +222,7 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 		selection:      selectionService,
 		discovery:      discoveryService,
 		channelService: channelService,
+		channelID:      channelID,
 	}, nil
 }
 

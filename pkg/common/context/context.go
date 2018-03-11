@@ -31,6 +31,7 @@ type Channel interface {
 	DiscoveryService() fab.DiscoveryService
 	SelectionService() fab.SelectionService
 	ChannelService() fab.ChannelService
+	ChannelID() string
 }
 
 //ClientProvider returns client context

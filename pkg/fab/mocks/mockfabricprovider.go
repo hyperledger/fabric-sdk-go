@@ -21,11 +21,6 @@ type MockInfraProvider struct {
 	customOrderer   fab.Orderer
 }
 
-// CreateChannelLedger returns a new client initialized for the current instance of the SDK.
-func (f *MockInfraProvider) CreateChannelLedger(ic msp.Identity, channelName string) (fab.ChannelLedger, error) {
-	return nil, nil
-}
-
 // CreateEventService creates the event service.
 func (f *MockInfraProvider) CreateEventService(ic fab.ClientContext, chConfig fab.ChannelCfg) (fab.EventService, error) {
 	panic("not implemented")

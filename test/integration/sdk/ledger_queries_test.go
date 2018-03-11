@@ -41,10 +41,10 @@ func TestLedgerClientQueries(t *testing.T) {
 	//}
 
 	//prepare contexts
-	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
+	org1AdminChannelContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
 
 	// Ledger client
-	client, err := ledger.New(org1AdminClientContext, testSetup.ChannelID)
+	client, err := ledger.New(org1AdminChannelContext)
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}

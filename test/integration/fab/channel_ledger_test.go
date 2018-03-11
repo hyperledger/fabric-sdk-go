@@ -73,11 +73,11 @@ func TestLedgerQueries(t *testing.T) {
 	}
 
 	//prepare required contexts
-	clientCtx := sdk.Context(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
+
 	channelClientCtx := sdk.ChannelContext(channelID, fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
 
 	// Get a ledger client.
-	ledgerClient, err := ledger.New(clientCtx, channelID)
+	ledgerClient, err := ledger.New(channelClientCtx)
 
 	// Test Query Info - retrieve values before transaction
 	testTargets := targets[0:1]
@@ -111,6 +111,9 @@ func TestLedgerQueries(t *testing.T) {
 	testQueryTransaction(t, ledgerClient, txID, targets)
 
 	testQueryBlock(t, ledgerClient, targets)
+
+	//prepare context
+	clientCtx := sdk.Context(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
 
 	resmgmtClient, err := resmgmt.New(clientCtx)
 

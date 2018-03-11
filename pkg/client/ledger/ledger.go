@@ -14,11 +14,11 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -35,11 +35,9 @@ const (
 // An application that requires interaction with multiple channels should create a separate
 // instance of the ledger client for each channel. Ledger client supports specific queries only.
 type Client struct {
-	context   context.Client
-	discovery fab.DiscoveryService
-	ledger    *channel.Ledger
-	filter    TargetFilter
-	chName    string
+	context context.Channel
+	filter  TargetFilter
+	ledger  *channel.Ledger
 }
 
 // MSPFilter is default filter
@@ -53,28 +51,21 @@ func (f *MSPFilter) Accept(peer fab.Peer) bool {
 }
 
 // New returns a Client instance.
-func New(clientProvider context.ClientProvider, channelID string, opts ...ClientOption) (*Client, error) {
+func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client, error) {
 
-	clientContext, err := clientProvider()
+	channelContext, err := channelProvider()
 	if err != nil {
 		return nil, err
 	}
 
-	l, err := channel.NewLedger(clientContext, channelID)
-	if err != nil {
-		return nil, err
-	}
-
-	discoveryService, err := clientContext.DiscoveryProvider().CreateDiscoveryService(channelID)
+	ledger, err := channel.NewLedger(channelContext, channelContext.ChannelID())
 	if err != nil {
 		return nil, err
 	}
 
 	ledgerClient := Client{
-		context:   clientContext,
-		discovery: discoveryService,
-		ledger:    l,
-		chName:    channelID,
+		context: channelContext,
+		ledger:  ledger,
 	}
 
 	for _, opt := range opts {
@@ -87,10 +78,10 @@ func New(clientProvider context.ClientProvider, channelID string, opts ...Client
 	// check if target filter was set - if not set the default
 	if ledgerClient.filter == nil {
 		// Default target filter is based on user msp
-		if clientContext.MspID() == "" {
+		if channelContext.MspID() == "" {
 			return nil, errors.New("mspID not available in user context")
 		}
-		filter := &MSPFilter{mspID: clientContext.MspID()}
+		filter := &MSPFilter{mspID: channelContext.MspID()}
 		ledgerClient.filter = filter
 	}
 
@@ -278,7 +269,7 @@ func (c *Client) QueryConfig(options ...RequestOption) (fab.ChannelCfg, error) {
 		return nil, errors.WithMessage(err, "failed to determine target peers for QueryConfig")
 	}
 
-	channelConfig, err := chconfig.New(c.context, c.chName, chconfig.WithPeers(targets), chconfig.WithMinResponses(opts.MinTargets))
+	channelConfig, err := chconfig.New(c.context, c.context.ChannelID(), chconfig.WithPeers(targets), chconfig.WithMinResponses(opts.MinTargets))
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryConfig failed")
 	}
@@ -327,7 +318,7 @@ func (c *Client) calculateTargets(opts Opts) ([]fab.Peer, error) {
 	var err error
 	if targets == nil {
 		// Retrieve targets from discovery
-		targets, err = c.discovery.GetPeers()
+		targets, err = c.context.DiscoveryService().GetPeers()
 		if err != nil {
 			return nil, err
 		}

@@ -74,6 +74,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
 	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
 	org2AdminClientContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
+	org1AdminChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
 	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 	org2ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
 
@@ -196,7 +197,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	initial, _ := strconv.Atoi(string(response.Payload))
 
 	// Ledger client will verify blockchain info
-	ledgerClient, err := ledger.New(org1AdminClientContext, channelID)
+	ledgerClient, err := ledger.New(org1AdminChannelContext)
 
 	if err != nil {
 		t.Fatalf("Failed to create new ledger client: %s", err)
