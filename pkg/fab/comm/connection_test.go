@@ -14,7 +14,6 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 
@@ -37,11 +36,11 @@ func TestConnection(t *testing.T) {
 	context := newMockContext()
 	chConfig := fabmocks.NewMockChannelCfg(channelID)
 
-	conn, err := NewConnection(context, chConfig, testStream, "")
+	_, err := NewConnection(context, chConfig, testStream, "")
 	if err == nil {
 		t.Fatalf("expected error creating new connection with empty URL")
 	}
-	conn, err = NewConnection(context, chConfig, testStream, "invalidhost:0000",
+	_, err = NewConnection(context, chConfig, testStream, "invalidhost:0000",
 		WithFailFast(true),
 		WithCertificate(nil),
 		WithHostOverride(""),
@@ -51,12 +50,12 @@ func TestConnection(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error creating new connection with invalid URL")
 	}
-	conn, err = NewConnection(context, chConfig, invalidStream, peerURL)
+	_, err = NewConnection(context, chConfig, invalidStream, peerURL)
 	if err == nil {
 		t.Fatalf("expected error creating new connection with invalid stream but got none")
 	}
 
-	conn, err = NewConnection(context, chConfig, testStream, peerURL)
+	conn, err := NewConnection(context, chConfig, testStream, peerURL)
 	if err != nil {
 		t.Fatalf("error creating new connection: %s", err)
 	}
@@ -84,13 +83,6 @@ func TestConnection(t *testing.T) {
 // Use the Deliver server for testing
 var testServer *eventmocks.MockEventhubServer
 var endorserAddr []string
-
-func newPeerConfig(peerURL string) *core.PeerConfig {
-	return &core.PeerConfig{
-		URL:         peerURL,
-		GRPCOptions: make(map[string]interface{}),
-	}
-}
 
 func newMockContext() fabcontext.Client {
 	return fabmocks.NewMockContext(fabmocks.NewMockUser("test"))

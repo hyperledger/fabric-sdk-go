@@ -31,7 +31,6 @@ type peerEndorser struct {
 	grpcDialOption []grpc.DialOption
 	target         string
 	dialTimeout    time.Duration
-	failFast       bool
 	commManager    fab.CommManager
 }
 

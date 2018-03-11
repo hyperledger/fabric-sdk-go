@@ -195,17 +195,15 @@ func testDial(t *testing.T, wg *sync.WaitGroup, connector *CachingConnector, add
 	conn, err := connector.DialContext(ctx, addr, grpc.WithInsecure())
 	cancel()
 	assert.Nil(t, err, "DialContext should have succeeded")
+	defer connector.ReleaseConn(conn)
 
 	endorserClient := pb.NewEndorserClient(conn)
-	ctx, cancel = context.WithTimeout(context.Background(), normalTimeout)
 	proposal := pb.SignedProposal{}
 	resp, err := endorserClient.ProcessProposal(context.Background(), &proposal)
-	cancel()
 
 	assert.Nil(t, err, "peer process proposal should not have error")
 	assert.Equal(t, int32(200), resp.GetResponse().Status)
 
 	randomSleep := rand.Intn(maxSleepBeforeRelease)
 	time.Sleep(time.Duration(minSleepBeforeRelease)*time.Millisecond + time.Duration(randomSleep)*time.Millisecond)
-	connector.ReleaseConn(conn)
 }

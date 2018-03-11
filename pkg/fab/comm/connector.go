@@ -230,7 +230,9 @@ func (cc *CachingConnector) removeConn(target string) {
 		if ok {
 			delete(cc.index, c.conn)
 			cc.conns.Delete(target)
-			c.conn.Close()
+			if err := c.conn.Close(); err != nil {
+				logger.Debugf("unable to close connection [%s]", err)
+			}
 		}
 	}
 }
@@ -316,7 +318,11 @@ func cache(conns map[string]*cachedConn, updateConn *cachedConn) {
 		logger.Debugf("new connection in connection janitor")
 	} else if c.conn != updateConn.conn {
 		logger.Debugf("connection change in connection janitor")
-		c.conn.Close() // Not blocking
+
+		if err := c.conn.Close(); err != nil {
+			logger.Debugf("unable to close connection [%s]", err)
+		}
+
 	} else {
 		logger.Debugf("updating existing connection in connection janitor")
 	}
@@ -347,9 +353,13 @@ func sweep(conns map[string]*cachedConn, idleTime time.Duration) []string {
 }
 
 func closeConn(conn *grpc.ClientConn) {
-	conn.Close()
+	if err := conn.Close(); err != nil {
+		logger.Debugf("unable to close connection [%s]", err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), connShutdownTimeout)
-	waitConn(ctx, conn, connectivity.Shutdown)
+	if err := waitConn(ctx, conn, connectivity.Shutdown); err != nil {
+		logger.Debugf("unable to wait for connection close [%s]", err)
+	}
 	cancel()
 }

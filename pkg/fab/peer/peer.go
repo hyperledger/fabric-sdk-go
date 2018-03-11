@@ -8,7 +8,6 @@ package peer
 
 import (
 	reqContext "context"
-	"fmt"
 
 	"crypto/x509"
 
@@ -48,7 +47,6 @@ func New(config core.Config, opts ...Option) (*Peer, error) {
 		config:      config,
 		commManager: &defCommManager{},
 	}
-	var err error
 
 	for _, opt := range opts {
 		err := opt(peer)
@@ -70,11 +68,12 @@ func New(config core.Config, opts ...Option) (*Peer, error) {
 			allowInsecure:      peer.inSecure,
 			commManager:        peer.commManager,
 		}
-		peer.processor, err = newPeerEndorser(&endorseRequest)
+		processor, err := newPeerEndorser(&endorseRequest)
 
 		if err != nil {
 			return nil, err
 		}
+		peer.processor = processor
 	}
 
 	return peer, nil
@@ -220,7 +219,7 @@ func (p *Peer) ProcessTransactionProposal(ctx reqContext.Context, proposal fab.P
 }
 
 func (p *Peer) String() string {
-	return fmt.Sprintf("%s", p.url)
+	return p.url
 }
 
 // PeersToTxnProcessors converts a slice of Peers to a slice of TxnProposalProcessors
@@ -243,5 +242,7 @@ func (*defCommManager) DialContext(ctx reqContext.Context, target string, opts .
 
 func (*defCommManager) ReleaseConn(conn *grpc.ClientConn) {
 	logger.Debugf("ReleaseConn [%p]", conn)
-	conn.Close()
+	if err := conn.Close(); err != nil {
+		logger.Debugf("unable to close connection [%s]", err)
+	}
 }

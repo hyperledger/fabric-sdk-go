@@ -33,17 +33,16 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 // Orderer allows a client to broadcast a transaction.
 type Orderer struct {
-	config               core.Config
-	url                  string
-	tlsCACert            *x509.Certificate
-	serverName           string
-	grpcDialOption       []grpc.DialOption
-	kap                  keepalive.ClientParameters
-	dialTimeout          time.Duration
-	failFast             bool
-	transportCredentials credentials.TransportCredentials
-	allowInsecure        bool
-	commManager          fab.CommManager
+	config         core.Config
+	url            string
+	serverName     string
+	tlsCACert      *x509.Certificate
+	grpcDialOption []grpc.DialOption
+	kap            keepalive.ClientParameters
+	dialTimeout    time.Duration
+	failFast       bool
+	allowInsecure  bool
+	commManager    fab.CommManager
 }
 
 // Option describes a functional parameter for the New constructor
@@ -245,7 +244,7 @@ func (o *Orderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 	}
 	defer o.releaseConn(ctx, conn)
 
-	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Broadcast(ctx)
+	broadcastClient, err := ab.NewAtomicBroadcastClient(conn).Broadcast(ctx)
 	if err != nil {
 		rpcStatus, ok := grpcstatus.FromError(err)
 		if ok {
@@ -253,44 +252,50 @@ func (o *Orderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 		}
 		return nil, errors.Wrap(err, "NewAtomicBroadcastClient failed")
 	}
-	done := make(chan bool)
-	var broadcastErr error
-	var broadcastStatus *common.Status
 
-	go func() {
-		for {
-			broadcastResponse, err := broadcastStream.Recv()
-			logger.Debugf("Orderer.broadcastStream - response:%v, error:%v\n", broadcastResponse, err)
-			if err != nil {
-				rpcStatus, ok := grpcstatus.FromError(err)
-				if ok {
-					err = status.NewFromGRPCStatus(rpcStatus)
-				}
-				broadcastErr = errors.Wrap(err, "broadcast recv failed")
-				done <- true
-				return
-			}
-			broadcastStatus = &broadcastResponse.Status
-			if broadcastResponse.Status == common.Status_SUCCESS {
-				done <- true
-				return
-			}
-			if broadcastResponse.Status != common.Status_SUCCESS {
-				broadcastErr = status.New(status.OrdererServerStatus, int32(broadcastResponse.Status), broadcastResponse.Info, nil)
-				done <- true
-				return
-			}
-		}
-	}()
-	if err := broadcastStream.Send(&common.Envelope{
+	responses := make(chan common.Status)
+	errs := make(chan error, 1)
+
+	go broadcastStream(broadcastClient, responses, errs)
+
+	err = broadcastClient.Send(&common.Envelope{
 		Payload:   envelope.Payload,
 		Signature: envelope.Signature,
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to send envelope to orderer")
 	}
-	broadcastStream.CloseSend()
-	<-done
-	return broadcastStatus, broadcastErr
+	if err = broadcastClient.CloseSend(); err != nil {
+		logger.Debugf("unable to close broadcast client [%s]", err)
+	}
+
+	select {
+	case broadcastStatus := <-responses:
+		return &broadcastStatus, nil
+	case broadcastErr := <-errs:
+		return nil, broadcastErr
+	}
+}
+
+func broadcastStream(broadcastClient ab.AtomicBroadcast_BroadcastClient, responses chan common.Status, errs chan error) {
+
+	broadcastResponse, err := broadcastClient.Recv()
+	logger.Debugf("Orderer.broadcastStream - response:%v, error:%v", broadcastResponse, err)
+	if err != nil {
+		rpcStatus, ok := grpcstatus.FromError(err)
+		if ok {
+			err = status.NewFromGRPCStatus(rpcStatus)
+		}
+		errs <- errors.Wrap(err, "broadcast recv failed")
+		return
+	}
+
+	if broadcastResponse.Status != common.Status_SUCCESS {
+		errs <- status.New(status.OrdererServerStatus, int32(broadcastResponse.Status), broadcastResponse.Info, nil)
+		return
+	}
+
+	responses <- broadcastResponse.Status
 }
 
 // SendDeliver sends a deliver request to the ordering service and returns the
@@ -314,7 +319,7 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 	}
 
 	// Create atomic broadcast client
-	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Deliver(ctx)
+	broadcastClient, err := ab.NewAtomicBroadcastClient(conn).Deliver(ctx)
 	if err != nil {
 		logger.Errorf("deliver failed [%s]", err)
 		o.releaseConn(ctx, conn)
@@ -325,29 +330,33 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 
 	// Receive blocks from the GRPC stream and put them on the channel
 	go func() {
-		blockStream(broadcastStream, responses, errs)
+		blockStream(broadcastClient, responses, errs)
 		o.releaseConn(ctx, conn)
 	}()
 
 	// Send block request envelope
 	logger.Debugf("Requesting blocks from ordering service")
-	if err := broadcastStream.Send(&common.Envelope{
+	err = broadcastClient.Send(&common.Envelope{
 		Payload:   envelope.Payload,
 		Signature: envelope.Signature,
-	}); err != nil {
+	})
+	if err != nil {
 		o.releaseConn(ctx, conn)
 
 		errs <- errors.Wrap(err, "failed to send block request to orderer")
 		return responses, errs
 	}
-	broadcastStream.CloseSend()
+
+	if err = broadcastClient.CloseSend(); err != nil {
+		logger.Debugf("unable to close deliver client [%s]", err)
+	}
 
 	return responses, errs
 }
 
-func blockStream(broadcastStream ab.AtomicBroadcast_DeliverClient, responses chan *common.Block, errs chan error) {
+func blockStream(deliverClient ab.AtomicBroadcast_DeliverClient, responses chan *common.Block, errs chan error) {
 	for {
-		response, err := broadcastStream.Recv()
+		response, err := deliverClient.Recv()
 		if err != nil {
 			errs <- errors.Wrap(err, "recv from ordering service failed")
 			return
@@ -357,11 +366,11 @@ func blockStream(broadcastStream ab.AtomicBroadcast_DeliverClient, responses cha
 		// Seek operation success, no more resposes
 		case *ab.DeliverResponse_Status:
 			logger.Debugf("Received deliver response status from ordering service: %s", t.Status)
-			if t.Status == common.Status_SUCCESS {
-				close(responses)
+			if t.Status != common.Status_SUCCESS {
+				errs <- errors.Errorf("error status from ordering service %s", t.Status)
 				return
 			}
-			errs <- errors.Errorf("error status from ordering service %s", t.Status)
+			close(responses)
 			return
 
 		// Response is a requested block
@@ -386,5 +395,7 @@ func (*defCommManager) DialContext(ctx reqContext.Context, target string, opts .
 
 func (*defCommManager) ReleaseConn(conn *grpc.ClientConn) {
 	logger.Debugf("ReleaseConn [%p]", conn)
-	conn.Close()
+	if err := conn.Close(); err != nil {
+		logger.Debugf("unable to close connection [%s]", err)
+	}
 }

@@ -63,8 +63,8 @@ func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvide
 
 	stream, err := streamProvider(grpcconn)
 	if err != nil {
-		if err := grpcconn.Close(); err != nil {
-			logger.Warnf("error closing GRPC connection: %s", err)
+		if closeErr := grpcconn.Close(); err != nil {
+			logger.Warnf("error closing GRPC connection: %s", closeErr)
 		}
 		return nil, errors.Wrapf(err, "could not create stream to %s", url)
 	}
