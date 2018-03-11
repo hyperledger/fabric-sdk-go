@@ -236,10 +236,12 @@ func PeersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 type defCommManager struct{}
 
 func (*defCommManager) DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+	logger.Debugf("DialContext [%s]", target)
 	opts = append(opts, grpc.WithBlock())
 	return grpc.DialContext(ctx, target, opts...)
 }
 
 func (*defCommManager) ReleaseConn(conn *grpc.ClientConn) {
+	logger.Debugf("ReleaseConn [%p]", conn)
 	conn.Close()
 }
