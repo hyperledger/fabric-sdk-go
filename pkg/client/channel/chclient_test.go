@@ -365,8 +365,6 @@ func TestOrdererStatusError(t *testing.T) {
 	assert.EqualValues(t, status.ConnectionFailed, status.ToSDKStatusCode(statusError.Code))
 	assert.Equal(t, status.OrdererClientStatus, statusError.Group)
 	assert.Equal(t, testErrorMessage, statusError.Message, "Expected response message from server")
-
-	chClient.Close()
 }
 
 func TestTransactionValidationError(t *testing.T) {
