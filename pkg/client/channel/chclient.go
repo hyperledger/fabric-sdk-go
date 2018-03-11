@@ -239,14 +239,6 @@ func (cc *Client) addDefaultTimeout(timeOutType core.TimeoutType, options ...Opt
 	return options
 }
 
-// Close ...
-// TODO: This function should probably be deprecated since all
-// resources (including caches) are on the providers and will
-// be freed when Close() is called on the SDK.
-func (cc *Client) Close() error {
-	return nil
-}
-
 // RegisterChaincodeEvent registers chain code event
 // @param {chan bool} channel which receives event details when the event is complete
 // @returns {object} object handle that should be used to unregister
