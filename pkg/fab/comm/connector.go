@@ -283,8 +283,7 @@ func janitor(sweepTime time.Duration, idleTime time.Duration, wg *sync.WaitGroup
 			flush(conns)
 			return
 		case c := <-conn:
-			logger.Debugf("updating connection in connection janitor")
-			conns[c.target] = c
+			cache(conns, c)
 		case <-ticker.C:
 			rm := sweep(conns, idleTime)
 			for _, target := range rm {
@@ -299,6 +298,30 @@ func janitor(sweepTime time.Duration, idleTime time.Duration, wg *sync.WaitGroup
 			}
 		}
 	}
+}
+
+func cache(conns map[string]*cachedConn, updateConn *cachedConn) {
+
+	c, ok := conns[updateConn.target]
+	if ok && updateConn.lastClose.IsZero() && updateConn.conn.GetState() == connectivity.Shutdown {
+		logger.Debugf("connection shutdown detected in connection janitor")
+		// We need to remove the connection from sweep consideration immediately
+		// since the connector has already removed it. Otherwise we can have a race
+		// between shutdown and creating a connection concurrently.
+		delete(conns, updateConn.target)
+		return
+	}
+
+	if !ok {
+		logger.Debugf("new connection in connection janitor")
+	} else if c.conn != updateConn.conn {
+		logger.Debugf("connection change in connection janitor")
+		c.conn.Close() // Not blocking
+	} else {
+		logger.Debugf("updating existing connection in connection janitor")
+	}
+
+	conns[updateConn.target] = updateConn
 }
 
 func flush(conns map[string]*cachedConn) {
