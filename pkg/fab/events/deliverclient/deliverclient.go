@@ -19,6 +19,7 @@ import (
 	deliverconn "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/connection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/dispatcher"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -27,12 +28,20 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 // deliverProvider is the connection provider used for connecting to the Deliver service
 var deliverProvider = func(context fabcontext.Client, chConfig fab.ChannelCfg, peer fab.Peer) (api.Connection, error) {
-	return deliverconn.New(context, chConfig, deliverconn.Deliver, peer.URL())
+	eventEndpoint, ok := peer.(api.EventEndpoint)
+	if !ok {
+		panic("peer is not an EventEndpoint")
+	}
+	return deliverconn.New(context, chConfig, deliverconn.Deliver, peer.URL(), eventEndpoint.Opts()...)
 }
 
 // deliverFilteredProvider is the connection provider used for connecting to the DeliverFiltered service
 var deliverFilteredProvider = func(context fabcontext.Client, chConfig fab.ChannelCfg, peer fab.Peer) (api.Connection, error) {
-	return deliverconn.New(context, chConfig, deliverconn.DeliverFiltered, peer.URL())
+	eventEndpoint, ok := peer.(api.EventEndpoint)
+	if !ok {
+		panic("peer is not an EventEndpoint")
+	}
+	return deliverconn.New(context, chConfig, deliverconn.DeliverFiltered, peer.URL(), eventEndpoint.Opts()...)
 }
 
 // Client connects to a peer and receives channel events, such as bock, filtered block, chaincode, and transaction status events.
@@ -46,10 +55,14 @@ func New(context fabcontext.Client, chConfig fab.ChannelCfg, opts ...options.Opt
 	params := defaultParams()
 	options.Apply(params, opts)
 
+	// Use a context that returns a custom Discovery Provider which
+	// produces event endpoints containing additional GRPC options.
+	deliverCtx := newDeliverContext(context)
+
 	client := &Client{
 		Client: *client.New(
 			params.permitBlockEvents,
-			dispatcher.New(context, chConfig, params.connProvider, opts...),
+			dispatcher.New(deliverCtx, chConfig, params.connProvider, opts...),
 			opts...,
 		),
 		params: *params,
@@ -120,4 +133,21 @@ func (c *Client) seekInfo() (*ab.SeekInfo, error) {
 	default:
 		return nil, errors.Errorf("unsupported seek type:[%s]", c.seekType)
 	}
+}
+
+// deliverContext overrides the DiscoveryProvider
+type deliverContext struct {
+	fabcontext.Client
+}
+
+func newDeliverContext(ctx fabcontext.Client) fabcontext.Client {
+	return &deliverContext{
+		Client: ctx,
+	}
+}
+
+// DiscoveryProvider returns a custom discovery provider which produces
+// event endpoints with additional GRPC options
+func (ctx *deliverContext) DiscoveryProvider() fab.DiscoveryProvider {
+	return endpoint.NewDiscoveryProvider(ctx.Client)
 }

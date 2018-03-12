@@ -467,6 +467,7 @@ type mockEventURLConfig struct {
 
 func newMockEventURLConfig() *mockEventURLConfig {
 	return &mockEventURLConfig{
+		Config:      fabmocks.NewMockConfig(),
 		eventURLMap: make(map[string]string),
 	}
 }

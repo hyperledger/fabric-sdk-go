@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/eventhubclient/connection"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
@@ -29,10 +30,7 @@ var ehConnProvider = func(context context.Client, chConfig fab.ChannelCfg, peer 
 	if !ok {
 		panic("peer is not an EventEndpoint")
 	}
-
-	return connection.New(
-		context, chConfig, eventEndpoint.EventURL(),
-	)
+	return connection.New(context, chConfig, eventEndpoint.EventURL(), eventEndpoint.Opts()...)
 }
 
 // Client connects to a peer and receives channel events, such as bock, filtered block, chaincode, and transaction status events.
@@ -46,8 +44,9 @@ func New(context context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (
 	params := defaultParams()
 	options.Apply(params, opts)
 
-	// The EventHub requires a custom Discovery Provider
-	// that produces EventEndpoints (which include the event URL).
+	// Use a context that returns a custom Discovery Provider which
+	// produces event endpoints containing the event URL and
+	// additional GRPC options.
 	ehCtx := newEventHubContext(context)
 
 	client := &Client{
@@ -102,6 +101,20 @@ func newEventHubContext(ctx context.Client) context.Client {
 }
 
 // DiscoveryProvider returns a custom discovery provider for the event hub
+// that provides additional connection options and filters by
+// the current MSP ID
 func (ctx *ehContext) DiscoveryProvider() fab.DiscoveryProvider {
-	return newDiscoveryProvider(ctx.Client)
+	return endpoint.NewDiscoveryProvider(ctx.Client, endpoint.WithTargetFilter(newMSPFilter(ctx.MspID())))
+}
+
+type mspFilter struct {
+	mspID string
+}
+
+func newMSPFilter(mspID string) *mspFilter {
+	return &mspFilter{mspID: mspID}
+}
+
+func (f *mspFilter) Accept(peer fab.Peer) bool {
+	return peer.MSPID() == f.mspID
 }

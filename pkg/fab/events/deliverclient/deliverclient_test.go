@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
@@ -33,17 +34,14 @@ const (
 var (
 	defaultOpts = []options.Opt{}
 
-	peer1 = fabclientmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051")
-	peer2 = fabclientmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051")
+	peer1 = fabclientmocks.NewMockPeer("peer1", "peer1.example.com:7051")
+	peer2 = fabclientmocks.NewMockPeer("peer2", "peer2.example.com:7051")
 )
 
 func TestOptionsInNewClient(t *testing.T) {
 	channelID := "mychannel"
 	client, err := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
-			clientmocks.NewDiscoveryProvider(peer1, peer2),
-		),
+		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
 		WithBlockEvents(),
 	)
@@ -56,10 +54,7 @@ func TestOptionsInNewClient(t *testing.T) {
 func TestClientConnect(t *testing.T) {
 	channelID := "mychannel"
 	eventClient, err := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
-			clientmocks.NewDiscoveryProvider(peer1, peer2),
-		),
+		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
 		withConnectionProvider(
 			clientmocks.NewProviderFactory().Provider(
@@ -187,10 +182,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 
 	channelID := "mychannel"
 	eventClient, err := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
-			clientmocks.NewDiscoveryProvider(peer1, peer2),
-		),
+		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
 		withConnectionProvider(
 			cp.FlakeyProvider(
@@ -230,10 +222,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 
 	channelID := "mychannel"
 	eventClient, err := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
-			clientmocks.NewDiscoveryProvider(peer1, peer2),
-		),
+		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
 		withConnectionProvider(
 			cp.FlakeyProvider(
@@ -303,10 +292,7 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 	cp := clientmocks.NewProviderFactory()
 
 	eventClient, err := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
-			clientmocks.NewDiscoveryProvider(peer1, peer2),
-		),
+		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
 		withConnectionProvider(
 			cp.FlakeyProvider(
@@ -450,4 +436,27 @@ func listenEvents(blockch <-chan *fab.BlockEvent, ccch <-chan *fab.CCEvent, wait
 			return
 		}
 	}
+}
+
+type mockConfig struct {
+	core.Config
+}
+
+func newMockConfig() *mockConfig {
+	return &mockConfig{
+		Config: fabmocks.NewMockConfig(),
+	}
+}
+
+func (c *mockConfig) PeerConfigByURL(url string) (*core.PeerConfig, error) {
+	return &core.PeerConfig{}, nil
+}
+
+func newMockContext() *fabmocks.MockContext {
+	ctx := fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockUser("user1"),
+		clientmocks.NewDiscoveryProvider(peer1, peer2),
+	)
+	ctx.SetConfig(newMockConfig())
+	return ctx
 }

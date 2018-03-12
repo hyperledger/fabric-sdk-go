@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package api
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
 
@@ -17,4 +18,7 @@ type EventEndpoint interface {
 
 	// EventURL returns the event URL
 	EventURL() string
+
+	// Opts returns additional options for the connection
+	Opts() []options.Opt
 }

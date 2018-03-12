@@ -919,18 +919,28 @@ func (c *Config) PeerConfigByURL(url string) (*core.PeerConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	var matchPeerConfig *core.PeerConfig
 	staticPeers := config.Peers
 	for _, staticPeerConfig := range staticPeers {
 		if strings.EqualFold(staticPeerConfig.URL, url) {
-			return &staticPeerConfig, nil
+			matchPeerConfig = &staticPeerConfig
+			break
 		}
 	}
 
-	// try to match from entity matchers
-	matchPeerConfig, err := c.tryMatchingPeerConfig(url)
-	if err != nil {
-		return nil, errors.WithMessage(err, "No Peer found with the url from config")
+	if matchPeerConfig == nil {
+		// try to match from entity matchers
+		matchPeerConfig, err = c.tryMatchingPeerConfig(url)
+		if err != nil {
+			return nil, errors.WithMessage(err, "No Peer found with the url from config")
+		}
 	}
+
+	if matchPeerConfig != nil && matchPeerConfig.TLSCACerts.Path != "" {
+		matchPeerConfig.TLSCACerts.Path = SubstPathVars(matchPeerConfig.TLSCACerts.Path)
+	}
+
 	return matchPeerConfig, nil
 }
 
