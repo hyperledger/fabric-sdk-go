@@ -9,7 +9,7 @@ package defmsp
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
-	mspimpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/msppvdr"
 )
 
 // ProviderFactory represents the default MSP provider factory.
@@ -22,7 +22,7 @@ func NewProviderFactory() *ProviderFactory {
 	return &f
 }
 
-// CreateIdentityManager returns a new default implementation of identity manager
-func (f *ProviderFactory) CreateIdentityManager(org string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (msp.IdentityManager, error) {
-	return mspimpl.NewIdentityManager(org, stateStore, cryptoProvider, config)
+// CreateProvider returns a new default implementation of MSP provider
+func (f *ProviderFactory) CreateProvider(config core.Config, cryptoProvider core.CryptoSuite, stateStore core.KVStore) (msp.Provider, error) {
+	return msppvdr.New(config, cryptoProvider, stateStore)
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
+	mspapi "github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 )
 
@@ -38,7 +39,7 @@ type textFixture struct {
 	stateStore      core.KVStore
 	userStore       msp.UserStore
 	identityManager *IdentityManager
-	caClient        *CAClient
+	caClient        mspapi.CAClient
 }
 
 var caServer = &mocks.MockFabricCAServer{}

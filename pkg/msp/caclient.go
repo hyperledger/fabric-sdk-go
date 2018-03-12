@@ -14,16 +14,16 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabsdk/msp")
 
 // CAClient implements api/msp/CAClient
-type CAClient struct {
+type CAClientImpl struct {
 	orgName         string
 	orgMspID        string
-	caName          string
 	config          core.Config
 	cryptoSuite     core.CryptoSuite
 	identityManager msp.IdentityManager
@@ -33,7 +33,7 @@ type CAClient struct {
 }
 
 // NewCAClient creates a new CA CAClient instance
-func NewCAClient(orgName string, identityManager msp.IdentityManager, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config core.Config) (*CAClient, error) {
+func NewCAClient(orgName string, identityManager msp.IdentityManager, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config core.Config) (*CAClientImpl, error) {
 
 	userStore, err := NewCertFileUserStore1(stateStore)
 	if err != nil {
@@ -75,7 +75,7 @@ func NewCAClient(orgName string, identityManager msp.IdentityManager, stateStore
 	caName := orgConfig.CertificateAuthorities[0]
 	caConfig, err = config.CAConfig(orgName)
 	if err == nil {
-		adapter, err = newFabricCAAdapter(orgName, caName, cryptoSuite, config)
+		adapter, err = newFabricCAAdapter(orgName, cryptoSuite, config)
 		if err == nil {
 			registrar = caConfig.Registrar
 		} else {
@@ -85,10 +85,9 @@ func NewCAClient(orgName string, identityManager msp.IdentityManager, stateStore
 		return nil, errors.Wrapf(err, "error initializing CA [%s]", caName)
 	}
 
-	mgr := &CAClient{
+	mgr := &CAClientImpl{
 		orgName:         orgName,
 		orgMspID:        orgConfig.MspID,
-		caName:          caName,
 		config:          config,
 		cryptoSuite:     cryptoSuite,
 		identityManager: identityManager,
@@ -99,11 +98,6 @@ func NewCAClient(orgName string, identityManager msp.IdentityManager, stateStore
 	return mgr, nil
 }
 
-// CAName returns the CA name.
-func (c *CAClient) CAName() string {
-	return c.caName
-}
-
 // Enroll a registered user in order to receive a signed X509 certificate.
 // A new key pair is generated for the user. The private key and the
 // enrollment certificate issued by the CA are stored in SDK stores.
@@ -111,7 +105,7 @@ func (c *CAClient) CAName() string {
 //
 // enrollmentID The registered ID to use for enrollment
 // enrollmentSecret The secret associated with the enrollment ID
-func (c *CAClient) Enroll(enrollmentID string, enrollmentSecret string) error {
+func (c *CAClientImpl) Enroll(enrollmentID string, enrollmentSecret string) error {
 
 	if c.adapter == nil {
 		return fmt.Errorf("no CAs configured for organization: %s", c.orgName)
@@ -140,7 +134,7 @@ func (c *CAClient) Enroll(enrollmentID string, enrollmentSecret string) error {
 }
 
 // Reenroll an enrolled user in order to obtain a new signed X509 certificate
-func (c *CAClient) Reenroll(enrollmentID string) error {
+func (c *CAClientImpl) Reenroll(enrollmentID string) error {
 
 	if c.adapter == nil {
 		return fmt.Errorf("no CAs configured for organization: %s", c.orgName)
@@ -175,12 +169,12 @@ func (c *CAClient) Reenroll(enrollmentID string) error {
 // Register a User with the Fabric CA
 // request: Registration Request
 // Returns Enrolment Secret
-func (c *CAClient) Register(request *msp.RegistrationRequest) (string, error) {
+func (c *CAClientImpl) Register(request *api.RegistrationRequest) (string, error) {
 	if c.adapter == nil {
 		return "", fmt.Errorf("no CAs configured for organization: %s", c.orgName)
 	}
 	if c.registrar.EnrollID == "" {
-		return "", msp.ErrCARegistrarNotFound
+		return "", api.ErrCARegistrarNotFound
 	}
 	// Validate registration request
 	if request == nil {
@@ -206,12 +200,12 @@ func (c *CAClient) Register(request *msp.RegistrationRequest) (string, error) {
 // Revoke a User with the Fabric CA
 // registrar: The User that is initiating the revocation
 // request: Revocation Request
-func (c *CAClient) Revoke(request *msp.RevocationRequest) (*msp.RevocationResponse, error) {
+func (c *CAClientImpl) Revoke(request *api.RevocationRequest) (*api.RevocationResponse, error) {
 	if c.adapter == nil {
 		return nil, fmt.Errorf("no CAs configured for organization: %s", c.orgName)
 	}
 	if c.registrar.EnrollID == "" {
-		return nil, msp.ErrCARegistrarNotFound
+		return nil, api.ErrCARegistrarNotFound
 	}
 	// Validate revocation request
 	if request == nil {
@@ -230,10 +224,10 @@ func (c *CAClient) Revoke(request *msp.RevocationRequest) (*msp.RevocationRespon
 	return resp, nil
 }
 
-func (c *CAClient) getRegistrar(enrollID string, enrollSecret string) (*msp.SigningIdentity, error) {
+func (c *CAClientImpl) getRegistrar(enrollID string, enrollSecret string) (*msp.SigningIdentity, error) {
 
 	if enrollID == "" {
-		return nil, msp.ErrCARegistrarNotFound
+		return nil, api.ErrCARegistrarNotFound
 	}
 
 	registrar, err := c.identityManager.GetSigningIdentity(enrollID)
@@ -242,7 +236,7 @@ func (c *CAClient) getRegistrar(enrollID string, enrollSecret string) (*msp.Sign
 			return nil, err
 		}
 		if enrollSecret == "" {
-			return nil, msp.ErrCARegistrarNotFound
+			return nil, api.ErrCARegistrarNotFound
 		}
 
 		// Attempt to enroll the registrar

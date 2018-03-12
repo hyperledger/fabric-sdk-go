@@ -8,7 +8,6 @@ package context
 
 import (
 	reqContext "context"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -66,7 +65,7 @@ type Provider struct {
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
 	signingManager    core.SigningManager
-	identityManager   map[string]msp.IdentityManager
+	mspProvider       msp.Provider
 	infraProvider     fab.InfraProvider
 	channelProvider   fab.ChannelProvider
 }
@@ -83,8 +82,7 @@ func (c *Provider) CryptoSuite() core.CryptoSuite {
 
 // IdentityManager returns identity manager for organization
 func (c *Provider) IdentityManager(orgName string) (msp.IdentityManager, bool) {
-	mgr, ok := c.identityManager[strings.ToLower(orgName)]
-	return mgr, ok
+	return c.mspProvider.IdentityManager(orgName)
 }
 
 // SigningManager returns signing manager
@@ -162,10 +160,10 @@ func WithSigningManager(signingManager core.SigningManager) SDKContextParams {
 	}
 }
 
-//WithIdentityManager sets identityManagers maps to context
-func WithIdentityManager(identityManagers map[string]msp.IdentityManager) SDKContextParams {
+//WithMSPProvider sets MSPProvider maps to context
+func WithMSPProvider(provider msp.Provider) SDKContextParams {
 	return func(ctx *Provider) {
-		ctx.identityManager = identityManagers
+		ctx.mspProvider = provider
 	}
 }
 

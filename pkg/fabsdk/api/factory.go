@@ -27,9 +27,9 @@ type CoreProviderFactory interface {
 	CreateInfraProvider(config core.Config) (fab.InfraProvider, error)
 }
 
-// MspProviderFactory allows overriding providers of MSP services
-type MspProviderFactory interface {
-	CreateIdentityManager(orgName string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (msp.IdentityManager, error)
+// MSPProviderFactory allows overriding providers of MSP services
+type MSPProviderFactory interface {
+	CreateProvider(config core.Config, cryptoProvider core.CryptoSuite, stateStore core.KVStore) (msp.Provider, error)
 }
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)

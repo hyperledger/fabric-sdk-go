@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package defmsp
+package msppvdr
 
 import (
 	"testing"
@@ -15,7 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 )
 
-func TestCreateIdentityManager(t *testing.T) {
+func TestCreateMSPProvider(t *testing.T) {
 
 	coreFactory := defcore.NewProviderFactory()
 
@@ -37,9 +37,7 @@ func TestCreateIdentityManager(t *testing.T) {
 		t.Fatalf("creating a user store failed: %v", err)
 	}
 
-	factory := NewProviderFactory()
-
-	provider, err := factory.CreateProvider(config, cryptosuite, stateStore)
+	provider, err := New(config, cryptosuite, stateStore)
 
 	mgr, ok := provider.IdentityManager("Org1")
 	if !ok {

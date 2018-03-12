@@ -21,7 +21,7 @@ func (ps *defPkgSuite) Core() (sdkApi.CoreProviderFactory, error) {
 	return defcore.NewProviderFactory(), nil
 }
 
-func (ps *defPkgSuite) MSP() (sdkApi.MspProviderFactory, error) {
+func (ps *defPkgSuite) MSP() (sdkApi.MSPProviderFactory, error) {
 	return defmsp.NewProviderFactory(), nil
 }
 

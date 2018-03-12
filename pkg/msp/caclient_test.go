@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/pkg/errors"
 )
@@ -137,16 +138,16 @@ func TestRegister(t *testing.T) {
 	}
 
 	// Register without registration name parameter
-	_, err = f.caClient.Register(&msp.RegistrationRequest{})
+	_, err = f.caClient.Register(&api.RegistrationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error without registration name parameter")
 	}
 
 	// Register with valid request
-	var attributes []msp.Attribute
-	attributes = append(attributes, msp.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, msp.Attribute{Key: "test2", Value: "test3"})
-	secret, err := f.caClient.Register(&msp.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
+	var attributes []api.Attribute
+	attributes = append(attributes, api.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, api.Attribute{Key: "test2", Value: "test3"})
+	secret, err := f.caClient.Register(&api.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
 	if err != nil {
 		t.Fatalf("identityManager Register return error %v", err)
 	}
@@ -163,10 +164,10 @@ func TestEmbeddedRegistar(t *testing.T) {
 	defer f.close()
 
 	// Register with valid request
-	var attributes []msp.Attribute
-	attributes = append(attributes, msp.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, msp.Attribute{Key: "test2", Value: "test3"})
-	secret, err := f.caClient.Register(&msp.RegistrationRequest{Name: "withEmbeddedRegistrar", Affiliation: "test", Attributes: attributes})
+	var attributes []api.Attribute
+	attributes = append(attributes, api.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, api.Attribute{Key: "test2", Value: "test3"})
+	secret, err := f.caClient.Register(&api.RegistrationRequest{Name: "withEmbeddedRegistrar", Affiliation: "test", Attributes: attributes})
 	if err != nil {
 		t.Fatalf("identityManager Register return error %v", err)
 	}
@@ -184,22 +185,22 @@ func TestRegisterNoRegistrar(t *testing.T) {
 
 	// Register with nil request
 	_, err := f.caClient.Register(nil)
-	if err != msp.ErrCARegistrarNotFound {
+	if err != api.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
 
 	// Register without registration name parameter
-	_, err = f.caClient.Register(&msp.RegistrationRequest{})
-	if err != msp.ErrCARegistrarNotFound {
+	_, err = f.caClient.Register(&api.RegistrationRequest{})
+	if err != api.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
 
 	// Register with valid request
-	var attributes []msp.Attribute
-	attributes = append(attributes, msp.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, msp.Attribute{Key: "test2", Value: "test3"})
-	_, err = f.caClient.Register(&msp.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
-	if err != msp.ErrCARegistrarNotFound {
+	var attributes []api.Attribute
+	attributes = append(attributes, api.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, api.Attribute{Key: "test2", Value: "test3"})
+	_, err = f.caClient.Register(&api.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
+	if err != api.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
 }
@@ -223,29 +224,9 @@ func TestRevoke(t *testing.T) {
 	user.SetEnrollmentCertificate(readCert(t))
 	user.SetPrivateKey(mockKey)
 
-	_, err = f.caClient.Revoke(&msp.RevocationRequest{})
+	_, err = f.caClient.Revoke(&api.RevocationRequest{})
 	if err == nil {
 		t.Fatalf("Expected decoding error with test cert")
-	}
-}
-
-// TestGetCAName will test the CAName is properly created once a new identityManagerClient is created
-func TestGetCAName(t *testing.T) {
-
-	f := textFixture{}
-	f.setup("")
-
-	netConfig, err := f.config.NetworkConfig()
-	if err != nil {
-		t.Fatalf("network config retrieval failed: %v", err)
-	}
-	orgConfig, ok := netConfig.Organizations[strings.ToLower(org1)]
-	if !ok {
-		t.Fatalf("org config retrieval failed: %v", err)
-	}
-
-	if f.caClient.CAName() != orgConfig.CertificateAuthorities[0] {
-		t.Fatalf("CAName returned wrong value: %s", f.caClient.CAName())
 	}
 }
 
@@ -346,8 +327,8 @@ func TestCAClientKeyPathError(t *testing.T) {
 
 // TestInterfaces will test if the interface instantiation happens properly, ie no nil returned
 func TestInterfaces(t *testing.T) {
-	var apiClient msp.CAClient
-	var cl CAClient
+	var apiClient api.CAClient
+	var cl CAClientImpl
 
 	apiClient = &cl
 	if apiClient == nil {
