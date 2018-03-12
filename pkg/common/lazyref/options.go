@@ -13,7 +13,7 @@ import (
 // Opt is a reference option
 type Opt func(ref *Reference)
 
-// WithIdleExpiration sets the idle-time expiration time for the reference.
+// WithIdleExpiration sets the idle-time expiration for the reference.
 // The reference is expired after not being accessed for the given duration.
 func WithIdleExpiration(expiration time.Duration) Opt {
 	return func(ref *Reference) {
@@ -57,10 +57,11 @@ const (
 	InitImmediately time.Duration = time.Duration(0)
 )
 
-// WithRefreshInterval indicates that the reference should be proactively refreshed.
-// - initialInit, if greater than or equal to 0, indicates that the reference
-//   should be initialized after this duration
-// - refreshPeriod is the period in which the reference will be refreshed
+// WithRefreshInterval specifies that the reference should be proactively refreshed.
+// Argument, initialInit, if greater than or equal to 0, indicates that the reference
+// should be initialized after this duration. If less than 0, the reference will be
+// initialized on first access.
+// Argument, refreshPeriod, is the period at which the reference will be refreshed.
 // Note that the Finalizer will not be invoked each time the value is refreshed.
 func WithRefreshInterval(initialInit, refreshPeriod time.Duration) Opt {
 	return func(ref *Reference) {

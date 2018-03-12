@@ -38,9 +38,9 @@ func ExampleReference_expiring() {
 	}
 }
 
-// ExampleReference_refreshing demonstrates a refreshing reference.
-// The reference is initialized immediately after creation and
-// then refreshed every 2 seconds
+// This example demonstrates a refreshing reference.
+// The reference is initialized immediately after creation
+// and every 2 seconds thereafter.
 func ExampleReference_refreshing() {
 	sequence := 0
 	ref := New(
@@ -48,12 +48,12 @@ func ExampleReference_refreshing() {
 			sequence++
 			return fmt.Sprintf("Data_%d", sequence), nil
 		},
-		WithRefreshInterval(InitImmediately, time.Second),
+		WithRefreshInterval(InitImmediately, 2*time.Second),
 	)
 
 	for i := 0; i < 5; i++ {
 		fmt.Println(ref.MustGet())
-		time.Sleep(2 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 }
 

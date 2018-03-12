@@ -68,8 +68,8 @@ func (f *Value) Get() (interface{}, error) {
 	return value, err
 }
 
-// MustGet returns the value. If an error occurred
-// during initialization then a panic will occur.
+// MustGet returns the value. If an error resulted
+// during initialization then this function will panic.
 func (f *Value) MustGet() interface{} {
 	value, err := f.Get()
 	if err != nil {
@@ -78,7 +78,7 @@ func (f *Value) MustGet() interface{} {
 	return value
 }
 
-// IsSet returns true if the value has been setl otherwise false
+// IsSet returns true if the value has been set, otherwise false is returned
 func (f *Value) IsSet() bool {
 	isSet, _, _ := f.get()
 	return isSet
