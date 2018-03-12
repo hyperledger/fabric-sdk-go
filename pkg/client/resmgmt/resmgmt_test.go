@@ -87,9 +87,7 @@ func TestJoinChannelSuccess(t *testing.T) {
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	// Setup target peers
-	var peers []fab.Peer
 	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr))
-	peers = append(peers, peer1)
 
 	// Test valid join channel request (success)
 	err := rc.JoinChannel("mychannel", WithTargets(peer1))
@@ -283,8 +281,7 @@ func TestOrdererConfigFail(t *testing.T) {
 	ctx.SetConfig(noOrdererConfig)
 	rc := setupResMgmtClient(ctx, nil, t)
 
-	opts := Opts{}
-	orderer, err := rc.ordererConfig(&opts, "mychannel")
+	orderer, err := rc.ordererConfig("mychannel")
 	assert.Nil(t, orderer)
 	assert.NotNil(t, err, "should fail since no orderer has been configured")
 }
@@ -1371,7 +1368,7 @@ func TestSaveChannelSuccess(t *testing.T) {
 	}
 
 	// Test valid Save Channel request (success)
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig}, WithOrdererID("example.com"))
+	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig}, WithOrdererURL("example.com"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1398,7 +1395,7 @@ func TestSaveChannelFailure(t *testing.T) {
 	}
 
 	// Test create channel failure
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig})
+	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "Invalid", ChannelConfig: channelConfig})
 	if err == nil {
 		t.Fatal("Should have failed with create channel error")
 	}
@@ -1431,14 +1428,14 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig}
 
 	// Test empty option (default order is random orderer from config)
-	opts := WithOrdererID("")
+	opts := WithOrdererURL("")
 	err := cc.SaveChannel(req, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Test valid orderer ID
-	opts = WithOrdererID("orderer.example.com")
+	opts = WithOrdererURL("orderer.example.com")
 	err = cc.SaveChannel(req, opts)
 	if err != nil {
 		t.Fatal(err)
@@ -1451,7 +1448,7 @@ func TestSaveChannelWithOpts(t *testing.T) {
 
 	cc = setupResMgmtClient(ctx, nil, t)
 
-	opts = WithOrdererID("Invalid")
+	opts = WithOrdererURL("Invalid")
 	err = cc.SaveChannel(req, opts)
 	if err == nil {
 		t.Fatal("Should have failed for invalid orderer ID")
@@ -1461,7 +1458,7 @@ func TestSaveChannelWithOpts(t *testing.T) {
 func TestJoinChannelWithInvalidOpts(t *testing.T) {
 
 	cc := setupDefaultResMgmtClient(t)
-	opts := WithOrdererID("Invalid")
+	opts := WithOrdererURL("Invalid")
 	err := cc.JoinChannel("mychannel", opts)
 	if err == nil {
 		t.Fatal("Should have failed for invalid orderer ID")
@@ -1491,7 +1488,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 
 	// empty list of signing identities (defaults to context user)
 	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []msp.Identity{}}
-	err := cc.SaveChannel(req, WithOrdererID(""))
+	err := cc.SaveChannel(req, WithOrdererURL(""))
 	if err != nil {
 		t.Fatalf("Failed to save channel with default signing identity: %s", err)
 	}
@@ -1499,7 +1496,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	// multiple signing identities
 	secondCtx := fcmocks.NewMockContext(fcmocks.NewMockUser("second"))
 	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []msp.Identity{cc.ctx, secondCtx}}
-	err = cc.SaveChannel(req, WithOrdererID(""))
+	err = cc.SaveChannel(req, WithOrdererURL(""))
 	if err != nil {
 		t.Fatalf("Failed to save channel with multiple signing identities: %s", err)
 	}

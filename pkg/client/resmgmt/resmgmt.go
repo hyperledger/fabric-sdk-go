@@ -23,7 +23,6 @@ import (
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
@@ -75,11 +74,11 @@ type UpgradeCCRequest struct {
 }
 
 //Opts contains options for operations performed by ResourceMgmtClient
-type Opts struct {
+type requestOptions struct {
 	Targets      []fab.Peer    // target peers
 	TargetFilter TargetFilter  // target filter
-	Timeout      time.Duration //timeout options for instantiate and upgrade CC
-	OrdererID    string        // use specific orderer
+	Timeout      time.Duration // timeout options for instantiate and upgrade CC
+	Orderer      fab.Orderer   // use specific orderer
 }
 
 //SaveChannelRequest used to save channel request
@@ -93,7 +92,7 @@ type SaveChannelRequest struct {
 }
 
 //RequestOption func for each Opts argument
-type RequestOption func(opts *Opts) error
+type RequestOption func(ctx context.Client, opts *requestOptions) error
 
 var logger = logging.NewLogger("fabsdk/client")
 
@@ -183,14 +182,9 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		return errors.New("No targets available")
 	}
 
-	ordererCfg, err := rc.ordererConfig(&opts, channelID)
+	orderer, err := rc.requestOrderer(&opts, channelID)
 	if err != nil {
-		return errors.WithMessage(err, "failed to find orderer config")
-	}
-
-	orderer, err := rc.ctx.InfraProvider().CreateOrdererFromConfig(ordererCfg)
-	if err != nil {
-		return errors.WithMessage(err, "failed to create orderers from config")
+		return errors.WithMessage(err, "failed to find orderer for request")
 	}
 
 	genesisBlock, err := resource.GenesisBlockFromOrderer(rc.ctx, channelID, orderer)
@@ -632,14 +626,9 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		configSignatures = append(configSignatures, configSignature)
 	}
 
-	ordererCfg, err := rc.ordererConfig(&opts, req.ChannelID)
+	orderer, err := rc.requestOrderer(&opts, req.ChannelID)
 	if err != nil {
-		return errors.WithMessage(err, "failed to find orderer config")
-	}
-
-	orderer, err := orderer.New(rc.ctx.Config(), orderer.FromOrdererConfig(ordererCfg))
-	if err != nil {
-		return errors.WithMessage(err, "failed to create new orderer from config")
+		return errors.WithMessage(err, "failed to find orderer for request")
 	}
 
 	request := api.CreateChannelRequest{
@@ -667,14 +656,9 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 		return nil, err
 	}
 
-	ordererCfg, err := rc.ordererConfig(&opts, channelID)
+	orderer, err := rc.requestOrderer(&opts, channelID)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to find orderer config")
-	}
-
-	orderer, err := orderer.New(rc.ctx.Config(), orderer.FromOrdererConfig(ordererCfg))
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to resolve orderer")
+		return nil, errors.WithMessage(err, "failed to find orderer for request")
 	}
 
 	channelConfig, err := chconfig.New(rc.ctx, channelID, chconfig.WithOrderer(orderer))
@@ -686,18 +670,25 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 
 }
 
-func (rc *Client) ordererConfig(opts *Opts, channelID string) (*core.OrdererConfig, error) {
-	if opts.OrdererID != "" {
-		ordererCfg, err := rc.ctx.Config().OrdererConfig(opts.OrdererID)
-		if err != nil {
-			return nil, errors.WithMessage(err, "orderer not found")
-		}
-		if ordererCfg == nil {
-			return nil, errors.New("orderer not found")
-		}
-		return ordererCfg, nil
+func (rc *Client) requestOrderer(opts *requestOptions, channelID string) (fab.Orderer, error) {
+	if opts.Orderer != nil {
+		return opts.Orderer, nil
 	}
 
+	ordererCfg, err := rc.ordererConfig(channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "orderer not found")
+	}
+
+	orderer, err := rc.ctx.InfraProvider().CreateOrdererFromConfig(ordererCfg)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to create orderer from config")
+	}
+	return orderer, nil
+
+}
+
+func (rc *Client) ordererConfig(channelID string) (*core.OrdererConfig, error) {
 	orderers, err := rc.ctx.Config().ChannelOrderers(channelID)
 
 	// TODO: Not sure that we should fallback to global orderers section.
@@ -719,10 +710,10 @@ func (rc *Client) ordererConfig(opts *Opts, channelID string) (*core.OrdererConf
 }
 
 // prepareRequestOpts prepares request options
-func (rc *Client) prepareRequestOpts(options ...RequestOption) (Opts, error) {
-	opts := Opts{}
+func (rc *Client) prepareRequestOpts(options ...RequestOption) (requestOptions, error) {
+	opts := requestOptions{}
 	for _, option := range options {
-		err := option(&opts)
+		err := option(rc.ctx, &opts)
 		if err != nil {
 			return opts, errors.WithMessage(err, "Failed to read opts")
 		}

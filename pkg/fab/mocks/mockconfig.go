@@ -188,6 +188,9 @@ func (c *MockConfig) SetCustomRandomOrdererCfg(customRandomOrdererCfg *config.Or
 
 // OrdererConfig not implemented
 func (c *MockConfig) OrdererConfig(name string) (*config.OrdererConfig, error) {
+	if name == "Invalid" {
+		return nil, errors.New("no orderer")
+	}
 	if c.customOrdererCfg != nil {
 		return c.customOrdererCfg, nil
 	}
@@ -245,6 +248,10 @@ func (c *MockConfig) ChannelPeers(name string) ([]config.ChannelPeer, error) {
 
 // ChannelOrderers returns a list of channel orderers
 func (c *MockConfig) ChannelOrderers(name string) ([]config.OrdererConfig, error) {
+	if name == "Invalid" {
+		return nil, errors.New("no orderer")
+	}
+
 	oConfig, err := c.OrdererConfig("")
 
 	return []config.OrdererConfig{*oConfig}, err
