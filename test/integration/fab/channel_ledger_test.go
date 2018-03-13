@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	"os"
 	"path"
 	"strconv"
 	"testing"
@@ -50,8 +51,13 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []string) {
 		t.Fatalf("creating peers failed: %v", err)
 	}
 
-	channelConfig := path.Join("../../../", metadata.ChannelConfigPath, channelConfigFile)
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: channelConfig, SigningIdentities: []msp.Identity{adminIdentity}}
+	ccReader, err := os.Open(path.Join("../../../", metadata.ChannelConfigPath, channelConfigFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ccReader.Close()
+
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: ccReader, SigningIdentities: []msp.Identity{adminIdentity}}
 	err = integration.InitializeChannel(sdk, orgName, req, targets)
 	if err != nil {
 		t.Fatalf("failed to ensure channel has been initialized: %s", err)

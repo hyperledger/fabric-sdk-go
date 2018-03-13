@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// WithTargetURLs allows overriding of the target peers for the request.
+// WithTargets allows overriding of the target peers for the request.
 func WithTargets(targets ...fab.Peer) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.Targets = targets

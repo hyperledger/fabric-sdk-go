@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package e2e
 
 import (
+	"os"
 	"path"
 	"strconv"
 	"testing"
@@ -67,8 +68,14 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 		t.Fatal(err)
 	}
 
+	ccReader, err := os.Open(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ccReader.Close()
+
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
-		ChannelConfig:     path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		ChannelConfig:     ccReader,
 		SigningIdentities: []msp.Identity{adminIdentity}}
 	if err = resMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)

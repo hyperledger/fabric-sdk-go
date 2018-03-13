@@ -8,6 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmt
 
 import (
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"time"
@@ -83,12 +84,10 @@ type requestOptions struct {
 
 //SaveChannelRequest used to save channel request
 type SaveChannelRequest struct {
-	// Channel Name (ID)
-	ChannelID string
-	// Path to channel configuration file
-	ChannelConfig string
-	// Users that sign channel configuration
-	SigningIdentities []msp.Identity
+	ChannelID         string
+	ChannelConfig     io.Reader      // ChannelConfig data source
+	SigningIdentities []msp.Identity // Users that sign channel configuration
+	// TODO: support pre-signed signature blocks
 }
 
 //RequestOption func for each Opts argument
@@ -597,11 +596,11 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		return err
 	}
 
-	if req.ChannelID == "" || req.ChannelConfig == "" {
+	if req.ChannelID == "" || req.ChannelConfig == nil {
 		return errors.New("must provide channel ID and channel config")
 	}
 
-	logger.Debugf("***** Saving channel: %s *****\n", req.ChannelID)
+	logger.Debugf("saving channel: %s", req.ChannelID)
 
 	// Signing user has to belong to one of configured channel organisations
 	// In case that order org is one of channel orgs we can use context user
@@ -619,7 +618,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		return errors.New("must provide signing user")
 	}
 
-	configTx, err := ioutil.ReadFile(req.ChannelConfig)
+	configTx, err := ioutil.ReadAll(req.ChannelConfig)
 	if err != nil {
 		return errors.WithMessage(err, "reading channel config file failed")
 	}

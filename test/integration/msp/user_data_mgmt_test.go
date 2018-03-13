@@ -27,7 +27,7 @@ import (
 // TestWithCustomStores demonstrates the usage of custom key and cert stores
 // to manage user private keys and certificates.
 func TestWithCustomStores(t *testing.T) {
-	config, err := configImpl.FromFile(sdkConfigFile)()
+	config, err := configImpl.FromFile("../" + integration.ConfigTestFile)()
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestWithCustomStores(t *testing.T) {
 
 	//
 	// NOTE: BCCSP SW implementation currently doesn't allow
-	// writting private keys out. The file store used internally
+	// writing private keys out. The file store used internally
 	// by BCCSP has access to provate parts that are not available
 	// outside of BCCSP at the moment. Fot this reason, our
 	// example custom kay store will just hold the keys in memory.

@@ -36,9 +36,9 @@ func setup() {
 	testSetup := integration.BaseSetupImpl{
 		ConfigFile: "../" + integration.ConfigTestFile,
 
-		ChannelID:     "mychannel",
-		OrgID:         org1Name,
-		ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		ChannelID:         "mychannel",
+		OrgID:             org1Name,
+		ChannelConfigFile: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
 	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))

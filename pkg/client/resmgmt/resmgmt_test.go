@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -1343,32 +1344,44 @@ func TestSaveChannelSuccess(t *testing.T) {
 		t.Fatalf("Should have failed for empty channel request")
 	}
 
+	r, err := os.Open(channelConfig)
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r.Close()
+
 	// Test empty channel name
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "", ChannelConfig: channelConfig})
+	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "", ChannelConfig: r})
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel id")
 	}
 
 	// Test empty channel config
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: ""})
+	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel"})
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel config")
 	}
 
 	// Test extract configuration error
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: "./testdata/extractcherr.tx"})
+	r1, err := os.Open("./testdata/extractcherr.tx")
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r1.Close()
+
+	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1})
 	if err == nil {
 		t.Fatalf("Should have failed to extract configuration")
 	}
 
 	// Test sign channel error
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: "./testdata/signcherr.tx"})
+	r2, err := os.Open("./testdata/signcherr.tx")
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r2.Close()
+
+	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2})
 	if err == nil {
 		t.Fatalf("Should have failed to sign configuration")
 	}
 
 	// Test valid Save Channel request (success)
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig}, WithOrdererURL("example.com"))
+	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererURL("example.com"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1395,7 +1408,11 @@ func TestSaveChannelFailure(t *testing.T) {
 	}
 
 	// Test create channel failure
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "Invalid", ChannelConfig: channelConfig})
+	r, err := os.Open(channelConfig)
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r.Close()
+
+	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "Invalid", ChannelConfig: r})
 	if err == nil {
 		t.Fatal("Should have failed with create channel error")
 	}
@@ -1425,16 +1442,26 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	cc := setupResMgmtClient(ctx, nil, t)
 
 	// Valid request (same for all options)
-	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig}
+	r1, err := os.Open(channelConfig)
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r1.Close()
+
+	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1}
 
 	// Test empty option (default order is random orderer from config)
 	opts := WithOrdererURL("")
-	err := cc.SaveChannel(req, opts)
+	err = cc.SaveChannel(req, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Test valid orderer ID
+	r2, err := os.Open(channelConfig)
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r2.Close()
+
+	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2}
+
 	opts = WithOrdererURL("orderer.example.com")
 	err = cc.SaveChannel(req, opts)
 	if err != nil {
@@ -1442,6 +1469,11 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	}
 
 	// Test invalid orderer ID
+	r3, err := os.Open(channelConfig)
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r3.Close()
+
+	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r3}
 
 	mockConfig = &fcmocks.MockConfig{}
 	ctx.SetConfig(mockConfig)
@@ -1487,15 +1519,23 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	cc := setupResMgmtClient(ctx, nil, t)
 
 	// empty list of signing identities (defaults to context user)
-	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []msp.Identity{}}
-	err := cc.SaveChannel(req, WithOrdererURL(""))
+	r1, err := os.Open(channelConfig)
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r1.Close()
+
+	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1, SigningIdentities: []msp.Identity{}}
+	err = cc.SaveChannel(req, WithOrdererURL(""))
 	if err != nil {
 		t.Fatalf("Failed to save channel with default signing identity: %s", err)
 	}
 
 	// multiple signing identities
+	r2, err := os.Open(channelConfig)
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r2.Close()
+
 	secondCtx := fcmocks.NewMockContext(fcmocks.NewMockUser("second"))
-	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentities: []msp.Identity{cc.ctx, secondCtx}}
+	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2, SigningIdentities: []msp.Identity{cc.ctx, secondCtx}}
 	err = cc.SaveChannel(req, WithOrdererURL(""))
 	if err != nil {
 		t.Fatalf("Failed to save channel with multiple signing identities: %s", err)

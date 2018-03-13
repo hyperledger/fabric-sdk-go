@@ -22,12 +22,12 @@ import (
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
-	Identity      msp.Identity
-	Targets       []string
-	ConfigFile    string
-	OrgID         string
-	ChannelID     string
-	ChannelConfig string
+	Identity          msp.Identity
+	Targets           []string
+	ConfigFile        string
+	OrgID             string
+	ChannelID         string
+	ChannelConfigFile string
 }
 
 // Initial B values for ExampleCC
@@ -80,8 +80,14 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	}
 	setup.Targets = targets
 
+	r, err := os.Open(setup.ChannelConfigFile)
+	if err != nil {
+		return errors.Wrapf(err, "opening channel config file failed")
+	}
+	defer r.Close()
+
 	// Create channel for tests
-	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentities: []msp.Identity{adminIdentity}}
+	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: r, SigningIdentities: []msp.Identity{adminIdentity}}
 	if err = InitializeChannel(sdk, setup.OrgID, req, targets); err != nil {
 		return errors.WithMessage(err, "failed to initialize channel")
 	}
