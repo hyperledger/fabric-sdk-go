@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -86,6 +87,7 @@ type requestOptions struct {
 type SaveChannelRequest struct {
 	ChannelID         string
 	ChannelConfig     io.Reader      // ChannelConfig data source
+	ChannelConfigPath string         // Convenience option to use the named file as ChannelConfig reader
 	SigningIdentities []msp.Identity // Users that sign channel configuration
 	// TODO: support pre-signed signature blocks
 }
@@ -594,6 +596,15 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
 		return err
+	}
+
+	if req.ChannelConfigPath != "" {
+		configReader, err := os.Open(req.ChannelConfigPath)
+		if err != nil {
+			return errors.Wrapf(err, "opening channel config file failed")
+		}
+		defer configReader.Close()
+		req.ChannelConfig = configReader
 	}
 
 	if req.ChannelID == "" || req.ChannelConfig == nil {

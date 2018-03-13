@@ -1386,6 +1386,11 @@ func TestSaveChannelSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Test valid Save Channel request (success / filename)
+	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigPath: channelConfig}, WithOrdererURL("example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestSaveChannelFailure(t *testing.T) {

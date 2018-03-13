@@ -8,7 +8,6 @@ package orgs
 
 import (
 	"math"
-	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -96,15 +95,8 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 		t.Fatalf("failed to get org2AdminUser, err : %v", err)
 	}
 
-	// Create channel (or update if it already exists)
-	ccReader, err := os.Open(path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer ccReader.Close()
-
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
-		ChannelConfig:     ccReader,
+		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
 		SigningIdentities: []msp.Identity{org1AdminUser, org2AdminUser}}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
