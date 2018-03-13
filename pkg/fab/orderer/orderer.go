@@ -88,7 +88,6 @@ func New(config core.Config, opts ...Option) (*Orderer, error) {
 // WithURL is a functional option for the orderer.New constructor that configures the orderer's URL.
 func WithURL(url string) Option {
 	return func(o *Orderer) error {
-		logger.Errorf("url [%s]", url)
 		o.url = url
 
 		return nil
