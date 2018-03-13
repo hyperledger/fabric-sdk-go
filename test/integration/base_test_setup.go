@@ -12,11 +12,9 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/pkg/errors"
@@ -25,7 +23,7 @@ import (
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
 	Identity      msp.Identity
-	Targets       []fab.ProposalProcessor
+	Targets       []string
 	ConfigFile    string
 	OrgID         string
 	ChannelID     string
@@ -91,19 +89,15 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	return nil
 }
 
-func getOrgTargets(config core.Config, org string) ([]fab.ProposalProcessor, error) {
-	targets := []fab.ProposalProcessor{}
+func getOrgTargets(config core.Config, org string) ([]string, error) {
+	var targets []string
 
 	peerConfig, err := config.PeersConfig(org)
 	if err != nil {
 		return nil, errors.WithMessage(err, "reading peer config failed")
 	}
 	for _, p := range peerConfig {
-		target, err := peer.New(config, peer.FromPeerConfig(&core.NetworkPeer{PeerConfig: p}))
-		if err != nil {
-			return nil, errors.WithMessage(err, "NewPeer failed")
-		}
-		targets = append(targets, target)
+		targets = append(targets, p.URL)
 	}
 	return targets, nil
 }

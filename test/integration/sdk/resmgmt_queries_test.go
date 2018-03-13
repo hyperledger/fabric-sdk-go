@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
@@ -66,9 +65,9 @@ func TestResMgmtClientQueries(t *testing.T) {
 
 }
 
-func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, target fab.ProposalProcessor, client *resmgmt.Client) {
+func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, target string, client *resmgmt.Client) {
 
-	chaincodeQueryResponse, err := client.QueryInstantiatedChaincodes(channelID, resmgmt.WithTargets(target.(fab.Peer)))
+	chaincodeQueryResponse, err := client.QueryInstantiatedChaincodes(channelID, resmgmt.WithTargetURLs(target))
 	if err != nil {
 		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
 	}
@@ -86,9 +85,9 @@ func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, tar
 	}
 }
 
-func testInstalledChaincodes(t *testing.T, ccID string, target fab.ProposalProcessor, client *resmgmt.Client) {
+func testInstalledChaincodes(t *testing.T, ccID string, target string, client *resmgmt.Client) {
 
-	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(target)
+	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(resmgmt.WithTargetURLs(target))
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
@@ -106,9 +105,9 @@ func testInstalledChaincodes(t *testing.T, ccID string, target fab.ProposalProce
 	}
 }
 
-func testQueryChannels(t *testing.T, channelID string, target fab.ProposalProcessor, client *resmgmt.Client) {
+func testQueryChannels(t *testing.T, channelID string, target string, client *resmgmt.Client) {
 
-	channelQueryResponse, err := client.QueryChannels(target)
+	channelQueryResponse, err := client.QueryChannels(resmgmt.WithTargetURLs(target))
 	if err != nil {
 		t.Fatalf("QueryChannels return error: %v", err)
 	}

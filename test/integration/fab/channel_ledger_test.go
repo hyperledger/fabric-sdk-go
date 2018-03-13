@@ -29,7 +29,7 @@ const (
 	orgName           = org1Name
 )
 
-func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.Peer) {
+func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []string) {
 	// Using shared SDK instance to increase test speed.
 	sdk := mainSDK
 
@@ -45,14 +45,14 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.Peer) {
 		t.Fatalf("failed to load signing identity: %s", err)
 	}
 
-	targets, err := integration.CreateProposalProcessors(sdk.Config(), []string{orgName})
+	targets, err := integration.OrgTargetPeers(sdk.Config(), []string{orgName})
 	if err != nil {
 		t.Fatalf("creating peers failed: %v", err)
 	}
 
 	channelConfig := path.Join("../../../", metadata.ChannelConfigPath, channelConfigFile)
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: channelConfig, SigningIdentities: []msp.Identity{adminIdentity}}
-	err = integration.InitializeChannel(sdk, orgName, req, integration.ProposalProcessors(targets))
+	err = integration.InitializeChannel(sdk, orgName, req, targets)
 	if err != nil {
 		t.Fatalf("failed to ensure channel has been initialized: %s", err)
 	}
@@ -81,7 +81,7 @@ func TestLedgerQueries(t *testing.T) {
 
 	// Test Query Info - retrieve values before transaction
 	testTargets := targets[0:1]
-	bciBeforeTx, err := ledgerClient.QueryInfo(ledger.WithTargets(testTargets...))
+	bciBeforeTx, err := ledgerClient.QueryInfo(ledger.WithTargetURLs(testTargets...))
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
@@ -98,7 +98,7 @@ func TestLedgerQueries(t *testing.T) {
 	}
 
 	// Test Query Info - retrieve values after transaction
-	bciAfterTx, err := ledgerClient.QueryInfo(ledger.WithTargets(testTargets...))
+	bciAfterTx, err := ledgerClient.QueryInfo(ledger.WithTargetURLs(testTargets...))
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
@@ -158,10 +158,10 @@ func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) 
 	return txID, nil
 }
 
-func testQueryTransaction(t *testing.T, ledgerClient *ledger.Client, txID fab.TransactionID, targets []fab.Peer) {
+func testQueryTransaction(t *testing.T, ledgerClient *ledger.Client, txID fab.TransactionID, targets []string) {
 
 	// Test Query Transaction -- verify that valid transaction has been processed
-	processedTransaction, err := ledgerClient.QueryTransaction(txID, ledger.WithTargets(targets...))
+	processedTransaction, err := ledgerClient.QueryTransaction(txID, ledger.WithTargetURLs(targets...))
 	if err != nil {
 		t.Fatalf("QueryTransaction return error: %v", err)
 	}
@@ -171,22 +171,22 @@ func testQueryTransaction(t *testing.T, ledgerClient *ledger.Client, txID fab.Tr
 	}
 
 	// Test Query Transaction -- Retrieve non existing transaction
-	_, err = ledgerClient.QueryTransaction("123ABC", ledger.WithTargets(targets...))
+	_, err = ledgerClient.QueryTransaction("123ABC", ledger.WithTargetURLs(targets...))
 	if err == nil {
 		t.Fatalf("QueryTransaction non-existing didn't return an error")
 	}
 }
 
-func testQueryBlock(t *testing.T, ledgerClient *ledger.Client, targets []fab.Peer) {
+func testQueryBlock(t *testing.T, ledgerClient *ledger.Client, targets []string) {
 
 	// Retrieve current blockchain info
-	bci, err := ledgerClient.QueryInfo(ledger.WithTargets(targets...))
+	bci, err := ledgerClient.QueryInfo(ledger.WithTargetURLs(targets...))
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
 	// Test Query Block by Hash - retrieve current block by hash
-	block, err := ledgerClient.QueryBlockByHash(bci.BCI.CurrentBlockHash, ledger.WithTargets(targets...))
+	block, err := ledgerClient.QueryBlockByHash(bci.BCI.CurrentBlockHash, ledger.WithTargetURLs(targets...))
 	if err != nil {
 		t.Fatalf("QueryBlockByHash return error: %v", err)
 	}
@@ -196,13 +196,13 @@ func testQueryBlock(t *testing.T, ledgerClient *ledger.Client, targets []fab.Pee
 	}
 
 	// Test Query Block by Hash - retrieve block by non-existent hash
-	_, err = ledgerClient.QueryBlockByHash([]byte("non-existent"), ledger.WithTargets(targets...))
+	_, err = ledgerClient.QueryBlockByHash([]byte("non-existent"), ledger.WithTargetURLs(targets...))
 	if err == nil {
 		t.Fatalf("QueryBlockByHash non-existent didn't return an error")
 	}
 
 	// Test Query Block - retrieve block by number
-	block, err = ledgerClient.QueryBlock(1, ledger.WithTargets(targets...))
+	block, err = ledgerClient.QueryBlock(1, ledger.WithTargetURLs(targets...))
 	if err != nil {
 		t.Fatalf("QueryBlock return error: %v", err)
 	}
@@ -211,18 +211,18 @@ func testQueryBlock(t *testing.T, ledgerClient *ledger.Client, targets []fab.Pee
 	}
 
 	// Test Query Block - retrieve block by non-existent number
-	_, err = ledgerClient.QueryBlock(2147483647, ledger.WithTargets(targets...))
+	_, err = ledgerClient.QueryBlock(2147483647, ledger.WithTargetURLs(targets...))
 	if err == nil {
 		t.Fatalf("QueryBlock non-existent didn't return an error")
 	}
 }
 
-func testInstantiatedChaincodes(t *testing.T, ccID string, channelID string, resmgmtClient *resmgmt.Client, targets []fab.Peer) {
+func testInstantiatedChaincodes(t *testing.T, ccID string, channelID string, resmgmtClient *resmgmt.Client, targets []string) {
 
 	found := false
 
 	// Test Query Instantiated chaincodes
-	chaincodeQueryResponse, err := resmgmtClient.QueryInstantiatedChaincodes(channelID, resmgmt.WithTargets(targets...))
+	chaincodeQueryResponse, err := resmgmtClient.QueryInstantiatedChaincodes(channelID, resmgmt.WithTargetURLs(targets...))
 	if err != nil {
 		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
 	}
@@ -259,10 +259,10 @@ func moveFundsAndGetTxID(t *testing.T, client *channel.Client, chaincodeID strin
 	return resp.TransactionID, nil
 }
 
-func testQueryConfigBlock(t *testing.T, ledgerClient *ledger.Client, targets []fab.Peer) {
+func testQueryConfigBlock(t *testing.T, ledgerClient *ledger.Client, targets []string) {
 
 	// Retrieve current channel configuration
-	cfgEnvelope, err := ledgerClient.QueryConfig(ledger.WithTargets(targets...))
+	cfgEnvelope, err := ledgerClient.QueryConfig(ledger.WithTargetURLs(targets...))
 	if err != nil {
 		t.Fatalf("QueryConfig return error: %v", err)
 	}
