@@ -147,7 +147,10 @@ Fabric should now be running. In a different shell, run integration tests
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go
 
 # Use script to setup parameters for integration tests and execute them
-make integration-tests-local
+# Previously we use to have hostnames like Fabric CA server, orderer and peer pointed to localhost
+# Now since we removed this now, We will be using a different config file config_test_local.yaml
+# which has the Fabric CA server, orderer and peers pointed to localhost
+make -args configFile=config_test_local.yaml integration-tests-local
 
 # Or more generally, run integration tests at a different code level (prev, stable, prerelease, devstable)
 # and fixture target version
@@ -156,12 +159,15 @@ make integration-tests-local
 
 
 ```bash
+# Previously we use to have hostnames like Fabric CA server, orderer and peer pointed to localhost
+# Now since we removed this now, We will be using a different config file config_test_local.yaml
+# which has the Fabric CA server, orderer and peers pointed to localhost
 # It is also possible to run integration tests using go test directly. For example:
 #cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/integration/
-#go test
+#go -args configFile=config_test_local.yaml test
 
 #cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/integration/orgs
-#go test
+#go -args configFile=config_test_local.yaml test
 
 # You should review test/scripts/integration.sh for options and details.
 # Note: you should generally prefer the scripted version to setup parameters for you.
