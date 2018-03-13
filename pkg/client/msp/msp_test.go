@@ -83,7 +83,7 @@ func TestMSP(t *testing.T) {
 		t.Fatalf("Enrolled user name doesn't match")
 	}
 
-	if enrolledUser.MspID() != myMSPID(t, sdk.Config()) {
+	if enrolledUser.MspID() != "Org1MSP" {
 		t.Fatalf("Enrolled user mspID doesn't match")
 	}
 
@@ -101,6 +101,33 @@ func TestMSP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Reenroll return error %v", err)
 	}
+
+	// Try with a non-default org
+	msp, err = New(ctxProvider, WithOrg("Org2"))
+	if err != nil {
+		t.Fatalf("failed to create CA client: %v", err)
+	}
+
+	org2lUserName := randomUserName()
+
+	err = msp.Enroll(org2lUserName, "enrollmentSecret")
+	if err != nil {
+		t.Fatalf("Enroll return error %v", err)
+	}
+
+	org2EnrolledUser, err := msp.GetUser(org2lUserName)
+	if err != nil {
+		t.Fatalf("Expected to find user")
+	}
+
+	if org2EnrolledUser.Name() != org2lUserName {
+		t.Fatalf("Enrolled user name doesn't match")
+	}
+
+	if org2EnrolledUser.MspID() != "Org2MSP" {
+		t.Fatalf("Enrolled user mspID doesn't match")
+	}
+
 }
 
 type textFixture struct {

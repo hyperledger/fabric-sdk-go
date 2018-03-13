@@ -21,6 +21,10 @@ var mainSDK *fabsdk.FabricSDK
 var mainTestSetup *integration.BaseSetupImpl
 var mainChaincodeID string
 
+const (
+	org1Name = "Org1"
+)
+
 func TestMain(m *testing.M) {
 	setup()
 	r := m.Run()
