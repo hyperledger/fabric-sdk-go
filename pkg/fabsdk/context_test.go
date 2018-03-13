@@ -74,16 +74,18 @@ func TestFabricSDKContext(t *testing.T) {
 		t.Fatal("context client supposed to be not empty")
 	}
 
+	// Anonymous
 	ctx, err := ctxProvider()
 
-	if err == nil || err.Error() != "invalid options to create identity" {
-		t.Fatalf("getting context client supposed to fail with idenity error, err: %v", err)
+	if err != nil {
+		t.Fatalf("expected to create anonymous context, err: %v", err)
 	}
 
 	if ctx == nil {
-		t.Fatal("context client will have providers even if idenity fails")
+		t.Fatal("context client will have providers even with anonymous context")
 	}
 
+	// Invalid user, invalid org
 	ctxProvider = sdk.Context(WithUser("INVALID_USER"), WithOrg("INVALID_ORG_NAME"))
 
 	ctx, err = ctxProvider()
@@ -96,7 +98,29 @@ func TestFabricSDKContext(t *testing.T) {
 		t.Fatal("context client will have providers even if idenity fails")
 	}
 
+	// Valid user, invalid org
+	ctxProvider = sdk.Context(WithUser(identityValidOptUser), WithOrg("INVALID_ORG_NAME"))
+
+	ctx, err = ctxProvider()
+
+	if err == nil || err.Error() != "invalid options to create identity, invalid org name" {
+		t.Fatalf("getting context client supposed to fail with idenity error, err: %v", err)
+	}
+
+	if ctx == nil {
+		t.Fatal("context client will have providers even if idenity fails")
+	}
+
+	// Valid user and org
 	ctxProvider = sdk.Context(WithUser(identityValidOptUser), WithOrg(identityValidOptOrg))
+
+	ctx, err = ctxProvider()
+
+	if err != nil {
+		t.Fatalf("getting context supposed to succeed")
+	}
+
+	ctxProvider = sdk.Context(WithUser(identityValidOptUser))
 
 	ctx, err = ctxProvider()
 

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package msp
+package api
 
 import (
 	"errors"
@@ -17,7 +17,6 @@ var (
 
 // CAClient provides management of identities in a Fabric network
 type CAClient interface {
-	CAName() string
 	Enroll(enrollmentID string, enrollmentSecret string) error
 	Reenroll(enrollmentID string) error
 	Register(request *RegistrationRequest) (string, error)

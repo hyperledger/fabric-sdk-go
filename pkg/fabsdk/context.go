@@ -45,6 +45,8 @@ func WithOrg(org string) ContextOption {
 	}
 }
 
+var ErrAnonymousIdentity = errors.New("missing credentials")
+
 func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.Identity, error) {
 	clientConfig, err := sdk.Config().Client()
 	if err != nil {
@@ -60,6 +62,10 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.Identity, error
 		if err != nil {
 			return nil, errors.WithMessage(err, "error in option passed to create identity")
 		}
+	}
+
+	if opts.identity == nil && opts.userName == "" {
+		return nil, ErrAnonymousIdentity
 	}
 
 	if opts.identity != nil {

@@ -12,6 +12,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
+// MSP provides context for MSP services
+type MSP interface {
+	Providers
+}
+
 // Client supplies the configuration and signing identity to client objects.
 type Client interface {
 	Providers
@@ -25,7 +30,7 @@ type Providers interface {
 	fab.Providers
 }
 
-//Channel supplies the configuration for channel context client
+// Channel supplies the configuration for channel context client
 type Channel interface {
 	Client
 	DiscoveryService() fab.DiscoveryService
@@ -34,8 +39,11 @@ type Channel interface {
 	ChannelID() string
 }
 
-//ClientProvider returns client context
+// MSPProvider returns MSP context
+type MSPProvider func() (MSP, error)
+
+// ClientProvider returns client context
 type ClientProvider func() (Client, error)
 
-//ChannelProvider returns channel client context
+// ChannelProvider returns channel client context
 type ChannelProvider func() (Channel, error)

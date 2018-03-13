@@ -8,7 +8,7 @@ package mocks
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	"github.com/pkg/errors"
 )
 
@@ -17,7 +17,7 @@ type MockCAClient struct {
 }
 
 // NewMockCAClient Constructor for a CA client.
-func NewMockCAClient(orgName string, cryptoProvider core.CryptoSuite, config core.Config) (msp.CAClient, error) {
+func NewMockCAClient(orgName string, cryptoProvider core.CryptoSuite, config core.Config) (api.CAClient, error) {
 	mcm := MockCAClient{}
 	return &mcm, nil
 }
@@ -33,16 +33,11 @@ func (mgr *MockCAClient) Reenroll(enrollmentID string) error {
 }
 
 // Register registers a user with a Fabric network
-func (mgr *MockCAClient) Register(request *msp.RegistrationRequest) (string, error) {
+func (mgr *MockCAClient) Register(request *api.RegistrationRequest) (string, error) {
 	return "", errors.New("not implemented")
 }
 
 // Revoke revokes a user
-func (mgr *MockCAClient) Revoke(request *msp.RevocationRequest) (*msp.RevocationResponse, error) {
+func (mgr *MockCAClient) Revoke(request *api.RevocationRequest) (*api.RevocationResponse, error) {
 	return nil, errors.New("not implemented")
-}
-
-// CAName return the name of a CA associated with this identity manager
-func (mgr *MockCAClient) CAName() string {
-	return ""
 }

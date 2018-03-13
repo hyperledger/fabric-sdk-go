@@ -16,7 +16,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
@@ -32,7 +31,7 @@ type FabricSDK struct {
 
 type options struct {
 	Core    sdkApi.CoreProviderFactory
-	Msp     sdkApi.MspProviderFactory
+	MSP     sdkApi.MSPProviderFactory
 	Service sdkApi.ServiceProviderFactory
 	Logger  api.LoggerProvider
 }
@@ -86,7 +85,7 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 	sdk := FabricSDK{
 		opts: options{
 			Core:    core,
-			Msp:     msp,
+			MSP:     msp,
 			Service: svc,
 			Logger:  lg,
 		},
@@ -168,24 +167,16 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		return errors.WithMessage(err, "failed to initialize signing manager")
 	}
 
-	// Initialize Identity Manager
-	identityManager := make(map[string]msp.IdentityManager)
-	netConfig, err := config.NetworkConfig()
+	// Initialize MSP Provider
+	mspProvider, err := sdk.opts.MSP.CreateProvider(config, cryptoSuite, stateStore)
 	if err != nil {
-		return errors.Wrapf(err, "failed to retrieve network config")
-	}
-	for orgName := range netConfig.Organizations {
-		mgr, err := sdk.opts.Msp.CreateIdentityManager(orgName, stateStore, cryptoSuite, config)
-		if err != nil {
-			return errors.Wrapf(err, "failed to initialize identity manager for organization: %s", orgName)
-		}
-		identityManager[orgName] = mgr
+		return errors.WithMessage(err, "failed to initialize identity manager provider")
 	}
 
 	// Initialize Fabric Provider
 	infraProvider, err := sdk.opts.Core.CreateInfraProvider(config)
 	if err != nil {
-		return errors.WithMessage(err, "failed to initialize core fabric provider")
+		return errors.WithMessage(err, "failed to initialize infra provider")
 	}
 
 	// Initialize discovery provider
@@ -212,7 +203,7 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		context.WithStateStore(stateStore),
 		context.WithDiscoveryProvider(discoveryProvider),
 		context.WithSelectionProvider(selectionProvider),
-		context.WithIdentityManager(identityManager),
+		context.WithMSPProvider(mspProvider),
 		context.WithInfraProvider(infraProvider),
 		context.WithChannelProvider(channelProvider))
 
@@ -247,6 +238,10 @@ func (sdk *FabricSDK) Context(options ...ContextOption) contextApi.ClientProvide
 
 	clientProvider := func() (contextApi.Client, error) {
 		identity, err := sdk.newIdentity(options...)
+		if err == ErrAnonymousIdentity {
+			identity = nil
+			err = nil
+		}
 		return &context.Client{Providers: sdk.provider, Identity: identity}, err
 	}
 

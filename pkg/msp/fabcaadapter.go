@@ -12,19 +12,18 @@ import (
 	caapi "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 )
 
 // fabricCAAdapter translates between SDK lingo and native Fabric CA API
 type fabricCAAdapter struct {
-	caName      string
 	config      core.Config
 	cryptoSuite core.CryptoSuite
 	caClient    *calib.Client
 }
 
-func newFabricCAAdapter(orgName string, caName string, cryptoSuite core.CryptoSuite, config core.Config) (*fabricCAAdapter, error) {
+func newFabricCAAdapter(orgName string, cryptoSuite core.CryptoSuite, config core.Config) (*fabricCAAdapter, error) {
 
 	caClient, err := createFabricCAClient(orgName, cryptoSuite, config)
 	if err != nil {
@@ -32,17 +31,11 @@ func newFabricCAAdapter(orgName string, caName string, cryptoSuite core.CryptoSu
 	}
 
 	a := &fabricCAAdapter{
-		caName:      caName,
 		config:      config,
 		cryptoSuite: cryptoSuite,
 		caClient:    caClient,
 	}
 	return a, nil
-}
-
-// CAName returns the CA name.
-func (c *fabricCAAdapter) CAName() string {
-	return c.caName
 }
 
 // Enroll handles enrollment.
@@ -89,7 +82,7 @@ func (c *fabricCAAdapter) Reenroll(key core.Key, cert []byte) ([]byte, error) {
 // cert: registrar enrollment certificate
 // request: Registration Request
 // Returns Enrolment Secret
-func (c *fabricCAAdapter) Register(key core.Key, cert []byte, request *msp.RegistrationRequest) (string, error) {
+func (c *fabricCAAdapter) Register(key core.Key, cert []byte, request *api.RegistrationRequest) (string, error) {
 	// Contruct request for Fabric CA client
 	var attributes []caapi.Attribute
 	for i := range request.Attributes {
@@ -122,7 +115,7 @@ func (c *fabricCAAdapter) Register(key core.Key, cert []byte, request *msp.Regis
 // key: registrar private key
 // cert: registrar enrollment certificate
 // request: Revocation Request
-func (c *fabricCAAdapter) Revoke(key core.Key, cert []byte, request *msp.RevocationRequest) (*msp.RevocationResponse, error) {
+func (c *fabricCAAdapter) Revoke(key core.Key, cert []byte, request *api.RevocationRequest) (*api.RevocationResponse, error) {
 	// Create revocation request
 	var req = caapi.RevocationRequest{
 		CAName: request.CAName,
@@ -141,17 +134,17 @@ func (c *fabricCAAdapter) Revoke(key core.Key, cert []byte, request *msp.Revocat
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to revoke")
 	}
-	var revokedCerts []msp.RevokedCert
+	var revokedCerts []api.RevokedCert
 	for i := range resp.RevokedCerts {
 		revokedCerts = append(
 			revokedCerts,
-			msp.RevokedCert{
+			api.RevokedCert{
 				Serial: resp.RevokedCerts[i].Serial,
 				AKI:    resp.RevokedCerts[i].AKI,
 			})
 	}
 
-	return &msp.RevocationResponse{
+	return &api.RevocationResponse{
 		RevokedCerts: revokedCerts,
 		CRL:          resp.CRL,
 	}, nil
