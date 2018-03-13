@@ -21,7 +21,7 @@ func ExampleValue_Get() {
 	go func() {
 		value, err := fv.Get()
 		if err != nil {
-			fmt.Printf("Error returns from Get: %s\n", err)
+			fmt.Printf("Error returned from Get: %s\n", err)
 		}
 		fmt.Println(value)
 		done <- true

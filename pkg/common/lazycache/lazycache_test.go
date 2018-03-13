@@ -17,6 +17,7 @@ func ExampleCache_MustGet() {
 	cache := New("Example_Cache", func(key Key) (interface{}, error) {
 		return fmt.Sprintf("Value_for_key_%s", key), nil
 	})
+	defer cache.Close()
 
 	key := NewStringKey("Key1")
 
@@ -31,6 +32,7 @@ func ExampleCache_Get() {
 		}
 		return fmt.Sprintf("Value_for_key_%s", key), nil
 	})
+	defer cache.Close()
 
 	value, err := cache.Get(NewStringKey("Key1"))
 	if err != nil {
@@ -43,7 +45,6 @@ func ExampleCache_Get() {
 		fmt.Printf("Error returned: %s\n", err)
 	}
 	fmt.Println(value)
-	cache.Close()
 }
 
 func TestGet(t *testing.T) {
