@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
+	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
@@ -158,7 +158,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Load specific targets for move funds test
-	loadOrgPeers(t, sdk)
+	loadOrgPeers(t, org1AdminClientContext)
 
 	// Verify that example CC is instantiated on Org1 peer
 	chaincodeQueryResponse, err := org1ResMgmt.QueryInstantiatedChaincodes("orgchannel")
@@ -385,24 +385,29 @@ func verifyValue(t *testing.T, chClient *channel.Client, expected int) {
 
 }
 
-func loadOrgPeers(t *testing.T, sdk *fabsdk.FabricSDK) {
+func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 
-	org1Peers, err := sdk.Config().PeersConfig(org1)
+	ctx, err := ctxProvider()
+	if err != nil {
+		t.Fatalf("context creation failed: %s", err)
+	}
+
+	org1Peers, err := ctx.Config().PeersConfig(org1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	org2Peers, err := sdk.Config().PeersConfig(org2)
+	org2Peers, err := ctx.Config().PeersConfig(org2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	orgTestPeer0, err = peer.New(sdk.Config(), peer.FromPeerConfig(&core.NetworkPeer{PeerConfig: org1Peers[0]}))
+	orgTestPeer0, err = ctx.InfraProvider().CreatePeerFromConfig(&core.NetworkPeer{PeerConfig: org1Peers[0]})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	orgTestPeer1, err = peer.New(sdk.Config(), peer.FromPeerConfig(&core.NetworkPeer{PeerConfig: org2Peers[0]}))
+	orgTestPeer1, err = ctx.InfraProvider().CreatePeerFromConfig(&core.NetworkPeer{PeerConfig: org2Peers[0]})
 	if err != nil {
 		t.Fatal(err)
 	}

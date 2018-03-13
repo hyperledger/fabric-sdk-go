@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestChannelQueries(t *testing.T) {
@@ -28,9 +29,12 @@ func TestChannelQueries(t *testing.T) {
 		t.Fatalf("Failed to get resource: %s", err)
 	}
 
-	testQueryChannels(t, client, testSetup.Targets[0])
+	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets[:1])
+	assert.Nil(t, err, "creating peers failed")
 
-	testInstalledChaincodes(t, chaincodeID, client, testSetup.Targets[0])
+	testQueryChannels(t, client, peers[0])
+
+	testInstalledChaincodes(t, chaincodeID, client, peers[0])
 
 }
 

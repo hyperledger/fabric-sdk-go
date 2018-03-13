@@ -12,7 +12,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
@@ -65,7 +64,7 @@ func TestLedgerClientQueries(t *testing.T) {
 
 	// Same query with target
 	target := testSetup.Targets[0]
-	ledgerInfoFromTarget, err := client.QueryInfo(ledger.WithTargets(target.(fab.Peer)))
+	ledgerInfoFromTarget, err := client.QueryInfo(ledger.WithTargetURLs(target))
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}

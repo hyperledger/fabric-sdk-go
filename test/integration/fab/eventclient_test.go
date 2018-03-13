@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
@@ -82,12 +83,15 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 		t.Fatalf("Failed to get channel transactor: %s", err)
 	}
 
+	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
+	assert.Nil(t, err, "creating peers failed")
+
 	tpResponses, prop, err := createAndSendTransactionProposal(
 		transactor,
 		chainCodeID,
 		"invoke",
 		[][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("10")},
-		testSetup.Targets,
+		peers,
 		nil,
 	)
 	if err != nil {

@@ -381,8 +381,17 @@ func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...R
 
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
 // Returns the details of all chaincodes installed on a peer.
-func (rc *Client) QueryInstalledChaincodes(proposalProcessor fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
-	return resource.QueryInstalledChaincodes(rc.ctx, proposalProcessor)
+func (rc *Client) QueryInstalledChaincodes(options ...RequestOption) (*pb.ChaincodeQueryResponse, error) {
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(opts.Targets) != 1 {
+		return nil, errors.New("only one target is supported")
+	}
+
+	return resource.QueryInstalledChaincodes(rc.ctx, opts.Targets[0])
 }
 
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on a peer for specific channel.
@@ -429,8 +438,17 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 
 // QueryChannels queries the names of all the channels that a peer has joined.
 // Returns the details of all channels that peer has joined.
-func (rc *Client) QueryChannels(proposalProcessor fab.ProposalProcessor) (*pb.ChannelQueryResponse, error) {
-	return resource.QueryChannels(rc.ctx, proposalProcessor)
+func (rc *Client) QueryChannels(options ...RequestOption) (*pb.ChannelQueryResponse, error) {
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(opts.Targets) != 1 {
+		return nil, errors.New("only one target is supported")
+	}
+
+	return resource.QueryChannels(rc.ctx, opts.Targets[0])
 }
 
 // sendCCProposal sends proposal for type  Instantiate, Upgrade

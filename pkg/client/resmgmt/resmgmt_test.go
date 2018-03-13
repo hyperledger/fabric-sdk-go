@@ -403,7 +403,7 @@ func TestQueryInstalledChaincodes(t *testing.T) {
 	rc := setupDefaultResMgmtClient(t)
 
 	// Test error
-	_, err := rc.QueryInstalledChaincodes(nil)
+	_, err := rc.QueryInstalledChaincodes()
 	if err == nil {
 		t.Fatalf("QueryInstalledChaincodes: peer cannot be nil")
 	}
@@ -411,7 +411,7 @@ func TestQueryInstalledChaincodes(t *testing.T) {
 	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: http.StatusOK}
 
 	// Test success (valid peer)
-	_, err = rc.QueryInstalledChaincodes(peer)
+	_, err = rc.QueryInstalledChaincodes(WithTargets(peer))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -434,7 +434,7 @@ func TestQueryChannels(t *testing.T) {
 	}
 
 	// Test error
-	_, err = rc.QueryChannels(nil)
+	_, err = rc.QueryChannels()
 	if err == nil {
 		t.Fatalf("QueryChannels: peer cannot be nil")
 	}
@@ -443,7 +443,7 @@ func TestQueryChannels(t *testing.T) {
 
 	// Test success (valid peer)
 	found := false
-	response, err = rc.QueryChannels(peer)
+	response, err = rc.QueryChannels(WithTargets(peer))
 	if err != nil {
 		t.Fatalf("failed to query channel for peer: %s", err)
 	}

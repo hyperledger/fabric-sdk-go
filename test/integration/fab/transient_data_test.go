@@ -9,11 +9,14 @@ package fab
 import (
 	"testing"
 
+	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestTransient ...
@@ -56,7 +59,10 @@ func TestTransient(t *testing.T) {
 		t.Fatalf("Failed to get channel transactor: %s", err)
 	}
 
-	transactionProposalResponse, _, err := createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), testSetup.Targets[:1], transientDataMap)
+	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets[:1])
+	assert.Nil(t, err, "creating peers failed")
+
+	transactionProposalResponse, _, err := createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), peers, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
@@ -72,7 +78,7 @@ func TestTransient(t *testing.T) {
 	}
 	//transient data null
 	transientDataMap["result"] = []byte{}
-	transactionProposalResponse, _, err = createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), testSetup.Targets[:1], transientDataMap)
+	transactionProposalResponse, _, err = createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), peers, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal with empty transient data return an error: %v", err)
 	}
@@ -120,4 +126,39 @@ func getTransactor(sdk *fabsdk.FabricSDK, channelID string, user string, orgName
 	chService := channelContext.ChannelService()
 
 	return chService.Transactor()
+}
+
+func getProposalProcessors(sdk *fabsdk.FabricSDK, user string, orgName string, targets []string) ([]fab.ProposalProcessor, error) {
+	ctxProvider := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrg(orgName))
+
+	ctx, err := ctxProvider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "context creation failed")
+	}
+
+	var peers []fab.ProposalProcessor
+	for _, url := range targets {
+		p, err := getPeer(ctx, url)
+		if err != nil {
+			return nil, err
+		}
+		peers = append(peers, p)
+	}
+
+	return peers, nil
+}
+
+func getPeer(ctx contextAPI.Client, url string) (fab.Peer, error) {
+
+	peerCfg, err := config.NetworkPeerConfigFromURL(ctx.Config(), url)
+	if err != nil {
+		return nil, err
+	}
+
+	peer, err := ctx.InfraProvider().CreatePeerFromConfig(peerCfg)
+	if err != nil {
+		return nil, errors.WithMessage(err, "creating peer from config failed")
+	}
+
+	return peer, nil
 }

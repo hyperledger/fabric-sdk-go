@@ -40,7 +40,7 @@ func WithTargetURLs(urls ...string) RequestOption {
 
 			peer, err := ctx.InfraProvider().CreatePeerFromConfig(peerCfg)
 			if err != nil {
-				return errors.WithMessage(err, "creating orderer from config failed")
+				return errors.WithMessage(err, "creating peer from config failed")
 			}
 
 			targets = append(targets, peer)

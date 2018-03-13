@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -71,11 +72,14 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 		t.Fatalf("Failed to get resource: %s", err)
 	}
 
-	if err := installCC(client, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets); err != nil {
+	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
+	assert.Nil(t, err, "creating peers failed")
+
+	if err := installCC(client, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, peers); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
-	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(client, testSetup.Targets[0])
+	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(client, peers[0])
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
@@ -91,7 +95,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 		t.Fatalf("Failed to retrieve installed chaincode.")
 	}
 	//Install same chaincode again, should fail
-	err = installCC(client, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
+	err = installCC(client, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, peers)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
@@ -116,13 +120,16 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricS
 		t.Fatalf("Failed to get resource: %s", err)
 	}
 
-	err = installCC(client, "install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg, testSetup.Targets)
+	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
+	assert.Nil(t, err, "creating peers failed")
+
+	err = installCC(client, "install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg, peers)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
 	//Install same chaincode again, should fail
-	err = installCC(client, "install", chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
+	err = installCC(client, "install", chainCodePath, chainCodeVersion, ccPkg, peers)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}

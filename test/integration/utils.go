@@ -14,8 +14,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 )
@@ -41,7 +39,7 @@ func randomString(strlen int) string {
 }
 
 // InitializeChannel ...
-func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChannelRequest, targets []fab.ProposalProcessor) error {
+func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChannelRequest, targets []string) error {
 
 	joinedTargets, err := FilterTargetsJoinedChannel(sdk, orgID, req.ChannelID, targets)
 	if err != nil {
@@ -63,8 +61,8 @@ func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChan
 }
 
 // FilterTargetsJoinedChannel filters targets to those that have joined the named channel.
-func FilterTargetsJoinedChannel(sdk *fabsdk.FabricSDK, orgID string, channelID string, targets []fab.ProposalProcessor) ([]fab.ProposalProcessor, error) {
-	joinedTargets := []fab.ProposalProcessor{}
+func FilterTargetsJoinedChannel(sdk *fabsdk.FabricSDK, orgID string, channelID string, targets []string) ([]string, error) {
+	var joinedTargets []string
 
 	//prepare context
 	clientContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrg(orgID))
@@ -125,23 +123,16 @@ func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string) (bool, error) {
 	return true, nil
 }
 
-// CreateProposalProcessors initializes target peers based on config
-func CreateProposalProcessors(config core.Config, orgs []string) ([]fab.Peer, error) {
-	peers := []fab.Peer{}
+// OrgTargetPeers determines peer endpoints for orgs
+func OrgTargetPeers(config core.Config, orgs []string) ([]string, error) {
+	var peers []string
 	for _, org := range orgs {
 		peerConfig, err := config.PeersConfig(org)
 		if err != nil {
 			return nil, errors.WithMessage(err, "reading peer config failed")
 		}
 		for _, p := range peerConfig {
-			endorser, err := peer.New(config, peer.FromPeerConfig(&core.NetworkPeer{PeerConfig: p}))
-			if err != nil {
-				return nil, errors.WithMessage(err, "NewPeer failed")
-			}
-			peers = append(peers, endorser)
-			if err != nil {
-				return nil, errors.WithMessage(err, "adding peer failed")
-			}
+			peers = append(peers, p.URL)
 		}
 	}
 	return peers, nil
@@ -149,9 +140,9 @@ func CreateProposalProcessors(config core.Config, orgs []string) ([]fab.Peer, er
 
 // HasPeerJoinedChannel checks whether the peer has already joined the channel.
 // It returns true if it has, false otherwise, or an error
-func HasPeerJoinedChannel(client *resmgmt.Client, peer fab.ProposalProcessor, channel string) (bool, error) {
+func HasPeerJoinedChannel(client *resmgmt.Client, target string, channel string) (bool, error) {
 	foundChannel := false
-	response, err := client.QueryChannels(peer)
+	response, err := client.QueryChannels(resmgmt.WithTargetURLs(target))
 	if err != nil {
 		return false, errors.WithMessage(err, "failed to query channel for peer")
 	}
@@ -162,15 +153,6 @@ func HasPeerJoinedChannel(client *resmgmt.Client, peer fab.ProposalProcessor, ch
 	}
 
 	return foundChannel, nil
-}
-
-//ProposalProcessors utility to convert []fab.Peer to []fab.ProposalProcessor
-func ProposalProcessors(targets []fab.Peer) []fab.ProposalProcessor {
-	proposalProcessors := []fab.ProposalProcessor{}
-	for _, peer := range targets {
-		proposalProcessors = append(proposalProcessors, peer)
-	}
-	return proposalProcessors
 }
 
 func CleanupTestPath(t *testing.T, storePath string) {
