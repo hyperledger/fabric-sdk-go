@@ -7,13 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
-	"context"
+	reqContext "context"
 	"sync/atomic"
 
 	"github.com/pkg/errors"
 
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -34,6 +35,7 @@ type GRPCConnection struct {
 	chConfig    fab.ChannelCfg
 	conn        *grpc.ClientConn
 	stream      grpc.ClientStream
+	commManager fab.CommManager
 	tlsCertHash []byte
 	done        int32
 }
@@ -52,20 +54,22 @@ func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvide
 		return nil, err
 	}
 
-	grpcctx := context.Background()
-	grpcctx, cancel := context.WithTimeout(grpcctx, params.connectTimeout)
+	reqCtx, cancel := reqContext.WithTimeout(context.NewRequest(ctx), params.connectTimeout)
 	defer cancel()
 
-	grpcconn, err := grpc.DialContext(grpcctx, endpoint.ToAddress(url), dialOpts...)
+	commManager, ok := context.RequestCommManager(reqCtx)
+	if !ok {
+		return nil, errors.New("unable to get comm manager")
+	}
+
+	grpcconn, err := commManager.DialContext(reqCtx, endpoint.ToAddress(url), dialOpts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not connect to %s", url)
 	}
 
 	stream, err := streamProvider(grpcconn)
 	if err != nil {
-		if closeErr := grpcconn.Close(); closeErr != nil {
-			logger.Warnf("error closing GRPC connection: %s", closeErr)
-		}
+		commManager.ReleaseConn(grpcconn)
 		return nil, errors.Wrapf(err, "could not create stream to %s", url)
 	}
 
@@ -76,6 +80,7 @@ func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvide
 	return &GRPCConnection{
 		context:     ctx,
 		chConfig:    chConfig,
+		commManager: commManager,
 		conn:        grpcconn,
 		stream:      stream,
 		tlsCertHash: comm.TLSCertHash(ctx.Config()),
@@ -94,15 +99,15 @@ func (c *GRPCConnection) Close() {
 		return
 	}
 
-	logger.Debugf("Closing stream....")
+	logger.Debug("Closing stream....")
 	if err := c.stream.CloseSend(); err != nil {
 		logger.Warnf("error closing GRPC stream: %s", err)
 	}
 
-	logger.Debugf("Closing connection....")
-	if err := c.conn.Close(); err != nil {
-		logger.Warnf("error closing GRPC connection: %s", err)
-	}
+	logger.Debug("Releasing connection....")
+	c.commManager.ReleaseConn(c.conn)
+
+	logger.Debug("... connection successfully closed.")
 }
 
 // Closed returns true if the connection has been closed

@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -198,6 +198,8 @@ func newPeerConfig(eventURL string) *core.PeerConfig {
 	}
 }
 
-func newMockContext() fabcontext.Client {
-	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
+func newMockContext() *fabmocks.MockContext {
+	context := fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
+	context.SetCustomInfraProvider(comm.NewMockInfraProvider())
+	return context
 }

@@ -220,5 +220,7 @@ func TestMain(m *testing.M) {
 }
 
 func newMockContext() *fabmocks.MockContext {
-	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
+	context := fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
+	context.SetCustomInfraProvider(comm.NewMockInfraProvider())
+	return context
 }

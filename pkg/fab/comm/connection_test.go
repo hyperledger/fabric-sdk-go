@@ -13,7 +13,6 @@ import (
 
 	"google.golang.org/grpc/keepalive"
 
-	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 
@@ -43,6 +42,7 @@ func TestConnection(t *testing.T) {
 	_, err = NewConnection(context, chConfig, testStream, "invalidhost:0000",
 		WithFailFast(true),
 		WithCertificate(nil),
+		WithInsecure(),
 		WithHostOverride(""),
 		WithKeepAliveParams(keepalive.ClientParameters{}),
 		WithConnectTimeout(3*time.Second),
@@ -80,10 +80,12 @@ func TestConnection(t *testing.T) {
 	conn.Close()
 }
 
-// Use the Deliver server for testing
+// Use the Event Hub server for testing
 var testServer *eventmocks.MockEventhubServer
 var endorserAddr []string
 
-func newMockContext() fabcontext.Client {
-	return fabmocks.NewMockContext(fabmocks.NewMockUser("test"))
+func newMockContext() *fabmocks.MockContext {
+	context := fabmocks.NewMockContext(fabmocks.NewMockUser("test"))
+	context.SetCustomInfraProvider(NewMockInfraProvider())
+	return context
 }

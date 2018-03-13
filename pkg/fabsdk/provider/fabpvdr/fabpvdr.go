@@ -83,10 +83,13 @@ func (f *InfraProvider) Initialize(providers context.Providers) error {
 
 // Close frees resources and caches.
 func (f *InfraProvider) Close() {
-	logger.Debug("Closing comm manager...")
-	f.commManager.Close()
 	logger.Debug("Closing event service cache...")
 	f.eventServiceCache.Close()
+
+	// Comm Manager must be closed last since other resources
+	// may still be using it.
+	logger.Debug("Closing comm manager...")
+	f.commManager.Close()
 }
 
 // CommManager provides comm support such as GRPC onnections
