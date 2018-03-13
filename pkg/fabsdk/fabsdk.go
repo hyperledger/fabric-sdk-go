@@ -107,6 +107,14 @@ func WithCorePkg(core sdkApi.CoreProviderFactory) Option {
 	}
 }
 
+// WithMSPPkg injects the MSP implementation into the SDK.
+func WithMSPPkg(msp sdkApi.MSPProviderFactory) Option {
+	return func(opts *options) error {
+		opts.MSP = msp
+		return nil
+	}
+}
+
 // WithServicePkg injects the service implementation into the SDK.
 func WithServicePkg(service sdkApi.ServiceProviderFactory) Option {
 	return func(opts *options) error {
@@ -156,7 +164,7 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 	cryptosuite.SetDefault(cryptoSuite)
 
 	// Initialize state store
-	stateStore, err := sdk.opts.Core.CreateStateStoreProvider(config)
+	userStore, err := sdk.opts.MSP.CreateUserStore(config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize state store")
 	}
@@ -168,7 +176,7 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 	}
 
 	// Initialize MSP Provider
-	mspProvider, err := sdk.opts.MSP.CreateProvider(config, cryptoSuite, stateStore)
+	mspProvider, err := sdk.opts.MSP.CreateProvider(config, cryptoSuite, userStore)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize identity manager provider")
 	}
@@ -200,7 +208,7 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 	sdk.provider = context.NewProvider(context.WithConfig(config),
 		context.WithCryptoSuite(cryptoSuite),
 		context.WithSigningManager(signingManager),
-		context.WithStateStore(stateStore),
+		context.WithUserStore(userStore),
 		context.WithDiscoveryProvider(discoveryProvider),
 		context.WithSelectionProvider(selectionProvider),
 		context.WithMSPProvider(mspProvider),

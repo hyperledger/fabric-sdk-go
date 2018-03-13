@@ -187,12 +187,12 @@ func (c *MockConfig) RandomOrdererConfig() (*config.OrdererConfig, error) {
 	return nil, nil
 }
 
-//SetCustomOrdererCfg sets custom orderer config for unit-tests
+//SetCustomNetworkPeerCfg sets custom orderer config for unit-tests
 func (c *MockConfig) SetCustomNetworkPeerCfg(customNetworkPeerCfg []config.NetworkPeer) {
 	c.customNetworkPeerCfg = customNetworkPeerCfg
 }
 
-//SetCustomOrdererCfg sets custom orderer config for unit-tests
+//SetCustomPeerCfg sets custom orderer config for unit-tests
 func (c *MockConfig) SetCustomPeerCfg(customPeerCfg *config.PeerConfig) {
 	c.customPeerCfg = customPeerCfg
 }

@@ -79,15 +79,38 @@ func TestWithCorePkg(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockCoreProviderFactory(mockCtrl)
-	mspFactory := mockapisdk.NewMockMSPProviderFactory(mockCtrl)
 
 	factory.EXPECT().CreateCryptoSuiteProvider(c).Return(nil, nil)
-	factory.EXPECT().CreateStateStoreProvider(c).Return(nil, nil)
 	factory.EXPECT().CreateSigningManager(nil, c).Return(nil, nil)
-	mspFactory.EXPECT().CreateProvider(c, gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	factory.EXPECT().CreateInfraProvider(gomock.Any()).Return(nil, nil)
 
 	_, err = New(WithConfig(c), WithCorePkg(factory))
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+}
+
+func TestWithMSPPkg(t *testing.T) {
+	// Test New SDK with valid config file
+	c, err := configImpl.FromFile(sdkConfigFile)()
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	sdk, err := New(WithConfig(c))
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+	defer sdk.Close()
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	factory := mockapisdk.NewMockMSPProviderFactory(mockCtrl)
+
+	factory.EXPECT().CreateUserStore(c).Return(nil, nil)
+	factory.EXPECT().CreateProvider(c, gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+
+	_, err = New(WithConfig(c), WithMSPPkg(factory))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}

@@ -21,11 +21,12 @@ var logger = logging.NewLogger("fabsdk")
 // MSPProvider provides the default implementation of MSP
 type MSPProvider struct {
 	providerContext core.Providers
+	userStore       msp.UserStore
 	identityManager map[string]msp.IdentityManager
 }
 
 // New creates a MSP context provider
-func New(config core.Config, cryptoSuite core.CryptoSuite, stateStore core.KVStore) (*MSPProvider, error) {
+func New(config core.Config, cryptoSuite core.CryptoSuite, userStore msp.UserStore) (*MSPProvider, error) {
 
 	identityManager := make(map[string]msp.IdentityManager)
 	netConfig, err := config.NetworkConfig()
@@ -33,7 +34,7 @@ func New(config core.Config, cryptoSuite core.CryptoSuite, stateStore core.KVSto
 		return nil, errors.WithMessage(err, "failed to retrieve network config")
 	}
 	for orgName := range netConfig.Organizations {
-		mgr, err := mspimpl.NewIdentityManager(orgName, stateStore, cryptoSuite, config)
+		mgr, err := mspimpl.NewIdentityManager(orgName, userStore, cryptoSuite, config)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to initialize identity manager for organization: %s", orgName)
 		}
@@ -41,6 +42,7 @@ func New(config core.Config, cryptoSuite core.CryptoSuite, stateStore core.KVSto
 	}
 
 	mspProvider := MSPProvider{
+		userStore:       userStore,
 		identityManager: identityManager,
 	}
 
@@ -51,6 +53,11 @@ func New(config core.Config, cryptoSuite core.CryptoSuite, stateStore core.KVSto
 func (p *MSPProvider) Initialize(providers core.Providers) error {
 	p.providerContext = providers
 	return nil
+}
+
+// UserStore returns the user store used by the MSP provider
+func (p *MSPProvider) UserStore() msp.UserStore {
+	return p.userStore
 }
 
 // IdentityManager returns the organization's identity manager

@@ -600,15 +600,3 @@ func (m *MockProviders) SigningManager() core.SigningManager {
 func (mr *MockProvidersMockRecorder) SigningManager() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SigningManager", reflect.TypeOf((*MockProviders)(nil).SigningManager))
 }
-
-// StateStore mocks base method
-func (m *MockProviders) StateStore() core.KVStore {
-	ret := m.ctrl.Call(m, "StateStore")
-	ret0, _ := ret[0].(core.KVStore)
-	return ret0
-}
-
-// StateStore indicates an expected call of StateStore
-func (mr *MockProvidersMockRecorder) StateStore() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StateStore", reflect.TypeOf((*MockProviders)(nil).StateStore))
-}

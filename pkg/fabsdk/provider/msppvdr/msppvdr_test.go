@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 )
 
 func TestCreateMSPProvider(t *testing.T) {
@@ -29,19 +29,17 @@ func TestCreateMSPProvider(t *testing.T) {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	stateStore, err := kvs.New(
-		&kvs.FileKeyValueStoreOptions{
-			Path: config.CredentialStorePath(),
-		})
-	if err != nil {
-		t.Fatalf("creating a user store failed: %v", err)
-	}
+	userStore := &mocks.MockUserStore{}
 
-	provider, err := New(config, cryptosuite, stateStore)
+	provider, err := New(config, cryptosuite, userStore)
+
+	if provider.UserStore() != userStore {
+		t.Fatalf("Invalid user store returned")
+	}
 
 	mgr, ok := provider.IdentityManager("Org1")
 	if !ok {
-		t.Fatalf("Unexpected error creating identity manager %v", err)
+		t.Fatalf("Expected to return idnetity manager")
 	}
 
 	_, ok = mgr.(*msp.IdentityManager)

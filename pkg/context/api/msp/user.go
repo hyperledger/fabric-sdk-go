@@ -48,8 +48,8 @@ type UserData struct {
 
 // UserStore is responsible for UserData persistence
 type UserStore interface {
-	Store(UserData) error
-	Load(UserIdentifier) (UserData, error)
+	Store(*UserData) error
+	Load(UserIdentifier) (*UserData, error)
 }
 
 // UserIdentifier is the User's unique identifier

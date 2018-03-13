@@ -79,9 +79,9 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	defer cleanupTestPath(t, credentialStorePath)
 
 	cs, err := sw.GetSuiteByConfig(config)
-	stateStore := stateStoreFromConfig(t, config)
+	userStore := userStoreFromConfig(t, config)
 
-	identityMgr, err := NewIdentityManager(orgName, stateStore, cs, config)
+	identityMgr, err := NewIdentityManager(orgName, userStore, cs, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -134,7 +134,7 @@ func prepareForEnroll(t *testing.T, mc *apimocks.MockCAClient, cs core.CryptoSui
 
 		// Save the "new" cert to user store
 		// This is done by IdentityManagement.Enroll()
-		user := msp.UserData{
+		user := &msp.UserData{
 			MspID: userToEnrollMspID,
 			Name:  userToEnroll,
 			EnrollmentCertificate: []byte(generatedCertBytes),

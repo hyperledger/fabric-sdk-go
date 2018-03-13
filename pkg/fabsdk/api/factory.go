@@ -21,7 +21,6 @@ type Providers interface {
 
 // CoreProviderFactory allows overriding of primitives and the fabric core object provider
 type CoreProviderFactory interface {
-	CreateStateStoreProvider(config core.Config) (core.KVStore, error)
 	CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error)
 	CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error)
 	CreateInfraProvider(config core.Config) (fab.InfraProvider, error)
@@ -29,7 +28,8 @@ type CoreProviderFactory interface {
 
 // MSPProviderFactory allows overriding providers of MSP services
 type MSPProviderFactory interface {
-	CreateProvider(config core.Config, cryptoProvider core.CryptoSuite, stateStore core.KVStore) (msp.Provider, error)
+	CreateUserStore(config core.Config) (msp.UserStore, error)
+	CreateProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.Provider, error)
 }
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)

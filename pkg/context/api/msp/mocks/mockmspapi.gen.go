@@ -95,3 +95,15 @@ func (m *MockProviders) IdentityManager(arg0 string) (msp.IdentityManager, bool)
 func (mr *MockProvidersMockRecorder) IdentityManager(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityManager", reflect.TypeOf((*MockProviders)(nil).IdentityManager), arg0)
 }
+
+// UserStore mocks base method
+func (m *MockProviders) UserStore() msp.UserStore {
+	ret := m.ctrl.Call(m, "UserStore")
+	ret0, _ := ret[0].(msp.UserStore)
+	return ret0
+}
+
+// UserStore indicates an expected call of UserStore
+func (mr *MockProvidersMockRecorder) UserStore() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserStore", reflect.TypeOf((*MockProviders)(nil).UserStore))
+}

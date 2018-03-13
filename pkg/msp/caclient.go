@@ -20,7 +20,7 @@ import (
 
 var logger = logging.NewLogger("fabsdk/msp")
 
-// CAClient implements api/msp/CAClient
+// CAClientImpl implements api/msp/CAClient
 type CAClientImpl struct {
 	orgName         string
 	orgMspID        string
@@ -33,12 +33,7 @@ type CAClientImpl struct {
 }
 
 // NewCAClient creates a new CA CAClient instance
-func NewCAClient(orgName string, identityManager msp.IdentityManager, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config core.Config) (*CAClientImpl, error) {
-
-	userStore, err := NewCertFileUserStore1(stateStore)
-	if err != nil {
-		return nil, errors.Wrapf(err, "creating a user store failed")
-	}
+func NewCAClient(orgName string, identityManager msp.IdentityManager, userStore msp.UserStore, cryptoSuite core.CryptoSuite, config core.Config) (*CAClientImpl, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {
@@ -121,7 +116,7 @@ func (c *CAClientImpl) Enroll(enrollmentID string, enrollmentSecret string) erro
 	if err != nil {
 		return errors.Wrap(err, "enroll failed")
 	}
-	userData := msp.UserData{
+	userData := &msp.UserData{
 		MspID: c.orgMspID,
 		Name:  enrollmentID,
 		EnrollmentCertificate: cert,
@@ -153,7 +148,7 @@ func (c *CAClientImpl) Reenroll(enrollmentID string) error {
 	if err != nil {
 		return errors.Wrap(err, "reenroll failed")
 	}
-	userData := msp.UserData{
+	userData := &msp.UserData{
 		MspID: c.orgMspID,
 		Name:  user.Name(),
 		EnrollmentCertificate: cert,

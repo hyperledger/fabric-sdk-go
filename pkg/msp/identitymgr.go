@@ -31,11 +31,7 @@ type IdentityManager struct {
 }
 
 // NewIdentityManager creates a new instance of IdentityManager
-// @param {string} organization
-// @param {Config} client config for fabric-ca services
-// @returns {IdentityManager} IdentityManager instance
-// @returns {error} error, if any
-func NewIdentityManager(orgName string, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
+func NewIdentityManager(orgName string, userStore msp.UserStore, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {
@@ -70,11 +66,6 @@ func NewIdentityManager(orgName string, stateStore core.KVStore, cryptoSuite cor
 		}
 	} else {
 		logger.Warnf("Cryptopath not provided for organization [%s], MSP stores not created", orgName)
-	}
-
-	userStore, err := NewCertFileUserStore1(stateStore)
-	if err != nil {
-		return nil, errors.Wrapf(err, "creating a user store failed")
 	}
 
 	mgr := &IdentityManager{

@@ -21,7 +21,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newUser(userData msp.UserData, cryptoSuite core.CryptoSuite) (*User, error) {
+func newUser(userData *msp.UserData, cryptoSuite core.CryptoSuite) (*User, error) {
 	pubKey, err := cryptoutil.GetPublicKeyFromCert(userData.EnrollmentCertificate, cryptoSuite)
 	if err != nil {
 		return nil, errors.WithMessage(err, "fetching public key from cert failed")
@@ -40,7 +40,7 @@ func newUser(userData msp.UserData, cryptoSuite core.CryptoSuite) (*User, error)
 }
 
 // NewUser creates a User instance
-func (mgr *IdentityManager) NewUser(userData msp.UserData) (*User, error) {
+func (mgr *IdentityManager) NewUser(userData *msp.UserData) (*User, error) {
 	return newUser(userData, mgr.cryptoSuite)
 }
 

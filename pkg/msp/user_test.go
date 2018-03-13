@@ -38,7 +38,7 @@ func TestUserMethods(t *testing.T) {
 	}
 
 	// Missing enrollment cert
-	userData := msp.UserData{
+	userData := &msp.UserData{
 		MspID: testUserMspID,
 		Name:  testUserName,
 	}

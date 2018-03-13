@@ -19,6 +19,14 @@ func TestNewPkgSuite(t *testing.T) {
 		t.Fatalf("Core is nil")
 	}
 
+	msp, err := pkgsuite.MSP()
+	if err != nil {
+		t.Fatalf("Unexpected error getting default MSP factory")
+	}
+	if msp == nil {
+		t.Fatalf("MSP is nil")
+	}
+
 	service, err := pkgsuite.Service()
 	if err != nil {
 		t.Fatalf("Unexpected error getting default service factory")

@@ -45,6 +45,8 @@ func WithOrg(org string) ContextOption {
 	}
 }
 
+// ErrAnonymousIdentity is returned when options for identity creation
+// don't include neither username nor identity
 var ErrAnonymousIdentity = errors.New("missing credentials")
 
 func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.Identity, error) {

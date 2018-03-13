@@ -4,7 +4,6 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package ca enables access to CA services.
 package msp
 
 import (
@@ -37,6 +36,7 @@ func WithOrg(orgName string) Option {
 	}
 }
 
+// New creates a new MSP instance
 func New(clientProvider context.ClientProvider, opts ...Option) (*MSP, error) {
 
 	ctx, err := clientProvider()
@@ -72,7 +72,7 @@ func newCAClient(ctx context.Client, orgName string) (mspapi.CAClient, error) {
 	if !ok {
 		return nil, fmt.Errorf("identity manager not found for organization '%s", orgName)
 	}
-	caClient, err := msp.NewCAClient(orgName, identityManager, ctx.StateStore(), ctx.CryptoSuite(), ctx.Config())
+	caClient, err := msp.NewCAClient(orgName, identityManager, ctx.UserStore(), ctx.CryptoSuite(), ctx.Config())
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create CA MSP")
 	}

@@ -133,16 +133,16 @@ func (mr *MockProvidersMockRecorder) SigningManager() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SigningManager", reflect.TypeOf((*MockProviders)(nil).SigningManager))
 }
 
-// StateStore mocks base method
-func (m *MockProviders) StateStore() core.KVStore {
-	ret := m.ctrl.Call(m, "StateStore")
-	ret0, _ := ret[0].(core.KVStore)
+// UserStore mocks base method
+func (m *MockProviders) UserStore() msp.UserStore {
+	ret := m.ctrl.Call(m, "UserStore")
+	ret0, _ := ret[0].(msp.UserStore)
 	return ret0
 }
 
-// StateStore indicates an expected call of StateStore
-func (mr *MockProvidersMockRecorder) StateStore() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StateStore", reflect.TypeOf((*MockProviders)(nil).StateStore))
+// UserStore indicates an expected call of UserStore
+func (mr *MockProvidersMockRecorder) UserStore() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserStore", reflect.TypeOf((*MockProviders)(nil).UserStore))
 }
 
 // MockClient is a mock of Client interface
@@ -302,14 +302,14 @@ func (mr *MockClientMockRecorder) SigningManager() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SigningManager", reflect.TypeOf((*MockClient)(nil).SigningManager))
 }
 
-// StateStore mocks base method
-func (m *MockClient) StateStore() core.KVStore {
-	ret := m.ctrl.Call(m, "StateStore")
-	ret0, _ := ret[0].(core.KVStore)
+// UserStore mocks base method
+func (m *MockClient) UserStore() msp.UserStore {
+	ret := m.ctrl.Call(m, "UserStore")
+	ret0, _ := ret[0].(msp.UserStore)
 	return ret0
 }
 
-// StateStore indicates an expected call of StateStore
-func (mr *MockClientMockRecorder) StateStore() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StateStore", reflect.TypeOf((*MockClient)(nil).StateStore))
+// UserStore indicates an expected call of UserStore
+func (mr *MockClientMockRecorder) UserStore() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserStore", reflect.TypeOf((*MockClient)(nil).UserStore))
 }
