@@ -24,6 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 var configImpl *Config
@@ -1432,6 +1433,27 @@ func TestTLSClientCertsNoCerts(t *testing.T) {
 	if !reflect.DeepEqual(certs[0], emptyCert) {
 		t.Fatalf("Actual cert is not equal to empty cert")
 	}
+}
+
+func TestNetworkPeerConfigFromURL(t *testing.T) {
+	configProvider, err := FromFile(configTestFilePath)()
+	if err != nil {
+		t.Fatalf("Unexpected error reading config: %v", err)
+	}
+	sampleConfig := configProvider.(*Config)
+
+	_, err = NetworkPeerConfigFromURL(sampleConfig, "invalid")
+	assert.NotNil(t, err, "invalid url should return err")
+
+	np, err := NetworkPeerConfigFromURL(sampleConfig, "peer0.org2.example.com:8051")
+	assert.Nil(t, err, "valid url should not return err")
+	assert.Equal(t, "peer0.org2.example.com:8051", np.URL, "wrong URL")
+	assert.Equal(t, "Org2MSP", np.MspID, "wrong MSP")
+
+	np, err = NetworkPeerConfigFromURL(sampleConfig, "peer0.org1.example.com:7051")
+	assert.Nil(t, err, "valid url should not return err")
+	assert.Equal(t, "peer0.org1.example.com:7051", np.URL, "wrong URL")
+	assert.Equal(t, "Org1MSP", np.MspID, "wrong MSP")
 }
 
 func TestNewGoodOpt(t *testing.T) {

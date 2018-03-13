@@ -22,6 +22,8 @@ type MockConfig struct {
 	tlsEnabled             bool
 	mutualTLSEnabled       bool
 	errorCase              bool
+	customNetworkPeerCfg   []config.NetworkPeer
+	customPeerCfg          *config.PeerConfig
 	customOrdererCfg       *config.OrdererConfig
 	customRandomOrdererCfg *config.OrdererConfig
 }
@@ -125,7 +127,16 @@ func (c *MockConfig) PeerConfig(org string, name string) (*config.PeerConfig, er
 
 // PeerConfigByURL retrieves PeerConfig by URL
 func (c *MockConfig) PeerConfigByURL(url string) (*config.PeerConfig, error) {
-	return nil, nil
+	if url == "invalid" {
+		return nil, errors.New("no orderer")
+	}
+	if c.customPeerCfg != nil {
+		return c.customPeerCfg, nil
+	}
+	cfg := config.PeerConfig{
+		URL: "example.com",
+	}
+	return &cfg, nil
 }
 
 // TLSCACertPool ...
@@ -174,6 +185,16 @@ func (c *MockConfig) RandomOrdererConfig() (*config.OrdererConfig, error) {
 		return c.customRandomOrdererCfg, nil
 	}
 	return nil, nil
+}
+
+//SetCustomOrdererCfg sets custom orderer config for unit-tests
+func (c *MockConfig) SetCustomNetworkPeerCfg(customNetworkPeerCfg []config.NetworkPeer) {
+	c.customNetworkPeerCfg = customNetworkPeerCfg
+}
+
+//SetCustomOrdererCfg sets custom orderer config for unit-tests
+func (c *MockConfig) SetCustomPeerCfg(customPeerCfg *config.PeerConfig) {
+	c.customPeerCfg = customPeerCfg
 }
 
 //SetCustomOrdererCfg sets custom orderer config for unit-tests
@@ -259,7 +280,10 @@ func (c *MockConfig) ChannelOrderers(name string) ([]config.OrdererConfig, error
 
 // NetworkPeers returns the mock network peers configuration
 func (c *MockConfig) NetworkPeers() ([]config.NetworkPeer, error) {
-	return nil, nil
+	if c.customNetworkPeerCfg != nil {
+		return c.customNetworkPeerCfg, nil
+	}
+	return nil, errors.New("no config")
 }
 
 // Ephemeral flag

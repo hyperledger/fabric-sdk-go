@@ -6,7 +6,12 @@ SPDX-License-Identifier: Apache-2.0
 
 package ledger
 
-import "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/pkg/errors"
+)
 
 const (
 	minTargets = 1
@@ -24,8 +29,8 @@ func WithDefaultTargetFilter(filter TargetFilter) ClientOption {
 	}
 }
 
-//RequestOption func for each Opts argument
-type RequestOption func(opts *Opts) error
+//RequestOption func for each requestOptions argument
+type RequestOption func(ctx context.Client, opts *requestOptions) error
 
 // TargetFilter allows for filtering target peers
 type TargetFilter interface {
@@ -33,8 +38,8 @@ type TargetFilter interface {
 	Accept(peer fab.Peer) bool
 }
 
-//Opts contains options for operations performed by LedgerClient
-type Opts struct {
+//requestOptions contains options for operations performed by LedgerClient
+type requestOptions struct {
 	Targets      []fab.Peer   // target peers
 	TargetFilter TargetFilter // target filter
 	MaxTargets   int          // maximum number of targets to select
@@ -43,15 +48,42 @@ type Opts struct {
 
 //WithTargets encapsulates fab.Peer targets to ledger RequestOption
 func WithTargets(targets ...fab.Peer) RequestOption {
-	return func(opts *Opts) error {
+	return func(ctx context.Client, opts *requestOptions) error {
 		opts.Targets = targets
 		return nil
 	}
 }
 
+// WithTargetURLs allows overriding of the target peers for the request.
+// Targets are specified by URL, and the SDK will create the underlying peer
+// objects.
+func WithTargetURLs(urls ...string) RequestOption {
+	return func(ctx context.Client, opts *requestOptions) error {
+
+		var targets []fab.Peer
+
+		for _, url := range urls {
+
+			peerCfg, err := config.NetworkPeerConfigFromURL(ctx.Config(), url)
+			if err != nil {
+				return err
+			}
+
+			peer, err := ctx.InfraProvider().CreatePeerFromConfig(peerCfg)
+			if err != nil {
+				return errors.WithMessage(err, "creating orderer from config failed")
+			}
+
+			targets = append(targets, peer)
+		}
+
+		return WithTargets(targets...)(ctx, opts)
+	}
+}
+
 //WithTargetFilter encapsulates TargetFilter targets to ledger RequestOption
 func WithTargetFilter(targetFilter TargetFilter) RequestOption {
-	return func(opts *Opts) error {
+	return func(ctx context.Client, opts *requestOptions) error {
 		opts.TargetFilter = targetFilter
 		return nil
 	}
@@ -59,7 +91,7 @@ func WithTargetFilter(targetFilter TargetFilter) RequestOption {
 
 //WithMaxTargets encapsulates max targets to ledger RequestOption
 func WithMaxTargets(maxTargets int) RequestOption {
-	return func(opts *Opts) error {
+	return func(ctx context.Client, opts *requestOptions) error {
 		opts.MaxTargets = maxTargets
 		return nil
 	}
@@ -67,7 +99,7 @@ func WithMaxTargets(maxTargets int) RequestOption {
 
 //WithMinTargets encapsulates min targets to ledger RequestOption
 func WithMinTargets(minTargets int) RequestOption {
-	return func(opts *Opts) error {
+	return func(ctx context.Client, opts *requestOptions) error {
 		opts.MinTargets = minTargets
 		return nil
 	}
