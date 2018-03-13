@@ -1429,6 +1429,38 @@ func (c *Config) TLSClientCerts() ([]tls.Certificate, error) {
 	return []tls.Certificate{clientCerts}, nil
 }
 
+// NetworkPeerConfigFromURL fetches the peer configuration based on a URL.
+func NetworkPeerConfigFromURL(cfg core.Config, url string) (*core.NetworkPeer, error) {
+	peerCfg, err := cfg.PeerConfigByURL(url)
+	if err != nil {
+		return nil, errors.WithMessage(err, "peer not found")
+	}
+	if peerCfg == nil {
+		return nil, errors.New("peer not found")
+	}
+
+	// find MSP ID
+	networkPeers, err := cfg.NetworkPeers()
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to load network peer config")
+	}
+
+	var mspID string
+	for _, peer := range networkPeers {
+		if peer.URL == peerCfg.URL { // need to use the looked-up URL due to matching
+			mspID = peer.MspID
+			break
+		}
+	}
+
+	np := core.NetworkPeer{
+		PeerConfig: *peerCfg,
+		MspID:      mspID,
+	}
+
+	return &np, nil
+}
+
 func loadByteKeyOrCertFromFile(c *core.ClientConfig, isKey bool) ([]byte, error) {
 	var path string
 	a := "key"

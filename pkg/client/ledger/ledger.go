@@ -279,10 +279,10 @@ func (c *Client) QueryConfig(options ...RequestOption) (fab.ChannelCfg, error) {
 }
 
 //prepareRequestOpts Reads Opts from Option array
-func (c *Client) prepareRequestOpts(options ...RequestOption) (Opts, error) {
-	opts := Opts{}
+func (c *Client) prepareRequestOpts(options ...RequestOption) (requestOptions, error) {
+	opts := requestOptions{}
 	for _, option := range options {
-		err := option(&opts)
+		err := option(c.context, &opts)
 		if err != nil {
 			return opts, errors.WithMessage(err, "Failed to read request opts")
 		}
@@ -306,7 +306,7 @@ func (c *Client) prepareRequestOpts(options ...RequestOption) (Opts, error) {
 }
 
 // calculateTargets calculates targets based on targets and filter
-func (c *Client) calculateTargets(opts Opts) ([]fab.Peer, error) {
+func (c *Client) calculateTargets(opts requestOptions) ([]fab.Peer, error) {
 
 	if opts.Targets != nil && opts.TargetFilter != nil {
 		return nil, errors.New("If targets are provided, filter cannot be provided")

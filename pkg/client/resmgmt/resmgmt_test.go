@@ -525,7 +525,7 @@ func TestInstallCCWithOpts(t *testing.T) {
 		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Payload: responseBytes}
 
 	req = InstallCCRequest{Name: "error", Version: "v0", Path: "", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	_, err = rc.InstallCC(req, WithTarget(&peer))
+	_, err = rc.InstallCC(req, WithTargets(&peer))
 	if err == nil {
 		t.Fatalf("Should have failed since install cc returns an error in the client")
 	}
@@ -540,7 +540,7 @@ func TestInstallCC(t *testing.T) {
 
 	// Chaincode that is not installed already (it will be installed)
 	req := InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	responses, err := rc.InstallCC(req, WithTarget(&peer))
+	responses, err := rc.InstallCC(req, WithTargets(&peer))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -11,10 +11,11 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/pkg/errors"
 )
 
-//WithTargets encapsulates fab.Peer targets to resmgmtclient RequestOption
+// WithTargetURLs allows overriding of the target peers for the request.
 func WithTargets(targets ...fab.Peer) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.Targets = targets
@@ -22,15 +23,34 @@ func WithTargets(targets ...fab.Peer) RequestOption {
 	}
 }
 
-//WithTarget encapsulates fab.Peer target to RequestOption
-func WithTarget(target fab.Peer) RequestOption {
+// WithTargetURLs allows overriding of the target peers for the request.
+// Targets are specified by URL, and the SDK will create the underlying peer
+// objects.
+func WithTargetURLs(urls ...string) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
-		opts.Targets = []fab.Peer{target}
-		return nil
+
+		var targets []fab.Peer
+
+		for _, url := range urls {
+
+			peerCfg, err := config.NetworkPeerConfigFromURL(ctx.Config(), url)
+			if err != nil {
+				return err
+			}
+
+			peer, err := ctx.InfraProvider().CreatePeerFromConfig(peerCfg)
+			if err != nil {
+				return errors.WithMessage(err, "creating orderer from config failed")
+			}
+
+			targets = append(targets, peer)
+		}
+
+		return WithTargets(targets...)(ctx, opts)
 	}
 }
 
-//WithTargetFilter encapsulates  resmgmtclient TargetFilter targets to resmgmtclient RequestOption
+// WithTargetFilter enables a target filter for the request.
 func WithTargetFilter(targetFilter TargetFilter) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.TargetFilter = targetFilter
@@ -38,7 +58,8 @@ func WithTargetFilter(targetFilter TargetFilter) RequestOption {
 	}
 }
 
-//WithTimeout encapsulates time.Duration to resmgmtclient RequestOption
+// WithTimeout specifies the timeout for the request. If not specified,
+// a default timeout from configuration is used.
 func WithTimeout(timeout time.Duration) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.Timeout = timeout
@@ -46,13 +67,13 @@ func WithTimeout(timeout time.Duration) RequestOption {
 	}
 }
 
-//WithOrdererURL allows an orderer to be specified for the request.
-//The orderer will be looked-up based on the url argument.
-//A default orderer implementation will be used.
-func WithOrdererURL(ordererID string) RequestOption {
+// WithOrdererURL allows an orderer to be specified for the request.
+// The orderer will be looked-up based on the url argument.
+// A default orderer implementation will be used.
+func WithOrdererURL(url string) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 
-		ordererCfg, err := ctx.Config().OrdererConfig(ordererID)
+		ordererCfg, err := ctx.Config().OrdererConfig(url)
 		if err != nil {
 			return errors.WithMessage(err, "orderer not found")
 		}
@@ -69,7 +90,7 @@ func WithOrdererURL(ordererID string) RequestOption {
 	}
 }
 
-//WithOrderer allows an orderer to be specified for the request.
+// WithOrderer allows an orderer to be specified for the request.
 func WithOrderer(orderer fab.Orderer) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.Orderer = orderer

@@ -68,7 +68,7 @@ func TestResMgmtClientQueries(t *testing.T) {
 
 func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, target fab.ProposalProcessor, client *resmgmt.Client) {
 
-	chaincodeQueryResponse, err := client.QueryInstantiatedChaincodes(channelID, resmgmt.WithTarget(target.(fab.Peer)))
+	chaincodeQueryResponse, err := client.QueryInstantiatedChaincodes(channelID, resmgmt.WithTargets(target.(fab.Peer)))
 	if err != nil {
 		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
 	}
