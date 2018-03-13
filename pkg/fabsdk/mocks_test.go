@@ -20,7 +20,6 @@ import (
 )
 
 type mockCorePkg struct {
-	stateStore     core.KVStore
 	cryptoSuite    core.CryptoSuite
 	signingManager core.SigningManager
 	infraProvider  fab.InfraProvider
@@ -29,10 +28,6 @@ type mockCorePkg struct {
 func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	pkgSuite := defPkgSuite{}
 	sdkcore, err := pkgSuite.Core()
-	if err != nil {
-		return nil, err
-	}
-	stateStore, err := sdkcore.CreateStateStoreProvider(config)
 	if err != nil {
 		return nil, err
 	}
@@ -50,17 +45,12 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	}
 
 	c := mockCorePkg{
-		stateStore:     stateStore,
 		cryptoSuite:    cs,
 		signingManager: sm,
 		infraProvider:  fp,
 	}
 
 	return &c, nil
-}
-
-func (mc *mockCorePkg) CreateStateStoreProvider(config core.Config) (core.KVStore, error) {
-	return mc.stateStore, nil
 }
 
 func (mc *mockCorePkg) CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {

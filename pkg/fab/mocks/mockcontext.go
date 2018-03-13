@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 
 	"strings"
 )
@@ -26,7 +27,7 @@ type MockProviderContext struct {
 	config            config.Config
 	cryptoSuite       core.CryptoSuite
 	signingManager    core.SigningManager
-	stateStore        core.KVStore
+	userStore         msp.UserStore
 	identityManager   map[string]msp.IdentityManager
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
@@ -44,7 +45,7 @@ func NewMockProviderContext() *MockProviderContext {
 		config:            NewMockConfig(),
 		signingManager:    mocks.NewMockSigningManager(),
 		cryptoSuite:       &MockCryptoSuite{},
-		stateStore:        &MockStateStore{},
+		userStore:         &mspmocks.MockUserStore{},
 		identityManager:   im,
 		discoveryProvider: &MockStaticDiscoveryProvider{},
 		selectionProvider: &MockSelectionProvider{},
@@ -55,12 +56,12 @@ func NewMockProviderContext() *MockProviderContext {
 }
 
 // NewMockProviderContextCustom creates a MockProviderContext consisting of the arguments
-func NewMockProviderContextCustom(config config.Config, cryptoSuite core.CryptoSuite, signer core.SigningManager, stateStore core.KVStore, identityManager map[string]msp.IdentityManager) *MockProviderContext {
+func NewMockProviderContextCustom(config config.Config, cryptoSuite core.CryptoSuite, signer core.SigningManager, userStore msp.UserStore, identityManager map[string]msp.IdentityManager) *MockProviderContext {
 	context := MockProviderContext{
 		config:          config,
 		signingManager:  signer,
 		cryptoSuite:     cryptoSuite,
-		stateStore:      stateStore,
+		userStore:       userStore,
 		identityManager: identityManager,
 	}
 	return &context
@@ -86,9 +87,9 @@ func (pc *MockProviderContext) SigningManager() core.SigningManager {
 	return pc.signingManager
 }
 
-// StateStore returns the mock state store
-func (pc *MockProviderContext) StateStore() core.KVStore {
-	return pc.stateStore
+// UserStore returns the mock usser store
+func (pc *MockProviderContext) UserStore() msp.UserStore {
+	return pc.userStore
 }
 
 // IdentityManager returns the identity manager

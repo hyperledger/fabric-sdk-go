@@ -8,13 +8,14 @@ package mocks
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
 // MockCoreContext is a mock core context
 type MockCoreContext struct {
 	MockConfig         core.Config
 	MockCcryptoSuite   core.CryptoSuite
-	MockStateStore     core.KVStore
+	MockUserStore      msp.UserStore
 	MockSigningManager core.SigningManager
 }
 
@@ -28,9 +29,9 @@ func (m *MockCoreContext) CryptoSuite() core.CryptoSuite {
 	return m.MockCcryptoSuite
 }
 
-// StateStore ...
-func (m *MockCoreContext) StateStore() core.KVStore {
-	return m.MockStateStore
+// UserStore ...
+func (m *MockCoreContext) UserStore() msp.UserStore {
+	return m.MockUserStore
 }
 
 // SigningManager ...

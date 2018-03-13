@@ -12,10 +12,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fab/signingmgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
-	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
@@ -28,22 +26,6 @@ type ProviderFactory struct {
 func NewProviderFactory() *ProviderFactory {
 	f := ProviderFactory{}
 	return &f
-}
-
-// CreateStateStoreProvider creates a KeyValueStore using the SDK's default implementation
-func (f *ProviderFactory) CreateStateStoreProvider(config core.Config) (core.KVStore, error) {
-
-	clientCofig, err := config.Client()
-	if err != nil {
-		return nil, errors.WithMessage(err, "Unable to retrieve client config")
-	}
-	stateStorePath := clientCofig.CredentialStore.Path
-
-	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: stateStorePath})
-	if err != nil {
-		return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
-	}
-	return stateStore, nil
 }
 
 // CreateCryptoSuiteProvider returns a new default implementation of BCCSP

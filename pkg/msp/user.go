@@ -23,7 +23,7 @@ type User struct {
 	privateKey            core.Key
 }
 
-func userIdentifier(userData msp.UserData) msp.UserIdentifier {
+func userIdentifier(userData *msp.UserData) msp.UserIdentifier {
 	return msp.UserIdentifier{MspID: userData.MspID, Name: userData.Name}
 }
 

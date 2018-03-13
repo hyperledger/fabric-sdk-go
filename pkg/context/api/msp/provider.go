@@ -16,6 +16,7 @@ type Context interface {
 
 // Provider provides MSP services
 type Provider interface {
+	UserStore() UserStore
 	IdentityManager(orgName string) (IdentityManager, bool)
 }
 

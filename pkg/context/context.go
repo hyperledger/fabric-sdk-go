@@ -60,7 +60,7 @@ func (c *Channel) ChannelID() string {
 //Provider implementation for Providers interface
 type Provider struct {
 	config            core.Config
-	stateStore        core.KVStore
+	userStore         msp.UserStore
 	cryptoSuite       core.CryptoSuite
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
@@ -90,9 +90,9 @@ func (c *Provider) SigningManager() core.SigningManager {
 	return c.signingManager
 }
 
-// StateStore returns state store
-func (c *Provider) StateStore() core.KVStore {
-	return c.stateStore
+// UserStore returns state store
+func (c *Provider) UserStore() msp.UserStore {
+	return c.userStore
 }
 
 // DiscoveryProvider returns discovery provider
@@ -125,10 +125,10 @@ func WithConfig(config core.Config) SDKContextParams {
 	}
 }
 
-//WithStateStore sets state store to FabContext
-func WithStateStore(stateStore core.KVStore) SDKContextParams {
+// WithUserStore sets user store to FabContext
+func WithUserStore(userStore msp.UserStore) SDKContextParams {
 	return func(ctx *Provider) {
-		ctx.stateStore = stateStore
+		ctx.userStore = userStore
 	}
 }
 

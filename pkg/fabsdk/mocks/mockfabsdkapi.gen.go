@@ -75,19 +75,6 @@ func (mr *MockCoreProviderFactoryMockRecorder) CreateSigningManager(arg0, arg1 i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSigningManager", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateSigningManager), arg0, arg1)
 }
 
-// CreateStateStoreProvider mocks base method
-func (m *MockCoreProviderFactory) CreateStateStoreProvider(arg0 core.Config) (core.KVStore, error) {
-	ret := m.ctrl.Call(m, "CreateStateStoreProvider", arg0)
-	ret0, _ := ret[0].(core.KVStore)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateStateStoreProvider indicates an expected call of CreateStateStoreProvider
-func (mr *MockCoreProviderFactoryMockRecorder) CreateStateStoreProvider(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStateStoreProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateStateStoreProvider), arg0)
-}
-
 // MockMSPProviderFactory is a mock of MSPProviderFactory interface
 type MockMSPProviderFactory struct {
 	ctrl     *gomock.Controller
@@ -112,7 +99,7 @@ func (m *MockMSPProviderFactory) EXPECT() *MockMSPProviderFactoryMockRecorder {
 }
 
 // CreateProvider mocks base method
-func (m *MockMSPProviderFactory) CreateProvider(arg0 core.Config, arg1 core.CryptoSuite, arg2 core.KVStore) (msp.Provider, error) {
+func (m *MockMSPProviderFactory) CreateProvider(arg0 core.Config, arg1 core.CryptoSuite, arg2 msp.UserStore) (msp.Provider, error) {
 	ret := m.ctrl.Call(m, "CreateProvider", arg0, arg1, arg2)
 	ret0, _ := ret[0].(msp.Provider)
 	ret1, _ := ret[1].(error)
@@ -122,6 +109,19 @@ func (m *MockMSPProviderFactory) CreateProvider(arg0 core.Config, arg1 core.Cryp
 // CreateProvider indicates an expected call of CreateProvider
 func (mr *MockMSPProviderFactoryMockRecorder) CreateProvider(arg0, arg1, arg2 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProvider", reflect.TypeOf((*MockMSPProviderFactory)(nil).CreateProvider), arg0, arg1, arg2)
+}
+
+// CreateUserStore mocks base method
+func (m *MockMSPProviderFactory) CreateUserStore(arg0 core.Config) (msp.UserStore, error) {
+	ret := m.ctrl.Call(m, "CreateUserStore", arg0)
+	ret0, _ := ret[0].(msp.UserStore)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUserStore indicates an expected call of CreateUserStore
+func (mr *MockMSPProviderFactoryMockRecorder) CreateUserStore(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserStore", reflect.TypeOf((*MockMSPProviderFactory)(nil).CreateUserStore), arg0)
 }
 
 // MockServiceProviderFactory is a mock of ServiceProviderFactory interface

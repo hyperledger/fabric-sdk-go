@@ -54,20 +54,19 @@ func NewCertFileUserStore(path string) (*CertFileUserStore, error) {
 }
 
 // Load returns the User stored in the store for a key.
-func (s *CertFileUserStore) Load(key msp.UserIdentifier) (msp.UserData, error) {
-	var userData msp.UserData
+func (s *CertFileUserStore) Load(key msp.UserIdentifier) (*msp.UserData, error) {
 	cert, err := s.store.Load(storeKeyFromUserIdentifier(key))
 	if err != nil {
 		if err == core.ErrKeyValueNotFound {
-			return userData, msp.ErrUserNotFound
+			return nil, msp.ErrUserNotFound
 		}
-		return userData, err
+		return nil, err
 	}
 	certBytes, ok := cert.([]byte)
 	if !ok {
-		return userData, errors.New("user is not of proper type")
+		return nil, errors.New("user is not of proper type")
 	}
-	userData = msp.UserData{
+	userData := &msp.UserData{
 		MspID: key.MspID,
 		Name:  key.Name,
 		EnrollmentCertificate: certBytes,
@@ -76,7 +75,7 @@ func (s *CertFileUserStore) Load(key msp.UserIdentifier) (msp.UserData, error) {
 }
 
 // Store stores a User into store
-func (s *CertFileUserStore) Store(user msp.UserData) error {
+func (s *CertFileUserStore) Store(user *msp.UserData) error {
 	key := storeKeyFromUserIdentifier(msp.UserIdentifier{MspID: user.MspID, Name: user.Name})
 	return s.store.Store(key, user.EnrollmentCertificate)
 }

@@ -92,7 +92,7 @@ func TestWrongURL(t *testing.T) {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
 
-	f.caClient, err = NewCAClient(org1, f.identityManager, f.stateStore, f.cryptoSuite, wrongURLConfigConfig)
+	f.caClient, err = NewCAClient(org1, f.identityManager, f.userStore, f.cryptoSuite, wrongURLConfigConfig)
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient return error: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestNoConfiguredCAs(t *testing.T) {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
 
-	_, err = NewCAClient(org1, f.identityManager, f.stateStore, f.cryptoSuite, wrongURLConfigConfig)
+	_, err = NewCAClient(org1, f.identityManager, f.userStore, f.cryptoSuite, wrongURLConfigConfig)
 	if err == nil || !strings.Contains(err.Error(), "no CAs configured") {
 		t.Fatalf("Expected error when there are no configured CAs")
 	}
@@ -246,8 +246,8 @@ func TestCAConfigError(t *testing.T) {
 	mockConfig.EXPECT().CAConfig(org1).Return(nil, errors.New("CAConfig error"))
 	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
 
-	stateStore := stateStoreFromConfig(t, mockConfig)
-	_, err := NewCAClient(org1, f.identityManager, stateStore, f.cryptoSuite, mockConfig)
+	userStore := &mocks.MockUserStore{}
+	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAConfig error") {
 		t.Fatalf("Expected error from CAConfig. Got: %v", err)
 	}
@@ -269,8 +269,8 @@ func TestCAServerCertPathsError(t *testing.T) {
 	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
 	mockConfig.EXPECT().CAServerCertPaths(org1).Return(nil, errors.New("CAServerCertPaths error"))
 
-	stateStore := stateStoreFromConfig(t, mockConfig)
-	_, err := NewCAClient(org1, f.identityManager, stateStore, f.cryptoSuite, mockConfig)
+	userStore := &mocks.MockUserStore{}
+	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAServerCertPaths error") {
 		t.Fatalf("Expected error from CAServerCertPaths. Got: %v", err)
 	}
@@ -293,8 +293,8 @@ func TestCAClientCertPathError(t *testing.T) {
 	mockConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertPath(org1).Return("", errors.New("CAClientCertPath error"))
 
-	stateStore := stateStoreFromConfig(t, mockConfig)
-	_, err := NewCAClient(org1, f.identityManager, stateStore, f.cryptoSuite, mockConfig)
+	userStore := &mocks.MockUserStore{}
+	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAClientCertPath error") {
 		t.Fatalf("Expected error from CAClientCertPath. Got: %v", err)
 	}
@@ -318,8 +318,8 @@ func TestCAClientKeyPathError(t *testing.T) {
 	mockConfig.EXPECT().CAClientCertPath(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyPath(org1).Return("", errors.New("CAClientKeyPath error"))
 
-	stateStore := stateStoreFromConfig(t, mockConfig)
-	_, err := NewCAClient(org1, f.identityManager, stateStore, f.cryptoSuite, mockConfig)
+	userStore := &mocks.MockUserStore{}
+	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAClientKeyPath error") {
 		t.Fatalf("Expected error from CAClientKeyPath. Got: %v", err)
 	}

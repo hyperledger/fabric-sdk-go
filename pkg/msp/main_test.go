@@ -36,7 +36,6 @@ const (
 type textFixture struct {
 	config          core.Config
 	cryptoSuite     core.CryptoSuite
-	stateStore      core.KVStore
 	userStore       msp.UserStore
 	identityManager *IdentityManager
 	caClient        mspapi.CAClient
@@ -71,14 +70,14 @@ func (f *textFixture) setup(configPath string) {
 			panic(fmt.Sprintf("creating a user store failed: %v", err))
 		}
 	}
-	f.stateStore = stateStoreFromConfig(nil, f.config)
+	f.userStore = userStoreFromConfig(nil, f.config)
 
-	f.identityManager, err = NewIdentityManager("org1", f.stateStore, f.cryptoSuite, f.config)
+	f.identityManager, err = NewIdentityManager("org1", f.userStore, f.cryptoSuite, f.config)
 	if err != nil {
 		panic(fmt.Sprintf("manager.NewManager returned error: %v", err))
 	}
 
-	f.caClient, err = NewCAClient(org1, f.identityManager, f.stateStore, f.cryptoSuite, f.config)
+	f.caClient, err = NewCAClient(org1, f.identityManager, f.userStore, f.cryptoSuite, f.config)
 	if err != nil {
 		panic(fmt.Sprintf("NewCAClient returned error: %v", err))
 	}
@@ -129,10 +128,14 @@ func mspIDByOrgName(t *testing.T, c core.Config, orgName string) string {
 	return orgConfig.MspID
 }
 
-func stateStoreFromConfig(t *testing.T, config core.Config) core.KVStore {
+func userStoreFromConfig(t *testing.T, config core.Config) msp.UserStore {
 	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: config.CredentialStorePath()})
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)
 	}
-	return stateStore
+	userStore, err := NewCertFileUserStore1(stateStore)
+	if err != nil {
+		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)
+	}
+	return userStore
 }

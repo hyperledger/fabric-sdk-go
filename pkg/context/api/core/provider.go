@@ -100,7 +100,6 @@ const (
 // Providers represents the SDK configured core providers context.
 type Providers interface {
 	CryptoSuite() CryptoSuite
-	StateStore() KVStore
 	Config() Config
 	SigningManager() SigningManager
 }

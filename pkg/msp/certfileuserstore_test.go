@@ -62,12 +62,12 @@ func TestStore(t *testing.T) {
 	}
 	cleanupTestPath(t, storePath)
 
-	user1 := msp.UserData{
+	user1 := &msp.UserData{
 		MspID: "Org1",
 		Name:  "user1",
 		EnrollmentCertificate: []byte(testCert1),
 	}
-	user2 := msp.UserData{
+	user2 := &msp.UserData{
 		MspID: "Org2",
 		Name:  "user2",
 		EnrollmentCertificate: []byte(testCert2),
@@ -124,7 +124,7 @@ func TestCreateNewStore(t *testing.T) {
 	}
 }
 
-func checkStoreValue(store *CertFileUserStore, user msp.UserData, expected []byte) error {
+func checkStoreValue(store *CertFileUserStore, user *msp.UserData, expected []byte) error {
 	userIdentifier := userIdentifier(user)
 	storeKey := storeKeyFromUserIdentifier(userIdentifier)
 	v, err := store.Load(userIdentifier)

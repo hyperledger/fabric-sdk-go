@@ -78,13 +78,8 @@ func TestGetSigningIdentity(t *testing.T) {
 		t.Fatalf("Failed to setup cryptoSuite: %s", err)
 	}
 
-	stateStore := stateStoreFromConfig(t, config)
-	userStore, err := NewCertFileUserStore1(stateStore)
-	if err != nil {
-		t.Fatalf("Failed to setup userStore: %s", err)
-	}
-
-	mgr, err := NewIdentityManager(orgName, stateStore, cryptoSuite, config)
+	userStore := userStoreFromConfig(t, config)
+	mgr, err := NewIdentityManager(orgName, userStore, cryptoSuite, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -111,7 +106,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed [%s]", err)
 	}
-	user1 := msp.UserData{
+	user1 := &msp.UserData{
 		MspID: mspID,
 		Name:  testUserName,
 		EnrollmentCertificate: []byte(testCert),
@@ -157,10 +152,10 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	stateStore := stateStoreFromConfig(t, config)
+	userStore := userStoreFromConfig(t, config)
 
 	// Invalid Org
-	_, err = NewIdentityManager("invalidOrg", stateStore, &fcmocks.MockCryptoSuite{}, config)
+	_, err = NewIdentityManager("invalidOrg", userStore, &fcmocks.MockCryptoSuite{}, config)
 	if err == nil {
 		t.Fatalf("Should have failed to setup manager for invalid org")
 	}
@@ -173,9 +168,9 @@ func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	stateStore := stateStoreFromConfig(t, config)
+	userStore := userStoreFromConfig(t, config)
 
-	mgr, err := NewIdentityManager(orgName, stateStore, cryptosuite.GetDefault(), config)
+	mgr, err := NewIdentityManager(orgName, userStore, cryptosuite.GetDefault(), config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

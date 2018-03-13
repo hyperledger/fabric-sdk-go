@@ -18,6 +18,7 @@ import (
 	coreMocks "github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -78,7 +79,7 @@ func newMockInfraProvider(t *testing.T) *InfraProvider {
 	im := make(map[string]msp.IdentityManager)
 	im[""] = &mocks.MockIdentityManager{}
 
-	ctx := mocks.NewMockProviderContextCustom(cfg, cryptoSuite, coreMocks.NewMockSigningManager(), mocks.NewMockStateStore(), im)
+	ctx := mocks.NewMockProviderContextCustom(cfg, cryptoSuite, coreMocks.NewMockSigningManager(), &mspmocks.MockUserStore{}, im)
 	ip := New(cfg)
 	ip.Initialize(ctx)
 
