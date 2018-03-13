@@ -8,6 +8,8 @@ package integration
 
 import (
 	"math/rand"
+	"os"
+	"testing"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
@@ -169,4 +171,11 @@ func ProposalProcessors(targets []fab.Peer) []fab.ProposalProcessor {
 		proposalProcessors = append(proposalProcessors, peer)
 	}
 	return proposalProcessors
+}
+
+func CleanupTestPath(t *testing.T, storePath string) {
+	err := os.RemoveAll(storePath)
+	if err != nil {
+		t.Fatalf("Cleaning up directory '%s' failed: %v", storePath, err)
+	}
 }

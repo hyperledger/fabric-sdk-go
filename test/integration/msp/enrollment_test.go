@@ -19,18 +19,26 @@ import (
 
 const (
 	IdentityTypeUser = "User"
-	sdkConfigFile    = "../../fixtures/config/config_test.yaml"
 )
 
 func TestRegisterEnroll(t *testing.T) {
 
-	configProvider := config.FromFile(sdkConfigFile)
+	configProvider := config.FromFile("../" + integration.ConfigTestFile)
 
 	// Instantiate the SDK
 	sdk, err := fabsdk.New(configProvider)
+
 	if err != nil {
 		t.Fatalf("SDK init failed: %v", err)
 	}
+
+	// Delete all private keys from the crypto suite store
+	// and users from the user store at the end
+	netConfig := sdk.Config()
+	keyStorePath := netConfig.KeyStorePath()
+	credentialStorePath := netConfig.CredentialStorePath()
+	defer integration.CleanupTestPath(t, keyStorePath)
+	defer integration.CleanupTestPath(t, credentialStorePath)
 
 	ctxProvider := sdk.Context()
 
