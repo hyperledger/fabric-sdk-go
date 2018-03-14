@@ -11,8 +11,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 )
 
-// PkgSuite provides the package factories that create clients and providers
-type PkgSuite interface {
+// pkgSuite provides the package factories that create clients and providers
+type pkgSuite interface {
 	Core() (sdkApi.CoreProviderFactory, error)
 	MSP() (sdkApi.MSPProviderFactory, error)
 	Service() (sdkApi.ServiceProviderFactory, error)

@@ -212,7 +212,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	peers = append(peers, peer1)
 
 	// Test both targets and filter provided (error condition)
-	err = rc.JoinChannel("mychannel", WithTargets(peers...), WithTargetFilter(&MSPFilter{mspID: "MspID"}))
+	err = rc.JoinChannel("mychannel", WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "MspID"}))
 	if err == nil || !strings.Contains(err.Error(), "If targets are provided, filter cannot be provided") {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
@@ -224,7 +224,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	}
 
 	// Test filter only (filter has no match)
-	err = rc.JoinChannel("mychannel", WithTargetFilter(&MSPFilter{mspID: "MspID"}))
+	err = rc.JoinChannel("mychannel", WithTargetFilter(&mspFilter{mspID: "MspID"}))
 	if err == nil || !strings.Contains(err.Error(), "No targets available") {
 		t.Fatalf("InstallCC should have failed with no targets error")
 	}
@@ -241,7 +241,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	rc.discovery, _ = disProvider.CreateDiscoveryService("mychannel")
 
 	// Test filter only (filter has a match)
-	err = rc.JoinChannel("mychannel", WithTargetFilter(&MSPFilter{mspID: "Org1MSP"}))
+	err = rc.JoinChannel("mychannel", WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -672,7 +672,7 @@ func TestInstallCCWithOptsRequiredParameters(t *testing.T) {
 	peers = append(peers, &peer)
 
 	// Test both targets and filter provided (error condition)
-	_, err = rc.InstallCC(req, WithTargets(peers...), WithTargetFilter(&MSPFilter{mspID: "Org1MSP"}))
+	_, err = rc.InstallCC(req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
@@ -692,7 +692,7 @@ func TestInstallCCWithOptsRequiredParameters(t *testing.T) {
 	}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
-	_, err = rc.InstallCC(req, WithTargetFilter(&MSPFilter{mspID: "Org2MSP"}))
+	_, err = rc.InstallCC(req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
 	}
@@ -848,7 +848,7 @@ func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
 	peers = append(peers, &peer)
 
 	// Test both targets and filter provided (error condition)
-	err = rc.InstantiateCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&MSPFilter{mspID: "Org1MSP"}))
+	err = rc.InstantiateCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
@@ -868,7 +868,7 @@ func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
 	}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
-	err = rc.InstantiateCC("mychannel", req, WithTargetFilter(&MSPFilter{mspID: "Org2MSP"}))
+	err = rc.InstantiateCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
 	}
@@ -1054,7 +1054,7 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 	peers = append(peers, &peer)
 
 	// Test both targets and filter provided (error condition)
-	err = rc.UpgradeCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&MSPFilter{mspID: "Org1MSP"}))
+	err = rc.UpgradeCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
@@ -1074,7 +1074,7 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 	}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
-	err = rc.UpgradeCC("mychannel", req, WithTargetFilter(&MSPFilter{mspID: "Org2MSP"}))
+	err = rc.UpgradeCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
 	}
@@ -1232,7 +1232,7 @@ func TestCCProposal(t *testing.T) {
 }
 
 func getDefaultTargetFilterOption() ClientOption {
-	targetFilter := &MSPFilter{mspID: "Org1MSP"}
+	targetFilter := &mspFilter{mspID: "Org1MSP"}
 	return WithDefaultTargetFilter(targetFilter)
 }
 

@@ -79,11 +79,11 @@ func TestWithCustomStores(t *testing.T) {
 
 	ctxProvider := sdk.Context()
 
-	// Get the MSP.
+	// Get the Client.
 	// Without WithOrg option, uses default client organization.
 	mspClient, err := msp.New(ctxProvider)
 	if err != nil {
-		t.Fatalf("failed to create MSP: %v", err)
+		t.Fatalf("failed to create Client: %v", err)
 	}
 
 	// As this integration test spawns a fresh CA instance,
@@ -155,7 +155,7 @@ func getMyMSPID(t *testing.T, config core.Config) string {
 
 	clientConfig, err := config.Client()
 	if err != nil {
-		t.Fatalf("config.MSP() failed: %v", err)
+		t.Fatalf("config.Client() failed: %v", err)
 	}
 
 	netConfig, err := config.NetworkConfig()

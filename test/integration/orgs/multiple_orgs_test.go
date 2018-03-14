@@ -248,7 +248,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Test Query Block by Hash - retrieve current block by number
-	block, err = ledgerClient.QueryBlock(int(ledgerInfoAfter.BCI.Height)-1, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	block, err = ledgerClient.QueryBlock(ledgerInfoAfter.BCI.Height-1, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
 	if err != nil {
 		t.Fatalf("QueryBlock return error: %v", err)
 	}

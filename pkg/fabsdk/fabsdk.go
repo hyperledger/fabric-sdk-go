@@ -61,7 +61,7 @@ func WithConfig(config core.Config) core.ConfigProvider {
 
 // fromPkgSuite creates an SDK based on the implementations in the provided pkg suite.
 // TODO: For now leaving this method as private until we have more usage.
-func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*FabricSDK, error) {
+func fromPkgSuite(config core.Config, pkgSuite pkgSuite, opts ...Option) (*FabricSDK, error) {
 	core, err := pkgSuite.Core()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to initialize core pkg")

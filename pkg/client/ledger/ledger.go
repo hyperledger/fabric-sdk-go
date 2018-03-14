@@ -43,13 +43,13 @@ type Client struct {
 	ledger *channel.Ledger
 }
 
-// MSPFilter is default filter
-type MSPFilter struct {
+// mspFilter is default filter
+type mspFilter struct {
 	mspID string
 }
 
 // Accept returns true if this peer is to be included in the target list
-func (f *MSPFilter) Accept(peer fab.Peer) bool {
+func (f *mspFilter) Accept(peer fab.Peer) bool {
 	return peer.MSPID() == f.mspID
 }
 
@@ -84,7 +84,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		if channelContext.MspID() == "" {
 			return nil, errors.New("mspID not available in user context")
 		}
-		filter := &MSPFilter{mspID: channelContext.MspID()}
+		filter := &mspFilter{mspID: channelContext.MspID()}
 		ledgerClient.filter = filter
 	}
 
@@ -183,7 +183,7 @@ func (c *Client) QueryBlockByHash(blockHash []byte, options ...RequestOption) (*
 // This query will be made to specified targets.
 // blockNumber: The number which is the ID of the Block.
 // It returns the block.
-func (c *Client) QueryBlock(blockNumber int, options ...RequestOption) (*common.Block, error) {
+func (c *Client) QueryBlock(blockNumber uint64, options ...RequestOption) (*common.Block, error) {
 
 	opts, err := c.prepareRequestOpts(options...)
 	if err != nil {

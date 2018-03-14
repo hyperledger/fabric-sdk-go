@@ -105,13 +105,13 @@ type Client struct {
 	filter    TargetFilter
 }
 
-// MSPFilter is default filter
-type MSPFilter struct {
+// mspFilter is default filter
+type mspFilter struct {
 	mspID string
 }
 
 // Accept returns true if this peer is to be included in the target list
-func (f *MSPFilter) Accept(peer fab.Peer) bool {
+func (f *mspFilter) Accept(peer fab.Peer) bool {
 	return peer.MSPID() == f.mspID
 }
 
@@ -157,7 +157,7 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 		if ctx.MspID() == "" {
 			return nil, errors.New("mspID not available in user context")
 		}
-		rcFilter := &MSPFilter{mspID: ctx.MspID()}
+		rcFilter := &mspFilter{mspID: ctx.MspID()}
 		resourceClient.filter = rcFilter
 	}
 	return resourceClient, nil

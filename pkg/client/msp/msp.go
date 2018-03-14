@@ -19,46 +19,46 @@ import (
 
 var logger = logging.NewLogger("fabsdk/client")
 
-// MSP enables access to MSP services
-type MSP struct {
+// Client enables access to Client services
+type Client struct {
 	orgName string
 	ctx     context.Client
 }
 
 // ClientOption describes a functional parameter for the New constructor
-type ClientOption func(*MSP) error
+type ClientOption func(*Client) error
 
 // WithOrg option
 func WithOrg(orgName string) ClientOption {
-	return func(msp *MSP) error {
+	return func(msp *Client) error {
 		msp.orgName = orgName
 		return nil
 	}
 }
 
-// New creates a new MSP instance
-func New(clientProvider context.ClientProvider, opts ...ClientOption) (*MSP, error) {
+// New creates a new Client instance
+func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, error) {
 
 	ctx, err := clientProvider()
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to create MSP")
+		return nil, errors.WithMessage(err, "failed to create Client")
 	}
 
-	msp := MSP{
+	msp := Client{
 		ctx: ctx,
 	}
 
 	for _, param := range opts {
 		err := param(&msp)
 		if err != nil {
-			return nil, errors.WithMessage(err, "failed to create MSP")
+			return nil, errors.WithMessage(err, "failed to create Client")
 		}
 	}
 
 	if msp.orgName == "" {
 		clientConfig, err := ctx.Config().Client()
 		if err != nil {
-			return nil, errors.WithMessage(err, "failed to create MSP")
+			return nil, errors.WithMessage(err, "failed to create Client")
 		}
 		msp.orgName = clientConfig.Organization
 	}
@@ -74,7 +74,7 @@ func newCAClient(ctx context.Client, orgName string) (mspapi.CAClient, error) {
 	}
 	caClient, err := msp.NewCAClient(orgName, identityManager, ctx.UserStore(), ctx.CryptoSuite(), ctx.Config())
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to create CA MSP")
+		return nil, errors.WithMessage(err, "failed to create CA Client")
 	}
 
 	return caClient, nil
@@ -103,7 +103,7 @@ func WithSecret(secret string) EnrollmentOption {
 //
 // enrollmentID enrollment ID of a registered user
 // opts represent enrollment options
-func (c *MSP) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
+func (c *Client) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
 
 	eo := enrollmentOptions{}
 	for _, param := range opts {
@@ -121,7 +121,7 @@ func (c *MSP) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
 }
 
 // Reenroll reenrolls an enrolled user in order to obtain a new signed X509 certificate
-func (c *MSP) Reenroll(enrollmentID string) error {
+func (c *Client) Reenroll(enrollmentID string) error {
 	ca, err := newCAClient(c.ctx, c.orgName)
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func (c *MSP) Reenroll(enrollmentID string) error {
 // Register registers a User with the Fabric CA
 // request: Registration Request
 // Returns Enrolment Secret
-func (c *MSP) Register(request *RegistrationRequest) (string, error) {
+func (c *Client) Register(request *RegistrationRequest) (string, error) {
 	ca, err := newCAClient(c.ctx, c.orgName)
 	if err != nil {
 		return "", err
@@ -154,7 +154,7 @@ func (c *MSP) Register(request *RegistrationRequest) (string, error) {
 
 // Revoke revokes a User with the Fabric CA
 // request: Revocation Request
-func (c *MSP) Revoke(request *RevocationRequest) (*RevocationResponse, error) {
+func (c *Client) Revoke(request *RevocationRequest) (*RevocationResponse, error) {
 	ca, err := newCAClient(c.ctx, c.orgName)
 	if err != nil {
 		return nil, err
@@ -181,7 +181,7 @@ func (c *MSP) Revoke(request *RevocationRequest) (*RevocationResponse, error) {
 }
 
 // GetSigningIdentity returns a signing identity for the given user name
-func (c *MSP) GetSigningIdentity(userName string) (*SigningIdentity, error) {
+func (c *Client) GetSigningIdentity(userName string) (*SigningIdentity, error) {
 	user, err := c.GetUser(userName)
 	if err != nil {
 		if err == mspctx.ErrUserNotFound {
@@ -194,7 +194,7 @@ func (c *MSP) GetSigningIdentity(userName string) (*SigningIdentity, error) {
 }
 
 // GetUser returns a user for the given user name
-func (c *MSP) GetUser(userName string) (User, error) {
+func (c *Client) GetUser(userName string) (User, error) {
 	im, _ := c.ctx.IdentityManager(c.orgName)
 	user, err := im.GetUser(userName)
 	if err != nil {

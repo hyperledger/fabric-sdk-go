@@ -41,7 +41,7 @@ func TestRegisterEnroll(t *testing.T) {
 
 	ctxProvider := sdk.Context()
 
-	// Get the MSP.
+	// Get the Client.
 	// Without WithOrg option, uses default client organization.
 	mspClient, err := msp.New(ctxProvider)
 	if err != nil {
@@ -104,7 +104,7 @@ func getRegistrarEnrollmentCredentials(t *testing.T, config core.Config) (string
 
 	clientConfig, err := config.Client()
 	if err != nil {
-		t.Fatalf("config.MSP() failed: %v", err)
+		t.Fatalf("config.Client() failed: %v", err)
 	}
 
 	myOrg := clientConfig.Organization

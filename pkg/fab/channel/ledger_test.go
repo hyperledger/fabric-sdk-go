@@ -45,12 +45,7 @@ func TestQueryMethods(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(setupContext(), context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	_, err := channel.QueryBlock(reqCtx, -1, []fab.ProposalProcessor{&peer})
-	if err == nil {
-		t.Fatalf("Query block cannot be negative number")
-	}
-
-	_, err = channel.QueryBlockByHash(reqCtx, nil, []fab.ProposalProcessor{&peer})
+	_, err := channel.QueryBlockByHash(reqCtx, nil, []fab.ProposalProcessor{&peer})
 	if err == nil {
 		t.Fatalf("Query hash cannot be nil")
 	}

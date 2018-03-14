@@ -59,11 +59,11 @@ func createBlockByHashInvokeRequest(channelID string, blockHash []byte) fab.Chai
 	return cir
 }
 
-func createBlockByNumberInvokeRequest(channelID string, blockNumber int) fab.ChaincodeInvokeRequest {
+func createBlockByNumberInvokeRequest(channelID string, blockNumber uint64) fab.ChaincodeInvokeRequest {
 
 	var args [][]byte
 	args = append(args, []byte(channelID))
-	args = append(args, []byte(strconv.Itoa(blockNumber)))
+	args = append(args, []byte(strconv.FormatUint(blockNumber, 10)))
 
 	cir := fab.ChaincodeInvokeRequest{
 		ChaincodeID: qscc,

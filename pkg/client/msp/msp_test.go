@@ -26,7 +26,7 @@ const (
 	configPath  = "testdata/config_test.yaml"
 )
 
-// TestMSP is a unit test for MSP enrollment and re-enrollment scenarios
+// TestMSP is a unit test for Client enrollment and re-enrollment scenarios
 func TestMSP(t *testing.T) {
 
 	f := textFixture{}
@@ -35,7 +35,7 @@ func TestMSP(t *testing.T) {
 
 	ctxProvider := sdk.Context()
 
-	// Get the MSP.
+	// Get the Client.
 	// Without WithOrg option, it uses default client organization.
 	msp, err := New(ctxProvider)
 	if err != nil {
