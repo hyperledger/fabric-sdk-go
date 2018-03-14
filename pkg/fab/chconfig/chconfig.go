@@ -14,7 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -140,7 +139,7 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 		}
 
 		for _, p := range chPeers {
-			newPeer, err := peer.New(ctx.Config(), peer.FromPeerConfig(&p.NetworkPeer))
+			newPeer, err := ctx.InfraProvider().CreatePeerFromConfig((&p.NetworkPeer))
 			if err != nil || newPeer == nil {
 				return nil, errors.WithMessage(err, "NewPeer failed")
 			}

@@ -19,7 +19,6 @@ import (
 
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 )
 
@@ -78,21 +77,17 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 
 		}
 		if !ok {
-			o, err := orderer.New(ctx.Config(), orderer.WithURL(target))
-			// TODO: should we fail hard if we cannot configure a default orderer?
-			//if err != nil {
-			//	return nil, errors.WithMessage(err, "failed to create orderer from defaults")
-			//}
-			if err == nil {
-				orderers = append(orderers, o)
+			oCfg = core.OrdererConfig{
+				URL: target,
 			}
-		} else {
-			o, err := orderer.New(ctx.Config(), orderer.FromOrdererConfig(&oCfg))
-			if err != nil {
-				return nil, errors.WithMessage(err, "failed to create orderer from config")
-			}
-			orderers = append(orderers, o)
 		}
+
+		o, err := ctx.InfraProvider().CreateOrdererFromConfig(&oCfg)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create orderer from config")
+		}
+		orderers = append(orderers, o)
+
 	}
 	return orderers, nil
 }
