@@ -18,9 +18,9 @@ import (
 )
 
 // NewFileKeyStore ...
-func NewFileKeyStore(cryptoConfogMspPath string) (core.KVStore, error) {
+func NewFileKeyStore(cryptoConfigMSPPath string) (core.KVStore, error) {
 	opts := &keyvaluestore.FileKeyValueStoreOptions{
-		Path: cryptoConfogMspPath,
+		Path: cryptoConfigMSPPath,
 		KeySerializer: func(key interface{}) (string, error) {
 			pkk, ok := key.(*msp.PrivKeyKey)
 			if !ok {
@@ -29,7 +29,11 @@ func NewFileKeyStore(cryptoConfogMspPath string) (core.KVStore, error) {
 			if pkk == nil || pkk.MSPID == "" || pkk.Username == "" || pkk.SKI == nil {
 				return "", errors.New("invalid key")
 			}
-			keyDir := path.Join(strings.Replace(cryptoConfogMspPath, "{username}", pkk.Username, -1), "keystore")
+
+			// TODO: refactor to case insensitive or remove eventually.
+			r := strings.NewReplacer("{userName}", pkk.Username, "{username}", pkk.Username)
+			keyDir := path.Join(r.Replace(cryptoConfigMSPPath), "keystore")
+
 			return path.Join(keyDir, hex.EncodeToString(pkk.SKI)+"_sk"), nil
 		},
 	}
