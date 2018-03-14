@@ -145,7 +145,7 @@ func FromPeerConfig(peerCfg *core.NetworkPeer) Option {
 		}
 
 		// TODO: Remove upon making peer interface immutable
-		p.mspID = peerCfg.MspID
+		p.mspID = peerCfg.MSPID
 		p.kap = getKeepAliveOptions(peerCfg)
 		p.failFast = getFailFast(peerCfg)
 		return nil

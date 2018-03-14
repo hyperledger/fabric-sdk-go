@@ -31,7 +31,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	f.setup("")
 	defer f.close()
 
-	orgMspID := mspIDByOrgName(t, f.config, org1)
+	orgMSPID := mspIDByOrgName(t, f.config, org1)
 
 	// Empty enrollment ID
 	err := f.caClient.Enroll("", "user1")
@@ -47,7 +47,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 
 	// Successful enrollment
 	enrollUserName := createRandomName()
-	enrolledUserData, err := f.userStore.Load(msp.UserIdentifier{MspID: orgMspID, Name: enrollUserName})
+	enrolledUserData, err := f.userStore.Load(msp.UserIdentifier{MSPID: orgMSPID, Name: enrollUserName})
 	if err != msp.ErrUserNotFound {
 		t.Fatalf("Expected to not find user in user store")
 	}
@@ -55,7 +55,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("identityManager Enroll return error %v", err)
 	}
-	enrolledUserData, err = f.userStore.Load(msp.UserIdentifier{MspID: orgMspID, Name: enrollUserName})
+	enrolledUserData, err = f.userStore.Load(msp.UserIdentifier{MSPID: orgMSPID, Name: enrollUserName})
 	if err != nil {
 		t.Fatalf("Expected to load user from user store")
 	}

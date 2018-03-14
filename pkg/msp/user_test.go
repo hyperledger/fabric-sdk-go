@@ -18,7 +18,7 @@ import (
 
 func TestUserMethods(t *testing.T) {
 
-	testUserMspID := "testUserMspID"
+	testUserMSPID := "testUserMSPID"
 	testUserName := "testUserName"
 
 	config, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
@@ -39,7 +39,7 @@ func TestUserMethods(t *testing.T) {
 
 	// Missing enrollment cert
 	userData := &msp.UserData{
-		MspID: testUserMspID,
+		MSPID: testUserMSPID,
 		Name:  testUserName,
 	}
 	_, err = newUser(userData, cryptoSuite)
@@ -63,9 +63,9 @@ func TestUserMethods(t *testing.T) {
 		t.Fatalf("newUser failed: %v", err)
 	}
 
-	// Check MspID
-	if user.MspID() != testUserMspID {
-		t.Fatal("user.SetMspID Failed to MSP.")
+	// Check MSPID
+	if user.MSPID() != testUserMSPID {
+		t.Fatal("user.SetMSPID Failed to MSP.")
 	}
 
 	// Check Name

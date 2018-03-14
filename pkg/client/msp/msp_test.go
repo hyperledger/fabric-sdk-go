@@ -82,7 +82,7 @@ func TestMSP(t *testing.T) {
 		t.Fatalf("Enrolled user name doesn't match")
 	}
 
-	if enrolledUser.MspID() != "Org1MSP" {
+	if enrolledUser.MSPID() != "Org1MSP" {
 		t.Fatalf("Enrolled user mspID doesn't match")
 	}
 
@@ -123,7 +123,7 @@ func TestMSP(t *testing.T) {
 		t.Fatalf("Enrolled user name doesn't match")
 	}
 
-	if org2EnrolledUser.MspID() != "Org2MSP" {
+	if org2EnrolledUser.MSPID() != "Org2MSP" {
 		t.Fatalf("Enrolled user mspID doesn't match")
 	}
 
@@ -194,7 +194,7 @@ func myMSPID(t *testing.T, c core.Config) string {
 	if !ok {
 		t.Fatalf("org config retrieval failed: %v", err)
 	}
-	return orgConfig.MspID
+	return orgConfig.MSPID
 }
 
 func randomUserName() string {

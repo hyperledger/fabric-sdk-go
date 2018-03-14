@@ -212,7 +212,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	peers = append(peers, peer1)
 
 	// Test both targets and filter provided (error condition)
-	err = rc.JoinChannel("mychannel", WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "MspID"}))
+	err = rc.JoinChannel("mychannel", WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "MSPID"}))
 	if err == nil || !strings.Contains(err.Error(), "If targets are provided, filter cannot be provided") {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
@@ -224,7 +224,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	}
 
 	// Test filter only (filter has no match)
-	err = rc.JoinChannel("mychannel", WithTargetFilter(&mspFilter{mspID: "MspID"}))
+	err = rc.JoinChannel("mychannel", WithTargetFilter(&mspFilter{mspID: "MSPID"}))
 	if err == nil || !strings.Contains(err.Error(), "No targets available") {
 		t.Fatalf("InstallCC should have failed with no targets error")
 	}

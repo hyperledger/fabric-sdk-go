@@ -44,7 +44,7 @@ func TestWithTargetURLsValid(t *testing.T) {
 
 	npConfig1 := core.NetworkPeer{
 		PeerConfig: pConfig1,
-		MspID:      "MYMSP",
+		MSPID:      "MYMSP",
 	}
 
 	pConfig2 := core.PeerConfig{
@@ -53,7 +53,7 @@ func TestWithTargetURLsValid(t *testing.T) {
 
 	npConfig2 := core.NetworkPeer{
 		PeerConfig: pConfig2,
-		MspID:      "OTHERMSP",
+		MSPID:      "OTHERMSP",
 	}
 
 	mockConfig.SetCustomPeerCfg(&pConfig1)
@@ -66,5 +66,5 @@ func TestWithTargetURLsValid(t *testing.T) {
 
 	assert.Equal(t, 1, len(opts.Targets), "should have one peer")
 	assert.Equal(t, pConfig1.URL, opts.Targets[0].URL(), "", "Wrong URL")
-	assert.Equal(t, npConfig1.MspID, opts.Targets[0].MSPID(), "", "Wrong MSP")
+	assert.Equal(t, npConfig1.MSPID, opts.Targets[0].MSPID(), "", "Wrong MSP")
 }

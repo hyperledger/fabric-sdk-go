@@ -35,7 +35,7 @@ func (s *MemoryUserStore) Load(id msp.UserIdentifier) (*msp.UserData, error) {
 	}
 	userData := msp.UserData{
 		Name:  id.Name,
-		MspID: id.MspID,
+		MSPID: id.MSPID,
 		EnrollmentCertificate: cert,
 	}
 	return &userData, nil

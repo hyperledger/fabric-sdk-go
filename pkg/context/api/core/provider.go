@@ -24,8 +24,8 @@ type Config interface {
 	CAClientCertPath(org string) (string, error)
 	TimeoutOrDefault(TimeoutType) time.Duration
 	Timeout(TimeoutType) time.Duration
-	MspID(org string) (string, error)
-	PeerMspID(name string) (string, error)
+	MSPID(org string) (string, error)
+	PeerMSPID(name string) (string, error)
 	OrderersConfig() ([]OrdererConfig, error)
 	RandomOrdererConfig() (*OrdererConfig, error)
 	OrdererConfig(name string) (*OrdererConfig, error)

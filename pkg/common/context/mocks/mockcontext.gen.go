@@ -241,16 +241,16 @@ func (mr *MockClientMockRecorder) InfraProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InfraProvider", reflect.TypeOf((*MockClient)(nil).InfraProvider))
 }
 
-// MspID mocks base method
-func (m *MockClient) MspID() string {
-	ret := m.ctrl.Call(m, "MspID")
+// MSPID mocks base method
+func (m *MockClient) MSPID() string {
+	ret := m.ctrl.Call(m, "MSPID")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// MspID indicates an expected call of MspID
-func (mr *MockClientMockRecorder) MspID() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MspID", reflect.TypeOf((*MockClient)(nil).MspID))
+// MSPID indicates an expected call of MSPID
+func (mr *MockClientMockRecorder) MSPID() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MSPID", reflect.TypeOf((*MockClient)(nil).MSPID))
 }
 
 // PrivateKey mocks base method

@@ -201,7 +201,7 @@ func TestPeerOptions(t *testing.T) {
 
 	networkPeer := &core.NetworkPeer{
 		PeerConfig: peerConfig,
-		MspID:      "Org1MSP",
+		MSPID:      "Org1MSP",
 	}
 	//from config with grpc
 	_, err := New(config, FromPeerConfig(networkPeer))

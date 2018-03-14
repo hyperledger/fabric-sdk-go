@@ -264,17 +264,17 @@ func (mr *MockConfigMockRecorder) KeyStorePath() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeyStorePath", reflect.TypeOf((*MockConfig)(nil).KeyStorePath))
 }
 
-// MspID mocks base method
-func (m *MockConfig) MspID(arg0 string) (string, error) {
-	ret := m.ctrl.Call(m, "MspID", arg0)
+// MSPID mocks base method
+func (m *MockConfig) MSPID(arg0 string) (string, error) {
+	ret := m.ctrl.Call(m, "MSPID", arg0)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// MspID indicates an expected call of MspID
-func (mr *MockConfigMockRecorder) MspID(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MspID", reflect.TypeOf((*MockConfig)(nil).MspID), arg0)
+// MSPID indicates an expected call of MSPID
+func (mr *MockConfigMockRecorder) MSPID(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MSPID", reflect.TypeOf((*MockConfig)(nil).MSPID), arg0)
 }
 
 // NetworkConfig mocks base method
@@ -355,17 +355,17 @@ func (mr *MockConfigMockRecorder) PeerConfigByURL(arg0 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerConfigByURL", reflect.TypeOf((*MockConfig)(nil).PeerConfigByURL), arg0)
 }
 
-// PeerMspID mocks base method
-func (m *MockConfig) PeerMspID(arg0 string) (string, error) {
-	ret := m.ctrl.Call(m, "PeerMspID", arg0)
+// PeerMSPID mocks base method
+func (m *MockConfig) PeerMSPID(arg0 string) (string, error) {
+	ret := m.ctrl.Call(m, "PeerMSPID", arg0)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// PeerMspID indicates an expected call of PeerMspID
-func (mr *MockConfigMockRecorder) PeerMspID(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerMspID", reflect.TypeOf((*MockConfig)(nil).PeerMspID), arg0)
+// PeerMSPID indicates an expected call of PeerMSPID
+func (mr *MockConfigMockRecorder) PeerMSPID(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerMSPID", reflect.TypeOf((*MockConfig)(nil).PeerMSPID), arg0)
 }
 
 // PeersConfig mocks base method

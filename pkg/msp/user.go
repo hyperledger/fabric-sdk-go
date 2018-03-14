@@ -24,7 +24,7 @@ type User struct {
 }
 
 func userIdentifier(userData *msp.UserData) msp.UserIdentifier {
-	return msp.UserIdentifier{MspID: userData.MspID, Name: userData.Name}
+	return msp.UserIdentifier{MSPID: userData.MSPID, Name: userData.Name}
 }
 
 // Name Get the user name.
@@ -43,14 +43,14 @@ func (u *User) PrivateKey() core.Key {
 	return u.privateKey
 }
 
-// MspID returns the MSP for this user
-func (u *User) MspID() string {
+// MSPID returns the MSP for this user
+func (u *User) MSPID() string {
 	return u.mspID
 }
 
 // SerializedIdentity returns client's serialized identity
 func (u *User) SerializedIdentity() ([]byte, error) {
-	serializedIdentity := &pb_msp.SerializedIdentity{Mspid: u.MspID(),
+	serializedIdentity := &pb_msp.SerializedIdentity{Mspid: u.MSPID(),
 		IdBytes: u.EnrollmentCertificate()}
 	identity, err := proto.Marshal(serializedIdentity)
 	if err != nil {

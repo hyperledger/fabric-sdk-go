@@ -21,7 +21,7 @@ import (
 // IdentityManager implements fab/IdentityManager
 type IdentityManager struct {
 	orgName         string
-	orgMspID        string
+	orgMSPID        string
 	config          core.Config
 	cryptoSuite     core.CryptoSuite
 	embeddedUsers   map[string]core.TLSKeyPair
@@ -70,7 +70,7 @@ func NewIdentityManager(orgName string, userStore msp.UserStore, cryptoSuite cor
 
 	mgr := &IdentityManager{
 		orgName:         orgName,
-		orgMspID:        orgConfig.MspID,
+		orgMSPID:        orgConfig.MSPID,
 		config:          config,
 		cryptoSuite:     cryptoSuite,
 		mspPrivKeyStore: mspPrivKeyStore,

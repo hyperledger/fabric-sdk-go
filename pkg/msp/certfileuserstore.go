@@ -23,13 +23,13 @@ type CertFileUserStore struct {
 
 func userIdentifierFromUser(user msp.UserData) msp.UserIdentifier {
 	return msp.UserIdentifier{
-		MspID: user.MspID,
+		MSPID: user.MSPID,
 		Name:  user.Name,
 	}
 }
 
 func storeKeyFromUserIdentifier(key msp.UserIdentifier) string {
-	return key.Name + "@" + key.MspID + "-cert.pem"
+	return key.Name + "@" + key.MSPID + "-cert.pem"
 }
 
 // NewCertFileUserStore1 creates a new instance of CertFileUserStore
@@ -67,7 +67,7 @@ func (s *CertFileUserStore) Load(key msp.UserIdentifier) (*msp.UserData, error) 
 		return nil, errors.New("user is not of proper type")
 	}
 	userData := &msp.UserData{
-		MspID: key.MspID,
+		MSPID: key.MSPID,
 		Name:  key.Name,
 		EnrollmentCertificate: certBytes,
 	}
@@ -76,7 +76,7 @@ func (s *CertFileUserStore) Load(key msp.UserIdentifier) (*msp.UserData, error) 
 
 // Store stores a User into store
 func (s *CertFileUserStore) Store(user *msp.UserData) error {
-	key := storeKeyFromUserIdentifier(msp.UserIdentifier{MspID: user.MspID, Name: user.Name})
+	key := storeKeyFromUserIdentifier(msp.UserIdentifier{MSPID: user.MSPID, Name: user.Name})
 	return s.store.Store(key, user.EnrollmentCertificate)
 }
 

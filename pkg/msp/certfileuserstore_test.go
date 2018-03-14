@@ -63,12 +63,12 @@ func TestStore(t *testing.T) {
 	cleanupTestPath(t, storePath)
 
 	user1 := &msp.UserData{
-		MspID: "Org1",
+		MSPID: "Org1",
 		Name:  "user1",
 		EnrollmentCertificate: []byte(testCert1),
 	}
 	user2 := &msp.UserData{
-		MspID: "Org2",
+		MSPID: "Org2",
 		Name:  "user2",
 		EnrollmentCertificate: []byte(testCert2),
 	}
@@ -107,7 +107,7 @@ func TestStore(t *testing.T) {
 
 	// Check non-existing key
 	nonExistingKey := msp.UserIdentifier{
-		MspID: "Orgx",
+		MSPID: "Orgx",
 		Name:  "userx",
 	}
 	_, err = store.Load(nonExistingKey)

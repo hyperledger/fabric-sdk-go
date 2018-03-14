@@ -128,7 +128,7 @@ func TestFabricSDKContext(t *testing.T) {
 		t.Fatalf("getting context supposed to succeed")
 	}
 
-	if ctx == nil || ctx.MspID() == "" {
+	if ctx == nil || ctx.MSPID() == "" {
 		t.Fatalf("supposed to get valid context")
 	}
 

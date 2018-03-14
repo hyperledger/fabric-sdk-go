@@ -21,7 +21,7 @@ type ClientContext interface {
 	core.Providers
 	msp.Providers
 	Providers
-	MspID() string
+	MSPID() string
 	SerializedIdentity() ([]byte, error)
 	PrivateKey() core.Key
 }

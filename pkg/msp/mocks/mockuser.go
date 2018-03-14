@@ -80,13 +80,13 @@ func (u *MockUser) PrivateKey() core.Key {
 	return u.privateKey
 }
 
-// SetMspID sets the MSP for this user
-func (u *MockUser) SetMspID(mspID string) {
+// SetMSPID sets the MSP for this user
+func (u *MockUser) SetMSPID(mspID string) {
 	u.mspID = mspID
 }
 
-// MspID returns the MSP for this user
-func (u *MockUser) MspID() string {
+// MSPID returns the MSP for this user
+func (u *MockUser) MSPID() string {
 	return u.mspID
 }
 

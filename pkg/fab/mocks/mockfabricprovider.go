@@ -52,8 +52,8 @@ func (f *MockInfraProvider) CreateChannelTransactor(reqCtx reqContext.Context, c
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration
 func (f *MockInfraProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
 	if peerCfg != nil {
-		p := NewMockPeer(peerCfg.MspID, peerCfg.URL)
-		p.SetMSPID(peerCfg.MspID)
+		p := NewMockPeer(peerCfg.MSPID, peerCfg.URL)
+		p.SetMSPID(peerCfg.MSPID)
 
 		return p, nil
 	}

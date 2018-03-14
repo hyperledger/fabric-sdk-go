@@ -123,7 +123,7 @@ func TestWithCustomStores(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUser failed: %v", err)
 	}
-	userDataFromStore, err := customUserStore.Load(mspctx.UserIdentifier{MspID: getMyMSPID(t, config), Name: userName})
+	userDataFromStore, err := customUserStore.Load(mspctx.UserIdentifier{MSPID: getMyMSPID(t, config), Name: userName})
 	if err != nil {
 		t.Fatalf("Load user failed: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestWithCustomStores(t *testing.T) {
 	if userDataFromStore.Name != user.Name() {
 		t.Fatalf("username doesn't match")
 	}
-	if userDataFromStore.MspID != user.MspID() {
+	if userDataFromStore.MSPID != user.MSPID() {
 		t.Fatalf("username doesn't match")
 	}
 	if hex.EncodeToString(user.EnrollmentCertificate()) != hex.EncodeToString(userDataFromStore.EnrollmentCertificate) {
@@ -167,5 +167,5 @@ func getMyMSPID(t *testing.T, config core.Config) string {
 		t.Fatalf("Organization is not configured: %v", clientConfig.Organization)
 	}
 
-	return myOrg.MspID
+	return myOrg.MSPID
 }

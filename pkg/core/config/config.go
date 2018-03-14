@@ -604,14 +604,14 @@ func (c *Config) getTimeout(tType core.TimeoutType) time.Duration {
 	return timeout
 }
 
-// MspID returns the MSP ID for the requested organization
-func (c *Config) MspID(org string) (string, error) {
+// MSPID returns the MSP ID for the requested organization
+func (c *Config) MSPID(org string) (string, error) {
 	config, err := c.NetworkConfig()
 	if err != nil {
 		return "", err
 	}
 	// viper lowercases all key maps, org is lower case
-	mspID := config.Organizations[strings.ToLower(org)].MspID
+	mspID := config.Organizations[strings.ToLower(org)].MSPID
 	if mspID == "" {
 		return "", errors.Errorf("MSP ID is empty for org: %s", org)
 	}
@@ -1189,12 +1189,12 @@ func (c *Config) ChannelPeers(name string) ([]core.ChannelPeer, error) {
 			p.TLSCACerts.Path = SubstPathVars(p.TLSCACerts.Path)
 		}
 
-		mspID, err := c.PeerMspID(peerName)
+		mspID, err := c.PeerMSPID(peerName)
 		if err != nil {
 			return nil, errors.Errorf("failed to retrieve msp id for peer %s", peerName)
 		}
 
-		networkPeer := core.NetworkPeer{PeerConfig: p, MspID: mspID}
+		networkPeer := core.NetworkPeer{PeerConfig: p, MSPID: mspID}
 
 		peer := core.ChannelPeer{PeerChannelConfig: chPeerConfig, NetworkPeer: networkPeer}
 
@@ -1224,20 +1224,20 @@ func (c *Config) NetworkPeers() ([]core.NetworkPeer, error) {
 			p.TLSCACerts.Path = SubstPathVars(p.TLSCACerts.Path)
 		}
 
-		mspID, err := c.PeerMspID(name)
+		mspID, err := c.PeerMSPID(name)
 		if err != nil {
 			return nil, errors.Errorf("failed to retrieve msp id for peer %s", name)
 		}
 
-		netPeer := core.NetworkPeer{PeerConfig: p, MspID: mspID}
+		netPeer := core.NetworkPeer{PeerConfig: p, MSPID: mspID}
 		netPeers = append(netPeers, netPeer)
 	}
 
 	return netPeers, nil
 }
 
-// PeerMspID returns msp that peer belongs to
-func (c *Config) PeerMspID(name string) (string, error) {
+// PeerMSPID returns msp that peer belongs to
+func (c *Config) PeerMSPID(name string) (string, error) {
 	netConfig, err := c.NetworkConfig()
 	if err != nil {
 		return "", err
@@ -1250,12 +1250,12 @@ func (c *Config) PeerMspID(name string) (string, error) {
 		for i := 0; i < len(org.Peers); i++ {
 			if strings.EqualFold(org.Peers[i], name) {
 				// peer belongs to this org add org msp
-				mspID = org.MspID
+				mspID = org.MSPID
 				break
 			} else {
 				peer, err := c.findMatchingPeer(org.Peers[i])
 				if err == nil && strings.EqualFold(peer, name) {
-					mspID = org.MspID
+					mspID = org.MSPID
 					break
 				}
 			}
@@ -1456,14 +1456,14 @@ func NetworkPeerConfigFromURL(cfg core.Config, url string) (*core.NetworkPeer, e
 	var mspID string
 	for _, peer := range networkPeers {
 		if peer.URL == peerCfg.URL { // need to use the looked-up URL due to matching
-			mspID = peer.MspID
+			mspID = peer.MSPID
 			break
 		}
 	}
 
 	np := core.NetworkPeer{
 		PeerConfig: *peerCfg,
-		MspID:      mspID,
+		MSPID:      mspID,
 	}
 
 	return &np, nil

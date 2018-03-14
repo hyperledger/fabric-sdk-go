@@ -189,7 +189,7 @@ func (c *Client) GetSigningIdentity(userName string) (*SigningIdentity, error) {
 		}
 		return nil, err
 	}
-	signingIdentity := &SigningIdentity{MspID: user.MspID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
+	signingIdentity := &SigningIdentity{MSPID: user.MSPID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
 	return signingIdentity, nil
 }
 

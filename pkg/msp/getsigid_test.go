@@ -60,7 +60,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	if !ok {
 		t.Fatalf("Failed to setup orgConfig: %s", err)
 	}
-	mspID := orgConfig.MspID
+	mspID := orgConfig.MSPID
 
 	clientCofig, err := config.Client()
 	if err != nil {
@@ -107,7 +107,7 @@ func TestGetSigningIdentity(t *testing.T) {
 		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed [%s]", err)
 	}
 	user1 := &msp.UserData{
-		MspID: mspID,
+		MSPID: mspID,
 		Name:  testUserName,
 		EnrollmentCertificate: []byte(testCert),
 	}
@@ -137,8 +137,8 @@ func checkSigningIdentity(mgr msp.IdentityManager, user string) error {
 	if id.EnrollmentCert == nil {
 		return errors.New("Enrollment cert is missing")
 	}
-	if id.MspID == "" {
-		return errors.New("MspID is missing")
+	if id.MSPID == "" {
+		return errors.New("MSPID is missing")
 	}
 	if id.PrivateKey == nil {
 		return errors.New("private key is missing")

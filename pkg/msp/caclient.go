@@ -23,7 +23,7 @@ var logger = logging.NewLogger("fabsdk/msp")
 // CAClientImpl implements api/msp/CAClient
 type CAClientImpl struct {
 	orgName         string
-	orgMspID        string
+	orgMSPID        string
 	config          core.Config
 	cryptoSuite     core.CryptoSuite
 	identityManager msp.IdentityManager
@@ -82,7 +82,7 @@ func NewCAClient(orgName string, identityManager msp.IdentityManager, userStore 
 
 	mgr := &CAClientImpl{
 		orgName:         orgName,
-		orgMspID:        orgConfig.MspID,
+		orgMSPID:        orgConfig.MSPID,
 		config:          config,
 		cryptoSuite:     cryptoSuite,
 		identityManager: identityManager,
@@ -117,7 +117,7 @@ func (c *CAClientImpl) Enroll(enrollmentID string, enrollmentSecret string) erro
 		return errors.Wrap(err, "enroll failed")
 	}
 	userData := &msp.UserData{
-		MspID: c.orgMspID,
+		MSPID: c.orgMSPID,
 		Name:  enrollmentID,
 		EnrollmentCertificate: cert,
 	}
@@ -149,7 +149,7 @@ func (c *CAClientImpl) Reenroll(enrollmentID string) error {
 		return errors.Wrap(err, "reenroll failed")
 	}
 	userData := &msp.UserData{
-		MspID: c.orgMspID,
+		MSPID: c.orgMSPID,
 		Name:  user.Name(),
 		EnrollmentCertificate: cert,
 	}

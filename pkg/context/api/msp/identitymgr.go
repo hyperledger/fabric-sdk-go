@@ -12,7 +12,7 @@ import (
 
 // Identity supplies the serialized identity and key reference.
 type Identity interface {
-	MspID() string
+	MSPID() string
 	SerializedIdentity() ([]byte, error)
 	PrivateKey() core.Key
 }
@@ -20,7 +20,7 @@ type Identity interface {
 // SigningIdentity is the identity object that encapsulates the user's private key for signing
 // and the user's enrollment certificate (identity)
 type SigningIdentity struct {
-	MspID          string
+	MSPID          string
 	EnrollmentCert []byte
 	PrivateKey     core.Key
 }

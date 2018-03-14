@@ -101,7 +101,7 @@ func TestCAConfig(t *testing.T) {
 	}
 
 	//Testing MSPID
-	mspID, err := configImpl.MspID(org1)
+	mspID, err := configImpl.MSPID(org1)
 	if mspID != "Org1MSP" || err != nil {
 		t.Fatal("Get MSP ID failed")
 	}
@@ -177,7 +177,7 @@ func TestCAConfig(t *testing.T) {
 	}
 
 	// testing empty OrgMSP
-	mspID, err = configImpl.MspID("dummyorg1")
+	mspID, err = configImpl.MSPID("dummyorg1")
 	if err == nil {
 		t.Fatal("Get MSP ID did not fail for dummyorg1")
 	}
@@ -223,7 +223,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	}
 
 	//Testing MSPID failure scenario
-	mspID, err := sampleConfig.MspID("peerorg1")
+	mspID, err := sampleConfig.MSPID("peerorg1")
 	if mspID != "" || err == nil {
 		t.Fatal("Get MSP ID supposed to fail")
 	}
@@ -1458,12 +1458,12 @@ func TestNetworkPeerConfigFromURL(t *testing.T) {
 	np, err := NetworkPeerConfigFromURL(sampleConfig, "peer0.org2.example.com:8051")
 	assert.Nil(t, err, "valid url should not return err")
 	assert.Equal(t, "peer0.org2.example.com:8051", np.URL, "wrong URL")
-	assert.Equal(t, "Org2MSP", np.MspID, "wrong MSP")
+	assert.Equal(t, "Org2MSP", np.MSPID, "wrong MSP")
 
 	np, err = NetworkPeerConfigFromURL(sampleConfig, "peer0.org1.example.com:7051")
 	assert.Nil(t, err, "valid url should not return err")
 	assert.Equal(t, "peer0.org1.example.com:7051", np.URL, "wrong URL")
-	assert.Equal(t, "Org1MSP", np.MspID, "wrong MSP")
+	assert.Equal(t, "Org1MSP", np.MSPID, "wrong MSP")
 }
 
 func TestNewGoodOpt(t *testing.T) {

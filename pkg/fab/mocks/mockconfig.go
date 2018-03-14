@@ -222,13 +222,13 @@ func (c *MockConfig) OrdererConfig(name string) (*config.OrdererConfig, error) {
 	return &oConfig, nil
 }
 
-// MspID not implemented
-func (c *MockConfig) MspID(org string) (string, error) {
+// MSPID not implemented
+func (c *MockConfig) MSPID(org string) (string, error) {
 	return "", nil
 }
 
-// PeerMspID not implemented
-func (c *MockConfig) PeerMspID(name string) (string, error) {
+// PeerMSPID not implemented
+func (c *MockConfig) PeerMSPID(name string) (string, error) {
 	return "", nil
 }
 

@@ -31,7 +31,7 @@ func newUser(userData *msp.UserData, cryptoSuite core.CryptoSuite) (*User, error
 		return nil, errors.WithMessage(err, "cryptoSuite GetKey failed")
 	}
 	u := &User{
-		mspID: userData.MspID,
+		mspID: userData.MSPID,
 		name:  userData.Name,
 		enrollmentCertificate: userData.EnrollmentCertificate,
 		privateKey:            pk,
@@ -49,7 +49,7 @@ func (mgr *IdentityManager) loadUserFromStore(userName string) (msp.User, error)
 		return nil, msp.ErrUserNotFound
 	}
 	var user msp.User
-	userData, err := mgr.userStore.Load(msp.UserIdentifier{MspID: mgr.orgMspID, Name: userName})
+	userData, err := mgr.userStore.Load(msp.UserIdentifier{MSPID: mgr.orgMSPID, Name: userName})
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (mgr *IdentityManager) GetSigningIdentity(userName string) (*msp.SigningIde
 	if err != nil {
 		return nil, err
 	}
-	signingIdentity := &msp.SigningIdentity{MspID: user.MspID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
+	signingIdentity := &msp.SigningIdentity{MSPID: user.MSPID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
 	return signingIdentity, nil
 }
 
@@ -108,7 +108,7 @@ func (mgr *IdentityManager) GetUser(userName string) (msp.User, error) {
 		if privateKey == nil {
 			return nil, fmt.Errorf("unable to find private key for user [%s]", userName)
 		}
-		mspID, err := mgr.config.MspID(mgr.orgName)
+		mspID, err := mgr.config.MSPID(mgr.orgName)
 		if err != nil {
 			return nil, errors.WithMessage(err, "MSP ID config read failed")
 		}
@@ -194,7 +194,7 @@ func (mgr *IdentityManager) getPrivateKeyPemFromKeyStore(userName string, ski []
 	}
 	key, err := mgr.mspPrivKeyStore.Load(
 		&msp.PrivKeyKey{
-			MspID:    mgr.orgMspID,
+			MSPID:    mgr.orgMSPID,
 			UserName: userName,
 			SKI:      ski,
 		})
@@ -213,7 +213,7 @@ func (mgr *IdentityManager) getCertBytesFromCertStore(userName string) ([]byte, 
 		return nil, msp.ErrUserNotFound
 	}
 	cert, err := mgr.mspCertStore.Load(&msp.CertKey{
-		MspID:    mgr.orgMspID,
+		MSPID:    mgr.orgMSPID,
 		UserName: userName,
 	})
 	if err != nil {

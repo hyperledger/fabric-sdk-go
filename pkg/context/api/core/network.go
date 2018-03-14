@@ -87,12 +87,12 @@ type ChannelPeer struct {
 // NetworkPeer combines peer info with MSP info
 type NetworkPeer struct {
 	PeerConfig
-	MspID string
+	MSPID string
 }
 
 // OrganizationConfig provides the definition of an organization in the network
 type OrganizationConfig struct {
-	MspID                  string
+	MSPID                  string
 	CryptoPath             string
 	Users                  map[string]TLSKeyPair
 	Peers                  []string

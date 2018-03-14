@@ -125,7 +125,7 @@ func mspIDByOrgName(t *testing.T, c core.Config, orgName string) string {
 	if !ok {
 		t.Fatalf("org config retrieval failed: %v", err)
 	}
-	return orgConfig.MspID
+	return orgConfig.MSPID
 }
 
 func userStoreFromConfig(t *testing.T, config core.Config) msp.UserStore {

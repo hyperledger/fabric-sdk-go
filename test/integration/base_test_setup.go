@@ -132,7 +132,7 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 		return errors.WithMessage(err, "creating chaincode package failed")
 	}
 
-	mspID, err := sdk.Config().MspID(orgName)
+	mspID, err := sdk.Config().MSPID(orgName)
 	if err != nil {
 		return errors.WithMessage(err, "looking up MSP ID failed")
 	}

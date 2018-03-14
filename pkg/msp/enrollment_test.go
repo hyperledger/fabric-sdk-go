@@ -45,7 +45,7 @@ m1KOnMry/mOZcnXnTIh2ASV4ss8VluzBcyHGAv7BCmxXxDkjcV9eybv8
 
 	userToEnroll = "enrollmentID"
 
-	userToEnrollMspID       string
+	userToEnrollMSPID       string
 	enrollmentTestUserStore msp.UserStore
 )
 
@@ -67,7 +67,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	if !ok {
 		t.Fatalf("org config not found: %s", orgName)
 	}
-	userToEnrollMspID = orgConfig.MspID
+	userToEnrollMSPID = orgConfig.MSPID
 
 	// Delete all private keys from the crypto suite store
 	// and users from the user store
@@ -135,7 +135,7 @@ func prepareForEnroll(t *testing.T, mc *apimocks.MockCAClient, cs core.CryptoSui
 		// Save the "new" cert to user store
 		// This is done by IdentityManagement.Enroll()
 		user := &msp.UserData{
-			MspID: userToEnrollMspID,
+			MSPID: userToEnrollMSPID,
 			Name:  userToEnroll,
 			EnrollmentCertificate: []byte(generatedCertBytes),
 		}

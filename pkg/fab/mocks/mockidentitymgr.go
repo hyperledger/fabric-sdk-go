@@ -25,7 +25,7 @@ func NewMockIdentityManager(orgName string, cryptoProvider core.CryptoSuite, con
 func (mgr *MockIdentityManager) GetSigningIdentity(userName string) (*msp.SigningIdentity, error) {
 
 	si := msp.SigningIdentity{
-		MspID: "Org1MSP",
+		MSPID: "Org1MSP",
 	}
 	return &si, nil
 }

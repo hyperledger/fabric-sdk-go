@@ -154,10 +154,10 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 	//check if target filter was set - if not set the default
 	if resourceClient.filter == nil {
 		// Default target filter is based on user msp
-		if ctx.MspID() == "" {
+		if ctx.MSPID() == "" {
 			return nil, errors.New("mspID not available in user context")
 		}
-		rcFilter := &mspFilter{mspID: ctx.MspID()}
+		rcFilter := &mspFilter{mspID: ctx.MSPID()}
 		resourceClient.filter = rcFilter
 	}
 	return resourceClient, nil

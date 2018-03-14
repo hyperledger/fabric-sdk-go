@@ -27,7 +27,7 @@ func NewFileCertStore(cryptoConfogMspPath string) (core.KVStore, error) {
 			if !ok {
 				return "", errors.New("converting key to CertKey failed")
 			}
-			if ck == nil || ck.MspID == "" || ck.UserName == "" {
+			if ck == nil || ck.MSPID == "" || ck.UserName == "" {
 				return "", errors.New("invalid key")
 			}
 			certDir := path.Join(strings.Replace(cryptoConfogMspPath, "{userName}", ck.UserName, -1), "signcerts")

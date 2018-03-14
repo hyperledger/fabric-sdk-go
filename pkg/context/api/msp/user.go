@@ -31,7 +31,7 @@ var (
 // An application cannot use the Peer identity to sign things because the application doesn’t
 // have access to the Peer identity’s private key.
 type User interface {
-	MspID() string
+	MSPID() string
 	Name() string
 	SerializedIdentity() ([]byte, error)
 	PrivateKey() core.Key
@@ -42,7 +42,7 @@ type User interface {
 // PrivateKey is stored separately, in the crypto store
 type UserData struct {
 	Name                  string
-	MspID                 string
+	MSPID                 string
 	EnrollmentCertificate []byte
 }
 
@@ -54,19 +54,19 @@ type UserStore interface {
 
 // UserIdentifier is the User's unique identifier
 type UserIdentifier struct {
-	MspID string
+	MSPID string
 	Name  string
 }
 
 // PrivKeyKey is a composite key for accessing a private key in the key store
 type PrivKeyKey struct {
-	MspID    string
+	MSPID    string
 	UserName string
 	SKI      []byte
 }
 
 // CertKey is a composite key for accessing a cert in the cert store
 type CertKey struct {
-	MspID    string
+	MSPID    string
 	UserName string
 }
