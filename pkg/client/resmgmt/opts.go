@@ -7,9 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmt
 
 import (
+	reqContext "context"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/pkg/errors"
@@ -58,11 +60,14 @@ func WithTargetFilter(targetFilter TargetFilter) RequestOption {
 	}
 }
 
-// WithTimeout specifies the timeout for the request. If not specified,
-// a default timeout from configuration is used.
-func WithTimeout(timeout time.Duration) RequestOption {
-	return func(ctx context.Client, opts *requestOptions) error {
-		opts.Timeout = timeout
+//WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
+//if not provided, default timeout configuration from config will be used
+func WithTimeout(timeoutType core.TimeoutType, timeout time.Duration) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		if o.Timeouts == nil {
+			o.Timeouts = make(map[core.TimeoutType]time.Duration)
+		}
+		o.Timeouts[timeoutType] = timeout
 		return nil
 	}
 }
@@ -94,6 +99,14 @@ func WithOrdererURL(url string) RequestOption {
 func WithOrderer(orderer fab.Orderer) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.Orderer = orderer
+		return nil
+	}
+}
+
+//WithParentContext encapsulates grpc context parent to Options
+func WithParentContext(parentContext reqContext.Context) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		o.ParentContext = parentContext
 		return nil
 	}
 }

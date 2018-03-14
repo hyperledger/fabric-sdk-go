@@ -43,7 +43,8 @@ const (
 	defaultConnIdleTimeout         = time.Second * 30
 	defaultCacheSweepInterval      = time.Second * 15
 	defaultEventServiceIdleTimeout = time.Minute * 2
-	defaultResMgmtTimeout          = time.Second * 60
+	defaultResMgmtTimeout          = time.Second * 180
+	defaultExecuteTimeout          = time.Second * 180
 )
 
 var logModules = [...]string{"fabsdk", "fabsdk/client", "fabsdk/core", "fabsdk/fab", "fabsdk/common", "fabsdk/msp"}
@@ -567,6 +568,9 @@ func (c *Config) getTimeout(tType core.TimeoutType) time.Duration {
 		timeout = c.configViper.GetDuration("client.global.timeout.query")
 	case core.Execute:
 		timeout = c.configViper.GetDuration("client.global.timeout.execute")
+		if timeout == 0 {
+			timeout = defaultExecuteTimeout
+		}
 	case core.DiscoveryGreylistExpiry:
 		timeout = c.configViper.GetDuration("client.peer.timeout.discovery.greylistExpiry")
 	case core.PeerResponse:

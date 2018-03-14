@@ -129,7 +129,7 @@ func (t *Transactor) SendTransactionProposal(proposal *fab.TransactionProposal, 
 		return nil, errors.New("failed get client context from reqContext for SendTransactionProposal")
 	}
 
-	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(core.PeerResponse), contextImpl.WithReqContext(t.reqCtx))
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(core.PeerResponse), contextImpl.WithParent(t.reqCtx))
 	defer cancel()
 
 	return txn.SendProposal(reqCtx, proposal, targets)
@@ -148,7 +148,7 @@ func (t *Transactor) SendTransaction(tx *fab.Transaction) (*fab.TransactionRespo
 		return nil, errors.New("failed get client context from reqContext for SendTransaction")
 	}
 
-	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(core.OrdererResponse), contextImpl.WithReqContext(t.reqCtx))
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(core.OrdererResponse), contextImpl.WithParent(t.reqCtx))
 	defer cancel()
 
 	return txn.Send(reqCtx, tx, t.orderers)

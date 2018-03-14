@@ -27,10 +27,6 @@ import (
 
 var logger = logging.NewLogger("fabsdk/fab")
 
-const (
-	defaultHandlerTimeout = time.Second * 180
-)
-
 // Client enables access to a channel on a Fabric network.
 //
 // A channel client instance provides a handler to interact with peers on specified channel.
@@ -151,7 +147,7 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 	select {
 	case <-complete:
 		return Response(requestContext.Response), requestContext.Error
-	case <-time.After(requestContext.Opts.Timeout):
+	case <-time.After(requestContext.Opts.Timeouts[core.Execute]):
 		return Response{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
 			"request timed out", nil)
 	}
@@ -181,16 +177,21 @@ func (cc *Client) resolveRetry(ctx *invoke.RequestContext, o requestOptions) boo
 //createReqContext creates req context for invoke handler
 func (cc *Client) createReqContext(txnOpts *requestOptions) (reqContext.Context, reqContext.CancelFunc) {
 
-	//Setting default timeouts when not provided
-	if txnOpts.Timeout == 0 {
-		txnOpts.Timeout = cc.context.Config().Timeout(core.Execute)
-		if txnOpts.Timeout == 0 {
-			//If still zero, then set default handler timeout
-			txnOpts.Timeout = defaultHandlerTimeout
-		}
+	if txnOpts.Timeouts == nil {
+		txnOpts.Timeouts = make(map[core.TimeoutType]time.Duration)
 	}
 
-	return contextImpl.NewRequest(cc.context, contextImpl.WithTimeout(txnOpts.Timeout))
+	//setting default timeouts when not provided
+	if txnOpts.Timeouts[core.Execute] == 0 {
+		txnOpts.Timeouts[core.Execute] = cc.context.Config().TimeoutOrDefault(core.Execute)
+	}
+
+	reqCtx, cancel := contextImpl.NewRequest(cc.context, contextImpl.WithTimeout(txnOpts.Timeouts[core.Execute]),
+		contextImpl.WithParent(txnOpts.ParentContext))
+	//Add timeout overrides here as a value so that it can be used by immediate child contexts (in handlers/transactors)
+	reqCtx = reqContext.WithValue(reqCtx, contextImpl.ReqContextTimeoutOverrides, txnOpts.Timeouts)
+
+	return reqCtx, cancel
 }
 
 //prepareHandlerContexts prepares context objects for handlers
@@ -243,8 +244,9 @@ func (cc *Client) addDefaultTimeout(ctx context.Client, timeOutType core.Timeout
 		option(ctx, &txnOpts)
 	}
 
-	if txnOpts.Timeout == 0 {
-		return append(options, WithTimeout(cc.context.Config().TimeoutOrDefault(timeOutType)))
+	if txnOpts.Timeouts[timeOutType] == 0 {
+		//InvokeHandler relies on Execute timeout
+		return append(options, WithTimeout(core.Execute, cc.context.Config().TimeoutOrDefault(timeOutType)))
 	}
 	return options
 }

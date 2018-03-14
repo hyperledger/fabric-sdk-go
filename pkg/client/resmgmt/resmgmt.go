@@ -78,10 +78,11 @@ type UpgradeCCRequest struct {
 
 //requestOptions contains options for operations performed by ResourceMgmtClient
 type requestOptions struct {
-	Targets      []fab.Peer    // target peers
-	TargetFilter TargetFilter  // target filter
-	Timeout      time.Duration // timeout options for instantiate and upgrade CC
-	Orderer      fab.Orderer   // use specific orderer
+	Targets       []fab.Peer                         // target peers
+	TargetFilter  TargetFilter                       // target filter
+	Orderer       fab.Orderer                        // use specific orderer
+	Timeouts      map[core.TimeoutType]time.Duration //timeout options for resmgmt operations
+	ParentContext reqContext.Context                 //parent grpc context for resmgmt operations
 }
 
 //SaveChannelRequest used to save channel request
@@ -175,12 +176,12 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		return errors.WithMessage(err, "failed to get opts for JoinChannel")
 	}
 
+	//resolve timeouts
+	rc.resolveTimeouts(&opts)
+
 	//set parent request context for overall timeout
-	if opts.Timeout == 0 {
-		//use Channelmgmt timeout from config as default when overall timeout not supplied
-		opts.Timeout = rc.ctx.Config().TimeoutOrDefault(core.ResMgmt)
-	}
-	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeout))
+	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[core.ResMgmt]), contextImpl.WithParent(opts.ParentContext))
+	parentReqCtx = reqContext.WithValue(parentReqCtx, contextImpl.ReqContextTimeoutOverrides, opts.Timeouts)
 	defer parentReqCancel()
 
 	targets, err := rc.calculateTargets(rc.discovery, opts.Targets, opts.TargetFilter)
@@ -197,7 +198,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		return errors.WithMessage(err, "failed to find orderer for request")
 	}
 
-	ordrReqCtx, ordrReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.OrdererResponse), contextImpl.WithReqContext(parentReqCtx))
+	ordrReqCtx, ordrReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.OrdererResponse), contextImpl.WithParent(parentReqCtx))
 	defer ordrReqCtxCancel()
 
 	genesisBlock, err := resource.GenesisBlockFromOrderer(ordrReqCtx, channelID, orderer)
@@ -209,7 +210,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		GenesisBlock: genesisBlock,
 	}
 
-	peerReqCtx, peerReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeout), contextImpl.WithReqContext(parentReqCtx))
+	peerReqCtx, peerReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.ResMgmt), contextImpl.WithParent(parentReqCtx))
 	defer peerReqCtxCancel()
 	err = resource.JoinChannel(peerReqCtx, joinChannelRequest, peersToTxnProcessors(targets))
 	if err != nil {
@@ -317,12 +318,12 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		return nil, errors.WithMessage(err, "failed to get opts for InstallCC")
 	}
 
+	//resolve timeouts
+	rc.resolveTimeouts(&opts)
+
 	//set parent request context for overall timeout
-	if opts.Timeout == 0 {
-		//use ChaincodeMgmt timeout from config as default when overall timeout not supplied
-		opts.Timeout = rc.ctx.Config().TimeoutOrDefault(core.ResMgmt)
-	}
-	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeout))
+	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[core.ResMgmt]), contextImpl.WithParent(opts.ParentContext))
+	parentReqCtx = reqContext.WithValue(parentReqCtx, contextImpl.ReqContextTimeoutOverrides, opts.Timeouts)
 	defer parentReqCancel()
 
 	//Default targets when targets are not provided in options
@@ -348,7 +349,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	// Targets will be adjusted if cc has already been installed
 	newTargets := make([]fab.Peer, 0)
 	for _, target := range targets {
-		reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.PeerResponse), contextImpl.WithReqContext(parentReqCtx))
+		reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.PeerResponse), contextImpl.WithParent(parentReqCtx))
 		defer cancel()
 
 		installed, err := rc.isChaincodeInstalled(reqCtx, req, target)
@@ -373,7 +374,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		return responses, nil
 	}
 
-	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeout), contextImpl.WithReqContext(parentReqCtx))
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.ResMgmt), contextImpl.WithParent(parentReqCtx))
 	defer cancel()
 
 	icr := api.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package}
@@ -591,9 +592,9 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
-	timeout := rc.ctx.Config().TimeoutOrDefault(core.Execute)
-	if opts.Timeout != 0 {
-		timeout = opts.Timeout
+	var timeout = opts.Timeouts[core.Execute]
+	if timeout == 0 {
+		timeout = rc.ctx.Config().TimeoutOrDefault(core.Execute)
 	}
 
 	select {
@@ -814,10 +815,31 @@ func (rc *Client) prepareRequestOpts(options ...RequestOption) (requestOptions, 
 //createRequestContext creates request context for grpc
 func (rc *Client) createRequestContext(opts requestOptions, defaultTimeoutType core.TimeoutType) (reqContext.Context, reqContext.CancelFunc) {
 
-	timeout := opts.Timeout
-	if timeout == 0 {
-		timeout = rc.ctx.Config().TimeoutOrDefault(defaultTimeoutType)
+	rc.resolveTimeouts(&opts)
+
+	if opts.Timeouts[defaultTimeoutType] == 0 {
+		opts.Timeouts[defaultTimeoutType] = rc.ctx.Config().TimeoutOrDefault(defaultTimeoutType)
 	}
 
-	return contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(timeout))
+	return contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[defaultTimeoutType]), contextImpl.WithParent(opts.ParentContext))
+}
+
+//resolveTimeouts sets default for timeouts from config if not provided through opts
+func (rc *Client) resolveTimeouts(opts *requestOptions) {
+
+	if opts.Timeouts == nil {
+		opts.Timeouts = make(map[core.TimeoutType]time.Duration)
+	}
+
+	if opts.Timeouts[core.ResMgmt] == 0 {
+		opts.Timeouts[core.ResMgmt] = rc.ctx.Config().TimeoutOrDefault(core.ResMgmt)
+	}
+
+	if opts.Timeouts[core.OrdererResponse] == 0 {
+		opts.Timeouts[core.OrdererResponse] = rc.ctx.Config().TimeoutOrDefault(core.OrdererResponse)
+	}
+
+	if opts.Timeouts[core.PeerResponse] == 0 {
+		opts.Timeouts[core.PeerResponse] = rc.ctx.Config().TimeoutOrDefault(core.PeerResponse)
+	}
 }

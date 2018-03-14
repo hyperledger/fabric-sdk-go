@@ -9,6 +9,8 @@ package channel
 import (
 	"testing"
 
+	"time"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/stretchr/testify/assert"
@@ -73,4 +75,26 @@ func setupMockTestContext(username string, mspID string) *fcmocks.MockContext {
 	user := fcmocks.NewMockUserWithMSPID(username, mspID)
 	ctx := fcmocks.NewMockContext(user)
 	return ctx
+}
+
+func TestTimeoutOptions(t *testing.T) {
+
+	opts := requestOptions{}
+
+	options := []RequestOption{WithTimeout(core.PeerResponse, 20*time.Second),
+		WithTimeout(core.ResMgmt, 25*time.Second), WithTimeout(core.OrdererResponse, 30*time.Second),
+		WithTimeout(core.EventHubConnection, 35*time.Second), WithTimeout(core.Execute, 40*time.Second),
+		WithTimeout(core.Query, 45*time.Second)}
+
+	for _, option := range options {
+		option(nil, &opts)
+	}
+
+	assert.True(t, opts.Timeouts[core.PeerResponse] == 20*time.Second, "timeout value by type didn't match with one supplied")
+	assert.True(t, opts.Timeouts[core.ResMgmt] == 25*time.Second, "timeout value by type didn't match with one supplied")
+	assert.True(t, opts.Timeouts[core.OrdererResponse] == 30*time.Second, "timeout value by type didn't match with one supplied")
+	assert.True(t, opts.Timeouts[core.EventHubConnection] == 35*time.Second, "timeout value by type didn't match with one supplied")
+	assert.True(t, opts.Timeouts[core.Execute] == 40*time.Second, "timeout value by type didn't match with one supplied")
+	assert.True(t, opts.Timeouts[core.Query] == 45*time.Second, "timeout value by type didn't match with one supplied")
+
 }

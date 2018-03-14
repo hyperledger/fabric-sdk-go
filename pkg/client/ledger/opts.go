@@ -7,9 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package ledger
 
 import (
+	reqContext "context"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/pkg/errors"
@@ -42,11 +44,12 @@ type TargetFilter interface {
 
 //requestOptions contains options for operations performed by LedgerClient
 type requestOptions struct {
-	Targets      []fab.Peer    // target peers
-	TargetFilter TargetFilter  // target filter
-	MaxTargets   int           // maximum number of targets to select
-	MinTargets   int           // min number of targets that have to respond with no error (or agree on result)
-	Timeout      time.Duration //timeout options for QueryInfo,QueryBlockByHash,QueryBlock,QueryTransaction,QueryConfig
+	Targets       []fab.Peer                         // target peers
+	TargetFilter  TargetFilter                       // target filter
+	MaxTargets    int                                // maximum number of targets to select
+	MinTargets    int                                // min number of targets that have to respond with no error (or agree on result)
+	Timeouts      map[core.TimeoutType]time.Duration //timeout options for ledger query operations
+	ParentContext reqContext.Context                 //parent grpc context for ledger operations
 }
 
 //WithTargets encapsulates fab.Peer targets to ledger RequestOption
@@ -108,11 +111,22 @@ func WithMinTargets(minTargets int) RequestOption {
 	}
 }
 
-//WithTimeout encapsulates timeout to ledger RequestOption
+//WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
 //for QueryInfo,QueryBlockByHash,QueryBlock,QueryTransaction,QueryConfig functions
-func WithTimeout(timeout time.Duration) RequestOption {
-	return func(ctx context.Client, opts *requestOptions) error {
-		opts.Timeout = timeout
+func WithTimeout(timeoutType core.TimeoutType, timeout time.Duration) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		if o.Timeouts == nil {
+			o.Timeouts = make(map[core.TimeoutType]time.Duration)
+		}
+		o.Timeouts[timeoutType] = timeout
+		return nil
+	}
+}
+
+//WithParentContext encapsulates grpc context parent to Options
+func WithParentContext(parentContext reqContext.Context) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		o.ParentContext = parentContext
 		return nil
 	}
 }

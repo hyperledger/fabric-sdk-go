@@ -8,6 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 package invoke
 
 import (
+	reqContext "context"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -18,9 +19,10 @@ import (
 
 // Opts allows the user to specify more advanced options
 type Opts struct {
-	Targets []fab.Peer // targets
-	Timeout time.Duration
-	Retry   retry.Opts
+	Targets       []fab.Peer // targets
+	Retry         retry.Opts
+	Timeouts      map[core.TimeoutType]time.Duration
+	ParentContext reqContext.Context //parent grpc context
 }
 
 // Request contains the parameters to execute transaction

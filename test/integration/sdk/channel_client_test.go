@@ -14,6 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -208,7 +209,7 @@ func testInvokeHandler(ccID string, chClient *channel.Client, t *testing.T) {
 			Fcn:         "invoke",
 			Args:        integration.ExampleCCTxArgs(),
 		},
-		channel.WithTimeout(5*time.Second),
+		channel.WithTimeout(core.Execute, 5*time.Second),
 	)
 	if err != nil {
 		t.Fatalf("Failed to invoke example cc asynchronously: %s", err)

@@ -106,7 +106,7 @@ func (c *Client) QueryInfo(options ...RequestOption) (*fab.BlockchainInfoRespons
 		return nil, errors.WithMessage(err, "failed to determine target peers for QueryBlockByHash")
 	}
 
-	reqCtx, cancel := c.createRequestContext(opts)
+	reqCtx, cancel := c.createRequestContext(&opts)
 	defer cancel()
 
 	responses, err := c.ledger.QueryInfo(reqCtx, peersToTxnProcessors(targets))
@@ -152,7 +152,7 @@ func (c *Client) QueryBlockByHash(blockHash []byte, options ...RequestOption) (*
 		return nil, errors.WithMessage(err, "failed to determine target peers for QueryBlockByHash")
 	}
 
-	reqCtx, cancel := c.createRequestContext(opts)
+	reqCtx, cancel := c.createRequestContext(&opts)
 	defer cancel()
 
 	responses, err := c.ledger.QueryBlockByHash(reqCtx, blockHash, peersToTxnProcessors(targets))
@@ -196,7 +196,7 @@ func (c *Client) QueryBlock(blockNumber uint64, options ...RequestOption) (*comm
 		return nil, errors.WithMessage(err, "failed to determine target peers for QueryBlock")
 	}
 
-	reqCtx, cancel := c.createRequestContext(opts)
+	reqCtx, cancel := c.createRequestContext(&opts)
 	defer cancel()
 
 	responses, err := c.ledger.QueryBlock(reqCtx, blockNumber, peersToTxnProcessors(targets))
@@ -241,7 +241,7 @@ func (c *Client) QueryTransaction(transactionID fab.TransactionID, options ...Re
 		return nil, errors.WithMessage(err, "failed to determine target peers for QueryTransaction")
 	}
 
-	reqCtx, cancel := c.createRequestContext(opts)
+	reqCtx, cancel := c.createRequestContext(&opts)
 	defer cancel()
 
 	responses, err := c.ledger.QueryTransaction(reqCtx, transactionID, peersToTxnProcessors(targets))
@@ -289,7 +289,7 @@ func (c *Client) QueryConfig(options ...RequestOption) (fab.ChannelCfg, error) {
 		return nil, errors.WithMessage(err, "QueryConfig failed")
 	}
 
-	reqCtx, cancel := c.createRequestContext(opts)
+	reqCtx, cancel := c.createRequestContext(&opts)
 	defer cancel()
 
 	return channelConfig.Query(reqCtx)
@@ -371,14 +371,17 @@ func (c *Client) calculateTargets(opts requestOptions) ([]fab.Peer, error) {
 }
 
 //createRequestContext creates request context for grpc
-func (c *Client) createRequestContext(opts requestOptions) (reqContext.Context, reqContext.CancelFunc) {
+func (c *Client) createRequestContext(opts *requestOptions) (reqContext.Context, reqContext.CancelFunc) {
 
-	timeout := opts.Timeout
-	if timeout == 0 {
-		timeout = c.ctx.Config().TimeoutOrDefault(core.PeerResponse)
+	if opts.Timeouts == nil {
+		opts.Timeouts = make(map[core.TimeoutType]time.Duration)
 	}
 
-	return contextImpl.NewRequest(c.ctx, contextImpl.WithTimeout(timeout))
+	if opts.Timeouts[core.PeerResponse] == 0 {
+		opts.Timeouts[core.PeerResponse] = c.ctx.Config().TimeoutOrDefault(core.PeerResponse)
+	}
+
+	return contextImpl.NewRequest(c.ctx, contextImpl.WithTimeout(opts.Timeouts[core.PeerResponse]), contextImpl.WithParent(opts.ParentContext))
 }
 
 // filterTargets is helper method to filter peers

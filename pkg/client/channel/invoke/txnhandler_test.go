@@ -16,6 +16,7 @@ import (
 
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -73,7 +74,7 @@ func TestExecuteTxHandlerSuccess(t *testing.T) {
 		select {
 		case txStatusReg := <-mockEventService.TxStatusRegCh:
 			txStatusReg.Eventch <- &fab.TxStatusEvent{TxID: txStatusReg.TxID, TxValidationCode: pb.TxValidationCode_VALID}
-		case <-time.After(requestContext.Opts.Timeout):
+		case <-time.After(requestContext.Opts.Timeouts[core.Execute]):
 			t.Fatal("Execute handler : time out not expected")
 		}
 	}()
@@ -212,7 +213,8 @@ func prepareRequestContext(request Request, opts Opts, t *testing.T) *RequestCon
 		Response: Response{},
 	}
 
-	requestContext.Opts.Timeout = testTimeOut
+	requestContext.Opts.Timeouts = make(map[core.TimeoutType]time.Duration)
+	requestContext.Opts.Timeouts[core.Execute] = testTimeOut
 
 	return requestContext
 }

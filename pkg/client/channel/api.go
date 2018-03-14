@@ -7,9 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	reqContext "context"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
@@ -19,9 +21,10 @@ import (
 
 // opts allows the user to specify more advanced options
 type requestOptions struct {
-	Targets []fab.Peer // targets
-	Timeout time.Duration
-	Retry   retry.Opts
+	Targets       []fab.Peer // targets
+	Retry         retry.Opts
+	Timeouts      map[core.TimeoutType]time.Duration //timeout options for channel client operations
+	ParentContext reqContext.Context                 //parent grpc context for channel client operations (query, execute, invokehandler)
 }
 
 // RequestOption func for each Opts argument
@@ -42,14 +45,6 @@ type Response struct {
 	TxValidationCode pb.TxValidationCode
 	Proposal         *fab.TransactionProposal
 	Responses        []*fab.TransactionProposalResponse
-}
-
-//WithTimeout encapsulates time.Duration to Option
-func WithTimeout(timeout time.Duration) RequestOption {
-	return func(ctx context.Client, o *requestOptions) error {
-		o.Timeout = timeout
-		return nil
-	}
 }
 
 //WithTargets encapsulates ProposalProcessors to Option
@@ -91,6 +86,25 @@ func WithTargetURLs(urls ...string) RequestOption {
 func WithRetry(retryOpt retry.Opts) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		o.Retry = retryOpt
+		return nil
+	}
+}
+
+//WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
+func WithTimeout(timeoutType core.TimeoutType, timeout time.Duration) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		if o.Timeouts == nil {
+			o.Timeouts = make(map[core.TimeoutType]time.Duration)
+		}
+		o.Timeouts[timeoutType] = timeout
+		return nil
+	}
+}
+
+//WithParentContext encapsulates grpc context parent to Options
+func WithParentContext(parentContext reqContext.Context) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		o.ParentContext = parentContext
 		return nil
 	}
 }

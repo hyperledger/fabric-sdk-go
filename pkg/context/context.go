@@ -228,8 +228,9 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 
 type reqContextKey string
 
+//ReqContextTimeoutOverrides key for grpc context value of timeout overrides
+var ReqContextTimeoutOverrides = reqContextKey("timeout-overrides")
 var reqContextCommManager = reqContextKey("commManager")
-var reqContextTimeout = reqContextKey("timeout")
 var reqContextClient = reqContextKey("clientContext")
 
 //WithTimeoutType sets timeout by type defined in config to request context
@@ -246,8 +247,8 @@ func WithTimeout(timeout time.Duration) ReqContextOptions {
 	}
 }
 
-//WithReqContext sets existing reqContext as a parent ReqContext
-func WithReqContext(context reqContext.Context) ReqContextOptions {
+//WithParent sets existing reqContext as a parent ReqContext
+func WithParent(context reqContext.Context) ReqContextOptions {
 	return func(ctx *requestContextOpts) {
 		ctx.parentContext = context
 	}
@@ -271,18 +272,21 @@ func NewRequest(client context.Client, options ...ReqContextOptions) (reqContext
 		option(&reqCtxOpts)
 	}
 
-	var timeout time.Duration
-	if reqCtxOpts.timeout > 0 {
-		timeout = reqCtxOpts.timeout
-	} else {
-		timeout = client.Config().TimeoutOrDefault(reqCtxOpts.timeoutType)
-	}
-
 	parentContext := reqCtxOpts.parentContext
 	if parentContext == nil {
 		//when parent request context not set, use background context
 		parentContext = reqContext.Background()
 	}
+
+	var timeout time.Duration
+	if reqCtxOpts.timeout > 0 {
+		timeout = reqCtxOpts.timeout
+	} else if timeoutOverride := requestTimeoutOverride(parentContext, reqCtxOpts.timeoutType); timeoutOverride > 0 {
+		timeout = timeoutOverride
+	} else {
+		timeout = client.Config().TimeoutOrDefault(reqCtxOpts.timeoutType)
+	}
+
 	ctx := reqContext.WithValue(parentContext, reqContextCommManager, client.InfraProvider().CommManager())
 	ctx = reqContext.WithValue(ctx, reqContextClient, client)
 	ctx, cancel := reqContext.WithTimeout(ctx, timeout)
@@ -300,4 +304,13 @@ func RequestCommManager(ctx reqContext.Context) (fab.CommManager, bool) {
 func RequestClientContext(ctx reqContext.Context) (context.Client, bool) {
 	clientContext, ok := ctx.Value(reqContextClient).(context.Client)
 	return clientContext, ok
+}
+
+// requestTimeoutOverrides extracts the timeout from timeout override map from the request-scoped context.
+func requestTimeoutOverride(ctx reqContext.Context, timeoutType core.TimeoutType) time.Duration {
+	timeoutOverrides, ok := ctx.Value(ReqContextTimeoutOverrides).(map[core.TimeoutType]time.Duration)
+	if !ok {
+		return 0
+	}
+	return timeoutOverrides[timeoutType]
 }
