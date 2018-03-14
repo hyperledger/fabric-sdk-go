@@ -48,7 +48,7 @@ XdsmTcdRvJ3TS/6HCA==
 
 func TestGetSigningIdentity(t *testing.T) {
 
-	config, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
+	config, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -148,7 +148,7 @@ func checkSigningIdentity(mgr msp.IdentityManager, user string) error {
 
 func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 
-	config, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
+	config, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -164,7 +164,7 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 
 func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 
-	config, err := config.FromFile("../../test/fixtures/config/config_test_embedded_pems.yaml")()
+	config, err := config.FromFile("../../pkg/core/config/testdata/config_test_embedded_pems.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
