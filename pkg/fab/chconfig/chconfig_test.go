@@ -8,8 +8,11 @@ package chconfig
 import (
 	"testing"
 
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
@@ -25,12 +28,15 @@ func TestChannelConfigWithPeer(t *testing.T) {
 	ctx := setupTestContext()
 	peer := getPeerWithConfigBlockPayload(t)
 
-	channelConfig, err := New(ctx, channelID, WithPeers([]fab.Peer{peer}), WithMinResponses(1))
+	channelConfig, err := New(channelID, WithPeers([]fab.Peer{peer}), WithMinResponses(1))
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	cfg, err := channelConfig.Query()
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
+
+	cfg, err := channelConfig.Query(reqCtx)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -45,12 +51,15 @@ func TestChannelConfigWithPeerError(t *testing.T) {
 	ctx := setupTestContext()
 	peer := getPeerWithConfigBlockPayload(t)
 
-	channelConfig, err := New(ctx, channelID, WithPeers([]fab.Peer{peer}), WithMinResponses(2))
+	channelConfig, err := New(channelID, WithPeers([]fab.Peer{peer}), WithMinResponses(2))
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	_, err = channelConfig.Query()
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
+
+	_, err = channelConfig.Query(reqCtx)
 	if err == nil {
 		t.Fatalf("Should have failed with since there's one endorser and at least two are required")
 	}
@@ -61,13 +70,16 @@ func TestChannelConfigWithOrdererError(t *testing.T) {
 	ctx := setupTestContext()
 	o, err := orderer.New(ctx.Config(), orderer.WithURL("localhost:7054"))
 	assert.Nil(t, err)
-	channelConfig, err := New(ctx, channelID, WithOrderer(o))
+	channelConfig, err := New(channelID, WithOrderer(o))
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
+
 	// Expecting error since orderer is not setup
-	_, err = channelConfig.Query()
+	_, err = channelConfig.Query(reqCtx)
 	if err == nil {
 		t.Fatalf("Should have failed since orderer is not available")
 	}

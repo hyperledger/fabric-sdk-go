@@ -7,7 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"time"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/pkg/errors"
@@ -32,7 +35,9 @@ func (t *MockTransactor) CreateTransactionHeader() (fab.TransactionHeader, error
 
 // SendTransactionProposal sends a TransactionProposal to the target peers.
 func (t *MockTransactor) SendTransactionProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
-	return txn.SendProposal(t.Ctx, proposal, targets)
+	rqtx, cancel := contextImpl.NewRequest(t.Ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
+	return txn.SendProposal(rqtx, proposal, targets)
 }
 
 // CreateTransaction create a transaction with proposal response.
@@ -42,5 +47,7 @@ func (t *MockTransactor) CreateTransaction(request fab.TransactionRequest) (*fab
 
 // SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
 func (t *MockTransactor) SendTransaction(tx *fab.Transaction) (*fab.TransactionResponse, error) {
-	return txn.Send(t.Ctx, tx, t.Orderers)
+	rqtx, cancel := contextImpl.NewRequest(t.Ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
+	return txn.Send(rqtx, tx, t.Orderers)
 }

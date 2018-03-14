@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	reqContext "context"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	msp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
@@ -64,6 +66,6 @@ func NewMockChannelConfig(ctx context.Client, channelID string) (*MockChannelCon
 }
 
 // Query mocks query for channel configuration
-func (c *MockChannelConfig) Query() (fab.ChannelCfg, error) {
+func (c *MockChannelConfig) Query(reqCtx reqContext.Context) (fab.ChannelCfg, error) {
 	return NewMockChannelCfg(c.channelID), nil
 }

@@ -21,9 +21,10 @@ type MockChannelProvider struct {
 
 // MockChannelService holds a mock channel service.
 type MockChannelService struct {
-	provider   *MockChannelProvider
-	channelID  string
-	transactor fab.Transactor
+	provider     *MockChannelProvider
+	channelID    string
+	transactor   fab.Transactor
+	mockOrderers []string
 }
 
 // NewMockChannelProvider returns a mock ChannelProvider
@@ -60,14 +61,14 @@ func (cp *MockChannelProvider) SetCustomChannelService(customSelectionService fa
 	cp.customSelectionService = customSelectionService
 }
 
+// SetOrderers sets orderes to mock channel service for unit-test purposes
+func (cs *MockChannelService) SetOrderers(orderers []string) {
+	cs.mockOrderers = orderers
+}
+
 // EventService returns a mock event service
 func (cs *MockChannelService) EventService() (fab.EventService, error) {
 	return NewMockEventService(), nil
-}
-
-// Transactor ...
-func (cs *MockChannelService) Transactor() (fab.Transactor, error) {
-	return cs.transactor, nil
 }
 
 // SetTransactor changes the return value of Transactor
@@ -83,4 +84,9 @@ func (cs *MockChannelService) Config() (fab.ChannelConfig, error) {
 // Membership returns member identification
 func (cs *MockChannelService) Membership() (fab.ChannelMembership, error) {
 	return NewMockMembership(), nil
+}
+
+//ChannelConfig returns channel config
+func (cs *MockChannelService) ChannelConfig() fab.ChannelCfg {
+	return &MockChannelCfg{MockID: cs.channelID, MockOrderers: cs.mockOrderers}
 }

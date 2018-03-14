@@ -9,8 +9,11 @@ package resource
 import (
 	"testing"
 
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
+
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/stretchr/testify/assert"
@@ -33,6 +36,9 @@ func TestCreateChaincodeInstallProposal(t *testing.T) {
 	prop, err := CreateChaincodeInstallProposal(txid, request)
 	assert.Nil(t, err, "CreateChaincodeInstallProposal failed")
 
-	_, err = txn.SendProposal(ctx, prop, []fab.ProposalProcessor{&peer})
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
+
+	_, err = txn.SendProposal(reqCtx, prop, []fab.ProposalProcessor{&peer})
 	assert.Nil(t, err, "sending mock proposal failed")
 }

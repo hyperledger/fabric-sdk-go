@@ -375,11 +375,13 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 
 func TestTimeouts(t *testing.T) {
 	configImpl.configViper.Set("client.peer.timeout.connection", "2s")
+	configImpl.configViper.Set("client.peer.timeout.response", "6s")
 	configImpl.configViper.Set("client.eventService.timeout.connection", "2m")
 	configImpl.configViper.Set("client.eventService.timeout.registrationResponse", "2h")
 	configImpl.configViper.Set("client.orderer.timeout.connection", "2ms")
 	configImpl.configViper.Set("client.global.timeout.query", "7h")
 	configImpl.configViper.Set("client.global.timeout.execute", "8h")
+	configImpl.configViper.Set("client.global.timeout.resmgmt", "118s")
 	configImpl.configViper.Set("client.global.timeout.cache.connectionIdle", "1m")
 	configImpl.configViper.Set("client.global.timeout.cache.eventServiceIdle", "2m")
 	configImpl.configViper.Set("client.orderer.timeout.response", "6s")
@@ -418,6 +420,14 @@ func TestTimeouts(t *testing.T) {
 	}
 	t1 = configImpl.TimeoutOrDefault(api.EventServiceIdle)
 	if t1 != time.Minute*2 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	}
+	t1 = configImpl.TimeoutOrDefault(api.PeerResponse)
+	if t1 != time.Second*6 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	}
+	t1 = configImpl.TimeoutOrDefault(api.ResMgmt)
+	if t1 != time.Second*118 {
 		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}
 

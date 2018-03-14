@@ -9,9 +9,9 @@ package fab
 // ChannelService supplies services related to a channel.
 type ChannelService interface {
 	Config() (ChannelConfig, error)
-	Transactor() (Transactor, error)
 	EventService() (EventService, error)
 	Membership() (ChannelMembership, error)
+	ChannelConfig() ChannelCfg
 }
 
 // Transactor supplies methods for sending transaction proposals and transactions.

@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package ledger
 
 import (
+	"time"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -40,10 +42,11 @@ type TargetFilter interface {
 
 //requestOptions contains options for operations performed by LedgerClient
 type requestOptions struct {
-	Targets      []fab.Peer   // target peers
-	TargetFilter TargetFilter // target filter
-	MaxTargets   int          // maximum number of targets to select
-	MinTargets   int          // min number of targets that have to respond with no error (or agree on result)
+	Targets      []fab.Peer    // target peers
+	TargetFilter TargetFilter  // target filter
+	MaxTargets   int           // maximum number of targets to select
+	MinTargets   int           // min number of targets that have to respond with no error (or agree on result)
+	Timeout      time.Duration //timeout options for QueryInfo,QueryBlockByHash,QueryBlock,QueryTransaction,QueryConfig
 }
 
 //WithTargets encapsulates fab.Peer targets to ledger RequestOption
@@ -101,6 +104,15 @@ func WithMaxTargets(maxTargets int) RequestOption {
 func WithMinTargets(minTargets int) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.MinTargets = minTargets
+		return nil
+	}
+}
+
+//WithTimeout encapsulates timeout to ledger RequestOption
+//for QueryInfo,QueryBlockByHash,QueryBlock,QueryTransaction,QueryConfig functions
+func WithTimeout(timeout time.Duration) RequestOption {
+	return func(ctx context.Client, opts *requestOptions) error {
+		opts.Timeout = timeout
 		return nil
 	}
 }

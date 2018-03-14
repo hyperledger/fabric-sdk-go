@@ -8,12 +8,14 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	reqContext "context"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
@@ -37,7 +39,6 @@ const (
 type Client struct {
 	context         context.Channel
 	membership      fab.ChannelMembership
-	transactor      fab.Transactor
 	eventService    fab.EventService
 	greylist        *greylist.Filter
 	discoveryFilter fab.TargetFilter
@@ -82,11 +83,6 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, errors.WithMessage(err, "event service creation failed")
 	}
 
-	transactor, err := channelContext.ChannelService().Transactor()
-	if err != nil {
-		return nil, errors.WithMessage(err, "transactor creation failed")
-	}
-
 	membership, err := channelContext.ChannelService().Membership()
 	if err != nil {
 		return nil, errors.WithMessage(err, "membership creation failed")
@@ -94,7 +90,6 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 
 	channelClient := Client{
 		membership:   membership,
-		transactor:   transactor,
 		eventService: eventService,
 		greylist:     greylistProvider,
 	}
@@ -133,8 +128,11 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 		return Response{}, err
 	}
 
+	reqCtx, cancel := cc.createReqContext(&txnOpts)
+	defer cancel()
+
 	//Prepare context objects for handler
-	requestContext, clientContext, err := cc.prepareHandlerContexts(request, txnOpts)
+	requestContext, clientContext, err := cc.prepareHandlerContexts(reqCtx, request, txnOpts)
 	if err != nil {
 		return Response{}, err
 	}
@@ -180,18 +178,39 @@ func (cc *Client) resolveRetry(ctx *invoke.RequestContext, o requestOptions) boo
 	return false
 }
 
+//createReqContext creates req context for invoke handler
+func (cc *Client) createReqContext(txnOpts *requestOptions) (reqContext.Context, reqContext.CancelFunc) {
+
+	//Setting default timeouts when not provided
+	if txnOpts.Timeout == 0 {
+		txnOpts.Timeout = cc.context.Config().Timeout(core.Execute)
+		if txnOpts.Timeout == 0 {
+			//If still zero, then set default handler timeout
+			txnOpts.Timeout = defaultHandlerTimeout
+		}
+	}
+
+	return contextImpl.NewRequest(cc.context, contextImpl.WithTimeout(txnOpts.Timeout))
+}
+
 //prepareHandlerContexts prepares context objects for handlers
-func (cc *Client) prepareHandlerContexts(request Request, o requestOptions) (*invoke.RequestContext, *invoke.ClientContext, error) {
+func (cc *Client) prepareHandlerContexts(reqCtx reqContext.Context, request Request, o requestOptions) (*invoke.RequestContext, *invoke.ClientContext, error) {
 
 	if request.ChaincodeID == "" || request.Fcn == "" {
 		return nil, nil, errors.New("ChaincodeID and Fcn are required")
+	}
+
+	chConfig := cc.context.ChannelService().ChannelConfig()
+	transactor, err := cc.context.InfraProvider().CreateChannelTransactor(reqCtx, chConfig)
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "failed to create transactor")
 	}
 
 	clientContext := &invoke.ClientContext{
 		Selection:    cc.context.SelectionService(),
 		Discovery:    cc.context.DiscoveryService(),
 		Membership:   cc.membership,
-		Transactor:   cc.transactor,
+		Transactor:   transactor,
 		EventService: cc.eventService,
 	}
 
@@ -200,15 +219,6 @@ func (cc *Client) prepareHandlerContexts(request Request, o requestOptions) (*in
 		Opts:         invoke.Opts(o),
 		Response:     invoke.Response{},
 		RetryHandler: retry.New(o.Retry),
-	}
-
-	if requestContext.Opts.Timeout == 0 {
-		to := cc.context.Config().Timeout(core.Execute)
-		if to == 0 {
-			requestContext.Opts.Timeout = defaultHandlerTimeout
-		} else {
-			requestContext.Opts.Timeout = to
-		}
 	}
 
 	return requestContext, clientContext, nil

@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	reqContext "context"
+
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	mspCfg "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 )
@@ -22,7 +24,7 @@ type OrgAnchorPeer struct {
 type ChannelConfig interface {
 
 	// Query channel configuration
-	Query() (ChannelCfg, error)
+	Query(reqCtx reqContext.Context) (ChannelCfg, error)
 }
 
 // ChannelCfg contains channel configuration

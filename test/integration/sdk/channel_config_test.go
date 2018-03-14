@@ -12,9 +12,9 @@ import (
 	"testing"
 
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
@@ -33,24 +33,6 @@ func TestChannelConfig(t *testing.T) {
 	sdk := mainSDK
 	testSetup := mainTestSetup
 
-	//testSetup := integration.BaseSetupImpl{
-	//	ConfigFile:    "../" + integration.ConfigTestFile,
-	//	ChannelID:     "mychannel",
-	//	OrgID:         org1Name,
-	//	ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	//}
-
-	// Create SDK setup for the integration tests
-	//sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
-	//if err != nil {
-	//	t.Fatalf("Failed to create new SDK: %s", err)
-	//}
-	//defer sdk.Close()
-
-	//if err := testSetup.Initialize(sdk); err != nil {
-	//	t.Fatalf(err.Error())
-	//}
-
 	//prepare contexts
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
 
@@ -66,7 +48,10 @@ func TestChannelConfig(t *testing.T) {
 		t.Fatalf("Failed to create new channel config: %s", err)
 	}
 
-	response, err := cfg.Query()
+	reqCtx, cancel := context.NewRequest(channelCtx, context.WithTimeoutType(core.PeerResponse))
+	defer cancel()
+
+	response, err := cfg.Query(reqCtx)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -123,7 +108,10 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 		t.Fatalf("Failed to create new channel config: %s", err)
 	}
 
-	response, err := cfg.Query()
+	reqCtx, cancel := context.NewRequest(channelCtx, context.WithTimeoutType(core.OrdererResponse))
+	defer cancel()
+
+	response, err := cfg.Query(reqCtx)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -164,13 +152,8 @@ func (f *CustomInfraProvider) Initialize(providers contextAPI.Providers) error {
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *CustomInfraProvider) CreateChannelConfig(ic msp.Identity, channelID string) (fab.ChannelConfig, error) {
-	ctx := chconfig.Context{
-		Providers: f.providerContext,
-		Identity:  ic,
-	}
-
-	return chconfig.New(ctx, channelID, chconfig.WithOrderer(f.orderer))
+func (f *CustomInfraProvider) CreateChannelConfig(channelID string) (fab.ChannelConfig, error) {
+	return chconfig.New(channelID, chconfig.WithOrderer(f.orderer))
 }
 
 // CreateInfraProvider returns a new default implementation of fabric primitives

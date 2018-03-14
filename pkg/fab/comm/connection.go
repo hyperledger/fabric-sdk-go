@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
-	reqContext "context"
 	"sync/atomic"
 
 	"github.com/pkg/errors"
@@ -54,7 +53,7 @@ func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvide
 		return nil, err
 	}
 
-	reqCtx, cancel := reqContext.WithTimeout(context.NewRequest(ctx), params.connectTimeout)
+	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(params.connectTimeout))
 	defer cancel()
 
 	commManager, ok := context.RequestCommManager(reqCtx)

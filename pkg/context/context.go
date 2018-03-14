@@ -11,6 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"time"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -227,15 +229,75 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 type reqContextKey string
 
 var reqContextCommManager = reqContextKey("commManager")
+var reqContextTimeout = reqContextKey("timeout")
+var reqContextClient = reqContextKey("clientContext")
+
+//WithTimeoutType sets timeout by type defined in config to request context
+func WithTimeoutType(timeoutType core.TimeoutType) ReqContextOptions {
+	return func(ctx *requestContextOpts) {
+		ctx.timeoutType = timeoutType
+	}
+}
+
+//WithTimeout sets timeout time duration to request context
+func WithTimeout(timeout time.Duration) ReqContextOptions {
+	return func(ctx *requestContextOpts) {
+		ctx.timeout = timeout
+	}
+}
+
+//WithReqContext sets existing reqContext as a parent ReqContext
+func WithReqContext(context reqContext.Context) ReqContextOptions {
+	return func(ctx *requestContextOpts) {
+		ctx.parentContext = context
+	}
+}
+
+//ReqContextOptions parameter for creating requestContext
+type ReqContextOptions func(opts *requestContextOpts)
+
+type requestContextOpts struct {
+	timeoutType   core.TimeoutType
+	timeout       time.Duration
+	parentContext reqContext.Context
+}
 
 // NewRequest creates a request-scoped context.
-func NewRequest(client context.Client) reqContext.Context {
-	ctx := reqContext.WithValue(reqContext.Background(), reqContextCommManager, client.InfraProvider().CommManager())
-	return ctx
+func NewRequest(client context.Client, options ...ReqContextOptions) (reqContext.Context, reqContext.CancelFunc) {
+
+	//'-1' to get default config timeout when timeout options not passed
+	reqCtxOpts := requestContextOpts{timeoutType: -1}
+	for _, option := range options {
+		option(&reqCtxOpts)
+	}
+
+	var timeout time.Duration
+	if reqCtxOpts.timeout > 0 {
+		timeout = reqCtxOpts.timeout
+	} else {
+		timeout = client.Config().TimeoutOrDefault(reqCtxOpts.timeoutType)
+	}
+
+	parentContext := reqCtxOpts.parentContext
+	if parentContext == nil {
+		//when parent request context not set, use background context
+		parentContext = reqContext.Background()
+	}
+	ctx := reqContext.WithValue(parentContext, reqContextCommManager, client.InfraProvider().CommManager())
+	ctx = reqContext.WithValue(ctx, reqContextClient, client)
+	ctx, cancel := reqContext.WithTimeout(ctx, timeout)
+
+	return ctx, cancel
 }
 
 // RequestCommManager extracts the CommManager from the request-scoped context.
 func RequestCommManager(ctx reqContext.Context) (fab.CommManager, bool) {
 	commManager, ok := ctx.Value(reqContextCommManager).(fab.CommManager)
 	return commManager, ok
+}
+
+// RequestClientContext extracts the Client Context from the request-scoped context.
+func RequestClientContext(ctx reqContext.Context) (context.Client, bool) {
+	clientContext, ok := ctx.Value(reqContextClient).(context.Client)
+	return clientContext, ok
 }

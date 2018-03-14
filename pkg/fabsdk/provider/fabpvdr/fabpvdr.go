@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fabpvdr
 
 import (
+	reqContext "context"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/lazycache"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
@@ -111,14 +113,9 @@ func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, chConfig fab.C
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *InfraProvider) CreateChannelConfig(ic msp.Identity, channelID string) (fab.ChannelConfig, error) {
+func (f *InfraProvider) CreateChannelConfig(channelID string) (fab.ChannelConfig, error) {
 
-	ctx := chconfig.Context{
-		Providers: f.providerContext,
-		Identity:  ic,
-	}
-
-	return chconfig.New(ctx, channelID)
+	return chconfig.New(channelID)
 }
 
 // CreateChannelMembership returns a channel member identifier
@@ -127,14 +124,8 @@ func (f *InfraProvider) CreateChannelMembership(cfg fab.ChannelCfg) (fab.Channel
 }
 
 // CreateChannelTransactor initializes the transactor
-func (f *InfraProvider) CreateChannelTransactor(ic msp.Identity, cfg fab.ChannelCfg) (fab.Transactor, error) {
-
-	ctx := chconfig.Context{
-		Providers: f.providerContext,
-		Identity:  ic,
-	}
-
-	return channelImpl.NewTransactor(ctx, cfg)
+func (f *InfraProvider) CreateChannelTransactor(reqCtx reqContext.Context, cfg fab.ChannelCfg) (fab.Transactor, error) {
+	return channelImpl.NewTransactor(reqCtx, cfg)
 }
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration

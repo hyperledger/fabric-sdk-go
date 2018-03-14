@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -155,7 +156,11 @@ func TestBroadcastEnvelope(t *testing.T) {
 		Signature: []byte(""),
 		Payload:   []byte(""),
 	}
-	res, err := broadcastEnvelope(ctx, sigEnvelope, orderers)
+
+	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
+	defer cancel()
+
+	res, err := broadcastEnvelope(reqCtx, sigEnvelope, orderers)
 
 	if err != nil {
 		t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
@@ -185,7 +190,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 	// It should always succeed even though one of them has failed
 	for i := 0; i < broadcastCount; i++ {
-		if res, err := broadcastEnvelope(ctx, sigEnvelope, orderers); err != nil {
+		if res, err := broadcastEnvelope(reqCtx, sigEnvelope, orderers); err != nil {
 			t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
 		}
 	}
@@ -197,14 +202,14 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 
 	for i := 0; i < broadcastCount; i++ {
-		_, err := broadcastEnvelope(ctx, sigEnvelope, orderers)
+		_, err := broadcastEnvelope(reqCtx, sigEnvelope, orderers)
 		if !strings.Contains(err.Error(), "Service Unavailable") {
 			t.Fatal("Test Broadcast failed but didn't return the correct reason(should contain 'Service Unavailable')")
 		}
 	}
 
 	emptyOrderers := []fab.Orderer{}
-	_, err = broadcastEnvelope(ctx, sigEnvelope, emptyOrderers)
+	_, err = broadcastEnvelope(reqCtx, sigEnvelope, emptyOrderers)
 
 	if err == nil || err.Error() != "orderers not set" {
 		t.Fatal("orderers not set validation on broadcast envelope is not working as expected")
@@ -216,7 +221,10 @@ func TestSendTransaction(t *testing.T) {
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
-	response, err := Send(ctx, nil, nil)
+	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
+	defer cancel()
+
+	response, err := Send(reqCtx, nil, nil)
 
 	//Expect orderer is nil error
 	if response != nil || err == nil || err.Error() != "orderers is nil" {
@@ -228,7 +236,7 @@ func TestSendTransaction(t *testing.T) {
 	orderers := []fab.Orderer{orderer}
 
 	//Call Send Transaction with nil tx
-	response, err = Send(ctx, nil, orderers)
+	response, err = Send(reqCtx, nil, orderers)
 
 	//Expect tx is nil error
 	if response != nil || err == nil || err.Error() != "transaction is nil" {
@@ -244,7 +252,7 @@ func TestSendTransaction(t *testing.T) {
 	}
 
 	//Call Send Transaction with nil proposal
-	response, err = Send(ctx, &txn, orderers)
+	response, err = Send(reqCtx, &txn, orderers)
 
 	//Expect proposal is nil error
 	if response != nil || err == nil || err.Error() != "proposal is nil" {
@@ -259,7 +267,7 @@ func TestSendTransaction(t *testing.T) {
 		Transaction: &pb.Transaction{},
 	}
 	//Call Send Transaction
-	response, err = Send(ctx, &txn, orderers)
+	response, err = Send(reqCtx, &txn, orderers)
 
 	//Expect header unmarshal error
 	if response != nil || err == nil || !strings.Contains(err.Error(), "unmarshal") {
@@ -275,7 +283,7 @@ func TestSendTransaction(t *testing.T) {
 	}
 
 	//Call Send Transaction
-	response, err = Send(ctx, &txn, orderers)
+	response, err = Send(reqCtx, &txn, orderers)
 
 	if response == nil || err != nil {
 		t.Fatalf("Test SendTransaction failed, reason : '%s'", err.Error())
@@ -335,7 +343,11 @@ func TestConcurrentOrderers(t *testing.T) {
 		},
 		Transaction: &pb.Transaction{},
 	}
-	_, err = Send(ctx, &txn, orderers)
+
+	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
+	defer cancel()
+
+	_, err = Send(reqCtx, &txn, orderers)
 	if err != nil {
 		t.Fatalf("SendTransaction returned error: %s", err)
 	}

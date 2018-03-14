@@ -14,6 +14,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 
+	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	mock_context "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
@@ -81,7 +84,10 @@ func TestSendTransactionProposal(t *testing.T) {
 		t.Fatalf("new transaction proposal failed: %s", err)
 	}
 
-	tpr, err := SendProposal(ctx, tp, []fab.ProposalProcessor{&peer})
+	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
+	defer cancel()
+
+	tpr, err := SendProposal(reqCtx, tp, []fab.ProposalProcessor{&peer})
 	if err != nil {
 		t.Fatalf("send transaction proposal failed: %s", err)
 	}
@@ -112,7 +118,10 @@ func TestNewTransactionProposalParams(t *testing.T) {
 		t.Fatalf("new transaction proposal failed: %s", err)
 	}
 
-	_, err = SendProposal(ctx, tp, nil)
+	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
+	defer cancel()
+
+	_, err = SendProposal(reqCtx, tp, nil)
 	if err == nil {
 		t.Fatalf("Expected error")
 	}
@@ -152,7 +161,10 @@ func TestConcurrentPeers(t *testing.T) {
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
-	result, err := SendProposal(ctx, &fab.TransactionProposal{
+	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
+	defer cancel()
+
+	result, err := SendProposal(reqCtx, &fab.TransactionProposal{
 		Proposal: &pb.Proposal{},
 	}, peers)
 	if err != nil {
@@ -185,7 +197,10 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any(), tp).Return(&tpr, nil)
 	targets := []fab.ProposalProcessor{proc}
 
-	result, err := SendProposal(ctx, &fab.TransactionProposal{
+	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
+	defer cancel()
+
+	result, err := SendProposal(reqCtx, &fab.TransactionProposal{
 		Proposal: &pb.Proposal{},
 	}, nil)
 
@@ -193,7 +208,7 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 		t.Fatalf("Test SendTransactionProposal failed, validation on peer is nil is not working as expected: %v", err)
 	}
 
-	result, err = SendProposal(ctx, &fab.TransactionProposal{
+	result, err = SendProposal(reqCtx, &fab.TransactionProposal{
 		Proposal: &pb.Proposal{},
 	}, []fab.ProposalProcessor{})
 
@@ -201,7 +216,7 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 		t.Fatalf("Test SendTransactionProposal failed, validation on missing peer objects is not working: %v", err)
 	}
 
-	result, err = SendProposal(ctx, &fab.TransactionProposal{
+	result, err = SendProposal(reqCtx, &fab.TransactionProposal{
 		Proposal: &pb.Proposal{}}, targets)
 
 	if result == nil || err != nil {
@@ -233,8 +248,11 @@ func TestProposalResponseError(t *testing.T) {
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any(), tp).Return(&tpr, testError)
 	proc2.EXPECT().ProcessTransactionProposal(gomock.Any(), tp).Return(&tpr, testError)
 
+	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
+	defer cancel()
+
 	targets := []fab.ProposalProcessor{proc, proc2}
-	_, err = SendProposal(ctx, &fab.TransactionProposal{
+	_, err = SendProposal(reqCtx, &fab.TransactionProposal{
 		Proposal: &pb.Proposal{},
 	}, targets)
 	errs, ok := err.(multi.Errors)

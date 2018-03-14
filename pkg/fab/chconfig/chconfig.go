@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package chconfig
 
 import (
+	reqContext "context"
+
 	"github.com/golang/protobuf/proto"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -25,6 +27,7 @@ import (
 
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -52,7 +55,6 @@ type Context struct {
 // ChannelConfig implements query channel configuration
 type ChannelConfig struct {
 	channelID string
-	ctx       context.Client
 	opts      Opts
 }
 
@@ -97,28 +99,33 @@ func (cfg *ChannelCfg) Versions() *fab.Versions {
 }
 
 // New channel config implementation
-func New(ctx context.Client, channelID string, options ...Option) (*ChannelConfig, error) {
+func New(channelID string, options ...Option) (*ChannelConfig, error) {
 	opts, err := prepareOpts(options...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ChannelConfig{channelID: channelID, ctx: ctx, opts: opts}, nil
+	return &ChannelConfig{channelID: channelID, opts: opts}, nil
 }
 
 // Query returns channel configuration
-func (c *ChannelConfig) Query() (fab.ChannelCfg, error) {
+func (c *ChannelConfig) Query(reqCtx reqContext.Context) (fab.ChannelCfg, error) {
 
 	if c.opts.Orderer != nil {
-		return c.queryOrderer()
+		return c.queryOrderer(reqCtx)
 	}
 
-	return c.queryPeers()
+	return c.queryPeers(reqCtx)
 }
 
-func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
+func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, error) {
 
-	l, err := channel.NewLedger(c.ctx, c.channelID)
+	ctx, ok := contextImpl.RequestClientContext(reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for signPayload")
+	}
+
+	l, err := channel.NewLedger(c.channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "ledger client creation failed")
 	}
@@ -127,13 +134,13 @@ func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 	if c.opts.Targets == nil {
 
 		// Calculate targets from config
-		chPeers, err := c.ctx.Config().ChannelPeers(c.channelID)
+		chPeers, err := ctx.Config().ChannelPeers(c.channelID)
 		if err != nil {
 			return nil, errors.WithMessage(err, "read configuration for channel peers failed")
 		}
 
 		for _, p := range chPeers {
-			newPeer, err := peer.New(c.ctx.Config(), peer.FromPeerConfig(&p.NetworkPeer))
+			newPeer, err := peer.New(ctx.Config(), peer.FromPeerConfig(&p.NetworkPeer))
 			if err != nil || newPeer == nil {
 				return nil, errors.WithMessage(err, "NewPeer failed")
 			}
@@ -150,7 +157,7 @@ func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 		minEndorsers = defaultMinResponses
 	}
 
-	configEnvelope, err := l.QueryConfigBlock(targets, minEndorsers)
+	configEnvelope, err := l.QueryConfigBlock(reqCtx, targets, minEndorsers)
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryBlockConfig failed")
 	}
@@ -158,9 +165,9 @@ func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 	return extractConfig(c.channelID, configEnvelope)
 }
 
-func (c *ChannelConfig) queryOrderer() (*ChannelCfg, error) {
+func (c *ChannelConfig) queryOrderer(reqCtx reqContext.Context) (*ChannelCfg, error) {
 
-	configEnvelope, err := resource.LastConfigFromOrderer(c.ctx, c.channelID, c.opts.Orderer)
+	configEnvelope, err := resource.LastConfigFromOrderer(reqCtx, c.channelID, c.opts.Orderer)
 	if err != nil {
 		return nil, errors.WithMessage(err, "LastConfigFromOrderer failed")
 	}

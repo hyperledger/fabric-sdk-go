@@ -9,16 +9,18 @@ package mocks
 import (
 	"fmt"
 
+	reqContext "context"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
 // MockInfraProvider represents the default implementation of Fabric objects.
 type MockInfraProvider struct {
-	providerContext context.Providers
-	customOrderer   fab.Orderer
+	providerContext  context.Providers
+	customOrderer    fab.Orderer
+	customTransactor fab.Transactor
 }
 
 // CreateEventService creates the event service.
@@ -27,11 +29,8 @@ func (f *MockInfraProvider) CreateEventService(ic fab.ClientContext, chConfig fa
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *MockInfraProvider) CreateChannelConfig(ic msp.Identity, channelID string) (fab.ChannelConfig, error) {
-	if ic == nil {
-		return &MockChannelConfig{channelID: channelID}, nil
-	}
-	return &MockChannelConfig{channelID: channelID, ctx: NewMockContext(ic)}, nil
+func (f *MockInfraProvider) CreateChannelConfig(channelID string) (fab.ChannelConfig, error) {
+	return &MockChannelConfig{channelID: channelID}, nil
 }
 
 // CreateChannelMembership returns a channel member identifier
@@ -40,13 +39,14 @@ func (f *MockInfraProvider) CreateChannelMembership(cfg fab.ChannelCfg) (fab.Cha
 }
 
 // CreateChannelTransactor initializes the transactor
-func (f *MockInfraProvider) CreateChannelTransactor(ic msp.Identity, cfg fab.ChannelCfg) (fab.Transactor, error) {
+func (f *MockInfraProvider) CreateChannelTransactor(reqCtx reqContext.Context, cfg fab.ChannelCfg) (fab.Transactor, error) {
+	if f.customTransactor != nil {
+		return f.customTransactor, nil
+	}
 	if cfg == nil {
 		return &MockTransactor{}, nil
-	} else if ic == nil {
-		return &MockTransactor{ChannelID: cfg.ID()}, nil
 	}
-	return &MockTransactor{ChannelID: cfg.ID(), Ctx: NewMockContext(ic)}, nil
+	return &MockTransactor{ChannelID: cfg.ID(), Ctx: reqCtx}, nil
 }
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration
@@ -77,6 +77,11 @@ func (f *MockInfraProvider) CommManager() fab.CommManager {
 // SetCustomOrderer creates a default implementation of Orderer based on configuration.
 func (f *MockInfraProvider) SetCustomOrderer(customOrderer fab.Orderer) {
 	f.customOrderer = customOrderer
+}
+
+// SetCustomTransactor sets custom transactor for unit-test purposes
+func (f *MockInfraProvider) SetCustomTransactor(customTransactor fab.Transactor) {
+	f.customTransactor = customTransactor
 }
 
 //Close mock close function

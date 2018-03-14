@@ -7,14 +7,15 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	reqContex "context"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 // MockTransactor provides an implementation of Transactor that exposes all its context.
 type MockTransactor struct {
-	Ctx       context.Client
+	Ctx       reqContex.Context
 	ChannelID string
 	Orderers  []fab.Orderer
 }

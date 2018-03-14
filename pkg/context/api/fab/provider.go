@@ -28,8 +28,8 @@ type ClientContext interface {
 
 // InfraProvider enables access to fabric objects such as peer and user based on config or
 type InfraProvider interface {
-	CreateChannelConfig(user msp.Identity, name string) (ChannelConfig, error)
-	CreateChannelTransactor(ic msp.Identity, cfg ChannelCfg) (Transactor, error)
+	CreateChannelConfig(name string) (ChannelConfig, error)
+	CreateChannelTransactor(reqCtx reqContext.Context, cfg ChannelCfg) (Transactor, error)
 	CreateChannelMembership(cfg ChannelCfg) (ChannelMembership, error)
 	CreateEventService(ctx ClientContext, chConfig ChannelCfg) (EventService, error)
 	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (Peer, error)

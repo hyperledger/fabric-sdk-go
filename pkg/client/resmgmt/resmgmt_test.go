@@ -370,8 +370,10 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	// Chaincode found request
 	req := InstallCCRequest{Name: "test-name", Path: "test-path", Version: "test-version"}
 
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
 	// Test chaincode installed (valid peer)
-	installed, err := rc.isChaincodeInstalled(req, peer1)
+	installed, err := rc.isChaincodeInstalled(reqCtx, req, peer1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -383,7 +385,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	req = InstallCCRequest{Name: "ID", Version: "v0", Path: "path"}
 
 	// Test chaincode installed
-	installed, err = rc.isChaincodeInstalled(req, peer1)
+	installed, err = rc.isChaincodeInstalled(reqCtx, req, peer1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,7 +394,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	}
 
 	// Test error retrieving installed cc info (peer is nil)
-	_, err = rc.isChaincodeInstalled(req, nil)
+	_, err = rc.isChaincodeInstalled(reqCtx, req, nil)
 	if err == nil {
 		t.Fatalf("Should have failed with error in get installed chaincodes")
 	}
@@ -889,7 +891,7 @@ func TestInstantiateCCDiscoveryError(t *testing.T) {
 		ChannelID: "mychannel",
 		Orderers:  []fab.Orderer{orderer},
 	}
-	rc.ctx.ChannelProvider().(*fcmocks.MockChannelProvider).SetTransactor(&transactor)
+	rc.ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
 
 	// Start mock event hub
 	eventServer, err := fcmocks.StartMockEventServer(fmt.Sprintf("%s:%d", "127.0.0.1", 7053))
@@ -1094,7 +1096,7 @@ func TestUpgradeCCDiscoveryError(t *testing.T) {
 		ChannelID: "mychannel",
 		Orderers:  []fab.Orderer{orderer},
 	}
-	rc.ctx.ChannelProvider().(*fcmocks.MockChannelProvider).SetTransactor(&transactor)
+	rc.ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
 
 	// Start mock event hub
 	eventServer, err := fcmocks.StartMockEventServer(fmt.Sprintf("%s:%d", "127.0.0.1", 7053))
@@ -1166,7 +1168,7 @@ func TestCCProposal(t *testing.T) {
 		ChannelID: "mychannel",
 		Orderers:  []fab.Orderer{orderer},
 	}
-	rc.ctx.ChannelProvider().(*fcmocks.MockChannelProvider).SetTransactor(&transactor)
+	rc.ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
 
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
 	instantiateReq := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
@@ -1208,7 +1210,10 @@ func TestCCProposal(t *testing.T) {
 	}
 
 	// Test invalid function (only 'instatiate' and 'upgrade' are supported)
-	err = rc.sendCCProposal(3, "mychannel", instantiateReq, WithTargets(peers...))
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
+	opts := requestOptions{Targets: peers}
+	err = rc.sendCCProposal(reqCtx, 3, "mychannel", instantiateReq, opts)
 	if err == nil {
 		t.Fatalf("Should have failed for invalid function name")
 	}
@@ -1249,17 +1254,6 @@ func setupDefaultResMgmtClient(t *testing.T) *Client {
 }
 
 func setupResMgmtClient(fabCtx context.Client, discErr error, t *testing.T, opts ...ClientOption) *Client {
-
-	chProvider, err := fcmocks.NewMockChannelProvider(fabCtx)
-	if err != nil {
-		t.Fatalf("Failed to setup channel provider: %s", err)
-	}
-
-	transactor := txnmocks.MockTransactor{
-		Ctx:       fabCtx,
-		ChannelID: "",
-	}
-	chProvider.SetTransactor(&transactor)
 
 	ctx := createClientContext(fabCtx)
 

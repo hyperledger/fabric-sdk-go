@@ -65,6 +65,7 @@ client:
     timeout:
       query: 45s
       execute: 60s
+      resmgmt: 60s
     cache:
       connectionIdle: 30s
 

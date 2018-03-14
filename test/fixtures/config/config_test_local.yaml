@@ -46,6 +46,7 @@ client:
 # Global configuration for peer, event service and orderer timeouts
   peer:
     timeout:
+      response: 40s
       connection: 3s
       queryResponse: 45s
       executeTxResponse: 60s
@@ -70,6 +71,7 @@ client:
     timeout:
       query: 45s
       execute: 60s
+      resmgmt: 60s
     cache:
       connectionIdle: 30s
       eventServiceIdle: 500ms

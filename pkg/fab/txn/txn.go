@@ -14,9 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -105,7 +103,7 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 }
 
 // Send send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
-func Send(ctx contextApi.Client, tx *fab.Transaction, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func Send(reqCtx reqContext.Context, tx *fab.Transaction, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
 	if orderers == nil || len(orderers) == 0 {
 		return nil, errors.New("orderers is nil")
 	}
@@ -130,7 +128,7 @@ func Send(ctx contextApi.Client, tx *fab.Transaction, orderers []fab.Orderer) (*
 	// create the payload
 	payload := common.Payload{Header: hdr, Data: txBytes}
 
-	transactionResponse, err := BroadcastPayload(ctx, &payload, orderers)
+	transactionResponse, err := BroadcastPayload(reqCtx, &payload, orderers)
 	if err != nil {
 		return nil, err
 	}
@@ -140,23 +138,27 @@ func Send(ctx contextApi.Client, tx *fab.Transaction, orderers []fab.Orderer) (*
 
 // BroadcastPayload will send the given payload to some orderer, picking random endpoints
 // until all are exhausted
-func BroadcastPayload(ctx contextApi.Client, payload *common.Payload, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func BroadcastPayload(reqCtx reqContext.Context, payload *common.Payload, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
 	// Check if orderers are defined
 	if len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
 	}
 
+	ctx, ok := context.RequestClientContext(reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for signPayload")
+	}
 	envelope, err := signPayload(ctx, payload)
 	if err != nil {
 		return nil, err
 	}
 
-	return broadcastEnvelope(ctx, envelope, orderers)
+	return broadcastEnvelope(reqCtx, envelope, orderers)
 }
 
 // broadcastEnvelope will send the given envelope to some orderer, picking random endpoints
 // until all are exhausted
-func broadcastEnvelope(ctx contextApi.Client, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func broadcastEnvelope(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
 	// Check if orderers are defined
 	if len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
@@ -171,7 +173,7 @@ func broadcastEnvelope(ctx contextApi.Client, envelope *fab.SignedEnvelope, orde
 	// Iterate them in a random order and try broadcasting 1 by 1
 	var errResp error
 	for _, i := range rand.Perm(len(randOrderers)) {
-		resp, err := sendBroadcast(ctx, envelope, randOrderers[i])
+		resp, err := sendBroadcast(reqCtx, envelope, randOrderers[i])
 		if err != nil {
 			errResp = err
 		} else {
@@ -181,10 +183,9 @@ func broadcastEnvelope(ctx contextApi.Client, envelope *fab.SignedEnvelope, orde
 	return nil, errResp
 }
 
-func sendBroadcast(ctx contextApi.Client, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*fab.TransactionResponse, error) {
+func sendBroadcast(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*fab.TransactionResponse, error) {
 	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
-	reqCtx, cancel := reqContext.WithTimeout(context.NewRequest(ctx), ctx.Config().TimeoutOrDefault(core.OrdererResponse))
-	defer cancel()
+	// Send request
 	if _, err := orderer.SendBroadcast(reqCtx, envelope); err != nil {
 		logger.Debugf("Receive Error Response from orderer :%v\n", err)
 		return nil, errors.Wrapf(err, "calling orderer '%s' failed", orderer.URL())
@@ -195,11 +196,15 @@ func sendBroadcast(ctx contextApi.Client, envelope *fab.SignedEnvelope, orderer 
 }
 
 // SendPayload sends the given payload to each orderer and returns a block response
-func SendPayload(ctx contextApi.Client, payload *common.Payload, orderers []fab.Orderer) (*common.Block, error) {
+func SendPayload(reqCtx reqContext.Context, payload *common.Payload, orderers []fab.Orderer) (*common.Block, error) {
 	if orderers == nil || len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
 	}
 
+	ctx, ok := context.RequestClientContext(reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for signPayload")
+	}
 	envelope, err := signPayload(ctx, payload)
 	if err != nil {
 		return nil, err
@@ -214,7 +219,7 @@ func SendPayload(ctx contextApi.Client, payload *common.Payload, orderers []fab.
 	// Iterate them in a random order and try broadcasting 1 by 1
 	var errResp error
 	for _, i := range rand.Perm(len(randOrderers)) {
-		resp, err := sendEnvelope(ctx, envelope, randOrderers[i])
+		resp, err := sendEnvelope(reqCtx, envelope, randOrderers[i])
 		if err != nil {
 			errResp = err
 		} else {
@@ -225,13 +230,10 @@ func SendPayload(ctx contextApi.Client, payload *common.Payload, orderers []fab.
 }
 
 // sendEnvelope sends the given envelope to each orderer and returns a block response
-func sendEnvelope(ctx contextApi.Client, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*common.Block, error) {
+func sendEnvelope(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*common.Block, error) {
 
 	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
-	reqCtx, cancel := reqContext.WithTimeout(context.NewRequest(ctx), ctx.Config().TimeoutOrDefault(core.OrdererResponse))
-	defer cancel()
 	blocks, errs := orderer.SendDeliver(reqCtx, envelope)
-
 	var block *common.Block
 	for {
 		select {

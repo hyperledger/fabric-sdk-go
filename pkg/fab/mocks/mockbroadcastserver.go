@@ -37,6 +37,7 @@ type MockBroadcastServer struct {
 	BroadcastInternalServerError bool
 	DeliverResponse              *po.DeliverResponse
 	BroadcastError               error
+	BroadcastCustomResponse      *po.BroadcastResponse
 }
 
 // Broadcast mock broadcast
@@ -55,6 +56,11 @@ func (m *MockBroadcastServer) Broadcast(server po.AtomicBroadcast_BroadcastServe
 	if m.BroadcastInternalServerError {
 		return server.Send(broadcastResponseError)
 	}
+
+	if m.BroadcastCustomResponse != nil {
+		return server.Send(m.BroadcastCustomResponse)
+	}
+
 	return server.Send(broadcastResponseSuccess)
 }
 

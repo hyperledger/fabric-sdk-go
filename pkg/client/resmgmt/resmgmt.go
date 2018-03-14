@@ -8,6 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmt
 
 import (
+	reqContext "context"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -75,7 +76,7 @@ type UpgradeCCRequest struct {
 	CollConfig []*common.CollectionConfig
 }
 
-//Opts contains options for operations performed by ResourceMgmtClient
+//requestOptions contains options for operations performed by ResourceMgmtClient
 type requestOptions struct {
 	Targets      []fab.Peer    // target peers
 	TargetFilter TargetFilter  // target filter
@@ -174,6 +175,14 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		return errors.WithMessage(err, "failed to get opts for JoinChannel")
 	}
 
+	//set parent request context for overall timeout
+	if opts.Timeout == 0 {
+		//use Channelmgmt timeout from config as default when overall timeout not supplied
+		opts.Timeout = rc.ctx.Config().TimeoutOrDefault(core.ResMgmt)
+	}
+	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeout))
+	defer parentReqCancel()
+
 	targets, err := rc.calculateTargets(rc.discovery, opts.Targets, opts.TargetFilter)
 	if err != nil {
 		return errors.WithMessage(err, "failed to determine target peers for JoinChannel")
@@ -188,7 +197,10 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		return errors.WithMessage(err, "failed to find orderer for request")
 	}
 
-	genesisBlock, err := resource.GenesisBlockFromOrderer(rc.ctx, channelID, orderer)
+	ordrReqCtx, ordrReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.OrdererResponse), contextImpl.WithReqContext(parentReqCtx))
+	defer ordrReqCtxCancel()
+
+	genesisBlock, err := resource.GenesisBlockFromOrderer(ordrReqCtx, channelID, orderer)
 	if err != nil {
 		return errors.WithMessage(err, "genesis block retrieval failed")
 	}
@@ -197,7 +209,9 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		GenesisBlock: genesisBlock,
 	}
 
-	err = resource.JoinChannel(rc.ctx, joinChannelRequest, peersToTxnProcessors(targets))
+	peerReqCtx, peerReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeout), contextImpl.WithReqContext(parentReqCtx))
+	defer peerReqCtxCancel()
+	err = resource.JoinChannel(peerReqCtx, joinChannelRequest, peersToTxnProcessors(targets))
 	if err != nil {
 		return errors.WithMessage(err, "join channel failed")
 	}
@@ -269,8 +283,9 @@ func (rc *Client) calculateTargets(discovery fab.DiscoveryService, peers []fab.P
 }
 
 // isChaincodeInstalled verify if chaincode is installed on peer
-func (rc *Client) isChaincodeInstalled(req InstallCCRequest, peer fab.Peer) (bool, error) {
-	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(rc.ctx, peer)
+func (rc *Client) isChaincodeInstalled(reqCtx reqContext.Context, req InstallCCRequest, peer fab.Peer) (bool, error) {
+
+	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, peer)
 	if err != nil {
 		return false, err
 	}
@@ -302,6 +317,14 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		return nil, errors.WithMessage(err, "failed to get opts for InstallCC")
 	}
 
+	//set parent request context for overall timeout
+	if opts.Timeout == 0 {
+		//use ChaincodeMgmt timeout from config as default when overall timeout not supplied
+		opts.Timeout = rc.ctx.Config().TimeoutOrDefault(core.ResMgmt)
+	}
+	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeout))
+	defer parentReqCancel()
+
 	//Default targets when targets are not provided in options
 	if len(opts.Targets) == 0 {
 		opts.Targets, err = rc.getDefaultTargets(rc.discovery)
@@ -325,7 +348,10 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	// Targets will be adjusted if cc has already been installed
 	newTargets := make([]fab.Peer, 0)
 	for _, target := range targets {
-		installed, err := rc.isChaincodeInstalled(req, target)
+		reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.PeerResponse), contextImpl.WithReqContext(parentReqCtx))
+		defer cancel()
+
+		installed, err := rc.isChaincodeInstalled(reqCtx, req, target)
 		if err != nil {
 			// Add to errors with unable to verify error message
 			errs = append(errs, errors.Errorf("unable to verify if cc is installed on %s", target.URL()))
@@ -347,8 +373,11 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		return responses, nil
 	}
 
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeout), contextImpl.WithReqContext(parentReqCtx))
+	defer cancel()
+
 	icr := api.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package}
-	transactionProposalResponse, _, err := resource.InstallChaincode(rc.ctx, icr, peer.PeersToTxnProcessors(newTargets))
+	transactionProposalResponse, _, err := resource.InstallChaincode(reqCtx, icr, peer.PeersToTxnProcessors(newTargets))
 	for _, v := range transactionProposalResponse {
 		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v", req.Name, v.Endorser, v.Status)
 
@@ -372,17 +401,36 @@ func checkRequiredInstallCCParams(req InstallCCRequest) error {
 
 // InstantiateCC instantiates chaincode using default settings
 func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, options ...RequestOption) error {
-	return rc.sendCCProposal(InstantiateChaincode, channelID, req, options...)
+
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return errors.WithMessage(err, "failed to get opts for InstantiateCC")
+	}
+
+	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
+	defer cancel()
+
+	return rc.sendCCProposal(reqCtx, InstantiateChaincode, channelID, req, opts)
 }
 
 // UpgradeCC upgrades chaincode  with optional custom options (specific peers, filtered peers, timeout)
 func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...RequestOption) error {
-	return rc.sendCCProposal(UpgradeChaincode, channelID, InstantiateCCRequest(req), options...)
+
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return errors.WithMessage(err, "failed to get opts for UpgradeCC")
+	}
+
+	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
+	defer cancel()
+
+	return rc.sendCCProposal(reqCtx, UpgradeChaincode, channelID, InstantiateCCRequest(req), opts)
 }
 
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
 // Returns the details of all chaincodes installed on a peer.
 func (rc *Client) QueryInstalledChaincodes(options ...RequestOption) (*pb.ChaincodeQueryResponse, error) {
+
 	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
 		return nil, err
@@ -392,7 +440,10 @@ func (rc *Client) QueryInstalledChaincodes(options ...RequestOption) (*pb.Chainc
 		return nil, errors.New("only one target is supported")
 	}
 
-	return resource.QueryInstalledChaincodes(rc.ctx, opts.Targets[0])
+	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
+	defer cancel()
+
+	return resource.QueryInstalledChaincodes(reqCtx, opts.Targets[0])
 }
 
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on a peer for specific channel.
@@ -424,12 +475,15 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		target = targets[randomNumber]
 	}
 
-	l, err := channel.NewLedger(rc.ctx, channelID)
+	l, err := channel.NewLedger(channelID)
 	if err != nil {
 		return nil, err
 	}
 
-	responses, err := l.QueryInstantiatedChaincodes([]fab.ProposalProcessor{target})
+	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
+	defer cancel()
+
+	responses, err := l.QueryInstantiatedChaincodes(reqCtx, []fab.ProposalProcessor{target})
 	if err != nil {
 		return nil, err
 	}
@@ -440,6 +494,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 // QueryChannels queries the names of all the channels that a peer has joined.
 // Returns the details of all channels that peer has joined.
 func (rc *Client) QueryChannels(options ...RequestOption) (*pb.ChannelQueryResponse, error) {
+
 	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
 		return nil, err
@@ -449,19 +504,18 @@ func (rc *Client) QueryChannels(options ...RequestOption) (*pb.ChannelQueryRespo
 		return nil, errors.New("only one target is supported")
 	}
 
-	return resource.QueryChannels(rc.ctx, opts.Targets[0])
+	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
+	defer cancel()
+
+	return resource.QueryChannels(reqCtx, opts.Targets[0])
+
 }
 
 // sendCCProposal sends proposal for type  Instantiate, Upgrade
-func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID string, req InstantiateCCRequest, options ...RequestOption) error {
+func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chaincodeProposalType, channelID string, req InstantiateCCRequest, opts requestOptions) error {
 
 	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
 		return err
-	}
-
-	opts, err := rc.prepareRequestOpts(options...)
-	if err != nil {
-		return errors.WithMessage(err, "failed to get opts for cc proposal")
 	}
 
 	// per channel discovery service
@@ -492,7 +546,9 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 	if err != nil {
 		return errors.WithMessage(err, "Unable to get channel service")
 	}
-	transactor, err := channelService.Transactor()
+
+	chConfig := channelService.ChannelConfig()
+	transactor, err := rc.ctx.InfraProvider().CreateChannelTransactor(reqCtx, chConfig)
 	if err != nil {
 		return errors.WithMessage(err, "get channel transactor failed")
 	}
@@ -666,7 +722,10 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		Signatures: configSignatures,
 	}
 
-	_, err = resource.CreateChannel(rc.ctx, request)
+	reqCtx, cancel := rc.createRequestContext(opts, core.OrdererResponse)
+	defer cancel()
+
+	_, err = resource.CreateChannel(reqCtx, request)
 	if err != nil {
 		return errors.WithMessage(err, "create channel failed")
 	}
@@ -689,12 +748,15 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 		return nil, errors.WithMessage(err, "failed to find orderer for request")
 	}
 
-	channelConfig, err := chconfig.New(rc.ctx, channelID, chconfig.WithOrderer(orderer))
+	channelConfig, err := chconfig.New(channelID, chconfig.WithOrderer(orderer))
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryConfig failed")
 	}
 
-	return channelConfig.Query()
+	reqCtx, cancel := rc.createRequestContext(opts, core.OrdererResponse)
+	defer cancel()
+
+	return channelConfig.Query(reqCtx)
 
 }
 
@@ -747,4 +809,15 @@ func (rc *Client) prepareRequestOpts(options ...RequestOption) (requestOptions, 
 		}
 	}
 	return opts, nil
+}
+
+//createRequestContext creates request context for grpc
+func (rc *Client) createRequestContext(opts requestOptions, defaultTimeoutType core.TimeoutType) (reqContext.Context, reqContext.CancelFunc) {
+
+	timeout := opts.Timeout
+	if timeout == 0 {
+		timeout = rc.ctx.Config().TimeoutOrDefault(defaultTimeoutType)
+	}
+
+	return contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(timeout))
 }

@@ -9,6 +9,9 @@ package channel
 import (
 	"testing"
 
+	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
@@ -60,8 +63,9 @@ func createTransactor(t *testing.T) *Transactor {
 	ctx := mocks.NewMockContext(user)
 	orderer := mocks.NewMockOrderer("", nil)
 	chConfig := mocks.NewMockChannelCfg("testChannel")
-
-	transactor, err := NewTransactor(ctx, chConfig)
+	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
+	defer cancel()
+	transactor, err := NewTransactor(reqCtx, chConfig)
 	transactor.orderers = []fab.Orderer{orderer}
 	assert.Nil(t, err)
 

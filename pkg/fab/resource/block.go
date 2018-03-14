@@ -8,9 +8,11 @@ SPDX-License-Identifier: Apache-2.0
 package resource
 
 import (
+	reqContext "context"
+
 	"github.com/golang/protobuf/proto"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
@@ -19,7 +21,11 @@ import (
 )
 
 // block retrieves the block at the given position
-func retrieveBlock(ctx context.Client, orderers []fab.Orderer, channel string, pos *ab.SeekPosition) (*common.Block, error) {
+func retrieveBlock(reqCtx reqContext.Context, orderers []fab.Orderer, channel string, pos *ab.SeekPosition) (*common.Block, error) {
+	ctx, ok := contextImpl.RequestClientContext(reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for signPayload")
+	}
 	th, err := txn.NewHeader(ctx, channel)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating TX ID failed")
@@ -70,7 +76,7 @@ func retrieveBlock(ctx context.Client, orderers []fab.Orderer, channel string, p
 		Data:   seekInfoBytes,
 	}
 
-	return txn.SendPayload(ctx, &payload, orderers)
+	return txn.SendPayload(reqCtx, &payload, orderers)
 }
 
 // newNewestSeekPosition returns a SeekPosition that requests the newest block

@@ -21,6 +21,7 @@ client:
 # Global configuration for peer, event service and orderer timeouts
   peer:
     timeout:
+      response: 10s
       connection: 3s
       discovery:
         greylistExpiry: 5s
@@ -36,6 +37,7 @@ client:
     timeout:
       query: 20s
       execute: 30s
+      resmgmt: 60s
     cache:
       connectionIdle: 30s
 

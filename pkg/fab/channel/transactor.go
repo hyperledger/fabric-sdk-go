@@ -15,6 +15,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
+	reqContext "context"
+
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
@@ -22,13 +25,19 @@ import (
 
 // Transactor enables sending transactions and transaction proposals on the channel.
 type Transactor struct {
-	ctx       context.Client
+	reqCtx    reqContext.Context
 	ChannelID string
 	orderers  []fab.Orderer
 }
 
 // NewTransactor returns a Transactor for the current context and channel config.
-func NewTransactor(ctx context.Client, cfg fab.ChannelCfg) (*Transactor, error) {
+func NewTransactor(reqCtx reqContext.Context, cfg fab.ChannelCfg) (*Transactor, error) {
+
+	ctx, ok := contextImpl.RequestClientContext(reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for create new transactor")
+	}
+
 	orderers, err := orderersFromChannelCfg(ctx, cfg)
 	if err != nil {
 		return nil, errors.WithMessage(err, "reading orderers from channel config failed")
@@ -39,7 +48,7 @@ func NewTransactor(ctx context.Client, cfg fab.ChannelCfg) (*Transactor, error) 
 	//}
 
 	t := Transactor{
-		ctx:       ctx,
+		reqCtx:    reqCtx,
 		ChannelID: cfg.ID(),
 		orderers:  orderers,
 	}
@@ -105,7 +114,12 @@ func orderersByTarget(ctx context.Client) (map[string]core.OrdererConfig, error)
 // CreateTransactionHeader creates a Transaction Header based on the current context.
 func (t *Transactor) CreateTransactionHeader() (fab.TransactionHeader, error) {
 
-	txh, err := txn.NewHeader(t.ctx, t.ChannelID)
+	ctx, ok := contextImpl.RequestClientContext(t.reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for txn Header")
+	}
+
+	txh, err := txn.NewHeader(ctx, t.ChannelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "new transaction ID failed")
 	}
@@ -115,7 +129,15 @@ func (t *Transactor) CreateTransactionHeader() (fab.TransactionHeader, error) {
 
 // SendTransactionProposal sends a TransactionProposal to the target peers.
 func (t *Transactor) SendTransactionProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
-	return txn.SendProposal(t.ctx, proposal, targets)
+	ctx, ok := contextImpl.RequestClientContext(t.reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for SendTransactionProposal")
+	}
+
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(core.PeerResponse), contextImpl.WithReqContext(t.reqCtx))
+	defer cancel()
+
+	return txn.SendProposal(reqCtx, proposal, targets)
 }
 
 // CreateTransaction create a transaction with proposal response.
@@ -126,5 +148,13 @@ func (t *Transactor) CreateTransaction(request fab.TransactionRequest) (*fab.Tra
 
 // SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
 func (t *Transactor) SendTransaction(tx *fab.Transaction) (*fab.TransactionResponse, error) {
-	return txn.Send(t.ctx, tx, t.orderers)
+	ctx, ok := contextImpl.RequestClientContext(t.reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for SendTransaction")
+	}
+
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(core.OrdererResponse), contextImpl.WithReqContext(t.reqCtx))
+	defer cancel()
+
+	return txn.Send(reqCtx, tx, t.orderers)
 }

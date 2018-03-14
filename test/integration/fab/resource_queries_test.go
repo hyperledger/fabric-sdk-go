@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	reqContext "context"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/stretchr/testify/assert"
@@ -24,25 +24,26 @@ func TestChannelQueries(t *testing.T) {
 	//chaincodeID := integration.GenerateRandomID()
 
 	// Low level resource
-	client, err := getContext(sdk, "Admin", orgName)
+	reqCtx, cancel, err := getContext(sdk, "Admin", orgName)
 	if err != nil {
 		t.Fatalf("Failed to get resource: %s", err)
 	}
+	defer cancel()
 
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets[:1])
 	assert.Nil(t, err, "creating peers failed")
 
-	testQueryChannels(t, client, peers[0])
+	testQueryChannels(t, reqCtx, peers[0])
 
-	testInstalledChaincodes(t, chaincodeID, client, peers[0])
+	testInstalledChaincodes(t, reqCtx, chaincodeID, peers[0])
 
 }
 
-func testQueryChannels(t *testing.T, client *context.Client, target fab.ProposalProcessor) {
+func testQueryChannels(t *testing.T, reqCtx reqContext.Context, target fab.ProposalProcessor) {
 
 	// Our target will be primary peer on this channel
 	t.Logf("****QueryChannels for %s", target)
-	channelQueryResponse, err := resource.QueryChannels(client, target)
+	channelQueryResponse, err := resource.QueryChannels(reqCtx, target)
 	if err != nil {
 		t.Fatalf("QueryChannels return error: %v", err)
 	}
@@ -53,12 +54,12 @@ func testQueryChannels(t *testing.T, client *context.Client, target fab.Proposal
 
 }
 
-func testInstalledChaincodes(t *testing.T, ccID string, client *context.Client, target fab.ProposalProcessor) {
+func testInstalledChaincodes(t *testing.T, reqCtx reqContext.Context, ccID string, target fab.ProposalProcessor) {
 
 	// Our target will be primary peer on this channel
 	t.Logf("****QueryInstalledChaincodes for %s", target)
 
-	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(client, target)
+	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, target)
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}

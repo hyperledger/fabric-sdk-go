@@ -503,13 +503,6 @@ func setupTestChannelService(ctx context.Client, orderers []fab.Orderer) (fab.Ch
 		return nil, errors.WithMessage(err, "mock channel service creation failed")
 	}
 
-	transactor := txnmocks.MockTransactor{
-		Ctx:       ctx,
-		ChannelID: channelID,
-		Orderers:  orderers,
-	}
-	chService.(*fcmocks.MockChannelService).SetTransactor(&transactor)
-
 	return chService, nil
 }
 
@@ -527,6 +520,14 @@ func setupCustomTestContext(t *testing.T, selectionService fab.SelectionService,
 		orderer := fcmocks.NewMockOrderer("", nil)
 		orderers = []fab.Orderer{orderer}
 	}
+
+	transactor := txnmocks.MockTransactor{
+		Ctx:       ctx,
+		ChannelID: channelID,
+		Orderers:  orderers,
+	}
+
+	ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
 
 	testChannelSvc, err := setupTestChannelService(ctx, orderers)
 	assert.Nil(t, err, "Got error %s", err)

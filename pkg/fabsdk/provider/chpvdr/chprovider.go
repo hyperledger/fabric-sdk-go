@@ -10,6 +10,8 @@ import (
 	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 )
@@ -38,12 +40,15 @@ func (cp *ChannelProvider) ChannelService(ctx fab.ClientContext, channelID strin
 	if channelID != "" {
 		v, ok := cp.chCfgMap.Load(channelID)
 		if !ok {
-			p, err := cp.infraProvider.CreateChannelConfig(ctx, channelID)
+			p, err := cp.infraProvider.CreateChannelConfig(channelID)
 			if err != nil {
 				return nil, err
 			}
 
-			cfg, err = p.Query()
+			reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(core.PeerResponse))
+			defer cancel()
+
+			cfg, err = p.Query(reqCtx)
 			if err != nil {
 				return nil, err
 			}
@@ -85,15 +90,15 @@ func (cs *ChannelService) EventService() (fab.EventService, error) {
 
 // Config returns the Config for the named channel
 func (cs *ChannelService) Config() (fab.ChannelConfig, error) {
-	return cs.infraProvider.CreateChannelConfig(cs.context, cs.cfg.ID())
-}
-
-// Transactor returns a transaction client for the current context and named channel.
-func (cs *ChannelService) Transactor() (fab.Transactor, error) {
-	return cs.infraProvider.CreateChannelTransactor(cs.context, cs.cfg)
+	return cs.infraProvider.CreateChannelConfig(cs.cfg.ID())
 }
 
 // Membership returns the member identifier for this channel
 func (cs *ChannelService) Membership() (fab.ChannelMembership, error) {
 	return cs.infraProvider.CreateChannelMembership(cs.cfg)
+}
+
+// ChannelConfig returns the channel config for this channel
+func (cs *ChannelService) ChannelConfig() fab.ChannelCfg {
+	return cs.cfg
 }

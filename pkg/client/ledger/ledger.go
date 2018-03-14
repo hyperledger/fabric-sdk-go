@@ -8,6 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 package ledger
 
 import (
+	reqContext "context"
 	"math/rand"
 	"time"
 
@@ -18,6 +19,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
@@ -35,9 +38,9 @@ const (
 // An application that requires interaction with multiple channels should create a separate
 // instance of the ledger client for each channel. Ledger client supports specific queries only.
 type Client struct {
-	context context.Channel
-	filter  TargetFilter
-	ledger  *channel.Ledger
+	ctx    context.Channel
+	filter TargetFilter
+	ledger *channel.Ledger
 }
 
 // MSPFilter is default filter
@@ -58,14 +61,14 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, err
 	}
 
-	ledger, err := channel.NewLedger(channelContext, channelContext.ChannelID())
+	ledger, err := channel.NewLedger(channelContext.ChannelID())
 	if err != nil {
 		return nil, err
 	}
 
 	ledgerClient := Client{
-		context: channelContext,
-		ledger:  ledger,
+		ctx:    channelContext,
+		ledger: ledger,
 	}
 
 	for _, opt := range opts {
@@ -103,7 +106,10 @@ func (c *Client) QueryInfo(options ...RequestOption) (*fab.BlockchainInfoRespons
 		return nil, errors.WithMessage(err, "failed to determine target peers for QueryBlockByHash")
 	}
 
-	responses, err := c.ledger.QueryInfo(peersToTxnProcessors(targets))
+	reqCtx, cancel := c.createRequestContext(opts)
+	defer cancel()
+
+	responses, err := c.ledger.QueryInfo(reqCtx, peersToTxnProcessors(targets))
 	if err != nil && len(responses) == 0 {
 		return nil, errors.WithMessage(err, "Failed to QueryBlockByHash")
 	}
@@ -146,7 +152,10 @@ func (c *Client) QueryBlockByHash(blockHash []byte, options ...RequestOption) (*
 		return nil, errors.WithMessage(err, "failed to determine target peers for QueryBlockByHash")
 	}
 
-	responses, err := c.ledger.QueryBlockByHash(blockHash, peersToTxnProcessors(targets))
+	reqCtx, cancel := c.createRequestContext(opts)
+	defer cancel()
+
+	responses, err := c.ledger.QueryBlockByHash(reqCtx, blockHash, peersToTxnProcessors(targets))
 	if err != nil && len(responses) == 0 {
 		return nil, errors.WithMessage(err, "Failed to QueryBlockByHash")
 	}
@@ -187,7 +196,10 @@ func (c *Client) QueryBlock(blockNumber int, options ...RequestOption) (*common.
 		return nil, errors.WithMessage(err, "failed to determine target peers for QueryBlock")
 	}
 
-	responses, err := c.ledger.QueryBlock(blockNumber, peersToTxnProcessors(targets))
+	reqCtx, cancel := c.createRequestContext(opts)
+	defer cancel()
+
+	responses, err := c.ledger.QueryBlock(reqCtx, blockNumber, peersToTxnProcessors(targets))
 	if err != nil && len(responses) == 0 {
 		return nil, errors.WithMessage(err, "Failed to QueryBlock")
 	}
@@ -229,7 +241,10 @@ func (c *Client) QueryTransaction(transactionID fab.TransactionID, options ...Re
 		return nil, errors.WithMessage(err, "failed to determine target peers for QueryTransaction")
 	}
 
-	responses, err := c.ledger.QueryTransaction(transactionID, peersToTxnProcessors(targets))
+	reqCtx, cancel := c.createRequestContext(opts)
+	defer cancel()
+
+	responses, err := c.ledger.QueryTransaction(reqCtx, transactionID, peersToTxnProcessors(targets))
 	if err != nil && len(responses) == 0 {
 		return nil, errors.WithMessage(err, "Failed to QueryTransaction")
 	}
@@ -269,12 +284,15 @@ func (c *Client) QueryConfig(options ...RequestOption) (fab.ChannelCfg, error) {
 		return nil, errors.WithMessage(err, "failed to determine target peers for QueryConfig")
 	}
 
-	channelConfig, err := chconfig.New(c.context, c.context.ChannelID(), chconfig.WithPeers(targets), chconfig.WithMinResponses(opts.MinTargets))
+	channelConfig, err := chconfig.New(c.ctx.ChannelID(), chconfig.WithPeers(targets), chconfig.WithMinResponses(opts.MinTargets))
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryConfig failed")
 	}
 
-	return channelConfig.Query()
+	reqCtx, cancel := c.createRequestContext(opts)
+	defer cancel()
+
+	return channelConfig.Query(reqCtx)
 
 }
 
@@ -282,7 +300,7 @@ func (c *Client) QueryConfig(options ...RequestOption) (fab.ChannelCfg, error) {
 func (c *Client) prepareRequestOpts(options ...RequestOption) (requestOptions, error) {
 	opts := requestOptions{}
 	for _, option := range options {
-		err := option(c.context, &opts)
+		err := option(c.ctx, &opts)
 		if err != nil {
 			return opts, errors.WithMessage(err, "Failed to read request opts")
 		}
@@ -318,7 +336,7 @@ func (c *Client) calculateTargets(opts requestOptions) ([]fab.Peer, error) {
 	var err error
 	if targets == nil {
 		// Retrieve targets from discovery
-		targets, err = c.context.DiscoveryService().GetPeers()
+		targets, err = c.ctx.DiscoveryService().GetPeers()
 		if err != nil {
 			return nil, err
 		}
@@ -350,6 +368,17 @@ func (c *Client) calculateTargets(opts requestOptions) ([]fab.Peer, error) {
 	shuffle(targets)
 
 	return targets[:numOfTargets], nil
+}
+
+//createRequestContext creates request context for grpc
+func (c *Client) createRequestContext(opts requestOptions) (reqContext.Context, reqContext.CancelFunc) {
+
+	timeout := opts.Timeout
+	if timeout == 0 {
+		timeout = c.ctx.Config().TimeoutOrDefault(core.PeerResponse)
+	}
+
+	return contextImpl.NewRequest(c.ctx, contextImpl.WithTimeout(timeout))
 }
 
 // filterTargets is helper method to filter peers

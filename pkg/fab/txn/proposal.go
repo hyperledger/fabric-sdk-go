@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package txn
 
 import (
+	reqContext "context"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -77,7 +78,7 @@ func signProposal(ctx contextApi.Client, proposal *pb.Proposal) (*pb.SignedPropo
 }
 
 // SendProposal sends a TransactionProposal to ProposalProcessor.
-func SendProposal(ctx contextApi.Client, proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+func SendProposal(reqCtx reqContext.Context, proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
 
 	if proposal == nil {
 		return nil, errors.New("proposal is required")
@@ -87,6 +88,10 @@ func SendProposal(ctx contextApi.Client, proposal *fab.TransactionProposal, targ
 		return nil, errors.New("targets is required")
 	}
 
+	ctx, ok := context.RequestClientContext(reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for signProposal")
+	}
 	signedProposal, err := signProposal(ctx, proposal.Proposal)
 	if err != nil {
 		return nil, errors.WithMessage(err, "sign proposal failed")
@@ -105,7 +110,8 @@ func SendProposal(ctx contextApi.Client, proposal *fab.TransactionProposal, targ
 			defer wg.Done()
 
 			// TODO: The RPC should be timed-out.
-			resp, err := processor.ProcessTransactionProposal(context.NewRequest(ctx), request)
+			//resp, err := processor.ProcessTransactionProposal(context.NewRequestOLD(ctx), request)
+			resp, err := processor.ProcessTransactionProposal(reqCtx, request)
 			if err != nil {
 				logger.Debugf("Received error response from txn proposal processing: %v", err)
 				responseMtx.Lock()

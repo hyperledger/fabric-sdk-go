@@ -85,6 +85,10 @@ const (
 	CacheSweepInterval
 	// EventServiceIdle is the timeout for closing the event service connection
 	EventServiceIdle
+	// PeerResponse peer response timeout
+	PeerResponse
+	// ResMgmt timeout is default overall timeout for all resource management operations
+	ResMgmt
 )
 
 // EventServiceType specifies the type of event service to use

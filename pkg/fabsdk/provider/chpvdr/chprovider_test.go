@@ -13,7 +13,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
@@ -28,14 +27,14 @@ type mockClientContext struct {
 func TestBasicValidChannel(t *testing.T) {
 	ctx := mocks.NewMockProviderContext()
 
-	pf := &MockProviderFactory{}
-
 	user := mocks.NewMockUser("user")
 
 	clientCtx := &mockClientContext{
 		Providers: ctx,
 		Identity:  user,
 	}
+
+	pf := &MockProviderFactory{ctx: clientCtx}
 
 	fp, err := pf.CreateInfraProvider(ctx.Config())
 	if err != nil {
@@ -66,23 +65,19 @@ func TestBasicValidChannel(t *testing.T) {
 // MockProviderFactory is configured to retrieve channel config from orderer
 type MockProviderFactory struct {
 	defcore.ProviderFactory
+	ctx context.Client
 }
 
 // MockInfraProvider overrides channel config default implementation
 type MockInfraProvider struct {
 	*fabpvdr.InfraProvider
 	providerContext context.Providers
+	ctx             context.Client
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *MockInfraProvider) CreateChannelConfig(ic msp.Identity, channelID string) (fab.ChannelConfig, error) {
-
-	ctx := chconfig.Context{
-		Providers: f.providerContext,
-		Identity:  ic,
-	}
-
-	return mocks.NewMockChannelConfig(ctx, "mychannel")
+func (f *MockInfraProvider) CreateChannelConfig(channelID string) (fab.ChannelConfig, error) {
+	return mocks.NewMockChannelConfig(f.ctx, "mychannel")
 
 }
 
@@ -92,6 +87,7 @@ func (f *MockProviderFactory) CreateInfraProvider(config core.Config) (fab.Infra
 
 	cfp := MockInfraProvider{
 		InfraProvider: fabProvider,
+		ctx:           f.ctx,
 	}
 	return &cfp, nil
 }
