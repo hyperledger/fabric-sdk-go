@@ -174,7 +174,7 @@ func TestQueryWithOptTarget(t *testing.T) {
 	peers := []fab.Peer{testPeer}
 
 	response, err := chClient.Query(Request{ChaincodeID: "testCC", Fcn: "invoke",
-		Args: [][]byte{[]byte("query"), []byte("b")}}, WithTargets(peers))
+		Args: [][]byte{[]byte("query"), []byte("b")}}, WithTargets(peers...))
 	if err != nil {
 		t.Fatalf("Failed to invoke test cc: %s", err)
 	}

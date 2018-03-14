@@ -155,6 +155,7 @@ func HasPeerJoinedChannel(client *resmgmt.Client, target string, channel string)
 	return foundChannel, nil
 }
 
+// CleanupTestPath removes the contents of a state store.
 func CleanupTestPath(t *testing.T, storePath string) {
 	err := os.RemoveAll(storePath)
 	if err != nil {

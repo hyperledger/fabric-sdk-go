@@ -116,19 +116,19 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 }
 
 // Query chaincode using request and optional options provided
-func (cc *Client) Query(request Request, options ...Option) (Response, error) {
-	return cc.InvokeHandler(invoke.NewQueryHandler(), request, cc.addDefaultTimeout(core.Query, options...)...)
+func (cc *Client) Query(request Request, options ...RequestOption) (Response, error) {
+	return cc.InvokeHandler(invoke.NewQueryHandler(), request, cc.addDefaultTimeout(cc.context, core.Query, options...)...)
 }
 
 // Execute prepares and executes transaction using request and optional options provided
-func (cc *Client) Execute(request Request, options ...Option) (Response, error) {
-	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, cc.addDefaultTimeout(core.Execute, options...)...)
+func (cc *Client) Execute(request Request, options ...RequestOption) (Response, error) {
+	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, cc.addDefaultTimeout(cc.context, core.Execute, options...)...)
 }
 
 //InvokeHandler invokes handler using request and options provided
-func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options ...Option) (Response, error) {
+func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options ...RequestOption) (Response, error) {
 	//Read execute tx options
-	txnOpts, err := cc.prepareOptsFromOptions(options...)
+	txnOpts, err := cc.prepareOptsFromOptions(cc.context, options...)
 	if err != nil {
 		return Response{}, err
 	}
@@ -159,7 +159,7 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 	}
 }
 
-func (cc *Client) resolveRetry(ctx *invoke.RequestContext, o opts) bool {
+func (cc *Client) resolveRetry(ctx *invoke.RequestContext, o requestOptions) bool {
 	errs, ok := ctx.Error.(multi.Errors)
 	if !ok {
 		errs = append(errs, ctx.Error)
@@ -181,7 +181,7 @@ func (cc *Client) resolveRetry(ctx *invoke.RequestContext, o opts) bool {
 }
 
 //prepareHandlerContexts prepares context objects for handlers
-func (cc *Client) prepareHandlerContexts(request Request, o opts) (*invoke.RequestContext, *invoke.ClientContext, error) {
+func (cc *Client) prepareHandlerContexts(request Request, o requestOptions) (*invoke.RequestContext, *invoke.ClientContext, error) {
 
 	if request.ChaincodeID == "" || request.Fcn == "" {
 		return nil, nil, errors.New("ChaincodeID and Fcn are required")
@@ -215,10 +215,10 @@ func (cc *Client) prepareHandlerContexts(request Request, o opts) (*invoke.Reque
 }
 
 //prepareOptsFromOptions Reads apitxn.Opts from Option array
-func (cc *Client) prepareOptsFromOptions(options ...Option) (opts, error) {
-	txnOpts := opts{}
+func (cc *Client) prepareOptsFromOptions(ctx context.Client, options ...RequestOption) (requestOptions, error) {
+	txnOpts := requestOptions{}
 	for _, option := range options {
-		err := option(&txnOpts)
+		err := option(ctx, &txnOpts)
 		if err != nil {
 			return txnOpts, errors.WithMessage(err, "Failed to read opts")
 		}
@@ -227,10 +227,10 @@ func (cc *Client) prepareOptsFromOptions(options ...Option) (opts, error) {
 }
 
 //addDefaultTimeout adds given default timeout if it is missing in options
-func (cc *Client) addDefaultTimeout(timeOutType core.TimeoutType, options ...Option) []Option {
-	txnOpts := opts{}
+func (cc *Client) addDefaultTimeout(ctx context.Client, timeOutType core.TimeoutType, options ...RequestOption) []RequestOption {
+	txnOpts := requestOptions{}
 	for _, option := range options {
-		option(&txnOpts)
+		option(ctx, &txnOpts)
 	}
 
 	if txnOpts.Timeout == 0 {

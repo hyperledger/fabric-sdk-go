@@ -25,11 +25,11 @@ type MSP struct {
 	ctx     context.Client
 }
 
-// Option describes a functional parameter for the New constructor
-type Option func(*MSP) error
+// ClientOption describes a functional parameter for the New constructor
+type ClientOption func(*MSP) error
 
 // WithOrg option
-func WithOrg(orgName string) Option {
+func WithOrg(orgName string) ClientOption {
 	return func(msp *MSP) error {
 		msp.orgName = orgName
 		return nil
@@ -37,7 +37,7 @@ func WithOrg(orgName string) Option {
 }
 
 // New creates a new MSP instance
-func New(clientProvider context.ClientProvider, opts ...Option) (*MSP, error) {
+func New(clientProvider context.ClientProvider, opts ...ClientOption) (*MSP, error) {
 
 	ctx, err := clientProvider()
 	if err != nil {
