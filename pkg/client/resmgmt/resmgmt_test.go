@@ -1266,8 +1266,8 @@ func setupResMgmtClient(fabCtx context.Client, discErr error, t *testing.T, opts
 
 }
 
-func setupTestContext(userName string, mspID string) *fcmocks.MockContext {
-	user := fcmocks.NewMockUserWithMSPID(userName, mspID)
+func setupTestContext(username string, mspID string) *fcmocks.MockContext {
+	user := fcmocks.NewMockUserWithMSPID(username, mspID)
 	ctx := fcmocks.NewMockContext(user)
 	return ctx
 }
@@ -1279,8 +1279,8 @@ func setupCustomOrderer(ctx *fcmocks.MockContext, mockOrderer fab.Orderer) *fcmo
 	return ctx
 }
 
-func setupTestContextWithDiscoveryError(userName string, mspID string, discErr error) *fcmocks.MockContext {
-	user := fcmocks.NewMockUserWithMSPID(userName, mspID)
+func setupTestContextWithDiscoveryError(username string, mspID string, discErr error) *fcmocks.MockContext {
+	user := fcmocks.NewMockUserWithMSPID(username, mspID)
 	dscPvdr, _ := setupTestDiscovery(discErr, nil)
 	//ignore err and set whatever you get in dscPvdr
 	ctx := fcmocks.NewMockContextWithCustomDiscovery(user, dscPvdr)

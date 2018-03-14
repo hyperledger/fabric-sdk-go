@@ -69,8 +69,8 @@ func TestWithTargetURLsValid(t *testing.T) {
 	assert.Equal(t, npConfig1.MSPID, opts.Targets[0].MSPID(), "", "Wrong MSP")
 }
 
-func setupTestContext(userName string, mspID string) *fcmocks.MockContext {
-	user := fcmocks.NewMockUserWithMSPID(userName, mspID)
+func setupTestContext(username string, mspID string) *fcmocks.MockContext {
+	user := fcmocks.NewMockUserWithMSPID(username, mspID)
 	ctx := fcmocks.NewMockContext(user)
 	return ctx
 }

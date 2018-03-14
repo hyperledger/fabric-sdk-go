@@ -191,7 +191,7 @@ organizations:
             -----END CERTIFICATE-----
 
     # This org's MSP store (absolute path or relative to client.cryptoconfig)
-    cryptoPath:  peerOrganizations/org1.example.com/users/{userName}@org1.example.com/msp
+    cryptoPath:  peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp
 
     peers:
       - peer0.org1.example.com

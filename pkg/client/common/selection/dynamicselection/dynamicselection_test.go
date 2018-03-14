@@ -338,7 +338,7 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatalf("Failed to to get client context: %s", err)
 	}
 
-	mychannelUser := ChannelUser{ChannelID: "mychannel", UserName: "User1", OrgName: "Org1"}
+	mychannelUser := ChannelUser{ChannelID: "mychannel", Username: "User1", OrgName: "Org1"}
 
 	selectionProvider, err := New(ctx.Config(), []ChannelUser{mychannelUser}, nil)
 	if err != nil {
@@ -472,8 +472,8 @@ func (lbp *customLBP) Choose(peerGroups []pgresolver.PeerGroup) pgresolver.PeerG
 	return peerGroups[0]
 }
 
-func setupMockContext(userName, orgName string) context.Providers {
-	user := mocks.NewMockUserWithMSPID(userName, orgName)
+func setupMockContext(username, orgName string) context.Providers {
+	user := mocks.NewMockUserWithMSPID(username, orgName)
 	ctx := mocks.NewMockContext(user)
 	return ctx
 }

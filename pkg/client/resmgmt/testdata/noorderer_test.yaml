@@ -42,7 +42,7 @@ organizations:
     mspid: Org1MSP
 
     # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
-    cryptoPath:  peerOrganizations/org1.example.com/users/{userName}@org1.example.com/msp
+    cryptoPath:  peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp
 
     peers:
       - peer0.org1.example.com

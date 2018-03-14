@@ -26,10 +26,10 @@ func NewFileKeyStore(cryptoConfogMspPath string) (core.KVStore, error) {
 			if !ok {
 				return "", errors.New("converting key to PrivKeyKey failed")
 			}
-			if pkk == nil || pkk.MSPID == "" || pkk.UserName == "" || pkk.SKI == nil {
+			if pkk == nil || pkk.MSPID == "" || pkk.Username == "" || pkk.SKI == nil {
 				return "", errors.New("invalid key")
 			}
-			keyDir := path.Join(strings.Replace(cryptoConfogMspPath, "{userName}", pkk.UserName, -1), "keystore")
+			keyDir := path.Join(strings.Replace(cryptoConfogMspPath, "{username}", pkk.Username, -1), "keystore")
 			return path.Join(keyDir, hex.EncodeToString(pkk.SKI)+"_sk"), nil
 		},
 	}

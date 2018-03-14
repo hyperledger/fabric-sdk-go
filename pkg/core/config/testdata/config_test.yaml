@@ -189,7 +189,7 @@ organizations:
     mspid: Org1MSP
 
     # This org's MSP store (absolute path or relative to client.cryptoconfig)
-    cryptoPath:  peerOrganizations/org1.example.com/users/{userName}@org1.example.com/msp
+    cryptoPath:  peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp
 
     peers:
       - peer0.org1.example.com
@@ -223,7 +223,7 @@ organizations:
     mspid: Org2MSP
 
     # This org's MSP store (absolute path or relative to client.cryptoconfig)
-    cryptoPath:  peerOrganizations/org2.example.com/users/{userName}@org2.example.com/msp
+    cryptoPath:  peerOrganizations/org2.example.com/users/{username}@org2.example.com/msp
 
     peers:
       - peer0.org2.example.com
@@ -237,7 +237,7 @@ organizations:
       mspID: "OrdererOrg"
 
       # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
-      cryptoPath: ordererOrganizations/example.com/users/{userName}@example.com/msp
+      cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
 
 
 #

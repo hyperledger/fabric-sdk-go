@@ -22,7 +22,7 @@ import (
 // ChannelUser contains user(identity) info to be used for specific channel
 type ChannelUser struct {
 	ChannelID string
-	UserName  string
+	Username  string
 	OrgName   string
 }
 
@@ -76,7 +76,7 @@ func (p *SelectionProvider) CreateSelectionService(channelID string) (fab.Select
 		return nil, errors.New("Must provide user for channel")
 	}
 
-	ccPolicyProvider, err := newCCPolicyProvider(p.providers, channelID, channelUser.UserName, channelUser.OrgName)
+	ccPolicyProvider, err := newCCPolicyProvider(p.providers, channelID, channelUser.Username, channelUser.OrgName)
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to create cc policy provider")
 	}

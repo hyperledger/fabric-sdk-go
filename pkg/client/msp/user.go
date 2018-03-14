@@ -82,12 +82,12 @@ type UserIdentifier struct {
 // PrivKeyKey is a composite key for accessing a private key in the key store
 type PrivKeyKey struct {
 	MSPID    string
-	UserName string
+	Username string
 	SKI      []byte
 }
 
 // CertKey is a composite key for accessing a cert in the cert store
 type CertKey struct {
 	MSPID    string
-	UserName string
+	Username string
 }

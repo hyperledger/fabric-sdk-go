@@ -15,16 +15,16 @@ import (
 type identityOptions struct {
 	identity msp.Identity
 	orgName  string
-	userName string
+	username string
 }
 
 // ContextOption provides parameters for creating a session (primarily from a fabric identity/user)
 type ContextOption func(s *identityOptions) error
 
 // WithUser uses the named user to load the identity
-func WithUser(userName string) ContextOption {
+func WithUser(username string) ContextOption {
 	return func(o *identityOptions) error {
-		o.userName = userName
+		o.username = username
 		return nil
 	}
 }
@@ -66,7 +66,7 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.Identity, error
 		}
 	}
 
-	if opts.identity == nil && opts.userName == "" {
+	if opts.identity == nil && opts.username == "" {
 		return nil, ErrAnonymousIdentity
 	}
 
@@ -74,7 +74,7 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.Identity, error
 		return opts.identity, nil
 	}
 
-	if opts.userName == "" || opts.orgName == "" {
+	if opts.username == "" || opts.orgName == "" {
 		return nil, errors.New("invalid options to create identity")
 	}
 
@@ -83,7 +83,7 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.Identity, error
 		return nil, errors.New("invalid options to create identity, invalid org name")
 	}
 
-	user, err := mgr.GetUser(opts.userName)
+	user, err := mgr.GetUser(opts.username)
 	if err != nil {
 		return nil, err
 	}

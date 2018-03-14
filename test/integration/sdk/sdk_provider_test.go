@@ -38,7 +38,7 @@ func TestDynamicSelection(t *testing.T) {
 
 	// Specify user that will be used by dynamic selection service (to retrieve chanincode policy information)
 	// This user has to have privileges to query lscc for chaincode data
-	mychannelUser := selection.ChannelUser{ChannelID: testSetup.ChannelID, UserName: "User1", OrgName: "Org1"}
+	mychannelUser := selection.ChannelUser{ChannelID: testSetup.ChannelID, Username: "User1", OrgName: "Org1"}
 
 	// Create SDK setup for channel client with dynamic selection
 	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile),

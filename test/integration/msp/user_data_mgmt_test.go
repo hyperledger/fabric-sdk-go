@@ -97,11 +97,11 @@ func TestWithCustomStores(t *testing.T) {
 	}
 
 	// Generate a random user name
-	userName := integration.GenerateRandomID()
+	username := integration.GenerateRandomID()
 
 	// Register the new user
 	enrollmentSecret, err := mspClient.Register(&msp.RegistrationRequest{
-		Name: userName,
+		Name: username,
 		Type: IdentityTypeUser,
 		// Affiliation is mandatory. "org1" and "org2" are hardcoded as CA defaults
 		// See https://github.com/hyperledger/fabric-ca/blob/release/cmd/fabric-ca-server/config.go
@@ -112,18 +112,18 @@ func TestWithCustomStores(t *testing.T) {
 	}
 
 	// Enroll the new user
-	err = mspClient.Enroll(userName, msp.WithSecret(enrollmentSecret))
+	err = mspClient.Enroll(username, msp.WithSecret(enrollmentSecret))
 	if err != nil {
 		t.Fatalf("Enroll failed: %v", err)
 	}
 
 	// Let's try to find user's key and cert in our custom stores
 	// and compare them to what is returned by msp.GetUser()
-	user, err := mspClient.GetUser(userName)
+	user, err := mspClient.GetUser(username)
 	if err != nil {
 		t.Fatalf("GetUser failed: %v", err)
 	}
-	userDataFromStore, err := customUserStore.Load(mspctx.UserIdentifier{MSPID: getMyMSPID(t, config), Name: userName})
+	userDataFromStore, err := customUserStore.Load(mspctx.UserIdentifier{MSPID: getMyMSPID(t, config), Name: username})
 	if err != nil {
 		t.Fatalf("Load user failed: %v", err)
 	}

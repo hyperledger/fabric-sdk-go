@@ -49,36 +49,36 @@ func TestMSP(t *testing.T) {
 	}
 
 	// Empty enrollment secret
-	err = msp.Enroll("enrolledUserName", WithSecret(""))
+	err = msp.Enroll("enrolledUsername", WithSecret(""))
 	if err == nil {
 		t.Fatalf("Enroll should return error for empty enrollment secret")
 	}
 
 	// Successful enrollment scenario
 
-	enrollUserName := randomUserName()
+	enrollUsername := randomUsername()
 
-	_, err = msp.GetSigningIdentity(enrollUserName)
+	_, err = msp.GetSigningIdentity(enrollUsername)
 	if err != ErrUserNotFound {
 		t.Fatalf("Expected to not find user")
 	}
 
-	err = msp.Enroll(enrollUserName, WithSecret("enrollmentSecret"))
+	err = msp.Enroll(enrollUsername, WithSecret("enrollmentSecret"))
 	if err != nil {
 		t.Fatalf("Enroll return error %v", err)
 	}
 
-	_, err = msp.GetSigningIdentity(enrollUserName)
+	_, err = msp.GetSigningIdentity(enrollUsername)
 	if err != nil {
 		t.Fatalf("Expected to find user")
 	}
 
-	enrolledUser, err := msp.GetUser(enrollUserName)
+	enrolledUser, err := msp.GetUser(enrollUsername)
 	if err != nil {
 		t.Fatalf("Expected to find user")
 	}
 
-	if enrolledUser.Name() != enrollUserName {
+	if enrolledUser.Name() != enrollUsername {
 		t.Fatalf("Enrolled user name doesn't match")
 	}
 
@@ -107,19 +107,19 @@ func TestMSP(t *testing.T) {
 		t.Fatalf("failed to create CA client: %v", err)
 	}
 
-	org2lUserName := randomUserName()
+	org2lUsername := randomUsername()
 
-	err = msp.Enroll(org2lUserName, WithSecret("enrollmentSecret"))
+	err = msp.Enroll(org2lUsername, WithSecret("enrollmentSecret"))
 	if err != nil {
 		t.Fatalf("Enroll return error %v", err)
 	}
 
-	org2EnrolledUser, err := msp.GetUser(org2lUserName)
+	org2EnrolledUser, err := msp.GetUser(org2lUsername)
 	if err != nil {
 		t.Fatalf("Expected to find user")
 	}
 
-	if org2EnrolledUser.Name() != org2lUserName {
+	if org2EnrolledUser.Name() != org2lUsername {
 		t.Fatalf("Enrolled user name doesn't match")
 	}
 
@@ -197,6 +197,6 @@ func myMSPID(t *testing.T, c core.Config) string {
 	return orgConfig.MSPID
 }
 
-func randomUserName() string {
+func randomUsername() string {
 	return "user" + strconv.Itoa(rand.Intn(500000))
 }

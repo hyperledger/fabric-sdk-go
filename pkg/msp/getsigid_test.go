@@ -94,10 +94,10 @@ func TestGetSigningIdentity(t *testing.T) {
 		t.Fatalf("Should have failed to retrieve signing identity for non-existent user")
 	}
 
-	testUserName := createRandomName()
+	testUsername := createRandomName()
 
 	// Should not find the user
-	if err := checkSigningIdentity(mgr, testUserName); err != msp.ErrUserNotFound {
+	if err := checkSigningIdentity(mgr, testUsername); err != msp.ErrUserNotFound {
 		t.Fatalf("expected ErrUserNotFound, got: %s", err)
 	}
 
@@ -108,7 +108,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	}
 	user1 := &msp.UserData{
 		MSPID: mspID,
-		Name:  testUserName,
+		Name:  testUsername,
 		EnrollmentCertificate: []byte(testCert),
 	}
 	err = userStore.Store(user1)
@@ -117,7 +117,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	}
 
 	// Should succeed after enrollment
-	if err := checkSigningIdentity(mgr, testUserName); err != nil {
+	if err := checkSigningIdentity(mgr, testUsername); err != nil {
 		t.Fatalf("checkSigningIdentity failed: %s", err)
 	}
 }

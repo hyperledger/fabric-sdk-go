@@ -44,8 +44,8 @@ type CCPolicyProvider interface {
 }
 
 // NewCCPolicyProvider creates new chaincode policy data provider
-func newCCPolicyProvider(providers api.Providers, channelID string, userName string, orgName string) (CCPolicyProvider, error) {
-	if providers == nil || channelID == "" || userName == "" || orgName == "" {
+func newCCPolicyProvider(providers api.Providers, channelID string, username string, orgName string) (CCPolicyProvider, error) {
+	if providers == nil || channelID == "" || username == "" || orgName == "" {
 		return nil, errors.New("Must provide providers, channel ID, user name and organisation for cc policy provider")
 	}
 
@@ -61,7 +61,7 @@ func newCCPolicyProvider(providers api.Providers, channelID string, userName str
 		return nil, errors.New("invalid options to create identity, invalid org name")
 	}
 
-	identity, err := mgr.GetUser(userName)
+	identity, err := mgr.GetUser(username)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to create identity for ccl policy provider")
 	}
