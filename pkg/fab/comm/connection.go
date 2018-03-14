@@ -25,6 +25,12 @@ import (
 
 var logger = logging.NewLogger("fabsdk/fab")
 
+const (
+	// GRPC max message size (same as Fabric)
+	maxCallRecvMsgSize = 100 * 1024 * 1024
+	maxCallSendMsgSize = 100 * 1024 * 1024
+)
+
 // StreamProvider creates a GRPC stream
 type StreamProvider func(conn *grpc.ClientConn) (grpc.ClientStream, error)
 
@@ -153,6 +159,9 @@ func newDialOpts(config core.Config, url string, params *params) ([]grpc.DialOpt
 		logger.Debugf("Creating an insecure connection [%s]", url)
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
+
+	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
+		grpc.MaxCallSendMsgSize(maxCallSendMsgSize)))
 
 	return dialOpts, nil
 }

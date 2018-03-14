@@ -31,6 +31,12 @@ import (
 
 var logger = logging.NewLogger("fabsdk/fab")
 
+const (
+	// GRPC max message size (same as Fabric)
+	maxCallRecvMsgSize = 100 * 1024 * 1024
+	maxCallSendMsgSize = 100 * 1024 * 1024
+)
+
 // Orderer allows a client to broadcast a transaction.
 type Orderer struct {
 	config         core.Config
@@ -77,6 +83,9 @@ func New(config core.Config, opts ...Option) (*Orderer, error) {
 	} else {
 		grpcOpts = append(grpcOpts, grpc.WithInsecure())
 	}
+
+	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
+		grpc.MaxCallSendMsgSize(maxCallSendMsgSize)))
 
 	orderer.dialTimeout = config.TimeoutOrDefault(core.OrdererConnection)
 	orderer.url = endpoint.ToAddress(orderer.url)

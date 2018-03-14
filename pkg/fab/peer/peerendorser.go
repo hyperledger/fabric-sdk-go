@@ -26,6 +26,12 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
+const (
+	// GRPC max message size (same as Fabric)
+	maxCallRecvMsgSize = 100 * 1024 * 1024
+	maxCallSendMsgSize = 100 * 1024 * 1024
+)
+
 // peerEndorser enables access to a GRPC-based endorser for running transaction proposal simulations
 type peerEndorser struct {
 	grpcDialOption []grpc.DialOption
@@ -66,6 +72,9 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 	} else {
 		grpcOpts = append(grpcOpts, grpc.WithInsecure())
 	}
+
+	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
+		grpc.MaxCallSendMsgSize(maxCallSendMsgSize)))
 
 	timeout := endorseReq.config.TimeoutOrDefault(core.EndorserConnection)
 
