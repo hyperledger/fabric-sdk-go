@@ -80,19 +80,44 @@ func newCAClient(ctx context.Client, orgName string) (mspapi.CAClient, error) {
 	return caClient, nil
 }
 
+// enrollmentOptions represent enrollment options
+type enrollmentOptions struct {
+	secret string
+}
+
+// EnrollmentOption describes a functional parameter for Enroll
+type EnrollmentOption func(*enrollmentOptions) error
+
+// WithSecret enrollment option
+func WithSecret(secret string) EnrollmentOption {
+	return func(o *enrollmentOptions) error {
+		o.secret = secret
+		return nil
+	}
+}
+
 // Enroll enrolls a registered user in order to receive a signed X509 certificate.
 // A new key pair is generated for the user. The private key and the
 // enrollment certificate issued by the CA are stored in SDK stores.
 // They can be retrieved by calling IdentityManager.GetSigningIdentity().
 //
 // enrollmentID enrollment ID of a registered user
-// enrollmentSecret secret associated with the enrollment ID
-func (c *MSP) Enroll(enrollmentID string, enrollmentSecret string) error {
+// opts represent enrollment options
+func (c *MSP) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
+
+	eo := enrollmentOptions{}
+	for _, param := range opts {
+		err := param(&eo)
+		if err != nil {
+			return errors.WithMessage(err, "failed to enroll")
+		}
+	}
+
 	ca, err := newCAClient(c.ctx, c.orgName)
 	if err != nil {
 		return err
 	}
-	return ca.Enroll(enrollmentID, enrollmentSecret)
+	return ca.Enroll(enrollmentID, eo.secret)
 }
 
 // Reenroll reenrolls an enrolled user in order to obtain a new signed X509 certificate
@@ -107,36 +132,76 @@ func (c *MSP) Reenroll(enrollmentID string) error {
 // Register registers a User with the Fabric CA
 // request: Registration Request
 // Returns Enrolment Secret
-func (c *MSP) Register(request *mspapi.RegistrationRequest) (string, error) {
+func (c *MSP) Register(request *RegistrationRequest) (string, error) {
 	ca, err := newCAClient(c.ctx, c.orgName)
 	if err != nil {
 		return "", err
 	}
-	return ca.Register(request)
+	var a []mspapi.Attribute
+	for i := range request.Attributes {
+		a = append(a, mspapi.Attribute{Name: request.Attributes[i].Name, Key: request.Attributes[i].Key, Value: request.Attributes[i].Value})
+	}
+	r := mspapi.RegistrationRequest{
+		Name:           request.Name,
+		Type:           request.Type,
+		MaxEnrollments: request.MaxEnrollments,
+		Affiliation:    request.Affiliation,
+		CAName:         request.CAName,
+		Secret:         request.Secret,
+	}
+	return ca.Register(&r)
 }
 
 // Revoke revokes a User with the Fabric CA
 // request: Revocation Request
-func (c *MSP) Revoke(request *mspapi.RevocationRequest) (*mspapi.RevocationResponse, error) {
+func (c *MSP) Revoke(request *RevocationRequest) (*RevocationResponse, error) {
 	ca, err := newCAClient(c.ctx, c.orgName)
 	if err != nil {
 		return nil, err
 	}
-	return ca.Revoke(request)
-}
-
-// GetSigningIdentity returns a signing identity for the given user name
-func (c *MSP) GetSigningIdentity(userName string) (*mspctx.SigningIdentity, error) {
-	user, err := c.GetUser(userName)
+	req := mspapi.RevocationRequest(*request)
+	resp, err := ca.Revoke(&req)
 	if err != nil {
 		return nil, err
 	}
-	signingIdentity := &mspctx.SigningIdentity{MspID: user.MspID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
+	var revokedCerts []RevokedCert
+	for i := range resp.RevokedCerts {
+		revokedCerts = append(
+			revokedCerts,
+			RevokedCert{
+				Serial: resp.RevokedCerts[i].Serial,
+				AKI:    resp.RevokedCerts[i].AKI,
+			})
+	}
+
+	return &RevocationResponse{
+		RevokedCerts: revokedCerts,
+		CRL:          resp.CRL,
+	}, nil
+}
+
+// GetSigningIdentity returns a signing identity for the given user name
+func (c *MSP) GetSigningIdentity(userName string) (*SigningIdentity, error) {
+	user, err := c.GetUser(userName)
+	if err != nil {
+		if err == mspctx.ErrUserNotFound {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	signingIdentity := &SigningIdentity{MspID: user.MspID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
 	return signingIdentity, nil
 }
 
 // GetUser returns a user for the given user name
-func (c *MSP) GetUser(userName string) (mspctx.User, error) {
+func (c *MSP) GetUser(userName string) (User, error) {
 	im, _ := c.ctx.IdentityManager(c.orgName)
-	return im.GetUser(userName)
+	user, err := im.GetUser(userName)
+	if err != nil {
+		if err == mspctx.ErrUserNotFound {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	return user, nil
 }

@@ -20,7 +20,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	mspimpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
@@ -82,7 +81,7 @@ func TestWithCustomStores(t *testing.T) {
 
 	// Get the MSP.
 	// Without WithOrg option, uses default client organization.
-	msp, err := msp.New(ctxProvider)
+	mspClient, err := msp.New(ctxProvider)
 	if err != nil {
 		t.Fatalf("failed to create MSP: %v", err)
 	}
@@ -92,7 +91,7 @@ func TestWithCustomStores(t *testing.T) {
 	// CA operations that require the registrar's identity
 	// will be rejected by the CA.
 	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, sdk.Config())
-	err = msp.Enroll(registrarEnrollID, registrarEnrollSecret)
+	err = mspClient.Enroll(registrarEnrollID, msp.WithSecret(registrarEnrollSecret))
 	if err != nil {
 		t.Fatalf("Enroll failed: %v", err)
 	}
@@ -101,7 +100,7 @@ func TestWithCustomStores(t *testing.T) {
 	userName := integration.GenerateRandomID()
 
 	// Register the new user
-	enrollmentSecret, err := msp.Register(&api.RegistrationRequest{
+	enrollmentSecret, err := mspClient.Register(&msp.RegistrationRequest{
 		Name: userName,
 		Type: IdentityTypeUser,
 		// Affiliation is mandatory. "org1" and "org2" are hardcoded as CA defaults
@@ -113,14 +112,14 @@ func TestWithCustomStores(t *testing.T) {
 	}
 
 	// Enroll the new user
-	err = msp.Enroll(userName, enrollmentSecret)
+	err = mspClient.Enroll(userName, msp.WithSecret(enrollmentSecret))
 	if err != nil {
 		t.Fatalf("Enroll failed: %v", err)
 	}
 
 	// Let's try to find user's key and cert in our custom stores
 	// and compare them to what is returned by msp.GetUser()
-	user, err := msp.GetUser(userName)
+	user, err := mspClient.GetUser(userName)
 	if err != nil {
 		t.Fatalf("GetUser failed: %v", err)
 	}

@@ -13,7 +13,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
@@ -44,7 +43,7 @@ func TestRegisterEnroll(t *testing.T) {
 
 	// Get the MSP.
 	// Without WithOrg option, uses default client organization.
-	msp, err := msp.New(ctxProvider)
+	mspClient, err := msp.New(ctxProvider)
 	if err != nil {
 		t.Fatalf("failed to create CA client: %v", err)
 	}
@@ -54,7 +53,7 @@ func TestRegisterEnroll(t *testing.T) {
 	// CA operations that require the registrar's identity
 	// will be rejected by the CA.
 	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, sdk.Config())
-	err = msp.Enroll(registrarEnrollID, registrarEnrollSecret)
+	err = mspClient.Enroll(registrarEnrollID, msp.WithSecret(registrarEnrollSecret))
 	if err != nil {
 		t.Fatalf("Enroll failed: %v", err)
 	}
@@ -70,7 +69,7 @@ func TestRegisterEnroll(t *testing.T) {
 	userName := integration.GenerateRandomID()
 
 	// Register the new user
-	enrollmentSecret, err := msp.Register(&api.RegistrationRequest{
+	enrollmentSecret, err := mspClient.Register(&msp.RegistrationRequest{
 		Name: userName,
 		Type: IdentityTypeUser,
 		// Affiliation is mandatory. "org1" and "org2" are hardcoded as CA defaults
@@ -82,19 +81,19 @@ func TestRegisterEnroll(t *testing.T) {
 	}
 
 	// Enroll the new user
-	err = msp.Enroll(userName, enrollmentSecret)
+	err = mspClient.Enroll(userName, msp.WithSecret(enrollmentSecret))
 	if err != nil {
 		t.Fatalf("Enroll failed: %v", err)
 	}
 
 	// Get the new user's signing identity
-	_, err = msp.GetSigningIdentity(userName)
+	_, err = mspClient.GetSigningIdentity(userName)
 	if err != nil {
 		t.Fatalf("GetSigningIdentity failed: %v", err)
 	}
 
 	// Get the new user's full information
-	_, err = msp.GetUser(userName)
+	_, err = mspClient.GetUser(userName)
 	if err != nil {
 		t.Fatalf("GetSigningIdentity failed: %v", err)
 	}
