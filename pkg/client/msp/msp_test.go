@@ -16,7 +16,6 @@ import (
 	"os"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
@@ -44,15 +43,15 @@ func TestMSP(t *testing.T) {
 	}
 
 	// Empty enrollment ID
-	err = msp.Enroll("", "user1")
+	err = msp.Enroll("", WithSecret("user1"))
 	if err == nil {
-		t.Fatalf("Enroll shoudl return error for empty enrollment ID")
+		t.Fatalf("Enroll should return error for empty enrollment ID")
 	}
 
 	// Empty enrollment secret
-	err = msp.Enroll("enrolledUserName", "")
+	err = msp.Enroll("enrolledUserName", WithSecret(""))
 	if err == nil {
-		t.Fatalf("Enroll shoudl return error for empty enrollment secret")
+		t.Fatalf("Enroll should return error for empty enrollment secret")
 	}
 
 	// Successful enrollment scenario
@@ -60,11 +59,11 @@ func TestMSP(t *testing.T) {
 	enrollUserName := randomUserName()
 
 	_, err = msp.GetSigningIdentity(enrollUserName)
-	if err != mspctx.ErrUserNotFound {
+	if err != ErrUserNotFound {
 		t.Fatalf("Expected to not find user")
 	}
 
-	err = msp.Enroll(enrollUserName, "enrollmentSecret")
+	err = msp.Enroll(enrollUserName, WithSecret("enrollmentSecret"))
 	if err != nil {
 		t.Fatalf("Enroll return error %v", err)
 	}
@@ -110,7 +109,7 @@ func TestMSP(t *testing.T) {
 
 	org2lUserName := randomUserName()
 
-	err = msp.Enroll(org2lUserName, "enrollmentSecret")
+	err = msp.Enroll(org2lUserName, WithSecret("enrollmentSecret"))
 	if err != nil {
 		t.Fatalf("Enroll return error %v", err)
 	}
