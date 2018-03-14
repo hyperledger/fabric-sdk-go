@@ -64,7 +64,6 @@ orderers:
     # they will be passed in as-is to gRPC client constructor
     grpcOptions:
       ssl-target-name-override: orderer.example.com
-      grpc-max-send-message-length: 15
 
     tlsCACerts:
       # Certificate location absolute path

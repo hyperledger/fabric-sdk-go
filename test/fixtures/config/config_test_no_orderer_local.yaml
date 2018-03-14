@@ -11,17 +11,6 @@
 name: "global-trade-network"
 
 #
-# Any properties with an "x-" prefix will be treated as application-specific, exactly like how naming
-# in HTTP headers or swagger properties work. The SDK will simply ignore these fields and leave
-# them for the applications to process. This is a mechanism for different components of an application
-# to exchange information that are not part of the standard schema described below. In particular,
-# the "x-type" property with the "hlfv1" value example below is used by Hyperledger Composer to
-# determine the type of Fabric networks (v0.6 vs. v1.0) it needs to work with.
-#
-x-type: "hlfv1"
-x-loggingLevel: info
-
-#
 # Describe what the target network is/does.
 #
 description: "The network to be in if you want to stay in the global trade business"
@@ -208,7 +197,6 @@ peers:
     #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
-      grpc.http2.keepalive_time: 15
       fail-fast: false
       #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
@@ -226,7 +214,6 @@ orderers:
     #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: orderer.example.com
-      grpc-max-send-message-length: 15
 #     These parameters should be set in coordination with the keepalive policy on the server,
 #     as incompatible settings can result in closing of connection.
 #     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled

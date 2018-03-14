@@ -61,7 +61,6 @@ orderers:
 
     grpcOptions:
       ssl-target-name-override: orderer.example.com
-      grpc-max-send-message-length: 15
 
     tlsCACerts:
       # INVALID certificate location absolute path

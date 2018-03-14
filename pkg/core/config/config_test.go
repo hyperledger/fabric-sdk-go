@@ -32,10 +32,10 @@ var configImpl *Config
 const (
 	org0                            = "org0"
 	org1                            = "Org1"
-	configTestFilePath              = "../../../test/fixtures/config/config_test.yaml"
+	configTestFilePath              = "testdata/config_test.yaml"
 	configEmptyTestFilePath         = "testdata/empty.yaml"
 	configPemTestFilePath           = "testdata/config_test_pem.yaml"
-	configEmbeddedUsersTestFilePath = "../../../test/fixtures/config/config_test_embedded_pems.yaml"
+	configEmbeddedUsersTestFilePath = "testdata/config_test_embedded_pems.yaml"
 	configType                      = "yaml"
 	defaultConfigPath               = "testdata/template"
 )

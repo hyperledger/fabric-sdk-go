@@ -10,8 +10,6 @@
 #
 name: "global-trade-network"
 
-x-type: "hlfv1"
-x-loggingLevel: info
 
 description: "The network to be in if you want to stay in the global trade business"
 version: 1.0.0
@@ -100,7 +98,6 @@ orderers:
 
     grpcOptions:
       ssl-target-name-override: orderer.example.com
-      grpc-max-send-message-length: 15
 
     tlsCACerts:
       # Certificate location absolute path
@@ -117,7 +114,6 @@ peers:
 
     grpcOptions:
       ssl-target-name-override:
-      grpc.http2.keepalive_time: 15
 
     tlsCACerts:
       # Certificate location absolute path
