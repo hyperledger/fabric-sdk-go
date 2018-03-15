@@ -8,12 +8,10 @@ package invoke
 
 import (
 	"bytes"
-	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
@@ -164,9 +162,6 @@ func (c *CommitTxHandler) Handle(requestContext *RequestContext, clientContext *
 			requestContext.Error = status.New(status.EventServerStatus, int32(txStatus.TxValidationCode), "received invalid transaction", nil)
 			return
 		}
-	case <-time.After(requestContext.Opts.Timeouts[core.Execute]):
-		requestContext.Error = errors.New("Execute didn't receive block event")
-		return
 	}
 
 	//Delegate to next step if any
