@@ -68,18 +68,22 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 		oCfg, ok := ordererDict[target]
 
 		if !ok {
+			logger.Debugf("Failed to get channel Cfg orderer [%s] from ordererDict, now trying orderer Matchers in Entity Matchers", target)
 			// Try to find a match from entityMatchers config
 			matchingOrdererConfig, matchErr := ctx.Config().OrdererConfig(strings.ToLower(target))
 			if matchErr == nil && matchingOrdererConfig != nil {
+				logger.Debugf("Found matching ordererConfig from entity Matchers for channel Cfg Orderer [%s]", target)
 				oCfg = *matchingOrdererConfig
 				ok = true
 			}
 
 		}
 		if !ok {
+			logger.Debugf("Unable to find matching ordererConfig from entity Matchers for channel Cfg Orderer [%s]", target)
 			oCfg = core.OrdererConfig{
 				URL: target,
 			}
+			logger.Debugf("Created a new OrdererConfig with URL as [%s]", target)
 		}
 
 		o, err := ctx.InfraProvider().CreateOrdererFromConfig(&oCfg)

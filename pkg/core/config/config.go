@@ -387,10 +387,12 @@ func (c *Config) getCAName(org string) (string, error) {
 	}
 
 	if _, ok := config.CertificateAuthorities[strings.ToLower(certAuthorityName)]; !ok {
+		logger.Debugf("Could not find Certificate Authority for [%s], trying with Entity Matchers", certAuthorityName)
 		_, mappedHost, err := c.tryMatchingCAConfig(strings.ToLower(certAuthorityName))
 		if err != nil {
 			return "", errors.WithMessage(err, fmt.Sprintf("CA Server Name %s not found", certAuthorityName))
 		}
+		logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", certAuthorityName, mappedHost)
 		return mappedHost, nil
 	}
 
@@ -480,7 +482,7 @@ func (c *Config) tryMatchingCAConfig(caName string) (*core.CAConfig, string, err
 			//Get the certAuthorityMatchConfig from mapped host
 			caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityMatchConfig.MappedHost)]
 			if !ok {
-				return nil, certAuthorityMatchConfig.MappedHost, errors.WithMessage(err, "failed to load config from matched CertAuthority")
+				return nil, certAuthorityMatchConfig.MappedHost, errors.New("failed to load config from matched CertAuthority")
 			}
 			_, isPortPresentInCAName := c.getPortIfPresent(caName)
 			//if substitution url is empty, use the same network certAuthority url
@@ -722,10 +724,12 @@ func (c *Config) OrdererConfig(name string) (*core.OrdererConfig, error) {
 	}
 	orderer, ok := config.Orderers[strings.ToLower(name)]
 	if !ok {
+		logger.Debugf("Could not find Orderer for [%s], trying with Entity Matchers", name)
 		matchingOrdererConfig, matchErr := c.tryMatchingOrdererConfig(strings.ToLower(name))
 		if matchErr != nil {
 			return nil, errors.WithMessage(matchErr, "unable to find Orderer Config")
 		}
+		logger.Debugf("Found matching Orderer Config for [%s]", name)
 		orderer = *matchingOrdererConfig
 	}
 
@@ -750,10 +754,12 @@ func (c *Config) PeersConfig(org string) ([]core.PeerConfig, error) {
 	for _, peerName := range peersConfig {
 		p := config.Peers[strings.ToLower(peerName)]
 		if err = c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
+			logger.Debugf("Could not verify Peer for [%s], trying with Entity Matchers", peerName)
 			matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(peerName)
 			if matchErr != nil {
 				return nil, errors.WithMessage(err, "unable to find Peer Config")
 			}
+			logger.Debugf("Found a matchingPeerConfig for [%s]", peerName)
 			p = *matchingPeerConfig
 		}
 		if p.TLSCACerts.Path != "" {
@@ -801,7 +807,7 @@ func (c *Config) tryMatchingPeerConfig(peerName string) (*core.PeerConfig, error
 			//Get the peerConfig from mapped host
 			peerConfig, ok := networkConfig.Peers[strings.ToLower(peerMatchConfig.MappedHost)]
 			if !ok {
-				return nil, errors.WithMessage(err, "failed to load config from matched Peer")
+				return nil, errors.New("failed to load config from matched Peer")
 			}
 
 			// Make a copy of GRPC options (as it is manipulated below)
@@ -902,7 +908,7 @@ func (c *Config) tryMatchingOrdererConfig(ordererName string) (*core.OrdererConf
 			//Get the ordererConfig from mapped host
 			ordererConfig, ok := networkConfig.Orderers[strings.ToLower(ordererMatchConfig.MappedHost)]
 			if !ok {
-				return nil, errors.WithMessage(err, "failed to load config from matched Orderer")
+				return nil, errors.New("failed to load config from matched Orderer")
 			}
 
 			// Make a copy of GRPC options (as it is manipulated below)
@@ -1059,10 +1065,12 @@ func (c *Config) PeerConfigByURL(url string) (*core.PeerConfig, error) {
 
 	if matchPeerConfig == nil {
 		// try to match from entity matchers
+		logger.Debugf("Could not find Peer for url [%s], trying with Entity Matchers", url)
 		matchPeerConfig, err = c.tryMatchingPeerConfig(url)
 		if err != nil {
 			return nil, errors.WithMessage(err, "No Peer found with the url from config")
 		}
+		logger.Debugf("Found MatchingPeerConfig for url [%s]", url)
 	}
 
 	if matchPeerConfig != nil && matchPeerConfig.TLSCACerts.Path != "" {
@@ -1092,10 +1100,12 @@ func (c *Config) PeerConfig(org string, name string) (*core.PeerConfig, error) {
 
 	peerConfig, ok := config.Peers[strings.ToLower(name)]
 	if !ok {
+		logger.Debugf("Could not find Peer for [%s], trying with Entity Matchers", name)
 		matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(strings.ToLower(name))
 		if matchErr != nil {
 			return nil, errors.WithMessage(matchErr, "unable to find peer config")
 		}
+		logger.Debugf("Found MatchingPeerConfig for [%s]", name)
 		peerConfig = *matchingPeerConfig
 	}
 
@@ -1113,10 +1123,12 @@ func (c *Config) peerConfig(name string) (*core.PeerConfig, error) {
 	}
 	peerConfig, ok := config.Peers[strings.ToLower(name)]
 	if !ok {
+		logger.Debugf("Could not find PeerConfig for [%s], trying with Entity Matchers", name)
 		matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(strings.ToLower(name))
 		if matchErr != nil {
 			return nil, errors.WithMessage(matchErr, "unable to find peer config")
 		}
+		logger.Debugf("Found MatchingPeerConfig for [%s]", name)
 		peerConfig = *matchingPeerConfig
 	}
 
@@ -1194,10 +1206,12 @@ func (c *Config) ChannelPeers(name string) ([]core.ChannelPeer, error) {
 		// Get generic peer configuration
 		p, ok := netConfig.Peers[strings.ToLower(peerName)]
 		if !ok {
+			logger.Debugf("Could not find Peer for [%s], trying with Entity Matchers", peerName)
 			matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(strings.ToLower(peerName))
 			if matchErr != nil {
 				return nil, errors.Errorf("peer config not found for %s", peerName)
 			}
+			logger.Debugf("Found matchingPeerConfig for [%s]", peerName)
 			p = *matchingPeerConfig
 		}
 
