@@ -64,4 +64,5 @@ type RequestContext struct {
 	Response     Response
 	Error        error
 	RetryHandler retry.Handler
+	Ctx          reqContext.Context
 }

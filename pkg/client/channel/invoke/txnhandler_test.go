@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package invoke
 
 import (
+	reqContext "context"
 	"strings"
 	"testing"
 	"time"
@@ -212,6 +213,7 @@ func prepareRequestContext(request Request, opts Opts, t *testing.T) *RequestCon
 	requestContext := &RequestContext{Request: request,
 		Opts:     opts,
 		Response: Response{},
+		Ctx:      reqContext.Background(),
 	}
 
 	requestContext.Opts.Timeouts = make(map[core.TimeoutType]time.Duration)

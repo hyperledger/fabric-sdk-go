@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -146,6 +147,9 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 	select {
 	case <-complete:
 		return Response(requestContext.Response), requestContext.Error
+	case <-reqCtx.Done():
+		return Response{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
+			"request timed out", nil)
 	}
 }
 
@@ -216,6 +220,7 @@ func (cc *Client) prepareHandlerContexts(reqCtx reqContext.Context, request Requ
 		Opts:         invoke.Opts(o),
 		Response:     invoke.Response{},
 		RetryHandler: retry.New(o.Retry),
+		Ctx:          reqCtx,
 	}
 
 	return requestContext, clientContext, nil

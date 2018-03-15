@@ -603,6 +603,8 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 			return nil
 		}
 		return status.New(status.EventServerStatus, int32(txStatus.TxValidationCode), "instantiateOrUpgradeCC failed", nil)
+	case <-reqCtx.Done():
+		return errors.New("instantiateOrUpgradeCC timeout")
 	}
 
 }
