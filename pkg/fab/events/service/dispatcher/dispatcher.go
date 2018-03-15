@@ -470,15 +470,15 @@ func (ed *Dispatcher) publishCCEvents(ccEvent *pb.ChaincodeEvent) {
 
 			if ed.eventConsumerTimeout < 0 {
 				select {
-				case reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId):
+				case reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId, ccEvent.Payload):
 				default:
 					logger.Warnf("Unable to send to CC event channel.")
 				}
 			} else if ed.eventConsumerTimeout == 0 {
-				reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId)
+				reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId, ccEvent.Payload)
 			} else {
 				select {
-				case reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId):
+				case reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId, ccEvent.Payload):
 				case <-time.After(ed.eventConsumerTimeout):
 					logger.Warnf("Timed out sending CC event.")
 				}

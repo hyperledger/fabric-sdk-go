@@ -121,11 +121,12 @@ func NewRegisterEvent(respch chan<- fab.Registration, errCh chan<- error) Regist
 }
 
 // NewChaincodeEvent creates a new ChaincodeEvent
-func NewChaincodeEvent(chaincodeID, eventName, txID string) *fab.CCEvent {
+func NewChaincodeEvent(chaincodeID, eventName, txID string, payload []byte) *fab.CCEvent {
 	return &fab.CCEvent{
 		ChaincodeID: chaincodeID,
 		EventName:   eventName,
 		TxID:        txID,
+		Payload:     payload,
 	}
 }
 

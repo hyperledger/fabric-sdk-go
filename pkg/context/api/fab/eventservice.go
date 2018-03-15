@@ -13,25 +13,35 @@ import (
 
 // BlockEvent contains the data for the block event
 type BlockEvent struct {
+	// Block is the block that was committed
 	Block *cb.Block
 }
 
 // FilteredBlockEvent contains the data for a filtered block event
 type FilteredBlockEvent struct {
+	// FilteredBlock contains a filtered version of the block that was committed
 	FilteredBlock *pb.FilteredBlock
 }
 
 // TxStatusEvent contains the data for a transaction status event
 type TxStatusEvent struct {
-	TxID             string
+	// TxID is the ID of the transaction in which the event was set
+	TxID string
+	// TxValidationCode is the status code of the commit
 	TxValidationCode pb.TxValidationCode
 }
 
 // CCEvent contains the data for a chaincode event
 type CCEvent struct {
-	TxID        string
+	// TxID is the ID of the transaction in which the event was set
+	TxID string
+	// ChaincodeID is the ID of the chaincode that set the event
 	ChaincodeID string
-	EventName   string
+	// EventName is the name of the chaincode event
+	EventName string
+	// Payload contains the payload of the chaincode event
+	// NOTE: Payload will be nil for filtered events
+	Payload []byte
 }
 
 // Registration is a handle that is returned from a successful RegisterXXXEvent.

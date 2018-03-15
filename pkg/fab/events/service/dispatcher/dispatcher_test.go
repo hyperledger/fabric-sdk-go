@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package dispatcher
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -425,7 +426,118 @@ func TestTxStatusEvents(t *testing.T) {
 	}
 }
 
-func TestCCEvents(t *testing.T) {
+func TestCCEventsUnfiltered(t *testing.T) {
+	channelID := "testchannel"
+	dispatcher := New()
+	if err := dispatcher.Start(); err != nil {
+		t.Fatalf("Error starting dispatcher: %s", err)
+	}
+
+	dispatcherEventch, err := dispatcher.EventCh()
+	if err != nil {
+		t.Fatalf("Error getting event channel from dispatcher: %s", err)
+	}
+
+	ccID1 := "mycc1"
+	ccID2 := "mycc2"
+	ccFilter1 := "event1"
+	ccFilter2 := "event2"
+	event1 := "event1"
+	event2 := "event2"
+	payload1 := []byte("payload1")
+	payload2 := []byte("payload2")
+
+	errch := make(chan error)
+	fbrespch := make(chan fab.Registration)
+	eventch := make(chan *fab.CCEvent, 10)
+	dispatcherEventch <- NewRegisterChaincodeEvent(ccID1, ccFilter1, eventch, fbrespch, errch)
+
+	var reg1 fab.Registration
+	select {
+	case reg1 = <-fbrespch:
+	case err := <-errch:
+		t.Fatalf("error registering for chaincode events: %s", err)
+	}
+
+	eventch = make(chan *fab.CCEvent, 10)
+	dispatcherEventch <- NewRegisterChaincodeEvent(ccID1, ccFilter1, eventch, fbrespch, errch)
+
+	select {
+	case reg1 = <-fbrespch:
+		t.Fatalf("expecting error registering multiple times for chaincode events but got registration")
+	case err = <-errch:
+	}
+
+	if err == nil {
+		t.Fatalf("expecting error registering multiple times for chaincode events")
+	}
+
+	dispatcherEventch <- NewUnregisterEvent(reg1)
+
+	eventch1 := make(chan *fab.CCEvent, 10)
+	dispatcherEventch <- NewRegisterChaincodeEvent(ccID1, ccFilter1, eventch1, fbrespch, errch)
+
+	select {
+	case reg1 = <-fbrespch:
+	case err := <-errch:
+		t.Fatalf("error registering for chaincode events: %s", err)
+	}
+
+	eventch2 := make(chan *fab.CCEvent, 10)
+	dispatcherEventch <- NewRegisterChaincodeEvent(ccID2, ccFilter2, eventch2, fbrespch, errch)
+
+	var reg2 fab.Registration
+	select {
+	case reg2 = <-fbrespch:
+	case err := <-errch:
+		t.Fatalf("error registering for chaincode events: %s", err)
+	}
+
+	dispatcherEventch <- servicemocks.NewBlockProducer().NewBlock(
+		channelID,
+		servicemocks.NewTransactionWithCCEvent("txid1", pb.TxValidationCode_VALID, ccID1, event1, payload1),
+		servicemocks.NewTransactionWithCCEvent("txid2", pb.TxValidationCode_VALID, ccID2, event2, payload2),
+	)
+
+	numExpected := 2
+	numReceived := 0
+
+	for {
+		select {
+		case event, ok := <-eventch1:
+			if !ok {
+				t.Fatalf("unexpected closed channel")
+			} else {
+				checkCCEvent(t, event, ccID1, payload1, event1)
+				numReceived++
+			}
+		case event, ok := <-eventch2:
+			if !ok {
+				t.Fatalf("unexpected closed channel")
+			} else {
+				checkCCEvent(t, event, ccID2, payload2, event2)
+				numReceived++
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatalf("timed out waiting for [%d] CC events. Only received [%d]", numExpected, numReceived)
+		}
+
+		if numReceived == numExpected {
+			break
+		}
+	}
+
+	dispatcherEventch <- NewUnregisterEvent(reg1)
+	dispatcherEventch <- NewUnregisterEvent(reg2)
+
+	stopResp := make(chan error)
+	dispatcherEventch <- NewStopEvent(stopResp)
+	if err := <-stopResp; err != nil {
+		t.Fatalf("Error stopping dispatcher: %s", err)
+	}
+}
+
+func TestCCEventsFiltered(t *testing.T) {
 	channelID := "testchannel"
 	dispatcher := New()
 	if err := dispatcher.Start(); err != nil {
@@ -507,14 +619,14 @@ func TestCCEvents(t *testing.T) {
 			if !ok {
 				t.Fatalf("unexpected closed channel")
 			} else {
-				checkCCEvent(t, event, ccID1, event1)
+				checkCCEvent(t, event, ccID1, nil, event1)
 				numReceived++
 			}
 		case event, ok := <-eventch2:
 			if !ok {
 				t.Fatalf("unexpected closed channel")
 			} else {
-				checkCCEvent(t, event, ccID2, event2, event3)
+				checkCCEvent(t, event, ccID2, nil, event2, event3)
 				numReceived++
 			}
 		case <-time.After(5 * time.Second):
@@ -646,9 +758,12 @@ func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID str
 	}
 }
 
-func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expectedEventNames ...string) {
+func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expectedPayload []byte, expectedEventNames ...string) {
 	if event.ChaincodeID != expectedCCID {
 		t.Fatalf("expecting event for CC [%s] but received event for CC [%s]", expectedCCID, event.ChaincodeID)
+	}
+	if bytes.Compare(event.Payload, expectedPayload) != 0 {
+		t.Fatalf("expecting payload [%s] but received payload [%s]", expectedPayload, event.Payload)
 	}
 	found := false
 	for _, eventName := range expectedEventNames {

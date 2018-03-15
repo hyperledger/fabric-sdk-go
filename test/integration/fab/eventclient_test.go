@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	"bytes"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -194,6 +195,14 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 			t.Logf("Received chaincode event: %#v", event)
 			if event.ChaincodeID != chainCodeID {
 				t.Fatalf("Expecting event for CC ID [%s] but got event for CC ID [%s]", chainCodeID, event.ChaincodeID)
+			}
+			if blockEvents {
+				expectedPayload := []byte("Test Payload")
+				if bytes.Compare(event.Payload, expectedPayload) != 0 {
+					t.Fatalf("Expecting payload [%s] but got [%s]", []byte("Test Payload"), event.Payload)
+				}
+			} else if event.Payload != nil {
+				t.Fatalf("Expecting nil payload for filtered events but got [%s]", event.Payload)
 			}
 			atomic.AddUint32(&numReceived, 1)
 		case <-time.After(5 * time.Second):

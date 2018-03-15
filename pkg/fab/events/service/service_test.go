@@ -559,7 +559,7 @@ func testConcurrentCCEvents(channelID string, numEvents uint, eventService fab.E
 		var i uint
 		for i = 0; i < numEvents+10; i++ {
 			conn.Ledger().NewBlock(channelID,
-				servicemocks.NewTransactionWithCCEvent(fmt.Sprintf("txid_cc_%d", i), pb.TxValidationCode_VALID, ccID, event1),
+				servicemocks.NewTransactionWithCCEvent(fmt.Sprintf("txid_cc_%d", i), pb.TxValidationCode_VALID, ccID, event1, nil),
 			)
 		}
 	}()

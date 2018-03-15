@@ -287,7 +287,7 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 		servicemocks.NewTransaction("txID", pb.TxValidationCode_VALID, cb.HeaderType_CONFIG_UPDATE),
 	)
 	ledger.NewBlock(channelID,
-		servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1"),
+		servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1", nil),
 	)
 
 	cp := clientmocks.NewProviderFactory()
@@ -346,7 +346,7 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 
 	// Produce a chaincode event
 	ledger.NewBlock(channelID,
-		servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1"),
+		servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1", nil),
 	)
 
 	// Wait a while for the subscriber to receive the events
@@ -359,7 +359,7 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 
 	// Produce some more events while the client is disconnected
 	ledger.NewBlock(channelID,
-		servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1"),
+		servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1", nil),
 	)
 	ledger.NewBlock(channelID,
 		servicemocks.NewTransaction("txID", pb.TxValidationCode_VALID, cb.HeaderType_CONFIG_UPDATE),

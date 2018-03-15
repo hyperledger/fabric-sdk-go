@@ -359,7 +359,7 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 	numEvents++
 	numCCEvents++
 	ledger.NewBlock(channelID,
-		servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1"),
+		servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1", nil),
 	)
 
 	// Wait a while for the subscriber to receive the event
@@ -375,7 +375,7 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 	for ; numCCEvents < int(expectedCCEvents); numCCEvents++ {
 		numEvents++
 		ledger.NewBlock(channelID,
-			servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1"),
+			servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1", nil),
 		)
 	}
 	for ; numEvents < int(expectedBlockEvents); numEvents++ {

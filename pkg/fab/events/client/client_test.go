@@ -9,6 +9,7 @@ SPDX-License-Identifier: Apache-2.0
 package client
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 	"testing"
@@ -595,14 +596,14 @@ func TestCCEvents(t *testing.T) {
 			if !ok {
 				t.Fatalf("unexpected closed channel")
 			} else {
-				checkCCEvent(t, event, ccID1, event1)
+				checkCCEvent(t, event, ccID1, nil, event1)
 				numReceived++
 			}
 		case event, ok := <-eventch2:
 			if !ok {
 				t.Fatalf("unexpected closed channel")
 			} else {
-				checkCCEvent(t, event, ccID2, event2, event3)
+				checkCCEvent(t, event, ccID2, nil, event2, event3)
 				numReceived++
 			}
 		case <-time.After(5 * time.Second):
@@ -908,6 +909,7 @@ func listenChaincodeEvents(channelID string, eventch <-chan *fab.CCEvent, expect
 func txStatusTest(eventClient *Client, ledger servicemocks.Ledger, channelID string, expected int, errch chan<- error) {
 	ccID := "mycc1"
 	event1 := "event1"
+	payload1 := []byte("payload1")
 
 	var wg sync.WaitGroup
 	wg.Add(expected)
@@ -931,7 +933,7 @@ func txStatusTest(eventClient *Client, ledger servicemocks.Ledger, channelID str
 			defer eventClient.Unregister(reg)
 
 			ledger.NewBlock(channelID,
-				servicemocks.NewTransactionWithCCEvent(txID, pb.TxValidationCode_VALID, ccID, event1),
+				servicemocks.NewTransactionWithCCEvent(txID, pb.TxValidationCode_VALID, ccID, event1, payload1),
 			)
 
 			select {
@@ -1108,7 +1110,7 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents mockconn.NumBlo
 	numEvents++
 	numCCEvents++
 	ledger.NewBlock(channelID,
-		servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1"),
+		servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1", nil),
 	)
 
 	// Wait a while for the subscriber to receive the event
@@ -1124,7 +1126,7 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents mockconn.NumBlo
 	for ; numCCEvents < int(expectedCCEvents); numCCEvents++ {
 		numEvents++
 		ledger.NewBlock(channelID,
-			servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1"),
+			servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1", nil),
 		)
 	}
 	for ; numEvents < int(expectedBlockEvents); numEvents++ {
@@ -1316,10 +1318,14 @@ func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID str
 	}
 }
 
-func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expectedEventNames ...string) {
+func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expectedPayload []byte, expectedEventNames ...string) {
 	if event.ChaincodeID != expectedCCID {
 		t.Fatalf("expecting event for CC [%s] but received event for CC [%s]", expectedCCID, event.ChaincodeID)
 	}
+	if bytes.Compare(event.Payload, expectedPayload) != 0 {
+		t.Fatalf("expecting payload [%s] but received payload [%s]", expectedPayload, event.Payload)
+	}
+
 	found := false
 	for _, eventName := range expectedEventNames {
 		if event.EventName == eventName {

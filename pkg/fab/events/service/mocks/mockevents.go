@@ -43,6 +43,7 @@ type TxInfo struct {
 	HeaderType       cb.HeaderType
 	ChaincodeID      string
 	EventName        string
+	Payload          []byte
 }
 
 // NewTransaction creates a new transaction
@@ -55,12 +56,13 @@ func NewTransaction(txID string, txValidationCode pb.TxValidationCode, headerTyp
 }
 
 // NewTransactionWithCCEvent creates a new transaction with the given chaincode event
-func NewTransactionWithCCEvent(txID string, txValidationCode pb.TxValidationCode, ccID string, eventName string) *TxInfo {
+func NewTransactionWithCCEvent(txID string, txValidationCode pb.TxValidationCode, ccID string, eventName string, payload []byte) *TxInfo {
 	return &TxInfo{
 		TxID:             txID,
 		TxValidationCode: txValidationCode,
 		ChaincodeID:      ccID,
 		EventName:        eventName,
+		Payload:          payload,
 		HeaderType:       cb.HeaderType_ENDORSER_TRANSACTION,
 	}
 }
@@ -105,7 +107,7 @@ func NewFilteredTxWithCCEvent(txID, ccID, event string) *pb.FilteredTransaction 
 
 func newEnvelope(channelID string, txInfo *TxInfo) *cb.Envelope {
 	tx := &pb.Transaction{
-		Actions: []*pb.TransactionAction{newTxAction(txInfo.TxID, txInfo.ChaincodeID, txInfo.EventName)},
+		Actions: []*pb.TransactionAction{newTxAction(txInfo.TxID, txInfo.ChaincodeID, txInfo.EventName, txInfo.Payload)},
 	}
 	txBytes, err := proto.Marshal(tx)
 	if err != nil {
@@ -132,11 +134,12 @@ func newEnvelope(channelID string, txInfo *TxInfo) *cb.Envelope {
 	}
 }
 
-func newTxAction(txID string, ccID string, eventName string) *pb.TransactionAction {
+func newTxAction(txID string, ccID string, eventName string, payload []byte) *pb.TransactionAction {
 	ccEvent := &pb.ChaincodeEvent{
 		TxId:        string(txID),
 		ChaincodeId: ccID,
 		EventName:   eventName,
+		Payload:     payload,
 	}
 	eventBytes, err := proto.Marshal(ccEvent)
 	if err != nil {
