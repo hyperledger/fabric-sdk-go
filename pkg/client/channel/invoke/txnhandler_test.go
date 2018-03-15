@@ -95,19 +95,12 @@ func TestQueryHandlerErrors(t *testing.T) {
 
 	//Prepare context objects for handler
 	requestContext := prepareRequestContext(request, Opts{}, t)
-	clientContext := setupChannelClientContext(errors.New(discoveryServiceError), nil, nil, t)
 
 	//Get query handler
 	queryHandler := NewQueryHandler()
 
-	//Perform action through handler
-	queryHandler.Handle(requestContext, clientContext)
-	if requestContext.Error == nil || !strings.Contains(requestContext.Error.Error(), discoveryServiceError) {
-		t.Fatal("Expected error: ", discoveryServiceError, ", Received error:", requestContext.Error.Error())
-	}
-
-	//Error Scenario 2
-	clientContext = setupChannelClientContext(nil, errors.New(selectionServiceError), nil, t)
+	//Error Scenario 1
+	clientContext := setupChannelClientContext(nil, errors.New(selectionServiceError), nil, t)
 
 	//Perform action through handler
 	queryHandler.Handle(requestContext, clientContext)
@@ -115,7 +108,7 @@ func TestQueryHandlerErrors(t *testing.T) {
 		t.Fatal("Expected error: ", selectionServiceError, ", Received error:", requestContext.Error.Error())
 	}
 
-	//Error Scenario 3 different payload return
+	//Error Scenario 2 different payload return
 	mockPeer1 := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200,
 		Payload: []byte("value")}
 	mockPeer2 := &fcmocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200,
@@ -165,9 +158,18 @@ func TestEndorsementHandler(t *testing.T) {
 	assert.Nil(t, requestContext.Error)
 }
 
+// Target filter
+type filter struct {
+	peer fab.Peer
+}
+
+func (f *filter) Accept(p fab.Peer) bool {
+	return p.URL() == f.peer.URL()
+}
+
 func TestProposalProcessorHandler(t *testing.T) {
-	peer1 := fcmocks.NewMockPeer("p1", "")
-	peer2 := fcmocks.NewMockPeer("p2", "")
+	peer1 := fcmocks.NewMockPeer("p1", "peer1:7051")
+	peer2 := fcmocks.NewMockPeer("p2", "peer2:7051")
 	discoveryPeers := []fab.Peer{peer1, peer2}
 
 	//Get query handler
@@ -206,6 +208,18 @@ func TestProposalProcessorHandler(t *testing.T) {
 	if requestContext.Opts.Targets[0] != peer2 {
 		t.Fatalf("Didn't get expected peers")
 	}
+
+	requestContext = prepareRequestContext(request, Opts{TargetFilter: &filter{peer: peer2}}, t)
+	handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
+	if requestContext.Error != nil {
+		t.Fatalf("Got error: %s", requestContext.Error)
+	}
+	if len(requestContext.Opts.Targets) != 1 {
+		t.Fatalf("Expecting 1 proposal processor but got %d", len(requestContext.Opts.Targets))
+	}
+	if requestContext.Opts.Targets[0] != peer2 {
+		t.Fatalf("Didn't get expected peers")
+	}
 }
 
 //prepareHandlerContexts prepares context objects for handlers
@@ -218,6 +232,11 @@ func prepareRequestContext(request Request, opts Opts, t *testing.T) *RequestCon
 
 	requestContext.Opts.Timeouts = make(map[core.TimeoutType]time.Duration)
 	requestContext.Opts.Timeouts[core.Execute] = testTimeOut
+	if opts.TargetFilter != nil {
+		requestContext.SelectionFilter = func(peer fab.Peer) bool {
+			return opts.TargetFilter.Accept(peer)
+		}
+	}
 
 	return requestContext
 }
@@ -264,7 +283,6 @@ func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryService, 
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewMockDiscoveryProvider failed")
 	}
-
 	return mockDiscovery.CreateDiscoveryService("mychannel")
 }
 

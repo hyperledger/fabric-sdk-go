@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
 
@@ -19,9 +20,8 @@ type MockSelectionProvider struct {
 
 // MockSelectionService implements mock selection service
 type MockSelectionService struct {
-	Error     error
-	Peers     []fab.Peer
-	SelectAll bool
+	Error error
+	Peers []fab.Peer
 }
 
 // NewMockSelectionProvider returns mock selection provider
@@ -43,15 +43,10 @@ func (dp *MockSelectionProvider) SetCustomSelectionService(customSelectionServic
 }
 
 // GetEndorsersForChaincode mocks retrieving endorsing peers
-func (ds *MockSelectionService) GetEndorsersForChaincode(channelPeers []fab.Peer,
-	chaincodeIDs ...string) ([]fab.Peer, error) {
+func (ds *MockSelectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...options.Opt) ([]fab.Peer, error) {
 
 	if ds.Error != nil {
 		return nil, ds.Error
-	}
-
-	if ds.SelectAll {
-		return channelPeers, nil
 	}
 
 	if ds.Peers == nil {

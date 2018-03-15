@@ -7,6 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	selectopts "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
@@ -19,9 +22,9 @@ type MockSelectionProvider struct {
 
 // MockSelectionService implements mock selection service
 type MockSelectionService struct {
-	Error     error
-	Peers     []fab.Peer
-	SelectAll bool
+	Error          error
+	Peers          []fab.Peer
+	ChannelContext context.Channel
 }
 
 // NewMockSelectionProvider returns mock selection provider
@@ -35,24 +38,36 @@ func (dp *MockSelectionProvider) CreateSelectionService(channelID string) (*Mock
 }
 
 // GetEndorsersForChaincode mocks retrieving endorsing peers
-func (ds *MockSelectionService) GetEndorsersForChaincode(channelPeers []fab.Peer,
-	chaincodeIDs ...string) ([]fab.Peer, error) {
+func (ds *MockSelectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...options.Opt) ([]fab.Peer, error) {
 
 	if ds.Error != nil {
 		return nil, ds.Error
 	}
 
-	if ds.SelectAll {
-		return channelPeers, nil
-	}
+	params := selectopts.NewParams(opts)
 
-	if ds.Peers == nil {
+	var peers []fab.Peer
+	if ds.ChannelContext != nil {
+		var err error
+		peers, err = ds.ChannelContext.DiscoveryService().GetPeers()
+		if err != nil {
+			return nil, err
+		}
+	} else if ds.Peers == nil {
 		mockPeer := mocks.NewMockPeer("Peer1", "http://peer1.com")
-		peers := make([]fab.Peer, 0)
 		peers = append(peers, mockPeer)
-		ds.Peers = peers
 	}
 
-	return ds.Peers, nil
+	if params.PeerFilter != nil {
+		for _, p := range ds.Peers {
+			if params.PeerFilter(p) {
+				peers = append(peers, p)
+			}
+		}
+	} else {
+		peers = ds.Peers
+	}
+
+	return peers, nil
 
 }

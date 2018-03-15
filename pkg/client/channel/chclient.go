@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -33,32 +32,14 @@ var logger = logging.NewLogger("fabsdk/fab")
 // An application that requires interaction with multiple channels should create a separate
 // instance of the channel client for each channel. Channel client supports non-admin functions only.
 type Client struct {
-	context         context.Channel
-	membership      fab.ChannelMembership
-	eventService    fab.EventService
-	greylist        *greylist.Filter
-	discoveryFilter fab.TargetFilter
-}
-
-type customChannelContext struct {
-	context.Channel
-	discoveryService fab.DiscoveryService
-}
-
-func (ccc *customChannelContext) DiscoveryService() fab.DiscoveryService {
-	return ccc.discoveryService
+	context      context.Channel
+	membership   fab.ChannelMembership
+	eventService fab.EventService
+	greylist     *greylist.Filter
 }
 
 // ClientOption describes a functional parameter for the New constructor
 type ClientOption func(*Client) error
-
-// WithTargetFilter option to configure new
-func WithTargetFilter(filter fab.TargetFilter) ClientOption {
-	return func(client *Client) error {
-		client.discoveryFilter = filter
-		return nil
-	}
-}
 
 // New returns a Client instance.
 func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client, error) {
@@ -88,20 +69,12 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		membership:   membership,
 		eventService: eventService,
 		greylist:     greylistProvider,
+		context:      channelContext,
 	}
 
 	for _, param := range opts {
 		param(&channelClient)
 	}
-
-	//target filter
-	discoveryService := discovery.NewDiscoveryFilterService(channelContext.DiscoveryService(), channelClient.discoveryFilter)
-
-	//greylist filter
-	customDiscoveryService := discovery.NewDiscoveryFilterService(discoveryService, greylistProvider)
-
-	//update context
-	channelClient.context = &customChannelContext{Channel: channelContext, discoveryService: customDiscoveryService}
 
 	return &channelClient, nil
 }
@@ -207,6 +180,16 @@ func (cc *Client) prepareHandlerContexts(reqCtx reqContext.Context, request Requ
 		return nil, nil, errors.WithMessage(err, "failed to create transactor")
 	}
 
+	peerFilter := func(peer fab.Peer) bool {
+		if !cc.greylist.Accept(peer) {
+			return false
+		}
+		if o.TargetFilter != nil && !o.TargetFilter.Accept(peer) {
+			return false
+		}
+		return true
+	}
+
 	clientContext := &invoke.ClientContext{
 		Selection:    cc.context.SelectionService(),
 		Discovery:    cc.context.DiscoveryService(),
@@ -216,11 +199,12 @@ func (cc *Client) prepareHandlerContexts(reqCtx reqContext.Context, request Requ
 	}
 
 	requestContext := &invoke.RequestContext{
-		Request:      invoke.Request(request),
-		Opts:         invoke.Opts(o),
-		Response:     invoke.Response{},
-		RetryHandler: retry.New(o.Retry),
-		Ctx:          reqCtx,
+		Request:         invoke.Request(request),
+		Opts:            invoke.Opts(o),
+		Response:        invoke.Response{},
+		RetryHandler:    retry.New(o.Retry),
+		Ctx:             reqCtx,
+		SelectionFilter: peerFilter,
 	}
 
 	return requestContext, clientContext, nil

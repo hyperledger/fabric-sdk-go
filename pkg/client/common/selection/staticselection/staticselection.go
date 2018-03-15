@@ -7,13 +7,17 @@ SPDX-License-Identifier: Apache-2.0
 package staticselection
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
+	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	copts "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/pkg/errors"
 )
 
-var logger = logging.NewLogger("fabsdk/client")
+const loggerModule = "fabsdk/client"
+
+var logger = logging.NewLogger(loggerModule)
 
 // SelectionProvider implements selection provider
 type SelectionProvider struct {
@@ -27,6 +31,7 @@ func New(config core.Config) (*SelectionProvider, error) {
 
 // selectionService implements static selection service
 type selectionService struct {
+	discoveryService fab.DiscoveryService
 }
 
 // CreateSelectionService creates a static selection service
@@ -34,11 +39,40 @@ func (p *SelectionProvider) CreateSelectionService(channelID string) (fab.Select
 	return &selectionService{}, nil
 }
 
-func (s *selectionService) GetEndorsersForChaincode(channelPeers []fab.Peer,
-	chaincodeIDs ...string) ([]fab.Peer, error) {
+func (s *selectionService) Initialize(context contextAPI.Channel) error {
+	s.discoveryService = context.DiscoveryService()
+	return nil
+}
 
-	if len(chaincodeIDs) == 0 {
-		return nil, errors.New("no chaincode IDs provided")
+func (s *selectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...copts.Opt) ([]fab.Peer, error) {
+	params := options.NewParams(opts)
+
+	channelPeers, err := s.discoveryService.GetPeers()
+	if err != nil {
+		logger.Errorf("Error retrieving peers from discovery service: %s", err)
+		return nil, nil
+	}
+
+	// Apply peer filter if provided
+	if params.PeerFilter != nil {
+		var peers []fab.Peer
+		for _, peer := range channelPeers {
+			if params.PeerFilter(peer) {
+				peers = append(peers, peer)
+			}
+		}
+		channelPeers = peers
+	}
+
+	if logging.IsEnabledFor(loggerModule, logging.DEBUG) {
+		str := ""
+		for i, peer := range channelPeers {
+			str += peer.URL()
+			if i+1 < len(channelPeers) {
+				str += ","
+			}
+		}
+		logger.Debugf("Available peers:\n%s\n", str)
 	}
 
 	return channelPeers, nil

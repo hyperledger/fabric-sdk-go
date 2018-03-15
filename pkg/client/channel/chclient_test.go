@@ -16,6 +16,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -113,15 +114,6 @@ func TestQuery(t *testing.T) {
 	assert.True(t, ok, "expected status error")
 	assert.EqualValues(t, status.EndorsementMismatch.ToInt32(), s.Code, "expected mismatch error")
 
-}
-
-func TestQueryDiscoveryError(t *testing.T) {
-	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, nil, t)
-
-	_, err := chClient.Query(Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
-	if err == nil {
-		t.Fatalf("Should have failed to query with error in discovery.GetPeers()")
-	}
 }
 
 func TestQuerySelectionError(t *testing.T) {
@@ -302,16 +294,6 @@ func TestQueryWithCustomEndorser(t *testing.T) {
 	}
 }
 
-func TestExecuteTxDiscoveryError(t *testing.T) {
-	chClient := setupChannelClientWithError(errors.New("Test Error"), nil, nil, t)
-
-	_, err := chClient.Execute(Request{ChaincodeID: "testCC", Fcn: "invoke",
-		Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
-	if err == nil {
-		t.Fatalf("Should have failed to execute tx with error in discovery.GetPeers()")
-	}
-}
-
 func TestExecuteTxSelectionError(t *testing.T) {
 	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), nil, t)
 
@@ -444,21 +426,31 @@ func TestMultiErrorPropogation(t *testing.T) {
 	assert.Equal(t, "Multiple errors occurred: \nTest Error\nTest Error", statusError.Message, "Expected multi error message")
 }
 
+type serviceInit interface {
+	Initialize(context context.Channel) error
+}
+
 func TestDiscoveryGreylist(t *testing.T) {
 
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
 	testPeer1.Error = status.New(status.EndorserClientStatus,
 		status.ConnectionFailed.ToInt32(), "test", []interface{}{testPeer1.URL()})
 
-	selectionService, err := setupTestSelection(nil, nil)
+	selectionProvider, err := staticselection.New(fcmocks.NewMockConfig())
 	assert.Nil(t, err, "Got error %s", err)
-	selectionService.SelectAll = true
+
+	selectionService, err := selectionProvider.CreateSelectionService("mychannel")
+	assert.Nil(t, err, "Got error %s", err)
 
 	discoveryService, err := setupTestDiscovery(nil, []fab.Peer{testPeer1})
 	assert.Nil(t, err, "Got error %s", err)
 
 	fabCtx := setupCustomTestContext(t, selectionService, discoveryService, nil)
 	ctx := createChannelContext(fabCtx, channelID)
+
+	channelCtx, err := ctx()
+	assert.Nil(t, err, "Got error %s", err)
+	selectionService.(serviceInit).Initialize(channelCtx)
 
 	chClient, err := New(ctx)
 	assert.Nil(t, err, "Got error %s", err)

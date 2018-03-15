@@ -9,6 +9,8 @@ package fab
 import (
 	reqContext "context"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"google.golang.org/grpc"
@@ -44,8 +46,10 @@ type SelectionProvider interface {
 // SelectionService selects peers for endorsement and commit events
 type SelectionService interface {
 	// GetEndorsersForChaincode returns a set of peers that should satisfy the endorsement
-	// policies of all of the given chaincodes
-	GetEndorsersForChaincode(channelPeers []Peer, chaincodeIDs ...string) ([]Peer, error)
+	// policies of all of the given chaincodes.
+	// A set of options may be provided to the selection service. Note that the type of options
+	// may vary depending on the specific selection service implementation.
+	GetEndorsersForChaincode(chaincodeIDs []string, opts ...options.Opt) ([]Peer, error)
 }
 
 // DiscoveryProvider is used to discover peers on the network

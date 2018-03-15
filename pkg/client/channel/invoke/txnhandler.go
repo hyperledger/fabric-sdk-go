@@ -9,9 +9,11 @@ package invoke
 import (
 	"bytes"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/pkg/errors"
 
+	selectopts "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
@@ -64,22 +66,16 @@ type ProposalProcessorHandler struct {
 
 //Handle selects proposal processors
 func (h *ProposalProcessorHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
-	//Get proposal processor, if not supplied then use discovery service to get available peers as endorser
-	//If selection service available then get endorser peers for this chaincode
+	//Get proposal processor, if not supplied then use selection service to get available peers as endorser
 	if len(requestContext.Opts.Targets) == 0 {
-		// Use discovery service to figure out proposal processors
-		peers, err := clientContext.Discovery.GetPeers()
-		if err != nil {
-			requestContext.Error = errors.WithMessage(err, "GetPeers failed")
-			return
+		var selectionOpts []options.Opt
+		if requestContext.SelectionFilter != nil {
+			selectionOpts = append(selectionOpts, selectopts.WithPeerFilter(requestContext.SelectionFilter))
 		}
-		endorsers := peers
-		if clientContext.Selection != nil {
-			endorsers, err = clientContext.Selection.GetEndorsersForChaincode(peers, requestContext.Request.ChaincodeID)
-			if err != nil {
-				requestContext.Error = errors.WithMessage(err, "Failed to get endorsing peers")
-				return
-			}
+		endorsers, err := clientContext.Selection.GetEndorsersForChaincode([]string{requestContext.Request.ChaincodeID}, selectionOpts...)
+		if err != nil {
+			requestContext.Error = errors.WithMessage(err, "Failed to get endorsing peers")
+			return
 		}
 		requestContext.Opts.Targets = endorsers
 	}

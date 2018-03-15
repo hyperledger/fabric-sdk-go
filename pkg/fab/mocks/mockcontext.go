@@ -262,6 +262,43 @@ func NewMockContextWithCustomDiscovery(ic msp.SigningIdentity, discPvdr fab.Disc
 	return &ctx
 }
 
+// MockChannelContext holds the client context plus channel-specific entities
+type MockChannelContext struct {
+	*MockContext
+	channelID string
+	Discovery fab.DiscoveryService
+	Selection fab.SelectionService
+	Channel   fab.ChannelService
+}
+
+// NewMockChannelContext returns a new MockChannelContext
+func NewMockChannelContext(context *MockContext, channelID string) *MockChannelContext {
+	return &MockChannelContext{
+		MockContext: context,
+		channelID:   channelID,
+	}
+}
+
+// DiscoveryService returns a discovery service
+func (c *MockChannelContext) DiscoveryService() fab.DiscoveryService {
+	return c.Discovery
+}
+
+// SelectionService returns the selection service
+func (c *MockChannelContext) SelectionService() fab.SelectionService {
+	return c.Selection
+}
+
+// ChannelService returns the ChannelService
+func (c *MockChannelContext) ChannelService() fab.ChannelService {
+	return c.Channel
+}
+
+// ChannelID returns the channel ID
+func (c *MockChannelContext) ChannelID() string {
+	return c.channelID
+}
+
 // MockTransactionHeader supplies a transaction ID and metadata.
 type MockTransactionHeader struct {
 	MockID        fab.TransactionID

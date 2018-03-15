@@ -9,8 +9,18 @@ package staticselection
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 )
+
+type serviceInit interface {
+	Initialize(context context.Channel) error
+}
 
 func TestStaticSelection(t *testing.T) {
 
@@ -18,6 +28,9 @@ func TestStaticSelection(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
+
+	peer1 := fabmocks.NewMockPeer("p1", "localhost:7051")
+	peer2 := fabmocks.NewMockPeer("p2", "localhost:8051")
 
 	selectionProvider, err := New(config)
 	if err != nil {
@@ -29,19 +42,38 @@ func TestStaticSelection(t *testing.T) {
 		t.Fatalf("Failed to setup selection service: %s", err)
 	}
 
-	peers, err := selectionService.GetEndorsersForChaincode(nil)
-	if err == nil {
-		t.Fatalf("Should have failed for no chaincode IDs provided")
-	}
+	ctx := fabmocks.NewMockContext(mspmocks.NewMockSigningIdentity("User1", ""))
+	chctx := fabmocks.NewMockChannelContext(ctx, "testchannel")
+	chctx.Discovery = fabmocks.NewMockDiscoveryService(nil, []fab.Peer{peer1, peer2})
 
-	peers, err = selectionService.GetEndorsersForChaincode(nil, "")
+	selectionService.(serviceInit).Initialize(chctx)
+
+	peers, err := selectionService.GetEndorsersForChaincode(nil)
 	if err != nil {
 		t.Fatalf("Failed to get endorsers: %s", err)
 	}
 
-	expectedNumOfPeeers := 0
+	expectedNumOfPeeers := 2
 	if len(peers) != expectedNumOfPeeers {
 		t.Fatalf("Expecting %d, got %d peers", expectedNumOfPeeers, len(peers))
 	}
 
+	peers, err = selectionService.GetEndorsersForChaincode(nil,
+		options.WithPeerFilter(
+			func(peer fab.Peer) bool {
+				return peer.URL() == peer2.URL()
+			},
+		),
+	)
+	if err != nil {
+		t.Fatalf("Failed to get endorsers: %s", err)
+	}
+
+	expectedNumOfPeeers = 1
+	if len(peers) != expectedNumOfPeeers {
+		t.Fatalf("Expecting %d, got %d peers", expectedNumOfPeeers, len(peers))
+	}
+	if peers[0].URL() != peer2.URL() {
+		t.Fatalf("Expecting peer %s but got %s", peer2.URL(), peers[0].URL())
+	}
 }

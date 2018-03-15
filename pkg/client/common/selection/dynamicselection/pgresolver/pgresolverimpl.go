@@ -11,6 +11,7 @@ import (
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -18,7 +19,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logger = logging.NewLogger("fabsdk/client")
+const loggerModule = "fabsdk/client"
+
+var logger = logging.NewLogger(loggerModule)
 
 type peerGroupResolver struct {
 	mspGroups []Group
@@ -48,19 +51,21 @@ func NewRandomPeerGroupResolver(sigPolicyEnv *common.SignaturePolicyEnvelope, pe
 // NewPeerGroupResolver returns a new PeerGroupResolver
 func NewPeerGroupResolver(groupHierarchy GroupOfGroups, lbp LoadBalancePolicy) (PeerGroupResolver, error) {
 
-	logger.Debugf("\n***** Policy: %s\n", groupHierarchy)
+	logger.Debugf("***** Policy: %s", groupHierarchy)
 
 	mspGroups := groupHierarchy.Reduce()
 
-	s := "\n***** Org Groups:\n"
-	for i, g := range mspGroups {
-		s += fmt.Sprintf("%s", g)
-		if i+1 < len(mspGroups) {
-			s += fmt.Sprintf("  OR\n")
+	if logging.IsEnabledFor(loggerModule, logging.DEBUG) {
+		s := "\n***** Org Groups:\n"
+		for i, g := range mspGroups {
+			s += fmt.Sprintf("%s", g)
+			if i+1 < len(mspGroups) {
+				s += fmt.Sprintf("  OR\n")
+			}
 		}
+		s += fmt.Sprintf("\n")
+		logger.Debugf(s)
 	}
-	s += fmt.Sprintf("\n")
-	logger.Debugf(s)
 
 	return &peerGroupResolver{
 		mspGroups: mspGroups,
@@ -68,24 +73,44 @@ func NewPeerGroupResolver(groupHierarchy GroupOfGroups, lbp LoadBalancePolicy) (
 	}, nil
 }
 
-func (c *peerGroupResolver) Resolve() PeerGroup {
+func (c *peerGroupResolver) Resolve(filter options.PeerFilter) PeerGroup {
 	peerGroups := c.getPeerGroups()
 
-	s := ""
-	if len(peerGroups) == 0 {
-		s = "\n\n***** No Available Peer Groups\n"
-	} else {
-		s = "\n\n***** Available Peer Groups:\n"
-		for i, grp := range peerGroups {
-			s += fmt.Sprintf("%d - %s", i, grp)
-			if i+1 < len(peerGroups) {
-				s += fmt.Sprintf(" OR\n")
+	if logging.IsEnabledFor(loggerModule, logging.DEBUG) {
+		s := ""
+		if len(peerGroups) == 0 {
+			s = "\n\n***** No Available Peer Groups\n"
+		} else {
+			s = "\n\n***** Available Peer Groups:\n"
+			for i, grp := range peerGroups {
+				s += fmt.Sprintf("%d - %s", i, grp)
+				if i+1 < len(peerGroups) {
+					s += fmt.Sprintf(" OR\n")
+				}
 			}
+			s += fmt.Sprintf("\n")
 		}
-		s += fmt.Sprintf("\n")
+		logger.Debugf(s)
 	}
 
-	logger.Debugf(s)
+	if filter != nil {
+		var pgroups []PeerGroup
+		for _, pg := range peerGroups {
+			include := true
+			for _, p := range pg.Peers() {
+				if !filter(p) {
+					include = false
+					logger.Infof("Peer [%s] is not accepted by the filter and therefore peer group will be excluded.", p.URL())
+					break
+				}
+			}
+			if include {
+				logger.Infof("Including peer group %s", pg)
+				pgroups = append(pgroups, pg)
+			}
+		}
+		peerGroups = pgroups
+	}
 
 	return c.lbp.Choose(peerGroups)
 }

@@ -11,6 +11,7 @@ import (
 	reqContext "context"
 	"time"
 
+	selectopts "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
@@ -20,6 +21,7 @@ import (
 // Opts allows the user to specify more advanced options
 type Opts struct {
 	Targets       []fab.Peer // targets
+	TargetFilter  fab.TargetFilter
 	Retry         retry.Opts
 	Timeouts      map[core.TimeoutType]time.Duration
 	ParentContext reqContext.Context //parent grpc context
@@ -59,10 +61,11 @@ type ClientContext struct {
 
 //RequestContext contains request, opts, response parameters for handler execution
 type RequestContext struct {
-	Request      Request
-	Opts         Opts
-	Response     Response
-	Error        error
-	RetryHandler retry.Handler
-	Ctx          reqContext.Context
+	Request         Request
+	Opts            Opts
+	Response        Response
+	Error           error
+	RetryHandler    retry.Handler
+	Ctx             reqContext.Context
+	SelectionFilter selectopts.PeerFilter
 }

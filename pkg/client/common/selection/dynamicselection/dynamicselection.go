@@ -8,16 +8,24 @@ package dynamicselection
 
 import (
 	"fmt"
-	"sync"
+	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/lazycache"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/lazyref"
 
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	copts "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection/pgresolver"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
+
+const defaultCacheTimeout = 30 * time.Minute
 
 // ChannelUser contains user(identity) info to be used for specific channel
 type ChannelUser struct {
@@ -29,27 +37,53 @@ type ChannelUser struct {
 // SelectionProvider implements selection provider
 // TODO: refactor users into client contexts
 type SelectionProvider struct {
-	config    core.Config
-	users     []ChannelUser
-	lbp       pgresolver.LoadBalancePolicy
-	providers api.Providers
+	config       core.Config
+	users        []ChannelUser
+	lbp          pgresolver.LoadBalancePolicy
+	providers    api.Providers
+	cacheTimeout time.Duration
+}
+
+// Opt applies a selection provider option
+type Opt func(*SelectionProvider)
+
+// WithLoadBalancePolicy sets the load-balance policy
+func WithLoadBalancePolicy(lbp pgresolver.LoadBalancePolicy) Opt {
+	return func(p *SelectionProvider) {
+		p.lbp = lbp
+	}
+}
+
+// WithCacheTimeout sets the expiration timeout of the cache
+func WithCacheTimeout(timeout time.Duration) Opt {
+	return func(p *SelectionProvider) {
+		p.cacheTimeout = timeout
+	}
 }
 
 // New returns dynamic selection provider
-func New(config core.Config, users []ChannelUser, lbp pgresolver.LoadBalancePolicy) (*SelectionProvider, error) {
-	lbPolicy := lbp
-	if lbPolicy == nil {
-		lbPolicy = pgresolver.NewRandomLBP()
+func New(config core.Config, users []ChannelUser, opts ...Opt) (*SelectionProvider, error) {
+	p := &SelectionProvider{
+		config:       config,
+		users:        users,
+		lbp:          pgresolver.NewRandomLBP(),
+		cacheTimeout: defaultCacheTimeout,
 	}
-	return &SelectionProvider{config: config, users: users, lbp: lbPolicy}, nil
+
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	return p, nil
 }
 
 type selectionService struct {
 	channelID        string
-	mutex            sync.RWMutex
-	pgResolvers      map[string]pgresolver.PeerGroupResolver
+	pgResolvers      *lazycache.Cache
 	pgLBP            pgresolver.LoadBalancePolicy
 	ccPolicyProvider CCPolicyProvider
+	discoveryService fab.DiscoveryService
+	cacheTimeout     time.Duration
 }
 
 // Initialize allow for initializing providers
@@ -81,62 +115,63 @@ func (p *SelectionProvider) CreateSelectionService(channelID string) (fab.Select
 		return nil, errors.WithMessage(err, "Failed to create cc policy provider")
 	}
 
-	return &selectionService{
-		channelID:        channelID,
-		pgResolvers:      make(map[string]pgresolver.PeerGroupResolver),
-		pgLBP:            p.lbp,
-		ccPolicyProvider: ccPolicyProvider,
-	}, nil
+	return newSelectionService(channelID, p.lbp, ccPolicyProvider, p.cacheTimeout)
 }
 
-func (s *selectionService) GetEndorsersForChaincode(channelPeers []fab.Peer,
-	chaincodeIDs ...string) ([]fab.Peer, error) {
+func newSelectionService(channelID string, lbp pgresolver.LoadBalancePolicy, ccPolicyProvider CCPolicyProvider, cacheTimeout time.Duration) (*selectionService, error) {
+	service := &selectionService{
+		channelID:        channelID,
+		pgLBP:            lbp,
+		ccPolicyProvider: ccPolicyProvider,
+	}
 
+	service.pgResolvers = lazycache.New(
+		"PG_Resolver_Cache",
+		func(key lazycache.Key) (interface{}, error) {
+			return lazyref.New(
+				func() (interface{}, error) {
+					return service.createPGResolver(key.(*resolverKey))
+				},
+				lazyref.WithAbsoluteExpiration(cacheTimeout),
+			).Get()
+		},
+	)
+
+	return service, nil
+}
+
+func (s *selectionService) Initialize(context contextAPI.Channel) error {
+	s.discoveryService = context.DiscoveryService()
+	return nil
+}
+
+func (s *selectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...copts.Opt) ([]fab.Peer, error) {
 	if len(chaincodeIDs) == 0 {
 		return nil, errors.New("no chaincode IDs provided")
 	}
 
-	if len(channelPeers) == 0 {
-		return nil, errors.New("Must provide at least one channel peer")
-	}
+	params := options.NewParams(opts)
 
-	resolver, err := s.getPeerGroupResolver(channelPeers, chaincodeIDs)
+	resolver, err := s.getPeerGroupResolver(chaincodeIDs)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("Error getting peer group resolver for chaincodes [%v] on channel [%s]", chaincodeIDs, s.channelID))
 	}
-	return resolver.Resolve().Peers(), nil
+	return resolver.Resolve(params.PeerFilter).Peers(), nil
 }
 
-func (s *selectionService) getPeerGroupResolver(channelPeers []fab.Peer, chaincodeIDs []string) (pgresolver.PeerGroupResolver, error) {
-	key := newResolverKey(s.channelID, chaincodeIDs...)
-
-	s.mutex.RLock()
-	resolver := s.pgResolvers[key.String()]
-	s.mutex.RUnlock()
-
-	if resolver == nil {
-		var err error
-		if resolver, err = s.createPGResolver(channelPeers, key); err != nil {
-			return nil, errors.WithMessage(err, fmt.Sprintf("unable to create new peer group resolver for chaincode(s) [%v] on channel [%s]", chaincodeIDs, s.channelID))
-		}
+func (s *selectionService) getPeerGroupResolver(chaincodeIDs []string) (pgresolver.PeerGroupResolver, error) {
+	value, err := s.pgResolvers.Get(newResolverKey(s.channelID, chaincodeIDs...))
+	if err != nil {
+		return nil, err
 	}
-	return resolver, nil
+	return value.(pgresolver.PeerGroupResolver), nil
 }
 
-func (s *selectionService) createPGResolver(channelPeers []fab.Peer, key *resolverKey) (pgresolver.PeerGroupResolver, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	resolver := s.pgResolvers[key.String()]
-	if resolver != nil {
-		// TODO: Expire cache
-		return resolver, nil
-	}
-
+func (s *selectionService) createPGResolver(key *resolverKey) (pgresolver.PeerGroupResolver, error) {
 	// Retrieve the signature policies for all of the chaincodes
 	var policyGroups []pgresolver.Group
 	for _, ccID := range key.chaincodeIDs {
-		policyGroup, err := s.getPolicyGroupForCC(key.channelID, ccID, channelPeers)
+		policyGroup, err := s.getPolicyGroupForCC(key.channelID, ccID)
 		if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("error retrieving signature policy for chaincode [%s] on channel [%s]", ccID, key.channelID))
 		}
@@ -150,16 +185,14 @@ func (s *selectionService) createPGResolver(channelPeers []fab.Peer, key *resolv
 	}
 
 	// Create the resolver
-	if resolver, err = pgresolver.NewPeerGroupResolver(aggregatePolicyGroup, s.pgLBP); err != nil {
+	resolver, err := pgresolver.NewPeerGroupResolver(aggregatePolicyGroup, s.pgLBP)
+	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("error creating peer group resolver for chaincodes [%v] on channel [%s]", key.chaincodeIDs, key.channelID))
 	}
-
-	s.pgResolvers[key.String()] = resolver
-
 	return resolver, nil
 }
 
-func (s *selectionService) getPolicyGroupForCC(channelID string, ccID string, channelPeers []fab.Peer) (pgresolver.Group, error) {
+func (s *selectionService) getPolicyGroupForCC(channelID string, ccID string) (pgresolver.Group, error) {
 	sigPolicyEnv, err := s.ccPolicyProvider.GetChaincodePolicy(ccID)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("error querying chaincode [%s] on channel [%s]", ccID, channelID))
@@ -167,11 +200,18 @@ func (s *selectionService) getPolicyGroupForCC(channelID string, ccID string, ch
 
 	return pgresolver.NewSignaturePolicyCompiler(
 		func(mspID string) []fab.Peer {
-			return s.getAvailablePeers(channelPeers, mspID)
-		}).Compile(sigPolicyEnv)
+			return s.getAvailablePeers(mspID)
+		},
+	).Compile(sigPolicyEnv)
 }
 
-func (s *selectionService) getAvailablePeers(channelPeers []fab.Peer, mspID string) []fab.Peer {
+func (s *selectionService) getAvailablePeers(mspID string) []fab.Peer {
+	channelPeers, err := s.discoveryService.GetPeers()
+	if err != nil {
+		logger.Errorf("Error retrieving peers from discovery service: %s", err)
+		return nil
+	}
+
 	var peers []fab.Peer
 	for _, peer := range channelPeers {
 		if string(peer.MSPID()) == mspID {
@@ -179,14 +219,16 @@ func (s *selectionService) getAvailablePeers(channelPeers []fab.Peer, mspID stri
 		}
 	}
 
-	str := ""
-	for i, peer := range peers {
-		str += peer.URL()
-		if i+1 < len(peers) {
-			str += ","
+	if logging.IsEnabledFor(loggerModule, logging.DEBUG) {
+		str := ""
+		for i, peer := range peers {
+			str += peer.URL()
+			if i+1 < len(peers) {
+				str += ","
+			}
 		}
+		logger.Debugf("Available peers:\n%s\n", str)
 	}
-	logger.Debugf("Available peers:\n%s\n", str)
 
 	return peers
 }

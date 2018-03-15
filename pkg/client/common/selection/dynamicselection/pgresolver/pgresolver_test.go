@@ -8,6 +8,7 @@ package pgresolver
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -26,18 +27,18 @@ const (
 	org10 = "Org10MSP"
 )
 
-var p1 = peer("peer1")
-var p2 = peer("peer2")
-var p3 = peer("peer3")
-var p4 = peer("peer4")
-var p5 = peer("peer5")
-var p6 = peer("peer6")
-var p7 = peer("peer7")
-var p8 = peer("peer8")
-var p9 = peer("peer9")
-var p10 = peer("peer10")
-var p11 = peer("peer11")
-var p12 = peer("peer12")
+var p1 = peer("peer1", "peer1:7051")
+var p2 = peer("peer2", "peer2:7051")
+var p3 = peer("peer3", "peer3:7051")
+var p4 = peer("peer4", "peer4:7051")
+var p5 = peer("peer5", "peer5:7051")
+var p6 = peer("peer6", "peer6:7051")
+var p7 = peer("peer7", "peer7:7051")
+var p8 = peer("peer8", "peer8:7051")
+var p9 = peer("peer9", "peer9:7051")
+var p10 = peer("peer10", "peer10:7051")
+var p11 = peer("peer11", "peer11:7051")
+var p12 = peer("peer12", "peer12:7051")
 
 var peersByMSPID = map[string][]fab.Peer{
 	org1: peers(p1, p2),
@@ -74,7 +75,7 @@ func TestPeerGroupResolverPolicyNoAvailablePeers(t *testing.T) {
 		func(mspID string) []fab.Peer {
 			return nil
 		},
-		expected)
+		expected, nil)
 }
 
 // 1 of [(2 of [1,2]),(2 of [1,3,4])]
@@ -111,7 +112,29 @@ func TestPeerGroupResolverPolicy1(t *testing.T) {
 		pg(p5, p8), pg(p5, p9), pg(p5, p10), pg(p6, p8), pg(p6, p9), pg(p6, p10), pg(p7, p8), pg(p7, p9), pg(p7, p10),
 	}
 
-	testPeerGroupResolver(t, sigPolicyEnv, retrievePeersByMSPid, expected)
+	testPeerGroupResolver(t, sigPolicyEnv, retrievePeersByMSPid, expected,
+		func(peer fab.Peer) bool {
+			return true
+		},
+	)
+
+	// With peer filter
+	expected = []PeerGroup{
+		// Org1 and Org2
+		pg(p1, p3), pg(p1, p4), pg(p2, p3), pg(p2, p4),
+		// Org1 and Org3
+		pg(p1, p5), pg(p1, p7), pg(p2, p5), pg(p2, p7),
+		// Org1 and Org4
+		pg(p1, p8), pg(p1, p9), pg(p1, p10), pg(p2, p8), pg(p2, p9), pg(p2, p10),
+		// Org3 and Org4
+		pg(p5, p8), pg(p5, p9), pg(p5, p10), pg(p7, p8), pg(p7, p9), pg(p7, p10),
+	}
+	testPeerGroupResolver(t, sigPolicyEnv, retrievePeersByMSPid, expected,
+		func(peer fab.Peer) bool {
+			// Filter out peer6
+			return peer.URL() != p6.URL()
+		},
+	)
 }
 
 // 1 of [(2 of [1,2]),(3 of [3,4,5])]
@@ -146,7 +169,7 @@ func TestPeerGroupResolverPolicy2(t *testing.T) {
 		pg(p7, p8, p11), pg(p7, p8, p12), pg(p7, p9, p11), pg(p7, p9, p12), pg(p7, p10, p11), pg(p7, p10, p12),
 	}
 
-	testPeerGroupResolver(t, sigPolicyEnv, retrievePeersByMSPid, expected)
+	testPeerGroupResolver(t, sigPolicyEnv, retrievePeersByMSPid, expected, nil)
 }
 
 // 2 of [(1 of [1,2]),(1 of [3,4,5])]
@@ -179,7 +202,7 @@ func TestPeerGroupResolverPolicy3(t *testing.T) {
 		pg(p3, p5), pg(p3, p6), pg(p3, p7), pg(p3, p8), pg(p3, p9), pg(p3, p10), pg(p3, p11), pg(p3, p12),
 		pg(p4, p5), pg(p4, p6), pg(p4, p7), pg(p4, p8), pg(p4, p9), pg(p4, p10), pg(p4, p11), pg(p4, p12),
 	}
-	testPeerGroupResolver(t, sigPolicyEnv, retrievePeersByMSPid, expected)
+	testPeerGroupResolver(t, sigPolicyEnv, retrievePeersByMSPid, expected, nil)
 }
 
 // 2 of [1,2,(2 of [3,4,5])]
@@ -215,7 +238,7 @@ func TestPeerGroupResolverPolicy4(t *testing.T) {
 		pg(p3, p8), pg(p3, p9), pg(p3, p10),
 		pg(p4, p8), pg(p4, p9), pg(p4, p10),
 	}
-	testPeerGroupResolver(t, sigPolicyEnv, retrievePeersByMSPid, expected)
+	testPeerGroupResolver(t, sigPolicyEnv, retrievePeersByMSPid, expected, nil)
 }
 
 // 1 of [1,(2 of [2,(1 of [3,4])])]
@@ -297,20 +320,20 @@ func TestPeerGroupResolverPolicy5(t *testing.T) {
 		pg(p4, p10, p11), pg(p4, p10, p12),
 	}
 
-	testPeerGroupResolver(t, sigPolicyEnv, retrievePeersByMSPid, expected)
+	testPeerGroupResolver(t, sigPolicyEnv, retrievePeersByMSPid, expected, nil)
 }
 
-func testPeerGroupResolver(t *testing.T, sigPolicyEnv *common.SignaturePolicyEnvelope, peerRetriever PeerRetriever, expected []PeerGroup) {
+func testPeerGroupResolver(t *testing.T, sigPolicyEnv *common.SignaturePolicyEnvelope, peerRetriever PeerRetriever, expected []PeerGroup, filter options.PeerFilter) {
 
 	pgResolver, err := NewRoundRobinPeerGroupResolver(sigPolicyEnv, peerRetriever)
 	if err != nil {
 		t.Fatal(err)
 	}
-	verify(t, pgResolver, expected)
+	verify(t, pgResolver, expected, filter)
 }
 
-func peer(name string) fab.Peer {
-	mp := mocks.NewMockPeer(name, "localhost:7051")
+func peer(name, url string) fab.Peer {
+	mp := mocks.NewMockPeer(name, url)
 	return mp
 }
 
@@ -318,9 +341,9 @@ func peers(peers ...fab.Peer) []fab.Peer {
 	return peers
 }
 
-func verify(t *testing.T, pgResolver PeerGroupResolver, expectedPeerGroups []PeerGroup) {
+func verify(t *testing.T, pgResolver PeerGroupResolver, expectedPeerGroups []PeerGroup, filter options.PeerFilter) {
 	for i := 0; i < len(expectedPeerGroups); i++ {
-		peerGroup := pgResolver.Resolve()
+		peerGroup := pgResolver.Resolve(filter)
 		if !containsPeerGroup(expectedPeerGroups, peerGroup) {
 			t.Fatalf("peer group %s is not one of the expected peer groups: %v", peerGroup, expectedPeerGroups)
 		}

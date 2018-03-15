@@ -44,12 +44,17 @@ func (dp *MockStaticDiscoveryProvider) CreateDiscoveryService(channelID string) 
 	if channelID == "error" {
 		return nil, errors.New("Generate error when creating new discovery service")
 	}
-	return &MockStaticDiscoveryService{Error: dp.Error, Peers: dp.Peers}, nil
+	return NewMockDiscoveryService(dp.Error, dp.Peers), nil
 }
 
 //SetCustomDiscoveryService sets custom discoveryService
 func (dp *MockStaticDiscoveryProvider) SetCustomDiscoveryService(customDiscoveryService fab.DiscoveryService) {
 	dp.customDiscoveryService = customDiscoveryService
+}
+
+//NewMockDiscoveryService returns a new MockStaticDiscoveryService
+func NewMockDiscoveryService(err error, peers []fab.Peer) *MockStaticDiscoveryService {
+	return &MockStaticDiscoveryService{Error: err, Peers: peers}
 }
 
 // GetPeers is used to discover eligible peers for chaincode

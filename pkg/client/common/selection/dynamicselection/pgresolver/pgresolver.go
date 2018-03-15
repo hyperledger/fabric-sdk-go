@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package pgresolver
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
@@ -19,16 +20,17 @@ type SignaturePolicyCompiler interface {
 	Compile(sigPolicyEnv *common.SignaturePolicyEnvelope) (GroupOfGroups, error)
 }
 
-// PeerRetriever is a function that retuens a set of peers for the given MSP ID
+// PeerRetriever is a function that returns a set of peers for the given MSP ID
 type PeerRetriever func(mspID string) []fab.Peer
 
 // PeerGroupResolver resolves a group of peers that would (exactly) satisfy
 // a chaincode's endorsement policy.
 type PeerGroupResolver interface {
 	// Resolve returns a PeerGroup ensuring that all of the peers in the group are
-	// in the given set of available peers
+	// in the given set of available peers. An optional peer filter may be specified
+	// to provide per-request filtering of peers.
 	// This method should never return nil but may return a PeerGroup that contains no peers.
-	Resolve() PeerGroup
+	Resolve(filter options.PeerFilter) PeerGroup
 }
 
 // LoadBalancePolicy is used to pick a peer group from a given set of peer groups

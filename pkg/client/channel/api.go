@@ -22,6 +22,7 @@ import (
 // opts allows the user to specify more advanced options
 type requestOptions struct {
 	Targets       []fab.Peer // targets
+	TargetFilter  fab.TargetFilter
 	Retry         retry.Opts
 	Timeouts      map[core.TimeoutType]time.Duration //timeout options for channel client operations
 	ParentContext reqContext.Context                 //parent grpc context for channel client operations (query, execute, invokehandler)
@@ -79,6 +80,14 @@ func WithTargetURLs(urls ...string) RequestOption {
 		}
 
 		return WithTargets(targets...)(ctx, opts)
+	}
+}
+
+// WithTargetFilter specifies a per-request target peer-filter
+func WithTargetFilter(filter fab.TargetFilter) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		o.TargetFilter = filter
+		return nil
 	}
 }
 

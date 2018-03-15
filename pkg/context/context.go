@@ -193,6 +193,12 @@ func NewProvider(params ...SDKContextParams) *Provider {
 	return &ctxProvider
 }
 
+// serviceInit interface allows for initializing services
+// with the provided context
+type serviceInit interface {
+	Initialize(context context.Channel) error
+}
+
 //NewChannel creates new channel context client
 // Not be used by end developers, fabsdk package use only
 func NewChannel(clientProvider context.ClientProvider, channelID string) (*Channel, error) {
@@ -217,13 +223,28 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 		return nil, errors.WithMessage(err, "failed to get selection service to create channel client")
 	}
 
-	return &Channel{
+	channel := &Channel{
 		Client:         client,
 		selection:      selectionService,
 		discovery:      discoveryService,
 		channelService: channelService,
 		channelID:      channelID,
-	}, nil
+	}
+
+	//initialize
+	if pi, ok := channelService.(serviceInit); ok {
+		pi.Initialize(channel)
+	}
+
+	if pi, ok := discoveryService.(serviceInit); ok {
+		pi.Initialize(channel)
+	}
+
+	if pi, ok := selectionService.(serviceInit); ok {
+		pi.Initialize(channel)
+	}
+
+	return channel, nil
 }
 
 type reqContextKey string

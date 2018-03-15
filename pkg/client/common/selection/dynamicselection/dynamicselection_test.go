@@ -9,6 +9,7 @@ package dynamicselection
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection/pgresolver"
@@ -76,51 +77,65 @@ func TestGetEndorsersForChaincodeOneCC(t *testing.T) {
 
 	channelPeers := []fab.Peer{p1, p2, p3, p4, p5, p6, p7, p8}
 
-	service := newMockSelectionService(
+	service, err := newMockSelectionService(
 		newMockCCDataProvider(channel1).
 			add(cc1, getPolicy1()),
-		pgresolver.NewRoundRobinLBP())
-
+		pgresolver.NewRoundRobinLBP(),
+		newMockDiscoveryService(channelPeers...),
+	)
+	if err != nil {
+		t.Fatalf("got error creating selection service: %s", err)
+	}
 	// Channel1(Policy(cc1)) = Org1
 	expected := []pgresolver.PeerGroup{
 		// Org1
 		pg(p1), pg(p2),
 	}
-	verify(t, service, expected, channel1, channelPeers, cc1)
+	verify(t, service, expected, channel1, cc1)
 }
 
 func TestGetEndorsersForChaincodeTwoCCs(t *testing.T) {
-
-	service := newMockSelectionService(
-		newMockCCDataProvider(channel1).
-			add(cc1, getPolicy1()).
-			add(cc2, getPolicy2()),
-		pgresolver.NewRoundRobinLBP())
-
-	// Channel1(Policy(cc1) and Policy(cc2)) = Org1 and (1 of [(2 of [Org1,Org2]),(2 of [Org1,Org3,Org4])])
-	expected := []pgresolver.PeerGroup{
-		// Org1 and Org2
-		pg(p1, p3), pg(p1, p4), pg(p2, p3), pg(p2, p4),
-		// Org1 and Org3
-		pg(p1, p5), pg(p1, p6), pg(p1, p7), pg(p2, p5), pg(p2, p6), pg(p2, p7),
-		// Org1 and Org4
-		pg(p1, p8), pg(p1, p9), pg(p1, p10), pg(p2, p8), pg(p2, p9), pg(p2, p10),
-		// Org1 and Org3 and Org4
-		pg(p1, p5, p8), pg(p1, p5, p9), pg(p1, p5, p10), pg(p1, p6, p8), pg(p1, p6, p9), pg(p1, p6, p10), pg(p1, p7, p8), pg(p1, p7, p9), pg(p1, p7, p10),
-		pg(p2, p5, p8), pg(p2, p5, p9), pg(p2, p5, p10), pg(p2, p6, p8), pg(p2, p6, p9), pg(p2, p6, p10), pg(p2, p7, p8), pg(p2, p7, p9), pg(p2, p7, p10),
-	}
 	channelPeers := []fab.Peer{p1, p2, p3, p4, p5, p6, p7, p8}
-	verify(t, service, expected, channel1, channelPeers, cc1, cc2)
-}
 
-func TestGetEndorsersForChaincodeTwoCCsTwoChannels(t *testing.T) {
-
-	service := newMockSelectionService(
+	service, err := newMockSelectionService(
 		newMockCCDataProvider(channel1).
 			add(cc1, getPolicy1()).
 			add(cc2, getPolicy2()),
 		pgresolver.NewRoundRobinLBP(),
+		newMockDiscoveryService(channelPeers...),
 	)
+	if err != nil {
+		t.Fatalf("got error creating selection service: %s", err)
+	}
+
+	// Channel1(Policy(cc1) and Policy(cc2)) = Org1 and (1 of [(2 of [Org1,Org2]),(2 of [Org1,Org3,Org4])])
+	expected := []pgresolver.PeerGroup{
+		// Org1 and Org2
+		pg(p1, p3), pg(p1, p4), pg(p2, p3), pg(p2, p4),
+		// Org1 and Org3
+		pg(p1, p5), pg(p1, p6), pg(p1, p7), pg(p2, p5), pg(p2, p6), pg(p2, p7),
+		// Org1 and Org4
+		pg(p1, p8), pg(p1, p9), pg(p1, p10), pg(p2, p8), pg(p2, p9), pg(p2, p10),
+		// Org1 and Org3 and Org4
+		pg(p1, p5, p8), pg(p1, p5, p9), pg(p1, p5, p10), pg(p1, p6, p8), pg(p1, p6, p9), pg(p1, p6, p10), pg(p1, p7, p8), pg(p1, p7, p9), pg(p1, p7, p10),
+		pg(p2, p5, p8), pg(p2, p5, p9), pg(p2, p5, p10), pg(p2, p6, p8), pg(p2, p6, p9), pg(p2, p6, p10), pg(p2, p7, p8), pg(p2, p7, p9), pg(p2, p7, p10),
+	}
+	verify(t, service, expected, channel1, cc1, cc2)
+}
+
+func TestGetEndorsersForChaincodeTwoCCsTwoChannels(t *testing.T) {
+	channel1Peers := []fab.Peer{p1, p2, p3, p4, p5, p6, p7, p8}
+
+	service, err := newMockSelectionService(
+		newMockCCDataProvider(channel1).
+			add(cc1, getPolicy1()).
+			add(cc2, getPolicy2()),
+		pgresolver.NewRoundRobinLBP(),
+		newMockDiscoveryService(channel1Peers...),
+	)
+	if err != nil {
+		t.Fatalf("got error creating selection service: %s", err)
+	}
 
 	// Channel1(Policy(cc1) and Policy(cc2)) = Org1 and (1 of [(2 of [Org1,Org2]),(2 of [Org1,Org3,Org4])])
 	expected := []pgresolver.PeerGroup{
@@ -135,15 +150,19 @@ func TestGetEndorsersForChaincodeTwoCCsTwoChannels(t *testing.T) {
 		pg(p2, p5, p8), pg(p2, p5, p9), pg(p2, p5, p10), pg(p2, p6, p8), pg(p2, p6, p9), pg(p2, p6, p10), pg(p2, p7, p8), pg(p2, p7, p9), pg(p2, p7, p10),
 	}
 
-	channel1Peers := []fab.Peer{p1, p2, p3, p4, p5, p6, p7, p8}
-	verify(t, service, expected, channel1, channel1Peers, cc1, cc2)
+	verify(t, service, expected, channel1, cc1, cc2)
 
-	service = newMockSelectionService(
+	channel2Peers := []fab.Peer{p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12}
+	service, err = newMockSelectionService(
 		newMockCCDataProvider(channel2).
 			add(cc1, getPolicy3()).
 			add(cc2, getPolicy2()),
 		pgresolver.NewRoundRobinLBP(),
+		newMockDiscoveryService(channel2Peers...),
 	)
+	if err != nil {
+		t.Fatalf("got error creating selection service: %s", err)
+	}
 
 	// Channel2(Policy(cc1) and Policy(cc2)) = Org5 and (1 of [(2 of [Org1,Org2]),(2 of [Org1,Org3,Org4])])
 	expected = []pgresolver.PeerGroup{
@@ -161,11 +180,10 @@ func TestGetEndorsersForChaincodeTwoCCsTwoChannels(t *testing.T) {
 		pg(p12, p5, p8), pg(p12, p5, p9), pg(p12, p5, p10), pg(p12, p6, p8), pg(p12, p6, p9), pg(p12, p6, p10), pg(p12, p7, p8), pg(p12, p7, p9), pg(p12, p7, p10),
 	}
 
-	channel2Peers := []fab.Peer{p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12}
-	verify(t, service, expected, channel2, channel2Peers, cc1, cc2)
+	verify(t, service, expected, channel2, cc1, cc2)
 }
 
-func verify(t *testing.T, service fab.SelectionService, expectedPeerGroups []pgresolver.PeerGroup, channelID string, channelPeers []fab.Peer, chaincodeIDs ...string) {
+func verify(t *testing.T, service fab.SelectionService, expectedPeerGroups []pgresolver.PeerGroup, channelID string, chaincodeIDs ...string) {
 	// Set the log level to WARNING since the following spits out too much info in DEBUG
 	module := "pg-resolver"
 	level := logging.GetLevel(module)
@@ -173,7 +191,7 @@ func verify(t *testing.T, service fab.SelectionService, expectedPeerGroups []pgr
 	defer logging.SetLevel(module, level)
 
 	for i := 0; i < len(expectedPeerGroups); i++ {
-		peers, err := service.GetEndorsersForChaincode(channelPeers, chaincodeIDs...)
+		peers, err := service.GetEndorsersForChaincode(chaincodeIDs)
 		if err != nil {
 			t.Fatalf("error getting endorsers: %s", err)
 		}
@@ -225,12 +243,13 @@ func peer(name string, mspID string) fab.Peer {
 	return mp
 }
 
-func newMockSelectionService(ccPolicyProvider CCPolicyProvider, lbp pgresolver.LoadBalancePolicy) fab.SelectionService {
-	return &selectionService{
-		ccPolicyProvider: ccPolicyProvider,
-		pgLBP:            lbp,
-		pgResolvers:      make(map[string]pgresolver.PeerGroupResolver),
+func newMockSelectionService(ccPolicyProvider CCPolicyProvider, lbp pgresolver.LoadBalancePolicy, discoveryService fab.DiscoveryService) (fab.SelectionService, error) {
+	service, err := newSelectionService("", lbp, ccPolicyProvider, 5*time.Second)
+	if err != nil {
+		return nil, err
 	}
+	service.discoveryService = discoveryService
+	return service, nil
 }
 
 type mockCCDataProvider struct {
@@ -341,7 +360,7 @@ func TestDynamicSelection(t *testing.T) {
 
 	mychannelUser := ChannelUser{ChannelID: "mychannel", Username: "User1", OrgName: "Org1"}
 
-	selectionProvider, err := New(ctx.Config(), []ChannelUser{mychannelUser}, nil)
+	selectionProvider, err := New(ctx.Config(), []ChannelUser{mychannelUser})
 	if err != nil {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}
@@ -360,7 +379,7 @@ func TestDynamicSelection(t *testing.T) {
 
 	selectionProvider.providers = ctx
 	testLBPolicy(t, selectionProvider)
-	testCustomLBPolicy(t, ctx.Config(), selectionProvider, mychannelUser)
+	testCustomLBPolicy(t, ctx.Config(), mychannelUser)
 }
 
 func testLBPolicy(t *testing.T, selectionProvider *SelectionProvider) {
@@ -396,28 +415,27 @@ func testLBPolicy(t *testing.T, selectionProvider *SelectionProvider) {
 		t.Fatalf("Should have failed for no chaincode IDs provided")
 	}
 
-	_, err = selectionService.GetEndorsersForChaincode(nil, "")
+	_, err = selectionService.GetEndorsersForChaincode([]string{""})
 	if err == nil {
 		t.Fatalf("Should have failed since no channel peers are provided")
 	}
 
-	chPeers := []fab.Peer{peer("p0", "Org1")}
-	_, err = selectionService.GetEndorsersForChaincode(chPeers, "")
+	_, err = selectionService.GetEndorsersForChaincode([]string{""})
 	if err == nil {
 		t.Fatalf("Should have failed since empty cc ID provided")
 	}
 
-	_, err = selectionService.GetEndorsersForChaincode(chPeers, "abc")
+	_, err = selectionService.GetEndorsersForChaincode([]string{"abc"})
 	if err == nil {
 		t.Fatalf("Should have failed for non-existent cc ID")
 	}
 
 }
 
-func testCustomLBPolicy(t *testing.T, c core.Config, selectionProvider *SelectionProvider, mychannelUser ChannelUser) {
+func testCustomLBPolicy(t *testing.T, c core.Config, mychannelUser ChannelUser) {
 
 	// Test custom load balancer
-	selectionProvider, err := New(c, []ChannelUser{mychannelUser}, newCustomLBP())
+	selectionProvider, err := New(c, []ChannelUser{mychannelUser}, WithLoadBalancePolicy(newCustomLBP()))
 	if err != nil {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}
@@ -477,4 +495,16 @@ func setupMockContext(username, orgName string) context.Providers {
 	user := mspmocks.NewMockSigningIdentity(username, orgName)
 	ctx := mocks.NewMockContext(user)
 	return ctx
+}
+
+type mockDiscoveryService struct {
+	peers []fab.Peer
+}
+
+func newMockDiscoveryService(peers ...fab.Peer) fab.DiscoveryService {
+	return &mockDiscoveryService{peers: peers}
+}
+
+func (s *mockDiscoveryService) GetPeers() ([]fab.Peer, error) {
+	return s.peers, nil
 }
