@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -141,7 +142,7 @@ func (r *mockReader) Read(p []byte) (int, error) {
 }
 
 func TestBroadcastEnvelope(t *testing.T) {
-	user := mocks.NewMockUserWithMSPID("test", "1234")
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
 	lsnr1 := make(chan *fab.SignedEnvelope)
@@ -218,7 +219,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 
 func TestSendTransaction(t *testing.T) {
 	//Setup channel
-	user := mocks.NewMockUserWithMSPID("test", "1234")
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
 	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
@@ -291,7 +292,7 @@ func TestSendTransaction(t *testing.T) {
 }
 
 func TestBuildChannelHeader(t *testing.T) {
-	user := mocks.NewMockUserWithMSPID("test", "1234")
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
 	txnid, err := NewHeader(ctx, "test")
@@ -311,7 +312,7 @@ func TestBuildChannelHeader(t *testing.T) {
 }
 
 func TestSignPayload(t *testing.T) {
-	user := mocks.NewMockUserWithMSPID("test", "1234")
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
 	payload := common.Payload{}
@@ -324,7 +325,7 @@ func TestSignPayload(t *testing.T) {
 }
 
 func TestConcurrentOrderers(t *testing.T) {
-	user := mocks.NewMockUserWithMSPID("test", "1234")
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
 	// Determine number of orderers to use - environment can override

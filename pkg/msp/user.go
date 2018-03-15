@@ -17,20 +17,37 @@ import (
 
 // User is a representation of a Fabric user
 type User struct {
+	id                    string
 	mspID                 string
-	name                  string
 	enrollmentCertificate []byte
 	privateKey            core.Key
 }
 
-func userIdentifier(userData *msp.UserData) msp.UserIdentifier {
-	return msp.UserIdentifier{MSPID: userData.MSPID, Name: userData.Name}
+func userIdentifier(userData *msp.UserData) msp.IdentityIdentifier {
+	return msp.IdentityIdentifier{MSPID: userData.MSPID, ID: userData.ID}
 }
 
-// Name Get the user name.
-// @returns {string} The user name.
-func (u *User) Name() string {
-	return u.name
+// Identifier returns user identifier
+func (u *User) Identifier() *msp.IdentityIdentifier {
+	return &msp.IdentityIdentifier{MSPID: u.mspID, ID: u.id}
+}
+
+// Verify a signature over some message using this identity as reference
+func (u *User) Verify(msg []byte, sig []byte) error {
+	return errors.New("not implemented")
+}
+
+// Serialize converts an identity to bytes
+func (u *User) Serialize() ([]byte, error) {
+	serializedIdentity := &pb_msp.SerializedIdentity{
+		Mspid:   u.mspID,
+		IdBytes: u.enrollmentCertificate,
+	}
+	identity, err := proto.Marshal(serializedIdentity)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal serializedIdentity failed")
+	}
+	return identity, nil
 }
 
 // EnrollmentCertificate Returns the underlying ECert representing this user’s identity.
@@ -43,18 +60,12 @@ func (u *User) PrivateKey() core.Key {
 	return u.privateKey
 }
 
-// MSPID returns the MSP for this user
-func (u *User) MSPID() string {
-	return u.mspID
+// PublicVersion returns the public parts of this identity
+func (u *User) PublicVersion() msp.Identity {
+	return u
 }
 
-// SerializedIdentity returns client's serialized identity
-func (u *User) SerializedIdentity() ([]byte, error) {
-	serializedIdentity := &pb_msp.SerializedIdentity{Mspid: u.MSPID(),
-		IdBytes: u.EnrollmentCertificate()}
-	identity, err := proto.Marshal(serializedIdentity)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal serializedIdentity failed")
-	}
-	return identity, nil
+// Sign the message
+func (u *User) Sign(msg []byte) ([]byte, error) {
+	return nil, errors.New("not implemented")
 }

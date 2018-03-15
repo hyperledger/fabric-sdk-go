@@ -97,7 +97,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
-		SigningIdentities: []msp.Identity{org1AdminUser, org2AdminUser}}
+		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}

@@ -118,7 +118,7 @@ func (c *CAClientImpl) Enroll(enrollmentID string, enrollmentSecret string) erro
 	}
 	userData := &msp.UserData{
 		MSPID: c.orgMSPID,
-		Name:  enrollmentID,
+		ID:    enrollmentID,
 		EnrollmentCertificate: cert,
 	}
 	err = c.userStore.Store(userData)
@@ -139,7 +139,7 @@ func (c *CAClientImpl) Reenroll(enrollmentID string) error {
 		return errors.New("user name missing")
 	}
 
-	user, err := c.identityManager.GetUser(enrollmentID)
+	user, err := c.identityManager.GetSigningIdentity(enrollmentID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to retrieve user: %s", enrollmentID)
 	}
@@ -150,7 +150,7 @@ func (c *CAClientImpl) Reenroll(enrollmentID string) error {
 	}
 	userData := &msp.UserData{
 		MSPID: c.orgMSPID,
-		Name:  user.Name(),
+		ID:    user.Identifier().ID,
 		EnrollmentCertificate: cert,
 	}
 	err = c.userStore.Store(userData)
@@ -184,7 +184,7 @@ func (c *CAClientImpl) Register(request *api.RegistrationRequest) (string, error
 		return "", err
 	}
 
-	secret, err := c.adapter.Register(registrar.PrivateKey, registrar.EnrollmentCert, request)
+	secret, err := c.adapter.Register(registrar.PrivateKey(), registrar.EnrollmentCertificate(), request)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to register user")
 	}
@@ -212,14 +212,14 @@ func (c *CAClientImpl) Revoke(request *api.RevocationRequest) (*api.RevocationRe
 		return nil, err
 	}
 
-	resp, err := c.adapter.Revoke(registrar.PrivateKey, registrar.EnrollmentCert, request)
+	resp, err := c.adapter.Revoke(registrar.PrivateKey(), registrar.EnrollmentCertificate(), request)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to revoke")
 	}
 	return resp, nil
 }
 
-func (c *CAClientImpl) getRegistrar(enrollID string, enrollSecret string) (*msp.SigningIdentity, error) {
+func (c *CAClientImpl) getRegistrar(enrollID string, enrollSecret string) (msp.SigningIdentity, error) {
 
 	if enrollID == "" {
 		return nil, api.ErrCARegistrarNotFound

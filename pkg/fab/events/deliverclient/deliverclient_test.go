@@ -22,6 +22,7 @@ import (
 	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	fabclientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -454,7 +455,7 @@ func (c *mockConfig) PeerConfigByURL(url string) (*core.PeerConfig, error) {
 
 func newMockContext() *fabmocks.MockContext {
 	ctx := fabmocks.NewMockContextWithCustomDiscovery(
-		fabmocks.NewMockUser("user1"),
+		mspmocks.NewMockSigningIdentity("user1", "test1"),
 		clientmocks.NewDiscoveryProvider(peer1, peer2),
 	)
 	ctx.SetConfig(newMockConfig())

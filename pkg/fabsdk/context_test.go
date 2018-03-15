@@ -44,7 +44,7 @@ func TestWithIdentity(t *testing.T) {
 	if !ok {
 		t.Fatalf("Invalid organization: %s", identityValidOptOrg)
 	}
-	identity, err := identityManager.GetUser(identityValidOptUser)
+	identity, err := identityManager.GetSigningIdentity(identityValidOptUser)
 	if err != nil {
 		t.Fatalf("Unexpected error loading identity: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestWithIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error from opt, but got %v", err)
 	}
-	if opts.identity != identity {
+	if opts.signingIdentity != identity {
 		t.Fatal("Expected identity to be populated")
 	}
 }
@@ -128,7 +128,7 @@ func TestFabricSDKContext(t *testing.T) {
 		t.Fatalf("getting context supposed to succeed")
 	}
 
-	if ctx == nil || ctx.MSPID() == "" {
+	if ctx == nil || ctx.Identifier().MSPID == "" {
 		t.Fatalf("supposed to get valid context")
 	}
 

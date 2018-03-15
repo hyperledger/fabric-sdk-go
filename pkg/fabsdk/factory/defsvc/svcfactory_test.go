@@ -16,10 +16,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 )
 
 func TestCreateDiscoveryProvider(t *testing.T) {
-	ctx := mocks.NewMockContext(mocks.NewMockUser("testuser"))
+	ctx := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("testuser", "testuser"))
 	fabPvdr := fabpvdr.New(ctx.Config())
 
 	factory := NewProviderFactory()

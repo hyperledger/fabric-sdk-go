@@ -6,103 +6,68 @@ SPDX-License-Identifier: Apache-2.0
 
 package mocks
 
-import "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+)
 
-// MockUser ...
-type MockUser struct {
-	name                  string
-	mspID                 string
-	roles                 []string
-	privateKey            core.Key
+// MockSigningIdentity ...
+type MockSigningIdentity struct {
+	id                    string
+	mspid                 string
 	enrollmentCertificate []byte
+	privateKey            core.Key
 }
 
-// NewMockUser ...
-/**
- * Constructor for a user.
- *
- * @param {string} name - The user name
- */
-func NewMockUser(name string) *MockUser {
-	return &MockUser{name: name}
+// NewMockSigningIdentity to return mock user with MSPID
+func NewMockSigningIdentity(id string, mspid string) *MockSigningIdentity {
+	return &MockSigningIdentity{
+		id:    id,
+		mspid: mspid,
+	}
 }
 
-// Name ...
-/**
- * Get the user name.
- * @returns {string} The user name.
- */
-func (u *MockUser) Name() string {
-	return u.name
+// Identifier returns the identifier of that identity
+func (m MockSigningIdentity) Identifier() *msp.IdentityIdentifier {
+	return &msp.IdentityIdentifier{ID: m.id, MSPID: m.mspid}
 }
 
-// Roles ...
-/**
- * Get the roles.
- * @returns {[]string} The roles.
- */
-func (u *MockUser) Roles() []string {
-	return u.roles
+// Verify a signature over some message using this identity as reference
+func (m MockSigningIdentity) Verify(msg []byte, sig []byte) error {
+	return nil
 }
 
-// SetRoles ...
-/**
- * Set the roles.
- * @param roles {[]string} The roles.
- */
-func (u *MockUser) SetRoles(roles []string) {
-	u.roles = roles
-}
-
-// EnrollmentCertificate ...
-/**
- * Returns the underlying ECert representing this user’s identity.
- */
-func (u *MockUser) EnrollmentCertificate() []byte {
-	return u.enrollmentCertificate
-}
-
-// SetEnrollmentCertificate ...
-/**
- * Set the user’s Enrollment Certificate.
- */
-func (u *MockUser) SetEnrollmentCertificate(cert []byte) {
-	u.enrollmentCertificate = cert
-}
-
-// SetPrivateKey ...
-func (u *MockUser) SetPrivateKey(privateKey core.Key) {
-	u.privateKey = privateKey
-}
-
-// PrivateKey ...
-func (u *MockUser) PrivateKey() core.Key {
-	return u.privateKey
-}
-
-// SetMSPID sets the MSP for this user
-func (u *MockUser) SetMSPID(mspID string) {
-	u.mspID = mspID
-}
-
-// MSPID returns the MSP for this user
-func (u *MockUser) MSPID() string {
-	return u.mspID
-}
-
-// SerializedIdentity returns MockUser's serialized identity
-func (u *MockUser) SerializedIdentity() ([]byte, error) {
+// Serialize converts an identity to bytes
+func (m MockSigningIdentity) Serialize() ([]byte, error) {
 	return []byte("test"), nil
 }
 
-// GenerateTcerts ...
-/**
- * Gets a batch of TCerts to use for transaction. there is a 1-to-1 relationship between
- * TCert and Transaction. The TCert can be generated locally by the SDK using the user’s crypto materials.
- * @param {int} count how many in the batch to obtain
- * @param {[]string} attributes  list of attributes to include in the TCert
- * @return {[]tcert} An array of TCerts
- */
-func (u *MockUser) GenerateTcerts(count int, attributes []string) {
+// SetEnrollmentCertificate sets yhe enrollment certificate.
+func (m MockSigningIdentity) SetEnrollmentCertificate(cert []byte) {
+	m.enrollmentCertificate = cert
+}
 
+// EnrollmentCertificate Returns the underlying ECert representing this user’s identity.
+func (m MockSigningIdentity) EnrollmentCertificate() []byte {
+	return m.enrollmentCertificate
+}
+
+// Sign the message
+func (m MockSigningIdentity) Sign(msg []byte) ([]byte, error) {
+	return nil, nil
+}
+
+// PublicVersion returns the public parts of this identity
+func (m MockSigningIdentity) PublicVersion() msp.Identity {
+	return nil
+}
+
+// SetPrivateKey sets the private key
+func (m MockSigningIdentity) SetPrivateKey(key core.Key) {
+	m.privateKey = key
+}
+
+// PrivateKey returns the crypto suite representation of the private key
+func (m MockSigningIdentity) PrivateKey() core.Key {
+	return m.privateKey
 }

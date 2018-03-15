@@ -21,9 +21,7 @@ type ClientContext interface {
 	core.Providers
 	msp.Providers
 	Providers
-	MSPID() string
-	SerializedIdentity() ([]byte, error)
-	PrivateKey() core.Key
+	msp.SigningIdentity
 }
 
 // InfraProvider enables access to fabric objects such as peer and user based on config or

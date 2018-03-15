@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 )
 
 func TestEndpoint(t *testing.T) {
@@ -118,7 +119,7 @@ func (c *mockConfig) PeerConfigByURL(url string) (*core.PeerConfig, error) {
 
 func newMockContext() *fabmocks.MockContext {
 	ctx := fabmocks.NewMockContext(
-		fabmocks.NewMockUser("user1"),
+		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 	)
 	ctx.SetConfig(newMockConfig())
 	return ctx

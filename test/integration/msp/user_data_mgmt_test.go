@@ -119,19 +119,19 @@ func TestWithCustomStores(t *testing.T) {
 
 	// Let's try to find user's key and cert in our custom stores
 	// and compare them to what is returned by msp.GetUser()
-	user, err := mspClient.GetUser(username)
+	user, err := mspClient.GetSigningIdentity(username)
 	if err != nil {
 		t.Fatalf("GetUser failed: %v", err)
 	}
-	userDataFromStore, err := customUserStore.Load(mspctx.UserIdentifier{MSPID: getMyMSPID(t, config), Name: username})
+	userDataFromStore, err := customUserStore.Load(mspctx.IdentityIdentifier{MSPID: getMyMSPID(t, config), ID: username})
 	if err != nil {
 		t.Fatalf("Load user failed: %v", err)
 	}
 
-	if userDataFromStore.Name != user.Name() {
+	if userDataFromStore.ID != user.Identifier().ID {
 		t.Fatalf("username doesn't match")
 	}
-	if userDataFromStore.MSPID != user.MSPID() {
+	if userDataFromStore.MSPID != user.Identifier().MSPID {
 		t.Fatalf("username doesn't match")
 	}
 	if hex.EncodeToString(user.EnrollmentCertificate()) != hex.EncodeToString(userDataFromStore.EnrollmentCertificate) {

@@ -23,18 +23,18 @@ func NewFileCertStore(cryptoConfigMSPPath string) (core.KVStore, error) {
 	opts := &keyvaluestore.FileKeyValueStoreOptions{
 		Path: cryptoConfigMSPPath,
 		KeySerializer: func(key interface{}) (string, error) {
-			ck, ok := key.(*msp.CertKey)
+			ck, ok := key.(*msp.IdentityIdentifier)
 			if !ok {
 				return "", errors.New("converting key to CertKey failed")
 			}
-			if ck == nil || ck.MSPID == "" || ck.Username == "" {
+			if ck == nil || ck.MSPID == "" || ck.ID == "" {
 				return "", errors.New("invalid key")
 			}
 
 			// TODO: refactor to case insensitive or remove eventually.
-			r := strings.NewReplacer("{userName}", ck.Username, "{username}", ck.Username)
+			r := strings.NewReplacer("{userName}", ck.ID, "{username}", ck.ID)
 			certDir := path.Join(r.Replace(cryptoConfigMSPPath), "signcerts")
-			return path.Join(certDir, fmt.Sprintf("%s@%s-cert.pem", ck.Username, orgName)), nil
+			return path.Join(certDir, fmt.Sprintf("%s@%s-cert.pem", ck.ID, orgName)), nil
 		},
 	}
 	return keyvaluestore.New(opts)

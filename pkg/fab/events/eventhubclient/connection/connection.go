@@ -67,7 +67,7 @@ func (c *EventHubConnection) EventHubStream() pb.Events_ChatClient {
 
 // Send sends an event to the event hub server
 func (c *EventHubConnection) Send(emsg *pb.Event) error {
-	creator, err := c.Context().SerializedIdentity()
+	creator, err := c.Context().Serialize()
 	if err != nil {
 		return errors.WithMessage(err, "error getting creator identity")
 	}

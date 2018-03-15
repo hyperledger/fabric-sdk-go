@@ -21,15 +21,15 @@ type CertFileUserStore struct {
 	store core.KVStore
 }
 
-func userIdentifierFromUser(user msp.UserData) msp.UserIdentifier {
-	return msp.UserIdentifier{
+func userIdentifierFromUser(user msp.UserData) msp.IdentityIdentifier {
+	return msp.IdentityIdentifier{
 		MSPID: user.MSPID,
-		Name:  user.Name,
+		ID:    user.ID,
 	}
 }
 
-func storeKeyFromUserIdentifier(key msp.UserIdentifier) string {
-	return key.Name + "@" + key.MSPID + "-cert.pem"
+func storeKeyFromUserIdentifier(key msp.IdentityIdentifier) string {
+	return key.ID + "@" + key.MSPID + "-cert.pem"
 }
 
 // NewCertFileUserStore1 creates a new instance of CertFileUserStore
@@ -54,7 +54,7 @@ func NewCertFileUserStore(path string) (*CertFileUserStore, error) {
 }
 
 // Load returns the User stored in the store for a key.
-func (s *CertFileUserStore) Load(key msp.UserIdentifier) (*msp.UserData, error) {
+func (s *CertFileUserStore) Load(key msp.IdentityIdentifier) (*msp.UserData, error) {
 	cert, err := s.store.Load(storeKeyFromUserIdentifier(key))
 	if err != nil {
 		if err == core.ErrKeyValueNotFound {
@@ -68,7 +68,7 @@ func (s *CertFileUserStore) Load(key msp.UserIdentifier) (*msp.UserData, error) 
 	}
 	userData := &msp.UserData{
 		MSPID: key.MSPID,
-		Name:  key.Name,
+		ID:    key.ID,
 		EnrollmentCertificate: certBytes,
 	}
 	return userData, nil
@@ -76,11 +76,11 @@ func (s *CertFileUserStore) Load(key msp.UserIdentifier) (*msp.UserData, error) 
 
 // Store stores a User into store
 func (s *CertFileUserStore) Store(user *msp.UserData) error {
-	key := storeKeyFromUserIdentifier(msp.UserIdentifier{MSPID: user.MSPID, Name: user.Name})
+	key := storeKeyFromUserIdentifier(msp.IdentityIdentifier{MSPID: user.MSPID, ID: user.ID})
 	return s.store.Store(key, user.EnrollmentCertificate)
 }
 
 // Delete deletes a User from store
-func (s *CertFileUserStore) Delete(key msp.UserIdentifier) error {
+func (s *CertFileUserStore) Delete(key msp.IdentityIdentifier) error {
 	return s.store.Delete(storeKeyFromUserIdentifier(key))
 }

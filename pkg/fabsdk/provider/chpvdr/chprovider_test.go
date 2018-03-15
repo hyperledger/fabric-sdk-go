@@ -16,22 +16,23 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
 type mockClientContext struct {
 	context.Providers
-	msp.Identity
+	msp.SigningIdentity
 }
 
 func TestBasicValidChannel(t *testing.T) {
 	ctx := mocks.NewMockProviderContext()
 
-	user := mocks.NewMockUser("user")
+	user := mspmocks.NewMockSigningIdentity("user", "user")
 
 	clientCtx := &mockClientContext{
-		Providers: ctx,
-		Identity:  user,
+		Providers:       ctx,
+		SigningIdentity: user,
 	}
 
 	pf := &MockProviderFactory{ctx: clientCtx}

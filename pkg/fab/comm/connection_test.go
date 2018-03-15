@@ -15,6 +15,7 @@ import (
 
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -65,7 +66,7 @@ func TestConnection(t *testing.T) {
 	if conn.Stream() == nil {
 		t.Fatalf("got invalid stream")
 	}
-	if _, err := context.SerializedIdentity(); err != nil {
+	if _, err := context.Serialize(); err != nil {
 		t.Fatalf("error getting identity")
 	}
 
@@ -85,7 +86,7 @@ var testServer *eventmocks.MockEventhubServer
 var endorserAddr []string
 
 func newMockContext() *fabmocks.MockContext {
-	context := fabmocks.NewMockContext(fabmocks.NewMockUser("test"))
+	context := fabmocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", "test"))
 	context.SetCustomInfraProvider(NewMockInfraProvider())
 	return context
 }

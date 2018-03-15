@@ -31,6 +31,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -136,7 +137,7 @@ func TestJoinChannelWithFilter(t *testing.T) {
 }
 
 func TestNoSigningUserFailure(t *testing.T) {
-	user := fcmocks.NewMockUserWithMSPID("test", "")
+	user := mspmocks.NewMockSigningIdentity("test", "")
 
 	// Setup client without user context
 	fabCtx := fcmocks.NewMockContext(user)
@@ -144,8 +145,8 @@ func TestNoSigningUserFailure(t *testing.T) {
 	fabCtx.SetConfig(config)
 
 	clientCtx := createClientContext(contextImpl.Client{
-		Providers: fabCtx,
-		Identity:  fabCtx,
+		Providers:       fabCtx,
+		SigningIdentity: fabCtx,
 	})
 
 	_, err := New(clientCtx)
@@ -1267,7 +1268,7 @@ func setupResMgmtClient(fabCtx context.Client, discErr error, t *testing.T, opts
 }
 
 func setupTestContext(username string, mspID string) *fcmocks.MockContext {
-	user := fcmocks.NewMockUserWithMSPID(username, mspID)
+	user := mspmocks.NewMockSigningIdentity(username, mspID)
 	ctx := fcmocks.NewMockContext(user)
 	return ctx
 }
@@ -1280,7 +1281,7 @@ func setupCustomOrderer(ctx *fcmocks.MockContext, mockOrderer fab.Orderer) *fcmo
 }
 
 func setupTestContextWithDiscoveryError(username string, mspID string, discErr error) *fcmocks.MockContext {
-	user := fcmocks.NewMockUserWithMSPID(username, mspID)
+	user := mspmocks.NewMockSigningIdentity(username, mspID)
 	dscPvdr, _ := setupTestDiscovery(discErr, nil)
 	//ignore err and set whatever you get in dscPvdr
 	ctx := fcmocks.NewMockContextWithCustomDiscovery(user, dscPvdr)
@@ -1390,15 +1391,15 @@ func TestSaveChannelSuccess(t *testing.T) {
 func TestSaveChannelFailure(t *testing.T) {
 
 	// Set up context with error in create channel
-	user := fcmocks.NewMockUser("test")
+	user := mspmocks.NewMockSigningIdentity("test", "test")
 	errCtx := fcmocks.NewMockContext(user)
 	network := getNetworkConfig(t)
 	errCtx.SetConfig(network)
 	fabCtx := setupTestContext("user", "Org1Msp1")
 
 	clientCtx := createClientContext(contextImpl.Client{
-		Providers: fabCtx,
-		Identity:  fabCtx,
+		Providers:       fabCtx,
+		SigningIdentity: fabCtx,
 	})
 
 	cc, err := New(clientCtx)
@@ -1522,7 +1523,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	assert.Nil(t, err, "opening channel config file failed")
 	defer r1.Close()
 
-	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1, SigningIdentities: []msp.Identity{}}
+	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1, SigningIdentities: []msp.SigningIdentity{}}
 	err = cc.SaveChannel(req, WithOrdererURL(""))
 	if err != nil {
 		t.Fatalf("Failed to save channel with default signing identity: %s", err)
@@ -1533,8 +1534,8 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	assert.Nil(t, err, "opening channel config file failed")
 	defer r2.Close()
 
-	secondCtx := fcmocks.NewMockContext(fcmocks.NewMockUser("second"))
-	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2, SigningIdentities: []msp.Identity{cc.ctx, secondCtx}}
+	secondCtx := fcmocks.NewMockContext(mspmocks.NewMockSigningIdentity("second", "second"))
+	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2, SigningIdentities: []msp.SigningIdentity{cc.ctx, secondCtx}}
 	err = cc.SaveChannel(req, WithOrdererURL(""))
 	if err != nil {
 		t.Fatalf("Failed to save channel with multiple signing identities: %s", err)

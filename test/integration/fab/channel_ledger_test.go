@@ -50,7 +50,7 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []string) {
 		t.Fatalf("creating peers failed: %v", err)
 	}
 
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, channelConfigFile), SigningIdentities: []msp.Identity{adminIdentity}}
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, channelConfigFile), SigningIdentities: []msp.SigningIdentity{adminIdentity}}
 	err = integration.InitializeChannel(sdk, orgName, req, targets)
 	if err != nil {
 		t.Fatalf("failed to ensure channel has been initialized: %s", err)

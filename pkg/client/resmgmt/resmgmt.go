@@ -88,9 +88,9 @@ type requestOptions struct {
 //SaveChannelRequest used to save channel request
 type SaveChannelRequest struct {
 	ChannelID         string
-	ChannelConfig     io.Reader      // ChannelConfig data source
-	ChannelConfigPath string         // Convenience option to use the named file as ChannelConfig reader
-	SigningIdentities []msp.Identity // Users that sign channel configuration
+	ChannelConfig     io.Reader             // ChannelConfig data source
+	ChannelConfigPath string                // Convenience option to use the named file as ChannelConfig reader
+	SigningIdentities []msp.SigningIdentity // Users that sign channel configuration
 	// TODO: support pre-signed signature blocks
 }
 
@@ -155,10 +155,10 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 	//check if target filter was set - if not set the default
 	if resourceClient.filter == nil {
 		// Default target filter is based on user msp
-		if ctx.MSPID() == "" {
+		if ctx.Identifier().MSPID == "" {
 			return nil, errors.New("mspID not available in user context")
 		}
-		rcFilter := &mspFilter{mspID: ctx.MSPID()}
+		rcFilter := &mspFilter{mspID: ctx.Identifier().MSPID}
 		resourceClient.filter = rcFilter
 	}
 	return resourceClient, nil
@@ -670,7 +670,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 
 	// Signing user has to belong to one of configured channel organisations
 	// In case that order org is one of channel orgs we can use context user
-	var signers []msp.Identity
+	var signers []msp.SigningIdentity
 
 	if len(req.SigningIdentities) > 0 {
 		for _, id := range req.SigningIdentities {
@@ -698,8 +698,8 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	for _, signer := range signers {
 
 		sigCtx := contextImpl.Client{
-			Identity:  signer,
-			Providers: rc.ctx,
+			SigningIdentity: signer,
+			Providers:       rc.ctx,
 		}
 
 		configSignature, err := resource.CreateConfigSignature(&sigCtx, chConfig)

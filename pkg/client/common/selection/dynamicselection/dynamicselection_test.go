@@ -16,10 +16,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
@@ -473,7 +474,7 @@ func (lbp *customLBP) Choose(peerGroups []pgresolver.PeerGroup) pgresolver.PeerG
 }
 
 func setupMockContext(username, orgName string) context.Providers {
-	user := mocks.NewMockUserWithMSPID(username, orgName)
+	user := mspmocks.NewMockSigningIdentity(username, orgName)
 	ctx := mocks.NewMockContext(user)
 	return ctx
 }

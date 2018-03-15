@@ -40,7 +40,7 @@ func TestUserMethods(t *testing.T) {
 	// Missing enrollment cert
 	userData := &msp.UserData{
 		MSPID: testUserMSPID,
-		Name:  testUsername,
+		ID:    testUsername,
 	}
 	_, err = newUser(userData, cryptoSuite)
 	if err == nil {
@@ -64,12 +64,12 @@ func TestUserMethods(t *testing.T) {
 	}
 
 	// Check MSPID
-	if user.MSPID() != testUserMSPID {
+	if user.Identifier().MSPID != testUserMSPID {
 		t.Fatal("user.SetMSPID Failed to MSP.")
 	}
 
 	// Check Name
-	if user.Name() != testUsername {
+	if user.Identifier().ID != testUsername {
 		t.Fatalf("NewUser create wrong user")
 	}
 

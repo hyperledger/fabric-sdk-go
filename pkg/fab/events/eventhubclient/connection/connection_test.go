@@ -18,6 +18,7 @@ import (
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -199,7 +200,7 @@ func newPeerConfig(eventURL string) *core.PeerConfig {
 }
 
 func newMockContext() *fabmocks.MockContext {
-	context := fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
+	context := fabmocks.NewMockContext(mspmocks.NewMockSigningIdentity("user1", "Org1MSP"))
 	context.SetCustomInfraProvider(comm.NewMockInfraProvider())
 	return context
 }

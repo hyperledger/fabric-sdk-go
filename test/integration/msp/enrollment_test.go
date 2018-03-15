@@ -92,12 +92,6 @@ func TestRegisterEnroll(t *testing.T) {
 		t.Fatalf("GetSigningIdentity failed: %v", err)
 	}
 
-	// Get the new user's full information
-	_, err = mspClient.GetUser(username)
-	if err != nil {
-		t.Fatalf("GetSigningIdentity failed: %v", err)
-	}
-
 }
 
 func getRegistrarEnrollmentCredentials(t *testing.T, config core.Config) (string, string) {

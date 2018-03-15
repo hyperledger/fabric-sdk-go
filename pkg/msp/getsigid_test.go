@@ -108,7 +108,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	}
 	user1 := &msp.UserData{
 		MSPID: mspID,
-		Name:  testUsername,
+		ID:    testUsername,
 		EnrollmentCertificate: []byte(testCert),
 	}
 	err = userStore.Store(user1)
@@ -134,13 +134,13 @@ func checkSigningIdentity(mgr msp.IdentityManager, user string) error {
 	if id == nil {
 		return errors.New("SigningIdentity is nil")
 	}
-	if id.EnrollmentCert == nil {
+	if id.EnrollmentCertificate() == nil {
 		return errors.New("Enrollment cert is missing")
 	}
-	if id.MSPID == "" {
+	if id.Identifier().MSPID == "" {
 		return errors.New("MSPID is missing")
 	}
-	if id.PrivateKey == nil {
+	if id.PrivateKey() == nil {
 		return errors.New("private key is missing")
 	}
 	return nil

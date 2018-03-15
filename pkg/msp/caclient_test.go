@@ -47,7 +47,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 
 	// Successful enrollment
 	enrollUsername := createRandomName()
-	enrolledUserData, err := f.userStore.Load(msp.UserIdentifier{MSPID: orgMSPID, Name: enrollUsername})
+	enrolledUserData, err := f.userStore.Load(msp.IdentityIdentifier{MSPID: orgMSPID, ID: enrollUsername})
 	if err != msp.ErrUserNotFound {
 		t.Fatalf("Expected to not find user in user store")
 	}
@@ -55,7 +55,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("identityManager Enroll return error %v", err)
 	}
-	enrolledUserData, err = f.userStore.Load(msp.UserIdentifier{MSPID: orgMSPID, Name: enrollUsername})
+	enrolledUserData, err = f.userStore.Load(msp.IdentityIdentifier{MSPID: orgMSPID, ID: enrollUsername})
 	if err != nil {
 		t.Fatalf("Expected to load user from user store")
 	}
@@ -74,7 +74,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newUser return error %v", err)
 	}
-	err = f.caClient.Reenroll(enrolledUser.Name())
+	err = f.caClient.Reenroll(enrolledUser.Identifier().ID)
 	if err != nil {
 		t.Fatalf("Reenroll return error %v", err)
 	}
@@ -220,7 +220,7 @@ func TestRevoke(t *testing.T) {
 	}
 
 	mockKey := bccspwrapper.GetKey(&mocks.MockKey{})
-	user := mocks.NewMockUser("test")
+	user := mocks.NewMockSigningIdentity("test", "test")
 	user.SetEnrollmentCertificate(readCert(t))
 	user.SetPrivateKey(mockKey)
 

@@ -73,16 +73,16 @@ func TestMSP(t *testing.T) {
 		t.Fatalf("Expected to find user")
 	}
 
-	enrolledUser, err := msp.GetUser(enrollUsername)
+	enrolledUser, err := msp.GetSigningIdentity(enrollUsername)
 	if err != nil {
 		t.Fatalf("Expected to find user")
 	}
 
-	if enrolledUser.Name() != enrollUsername {
+	if enrolledUser.Identifier().ID != enrollUsername {
 		t.Fatalf("Enrolled user name doesn't match")
 	}
 
-	if enrolledUser.MSPID() != "Org1MSP" {
+	if enrolledUser.Identifier().MSPID != "Org1MSP" {
 		t.Fatalf("Enrolled user mspID doesn't match")
 	}
 
@@ -96,7 +96,7 @@ func TestMSP(t *testing.T) {
 	}
 
 	// Reenroll with appropriate user
-	err = msp.Reenroll(enrolledUser.Name())
+	err = msp.Reenroll(enrolledUser.Identifier().ID)
 	if err != nil {
 		t.Fatalf("Reenroll return error %v", err)
 	}
@@ -114,16 +114,16 @@ func TestMSP(t *testing.T) {
 		t.Fatalf("Enroll return error %v", err)
 	}
 
-	org2EnrolledUser, err := msp.GetUser(org2lUsername)
+	org2EnrolledUser, err := msp.GetSigningIdentity(org2lUsername)
 	if err != nil {
 		t.Fatalf("Expected to find user")
 	}
 
-	if org2EnrolledUser.Name() != org2lUsername {
+	if org2EnrolledUser.Identifier().ID != org2lUsername {
 		t.Fatalf("Enrolled user name doesn't match")
 	}
 
-	if org2EnrolledUser.MSPID() != "Org2MSP" {
+	if org2EnrolledUser.Identifier().MSPID != "Org2MSP" {
 		t.Fatalf("Enrolled user mspID doesn't match")
 	}
 

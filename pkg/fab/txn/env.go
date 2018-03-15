@@ -60,7 +60,7 @@ func NewHeader(ctx contextApi.Client, channelID string) (*TransactionHeader, err
 		return nil, errors.WithMessage(err, "nonce creation failed")
 	}
 
-	creator, err := ctx.SerializedIdentity()
+	creator, err := ctx.Serialize()
 	if err != nil {
 		return nil, errors.WithMessage(err, "identity from context failed")
 	}

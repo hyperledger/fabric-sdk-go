@@ -20,6 +20,6 @@ func (m *MockUserStore) Store(*msp.UserData) error {
 }
 
 // Load ...
-func (m *MockUserStore) Load(msp.UserIdentifier) (*msp.UserData, error) {
+func (m *MockUserStore) Load(identifier msp.IdentityIdentifier) (*msp.UserData, error) {
 	return &msp.UserData{}, nil
 }
