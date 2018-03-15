@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"net"
 	"net/http"
 
 	"time"
@@ -70,13 +71,14 @@ type MockFabricCAServer struct {
 }
 
 // Start fabric CA mock server
-func (s *MockFabricCAServer) Start(address string, cryptoSuite core.CryptoSuite) error {
+func (s *MockFabricCAServer) Start(lis net.Listener, cryptoSuite core.CryptoSuite) {
 
 	if s.running {
-		return nil
+		panic("already started")
 	}
 
-	s.address = address
+	addr := lis.Addr().String()
+	s.address = addr
 	s.cryptoSuite = cryptoSuite
 
 	// Register request handlers
@@ -85,12 +87,12 @@ func (s *MockFabricCAServer) Start(address string, cryptoSuite core.CryptoSuite)
 	http.HandleFunc("/reenroll", s.enroll)
 
 	server := &http.Server{
-		Addr:      s.address,
+		Addr:      addr,
 		TLSConfig: nil,
 	}
 
 	go func() {
-		err := server.ListenAndServe()
+		err := server.Serve(lis)
 		if err != nil {
 			panic("HTTP Server: Failed to start")
 		}
@@ -99,8 +101,12 @@ func (s *MockFabricCAServer) Start(address string, cryptoSuite core.CryptoSuite)
 	logger.Infof("HTTP Server started on %s", s.address)
 
 	s.running = true
-	return nil
 
+}
+
+// Running returns the status of the mock server
+func (s *MockFabricCAServer) Running() bool {
+	return s.running
 }
 
 func (s *MockFabricCAServer) addKeyToKeyStore(privateKey []byte) error {

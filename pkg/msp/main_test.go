@@ -9,6 +9,7 @@ package msp
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"strings"
 	"testing"
@@ -24,7 +25,7 @@ import (
 
 const (
 	org1                        = "Org1"
-	caServerURL                 = "http://localhost:8090"
+	caServerURLListen           = "http://127.0.0.1:0"
 	dummyUserStorePath          = "/tmp/userstore"
 	fullConfigPath              = "testdata/config_test.yaml"
 	wrongURLConfigPath          = "testdata/config_wrong_url.yaml"
@@ -32,6 +33,8 @@ const (
 	embeddedRegistrarConfigPath = "testdata/config_embedded_registrar.yaml"
 	noRegistrarConfigPath       = "testdata/config_no_registrar.yaml"
 )
+
+var caServerURL string
 
 type textFixture struct {
 	config          core.Config
@@ -49,8 +52,19 @@ func (f *textFixture) setup(configPath string) {
 		configPath = fullConfigPath
 	}
 
+	var lis net.Listener
 	var err error
-	f.config, err = config.FromFile(configPath)()
+	if !caServer.Running() {
+		lis, err = net.Listen("tcp", strings.TrimPrefix(caServerURLListen, "http://"))
+		if err != nil {
+			panic(fmt.Sprintf("Error starting CA Server %s", err))
+		}
+
+		caServerURL = "http://" + lis.Addr().String()
+	}
+
+	cfgRaw := readConfigWithReplacement(configPath, "http://localhost:8050", caServerURL)
+	f.config, err = config.FromRaw(cfgRaw, "yaml")()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
@@ -64,6 +78,7 @@ func (f *textFixture) setup(configPath string) {
 	if f.cryptoSuite == nil {
 		panic(fmt.Sprintf("Failed initialize cryptoSuite: %v", err))
 	}
+
 	if f.config.CredentialStorePath() != "" {
 		f.userStore, err = NewCertFileUserStore(f.config.CredentialStorePath())
 		if err != nil {
@@ -83,7 +98,9 @@ func (f *textFixture) setup(configPath string) {
 	}
 
 	// Start Http Server if it's not running
-	caServer.Start(strings.TrimPrefix(caServerURL, "http://"), f.cryptoSuite)
+	if !caServer.Running() {
+		caServer.Start(lis, f.cryptoSuite)
+	}
 }
 
 func (f *textFixture) close() {
@@ -98,6 +115,16 @@ func readCert(t *testing.T) []byte {
 		t.Fatalf("Error reading cert: %s", err.Error())
 	}
 	return cert
+}
+
+func readConfigWithReplacement(path string, origURL, newURL string) []byte {
+	cfgRaw, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config [%s]", err))
+	}
+
+	updatedCfg := strings.Replace(string(cfgRaw), origURL, newURL, -1)
+	return []byte(updatedCfg)
 }
 
 func cleanup(storePath string) {

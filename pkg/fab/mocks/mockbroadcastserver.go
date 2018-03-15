@@ -83,14 +83,16 @@ func (m *MockBroadcastServer) Deliver(server po.AtomicBroadcast_DeliverServer) e
 }
 
 //StartMockBroadcastServer starts mock server for unit testing purpose
-func StartMockBroadcastServer(broadcastTestURL string, grpcServer *grpc.Server) *MockBroadcastServer {
+func StartMockBroadcastServer(broadcastTestURL string, grpcServer *grpc.Server) (*MockBroadcastServer, string) {
 	lis, err := net.Listen("tcp", broadcastTestURL)
 	if err != nil {
 		panic(fmt.Sprintf("Error starting BroadcastServer %s", err))
 	}
+	addr := lis.Addr().String()
+
 	broadcastServer := new(MockBroadcastServer)
 	po.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
 	go grpcServer.Serve(lis)
 
-	return broadcastServer
+	return broadcastServer, addr
 }

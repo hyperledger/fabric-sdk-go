@@ -69,7 +69,7 @@ func TestChannelConfigWithPeerError(t *testing.T) {
 func TestChannelConfigWithOrdererError(t *testing.T) {
 
 	ctx := setupTestContext()
-	o, err := orderer.New(ctx.Config(), orderer.WithURL("localhost:7054"))
+	o, err := orderer.New(ctx.Config(), orderer.WithURL("localhost:9999"))
 	assert.Nil(t, err)
 	channelConfig, err := New(channelID, WithOrderer(o))
 	if err != nil {

@@ -31,8 +31,8 @@ import (
 )
 
 const (
-	peer1URL    = "localhost:7050"
-	peer2URL    = "localhost:7054"
+	peer1URL    = "localhost:0"
+	peer2URL    = "localhost:0"
 	testAddress = "127.0.0.1:0"
 )
 

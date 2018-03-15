@@ -25,9 +25,11 @@ import (
 )
 
 const (
-	eventAddress = "localhost:7053"
-	eventURL     = "grpc://" + eventAddress
+	eventAddressListen = "localhost:0"
 )
+
+var eventAddress string
+var eventURL string
 
 func TestInvalidConnectionOpts(t *testing.T) {
 	if _, err := New(newMockContext(), fabmocks.NewMockChannelCfg("channelid"), "grpcs://invalidhost:7053"); err == nil {
@@ -177,10 +179,13 @@ func TestMain(m *testing.M) {
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 
-	lis, err := net.Listen("tcp", eventAddress)
+	lis, err := net.Listen("tcp", eventAddressListen)
 	if err != nil {
 		panic(fmt.Sprintf("Error starting events listener %s", err))
 	}
+
+	eventAddress = lis.Addr().String()
+	eventURL = "grpc://" + eventAddress
 
 	ehServer = eventmocks.NewMockEventhubServer()
 

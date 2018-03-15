@@ -43,7 +43,7 @@ func verifyPeer(t *testing.T, peer fab.Peer, url string) {
 func TestCreatePeerFromConfig(t *testing.T) {
 	p := newMockInfraProvider(t)
 
-	url := "grpc://localhost:8080"
+	url := "grpc://localhost:9999"
 
 	peerCfg := core.NetworkPeer{
 		PeerConfig: core.PeerConfig{
