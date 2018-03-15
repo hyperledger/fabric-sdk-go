@@ -803,6 +803,10 @@ func (c *Config) tryMatchingPeerConfig(peerName string) (*core.PeerConfig, error
 			if !ok {
 				return nil, errors.WithMessage(err, "failed to load config from matched Peer")
 			}
+
+			// Make a copy of GRPC options (as it is manipulated below)
+			peerConfig.GRPCOptions = copyPropertiesMap(peerConfig.GRPCOptions)
+
 			_, isPortPresentInPeerName := c.getPortIfPresent(peerName)
 			//if substitution url is empty, use the same network peer url
 			if peerMatchConfig.URLSubstitutionExp == "" {
@@ -900,6 +904,10 @@ func (c *Config) tryMatchingOrdererConfig(ordererName string) (*core.OrdererConf
 			if !ok {
 				return nil, errors.WithMessage(err, "failed to load config from matched Orderer")
 			}
+
+			// Make a copy of GRPC options (as it is manipulated below)
+			ordererConfig.GRPCOptions = copyPropertiesMap(ordererConfig.GRPCOptions)
+
 			_, isPortPresentInOrdererName := c.getPortIfPresent(ordererName)
 			//if substitution url is empty, use the same network orderer url
 			if ordererMatchConfig.URLSubstitutionExp == "" {
@@ -948,6 +956,14 @@ func (c *Config) tryMatchingOrdererConfig(ordererName string) (*core.OrdererConf
 		}
 	}
 	return nil, errors.New("no matching orderer config found")
+}
+
+func copyPropertiesMap(origMap map[string]interface{}) map[string]interface{} {
+	newMap := make(map[string]interface{}, len(origMap))
+	for k, v := range origMap {
+		newMap[k] = v
+	}
+	return newMap
 }
 
 func (c *Config) findMatchingPeer(peerName string) (string, error) {
