@@ -104,7 +104,7 @@ func newEventHubContext(ctx context.Client) context.Client {
 // that provides additional connection options and filters by
 // the current MSP ID
 func (ctx *ehContext) DiscoveryProvider() fab.DiscoveryProvider {
-	return endpoint.NewDiscoveryProvider(ctx.Client, endpoint.WithTargetFilter(newMSPFilter(ctx.MSPID())))
+	return endpoint.NewDiscoveryProvider(ctx.Client, endpoint.WithTargetFilter(newMSPFilter(ctx.Identifier().MSPID)))
 }
 
 type mspFilter struct {

@@ -21,6 +21,7 @@ import (
 	mock_context "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -30,7 +31,7 @@ const (
 )
 
 func TestNewTransactionProposal(t *testing.T) {
-	user := mocks.NewMockUserWithMSPID("test", "1234")
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
 	request := fab.ChaincodeInvokeRequest{
@@ -60,7 +61,7 @@ func TestNewTransactionProposal(t *testing.T) {
 }
 
 func TestSendTransactionProposal(t *testing.T) {
-	user := mocks.NewMockUserWithMSPID("test", "1234")
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
 	ctx := mocks.NewMockContext(user)
 	responseMessage := "success"
 
@@ -100,7 +101,7 @@ func TestSendTransactionProposal(t *testing.T) {
 }
 
 func TestNewTransactionProposalParams(t *testing.T) {
-	user := mocks.NewMockUserWithMSPID("test", "1234")
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
 	request := fab.ChaincodeInvokeRequest{
@@ -158,7 +159,7 @@ func TestConcurrentPeers(t *testing.T) {
 	const numPeers = 10000
 	peers := setupMassiveTestPeers(numPeers)
 
-	user := mocks.NewMockUserWithMSPID("test", "1234")
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
 	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
@@ -178,7 +179,7 @@ func TestConcurrentPeers(t *testing.T) {
 
 func TestSendTransactionProposalToProcessors(t *testing.T) {
 
-	user := mocks.NewMockUserWithMSPID("test", "1234")
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
 	mockCtrl := gomock.NewController(t)
@@ -227,7 +228,7 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 func TestProposalResponseError(t *testing.T) {
 	testError := fmt.Errorf("Test Error")
 
-	user := mocks.NewMockUserWithMSPID("test", "1234")
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
 	mockCtrl := gomock.NewController(t)

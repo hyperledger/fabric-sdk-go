@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -152,7 +153,7 @@ func TestJoinChannel(t *testing.T) {
 }
 
 func setupContext() context.Client {
-	user := mocks.NewMockUser("test")
+	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
 	return ctx
 }

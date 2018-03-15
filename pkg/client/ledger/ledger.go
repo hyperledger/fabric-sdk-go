@@ -81,10 +81,10 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 	// check if target filter was set - if not set the default
 	if ledgerClient.filter == nil {
 		// Default target filter is based on user msp
-		if channelContext.MSPID() == "" {
+		if channelContext.Identifier().MSPID == "" {
 			return nil, errors.New("mspID not available in user context")
 		}
-		filter := &mspFilter{mspID: channelContext.MSPID()}
+		filter := &mspFilter{mspID: channelContext.Identifier().MSPID}
 		ledgerClient.filter = filter
 	}
 

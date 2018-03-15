@@ -150,7 +150,7 @@ func (c *DeliverConnection) createSignedEnvelope(msg proto.Message) (*cb.Envelop
 		return nil, err
 	}
 
-	identity, err := c.Context().SerializedIdentity()
+	identity, err := c.Context().Serialize()
 	if err != nil {
 		return nil, err
 	}

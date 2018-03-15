@@ -7,30 +7,76 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	"github.com/pkg/errors"
 )
 
 // MockIdentityManager is a mock IdentityManager
 type MockIdentityManager struct {
+	users map[string]msp.SigningIdentity
+}
+
+// UsersOptions holds optional users
+type UsersOptions struct {
+	users map[string]msp.SigningIdentity
+}
+
+// UsersOption describes a functional parameter for the New constructor
+type UsersOption func(*UsersOptions) error
+
+// WithUsers option
+func WithUsers(users map[string]msp.SigningIdentity) UsersOption {
+	return func(mgr *UsersOptions) error {
+		if mgr.users != nil {
+			return errors.New("already initialized")
+		}
+		mgr.users = users
+		return nil
+	}
+}
+
+// WithUser option
+func WithUser(username string, org string) UsersOption {
+	return func(mgr *UsersOptions) error {
+		if mgr.users != nil {
+			return errors.New("already initialized")
+		}
+		mgr.users = make(map[string]msp.SigningIdentity)
+		mgr.users[username] = mspmocks.NewMockSigningIdentity(username, org)
+		return nil
+	}
 }
 
 // NewMockIdentityManager Constructor for a identity manager.
-func NewMockIdentityManager(orgName string, cryptoProvider core.CryptoSuite, config core.Config) (msp.IdentityManager, error) {
-	mcm := MockIdentityManager{}
-	return &mcm, nil
+func NewMockIdentityManager(opts ...UsersOption) msp.IdentityManager {
+
+	manager := MockIdentityManager{}
+
+	usersOptions := UsersOptions{}
+
+	for _, param := range opts {
+		err := param(&usersOptions)
+		if err != nil {
+			panic(fmt.Errorf("failed to create IdentityManager: %v", err))
+		}
+	}
+	if usersOptions.users != nil {
+		manager.users = usersOptions.users
+	} else {
+		manager.users = make(map[string]msp.SigningIdentity)
+	}
+
+	return &manager
 }
 
 // GetSigningIdentity will return an identity that can be used to cryptographically sign an object
-func (mgr *MockIdentityManager) GetSigningIdentity(username string) (*msp.SigningIdentity, error) {
-
-	si := msp.SigningIdentity{
-		MSPID: "Org1MSP",
+func (mgr *MockIdentityManager) GetSigningIdentity(id string) (msp.SigningIdentity, error) {
+	si, ok := mgr.users[id]
+	if !ok {
+		return nil, msp.ErrUserNotFound
 	}
-	return &si, nil
-}
-
-// GetUser will return a user for a given user name
-func (mgr *MockIdentityManager) GetUser(username string) (msp.User, error) {
-	return nil, nil
+	return si, nil
 }

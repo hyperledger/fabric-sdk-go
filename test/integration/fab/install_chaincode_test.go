@@ -171,6 +171,6 @@ func getContext(sdk *fabsdk.FabricSDK, user string, orgName string) (reqContext.
 		return nil, nil, errors.WithMessage(err, "create context failed")
 	}
 
-	reqCtx, cancel := context.NewRequest(&context.Client{Providers: clientContext, Identity: clientContext}, context.WithTimeoutType(core.PeerResponse))
+	reqCtx, cancel := context.NewRequest(&context.Client{Providers: clientContext, SigningIdentity: clientContext}, context.WithTimeoutType(core.PeerResponse))
 	return reqCtx, cancel, nil
 }

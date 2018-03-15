@@ -61,7 +61,7 @@ func newCCPolicyProvider(providers api.Providers, channelID string, username str
 		return nil, errors.New("invalid options to create identity, invalid org name")
 	}
 
-	identity, err := mgr.GetUser(username)
+	identity, err := mgr.GetSigningIdentity(username)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to create identity for ccl policy provider")
 	}
@@ -83,7 +83,7 @@ type ccPolicyProvider struct {
 	config      core.Config
 	providers   context.Providers
 	channelID   string
-	identity    msp.Identity
+	identity    msp.SigningIdentity
 	targetPeers []core.ChannelPeer
 	ccDataMap   map[string]*ccprovider.ChaincodeData // TODO: Add expiry and configurable timeout for map entries
 	mutex       sync.RWMutex
@@ -214,7 +214,7 @@ func (dp *ccPolicyProvider) getChannelContext() context.ChannelProvider {
 	return func() (context.Channel, error) {
 		//Get Client Context
 		clientProvider := func() (context.Client, error) {
-			return &contextImpl.Client{Providers: dp.providers, Identity: dp.identity}, nil
+			return &contextImpl.Client{Providers: dp.providers, SigningIdentity: dp.identity}, nil
 		}
 
 		return contextImpl.NewChannel(clientProvider, dp.channelID)

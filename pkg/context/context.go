@@ -22,7 +22,7 @@ import (
 // Client supplies the configuration and signing identity to client objects.
 type Client struct {
 	context.Providers
-	msp.Identity
+	msp.SigningIdentity
 }
 
 //Channel supplies the configuration for channel context client

@@ -180,28 +180,15 @@ func (c *Client) Revoke(request *RevocationRequest) (*RevocationResponse, error)
 	}, nil
 }
 
-// GetSigningIdentity returns a signing identity for the given user name
-func (c *Client) GetSigningIdentity(username string) (*SigningIdentity, error) {
-	user, err := c.GetUser(username)
-	if err != nil {
-		if err == mspctx.ErrUserNotFound {
-			return nil, ErrUserNotFound
-		}
-		return nil, err
-	}
-	signingIdentity := &SigningIdentity{MSPID: user.MSPID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
-	return signingIdentity, nil
-}
-
-// GetUser returns a user for the given user name
-func (c *Client) GetUser(username string) (User, error) {
+// GetSigningIdentity returns signing identity for id
+func (c *Client) GetSigningIdentity(id string) (mspctx.SigningIdentity, error) {
 	im, _ := c.ctx.IdentityManager(c.orgName)
-	user, err := im.GetUser(username)
+	si, err := im.GetSigningIdentity(id)
 	if err != nil {
 		if err == mspctx.ErrUserNotFound {
 			return nil, ErrUserNotFound
 		}
 		return nil, err
 	}
-	return user, nil
+	return si, nil
 }

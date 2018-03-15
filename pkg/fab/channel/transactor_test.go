@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -59,7 +60,7 @@ func TestTransactionBadStatus(t *testing.T) {
 }
 
 func createTransactor(t *testing.T) *Transactor {
-	user := mocks.NewMockUser("test")
+	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
 	orderer := mocks.NewMockOrderer("", nil)
 	chConfig := mocks.NewMockChannelCfg("testChannel")
@@ -114,7 +115,7 @@ func createTransactionProposalResponseBadStatus(t *testing.T, transactor fab.Tra
 
 // TestOrderersFromChannelCfg uses an orderer that exists in the configuration.
 func TestOrderersFromChannelCfg(t *testing.T) {
-	user := mocks.NewMockUser("test")
+	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
 	chConfig := mocks.NewMockChannelCfg("testChannel")
 	chConfig.MockOrderers = []string{"example.com"}
@@ -126,7 +127,7 @@ func TestOrderersFromChannelCfg(t *testing.T) {
 
 // TestOrderersFromChannelCfg uses an orderer that does not exist in the configuration.
 func TestOrderersFromChannelCfgBadTLS(t *testing.T) {
-	user := mocks.NewMockUser("test")
+	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
 	chConfig := mocks.NewMockChannelCfg("testChannel")
 	chConfig.MockOrderers = []string{"doesnotexist.com"}

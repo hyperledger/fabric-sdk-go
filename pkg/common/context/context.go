@@ -15,7 +15,7 @@ import (
 // Client supplies the configuration and signing identity to client objects.
 type Client interface {
 	Providers
-	msp.Identity
+	msp.SigningIdentity
 }
 
 // Providers represents the SDK configured providers context.

@@ -216,6 +216,30 @@ func (mr *MockClientMockRecorder) DiscoveryProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoveryProvider", reflect.TypeOf((*MockClient)(nil).DiscoveryProvider))
 }
 
+// EnrollmentCertificate mocks base method
+func (m *MockClient) EnrollmentCertificate() []byte {
+	ret := m.ctrl.Call(m, "EnrollmentCertificate")
+	ret0, _ := ret[0].([]byte)
+	return ret0
+}
+
+// EnrollmentCertificate indicates an expected call of EnrollmentCertificate
+func (mr *MockClientMockRecorder) EnrollmentCertificate() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnrollmentCertificate", reflect.TypeOf((*MockClient)(nil).EnrollmentCertificate))
+}
+
+// Identifier mocks base method
+func (m *MockClient) Identifier() *msp.IdentityIdentifier {
+	ret := m.ctrl.Call(m, "Identifier")
+	ret0, _ := ret[0].(*msp.IdentityIdentifier)
+	return ret0
+}
+
+// Identifier indicates an expected call of Identifier
+func (mr *MockClientMockRecorder) Identifier() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Identifier", reflect.TypeOf((*MockClient)(nil).Identifier))
+}
+
 // IdentityManager mocks base method
 func (m *MockClient) IdentityManager(arg0 string) (msp.IdentityManager, bool) {
 	ret := m.ctrl.Call(m, "IdentityManager", arg0)
@@ -241,18 +265,6 @@ func (mr *MockClientMockRecorder) InfraProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InfraProvider", reflect.TypeOf((*MockClient)(nil).InfraProvider))
 }
 
-// MSPID mocks base method
-func (m *MockClient) MSPID() string {
-	ret := m.ctrl.Call(m, "MSPID")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// MSPID indicates an expected call of MSPID
-func (mr *MockClientMockRecorder) MSPID() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MSPID", reflect.TypeOf((*MockClient)(nil).MSPID))
-}
-
 // PrivateKey mocks base method
 func (m *MockClient) PrivateKey() core.Key {
 	ret := m.ctrl.Call(m, "PrivateKey")
@@ -263,6 +275,18 @@ func (m *MockClient) PrivateKey() core.Key {
 // PrivateKey indicates an expected call of PrivateKey
 func (mr *MockClientMockRecorder) PrivateKey() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrivateKey", reflect.TypeOf((*MockClient)(nil).PrivateKey))
+}
+
+// PublicVersion mocks base method
+func (m *MockClient) PublicVersion() msp.Identity {
+	ret := m.ctrl.Call(m, "PublicVersion")
+	ret0, _ := ret[0].(msp.Identity)
+	return ret0
+}
+
+// PublicVersion indicates an expected call of PublicVersion
+func (mr *MockClientMockRecorder) PublicVersion() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublicVersion", reflect.TypeOf((*MockClient)(nil).PublicVersion))
 }
 
 // SelectionProvider mocks base method
@@ -277,17 +301,30 @@ func (mr *MockClientMockRecorder) SelectionProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectionProvider", reflect.TypeOf((*MockClient)(nil).SelectionProvider))
 }
 
-// SerializedIdentity mocks base method
-func (m *MockClient) SerializedIdentity() ([]byte, error) {
-	ret := m.ctrl.Call(m, "SerializedIdentity")
+// Serialize mocks base method
+func (m *MockClient) Serialize() ([]byte, error) {
+	ret := m.ctrl.Call(m, "Serialize")
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SerializedIdentity indicates an expected call of SerializedIdentity
-func (mr *MockClientMockRecorder) SerializedIdentity() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SerializedIdentity", reflect.TypeOf((*MockClient)(nil).SerializedIdentity))
+// Serialize indicates an expected call of Serialize
+func (mr *MockClientMockRecorder) Serialize() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serialize", reflect.TypeOf((*MockClient)(nil).Serialize))
+}
+
+// Sign mocks base method
+func (m *MockClient) Sign(arg0 []byte) ([]byte, error) {
+	ret := m.ctrl.Call(m, "Sign", arg0)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Sign indicates an expected call of Sign
+func (mr *MockClientMockRecorder) Sign(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sign", reflect.TypeOf((*MockClient)(nil).Sign), arg0)
 }
 
 // SigningManager mocks base method
@@ -312,4 +349,16 @@ func (m *MockClient) UserStore() msp.UserStore {
 // UserStore indicates an expected call of UserStore
 func (mr *MockClientMockRecorder) UserStore() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserStore", reflect.TypeOf((*MockClient)(nil).UserStore))
+}
+
+// Verify mocks base method
+func (m *MockClient) Verify(arg0, arg1 []byte) error {
+	ret := m.ctrl.Call(m, "Verify", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Verify indicates an expected call of Verify
+func (mr *MockClientMockRecorder) Verify(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*MockClient)(nil).Verify), arg0, arg1)
 }

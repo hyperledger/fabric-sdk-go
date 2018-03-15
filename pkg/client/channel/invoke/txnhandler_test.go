@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -250,7 +251,7 @@ func setupChannelClientContext(discErr error, selectionErr error, peers []fab.Pe
 }
 
 func setupTestContext() context.Client {
-	user := fcmocks.NewMockUser("test")
+	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := fcmocks.NewMockContext(user)
 	return ctx
 }

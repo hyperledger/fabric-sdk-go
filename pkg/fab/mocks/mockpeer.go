@@ -34,7 +34,7 @@ type MockPeer struct {
 
 // NewMockPeer creates basic mock peer
 func NewMockPeer(name string, url string) *MockPeer {
-	mp := &MockPeer{MockName: name, MockURL: url, Status: 200, RWLock: &sync.RWMutex{}}
+	mp := &MockPeer{MockName: name, MockMSP: "Org1MSP", MockURL: url, Status: 200, RWLock: &sync.RWMutex{}}
 	return mp
 }
 

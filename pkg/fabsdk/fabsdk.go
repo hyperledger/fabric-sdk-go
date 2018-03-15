@@ -250,7 +250,7 @@ func (sdk *FabricSDK) Context(options ...ContextOption) contextApi.ClientProvide
 			identity = nil
 			err = nil
 		}
-		return &context.Client{Providers: sdk.provider, Identity: identity}, err
+		return &context.Client{Providers: sdk.provider, SigningIdentity: identity}, err
 	}
 
 	return clientProvider

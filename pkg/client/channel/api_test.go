@@ -13,6 +13,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -72,7 +73,7 @@ func TestWithTargetURLsValid(t *testing.T) {
 }
 
 func setupMockTestContext(username string, mspID string) *fcmocks.MockContext {
-	user := fcmocks.NewMockUserWithMSPID(username, mspID)
+	user := mspmocks.NewMockSigningIdentity(username, mspID)
 	ctx := fcmocks.NewMockContext(user)
 	return ctx
 }

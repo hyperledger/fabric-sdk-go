@@ -136,7 +136,7 @@ func prepareForEnroll(t *testing.T, mc *apimocks.MockCAClient, cs core.CryptoSui
 		// This is done by IdentityManagement.Enroll()
 		user := &msp.UserData{
 			MSPID: userToEnrollMSPID,
-			Name:  userToEnroll,
+			ID:    userToEnroll,
 			EnrollmentCertificate: []byte(generatedCertBytes),
 		}
 		err = enrollmentTestUserStore.Store(user)

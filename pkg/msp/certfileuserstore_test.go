@@ -64,51 +64,51 @@ func TestStore(t *testing.T) {
 
 	user1 := &msp.UserData{
 		MSPID: "Org1",
-		Name:  "user1",
+		ID:    "user1",
 		EnrollmentCertificate: []byte(testCert1),
 	}
 	user2 := &msp.UserData{
 		MSPID: "Org2",
-		Name:  "user2",
+		ID:    "user2",
 		EnrollmentCertificate: []byte(testCert2),
 	}
 
 	if err := store.Store(user1); err != nil {
-		t.Fatalf("Store %s failed [%s]", user1.Name, err)
+		t.Fatalf("Store %s failed [%s]", user1.ID, err)
 	}
 	if err := store.Store(user2); err != nil {
-		t.Fatalf("Store %s failed [%s]", user2.Name, err)
+		t.Fatalf("Store %s failed [%s]", user2.ID, err)
 	}
 
 	// Check key1, value1
 	if err := checkStoreValue(store, user1, user1.EnrollmentCertificate); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", user1.Name, err)
+		t.Fatalf("checkStoreValue %s failed [%s]", user1.ID, err)
 	}
-	if err := store.Delete(userIdentifier(user1)); err != nil {
-		t.Fatalf("Delete %s failed [%s]", user1.Name, err)
+	if err := store.Delete(msp.IdentityIdentifier{MSPID: user1.MSPID, ID: user1.ID}); err != nil {
+		t.Fatalf("Delete %s failed [%s]", user1.ID, err)
 	}
 	if err := checkStoreValue(store, user2, user2.EnrollmentCertificate); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", user2.Name, err)
+		t.Fatalf("checkStoreValue %s failed [%s]", user2.ID, err)
 	}
 	if err := checkStoreValue(store, user1, nil); err != msp.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user1.Name, err)
+		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user1.ID, err)
 	}
 
 	// Check ke2, value2
 	if err := checkStoreValue(store, user2, user2.EnrollmentCertificate); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", user2.Name, err)
+		t.Fatalf("checkStoreValue %s failed [%s]", user2.ID, err)
 	}
-	if err := store.Delete(userIdentifier(user2)); err != nil {
-		t.Fatalf("Delete %s failed [%s]", user2.Name, err)
+	if err := store.Delete(msp.IdentityIdentifier{MSPID: user2.MSPID, ID: user2.ID}); err != nil {
+		t.Fatalf("Delete %s failed [%s]", user2.ID, err)
 	}
 	if err := checkStoreValue(store, user2, nil); err != msp.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user2.Name, err)
+		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user2.ID, err)
 	}
 
 	// Check non-existing key
-	nonExistingKey := msp.UserIdentifier{
+	nonExistingKey := msp.IdentityIdentifier{
 		MSPID: "Orgx",
-		Name:  "userx",
+		ID:    "userx",
 	}
 	_, err = store.Load(nonExistingKey)
 	if err == nil || err != msp.ErrUserNotFound {

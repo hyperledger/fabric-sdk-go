@@ -17,6 +17,7 @@ import (
 	esdispatcher "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/pkg/errors"
 )
 
@@ -30,7 +31,7 @@ func TestConnect(t *testing.T) {
 
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
@@ -109,7 +110,7 @@ func TestConnectNoPeers(t *testing.T) {
 
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(), // Add no peers to discovery service
 		),
 		fabmocks.NewMockChannelCfg(channelID),
@@ -152,7 +153,7 @@ func TestConnectionEvent(t *testing.T) {
 
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),

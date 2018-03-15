@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -37,7 +38,7 @@ func TestRegisterInterests(t *testing.T) {
 	channelID := "testchannel"
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
@@ -133,7 +134,7 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 	channelID := "testchannel"
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
@@ -233,7 +234,7 @@ func TestTimedOutRegister(t *testing.T) {
 	channelID := "testchannel"
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
@@ -293,7 +294,7 @@ func TestBlockEvents(t *testing.T) {
 	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory)
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
@@ -365,7 +366,7 @@ func TestFilteredBlockEvents(t *testing.T) {
 	ledger := servicemocks.NewMockLedger(ehmocks.FilteredBlockEventFactory)
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
@@ -445,7 +446,7 @@ func newPeerConfig(peerURL string) *core.PeerConfig {
 }
 
 func newMockContext() context.Client {
-	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
+	return fabmocks.NewMockContext(mspmocks.NewMockSigningIdentity("user1", "Org1MSP"))
 }
 
 func newMockEventEndpoint(url string) api.EventEndpoint {

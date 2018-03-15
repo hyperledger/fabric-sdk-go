@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -220,7 +221,7 @@ func TestMain(m *testing.M) {
 }
 
 func newMockContext() *fabmocks.MockContext {
-	context := fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
+	context := fabmocks.NewMockContext(mspmocks.NewMockSigningIdentity("user1", "test"))
 	context.SetCustomInfraProvider(comm.NewMockInfraProvider())
 	return context
 }

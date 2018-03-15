@@ -21,7 +21,7 @@ type CacheKey struct {
 
 // NewCacheKey returns a new CacheKey
 func NewCacheKey(ctx fab.ClientContext, chConfig fab.ChannelCfg) (*CacheKey, error) {
-	identity, err := ctx.SerializedIdentity()
+	identity, err := ctx.Serialize()
 	if err != nil {
 		return nil, err
 	}

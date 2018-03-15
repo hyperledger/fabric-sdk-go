@@ -26,12 +26,12 @@ func NewFileKeyStore(cryptoConfigMSPPath string) (core.KVStore, error) {
 			if !ok {
 				return "", errors.New("converting key to PrivKeyKey failed")
 			}
-			if pkk == nil || pkk.MSPID == "" || pkk.Username == "" || pkk.SKI == nil {
+			if pkk == nil || pkk.MSPID == "" || pkk.ID == "" || pkk.SKI == nil {
 				return "", errors.New("invalid key")
 			}
 
 			// TODO: refactor to case insensitive or remove eventually.
-			r := strings.NewReplacer("{userName}", pkk.Username, "{username}", pkk.Username)
+			r := strings.NewReplacer("{userName}", pkk.ID, "{username}", pkk.ID)
 			keyDir := path.Join(r.Replace(cryptoConfigMSPPath), "keystore")
 
 			return path.Join(keyDir, hex.EncodeToString(pkk.SKI)+"_sk"), nil

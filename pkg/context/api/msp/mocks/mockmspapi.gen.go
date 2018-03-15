@@ -35,9 +35,9 @@ func (m *MockIdentityManager) EXPECT() *MockIdentityManagerMockRecorder {
 }
 
 // GetSigningIdentity mocks base method
-func (m *MockIdentityManager) GetSigningIdentity(arg0 string) (*msp.SigningIdentity, error) {
+func (m *MockIdentityManager) GetSigningIdentity(arg0 string) (msp.SigningIdentity, error) {
 	ret := m.ctrl.Call(m, "GetSigningIdentity", arg0)
-	ret0, _ := ret[0].(*msp.SigningIdentity)
+	ret0, _ := ret[0].(msp.SigningIdentity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -45,19 +45,6 @@ func (m *MockIdentityManager) GetSigningIdentity(arg0 string) (*msp.SigningIdent
 // GetSigningIdentity indicates an expected call of GetSigningIdentity
 func (mr *MockIdentityManagerMockRecorder) GetSigningIdentity(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSigningIdentity", reflect.TypeOf((*MockIdentityManager)(nil).GetSigningIdentity), arg0)
-}
-
-// GetUser mocks base method
-func (m *MockIdentityManager) GetUser(arg0 string) (msp.User, error) {
-	ret := m.ctrl.Call(m, "GetUser", arg0)
-	ret0, _ := ret[0].(msp.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUser indicates an expected call of GetUser
-func (mr *MockIdentityManagerMockRecorder) GetUser(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockIdentityManager)(nil).GetUser), arg0)
 }
 
 // MockProviders is a mock of Providers interface

@@ -31,11 +31,11 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 type fabCtx struct {
 	context.Providers
-	msp.Identity
+	msp.SigningIdentity
 }
 
 // SignChannelConfig signs a configuration.
-func SignChannelConfig(ctx context.Client, config []byte, signer msp.Identity) (*common.ConfigSignature, error) {
+func SignChannelConfig(ctx context.Client, config []byte, signer msp.SigningIdentity) (*common.ConfigSignature, error) {
 	logger.Debug("SignChannelConfig - start")
 
 	if config == nil {
@@ -53,8 +53,8 @@ func SignChannelConfig(ctx context.Client, config []byte, signer msp.Identity) (
 	}
 
 	sigCtx := fabCtx{
-		Providers: ctx,
-		Identity:  signingUser,
+		Providers:       ctx,
+		SigningIdentity: signingUser,
 	}
 
 	return CreateConfigSignature(sigCtx, config)

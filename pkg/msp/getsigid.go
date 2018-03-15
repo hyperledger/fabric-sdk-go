@@ -31,8 +31,8 @@ func newUser(userData *msp.UserData, cryptoSuite core.CryptoSuite) (*User, error
 		return nil, errors.WithMessage(err, "cryptoSuite GetKey failed")
 	}
 	u := &User{
+		id:    userData.ID,
 		mspID: userData.MSPID,
-		name:  userData.Name,
 		enrollmentCertificate: userData.EnrollmentCertificate,
 		privateKey:            pk,
 	}
@@ -44,12 +44,12 @@ func (mgr *IdentityManager) NewUser(userData *msp.UserData) (*User, error) {
 	return newUser(userData, mgr.cryptoSuite)
 }
 
-func (mgr *IdentityManager) loadUserFromStore(username string) (msp.User, error) {
+func (mgr *IdentityManager) loadUserFromStore(username string) (*User, error) {
 	if mgr.userStore == nil {
 		return nil, msp.ErrUserNotFound
 	}
-	var user msp.User
-	userData, err := mgr.userStore.Load(msp.UserIdentifier{MSPID: mgr.orgMSPID, Name: username})
+	var user *User
+	userData, err := mgr.userStore.Load(msp.IdentityIdentifier{MSPID: mgr.orgMSPID, ID: username})
 	if err != nil {
 		return nil, err
 	}
@@ -60,18 +60,17 @@ func (mgr *IdentityManager) loadUserFromStore(username string) (msp.User, error)
 	return user, nil
 }
 
-// GetSigningIdentity returns a signing identity for the given user name
-func (mgr *IdentityManager) GetSigningIdentity(username string) (*msp.SigningIdentity, error) {
-	user, err := mgr.GetUser(username)
+// GetSigningIdentity returns a signing identity for the given id
+func (mgr *IdentityManager) GetSigningIdentity(id string) (msp.SigningIdentity, error) {
+	user, err := mgr.GetUser(id)
 	if err != nil {
 		return nil, err
 	}
-	signingIdentity := &msp.SigningIdentity{MSPID: user.MSPID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
-	return signingIdentity, nil
+	return user, nil
 }
 
 // GetUser returns a user for the given user name
-func (mgr *IdentityManager) GetUser(username string) (msp.User, error) {
+func (mgr *IdentityManager) GetUser(username string) (*User, error) {
 
 	u, err := mgr.loadUserFromStore(username)
 	if err != nil {
@@ -113,8 +112,8 @@ func (mgr *IdentityManager) GetUser(username string) (msp.User, error) {
 			return nil, errors.WithMessage(err, "MSP ID config read failed")
 		}
 		u = &User{
+			id:    username,
 			mspID: mspID,
-			name:  username,
 			enrollmentCertificate: certBytes,
 			privateKey:            privateKey,
 		}
@@ -194,9 +193,9 @@ func (mgr *IdentityManager) getPrivateKeyPemFromKeyStore(username string, ski []
 	}
 	key, err := mgr.mspPrivKeyStore.Load(
 		&msp.PrivKeyKey{
-			MSPID:    mgr.orgMSPID,
-			Username: username,
-			SKI:      ski,
+			ID:    username,
+			MSPID: mgr.orgMSPID,
+			SKI:   ski,
 		})
 	if err != nil {
 		return nil, err
@@ -212,9 +211,9 @@ func (mgr *IdentityManager) getCertBytesFromCertStore(username string) ([]byte, 
 	if mgr.mspCertStore == nil {
 		return nil, msp.ErrUserNotFound
 	}
-	cert, err := mgr.mspCertStore.Load(&msp.CertKey{
-		MSPID:    mgr.orgMSPID,
-		Username: username,
+	cert, err := mgr.mspCertStore.Load(&msp.IdentityIdentifier{
+		ID:    username,
+		MSPID: mgr.orgMSPID,
 	})
 	if err != nil {
 		if err == core.ErrKeyValueNotFound {

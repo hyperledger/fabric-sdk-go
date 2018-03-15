@@ -69,7 +69,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-		SigningIdentities: []msp.Identity{adminIdentity}}
+		SigningIdentities: []msp.SigningIdentity{adminIdentity}}
 	if err = resMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}

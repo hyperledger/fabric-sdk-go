@@ -19,6 +19,7 @@ import (
 	esdispatcher "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/pkg/errors"
 )
 
@@ -32,7 +33,7 @@ func TestSeek(t *testing.T) {
 
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
@@ -93,7 +94,7 @@ func TestUnauthorized(t *testing.T) {
 
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
@@ -156,7 +157,7 @@ func TestBlockEvents(t *testing.T) {
 
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
@@ -224,7 +225,7 @@ func TestFilteredBlockEvents(t *testing.T) {
 
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
-			fabmocks.NewMockUser("user1"),
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),

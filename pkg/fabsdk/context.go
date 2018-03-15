@@ -13,9 +13,9 @@ import (
 )
 
 type identityOptions struct {
-	identity msp.Identity
-	orgName  string
-	username string
+	signingIdentity msp.SigningIdentity
+	orgName         string
+	username        string
 }
 
 // ContextOption provides parameters for creating a session (primarily from a fabric identity/user)
@@ -30,9 +30,9 @@ func WithUser(username string) ContextOption {
 }
 
 // WithIdentity uses a pre-constructed identity object as the credential for the session
-func WithIdentity(identity msp.Identity) ContextOption {
+func WithIdentity(signingIdentity msp.SigningIdentity) ContextOption {
 	return func(o *identityOptions) error {
-		o.identity = identity
+		o.signingIdentity = signingIdentity
 		return nil
 	}
 }
@@ -49,7 +49,7 @@ func WithOrg(org string) ContextOption {
 // don't include neither username nor identity
 var ErrAnonymousIdentity = errors.New("missing credentials")
 
-func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.Identity, error) {
+func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.SigningIdentity, error) {
 	clientConfig, err := sdk.Config().Client()
 	if err != nil {
 		return nil, errors.WithMessage(err, "retrieving client configuration failed")
@@ -66,12 +66,12 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.Identity, error
 		}
 	}
 
-	if opts.identity == nil && opts.username == "" {
+	if opts.signingIdentity == nil && opts.username == "" {
 		return nil, ErrAnonymousIdentity
 	}
 
-	if opts.identity != nil {
-		return opts.identity, nil
+	if opts.signingIdentity != nil {
+		return opts.signingIdentity, nil
 	}
 
 	if opts.username == "" || opts.orgName == "" {
@@ -83,7 +83,7 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.Identity, error
 		return nil, errors.New("invalid options to create identity, invalid org name")
 	}
 
-	user, err := mgr.GetUser(opts.username)
+	user, err := mgr.GetSigningIdentity(opts.username)
 	if err != nil {
 		return nil, err
 	}

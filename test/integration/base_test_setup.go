@@ -87,7 +87,7 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	defer r.Close()
 
 	// Create channel for tests
-	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: r, SigningIdentities: []msp.Identity{adminIdentity}}
+	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: r, SigningIdentities: []msp.SigningIdentity{adminIdentity}}
 	if err = InitializeChannel(sdk, setup.OrgID, req, targets); err != nil {
 		return errors.WithMessage(err, "failed to initialize channel")
 	}
@@ -157,7 +157,7 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 
 // GetSigningIdentity returns signing identity
 //TODO : not a recommended way to get idenity, will be replaced
-func GetSigningIdentity(sdk *fabsdk.FabricSDK, user, orgID string) (msp.Identity, error) {
+func GetSigningIdentity(sdk *fabsdk.FabricSDK, user, orgID string) (msp.SigningIdentity, error) {
 	idenityContext := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrg(orgID))
 	return idenityContext()
 }

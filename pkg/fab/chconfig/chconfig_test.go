@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -87,7 +88,7 @@ func TestChannelConfigWithOrdererError(t *testing.T) {
 }
 
 func setupTestContext() context.Client {
-	user := mocks.NewMockUser("test")
+	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
 	return ctx
 }

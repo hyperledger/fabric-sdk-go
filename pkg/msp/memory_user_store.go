@@ -23,18 +23,18 @@ func NewMemoryUserStore() *MemoryUserStore {
 
 // Store stores a user into store
 func (s *MemoryUserStore) Store(user *msp.UserData) error {
-	s.store[user.Name+"@"+user.Name] = user.EnrollmentCertificate
+	s.store[user.ID+"@"+user.MSPID] = user.EnrollmentCertificate
 	return nil
 }
 
 // Load loads a user from store
-func (s *MemoryUserStore) Load(id msp.UserIdentifier) (*msp.UserData, error) {
-	cert, ok := s.store[id.Name+"@"+id.Name]
+func (s *MemoryUserStore) Load(id msp.IdentityIdentifier) (*msp.UserData, error) {
+	cert, ok := s.store[id.ID+"@"+id.MSPID]
 	if !ok {
 		return nil, msp.ErrUserNotFound
 	}
 	userData := msp.UserData{
-		Name:  id.Name,
+		ID:    id.ID,
 		MSPID: id.MSPID,
 		EnrollmentCertificate: cert,
 	}
