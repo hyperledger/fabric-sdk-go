@@ -122,7 +122,7 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 		return Response(requestContext.Response), requestContext.Error
 	case <-reqCtx.Done():
 		return Response{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
-			"request timed out", nil)
+			"request timed out or been cancelled", nil)
 	}
 }
 
