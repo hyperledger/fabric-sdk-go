@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package chconfig
 
 import (
+	reqContext "context"
 	"testing"
 
 	"time"
@@ -17,6 +18,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	"github.com/pkg/errors"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +32,7 @@ func TestChannelConfigWithPeer(t *testing.T) {
 	ctx := setupTestContext()
 	peer := getPeerWithConfigBlockPayload(t)
 
-	channelConfig, err := New(channelID, WithPeers([]fab.Peer{peer}), WithMinResponses(1))
+	channelConfig, err := New(channelID, WithPeers([]fab.Peer{peer}), WithMinResponses(1), WithMaxTargets(1))
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -87,6 +90,40 @@ func TestChannelConfigWithOrdererError(t *testing.T) {
 
 }
 
+func TestRandomMaxTargetsSelections(t *testing.T) {
+
+	testTargets := []fab.ProposalProcessor{
+		&mockProposalProcessor{"ONE"}, &mockProposalProcessor{"TWO"}, &mockProposalProcessor{"THREE"},
+		&mockProposalProcessor{"FOUR"}, &mockProposalProcessor{"FIVE"}, &mockProposalProcessor{"SIX"},
+		&mockProposalProcessor{"SEVEN"}, &mockProposalProcessor{"EIGHT"}, &mockProposalProcessor{"NINE"},
+	}
+
+	max := 3
+	before := ""
+	for _, v := range testTargets[:max] {
+		before = before + v.(*mockProposalProcessor).name
+	}
+
+	responseTargets := randomMaxTargets(testTargets, max)
+	assert.True(t, responseTargets != nil && len(responseTargets) == max, "response target not as expected")
+
+	after := ""
+	for _, v := range responseTargets {
+		after = after + v.(*mockProposalProcessor).name
+	}
+	//make sure it is random
+	assert.False(t, before == after, "response targets are not random")
+
+	max = 0 //when zero minimum supplied, result should be empty
+	responseTargets = randomMaxTargets(testTargets, max)
+	assert.True(t, responseTargets != nil && len(responseTargets) == max, "response target not as expected")
+
+	max = 12 //greater than targets length
+	responseTargets = randomMaxTargets(testTargets, max)
+	assert.True(t, responseTargets != nil && len(responseTargets) == len(testTargets), "response target not as expected")
+
+}
+
 func setupTestContext() context.Client {
 	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
@@ -119,6 +156,15 @@ func getPeerWithConfigBlockPayload(t *testing.T) fab.Peer {
 	peer := &mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: payload, Status: 200}
 
 	return peer
+}
+
+//mockProposalProcessor to mock proposal processor for random max target test
+type mockProposalProcessor struct {
+	name string
+}
+
+func (pp *mockProposalProcessor) ProcessTransactionProposal(reqCtx reqContext.Context, request fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
+	return nil, errors.New("not implemented, just mock")
 }
 
 var validRootCA = `-----BEGIN CERTIFICATE-----

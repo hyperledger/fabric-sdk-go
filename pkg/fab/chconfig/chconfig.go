@@ -8,6 +8,7 @@ package chconfig
 
 import (
 	reqContext "context"
+	"math/rand"
 
 	"github.com/golang/protobuf/proto"
 
@@ -33,6 +34,7 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 const (
 	defaultMinResponses = 1
+	defaultMaxTargets   = 2
 )
 
 // Opts contains options for retrieving channel configuration
@@ -40,6 +42,7 @@ type Opts struct {
 	Orderer      fab.Orderer // if configured, channel config will be retrieved from this orderer
 	Targets      []fab.Peer  // if configured, channel config will be retrieved from peers (targets)
 	MinResponses int         // used with targets option; min number of success responses (from targets/peers)
+	MaxTargets   int         //if configured, channel config will be retrieved for these number of random targets
 }
 
 // Option func for each Opts argument
@@ -145,18 +148,15 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 			}
 
 			targets = append(targets, newPeer)
-
 		}
+
+		targets = randomMaxTargets(targets, c.opts.MaxTargets)
+
 	} else {
 		targets = peersToTxnProcessors(c.opts.Targets)
 	}
 
-	minEndorsers := c.opts.MinResponses
-	if minEndorsers == 0 {
-		minEndorsers = defaultMinResponses
-	}
-
-	configEnvelope, err := l.QueryConfigBlock(reqCtx, targets, minEndorsers)
+	configEnvelope, err := l.QueryConfigBlock(reqCtx, targets, c.opts.MinResponses)
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryBlockConfig failed")
 	}
@@ -198,6 +198,14 @@ func WithOrderer(orderer fab.Orderer) Option {
 	}
 }
 
+// WithMaxTargets encapsulates minTargets to Option
+func WithMaxTargets(maxTargets int) Option {
+	return func(opts *Opts) error {
+		opts.MaxTargets = maxTargets
+		return nil
+	}
+}
+
 // prepareQueryConfigOpts Reads channel config options from Option array
 func prepareOpts(options ...Option) (Opts, error) {
 	opts := Opts{}
@@ -207,6 +215,15 @@ func prepareOpts(options ...Option) (Opts, error) {
 			return opts, errors.WithMessage(err, "Failed to read query config opts")
 		}
 	}
+
+	//resolve defaults
+	if opts.MinResponses == 0 {
+		opts.MinResponses = defaultMinResponses
+	}
+	if opts.MaxTargets == 0 {
+		opts.MaxTargets = defaultMaxTargets
+	}
+
 	return opts, nil
 }
 
@@ -480,4 +497,16 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 		tpp[i] = peers[i]
 	}
 	return tpp
+}
+
+//randomMaxTargets returns random sub set of max length targets
+func randomMaxTargets(targets []fab.ProposalProcessor, max int) []fab.ProposalProcessor {
+	if len(targets) <= max {
+		return targets
+	}
+	for i := range targets {
+		j := rand.Intn(i + 1)
+		targets[i], targets[j] = targets[j], targets[i]
+	}
+	return targets[:max]
 }
