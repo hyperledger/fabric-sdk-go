@@ -53,7 +53,7 @@ func WithTargetURLs(urls ...string) RequestOption {
 }
 
 // WithTargetFilter enables a target filter for the request.
-func WithTargetFilter(targetFilter TargetFilter) RequestOption {
+func WithTargetFilter(targetFilter fab.TargetFilter) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.TargetFilter = targetFilter
 		return nil

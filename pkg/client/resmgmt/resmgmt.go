@@ -35,12 +35,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// TargetFilter allows for filtering target peers
-type TargetFilter interface {
-	// Accept returns true if peer should be included in the list of target peers
-	Accept(peer fab.Peer) bool
-}
-
 // InstallCCRequest contains install chaincode request parameters
 type InstallCCRequest struct {
 	Name    string
@@ -79,7 +73,7 @@ type UpgradeCCRequest struct {
 //requestOptions contains options for operations performed by ResourceMgmtClient
 type requestOptions struct {
 	Targets       []fab.Peer                         // target peers
-	TargetFilter  TargetFilter                       // target filter
+	TargetFilter  fab.TargetFilter                   // target filter
 	Orderer       fab.Orderer                        // use specific orderer
 	Timeouts      map[core.TimeoutType]time.Duration //timeout options for resmgmt operations
 	ParentContext reqContext.Context                 //parent grpc context for resmgmt operations
@@ -103,7 +97,7 @@ var logger = logging.NewLogger("fabsdk/client")
 type Client struct {
 	ctx       context.Client
 	discovery fab.DiscoveryService // global discovery service (detects all peers on the network)
-	filter    TargetFilter
+	filter    fab.TargetFilter
 }
 
 // mspFilter is default filter
@@ -120,7 +114,7 @@ func (f *mspFilter) Accept(peer fab.Peer) bool {
 type ClientOption func(*Client) error
 
 // WithDefaultTargetFilter option to configure new
-func WithDefaultTargetFilter(filter TargetFilter) ClientOption {
+func WithDefaultTargetFilter(filter fab.TargetFilter) ClientOption {
 	return func(rmc *Client) error {
 		rmc.filter = filter
 		return nil
@@ -221,7 +215,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 }
 
 // filterTargets is helper method to filter peers
-func filterTargets(peers []fab.Peer, filter TargetFilter) []fab.Peer {
+func filterTargets(peers []fab.Peer, filter fab.TargetFilter) []fab.Peer {
 
 	if filter == nil {
 		return peers
@@ -254,7 +248,7 @@ func (rc *Client) getDefaultTargets(discovery fab.DiscoveryService) ([]fab.Peer,
 }
 
 // calculateTargets calculates targets based on targets and filter
-func (rc *Client) calculateTargets(discovery fab.DiscoveryService, peers []fab.Peer, filter TargetFilter) ([]fab.Peer, error) {
+func (rc *Client) calculateTargets(discovery fab.DiscoveryService, peers []fab.Peer, filter fab.TargetFilter) ([]fab.Peer, error) {
 
 	if peers != nil && filter != nil {
 		return nil, errors.New("If targets are provided, filter cannot be provided")
