@@ -147,10 +147,6 @@ func (c *MockConfig) TLSCACertPool(cert ...*x509.Certificate) (*x509.CertPool, e
 	return nil, nil
 }
 
-// SetTLSCACertPool ...
-func (c *MockConfig) SetTLSCACertPool(pool *x509.CertPool) {
-}
-
 // TcertBatchSize ...
 func (c *MockConfig) TcertBatchSize() int {
 	return 0

@@ -32,6 +32,8 @@ import (
 
 	"regexp"
 
+	"sync"
+
 	cs "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 )
 
@@ -52,7 +54,7 @@ var logModules = [...]string{"fabsdk", "fabsdk/client", "fabsdk/core", "fabsdk/f
 
 // Config represents the configuration for the client
 type Config struct {
-	tlsCertPool         *x509.CertPool
+	tlsCerts            []*x509.Certificate
 	networkConfig       *core.NetworkConfig
 	networkConfigCached bool
 	configViper         *viper.Viper
@@ -60,6 +62,7 @@ type Config struct {
 	ordererMatchers     map[int]*regexp.Regexp
 	caMatchers          map[int]*regexp.Regexp
 	opts                options
+	certPoolLock        sync.Mutex
 }
 
 type options struct {
@@ -213,13 +216,8 @@ func newViper(cmdRootPrefix string) *viper.Viper {
 
 func initConfig(c *Config) (*Config, error) {
 	setLogLevel(c.configViper)
-	tlsCertPool, err := getCertPool(c.configViper)
-	if err != nil {
-		return nil, err
-	}
-	c.tlsCertPool = tlsCertPool
 
-	if err = c.cacheNetworkConfiguration(); err != nil {
+	if err := c.cacheNetworkConfiguration(); err != nil {
 		return nil, errors.WithMessage(err, "network configuration load failed")
 	}
 
@@ -238,18 +236,6 @@ func initConfig(c *Config) (*Config, error) {
 	}
 
 	return c, nil
-}
-
-func getCertPool(myViper *viper.Viper) (*x509.CertPool, error) {
-	tlsCertPool := x509.NewCertPool()
-	if myViper.GetBool("client.tlsCerts.systemCertPool") == true {
-		var err error
-		if tlsCertPool, err = x509.SystemCertPool(); err != nil {
-			return nil, err
-		}
-		logger.Debugf("Loaded system cert pool of size: %d", len(tlsCertPool.Subjects()))
-	}
-	return tlsCertPool, nil
 }
 
 // setLogLevel will set the log level of the client
@@ -1314,25 +1300,54 @@ func (c *Config) verifyPeerConfig(p core.PeerConfig, peerName string, tlsEnabled
 	return nil
 }
 
-// SetTLSCACertPool allows a user to set a global cert pool with a set of
-// root TLS CAs that will be used for all outgoing connections
-func (c *Config) SetTLSCACertPool(certPool *x509.CertPool) {
-	if certPool == nil {
-		certPool = x509.NewCertPool()
-	}
-	c.tlsCertPool = certPool
-}
-
 // TLSCACertPool returns the configured cert pool. If a certConfig
 // is provided, the certficate is added to the pool
 func (c *Config) TLSCACertPool(certs ...*x509.Certificate) (*x509.CertPool, error) {
-	for _, cert := range certs {
-		if cert != nil {
-			c.tlsCertPool.AddCert(cert)
+
+	c.certPoolLock.Lock()
+	defer c.certPoolLock.Unlock()
+
+	//add cert if it is not nil and doesn't exists already
+	for _, newCert := range certs {
+		if newCert != nil && !c.containsCert(newCert) {
+			c.tlsCerts = append(c.tlsCerts, newCert)
 		}
 	}
 
-	return c.tlsCertPool, nil
+	//get new cert pool
+	tlsCertPool, err := c.getCertPool()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to create cert pool")
+	}
+
+	//add all tls ca certs to cert pool
+	for _, cert := range c.tlsCerts {
+		tlsCertPool.AddCert(cert)
+	}
+
+	return tlsCertPool, nil
+}
+
+func (c *Config) containsCert(newCert *x509.Certificate) bool {
+	//TODO may need to maintain separate map of {cert.RawSubject, cert} to improve performance on search
+	for _, cert := range c.tlsCerts {
+		if cert.Equal(newCert) {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *Config) getCertPool() (*x509.CertPool, error) {
+	tlsCertPool := x509.NewCertPool()
+	if c.configViper.GetBool("client.tlsCerts.systemCertPool") == true {
+		var err error
+		if tlsCertPool, err = x509.SystemCertPool(); err != nil {
+			return nil, err
+		}
+		logger.Debugf("Loaded system cert pool of size: %d", len(tlsCertPool.Subjects()))
+	}
+	return tlsCertPool, nil
 }
 
 // IsSecurityEnabled ...

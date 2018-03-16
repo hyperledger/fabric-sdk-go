@@ -34,7 +34,7 @@ func TestBadConfig(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mocks.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 
@@ -52,7 +52,7 @@ func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 	//Prepare Config
 	providerLib, softHSMPin, softHSMTokenLabel := pkcs11.FindPKCS11Lib()
 
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mocks.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
@@ -78,7 +78,7 @@ func TestCryptoSuiteByConfigPKCS11Failure(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	//Prepare Config
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mocks.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)

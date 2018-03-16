@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc., Unchain B.V. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package mock_core
+package mocks
 
 import (
 	tls "crypto/tls"

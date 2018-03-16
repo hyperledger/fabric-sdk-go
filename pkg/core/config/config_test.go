@@ -291,16 +291,23 @@ func TestTLSCAConfig(t *testing.T) {
 	certConfig := endpoint.TLSConfig{Path: certFile}
 
 	cert, err := certConfig.TLSCert()
-
 	if err != nil {
-		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
+		t.Fatalf("Failed to get TLS CA Cert, reason: %v", err)
 	}
 
 	_, err = configImpl.TLSCACertPool(cert)
-
 	if err != nil {
 		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
 	}
+
+	//Try again with same cert
+	_, err = configImpl.TLSCACertPool(cert)
+	if err != nil {
+		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
+	}
+
+	assert.False(t, len(configImpl.tlsCerts) > 1, "number of certs in cert list shouldn't accept duplicates")
+
 	//Test TLSCA Cert Pool (Negative test case)
 
 	badCertConfig := endpoint.TLSConfig{Path: "some random invalid path"}
@@ -976,10 +983,12 @@ func TestSystemCertPoolDisabled(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := configProvider.(*Config)
-
+	certPool, err := configProvider.TLSCACertPool()
+	if err != nil {
+		t.Fatal("not supposed to get error")
+	}
 	// cert pool should be empty
-	if len(c.tlsCertPool.Subjects()) > 0 {
+	if len(certPool.Subjects()) > 0 {
 		t.Fatal("Expecting empty tls cert pool due to disabled system cert pool")
 	}
 }
@@ -992,23 +1001,21 @@ func TestSystemCertPoolEnabled(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := configProvider.(*Config)
+	certPool, err := configProvider.TLSCACertPool()
+	if err != nil {
+		t.Fatal("not supposed to get error")
+	}
 
-	if len(c.tlsCertPool.Subjects()) == 0 {
+	if len(certPool.Subjects()) == 0 {
 		t.Fatal("System Cert Pool not loaded even though it is enabled")
 	}
 
 	// Org2 'mychannel' peer is missing cert + pem (it should not fail when systemCertPool enabled)
-	_, err = c.ChannelPeers("mychannel")
+	_, err = configProvider.ChannelPeers("mychannel")
 	if err != nil {
 		t.Fatalf("Should have skipped verifying ca cert + pem: %s", err)
 	}
 
-}
-
-func TestSetTLSCACertPool(t *testing.T) {
-	configImpl.SetTLSCACertPool(nil)
-	t.Log("TLSCACertRoot must be created. Nothing additional to verify..")
 }
 
 func TestInitConfigFromRawWithPem(t *testing.T) {

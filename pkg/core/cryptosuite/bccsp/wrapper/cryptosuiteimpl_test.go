@@ -49,7 +49,7 @@ func TestCryptoSuiteByConfig(t *testing.T) {
 	//Prepare Config
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mocks.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
@@ -72,7 +72,7 @@ func TestCryptoSuiteByConfigFailures(t *testing.T) {
 	//Prepare Config
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mocks.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(100)
@@ -94,7 +94,7 @@ func TestCryptoSuiteByConfigFailures(t *testing.T) {
 func TestCreateInvalidBCCSPSecurityLevel(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mocks.NewMockConfig(mockCtrl)
 
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
@@ -113,7 +113,7 @@ func TestCreateInvalidBCCSPSecurityLevel(t *testing.T) {
 func TestCreateInvalidBCCSPHashFamily(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mocks.NewMockConfig(mockCtrl)
 
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("ABC")
@@ -138,7 +138,7 @@ func TestCreateInvalidSecurityProviderPanic(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mocks.NewMockConfig(mockCtrl)
 
 	mockConfig.EXPECT().SecurityProvider().Return("XYZ")
 	mockConfig.EXPECT().SecurityProvider().Return("XYZ")

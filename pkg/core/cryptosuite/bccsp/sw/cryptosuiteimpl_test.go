@@ -21,7 +21,7 @@ func TestBadConfig(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mocks.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 
@@ -36,7 +36,7 @@ func TestCryptoSuiteByConfigSW(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mocks.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
@@ -56,7 +56,7 @@ func TestCryptoSuiteByBadConfigSW(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mocks.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA0")
 	mockConfig.EXPECT().SecurityLevel().Return(256)

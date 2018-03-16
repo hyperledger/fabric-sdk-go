@@ -15,7 +15,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core/mocks"
+	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
@@ -239,7 +239,7 @@ func TestCAConfigError(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mockCore.NewMockConfig(mockCtrl)
 
 	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
 	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
@@ -262,7 +262,7 @@ func TestCAServerCertPathsError(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mockCore.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
 	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
 	mockConfig.EXPECT().CAConfig(org1).Return(&core.CAConfig{}, nil).AnyTimes()
@@ -285,7 +285,7 @@ func TestCAClientCertPathError(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mockCore.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
 	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
 	mockConfig.EXPECT().CAConfig(org1).Return(&core.CAConfig{}, nil).AnyTimes()
@@ -309,7 +309,7 @@ func TestCAClientKeyPathError(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mockCore.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
 	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
 	mockConfig.EXPECT().CAConfig(org1).Return(&core.CAConfig{}, nil).AnyTimes()

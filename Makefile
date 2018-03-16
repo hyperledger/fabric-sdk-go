@@ -339,7 +339,7 @@ dockerenv-latest-up: clean
 
 .PHONY: mock-gen
 mock-gen:
-	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core Config,Providers | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/common/providers/core/mocks/mockcoreapi.gen.go
+	mockgen -build_flags '$(GO_LDFLAGS_ARG)' -package mocks github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core Config,Providers | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/common/providers/core/mocks/mockcoreapi.gen.go
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp IdentityManager,Providers | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/common/providers/msp/mocks/mockmspapi.gen.go
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab ProposalProcessor,Providers | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/common/providers/fab/mocks/mockfabapi.gen.go
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context Providers,Client | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/common/providers/context/mocks/mockcontext.gen.go

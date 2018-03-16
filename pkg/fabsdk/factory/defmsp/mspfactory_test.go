@@ -12,7 +12,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core/mocks"
+	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -41,7 +41,7 @@ func newMockUserStore(t *testing.T) msp.UserStore {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mockCore.NewMockConfig(mockCtrl)
 
 	mockClientConfig := core.ClientConfig{
 		CredentialStore: core.CredentialStoreType{
@@ -70,7 +70,7 @@ func TestCreateUserStoreEmptyConfig(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mockCore.NewMockConfig(mockCtrl)
 
 	mockClientConfig := core.ClientConfig{}
 	mockConfig.EXPECT().Client().Return(&mockClientConfig, nil)
@@ -86,7 +86,7 @@ func TestCreateUserStoreFailConfig(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
+	mockConfig := mockCore.NewMockConfig(mockCtrl)
 
 	mockConfig.EXPECT().Client().Return(nil, errors.New("error"))
 

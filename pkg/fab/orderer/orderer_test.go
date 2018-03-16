@@ -23,7 +23,7 @@ import (
 	"github.com/golang/mock/gomock"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core/mocks"
+	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
@@ -345,7 +345,7 @@ func TestSendBroadcastError(t *testing.T) {
 func TestBroadcastBadDial(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mock_core.NewMockConfig(mockCtrl)
+	config := mockCore.NewMockConfig(mockCtrl)
 
 	config.EXPECT().TimeoutOrDefault(core.OrdererConnection).Return(time.Second * 1)
 	config.EXPECT().TLSCACertPool(gomock.Any()).Return(x509.NewCertPool(), nil).AnyTimes()
@@ -524,7 +524,7 @@ func TestNewOrdererSecured(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mock_core.DefaultMockConfig(mockCtrl)
+	config := mockCore.DefaultMockConfig(mockCtrl)
 	config.EXPECT().TimeoutOrDefault(core.OrdererConnection).Return(time.Second * 1).AnyTimes()
 
 	//Test grpc URL
