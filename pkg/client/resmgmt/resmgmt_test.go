@@ -1289,7 +1289,7 @@ func setupTestContextWithDiscoveryError(username string, mspID string, discErr e
 }
 
 func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*fcmocks.MockEndorserServer, string) {
-	lis, err := net.Listen("tcp", "127.0.0.1:7051")
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
 	addr := lis.Addr().String()
 
 	endorserServer := &fcmocks.MockEndorserServer{}
@@ -1316,7 +1316,7 @@ func TestSaveChannelSuccess(t *testing.T) {
 
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
-	fcmocks.StartMockBroadcastServer("127.0.0.1:7050", grpcServer)
+	_, addr := fcmocks.StartMockBroadcastServer("127.0.0.1:0", grpcServer)
 
 	ctx := setupTestContext("test", "Org1MSP")
 
@@ -1325,7 +1325,7 @@ func TestSaveChannelSuccess(t *testing.T) {
 	grpcOpts["allow-insecure"] = true
 
 	oConfig := &core.OrdererConfig{
-		URL:         "127.0.0.1:7050",
+		URL:         addr,
 		GRPCOptions: grpcOpts,
 	}
 	mockConfig.SetCustomOrdererCfg(oConfig)
@@ -1423,7 +1423,7 @@ func TestSaveChannelWithOpts(t *testing.T) {
 
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
-	fcmocks.StartMockBroadcastServer("127.0.0.1:7050", grpcServer)
+	_, addr := fcmocks.StartMockBroadcastServer("127.0.0.1:0", grpcServer)
 
 	ctx := setupTestContext("test", "Org1MSP")
 
@@ -1432,7 +1432,7 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	grpcOpts["allow-insecure"] = true
 
 	oConfig := &core.OrdererConfig{
-		URL:         "127.0.0.1:7050",
+		URL:         addr,
 		GRPCOptions: grpcOpts,
 	}
 	mockConfig.SetCustomOrdererCfg(oConfig)
@@ -1501,7 +1501,7 @@ func TestJoinChannelWithInvalidOpts(t *testing.T) {
 func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
-	fcmocks.StartMockBroadcastServer("127.0.0.1:7050", grpcServer)
+	_, addr := fcmocks.StartMockBroadcastServer("127.0.0.1:0", grpcServer)
 	ctx := setupTestContext("test", "Org1MSP")
 
 	mockConfig := &fcmocks.MockConfig{}
@@ -1509,7 +1509,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	grpcOpts["allow-insecure"] = true
 
 	oConfig := &core.OrdererConfig{
-		URL:         "127.0.0.1:7050",
+		URL:         addr,
 		GRPCOptions: grpcOpts,
 	}
 	mockConfig.SetCustomRandomOrdererCfg(oConfig)

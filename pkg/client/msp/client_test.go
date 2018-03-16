@@ -7,7 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"io/ioutil"
 	"math/rand"
+	"net"
 	"strconv"
 	"strings"
 	"testing"
@@ -22,9 +24,11 @@ import (
 )
 
 const (
-	caServerURL = "http://localhost:8090"
-	configPath  = "testdata/config_test.yaml"
+	caServerURLListen = "http://localhost:0"
+	configPath        = "testdata/config_test.yaml"
 )
+
+var caServerURL string
 
 // TestMSP is a unit test for Client enrollment and re-enrollment scenarios
 func TestMSP(t *testing.T) {
@@ -137,7 +141,22 @@ var caServer = &mocks.MockFabricCAServer{}
 
 func (f *textFixture) setup() *fabsdk.FabricSDK {
 
-	configProvider := config.FromFile(configPath)
+	var lis net.Listener
+	var err error
+	if !caServer.Running() {
+		lis, err = net.Listen("tcp", strings.TrimPrefix(caServerURLListen, "http://"))
+		if err != nil {
+			panic(fmt.Sprintf("Error starting CA Server %s", err))
+		}
+
+		caServerURL = "http://" + lis.Addr().String()
+	}
+
+	cfgRaw := readConfigWithReplacement(configPath, "http://localhost:8050", caServerURL)
+	configProvider := config.FromRaw(cfgRaw, "yaml")
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
 
 	// Instantiate the SDK
 	sdk, err := fabsdk.New(configProvider)
@@ -145,10 +164,7 @@ func (f *textFixture) setup() *fabsdk.FabricSDK {
 		panic(fmt.Sprintf("SDK init failed: %v", err))
 	}
 
-	f.config, err = config.FromFile(configPath)()
-	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
-	}
+	f.config = sdk.Config()
 
 	// Delete all private keys from the crypto suite store
 	// and users from the user store
@@ -160,8 +176,11 @@ func (f *textFixture) setup() *fabsdk.FabricSDK {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to init context: %v", err))
 	}
+
 	// Start Http Server if it's not running
-	caServer.Start(strings.TrimPrefix(caServerURL, "http://"), ctx.CryptoSuite())
+	if !caServer.Running() {
+		caServer.Start(lis, ctx.CryptoSuite())
+	}
 
 	return sdk
 }
@@ -169,6 +188,16 @@ func (f *textFixture) setup() *fabsdk.FabricSDK {
 func (f *textFixture) close() {
 	cleanup(f.config.CredentialStorePath())
 	cleanup(f.config.KeyStorePath())
+}
+
+func readConfigWithReplacement(path string, origURL, newURL string) []byte {
+	cfgRaw, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config [%s]", err))
+	}
+
+	updatedCfg := strings.Replace(string(cfgRaw), origURL, newURL, -1)
+	return []byte(updatedCfg)
 }
 
 func cleanup(storePath string) {

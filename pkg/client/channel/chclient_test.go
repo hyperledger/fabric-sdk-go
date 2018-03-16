@@ -32,8 +32,7 @@ import (
 )
 
 const (
-	testAddress = "127.0.0.1:47882"
-	channelID   = "testChannel"
+	channelID = "testChannel"
 )
 
 func TestTxProposalResponseFilter(t *testing.T) {

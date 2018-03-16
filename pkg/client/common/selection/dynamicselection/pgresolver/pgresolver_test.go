@@ -27,18 +27,18 @@ const (
 	org10 = "Org10MSP"
 )
 
-var p1 = peer("peer1", "peer1:7051")
-var p2 = peer("peer2", "peer2:7051")
-var p3 = peer("peer3", "peer3:7051")
-var p4 = peer("peer4", "peer4:7051")
-var p5 = peer("peer5", "peer5:7051")
-var p6 = peer("peer6", "peer6:7051")
-var p7 = peer("peer7", "peer7:7051")
-var p8 = peer("peer8", "peer8:7051")
-var p9 = peer("peer9", "peer9:7051")
-var p10 = peer("peer10", "peer10:7051")
-var p11 = peer("peer11", "peer11:7051")
-var p12 = peer("peer12", "peer12:7051")
+var p1 = peer("peer1", "peer1:9999")
+var p2 = peer("peer2", "peer2:9999")
+var p3 = peer("peer3", "peer3:9999")
+var p4 = peer("peer4", "peer4:9999")
+var p5 = peer("peer5", "peer5:9999")
+var p6 = peer("peer6", "peer6:9999")
+var p7 = peer("peer7", "peer7:9999")
+var p8 = peer("peer8", "peer8:9999")
+var p9 = peer("peer9", "peer9:9999")
+var p10 = peer("peer10", "peer10:9999")
+var p11 = peer("peer11", "peer11:9999")
+var p12 = peer("peer12", "peer12:9999")
 
 var peersByMSPID = map[string][]fab.Peer{
 	org1: peers(p1, p2),
