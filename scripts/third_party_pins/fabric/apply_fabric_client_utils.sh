@@ -156,7 +156,7 @@ FILTER_FILENAME="bccsp/signer/signer.go"
 FILTER_FN=New,Public,Sign
 gofilter
 sed -i'' -e '/"crypto"/ a \
-"github.com\/hyperledger\/fabric-sdk-go\/pkg\/context\/api\/core"\
+"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
@@ -232,7 +232,7 @@ FILTER_FN+=",GetOrganizationalUnits,SatisfiesPrincipal,Serialize,Validate,Verify
 FILTER_FN+=",getHashOpt,GetPublicVersion,Sign"
 gofilter
 sed -i'' -e '/"encoding\/hex/ a\
-"github.com\/hyperledger\/fabric-sdk-go\/pkg\/context\/api\/core"\
+"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp"/bccsp "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"

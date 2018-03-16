@@ -27,7 +27,7 @@ index 00000000..fdeb3a4f
 +package logbridge
 +
 +import (
-+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
++	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 +)
 +
 +// Log levels (from fabric-sdk-go/pkg/logging/level.go).

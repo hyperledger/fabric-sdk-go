@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	mock_fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	mock_fab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/pkg/errors"
 )

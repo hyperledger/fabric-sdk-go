@@ -11,7 +11,7 @@ import (
 	"crypto/x509"
 	"time"
 
-	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	config "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 
 	"github.com/pkg/errors"

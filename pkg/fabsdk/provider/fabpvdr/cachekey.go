@@ -9,7 +9,7 @@ package fabpvdr
 import (
 	"crypto/sha256"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
 // CacheKey holds a key for the provider cache

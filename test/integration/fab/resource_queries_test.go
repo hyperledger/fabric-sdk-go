@@ -10,7 +10,7 @@ import (
 	reqContext "context"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/stretchr/testify/assert"
 )

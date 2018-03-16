@@ -14,8 +14,8 @@ import (
 	"encoding/hex"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"

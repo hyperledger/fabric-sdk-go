@@ -9,12 +9,11 @@ package fabpvdr
 import (
 	reqContext "context"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/lazycache"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/membership"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
@@ -23,7 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/eventhubclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
 	"github.com/pkg/errors"
 )
 
@@ -45,11 +44,6 @@ type InfraProvider struct {
 	providerContext   context.Providers
 	commManager       *comm.CachingConnector
 	eventServiceCache cache
-}
-
-type fabContext struct {
-	context.Providers
-	msp.Identity
 }
 
 // New creates a InfraProvider enabling access to core Fabric objects and functionality.

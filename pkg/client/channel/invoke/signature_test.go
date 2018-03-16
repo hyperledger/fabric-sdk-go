@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/stretchr/testify/assert"
 )

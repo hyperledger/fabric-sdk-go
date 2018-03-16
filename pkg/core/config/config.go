@@ -24,10 +24,10 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 
 	"regexp"
@@ -47,7 +47,8 @@ const (
 	defaultExecuteTimeout          = time.Second * 180
 )
 
-var logModules = [...]string{"fabsdk", "fabsdk/client", "fabsdk/core", "fabsdk/fab", "fabsdk/common", "fabsdk/msp"}
+var logModules = [...]string{"fabsdk", "fabsdk/client", "fabsdk/core", "fabsdk/fab", "fabsdk/common",
+	"fabsdk/msp", "fabsdk/util", "fabsdk/context"}
 
 // Config represents the configuration for the client
 type Config struct {

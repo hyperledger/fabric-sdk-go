@@ -9,8 +9,8 @@ package msp
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/pkg/errors"
 )
 

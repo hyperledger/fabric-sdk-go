@@ -11,7 +11,7 @@ Please review third_party pinning scripts and patches for more details.
 package logbridge
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 )
 
 // Log levels (from fabric-sdk-go/pkg/logging/level.go).

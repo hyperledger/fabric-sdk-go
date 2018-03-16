@@ -21,7 +21,7 @@ Please review third_party pinning scripts and patches for more details.
 package lib
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 )
 
 func newSigner(key core.Key, cert []byte, id *Identity) *Signer {

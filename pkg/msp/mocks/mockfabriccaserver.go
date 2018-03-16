@@ -16,11 +16,11 @@ import (
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 )
 
-var logger = logging.NewLogger("fabsdk/core")
+var logger = logging.NewLogger("fabsdk/msp")
 
 // Matching key-cert pair. On enroll, the key will be
 // imported into the key store, and the cert will be

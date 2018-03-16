@@ -10,9 +10,9 @@ import (
 	reqContext "context"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/pkg/errors"
 )
@@ -26,7 +26,7 @@ const (
 type ClientOption func(*Client) error
 
 // WithDefaultTargetFilter option to configure new
-func WithDefaultTargetFilter(filter TargetFilter) ClientOption {
+func WithDefaultTargetFilter(filter fab.TargetFilter) ClientOption {
 	return func(rmc *Client) error {
 		rmc.filter = filter
 		return nil
@@ -36,16 +36,10 @@ func WithDefaultTargetFilter(filter TargetFilter) ClientOption {
 //RequestOption func for each requestOptions argument
 type RequestOption func(ctx context.Client, opts *requestOptions) error
 
-// TargetFilter allows for filtering target peers
-type TargetFilter interface {
-	// Accept returns true if peer should be included in the list of target peers
-	Accept(peer fab.Peer) bool
-}
-
 //requestOptions contains options for operations performed by LedgerClient
 type requestOptions struct {
 	Targets       []fab.Peer                         // target peers
-	TargetFilter  TargetFilter                       // target filter
+	TargetFilter  fab.TargetFilter                   // target filter
 	MaxTargets    int                                // maximum number of targets to select
 	MinTargets    int                                // min number of targets that have to respond with no error (or agree on result)
 	Timeouts      map[core.TimeoutType]time.Duration //timeout options for ledger query operations
@@ -88,7 +82,7 @@ func WithTargetURLs(urls ...string) RequestOption {
 }
 
 //WithTargetFilter encapsulates TargetFilter targets to ledger RequestOption
-func WithTargetFilter(targetFilter TargetFilter) RequestOption {
+func WithTargetFilter(targetFilter fab.TargetFilter) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.TargetFilter = targetFilter
 		return nil

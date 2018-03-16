@@ -9,7 +9,7 @@ package mocks
 import (
 	"fmt"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/pkg/errors"
 )

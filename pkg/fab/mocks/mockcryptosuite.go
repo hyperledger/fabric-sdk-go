@@ -10,7 +10,7 @@ import (
 	"crypto/sha256"
 	"hash"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 )
 
 // MockCryptoSuite implementation
