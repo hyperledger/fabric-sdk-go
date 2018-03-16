@@ -22,13 +22,17 @@ CONFIG_FILE="${CONFIG_FILE:-config_test.yaml}"
 
 REPO="github.com/hyperledger/fabric-sdk-go"
 
-# Packages to include in test run
+# Packages to exclude from test run
 PKGS=`$GO_CMD list $REPO/test/integration/... 2> /dev/null | \
+      grep -v ^$REPO/test/integration/e2e | \
+      grep -v ^$REPO/test/integration/fab | \
+      grep -v ^$REPO/test/integration/msp | \
+      grep -v ^$REPO/test/integration/orgs | \
       grep -v ^$REPO/test/integration/pkcs11 | \
-      grep -v ^$REPO/test/integration/revoked | \
+      grep -v ^$REPO/test/integration/sdk | \
       grep -v ^$REPO/test/integration\$`
 
-echo "Running integration tests ..."
+echo "Running integration tests for revoked certificates ..."
 RACEFLAG=""
 ARCH=$(uname -m)
 

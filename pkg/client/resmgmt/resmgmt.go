@@ -383,6 +383,9 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	if err != nil {
 		return responses, errors.WithMessage(err, "InstallChaincode failed")
 	}
+	if len(errs) > 0 {
+		return responses, errs
+	}
 
 	return responses, nil
 }
