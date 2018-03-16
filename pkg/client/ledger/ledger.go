@@ -13,8 +13,11 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -34,9 +37,10 @@ var logger = logging.NewLogger("fabsdk/client")
 // An application that requires interaction with multiple channels should create a separate
 // instance of the ledger client for each channel. Ledger client supports specific queries only.
 type Client struct {
-	ctx    context.Channel
-	filter fab.TargetFilter
-	ledger *channel.Ledger
+	ctx      context.Channel
+	filter   fab.TargetFilter
+	ledger   *channel.Ledger
+	verifier *requestVerifier
 }
 
 // mspFilter is default filter
@@ -57,14 +61,24 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, err
 	}
 
+	if channelContext.ChannelService() == nil {
+		return nil, errors.New("channel service not initialized")
+	}
+
+	membership, err := channelContext.ChannelService().Membership()
+	if err != nil {
+		return nil, errors.WithMessage(err, "membership creation failed")
+	}
+
 	ledger, err := channel.NewLedger(channelContext.ChannelID())
 	if err != nil {
 		return nil, err
 	}
 
 	ledgerClient := Client{
-		ctx:    channelContext,
-		ledger: ledger,
+		ctx:      channelContext,
+		ledger:   ledger,
+		verifier: &requestVerifier{membership: membership},
 	}
 
 	for _, opt := range opts {
@@ -93,21 +107,21 @@ func (c *Client) QueryInfo(options ...RequestOption) (*fab.BlockchainInfoRespons
 
 	opts, err := c.prepareRequestOpts(options...)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get opts for QueryBlockByHash")
+		return nil, errors.WithMessage(err, "failed to get opts for QueryInfo")
 	}
 
 	// Determine targets
 	targets, err := c.calculateTargets(opts)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to determine target peers for QueryBlockByHash")
+		return nil, errors.WithMessage(err, "failed to determine target peers for QueryInfo")
 	}
 
 	reqCtx, cancel := c.createRequestContext(&opts)
 	defer cancel()
 
-	responses, err := c.ledger.QueryInfo(reqCtx, peersToTxnProcessors(targets))
+	responses, err := c.ledger.QueryInfo(reqCtx, peersToTxnProcessors(targets), c.verifier)
 	if err != nil && len(responses) == 0 {
-		return nil, errors.WithMessage(err, "Failed to QueryBlockByHash")
+		return nil, errors.WithMessage(err, "Failed to QueryInfo")
 	}
 
 	if len(responses) < opts.MinTargets {
@@ -151,7 +165,7 @@ func (c *Client) QueryBlockByHash(blockHash []byte, options ...RequestOption) (*
 	reqCtx, cancel := c.createRequestContext(&opts)
 	defer cancel()
 
-	responses, err := c.ledger.QueryBlockByHash(reqCtx, blockHash, peersToTxnProcessors(targets))
+	responses, err := c.ledger.QueryBlockByHash(reqCtx, blockHash, peersToTxnProcessors(targets), c.verifier)
 	if err != nil && len(responses) == 0 {
 		return nil, errors.WithMessage(err, "Failed to QueryBlockByHash")
 	}
@@ -195,7 +209,7 @@ func (c *Client) QueryBlock(blockNumber uint64, options ...RequestOption) (*comm
 	reqCtx, cancel := c.createRequestContext(&opts)
 	defer cancel()
 
-	responses, err := c.ledger.QueryBlock(reqCtx, blockNumber, peersToTxnProcessors(targets))
+	responses, err := c.ledger.QueryBlock(reqCtx, blockNumber, peersToTxnProcessors(targets), c.verifier)
 	if err != nil && len(responses) == 0 {
 		return nil, errors.WithMessage(err, "Failed to QueryBlock")
 	}
@@ -209,8 +223,6 @@ func (c *Client) QueryBlock(blockNumber uint64, options ...RequestOption) (*comm
 		if i == 0 {
 			continue
 		}
-
-		// TODO: Signature validation
 
 		// All payloads have to match
 		if !proto.Equal(response.Data, r.Data) {
@@ -240,7 +252,7 @@ func (c *Client) QueryTransaction(transactionID fab.TransactionID, options ...Re
 	reqCtx, cancel := c.createRequestContext(&opts)
 	defer cancel()
 
-	responses, err := c.ledger.QueryTransaction(reqCtx, transactionID, peersToTxnProcessors(targets))
+	responses, err := c.ledger.QueryTransaction(reqCtx, transactionID, peersToTxnProcessors(targets), c.verifier)
 	if err != nil && len(responses) == 0 {
 		return nil, errors.WithMessage(err, "Failed to QueryTransaction")
 	}
@@ -254,8 +266,6 @@ func (c *Client) QueryTransaction(transactionID fab.TransactionID, options ...Re
 		if i == 0 {
 			continue
 		}
-
-		// TODO: Signature validation
 
 		// All payloads have to match
 		if !proto.Equal(response, r) {
@@ -412,4 +422,44 @@ func shuffle(a []fab.Peer) {
 		j := rand.Intn(i + 1)
 		a[i], a[j] = a[j], a[i]
 	}
+}
+
+type requestVerifier struct {
+	membership fab.ChannelMembership
+}
+
+// Verify checks transaction proposal response
+func (v *requestVerifier) Verify(response *fab.TransactionProposalResponse) error {
+
+	if response.ProposalResponse.GetResponse().Status != int32(common.Status_SUCCESS) {
+		return status.NewFromProposalResponse(response.ProposalResponse, response.Endorser)
+	}
+
+	res := response.ProposalResponse
+
+	if res.GetEndorsement() == nil {
+		return errors.Errorf("Missing endorsement in proposal response")
+	}
+	creatorID := res.GetEndorsement().Endorser
+
+	err := v.membership.Validate(creatorID)
+	if err != nil {
+		return errors.WithMessage(err, "The creator certificate is not valid")
+	}
+
+	// check the signature against the endorser and payload hash
+	digest := append(res.GetPayload(), res.GetEndorsement().Endorser...)
+
+	// validate the signature
+	err = v.membership.Verify(creatorID, digest, res.GetEndorsement().Signature)
+	if err != nil {
+		return errors.WithMessage(err, "The creator's signature over the proposal is not valid")
+	}
+
+	return nil
+}
+
+// Match matches transaction proposal responses (empty)
+func (v *requestVerifier) Match(response []*fab.TransactionProposalResponse) error {
+	return nil
 }
