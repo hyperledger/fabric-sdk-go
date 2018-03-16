@@ -30,7 +30,7 @@ func (f *CustomMSPFactory) CreateUserStore(config core.Config) (msp.UserStore, e
 	return f.customUserStore, nil
 }
 
-// CreateProvider creates an MSP provider
-func (f *CustomMSPFactory) CreateProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.Provider, error) {
-	return f.defaultFactory.CreateProvider(config, cryptoProvider, f.customUserStore)
+// CreateIdentityManagerProvider creates an IdentityManager provider
+func (f *CustomMSPFactory) CreateIdentityManagerProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error) {
+	return f.defaultFactory.CreateIdentityManagerProvider(config, cryptoProvider, f.customUserStore)
 }

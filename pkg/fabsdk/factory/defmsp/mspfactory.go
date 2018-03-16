@@ -47,7 +47,7 @@ func (f *ProviderFactory) CreateUserStore(config core.Config) (msp.UserStore, er
 	return userStore, nil
 }
 
-// CreateProvider returns a new default implementation of MSP provider
-func (f *ProviderFactory) CreateProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.Provider, error) {
+// CreateIdentityManagerProvider returns a new default implementation of MSP provider
+func (f *ProviderFactory) CreateIdentityManagerProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error) {
 	return msppvdr.New(config, cryptoProvider, userStore)
 }
