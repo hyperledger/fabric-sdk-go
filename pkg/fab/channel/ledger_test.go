@@ -125,19 +125,19 @@ func TestQueryConfig(t *testing.T) {
 	defer cancel()
 
 	// empty targets
-	_, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{}, 1, nil)
+	_, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{}, nil)
 	if err == nil {
 		t.Fatalf("Should have failed due to empty targets")
 	}
 
 	// min endorsers <= 0
-	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 0, nil)
+	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, &TransactionProposalResponseVerifier{})
 	if err == nil {
 		t.Fatalf("Should have failed due to empty targets")
 	}
 
 	// peer without payload
-	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 1, nil)
+	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, &TransactionProposalResponseVerifier{MinResponses: 1})
 	if err == nil {
 		t.Fatalf("Should have failed due to nil block metadata")
 	}
@@ -166,13 +166,13 @@ func TestQueryConfig(t *testing.T) {
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: payload, Status: 200}
 
 	// fail with min endorsers
-	res, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, 2, nil)
+	res, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, &TransactionProposalResponseVerifier{MinResponses: 2})
 	if err == nil {
 		t.Fatalf("Should have failed with since there's one endorser and at least two are required")
 	}
 
 	// success with one endorser
-	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, 1, nil)
+	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, &TransactionProposalResponseVerifier{MinResponses: 1})
 	if err != nil || res == nil {
 		t.Fatalf("Test QueryConfig failed: %v", err)
 	}
@@ -181,7 +181,7 @@ func TestQueryConfig(t *testing.T) {
 	peer2 := mocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, Payload: payload, Status: 200}
 
 	// success with two endorsers
-	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, 2, nil)
+	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, &TransactionProposalResponseVerifier{MinResponses: 2})
 	if err != nil || res == nil {
 		t.Fatalf("Test QueryConfig failed: %v", err)
 	}
@@ -207,7 +207,7 @@ func TestQueryConfig(t *testing.T) {
 
 	// peer 2 now had different payload; query config block should fail
 	peer2.Payload = payload2
-	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, 2, nil)
+	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, &TransactionProposalResponseVerifier{MinResponses: 2})
 	if err == nil {
 		t.Fatalf("Should have failed for different block payloads")
 	}
@@ -246,7 +246,7 @@ func TestQueryConfigBlockDifferentMetadata(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(setupContext(), context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer1, &peer2}, 2, nil)
+	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer1, &peer2}, &TransactionProposalResponseVerifier{MinResponses: 2})
 	assert.Nil(t, err, "Expected success querying blocks with identical block data payloads")
 }
 

@@ -89,7 +89,15 @@ func (c *Ledger) QueryBlockByHash(reqCtx reqContext.Context, blockHash []byte, t
 	cir := createBlockByHashInvokeRequest(c.chName, blockHash)
 	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets, verifier)
 
+	responses, errors := getConfigBlocks(tprs)
+	errs = multi.Append(errs, errors)
+
+	return responses, errs
+}
+
+func getConfigBlocks(tprs []*fab.TransactionProposalResponse) ([]*common.Block, error) {
 	responses := []*common.Block{}
+	var errs error
 	for _, tpr := range tprs {
 		r, err := createCommonBlock(tpr)
 		if err != nil {
@@ -110,15 +118,8 @@ func (c *Ledger) QueryBlock(reqCtx reqContext.Context, blockNumber uint64, targe
 	cir := createBlockByNumberInvokeRequest(c.chName, blockNumber)
 	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets, verifier)
 
-	responses := []*common.Block{}
-	for _, tpr := range tprs {
-		r, err := createCommonBlock(tpr)
-		if err != nil {
-			errs = multi.Append(errs, errors.WithMessage(err, "From target: "+tpr.Endorser))
-		} else {
-			responses = append(responses, r)
-		}
-	}
+	responses, errors := getConfigBlocks(tprs)
+	errs = multi.Append(errs, errors)
 	return responses, errs
 }
 
@@ -190,14 +191,10 @@ func createChaincodeQueryResponse(tpr *fab.TransactionProposalResponse) (*pb.Cha
 
 // QueryConfigBlock returns the current configuration block for the specified channel. If the
 // peer doesn't belong to the channel, return error
-func (c *Ledger) QueryConfigBlock(reqCtx reqContext.Context, targets []fab.ProposalProcessor, minResponses int, verifier ResponseVerifier) (*common.ConfigEnvelope, error) {
+func (c *Ledger) QueryConfigBlock(reqCtx reqContext.Context, targets []fab.ProposalProcessor, verifier ResponseVerifier) (*common.ConfigEnvelope, error) {
 
 	if len(targets) == 0 {
 		return nil, errors.New("target(s) required")
-	}
-
-	if minResponses <= 0 {
-		return nil, errors.New("Minimum endorser has to be greater than zero")
 	}
 
 	cir := createConfigBlockInvokeRequest(c.chName)
@@ -206,34 +203,12 @@ func (c *Ledger) QueryConfigBlock(reqCtx reqContext.Context, targets []fab.Propo
 		return nil, errors.WithMessage(err, "queryChaincode failed")
 	}
 
-	if len(tprs) < minResponses {
-		return nil, errors.Errorf("Required minimum %d endorsments got %d", minResponses, len(tprs))
+	matchErr := verifier.Match(tprs)
+	if matchErr != nil {
+		return nil, matchErr
 	}
 
-	block, err := createCommonBlock(tprs[0])
-	if err != nil {
-		return nil, err
-	}
-
-	// Compare block data from  remaining responses
-	for _, tpr := range tprs[1:] {
-		b, err := createCommonBlock(tpr)
-		if err != nil {
-			return nil, err
-		}
-
-		if !proto.Equal(block.Data, b.Data) {
-			return nil, errors.New("Payloads for config block do not match")
-		}
-	}
-
-	if block.Data == nil || block.Data.Data == nil {
-		return nil, errors.New("config block data is nil")
-	}
-
-	if len(block.Data.Data) != 1 {
-		return nil, errors.New("config block must contain one transaction")
-	}
+	block, _ := createCommonBlock(tprs[0])
 
 	return createConfigEnvelope(block.Data.Data[0])
 
