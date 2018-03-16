@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -46,7 +47,7 @@ func TestQueryMethods(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(setupContext(), context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	_, err := channel.QueryBlockByHash(reqCtx, nil, []fab.ProposalProcessor{&peer})
+	_, err := channel.QueryBlockByHash(reqCtx, nil, []fab.ProposalProcessor{&peer}, nil)
 	if err == nil {
 		t.Fatalf("Query hash cannot be nil")
 	}
@@ -60,13 +61,13 @@ func TestChannelQueryBlock(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(setupContext(), context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	_, err := channel.QueryBlock(reqCtx, 1, []fab.ProposalProcessor{&peer})
+	_, err := channel.QueryBlock(reqCtx, 1, []fab.ProposalProcessor{&peer}, nil)
 
 	if err != nil {
 		t.Fatalf("Test channel query block failed: %s", err)
 	}
 
-	_, err = channel.QueryBlockByHash(reqCtx, []byte(""), []fab.ProposalProcessor{&peer})
+	_, err = channel.QueryBlockByHash(reqCtx, []byte(""), []fab.ProposalProcessor{&peer}, nil)
 
 	if err != nil {
 		t.Fatal("Test channel query block by hash failed,")
@@ -81,7 +82,7 @@ func TestQueryInstantiatedChaincodes(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(setupContext(), context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	res, err := channel.QueryInstantiatedChaincodes(reqCtx, []fab.ProposalProcessor{&peer})
+	res, err := channel.QueryInstantiatedChaincodes(reqCtx, []fab.ProposalProcessor{&peer}, nil)
 
 	if err != nil || res == nil {
 		t.Fatalf("Test QueryInstatiated chaincode failed: %v", err)
@@ -96,7 +97,7 @@ func TestQueryTransaction(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(setupContext(), context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	res, err := channel.QueryTransaction(reqCtx, "txid", []fab.ProposalProcessor{&peer})
+	res, err := channel.QueryTransaction(reqCtx, "txid", []fab.ProposalProcessor{&peer}, nil)
 
 	if err != nil || res == nil {
 		t.Fatal("Test QueryTransaction failed")
@@ -110,7 +111,7 @@ func TestQueryInfo(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(setupContext(), context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	res, err := channel.QueryInfo(reqCtx, []fab.ProposalProcessor{&peer})
+	res, err := channel.QueryInfo(reqCtx, []fab.ProposalProcessor{&peer}, nil)
 
 	if err != nil || res == nil {
 		t.Fatalf("Test QueryInfo failed: %v", err)
@@ -124,19 +125,19 @@ func TestQueryConfig(t *testing.T) {
 	defer cancel()
 
 	// empty targets
-	_, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{}, 1)
+	_, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{}, 1, nil)
 	if err == nil {
 		t.Fatalf("Should have failed due to empty targets")
 	}
 
 	// min endorsers <= 0
-	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 0)
+	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 0, nil)
 	if err == nil {
 		t.Fatalf("Should have failed due to empty targets")
 	}
 
 	// peer without payload
-	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 1)
+	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 1, nil)
 	if err == nil {
 		t.Fatalf("Should have failed due to nil block metadata")
 	}
@@ -165,13 +166,13 @@ func TestQueryConfig(t *testing.T) {
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: payload, Status: 200}
 
 	// fail with min endorsers
-	res, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, 2)
+	res, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, 2, nil)
 	if err == nil {
 		t.Fatalf("Should have failed with since there's one endorser and at least two are required")
 	}
 
 	// success with one endorser
-	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, 1)
+	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, 1, nil)
 	if err != nil || res == nil {
 		t.Fatalf("Test QueryConfig failed: %v", err)
 	}
@@ -180,7 +181,7 @@ func TestQueryConfig(t *testing.T) {
 	peer2 := mocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, Payload: payload, Status: 200}
 
 	// success with two endorsers
-	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, 2)
+	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, 2, nil)
 	if err != nil || res == nil {
 		t.Fatalf("Test QueryConfig failed: %v", err)
 	}
@@ -206,7 +207,7 @@ func TestQueryConfig(t *testing.T) {
 
 	// peer 2 now had different payload; query config block should fail
 	peer2.Payload = payload2
-	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, 2)
+	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, 2, nil)
 	if err == nil {
 		t.Fatalf("Should have failed for different block payloads")
 	}
@@ -245,7 +246,7 @@ func TestQueryConfigBlockDifferentMetadata(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(setupContext(), context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer1, &peer2}, 2)
+	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer1, &peer2}, 2, nil)
 	assert.Nil(t, err, "Expected success querying blocks with identical block data payloads")
 }
 
@@ -261,9 +262,18 @@ func TestFilterResponses(t *testing.T) {
 		}
 		tprs = append(tprs, &fab.TransactionProposalResponse{Status: int32(s)})
 	}
-	f, errs := filterResponses(tprs, err)
+	f, errs := filterResponses(tprs, err, &TestVerifier{})
 	assert.Len(t, f, 51)
 	assert.Len(t, errs.(multi.Errors), 51)
+}
+
+func TestFilterResponsesWithVerifyError(t *testing.T) {
+	tprs := []*fab.TransactionProposalResponse{}
+	err := fmt.Errorf("test")
+	tprs = append(tprs, &fab.TransactionProposalResponse{Status: 200})
+	f, errs := filterResponses(tprs, err, &TestVerifier{verifyErr: errors.New("error")})
+	assert.Len(t, f, 0)
+	assert.Len(t, errs.(multi.Errors), 2)
 }
 
 func setupTestLedger() (*Ledger, error) {
@@ -278,4 +288,19 @@ func setupContext() contextApi.Client {
 	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
 	return ctx
+}
+
+type TestVerifier struct {
+	verifyErr error
+	matchErr  error
+}
+
+// Verify checks transaction proposal response
+func (tv *TestVerifier) Verify(response *fab.TransactionProposalResponse) error {
+	return tv.verifyErr
+}
+
+// Match matches transaction proposal responses
+func (tv *TestVerifier) Match(response []*fab.TransactionProposalResponse) error {
+	return tv.matchErr
 }

@@ -156,7 +156,8 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 		targets = peersToTxnProcessors(c.opts.Targets)
 	}
 
-	configEnvelope, err := l.QueryConfigBlock(reqCtx, targets, c.opts.MinResponses)
+	// TODO: Verifier implementation Will be handled by different ticket
+	configEnvelope, err := l.QueryConfigBlock(reqCtx, targets, c.opts.MinResponses, nil)
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryBlockConfig failed")
 	}

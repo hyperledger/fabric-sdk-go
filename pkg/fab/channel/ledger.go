@@ -34,6 +34,12 @@ type Ledger struct {
 	chName string
 }
 
+// ResponseVerifier checks transaction proposal response(s)
+type ResponseVerifier interface {
+	Verify(response *fab.TransactionProposalResponse) error
+	Match(response []*fab.TransactionProposalResponse) error
+}
+
 // NewLedger constructs a Ledger client for the current context and named channel.
 func NewLedger(chName string) (*Ledger, error) {
 	l := Ledger{
@@ -44,11 +50,11 @@ func NewLedger(chName string) (*Ledger, error) {
 
 // QueryInfo queries for various useful information on the state of the channel
 // (height, known peers).
-func (c *Ledger) QueryInfo(reqCtx reqContext.Context, targets []fab.ProposalProcessor) ([]*fab.BlockchainInfoResponse, error) {
+func (c *Ledger) QueryInfo(reqCtx reqContext.Context, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*fab.BlockchainInfoResponse, error) {
 	logger.Debug("queryInfo - start")
 
 	cir := createChannelInfoInvokeRequest(c.chName)
-	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets)
+	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets, verifier)
 
 	responses := []*fab.BlockchainInfoResponse{}
 	for _, tpr := range tprs {
@@ -74,14 +80,14 @@ func createBlockchainInfo(tpr *fab.TransactionProposalResponse) (*common.Blockch
 // QueryBlockByHash queries the ledger for Block by block hash.
 // This query will be made to specified targets.
 // Returns the block.
-func (c *Ledger) QueryBlockByHash(reqCtx reqContext.Context, blockHash []byte, targets []fab.ProposalProcessor) ([]*common.Block, error) {
+func (c *Ledger) QueryBlockByHash(reqCtx reqContext.Context, blockHash []byte, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*common.Block, error) {
 
 	if blockHash == nil {
 		return nil, errors.New("blockHash is required")
 	}
 
 	cir := createBlockByHashInvokeRequest(c.chName, blockHash)
-	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets)
+	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets, verifier)
 
 	responses := []*common.Block{}
 	for _, tpr := range tprs {
@@ -99,10 +105,10 @@ func (c *Ledger) QueryBlockByHash(reqCtx reqContext.Context, blockHash []byte, t
 // This query will be made to specified targets.
 // blockNumber: The number which is the ID of the Block.
 // It returns the block.
-func (c *Ledger) QueryBlock(reqCtx reqContext.Context, blockNumber uint64, targets []fab.ProposalProcessor) ([]*common.Block, error) {
+func (c *Ledger) QueryBlock(reqCtx reqContext.Context, blockNumber uint64, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*common.Block, error) {
 
 	cir := createBlockByNumberInvokeRequest(c.chName, blockNumber)
-	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets)
+	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets, verifier)
 
 	responses := []*common.Block{}
 	for _, tpr := range tprs {
@@ -128,10 +134,10 @@ func createCommonBlock(tpr *fab.TransactionProposalResponse) (*common.Block, err
 // QueryTransaction queries the ledger for Transaction by number.
 // This query will be made to specified targets.
 // Returns the ProcessedTransaction information containing the transaction.
-func (c *Ledger) QueryTransaction(reqCtx reqContext.Context, transactionID fab.TransactionID, targets []fab.ProposalProcessor) ([]*pb.ProcessedTransaction, error) {
+func (c *Ledger) QueryTransaction(reqCtx reqContext.Context, transactionID fab.TransactionID, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*pb.ProcessedTransaction, error) {
 
 	cir := createTransactionByIDInvokeRequest(c.chName, transactionID)
-	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets)
+	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets, verifier)
 
 	responses := []*pb.ProcessedTransaction{}
 	for _, tpr := range tprs {
@@ -157,9 +163,9 @@ func createProcessedTransaction(tpr *fab.TransactionProposalResponse) (*pb.Proce
 
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on this channel.
 // This query will be made to specified targets.
-func (c *Ledger) QueryInstantiatedChaincodes(reqCtx reqContext.Context, targets []fab.ProposalProcessor) ([]*pb.ChaincodeQueryResponse, error) {
+func (c *Ledger) QueryInstantiatedChaincodes(reqCtx reqContext.Context, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*pb.ChaincodeQueryResponse, error) {
 	cir := createChaincodeInvokeRequest()
-	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets)
+	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets, verifier)
 
 	responses := []*pb.ChaincodeQueryResponse{}
 	for _, tpr := range tprs {
@@ -184,7 +190,7 @@ func createChaincodeQueryResponse(tpr *fab.TransactionProposalResponse) (*pb.Cha
 
 // QueryConfigBlock returns the current configuration block for the specified channel. If the
 // peer doesn't belong to the channel, return error
-func (c *Ledger) QueryConfigBlock(reqCtx reqContext.Context, targets []fab.ProposalProcessor, minResponses int) (*common.ConfigEnvelope, error) {
+func (c *Ledger) QueryConfigBlock(reqCtx reqContext.Context, targets []fab.ProposalProcessor, minResponses int, verifier ResponseVerifier) (*common.ConfigEnvelope, error) {
 
 	if len(targets) == 0 {
 		return nil, errors.New("target(s) required")
@@ -195,7 +201,7 @@ func (c *Ledger) QueryConfigBlock(reqCtx reqContext.Context, targets []fab.Propo
 	}
 
 	cir := createConfigBlockInvokeRequest(c.chName)
-	tprs, err := queryChaincode(reqCtx, c.chName, cir, targets)
+	tprs, err := queryChaincode(reqCtx, c.chName, cir, targets, verifier)
 	if err != nil && len(tprs) == 0 {
 		return nil, errors.WithMessage(err, "queryChaincode failed")
 	}
@@ -242,7 +248,7 @@ func collectProposalResponses(tprs []*fab.TransactionProposalResponse) [][]byte 
 	return responses
 }
 
-func queryChaincode(reqCtx reqContext.Context, channelID string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+func queryChaincode(reqCtx reqContext.Context, channelID string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*fab.TransactionProposalResponse, error) {
 	ctx, ok := contextImpl.RequestClientContext(reqCtx)
 	if !ok {
 		return nil, errors.New("failed get client context from reqContext for signProposal")
@@ -258,13 +264,19 @@ func queryChaincode(reqCtx reqContext.Context, channelID string, request fab.Cha
 	}
 	tprs, errs := txn.SendProposal(reqCtx, tp, targets)
 
-	return filterResponses(tprs, errs)
+	return filterResponses(tprs, errs, verifier)
 }
 
-func filterResponses(responses []*fab.TransactionProposalResponse, errs error) ([]*fab.TransactionProposalResponse, error) {
+func filterResponses(responses []*fab.TransactionProposalResponse, errs error, verifier ResponseVerifier) ([]*fab.TransactionProposalResponse, error) {
 	filteredResponses := responses[:0]
 	for _, response := range responses {
 		if response.Status == http.StatusOK {
+			if verifier != nil {
+				if err := verifier.Verify(response); err != nil {
+					errs = multi.Append(errs, errors.Errorf("failed to verify response from %s: %s", response.Endorser, err))
+					continue
+				}
+			}
 			filteredResponses = append(filteredResponses, response)
 		} else {
 			errs = multi.Append(errs, errors.Errorf("bad status from %s (%d)", response.Endorser, response.Status))
