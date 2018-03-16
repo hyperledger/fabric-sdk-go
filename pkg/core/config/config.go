@@ -542,10 +542,10 @@ func (c *Config) Timeout(tType core.TimeoutType) time.Duration {
 func (c *Config) EventServiceType() core.EventServiceType {
 	etype := c.configViper.GetString("client.eventService.type")
 	switch etype {
-	case "deliver":
-		return core.DeliverEventServiceType
-	default:
+	case "eventhub":
 		return core.EventHubEventServiceType
+	default:
+		return core.DeliverEventServiceType
 	}
 }
 

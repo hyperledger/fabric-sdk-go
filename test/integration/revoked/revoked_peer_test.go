@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -39,6 +40,8 @@ const (
 	org2User         = "User1"
 	channelID        = "orgchannel"
 )
+
+var logger = logging.NewLogger("fabsdk/test")
 
 // Peers used for testing
 var orgTestPeer0 fab.Peer
@@ -137,7 +140,9 @@ func TestRevokedPeer(t *testing.T) {
 	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
 
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
-	err = org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
+	err = org1ResMgmt.InstantiateCC("orgchannel",
+		resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
+		resmgmt.WithTargetURLs("peer0.org1.example.com"))
 	if err != nil {
 		t.Fatal(err)
 	}

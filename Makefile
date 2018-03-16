@@ -27,13 +27,13 @@ DOCKER_CMD         ?= docker
 DOCKER_COMPOSE_CMD ?= docker-compose
 
 # Fabric versions used in the Makefile
-FABRIC_STABLE_VERSION           := 1.0.6
-FABRIC_STABLE_VERSION_MINOR     := 1.0
+FABRIC_STABLE_VERSION           := 1.1.0
+FABRIC_STABLE_VERSION_MINOR     := 1.1
 FABRIC_STABLE_VERSION_MAJOR     := 1
 FABRIC_BASEIMAGE_STABLE_VERSION := 0.4.6
 
 FABRIC_PRERELEASE_VERSION       := 1.1.0
-FABRIC_PREV_VERSION             := 1.0.0
+FABRIC_PREV_VERSION             := 1.0.6
 FABRIC_DEVSTABLE_VERSION_MINOR  := 1.1
 FABRIC_DEVSTABLE_VERSION_MAJOR  := 1
 
@@ -77,11 +77,12 @@ FABRIC_SDK_DEPRECATED_UNITTEST   ?= false
 INT_TESTS_LOCAL_CONFIG_FILE := config_test_local.yaml
 
 # Code levels to exercise integration/e2e tests against (overridable)
-FABRIC_STABLE_INTTEST        ?= true
-FABRIC_STABLE_PKCS11_INTTEST ?= false
-FABRIC_PREV_INTTEST          ?= false
-FABRIC_PRERELEASE_INTTEST    ?= false
-FABRIC_DEVSTABLE_INTTEST     ?= false
+FABRIC_STABLE_INTTEST         ?= true
+FABRIC_STABLE_PKCS11_INTTEST  ?= false
+FABRIC_STABLE_REVOKED_INTTEST ?= false
+FABRIC_PREV_INTTEST           ?= false
+FABRIC_PRERELEASE_INTTEST     ?= false
+FABRIC_DEVSTABLE_INTTEST      ?= false
 
 # Code levels
 FABRIC_STABLE_CODELEVEL_TAG     := stable
@@ -138,8 +139,9 @@ export FABRIC_SDKGO_DEPEND_INSTALL=true
 FABRIC_SDK_DEPRECATED_UNITTEST   := false
 FABRIC_STABLE_INTTEST            := true
 FABRIC_STABLE_PKCS11_INTTEST     := true
+FABRIC_STABLE_REVOKED_INTTEST    := true
 FABRIC_PREV_INTTEST              := true
-FABRIC_PRERELEASE_INTTEST        := true
+FABRIC_PRERELEASE_INTTEST        := false
 FABRIC_DEVSTABLE_INTTEST         := false
 endif
 
@@ -221,14 +223,6 @@ unit-tests-pkcs11: checks depend populate
 	@FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit-pkcs11.sh
 
 
-.PHONY: integration-tests-revoked
-integration-tests-revoked: clean depend populate
-	@cd $(FIXTURE_DOCKERENV_PATH) && \
-		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-revoked.yaml up --force-recreate --abort-on-container-exit
-	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-revoked.yaml"
-
-
-
 .PHONY: integration-tests-stable
 integration-tests-stable: clean depend populate
 	@cd $(FIXTURE_DOCKERENV_PATH) && \
@@ -257,6 +251,12 @@ integration-tests-devstable: clean depend populate
 		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
 	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)/ $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
 
+.PHONY: integration-tests-stable-revoked
+integration-tests-stable-revoked: clean depend populate
+	@cd $(FIXTURE_DOCKERENV_PATH) && \
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-revoked.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-revoked.yaml"
+
 .PHONY: integration-tests-stable-pkcs11
 integration-tests-stable-pkcs11: clean depend populate build-softhsm2-image
 	@cd $(FIXTURE_DOCKERENV_PATH) && \
@@ -280,15 +280,15 @@ integration-tests: integration-test
 integration-test: clean depend populate
 ifeq ($(FABRIC_STABLE_INTTEST),true)
 	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-revoked
-endif
-ifeq ($(FABRIC_STABLE_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
 	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable
 endif
 ifeq ($(FABRIC_STABLE_PKCS11_INTTEST),true)
 	@$(MAKE) -f $(MAKEFILE_THIS) clean
 	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-pkcs11
+endif
+ifeq ($(FABRIC_STABLE_REVOKED_INTTEST),true)
+	@$(MAKE) -f $(MAKEFILE_THIS) clean
+	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-revoked
 endif
 ifeq ($(FABRIC_PRERELEASE_INTTEST),true)
 	@$(MAKE) -f $(MAKEFILE_THIS) clean

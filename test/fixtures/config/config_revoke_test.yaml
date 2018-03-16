@@ -44,9 +44,9 @@ client:
         # This interval will define how long a peer is greylisted
         greylistExpiry: 5s
   eventService:
-    # Event service type (deliver|eventhub) - default: eventhub
+    # Event service type (deliver|eventhub) - default: deliver
     # NOTE: This is temporary until the SDK starts making use of channel capabilities
-    type: eventhub
+    type: deliver
     timeout:
       connection: 3s
       registrationResponse: 10s
@@ -274,12 +274,11 @@ peers:
     # this URL is used to connect the EventHub and registering event listeners
     eventUrl: peer0.org1.example.com:7053
 
-    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
-#     These parameters should be set in coordination with the keepalive policy on the server,
-#     as incompatible settings can result in closing of connection.
-#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
       keep-alive-time: 0s
       keep-alive-timeout: 20s
       keep-alive-permit: false
@@ -294,13 +293,13 @@ peers:
 
   local.peer1.org2.example.com:
     url: peer1.org2.example.com:9051
-    eventUrl: peer1.org2.example.com:9053
-    #TODO to be moved to high level, common for all grpc connections
+    #eventUrl: peer1.org2.example.com:9053
+
     grpcOptions:
       ssl-target-name-override: peer1.org2.example.com
-#     These parameters should be set in coordination with the keepalive policy on the server,
-#     as incompatible settings can result in closing of connection.
-#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
       keep-alive-time: 0s
       keep-alive-timeout: 20s
       keep-alive-permit: false

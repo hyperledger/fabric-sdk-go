@@ -40,9 +40,9 @@ You're good to go, happy coding! Check out the examples for usage demonstrations
 
 ### Current Compatibility
 The SDK's integration tests run against three tagged Fabric versions:
-- prev (currently v1.0.0)
-- stable (currently latest of v1.0.x)
-- prerelease (currently latest of v1.1.0-x)
+- prev (currently v1.0.6)
+- stable (currently v1.1.0)
+- prerelease (currently disabled)
 
 Additionally for development purposes integration tests also run against the devstable Fabric version as needed.
 
@@ -50,7 +50,7 @@ Additionally for development purposes integration tests also run against the dev
 When the 'prev' code level is updated, the last tested fabric-sdk-go commit or tag is listed below.
 
 - fabric v1.0.0 & fabric-ca v1.0.0
-  - fabric-sdk-go: master:HEAD
+  - fabric-sdk-go: 79b343ba
 
 ### Running the test suite
 

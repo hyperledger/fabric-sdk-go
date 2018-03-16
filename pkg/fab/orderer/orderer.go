@@ -288,7 +288,6 @@ func (o *Orderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 func broadcastStream(broadcastClient ab.AtomicBroadcast_BroadcastClient, responses chan common.Status, errs chan error) {
 
 	broadcastResponse, err := broadcastClient.Recv()
-	logger.Debugf("Orderer.broadcastStream - response:%v, error:%v", broadcastResponse, err)
 	if err != nil {
 		rpcStatus, ok := grpcstatus.FromError(err)
 		if ok {

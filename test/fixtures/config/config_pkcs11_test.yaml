@@ -43,9 +43,9 @@ client:
         # This interval will define how long a peer is greylisted
         greylistExpiry: 5s
   eventService:
-    # Event service type (deliver|eventhub) - default: eventhub
+    # Event service type (deliver|eventhub) - default: deliver
     # NOTE: This is temporary until the SDK starts making use of channel capabilities
-    type: eventhub
+    type: deliver
     timeout:
       connection: 3s
       registrationResponse: 10s
