@@ -98,17 +98,17 @@ func (m *MockMSPProviderFactory) EXPECT() *MockMSPProviderFactoryMockRecorder {
 	return m.recorder
 }
 
-// CreateProvider mocks base method
-func (m *MockMSPProviderFactory) CreateProvider(arg0 core.Config, arg1 core.CryptoSuite, arg2 msp.UserStore) (msp.Provider, error) {
-	ret := m.ctrl.Call(m, "CreateProvider", arg0, arg1, arg2)
-	ret0, _ := ret[0].(msp.Provider)
+// CreateIdentityManagerProvider mocks base method
+func (m *MockMSPProviderFactory) CreateIdentityManagerProvider(arg0 core.Config, arg1 core.CryptoSuite, arg2 msp.UserStore) (msp.IdentityManagerProvider, error) {
+	ret := m.ctrl.Call(m, "CreateIdentityManagerProvider", arg0, arg1, arg2)
+	ret0, _ := ret[0].(msp.IdentityManagerProvider)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateProvider indicates an expected call of CreateProvider
-func (mr *MockMSPProviderFactoryMockRecorder) CreateProvider(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProvider", reflect.TypeOf((*MockMSPProviderFactory)(nil).CreateProvider), arg0, arg1, arg2)
+// CreateIdentityManagerProvider indicates an expected call of CreateIdentityManagerProvider
+func (mr *MockMSPProviderFactoryMockRecorder) CreateIdentityManagerProvider(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentityManagerProvider", reflect.TypeOf((*MockMSPProviderFactory)(nil).CreateIdentityManagerProvider), arg0, arg1, arg2)
 }
 
 // CreateUserStore mocks base method

@@ -116,7 +116,7 @@ func TestCreateIdentityManager(t *testing.T) {
 		t.Fatalf("Unexpected error creating user store %v", err)
 	}
 
-	provider, err := factory.CreateProvider(config, cryptosuite, userStore)
+	provider, err := factory.CreateIdentityManagerProvider(config, cryptosuite, userStore)
 	if err != nil {
 		t.Fatalf("Unexpected error creating provider %v", err)
 	}

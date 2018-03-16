@@ -12,7 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 )
 
-// ========== MSP Provider Factory with custom crypto provider ============= //
+// ========== Core Provider Factory with custom crypto provider ============= //
 
 // CustomCoreFactory is a custom factory for tests.
 type CustomCoreFactory struct {

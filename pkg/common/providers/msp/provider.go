@@ -14,15 +14,13 @@ type Context interface {
 	Providers
 }
 
-// TODO - the Providers/Provider interfaces need to be refactored to be similar to other Providers
-
-// Provider provides MSP services
-type Provider interface {
-	UserStore() UserStore
+// IdentityManagerProvider provides identity management services
+type IdentityManagerProvider interface {
 	IdentityManager(orgName string) (IdentityManager, bool)
 }
 
-// Providers represents the MSP service providers context.
+// Providers represents a provider of MSP service.
 type Providers interface {
-	Provider
+	UserStore() UserStore
+	IdentityManagerProvider
 }

@@ -108,7 +108,7 @@ func TestWithMSPPkg(t *testing.T) {
 	factory := mockapisdk.NewMockMSPProviderFactory(mockCtrl)
 
 	factory.EXPECT().CreateUserStore(c).Return(nil, nil)
-	factory.EXPECT().CreateProvider(c, gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+	factory.EXPECT().CreateIdentityManagerProvider(c, gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 
 	_, err = New(WithConfig(c), WithMSPPkg(factory))
 	if err != nil {
