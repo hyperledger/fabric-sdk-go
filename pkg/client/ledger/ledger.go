@@ -357,7 +357,7 @@ func (c *Client) calculateTargets(opts requestOptions) ([]fab.Peer, error) {
 	}
 
 	if len(targets) == 0 {
-		return nil, errors.New("No targets available")
+		return nil, errors.WithStack(status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), "no targets available", nil))
 	}
 
 	if len(targets) < opts.MinTargets {
