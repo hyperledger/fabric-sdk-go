@@ -44,6 +44,8 @@ type InfraProvider struct {
 	providerContext   context.Providers
 	commManager       *comm.CachingConnector
 	eventServiceCache cache
+	chCfgCache        cache
+	membershipCache   cache
 }
 
 // New creates a InfraProvider enabling access to core Fabric objects and functionality.
@@ -51,23 +53,27 @@ func New(config core.Config, opts ...options.Opt) *InfraProvider {
 	idleTime := config.TimeoutOrDefault(core.ConnectionIdle)
 	sweepTime := config.TimeoutOrDefault(core.CacheSweepInterval)
 	eventIdleTime := config.TimeoutOrDefault(core.EventServiceIdle)
+	chConfigRefresh := config.TimeoutOrDefault(core.ChannelConfigRefresh)
+	membershipRefresh := config.TimeoutOrDefault(core.ChannelMembershipRefresh)
 
-	cc := comm.NewCachingConnector(sweepTime, idleTime)
+	eventServiceCache := lazycache.New(
+		"Event_Service_Cache",
+		func(key lazycache.Key) (interface{}, error) {
+			ck := key.(cacheKey)
+			return NewEventClientRef(
+				eventIdleTime,
+				func() (fab.EventClient, error) {
+					return getEventClient(ck.Context(), ck.ChannelConfig(), opts...)
+				},
+			), nil
+		},
+	)
 
 	return &InfraProvider{
-		commManager: cc,
-		eventServiceCache: lazycache.New(
-			"Event_Service_Cache",
-			func(key lazycache.Key) (interface{}, error) {
-				cacheKey := key.(cacheKey)
-				return NewEventClientRef(
-					eventIdleTime,
-					func() (fab.EventClient, error) {
-						return getEventClient(cacheKey.Context(), cacheKey.ChannelConfig(), opts...)
-					},
-				), nil
-			},
-		),
+		commManager:       comm.NewCachingConnector(sweepTime, idleTime),
+		eventServiceCache: eventServiceCache,
+		chCfgCache:        chconfig.NewRefCache(chConfigRefresh),
+		membershipCache:   membership.NewRefCache(membershipRefresh),
 	}
 }
 
@@ -82,6 +88,12 @@ func (f *InfraProvider) Close() {
 	logger.Debug("Closing event service cache...")
 	f.eventServiceCache.Close()
 
+	logger.Debug("Closing membership cache...")
+	f.membershipCache.Close()
+
+	logger.Debug("Closing channel configuration cache...")
+	f.chCfgCache.Close()
+
 	// Comm Manager must be closed last since other resources
 	// may still be using it.
 	logger.Debug("Closing comm manager...")
@@ -94,8 +106,12 @@ func (f *InfraProvider) CommManager() fab.CommManager {
 }
 
 // CreateEventService creates the event service.
-func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, chConfig fab.ChannelCfg) (fab.EventService, error) {
-	key, err := NewCacheKey(ctx, chConfig)
+func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, channelID string) (fab.EventService, error) {
+	chnlCfg, err := f.CreateChannelCfg(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+	key, err := NewCacheKey(ctx, chnlCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -108,13 +124,44 @@ func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, chConfig fab.C
 
 // CreateChannelConfig initializes the channel config
 func (f *InfraProvider) CreateChannelConfig(channelID string) (fab.ChannelConfig, error) {
-
 	return chconfig.New(channelID)
 }
 
-// CreateChannelMembership returns a channel member identifier
-func (f *InfraProvider) CreateChannelMembership(cfg fab.ChannelCfg) (fab.ChannelMembership, error) {
-	return membership.New(membership.Context{Providers: f.providerContext}, cfg)
+// CreateChannelCfg creates and caches the channel configuration
+func (f *InfraProvider) CreateChannelCfg(ctx fab.ClientContext, channelID string) (fab.ChannelCfg, error) {
+	if channelID == "" {
+		// System channel
+		return chconfig.NewChannelCfg(""), nil
+	}
+	chCfgRef, err := f.loadChannelCfgRef(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+	chCfg, err := chCfgRef.Get()
+	if err != nil {
+		return nil, errors.WithMessage(err, "could not get chConfig cache reference")
+	}
+	return chCfg.(fab.ChannelCfg), nil
+}
+
+// CreateChannelMembership returns and caches a channel member identifier
+// A membership reference is returned that refreshes with the configured interval
+func (f *InfraProvider) CreateChannelMembership(ctx fab.ClientContext, channelID string) (fab.ChannelMembership, error) {
+	chCfgRef, err := f.loadChannelCfgRef(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+	key, err := membership.NewCacheKey(membership.Context{Providers: f.providerContext},
+		chCfgRef.Reference, channelID)
+	if err != nil {
+		return nil, err
+	}
+	ref, err := f.membershipCache.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return ref.(*membership.Ref), nil
 }
 
 // CreateChannelTransactor initializes the transactor
@@ -134,6 +181,19 @@ func (f *InfraProvider) CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Or
 		return nil, errors.WithMessage(err, "creating orderer failed")
 	}
 	return newOrderer, nil
+}
+
+func (f *InfraProvider) loadChannelCfgRef(ctx fab.ClientContext, channelID string) (*chconfig.Ref, error) {
+	key, err := chconfig.NewCacheKey(ctx, f.CreateChannelConfig, channelID)
+	if err != nil {
+		return nil, err
+	}
+	c, err := f.chCfgCache.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.(*chconfig.Ref), nil
 }
 
 func getEventClient(ctx context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (fab.EventClient, error) {

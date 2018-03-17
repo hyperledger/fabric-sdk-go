@@ -64,6 +64,8 @@ client:
     cache:
       connectionIdle: 30s
       eventServiceIdle: 500ms
+      channelConfig: 60s
+      channelMembership: 30s
 
   # Root of the MSP directories with keys and certs.
   cryptoconfig:
@@ -294,7 +296,7 @@ peers:
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
 #     These parameters should be set in coordination with the keepalive policy on the server,
-#     as incompatible settings can result in closing of connection.      
+#     as incompatible settings can result in closing of connection.
 #     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
       keep-alive-time: 0s
       keep-alive-timeout: 20s

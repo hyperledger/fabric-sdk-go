@@ -62,6 +62,8 @@ client:
     cache:
       connectionIdle: 30s
       eventServiceIdle: 500ms
+      channelConfig: 60s
+      channelMembership: 30s
 
 
   # Root of the MSP directories with keys and certs.
@@ -287,7 +289,7 @@ peers:
       # Certificate location absolute path
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
-  
+
   local.peer1.org2.example.com:
     url: peer1.org2.example.com:9051
     eventUrl: peer1.org2.example.com:9053

@@ -24,18 +24,23 @@ type MockInfraProvider struct {
 }
 
 // CreateEventService creates the event service.
-func (f *MockInfraProvider) CreateEventService(ic fab.ClientContext, chConfig fab.ChannelCfg) (fab.EventService, error) {
+func (f *MockInfraProvider) CreateEventService(ic fab.ClientContext, channelID string) (fab.EventService, error) {
 	panic("not implemented")
+}
+
+// CreateChannelCfg creates the channel configuration
+func (f *MockInfraProvider) CreateChannelCfg(ctx fab.ClientContext, name string) (fab.ChannelCfg, error) {
+	return nil, nil
+}
+
+// CreateChannelMembership returns a channel member identifier
+func (f *MockInfraProvider) CreateChannelMembership(ctx fab.ClientContext, channel string) (fab.ChannelMembership, error) {
+	return nil, fmt.Errorf("Not implemented")
 }
 
 // CreateChannelConfig initializes the channel config
 func (f *MockInfraProvider) CreateChannelConfig(channelID string) (fab.ChannelConfig, error) {
-	return &MockChannelConfig{channelID: channelID}, nil
-}
-
-// CreateChannelMembership returns a channel member identifier
-func (f *MockInfraProvider) CreateChannelMembership(cfg fab.ChannelCfg) (fab.ChannelMembership, error) {
-	return nil, fmt.Errorf("Not implemented")
+	return nil, nil
 }
 
 // CreateChannelTransactor initializes the transactor

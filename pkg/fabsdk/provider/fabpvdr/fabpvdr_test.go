@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -21,6 +22,11 @@ import (
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 	"github.com/stretchr/testify/assert"
 )
+
+type mockClientContext struct {
+	context.Providers
+	msp.SigningIdentity
+}
 
 func TestCreateInfraProvider(t *testing.T) {
 	newMockInfraProvider(t)
@@ -62,7 +68,14 @@ func TestCreatePeerFromConfig(t *testing.T) {
 
 func TestCreateMembership(t *testing.T) {
 	p := newMockInfraProvider(t)
-	m, err := p.CreateChannelMembership(mocks.NewMockChannelCfg(""))
+	ctx := mocks.NewMockProviderContext()
+	user := mspmocks.NewMockSigningIdentity("user", "user")
+	clientCtx := &mockClientContext{
+		Providers:       ctx,
+		SigningIdentity: user,
+	}
+
+	m, err := p.CreateChannelMembership(clientCtx, "test")
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 }

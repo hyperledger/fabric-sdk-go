@@ -91,6 +91,10 @@ const (
 	PeerResponse
 	// ResMgmt timeout is default overall timeout for all resource management operations
 	ResMgmt
+	// ChannelConfigRefresh channel configuration refresh interval
+	ChannelConfigRefresh
+	// ChannelMembershipRefresh channel membership refresh interval
+	ChannelMembershipRefresh
 )
 
 // EventServiceType specifies the type of event service to use

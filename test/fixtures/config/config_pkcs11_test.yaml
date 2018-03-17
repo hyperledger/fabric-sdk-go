@@ -61,6 +61,8 @@ client:
     cache:
       connectionIdle: 30s
       eventServiceIdle: 30s
+      channelConfig: 60s
+      channelMembership: 30s
 
 
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"

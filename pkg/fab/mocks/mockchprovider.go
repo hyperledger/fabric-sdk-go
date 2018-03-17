@@ -87,6 +87,6 @@ func (cs *MockChannelService) Membership() (fab.ChannelMembership, error) {
 }
 
 //ChannelConfig returns channel config
-func (cs *MockChannelService) ChannelConfig() fab.ChannelCfg {
-	return &MockChannelCfg{MockID: cs.channelID, MockOrderers: cs.mockOrderers}
+func (cs *MockChannelService) ChannelConfig() (fab.ChannelCfg, error) {
+	return &MockChannelCfg{MockID: cs.channelID, MockOrderers: cs.mockOrderers}, nil
 }

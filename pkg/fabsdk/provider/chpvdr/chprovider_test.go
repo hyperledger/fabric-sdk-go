@@ -79,7 +79,14 @@ type MockInfraProvider struct {
 // CreateChannelConfig initializes the channel config
 func (f *MockInfraProvider) CreateChannelConfig(channelID string) (fab.ChannelConfig, error) {
 	return mocks.NewMockChannelConfig(f.ctx, "mychannel")
+}
 
+func (f *MockInfraProvider) CreateChannelCfg(ctx fab.ClientContext, channel string) (fab.ChannelCfg, error) {
+	return mocks.NewMockChannelCfg(channel), nil
+}
+
+func (f *MockInfraProvider) CreateChannelMembership(ctx fab.ClientContext, channel string) (fab.ChannelMembership, error) {
+	return mocks.NewMockMembership(), nil
 }
 
 // CreateInfraProvider mocks new default implementation of fabric primitives

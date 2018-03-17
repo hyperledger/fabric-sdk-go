@@ -11,7 +11,7 @@ type ChannelService interface {
 	Config() (ChannelConfig, error)
 	EventService() (EventService, error)
 	Membership() (ChannelMembership, error)
-	ChannelConfig() ChannelCfg
+	ChannelConfig() (ChannelCfg, error)
 }
 
 // Transactor supplies methods for sending transaction proposals and transactions.
