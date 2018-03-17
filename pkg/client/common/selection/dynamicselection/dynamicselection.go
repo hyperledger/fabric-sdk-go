@@ -133,7 +133,7 @@ func newSelectionService(channelID string, lbp pgresolver.LoadBalancePolicy, ccP
 					return service.createPGResolver(key.(*resolverKey))
 				},
 				lazyref.WithAbsoluteExpiration(cacheTimeout),
-			).Get()
+			), nil
 		},
 	)
 
@@ -164,7 +164,12 @@ func (s *selectionService) getPeerGroupResolver(chaincodeIDs []string) (pgresolv
 	if err != nil {
 		return nil, err
 	}
-	return value.(pgresolver.PeerGroupResolver), nil
+	lazyRef := value.(*lazyref.Reference)
+	resolver, err := lazyRef.Get()
+	if err != nil {
+		return nil, err
+	}
+	return resolver.(pgresolver.PeerGroupResolver), nil
 }
 
 func (s *selectionService) createPGResolver(key *resolverKey) (pgresolver.PeerGroupResolver, error) {
