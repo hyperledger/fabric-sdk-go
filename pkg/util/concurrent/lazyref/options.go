@@ -66,7 +66,7 @@ const (
 func WithRefreshInterval(initialInit, refreshPeriod time.Duration) Opt {
 	return func(ref *Reference) {
 		ref.expirationHandler = ref.refreshValue
-		ref.expiryType = LastInitialized
+		ref.expiryType = Refreshing
 		ref.expirationProvider = NewSimpleExpirationProvider(refreshPeriod)
 		ref.initialInit = initialInit
 	}

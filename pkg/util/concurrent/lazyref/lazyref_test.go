@@ -216,9 +216,6 @@ func TestGetWithFinalizer(t *testing.T) {
 func TestExpiring(t *testing.T) {
 	var numTimesInitialized int32
 	var numTimesFinalized int32
-	expectedTimesInitialized := 3
-	expectedTimesFinalized := expectedTimesInitialized
-	expectedTimesValueChanged := expectedTimesInitialized
 	concurrency := 20
 	iterations := 100
 
@@ -261,9 +258,9 @@ func TestExpiring(t *testing.T) {
 				}
 				time.Sleep(5 * time.Millisecond)
 			}
-			if timesValueChanged != expectedTimesValueChanged {
+			if timesValueChanged <= 1 {
 				mutex.Lock()
-				errors = append(errors, fmt.Errorf("expecting value to have changed %d time(s) but it changed %d time(s)", expectedTimesValueChanged, timesValueChanged))
+				errors = append(errors, fmt.Errorf("expecting value to have changed multiple times but it changed %d time(s)", timesValueChanged))
 				mutex.Unlock()
 			}
 		}()
@@ -272,23 +269,20 @@ func TestExpiring(t *testing.T) {
 	wg.Wait()
 	ref.Close()
 
-	if num := atomic.LoadInt32(&numTimesInitialized); num != int32(expectedTimesInitialized) {
-		t.Fatalf("expecting initializer to be called %d time(s) but was called %d time(s)", expectedTimesInitialized, num)
-	}
-	if num := atomic.LoadInt32(&numTimesFinalized); num != int32(expectedTimesFinalized) {
-		t.Fatalf("expecting finalizer to be called %d time(s) but was called %d time(s)", expectedTimesFinalized, num)
-	}
 	if len(errors) > 0 {
 		t.Fatalf(errors[0].Error())
+	}
+	if num := atomic.LoadInt32(&numTimesInitialized); num <= 1 {
+		t.Fatalf("expecting initializer to be called multiple times but was called %d time(s)", num)
+	}
+	if num := atomic.LoadInt32(&numTimesFinalized); num <= 1 {
+		t.Fatalf("expecting finalizer to be called multiple times but was called %d time(s)", num)
 	}
 }
 
 func TestExpiringWithErr(t *testing.T) {
 	var numTimesInitialized int32
 	var numTimesFinalized int32
-	expectedTimesInitialized := 5
-	expectedTimesFinalized := expectedTimesInitialized - 1
-	expectedTimesValueChanged := expectedTimesInitialized - 1
 	concurrency := 20
 	iterations := 100
 
@@ -337,9 +331,9 @@ func TestExpiringWithErr(t *testing.T) {
 				}
 				time.Sleep(50 * time.Millisecond)
 			}
-			if timesValueChanged != expectedTimesValueChanged {
+			if timesValueChanged <= 1 {
 				mutex.Lock()
-				errors = append(errors, fmt.Errorf("expecting value to have changed %d time(s) but it changed %d time(s)", expectedTimesValueChanged, timesValueChanged))
+				errors = append(errors, fmt.Errorf("expecting value to have changed multiple times but it changed %d time(s)", timesValueChanged))
 				mutex.Unlock()
 			}
 		}()
@@ -351,20 +345,17 @@ func TestExpiringWithErr(t *testing.T) {
 	if len(errors) > 0 {
 		t.Fatalf(errors[0].Error())
 	}
-	if num := atomic.LoadInt32(&numTimesInitialized); num != int32(expectedTimesInitialized) {
-		t.Fatalf("expecting initializer to be called %d time(s) but was called %d time(s)", expectedTimesInitialized, num)
+	if num := atomic.LoadInt32(&numTimesInitialized); num <= 1 {
+		t.Fatalf("expecting initializer to be called multiple times but was called %d time(s)", num)
 	}
-	if num := atomic.LoadInt32(&numTimesFinalized); num != int32(expectedTimesFinalized) {
-		t.Fatalf("expecting finalizer to be called %d time(s) but was called %d time(s)", expectedTimesFinalized, num)
+	if num := atomic.LoadInt32(&numTimesFinalized); num <= 1 {
+		t.Fatalf("expecting finalizer to be called multiple times but was called %d time(s)", num)
 	}
 }
 
 func TestExpiringOnIdle(t *testing.T) {
 	var numTimesInitialized int32
 	var numTimesFinalized int32
-	expectedTimesInitialized := 2
-	expectedTimesFinalized := expectedTimesInitialized
-	expectedTimesValueChanged := 2
 	iterations := 20
 
 	seq := 0
@@ -381,7 +372,7 @@ func TestExpiringOnIdle(t *testing.T) {
 				atomic.AddInt32(&numTimesFinalized, 1)
 			},
 		),
-		WithIdleExpiration(time.Second),
+		WithIdleExpiration(100*time.Millisecond),
 	)
 
 	previousValue := ""
@@ -392,7 +383,7 @@ func TestExpiringOnIdle(t *testing.T) {
 			previousValue = value.(string)
 			timesValueChanged++
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(time.Duration(20*j) * time.Millisecond)
 	}
 
 	// Wait for the ref to expire
@@ -403,17 +394,17 @@ func TestExpiringOnIdle(t *testing.T) {
 		timesValueChanged++
 	}
 
-	if timesValueChanged != expectedTimesValueChanged {
-		t.Fatalf("expecting value to have changed %d time(s) but it changed %d time(s)", expectedTimesValueChanged, timesValueChanged)
+	if timesValueChanged <= 1 {
+		t.Fatalf("expecting value to have changed multiple times but it changed %d time(s)", timesValueChanged)
 	}
 
 	ref.Close()
 
-	if num := atomic.LoadInt32(&numTimesInitialized); num != int32(expectedTimesInitialized) {
-		t.Fatalf("expecting initializer to be called %d time(s) but was called %d time(s)", expectedTimesInitialized, num)
+	if num := atomic.LoadInt32(&numTimesInitialized); num <= 1 {
+		t.Fatalf("expecting initializer to be called multiple times but was called %d time(s)", num)
 	}
-	if num := atomic.LoadInt32(&numTimesFinalized); num != int32(expectedTimesFinalized) {
-		t.Fatalf("expecting finalizer to be called %d time(s) but was called %d time(s)", expectedTimesFinalized, num)
+	if num := atomic.LoadInt32(&numTimesFinalized); num <= 1 {
+		t.Fatalf("expecting finalizer to be called multiple times but was called %d time(s)", num)
 	}
 }
 
@@ -423,7 +414,7 @@ func TestProactiveRefresh(t *testing.T) {
 	expectedTimesFinalized := 1
 
 	concurrency := 20
-	iterations := 100
+	iterations := 50
 
 	seq := 0
 	ref := New(
@@ -443,7 +434,7 @@ func TestProactiveRefresh(t *testing.T) {
 				t.Logf("Finalizer called")
 			},
 		),
-		WithRefreshInterval(InitOnFirstAccess, 500*time.Millisecond),
+		WithRefreshInterval(InitImmediately, 500*time.Millisecond),
 	)
 
 	var wg sync.WaitGroup
