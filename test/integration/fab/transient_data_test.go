@@ -130,7 +130,10 @@ func getTransactor(sdk *fabsdk.FabricSDK, channelID string, user string, orgName
 	}
 	chService := channelContext.ChannelService()
 
-	chConfig := chService.ChannelConfig()
+	chConfig, err := chService.ChannelConfig()
+	if err != nil {
+		return nil, nil, nil, errors.WithMessage(err, "channel config retrieval failed")
+	}
 
 	reqCtx, cancel := context.NewRequest(channelContext, context.WithTimeoutType(core.PeerResponse))
 	transactor, err := channel.NewTransactor(reqCtx, chConfig)
