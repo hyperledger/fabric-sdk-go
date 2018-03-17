@@ -184,7 +184,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 	}
 
 	if len(targets) == 0 {
-		return errors.New("No targets available")
+		return errors.WithStack(status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), "no targets available", nil))
 	}
 
 	orderer, err := rc.requestOrderer(&opts, channelID)
@@ -334,7 +334,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	}
 
 	if len(targets) == 0 {
-		return nil, errors.New("No targets available for install cc")
+		return nil, errors.WithStack(status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), "no targets available", nil))
 	}
 
 	responses := make([]InstallCCResponse, 0)
@@ -537,7 +537,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 	}
 
 	if len(targets) == 0 {
-		return errors.New("No targets available for cc proposal")
+		return errors.WithStack(status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), "no targets available", nil))
 	}
 
 	// Get transactor on the channel to create and send the deploy proposal

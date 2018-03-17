@@ -32,6 +32,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -176,10 +177,11 @@ func TestJoinChannelRequiredParameters(t *testing.T) {
 
 	// Test missing default targets
 	err = rc.JoinChannel("mychannel")
-	if err == nil || !strings.Contains(err.Error(), "No targets available") {
-		t.Fatalf("InstallCC should have failed with no default targets error")
-	}
 
+	assert.NotNil(t, err, "error should have been returned")
+	s, ok := status.FromError(err)
+	assert.True(t, ok, "status code should be available")
+	assert.Equal(t, status.NoPeersFound.ToInt32(), s.Code, "code should be no peers found")
 }
 
 func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
@@ -226,9 +228,10 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
 	// Test filter only (filter has no match)
 	err = rc.JoinChannel("mychannel", WithTargetFilter(&mspFilter{mspID: "MSPID"}))
-	if err == nil || !strings.Contains(err.Error(), "No targets available") {
-		t.Fatalf("InstallCC should have failed with no targets error")
-	}
+	assert.NotNil(t, err, "error should have been returned")
+	s, ok := status.FromError(err)
+	assert.True(t, ok, "status code should be available")
+	assert.Equal(t, status.NoPeersFound.ToInt32(), s.Code, "code should be no peers found")
 
 	//Some cleanup before further test
 	orderer = fcmocks.NewMockOrderer("", nil)
