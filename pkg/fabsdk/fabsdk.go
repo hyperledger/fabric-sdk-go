@@ -39,6 +39,10 @@ type options struct {
 // Option configures the SDK.
 type Option func(opts *options) error
 
+type closeable interface {
+	Close()
+}
+
 // New initializes the SDK based on the set of options provided.
 // configProvider provides the application configuration.
 func New(cp core.ConfigProvider, opts ...Option) (*FabricSDK, error) {
@@ -233,6 +237,12 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 
 // Close frees up caches and connections being maintained by the SDK
 func (sdk *FabricSDK) Close() {
+	if pvdr, ok := sdk.provider.DiscoveryProvider().(closeable); ok {
+		pvdr.Close()
+	}
+	if pvdr, ok := sdk.provider.SelectionProvider().(closeable); ok {
+		pvdr.Close()
+	}
 	sdk.provider.InfraProvider().Close()
 }
 
