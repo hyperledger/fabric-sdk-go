@@ -34,7 +34,7 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 const (
 	defaultMinResponses = 1
-	defaultMaxTargets   = 2
+	defaultMaxTargets   = 1
 )
 
 // Opts contains options for retrieving channel configuration
