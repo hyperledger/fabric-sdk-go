@@ -65,6 +65,18 @@ func TestConnectorDoubleClose(t *testing.T) {
 	connector.Close()
 }
 
+func TestReleaseAfterClose(t *testing.T) {
+	connector := NewCachingConnector(normalSweepTime, normalIdleTime)
+	defer connector.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), normalTimeout)
+	conn1, err := connector.DialContext(ctx, endorserAddr[0], grpc.WithInsecure())
+	cancel()
+	assert.Nil(t, err, "DialContext should have succeeded")
+	connector.Close()
+	assert.Equal(t, connectivity.Shutdown, conn1.GetState(), "connection should be shutdown")
+	connector.ReleaseConn(conn1)
+}
 func TestConnectorHappyFlushNumber1(t *testing.T) {
 	connector := NewCachingConnector(normalSweepTime, normalIdleTime)
 	defer connector.Close()
