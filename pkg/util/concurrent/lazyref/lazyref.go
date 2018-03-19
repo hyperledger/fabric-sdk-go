@@ -170,7 +170,7 @@ func (r *Reference) Close() {
 		return
 	}
 
-	logger.Info("Closing reference")
+	logger.Debug("Closing reference")
 
 	r.notifyClosing()
 	r.wg.Wait()
