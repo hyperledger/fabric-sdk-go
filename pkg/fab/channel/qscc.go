@@ -18,6 +18,7 @@ const (
 	qsccChannelInfo     = "GetChainInfo"
 	qsccBlockByHash     = "GetBlockByHash"
 	qsccBlockByNumber   = "GetBlockByNumber"
+	qsccBlockByTxID     = "GetBlockByTxID"
 )
 
 func createTransactionByIDInvokeRequest(channelID string, transactionID fab.TransactionID) fab.ChaincodeInvokeRequest {
@@ -68,6 +69,19 @@ func createBlockByNumberInvokeRequest(channelID string, blockNumber uint64) fab.
 	cir := fab.ChaincodeInvokeRequest{
 		ChaincodeID: qscc,
 		Fcn:         qsccBlockByNumber,
+		Args:        args,
+	}
+	return cir
+}
+
+func createBlockByTxIDInvokeRequest(channelID string, transactionID fab.TransactionID) fab.ChaincodeInvokeRequest {
+	var args [][]byte
+	args = append(args, []byte(channelID))
+	args = append(args, []byte(transactionID))
+
+	cir := fab.ChaincodeInvokeRequest{
+		ChaincodeID: qscc,
+		Fcn:         qsccBlockByTxID,
 		Args:        args,
 	}
 	return cir

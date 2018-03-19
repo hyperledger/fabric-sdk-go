@@ -95,6 +95,24 @@ func (c *Ledger) QueryBlockByHash(reqCtx reqContext.Context, blockHash []byte, t
 	return responses, errs
 }
 
+// QueryBlockByTxID returns a block which contains a transaction
+// This query will be made to specified targets.
+// Returns the block.
+func (c *Ledger) QueryBlockByTxID(reqCtx reqContext.Context, txID fab.TransactionID, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*common.Block, error) {
+
+	if txID == "" {
+		return nil, errors.New("txID is required")
+	}
+
+	cir := createBlockByTxIDInvokeRequest(c.chName, txID)
+	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets, verifier)
+
+	responses, errors := getConfigBlocks(tprs)
+	errs = multi.Append(errs, errors)
+
+	return responses, errs
+}
+
 func getConfigBlocks(tprs []*fab.TransactionProposalResponse) ([]*common.Block, error) {
 	responses := []*common.Block{}
 	var errs error

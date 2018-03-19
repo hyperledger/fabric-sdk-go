@@ -190,6 +190,49 @@ func (c *Client) QueryBlockByHash(blockHash []byte, options ...RequestOption) (*
 	return response, err
 }
 
+// QueryBlockByTxID returns a block which contains a transaction
+// This query will be made to specified targets.
+// Returns the block.
+func (c *Client) QueryBlockByTxID(txID fab.TransactionID, options ...RequestOption) (*common.Block, error) {
+
+	opts, err := c.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get opts for QueryBlockByTxID")
+	}
+
+	// Determine targets
+	targets, err := c.calculateTargets(opts)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to determine target peers for QueryBlockByTxID")
+	}
+
+	reqCtx, cancel := c.createRequestContext(&opts)
+	defer cancel()
+
+	responses, err := c.ledger.QueryBlockByTxID(reqCtx, txID, peersToTxnProcessors(targets), c.verifier)
+	if err != nil && len(responses) == 0 {
+		return nil, errors.WithMessage(err, "Failed to QueryBlockByTxID")
+	}
+
+	if len(responses) < opts.MinTargets {
+		return nil, errors.Errorf("QueryBlockByTxID: Number of responses %d is less than MinTargets %d", len(responses), opts.MinTargets)
+	}
+
+	response := responses[0]
+	for i, r := range responses {
+		if i == 0 {
+			continue
+		}
+
+		// All payloads have to match
+		if !proto.Equal(response.Data, r.Data) {
+			return nil, errors.New("Payloads for QueryBlockByTxID do not match")
+		}
+	}
+
+	return response, err
+}
+
 // QueryBlock queries the ledger for Block by block number.
 // This query will be made to specified targets.
 // blockNumber: The number which is the ID of the Block.
