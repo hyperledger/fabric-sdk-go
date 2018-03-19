@@ -573,21 +573,21 @@ func (c *Config) getTimeout(tType core.TimeoutType) time.Duration {
 	case core.OrdererResponse:
 		timeout = c.configViper.GetDuration("client.orderer.timeout.response")
 	case core.ChannelConfigRefresh:
-		timeout = c.configViper.GetDuration("client.global.timeout.cache.channelConfig")
+		timeout = c.configViper.GetDuration("client.global.cache.channelConfig")
 	case core.ChannelMembershipRefresh:
-		timeout = c.configViper.GetDuration("client.global.timeout.cache.channelMembership")
+		timeout = c.configViper.GetDuration("client.global.cache.channelMembership")
 	case core.CacheSweepInterval: // EXPERIMENTAL - do we need this to be configurable?
 		timeout = c.configViper.GetDuration("client.cache.interval.sweep")
 		if timeout == 0 {
 			timeout = defaultCacheSweepInterval
 		}
 	case core.ConnectionIdle:
-		timeout = c.configViper.GetDuration("client.global.timeout.cache.connectionIdle")
+		timeout = c.configViper.GetDuration("client.global.cache.connectionIdle")
 		if timeout == 0 {
 			timeout = defaultConnIdleTimeout
 		}
 	case core.EventServiceIdle:
-		timeout = c.configViper.GetDuration("client.global.timeout.cache.eventServiceIdle")
+		timeout = c.configViper.GetDuration("client.global.cache.eventServiceIdle")
 		if timeout == 0 {
 			timeout = defaultEventServiceIdleTimeout
 		}
