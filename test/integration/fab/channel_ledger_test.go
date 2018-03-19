@@ -111,6 +111,8 @@ func TestLedgerQueries(t *testing.T) {
 
 	testQueryBlock(t, ledgerClient, targets)
 
+	testQueryBlockByTxID(t, ledgerClient, txID, targets)
+
 	//prepare context
 	clientCtx := sdk.Context(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
 
@@ -214,6 +216,25 @@ func testQueryBlock(t *testing.T, ledgerClient *ledger.Client, targets []string)
 	if err == nil {
 		t.Fatalf("QueryBlock non-existent didn't return an error")
 	}
+}
+
+func testQueryBlockByTxID(t *testing.T, ledgerClient *ledger.Client, txID fab.TransactionID, targets []string) {
+
+	// Test Query Block- retrieve block by non-existent tx ID
+	_, err := ledgerClient.QueryBlockByTxID("non-existent", ledger.WithTargetURLs(targets...))
+	if err == nil {
+		t.Fatal("QueryBlockByTxID non-existent didn't return an error")
+	}
+
+	// Test Query Block - retrieve block by valid tx ID
+	block, err := ledgerClient.QueryBlockByTxID(txID, ledger.WithTargetURLs(targets...))
+	if err != nil {
+		t.Fatalf("QueryBlockByTxID return error: %v", err)
+	}
+	if block.Data == nil {
+		t.Fatal("QueryBlockByTxID block data is nil")
+	}
+
 }
 
 func testInstantiatedChaincodes(t *testing.T, ccID string, channelID string, resmgmtClient *resmgmt.Client, targets []string) {

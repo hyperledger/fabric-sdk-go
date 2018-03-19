@@ -8,6 +8,7 @@ package channel
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"time"
@@ -51,6 +52,11 @@ func TestQueryMethods(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Query hash cannot be nil")
 	}
+
+	_, err = channel.QueryBlockByTxID(reqCtx, "", []fab.ProposalProcessor{&peer}, nil)
+	if err == nil || !strings.Contains(err.Error(), "txID is required") {
+		t.Fatalf("Tx ID cannot be nil")
+	}
 }
 
 func TestChannelQueryBlock(t *testing.T) {
@@ -62,15 +68,18 @@ func TestChannelQueryBlock(t *testing.T) {
 	defer cancel()
 
 	_, err := channel.QueryBlock(reqCtx, 1, []fab.ProposalProcessor{&peer}, nil)
-
 	if err != nil {
 		t.Fatalf("Test channel query block failed: %s", err)
 	}
 
 	_, err = channel.QueryBlockByHash(reqCtx, []byte(""), []fab.ProposalProcessor{&peer}, nil)
-
 	if err != nil {
-		t.Fatal("Test channel query block by hash failed,")
+		t.Fatalf("Test channel query block by hash failed: %s", err)
+	}
+
+	_, err = channel.QueryBlockByTxID(reqCtx, "1234", []fab.ProposalProcessor{&peer}, nil)
+	if err != nil {
+		t.Fatalf("Test channel query block by tx ID failed: %s", err)
 	}
 
 }
