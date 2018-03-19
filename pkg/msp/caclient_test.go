@@ -15,12 +15,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/pkg/errors"
 )
 
@@ -219,8 +219,8 @@ func TestRevoke(t *testing.T) {
 		t.Fatalf("Expected error with nil request")
 	}
 
-	mockKey := bccspwrapper.GetKey(&mocks.MockKey{})
-	user := mocks.NewMockSigningIdentity("test", "test")
+	mockKey := bccspwrapper.GetKey(&mockmsp.MockKey{})
+	user := mockmsp.NewMockSigningIdentity("test", "test")
 	user.SetEnrollmentCertificate(readCert(t))
 	user.SetPrivateKey(mockKey)
 
@@ -246,7 +246,7 @@ func TestCAConfigError(t *testing.T) {
 	mockConfig.EXPECT().CAConfig(org1).Return(nil, errors.New("CAConfig error"))
 	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
 
-	userStore := &mocks.MockUserStore{}
+	userStore := &mockmsp.MockUserStore{}
 	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAConfig error") {
 		t.Fatalf("Expected error from CAConfig. Got: %v", err)
@@ -269,7 +269,7 @@ func TestCAServerCertPathsError(t *testing.T) {
 	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
 	mockConfig.EXPECT().CAServerCertPaths(org1).Return(nil, errors.New("CAServerCertPaths error"))
 
-	userStore := &mocks.MockUserStore{}
+	userStore := &mockmsp.MockUserStore{}
 	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAServerCertPaths error") {
 		t.Fatalf("Expected error from CAServerCertPaths. Got: %v", err)
@@ -293,7 +293,7 @@ func TestCAClientCertPathError(t *testing.T) {
 	mockConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertPath(org1).Return("", errors.New("CAClientCertPath error"))
 
-	userStore := &mocks.MockUserStore{}
+	userStore := &mockmsp.MockUserStore{}
 	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAClientCertPath error") {
 		t.Fatalf("Expected error from CAClientCertPath. Got: %v", err)
@@ -318,7 +318,7 @@ func TestCAClientKeyPathError(t *testing.T) {
 	mockConfig.EXPECT().CAClientCertPath(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyPath(org1).Return("", errors.New("CAClientKeyPath error"))
 
-	userStore := &mocks.MockUserStore{}
+	userStore := &mockmsp.MockUserStore{}
 	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAClientKeyPath error") {
 		t.Fatalf("Expected error from CAClientKeyPath. Got: %v", err)

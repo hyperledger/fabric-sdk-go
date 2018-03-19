@@ -20,7 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	mspapi "github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
 
 const (
@@ -44,7 +44,7 @@ type textFixture struct {
 	caClient        mspapi.CAClient
 }
 
-var caServer = &mocks.MockFabricCAServer{}
+var caServer = &mockmsp.MockFabricCAServer{}
 
 func (f *textFixture) setup(configPath string) {
 

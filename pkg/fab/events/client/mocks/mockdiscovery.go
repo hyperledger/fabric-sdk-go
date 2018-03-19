@@ -10,7 +10,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
-// MockDiscoveryProvider mocks out the discovery provider
+// MockDiscoveryProvider mockcore out the discovery provider
 type MockDiscoveryProvider struct {
 	peers []fab.Peer
 }

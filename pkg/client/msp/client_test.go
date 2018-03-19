@@ -20,7 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
 
 const (
@@ -137,7 +137,7 @@ type textFixture struct {
 	config core.Config
 }
 
-var caServer = &mocks.MockFabricCAServer{}
+var caServer = &mockmsp.MockFabricCAServer{}
 
 func (f *textFixture) setup() *fabsdk.FabricSDK {
 

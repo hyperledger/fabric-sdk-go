@@ -54,18 +54,18 @@ func (cfg *MockChannelCfg) Versions() *fab.Versions {
 	return cfg.MockVersions
 }
 
-// MockChannelConfig mocks query channel configuration
+// MockChannelConfig mockcore query channel configuration
 type MockChannelConfig struct {
 	channelID string
 	ctx       context.Client
 }
 
-// NewMockChannelConfig mocks channel config implementation
+// NewMockChannelConfig mockcore channel config implementation
 func NewMockChannelConfig(ctx context.Client, channelID string) (*MockChannelConfig, error) {
 	return &MockChannelConfig{channelID: channelID, ctx: ctx}, nil
 }
 
-// Query mocks query for channel configuration
+// Query mockcore query for channel configuration
 func (c *MockChannelConfig) Query(reqCtx reqContext.Context) (fab.ChannelCfg, error) {
 	return NewMockChannelCfg(c.channelID), nil
 }

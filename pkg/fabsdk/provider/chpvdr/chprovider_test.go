@@ -16,7 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
-	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -89,7 +89,7 @@ func (f *MockInfraProvider) CreateChannelMembership(ctx fab.ClientContext, chann
 	return mocks.NewMockMembership(), nil
 }
 
-// CreateInfraProvider mocks new default implementation of fabric primitives
+// CreateInfraProvider mockcore new default implementation of fabric primitives
 func (f *MockProviderFactory) CreateInfraProvider(config core.Config) (fab.InfraProvider, error) {
 	fabProvider := fabpvdr.New(config)
 

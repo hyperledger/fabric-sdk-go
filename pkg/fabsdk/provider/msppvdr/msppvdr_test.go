@@ -12,7 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
 
 func TestCreateMSPProvider(t *testing.T) {
@@ -29,7 +29,7 @@ func TestCreateMSPProvider(t *testing.T) {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	userStore := &mocks.MockUserStore{}
+	userStore := &mockmsp.MockUserStore{}
 
 	provider, err := New(config, cryptosuite, userStore)
 

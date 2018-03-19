@@ -24,7 +24,7 @@ import (
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
-	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -208,7 +208,7 @@ func TestExecuteTx(t *testing.T) {
 	assert.True(t, ok, "expected status error")
 	assert.EqualValues(t, status.EndorsementMismatch.ToInt32(), s.Code, "expected mismatch error")
 
-	// TODO: Test Valid Scenario with mocks
+	// TODO: Test Valid Scenario with mockcore
 
 }
 
@@ -524,7 +524,7 @@ func setupCustomTestContext(t *testing.T, selectionService fab.SelectionService,
 	testChannelSvc, err := setupTestChannelService(ctx, orderers)
 	assert.Nil(t, err, "Got error %s", err)
 
-	//Modify for custom mocks to test scenarios
+	//Modify for custom mockcore to test scenarios
 	selectionProvider := ctx.MockProviderContext.SelectionProvider()
 	selectionProvider.(*fcmocks.MockSelectionProvider).SetCustomSelectionService(selectionService)
 

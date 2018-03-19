@@ -12,7 +12,7 @@ import (
 
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
 
 func TestSigningManager(t *testing.T) {
@@ -37,7 +37,7 @@ func TestSigningManager(t *testing.T) {
 		t.Fatalf("Should have failed to sign object with nil key")
 	}
 
-	signedObj, err := signingMgr.Sign([]byte("Hello"), bccspwrapper.GetKey(&mocks.MockKey{}))
+	signedObj, err := signingMgr.Sign([]byte("Hello"), bccspwrapper.GetKey(&mockmsp.MockKey{}))
 	if err != nil {
 		t.Fatalf("Failed to sign object: %s", err)
 	}

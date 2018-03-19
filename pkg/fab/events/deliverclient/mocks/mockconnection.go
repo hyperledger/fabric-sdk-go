@@ -53,7 +53,7 @@ func (c *MockConnection) Receive(eventch chan<- interface{}) {
 	c.MockConnection.Receive(eventch)
 }
 
-// Send mocks sending seek info to the deliver server
+// Send mockcore sending seek info to the deliver server
 func (c *MockConnection) Send(sinfo *ab.SeekInfo) error {
 	if c.Closed() {
 		return errors.New("mock connection is closed")

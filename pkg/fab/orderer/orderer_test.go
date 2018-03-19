@@ -23,8 +23,8 @@ import (
 	"github.com/golang/mock/gomock"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockcore"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -469,7 +469,7 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 func TestForGRPCErrorsWithKeepAliveOptsFailFast(t *testing.T) {
 	//keep alive options set and failfast is true
 	ordererConfig := getGRPCOpts("grpc://"+testOrdererURL+"Test", true, true)
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"), FromOrdererConfig(ordererConfig))
+	orderer, _ := New(mockcore.NewMockConfig(), WithURL(testOrdererURL+"Test"), FromOrdererConfig(ordererConfig))
 	orderer.dialTimeout = 2 * time.Second
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 	if err == nil {

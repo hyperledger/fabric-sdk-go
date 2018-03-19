@@ -21,7 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
-	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -254,7 +254,7 @@ func TestGenesisBlockOrdererTimeout(t *testing.T) {
 	const channelName = "testchannel"
 
 	ctx := setupContext()
-	orderer := mocks.NewMockOrderer("", nil)
+	orderer := mockcore.NewMockOrderer("", nil)
 
 	_, err := GenesisBlockFromOrderer(ctx, channelName, orderer)
 

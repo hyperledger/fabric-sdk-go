@@ -37,7 +37,7 @@ func (dp *MockSelectionProvider) CreateSelectionService(channelID string) (*Mock
 	return &MockSelectionService{Error: dp.Error, Peers: dp.Peers}, nil
 }
 
-// GetEndorsersForChaincode mocks retrieving endorsing peers
+// GetEndorsersForChaincode mockcore retrieving endorsing peers
 func (ds *MockSelectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...options.Opt) ([]fab.Peer, error) {
 
 	if ds.Error != nil {
