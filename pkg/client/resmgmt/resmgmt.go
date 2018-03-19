@@ -15,6 +15,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifiers"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -481,8 +482,18 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
 	defer cancel()
 
-	// TODO: Should we move QueryInstantiatedChaincodes to ledger client
-	responses, err := l.QueryInstantiatedChaincodes(reqCtx, []fab.ProposalProcessor{target}, nil)
+	// Channel service membership is required to verify signature
+	channelService, err := rc.ctx.ChannelProvider().ChannelService(rc.ctx, channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Unable to get channel service")
+	}
+
+	membership, err := channelService.Membership()
+	if err != nil {
+		return nil, errors.WithMessage(err, "membership creation failed")
+	}
+
+	responses, err := l.QueryInstantiatedChaincodes(reqCtx, []fab.ProposalProcessor{target}, &verifiers.Signature{Membership: membership})
 	if err != nil {
 		return nil, err
 	}
@@ -571,6 +582,20 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 	txProposalResponse, err := transactor.SendTransactionProposal(tp, peersToTxnProcessors(targets))
 	if err != nil {
 		return errors.WithMessage(err, "sending deploy transaction proposal failed")
+	}
+
+	// Membership is required to verify signature
+	membership, err := channelService.Membership()
+	if err != nil {
+		return errors.WithMessage(err, "membership creation failed")
+	}
+
+	// Verify signature(s)
+	sv := &verifiers.Signature{Membership: membership}
+	for _, r := range txProposalResponse {
+		if err := sv.Verify(r); err != nil {
+			return errors.WithMessage(err, "Failed to verify signature")
+		}
 	}
 
 	eventService, err := channelService.EventService()
