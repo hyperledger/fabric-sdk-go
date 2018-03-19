@@ -17,17 +17,17 @@ type MockMSPManager struct {
 	Err  error
 }
 
-// NewMockMSPManager mocks msp manager
+// NewMockMSPManager mockcore msp manager
 func NewMockMSPManager(msps map[string]msp.MSP) *MockMSPManager {
 	return &MockMSPManager{MSPs: msps}
 }
 
-// NewMockMSPManagerWithError mocks msp manager
+// NewMockMSPManagerWithError mockcore msp manager
 func NewMockMSPManagerWithError(msps map[string]msp.MSP, err error) *MockMSPManager {
 	return &MockMSPManager{MSPs: msps, Err: err}
 }
 
-// DeserializeIdentity mocks deserialize identity
+// DeserializeIdentity mockcore deserialize identity
 func (mgr *MockMSPManager) DeserializeIdentity(serializedIdentity []byte) (msp.Identity, error) {
 	return nil, nil
 }

@@ -17,7 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
-	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 
 	"strings"
 

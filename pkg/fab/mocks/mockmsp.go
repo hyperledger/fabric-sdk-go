@@ -21,7 +21,7 @@ func NewMockMSP(err error) *MockMSP {
 	return &MockMSP{Err: err}
 }
 
-// DeserializeIdentity mocks deserialize identity
+// DeserializeIdentity mockcore deserialize identity
 func (m *MockMSP) DeserializeIdentity(serializedIdentity []byte) (msp.Identity, error) {
 	if m.Err != nil && m.Err.Error() == "DeserializeIdentity" {
 		return nil, m.Err

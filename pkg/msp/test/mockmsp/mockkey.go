@@ -4,11 +4,11 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package mocks
+package mockmsp
 
 import "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 
-// MockKey mocks BCCSP key
+// MockKey mockcore BCCSP key
 type MockKey struct {
 }
 

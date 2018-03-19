@@ -42,7 +42,7 @@ func (dp *MockSelectionProvider) SetCustomSelectionService(customSelectionServic
 	dp.customSelectionService = customSelectionService
 }
 
-// GetEndorsersForChaincode mocks retrieving endorsing peers
+// GetEndorsersForChaincode mockcore retrieving endorsing peers
 func (ds *MockSelectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...options.Opt) ([]fab.Peer, error) {
 
 	if ds.Error != nil {

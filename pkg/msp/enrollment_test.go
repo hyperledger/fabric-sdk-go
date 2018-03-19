@@ -16,7 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	apimocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/api/mocks"
+	apimocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmspapi"
 )
 
 var (

@@ -13,7 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
 )
 
@@ -21,7 +21,7 @@ func TestBadConfig(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockConfig := mocks.NewMockConfig(mockCtrl)
+	mockConfig := mockcore.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 
@@ -36,7 +36,7 @@ func TestCryptoSuiteByConfigSW(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockConfig := mocks.NewMockConfig(mockCtrl)
+	mockConfig := mockcore.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
@@ -61,7 +61,7 @@ func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 	//Prepare Config
 	providerLib, softHSMPin, softHSMTokenLabel := pkcs11.FindPKCS11Lib()
 
-	mockConfig := mocks.NewMockConfig(mockCtrl)
+	mockConfig := mockcore.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
 	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")

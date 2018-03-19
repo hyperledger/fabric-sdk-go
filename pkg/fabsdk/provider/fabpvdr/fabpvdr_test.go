@@ -19,7 +19,7 @@ import (
 	coreMocks "github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
-	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/stretchr/testify/assert"
 )
 
