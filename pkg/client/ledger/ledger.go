@@ -14,7 +14,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifiers"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
@@ -41,7 +41,7 @@ type Client struct {
 	ctx      context.Channel
 	filter   fab.TargetFilter
 	ledger   *channel.Ledger
-	verifier *verifiers.Signature
+	verifier *verifier.Signature
 }
 
 // mspFilter is default filter
@@ -79,7 +79,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 	ledgerClient := Client{
 		ctx:      channelContext,
 		ledger:   ledger,
-		verifier: &verifiers.Signature{Membership: membership},
+		verifier: &verifier.Signature{Membership: membership},
 	}
 
 	for _, opt := range opts {

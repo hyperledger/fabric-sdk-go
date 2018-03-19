@@ -4,8 +4,8 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package verifiers provides various verifiers (e.g. signature)
-package verifiers
+// Package verifier provides various verifier (e.g. signature)
+package verifier
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"

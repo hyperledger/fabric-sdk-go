@@ -15,7 +15,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifiers"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -493,7 +493,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		return nil, errors.WithMessage(err, "membership creation failed")
 	}
 
-	responses, err := l.QueryInstantiatedChaincodes(reqCtx, []fab.ProposalProcessor{target}, &verifiers.Signature{Membership: membership})
+	responses, err := l.QueryInstantiatedChaincodes(reqCtx, []fab.ProposalProcessor{target}, &verifier.Signature{Membership: membership})
 	if err != nil {
 		return nil, err
 	}
@@ -591,7 +591,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 	}
 
 	// Verify signature(s)
-	sv := &verifiers.Signature{Membership: membership}
+	sv := &verifier.Signature{Membership: membership}
 	for _, r := range txProposalResponse {
 		if err := sv.Verify(r); err != nil {
 			return errors.WithMessage(err, "Failed to verify signature")
