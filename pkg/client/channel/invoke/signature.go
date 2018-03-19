@@ -7,13 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package invoke
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifiers"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 
 	"github.com/pkg/errors"
-
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 //NewSignatureValidationHandler returns a handler that validates an endorsement
@@ -43,11 +40,7 @@ func (f *SignatureValidationHandler) Handle(requestContext *RequestContext, clie
 
 func (f *SignatureValidationHandler) validate(txProposalResponse []*fab.TransactionProposalResponse, ctx *ClientContext) error {
 	for _, r := range txProposalResponse {
-		if r.ProposalResponse.GetResponse().Status != int32(common.Status_SUCCESS) {
-			return status.NewFromProposalResponse(r.ProposalResponse, r.Endorser)
-		}
-
-		if err := verifyProposalResponse(r.ProposalResponse, ctx); err != nil {
+		if err := verifyProposalResponse(r, ctx); err != nil {
 			return err
 		}
 	}
@@ -55,25 +48,7 @@ func (f *SignatureValidationHandler) validate(txProposalResponse []*fab.Transact
 	return nil
 }
 
-func verifyProposalResponse(res *pb.ProposalResponse, ctx *ClientContext) error {
-	if res.GetEndorsement() == nil {
-		return errors.Errorf("Missing endorsement in proposal response")
-	}
-	creatorID := res.GetEndorsement().Endorser
-
-	err := ctx.Membership.Validate(creatorID)
-	if err != nil {
-		return errors.WithMessage(err, "The creator certificate is not valid")
-	}
-
-	// check the signature against the endorser and payload hash
-	digest := append(res.GetPayload(), res.GetEndorsement().Endorser...)
-
-	// validate the signature
-	err = ctx.Membership.Verify(creatorID, digest, res.GetEndorsement().Signature)
-	if err != nil {
-		return errors.WithMessage(err, "The creator's signature over the proposal is not valid")
-	}
-
-	return nil
+func verifyProposalResponse(res *fab.TransactionProposalResponse, ctx *ClientContext) error {
+	sv := &verifiers.Signature{Membership: ctx.Membership}
+	return sv.Verify(res)
 }
