@@ -32,13 +32,13 @@ func (v *Signature) Verify(response *fab.TransactionProposalResponse) error {
 	res := response.ProposalResponse
 
 	if res.GetEndorsement() == nil {
-		return errors.Errorf("Missing endorsement in proposal response")
+		return errors.WithStack(status.New(status.EndorserClientStatus, status.MissingEndorsement.ToInt32(), "missing endorsement in proposal response", nil))
 	}
 	creatorID := res.GetEndorsement().Endorser
 
 	err := v.Membership.Validate(creatorID)
 	if err != nil {
-		return errors.WithMessage(err, "The creator certificate is not valid")
+		return errors.WithStack(status.New(status.EndorserClientStatus, status.SignatureVerificationFailed.ToInt32(), "the creator certificate is not valid", []interface{}{err.Error()}))
 	}
 
 	// check the signature against the endorser and payload hash
@@ -47,7 +47,7 @@ func (v *Signature) Verify(response *fab.TransactionProposalResponse) error {
 	// validate the signature
 	err = v.Membership.Verify(creatorID, digest, res.GetEndorsement().Signature)
 	if err != nil {
-		return errors.WithMessage(err, "The creator's signature over the proposal is not valid")
+		return errors.WithStack(status.New(status.EndorserClientStatus, status.SignatureVerificationFailed.ToInt32(), "the creator's signature over the proposal is not valid", []interface{}{err.Error()}))
 	}
 
 	return nil

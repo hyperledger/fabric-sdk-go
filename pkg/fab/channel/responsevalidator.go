@@ -9,6 +9,7 @@ package channel
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 	"github.com/pkg/errors"
 )
 
@@ -53,7 +54,7 @@ func (tprv *TransactionProposalResponseVerifier) Match(transactionProposalRespon
 		}
 
 		if !proto.Equal(block.Data, b.Data) {
-			return errors.New("payloads for config block do not match")
+			return errors.WithStack(status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(), "payloads for config block do not match", nil))
 		}
 	}
 

@@ -28,6 +28,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 	"github.com/pkg/errors"
 
 	"regexp"
@@ -494,8 +495,8 @@ func (c *Config) tryMatchingCAConfig(caName string) (*core.CAConfig, string, err
 			return &caConfig, certAuthorityMatchConfig.MappedHost, nil
 		}
 	}
-	return nil, "", errors.New("no matching certAuthority config found")
 
+	return nil, "", errors.WithStack(status.New(status.ClientStatus, status.NoMatchingCertificateAuthorityEntity.ToInt32(), "no matching certAuthority config found", nil))
 }
 
 // CAClientCertPem Read configuration option for the fabric CA client cert pem embedded in the client config
@@ -870,7 +871,8 @@ func (c *Config) tryMatchingPeerConfig(peerName string) (*core.PeerConfig, error
 			return &peerConfig, nil
 		}
 	}
-	return nil, errors.New("no matching peer config found")
+
+	return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingPeerEntity.ToInt32(), "no matching peer config found", nil))
 }
 
 func (c *Config) tryMatchingOrdererConfig(ordererName string) (*core.OrdererConfig, error) {
@@ -952,7 +954,8 @@ func (c *Config) tryMatchingOrdererConfig(ordererName string) (*core.OrdererConf
 			return &ordererConfig, nil
 		}
 	}
-	return nil, errors.New("no matching orderer config found")
+
+	return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingOrdererEntity.ToInt32(), "no matching orderer config found", nil))
 }
 
 func copyPropertiesMap(origMap map[string]interface{}) map[string]interface{} {
@@ -989,7 +992,8 @@ func (c *Config) findMatchingPeer(peerName string) (string, error) {
 			return peerMatchConfig.MappedHost, nil
 		}
 	}
-	return "", errors.New("no matching peers found")
+
+	return "", errors.WithStack(status.New(status.ClientStatus, status.NoMatchingPeerEntity.ToInt32(), "no matching peer config found", nil))
 }
 
 func (c *Config) compileMatchers() error {

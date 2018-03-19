@@ -7,13 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package invoke
 
 import (
-	"errors"
 	"strings"
 	"testing"
 
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +33,7 @@ func TestSignatureValidationHandlerSuccess(t *testing.T) {
 }
 
 func TestSignatureValidationCreatorValidateError(t *testing.T) {
-	validateErr := errors.New("ValidateErr")
+	validateErr := status.New(status.EndorserClientStatus, status.SignatureVerificationFailed.ToInt32(), "", nil)
 	// Sample request
 	request := Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}
 	requestContext := prepareRequestContext(request, Opts{}, t)
@@ -47,7 +47,7 @@ func TestSignatureValidationCreatorValidateError(t *testing.T) {
 }
 
 func TestSignatureValidationCreatorVerifyError(t *testing.T) {
-	verifyErr := errors.New("Verify")
+	verifyErr := status.New(status.EndorserClientStatus, status.SignatureVerificationFailed.ToInt32(), "", nil)
 
 	// Sample request
 	request := Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}
