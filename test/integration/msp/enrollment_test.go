@@ -33,11 +33,8 @@ func TestRegisterEnroll(t *testing.T) {
 
 	// Delete all private keys from the crypto suite store
 	// and users from the user store at the end
-	netConfig := sdk.Config()
-	keyStorePath := netConfig.KeyStorePath()
-	credentialStorePath := netConfig.CredentialStorePath()
-	defer integration.CleanupTestPath(t, keyStorePath)
-	defer integration.CleanupTestPath(t, credentialStorePath)
+	integration.CleanupUserData(t, sdk)
+	defer integration.CleanupUserData(t, sdk)
 
 	ctxProvider := sdk.Context()
 
