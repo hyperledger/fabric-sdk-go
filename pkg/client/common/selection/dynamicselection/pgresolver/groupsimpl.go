@@ -378,10 +378,14 @@ func (o *andOperation) and(grps []Group, index int) {
 	if index >= len(grps) {
 		var items []Item
 		for _, c := range o.stack.Groups() {
-			items = append(items, c.group.Items()[c.index])
+			groupItems := c.group.Items()
+			if c.index < len(groupItems) {
+				items = append(items, groupItems[c.index])
+			}
 		}
-		g := NewGroup(items)
-		o.result = append(o.result, g)
+		if len(items) > 0 {
+			o.result = append(o.result, NewGroup(items))
+		}
 	} else {
 		grp := grps[index]
 		items := grp.Items()
