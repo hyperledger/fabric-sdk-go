@@ -177,7 +177,29 @@ func (s *selectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts 
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("Error getting peer group resolver for chaincodes [%v] on channel [%s]", chaincodeIDs, s.channelID))
 	}
-	return resolver.Resolve(params.PeerFilter).Peers(), nil
+
+	peers, err := s.discoveryService.GetPeers()
+	if err != nil {
+		return nil, err
+	}
+
+	if params.PeerFilter != nil {
+		var filteredPeers []fab.Peer
+		for _, peer := range peers {
+			if params.PeerFilter(peer) {
+				filteredPeers = append(filteredPeers, peer)
+			} else {
+				logger.Debugf("Peer [%s] is not accepted by the filter and therefore peer group will be excluded.", peer.URL())
+			}
+		}
+		peers = filteredPeers
+	}
+
+	peerGroup, err := resolver.Resolve(peers)
+	if err != nil {
+		return nil, err
+	}
+	return peerGroup.Peers(), nil
 }
 
 func (s *selectionService) Close() {
@@ -199,7 +221,7 @@ func (s *selectionService) getPeerGroupResolver(chaincodeIDs []string) (pgresolv
 
 func (s *selectionService) createPGResolver(key *resolverKey) (pgresolver.PeerGroupResolver, error) {
 	// Retrieve the signature policies for all of the chaincodes
-	var policyGroups []pgresolver.Group
+	var policyGroups []pgresolver.GroupRetriever
 	for _, ccID := range key.chaincodeIDs {
 		policyGroup, err := s.getPolicyGroupForCC(key.channelID, ccID)
 		if err != nil {
@@ -209,30 +231,32 @@ func (s *selectionService) createPGResolver(key *resolverKey) (pgresolver.PeerGr
 	}
 
 	// Perform an 'and' operation on all of the peer groups
-	aggregatePolicyGroup, err := pgresolver.NewGroupOfGroups(policyGroups).Nof(int32(len(policyGroups)))
-	if err != nil {
-		return nil, errors.WithMessage(err, fmt.Sprintf("error computing signature policy for chaincode(s) [%v] on channel [%s]", key.chaincodeIDs, key.channelID))
+	aggregatePolicyGroupRetriever := func(peerRetriever pgresolver.MSPPeerRetriever) (pgresolver.GroupOfGroups, error) {
+		var groups []pgresolver.Group
+		for _, f := range policyGroups {
+			grps, err := f(peerRetriever)
+			if err != nil {
+				return nil, err
+			}
+			groups = append(groups, grps)
+		}
+		return pgresolver.NewGroupOfGroups(groups).Nof(int32(len(policyGroups)))
 	}
 
 	// Create the resolver
-	resolver, err := pgresolver.NewPeerGroupResolver(aggregatePolicyGroup, s.pgLBP)
+	resolver, err := pgresolver.NewPeerGroupResolver(aggregatePolicyGroupRetriever, s.pgLBP)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("error creating peer group resolver for chaincodes [%v] on channel [%s]", key.chaincodeIDs, key.channelID))
 	}
 	return resolver, nil
 }
 
-func (s *selectionService) getPolicyGroupForCC(channelID string, ccID string) (pgresolver.Group, error) {
+func (s *selectionService) getPolicyGroupForCC(channelID string, ccID string) (pgresolver.GroupRetriever, error) {
 	sigPolicyEnv, err := s.ccPolicyProvider.GetChaincodePolicy(ccID)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("error querying chaincode [%s] on channel [%s]", ccID, channelID))
 	}
-
-	return pgresolver.NewSignaturePolicyCompiler(
-		func(mspID string) []fab.Peer {
-			return s.getAvailablePeers(mspID)
-		},
-	).Compile(sigPolicyEnv)
+	return pgresolver.CompileSignaturePolicy(sigPolicyEnv)
 }
 
 func (s *selectionService) getAvailablePeers(mspID string) []fab.Peer {

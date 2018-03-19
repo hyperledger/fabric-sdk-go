@@ -14,6 +14,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// MSPPeerRetriever is a function that retrieves peers by MSPID
+type MSPPeerRetriever func(mspID string) []fab.Peer
+
 // NewGroupOfGroups returns a new group of groups
 func NewGroupOfGroups(groups []Group) GroupOfGroups {
 	items := make([]Item, len(groups))
@@ -34,7 +37,7 @@ func NewPeerGroup(peers ...fab.Peer) PeerGroup {
 }
 
 // NewMSPPeerGroup returns a new MSP PeerGroup
-func NewMSPPeerGroup(mspID string, peerRetriever PeerRetriever) PeerGroup {
+func NewMSPPeerGroup(mspID string, peerRetriever MSPPeerRetriever) PeerGroup {
 	return &mspPeerGroup{
 		mspID:         mspID,
 		peerRetriever: peerRetriever,
@@ -268,7 +271,7 @@ func (pg *peerGroup) Collapse() Group {
 
 type mspPeerGroup struct {
 	mspID         string
-	peerRetriever PeerRetriever
+	peerRetriever MSPPeerRetriever
 }
 
 func (pg *mspPeerGroup) Items() []Item {
@@ -381,6 +384,8 @@ func (o *andOperation) and(grps []Group, index int) {
 			groupItems := c.group.Items()
 			if c.index < len(groupItems) {
 				items = append(items, groupItems[c.index])
+			} else {
+				logger.Warnf("Expecting index to be less than %d but got %d", len(groupItems), c.index)
 			}
 		}
 		if len(items) > 0 {
