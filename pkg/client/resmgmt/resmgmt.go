@@ -406,7 +406,7 @@ func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, opti
 		return errors.WithMessage(err, "failed to get opts for InstantiateCC")
 	}
 
-	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
+	reqCtx, cancel := rc.createRequestContext(opts, core.ResMgmt)
 	defer cancel()
 
 	return rc.sendCCProposal(reqCtx, InstantiateChaincode, channelID, req, opts)
@@ -420,7 +420,7 @@ func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...R
 		return errors.WithMessage(err, "failed to get opts for UpgradeCC")
 	}
 
-	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
+	reqCtx, cancel := rc.createRequestContext(opts, core.ResMgmt)
 	defer cancel()
 
 	return rc.sendCCProposal(reqCtx, UpgradeChaincode, channelID, InstantiateCCRequest(req), opts)
@@ -630,7 +630,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		}
 		return status.New(status.EventServerStatus, int32(txStatus.TxValidationCode), "instantiateOrUpgradeCC failed", nil)
 	case <-reqCtx.Done():
-		return errors.New("instantiateOrUpgradeCC timed out or been cancelled")
+		return errors.New("instantiateOrUpgradeCC timed out or cancelled")
 	}
 
 }
