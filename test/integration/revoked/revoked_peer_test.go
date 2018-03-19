@@ -53,6 +53,11 @@ func TestRevokedPeer(t *testing.T) {
 	}
 	defer sdk.Close()
 
+	// Delete all private keys from the crypto suite store
+	// and users from the user store at the end
+	integration.CleanupUserData(t, sdk)
+	defer integration.CleanupUserData(t, sdk)
+
 	//prepare contexts
 	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
 	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))

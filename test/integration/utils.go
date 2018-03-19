@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -159,6 +161,17 @@ func HasPeerJoinedChannel(client *resmgmt.Client, target string, channel string)
 func CleanupTestPath(t *testing.T, storePath string) {
 	err := os.RemoveAll(storePath)
 	if err != nil {
+		if t == nil {
+			panic(fmt.Sprintf("Cleaning up directory '%s' failed: %v", storePath, err))
+		}
 		t.Fatalf("Cleaning up directory '%s' failed: %v", storePath, err)
 	}
+}
+
+func CleanupUserData(t *testing.T, sdk *fabsdk.FabricSDK) {
+	netConfig := sdk.Config()
+	keyStorePath := netConfig.KeyStorePath()
+	credentialStorePath := netConfig.CredentialStorePath()
+	CleanupTestPath(t, keyStorePath)
+	CleanupTestPath(t, credentialStorePath)
 }

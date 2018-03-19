@@ -32,6 +32,11 @@ func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts
 	}
 	defer sdk.Close()
 
+	// Delete all private keys from the crypto suite store
+	// and users from the user store at the end
+	integration.CleanupUserData(t, sdk)
+	defer integration.CleanupUserData(t, sdk)
+
 	// ************ Test setup complete ************** //
 
 	//TODO : discovery filter should be fixed

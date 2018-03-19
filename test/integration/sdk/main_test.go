@@ -42,6 +42,10 @@ func setup() {
 		panic(fmt.Sprintf("Failed to create new SDK: %s", err))
 	}
 
+	// Delete all private keys from the crypto suite store
+	// and users from the user store
+	integration.CleanupUserData(nil, sdk)
+
 	if err := testSetup.Initialize(sdk); err != nil {
 		panic(err.Error())
 	}
@@ -57,5 +61,6 @@ func setup() {
 }
 
 func teardown() {
+	integration.CleanupUserData(nil, mainSDK)
 	mainSDK.Close()
 }

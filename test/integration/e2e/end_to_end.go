@@ -48,6 +48,11 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	}
 	defer sdk.Close()
 
+	// Delete all private keys from the crypto suite store
+	// and users from the user store at the end
+	integration.CleanupUserData(t, sdk)
+	defer integration.CleanupUserData(t, sdk)
+
 	//clientContext allows creation of transactions using the supplied identity as the credential.
 	clientContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(ordererOrgName))
 
