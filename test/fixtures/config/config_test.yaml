@@ -242,17 +242,16 @@ orderers:
 
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
-    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: orderer.example.com
-#     These parameters should be set in coordination with the keepalive policy on the server,
-#     as incompatible settings can result in closing of connection.
-#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
       keep-alive-time: 0s
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
     tlsCACerts:
@@ -267,21 +266,19 @@ peers:
   local.peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
     url: peer0.org1.example.com:7051
-
-    # this URL is used to connect the EventHub and registering event listeners
+    # eventUrl is only needed when using eventhub (default is delivery service)
     eventUrl: peer0.org1.example.com:7053
 
-    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
-#     These parameters should be set in coordination with the keepalive policy on the server,
-#     as incompatible settings can result in closing of connection.
-#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
       keep-alive-time: 0s
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
     tlsCACerts:
@@ -290,18 +287,18 @@ peers:
 
   local.peer0.org2.example.com:
     url: peer0.org2.example.com:8051
+    # eventUrl is only needed when using eventhub (default is delivery service)
     eventUrl: peer0.org2.example.com:8053
-    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
-#     These parameters should be set in coordination with the keepalive policy on the server,
-#     as incompatible settings can result in closing of connection.
-#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
       keep-alive-time: 0s
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
     tlsCACerts:
