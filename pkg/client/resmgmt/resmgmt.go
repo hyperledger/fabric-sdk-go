@@ -618,11 +618,6 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
-	var timeout = opts.Timeouts[core.Execute]
-	if timeout == 0 {
-		timeout = rc.ctx.Config().TimeoutOrDefault(core.Execute)
-	}
-
 	select {
 	case txStatus := <-statusNotifier:
 		if txStatus.TxValidationCode == pb.TxValidationCode_VALID {
