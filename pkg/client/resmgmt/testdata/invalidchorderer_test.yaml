@@ -11,7 +11,7 @@ version: 1.0.0
 
 client:
 
-  organization: Org1
+  organization: org1
 
   logging:
     level: info
@@ -44,7 +44,7 @@ channels:
       - invalid.example.com
 
 organizations:
-  Org1:
+  org1:
     mspid: Org1MSP
 
     # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)

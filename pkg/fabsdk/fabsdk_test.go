@@ -20,7 +20,7 @@ import (
 const (
 	sdkConfigFile      = "../../test/fixtures/config/config_test.yaml"
 	sdkValidClientUser = "User1"
-	sdkValidClientOrg1 = "Org1"
+	sdkValidClientOrg1 = "org1"
 )
 
 func TestNewGoodOpt(t *testing.T) {

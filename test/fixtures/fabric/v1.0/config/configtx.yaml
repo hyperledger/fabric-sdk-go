@@ -22,15 +22,15 @@ Profiles:
         Consortiums:
             SampleConsortium:
                 Organizations:
-                    - *Org1
-                    - *Org2
+                    - *org1
+                    - *org2
     TwoOrgsChannel:
         Consortium: SampleConsortium
         Application:
             <<: *ApplicationDefaults
             Organizations:
-                - *Org1
-                - *Org2
+                - *org1
+                - *org2
 
 ################################################################################
 #
@@ -55,7 +55,7 @@ Organizations:
         # MSPDir is the filesystem path which contains the MSP configuration
         MSPDir: ../../v1/crypto-config/ordererOrganizations/example.com/msp
 
-    - &Org1
+    - &org1
         # DefaultOrg defines the organization which is used in the sampleconfig
         # of the fabric.git development environment
         Name: Org1MSP
@@ -72,7 +72,7 @@ Organizations:
             - Host: peer0.org1.example.com
               Port: 7051
 
-    - &Org2
+    - &org2
         # DefaultOrg defines the organization which is used in the sampleconfig
         # of the fabric.git development environment
         Name: Org2MSP

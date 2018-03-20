@@ -31,7 +31,7 @@ var configImpl *Config
 
 const (
 	org0                            = "org0"
-	org1                            = "Org1"
+	org1                            = "org1"
 	configTestFilePath              = "testdata/config_test.yaml"
 	configEmptyTestFilePath         = "testdata/empty.yaml"
 	configPemTestFilePath           = "testdata/config_test_pem.yaml"

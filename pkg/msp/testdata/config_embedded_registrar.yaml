@@ -27,7 +27,7 @@ client:
 
   # Which organization does this application instance belong to? The value must be the name of an org
   # defined under "organizations"
-  organization: Org1
+  organization: org1
 
   logging:
     level: info
@@ -161,7 +161,7 @@ channels:
 # list of participating organizations in this network
 #
 organizations:
-  Org1:
+  org1:
     mspid: Org1MSP
 
     users:

@@ -284,6 +284,7 @@ func (c *Config) Client() (*core.ClientConfig, error) {
 	}
 	client := config.Client
 
+	client.Organization = strings.ToLower(client.Organization)
 	client.TLSCerts.Path = SubstPathVars(client.TLSCerts.Path)
 	client.TLSCerts.Client.Key.Path = SubstPathVars(client.TLSCerts.Client.Key.Path)
 	client.TLSCerts.Client.Cert.Path = SubstPathVars(client.TLSCerts.Client.Cert.Path)

@@ -27,7 +27,7 @@ client:
 
   # Which organization does this application instance belong to? The value must be the name of an org
   # defined under "organizations"
-  organization: Org1
+  organization: org1
 
   logging:
     level: info
@@ -173,7 +173,7 @@ channels:
 # list of participating organizations in this network
 #
 organizations:
-  Org1:
+  org1:
     mspid: Org1MSP
 
     # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
@@ -291,7 +291,7 @@ organizations:
   # peers with a public URL to send transaction proposals. The file will not contain private
   # information reserved for members of the organization, such as admin key and certificate,
   # fabric-ca registrar enroll ID and secret, etc.
-  Org2:
+  org2:
     mspid: Org2MSP
 
     users:

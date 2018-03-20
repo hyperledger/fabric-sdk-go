@@ -11,7 +11,7 @@ description: "The network to be in if you want to stay in the global trade busin
 version: 1.0.0
 
 client:
-  organization: Org2
+  organization: org2
 
   logging:
     level: info
@@ -76,7 +76,7 @@ channels:
 
 organizations:
 
-  Org2:
+  org2:
     mspid: Org2MSP
 
     # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
