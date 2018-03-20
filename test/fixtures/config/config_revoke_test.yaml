@@ -170,7 +170,9 @@ channels:
         endorsingPeer: true
         chaincodeQuery: true
         ledgerQuery: true
-        eventSource: true
+        # Don't use revoked peer as event source or
+        # else the test will time out waiting for event
+        eventSource: false
 
 
 #

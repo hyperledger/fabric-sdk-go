@@ -59,6 +59,7 @@ var (
 
 // New returns a new Deliver Server connection
 func New(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvider StreamProvider, url string, opts ...options.Opt) (*DeliverConnection, error) {
+	logger.Debugf("Connecting to %s...", url)
 	connect, err := comm.NewConnection(
 		ctx, chConfig,
 		func(grpcconn *grpc.ClientConn) (grpc.ClientStream, error) {
