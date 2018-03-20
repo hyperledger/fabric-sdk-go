@@ -162,3 +162,17 @@ func NewFromGRPCStatus(s *grpcstatus.Status) *Status {
 	return &Status{Group: GRPCTransportStatus, Code: s.Proto().Code,
 		Message: s.Message(), Details: details}
 }
+
+// ChaincodeStatus is for extracting Code and message from chaincode GRPC errors
+type ChaincodeStatus struct {
+	Code    int
+	Message string
+}
+
+// NewFromExtractedChaincodeError returns Status when an error occurs in GRPC Transport
+func NewFromExtractedChaincodeError(code int, message string) *Status {
+	status := &ChaincodeStatus{Code: code, Message: message}
+
+	return &Status{Group: GRPCTransportStatus, Code: ChaincodeError.ToInt32(),
+		Message: message, Details: []interface{}{status}}
+}

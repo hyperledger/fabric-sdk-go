@@ -12,8 +12,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -142,6 +144,20 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 		t.Fatalf("Failed to register cc event: %s", err)
 	}
 	defer client.UnregisterChaincodeEvent(reg)
+
+	// Try calling unknown function call and expect an error
+	response, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxArgs()})
+	if err == nil {
+		t.Fatal("Should have failed with dummy function")
+	}
+	s, ok := status.FromError(err)
+	assert.True(t, ok, "expected GRPC status error")
+	assert.EqualValues(t, status.ChaincodeError, s.Code, "expected ChaincodeError")
+	assert.True(t, len(s.Details) > 0, "expected Details to exist in ChaincodeError")
+	chaincodeQueryStatus := s.Details[0].(*status.ChaincodeStatus)
+	if chaincodeQueryStatus.Code != 500 {
+		t.Fatalf("Expected 500 grpc status code in ChaincodeError")
+	}
 
 	// Move funds
 	response, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})

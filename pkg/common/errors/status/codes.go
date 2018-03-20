@@ -48,6 +48,9 @@ const (
 	// MissingEndorsement is if an endoresement is missing
 	MissingEndorsement Code = 9
 
+	// ChaincodeError is for errors returned by Chaincode
+	ChaincodeError Code = 10
+
 	// NoMatchingCertificateAuthorityEntity is if entityMatchers are unable to find any matchingCertificateAuthority
 	NoMatchingCertificateAuthorityEntity Code = 21
 
@@ -70,6 +73,7 @@ var CodeName = map[int32]string{
 	7:  "MULTIPLE_ERRORS",
 	8:  "SIGNATURE_VERIFICATION_FAILED",
 	9:  "MISSING_ENDORSEMENT",
+	10: "CHAINCODE_ERROR",
 	21: "NO_MATCHING_CERTIFICATE_AUTHORITY_ENTITY",
 	22: "NO_MATCHING_PEER_ENTITY",
 	23: "NO_MATCHING_ORDERER_ENTITY",

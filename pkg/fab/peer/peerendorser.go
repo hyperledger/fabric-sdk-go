@@ -9,9 +9,12 @@ package peer
 import (
 	reqContext "context"
 	"crypto/x509"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -143,9 +146,51 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 	if err != nil {
 		logger.Errorf("process proposal failed [%s]", err)
 		rpcStatus, ok := grpcstatus.FromError(err)
+
 		if ok {
-			err = status.NewFromGRPCStatus(rpcStatus)
+			code, message, extractErr := extractChaincodeError(rpcStatus)
+			if extractErr != nil {
+				err = status.NewFromGRPCStatus(rpcStatus)
+			} else {
+				err = status.NewFromExtractedChaincodeError(code, message)
+			}
 		}
 	}
 	return resp, err
+}
+
+func extractChaincodeError(status *grpcstatus.Status) (int, string, error) {
+	var code int
+	var message string
+	if status.Code().String() != "Unknown" || status.Message() == "" {
+		return 0, "", errors.New("Unable to parse GRPC status message")
+	}
+	statusLength := len("status:")
+	messageLength := len("message:")
+	if strings.Contains(status.Message(), "status:") {
+		i := strings.Index(status.Message(), "status:")
+		if i >= 0 {
+			j := strings.Index(status.Message()[i:], ",")
+			if j > statusLength {
+				i, err := strconv.Atoi(strings.TrimSpace(status.Message()[i+statusLength : i+j]))
+				if err != nil {
+					return 0, "", errors.Errorf("Non-number returned as GRPC status [%s] ", strings.TrimSpace(status.Message()[i+statusLength:i+j]))
+				}
+				code = i
+			}
+		}
+	}
+	if strings.Contains(status.Message(), "message:") {
+		i := strings.Index(status.Message(), "message:")
+		if i >= 0 {
+			j := strings.Index(status.Message()[i:], ")")
+			if j > messageLength {
+				message = strings.TrimSpace(status.Message()[i+messageLength : i+j])
+			}
+		}
+	}
+	if code != 0 && message != "" {
+		return code, message, nil
+	}
+	return code, message, errors.Errorf("Unable to parse GRPC Status Message Code: %v Message: %v", code, message)
 }
