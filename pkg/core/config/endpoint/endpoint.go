@@ -14,8 +14,8 @@ import (
 
 	"regexp"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 	"github.com/pkg/errors"
 )
 

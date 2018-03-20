@@ -9,8 +9,8 @@ package invoke
 import (
 	"bytes"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 	"github.com/pkg/errors"
 
 	selectopts "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
