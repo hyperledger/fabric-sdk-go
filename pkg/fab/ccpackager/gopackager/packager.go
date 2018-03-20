@@ -33,7 +33,7 @@ type Descriptor struct {
 // A list of file extensions that should be packaged into the .tar.gz.
 // Files with all other file extenstions will be excluded to minimize the size
 // of the install payload.
-var keep = []string{".go", ".c", ".h"}
+var keep = []string{".c", ".h", ".s", ".go", ".yaml", ".json"}
 
 var logger = logging.NewLogger("fabsdk/fab")
 
