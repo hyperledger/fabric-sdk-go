@@ -76,23 +76,27 @@ func (cc *CachingConnector) Close() {
 	cc.lock.Lock()
 	defer cc.lock.Unlock()
 
-	if cc.janitorDone != nil {
-		logger.Debug("closing caching GRPC connector")
-
-		select {
-		case <-cc.janitorClosed:
-			logger.Debugf("janitor not running")
-		default:
-			logger.Debugf("janitor running")
-			cc.janitorDone <- true
-			cc.waitgroup.Wait()
-		}
-
-		close(cc.janitorChan)
-		close(cc.janitorClosed)
-		close(cc.janitorDone)
-		cc.janitorDone = nil
+	// Safety check to see if the connector has been closed. This represents a
+	// bug in the calling code, but it's not good to panic here.
+	if cc.janitorDone == nil {
+		logger.Warn("Trying to close connector after already closed")
+		return
 	}
+	logger.Debug("closing caching GRPC connector")
+
+	select {
+	case <-cc.janitorClosed:
+		logger.Debugf("janitor not running")
+	default:
+		logger.Debugf("janitor running")
+		cc.janitorDone <- true
+		cc.waitgroup.Wait()
+	}
+
+	close(cc.janitorChan)
+	close(cc.janitorClosed)
+	close(cc.janitorDone)
+	cc.janitorDone = nil
 }
 
 // DialContext is a wrapper for grpc.DialContext where connections are cached.
@@ -118,6 +122,18 @@ func (cc *CachingConnector) DialContext(ctx context.Context, target string, opts
 func (cc *CachingConnector) ReleaseConn(conn *grpc.ClientConn) {
 	cc.lock.Lock()
 	defer cc.lock.Unlock()
+
+	// Safety check to see if the connector has been closed. This represents a
+	// bug in the calling code, but it's not good to panic here.
+	if cc.janitorDone == nil {
+		logger.Warn("Trying to release connection after connector closed")
+
+		if conn.GetState() != connectivity.Shutdown {
+			logger.Warn("Connection is not shutdown, trying to close ...")
+			conn.Close()
+		}
+		return
+	}
 
 	cconn, ok := cc.index[conn]
 	if !ok {
