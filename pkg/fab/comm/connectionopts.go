@@ -91,7 +91,11 @@ func (p *params) SetHostOverride(value string) {
 }
 
 func (p *params) SetCertificate(value *x509.Certificate) {
-	logger.Debugf("Certificate: %s", value)
+	if value != nil {
+		logger.Debugf("setting certificate [subject: %s, serial: %s]", value.Subject, value.SerialNumber)
+	} else {
+		logger.Debugf("setting nil certificate")
+	}
 	p.certificate = value
 }
 

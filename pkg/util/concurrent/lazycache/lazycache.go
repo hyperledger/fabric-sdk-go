@@ -139,13 +139,13 @@ func (c *Cache) Close() {
 
 func (c *Cache) close(key string, f future) {
 	if !f.IsSet() {
-		logger.Debugf("%s - Reference for [%s] is not set", c.name, key)
+		logger.Debugf("%s - Reference for [%q] is not set", c.name, key)
 		return
 	}
 
 	if value, _ := f.Get(); value != nil {
 		if clos, ok := value.(closable); ok && c != nil {
-			logger.Debugf("%s - Invoking Close on value for key [%s].", c.name, key)
+			logger.Debugf("%s - Invoking Close on value for key [%q].", c.name, key)
 			clos.Close()
 		}
 	}
