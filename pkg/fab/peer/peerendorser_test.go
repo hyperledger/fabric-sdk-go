@@ -25,9 +25,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 )
 
 const (

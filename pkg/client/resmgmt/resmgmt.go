@@ -23,6 +23,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -31,7 +32,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/multi"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
