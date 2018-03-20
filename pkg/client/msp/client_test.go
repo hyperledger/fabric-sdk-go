@@ -207,25 +207,6 @@ func cleanup(storePath string) {
 	}
 }
 
-func myMSPID(t *testing.T, c core.Config) string {
-
-	clientConfig, err := c.Client()
-	if err != nil {
-		t.Fatalf("network config retrieval failed: %v", err)
-	}
-
-	netConfig, err := c.NetworkConfig()
-	if err != nil {
-		t.Fatalf("network config retrieval failed: %v", err)
-	}
-
-	orgConfig, ok := netConfig.Organizations[strings.ToLower(clientConfig.Organization)]
-	if !ok {
-		t.Fatalf("org config retrieval failed: %v", err)
-	}
-	return orgConfig.MSPID
-}
-
 func randomUsername() string {
 	return "user" + strconv.Itoa(rand.Intn(500000))
 }

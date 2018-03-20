@@ -64,7 +64,7 @@ func TestFromError(t *testing.T) {
 	assert.True(t, ok)
 	assert.EqualValues(t, OK.ToInt32(), s.Code)
 
-	s, ok = FromError(fmt.Errorf("Test"))
+	_, ok = FromError(fmt.Errorf("Test"))
 	assert.False(t, ok)
 
 	errs := multi.Errors{}

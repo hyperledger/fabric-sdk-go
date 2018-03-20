@@ -11,10 +11,7 @@ import (
 
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
@@ -51,12 +48,4 @@ func TestCreateSelectionProvider(t *testing.T) {
 	if !ok {
 		t.Fatalf("Unexpected selection provider created")
 	}
-}
-
-type defPeerCreator struct {
-	config core.Config
-}
-
-func (pc *defPeerCreator) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
-	return peer.New(pc.config, peer.FromPeerConfig(peerCfg))
 }

@@ -168,6 +168,7 @@ func CleanupTestPath(t *testing.T, storePath string) {
 	}
 }
 
+// CleanupUserData removes user data.
 func CleanupUserData(t *testing.T, sdk *fabsdk.FabricSDK) {
 	netConfig := sdk.Config()
 	keyStorePath := netConfig.KeyStorePath()

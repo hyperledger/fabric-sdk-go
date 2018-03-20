@@ -85,7 +85,7 @@ func TestGet(t *testing.T) {
 				t.Fatalf("Expecting value [%s] but got [%s]", expectedValue, value)
 			}
 
-			value, err = cache.Get(NewStringKey("error"))
+			_, err = cache.Get(NewStringKey("error"))
 			if err == nil {
 				t.Fatalf("Expecting error but got none")
 			}

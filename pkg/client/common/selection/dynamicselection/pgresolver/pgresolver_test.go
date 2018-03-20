@@ -16,16 +16,11 @@ import (
 )
 
 const (
-	org1  = "Org1MSP"
-	org2  = "Org2MSP"
-	org3  = "Org3MSP"
-	org4  = "Org4MSP"
-	org5  = "Org5MSP"
-	org6  = "Org6MSP"
-	org7  = "Org7MSP"
-	org8  = "Org8MSP"
-	org9  = "Org9MSP"
-	org10 = "Org10MSP"
+	org1 = "Org1MSP"
+	org2 = "Org2MSP"
+	org3 = "Org3MSP"
+	org4 = "Org4MSP"
+	org5 = "Org5MSP"
 )
 
 var p1 = peer("peer1", "peer1:9999", org1)
@@ -42,8 +37,6 @@ var p11 = peer("peer11", "peer11:9999", org5)
 var p12 = peer("peer12", "peer12:9999", org5)
 
 var allPeers = []fab.Peer{p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12}
-
-var configImp = mocks.NewMockConfig()
 
 const (
 	o1 = iota
@@ -345,10 +338,6 @@ func peer(name, url, mspID string) fab.Peer {
 	mp := mocks.NewMockPeer(name, url)
 	mp.MockMSP = mspID
 	return mp
-}
-
-func peers(peers ...fab.Peer) []fab.Peer {
-	return peers
 }
 
 func verify(t *testing.T, pgResolver PeerGroupResolver, peers []fab.Peer, expectedPeerGroups []PeerGroup, expectedErr error) {

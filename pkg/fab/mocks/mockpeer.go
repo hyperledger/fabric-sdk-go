@@ -39,7 +39,7 @@ func NewMockPeer(name string, url string) *MockPeer {
 }
 
 // Name returns the mock peer's mock name
-func (p MockPeer) Name() string {
+func (p *MockPeer) Name() string {
 	return p.MockName
 }
 

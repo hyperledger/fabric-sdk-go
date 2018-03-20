@@ -23,6 +23,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var logger = logging.NewLogger("fabsdk")
+
 // FabricSDK provides access (and context) to clients being managed by the SDK.
 type FabricSDK struct {
 	opts     options
@@ -165,47 +167,54 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 	rand.Seed(time.Now().UnixNano())
 
 	// Setting this cryptosuite as the factory default
-	cryptosuite.SetDefault(cryptoSuite)
+	if !cryptosuite.DefaultInitialized() {
+		err = cryptosuite.SetDefault(cryptoSuite)
+		if err != nil {
+			return errors.WithMessage(err, "failed to set default crypto suite")
+		}
+	} else {
+		logger.Debug("default cryptosuite already initialized")
+	}
 
 	// Initialize state store
 	userStore, err := sdk.opts.MSP.CreateUserStore(config)
 	if err != nil {
-		return errors.WithMessage(err, "failed to initialize state store")
+		return errors.WithMessage(err, "failed to create state store")
 	}
 
 	// Initialize Signing Manager
 	signingManager, err := sdk.opts.Core.CreateSigningManager(cryptoSuite, config)
 	if err != nil {
-		return errors.WithMessage(err, "failed to initialize signing manager")
+		return errors.WithMessage(err, "failed to create signing manager")
 	}
 
 	// Initialize IdentityManagerProvider
 	identityManagerProvider, err := sdk.opts.MSP.CreateIdentityManagerProvider(config, cryptoSuite, userStore)
 	if err != nil {
-		return errors.WithMessage(err, "failed to initialize identity manager provider")
+		return errors.WithMessage(err, "failed to create identity manager provider")
 	}
 
 	// Initialize Fabric provider
 	infraProvider, err := sdk.opts.Core.CreateInfraProvider(config)
 	if err != nil {
-		return errors.WithMessage(err, "failed to initialize infra provider")
+		return errors.WithMessage(err, "failed to create infra provider")
 	}
 
 	// Initialize discovery provider
 	discoveryProvider, err := sdk.opts.Service.CreateDiscoveryProvider(config, infraProvider)
 	if err != nil {
-		return errors.WithMessage(err, "failed to initialize discovery provider")
+		return errors.WithMessage(err, "failed to create discovery provider")
 	}
 
 	// Initialize selection provider (for selecting endorsing peers)
 	selectionProvider, err := sdk.opts.Service.CreateSelectionProvider(config)
 	if err != nil {
-		return errors.WithMessage(err, "failed to initialize selection provider")
+		return errors.WithMessage(err, "failed to create selection provider")
 	}
 
 	channelProvider, err := chpvdr.New(infraProvider)
 	if err != nil {
-		return errors.WithMessage(err, "failed to initialize channel provider")
+		return errors.WithMessage(err, "failed to create channel provider")
 	}
 
 	//update sdk providers list since all required providers are initialized
@@ -221,15 +230,24 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 
 	//initialize
 	if pi, ok := infraProvider.(providerInit); ok {
-		pi.Initialize(sdk.provider)
+		err = pi.Initialize(sdk.provider)
+		if err != nil {
+			return errors.WithMessage(err, "failed to initialize infra provider")
+		}
 	}
 
 	if pi, ok := discoveryProvider.(providerInit); ok {
-		pi.Initialize(sdk.provider)
+		err = pi.Initialize(sdk.provider)
+		if err != nil {
+			return errors.WithMessage(err, "failed to initialize discovery provider")
+		}
 	}
 
 	if pi, ok := selectionProvider.(providerInit); ok {
-		pi.Initialize(sdk.provider)
+		err = pi.Initialize(sdk.provider)
+		if err != nil {
+			return errors.WithMessage(err, "failed to initialize selection provider")
+		}
 	}
 
 	return nil

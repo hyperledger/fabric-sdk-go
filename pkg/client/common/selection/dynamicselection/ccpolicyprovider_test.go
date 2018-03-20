@@ -10,29 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"net"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	"google.golang.org/grpc"
 )
-
-func startEndorserServer(t *testing.T, grpcServer *grpc.Server, testAddress string) (*mocks.MockEndorserServer, string) {
-	lis, err := net.Listen("tcp", testAddress)
-	addr := lis.Addr().String()
-
-	endorserServer := &mocks.MockEndorserServer{}
-	pb.RegisterEndorserServer(grpcServer, endorserServer)
-	if err != nil {
-		t.Logf("Error starting test server %s", err)
-		t.FailNow()
-	}
-	t.Logf("Starting test server on %s\n", addr)
-	go grpcServer.Serve(lis)
-	return endorserServer, addr
-}
 
 func TestCCPolicyProvider(t *testing.T) {
 	// Create SDK setup for channel client with dynamic selection
@@ -50,37 +30,37 @@ func TestCCPolicyProvider(t *testing.T) {
 	}
 
 	// Nil sdk
-	ccPolicyProvider, err := newCCPolicyProvider(nil, "mychannel", "User1", "Org1")
+	_, err = newCCPolicyProvider(nil, "mychannel", "User1", "Org1")
 	if err == nil {
 		t.Fatalf("Should have failed for nil sdk")
 	}
 
 	// Invalid channelID
-	ccPolicyProvider, err = newCCPolicyProvider(context, "", "User1", "Org1")
+	_, err = newCCPolicyProvider(context, "", "User1", "Org1")
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel")
 	}
 
 	// Empty user name
-	ccPolicyProvider, err = newCCPolicyProvider(context, "mychannel", "", "Prg1")
+	_, err = newCCPolicyProvider(context, "mychannel", "", "Prg1")
 	if err == nil {
 		t.Fatalf("Should have failed for empty user name")
 	}
 
 	// Empty org name
-	ccPolicyProvider, err = newCCPolicyProvider(context, "mychannel", "User1", "")
+	_, err = newCCPolicyProvider(context, "mychannel", "User1", "")
 	if err == nil {
 		t.Fatalf("Should have failed for nil sdk")
 	}
 
 	// Invalid channel
-	ccPolicyProvider, err = newCCPolicyProvider(context, "non-existent", "User1", "Org1")
+	_, err = newCCPolicyProvider(context, "non-existent", "User1", "Org1")
 	if err == nil {
 		t.Fatalf("Should have failed for invalid channel name")
 	}
 
 	// All good
-	ccPolicyProvider, err = newCCPolicyProvider(context, "mychannel", "User1", "Org1")
+	ccPolicyProvider, err := newCCPolicyProvider(context, "mychannel", "User1", "Org1")
 	if err != nil {
 		t.Fatalf("Failed to setup cc policy provider: %s", err)
 	}

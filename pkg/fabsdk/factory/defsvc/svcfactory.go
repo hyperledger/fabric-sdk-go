@@ -14,10 +14,6 @@ import (
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
 )
 
-type peerCreator interface {
-	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error)
-}
-
 // ProviderFactory represents the default SDK provider factory for services.
 type ProviderFactory struct{}
 

@@ -9,15 +9,12 @@ package msp
 import (
 	"fmt"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	mspapi "github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	"github.com/pkg/errors"
 )
-
-var logger = logging.NewLogger("fabsdk/client")
 
 // Client enables access to Client services
 type Client struct {
@@ -137,10 +134,13 @@ func (c *Client) Register(request *RegistrationRequest) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var a []mspapi.Attribute
-	for i := range request.Attributes {
-		a = append(a, mspapi.Attribute{Name: request.Attributes[i].Name, Key: request.Attributes[i].Key, Value: request.Attributes[i].Value})
-	}
+
+	// TODO - this code is unused.
+	//var a []mspapi.Attribute
+	//for i := range request.Attributes {
+	//	a = append(a, mspapi.Attribute{Name: request.Attributes[i].Name, Key: request.Attributes[i].Key, Value: request.Attributes[i].Value})
+	//}
+
 	r := mspapi.RegistrationRequest{
 		Name:           request.Name,
 		Type:           request.Type,

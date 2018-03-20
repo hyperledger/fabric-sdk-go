@@ -126,9 +126,7 @@ func TestJoinChannelWithFilter(t *testing.T) {
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	// Setup target peers
-	var peers []fab.Peer
 	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr))
-	peers = append(peers, peer1)
 
 	// Test valid join channel request (success)
 	err := rc.JoinChannel("mychannel", WithTargets(peer1))
@@ -476,16 +474,15 @@ func TestInstallCCWithOpts(t *testing.T) {
 	chaincodes[0] = &pb.ChaincodeInfo{Name: "name", Path: "path", Version: "version"}
 	response.Chaincodes = chaincodes
 	responseBytes, err := proto.Marshal(response)
+	assert.Nil(t, err, "marshal should not have failed")
 
 	// Setup targets
-	var peers []fab.Peer
 	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
 		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Payload: responseBytes}
-	peers = append(peers, &peer)
 
 	// Already installed chaincode request
 	req := InstallCCRequest{Name: "name", Version: "version", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	responses, err := rc.InstallCC(req, WithTargets(peers...))
+	responses, err := rc.InstallCC(req, WithTargets(&peer))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -504,7 +501,7 @@ func TestInstallCCWithOpts(t *testing.T) {
 
 	// Chaincode not found request (it will be installed)
 	req = InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	responses, err = rc.InstallCC(req, WithTargets(peers...))
+	responses, err = rc.InstallCC(req, WithTargets(&peer))
 	if err != nil {
 		t.Fatal(err)
 	}

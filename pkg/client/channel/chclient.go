@@ -73,7 +73,10 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 	}
 
 	for _, param := range opts {
-		param(&channelClient)
+		err := param(&channelClient)
+		if err != nil {
+			return nil, errors.WithMessage(err, "option failed")
+		}
 	}
 
 	return &channelClient, nil
@@ -81,12 +84,22 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 
 // Query chaincode using request and optional options provided
 func (cc *Client) Query(request Request, options ...RequestOption) (Response, error) {
-	return cc.InvokeHandler(invoke.NewQueryHandler(), request, cc.addDefaultTimeout(cc.context, core.Query, options...)...)
+	optsWithTimeout, err := cc.addDefaultTimeout(cc.context, core.Query, options...)
+	if err != nil {
+		return Response{}, errors.WithMessage(err, "option failed")
+	}
+
+	return cc.InvokeHandler(invoke.NewQueryHandler(), request, optsWithTimeout...)
 }
 
 // Execute prepares and executes transaction using request and optional options provided
 func (cc *Client) Execute(request Request, options ...RequestOption) (Response, error) {
-	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, cc.addDefaultTimeout(cc.context, core.Execute, options...)...)
+	optsWithTimeout, err := cc.addDefaultTimeout(cc.context, core.Execute, options...)
+	if err != nil {
+		return Response{}, errors.WithMessage(err, "option failed")
+	}
+
+	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, optsWithTimeout...)
 }
 
 //InvokeHandler invokes handler using request and options provided
@@ -226,17 +239,20 @@ func (cc *Client) prepareOptsFromOptions(ctx context.Client, options ...RequestO
 }
 
 //addDefaultTimeout adds given default timeout if it is missing in options
-func (cc *Client) addDefaultTimeout(ctx context.Client, timeOutType core.TimeoutType, options ...RequestOption) []RequestOption {
+func (cc *Client) addDefaultTimeout(ctx context.Client, timeOutType core.TimeoutType, options ...RequestOption) ([]RequestOption, error) {
 	txnOpts := requestOptions{}
 	for _, option := range options {
-		option(ctx, &txnOpts)
+		err := option(ctx, &txnOpts)
+		if err != nil {
+			return nil, errors.WithMessage(err, "option failed")
+		}
 	}
 
 	if txnOpts.Timeouts[timeOutType] == 0 {
 		//InvokeHandler relies on Execute timeout
-		return append(options, WithTimeout(core.Execute, cc.context.Config().TimeoutOrDefault(timeOutType)))
+		return append(options, WithTimeout(core.Execute, cc.context.Config().TimeoutOrDefault(timeOutType))), nil
 	}
-	return options
+	return options, nil
 }
 
 // RegisterChaincodeEvent registers chain code event

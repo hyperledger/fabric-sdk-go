@@ -14,7 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazyref"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	copts "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -86,7 +85,6 @@ type selectionService struct {
 	pgLBP            pgresolver.LoadBalancePolicy
 	ccPolicyProvider CCPolicyProvider
 	discoveryService fab.DiscoveryService
-	cacheTimeout     time.Duration
 }
 
 // Initialize allow for initializing providers
@@ -257,32 +255,4 @@ func (s *selectionService) getPolicyGroupForCC(channelID string, ccID string) (p
 		return nil, errors.WithMessage(err, fmt.Sprintf("error querying chaincode [%s] on channel [%s]", ccID, channelID))
 	}
 	return pgresolver.CompileSignaturePolicy(sigPolicyEnv)
-}
-
-func (s *selectionService) getAvailablePeers(mspID string) []fab.Peer {
-	channelPeers, err := s.discoveryService.GetPeers()
-	if err != nil {
-		logger.Errorf("Error retrieving peers from discovery service: %s", err)
-		return nil
-	}
-
-	var peers []fab.Peer
-	for _, peer := range channelPeers {
-		if string(peer.MSPID()) == mspID {
-			peers = append(peers, peer)
-		}
-	}
-
-	if logging.IsEnabledFor(loggerModule, logging.DEBUG) {
-		str := ""
-		for i, peer := range peers {
-			str += peer.URL()
-			if i+1 < len(peers) {
-				str += ","
-			}
-		}
-		logger.Debugf("Available peers:\n%s\n", str)
-	}
-
-	return peers
 }

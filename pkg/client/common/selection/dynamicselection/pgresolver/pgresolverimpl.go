@@ -73,7 +73,7 @@ func (c *peerGroupResolver) Resolve(peers []fab.Peer) (PeerGroup, error) {
 	}
 
 	if logging.IsEnabledFor(loggerModule, logging.DEBUG) {
-		s := ""
+		var s string
 		if len(peerGroups) == 0 {
 			s = "\n\n***** No Available Peer Groups\n"
 		} else {
@@ -116,9 +116,7 @@ func (c *peerGroupResolver) getPeerGroups(peerRetriever MSPPeerRetriever) ([]Pee
 
 	var allPeerGroups []PeerGroup
 	for _, g := range mspGroups {
-		for _, pg := range mustGetPeerGroups(g) {
-			allPeerGroups = append(allPeerGroups, pg)
-		}
+		allPeerGroups = append(allPeerGroups, mustGetPeerGroups(g)...)
 	}
 	return allPeerGroups, nil
 }
@@ -238,13 +236,19 @@ func mspPrincipalToString(principal *mb.MSPPrincipal) (string, error) {
 	case mb.MSPPrincipal_ROLE:
 		// Principal contains the msp role
 		mspRole := &mb.MSPRole{}
-		proto.Unmarshal(principal.Principal, mspRole)
+		err := proto.Unmarshal(principal.Principal, mspRole)
+		if err != nil {
+			return "", errors.WithMessage(err, "unmarshal of principal failed")
+		}
 		return mspRole.MspIdentifier, nil
 
 	case mb.MSPPrincipal_ORGANIZATION_UNIT:
 		// Principal contains the OrganizationUnit
 		unit := &mb.OrganizationUnit{}
-		proto.Unmarshal(principal.Principal, unit)
+		err := proto.Unmarshal(principal.Principal, unit)
+		if err != nil {
+			return "", errors.WithMessage(err, "unmarshal of principal failed")
+		}
 		return unit.MspIdentifier, nil
 
 	case mb.MSPPrincipal_IDENTITY:

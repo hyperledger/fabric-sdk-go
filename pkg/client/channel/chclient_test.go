@@ -360,7 +360,7 @@ func TestTransactionValidationError(t *testing.T) {
 		case txStatusReg := <-mockEventService.TxStatusRegCh:
 			txStatusReg.Eventch <- &fab.TxStatusEvent{TxID: txStatusReg.TxID, TxValidationCode: validationCode}
 		case <-time.After(time.Second * 5):
-			t.Fatal("Timed out waiting for execute Tx to register event callback")
+			panic("Timed out waiting for execute Tx to register event callback")
 		}
 	}()
 

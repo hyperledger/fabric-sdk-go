@@ -26,11 +26,8 @@ import (
 
 const (
 	testTimeOut              = 20 * time.Second
-	discoveryServiceError    = "Discovery service error"
 	selectionServiceError    = "Selection service error"
 	endorsementMisMatchError = "ProposalResponsePayloads do not match"
-
-	filterTxError = "Filter Tx error"
 )
 
 func TestQueryHandlerSuccess(t *testing.T) {
@@ -77,7 +74,7 @@ func TestExecuteTxHandlerSuccess(t *testing.T) {
 		case txStatusReg := <-mockEventService.TxStatusRegCh:
 			txStatusReg.Eventch <- &fab.TxStatusEvent{TxID: txStatusReg.TxID, TxValidationCode: pb.TxValidationCode_VALID}
 		case <-time.After(requestContext.Opts.Timeouts[core.Execute]):
-			t.Fatal("Execute handler : time out not expected")
+			panic("Execute handler : time out not expected")
 		}
 	}()
 

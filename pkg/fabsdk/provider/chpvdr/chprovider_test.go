@@ -47,13 +47,13 @@ func TestBasicValidChannel(t *testing.T) {
 		t.Fatalf("Unexpected error creating Channel Provider: %v", err)
 	}
 
-	channelService, err := cp.ChannelService(clientCtx, "mychannel")
+	_, err = cp.ChannelService(clientCtx, "mychannel")
 	if err != nil {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}
 
 	// System channel
-	channelService, err = cp.ChannelService(clientCtx, "")
+	channelService, err := cp.ChannelService(clientCtx, "")
 	if err != nil {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}
@@ -72,8 +72,7 @@ type MockProviderFactory struct {
 // MockInfraProvider overrides channel config default implementation
 type MockInfraProvider struct {
 	*fabpvdr.InfraProvider
-	providerContext context.Providers
-	ctx             context.Client
+	ctx context.Client
 }
 
 // CreateChannelConfig initializes the channel config

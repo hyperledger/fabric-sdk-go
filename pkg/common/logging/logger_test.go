@@ -18,7 +18,6 @@ import (
 
 var moduleName = "module-xyz"
 var moduleName2 = "module-xyz-deftest"
-var logPrefixFormatter = " [%s] "
 var buf bytes.Buffer
 
 func TestLoggingForCustomLogger(t *testing.T) {

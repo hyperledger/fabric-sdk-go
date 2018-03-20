@@ -14,31 +14,22 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection/pgresolver"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
-	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
-var testConfig *config.Config
-
 const (
-	org1  = "Org1MSP"
-	org2  = "Org2MSP"
-	org3  = "Org3MSP"
-	org4  = "Org4MSP"
-	org5  = "Org5MSP"
-	org6  = "Org6MSP"
-	org7  = "Org7MSP"
-	org8  = "Org8MSP"
-	org9  = "Org9MSP"
-	org10 = "Org10MSP"
+	org1 = "Org1MSP"
+	org2 = "Org2MSP"
+	org3 = "Org3MSP"
+	org4 = "Org4MSP"
+	org5 = "Org5MSP"
 )
 
 const (
@@ -49,7 +40,6 @@ const (
 const (
 	cc1 = "cc1"
 	cc2 = "cc2"
-	cc3 = "cc3"
 )
 
 const (
@@ -489,12 +479,6 @@ func (lbp *customLBP) Choose(peerGroups []pgresolver.PeerGroup) pgresolver.PeerG
 		return pgresolver.NewPeerGroup()
 	}
 	return peerGroups[0]
-}
-
-func setupMockContext(username, orgName string) context.Providers {
-	user := mspmocks.NewMockSigningIdentity(username, orgName)
-	ctx := mocks.NewMockContext(user)
-	return ctx
 }
 
 type mockDiscoveryService struct {
