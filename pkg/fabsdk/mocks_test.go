@@ -69,7 +69,6 @@ type mockPkgSuite struct {
 	errOnCore    bool
 	errOnMsp     bool
 	errOnService bool
-	errOnSession bool
 	errOnLogger  bool
 }
 

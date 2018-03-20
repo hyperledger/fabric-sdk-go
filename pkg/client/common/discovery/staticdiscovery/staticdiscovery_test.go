@@ -28,12 +28,12 @@ func TestStaticDiscovery(t *testing.T) {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}
 
-	discoveryService, err := discoveryProvider.CreateDiscoveryService("invalidChannel")
+	_, err = discoveryProvider.CreateDiscoveryService("invalidChannel")
 	if err == nil {
 		t.Fatalf("Should have failed to setup discovery service for non-configured channel")
 	}
 
-	discoveryService, err = discoveryProvider.CreateDiscoveryService("mychannel")
+	discoveryService, err := discoveryProvider.CreateDiscoveryService("mychannel")
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}

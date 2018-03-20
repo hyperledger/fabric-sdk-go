@@ -21,7 +21,6 @@ const (
 	sdkConfigFile      = "../../test/fixtures/config/config_test.yaml"
 	sdkValidClientUser = "User1"
 	sdkValidClientOrg1 = "Org1"
-	sdkValidClientOrg2 = "Org2"
 )
 
 func TestNewGoodOpt(t *testing.T) {
@@ -238,7 +237,7 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 		t.Fatalf("Failed to read config file stat. Error: %s", err)
 	}
 	s := fi.Size()
-	cBytes := make([]byte, s, s)
+	cBytes := make([]byte, s)
 	n, err := f.Read(cBytes)
 	if err != nil {
 		t.Fatalf("Failed to read test config for bytes array testing. Error: %s", err)

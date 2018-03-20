@@ -67,6 +67,12 @@ func SetDefault(newDefaultSuite core.CryptoSuite) error {
 	return initSuite(newDefaultSuite)
 }
 
+// DefaultInitialized returns true if a default suite has already been
+// set.
+func DefaultInitialized() bool {
+	return atomic.LoadInt32(&initialized) > 0
+}
+
 //GetSHA256Opts returns options relating to SHA-256.
 func GetSHA256Opts() core.HashOpts {
 	return &bccsp.SHA256Opts{}

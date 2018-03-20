@@ -9,14 +9,11 @@ package msppvdr
 import (
 	"strings"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	mspimpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
 )
-
-var logger = logging.NewLogger("fabsdk")
 
 // MSPProvider provides the default implementation of MSP
 type MSPProvider struct {

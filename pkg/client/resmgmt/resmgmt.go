@@ -279,7 +279,7 @@ func (rc *Client) calculateTargets(discovery fab.DiscoveryService, peers []fab.P
 }
 
 // isChaincodeInstalled verify if chaincode is installed on peer
-func (rc *Client) isChaincodeInstalled(reqCtx reqContext.Context, req InstallCCRequest, peer fab.Peer) (bool, error) {
+func (rc *Client) isChaincodeInstalled(reqCtx reqContext.Context, req InstallCCRequest, peer fab.ProposalProcessor) (bool, error) {
 
 	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, peer)
 	if err != nil {
@@ -618,11 +618,6 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
-	var timeout = opts.Timeouts[core.Execute]
-	if timeout == 0 {
-		timeout = rc.ctx.Config().TimeoutOrDefault(core.Execute)
-	}
-
 	select {
 	case txStatus := <-statusNotifier:
 		if txStatus.TxValidationCode == pb.TxValidationCode_VALID {
@@ -686,7 +681,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		if err != nil {
 			return errors.Wrapf(err, "opening channel config file failed")
 		}
-		defer configReader.Close()
+		defer loggedClose(configReader)
 		req.ChannelConfig = configReader
 	}
 
@@ -758,6 +753,13 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	}
 
 	return nil
+}
+
+func loggedClose(c io.Closer) {
+	err := c.Close()
+	if err != nil {
+		logger.Warnf("closing resource failed: %s", err)
+	}
 }
 
 // QueryConfigFromOrderer config returns channel configuration from orderer

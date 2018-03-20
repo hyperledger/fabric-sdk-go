@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateMSPProvider(t *testing.T) {
@@ -32,6 +33,7 @@ func TestCreateMSPProvider(t *testing.T) {
 	userStore := &mockmsp.MockUserStore{}
 
 	provider, err := New(config, cryptosuite, userStore)
+	assert.Nil(t, err, "New should not have failed")
 
 	if provider.UserStore() != userStore {
 		t.Fatalf("Invalid user store returned")

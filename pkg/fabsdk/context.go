@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/pkg/errors"
 )
@@ -89,19 +88,4 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.SigningIdentity
 	}
 
 	return user, nil
-}
-
-// session represents an identity being used with clients along with services
-// that associate with that identity (particularly the channel service).
-type session struct {
-	msp.Identity
-}
-
-// newSession creates a session from a context and a user (TODO)
-func newSession(ic msp.Identity, cp fab.ChannelProvider) *session {
-	s := session{
-		Identity: ic,
-	}
-
-	return &s
 }

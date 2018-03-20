@@ -17,6 +17,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 )
 
+const (
+	sdkValidClientOrg2 = "Org2"
+)
+
 // TODO: (divyank) Re-enable.
 func testNewDefaultSDK(t *testing.T) {
 	// Test New SDK with valid config file

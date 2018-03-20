@@ -114,8 +114,7 @@ func TestFabricSDKContext(t *testing.T) {
 	// Valid user and org
 	ctxProvider = sdk.Context(WithUser(identityValidOptUser), WithOrg(identityValidOptOrg))
 
-	ctx, err = ctxProvider()
-
+	_, err = ctxProvider()
 	if err != nil {
 		t.Fatalf("getting context supposed to succeed")
 	}

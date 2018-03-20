@@ -14,15 +14,12 @@ import (
 	"github.com/pkg/errors"
 
 	selectopts "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
-
-var logger = logging.NewLogger("fabsdk/client")
 
 //EndorsementHandler for handling endorse transactions
 type EndorsementHandler struct {
@@ -118,7 +115,7 @@ func (f *EndorsementValidationHandler) validate(txProposalResponse []*fab.Transa
 			continue
 		}
 
-		if bytes.Compare(a1, r.ProposalResponse.GetResponse().Payload) != 0 {
+		if !bytes.Equal(a1, r.ProposalResponse.GetResponse().Payload) {
 			return status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
 				"ProposalResponsePayloads do not match", nil)
 		}
@@ -239,7 +236,7 @@ func createAndSendTransaction(sender fab.Sender, proposal *fab.TransactionPropos
 	return transactionResponse, nil
 }
 
-func createAndSendTransactionProposal(transactor fab.Transactor, chrequest *Request, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, error) {
+func createAndSendTransactionProposal(transactor fab.ProposalSender, chrequest *Request, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, error) {
 	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID:  chrequest.ChaincodeID,
 		Fcn:          chrequest.Fcn,
