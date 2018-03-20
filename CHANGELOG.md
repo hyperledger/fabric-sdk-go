@@ -1,7 +1,9 @@
 ## v1.0.0-alpha3
-Tue 20 Mar 2018 14:24:09 EDT
+Tue 20 Mar 2018 17:52:25 EDT
 
-* [ac4dd8eb](https://github.com/hyperledger/fabric-sdk-go/commit/ac4dd8eb) [[FAB-8912](https://jira.hyperledger.org/browse/FAB-8912)] Update stable target to 1.1.0
+* [aaeebdd3](https://github.com/hyperledger/fabric-sdk-go/commit/aaeebdd3) [[FAB-8983](https://jira.hyperledger.org/browse/FAB-8983)] make org names consistent in small case
+* [d7c5c6a0](https://github.com/hyperledger/fabric-sdk-go/commit/d7c5c6a0) [[FAB-7975](https://jira.hyperledger.org/browse/FAB-7975)] return status code for chaincode error
+* [8b74992f](https://github.com/hyperledger/fabric-sdk-go/commit/8b74992f) [[FAB-8912](https://jira.hyperledger.org/browse/FAB-8912)] Update stable target to 1.1.0
 * [79b343ba](https://github.com/hyperledger/fabric-sdk-go/commit/79b343ba) [[FAB-8995](https://jira.hyperledger.org/browse/FAB-8995)] Event client should read channel config
 * [e3276ec1](https://github.com/hyperledger/fabric-sdk-go/commit/e3276ec1) [[FAB-8985](https://jira.hyperledger.org/browse/FAB-8985)] client,common,fabsdk/... metalinter
 * [f46da4c6](https://github.com/hyperledger/fabric-sdk-go/commit/f46da4c6) [[FAB-8982](https://jira.hyperledger.org/browse/FAB-8982)] Remove binary output in debug log
