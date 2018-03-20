@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package endpoint
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -15,6 +16,23 @@ import (
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
+
+const (
+	url1 = "p1.test.com:9051"
+	url2 = "p2.test.com:9051"
+	url3 = "p3.test.com:9051"
+)
+
+var p1 = fabmocks.NewMockPeer("p1", url1)
+var p2 = fabmocks.NewMockPeer("p2", url2)
+var p3 = fabmocks.NewMockPeer("p3", url3)
+
+var pc1 = core.PeerConfig{URL: url1}
+var pc2 = core.PeerConfig{URL: url2}
+var pc3 = core.PeerConfig{URL: url3}
+
+var peers = []fab.Peer{p1, p2, p3}
+var peerConfigs = []core.PeerConfig{pc1, pc2, pc3}
 
 func TestEndpoint(t *testing.T) {
 	expectedEventURL := "localhost:7053"
@@ -69,71 +87,119 @@ func TestEndpoint(t *testing.T) {
 
 func TestDiscoveryProvider(t *testing.T) {
 	ctx := newMockContext()
+
+	expectedNumPeers := len(peers)
+
 	discoveryProvider := NewDiscoveryProvider(ctx)
 
 	discoveryService, err := discoveryProvider.CreateDiscoveryService("testchannel")
 	if err != nil {
 		t.Fatalf("error creating discovery service: %s", err)
 	}
-	_, err = discoveryService.GetPeers()
+	peers, err = discoveryService.GetPeers()
 	if err != nil {
 		t.Fatalf("error getting peers: %s", err)
 	}
-
+	if len(peers) != expectedNumPeers {
+		t.Fatalf("expecting %d peers but got %d", expectedNumPeers, len(peers))
+	}
 }
 
 func TestDiscoveryProviderWithTargetFilter(t *testing.T) {
 	ctx := newMockContext()
 
-	var numTimesCalled int
-	expectedNumTimesCalled := 1
+	expectedNumPeers := len(peers) - 1
 
-	discoveryProvider := NewDiscoveryProvider(ctx, WithTargetFilter(newMockFilter(&numTimesCalled)))
+	discoveryProvider := NewDiscoveryProvider(ctx, WithTargetFilter(newMockFilter(p3)))
 
 	discoveryService, err := discoveryProvider.CreateDiscoveryService("testchannel")
 	if err != nil {
 		t.Fatalf("error creating discovery service: %s", err)
 	}
-	_, err = discoveryService.GetPeers()
+	peers, err = discoveryService.GetPeers()
 	if err != nil {
 		t.Fatalf("error getting peers: %s", err)
 	}
-	if numTimesCalled != expectedNumTimesCalled {
-		t.Fatalf("expecting target filter to be called %d time(s) but was called %d time(s)", expectedNumTimesCalled, numTimesCalled)
+	if len(peers) != expectedNumPeers {
+		t.Fatalf("expecting %d peers but got %d", expectedNumPeers, len(peers))
+	}
+}
+
+func TestDiscoveryProviderWithEventSource(t *testing.T) {
+	ctx := newMockContext()
+
+	chPeer2 := core.ChannelPeer{}
+	chPeer2.URL = p2.URL()
+	chPeer2.EventSource = false
+	ctx.SetConfig(newMockConfig(chPeer2))
+
+	expectedNumPeers := len(peers) - 1
+
+	discoveryProvider := NewDiscoveryProvider(ctx)
+
+	discoveryService, err := discoveryProvider.CreateDiscoveryService("testchannel")
+	if err != nil {
+		t.Fatalf("error creating discovery service: %s", err)
+	}
+	peers, err = discoveryService.GetPeers()
+	if err != nil {
+		t.Fatalf("error getting peers: %s", err)
+	}
+	if len(peers) != expectedNumPeers {
+		t.Fatalf("expecting %d peers but got %d", expectedNumPeers, len(peers))
 	}
 }
 
 type mockConfig struct {
 	core.Config
+	channelPeers []core.ChannelPeer
 }
 
-func newMockConfig() *mockConfig {
+func newMockConfig(channelPeers ...core.ChannelPeer) *mockConfig {
 	return &mockConfig{
-		Config: fabmocks.NewMockConfig(),
+		Config:       fabmocks.NewMockConfig(),
+		channelPeers: channelPeers,
 	}
 }
 
 func (c *mockConfig) PeerConfigByURL(url string) (*core.PeerConfig, error) {
-	return &core.PeerConfig{}, nil
+	for _, pc := range peerConfigs {
+		if pc.URL == url {
+			return &pc, nil
+		}
+	}
+	return nil, nil
+}
+
+func (c *mockConfig) ChannelPeers(name string) ([]core.ChannelPeer, error) {
+	fmt.Printf("mockConfig.ChannelPeers - returning %#v", c.channelPeers)
+	return c.channelPeers, nil
 }
 
 func newMockContext() *fabmocks.MockContext {
-	ctx := fabmocks.NewMockContext(
+	discoveryProvider, _ := fabmocks.NewMockDiscoveryProvider(nil, peers)
+
+	ctx := fabmocks.NewMockContextWithCustomDiscovery(
 		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+		discoveryProvider,
 	)
 	ctx.SetConfig(newMockConfig())
 	return ctx
 }
 
 type mockFilter struct {
-	numTimesCalled *int
+	excludePeers []fab.Peer
 }
 
-func newMockFilter(numTimesCalled *int) *mockFilter {
-	return &mockFilter{numTimesCalled: numTimesCalled}
+func newMockFilter(excludePeers ...fab.Peer) *mockFilter {
+	return &mockFilter{excludePeers: excludePeers}
 }
 
 func (f *mockFilter) Accept(peer fab.Peer) bool {
-	*f.numTimesCalled++
+	for _, p := range f.excludePeers {
+		if p.URL() == peer.URL() {
+			return false
+		}
+	}
 	return true
 }
