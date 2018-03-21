@@ -23,8 +23,8 @@ type Ledger interface {
 	// Unregister unregisters the given consumer
 	Unregister(consumer Consumer)
 
-	// NewBlock returns a new block
-	NewBlock(channelID string, transactions ...*TxInfo)
+	// NewBlock creates a new block
+	NewBlock(channelID string, transactions ...*TxInfo) Block
 
 	// NewFilteredBlock returns a new filtered block
 	NewFilteredBlock(channelID string, filteredTx ...*pb.FilteredTransaction)

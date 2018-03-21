@@ -101,7 +101,7 @@ func TestForbiddenConnection(t *testing.T) {
 		if !ok {
 			t.Fatalf("unexpected closed connection")
 		}
-		statusResponse := e.(*pb.DeliverResponse).Type.(*pb.DeliverResponse_Status)
+		statusResponse := e.(*Event).Event.(*pb.DeliverResponse).Type.(*pb.DeliverResponse_Status)
 		if statusResponse.Status != expectedStatus {
 			t.Fatalf("expecting status %s but got %s", expectedStatus, statusResponse.Status)
 		}
@@ -181,9 +181,13 @@ func testSend(t *testing.T, streamType streamType) {
 		if !ok {
 			t.Fatalf("unexpected closed connection")
 		}
-		deliverResponse, ok := e.(*pb.DeliverResponse)
+		deliverEvent, ok := e.(*Event)
 		if !ok {
-			t.Fatalf("expected deliver response but got %T", e)
+			t.Fatalf("expected DeliverEvent but got %T", e)
+		}
+		deliverResponse, ok := deliverEvent.Event.(*pb.DeliverResponse)
+		if !ok {
+			t.Fatalf("expected DeliverEvent but got %T", e)
 		}
 
 		if streamType == streamTypeDeliver && deliverResponse.GetBlock() == nil {

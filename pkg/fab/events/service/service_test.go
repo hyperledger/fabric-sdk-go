@@ -45,7 +45,10 @@ const (
 	errorOutcome       Outcome = "error"
 )
 
-var defaultOpts = []options.Opt{}
+var (
+	defaultOpts = []options.Opt{}
+	sourceURL   = "localhost:9051"
+)
 
 func TestInvalidUnregister(t *testing.T) {
 	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts)
@@ -61,7 +64,7 @@ func TestInvalidUnregister(t *testing.T) {
 
 func TestBlockEvents(t *testing.T) {
 	channelID := "mychannel"
-	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withBlockLedger())
+	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withBlockLedger(sourceURL))
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
@@ -88,7 +91,7 @@ func TestBlockEvents(t *testing.T) {
 
 func TestBlockEventsWithFilter(t *testing.T) {
 	channelID := "mychannel"
-	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withBlockLedger())
+	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withBlockLedger(sourceURL))
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
@@ -154,7 +157,7 @@ func TestBlockEventsWithFilter(t *testing.T) {
 
 func TestFilteredBlockEvents(t *testing.T) {
 	channelID := "mychannel"
-	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withFilteredBlockLedger())
+	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withFilteredBlockLedger(sourceURL))
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
@@ -196,7 +199,7 @@ func TestFilteredBlockEvents(t *testing.T) {
 
 func TestBlockAndFilteredBlockEvents(t *testing.T) {
 	channelID := "mychannel"
-	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withBlockLedger())
+	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withBlockLedger(sourceURL))
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
@@ -257,7 +260,7 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 
 func TestTxStatusEvents(t *testing.T) {
 	channelID := "mychannel"
-	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withFilteredBlockLedger())
+	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withFilteredBlockLedger(sourceURL))
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
@@ -331,7 +334,7 @@ func TestTxStatusEvents(t *testing.T) {
 
 func TestCCEvents(t *testing.T) {
 	channelID := "mychannel"
-	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withFilteredBlockLedger())
+	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withFilteredBlockLedger(sourceURL))
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
@@ -423,7 +426,7 @@ func TestConcurrentEvents(t *testing.T) {
 			dispatcher.WithEventConsumerBufferSize(200),
 			dispatcher.WithEventConsumerTimeout(time.Second),
 		},
-		withBlockLedger(),
+		withBlockLedger(sourceURL),
 	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -705,15 +708,15 @@ type producerOpts struct {
 
 type producerOpt func(opts *producerOpts)
 
-func withBlockLedger() producerOpt {
+func withBlockLedger(source string) producerOpt {
 	return func(opts *producerOpts) {
-		opts.ledger = servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
+		opts.ledger = servicemocks.NewMockLedger(servicemocks.BlockEventFactory, source)
 	}
 }
 
-func withFilteredBlockLedger() producerOpt {
+func withFilteredBlockLedger(source string) producerOpt {
 	return func(opts *producerOpts) {
-		opts.ledger = servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)
+		opts.ledger = servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, source)
 	}
 }
 
@@ -735,7 +738,7 @@ func newServiceWithMockProducer(opts []options.Opt, pOpts ...producerOpt) (*Serv
 
 	ledger := popts.ledger
 	if popts.ledger == nil {
-		ledger = servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
+		ledger = servicemocks.NewMockLedger(servicemocks.BlockEventFactory, sourceURL)
 	}
 
 	eventProducer := servicemocks.NewMockProducer(ledger)

@@ -19,6 +19,8 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
+var sourceURL = "localhost:9051"
+
 func TestInvalidUnregister(t *testing.T) {
 	dispatcher := New()
 	if err := dispatcher.Start(); err != nil {
@@ -62,12 +64,15 @@ func TestBlockEvents(t *testing.T) {
 		t.Fatalf("Error registering for block events: %s", err)
 	}
 
-	dispatcherEventch <- servicemocks.NewBlockProducer().NewBlock(channelID)
+	dispatcherEventch <- NewBlockEvent(servicemocks.NewBlockProducer().NewBlock(channelID), sourceURL)
 
 	select {
-	case _, ok := <-eventch:
+	case event, ok := <-eventch:
 		if !ok {
 			t.Fatalf("unexpected closed channel")
+		}
+		if event.SourceURL != sourceURL {
+			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatalf("timed out waiting for block event")
@@ -124,14 +129,14 @@ func TestBlockEventsWithFilter(t *testing.T) {
 
 	eventProducer := servicemocks.NewBlockProducer()
 
-	dispatcherEventch <- eventProducer.NewBlock(channelID,
-		servicemocks.NewTransaction(txID1, txCode1, cb.HeaderType_CONFIG),
+	dispatcherEventch <- NewBlockEvent(eventProducer.NewBlock(channelID,
+		servicemocks.NewTransaction(txID1, txCode1, cb.HeaderType_CONFIG)), sourceURL,
 	)
-	dispatcherEventch <- eventProducer.NewBlock(channelID,
-		servicemocks.NewTransaction(txID2, txCode2, cb.HeaderType_CONFIG_UPDATE),
+	dispatcherEventch <- NewBlockEvent(eventProducer.NewBlock(channelID,
+		servicemocks.NewTransaction(txID2, txCode2, cb.HeaderType_CONFIG_UPDATE)), sourceURL,
 	)
-	dispatcherEventch <- eventProducer.NewBlock(channelID,
-		servicemocks.NewTransaction(txID2, txCode2, cb.HeaderType_ENDORSER_TRANSACTION),
+	dispatcherEventch <- NewBlockEvent(eventProducer.NewBlock(channelID,
+		servicemocks.NewTransaction(txID2, txCode2, cb.HeaderType_ENDORSER_TRANSACTION)), sourceURL,
 	)
 
 	numBlockEventsReceived := 0
@@ -202,11 +207,11 @@ func TestFilteredBlockEvents(t *testing.T) {
 	txID2 := "5678"
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
-	dispatcherEventch <- servicemocks.NewBlockProducer().NewFilteredBlock(
+	dispatcherEventch <- NewFilteredBlockEvent(servicemocks.NewBlockProducer().NewFilteredBlock(
 		channelID,
 		servicemocks.NewFilteredTx(txID1, txCode1),
 		servicemocks.NewFilteredTx(txID2, txCode2),
-	)
+	), sourceURL)
 
 	select {
 	case fbevent, ok := <-fbeventch:
@@ -218,6 +223,9 @@ func TestFilteredBlockEvents(t *testing.T) {
 		}
 		if fbevent.FilteredBlock.ChannelId != channelID {
 			t.Fatalf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
+		}
+		if fbevent.SourceURL != sourceURL {
+			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, fbevent.SourceURL)
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatalf("timed out waiting for filtered block event")
@@ -272,10 +280,10 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 	txID2 := "5678"
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
-	dispatcherEventch <- servicemocks.NewBlockProducer().NewBlock(channelID,
+	dispatcherEventch <- NewBlockEvent(servicemocks.NewBlockProducer().NewBlock(channelID,
 		servicemocks.NewTransaction(txID1, txCode1, cb.HeaderType_CONFIG),
 		servicemocks.NewTransaction(txID2, txCode2, cb.HeaderType_ENDORSER_TRANSACTION),
-	)
+	), sourceURL)
 
 	numReceived := 0
 	numExpected := 2
@@ -382,12 +390,14 @@ func TestTxStatusEvents(t *testing.T) {
 		t.Fatalf("error registering for TxStatus events: %s", err)
 	}
 
-	dispatcherEventch <- servicemocks.NewBlockProducer().NewFilteredBlock(
+	fblockEvent := NewFilteredBlockEvent(servicemocks.NewBlockProducer().NewFilteredBlock(
 		channelID,
 		servicemocks.NewFilteredTx(txID1, txCode1),
 		servicemocks.NewFilteredTx(txID2, txCode2),
-	)
+	), sourceURL)
+	dispatcherEventch <- fblockEvent
 
+	expectedBlockNumber := fblockEvent.FilteredBlock.Number
 	numExpected := 2
 	numReceived := 0
 
@@ -400,6 +410,12 @@ func TestTxStatusEvents(t *testing.T) {
 				checkTxStatusEvent(t, event, txID1, txCode1)
 				numReceived++
 			}
+			if event.SourceURL != sourceURL {
+				t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
+			}
+			if event.BlockNumber != expectedBlockNumber {
+				t.Fatalf("expecting block number [%d] but got [%d]", expectedBlockNumber, event.BlockNumber)
+			}
 		case event, ok := <-eventch2:
 			if !ok {
 				t.Fatalf("unexpected closed channel")
@@ -407,13 +423,20 @@ func TestTxStatusEvents(t *testing.T) {
 				checkTxStatusEvent(t, event, txID2, txCode2)
 				numReceived++
 			}
+			if event.SourceURL != sourceURL {
+				t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
+			}
 		case <-time.After(5 * time.Second):
 			t.Fatalf("timed out waiting for [%d] TxStatus events. Only received [%d]", numExpected, numReceived)
 		}
 
-		if numReceived == numExpected {
+		if numReceived >= numExpected {
 			break
 		}
+	}
+
+	if numReceived != numExpected {
+		t.Fatalf("expecting [%d] TxStatus events but got [%d]", numExpected, numReceived)
 	}
 
 	dispatcherEventch <- NewUnregisterEvent(reg1)
@@ -493,12 +516,16 @@ func TestCCEventsUnfiltered(t *testing.T) {
 		t.Fatalf("error registering for chaincode events: %s", err)
 	}
 
-	dispatcherEventch <- servicemocks.NewBlockProducer().NewBlock(
-		channelID,
-		servicemocks.NewTransactionWithCCEvent("txid1", pb.TxValidationCode_VALID, ccID1, event1, payload1),
-		servicemocks.NewTransactionWithCCEvent("txid2", pb.TxValidationCode_VALID, ccID2, event2, payload2),
-	)
+	blockEvent := NewBlockEvent(
+		servicemocks.NewBlockProducer().NewBlock(
+			channelID,
+			servicemocks.NewTransactionWithCCEvent("txid1", pb.TxValidationCode_VALID, ccID1, event1, payload1),
+			servicemocks.NewTransactionWithCCEvent("txid2", pb.TxValidationCode_VALID, ccID2, event2, payload2),
+		), sourceURL)
 
+	dispatcherEventch <- blockEvent
+
+	expectedBlockNumber := blockEvent.Block.Header.Number
 	numExpected := 2
 	numReceived := 0
 
@@ -511,6 +538,12 @@ func TestCCEventsUnfiltered(t *testing.T) {
 				checkCCEvent(t, event, ccID1, payload1, event1)
 				numReceived++
 			}
+			if event.SourceURL != sourceURL {
+				t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
+			}
+			if event.BlockNumber != expectedBlockNumber {
+				t.Fatalf("expecting block number [%d] but got [%d]", expectedBlockNumber, event.BlockNumber)
+			}
 		case event, ok := <-eventch2:
 			if !ok {
 				t.Fatalf("unexpected closed channel")
@@ -518,13 +551,23 @@ func TestCCEventsUnfiltered(t *testing.T) {
 				checkCCEvent(t, event, ccID2, payload2, event2)
 				numReceived++
 			}
+			if event.SourceURL != sourceURL {
+				t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
+			}
+			if event.BlockNumber != expectedBlockNumber {
+				t.Fatalf("expecting block number [%d] but got [%d]", expectedBlockNumber, event.BlockNumber)
+			}
 		case <-time.After(5 * time.Second):
 			t.Fatalf("timed out waiting for [%d] CC events. Only received [%d]", numExpected, numReceived)
 		}
 
-		if numReceived == numExpected {
+		if numReceived >= numExpected {
 			break
 		}
+	}
+
+	if numReceived != numExpected {
+		t.Fatalf("expecting [%d] CC events but got [%d]", numExpected, numReceived)
 	}
 
 	dispatcherEventch <- NewUnregisterEvent(reg1)
@@ -603,12 +646,12 @@ func TestCCEventsFiltered(t *testing.T) {
 		t.Fatalf("error registering for chaincode events: %s", err)
 	}
 
-	dispatcherEventch <- servicemocks.NewBlockProducer().NewFilteredBlock(
+	dispatcherEventch <- NewFilteredBlockEvent(servicemocks.NewBlockProducer().NewFilteredBlock(
 		channelID,
 		servicemocks.NewFilteredTxWithCCEvent("txid1", ccID1, event1),
 		servicemocks.NewFilteredTxWithCCEvent("txid2", ccID2, event2),
 		servicemocks.NewFilteredTxWithCCEvent("txid3", ccID2, event3),
-	)
+	), sourceURL)
 
 	numExpected := 3
 	numReceived := 0
@@ -633,9 +676,13 @@ func TestCCEventsFiltered(t *testing.T) {
 			t.Fatalf("timed out waiting for [%d] CC events. Only received [%d]", numExpected, numReceived)
 		}
 
-		if numReceived == numExpected {
+		if numReceived >= numExpected {
 			break
 		}
+	}
+
+	if numReceived != numExpected {
+		t.Fatalf("expecting [%d] CC events but got [%d]", numExpected, numReceived)
 	}
 
 	dispatcherEventch <- NewUnregisterEvent(reg1)

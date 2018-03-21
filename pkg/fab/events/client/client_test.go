@@ -39,12 +39,14 @@ const (
 var (
 	peer1 = fabmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051")
 	peer2 = fabmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051")
+
+	sourceURL = "localhost:9051"
 )
 
 func TestConnect(t *testing.T) {
 	connectionProvider := clientmocks.NewProviderFactory().Provider(
 		clientmocks.NewMockConnection(
-			clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
+			clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL)),
 		),
 	)
 
@@ -90,7 +92,7 @@ func TestFailConnect(t *testing.T) {
 		fabmocks.NewMockChannelCfg("mychannel"),
 		mockconn.NewProviderFactory().Provider(
 			mockconn.NewMockConnection(
-				mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
+				mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL)),
 			),
 		),
 		failAfterConnectClientProvider, []options.Opt{},
@@ -111,7 +113,7 @@ func TestCallsOnClosedClient(t *testing.T) {
 		),
 		fabmocks.NewMockChannelCfg("mychannel"),
 		filteredClientProvider,
-		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL)),
 	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -153,7 +155,7 @@ func TestCloseIfIdle(t *testing.T) {
 		),
 		fabmocks.NewMockChannelCfg(channelID),
 		clientProvider,
-		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory, sourceURL)),
 	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -187,7 +189,7 @@ func TestInvalidUnregister(t *testing.T) {
 		),
 		fabmocks.NewMockChannelCfg(channelID),
 		filteredClientProvider,
-		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL)),
 	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -210,7 +212,7 @@ func TestUnauthorizedBlockEvents(t *testing.T) {
 		),
 		fabmocks.NewMockChannelCfg(channelID),
 		filteredClientProvider,
-		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL)),
 	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -234,7 +236,7 @@ func TestBlockEvents(t *testing.T) {
 		),
 		fabmocks.NewMockChannelCfg(channelID),
 		clientProvider,
-		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory, sourceURL)),
 	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -292,7 +294,7 @@ func TestFilteredBlockEvents(t *testing.T) {
 		),
 		fabmocks.NewMockChannelCfg(channelID),
 		filteredClientProvider,
-		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL)),
 	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -369,7 +371,7 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 		),
 		fabmocks.NewMockChannelCfg(channelID),
 		clientProvider,
-		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory, sourceURL)),
 	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -447,7 +449,7 @@ func TestTxStatusEvents(t *testing.T) {
 		),
 		fabmocks.NewMockChannelCfg(channelID),
 		filteredClientProvider,
-		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL)),
 	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -531,7 +533,7 @@ func TestCCEvents(t *testing.T) {
 		),
 		fabmocks.NewMockChannelCfg(channelID),
 		filteredClientProvider,
-		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory)),
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL)),
 	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -731,7 +733,7 @@ func TestConcurrentEvents(t *testing.T) {
 		[]options.Opt{
 			esdispatcher.WithEventConsumerBufferSize(uint(numEvents) * 4),
 		},
-		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory)),
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory, sourceURL)),
 	)
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -885,12 +887,17 @@ func listenFilteredBlockEvents(channelID string, eventch <-chan *fab.FilteredBlo
 
 func listenChaincodeEvents(channelID string, eventch <-chan *fab.CCEvent, expected int, errch chan<- error) {
 	numReceived := 0
+	lastBlockNum := uint64(0)
 
 	for {
 		select {
-		case _, ok := <-eventch:
+		case event, ok := <-eventch:
 			if !ok {
 				fmt.Printf("CC events channel was closed \n")
+				return
+			}
+			if event.BlockNumber > 0 && event.BlockNumber <= lastBlockNum {
+				errch <- errors.Errorf("Expected block greater than [%d] but received [%d]", lastBlockNum, event.BlockNumber)
 				return
 			}
 			numReceived++
@@ -919,7 +926,7 @@ func txStatusTest(eventClient *Client, ledger servicemocks.Ledger, channelID str
 	var receivedEvents int
 
 	for i := 0; i < expected; i++ {
-		txID := fmt.Sprintf("txid_tx_%d", i)
+		txID := fmt.Sprintf("TxID_%d", i)
 		go func() {
 			defer wg.Done()
 
@@ -932,17 +939,21 @@ func txStatusTest(eventClient *Client, ledger servicemocks.Ledger, channelID str
 			}
 			defer eventClient.Unregister(reg)
 
-			ledger.NewBlock(channelID,
+			block := ledger.NewBlock(channelID,
 				servicemocks.NewTransactionWithCCEvent(txID, pb.TxValidationCode_VALID, ccID, event1, payload1),
 			)
 
 			select {
-			case _, ok := <-txeventch:
+			case event, ok := <-txeventch:
 				mutex.Lock()
 				if !ok {
 					errs = append(errs, errors.New("unexpected closed channel"))
 				} else {
 					receivedEvents++
+				}
+				if event.BlockNumber != block.Number() {
+					errch <- errors.Errorf("Expected block number [%d] but received [%d]", block.Number(), event.BlockNumber)
+					return
 				}
 				mutex.Unlock()
 			case <-time.After(5 * time.Second):
@@ -971,7 +982,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome mockconn
 			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg("mychannel"),
-		cp.FlakeyProvider(connAttemptResult, mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory))),
+		cp.FlakeyProvider(connAttemptResult, mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory, sourceURL))),
 		clientProvider,
 		[]options.Opt{
 			esdispatcher.WithEventConsumerTimeout(time.Second),
@@ -1000,7 +1011,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 
 	connectch := make(chan *dispatcher.ConnectionEvent)
 
-	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory, sourceURL)
 
 	eventClient, _, err := newClientWithMockConnAndOpts(
 		fabmocks.NewMockContextWithCustomDiscovery(
@@ -1055,7 +1066,7 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents mockconn.NumBlo
 	channelID := "mychannel"
 	ccID := "mycc"
 
-	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory, sourceURL)
 
 	cp := mockconn.NewProviderFactory()
 

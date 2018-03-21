@@ -204,6 +204,12 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 			} else if event.Payload != nil {
 				t.Fatalf("Expecting nil payload for filtered events but got [%s]", event.Payload)
 			}
+			if event.SourceURL == "" {
+				t.Fatalf("Expecting event source URL but got none")
+			}
+			if event.BlockNumber == 0 {
+				t.Fatalf("Expecting non-zero block number")
+			}
 			atomic.AddUint32(&numReceived, 1)
 		case <-time.After(5 * time.Second):
 			return
@@ -220,6 +226,12 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 			t.Logf("Received Tx Status event: %#v", txStatus)
 			if txStatus.TxID != string(txID) {
 				t.Fatalf("Expecting event for TxID [%s] but got event for TxID [%s]", txID, txStatus.TxID)
+			}
+			if txStatus.SourceURL == "" {
+				t.Fatalf("Expecting event source URL but got none")
+			}
+			if txStatus.BlockNumber == 0 {
+				t.Fatalf("Expecting non-zero block number")
 			}
 			atomic.AddUint32(&numReceived, 1)
 		case <-time.After(5 * time.Second):

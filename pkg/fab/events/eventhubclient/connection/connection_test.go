@@ -82,11 +82,14 @@ func TestSend(t *testing.T) {
 			t.Fatalf("unexpected closed connection")
 		}
 		t.Logf("Got response: %#v", e)
-		evt, ok := e.(*pb.Event)
+		eventHubEvent, ok := e.(*Event)
 		if !ok {
-			t.Fatalf("expected Event but got %T", e)
+			t.Fatalf("expected EventHubEvent but got %T", e)
 		}
-		_, ok = evt.Event.(*pb.Event_Register)
+		evt, ok := eventHubEvent.Event.(*pb.Event)
+		if !ok {
+			t.Fatalf("expected Event but got %T", eventHubEvent.Event)
+		}
 		if !ok {
 			t.Fatalf("expected register response but got %T", evt.Event)
 		}
@@ -115,9 +118,13 @@ func TestSend(t *testing.T) {
 			t.Fatalf("unexpected closed connection")
 		}
 		t.Logf("Got response: %#v", e)
-		evt, ok := e.(*pb.Event)
+		eventHubEvent, ok := e.(*Event)
 		if !ok {
-			t.Fatalf("expected Event but got %T", e)
+			t.Fatalf("expected EventHubEvent but got %T", e)
+		}
+		evt, ok := eventHubEvent.Event.(*pb.Event)
+		if !ok {
+			t.Fatalf("expected Event but got %T", eventHubEvent.Event)
 		}
 		_, ok = evt.Event.(*pb.Event_Unregister)
 		if !ok {

@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/connection"
 	esdispatcher "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -70,15 +71,16 @@ func (ed *Dispatcher) handleSeekEvent(e esdispatcher.Event) {
 	}
 }
 
-func (ed *Dispatcher) handleDeliverResponse(e esdispatcher.Event) {
-	evt := e.(*pb.DeliverResponse)
+func (ed *Dispatcher) handleEvent(e esdispatcher.Event) {
+	delevent := e.(*connection.Event)
+	evt := delevent.Event.(*pb.DeliverResponse)
 	switch response := evt.Type.(type) {
 	case *pb.DeliverResponse_Status:
 		ed.handleDeliverResponseStatus(response)
 	case *pb.DeliverResponse_Block:
-		ed.HandleBlock(response.Block)
+		ed.HandleBlock(response.Block, delevent.SourceURL)
 	case *pb.DeliverResponse_FilteredBlock:
-		ed.HandleFilteredBlock(response.FilteredBlock)
+		ed.HandleFilteredBlock(response.FilteredBlock, delevent.SourceURL)
 	default:
 		logger.Errorf("handler not found for deliver response type %T", response)
 	}
@@ -109,5 +111,5 @@ func (ed *Dispatcher) handleDeliverResponseStatus(evt *pb.DeliverResponse_Status
 
 func (ed *Dispatcher) registerHandlers() {
 	ed.RegisterHandler(&SeekEvent{}, ed.handleSeekEvent)
-	ed.RegisterHandler(&pb.DeliverResponse{}, ed.handleDeliverResponse)
+	ed.RegisterHandler(&connection.Event{}, ed.handleEvent)
 }

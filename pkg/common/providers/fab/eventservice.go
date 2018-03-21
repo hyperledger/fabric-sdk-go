@@ -15,12 +15,16 @@ import (
 type BlockEvent struct {
 	// Block is the block that was committed
 	Block *cb.Block
+	// SourceURL specifies the URL of the peer that produced the event
+	SourceURL string
 }
 
 // FilteredBlockEvent contains the data for a filtered block event
 type FilteredBlockEvent struct {
 	// FilteredBlock contains a filtered version of the block that was committed
 	FilteredBlock *pb.FilteredBlock
+	// SourceURL specifies the URL of the peer that produced the event
+	SourceURL string
 }
 
 // TxStatusEvent contains the data for a transaction status event
@@ -29,6 +33,11 @@ type TxStatusEvent struct {
 	TxID string
 	// TxValidationCode is the status code of the commit
 	TxValidationCode pb.TxValidationCode
+	// BlockNumber contains the block number in which the
+	// transaction was committed
+	BlockNumber uint64
+	// SourceURL specifies the URL of the peer that produced the event
+	SourceURL string
 }
 
 // CCEvent contains the data for a chaincode event
@@ -42,6 +51,11 @@ type CCEvent struct {
 	// Payload contains the payload of the chaincode event
 	// NOTE: Payload will be nil for filtered events
 	Payload []byte
+	// BlockNumber contains the block number in which the
+	// chaincode event was committed
+	BlockNumber uint64
+	// SourceURL specifies the URL of the peer that produced the event
+	SourceURL string
 }
 
 // Registration is a handle that is returned from a successful RegisterXXXEvent.

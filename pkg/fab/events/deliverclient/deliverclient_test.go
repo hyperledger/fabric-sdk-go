@@ -37,6 +37,8 @@ var (
 
 	peer1 = fabclientmocks.NewMockPeer("peer1", "peer1.example.com:7051")
 	peer2 = fabclientmocks.NewMockPeer("peer2", "peer2.example.com:7051")
+
+	sourceURL = "localhost:9051"
 )
 
 func TestOptionsInNewClient(t *testing.T) {
@@ -60,7 +62,7 @@ func TestClientConnect(t *testing.T) {
 		withConnectionProvider(
 			clientmocks.NewProviderFactory().Provider(
 				delivermocks.NewConnection(
-					clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory)),
+					clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)),
 				),
 			),
 			true,
@@ -188,7 +190,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 		withConnectionProvider(
 			cp.FlakeyProvider(
 				connAttemptResult,
-				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)),
 				clientmocks.WithFactory(func(opts ...clientmocks.Opt) clientmocks.Connection {
 					return delivermocks.NewConnection(opts...)
 				}),
@@ -219,7 +221,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 	cp := clientmocks.NewProviderFactory()
 
 	connectch := make(chan *clientdisp.ConnectionEvent)
-	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)
 
 	channelID := "mychannel"
 	eventClient, err := New(
@@ -280,7 +282,7 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 	channelID := "mychannel"
 	ccID := "mycc"
 
-	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)
 
 	// Add 2 blocks to the ledger befor the client has connected
 	ledger.NewBlock(channelID,

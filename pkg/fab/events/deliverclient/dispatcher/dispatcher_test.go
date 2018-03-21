@@ -26,6 +26,8 @@ import (
 var (
 	peer1 = fabmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051")
 	peer2 = fabmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051")
+
+	sourceURL = "localhost:9051"
 )
 
 func TestSeek(t *testing.T) {
@@ -39,7 +41,7 @@ func TestSeek(t *testing.T) {
 		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			delivermocks.NewConnection(
-				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)),
 			),
 		),
 	)
@@ -103,7 +105,7 @@ func TestUnauthorized(t *testing.T) {
 				clientmocks.WithResults(
 					clientmocks.NewResult(delivermocks.Connect, delivermocks.ForbiddenResult),
 				),
-				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)),
 			),
 		),
 	)
@@ -153,7 +155,7 @@ func TestUnauthorized(t *testing.T) {
 
 func TestBlockEvents(t *testing.T) {
 	channelID := "testchannel"
-	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)
 
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
@@ -199,9 +201,12 @@ func TestBlockEvents(t *testing.T) {
 	ledger.NewBlock(channelID)
 
 	select {
-	case _, ok := <-eventch:
+	case event, ok := <-eventch:
 		if !ok {
 			t.Fatalf("unexpected closed channel")
+		}
+		if event.SourceURL != sourceURL {
+			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatalf("timed out waiting for block event")
@@ -220,8 +225,7 @@ func TestBlockEvents(t *testing.T) {
 
 func TestFilteredBlockEvents(t *testing.T) {
 	channelID := "testchannel"
-
-	ledger := servicemocks.NewMockLedger(delivermocks.FilteredBlockEventFactory)
+	ledger := servicemocks.NewMockLedger(delivermocks.FilteredBlockEventFactory, sourceURL)
 
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
@@ -273,6 +277,9 @@ func TestFilteredBlockEvents(t *testing.T) {
 		}
 		if event.FilteredBlock.ChannelId != channelID {
 			t.Fatalf("expecting channelID [%s] but got [%s]", channelID, event.FilteredBlock.ChannelId)
+		}
+		if event.SourceURL != sourceURL {
+			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
 		}
 	case <-time.After(10 * time.Second):
 		t.Fatalf("timed out waiting for filtered block event")

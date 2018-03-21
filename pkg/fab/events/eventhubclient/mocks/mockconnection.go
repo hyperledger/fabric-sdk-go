@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/eventhubclient/connection"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
@@ -49,11 +50,11 @@ func (c *MockConnection) Send(emsg *pb.Event) error {
 				// Don't send a response
 				return nil
 			case clientmocks.FailResult:
-				c.ProduceEvent(newRegInterestsResponse(nil))
+				c.ProduceEvent(c.newRegInterestsResponse(nil))
 				return nil
 			}
 		}
-		c.ProduceEvent(newRegInterestsResponse(evt.Register.Events))
+		c.ProduceEvent(c.newRegInterestsResponse(evt.Register.Events))
 
 	case *pb.Event_Unregister:
 		result, exists := c.Result(UnregInterests)
@@ -63,11 +64,11 @@ func (c *MockConnection) Send(emsg *pb.Event) error {
 				// Don't send a response
 				return nil
 			case clientmocks.FailResult:
-				c.ProduceEvent(newUnregInterestsResponse(nil))
+				c.ProduceEvent(c.newUnregInterestsResponse(nil))
 				return nil
 			}
 		}
-		c.ProduceEvent(newUnregInterestsResponse(evt.Unregister.Events))
+		c.ProduceEvent(c.newUnregInterestsResponse(evt.Unregister.Events))
 
 	default:
 		panic(fmt.Sprintf("unsupported event type: %T", evt))
@@ -76,22 +77,28 @@ func (c *MockConnection) Send(emsg *pb.Event) error {
 	return nil
 }
 
-func newRegInterestsResponse(interests []*pb.Interest) *pb.Event {
-	return &pb.Event{
-		Event: &pb.Event_Register{
-			Register: &pb.Register{
-				Events: interests,
+func (c *MockConnection) newRegInterestsResponse(interests []*pb.Interest) *connection.Event {
+	return connection.NewEvent(
+		&pb.Event{
+			Event: &pb.Event_Register{
+				Register: &pb.Register{
+					Events: interests,
+				},
 			},
 		},
-	}
+		c.SourceURL(),
+	)
 }
 
-func newUnregInterestsResponse(interests []*pb.Interest) *pb.Event {
-	return &pb.Event{
-		Event: &pb.Event_Unregister{
-			Unregister: &pb.Unregister{
-				Events: interests,
+func (c *MockConnection) newUnregInterestsResponse(interests []*pb.Interest) *connection.Event {
+	return connection.NewEvent(
+		&pb.Event{
+			Event: &pb.Event_Unregister{
+				Unregister: &pb.Unregister{
+					Events: interests,
+				},
 			},
 		},
-	}
+		c.SourceURL(),
+	)
 }

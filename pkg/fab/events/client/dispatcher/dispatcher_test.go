@@ -24,6 +24,8 @@ import (
 var (
 	peer1 = fabmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051")
 	peer2 = fabmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051")
+
+	sourceURL = "localhost:9051"
 )
 
 func TestConnect(t *testing.T) {
@@ -38,7 +40,7 @@ func TestConnect(t *testing.T) {
 		clientmocks.NewProviderFactory().Provider(
 			clientmocks.NewMockConnection(
 				clientmocks.WithLedger(
-					servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory),
+					servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL),
 				),
 			),
 		),
@@ -117,7 +119,7 @@ func TestConnectNoPeers(t *testing.T) {
 		clientmocks.NewProviderFactory().Provider(
 			clientmocks.NewMockConnection(
 				clientmocks.WithLedger(
-					servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory),
+					servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL),
 				),
 			),
 		),
@@ -160,7 +162,7 @@ func TestConnectionEvent(t *testing.T) {
 		clientmocks.NewProviderFactory().Provider(
 			clientmocks.NewMockConnection(
 				clientmocks.WithLedger(
-					servicemocks.NewMockLedger(servicemocks.BlockEventFactory),
+					servicemocks.NewMockLedger(servicemocks.BlockEventFactory, sourceURL),
 				),
 			),
 		),
