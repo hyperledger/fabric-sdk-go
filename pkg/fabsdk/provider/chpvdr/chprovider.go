@@ -39,8 +39,6 @@ func (cp *ChannelProvider) ChannelService(ctx fab.ClientContext, channelID strin
 
 // ChannelService provides Channel clients and maintains contexts for them.
 // the identity context is used
-//
-// TODO: add cache for channel rather than reconstructing each time.
 type ChannelService struct {
 	provider      *ChannelProvider
 	infraProvider fab.InfraProvider

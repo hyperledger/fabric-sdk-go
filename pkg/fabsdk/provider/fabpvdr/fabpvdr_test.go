@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	coreMocks "github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -29,7 +30,7 @@ type mockClientContext struct {
 }
 
 func TestCreateInfraProvider(t *testing.T) {
-	newMockInfraProvider(t)
+	newInfraProvider(t)
 }
 
 func verifyPeer(t *testing.T, peer fab.Peer, url string) {
@@ -47,7 +48,7 @@ func verifyPeer(t *testing.T, peer fab.Peer, url string) {
 }
 
 func TestCreatePeerFromConfig(t *testing.T) {
-	p := newMockInfraProvider(t)
+	p := newInfraProvider(t)
 
 	url := "grpc://localhost:9999"
 
@@ -67,7 +68,7 @@ func TestCreatePeerFromConfig(t *testing.T) {
 }
 
 func TestCreateMembership(t *testing.T) {
-	p := newMockInfraProvider(t)
+	p := newInfraProvider(t)
 	ctx := mocks.NewMockProviderContext()
 	user := mspmocks.NewMockSigningIdentity("user", "user")
 	clientCtx := &mockClientContext{
@@ -80,7 +81,7 @@ func TestCreateMembership(t *testing.T) {
 	assert.NotNil(t, m)
 }
 
-func newMockInfraProvider(t *testing.T) *InfraProvider {
+func newInfraProvider(t *testing.T) *InfraProvider {
 	cfg, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf("config.FromFile failed: %v", err)

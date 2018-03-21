@@ -51,7 +51,7 @@ func NewRefCache(refresh time.Duration) *lazycache.Cache {
 	initializer := func(key lazycache.Key) (interface{}, error) {
 		ck, ok := key.(CacheKey)
 		if !ok {
-			return nil, errors.New("Unexpected cache key")
+			return nil, errors.New("unexpected cache key")
 		}
 		return NewRef(refresh, ck.Context(), ck.ChConfigRef()), nil
 	}
