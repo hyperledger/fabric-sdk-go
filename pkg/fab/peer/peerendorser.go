@@ -183,7 +183,7 @@ func extractChaincodeError(status *grpcstatus.Status) (int, string, error) {
 	if strings.Contains(status.Message(), "message:") {
 		i := strings.Index(status.Message(), "message:")
 		if i >= 0 {
-			j := strings.Index(status.Message()[i:], ")")
+			j := strings.LastIndex(status.Message()[i:], ")")
 			if j > messageLength {
 				message = strings.TrimSpace(status.Message()[i+messageLength : i+j])
 			}

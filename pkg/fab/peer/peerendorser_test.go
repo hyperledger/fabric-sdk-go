@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	grpcCodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
+	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -283,4 +284,16 @@ func TestEndorserRPCError(t *testing.T) {
 
 	grpcCode := status.ToGRPCStatusCode(statusError.Code)
 	assert.Equal(t, grpcCodes.Unknown, grpcCode)
+}
+
+func TestExtractChainCodeError(t *testing.T) {
+	expectedMsg := "Chaincode error(status: 500, message: Invalid function (dummy) call)"
+	error := grpcstatus.New(grpcCodes.Unknown, expectedMsg)
+	code, message, _ := extractChaincodeError(error)
+	if code != 500 {
+		t.Fatalf("Expected code to be 500")
+	}
+	if message != "Invalid function (dummy) call" {
+		t.Fatalf("Expected message not found")
+	}
 }
