@@ -52,7 +52,7 @@ func TestChannelClient(t *testing.T) {
 	//}
 
 	//chainCodeID := integration.GenerateRandomID()
-	//if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
+	//if _, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID); err != nil {
 	//	t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	//}
 

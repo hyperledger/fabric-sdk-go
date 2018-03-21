@@ -27,6 +27,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -87,9 +88,9 @@ func TestRevokedPeer(t *testing.T) {
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	if err = chMgmtClient.SaveChannel(req); err != nil {
-		t.Fatal(err)
-	}
+	txID, err := chMgmtClient.SaveChannel(req)
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, txID, "transaction ID should be populated")
 
 	// Allow orderer to process channel creation
 	time.Sleep(time.Second * 5)
@@ -140,12 +141,11 @@ func TestRevokedPeer(t *testing.T) {
 	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
 
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
-	err = org1ResMgmt.InstantiateCC("orgchannel",
+	resp, err := org1ResMgmt.InstantiateCC("orgchannel",
 		resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
 		resmgmt.WithTargetURLs("peer0.org1.example.com"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, resp, "transaction response should be populated")
 
 	// Load specific targets for move funds test - one of the
 	//targets has its certificate revoked

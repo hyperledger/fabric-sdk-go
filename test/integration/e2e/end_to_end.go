@@ -77,9 +77,9 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{adminIdentity}}
-	if err = resMgmtClient.SaveChannel(req); err != nil {
-		t.Fatal(err)
-	}
+	txID, err := resMgmtClient.SaveChannel(req)
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, txID, "transaction ID should be populated")
 
 	// Allow orderer to process channel creation
 	time.Sleep(time.Second * 5)
@@ -115,10 +115,9 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP"})
 
 	// Org resource manager will instantiate 'example_cc' on channel
-	err = orgResMgmt.InstantiateCC(channelID, resmgmt.InstantiateCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp, err := orgResMgmt.InstantiateCC(channelID, resmgmt.InstantiateCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, resp, "transaction response should be populated")
 
 	// ************ Test setup complete ************** //
 

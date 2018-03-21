@@ -33,6 +33,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -103,9 +104,9 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	if err = chMgmtClient.SaveChannel(req); err != nil {
-		t.Fatal(err)
-	}
+	txID, err := chMgmtClient.SaveChannel(req)
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, txID, "transaction ID should be populated")
 
 	// Allow orderer to process channel creation
 	time.Sleep(time.Second * 5)
@@ -156,10 +157,9 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
 
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
-	err = org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
-	if err != nil {
-		t.Fatal(err)
-	}
+	instantiateResp, err := org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, instantiateResp, "transaction response should be populated")
 
 	// Load specific targets for move funds test
 	loadOrgPeers(t, org1AdminClientContext)
@@ -292,10 +292,9 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
-	err = org1ResMgmt.UpgradeCC("orgchannel", resmgmt.UpgradeCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
-	if err != nil {
-		t.Fatal(err)
-	}
+	upgradeResp, err := org1ResMgmt.UpgradeCC("orgchannel", resmgmt.UpgradeCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, upgradeResp, "transaction response should be populated")
 
 	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
 	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1))

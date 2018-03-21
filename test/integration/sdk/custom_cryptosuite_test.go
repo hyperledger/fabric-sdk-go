@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/stretchr/testify/assert"
 )
 
 const samplekey = "sample-key"
@@ -49,9 +50,9 @@ func customCryptoSuiteInit(t *testing.T) (*integration.BaseSetupImpl, string) {
 	//}
 
 	chaincodeID := integration.GenerateRandomID()
-	if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
-		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
-	}
+	resp, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
+	assert.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	assert.NotEmpty(t, resp, "instantiate response should be populated")
 
 	return testSetup, chaincodeID
 }

@@ -48,7 +48,7 @@ func TestTransient(t *testing.T) {
 	//}
 
 	//chaincodeID := integration.GenerateRandomID()
-	//if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
+	//if _, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
 	//	t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	//}
 

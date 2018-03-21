@@ -85,7 +85,7 @@ func createChaincodeDeployProposal(txh fab.TransactionHeader, deploy chaincodePr
 	case UpgradeChaincode:
 		fcn = lsccUpgrade
 	default:
-		return nil, errors.WithMessage(err, "chaincode deployment type unknown")
+		return nil, errors.New("chaincode deployment type unknown")
 	}
 
 	cir := fab.ChaincodeInvokeRequest{
@@ -93,6 +93,5 @@ func createChaincodeDeployProposal(txh fab.TransactionHeader, deploy chaincodePr
 		Fcn:         fcn,
 		Args:        args,
 	}
-
 	return txn.CreateChaincodeInvokeProposal(txh, cir)
 }

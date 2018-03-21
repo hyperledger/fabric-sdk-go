@@ -120,21 +120,21 @@ func GetDeployPath() string {
 }
 
 // InstallAndInstantiateExampleCC install and instantiate using resource management client
-func InstallAndInstantiateExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, chainCodeID string) error {
+func InstallAndInstantiateExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, chainCodeID string) (resmgmt.InstantiateCCResponse, error) {
 	return InstallAndInstantiateCC(sdk, user, orgName, chainCodeID, "github.com/example_cc", "v0", GetDeployPath(), initArgs)
 }
 
 // InstallAndInstantiateCC install and instantiate using resource management client
-func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, ccName, ccPath, ccVersion, goPath string, ccArgs [][]byte) error {
+func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, ccName, ccPath, ccVersion, goPath string, ccArgs [][]byte) (resmgmt.InstantiateCCResponse, error) {
 
 	ccPkg, err := packager.NewCCPackage(ccPath, goPath)
 	if err != nil {
-		return errors.WithMessage(err, "creating chaincode package failed")
+		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "creating chaincode package failed")
 	}
 
 	mspID, err := sdk.Config().MSPID(orgName)
 	if err != nil {
-		return errors.WithMessage(err, "looking up MSP ID failed")
+		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "looking up MSP ID failed")
 	}
 
 	//prepare context
@@ -143,12 +143,12 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 	// Resource management client is responsible for managing resources (joining channels, install/instantiate/upgrade chaincodes)
 	resMgmtClient, err := resmgmt.New(clientContext)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to create new resource management client")
+		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "Failed to create new resource management client")
 	}
 
 	_, err = resMgmtClient.InstallCC(resmgmt.InstallCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Package: ccPkg})
 	if err != nil {
-		return err
+		return resmgmt.InstantiateCCResponse{}, err
 	}
 
 	ccPolicy := cauthdsl.SignedByMspMember(mspID)

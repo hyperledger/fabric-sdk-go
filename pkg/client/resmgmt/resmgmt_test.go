@@ -733,41 +733,41 @@ func TestInstantiateCCRequiredParameters(t *testing.T) {
 	req := InstantiateCCRequest{}
 
 	// Test empty channel name
-	err := rc.InstantiateCC("", req)
+	_, err := rc.InstantiateCC("", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty request")
 	}
 
 	// Test empty request
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty request")
 	}
 
 	// Test missing chaincode ID
 	req = InstantiateCCRequest{Name: "", Version: "v0", Path: "path"}
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc name")
 	}
 
 	// Test missing chaincode version
 	req = InstantiateCCRequest{Name: "ID", Version: "", Path: "path"}
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc version")
 	}
 
 	// Test missing chaincode path
 	req = InstantiateCCRequest{Name: "ID", Version: "v0", Path: ""}
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc path")
 	}
 
 	// Test missing chaincode policy
 	req = InstantiateCCRequest{Name: "ID", Version: "v0", Path: "path"}
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for nil chaincode policy")
 	}
@@ -785,7 +785,7 @@ func TestInstantiateCCRequiredParameters(t *testing.T) {
 	req = InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test missing default targets
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("InstallCC should have failed with no default targets error")
 	}
@@ -800,41 +800,41 @@ func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
 	req := InstantiateCCRequest{}
 
 	// Test empty channel name
-	err := rc.InstantiateCC("", req)
+	_, err := rc.InstantiateCC("", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel name")
 	}
 
 	// Test empty request
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty instantiate cc request")
 	}
 
 	// Test missing chaincode ID
 	req = InstantiateCCRequest{Name: "", Version: "v0", Path: "path"}
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc name")
 	}
 
 	// Test missing chaincode version
 	req = InstantiateCCRequest{Name: "ID", Version: "", Path: "path"}
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc version")
 	}
 
 	// Test missing chaincode path
 	req = InstantiateCCRequest{Name: "ID", Version: "v0", Path: ""}
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc path")
 	}
 
 	// Test missing chaincode policy
 	req = InstantiateCCRequest{Name: "ID", Version: "v0", Path: "path"}
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for missing chaincode policy")
 	}
@@ -849,7 +849,7 @@ func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
 	peers = append(peers, &peer)
 
 	// Test both targets and filter provided (error condition)
-	err = rc.InstantiateCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
+	_, err = rc.InstantiateCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
@@ -863,13 +863,13 @@ func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
 	rc = setupResMgmtClient(ctx, nil, t)
 
 	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed with no targets error")
 	}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
-	err = rc.InstantiateCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
+	_, err = rc.InstantiateCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
 	}
@@ -905,26 +905,26 @@ func TestInstantiateCCDiscoveryError(t *testing.T) {
 	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test InstantiateCC create new discovery service per channel error
-	err = rc.InstantiateCC("error", req)
+	_, err = rc.InstantiateCC("error", req)
 	if err == nil {
 		t.Fatalf("Should have failed to instantiate cc with create discovery service error")
 	}
 
 	// Test InstantiateCC discovery service get peers error
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed to instantiate cc with get peers discovery error")
 	}
 
 	// Test InstantiateCCWithOpts create new discovery service per channel error
-	err = rc.InstantiateCC("error", req)
+	_, err = rc.InstantiateCC("error", req)
 	if err == nil {
 		t.Fatalf("Should have failed to instantiate cc with opts with create discovery service error")
 	}
 
 	// Test InstantiateCCWithOpts discovery service get peers error
 	// if targets are not provided discovery service is used
-	err = rc.InstantiateCC("mychannel", req)
+	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed to instantiate cc with opts with get peers discovery error")
 	}
@@ -939,41 +939,41 @@ func TestUpgradeCCRequiredParameters(t *testing.T) {
 	req := UpgradeCCRequest{}
 
 	// Test empty channel name
-	err := rc.UpgradeCC("", req)
+	_, err := rc.UpgradeCC("", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel name")
 	}
 
 	// Test empty request
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty upgrade cc request")
 	}
 
 	// Test missing chaincode ID
 	req = UpgradeCCRequest{Name: "", Version: "v0", Path: "path"}
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc name")
 	}
 
 	// Test missing chaincode version
 	req = UpgradeCCRequest{Name: "ID", Version: "", Path: "path"}
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc version")
 	}
 
 	// Test missing chaincode path
 	req = UpgradeCCRequest{Name: "ID", Version: "v0", Path: ""}
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc path")
 	}
 
 	// Test missing chaincode policy
 	req = UpgradeCCRequest{Name: "ID", Version: "v0", Path: "path"}
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for nil chaincode policy")
 	}
@@ -991,7 +991,7 @@ func TestUpgradeCCRequiredParameters(t *testing.T) {
 	req = UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test missing default targets
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed with no default targets error")
 	}
@@ -1006,41 +1006,41 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 	req := UpgradeCCRequest{}
 
 	// Test empty channel name
-	err := rc.UpgradeCC("", req)
+	_, err := rc.UpgradeCC("", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel name")
 	}
 
 	// Test empty request
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty upgrade cc request")
 	}
 
 	// Test missing chaincode ID
 	req = UpgradeCCRequest{Name: "", Version: "v0", Path: "path"}
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc name")
 	}
 
 	// Test missing chaincode version
 	req = UpgradeCCRequest{Name: "ID", Version: "", Path: "path"}
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc version")
 	}
 
 	// Test missing chaincode path
 	req = UpgradeCCRequest{Name: "ID", Version: "v0", Path: ""}
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("UpgradeCC should have failed for empty cc path")
 	}
 
 	// Test missing chaincode policy
 	req = UpgradeCCRequest{Name: "ID", Version: "v0", Path: "path"}
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("UpgradeCC should have failed for missing chaincode policy")
 	}
@@ -1055,7 +1055,7 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 	peers = append(peers, &peer)
 
 	// Test both targets and filter provided (error condition)
-	err = rc.UpgradeCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
+	_, err = rc.UpgradeCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
@@ -1069,13 +1069,13 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 	rc = setupResMgmtClient(ctx, nil, t)
 
 	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed with no targets error")
 	}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
-	err = rc.UpgradeCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
+	_, err = rc.UpgradeCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
 	}
@@ -1111,26 +1111,26 @@ func TestUpgradeCCDiscoveryError(t *testing.T) {
 	req := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test error while creating discovery service for channel "error"
-	err = rc.UpgradeCC("error", req)
+	_, err = rc.UpgradeCC("error", req)
 	if err == nil {
 		t.Fatalf("Should have failed to upgrade cc with discovery error")
 	}
 
 	// Test error in discovery service while getting peers
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed to upgrade cc with discovery error")
 	}
 
 	// Test UpgradeCCWithOpts discovery service error when creating discovery service for channel 'error'
-	err = rc.UpgradeCC("error", req)
+	_, err = rc.UpgradeCC("error", req)
 	if err == nil {
 		t.Fatalf("Should have failed to upgrade cc with opts with discovery error")
 	}
 
 	// Test UpgradeCCWithOpts discovery service error
 	// if targets are not provided discovery service is used to get targets
-	err = rc.UpgradeCC("mychannel", req)
+	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed to upgrade cc with opts with discovery error")
 	}
@@ -1177,13 +1177,13 @@ func TestCCProposal(t *testing.T) {
 	// Test failed proposal error handling (endorser returns an error)
 	endorserServer.ProposalError = errors.New("Test Error")
 
-	err = rc.InstantiateCC("mychannel", instantiateReq, WithTargets(peers...))
+	_, err = rc.InstantiateCC("mychannel", instantiateReq, WithTargets(peers...))
 	if err == nil {
 		t.Fatalf("Should have failed to instantiate cc due to endorser error")
 	}
 
 	upgradeRequest := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
-	err = rc.UpgradeCC("mychannel", upgradeRequest, WithTargets(peers...))
+	_, err = rc.UpgradeCC("mychannel", upgradeRequest, WithTargets(peers...))
 	if err == nil {
 		t.Fatalf("Should have failed to upgrade cc due to endorser error")
 	}
@@ -1192,7 +1192,7 @@ func TestCCProposal(t *testing.T) {
 	endorserServer.ProposalError = nil
 
 	// Test error connecting to event hub
-	err = rc.InstantiateCC("mychannel", instantiateReq)
+	_, err = rc.InstantiateCC("mychannel", instantiateReq)
 	if err == nil {
 		t.Fatalf("Should have failed to get event hub since not setup")
 	}
@@ -1205,7 +1205,7 @@ func TestCCProposal(t *testing.T) {
 	defer eventServer.Stop()
 
 	// Test error in commit
-	err = rc.InstantiateCC("mychannel", instantiateReq)
+	_, err = rc.InstantiateCC("mychannel", instantiateReq)
 	if err == nil {
 		t.Fatalf("Should have failed due to error in commit")
 	}
@@ -1214,7 +1214,7 @@ func TestCCProposal(t *testing.T) {
 	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
 	opts := requestOptions{Targets: peers}
-	err = rc.sendCCProposal(reqCtx, 3, "mychannel", instantiateReq, opts)
+	_, err = rc.sendCCProposal(reqCtx, 3, "mychannel", instantiateReq, opts)
 	if err == nil {
 		t.Fatalf("Should have failed for invalid function name")
 	}
@@ -1226,7 +1226,7 @@ func TestCCProposal(t *testing.T) {
 	}
 	ctx.SetConfig(cfg)
 	rc = setupResMgmtClient(ctx, nil, t, getDefaultTargetFilterOption())
-	err = rc.InstantiateCC("mychannel", instantiateReq)
+	_, err = rc.InstantiateCC("mychannel", instantiateReq)
 	if err == nil {
 		t.Fatalf("Should have failed since no event source has been configured")
 	}
@@ -1334,58 +1334,46 @@ func TestSaveChannelSuccess(t *testing.T) {
 	cc := setupResMgmtClient(ctx, nil, t)
 
 	// Test empty channel request
-	err := cc.SaveChannel(SaveChannelRequest{})
-	if err == nil {
-		t.Fatalf("Should have failed for empty channel request")
-	}
+	_, err := cc.SaveChannel(SaveChannelRequest{})
+	assert.NotNil(t, err, "Should have failed for empty channel request")
 
 	r, err := os.Open(channelConfig)
 	assert.Nil(t, err, "opening channel config file failed")
 	defer r.Close()
 
 	// Test empty channel name
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "", ChannelConfig: r})
-	if err == nil {
-		t.Fatalf("Should have failed for empty channel id")
-	}
+	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "", ChannelConfig: r})
+	assert.NotNil(t, err, "Should have failed for empty channel id")
 
 	// Test empty channel config
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel"})
-	if err == nil {
-		t.Fatalf("Should have failed for empty channel config")
-	}
+	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel"})
+	assert.NotNil(t, err, "Should have failed for empty channel config")
 
 	// Test extract configuration error
 	r1, err := os.Open("./testdata/extractcherr.tx")
 	assert.Nil(t, err, "opening channel config file failed")
 	defer r1.Close()
 
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1})
-	if err == nil {
-		t.Fatalf("Should have failed to extract configuration")
-	}
+	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1})
+	assert.NotNil(t, err, "Should have failed to extract configuration")
 
 	// Test sign channel error
 	r2, err := os.Open("./testdata/signcherr.tx")
 	assert.Nil(t, err, "opening channel config file failed")
 	defer r2.Close()
 
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2})
-	if err == nil {
-		t.Fatalf("Should have failed to sign configuration")
-	}
+	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2})
+	assert.NotNil(t, err, "Should have failed to sign configuration")
 
 	// Test valid Save Channel request (success)
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererURL("example.com"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	txID, err := cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererURL("example.com"))
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, txID, "transaction ID should be populated")
 
 	// Test valid Save Channel request (success / filename)
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigPath: channelConfig}, WithOrdererURL("example.com"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	txID, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigPath: channelConfig}, WithOrdererURL("example.com"))
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, txID, "transaction ID should be populated")
 }
 
 func TestSaveChannelFailure(t *testing.T) {
@@ -1412,11 +1400,8 @@ func TestSaveChannelFailure(t *testing.T) {
 	assert.Nil(t, err, "opening channel config file failed")
 	defer r.Close()
 
-	err = cc.SaveChannel(SaveChannelRequest{ChannelID: "Invalid", ChannelConfig: r})
-	if err == nil {
-		t.Fatal("Should have failed with create channel error")
-	}
-
+	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "Invalid", ChannelConfig: r})
+	assert.NotNil(t, err, "Should have failed with create channel error")
 }
 
 func TestSaveChannelWithOpts(t *testing.T) {
@@ -1450,10 +1435,9 @@ func TestSaveChannelWithOpts(t *testing.T) {
 
 	// Test empty option (default order is random orderer from config)
 	opts := WithOrdererURL("")
-	err = cc.SaveChannel(req, opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	txID, err := cc.SaveChannel(req, opts)
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, txID, "transaction ID should be populated")
 
 	// Test valid orderer ID
 	r2, err := os.Open(channelConfig)
@@ -1463,10 +1447,9 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2}
 
 	opts = WithOrdererURL("orderer.example.com")
-	err = cc.SaveChannel(req, opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	txID, err = cc.SaveChannel(req, opts)
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, txID, "transaction ID should be populated")
 
 	// Test invalid orderer ID
 	r3, err := os.Open(channelConfig)
@@ -1481,10 +1464,8 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	cc = setupResMgmtClient(ctx, nil, t)
 
 	opts = WithOrdererURL("Invalid")
-	err = cc.SaveChannel(req, opts)
-	if err == nil {
-		t.Fatal("Should have failed for invalid orderer ID")
-	}
+	_, err = cc.SaveChannel(req, opts)
+	assert.NotNil(t, err, "Should have failed for invalid orderer ID")
 }
 
 func TestJoinChannelWithInvalidOpts(t *testing.T) {
@@ -1524,10 +1505,9 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	defer r1.Close()
 
 	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1, SigningIdentities: []msp.SigningIdentity{}}
-	err = cc.SaveChannel(req, WithOrdererURL(""))
-	if err != nil {
-		t.Fatalf("Failed to save channel with default signing identity: %s", err)
-	}
+	txID, err := cc.SaveChannel(req, WithOrdererURL(""))
+	assert.Nil(t, err, "Failed to save channel with default signing identity: %s", err)
+	assert.NotEmpty(t, txID, "transaction ID should be populated")
 
 	// multiple signing identities
 	r2, err := os.Open(channelConfig)
@@ -1536,10 +1516,9 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 
 	secondCtx := fcmocks.NewMockContext(mspmocks.NewMockSigningIdentity("second", "second"))
 	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2, SigningIdentities: []msp.SigningIdentity{cc.ctx, secondCtx}}
-	err = cc.SaveChannel(req, WithOrdererURL(""))
-	if err != nil {
-		t.Fatalf("Failed to save channel with multiple signing identities: %s", err)
-	}
+	txID, err = cc.SaveChannel(req, WithOrdererURL(""))
+	assert.Nil(t, err, "Failed to save channel with multiple signing identities: %s", err)
+	assert.NotEmpty(t, txID, "transaction ID should be populated")
 }
 
 func createClientContext(fabCtx context.Client) context.ClientProvider {

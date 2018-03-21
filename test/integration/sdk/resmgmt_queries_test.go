@@ -39,7 +39,7 @@ func TestResMgmtClientQueries(t *testing.T) {
 	//}
 
 	//ccID := integration.GenerateRandomID()
-	//if err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, ccID); err != nil {
+	//if _, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, ccID); err != nil {
 	//	t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	//}
 
