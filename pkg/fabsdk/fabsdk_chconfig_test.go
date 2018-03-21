@@ -18,11 +18,10 @@ import (
 )
 
 const (
-	sdkValidClientOrg2 = "Org2"
+	sdkValidClientOrg2 = "org2"
 )
 
-// TODO: (divyank) Re-enable.
-func testNewDefaultSDK(t *testing.T) {
+func TestNewDefaultSDK(t *testing.T) {
 	// Test New SDK with valid config file
 	sdk, err := New(configImpl.FromFile(sdkConfigFile))
 	if err != nil {
@@ -48,8 +47,7 @@ func verifySDK(t *testing.T, sdk *FabricSDK) {
 	}
 }
 
-// TODO: (divyank) Re-enable.
-func testWithConfigOpt(t *testing.T) {
+func TestWithConfigOpt(t *testing.T) {
 	// Test New SDK with valid config file
 	c, err := configImpl.FromFile(sdkConfigFile)()
 	if err != nil {
@@ -64,8 +62,7 @@ func testWithConfigOpt(t *testing.T) {
 	verifySDK(t, sdk)
 }
 
-// TODO: (divyank) Re-enable.
-func testNewDefaultTwoValidSDK(t *testing.T) {
+func TestNewDefaultTwoValidSDK(t *testing.T) {
 	sdk1, err := New(configImpl.FromFile(sdkConfigFile))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
@@ -100,7 +97,7 @@ func testNewDefaultTwoValidSDK(t *testing.T) {
 	}
 
 	if client2.Organization != sdkValidClientOrg2 {
-		t.Fatalf("Unexpected org in config: %s", client1.Organization)
+		t.Fatalf("Unexpected org in config: %s", client2.Organization)
 	}
 
 	// Get a common client context for the following tests
