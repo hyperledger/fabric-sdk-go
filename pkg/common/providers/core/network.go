@@ -68,6 +68,13 @@ type ChannelConfig struct {
 	Peers map[string]PeerChannelConfig
 	// Chaincodes list of services
 	Chaincodes []string
+	//Policies list of policies for channel
+	Policies ChannelPolicies
+}
+
+//ChannelPolicies defines list of policies defined for a channel
+type ChannelPolicies struct {
+	QueryChannel map[string]int
 }
 
 // PeerChannelConfig defines the peer capabilities

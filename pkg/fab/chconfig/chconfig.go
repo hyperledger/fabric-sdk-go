@@ -133,6 +133,7 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 	}
 
 	targets := []fab.ProposalProcessor{}
+	maxTargets, minResponses := c.getLimitOpts(ctx)
 	if c.opts.Targets == nil {
 
 		// Calculate targets from config
@@ -150,13 +151,13 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 			targets = append(targets, newPeer)
 		}
 
-		targets = randomMaxTargets(targets, c.opts.MaxTargets)
+		targets = randomMaxTargets(targets, maxTargets)
 
 	} else {
 		targets = peersToTxnProcessors(c.opts.Targets)
 	}
 
-	configEnvelope, err := l.QueryConfigBlock(reqCtx, targets, &channel.TransactionProposalResponseVerifier{MinResponses: c.opts.MinResponses})
+	configEnvelope, err := l.QueryConfigBlock(reqCtx, targets, &channel.TransactionProposalResponseVerifier{MinResponses: minResponses})
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryBlockConfig failed")
 	}
@@ -172,6 +173,37 @@ func (c *ChannelConfig) queryOrderer(reqCtx reqContext.Context) (*ChannelCfg, er
 	}
 
 	return extractConfig(c.channelID, configEnvelope)
+}
+
+func (c *ChannelConfig) getLimitOpts(ctx context.Client) (int, int) {
+
+	//Opts takes high priority, if provided in opts then it should be taken into account
+	if c.opts.MaxTargets > 0 && c.opts.MinResponses > 0 {
+		return c.opts.MaxTargets, c.opts.MinResponses
+	}
+
+	//If missing from opts, check config and update opts from config
+	chSdkCfg, err := ctx.Config().ChannelConfig(c.channelID)
+	if err != nil {
+		//ver rare, but return default in case of error
+		return defaultMaxTargets, defaultMinResponses
+	}
+
+	if c.opts.MaxTargets == 0 {
+		c.opts.MaxTargets = chSdkCfg.Policies.QueryChannel["maxTargets"]
+		if c.opts.MaxTargets == 0 {
+			c.opts.MaxTargets = defaultMaxTargets
+		}
+	}
+
+	if c.opts.MinResponses == 0 {
+		c.opts.MinResponses = chSdkCfg.Policies.QueryChannel["minResponses"]
+		if c.opts.MinResponses == 0 {
+			c.opts.MinResponses = defaultMinResponses
+		}
+	}
+
+	return c.opts.MaxTargets, c.opts.MinResponses
 }
 
 // WithPeers encapsulates peers to Option
@@ -214,14 +246,6 @@ func prepareOpts(options ...Option) (Opts, error) {
 		if err != nil {
 			return opts, errors.WithMessage(err, "Failed to read query config opts")
 		}
-	}
-
-	//resolve defaults
-	if opts.MinResponses == 0 {
-		opts.MinResponses = defaultMinResponses
-	}
-	if opts.MaxTargets == 0 {
-		opts.MaxTargets = defaultMaxTargets
 	}
 
 	return opts, nil

@@ -255,7 +255,7 @@ func (c *MockConfig) NetworkConfig() (*config.NetworkConfig, error) {
 
 // ChannelConfig returns the channel configuration
 func (c *MockConfig) ChannelConfig(name string) (*config.ChannelConfig, error) {
-	return nil, nil
+	return &config.ChannelConfig{Policies: config.ChannelPolicies{}}, nil
 }
 
 // ChannelPeers returns the channel peers configuration

@@ -127,6 +127,7 @@ func TestRandomMaxTargetsSelections(t *testing.T) {
 func setupTestContext() context.Client {
 	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
+	ctx.SetConfig(mocks.NewMockConfig())
 	return ctx
 }
 
