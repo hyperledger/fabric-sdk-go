@@ -14,11 +14,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/multi"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
@@ -33,7 +37,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -193,8 +196,28 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
 	}
 
+	// Call with a dummy function and expect a fail with multiple errors
+	response, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCQueryArgs()})
+	if err == nil {
+		t.Fatal("Should have failed with dummy function")
+	}
+	unWrappedError := errors.Cause(err)
+	if _, ok := unWrappedError.(multi.Errors); !ok {
+		t.Fatal("Should have got multiple errors")
+	}
+	for _, err := range unWrappedError.(multi.Errors) {
+		s, ok := status.FromError(err)
+		assert.True(t, ok, "expected GRPC status error")
+		assert.EqualValues(t, status.ChaincodeError, s.Code, "expected ChaincodeError")
+		assert.True(t, len(s.Details) > 0, "expected Details to exist in ChaincodeError")
+		chaincodeQueryStatus := s.Details[0].(*status.ChaincodeStatus)
+		if chaincodeQueryStatus.Code != 500 {
+			t.Fatalf("Expected 500 grpc status code in ChaincodeError")
+		}
+	}
+
 	// Org1 user queries initial value on both peers
-	response, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err = chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
