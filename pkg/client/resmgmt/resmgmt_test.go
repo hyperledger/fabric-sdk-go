@@ -1366,14 +1366,14 @@ func TestSaveChannelSuccess(t *testing.T) {
 	assert.NotNil(t, err, "Should have failed to sign configuration")
 
 	// Test valid Save Channel request (success)
-	txID, err := cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererURL("example.com"))
+	resp, err := cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererURL("example.com"))
 	assert.Nil(t, err, "error should be nil")
-	assert.NotEmpty(t, txID, "transaction ID should be populated")
+	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 
 	// Test valid Save Channel request (success / filename)
-	txID, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigPath: channelConfig}, WithOrdererURL("example.com"))
+	resp, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigPath: channelConfig}, WithOrdererURL("example.com"))
 	assert.Nil(t, err, "error should be nil")
-	assert.NotEmpty(t, txID, "transaction ID should be populated")
+	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 }
 
 func TestSaveChannelFailure(t *testing.T) {
@@ -1435,9 +1435,9 @@ func TestSaveChannelWithOpts(t *testing.T) {
 
 	// Test empty option (default order is random orderer from config)
 	opts := WithOrdererURL("")
-	txID, err := cc.SaveChannel(req, opts)
+	resp, err := cc.SaveChannel(req, opts)
 	assert.Nil(t, err, "error should be nil")
-	assert.NotEmpty(t, txID, "transaction ID should be populated")
+	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 
 	// Test valid orderer ID
 	r2, err := os.Open(channelConfig)
@@ -1447,9 +1447,9 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2}
 
 	opts = WithOrdererURL("orderer.example.com")
-	txID, err = cc.SaveChannel(req, opts)
+	resp, err = cc.SaveChannel(req, opts)
 	assert.Nil(t, err, "error should be nil")
-	assert.NotEmpty(t, txID, "transaction ID should be populated")
+	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 
 	// Test invalid orderer ID
 	r3, err := os.Open(channelConfig)
@@ -1505,9 +1505,9 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	defer r1.Close()
 
 	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1, SigningIdentities: []msp.SigningIdentity{}}
-	txID, err := cc.SaveChannel(req, WithOrdererURL(""))
+	resp, err := cc.SaveChannel(req, WithOrdererURL(""))
 	assert.Nil(t, err, "Failed to save channel with default signing identity: %s", err)
-	assert.NotEmpty(t, txID, "transaction ID should be populated")
+	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 
 	// multiple signing identities
 	r2, err := os.Open(channelConfig)
@@ -1516,9 +1516,9 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 
 	secondCtx := fcmocks.NewMockContext(mspmocks.NewMockSigningIdentity("second", "second"))
 	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2, SigningIdentities: []msp.SigningIdentity{cc.ctx, secondCtx}}
-	txID, err = cc.SaveChannel(req, WithOrdererURL(""))
+	resp, err = cc.SaveChannel(req, WithOrdererURL(""))
 	assert.Nil(t, err, "Failed to save channel with multiple signing identities: %s", err)
-	assert.NotEmpty(t, txID, "transaction ID should be populated")
+	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 }
 
 func createClientContext(fabCtx context.Client) context.ClientProvider {

@@ -99,6 +99,11 @@ type SaveChannelRequest struct {
 	// TODO: support pre-signed signature blocks
 }
 
+// SaveChannelResponse contains response parameters for Save
+type SaveChannelResponse struct {
+	TransactionID fab.TransactionID
+}
+
 //RequestOption func for each Opts argument
 type RequestOption func(ctx context.Client, opts *requestOptions) error
 
@@ -682,24 +687,24 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 }
 
 // SaveChannel creates or updates channel
-func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) (fab.TransactionID, error) {
+func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) (SaveChannelResponse, error) {
 
 	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
-		return fab.EmptyTransactionID, err
+		return SaveChannelResponse{}, err
 	}
 
 	if req.ChannelConfigPath != "" {
 		configReader, err := os.Open(req.ChannelConfigPath)
 		if err != nil {
-			return fab.EmptyTransactionID, errors.Wrapf(err, "opening channel config file failed")
+			return SaveChannelResponse{}, errors.Wrapf(err, "opening channel config file failed")
 		}
 		defer loggedClose(configReader)
 		req.ChannelConfig = configReader
 	}
 
 	if req.ChannelID == "" || req.ChannelConfig == nil {
-		return fab.EmptyTransactionID, errors.New("must provide channel ID and channel config")
+		return SaveChannelResponse{}, errors.New("must provide channel ID and channel config")
 	}
 
 	logger.Debugf("saving channel: %s", req.ChannelID)
@@ -717,17 +722,17 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	} else if rc.ctx != nil {
 		signers = append(signers, rc.ctx)
 	} else {
-		return fab.EmptyTransactionID, errors.New("must provide signing user")
+		return SaveChannelResponse{}, errors.New("must provide signing user")
 	}
 
 	configTx, err := ioutil.ReadAll(req.ChannelConfig)
 	if err != nil {
-		return fab.EmptyTransactionID, errors.WithMessage(err, "reading channel config file failed")
+		return SaveChannelResponse{}, errors.WithMessage(err, "reading channel config file failed")
 	}
 
 	chConfig, err := resource.ExtractChannelConfig(configTx)
 	if err != nil {
-		return fab.EmptyTransactionID, errors.WithMessage(err, "extracting channel config failed")
+		return SaveChannelResponse{}, errors.WithMessage(err, "extracting channel config failed")
 	}
 
 	var configSignatures []*common.ConfigSignature
@@ -740,14 +745,14 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 
 		configSignature, err := resource.CreateConfigSignature(&sigCtx, chConfig)
 		if err != nil {
-			return fab.EmptyTransactionID, errors.WithMessage(err, "signing configuration failed")
+			return SaveChannelResponse{}, errors.WithMessage(err, "signing configuration failed")
 		}
 		configSignatures = append(configSignatures, configSignature)
 	}
 
 	orderer, err := rc.requestOrderer(&opts, req.ChannelID)
 	if err != nil {
-		return fab.EmptyTransactionID, errors.WithMessage(err, "failed to find orderer for request")
+		return SaveChannelResponse{}, errors.WithMessage(err, "failed to find orderer for request")
 	}
 
 	request := api.CreateChannelRequest{
@@ -762,10 +767,10 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 
 	txID, err := resource.CreateChannel(reqCtx, request)
 	if err != nil {
-		return fab.EmptyTransactionID, errors.WithMessage(err, "create channel failed")
+		return SaveChannelResponse{}, errors.WithMessage(err, "create channel failed")
 	}
 
-	return txID, nil
+	return SaveChannelResponse{TransactionID: txID}, nil
 }
 
 func loggedClose(c io.Closer) {
