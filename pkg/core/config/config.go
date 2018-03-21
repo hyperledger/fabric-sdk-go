@@ -1480,6 +1480,8 @@ func (c *Config) TLSClientCerts() ([]tls.Certificate, error) {
 			return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
 		}
 
+		logger.Debug("pk read from config successfully")
+
 		return []tls.Certificate{clientCerts}, nil
 
 	}
