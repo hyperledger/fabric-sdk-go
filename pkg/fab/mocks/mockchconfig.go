@@ -17,6 +17,7 @@ import (
 // MockChannelCfg contains mock channel configuration
 type MockChannelCfg struct {
 	MockID          string
+	MockBlockNumber uint64
 	MockMSPs        []*msp.MSPConfig
 	MockAnchorPeers []*fab.OrgAnchorPeer
 	MockOrderers    []string
@@ -32,6 +33,11 @@ func NewMockChannelCfg(id string) *MockChannelCfg {
 // ID returns name
 func (cfg *MockChannelCfg) ID() string {
 	return cfg.MockID
+}
+
+// BlockNumber returns block number
+func (cfg *MockChannelCfg) BlockNumber() uint64 {
+	return cfg.MockBlockNumber
 }
 
 // MSPs returns msps

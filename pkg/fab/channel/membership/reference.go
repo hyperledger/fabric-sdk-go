@@ -19,6 +19,9 @@ type Ref struct {
 	*lazyref.Reference
 	chConfigRef *lazyref.Reference
 	context     Context
+	// Note: the following variables are only accessed from Ref.initializer which is synchronized
+	configBlockNumber uint64
+	mem               fab.ChannelMembership
 }
 
 // NewRef returns a new membership reference
@@ -64,7 +67,7 @@ func (ref *Ref) get() (fab.ChannelMembership, error) {
 
 func (ref *Ref) initializer() lazyref.Initializer {
 	return func() (interface{}, error) {
-		logger.Debugf("Creating membership...")
+		logger.Debugf("Initializing membership reference...")
 
 		channelCfg, err := ref.chConfigRef.Get()
 		if err != nil {
@@ -75,12 +78,17 @@ func (ref *Ref) initializer() lazyref.Initializer {
 			return nil, errors.New("chConfigRef.Get() returned unexpected value ")
 		}
 
-		//TODO: create new membership only if config block number has changed
-		membership, err := New(ref.context, cfg)
-		if err != nil {
-			return nil, err
+		logger.Debugf("Got config block with number %d have %d", cfg.BlockNumber(), ref.configBlockNumber)
+
+		// Membership is refreshed only if we have a newer config block
+		if ref.mem == nil || cfg.BlockNumber() > ref.configBlockNumber {
+			logger.Debugf("Creating membership...")
+			ref.mem, err = New(ref.context, cfg)
+			if err != nil {
+				return nil, err
+			}
 		}
 
-		return membership, nil
+		return ref.mem, nil
 	}
 }
