@@ -535,8 +535,23 @@ func TestInstallCCWithOpts(t *testing.T) {
 	}
 }
 
-func TestInstallCC(t *testing.T) {
+func TestInstallError(t *testing.T) {
+	rc := setupDefaultResMgmtClient(t)
 
+	testErr := fmt.Errorf("Test error message")
+	peer1 := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
+		Status: http.StatusInternalServerError, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Error: testErr}
+
+	peer2 := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
+		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
+
+	req := InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+	_, err := rc.InstallCC(req, WithTargets(&peer1, &peer2))
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), testErr.Error())
+}
+
+func TestInstallCC(t *testing.T) {
 	rc := setupDefaultResMgmtClient(t)
 
 	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",

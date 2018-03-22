@@ -309,7 +309,6 @@ func (rc *Client) isChaincodeInstalled(reqCtx reqContext.Context, req InstallCCR
 
 // InstallCC installs chaincode with optional custom options (specific peers, filtered peers)
 func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]InstallCCResponse, error) {
-
 	// For each peer query if chaincode installed. If cc is installed treat as success with message 'already installed'.
 	// If cc is not installed try to install, and if that fails add to the list with error and peer name.
 
@@ -349,7 +348,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	}
 
 	responses := make([]InstallCCResponse, 0)
-	var errs multi.Errors
+	errs := multi.Errors{}
 
 	// Targets will be adjusted if cc has already been installed
 	newTargets := make([]fab.Peer, 0)
@@ -360,7 +359,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		installed, err := rc.isChaincodeInstalled(reqCtx, req, target)
 		if err != nil {
 			// Add to errors with unable to verify error message
-			errs = append(errs, errors.Errorf("unable to verify if cc is installed on %s", target.URL()))
+			errs = append(errs, errors.Errorf("unable to verify if cc is installed on %s. Got error: %s", target.URL(), err.Error()))
 			continue
 		}
 		if installed {
@@ -376,7 +375,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	if len(newTargets) == 0 {
 		// CC is already installed on all targets and/or
 		// we are unable to verify if cc is installed on target(s)
-		return responses, nil
+		return responses, errs.ToError()
 	}
 
 	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.ResMgmt), contextImpl.WithParent(parentReqCtx))
@@ -392,13 +391,15 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	}
 
 	if err != nil {
-		return responses, errors.WithMessage(err, "InstallChaincode failed")
-	}
-	if len(errs) > 0 {
-		return responses, errs
+		installErrs, ok := err.(multi.Errors)
+		if ok {
+			errs = append(errs, installErrs)
+		} else {
+			errs = append(errs, err)
+		}
 	}
 
-	return responses, nil
+	return responses, errs.ToError()
 }
 
 func checkRequiredInstallCCParams(req InstallCCRequest) error {
