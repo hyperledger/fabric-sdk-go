@@ -32,6 +32,8 @@ import (
 var (
 	endpoint1 = newMockEventEndpoint("grpcs://peer1.example.com:7053")
 	endpoint2 = newMockEventEndpoint("grpcs://peer2.example.com:7053")
+
+	sourceURL = "localhost:9051"
 )
 
 func TestRegisterInterests(t *testing.T) {
@@ -44,7 +46,7 @@ func TestRegisterInterests(t *testing.T) {
 		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
-				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
 			),
 		),
 	)
@@ -140,7 +142,7 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
-				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
 				clientmocks.WithResults(
 					clientmocks.NewResult(ehmocks.RegInterests, clientmocks.FailResult),
 					clientmocks.NewResult(ehmocks.UnregInterests, clientmocks.FailResult),
@@ -243,7 +245,7 @@ func TestTimedOutRegister(t *testing.T) {
 				clientmocks.WithResults(
 					clientmocks.NewResult(ehmocks.RegInterests, clientmocks.NoOpResult),
 				),
-				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
 			),
 		),
 	)
@@ -291,7 +293,7 @@ func TestTimedOutRegister(t *testing.T) {
 
 func TestBlockEvents(t *testing.T) {
 	channelID := "testchannel"
-	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
@@ -342,9 +344,12 @@ func TestBlockEvents(t *testing.T) {
 	ledger.NewBlock(channelID)
 
 	select {
-	case _, ok := <-eventch:
+	case event, ok := <-eventch:
 		if !ok {
 			t.Fatalf("unexpected closed channel")
+		}
+		if event.SourceURL != sourceURL {
+			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatalf("timed out waiting for block event")
@@ -363,7 +368,7 @@ func TestBlockEvents(t *testing.T) {
 
 func TestFilteredBlockEvents(t *testing.T) {
 	channelID := "testchannel"
-	ledger := servicemocks.NewMockLedger(ehmocks.FilteredBlockEventFactory)
+	ledger := servicemocks.NewMockLedger(ehmocks.FilteredBlockEventFactory, sourceURL)
 	dispatcher := New(
 		fabmocks.NewMockContextWithCustomDiscovery(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
@@ -422,6 +427,9 @@ func TestFilteredBlockEvents(t *testing.T) {
 		}
 		if event.FilteredBlock.ChannelId != channelID {
 			t.Fatalf("expecting channelID [%s] but got [%s]", channelID, event.FilteredBlock.ChannelId)
+		}
+		if event.SourceURL != sourceURL {
+			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
 		}
 	case <-time.After(10 * time.Second):
 		t.Fatalf("timed out waiting for filtered block event")

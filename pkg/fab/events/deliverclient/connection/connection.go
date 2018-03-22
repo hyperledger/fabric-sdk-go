@@ -40,6 +40,7 @@ type deliverStream interface {
 // DeliverConnection manages the connection to the deliver server
 type DeliverConnection struct {
 	comm.GRPCConnection
+	url string
 }
 
 // StreamProvider creates a deliver stream
@@ -73,6 +74,7 @@ func New(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvider StreamPr
 
 	return &DeliverConnection{
 		GRPCConnection: *connect,
+		url:            url,
 	}, nil
 }
 
@@ -133,7 +135,7 @@ func (c *DeliverConnection) Receive(eventch chan<- interface{}) {
 			break
 		}
 
-		eventch <- in
+		eventch <- NewEvent(in, c.url)
 	}
 	logger.Debugf("Exiting stream listener")
 }
@@ -177,4 +179,18 @@ func (c *DeliverConnection) createSignedEnvelope(msg proto.Message) (*cb.Envelop
 	}
 
 	return &cb.Envelope{Payload: paylBytes, Signature: signature}, nil
+}
+
+// Event contains the deliver event as well as the event source
+type Event struct {
+	SourceURL string
+	Event     interface{}
+}
+
+// NewEvent returns a deliver event
+func NewEvent(event interface{}, sourceURL string) *Event {
+	return &Event{
+		SourceURL: sourceURL,
+		Event:     event,
+	}
 }

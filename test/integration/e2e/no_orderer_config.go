@@ -82,7 +82,7 @@ func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts
 
 	select {
 	case ccEvent := <-notifier:
-		t.Logf("Received CC event: %s\n", ccEvent)
+		t.Logf("Received CC event: %#v\n", ccEvent)
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
 	}

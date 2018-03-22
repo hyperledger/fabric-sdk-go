@@ -33,6 +33,7 @@ var logger = logging.NewLogger("fabsdk/fab")
 // to the event hub server
 type EventHubConnection struct {
 	comm.GRPCConnection
+	url string
 }
 
 // New returns a new Connection to the event hub.
@@ -50,6 +51,7 @@ func New(ctx fabcontext.Client, chConfig fab.ChannelCfg, url string, opts ...opt
 
 	return &EventHubConnection{
 		GRPCConnection: *connect,
+		url:            url,
 	}, nil
 }
 
@@ -126,8 +128,21 @@ func (c *EventHubConnection) Receive(eventch chan<- interface{}) {
 			break
 		}
 		logger.Debugf("Got event %#v", in)
-		eventch <- in
-
+		eventch <- NewEvent(in, c.url)
 	}
 	logger.Debugf("Exiting stream listener")
+}
+
+// Event contains the event hub event as well as the event source
+type Event struct {
+	SourceURL string
+	Event     interface{}
+}
+
+// NewEvent returns a new event hub event
+func NewEvent(event interface{}, sourceURL string) *Event {
+	return &Event{
+		SourceURL: sourceURL,
+		Event:     event,
+	}
 }

@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -26,24 +28,24 @@ type BlockEvent interface{}
 type Consumer chan interface{}
 
 // EventFactory creates block events
-type EventFactory func(block Block) BlockEvent
+type EventFactory func(block Block, sourceURL string) BlockEvent
 
 // BlockEventFactory creates block events
-var BlockEventFactory = func(block Block) BlockEvent {
+var BlockEventFactory = func(block Block, sourceURL string) BlockEvent {
 	b, ok := block.(*BlockWrapper)
 	if !ok {
 		panic(fmt.Sprintf("Invalid block type: %T", block))
 	}
-	return b.Block()
+	return &fab.BlockEvent{Block: b.Block(), SourceURL: sourceURL}
 }
 
 // FilteredBlockEventFactory creates filtered block events
-var FilteredBlockEventFactory = func(block Block) BlockEvent {
+var FilteredBlockEventFactory = func(block Block, sourceURL string) BlockEvent {
 	b, ok := block.(*FilteredBlockWrapper)
 	if !ok {
 		panic(fmt.Sprintf("Invalid block type: %T", block))
 	}
-	return b.Block()
+	return &fab.FilteredBlockEvent{FilteredBlock: b.Block(), SourceURL: sourceURL}
 }
 
 // MockLedger is a mock ledger that stores blocks sequentially
@@ -53,13 +55,15 @@ type MockLedger struct {
 	consumers     []Consumer
 	blocks        []Block
 	eventFactory  EventFactory
+	sourceURL     string
 }
 
 // NewMockLedger creates a new MockLedger
-func NewMockLedger(eventFactory EventFactory) *MockLedger {
+func NewMockLedger(eventFactory EventFactory, sourceURL string) *MockLedger {
 	return &MockLedger{
 		eventFactory:  eventFactory,
 		blockProducer: NewBlockProducer(),
+		sourceURL:     sourceURL,
 	}
 }
 
@@ -92,10 +96,12 @@ func (l *MockLedger) Unregister(Consumer Consumer) {
 }
 
 // NewBlock stores a new block on the ledger
-func (l *MockLedger) NewBlock(channelID string, transactions ...*TxInfo) {
+func (l *MockLedger) NewBlock(channelID string, transactions ...*TxInfo) Block {
 	l.Lock()
 	defer l.Unlock()
-	l.Store(NewBlockWrapper(l.blockProducer.NewBlock(channelID, transactions...)))
+	block := NewBlockWrapper(l.blockProducer.NewBlock(channelID, transactions...))
+	l.Store(block)
+	return block
 }
 
 // NewFilteredBlock stores a new filtered block on the ledger
@@ -110,7 +116,7 @@ func (l *MockLedger) Store(block Block) {
 	l.blocks = append(l.blocks, block)
 
 	for _, p := range l.consumers {
-		blockEvent := l.eventFactory(block)
+		blockEvent := l.eventFactory(block, l.sourceURL)
 		p <- blockEvent
 	}
 }
@@ -127,7 +133,7 @@ func (l *MockLedger) SendFrom(blockNum uint64) {
 
 	for _, block := range l.blocks[blockNum:] {
 		for _, p := range l.consumers {
-			p <- l.eventFactory(block)
+			p <- l.eventFactory(block, l.sourceURL)
 		}
 	}
 }

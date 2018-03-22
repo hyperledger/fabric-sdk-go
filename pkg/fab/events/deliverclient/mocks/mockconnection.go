@@ -9,6 +9,7 @@ package mocks
 import (
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/connection"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -43,10 +44,10 @@ func (c *MockConnection) Receive(eventch chan<- interface{}) {
 	if ok {
 		switch result.Result {
 		case BadRequestResult:
-			eventch <- newDeliverStatusResponse(cb.Status_BAD_REQUEST)
+			eventch <- c.newDeliverStatusResponse(cb.Status_BAD_REQUEST)
 			return
 		case ForbiddenResult:
-			eventch <- newDeliverStatusResponse(cb.Status_FORBIDDEN)
+			eventch <- c.newDeliverStatusResponse(cb.Status_FORBIDDEN)
 			return
 		}
 	}
@@ -72,10 +73,13 @@ func (c *MockConnection) Send(sinfo *ab.SeekInfo) error {
 	return nil
 }
 
-func newDeliverStatusResponse(status cb.Status) *pb.DeliverResponse {
-	return &pb.DeliverResponse{
-		Type: &pb.DeliverResponse_Status{
-			Status: status,
+func (c *MockConnection) newDeliverStatusResponse(status cb.Status) *connection.Event {
+	return connection.NewEvent(
+		&pb.DeliverResponse{
+			Type: &pb.DeliverResponse_Status{
+				Status: status,
+			},
 		},
-	}
+		c.SourceURL(),
+	)
 }

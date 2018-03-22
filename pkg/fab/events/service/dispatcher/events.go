@@ -8,6 +8,7 @@ package dispatcher
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -120,21 +121,41 @@ func NewRegisterEvent(respch chan<- fab.Registration, errCh chan<- error) Regist
 	}
 }
 
+// NewBlockEvent creates a new BlockEvent
+func NewBlockEvent(block *cb.Block, sourceURL string) *fab.BlockEvent {
+	return &fab.BlockEvent{
+		Block:     block,
+		SourceURL: sourceURL,
+	}
+}
+
+// NewFilteredBlockEvent creates a new FilteredBlockEvent
+func NewFilteredBlockEvent(fblock *pb.FilteredBlock, sourceURL string) *fab.FilteredBlockEvent {
+	return &fab.FilteredBlockEvent{
+		FilteredBlock: fblock,
+		SourceURL:     sourceURL,
+	}
+}
+
 // NewChaincodeEvent creates a new ChaincodeEvent
-func NewChaincodeEvent(chaincodeID, eventName, txID string, payload []byte) *fab.CCEvent {
+func NewChaincodeEvent(chaincodeID, eventName, txID string, payload []byte, blockNum uint64, sourceURL string) *fab.CCEvent {
 	return &fab.CCEvent{
 		ChaincodeID: chaincodeID,
 		EventName:   eventName,
 		TxID:        txID,
 		Payload:     payload,
+		BlockNumber: blockNum,
+		SourceURL:   sourceURL,
 	}
 }
 
 // NewTxStatusEvent creates a new TxStatusEvent
-func NewTxStatusEvent(txID string, txValidationCode pb.TxValidationCode) *fab.TxStatusEvent {
+func NewTxStatusEvent(txID string, txValidationCode pb.TxValidationCode, blockNum uint64, sourceURL string) *fab.TxStatusEvent {
 	return &fab.TxStatusEvent{
 		TxID:             txID,
 		TxValidationCode: txValidationCode,
+		BlockNumber:      blockNum,
+		SourceURL:        sourceURL,
 	}
 }
 

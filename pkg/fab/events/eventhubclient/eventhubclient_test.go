@@ -41,6 +41,7 @@ var (
 	peer2     = fabclientmocks.NewMockPeer("peer2", "peer2.example.com:7051")
 	eventURL1 = "peer1.example.com:7053"
 	eventURL2 = "peer2.example.com:7053"
+	sourceURL = "localhost:9051"
 )
 
 func TestOptionsInNewClient(t *testing.T) {
@@ -64,7 +65,7 @@ func TestClientConnect(t *testing.T) {
 		withConnectionProviderAndInterests(
 			clientmocks.NewProviderFactory().Provider(
 				ehclientmocks.NewConnection(
-					clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
+					clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
 				)),
 			filteredBlockInterests, false,
 		),
@@ -97,7 +98,7 @@ func TestTimeoutClientConnect(t *testing.T) {
 		withConnectionProviderAndInterests(
 			clientmocks.NewProviderFactory().Provider(
 				ehclientmocks.NewConnection(
-					clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
+					clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
 					clientmocks.WithResults(
 						clientmocks.NewResult(ehmocks.RegInterests, clientmocks.NoOpResult),
 					),
@@ -211,7 +212,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 		withConnectionProviderAndInterests(
 			clientmocks.NewProviderFactory().FlakeyProvider(
 				connAttemptResult,
-				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory)),
+				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
 				clientmocks.WithFactory(func(opts ...clientmocks.Opt) clientmocks.Connection {
 					return ehclientmocks.NewConnection(opts...)
 				}),
@@ -243,7 +244,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 	cp := clientmocks.NewProviderFactory()
 
 	connectch := make(chan *clientdisp.ConnectionEvent)
-	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)
 
 	eventClient, err := New(
 		newMockContext(),
@@ -301,7 +302,7 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 	channelID := "mychannel"
 	ccID := "mycc"
 
-	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory)
+	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)
 	cp := clientmocks.NewProviderFactory()
 
 	eventClient, err := New(

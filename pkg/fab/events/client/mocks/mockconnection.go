@@ -90,6 +90,7 @@ type MockConnection struct {
 	producerch <-chan interface{}
 	rcvch      chan interface{}
 	closed     int32
+	sourceURL  string
 }
 
 // Opts contains mock connection options
@@ -97,6 +98,7 @@ type Opts struct {
 	Ledger     servicemocks.Ledger
 	Operations OperationMap
 	Factory    ConnectionFactory
+	SourceURL  string
 }
 
 // NewMockConnection returns a new MockConnection using the given options
@@ -115,6 +117,11 @@ func NewMockConnection(opts ...Opt) *MockConnection {
 		panic("ledger is nil")
 	}
 
+	sourceURL := copts.SourceURL
+	if sourceURL == "" {
+		sourceURL = "localhost:9051"
+	}
+
 	producer := servicemocks.NewMockProducer(copts.Ledger)
 
 	c := &MockConnection{
@@ -122,6 +129,7 @@ func NewMockConnection(opts ...Opt) *MockConnection {
 		producerch: producer.Register(),
 		rcvch:      make(chan interface{}),
 		operations: operations,
+		sourceURL:  sourceURL,
 	}
 	return c
 }
@@ -176,6 +184,11 @@ func (c *MockConnection) Result(operation Operation) (ResultDesc, bool) {
 // Ledger returns the mock ledger
 func (c *MockConnection) Ledger() servicemocks.Ledger {
 	return c.producer.Ledger()
+}
+
+// SourceURL returns the event source
+func (c *MockConnection) SourceURL() string {
+	return c.sourceURL
 }
 
 // ProviderFactory creates various mock MockConnection Providers
@@ -289,6 +302,13 @@ func NewResult(operation Operation, result Result, errMsg ...string) *OperationR
 	}
 }
 
+// WithSourceURL provides the mock connection with an event source
+func WithSourceURL(sourceURL string) Opt {
+	return func(opts *Opts) {
+		opts.SourceURL = sourceURL
+	}
+}
+
 // WithLedger provides the mock connection with a ledger
 func WithLedger(ledger servicemocks.Ledger) Opt {
 	return func(opts *Opts) {
@@ -317,4 +337,13 @@ func newDeliverStatusResponse(status cb.Status) *pb.DeliverResponse_Status {
 	return &pb.DeliverResponse_Status{
 		Status: status,
 	}
+}
+
+type eventSource struct {
+	url string
+}
+
+// URL returns the URL of the peer that published the event
+func (es *eventSource) URL() string {
+	return es.url
 }

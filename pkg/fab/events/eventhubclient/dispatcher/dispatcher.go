@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/eventhubclient/connection"
 	esdispatcher "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -157,15 +158,13 @@ func validateInterests(have []*pb.Interest, want []*pb.Interest) error {
 }
 
 func (ed *Dispatcher) handleEvent(e esdispatcher.Event) {
-	event := e.(*pb.Event)
-
-	logger.Debugf("Handling event: %#v", event)
-
+	ehevent := e.(*connection.Event)
+	event := ehevent.Event.(*pb.Event)
 	switch evt := event.Event.(type) {
 	case *pb.Event_Block:
-		ed.HandleBlock(evt.Block)
+		ed.HandleBlock(evt.Block, ehevent.SourceURL)
 	case *pb.Event_FilteredBlock:
-		ed.HandleFilteredBlock(evt.FilteredBlock)
+		ed.HandleFilteredBlock(evt.FilteredBlock, ehevent.SourceURL)
 	case *pb.Event_Register:
 		ed.handleRegInterestsResponse(evt)
 	case *pb.Event_Unregister:
@@ -191,5 +190,5 @@ func (ed *Dispatcher) registerHandlers() {
 	// Register Handlers
 	ed.RegisterHandler(&RegisterInterestsEvent{}, ed.handleRegInterestsEvent)
 	ed.RegisterHandler(&UnregisterInterestsEvent{}, ed.handleUnregInterestsEvent)
-	ed.RegisterHandler(&pb.Event{}, ed.handleEvent)
+	ed.RegisterHandler(&connection.Event{}, ed.handleEvent)
 }
