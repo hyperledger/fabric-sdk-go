@@ -30,6 +30,7 @@ type ChannelConfig interface {
 // ChannelCfg contains channel configuration
 type ChannelCfg interface {
 	ID() string
+	BlockNumber() uint64
 	MSPs() []*mspCfg.MSPConfig
 	AnchorPeers() []*OrgAnchorPeer
 	Orderers() []string

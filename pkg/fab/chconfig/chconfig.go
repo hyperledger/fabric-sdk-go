@@ -63,6 +63,7 @@ type ChannelConfig struct {
 // ChannelCfg contains channel configuration
 type ChannelCfg struct {
 	id          string
+	blockNumber uint64
 	msps        []*mb.MSPConfig
 	anchorPeers []*fab.OrgAnchorPeer
 	orderers    []string
@@ -78,6 +79,11 @@ func NewChannelCfg(channelID string) *ChannelCfg {
 // ID returns the channel ID
 func (cfg *ChannelCfg) ID() string {
 	return cfg.id
+}
+
+// BlockNumber returns the channel config block number
+func (cfg *ChannelCfg) BlockNumber() uint64 {
+	return cfg.blockNumber
 }
 
 // MSPs returns msps
@@ -157,22 +163,22 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 		targets = peersToTxnProcessors(c.opts.Targets)
 	}
 
-	configEnvelope, err := l.QueryConfigBlock(reqCtx, targets, &channel.TransactionProposalResponseVerifier{MinResponses: minResponses})
+	block, err := l.QueryConfigBlock(reqCtx, targets, &channel.TransactionProposalResponseVerifier{MinResponses: minResponses})
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryBlockConfig failed")
 	}
 
-	return extractConfig(c.channelID, configEnvelope)
+	return extractConfig(c.channelID, block)
 }
 
 func (c *ChannelConfig) queryOrderer(reqCtx reqContext.Context) (*ChannelCfg, error) {
 
-	configEnvelope, err := resource.LastConfigFromOrderer(reqCtx, c.channelID, c.opts.Orderer)
+	block, err := resource.LastConfigFromOrderer(reqCtx, c.channelID, c.opts.Orderer)
 	if err != nil {
 		return nil, errors.WithMessage(err, "LastConfigFromOrderer failed")
 	}
 
-	return extractConfig(c.channelID, configEnvelope)
+	return extractConfig(c.channelID, block)
 }
 
 func (c *ChannelConfig) getLimitOpts(ctx context.Client) (int, int) {
@@ -251,7 +257,15 @@ func prepareOpts(options ...Option) (Opts, error) {
 	return opts, nil
 }
 
-func extractConfig(channelID string, configEnvelope *common.ConfigEnvelope) (*ChannelCfg, error) {
+func extractConfig(channelID string, block *common.Block) (*ChannelCfg, error) {
+	if block.Header == nil {
+		return nil, errors.New("expected header in block")
+	}
+
+	configEnvelope, err := resource.CreateConfigEnvelope(block.Data.Data[0])
+	if err != nil {
+		return nil, err
+	}
 
 	group := configEnvelope.Config.ChannelGroup
 
@@ -261,13 +275,14 @@ func extractConfig(channelID string, configEnvelope *common.ConfigEnvelope) (*Ch
 
 	config := &ChannelCfg{
 		id:          channelID,
+		blockNumber: block.Header.Number,
 		msps:        []*mb.MSPConfig{},
 		anchorPeers: []*fab.OrgAnchorPeer{},
 		orderers:    []string{},
 		versions:    versions,
 	}
 
-	err := loadConfig(config, config.versions.Channel, group, "base", "", true)
+	err = loadConfig(config, config.versions.Channel, group, "base", "", true)
 	if err != nil {
 		return nil, errors.WithMessage(err, "load config items from config group failed")
 	}

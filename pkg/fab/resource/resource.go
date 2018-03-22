@@ -116,7 +116,7 @@ func GenesisBlockFromOrderer(reqCtx reqContext.Context, channelName string, orde
 
 // LastConfigFromOrderer fetches the current configuration block for the specified channel
 // from the given orderer
-func LastConfigFromOrderer(reqCtx reqContext.Context, channelName string, orderer fab.Orderer) (*common.ConfigEnvelope, error) {
+func LastConfigFromOrderer(reqCtx reqContext.Context, channelName string, orderer fab.Orderer) (*common.Block, error) {
 	logger.Debugf("channelConfig - start for channel %s", channelName)
 
 	// Get the newest block
@@ -144,7 +144,7 @@ func LastConfigFromOrderer(reqCtx reqContext.Context, channelName string, ordere
 		return nil, errors.New("apiconfig block must contain one transaction")
 	}
 
-	return CreateConfigEnvelope(block.Data.Data[0])
+	return block, nil
 }
 
 // JoinChannel sends a join channel proposal to the target peer.
