@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package core
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
 
@@ -74,7 +75,15 @@ type ChannelConfig struct {
 
 //ChannelPolicies defines list of policies defined for a channel
 type ChannelPolicies struct {
-	QueryChannel map[string]int
+	//Policy for querying channel block
+	QueryChannelConfig QueryChannelConfigPolicy
+}
+
+//QueryChannelConfigPolicy defines opts for channelConfigBlock
+type QueryChannelConfigPolicy struct {
+	MinResponses int
+	MaxTargets   int
+	RetryOpts    retry.Opts
 }
 
 // PeerChannelConfig defines the peer capabilities

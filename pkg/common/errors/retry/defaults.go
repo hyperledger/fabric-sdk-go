@@ -91,3 +91,8 @@ var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 		status.Code(grpcCodes.Unavailable),
 	},
 }
+
+// ChannelConfigRetryableCodes error codes to be taken into account for query channel config retry
+var ChannelConfigRetryableCodes = map[status.Group][]status.Code{
+	status.EndorserClientStatus: []status.Code{status.EndorsementMismatch},
+}

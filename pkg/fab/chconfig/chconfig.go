@@ -26,15 +26,20 @@ import (
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
 
+//overrideRetryHandler is private and used for unit-tests to test query retry behaviors
+var overrideRetryHandler retry.Handler
+
 const (
 	defaultMinResponses = 1
-	defaultMaxTargets   = 1
+	defaultMaxTargets   = 2
 )
 
 // Opts contains options for retrieving channel configuration
@@ -43,6 +48,7 @@ type Opts struct {
 	Targets      []fab.Peer  // if configured, channel config will be retrieved from peers (targets)
 	MinResponses int         // used with targets option; min number of success responses (from targets/peers)
 	MaxTargets   int         //if configured, channel config will be retrieved for these number of random targets
+	RetryOpts    retry.Opts  //opts for channel query retry handler
 }
 
 // Option func for each Opts argument
@@ -138,10 +144,12 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 		return nil, errors.WithMessage(err, "ledger client creation failed")
 	}
 
-	targets := []fab.ProposalProcessor{}
-	maxTargets, minResponses := c.getLimitOpts(ctx)
-	if c.opts.Targets == nil {
+	if err = c.resolveOptsFromConfig(ctx); err != nil {
+		return nil, errors.WithMessage(err, "failed to resolve opts from config")
+	}
 
+	targets := []fab.ProposalProcessor{}
+	if c.opts.Targets == nil {
 		// Calculate targets from config
 		chPeers, err := ctx.Config().ChannelPeers(c.channelID)
 		if err != nil {
@@ -157,18 +165,31 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 			targets = append(targets, newPeer)
 		}
 
-		targets = randomMaxTargets(targets, maxTargets)
+		targets = randomMaxTargets(targets, c.opts.MaxTargets)
 
 	} else {
 		targets = peersToTxnProcessors(c.opts.Targets)
 	}
 
-	block, err := l.QueryConfigBlock(reqCtx, targets, &channel.TransactionProposalResponseVerifier{MinResponses: minResponses})
+	retryHandler := retry.New(c.opts.RetryOpts)
+
+	//Unit test purpose only
+	if overrideRetryHandler != nil {
+		retryHandler = overrideRetryHandler
+	}
+
+queryConfigBlock:
+	//Perform QueryConfigBlock
+	block, err := l.QueryConfigBlock(reqCtx, targets, &channel.TransactionProposalResponseVerifier{MinResponses: c.opts.MinResponses})
+	if c.resolveRetry(retryHandler, err) {
+		goto queryConfigBlock
+	}
+
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryBlockConfig failed")
 	}
-
 	return extractConfig(c.channelID, block)
+
 }
 
 func (c *ChannelConfig) queryOrderer(reqCtx reqContext.Context) (*ChannelCfg, error) {
@@ -181,35 +202,71 @@ func (c *ChannelConfig) queryOrderer(reqCtx reqContext.Context) (*ChannelCfg, er
 	return extractConfig(c.channelID, block)
 }
 
-func (c *ChannelConfig) getLimitOpts(ctx context.Client) (int, int) {
+//resolveOptsFromConfig loads opts from config if not loaded/initialized
+func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 
-	//Opts takes high priority, if provided in opts then it should be taken into account
-	if c.opts.MaxTargets > 0 && c.opts.MinResponses > 0 {
-		return c.opts.MaxTargets, c.opts.MinResponses
+	if c.opts.MaxTargets != 0 && c.opts.MinResponses != 0 && c.opts.RetryOpts.RetryableCodes != nil {
+		//already loaded
+		return nil
 	}
 
 	//If missing from opts, check config and update opts from config
 	chSdkCfg, err := ctx.Config().ChannelConfig(c.channelID)
 	if err != nil {
 		//ver rare, but return default in case of error
-		return defaultMaxTargets, defaultMinResponses
+		return err
 	}
 
 	if c.opts.MaxTargets == 0 {
-		c.opts.MaxTargets = chSdkCfg.Policies.QueryChannel["maxTargets"]
+		c.opts.MaxTargets = chSdkCfg.Policies.QueryChannelConfig.MaxTargets
 		if c.opts.MaxTargets == 0 {
 			c.opts.MaxTargets = defaultMaxTargets
 		}
 	}
 
 	if c.opts.MinResponses == 0 {
-		c.opts.MinResponses = chSdkCfg.Policies.QueryChannel["minResponses"]
+		c.opts.MinResponses = chSdkCfg.Policies.QueryChannelConfig.MinResponses
 		if c.opts.MinResponses == 0 {
 			c.opts.MinResponses = defaultMinResponses
 		}
 	}
 
-	return c.opts.MaxTargets, c.opts.MinResponses
+	if c.opts.RetryOpts.RetryableCodes == nil {
+		c.opts.RetryOpts = chSdkCfg.Policies.QueryChannelConfig.RetryOpts
+
+		if c.opts.RetryOpts.Attempts == 0 {
+			c.opts.RetryOpts.Attempts = retry.DefaultAttempts
+		}
+
+		if c.opts.RetryOpts.InitialBackoff == 0 {
+			c.opts.RetryOpts.InitialBackoff = retry.DefaultInitialBackoff
+		}
+
+		if c.opts.RetryOpts.BackoffFactor == 0 {
+			c.opts.RetryOpts.BackoffFactor = retry.DefaultBackoffFactor
+		}
+
+		if c.opts.RetryOpts.MaxBackoff == 0 {
+			c.opts.RetryOpts.MaxBackoff = retry.DefaultMaxBackoff
+		}
+
+		c.opts.RetryOpts.RetryableCodes = retry.ChannelConfigRetryableCodes
+	}
+
+	return nil
+}
+
+func (c *ChannelConfig) resolveRetry(handler retry.Handler, err error) bool {
+	errs, ok := err.(multi.Errors)
+	if !ok {
+		errs = append(errs, err)
+	}
+	for _, e := range errs {
+		if handler.Required(e) {
+			return true
+		}
+	}
+	return false
 }
 
 // WithPeers encapsulates peers to Option
@@ -240,6 +297,14 @@ func WithOrderer(orderer fab.Orderer) Option {
 func WithMaxTargets(maxTargets int) Option {
 	return func(opts *Opts) error {
 		opts.MaxTargets = maxTargets
+		return nil
+	}
+}
+
+// WithRetryOpts encapsulates retry opts to Option
+func WithRetryOpts(retryOpts retry.Opts) Option {
+	return func(opts *Opts) error {
+		opts.RetryOpts = retryOpts
 		return nil
 	}
 }

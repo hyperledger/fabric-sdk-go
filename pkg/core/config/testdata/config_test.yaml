@@ -166,11 +166,21 @@ channels:
     # config etc.
     policies:
       #[Optional] options for retrieving channel configuration blocks
-      queryChannel:
+      queryChannelConfig:
         #[Optional] min number of success responses (from targets/peers)
         minResponses: 1
         #[Optional] channel config will be retrieved for these number of random targets
         maxTargets: 1
+        #[Optional] retry options for query config block
+        retryOpts:
+          #[Optional] number of retry attempts
+          attempts: 5
+          #[Optional] the back off interval for the first retry attempt
+          initialBackoff: 500ms
+          #[Optional] the maximum back off interval for any retry attempt
+          maxBackoff: 5s
+          #[Optional] he factor by which the initial back off period is exponentially incremented
+          backoffFactor: 2.0
 
   # multi-org test channel
   orgchannel:
