@@ -7,8 +7,21 @@ SPDX-License-Identifier: Apache-2.0
 package membership
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"log"
+	"math/big"
 	"strings"
 	"testing"
+	"time"
+
+	"fmt"
+
+	"encoding/pem"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -67,6 +80,42 @@ func TestRevokedCertificate(t *testing.T) {
 		t.Fatalf("Expected error for revoked certificate")
 	}
 
+}
+
+//TestExpiredCertificate
+func TestCertificateDates(t *testing.T) {
+	var err error
+	goodMSPID := "GoodMSP"
+	ctx := mocks.NewMockProviderContext()
+	cfg := mocks.NewMockChannelCfg("")
+	if err != nil {
+		t.Fatalf("Error %v", err)
+	}
+	// Test good config input
+	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte(orgTwoCA))}
+	m, err := New(Context{Providers: ctx}, cfg)
+	assert.Nil(t, err)
+	assert.NotNil(t, m)
+
+	// Certificate is in the future
+	cert := generateSelfSignedCert(t, time.Now().Add(24*time.Hour))
+	sID := &mb.SerializedIdentity{Mspid: goodMSPID, IdBytes: []byte(cert)}
+	goodEndorser, err := proto.Marshal(sID)
+	assert.Nil(t, err)
+	err = m.Validate(goodEndorser)
+	if !strings.Contains(err.Error(), "Certificate provided is not valid until later date") {
+		t.Fatalf("Expected error 'Certificate provided is not valid until later date'")
+	}
+
+	// Certificate is in the past
+	cert = generateSelfSignedCert(t, time.Now().Add(-24*time.Hour))
+	sID = &mb.SerializedIdentity{Mspid: goodMSPID, IdBytes: []byte(cert)}
+	goodEndorser, err = proto.Marshal(sID)
+	assert.Nil(t, err)
+	err = m.Validate(goodEndorser)
+	if !strings.Contains(err.Error(), "Certificate provided has expired") {
+		t.Fatalf("Expected error 'Certificate provided has expired'")
+	}
 }
 
 func TestNewMembership(t *testing.T) {
@@ -226,3 +275,103 @@ Vnsqn32+nmoGO6dn1CvwtUTBMAoGCCqGSM49BAMCA0gAMEUCIQCH8+Vw0L38dv/v
 9gWvLhQv69q2bS0FBiAFwR4M17Z/2QIgH5W6rmsItiwa7nD0eZyiGmCzzQXW01b4
 5fDo4hNhETQ=
 -----END CERTIFICATE-----`
+
+var expiredCertificate = `-----BEGIN CERTIFICATE-----
+MIIB/TCCAaOgAwIBAgIBATAKBggqhkjOPQQDAjBOMRMwEQYDVQQKDArOoyBBY21l
+IENvMRkwFwYDVQQDExB0ZXN0LmV4YW1wbGUuY29tMQ8wDQYDVQQqEwZHb3BoZXIx
+CzAJBgNVBAYTAk5MMB4XDTE4MDMyMDE5NDE0NVoXDTE4MDMyMDIxNDE0NVowTjET
+MBEGA1UECgwKzqMgQWNtZSBDbzEZMBcGA1UEAxMQdGVzdC5leGFtcGxlLmNvbTEP
+MA0GA1UEKhMGR29waGVyMQswCQYDVQQGEwJOTDBZMBMGByqGSM49AgEGCCqGSM49
+AwEHA0IABKuBweTX12BpJ4zbhYflCWUnEAWLmOsPohPOF38Bf2efHET0+MjD3fqR
+FAXOxTxeDXCRJOrEavnimpFUZCAOxvCjcjBwMA4GA1UdDwEB/wQEAwICBDAmBgNV
+HSUEHzAdBggrBgEFBQcDAgYIKwYBBQUHAwEGAioDBgOBCwEwDwYDVR0TAQH/BAUw
+AwEB/zANBgNVHQ4EBgQEAQIDBDAWBgMqAwQED2V4dHJhIGV4dGVuc2lvbjAKBggq
+hkjOPQQDAgNIADBFAiA9WgC9FDstiVmU6JreuN9AKGDhOjuC069A5A5K9fNLEwIh
+AJ4v8ZQD4r2oPaiJtxJOPLx4OYGEPDUWmhdj3MkWUBZd
+-----END CERTIFICATE-----`
+
+type validity struct {
+	NotBefore, NotAfter time.Time
+}
+
+type publicKeyInfo struct {
+	Raw       asn1.RawContent
+	Algorithm pkix.AlgorithmIdentifier
+	PublicKey asn1.BitString
+}
+
+type tbsCertificate struct {
+	Raw                asn1.RawContent
+	Version            int `asn1:"optional,explicit,default:0,tag:0"`
+	SerialNumber       *big.Int
+	SignatureAlgorithm pkix.AlgorithmIdentifier
+	Issuer             asn1.RawValue
+	Validity           validity
+	Subject            asn1.RawValue
+	PublicKey          publicKeyInfo
+	UniqueID           asn1.BitString   `asn1:"optional,tag:1"`
+	SubjectUniqueID    asn1.BitString   `asn1:"optional,tag:2"`
+	Extensions         []pkix.Extension `asn1:"optional,explicit,tag:3"`
+}
+
+type certificate struct {
+	Raw                asn1.RawContent
+	TBSCertificate     tbsCertificate
+	SignatureAlgorithm pkix.AlgorithmIdentifier
+	SignatureValue     asn1.BitString
+}
+
+// encodeCertToMemory returns a PEM representation of a certificate
+func encodeCertToMemory(c certificate) string {
+	b, err := asn1.Marshal(c)
+	if err != nil {
+		return fmt.Sprintf("Failed marshaling cert: %v", err)
+	}
+	block := &pem.Block{
+		Bytes: b,
+		Type:  "CERTIFICATE",
+	}
+	b = pem.EncodeToMemory(block)
+	return string(b)
+}
+
+func generateSelfSignedCert(t *testing.T, now time.Time) string {
+	k, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	assert.NoError(t, err)
+
+	// Generate a self-signed certificate
+	testExtKeyUsage := []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth}
+	testUnknownExtKeyUsage := []asn1.ObjectIdentifier{[]int{1, 2, 3}, []int{2, 59, 1}}
+	//extraExtensionData := []byte("extra extension")
+	commonName := "securekey.com"
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName:   commonName,
+			Organization: []string{"SK"},
+			Country:      []string{"CA"},
+		},
+		NotBefore:             now.Add(-1 * time.Hour),
+		NotAfter:              now.Add(1 * time.Hour),
+		SignatureAlgorithm:    x509.ECDSAWithSHA256,
+		SubjectKeyId:          []byte{1, 2, 3, 4},
+		KeyUsage:              x509.KeyUsageCertSign,
+		ExtKeyUsage:           testExtKeyUsage,
+		UnknownExtKeyUsage:    testUnknownExtKeyUsage,
+		BasicConstraintsValid: true,
+		IsCA: true,
+	}
+	certRaw, err := x509.CreateCertificate(rand.Reader, &template, &template, &k.PublicKey, k)
+	assert.NoError(t, err)
+	if err != nil {
+		log.Fatalf("Failed to create certificate: %s", err)
+	}
+
+	var newCert certificate
+	_, err = asn1.Unmarshal(certRaw, &newCert)
+	if err != nil {
+		log.Fatalf("Failed to unmarshal certificate: %s", err)
+	}
+	return encodeCertToMemory(newCert)
+
+}

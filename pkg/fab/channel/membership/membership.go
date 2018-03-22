@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -40,11 +41,16 @@ func New(ctx Context, cfg fab.ChannelCfg) (fab.ChannelMembership, error) {
 }
 
 func (i *identityImpl) Validate(serializedID []byte) error {
+	err := areCertDatesValid(serializedID)
+	if err != nil {
+		logger.Errorf("Cert error %v", err)
+		return err
+	}
+
 	id, err := i.mspManager.DeserializeIdentity(serializedID)
 	if err != nil {
 		return err
 	}
-
 	return id.Validate()
 }
 
@@ -55,6 +61,30 @@ func (i *identityImpl) Verify(serializedID []byte, msg []byte, sig []byte) error
 	}
 
 	return id.Verify(msg, sig)
+}
+
+func areCertDatesValid(serializedID []byte) error {
+
+	sID := &mb.SerializedIdentity{}
+	err := proto.Unmarshal(serializedID, sID)
+	if err != nil {
+		return errors.Wrap(err, "could not deserialize a SerializedIdentity")
+	}
+
+	bl, _ := pem.Decode(sID.IdBytes)
+	if bl == nil {
+		return errors.New("could not decode the PEM structure")
+	}
+	cert, err := x509.ParseCertificate(bl.Bytes)
+	if err != nil {
+		return err
+	}
+	err = verifier.ValidateCertificateDates(cert)
+	if err != nil {
+		logger.Warnf("Certificate error '%v' for cert '%v'", err, cert.SerialNumber)
+		return err
+	}
+	return nil
 }
 
 func createMSPManager(ctx Context, cfg fab.ChannelCfg) (msp.MSPManager, error) {
