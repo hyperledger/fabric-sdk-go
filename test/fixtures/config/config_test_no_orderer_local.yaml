@@ -67,7 +67,6 @@ client:
       channelConfig: 60s
       channelMembership: 30s
 
-
   # Needed to load users crypto keys and certs.
   cryptoconfig:
     path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}

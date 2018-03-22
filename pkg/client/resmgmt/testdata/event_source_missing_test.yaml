@@ -44,6 +44,9 @@ client:
       resmgmt: 60s
     cache:
       connectionIdle: 30s
+      eventServiceIdle: 2m
+      channelConfig: 60s
+      channelMembership: 30s
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:
