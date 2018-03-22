@@ -38,7 +38,7 @@ type Client struct {
 	ctx      context.Channel
 	filter   fab.TargetFilter
 	ledger   *channel.Ledger
-	verifier *verifier.Signature
+	verifier channel.ResponseVerifier
 }
 
 // mspFilter is default filter
@@ -103,23 +103,16 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 // (height, known peers).
 func (c *Client) QueryInfo(options ...RequestOption) (*fab.BlockchainInfoResponse, error) {
 
-	opts, err := c.prepareRequestOpts(options...)
+	targets, opts, err := c.prepareRequestParams(options...)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get opts for QueryInfo")
+		return nil, errors.WithMessage(err, "QueryInfo failed to prepare request parameters")
 	}
-
-	// Determine targets
-	targets, err := c.calculateTargets(opts)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to determine target peers for QueryInfo")
-	}
-
-	reqCtx, cancel := c.createRequestContext(&opts)
+	reqCtx, cancel := c.createRequestContext(opts)
 	defer cancel()
 
 	responses, err := c.ledger.QueryInfo(reqCtx, peersToTxnProcessors(targets), c.verifier)
 	if err != nil && len(responses) == 0 {
-		return nil, errors.WithMessage(err, "Failed to QueryInfo")
+		return nil, errors.WithMessage(err, "QueryInfo failed")
 	}
 
 	if len(responses) < opts.MinTargets {
@@ -141,7 +134,7 @@ func (c *Client) QueryInfo(options ...RequestOption) (*fab.BlockchainInfoRespons
 
 	}
 
-	return response, err
+	return response, nil
 }
 
 // QueryBlockByHash queries the ledger for Block by block hash.
@@ -149,42 +142,19 @@ func (c *Client) QueryInfo(options ...RequestOption) (*fab.BlockchainInfoRespons
 // Returns the block.
 func (c *Client) QueryBlockByHash(blockHash []byte, options ...RequestOption) (*common.Block, error) {
 
-	opts, err := c.prepareRequestOpts(options...)
+	targets, opts, err := c.prepareRequestParams(options...)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get opts for QueryBlockByHash")
+		return nil, errors.WithMessage(err, "QueryBlockByHash failed to prepare request parameters")
 	}
-
-	// Determine targets
-	targets, err := c.calculateTargets(opts)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to determine target peers for QueryBlockByHash")
-	}
-
-	reqCtx, cancel := c.createRequestContext(&opts)
+	reqCtx, cancel := c.createRequestContext(opts)
 	defer cancel()
 
 	responses, err := c.ledger.QueryBlockByHash(reqCtx, blockHash, peersToTxnProcessors(targets), c.verifier)
 	if err != nil && len(responses) == 0 {
-		return nil, errors.WithMessage(err, "Failed to QueryBlockByHash")
+		return nil, errors.WithMessage(err, "QueryBlockByHash failed")
 	}
 
-	if len(responses) < opts.MinTargets {
-		return nil, errors.Errorf("QueryBlockByHash: Number of responses %d is less than MinTargets %d", len(responses), opts.MinTargets)
-	}
-
-	response := responses[0]
-	for i, r := range responses {
-		if i == 0 {
-			continue
-		}
-
-		// All payloads have to match
-		if !proto.Equal(response.Data, r.Data) {
-			return nil, errors.New("Payloads for QueryBlockByHash do not match")
-		}
-	}
-
-	return response, err
+	return matchBlockData(responses, opts.MinTargets)
 }
 
 // QueryBlockByTxID returns a block which contains a transaction
@@ -192,42 +162,19 @@ func (c *Client) QueryBlockByHash(blockHash []byte, options ...RequestOption) (*
 // Returns the block.
 func (c *Client) QueryBlockByTxID(txID fab.TransactionID, options ...RequestOption) (*common.Block, error) {
 
-	opts, err := c.prepareRequestOpts(options...)
+	targets, opts, err := c.prepareRequestParams(options...)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get opts for QueryBlockByTxID")
+		return nil, errors.WithMessage(err, "QueryBlockByTxID failed to prepare request parameters")
 	}
-
-	// Determine targets
-	targets, err := c.calculateTargets(opts)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to determine target peers for QueryBlockByTxID")
-	}
-
-	reqCtx, cancel := c.createRequestContext(&opts)
+	reqCtx, cancel := c.createRequestContext(opts)
 	defer cancel()
 
 	responses, err := c.ledger.QueryBlockByTxID(reqCtx, txID, peersToTxnProcessors(targets), c.verifier)
 	if err != nil && len(responses) == 0 {
-		return nil, errors.WithMessage(err, "Failed to QueryBlockByTxID")
+		return nil, errors.WithMessage(err, "QueryBlockByTxID failed")
 	}
 
-	if len(responses) < opts.MinTargets {
-		return nil, errors.Errorf("QueryBlockByTxID: Number of responses %d is less than MinTargets %d", len(responses), opts.MinTargets)
-	}
-
-	response := responses[0]
-	for i, r := range responses {
-		if i == 0 {
-			continue
-		}
-
-		// All payloads have to match
-		if !proto.Equal(response.Data, r.Data) {
-			return nil, errors.New("Payloads for QueryBlockByTxID do not match")
-		}
-	}
-
-	return response, err
+	return matchBlockData(responses, opts.MinTargets)
 }
 
 // QueryBlock queries the ledger for Block by block number.
@@ -236,27 +183,38 @@ func (c *Client) QueryBlockByTxID(txID fab.TransactionID, options ...RequestOpti
 // It returns the block.
 func (c *Client) QueryBlock(blockNumber uint64, options ...RequestOption) (*common.Block, error) {
 
-	opts, err := c.prepareRequestOpts(options...)
+	targets, opts, err := c.prepareRequestParams(options...)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get opts for QueryBlock")
+		return nil, errors.WithMessage(err, "QueryBlock failed to prepare request parameters")
 	}
-
-	// Determine targets
-	targets, err := c.calculateTargets(opts)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to determine target peers for QueryBlock")
-	}
-
-	reqCtx, cancel := c.createRequestContext(&opts)
+	reqCtx, cancel := c.createRequestContext(opts)
 	defer cancel()
 
 	responses, err := c.ledger.QueryBlock(reqCtx, blockNumber, peersToTxnProcessors(targets), c.verifier)
 	if err != nil && len(responses) == 0 {
-		return nil, errors.WithMessage(err, "Failed to QueryBlock")
+		return nil, errors.WithMessage(err, "QueryBlock failed")
 	}
 
-	if len(responses) < opts.MinTargets {
-		return nil, errors.Errorf("QueryBlock: Number of responses %d is less than MinTargets %d", len(responses), opts.MinTargets)
+	return matchBlockData(responses, opts.MinTargets)
+}
+
+func (c *Client) prepareRequestParams(options ...RequestOption) ([]fab.Peer, *requestOptions, error) {
+	opts, err := c.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "failed to get opts")
+	}
+
+	targets, err := c.calculateTargets(opts)
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "failed to determine target peers")
+	}
+
+	return targets, &opts, nil
+}
+
+func matchBlockData(responses []*common.Block, minTargets int) (*common.Block, error) {
+	if len(responses) < minTargets {
+		return nil, errors.Errorf("Number of responses %d is less than MinTargets %d", len(responses), minTargets)
 	}
 
 	response := responses[0]
@@ -265,13 +223,14 @@ func (c *Client) QueryBlock(blockNumber uint64, options ...RequestOption) (*comm
 			continue
 		}
 
-		// All payloads have to match
+		// Block data has to match
 		if !proto.Equal(response.Data, r.Data) {
-			return nil, errors.New("Payloads for QueryBlock do not match")
+			return nil, errors.New("Block data does not match")
 		}
 	}
 
-	return response, err
+	return response, nil
+
 }
 
 // QueryTransaction queries the ledger for Transaction by number.
@@ -279,23 +238,16 @@ func (c *Client) QueryBlock(blockNumber uint64, options ...RequestOption) (*comm
 // Returns the ProcessedTransaction information containing the transaction.
 func (c *Client) QueryTransaction(transactionID fab.TransactionID, options ...RequestOption) (*pb.ProcessedTransaction, error) {
 
-	opts, err := c.prepareRequestOpts(options...)
+	targets, opts, err := c.prepareRequestParams(options...)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get opts for QueryTransaction")
+		return nil, errors.WithMessage(err, "QueryTransaction failed to prepare request parameters")
 	}
-
-	// Determine targets
-	targets, err := c.calculateTargets(opts)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to determine target peers for QueryTransaction")
-	}
-
-	reqCtx, cancel := c.createRequestContext(&opts)
+	reqCtx, cancel := c.createRequestContext(opts)
 	defer cancel()
 
 	responses, err := c.ledger.QueryTransaction(reqCtx, transactionID, peersToTxnProcessors(targets), c.verifier)
 	if err != nil && len(responses) == 0 {
-		return nil, errors.WithMessage(err, "Failed to QueryTransaction")
+		return nil, errors.WithMessage(err, "QueryTransaction failed")
 	}
 
 	if len(responses) < opts.MinTargets {
@@ -310,37 +262,29 @@ func (c *Client) QueryTransaction(transactionID fab.TransactionID, options ...Re
 
 		// All payloads have to match
 		if !proto.Equal(response, r) {
-			return nil, errors.New("Payloads for QueryBlockByHash do not match")
+			return nil, errors.New("Payloads for QueryTransaction do not match")
 		}
 	}
 
-	return response, err
+	return response, nil
 }
 
 // QueryConfig config returns channel configuration
 func (c *Client) QueryConfig(options ...RequestOption) (fab.ChannelCfg, error) {
 
-	opts, err := c.prepareRequestOpts(options...)
+	targets, opts, err := c.prepareRequestParams(options...)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get opts for QueryConfig")
+		return nil, errors.WithMessage(err, "QueryConfig failed to prepare request parameters")
 	}
-
-	// Determine targets
-	targets, err := c.calculateTargets(opts)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to determine target peers for QueryConfig")
-	}
+	reqCtx, cancel := c.createRequestContext(opts)
+	defer cancel()
 
 	channelConfig, err := chconfig.New(c.ctx.ChannelID(), chconfig.WithPeers(targets), chconfig.WithMinResponses(opts.MinTargets))
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryConfig failed")
 	}
 
-	reqCtx, cancel := c.createRequestContext(&opts)
-	defer cancel()
-
 	return channelConfig.Query(reqCtx)
-
 }
 
 //prepareRequestOpts Reads Opts from Option array
