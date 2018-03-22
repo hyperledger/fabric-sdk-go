@@ -27,6 +27,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
 
 const (
@@ -104,6 +105,7 @@ func (p *peerEndorser) ProcessTransactionProposal(ctx reqContext.Context, reques
 	tpr := fab.TransactionProposalResponse{
 		ProposalResponse: proposalResponse,
 		Endorser:         p.target,
+		ChaincodeStatus:  getChaincodeResponseStatus(proposalResponse),
 		Status:           proposalResponse.GetResponse().Status,
 	}
 	return &tpr, nil
@@ -143,6 +145,7 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 
 	endorserClient := pb.NewEndorserClient(conn)
 	resp, err := endorserClient.ProcessProposal(ctx, proposal.SignedProposal)
+
 	if err != nil {
 		logger.Errorf("process proposal failed [%s]", err)
 		rpcStatus, ok := grpcstatus.FromError(err)
@@ -193,4 +196,16 @@ func extractChaincodeError(status *grpcstatus.Status) (int, string, error) {
 		return code, message, nil
 	}
 	return code, message, errors.Errorf("Unable to parse GRPC Status Message Code: %v Message: %v", code, message)
+}
+
+// getChaincodeResponseStatus gets the actual response status from response.Payload.extension.Response.status, as fabric always returns actual 200
+func getChaincodeResponseStatus(response *pb.ProposalResponse) int32 {
+	if response.Payload != nil {
+		payload, _ := protos_utils.GetProposalResponsePayload(response.Payload)
+		extension, _ := protos_utils.GetChaincodeAction(payload.Extension)
+		if extension != nil && extension.Response != nil {
+			return extension.Response.Status
+		}
+	}
+	return response.Response.Status
 }

@@ -48,6 +48,7 @@ func (e *EndorsementHandler) Handle(requestContext *RequestContext, clientContex
 	requestContext.Response.Responses = transactionProposalResponses
 	if len(transactionProposalResponses) > 0 {
 		requestContext.Response.Payload = transactionProposalResponses[0].ProposalResponse.GetResponse().Payload
+		requestContext.Response.ChaincodeStatus = transactionProposalResponses[0].ChaincodeStatus
 	}
 
 	//Delegate to next step if any
@@ -255,5 +256,6 @@ func createAndSendTransactionProposal(transactor fab.ProposalSender, chrequest *
 	}
 
 	transactionProposalResponses, err := transactor.SendTransactionProposal(proposal, targets)
+
 	return transactionProposalResponses, proposal, err
 }

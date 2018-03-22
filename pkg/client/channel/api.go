@@ -45,7 +45,9 @@ type Response struct {
 	TransactionID    fab.TransactionID
 	TxValidationCode pb.TxValidationCode
 	Proposal         *fab.TransactionProposal
-	Responses        []*fab.TransactionProposalResponse
+	// ChaincodeStatus is the status returned by Chaincode
+	ChaincodeStatus int32
+	Responses       []*fab.TransactionProposalResponse
 }
 
 //WithTargets encapsulates ProposalProcessors to Option

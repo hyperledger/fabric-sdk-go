@@ -223,6 +223,14 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 	initial, _ := strconv.Atoi(string(response.Payload))
 
+	if response.ChaincodeStatus == 0 {
+		t.Fatalf("Expected ChaincodeStatus")
+	}
+
+	if response.Responses[0].ChaincodeStatus != response.ChaincodeStatus {
+		t.Fatalf("Expected the chaincode status returned by successful Peer Endorsement to be same as Chaincode status for client response")
+	}
+
 	// Ledger client will verify blockchain info
 	ledgerClient, err := ledger.New(org1AdminChannelContext)
 
@@ -260,6 +268,14 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
+	}
+
+	if response.ChaincodeStatus == 0 {
+		t.Fatalf("Expected ChaincodeStatus")
+	}
+
+	if response.Responses[0].ChaincodeStatus != response.ChaincodeStatus {
+		t.Fatalf("Expected the chaincode status returned by successful Peer Endorsement to be same as Chaincode status for client response")
 	}
 
 	// Assert that funds have changed value on org1 peer
