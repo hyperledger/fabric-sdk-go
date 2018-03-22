@@ -64,7 +64,6 @@ client:
       channelConfig: 60s
       channelMembership: 30s
 
-
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"
   # are implementation specific
   credentialStore:

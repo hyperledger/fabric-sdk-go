@@ -65,7 +65,6 @@ client:
       channelConfig: 60s
       channelMembership: 30s
 
-
   # Root of the MSP directories with keys and certs.
   cryptoconfig:
     path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}
