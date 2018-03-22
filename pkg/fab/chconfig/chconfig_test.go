@@ -20,6 +20,10 @@ import (
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/pkg/errors"
 
+	"strings"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,6 +52,51 @@ func TestChannelConfigWithPeer(t *testing.T) {
 	if cfg.ID() != channelID {
 		t.Fatalf("Channel name error. Expecting %s, got %s ", channelID, cfg.ID())
 	}
+}
+
+func TestChannelConfigWithPeerWithRetries(t *testing.T) {
+
+	numberOfAttempts := 7
+	user := mspmocks.NewMockSigningIdentity("test", "test")
+	ctx := mocks.NewMockContext(user)
+
+	defRetryOpts := retry.DefaultOpts
+	defRetryOpts.Attempts = numberOfAttempts
+	defRetryOpts.InitialBackoff = 5 * time.Millisecond
+	defRetryOpts.BackoffFactor = 1.0
+
+	chConfig := &core.ChannelConfig{
+		Policies: core.ChannelPolicies{QueryChannelConfig: core.QueryChannelConfigPolicy{
+			MinResponses: 2,
+			MaxTargets:   1, //Ignored since we pass targets
+			RetryOpts:    defRetryOpts,
+		}},
+	}
+
+	mockConfig := &customMockConfig{MockConfig: &mocks.MockConfig{}, chConfig: chConfig}
+	ctx.SetConfig(mockConfig)
+
+	peer1 := getPeerWithConfigBlockPayload(t)
+	peer2 := getPeerWithConfigBlockPayload(t)
+
+	channelConfig, err := New(channelID, WithPeers([]fab.Peer{peer1, peer2}))
+	if err != nil {
+		t.Fatalf("Failed to create new channel client: %s", err)
+	}
+
+	//Set custom retry handler for tracking number of attempts
+	retryHandler := retry.New(defRetryOpts)
+	overrideRetryHandler = &customRetryHandler{handler: retryHandler, retries: 0}
+
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(100*time.Second))
+	defer cancel()
+
+	_, err = channelConfig.Query(reqCtx)
+	if err == nil || !strings.Contains(err.Error(), "ENDORSEMENT_MISMATCH") {
+		t.Fatalf("Supposed to fail with ENDORSEMENT_MISMATCH. Description: payloads for config block do not match")
+	}
+
+	assert.True(t, overrideRetryHandler.(*customRetryHandler).retries-1 == numberOfAttempts, "number of attempts missmatching")
 }
 
 func TestChannelConfigWithPeerError(t *testing.T) {
@@ -124,6 +173,55 @@ func TestRandomMaxTargetsSelections(t *testing.T) {
 
 }
 
+func TestResolveOptsFromConfig(t *testing.T) {
+	user := mspmocks.NewMockSigningIdentity("test", "test")
+	ctx := mocks.NewMockContext(user)
+
+	defRetryOpts := retry.DefaultOpts
+
+	chConfig := &core.ChannelConfig{
+		Policies: core.ChannelPolicies{QueryChannelConfig: core.QueryChannelConfigPolicy{
+			MinResponses: 8,
+			MaxTargets:   9,
+			RetryOpts:    defRetryOpts,
+		}},
+	}
+
+	mockConfig := &customMockConfig{MockConfig: &mocks.MockConfig{}, chConfig: chConfig}
+	ctx.SetConfig(mockConfig)
+
+	channelConfig, err := New(channelID, WithPeers([]fab.Peer{}))
+	if err != nil {
+		t.Fatal("Failed to create channel config")
+	}
+
+	assert.True(t, channelConfig.opts.MaxTargets == 0, "supposed to be zero when not resolved")
+	assert.True(t, channelConfig.opts.MinResponses == 0, "supposed to be zero when not resolved")
+	assert.True(t, channelConfig.opts.RetryOpts.RetryableCodes == nil, "supposed to be nil when not resolved")
+
+	channelConfig, err = New(channelID, WithPeers([]fab.Peer{}), WithMinResponses(2))
+	if err != nil {
+		t.Fatal("Failed to create channel config")
+	}
+
+	assert.True(t, channelConfig.opts.MaxTargets == 0, "supposed to be zero when not resolved")
+	assert.True(t, channelConfig.opts.MinResponses == 2, "supposed to be loaded with options")
+	assert.True(t, channelConfig.opts.RetryOpts.RetryableCodes == nil, "supposed to be nil when not resolved")
+
+	mockConfig.called = false
+	channelConfig.resolveOptsFromConfig(ctx)
+
+	assert.True(t, channelConfig.opts.MaxTargets == 9, "supposed to be loaded once opts resolved from config")
+	assert.True(t, channelConfig.opts.MinResponses == 2, "supposed to be updated once loaded with non zero value")
+	assert.True(t, channelConfig.opts.RetryOpts.RetryableCodes != nil, "supposed to be loaded once opts resolved from config")
+	assert.True(t, mockConfig.called, "config.ChannelConfig() not used by resolve opts function")
+
+	//Try again, opts shouldnt get reloaded from config once loaded
+	mockConfig.called = false
+	channelConfig.resolveOptsFromConfig(ctx)
+	assert.False(t, mockConfig.called, "config.ChannelConfig() should not be used by resolve opts function once opts are loaded")
+}
+
 func setupTestContext() context.Client {
 	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
@@ -166,6 +264,29 @@ type mockProposalProcessor struct {
 
 func (pp *mockProposalProcessor) ProcessTransactionProposal(reqCtx reqContext.Context, request fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
 	return nil, errors.New("not implemented, just mock")
+}
+
+//customMockConfig to mock config to override channel configuration options
+type customMockConfig struct {
+	*mocks.MockConfig
+	chConfig *core.ChannelConfig
+	called   bool
+}
+
+func (c *customMockConfig) ChannelConfig(name string) (*core.ChannelConfig, error) {
+	c.called = true
+	return c.chConfig, nil
+}
+
+//customRetryHandler is wrapper around retry handler which keeps count of attempts for unit-testing
+type customRetryHandler struct {
+	handler retry.Handler
+	retries int
+}
+
+func (c *customRetryHandler) Required(err error) bool {
+	c.retries++
+	return c.handler.Required(err)
 }
 
 var validRootCA = `-----BEGIN CERTIFICATE-----
