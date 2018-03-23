@@ -169,10 +169,10 @@ type ChaincodeStatus struct {
 	Message string
 }
 
-// NewFromExtractedChaincodeError returns Status when an error occurs in GRPC Transport
+// NewFromExtractedChaincodeError returns Status when a chaincode error occurs
 func NewFromExtractedChaincodeError(code int, message string) *Status {
 	status := &ChaincodeStatus{Code: code, Message: message}
 
-	return &Status{Group: GRPCTransportStatus, Code: ChaincodeError.ToInt32(),
+	return &Status{Group: ClientStatus, Code: ChaincodeError.ToInt32(),
 		Message: message, Details: []interface{}{status}}
 }
