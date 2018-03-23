@@ -218,22 +218,27 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 	}
 
 	if c.opts.MaxTargets == 0 {
-		c.opts.MaxTargets = chSdkCfg.Policies.QueryChannelConfig.MaxTargets
+		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+			c.opts.MaxTargets = chSdkCfg.Policies.QueryChannelConfig.MaxTargets
+		}
 		if c.opts.MaxTargets == 0 {
 			c.opts.MaxTargets = defaultMaxTargets
 		}
 	}
 
 	if c.opts.MinResponses == 0 {
-		c.opts.MinResponses = chSdkCfg.Policies.QueryChannelConfig.MinResponses
+		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+			c.opts.MinResponses = chSdkCfg.Policies.QueryChannelConfig.MinResponses
+		}
 		if c.opts.MinResponses == 0 {
 			c.opts.MinResponses = defaultMinResponses
 		}
 	}
 
 	if c.opts.RetryOpts.RetryableCodes == nil {
-		c.opts.RetryOpts = chSdkCfg.Policies.QueryChannelConfig.RetryOpts
-
+		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+			c.opts.RetryOpts = chSdkCfg.Policies.QueryChannelConfig.RetryOpts
+		}
 		if c.opts.RetryOpts.Attempts == 0 {
 			c.opts.RetryOpts.Attempts = retry.DefaultAttempts
 		}
