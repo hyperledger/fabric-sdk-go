@@ -8,6 +8,7 @@ package invoke
 
 import (
 	reqContext "context"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -162,6 +164,29 @@ type filter struct {
 
 func (f *filter) Accept(p fab.Peer) bool {
 	return p.URL() == f.peer.URL()
+}
+
+func TestResponseValidation(t *testing.T) {
+	p1 := &fab.TransactionProposalResponse{
+		Endorser: "peer 1",
+		Status:   http.StatusOK,
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+			Message: "test", Status: http.StatusOK, Payload: []byte("ResponsePayload")},
+			Payload: []byte("ProposalPayload1"),
+		}}
+	p2 := &fab.TransactionProposalResponse{
+		Endorser: "peer 1",
+		Status:   http.StatusOK,
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+			Message: "test", Status: http.StatusOK, Payload: []byte("ResponsePayload")},
+			Payload: []byte("ProposalPayload2"),
+		}}
+	h := EndorsementValidationHandler{}
+	err := h.validate([]*fab.TransactionProposalResponse{p1, p2})
+	assert.NotNil(t, err, "expected error with different response payloads")
+	s, ok := status.FromError(err)
+	assert.True(t, ok, "expected status error")
+	assert.EqualValues(t, int32(status.EndorsementMismatch), s.Code, "expected endorsement mismatch")
 }
 
 func TestProposalProcessorHandler(t *testing.T) {

@@ -8,7 +8,6 @@ SPDX-License-Identifier: Apache-2.0
 package txn
 
 import (
-	"bytes"
 	reqContext "context"
 	"math/rand"
 
@@ -63,9 +62,6 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 	for _, r := range request.ProposalResponses {
 		if r.ProposalResponse.Response.Status != 200 {
 			return nil, errors.Errorf("proposal response was not successful, error code %d, msg %s", r.ProposalResponse.Response.Status, r.ProposalResponse.Response.Message)
-		}
-		if !bytes.Equal(responsePayload, r.ProposalResponse.Payload) {
-			return nil, errors.Errorf("proposal response payloads are not the same (%v, %v)", responsePayload, r.ProposalResponse.Payload)
 		}
 	}
 

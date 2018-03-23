@@ -106,17 +106,18 @@ func (f *EndorsementValidationHandler) Handle(requestContext *RequestContext, cl
 }
 
 func (f *EndorsementValidationHandler) validate(txProposalResponse []*fab.TransactionProposalResponse) error {
-	var a1 []byte
+	var a1 *pb.ProposalResponse
 	for n, r := range txProposalResponse {
 		if r.ProposalResponse.GetResponse().Status != int32(common.Status_SUCCESS) {
 			return status.NewFromProposalResponse(r.ProposalResponse, r.Endorser)
 		}
 		if n == 0 {
-			a1 = r.ProposalResponse.GetResponse().Payload
+			a1 = r.ProposalResponse
 			continue
 		}
 
-		if !bytes.Equal(a1, r.ProposalResponse.GetResponse().Payload) {
+		if !bytes.Equal(a1.Payload, r.ProposalResponse.Payload) ||
+			!bytes.Equal(a1.GetResponse().Payload, r.ProposalResponse.GetResponse().Payload) {
 			return status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
 				"ProposalResponsePayloads do not match", nil)
 		}
