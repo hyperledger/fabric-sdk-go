@@ -222,6 +222,26 @@ func TestResolveOptsFromConfig(t *testing.T) {
 	assert.False(t, mockConfig.called, "config.ChannelConfig() should not be used by resolve opts function once opts are loaded")
 }
 
+func TestResolveOptsDefaultValues(t *testing.T) {
+	user := mspmocks.NewMockSigningIdentity("test", "test")
+	ctx := mocks.NewMockContext(user)
+
+	mockConfig := &customMockConfig{MockConfig: &mocks.MockConfig{}, chConfig: nil}
+	ctx.SetConfig(mockConfig)
+
+	channelConfig, err := New(channelID, WithPeers([]fab.Peer{}))
+	if err != nil {
+		t.Fatal("Failed to create channel config")
+	}
+	err = channelConfig.resolveOptsFromConfig(ctx)
+	if err != nil {
+		t.Fatal("Failed to resolve opts from config")
+	}
+	assert.True(t, channelConfig.opts.MaxTargets == 2, "supposed to be loaded once opts resolved from config")
+	assert.True(t, channelConfig.opts.MinResponses == 1, "supposed to be loaded once opts resolved from config")
+	assert.True(t, channelConfig.opts.RetryOpts.RetryableCodes != nil, "supposed to be loaded once opts resolved from config")
+}
+
 func setupTestContext() context.Client {
 	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
