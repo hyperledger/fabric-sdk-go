@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-name: "global-trade-network"
 
 description: "Test Invalid Channel Orderer Error"
 version: 1.0.0

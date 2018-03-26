@@ -550,6 +550,15 @@ func (c *Config) EventServiceType() core.EventServiceType {
 	}
 }
 
+// Lookup gets the Value from config file by Key
+func (c *Config) Lookup(key string) (interface{}, bool) {
+	value := c.configViper.Get(key)
+	if value != nil {
+		return value, true
+	}
+	return nil, false
+}
+
 func (c *Config) getTimeout(tType core.TimeoutType) time.Duration {
 	var timeout time.Duration
 	switch tType {
@@ -621,7 +630,6 @@ func (c *Config) MSPID(org string) (string, error) {
 func (c *Config) cacheNetworkConfiguration() error {
 	networkConfig := core.NetworkConfig{}
 	networkConfig.Name = c.configViper.GetString("name")
-	networkConfig.Xtype = c.configViper.GetString("x-type")
 	networkConfig.Description = c.configViper.GetString("description")
 	networkConfig.Version = c.configViper.GetString("version")
 

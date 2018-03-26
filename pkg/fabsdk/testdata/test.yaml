@@ -4,10 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-name: "global-trade-network"
-
-
-description: "The network to be in if you want to stay in the global trade business"
 version: 1.0.0
 
 client:
@@ -154,9 +150,6 @@ peers:
 certificateAuthorities:
   ca.org2.example.com:
     url: https://ca.org2.example.com:7054
-
-    httpOptions:
-      verify: true
 
     tlsCACerts:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem

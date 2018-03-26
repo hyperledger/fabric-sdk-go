@@ -231,3 +231,8 @@ func (c *MockConfig) TLSClientCerts() ([]tls.Certificate, error) {
 func (c *MockConfig) EventServiceType() core.EventServiceType {
 	return core.DeliverEventServiceType
 }
+
+// Lookup gets the Value from config file by Key
+func (c *MockConfig) Lookup(key string) (interface{}, bool) {
+	return nil, false
+}

@@ -9,6 +9,11 @@
 # knowledge that must be acquired from out-of-band sources. This file provides such a source.
 #
 
+name: "global-trade-network"
+
+description: "The network that has all the configuration parameters"
+
+x-type: "h1fv1"
 
 #
 # Schema version of the content. Used by the SDK to apply the corresponding parsing rules.
@@ -39,9 +44,9 @@ client:
         # This interval will define how long a peer is greylisted
         greylistExpiry: 5s
   eventService:
-    # Event service type (deliver|eventhub) - default: deliver
+    # Event service type (deliver|eventhub) - default: eventhub
     # NOTE: This is temporary until the SDK starts making use of channel capabilities
-    type: deliver
+    type: eventhub
     timeout:
       connection: 3s
       registrationResponse: 10s
@@ -70,6 +75,8 @@ client:
     # [Optional]. Used by user store. Not needed if all credentials are embedded in configuration
     # and enrollments are performed elswhere.
     path: "/tmp/state-store"
+    #[Optional]. Specific to Composer environment. Not used by SDK Go.
+    wallet: dummy-wallet
 
     # [Optional]. Specific to the CryptoSuite implementation used by GO SDK. Software-based implementations
     # requiring a key store. PKCS#11 based implementations does not.
@@ -136,6 +143,14 @@ channels:
         # Default: true
         eventSource: true
 
+    # [Optional]. what chaincodes are expected to exist on this channel? The application can use
+    # this information to validate that the target peers are in the expected state by comparing
+    # this list with the query results of getInstalledChaincodes() and getInstantiatedChaincodes()
+    chaincodes:
+      # the format follows the "canonical name" of chaincodes by fabric code
+      - example02:v1
+      - marbles:1.0
+
     # [Optional]. The application can use these options to perform channel operations like retrieving channel
     # config etc.
     policies:
@@ -175,26 +190,6 @@ channels:
         ledgerQuery: true
         eventSource: true
 
-    # [Optional]. The application can use these options to perform channel operations like retrieving channel
-    # config etc.
-    policies:
-      #[Optional] options for retrieving channel configuration blocks
-      queryChannelConfig:
-        #[Optional] min number of success responses (from targets/peers)
-        minResponses: 1
-        #[Optional] channel config will be retrieved for these number of random targets
-        maxTargets: 1
-        #[Optional] retry options for query config block
-        retryOpts:
-          #[Optional] number of retry attempts
-          attempts: 5
-          #[Optional] the back off interval for the first retry attempt
-          initialBackoff: 500ms
-          #[Optional] the maximum back off interval for any retry attempt
-          maxBackoff: 5s
-          #[Optional] he factor by which the initial back off period is exponentially incremented
-          backoffFactor: 2.0
-
 #
 # list of participating organizations in this network
 #
@@ -215,6 +210,18 @@ organizations:
     # Fabric-CA servers.
     certificateAuthorities:
       - ca.org1.example.com
+
+    # [Optional]. If the application is going to make requests that are reserved to organization
+    # administrators, including creating/updating channels, installing/instantiating chaincodes, it
+    # must have access to the admin identity represented by the private key and signing certificate.
+    # Both properties can be the PEM string or local path to the PEM file. Note that this is mainly for
+    # convenience in development mode, production systems should not expose sensitive information
+    # this way. The SDK should allow applications to set the org admin identity via APIs, and only use
+    # this route as an alternative when it exists.
+    adminPrivateKey:
+      pem: "-----BEGIN PRIVATE KEY----- <etc>"
+    signedCert:
+      path: "/tmp/somepath/signed-cert.pem"
 
   # the profile will contain public information about organizations other than the one it belongs to.
   # These are necessary information to make transaction lifecycles work, including MSP IDs and
@@ -253,16 +260,17 @@ orderers:
 
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
+    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: orderer.example.com
-      # These parameters should be set in coordination with the keepalive policy on the server,
-      # as incompatible settings can result in closing of connection.
-      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+#     These parameters should be set in coordination with the keepalive policy on the server,
+#     as incompatible settings can result in closing of connection.
+#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
       keep-alive-time: 0s
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
     tlsCACerts:
@@ -277,19 +285,21 @@ peers:
   local.peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
     url: peer0.org1.example.com:7051
-    # eventUrl is only needed when using eventhub (default is delivery service)
+
+    # this URL is used to connect the EventHub and registering event listeners
     eventUrl: peer0.org1.example.com:7053
 
+    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
-      # These parameters should be set in coordination with the keepalive policy on the server,
-      # as incompatible settings can result in closing of connection.
-      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+#     These parameters should be set in coordination with the keepalive policy on the server,
+#     as incompatible settings can result in closing of connection.
+#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
       keep-alive-time: 0s
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
     tlsCACerts:
@@ -298,18 +308,18 @@ peers:
 
   local.peer0.org2.example.com:
     url: peer0.org2.example.com:8051
-    # eventUrl is only needed when using eventhub (default is delivery service)
     eventUrl: peer0.org2.example.com:8053
+    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
-      # These parameters should be set in coordination with the keepalive policy on the server,
-      # as incompatible settings can result in closing of connection.
-      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+#     These parameters should be set in coordination with the keepalive policy on the server,
+#     as incompatible settings can result in closing of connection.      
+#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
       keep-alive-time: 0s
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
     tlsCACerts:
@@ -323,6 +333,10 @@ peers:
 certificateAuthorities:
   local.ca.org1.example.com:
     url: https://ca.org1.example.com:7054
+    # the properties specified under this object are passed to the 'http' client verbatim when
+    # making the request to the Fabric-CA server
+    httpOptions:
+      verify: true
     tlsCACerts:
       # Comma-Separated list of paths
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
@@ -342,6 +356,10 @@ certificateAuthorities:
     caName: ca.org1.example.com
   local.ca.org2.example.com:
     url: https://ca.org2.example.com:8054
+    # the properties specified under this object are passed to the 'http' client verbatim when
+    # making the request to the Fabric-CA server
+    httpOptions:
+      verify: true
     tlsCACerts:
       # Comma-Separated list of paths
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem

@@ -8,12 +8,7 @@
 # blockchain network that are necessary for the applications to interact with it. These are all
 # knowledge that must be acquired from out-of-band sources. This file provides such a source.
 #
-name: "global-trade-network"
 
-#
-# Describe what the target network is/does.
-#
-description: "The network to be in if you want to stay in the global trade business"
 
 #
 # Schema version of the content. Used by the SDK to apply the corresponding parsing rules.
@@ -82,9 +77,6 @@ client:
       # Specific to the underlying KeyValueStore that backs the crypto key store.
       path: /tmp/msp
 
-    # [Optional]. Specific to Composer environment. Not used by SDK Go.
-    wallet: wallet-name
-
    # BCCSP config for the client. Used by GO SDK.
   BCCSP:
     security:
@@ -138,14 +130,6 @@ channels:
         # Default: true
         eventSource: true
 
-    # [Optional]. what chaincodes are expected to exist on this channel? The application can use
-    # this information to validate that the target peers are in the expected state by comparing
-    # this list with the query results of getInstalledChaincodes() and getInstantiatedChaincodes()
-    chaincodes:
-      # the format follows the "canonical name" of chaincodes by fabric code
-      - example02:v1
-      - marbles:1.0
-
     # [Optional]. The application can use these options to perform channel operations like retrieving channel
     # config etc.
     policies:
@@ -186,18 +170,6 @@ organizations:
     # Fabric-CA servers.
     certificateAuthorities:
       - ca.org1.example.com
-
-    # [Optional]. If the application is going to make requests that are reserved to organization
-    # administrators, including creating/updating channels, installing/instantiating chaincodes, it
-    # must have access to the admin identity represented by the private key and signing certificate.
-    # Both properties can be the PEM string or local path to the PEM file. Note that this is mainly for
-    # convenience in development mode, production systems should not expose sensitive information
-    # this way. The SDK should allow applications to set the org admin identity via APIs, and only use
-    # this route as an alternative when it exists.
-    adminPrivateKey:
-      pem: "-----BEGIN PRIVATE KEY----- <etc>"
-    signedCert:
-      path: "/tmp/somepath/signed-cert.pem"
 
 
 #

@@ -128,7 +128,7 @@ func (c *MockConfig) PeerConfig(org string, name string) (*config.PeerConfig, er
 // PeerConfigByURL retrieves PeerConfig by URL
 func (c *MockConfig) PeerConfigByURL(url string) (*config.PeerConfig, error) {
 	if url == "invalid" {
-		return nil, errors.New("no orderer")
+		return nil, errors.New("no peer")
 	}
 	if c.customPeerCfg != nil {
 		return c.customPeerCfg, nil
@@ -320,4 +320,16 @@ func (c *MockConfig) TLSClientCerts() ([]tls.Certificate, error) {
 // EventServiceType returns the type of event service client to use
 func (c *MockConfig) EventServiceType() config.EventServiceType {
 	return config.DeliverEventServiceType
+}
+
+// Lookup gets the Value from config file by Key
+func (c *MockConfig) Lookup(key string) (interface{}, bool) {
+	if key == "invalid" {
+		return nil, false
+	}
+	value, ok := c.Lookup(key)
+	if !ok {
+		return nil, false
+	}
+	return value, true
 }

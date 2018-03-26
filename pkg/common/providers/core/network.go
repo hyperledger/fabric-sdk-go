@@ -14,7 +14,6 @@ import (
 // NetworkConfig provides a static definition of a Hyperledger Fabric network
 type NetworkConfig struct {
 	Name                   string
-	Xtype                  string
 	Description            string
 	Version                string
 	Client                 ClientConfig
@@ -31,7 +30,6 @@ type ClientConfig struct {
 	Organization    string
 	Logging         LoggingType
 	CryptoConfig    CCType
-	TLS             TLSType
 	TLSCerts        MutualTLSConfig
 	CredentialStore CredentialStoreType
 }
@@ -46,18 +44,12 @@ type CCType struct {
 	Path string
 }
 
-// TLSType defines whether or not TLS is enabled
-type TLSType struct {
-	Enabled bool
-}
-
 // CredentialStoreType defines pluggable KV store properties
 type CredentialStoreType struct {
 	Path        string
 	CryptoStore struct {
 		Path string
 	}
-	Wallet string
 }
 
 // ChannelConfig provides the definition of channels for the network
@@ -67,8 +59,6 @@ type ChannelConfig struct {
 	// Peers a list of peer-channels that are part of this organization
 	// to get the real Peer config object, use the Name field and fetch NetworkConfig.Peers[Name]
 	Peers map[string]PeerChannelConfig
-	// Chaincodes list of services
-	Chaincodes []string
 	//Policies list of policies for channel
 	Policies ChannelPolicies
 }
@@ -113,8 +103,6 @@ type OrganizationConfig struct {
 	Users                  map[string]TLSKeyPair
 	Peers                  []string
 	CertificateAuthorities []string
-	AdminPrivateKey        endpoint.TLSConfig
-	SignedCert             endpoint.TLSConfig
 }
 
 // OrdererConfig defines an orderer configuration
@@ -134,11 +122,10 @@ type PeerConfig struct {
 
 // CAConfig defines a CA configuration
 type CAConfig struct {
-	URL         string
-	HTTPOptions map[string]interface{}
-	TLSCACerts  MutualTLSConfig
-	Registrar   EnrollCredentials
-	CAName      string
+	URL        string
+	TLSCACerts MutualTLSConfig
+	Registrar  EnrollCredentials
+	CAName     string
 }
 
 // EnrollCredentials holds credentials used for enrollment

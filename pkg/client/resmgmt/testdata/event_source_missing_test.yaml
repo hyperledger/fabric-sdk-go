@@ -8,10 +8,6 @@
 # blockchain network that are necessary for the applications to interact with it. These are all
 # knowledge that must be acquired from out-of-band sources. This file provides such a source.
 #
-name: "global-trade-network"
-
-
-description: "The network to be in if you want to stay in the global trade business"
 version: 1.0.0
 
 client:
