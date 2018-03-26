@@ -16,7 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
@@ -279,5 +279,5 @@ type DeliverBlocksProviderFactory struct {
 
 // CreateInfraProvider returns an InfraProvider that uses block events
 func (f *DeliverBlocksProviderFactory) CreateInfraProvider(config core.Config) (fab.InfraProvider, error) {
-	return fabpvdr.New(config, deliverclient.WithBlockEvents()), nil
+	return fabpvdr.New(config, client.WithBlockEvents()), nil
 }

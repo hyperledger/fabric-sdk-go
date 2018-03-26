@@ -49,7 +49,7 @@ func TestOptionsInNewClient(t *testing.T) {
 	client, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
-		WithBlockEvents(),
+		client.WithBlockEvents(),
 	)
 	if err != nil {
 		t.Fatalf("error creating new event hub client: %s", err)
@@ -62,12 +62,11 @@ func TestClientConnect(t *testing.T) {
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
-		withConnectionProviderAndInterests(
+		withConnectionProvider(
 			clientmocks.NewProviderFactory().Provider(
 				ehclientmocks.NewConnection(
 					clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
 				)),
-			filteredBlockInterests, false,
 		),
 	)
 	if err != nil {
@@ -95,7 +94,7 @@ func TestTimeoutClientConnect(t *testing.T) {
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
-		withConnectionProviderAndInterests(
+		withConnectionProvider(
 			clientmocks.NewProviderFactory().Provider(
 				ehclientmocks.NewConnection(
 					clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
@@ -103,7 +102,6 @@ func TestTimeoutClientConnect(t *testing.T) {
 						clientmocks.NewResult(ehmocks.RegInterests, clientmocks.NoOpResult),
 					),
 				)),
-			filteredBlockInterests, false,
 		),
 	)
 	if err != nil {
@@ -209,7 +207,8 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
-		withConnectionProviderAndInterests(
+		client.WithBlockEvents(),
+		withConnectionProvider(
 			clientmocks.NewProviderFactory().FlakeyProvider(
 				connAttemptResult,
 				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
@@ -217,7 +216,6 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 					return ehclientmocks.NewConnection(opts...)
 				}),
 			),
-			blockInterests, true,
 		),
 		esdispatcher.WithEventConsumerTimeout(time.Second),
 		client.WithMaxConnectAttempts(maxConnectAttempts),
@@ -249,7 +247,8 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
-		withConnectionProviderAndInterests(
+		client.WithBlockEvents(),
+		withConnectionProvider(
 			cp.FlakeyProvider(
 				connAttemptResult,
 				clientmocks.WithLedger(ledger),
@@ -257,7 +256,6 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 					return ehclientmocks.NewConnection(opts...)
 				}),
 			),
-			blockInterests, true,
 		),
 		esdispatcher.WithEventConsumerTimeout(3*time.Second),
 		client.WithReconnect(reconnect),
@@ -308,7 +306,8 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
-		withConnectionProviderAndInterests(
+		client.WithBlockEvents(),
+		withConnectionProvider(
 			cp.FlakeyProvider(
 				connectResults,
 				clientmocks.WithLedger(ledger),
@@ -316,7 +315,6 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 					return ehclientmocks.NewConnection(opts...)
 				}),
 			),
-			blockInterests, true,
 		),
 		esdispatcher.WithEventConsumerTimeout(3*time.Second),
 		client.WithReconnectInitialDelay(0),

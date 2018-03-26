@@ -61,7 +61,6 @@ func New(context fabcontext.Client, chConfig fab.ChannelCfg, opts ...options.Opt
 
 	client := &Client{
 		Client: *client.New(
-			params.permitBlockEvents,
 			dispatcher.New(deliverCtx, chConfig, params.connProvider, opts...),
 			opts...,
 		),

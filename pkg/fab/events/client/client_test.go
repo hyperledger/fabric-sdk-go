@@ -1226,7 +1226,8 @@ func listenEvents(blockch <-chan *fab.BlockEvent, ccch <-chan *fab.CCEvent, wait
 type ClientProvider func(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts []options.Opt) (*Client, error)
 
 var clientProvider = func(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts []options.Opt) (*Client, error) {
-	return newClient(context, chConfig, connectionProvider, opts, true,
+	opts = append(opts, WithBlockEvents())
+	return newClient(context, chConfig, connectionProvider, opts,
 		func() error {
 			fmt.Printf("AfterConnect called")
 			return nil
@@ -1238,7 +1239,8 @@ var clientProvider = func(context context.Client, chConfig fab.ChannelCfg, conne
 }
 
 var failAfterConnectClientProvider = func(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts []options.Opt) (*Client, error) {
-	return newClient(context, chConfig, connectionProvider, opts, true,
+	opts = append(opts, WithBlockEvents())
+	return newClient(context, chConfig, connectionProvider, opts,
 		func() error {
 			return errors.New("simulated failure after connect")
 		},
@@ -1246,7 +1248,7 @@ var failAfterConnectClientProvider = func(context context.Client, chConfig fab.C
 }
 
 var filteredClientProvider = func(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts []options.Opt) (*Client, error) {
-	return newClient(context, chConfig, connectionProvider, opts, false,
+	return newClient(context, chConfig, connectionProvider, opts,
 		func() error {
 			fmt.Printf("AfterConnect called")
 			return nil
@@ -1257,9 +1259,8 @@ var filteredClientProvider = func(context context.Client, chConfig fab.ChannelCf
 		})
 }
 
-func newClient(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts []options.Opt, permitBlockEvents bool, afterConnect handler, beforeReconnect handler) (*Client, error) {
+func newClient(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts []options.Opt, afterConnect handler, beforeReconnect handler) (*Client, error) {
 	client := New(
-		permitBlockEvents,
 		dispatcher.New(
 			context, chConfig,
 			connectionProvider,

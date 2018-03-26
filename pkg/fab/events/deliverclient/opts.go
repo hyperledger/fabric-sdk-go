@@ -15,11 +15,10 @@ import (
 )
 
 type params struct {
-	connProvider      api.ConnectionProvider
-	permitBlockEvents bool
-	seekType          seek.Type
-	fromBlock         uint64
-	respTimeout       time.Duration
+	connProvider api.ConnectionProvider
+	seekType     seek.Type
+	fromBlock    uint64
+	respTimeout  time.Duration
 }
 
 func defaultParams() *params {
@@ -27,16 +26,6 @@ func defaultParams() *params {
 		connProvider: deliverFilteredProvider,
 		seekType:     seek.Newest,
 		respTimeout:  5 * time.Second,
-	}
-}
-
-// WithBlockEvents indicates that block events are to be received.
-// Note that the caller must have sufficient privileges for this option.
-func WithBlockEvents() options.Opt {
-	return func(p options.Params) {
-		if setter, ok := p.(connectionProviderSetter); ok {
-			setter.SetConnectionProvider(deliverProvider, true)
-		}
 	}
 }
 
@@ -60,16 +49,17 @@ func WithBlockNum(value uint64) options.Opt {
 }
 
 // withConnectionProvider is used only for testing
-func withConnectionProvider(connProvider api.ConnectionProvider, permitBlockEvents bool) options.Opt {
+func withConnectionProvider(connProvider api.ConnectionProvider) options.Opt {
 	return func(p options.Params) {
 		if setter, ok := p.(connectionProviderSetter); ok {
-			setter.SetConnectionProvider(connProvider, permitBlockEvents)
+			setter.SetConnectionProvider(connProvider)
 		}
 	}
 }
 
+// connectionProviderSetter is only used in unit tests
 type connectionProviderSetter interface {
-	SetConnectionProvider(value api.ConnectionProvider, permitBlockEvents bool)
+	SetConnectionProvider(value api.ConnectionProvider)
 }
 
 type seekTypeSetter interface {
@@ -80,10 +70,15 @@ type fromBlockSetter interface {
 	SetFromBlock(value uint64)
 }
 
-func (p *params) SetConnectionProvider(connProvider api.ConnectionProvider, permitBlockEvents bool) {
-	logger.Debugf("ConnectionProvider: %#v, PermitBlockEvents: %t", connProvider, permitBlockEvents)
+func (p *params) PermitBlockEvents() {
+	logger.Debugf("PermitBlockEvents")
+	p.connProvider = deliverProvider
+}
+
+// SetConnectionProvider is only used in unit tests
+func (p *params) SetConnectionProvider(connProvider api.ConnectionProvider) {
+	logger.Debugf("ConnectionProvider: %#v", connProvider)
 	p.connProvider = connProvider
-	p.permitBlockEvents = permitBlockEvents
 }
 
 func (p *params) SetFromBlock(value uint64) {

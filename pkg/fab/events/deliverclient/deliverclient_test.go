@@ -46,7 +46,7 @@ func TestOptionsInNewClient(t *testing.T) {
 	client, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
-		WithBlockEvents(),
+		client.WithBlockEvents(),
 	)
 	if err != nil {
 		t.Fatalf("error creating deliver client: %s", err)
@@ -59,13 +59,13 @@ func TestClientConnect(t *testing.T) {
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		client.WithBlockEvents(),
 		withConnectionProvider(
 			clientmocks.NewProviderFactory().Provider(
 				delivermocks.NewConnection(
 					clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)),
 				),
 			),
-			true,
 		),
 		WithSeekType(seek.FromBlock),
 		WithBlockNum(0),
@@ -187,6 +187,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		client.WithBlockEvents(),
 		withConnectionProvider(
 			cp.FlakeyProvider(
 				connAttemptResult,
@@ -195,7 +196,6 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 					return delivermocks.NewConnection(opts...)
 				}),
 			),
-			true,
 		),
 		esdispatcher.WithEventConsumerTimeout(time.Second),
 		client.WithMaxConnectAttempts(maxConnectAttempts),
@@ -227,6 +227,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		client.WithBlockEvents(),
 		withConnectionProvider(
 			cp.FlakeyProvider(
 				connAttemptResult,
@@ -235,7 +236,6 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 					return delivermocks.NewConnection(opts...)
 				}),
 			),
-			true,
 		),
 		esdispatcher.WithEventConsumerTimeout(3*time.Second),
 		client.WithReconnect(reconnect),
@@ -297,6 +297,7 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		client.WithBlockEvents(),
 		withConnectionProvider(
 			cp.FlakeyProvider(
 				connectResults,
@@ -305,7 +306,6 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 					return delivermocks.NewConnection(opts...)
 				}),
 			),
-			true,
 		),
 		esdispatcher.WithEventConsumerTimeout(3*time.Second),
 		client.WithReconnect(true),

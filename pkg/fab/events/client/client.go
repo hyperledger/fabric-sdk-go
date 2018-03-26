@@ -41,27 +41,25 @@ type Client struct {
 	eventservice.Service
 	params
 	sync.RWMutex
-	connEvent         chan *dispatcher.ConnectionEvent
-	connectionState   int32
-	stopped           int32
-	registerOnce      sync.Once
-	permitBlockEvents bool
-	afterConnect      handler
-	beforeReconnect   handler
+	connEvent       chan *dispatcher.ConnectionEvent
+	connectionState int32
+	stopped         int32
+	registerOnce    sync.Once
+	afterConnect    handler
+	beforeReconnect handler
 }
 
 type handler func() error
 
 // New returns a new event client
-func New(permitBlockEvents bool, dispatcher eventservice.Dispatcher, opts ...options.Opt) *Client {
+func New(dispatcher eventservice.Dispatcher, opts ...options.Opt) *Client {
 	params := defaultParams()
 	options.Apply(params, opts)
 
 	return &Client{
-		Service:           *eventservice.New(dispatcher, opts...),
-		params:            *params,
-		connectionState:   int32(Disconnected),
-		permitBlockEvents: permitBlockEvents,
+		Service:         *eventservice.New(dispatcher, opts...),
+		params:          *params,
+		connectionState: int32(Disconnected),
 	}
 }
 

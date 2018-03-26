@@ -22,6 +22,7 @@ type params struct {
 	timeBetweenConnAttempts time.Duration
 	connEventCh             chan *dispatcher.ConnectionEvent
 	respTimeout             time.Duration
+	permitBlockEvents       bool
 }
 
 func defaultParams() *params {
@@ -33,6 +34,16 @@ func defaultParams() *params {
 		reconnInitialDelay:      0,
 		timeBetweenConnAttempts: 5 * time.Second,
 		respTimeout:             5 * time.Second,
+	}
+}
+
+// WithBlockEvents indicates that block events are to be received.
+// Note that the caller must have sufficient privileges for this option.
+func WithBlockEvents() options.Opt {
+	return func(p options.Params) {
+		if setter, ok := p.(permitBlockEventsSetter); ok {
+			setter.PermitBlockEvents()
+		}
 	}
 }
 
@@ -143,6 +154,11 @@ func (p *params) SetResponseTimeout(value time.Duration) {
 	p.respTimeout = value
 }
 
+func (p *params) PermitBlockEvents() {
+	logger.Debugf("PermitBlockEvents")
+	p.permitBlockEvents = true
+}
+
 type reconnectSetter interface {
 	SetReconnect(value bool)
 }
@@ -169,4 +185,8 @@ type timeBetweenConnectAttemptsSetter interface {
 
 type responseTimeoutSetter interface {
 	SetResponseTimeout(value time.Duration)
+}
+
+type permitBlockEventsSetter interface {
+	PermitBlockEvents()
 }

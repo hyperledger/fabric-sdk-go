@@ -42,6 +42,11 @@ type Client struct {
 // New returns a new event hub client
 func New(context context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (*Client, error) {
 	params := defaultParams()
+
+	// FIXME: Temporarily set the default to block events since Fabric 1.0 does
+	// not support filtered block events
+	opts = append(opts, client.WithBlockEvents())
+
 	options.Apply(params, opts)
 
 	// Use a context that returns a custom Discovery Provider which
@@ -51,7 +56,6 @@ func New(context context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (
 
 	client := &Client{
 		Client: *client.New(
-			params.permitBlockEvents,
 			dispatcher.New(ehCtx, chConfig, params.connProvider, opts...),
 			opts...,
 		),

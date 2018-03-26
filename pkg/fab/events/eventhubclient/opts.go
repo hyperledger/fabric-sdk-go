@@ -18,41 +18,30 @@ var blockInterests = []*pb.Interest{&pb.Interest{EventType: pb.EventType_BLOCK}}
 var filteredBlockInterests = []*pb.Interest{&pb.Interest{EventType: pb.EventType_FILTEREDBLOCK}}
 
 type params struct {
-	connProvider      api.ConnectionProvider
-	interests         []*pb.Interest
-	permitBlockEvents bool
-	respTimeout       time.Duration
+	connProvider api.ConnectionProvider
+	interests    []*pb.Interest
+	respTimeout  time.Duration
 }
 
 func defaultParams() *params {
 	return &params{
-		connProvider:      ehConnProvider,
-		interests:         blockInterests,
-		respTimeout:       5 * time.Second,
-		permitBlockEvents: true,
+		connProvider: ehConnProvider,
+		interests:    filteredBlockInterests,
+		respTimeout:  5 * time.Second,
 	}
 }
 
-// WithBlockEvents indicates that block events are to be received.
-func WithBlockEvents() options.Opt {
+// withConnectionProvider is used only for testing
+func withConnectionProvider(connProvider api.ConnectionProvider) options.Opt {
 	return func(p options.Params) {
-		if setter, ok := p.(connectionProviderAndInterestsSetter); ok {
-			setter.SetConnectionProviderAndInterests(ehConnProvider, blockInterests, true)
+		if setter, ok := p.(connectionProviderSetter); ok {
+			setter.SetConnectionProvider(connProvider)
 		}
 	}
 }
 
-// withConnectionProviderAndInterests is used only for testing
-func withConnectionProviderAndInterests(connProvider api.ConnectionProvider, interests []*pb.Interest, permitBlockEvents bool) options.Opt {
-	return func(p options.Params) {
-		if setter, ok := p.(connectionProviderAndInterestsSetter); ok {
-			setter.SetConnectionProviderAndInterests(connProvider, interests, permitBlockEvents)
-		}
-	}
-}
-
-type connectionProviderAndInterestsSetter interface {
-	SetConnectionProviderAndInterests(connProvider api.ConnectionProvider, interests []*pb.Interest, permitBlockEvents bool)
+type connectionProviderSetter interface {
+	SetConnectionProvider(connProvider api.ConnectionProvider)
 }
 
 func (p *params) SetResponseTimeout(value time.Duration) {
@@ -60,9 +49,13 @@ func (p *params) SetResponseTimeout(value time.Duration) {
 	p.respTimeout = value
 }
 
-func (p *params) SetConnectionProviderAndInterests(connProvider api.ConnectionProvider, interests []*pb.Interest, permitBlockEvents bool) {
-	logger.Debugf("ConnProvider: %#v, Interests: %#v, PermitBlockEvents: %t", connProvider, interests, permitBlockEvents)
+// SetConnectionProvider is used only for testing
+func (p *params) SetConnectionProvider(connProvider api.ConnectionProvider) {
+	logger.Debugf("ConnProvider: %#v", connProvider)
 	p.connProvider = connProvider
-	p.interests = interests
-	p.permitBlockEvents = permitBlockEvents
+}
+
+func (p *params) PermitBlockEvents() {
+	logger.Debugf("PermitBlockEvents")
+	p.interests = blockInterests
 }
