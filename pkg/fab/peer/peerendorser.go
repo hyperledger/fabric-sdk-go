@@ -153,7 +153,12 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 		if ok {
 			code, message, extractErr := extractChaincodeError(rpcStatus)
 			if extractErr != nil {
-				err = status.NewFromGRPCStatus(rpcStatus)
+				code, message, extractErr := extractPrematureExecutionError(rpcStatus)
+				if extractErr != nil {
+					err = status.NewFromGRPCStatus(rpcStatus)
+				} else {
+					err = status.New(status.EndorserClientStatus, code, message, nil)
+				}
 			} else {
 				err = status.NewFromExtractedChaincodeError(code, message)
 			}
@@ -196,6 +201,17 @@ func extractChaincodeError(status *grpcstatus.Status) (int, string, error) {
 		return code, message, nil
 	}
 	return code, message, errors.Errorf("Unable to parse GRPC Status Message Code: %v Message: %v", code, message)
+}
+
+func extractPrematureExecutionError(grpcstat *grpcstatus.Status) (int32, string, error) {
+	if grpcstat.Code().String() != "Unknown" || grpcstat.Message() == "" {
+		return 0, "", errors.New("not a premature execution error")
+	}
+	index := strings.Index(grpcstat.Message(), "premature execution")
+	if index == -1 {
+		return 0, "", errors.New("not a premature execution error")
+	}
+	return int32(status.PrematureChaincodeExecution), grpcstat.Message()[index:], nil
 }
 
 // getChaincodeResponseStatus gets the actual response status from response.Payload.extension.Response.status, as fabric always returns actual 200

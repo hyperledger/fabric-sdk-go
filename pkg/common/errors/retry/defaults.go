@@ -40,6 +40,7 @@ var DefaultOpts = Opts{
 var DefaultRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: []status.Code{
 		status.EndorsementMismatch,
+		status.PrematureChaincodeExecution,
 	},
 	status.EndorserServerStatus: []status.Code{
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
@@ -67,6 +68,7 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: []status.Code{
 		status.ConnectionFailed, status.EndorsementMismatch,
+		status.PrematureChaincodeExecution,
 	},
 	status.EndorserServerStatus: []status.Code{
 		status.Code(common.Status_SERVICE_UNAVAILABLE),

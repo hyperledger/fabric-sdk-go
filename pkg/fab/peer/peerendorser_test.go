@@ -297,3 +297,19 @@ func TestExtractChainCodeError(t *testing.T) {
 		t.Fatalf("Expected message not found")
 	}
 }
+
+func TestExtractPrematureExecError(t *testing.T) {
+	err := grpcstatus.New(grpcCodes.Unknown, "some error")
+	_, _, e := extractPrematureExecutionError(err)
+	assert.EqualError(t, e, "not a premature execution error")
+
+	err = grpcstatus.New(grpcCodes.Unknown, "transaction returned with failure: premature execution - chaincode (somecc:v1) is being launched")
+	code, message, _ := extractPrematureExecutionError(err)
+	assert.EqualValues(t, int32(status.PrematureChaincodeExecution), code, "Expected premature execution error")
+	assert.EqualValues(t, "premature execution - chaincode (somecc:v1) is being launched", message, "Invalid message")
+
+	err = grpcstatus.New(grpcCodes.Unknown, "transaction returned with failure: premature execution - chaincode (somecc:v1) launched and waiting for registration")
+	code, message, _ = extractPrematureExecutionError(err)
+	assert.EqualValues(t, int32(status.PrematureChaincodeExecution), code, "Expected premature execution error")
+	assert.EqualValues(t, "premature execution - chaincode (somecc:v1) launched and waiting for registration", message, "Invalid message")
+}
