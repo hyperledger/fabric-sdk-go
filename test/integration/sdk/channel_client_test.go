@@ -282,7 +282,7 @@ func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T) {
 
 func testChaincodeEventListener(ccID string, chClient *channel.Client, listener *channel.Client, t *testing.T) {
 
-	eventID := "test([a-zA-Z]+)"
+	eventID := integration.GenerateRandomID()
 
 	// Register chaincode event (pass in channel which receives event details when the event is complete)
 	reg, notifier, err := listener.RegisterChaincodeEvent(ccID, eventID)
@@ -291,7 +291,7 @@ func testChaincodeEventListener(ccID string, chClient *channel.Client, listener 
 	}
 	defer chClient.UnregisterChaincodeEvent(reg)
 
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: append(integration.ExampleCCTxArgs(), []byte(eventID))})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}

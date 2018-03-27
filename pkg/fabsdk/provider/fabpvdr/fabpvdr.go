@@ -32,6 +32,7 @@ type cacheKey interface {
 	lazycache.Key
 	Context() fab.ClientContext
 	ChannelConfig() fab.ChannelCfg
+	Opts() []options.Opt
 }
 
 type cache interface {
@@ -49,7 +50,7 @@ type InfraProvider struct {
 }
 
 // New creates a InfraProvider enabling access to core Fabric objects and functionality.
-func New(config core.Config, opts ...options.Opt) *InfraProvider {
+func New(config core.Config) *InfraProvider {
 	idleTime := config.TimeoutOrDefault(core.ConnectionIdle)
 	sweepTime := config.TimeoutOrDefault(core.CacheSweepInterval)
 	eventIdleTime := config.TimeoutOrDefault(core.EventServiceIdle)
@@ -63,7 +64,7 @@ func New(config core.Config, opts ...options.Opt) *InfraProvider {
 			return NewEventClientRef(
 				eventIdleTime,
 				func() (fab.EventClient, error) {
-					return getEventClient(ck.Context(), ck.ChannelConfig(), opts...)
+					return getEventClient(ck.Context(), ck.ChannelConfig(), ck.Opts()...)
 				},
 			), nil
 		},
@@ -106,12 +107,12 @@ func (f *InfraProvider) CommManager() fab.CommManager {
 }
 
 // CreateEventService creates the event service.
-func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, channelID string) (fab.EventService, error) {
+func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, channelID string, opts ...options.Opt) (fab.EventService, error) {
 	chnlCfg, err := f.CreateChannelCfg(ctx, channelID)
 	if err != nil {
 		return nil, err
 	}
-	key, err := NewCacheKey(ctx, chnlCfg)
+	key, err := NewCacheKey(ctx, chnlCfg, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +120,7 @@ func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, channelID stri
 	if err != nil {
 		return nil, err
 	}
+
 	return eventService.(fab.EventService), nil
 }
 

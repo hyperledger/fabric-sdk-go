@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -67,7 +68,7 @@ func (cs *MockChannelService) SetOrderers(orderers []string) {
 }
 
 // EventService returns a mock event service
-func (cs *MockChannelService) EventService() (fab.EventService, error) {
+func (cs *MockChannelService) EventService(opts ...options.Opt) (fab.EventService, error) {
 	return NewMockEventService(), nil
 }
 

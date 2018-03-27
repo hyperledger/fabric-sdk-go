@@ -15,6 +15,9 @@ SPDX-License-Identifier: Apache-2.0
 // pkg/client/channel: Provides channel transaction capabilities.
 // Reference: https://godoc.org/github.com/hyperledger/fabric-sdk-go/pkg/client/channel
 //
+// pkg/client/event: Provides channel event capabilities.
+// Reference: https://godoc.org/github.com/hyperledger/fabric-sdk-go/pkg/client/event
+//
 // pkg/client/ledger: Enables queries to a channel's underlying ledger.
 // Reference: https://godoc.org/github.com/hyperledger/fabric-sdk-go/pkg/client/ledger
 //

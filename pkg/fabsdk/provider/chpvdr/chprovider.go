@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package chpvdr
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
@@ -52,8 +53,8 @@ func (cs *ChannelService) Config() (fab.ChannelConfig, error) {
 }
 
 // EventService returns the EventService.
-func (cs *ChannelService) EventService() (fab.EventService, error) {
-	return cs.infraProvider.CreateEventService(cs.context, cs.channelID)
+func (cs *ChannelService) EventService(opts ...options.Opt) (fab.EventService, error) {
+	return cs.infraProvider.CreateEventService(cs.context, cs.channelID, opts...)
 }
 
 // Membership returns the member identifier for this channel

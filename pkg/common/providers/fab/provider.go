@@ -32,7 +32,7 @@ type InfraProvider interface {
 	CreateChannelCfg(ctx ClientContext, channelID string) (ChannelCfg, error)
 	CreateChannelTransactor(reqCtx reqContext.Context, cfg ChannelCfg) (Transactor, error)
 	CreateChannelMembership(ctx ClientContext, channelID string) (ChannelMembership, error)
-	CreateEventService(ctx ClientContext, channelID string) (EventService, error)
+	CreateEventService(ctx ClientContext, channelID string, opts ...options.Opt) (EventService, error)
 	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (Peer, error)
 	CreateOrdererFromConfig(cfg *core.OrdererConfig) (Orderer, error)
 	CommManager() CommManager
