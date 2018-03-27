@@ -35,6 +35,15 @@ var DefaultOpts = Opts{
 	RetryableCodes: DefaultRetryableCodes,
 }
 
+// DefaultChClientOpts default retry options for the channel client
+var DefaultChClientOpts = Opts{
+	Attempts:       DefaultAttempts,
+	InitialBackoff: DefaultInitialBackoff,
+	MaxBackoff:     DefaultMaxBackoff,
+	BackoffFactor:  DefaultBackoffFactor,
+	RetryableCodes: ChannelClientRetryableCodes,
+}
+
 // DefaultRetryableCodes these are the error codes, grouped by source of error,
 // that are considered to be transient error conditions by default
 var DefaultRetryableCodes = map[status.Group][]status.Code{

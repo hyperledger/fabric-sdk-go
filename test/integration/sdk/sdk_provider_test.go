@@ -12,6 +12,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
@@ -67,14 +68,16 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	response, err := chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
 	value := response.Payload
 
 	// Move funds
-	response, err = chClient.Execute(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err = chClient.Execute(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}

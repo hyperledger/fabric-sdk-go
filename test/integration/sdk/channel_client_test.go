@@ -14,6 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -120,7 +121,8 @@ func TestChannelClient(t *testing.T) {
 
 func testQuery(expected string, ccID string, chClient *channel.Client, t *testing.T) {
 
-	response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
 		t.Fatalf("Failed to invoke example cc: %s", err)
 	}
@@ -131,7 +133,8 @@ func testQuery(expected string, ccID string, chClient *channel.Client, t *testin
 }
 
 func testQueryWithOpts(expected string, ccID string, chClient *channel.Client, t *testing.T) {
-	response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
 		t.Fatalf("Query returned error: %s", err)
 	}
@@ -141,7 +144,8 @@ func testQueryWithOpts(expected string, ccID string, chClient *channel.Client, t
 }
 
 func testTransaction(ccID string, chClient *channel.Client, t *testing.T) {
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}

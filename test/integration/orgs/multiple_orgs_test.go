@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -197,7 +198,8 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Call with a dummy function and expect a fail with multiple errors
-	response, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCQueryArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err == nil {
 		t.Fatal("Should have failed with dummy function")
 	}
@@ -217,7 +219,8 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Org1 user queries initial value on both peers
-	response, err = chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err = chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
@@ -265,7 +268,8 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Org2 user moves funds on org2 peer
-	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1))
+	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1),
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -336,13 +340,15 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	assert.NotEmpty(t, upgradeResp, "transaction response should be populated")
 
 	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
-	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1))
+	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1),
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err == nil {
 		t.Fatalf("Should have failed to move funds due to cc policy")
 	}
 
 	// Org2 user moves funds (cc policy ok since we have provided peers for both Orgs)
-	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer0, orgTestPeer1))
+	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer0, orgTestPeer1),
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -379,7 +385,8 @@ func testWithOrg2(t *testing.T, expectedValue int) int {
 	}
 
 	// Org2 user moves funds (dynamic selection will inspect chaincode policy to determine endorsers)
-	_, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	_, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -407,7 +414,8 @@ func verifyValue(t *testing.T, chClient *channel.Client, expected int) {
 	var valueInt int
 	for i := 0; i < pollRetries; i++ {
 		// Query final value on org1 peer
-		response, err := chClient.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, channel.WithTargets(orgTestPeer0))
+		response, err := chClient.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, channel.WithTargets(orgTestPeer0),
+			channel.WithRetry(retry.DefaultChClientOpts))
 		if err != nil {
 			t.Fatalf("Failed to query funds after transaction: %s", err)
 		}

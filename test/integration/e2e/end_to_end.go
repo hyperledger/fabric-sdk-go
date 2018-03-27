@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -129,7 +130,8 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	response, err := client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
@@ -145,7 +147,8 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	defer client.UnregisterChaincodeEvent(reg)
 
 	// Try calling unknown function call and expect an error
-	response, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxArgs()})
+	response, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err == nil {
 		t.Fatal("Should have failed with dummy function")
 	}
@@ -159,7 +162,8 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	}
 
 	// Move funds
-	response, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
