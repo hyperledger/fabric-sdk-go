@@ -26,7 +26,6 @@ import (
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -178,23 +177,22 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 		retryHandler = overrideRetryHandler
 	}
 
-queryConfigBlock:
-	//Perform QueryConfigBlock
-	block, err := l.QueryConfigBlock(reqCtx, targets, &channel.TransactionProposalResponseVerifier{MinResponses: c.opts.MinResponses})
-	if c.resolveRetry(retryHandler, err) {
-		goto queryConfigBlock
-	}
+	block, err := retry.NewInvoker(retryHandler).Invoke(
+		func() (interface{}, error) {
+			return l.QueryConfigBlock(reqCtx, targets, &channel.TransactionProposalResponseVerifier{MinResponses: c.opts.MinResponses})
+		},
+	)
 
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryBlockConfig failed")
 	}
-	return extractConfig(c.channelID, block)
+	return extractConfig(c.channelID, block.(*common.Block))
 
 }
 
 func (c *ChannelConfig) queryOrderer(reqCtx reqContext.Context) (*ChannelCfg, error) {
 
-	block, err := resource.LastConfigFromOrderer(reqCtx, c.channelID, c.opts.Orderer)
+	block, err := resource.LastConfigFromOrderer(reqCtx, c.channelID, c.opts.Orderer, resource.WithRetry(c.opts.RetryOpts))
 	if err != nil {
 		return nil, errors.WithMessage(err, "LastConfigFromOrderer failed")
 	}
@@ -259,19 +257,6 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 	}
 
 	return nil
-}
-
-func (c *ChannelConfig) resolveRetry(handler retry.Handler, err error) bool {
-	errs, ok := err.(multi.Errors)
-	if !ok {
-		errs = append(errs, err)
-	}
-	for _, e := range errs {
-		if handler.Required(e) {
-			return true
-		}
-	}
-	return false
 }
 
 // WithPeers encapsulates peers to Option

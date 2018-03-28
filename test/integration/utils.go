@@ -10,11 +10,11 @@ import (
 	"math/rand"
 	"os"
 	"testing"
-	"time"
 
 	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
@@ -100,11 +100,10 @@ func CreateChannel(sdk *fabsdk.FabricSDK, req resmgmt.SaveChannelRequest) (bool,
 	}
 
 	// Create channel (or update if it already exists)
-	if _, err = resMgmtClient.SaveChannel(req); err != nil {
+	if _, err = resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
 		return false, err
 	}
 
-	time.Sleep(time.Second * 5)
 	return true, nil
 }
 
@@ -119,7 +118,7 @@ func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string) (bool, error) {
 		return false, errors.WithMessage(err, "Failed to create new resource management client")
 	}
 
-	if err = resMgmtClient.JoinChannel(name); err != nil {
+	if err = resMgmtClient.JoinChannel(name, resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
 		return false, nil
 	}
 	return true, nil
@@ -144,7 +143,7 @@ func OrgTargetPeers(config core.Config, orgs []string) ([]string, error) {
 // It returns true if it has, false otherwise, or an error
 func HasPeerJoinedChannel(client *resmgmt.Client, target string, channel string) (bool, error) {
 	foundChannel := false
-	response, err := client.QueryChannels(resmgmt.WithTargetURLs(target))
+	response, err := client.QueryChannels(resmgmt.WithTargetURLs(target), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		return false, errors.WithMessage(err, "failed to query channel for peer")
 	}

@@ -108,12 +108,9 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	txID, err := chMgmtClient.SaveChannel(req)
+	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, txID, "transaction ID should be populated")
-
-	// Allow orderer to process channel creation
-	time.Sleep(time.Second * 5)
 
 	// Org1 resource management client (Org1 is default org)
 	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
@@ -122,7 +119,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Org1 peers join channel
-	if err = org1ResMgmt.JoinChannel("orgchannel"); err != nil {
+	if err = org1ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
 		t.Fatalf("Org1 peers failed to JoinChannel: %s", err)
 	}
 
@@ -133,7 +130,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Org2 peers join channel
-	if err = org2ResMgmt.JoinChannel("orgchannel"); err != nil {
+	if err = org2ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
 		t.Fatalf("Org2 peers failed to JoinChannel: %s", err)
 	}
 
@@ -146,13 +143,13 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	installCCReq := resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Package: ccPkg}
 
 	// Install example cc to Org1 peers
-	_, err = org1ResMgmt.InstallCC(installCCReq)
+	_, err = org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Install example cc to Org2 peers
-	_, err = org2ResMgmt.InstallCC(installCCReq)
+	_, err = org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +158,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
 
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
-	instantiateResp, err := org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
+	instantiateResp, err := org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy}, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, instantiateResp, "transaction response should be populated")
 
@@ -169,7 +166,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	loadOrgPeers(t, org1AdminClientContext)
 
 	// Verify that example CC is instantiated on Org1 peer
-	chaincodeQueryResponse, err := org1ResMgmt.QueryInstantiatedChaincodes("orgchannel")
+	chaincodeQueryResponse, err := org1ResMgmt.QueryInstantiatedChaincodes("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
 	}
@@ -317,13 +314,13 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	installCCReq = resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Package: ccPkg}
 
 	// Install example cc version '1' to Org1 peers
-	_, err = org1ResMgmt.InstallCC(installCCReq)
+	_, err = org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Install example cc version '1' to Org2 peers
-	_, err = org2ResMgmt.InstallCC(installCCReq)
+	_, err = org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}

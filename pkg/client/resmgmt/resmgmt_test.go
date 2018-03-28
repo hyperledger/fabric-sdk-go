@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -375,7 +377,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
 	// Test chaincode installed (valid peer)
-	installed, err := rc.isChaincodeInstalled(reqCtx, req, peer1)
+	installed, err := rc.isChaincodeInstalled(reqCtx, req, peer1, retry.Opts{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -387,7 +389,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	req = InstallCCRequest{Name: "ID", Version: "v0", Path: "path"}
 
 	// Test chaincode installed
-	installed, err = rc.isChaincodeInstalled(reqCtx, req, peer1)
+	installed, err = rc.isChaincodeInstalled(reqCtx, req, peer1, retry.Opts{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -396,7 +398,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	}
 
 	// Test error retrieving installed cc info (peer is nil)
-	_, err = rc.isChaincodeInstalled(reqCtx, req, nil)
+	_, err = rc.isChaincodeInstalled(reqCtx, req, nil, retry.Opts{})
 	if err == nil {
 		t.Fatalf("Should have failed with error in get installed chaincodes")
 	}

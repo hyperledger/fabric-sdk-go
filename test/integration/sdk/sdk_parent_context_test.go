@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -48,7 +49,7 @@ func TestParentContext(t *testing.T) {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
 
-	_, err = resClient.QueryChannels(resmgmt.WithTargetURLs(target), resmgmt.WithParentContext(parentContext))
+	_, err = resClient.QueryChannels(resmgmt.WithTargetURLs(target), resmgmt.WithParentContext(parentContext), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err == nil && !strings.Contains(err.Error(), "context canceled") {
 		t.Fatalf("expected context cancelled error but got: %v", err)
 	}

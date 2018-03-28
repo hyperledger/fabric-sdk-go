@@ -15,6 +15,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -88,6 +90,7 @@ type requestOptions struct {
 	Orderer       fab.Orderer                        // use specific orderer
 	Timeouts      map[core.TimeoutType]time.Duration //timeout options for resmgmt operations
 	ParentContext reqContext.Context                 //parent grpc context for resmgmt operations
+	Retry         retry.Opts
 }
 
 //SaveChannelRequest used to save channel request
@@ -211,7 +214,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 	ordrReqCtx, ordrReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.OrdererResponse), contextImpl.WithParent(parentReqCtx))
 	defer ordrReqCtxCancel()
 
-	genesisBlock, err := resource.GenesisBlockFromOrderer(ordrReqCtx, channelID, orderer)
+	genesisBlock, err := resource.GenesisBlockFromOrderer(ordrReqCtx, channelID, orderer, resource.WithRetry(opts.Retry))
 	if err != nil {
 		return errors.WithMessage(err, "genesis block retrieval failed")
 	}
@@ -222,7 +225,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 
 	peerReqCtx, peerReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.ResMgmt), contextImpl.WithParent(parentReqCtx))
 	defer peerReqCtxCancel()
-	err = resource.JoinChannel(peerReqCtx, joinChannelRequest, peersToTxnProcessors(targets))
+	err = resource.JoinChannel(peerReqCtx, joinChannelRequest, peersToTxnProcessors(targets), resource.WithRetry(opts.Retry))
 	if err != nil {
 		return errors.WithMessage(err, "join channel failed")
 	}
@@ -294,9 +297,9 @@ func (rc *Client) calculateTargets(discovery fab.DiscoveryService, peers []fab.P
 }
 
 // isChaincodeInstalled verify if chaincode is installed on peer
-func (rc *Client) isChaincodeInstalled(reqCtx reqContext.Context, req InstallCCRequest, peer fab.ProposalProcessor) (bool, error) {
+func (rc *Client) isChaincodeInstalled(reqCtx reqContext.Context, req InstallCCRequest, peer fab.ProposalProcessor, retryOpts retry.Opts) (bool, error) {
 
-	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, peer)
+	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, peer, resource.WithRetry(retryOpts))
 	if err != nil {
 		return false, err
 	}
@@ -361,7 +364,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.PeerResponse), contextImpl.WithParent(parentReqCtx))
 		defer cancel()
 
-		installed, err := rc.isChaincodeInstalled(reqCtx, req, target)
+		installed, err := rc.isChaincodeInstalled(reqCtx, req, target, opts.Retry)
 		if err != nil {
 			// Add to errors with unable to verify error message
 			errs = append(errs, errors.Errorf("unable to verify if cc is installed on %s. Got error: %s", target.URL(), err.Error()))
@@ -460,7 +463,7 @@ func (rc *Client) QueryInstalledChaincodes(options ...RequestOption) (*pb.Chainc
 	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
 	defer cancel()
 
-	return resource.QueryInstalledChaincodes(reqCtx, opts.Targets[0])
+	return resource.QueryInstalledChaincodes(reqCtx, opts.Targets[0], resource.WithRetry(opts.Retry))
 }
 
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on a peer for specific channel.
@@ -535,7 +538,7 @@ func (rc *Client) QueryChannels(options ...RequestOption) (*pb.ChannelQueryRespo
 	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
 	defer cancel()
 
-	return resource.QueryChannels(reqCtx, opts.Targets[0])
+	return resource.QueryChannels(reqCtx, opts.Targets[0], resource.WithRetry(opts.Retry))
 
 }
 
@@ -766,7 +769,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	reqCtx, cancel := rc.createRequestContext(opts, core.OrdererResponse)
 	defer cancel()
 
-	txID, err := resource.CreateChannel(reqCtx, request)
+	txID, err := resource.CreateChannel(reqCtx, request, resource.WithRetry(opts.Retry))
 	if err != nil {
 		return SaveChannelResponse{}, errors.WithMessage(err, "create channel failed")
 	}

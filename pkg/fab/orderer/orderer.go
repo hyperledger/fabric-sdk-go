@@ -374,7 +374,7 @@ func blockStream(deliverClient ab.AtomicBroadcast_DeliverClient, responses chan 
 		case *ab.DeliverResponse_Status:
 			logger.Debugf("Received deliver response status from ordering service: %s", t.Status)
 			if t.Status != common.Status_SUCCESS {
-				errs <- errors.Errorf("error status from ordering service %s", t.Status)
+				errs <- status.New(status.OrdererServerStatus, int32(t.Status), "error status from ordering service", []interface{}{})
 				return
 			}
 			close(responses)

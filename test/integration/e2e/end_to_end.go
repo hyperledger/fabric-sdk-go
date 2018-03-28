@@ -78,12 +78,9 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{adminIdentity}}
-	txID, err := resMgmtClient.SaveChannel(req)
+	txID, err := resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, txID, "transaction ID should be populated")
-
-	// Allow orderer to process channel creation
-	time.Sleep(time.Second * 5)
 
 	//prepare context
 	adminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName))
@@ -95,7 +92,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	}
 
 	// Org peers join channel
-	if err = orgResMgmt.JoinChannel(channelID); err != nil {
+	if err = orgResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
 		t.Fatalf("Org peers failed to JoinChannel: %s", err)
 	}
 
@@ -107,7 +104,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 
 	// Install example cc to org peers
 	installCCReq := resmgmt.InstallCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Package: ccPkg}
-	_, err = orgResMgmt.InstallCC(installCCReq)
+	_, err = orgResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +113,11 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP"})
 
 	// Org resource manager will instantiate 'example_cc' on channel
-	resp, err := orgResMgmt.InstantiateCC(channelID, resmgmt.InstantiateCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
+	resp, err := orgResMgmt.InstantiateCC(
+		channelID,
+		resmgmt.InstantiateCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
+		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
+	)
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, resp, "transaction response should be populated")
 

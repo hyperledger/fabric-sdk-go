@@ -13,7 +13,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
@@ -119,15 +118,27 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 		return Response{}, err
 	}
 
-	complete := make(chan bool)
+	invoker := retry.NewInvoker(
+		requestContext.RetryHandler,
+		retry.WithBeforeRetry(
+			func(err error) {
+				cc.greylist.Greylist(err)
 
+				// Reset context parameters
+				requestContext.Opts.Targets = txnOpts.Targets
+				requestContext.Error = nil
+				requestContext.Response = invoke.Response{}
+			},
+		),
+	)
+
+	complete := make(chan bool)
 	go func() {
-	handleInvoke:
-		//Perform action through handler
-		handler.Handle(requestContext, clientContext)
-		if cc.resolveRetry(requestContext, txnOpts) {
-			goto handleInvoke
-		}
+		invoker.Invoke(
+			func() (interface{}, error) {
+				handler.Handle(requestContext, clientContext)
+				return nil, requestContext.Error
+			})
 		complete <- true
 	}()
 	select {
@@ -137,27 +148,6 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 		return Response{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
 			"request timed out or been cancelled", nil)
 	}
-}
-
-func (cc *Client) resolveRetry(ctx *invoke.RequestContext, o requestOptions) bool {
-	errs, ok := ctx.Error.(multi.Errors)
-	if !ok {
-		errs = append(errs, ctx.Error)
-	}
-	for _, e := range errs {
-		if ctx.RetryHandler.Required(e) {
-			logger.Infof("Retrying on error %s", e)
-			cc.greylist.Greylist(e)
-
-			// Reset context parameters
-			ctx.Opts.Targets = o.Targets
-			ctx.Error = nil
-			ctx.Response = invoke.Response{}
-
-			return true
-		}
-	}
-	return false
 }
 
 //createReqContext creates req context for invoke handler

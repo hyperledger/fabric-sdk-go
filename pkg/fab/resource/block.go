@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -21,7 +22,7 @@ import (
 )
 
 // block retrieves the block at the given position
-func retrieveBlock(reqCtx reqContext.Context, orderers []fab.Orderer, channel string, pos *ab.SeekPosition) (*common.Block, error) {
+func retrieveBlock(reqCtx reqContext.Context, orderers []fab.Orderer, channel string, pos *ab.SeekPosition, opts options) (*common.Block, error) {
 	ctx, ok := contextImpl.RequestClientContext(reqCtx)
 	if !ok {
 		return nil, errors.New("failed get client context from reqContext for signPayload")
@@ -76,7 +77,15 @@ func retrieveBlock(reqCtx reqContext.Context, orderers []fab.Orderer, channel st
 		Data:   seekInfoBytes,
 	}
 
-	return txn.SendPayload(reqCtx, &payload, orderers)
+	resp, err := retry.NewInvoker(retry.New(opts.retry)).Invoke(
+		func() (interface{}, error) {
+			return txn.SendPayload(reqCtx, &payload, orderers)
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return resp.(*common.Block), err
 }
 
 // newNewestSeekPosition returns a SeekPosition that requests the newest block

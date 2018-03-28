@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -81,7 +82,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 		t.Fatalf("installCC return error: %v", err)
 	}
 
-	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, peers[0])
+	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, peers[0], resource.WithRetry(retry.DefaultResMgmtOpts))
 
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
@@ -150,7 +151,7 @@ func installCC(reqCtx reqContext.Context, name string, path string, version stri
 
 	icr := api.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage}
 
-	_, _, err := resource.InstallChaincode(reqCtx, icr, targets)
+	_, _, err := resource.InstallChaincode(reqCtx, icr, targets, resource.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		return errors.WithMessage(err, "InstallChaincode failed")
 	}

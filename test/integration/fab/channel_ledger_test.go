@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -243,7 +244,7 @@ func testInstantiatedChaincodes(t *testing.T, ccID string, channelID string, res
 	found := false
 
 	// Test Query Instantiated chaincodes
-	chaincodeQueryResponse, err := resmgmtClient.QueryInstantiatedChaincodes(channelID, resmgmt.WithTargetURLs(targets...))
+	chaincodeQueryResponse, err := resmgmtClient.QueryInstantiatedChaincodes(channelID, resmgmt.WithTargetURLs(targets...), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
 	}

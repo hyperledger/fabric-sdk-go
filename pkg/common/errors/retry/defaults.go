@@ -26,6 +26,18 @@ const (
 	DefaultBackoffFactor = 2.0
 )
 
+// Resource Management Suggested Defaults
+const (
+	// ResMgmtDefaultAttempts number of retry attempts made by default
+	ResMgmtDefaultAttempts = 5
+	// ResMgmtDefaultInitialBackoff default initial backoff
+	ResMgmtDefaultInitialBackoff = time.Second
+	// ResMgmtDefaultMaxBackoff default maximum backoff
+	ResMgmtDefaultMaxBackoff = 60 * time.Second
+	// ResMgmtDefaultBackoffFactor default backoff factor
+	ResMgmtDefaultBackoffFactor = 2.5
+)
+
 // DefaultOpts default retry options
 var DefaultOpts = Opts{
 	Attempts:       DefaultAttempts,
@@ -42,6 +54,15 @@ var DefaultChClientOpts = Opts{
 	MaxBackoff:     DefaultMaxBackoff,
 	BackoffFactor:  DefaultBackoffFactor,
 	RetryableCodes: ChannelClientRetryableCodes,
+}
+
+// DefaultResMgmtOpts default retry options for the resource management client
+var DefaultResMgmtOpts = Opts{
+	Attempts:       ResMgmtDefaultAttempts,
+	InitialBackoff: ResMgmtDefaultInitialBackoff,
+	MaxBackoff:     ResMgmtDefaultMaxBackoff,
+	BackoffFactor:  ResMgmtDefaultBackoffFactor,
+	RetryableCodes: ResMgmtDefaultRetryableCodes,
 }
 
 // DefaultRetryableCodes these are the error codes, grouped by source of error,
@@ -72,8 +93,38 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 	},
 }
 
+// ResMgmtDefaultRetryableCodes are the suggested codes that should be treated as
+// transient by fabric-sdk-go/pkg/client/resmgmt.Client
+var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
+	status.EndorserClientStatus: []status.Code{
+		status.EndorsementMismatch,
+		status.PrematureChaincodeExecution,
+	},
+	status.EndorserServerStatus: []status.Code{
+		status.Code(common.Status_SERVICE_UNAVAILABLE),
+		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+	},
+	status.OrdererServerStatus: []status.Code{
+		status.Code(common.Status_SERVICE_UNAVAILABLE),
+		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+		status.Code(common.Status_BAD_REQUEST),
+		status.Code(common.Status_NOT_FOUND),
+	},
+	status.EventServerStatus: []status.Code{
+		status.Code(pb.TxValidationCode_DUPLICATE_TXID),
+		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
+		status.Code(pb.TxValidationCode_PHANTOM_READ_CONFLICT),
+	},
+	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
+	// gRPC fail fast option, once available
+	status.GRPCTransportStatus: []status.Code{
+		status.Code(grpcCodes.Unavailable),
+	},
+}
+
 // ChannelClientRetryableCodes are the suggested codes that should be treated as
-// transient by fabric-sdk-go/api/apitxn.ChannelClient
+// transient by fabric-sdk-go/pkg/client/channel.Client
 var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: []status.Code{
 		status.ConnectionFailed, status.EndorsementMismatch,

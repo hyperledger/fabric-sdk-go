@@ -15,6 +15,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -117,11 +120,6 @@ func TestJoinChannel(t *testing.T) {
 	peer, _ := peer.New(mocks.NewMockConfig(), peer.WithURL("grpc://"+addr), peer.WithInsecure())
 	peers = append(peers, peer)
 
-	orderer := mocks.NewMockOrderer("", nil)
-	defer orderer.Close()
-	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
-	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
-
 	ctx := setupContext()
 
 	genesisBlock := mocks.NewSimpleMockBlock()
@@ -169,7 +167,7 @@ func TestQueryByChaincode(t *testing.T) {
 	}
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
-	resp, err := queryChaincodeWithTarget(reqCtx, request, &peer)
+	resp, err := queryChaincodeWithTarget(reqCtx, request, &peer, options{})
 	if err != nil {
 		t.Fatalf("Failed to query: %s", err)
 	}
@@ -191,7 +189,7 @@ func TestQueryByChaincodeBadStatus(t *testing.T) {
 	}
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
-	_, err := queryChaincodeWithTarget(reqCtx, request, &peer)
+	_, err := queryChaincodeWithTarget(reqCtx, request, &peer, options{})
 	if err == nil {
 		t.Fatalf("expected failure due to bad status")
 	}
@@ -209,7 +207,7 @@ func TestQueryByChaincodeError(t *testing.T) {
 
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
-	_, err := queryChaincodeWithTarget(reqCtx, request, &peer)
+	_, err := queryChaincodeWithTarget(reqCtx, request, &peer, options{})
 	if err == nil {
 		t.Fatalf("expected failure due to error")
 	}
@@ -246,6 +244,25 @@ func TestGenesisBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GenesisBlock failed: %s", err)
 	}
+}
+
+func TestGenesisBlockWithRetry(t *testing.T) {
+	const channelName = "testchannel"
+	ctx := setupContext()
+
+	orderer := mocks.NewMockOrderer("", nil)
+	defer orderer.Close()
+	orderer.EnqueueForSendDeliver(status.New(status.OrdererServerStatus, int32(common.Status_SERVICE_UNAVAILABLE), "service unavailable", []interface{}{}))
+	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
+	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
+	block, err := GenesisBlockFromOrderer(reqCtx, channelName, orderer, WithRetry(retry.DefaultResMgmtOpts))
+
+	if err != nil {
+		t.Fatalf("GenesisBlock failed: %s", err)
+	}
+	fmt.Printf("Block: %#v\n", block)
 }
 
 /*

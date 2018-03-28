@@ -10,6 +10,8 @@ import (
 	reqContext "context"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/stretchr/testify/assert"
@@ -43,7 +45,7 @@ func testQueryChannels(t *testing.T, reqCtx reqContext.Context, target fab.Propo
 
 	// Our target will be primary peer on this channel
 	t.Logf("****QueryChannels for %s", target)
-	channelQueryResponse, err := resource.QueryChannels(reqCtx, target)
+	channelQueryResponse, err := resource.QueryChannels(reqCtx, target, resource.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatalf("QueryChannels return error: %v", err)
 	}
@@ -59,7 +61,7 @@ func testInstalledChaincodes(t *testing.T, reqCtx reqContext.Context, ccID strin
 	// Our target will be primary peer on this channel
 	t.Logf("****QueryInstalledChaincodes for %s", target)
 
-	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, target)
+	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, target, resource.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}

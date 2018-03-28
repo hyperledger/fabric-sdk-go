@@ -9,8 +9,8 @@ package revoked
 import (
 	"path"
 	"testing"
-	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -88,12 +88,9 @@ func TestRevokedPeer(t *testing.T) {
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	txID, err := chMgmtClient.SaveChannel(req)
+	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, txID, "transaction ID should be populated")
-
-	// Allow orderer to process channel creation
-	time.Sleep(time.Second * 5)
 
 	// Org1 resource management client (Org1 is default org)
 	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
@@ -102,7 +99,7 @@ func TestRevokedPeer(t *testing.T) {
 	}
 
 	// Org1 peers join channel
-	if err = org1ResMgmt.JoinChannel("orgchannel"); err != nil {
+	if err = org1ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
 		t.Fatalf("Org1 peers failed to JoinChannel: %s", err)
 	}
 
@@ -113,7 +110,7 @@ func TestRevokedPeer(t *testing.T) {
 	}
 
 	// Org2 peers join channel
-	if err = org2ResMgmt.JoinChannel("orgchannel"); err != nil {
+	if err = org2ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
 		t.Fatalf("Org2 peers failed to JoinChannel: %s", err)
 	}
 
@@ -132,7 +129,7 @@ func TestRevokedPeer(t *testing.T) {
 	}
 
 	// Install example cc to Org2 peers
-	_, err = org2ResMgmt.InstallCC(installCCReq)
+	_, err = org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,6 +10,7 @@ import (
 	reqContext "context"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -107,6 +108,14 @@ func WithOrderer(orderer fab.Orderer) RequestOption {
 func WithParentContext(parentContext reqContext.Context) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		o.ParentContext = parentContext
+		return nil
+	}
+}
+
+// WithRetry sets retry options
+func WithRetry(retryOpt retry.Opts) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		o.Retry = retryOpt
 		return nil
 	}
 }
