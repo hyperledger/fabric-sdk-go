@@ -103,7 +103,11 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.query(stub, args)
 	}
 	if args[0] == "move" {
-		if err := stub.SetEvent("testEvent", []byte("Test Payload")); err != nil {
+		eventID := "testEvent"
+		if len(args) >= 5 {
+			eventID = args[4]
+		}
+		if err := stub.SetEvent(eventID, []byte("Test Payload")); err != nil {
 			return shim.Error("Unable to set CC event: testEvent. Aborting transaction ...")
 		}
 		return t.move(stub, args)
@@ -117,7 +121,7 @@ func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) 
 	var Aval, Bval int // Asset holdings
 	var X int          // Transaction value
 	var err error
-	if len(args) != 4 {
+	if len(args) < 4 {
 		return shim.Error("Incorrect number of arguments. Expecting 4, function followed by 2 names and 1 value")
 	}
 

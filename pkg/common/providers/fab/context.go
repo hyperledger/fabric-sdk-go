@@ -6,10 +6,12 @@ SPDX-License-Identifier: Apache-2.0
 
 package fab
 
+import "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+
 // ChannelService supplies services related to a channel.
 type ChannelService interface {
 	Config() (ChannelConfig, error)
-	EventService() (EventService, error)
+	EventService(opts ...options.Opt) (EventService, error)
 	Membership() (ChannelMembership, error)
 	ChannelConfig() (ChannelCfg, error)
 }

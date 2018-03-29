@@ -11,6 +11,7 @@ import (
 
 	reqContext "context"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -24,7 +25,7 @@ type MockInfraProvider struct {
 }
 
 // CreateEventService creates the event service.
-func (f *MockInfraProvider) CreateEventService(ic fab.ClientContext, channelID string) (fab.EventService, error) {
+func (f *MockInfraProvider) CreateEventService(ic fab.ClientContext, channelID string, opts ...options.Opt) (fab.EventService, error) {
 	panic("not implemented")
 }
 
