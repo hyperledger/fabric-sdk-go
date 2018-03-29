@@ -8,6 +8,7 @@ package msp
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defmsp"
 )
@@ -26,11 +27,11 @@ func NewCustomMSPFactory(customUserStore msp.UserStore) *CustomMSPFactory {
 }
 
 // CreateUserStore creates UserStore
-func (f *CustomMSPFactory) CreateUserStore(config core.Config) (msp.UserStore, error) {
+func (f *CustomMSPFactory) CreateUserStore(config msp.IdentityConfig) (msp.UserStore, error) {
 	return f.customUserStore, nil
 }
 
 // CreateIdentityManagerProvider creates an IdentityManager provider
-func (f *CustomMSPFactory) CreateIdentityManagerProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error) {
-	return f.defaultFactory.CreateIdentityManagerProvider(config, cryptoProvider, f.customUserStore)
+func (f *CustomMSPFactory) CreateIdentityManagerProvider(endpointConfig fab.EndpointConfig, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error) {
+	return f.defaultFactory.CreateIdentityManagerProvider(endpointConfig, cryptoProvider, f.customUserStore)
 }

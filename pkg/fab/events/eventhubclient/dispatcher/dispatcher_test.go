@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -446,8 +445,8 @@ func TestFilteredBlockEvents(t *testing.T) {
 	}
 }
 
-func newPeerConfig(peerURL string) *core.PeerConfig {
-	return &core.PeerConfig{
+func newPeerConfig(peerURL string) *fab.PeerConfig {
+	return &fab.PeerConfig{
 		URL:         peerURL,
 		GRPCOptions: make(map[string]interface{}),
 	}

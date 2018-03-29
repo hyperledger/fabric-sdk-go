@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
@@ -461,14 +460,14 @@ func listenEvents(blockch <-chan *fab.BlockEvent, ccch <-chan *fab.CCEvent, wait
 }
 
 type mockEventURLConfig struct {
-	core.Config
+	fab.EndpointConfig
 	eventURLMap map[string]string
 }
 
 func newMockEventURLConfig() *mockEventURLConfig {
 	return &mockEventURLConfig{
-		Config:      fabmocks.NewMockConfig(),
-		eventURLMap: make(map[string]string),
+		EndpointConfig: fabmocks.NewMockEndpointConfig(),
+		eventURLMap:    make(map[string]string),
 	}
 }
 
@@ -476,8 +475,8 @@ func (c *mockEventURLConfig) setURL(url, mapsToURL string) {
 	c.eventURLMap[url] = mapsToURL
 }
 
-func (c *mockEventURLConfig) PeerConfigByURL(url string) (*core.PeerConfig, error) {
-	return &core.PeerConfig{
+func (c *mockEventURLConfig) PeerConfigByURL(url string) (*fab.PeerConfig, error) {
+	return &fab.PeerConfig{
 		EventURL: c.eventURLMap[url],
 	}, nil
 }
@@ -490,6 +489,6 @@ func newMockContext() *fabmocks.MockContext {
 	config := newMockEventURLConfig()
 	config.setURL(peer1.URL(), eventURL1)
 	config.setURL(peer2.URL(), eventURL2)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 	return ctx
 }

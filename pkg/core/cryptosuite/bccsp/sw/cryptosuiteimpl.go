@@ -19,7 +19,7 @@ import (
 var logger = logging.NewLogger("fabsdk/core")
 
 //GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
-func GetSuiteByConfig(config core.Config) (core.CryptoSuite, error) {
+func GetSuiteByConfig(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	// TODO: delete this check?
 	if config.SecurityProvider() != "SW" {
 		return nil, errors.Errorf("Unsupported BCCSP Provider: %s", config.SecurityProvider())
@@ -65,7 +65,7 @@ func GetSuite(securityLevel int, hashFamily string, keyStore bccsp.KeyStore) (co
 }
 
 //GetOptsByConfig Returns Factory opts for given SDK config
-func getOptsByConfig(c core.Config) *bccspSw.SwOpts {
+func getOptsByConfig(c core.CryptoSuiteConfig) *bccspSw.SwOpts {
 	opts := &bccspSw.SwOpts{
 		HashFamily: c.SecurityAlgorithm(),
 		SecLevel:   c.SecurityLevel(),

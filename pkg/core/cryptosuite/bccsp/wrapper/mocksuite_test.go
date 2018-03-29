@@ -15,7 +15,7 @@ import (
 )
 
 //getSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
-func getSuiteByConfig(config core.Config) (core.CryptoSuite, error) {
+func getSuiteByConfig(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	opts := getOptsByConfig(config)
 	bccsp, err := getBCCSPFromOpts(opts)
 
@@ -32,7 +32,7 @@ func getBCCSPFromOpts(config *bccspSw.SwOpts) (bccsp.BCCSP, error) {
 }
 
 //getOptsByConfig Returns Factory opts for given SDK config
-func getOptsByConfig(c core.Config) *bccspSw.SwOpts {
+func getOptsByConfig(c core.CryptoSuiteConfig) *bccspSw.SwOpts {
 	// TODO: delete this check
 	if c.SecurityProvider() != "SW" {
 		panic(fmt.Sprintf("Unsupported BCCSP Provider: %s", c.SecurityProvider()))

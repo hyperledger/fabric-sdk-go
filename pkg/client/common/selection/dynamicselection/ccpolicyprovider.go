@@ -18,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -37,7 +36,7 @@ const (
 )
 
 type peerCreator interface {
-	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error)
+	CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.Peer, error)
 }
 
 // CCPolicyProvider retrieves policy for the given chaincode ID
@@ -52,7 +51,7 @@ func newCCPolicyProvider(providers api.Providers, channelID string, username str
 	}
 
 	// TODO: Add option to use anchor peers instead of config
-	targetPeers, err := providers.Config().ChannelPeers(channelID)
+	targetPeers, err := providers.EndpointConfig().ChannelPeers(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to read configuration for channel peers")
 	}
@@ -69,7 +68,6 @@ func newCCPolicyProvider(providers api.Providers, channelID string, username str
 	}
 
 	cpp := ccPolicyProvider{
-		config:      providers.Config(),
 		providers:   providers,
 		channelID:   channelID,
 		identity:    identity,
@@ -82,11 +80,10 @@ func newCCPolicyProvider(providers api.Providers, channelID string, username str
 }
 
 type ccPolicyProvider struct {
-	config      core.Config
 	providers   context.Providers
 	channelID   string
 	identity    msp.SigningIdentity
-	targetPeers []core.ChannelPeer
+	targetPeers []fab.ChannelPeer
 	ccDataMap   map[string]*ccprovider.ChaincodeData // TODO: Add expiry and configurable timeout for map entries
 	mutex       sync.RWMutex
 	provider    peerCreator

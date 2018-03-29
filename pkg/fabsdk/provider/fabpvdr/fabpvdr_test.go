@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -52,8 +51,8 @@ func TestCreatePeerFromConfig(t *testing.T) {
 
 	url := "grpc://localhost:9999"
 
-	peerCfg := core.NetworkPeer{
-		PeerConfig: core.PeerConfig{
+	peerCfg := fab.NetworkPeer{
+		PeerConfig: fab.PeerConfig{
 			URL: url,
 		},
 	}
@@ -82,19 +81,25 @@ func TestCreateMembership(t *testing.T) {
 }
 
 func newInfraProvider(t *testing.T) *InfraProvider {
-	cfg, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	configBackend, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf("config.FromFile failed: %v", err)
 	}
-	cryptoSuite, err := sw.GetSuiteByConfig(cfg)
+
+	cryptoCfg, endpointCfg, identityCfg, err := config.FromBackend(configBackend)()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	cryptoSuite, err := sw.GetSuiteByConfig(cryptoCfg)
 	if err != nil {
 		panic(fmt.Sprintf("cryptosuiteimpl.GetSuiteByConfig: %v", err))
 	}
 	im := make(map[string]msp.IdentityManager)
 	im[""] = &mocks.MockIdentityManager{}
 
-	ctx := mocks.NewMockProviderContextCustom(cfg, cryptoSuite, coreMocks.NewMockSigningManager(), &mspmocks.MockUserStore{}, im)
-	ip := New(cfg)
+	ctx := mocks.NewMockProviderContextCustom(cryptoCfg, endpointCfg, identityCfg, cryptoSuite, coreMocks.NewMockSigningManager(), &mspmocks.MockUserStore{}, im)
+	ip := New(endpointCfg)
 	ip.Initialize(ctx)
 
 	return ip

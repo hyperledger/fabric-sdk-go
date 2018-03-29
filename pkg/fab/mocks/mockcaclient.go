@@ -17,7 +17,7 @@ type MockCAClient struct {
 }
 
 // NewMockCAClient Constructor for a CA client.
-func NewMockCAClient(orgName string, cryptoProvider core.CryptoSuite, config core.Config) (api.CAClient, error) {
+func NewMockCAClient(orgName string, cryptoProvider core.CryptoSuite) (api.CAClient, error) {
 	mcm := MockCAClient{}
 	return &mcm, nil
 }

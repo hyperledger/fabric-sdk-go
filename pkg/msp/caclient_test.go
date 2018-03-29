@@ -14,9 +14,9 @@ import (
 	"strings"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockcore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockcontext"
+	mockmspApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
@@ -31,7 +31,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	f.setup("")
 	defer f.close()
 
-	orgMSPID := mspIDByOrgName(t, f.config, org1)
+	orgMSPID := mspIDByOrgName(t, f.endpointConfig, org1)
 
 	// Empty enrollment ID
 	err := f.caClient.Enroll("", "user1")
@@ -70,7 +70,11 @@ func TestEnrollAndReenroll(t *testing.T) {
 	}
 
 	// Reenroll with appropriate user
-	enrolledUser, err := f.identityManager.NewUser(enrolledUserData)
+	iManager, ok := f.identityManagerProvider.IdentityManager("org1")
+	if !ok {
+		t.Fatalf("failed to get identity manager")
+	}
+	enrolledUser, err := iManager.(*IdentityManager).NewUser(enrolledUserData)
 	if err != nil {
 		t.Fatalf("newUser return error %v", err)
 	}
@@ -87,12 +91,32 @@ func TestWrongURL(t *testing.T) {
 	f.setup("")
 	defer f.close()
 
-	wrongURLConfigConfig, err := config.FromFile(wrongURLConfigPath)()
+	configBackend, err := config.FromFile(wrongURLConfigPath)()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config backend: %v", err))
+	}
+
+	_, wrongURLEndpointConfig, wrongURLIdentityConfig, err := config.FromBackend(configBackend)()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
 
-	f.caClient, err = NewCAClient(org1, f.identityManager, f.userStore, f.cryptoSuite, wrongURLConfigConfig)
+	iManager, ok := f.identityManagerProvider.IdentityManager("Org1")
+	if !ok {
+		t.Fatalf("failed to get identity manager")
+	}
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockContext := mockcontext.NewMockClient(mockCtrl)
+	mockContext.EXPECT().EndpointConfig().Return(wrongURLEndpointConfig).AnyTimes()
+	mockContext.EXPECT().IdentityConfig().Return(wrongURLIdentityConfig).AnyTimes()
+	mockContext.EXPECT().CryptoSuite().Return(f.cryptoSuite).AnyTimes()
+	mockContext.EXPECT().UserStore().Return(f.userStore).AnyTimes()
+	mockContext.EXPECT().IdentityManager("Org1").Return(iManager, true).AnyTimes()
+
+	//f.caClient, err = NewCAClient(org1, f.identityManager, f.userStore, f.cryptoSuite, wrongURLConfigConfig)
+	f.caClient, err = NewCAClient(org1, mockContext)
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient return error: %v", err)
 	}
@@ -110,12 +134,25 @@ func TestNoConfiguredCAs(t *testing.T) {
 	f.setup("")
 	defer f.close()
 
-	wrongURLConfigConfig, err := config.FromFile(noCAConfigPath)()
+	configBackend, err := config.FromFile(noCAConfigPath)()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
 
-	_, err = NewCAClient(org1, f.identityManager, f.userStore, f.cryptoSuite, wrongURLConfigConfig)
+	_, wrongURLEndpointConfig, _, err := config.FromBackend(configBackend)()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockContext := mockcontext.NewMockClient(mockCtrl)
+	mockContext.EXPECT().EndpointConfig().Return(wrongURLEndpointConfig).AnyTimes()
+	mockContext.EXPECT().IdentityConfig().Return(f.identityConfig).AnyTimes()
+	mockContext.EXPECT().CryptoSuite().Return(f.cryptoSuite).AnyTimes()
+	mockContext.EXPECT().UserStore().Return(f.userStore).AnyTimes()
+
+	_, err = NewCAClient(org1, mockContext)
 	if err == nil || !strings.Contains(err.Error(), "no CAs configured") {
 		t.Fatalf("Expected error when there are no configured CAs")
 	}
@@ -239,15 +276,16 @@ func TestCAConfigError(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mockCore.NewMockConfig(mockCtrl)
+	mockContext := mockcontext.NewMockClient(mockCtrl)
 
-	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
-	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
-	mockConfig.EXPECT().CAConfig(org1).Return(nil, errors.New("CAConfig error"))
-	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
+	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
+	mockIdentityConfig.EXPECT().CAConfig(org1).Return(nil, errors.New("CAConfig error"))
+	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
 
-	userStore := &mockmsp.MockUserStore{}
-	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
+	mockContext.EXPECT().IdentityConfig().Return(mockIdentityConfig)
+	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
+
+	_, err := NewCAClient(org1, mockContext)
 	if err == nil || !strings.Contains(err.Error(), "CAConfig error") {
 		t.Fatalf("Expected error from CAConfig. Got: %v", err)
 	}
@@ -262,15 +300,18 @@ func TestCAServerCertPathsError(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mockCore.NewMockConfig(mockCtrl)
-	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
-	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
-	mockConfig.EXPECT().CAConfig(org1).Return(&core.CAConfig{}, nil).AnyTimes()
-	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
-	mockConfig.EXPECT().CAServerCertPaths(org1).Return(nil, errors.New("CAServerCertPaths error"))
+	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
+	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, nil).AnyTimes()
+	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
+	mockIdentityConfig.EXPECT().CAServerCertPaths(org1).Return(nil, errors.New("CAServerCertPaths error"))
 
-	userStore := &mockmsp.MockUserStore{}
-	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
+	mockContext := mockcontext.NewMockClient(mockCtrl)
+	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
+	mockContext.EXPECT().IdentityConfig().Return(mockIdentityConfig).AnyTimes()
+	mockContext.EXPECT().UserStore().Return(&mockmsp.MockUserStore{}).AnyTimes()
+	mockContext.EXPECT().CryptoSuite().Return(f.cryptoSuite).AnyTimes()
+
+	_, err := NewCAClient(org1, mockContext)
 	if err == nil || !strings.Contains(err.Error(), "CAServerCertPaths error") {
 		t.Fatalf("Expected error from CAServerCertPaths. Got: %v", err)
 	}
@@ -285,16 +326,19 @@ func TestCAClientCertPathError(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mockCore.NewMockConfig(mockCtrl)
-	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
-	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
-	mockConfig.EXPECT().CAConfig(org1).Return(&core.CAConfig{}, nil).AnyTimes()
-	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
-	mockConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
-	mockConfig.EXPECT().CAClientCertPath(org1).Return("", errors.New("CAClientCertPath error"))
+	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
+	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, nil).AnyTimes()
+	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
+	mockIdentityConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
+	mockIdentityConfig.EXPECT().CAClientCertPath(org1).Return("", errors.New("CAClientCertPath error"))
 
-	userStore := &mockmsp.MockUserStore{}
-	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
+	mockContext := mockcontext.NewMockClient(mockCtrl)
+	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
+	mockContext.EXPECT().IdentityConfig().Return(mockIdentityConfig).AnyTimes()
+	mockContext.EXPECT().UserStore().Return(&mockmsp.MockUserStore{}).AnyTimes()
+	mockContext.EXPECT().CryptoSuite().Return(f.cryptoSuite).AnyTimes()
+
+	_, err := NewCAClient(org1, mockContext)
 	if err == nil || !strings.Contains(err.Error(), "CAClientCertPath error") {
 		t.Fatalf("Expected error from CAClientCertPath. Got: %v", err)
 	}
@@ -309,17 +353,21 @@ func TestCAClientKeyPathError(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mockCore.NewMockConfig(mockCtrl)
-	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
-	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
-	mockConfig.EXPECT().CAConfig(org1).Return(&core.CAConfig{}, nil).AnyTimes()
-	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
-	mockConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
-	mockConfig.EXPECT().CAClientCertPath(org1).Return("", nil)
-	mockConfig.EXPECT().CAClientKeyPath(org1).Return("", errors.New("CAClientKeyPath error"))
 
-	userStore := &mockmsp.MockUserStore{}
-	_, err := NewCAClient(org1, f.identityManager, userStore, f.cryptoSuite, mockConfig)
+	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
+	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, nil).AnyTimes()
+	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
+	mockIdentityConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
+	mockIdentityConfig.EXPECT().CAClientCertPath(org1).Return("", nil)
+	mockIdentityConfig.EXPECT().CAClientKeyPath(org1).Return("", errors.New("CAClientKeyPath error"))
+
+	mockContext := mockcontext.NewMockClient(mockCtrl)
+	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
+	mockContext.EXPECT().IdentityConfig().Return(mockIdentityConfig).AnyTimes()
+	mockContext.EXPECT().UserStore().Return(&mockmsp.MockUserStore{}).AnyTimes()
+	mockContext.EXPECT().CryptoSuite().Return(f.cryptoSuite).AnyTimes()
+
+	_, err := NewCAClient(org1, mockContext)
 	if err == nil || !strings.Contains(err.Error(), "CAClientKeyPath error") {
 		t.Fatalf("Expected error from CAClientKeyPath. Got: %v", err)
 	}

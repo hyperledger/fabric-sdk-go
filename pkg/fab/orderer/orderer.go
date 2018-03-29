@@ -21,7 +21,6 @@ import (
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -39,7 +38,7 @@ const (
 
 // Orderer allows a client to broadcast a transaction.
 type Orderer struct {
-	config         core.Config
+	config         fab.EndpointConfig
 	url            string
 	serverName     string
 	tlsCACert      *x509.Certificate
@@ -55,7 +54,7 @@ type Orderer struct {
 type Option func(*Orderer) error
 
 // New Returns a Orderer instance
-func New(config core.Config, opts ...Option) (*Orderer, error) {
+func New(config fab.EndpointConfig, opts ...Option) (*Orderer, error) {
 	orderer := &Orderer{
 		config:      config,
 		commManager: &defCommManager{},
@@ -87,7 +86,7 @@ func New(config core.Config, opts ...Option) (*Orderer, error) {
 	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
 		grpc.MaxCallSendMsgSize(maxCallSendMsgSize)))
 
-	orderer.dialTimeout = config.TimeoutOrDefault(core.OrdererConnection)
+	orderer.dialTimeout = config.TimeoutOrDefault(fab.OrdererConnection)
 	orderer.url = endpoint.ToAddress(orderer.url)
 	orderer.grpcDialOption = grpcOpts
 
@@ -132,7 +131,7 @@ func WithInsecure() Option {
 
 // FromOrdererConfig is a functional option for the orderer.New constructor that configures a new orderer
 // from a apiconfig.OrdererConfig struct
-func FromOrdererConfig(ordererCfg *core.OrdererConfig) Option {
+func FromOrdererConfig(ordererCfg *fab.OrdererConfig) Option {
 	return func(o *Orderer) error {
 		o.url = ordererCfg.URL
 
@@ -171,7 +170,7 @@ func FromOrdererName(name string) Option {
 	}
 }
 
-func getServerNameOverride(ordererCfg *core.OrdererConfig) string {
+func getServerNameOverride(ordererCfg *fab.OrdererConfig) string {
 	serverNameOverride := ""
 	if str, ok := ordererCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
 		serverNameOverride = str
@@ -179,7 +178,7 @@ func getServerNameOverride(ordererCfg *core.OrdererConfig) string {
 	return serverNameOverride
 }
 
-func getFailFast(ordererCfg *core.OrdererConfig) bool {
+func getFailFast(ordererCfg *fab.OrdererConfig) bool {
 
 	var failFast = true
 	if ff, ok := ordererCfg.GRPCOptions["fail-fast"].(bool); ok {
@@ -188,7 +187,7 @@ func getFailFast(ordererCfg *core.OrdererConfig) bool {
 	return failFast
 }
 
-func getKeepAliveOptions(ordererCfg *core.OrdererConfig) keepalive.ClientParameters {
+func getKeepAliveOptions(ordererCfg *fab.OrdererConfig) keepalive.ClientParameters {
 
 	var kap keepalive.ClientParameters
 	if kaTime, ok := ordererCfg.GRPCOptions["keep-alive-time"].(time.Duration); ok {
@@ -203,7 +202,7 @@ func getKeepAliveOptions(ordererCfg *core.OrdererConfig) keepalive.ClientParamet
 	return kap
 }
 
-func isInsecureConnectionAllowed(ordererCfg *core.OrdererConfig) bool {
+func isInsecureConnectionAllowed(ordererCfg *fab.OrdererConfig) bool {
 	allowInsecure, ok := ordererCfg.GRPCOptions["allow-insecure"].(bool)
 	if ok {
 		return allowInsecure

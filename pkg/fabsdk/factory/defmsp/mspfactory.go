@@ -8,6 +8,7 @@ package defmsp
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/msppvdr"
@@ -26,7 +27,7 @@ func NewProviderFactory() *ProviderFactory {
 }
 
 // CreateUserStore creates a UserStore using the SDK's default implementation
-func (f *ProviderFactory) CreateUserStore(config core.Config) (msp.UserStore, error) {
+func (f *ProviderFactory) CreateUserStore(config msp.IdentityConfig) (msp.UserStore, error) {
 
 	clientCofig, err := config.Client()
 	if err != nil {
@@ -48,6 +49,6 @@ func (f *ProviderFactory) CreateUserStore(config core.Config) (msp.UserStore, er
 }
 
 // CreateIdentityManagerProvider returns a new default implementation of MSP provider
-func (f *ProviderFactory) CreateIdentityManagerProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error) {
-	return msppvdr.New(config, cryptoProvider, userStore)
+func (f *ProviderFactory) CreateIdentityManagerProvider(endpointConfig fab.EndpointConfig, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error) {
+	return msppvdr.New(endpointConfig, cryptoProvider, userStore)
 }

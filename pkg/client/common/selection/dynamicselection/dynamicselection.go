@@ -16,7 +16,6 @@ import (
 
 	copts "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
 
@@ -37,7 +36,7 @@ type ChannelUser struct {
 // SelectionProvider implements selection provider
 // TODO: refactor users into client contexts
 type SelectionProvider struct {
-	config       core.Config
+	config       fab.EndpointConfig
 	users        []ChannelUser
 	lbp          pgresolver.LoadBalancePolicy
 	providers    api.Providers
@@ -64,7 +63,7 @@ func WithCacheTimeout(timeout time.Duration) Opt {
 }
 
 // New returns dynamic selection provider
-func New(config core.Config, users []ChannelUser, opts ...Opt) (*SelectionProvider, error) {
+func New(config fab.EndpointConfig, users []ChannelUser, opts ...Opt) (*SelectionProvider, error) {
 	p := &SelectionProvider{
 		config:       config,
 		users:        users,

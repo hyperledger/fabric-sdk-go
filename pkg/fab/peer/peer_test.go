@@ -8,16 +8,13 @@ package peer
 
 import (
 	reqContext "context"
-	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockcore"
-	mock_fab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/pkg/errors"
 )
@@ -30,7 +27,7 @@ const (
 func TestNewPeerWithCertNoTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	config := mockcore.DefaultMockConfig(mockCtrl)
+	config := mockfab.DefaultMockConfig(mockCtrl)
 
 	url := "http://example.com"
 
@@ -50,12 +47,12 @@ func TestNewPeerTLSFromCert(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mockcore.DefaultMockConfig(mockCtrl)
+	config := mockfab.DefaultMockConfig(mockCtrl)
 
 	url := "grpcs://0.0.0.0:1234"
 
 	// TODO - test actual parameters and test server name override
-	_, err := New(config, WithURL(url), WithTLSCert(mockcore.GoodCert))
+	_, err := New(config, WithURL(url), WithTLSCert(mockfab.GoodCert))
 
 	if err != nil {
 		t.Fatalf("Expected peer to be constructed")
@@ -67,7 +64,7 @@ func TestNewPeerWithCertBadParams(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mockcore.DefaultMockConfig(mockCtrl)
+	config := mockfab.DefaultMockConfig(mockCtrl)
 
 	_, err := New(config)
 
@@ -81,7 +78,7 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mockcore.NewMockConfig(mockCtrl)
+	config := mockfab.NewMockEndpointConfig(mockCtrl)
 	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("failed to get certpool")).AnyTimes()
 
 	url := "grpcs://0.0.0.0:1234"
@@ -96,7 +93,7 @@ func TestMSPIDs(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mockcore.DefaultMockConfig(mockCtrl)
+	config := mockfab.DefaultMockConfig(mockCtrl)
 
 	testMSP := "orgN"
 	peer, err := New(config, WithURL(peer1URL), WithMSPID(testMSP))
@@ -114,7 +111,7 @@ func TestMSPIDs(t *testing.T) {
 func TestProposalProcessorSendProposal(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
+	proc := mockfab.NewMockProposalProcessor(mockCtrl)
 
 	tp := mockProcessProposalRequest()
 	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, ProposalResponse: nil}
@@ -135,7 +132,7 @@ func TestPeersToTxnProcessors(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mockcore.DefaultMockConfig(mockCtrl)
+	config := mockfab.DefaultMockConfig(mockCtrl)
 
 	peer1, err := New(config, WithURL(peer1URL))
 
@@ -174,7 +171,6 @@ func TestWithServerName(t *testing.T) {
 	if option == nil {
 		t.Fatalf("Failed to get option for server name.")
 	}
-	fmt.Printf("%v\n", &option)
 }
 
 func TestPeerOptions(t *testing.T) {
@@ -187,19 +183,19 @@ func TestPeerOptions(t *testing.T) {
 	grpcOpts["keep-alive-permit"] = false
 	grpcOpts["ssl-target-name-override"] = "mnq"
 	grpcOpts["allow-insecure"] = true
-	config := mockcore.DefaultMockConfig(mockCtrl)
+	config := mockfab.DefaultMockConfig(mockCtrl)
 
 	tlsConfig := endpoint.TLSConfig{
 		Path: "",
 		Pem:  "",
 	}
-	peerConfig := core.PeerConfig{
+	peerConfig := fab.PeerConfig{
 		URL:         "abc.com",
 		GRPCOptions: grpcOpts,
 		TLSCACerts:  tlsConfig,
 	}
 
-	networkPeer := &core.NetworkPeer{
+	networkPeer := &fab.NetworkPeer{
 		PeerConfig: peerConfig,
 		MSPID:      "Org1MSP",
 	}
@@ -227,7 +223,7 @@ func TestNewPeerSecured(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mockcore.DefaultMockConfig(mockCtrl)
+	config := mockfab.DefaultMockConfig(mockCtrl)
 
 	url := "grpc://0.0.0.0:1234"
 

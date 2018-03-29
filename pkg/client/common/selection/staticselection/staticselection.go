@@ -11,7 +11,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	copts "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
@@ -21,11 +20,11 @@ var logger = logging.NewLogger(loggerModule)
 
 // SelectionProvider implements selection provider
 type SelectionProvider struct {
-	config core.Config
+	config fab.EndpointConfig
 }
 
 // New returns static selection provider
-func New(config core.Config) (*SelectionProvider, error) {
+func New(config fab.EndpointConfig) (*SelectionProvider, error) {
 	return &SelectionProvider{config: config}, nil
 }
 

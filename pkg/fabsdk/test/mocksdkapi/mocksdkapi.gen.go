@@ -37,7 +37,7 @@ func (m *MockCoreProviderFactory) EXPECT() *MockCoreProviderFactoryMockRecorder 
 }
 
 // CreateCryptoSuiteProvider mocks base method
-func (m *MockCoreProviderFactory) CreateCryptoSuiteProvider(arg0 core.Config) (core.CryptoSuite, error) {
+func (m *MockCoreProviderFactory) CreateCryptoSuiteProvider(arg0 core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	ret := m.ctrl.Call(m, "CreateCryptoSuiteProvider", arg0)
 	ret0, _ := ret[0].(core.CryptoSuite)
 	ret1, _ := ret[1].(error)
@@ -50,7 +50,7 @@ func (mr *MockCoreProviderFactoryMockRecorder) CreateCryptoSuiteProvider(arg0 in
 }
 
 // CreateInfraProvider mocks base method
-func (m *MockCoreProviderFactory) CreateInfraProvider(arg0 core.Config) (fab.InfraProvider, error) {
+func (m *MockCoreProviderFactory) CreateInfraProvider(arg0 fab.EndpointConfig) (fab.InfraProvider, error) {
 	ret := m.ctrl.Call(m, "CreateInfraProvider", arg0)
 	ret0, _ := ret[0].(fab.InfraProvider)
 	ret1, _ := ret[1].(error)
@@ -63,16 +63,16 @@ func (mr *MockCoreProviderFactoryMockRecorder) CreateInfraProvider(arg0 interfac
 }
 
 // CreateSigningManager mocks base method
-func (m *MockCoreProviderFactory) CreateSigningManager(arg0 core.CryptoSuite, arg1 core.Config) (core.SigningManager, error) {
-	ret := m.ctrl.Call(m, "CreateSigningManager", arg0, arg1)
+func (m *MockCoreProviderFactory) CreateSigningManager(arg0 core.CryptoSuite) (core.SigningManager, error) {
+	ret := m.ctrl.Call(m, "CreateSigningManager", arg0)
 	ret0, _ := ret[0].(core.SigningManager)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateSigningManager indicates an expected call of CreateSigningManager
-func (mr *MockCoreProviderFactoryMockRecorder) CreateSigningManager(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSigningManager", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateSigningManager), arg0, arg1)
+func (mr *MockCoreProviderFactoryMockRecorder) CreateSigningManager(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSigningManager", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateSigningManager), arg0)
 }
 
 // MockMSPProviderFactory is a mock of MSPProviderFactory interface
@@ -99,7 +99,7 @@ func (m *MockMSPProviderFactory) EXPECT() *MockMSPProviderFactoryMockRecorder {
 }
 
 // CreateIdentityManagerProvider mocks base method
-func (m *MockMSPProviderFactory) CreateIdentityManagerProvider(arg0 core.Config, arg1 core.CryptoSuite, arg2 msp.UserStore) (msp.IdentityManagerProvider, error) {
+func (m *MockMSPProviderFactory) CreateIdentityManagerProvider(arg0 fab.EndpointConfig, arg1 core.CryptoSuite, arg2 msp.UserStore) (msp.IdentityManagerProvider, error) {
 	ret := m.ctrl.Call(m, "CreateIdentityManagerProvider", arg0, arg1, arg2)
 	ret0, _ := ret[0].(msp.IdentityManagerProvider)
 	ret1, _ := ret[1].(error)
@@ -112,7 +112,7 @@ func (mr *MockMSPProviderFactoryMockRecorder) CreateIdentityManagerProvider(arg0
 }
 
 // CreateUserStore mocks base method
-func (m *MockMSPProviderFactory) CreateUserStore(arg0 core.Config) (msp.UserStore, error) {
+func (m *MockMSPProviderFactory) CreateUserStore(arg0 msp.IdentityConfig) (msp.UserStore, error) {
 	ret := m.ctrl.Call(m, "CreateUserStore", arg0)
 	ret0, _ := ret[0].(msp.UserStore)
 	ret1, _ := ret[1].(error)
@@ -148,7 +148,7 @@ func (m *MockServiceProviderFactory) EXPECT() *MockServiceProviderFactoryMockRec
 }
 
 // CreateDiscoveryProvider mocks base method
-func (m *MockServiceProviderFactory) CreateDiscoveryProvider(arg0 core.Config, arg1 fab.InfraProvider) (fab.DiscoveryProvider, error) {
+func (m *MockServiceProviderFactory) CreateDiscoveryProvider(arg0 fab.EndpointConfig, arg1 fab.InfraProvider) (fab.DiscoveryProvider, error) {
 	ret := m.ctrl.Call(m, "CreateDiscoveryProvider", arg0, arg1)
 	ret0, _ := ret[0].(fab.DiscoveryProvider)
 	ret1, _ := ret[1].(error)
@@ -161,7 +161,7 @@ func (mr *MockServiceProviderFactoryMockRecorder) CreateDiscoveryProvider(arg0, 
 }
 
 // CreateSelectionProvider mocks base method
-func (m *MockServiceProviderFactory) CreateSelectionProvider(arg0 core.Config) (fab.SelectionProvider, error) {
+func (m *MockServiceProviderFactory) CreateSelectionProvider(arg0 fab.EndpointConfig) (fab.SelectionProvider, error) {
 	ret := m.ctrl.Call(m, "CreateSelectionProvider", arg0)
 	ret0, _ := ret[0].(fab.SelectionProvider)
 	ret1, _ := ret[1].(error)

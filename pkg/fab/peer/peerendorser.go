@@ -21,7 +21,6 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -48,7 +47,7 @@ type peerEndorserRequest struct {
 	target             string
 	certificate        *x509.Certificate
 	serverHostOverride string
-	config             core.Config
+	config             fab.EndpointConfig
 	kap                keepalive.ClientParameters
 	failFast           bool
 	allowInsecure      bool
@@ -80,7 +79,7 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
 		grpc.MaxCallSendMsgSize(maxCallSendMsgSize)))
 
-	timeout := endorseReq.config.TimeoutOrDefault(core.EndorserConnection)
+	timeout := endorseReq.config.TimeoutOrDefault(fab.EndorserConnection)
 
 	pc := &peerEndorser{
 		grpcDialOption: grpcOpts,

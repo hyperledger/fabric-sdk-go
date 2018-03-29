@@ -7,8 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
-	"fmt"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
@@ -53,7 +51,7 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 	}
 
 	if msp.orgName == "" {
-		clientConfig, err := ctx.Config().Client()
+		clientConfig, err := ctx.IdentityConfig().Client()
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to create Client")
 		}
@@ -65,11 +63,7 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 
 func newCAClient(ctx context.Client, orgName string) (mspapi.CAClient, error) {
 
-	identityManager, ok := ctx.IdentityManager(orgName)
-	if !ok {
-		return nil, fmt.Errorf("identity manager not found for organization '%s", orgName)
-	}
-	caClient, err := msp.NewCAClient(orgName, identityManager, ctx.UserStore(), ctx.CryptoSuite(), ctx.Config())
+	caClient, err := msp.NewCAClient(orgName, ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create CA Client")
 	}

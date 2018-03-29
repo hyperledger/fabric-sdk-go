@@ -18,7 +18,7 @@ import (
 
 func TestCreateCryptoSuiteProvider(t *testing.T) {
 	factory := NewProviderFactory()
-	config := mocks.NewMockConfig()
+	config := mocks.NewMockCryptoConfig()
 
 	cryptosuite, err := factory.CreateCryptoSuiteProvider(config)
 	if err != nil {
@@ -33,14 +33,14 @@ func TestCreateCryptoSuiteProvider(t *testing.T) {
 
 func TestCreateSigningManager(t *testing.T) {
 	factory := NewProviderFactory()
-	config := mocks.NewMockConfig()
+	config := mocks.NewMockCryptoConfig()
 
 	cryptosuite, err := factory.CreateCryptoSuiteProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	signer, err := factory.CreateSigningManager(cryptosuite, config)
+	signer, err := factory.CreateSigningManager(cryptosuite)
 	if err != nil {
 		t.Fatalf("Unexpected error creating signing manager %v", err)
 	}
@@ -55,7 +55,7 @@ func TestNewFactoryInfraProvider(t *testing.T) {
 	factory := NewProviderFactory()
 	ctx := mocks.NewMockProviderContext()
 
-	infraProvider, err := factory.CreateInfraProvider(ctx.Config())
+	infraProvider, err := factory.CreateInfraProvider(ctx.EndpointConfig())
 	if err != nil {
 		t.Fatalf("Unexpected error creating fabric provider %v", err)
 	}

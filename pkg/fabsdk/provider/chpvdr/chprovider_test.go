@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -37,7 +36,7 @@ func TestBasicValidChannel(t *testing.T) {
 
 	pf := &MockProviderFactory{ctx: clientCtx}
 
-	fp, err := pf.CreateInfraProvider(ctx.Config())
+	fp, err := pf.CreateInfraProvider(ctx.EndpointConfig())
 	if err != nil {
 		t.Fatalf("Unexpected error creating Fabric Provider: %v", err)
 	}
@@ -89,7 +88,7 @@ func (f *MockInfraProvider) CreateChannelMembership(ctx fab.ClientContext, chann
 }
 
 // CreateInfraProvider mockcore new default implementation of fabric primitives
-func (f *MockProviderFactory) CreateInfraProvider(config core.Config) (fab.InfraProvider, error) {
+func (f *MockProviderFactory) CreateInfraProvider(config fab.EndpointConfig) (fab.InfraProvider, error) {
 	fabProvider := fabpvdr.New(config)
 
 	cfp := MockInfraProvider{

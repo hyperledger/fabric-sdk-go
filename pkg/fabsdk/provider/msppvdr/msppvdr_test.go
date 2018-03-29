@@ -20,19 +20,24 @@ func TestCreateMSPProvider(t *testing.T) {
 
 	coreFactory := defcore.NewProviderFactory()
 
-	config, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	configBackend, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	cryptosuite, err := coreFactory.CreateCryptoSuiteProvider(config)
+	cryptoSuiteConfig, endpointConfig, _, err := config.FromBackend(configBackend)()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	cryptosuite, err := coreFactory.CreateCryptoSuiteProvider(cryptoSuiteConfig)
 	if err != nil {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
 	userStore := &mockmsp.MockUserStore{}
 
-	provider, err := New(config, cryptosuite, userStore)
+	provider, err := New(endpointConfig, cryptosuite, userStore)
 	assert.Nil(t, err, "New should not have failed")
 
 	if provider.UserStore() != userStore {

@@ -18,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
@@ -85,11 +84,11 @@ type UpgradeCCResponse struct {
 
 //requestOptions contains options for operations performed by ResourceMgmtClient
 type requestOptions struct {
-	Targets       []fab.Peer                         // target peers
-	TargetFilter  fab.TargetFilter                   // target filter
-	Orderer       fab.Orderer                        // use specific orderer
-	Timeouts      map[core.TimeoutType]time.Duration //timeout options for resmgmt operations
-	ParentContext reqContext.Context                 //parent grpc context for resmgmt operations
+	Targets       []fab.Peer                        // target peers
+	TargetFilter  fab.TargetFilter                  // target filter
+	Orderer       fab.Orderer                       // use specific orderer
+	Timeouts      map[fab.TimeoutType]time.Duration //timeout options for resmgmt operations
+	ParentContext reqContext.Context                //parent grpc context for resmgmt operations
 	Retry         retry.Opts
 }
 
@@ -193,7 +192,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 	rc.resolveTimeouts(&opts)
 
 	//set parent request context for overall timeout
-	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[core.ResMgmt]), contextImpl.WithParent(opts.ParentContext))
+	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[fab.ResMgmt]), contextImpl.WithParent(opts.ParentContext))
 	parentReqCtx = reqContext.WithValue(parentReqCtx, contextImpl.ReqContextTimeoutOverrides, opts.Timeouts)
 	defer parentReqCancel()
 
@@ -211,7 +210,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		return errors.WithMessage(err, "failed to find orderer for request")
 	}
 
-	ordrReqCtx, ordrReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.OrdererResponse), contextImpl.WithParent(parentReqCtx))
+	ordrReqCtx, ordrReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.OrdererResponse), contextImpl.WithParent(parentReqCtx))
 	defer ordrReqCtxCancel()
 
 	genesisBlock, err := resource.GenesisBlockFromOrderer(ordrReqCtx, channelID, orderer, resource.WithRetry(opts.Retry))
@@ -223,7 +222,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		GenesisBlock: genesisBlock,
 	}
 
-	peerReqCtx, peerReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.ResMgmt), contextImpl.WithParent(parentReqCtx))
+	peerReqCtx, peerReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.ResMgmt), contextImpl.WithParent(parentReqCtx))
 	defer peerReqCtxCancel()
 	err = resource.JoinChannel(peerReqCtx, joinChannelRequest, peersToTxnProcessors(targets), resource.WithRetry(opts.Retry))
 	if err != nil {
@@ -334,7 +333,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	rc.resolveTimeouts(&opts)
 
 	//set parent request context for overall timeout
-	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[core.ResMgmt]), contextImpl.WithParent(opts.ParentContext))
+	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[fab.ResMgmt]), contextImpl.WithParent(opts.ParentContext))
 	parentReqCtx = reqContext.WithValue(parentReqCtx, contextImpl.ReqContextTimeoutOverrides, opts.Timeouts)
 	defer parentReqCancel()
 
@@ -361,7 +360,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	// Targets will be adjusted if cc has already been installed
 	newTargets := make([]fab.Peer, 0)
 	for _, target := range targets {
-		reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.PeerResponse), contextImpl.WithParent(parentReqCtx))
+		reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.PeerResponse), contextImpl.WithParent(parentReqCtx))
 		defer cancel()
 
 		installed, err := rc.isChaincodeInstalled(reqCtx, req, target, opts.Retry)
@@ -386,7 +385,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		return responses, errs.ToError()
 	}
 
-	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(core.ResMgmt), contextImpl.WithParent(parentReqCtx))
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.ResMgmt), contextImpl.WithParent(parentReqCtx))
 	defer cancel()
 
 	icr := api.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package}
@@ -425,7 +424,7 @@ func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, opti
 		return InstantiateCCResponse{}, errors.WithMessage(err, "failed to get opts for InstantiateCC")
 	}
 
-	reqCtx, cancel := rc.createRequestContext(opts, core.ResMgmt)
+	reqCtx, cancel := rc.createRequestContext(opts, fab.ResMgmt)
 	defer cancel()
 
 	txID, err := rc.sendCCProposal(reqCtx, InstantiateChaincode, channelID, req, opts)
@@ -440,7 +439,7 @@ func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...R
 		return UpgradeCCResponse{}, errors.WithMessage(err, "failed to get opts for UpgradeCC")
 	}
 
-	reqCtx, cancel := rc.createRequestContext(opts, core.ResMgmt)
+	reqCtx, cancel := rc.createRequestContext(opts, fab.ResMgmt)
 	defer cancel()
 
 	txID, err := rc.sendCCProposal(reqCtx, UpgradeChaincode, channelID, InstantiateCCRequest(req), opts)
@@ -460,7 +459,7 @@ func (rc *Client) QueryInstalledChaincodes(options ...RequestOption) (*pb.Chainc
 		return nil, errors.New("only one target is supported")
 	}
 
-	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
+	reqCtx, cancel := rc.createRequestContext(opts, fab.PeerResponse)
 	defer cancel()
 
 	return resource.QueryInstalledChaincodes(reqCtx, opts.Targets[0], resource.WithRetry(opts.Retry))
@@ -500,7 +499,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		return nil, err
 	}
 
-	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
+	reqCtx, cancel := rc.createRequestContext(opts, fab.PeerResponse)
 	defer cancel()
 
 	// Channel service membership is required to verify signature
@@ -535,7 +534,7 @@ func (rc *Client) QueryChannels(options ...RequestOption) (*pb.ChannelQueryRespo
 		return nil, errors.New("only one target is supported")
 	}
 
-	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
+	reqCtx, cancel := rc.createRequestContext(opts, fab.PeerResponse)
 	defer cancel()
 
 	return resource.QueryChannels(reqCtx, opts.Targets[0], resource.WithRetry(opts.Retry))
@@ -766,7 +765,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		Signatures: configSignatures,
 	}
 
-	reqCtx, cancel := rc.createRequestContext(opts, core.OrdererResponse)
+	reqCtx, cancel := rc.createRequestContext(opts, fab.OrdererResponse)
 	defer cancel()
 
 	txID, err := resource.CreateChannel(reqCtx, request, resource.WithRetry(opts.Retry))
@@ -804,7 +803,7 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 		return nil, errors.WithMessage(err, "QueryConfig failed")
 	}
 
-	reqCtx, cancel := rc.createRequestContext(opts, core.OrdererResponse)
+	reqCtx, cancel := rc.createRequestContext(opts, fab.OrdererResponse)
 	defer cancel()
 
 	return channelConfig.Query(reqCtx)
@@ -829,8 +828,8 @@ func (rc *Client) requestOrderer(opts *requestOptions, channelID string) (fab.Or
 
 }
 
-func (rc *Client) ordererConfig(channelID string) (*core.OrdererConfig, error) {
-	orderers, err := rc.ctx.Config().ChannelOrderers(channelID)
+func (rc *Client) ordererConfig(channelID string) (*fab.OrdererConfig, error) {
+	orderers, err := rc.ctx.EndpointConfig().ChannelOrderers(channelID)
 
 	// TODO: Not sure that we should fallback to global orderers section.
 	// For now - not doing so.
@@ -863,12 +862,12 @@ func (rc *Client) prepareRequestOpts(options ...RequestOption) (requestOptions, 
 }
 
 //createRequestContext creates request context for grpc
-func (rc *Client) createRequestContext(opts requestOptions, defaultTimeoutType core.TimeoutType) (reqContext.Context, reqContext.CancelFunc) {
+func (rc *Client) createRequestContext(opts requestOptions, defaultTimeoutType fab.TimeoutType) (reqContext.Context, reqContext.CancelFunc) {
 
 	rc.resolveTimeouts(&opts)
 
 	if opts.Timeouts[defaultTimeoutType] == 0 {
-		opts.Timeouts[defaultTimeoutType] = rc.ctx.Config().TimeoutOrDefault(defaultTimeoutType)
+		opts.Timeouts[defaultTimeoutType] = rc.ctx.EndpointConfig().TimeoutOrDefault(defaultTimeoutType)
 	}
 
 	return contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[defaultTimeoutType]), contextImpl.WithParent(opts.ParentContext))
@@ -878,18 +877,18 @@ func (rc *Client) createRequestContext(opts requestOptions, defaultTimeoutType c
 func (rc *Client) resolveTimeouts(opts *requestOptions) {
 
 	if opts.Timeouts == nil {
-		opts.Timeouts = make(map[core.TimeoutType]time.Duration)
+		opts.Timeouts = make(map[fab.TimeoutType]time.Duration)
 	}
 
-	if opts.Timeouts[core.ResMgmt] == 0 {
-		opts.Timeouts[core.ResMgmt] = rc.ctx.Config().TimeoutOrDefault(core.ResMgmt)
+	if opts.Timeouts[fab.ResMgmt] == 0 {
+		opts.Timeouts[fab.ResMgmt] = rc.ctx.EndpointConfig().TimeoutOrDefault(fab.ResMgmt)
 	}
 
-	if opts.Timeouts[core.OrdererResponse] == 0 {
-		opts.Timeouts[core.OrdererResponse] = rc.ctx.Config().TimeoutOrDefault(core.OrdererResponse)
+	if opts.Timeouts[fab.OrdererResponse] == 0 {
+		opts.Timeouts[fab.OrdererResponse] = rc.ctx.EndpointConfig().TimeoutOrDefault(fab.OrdererResponse)
 	}
 
-	if opts.Timeouts[core.PeerResponse] == 0 {
-		opts.Timeouts[core.PeerResponse] = rc.ctx.Config().TimeoutOrDefault(core.PeerResponse)
+	if opts.Timeouts[fab.PeerResponse] == 0 {
+		opts.Timeouts[fab.PeerResponse] = rc.ctx.EndpointConfig().TimeoutOrDefault(fab.PeerResponse)
 	}
 }

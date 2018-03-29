@@ -29,6 +29,7 @@ type identityImpl struct {
 // Context holds the providers
 type Context struct {
 	core.Providers
+	EndpointConfig fab.EndpointConfig
 }
 
 // New member identity
@@ -101,11 +102,11 @@ func createMSPManager(ctx Context, cfg fab.ChannelCfg) (msp.MSPManager, error) {
 
 		for _, msp := range msps {
 			for _, cert := range msp.GetTLSRootCerts() {
-				addCertsToConfig(ctx.Config(), cert)
+				addCertsToConfig(ctx.EndpointConfig, cert)
 			}
 
 			for _, cert := range msp.GetTLSIntermediateCerts() {
-				addCertsToConfig(ctx.Config(), cert)
+				addCertsToConfig(ctx.EndpointConfig, cert)
 			}
 		}
 	}
@@ -173,7 +174,7 @@ func loadMSPs(mspConfigs []*mb.MSPConfig, cs core.CryptoSuite) ([]msp.MSP, error
 }
 
 //addCertsToConfig adds cert bytes to config TLSCACertPool
-func addCertsToConfig(config core.Config, pemCerts []byte) {
+func addCertsToConfig(config fab.EndpointConfig, pemCerts []byte) {
 	for len(pemCerts) > 0 {
 		var block *pem.Block
 		block, pemCerts = pem.Decode(pemCerts)

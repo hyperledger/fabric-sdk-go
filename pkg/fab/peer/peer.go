@@ -17,7 +17,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
@@ -26,7 +25,7 @@ var logger = logging.NewLogger("fabsdk/fab")
 // Peer represents a node in the target blockchain network to which
 // HFC sends endorsement proposals, transaction ordering or query requests.
 type Peer struct {
-	config      core.Config
+	config      fab.EndpointConfig
 	certificate *x509.Certificate
 	serverName  string
 	processor   fab.ProposalProcessor
@@ -42,7 +41,7 @@ type Peer struct {
 type Option func(*Peer) error
 
 // New Returns a new Peer instance
-func New(config core.Config, opts ...Option) (*Peer, error) {
+func New(config fab.EndpointConfig, opts ...Option) (*Peer, error) {
 	peer := &Peer{
 		config:      config,
 		commManager: &defCommManager{},
@@ -126,7 +125,7 @@ func WithMSPID(mspID string) Option {
 
 // FromPeerConfig is a functional option for the peer.New constructor that configures a new peer
 // from a apiconfig.NetworkPeer struct
-func FromPeerConfig(peerCfg *core.NetworkPeer) Option {
+func FromPeerConfig(peerCfg *fab.NetworkPeer) Option {
 	return func(p *Peer) error {
 
 		p.url = peerCfg.URL
@@ -152,7 +151,7 @@ func FromPeerConfig(peerCfg *core.NetworkPeer) Option {
 	}
 }
 
-func getServerNameOverride(peerCfg *core.NetworkPeer) string {
+func getServerNameOverride(peerCfg *fab.NetworkPeer) string {
 	serverHostOverride := ""
 	if str, ok := peerCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
 		serverHostOverride = str
@@ -161,7 +160,7 @@ func getServerNameOverride(peerCfg *core.NetworkPeer) string {
 	return serverHostOverride
 }
 
-func getFailFast(peerCfg *core.NetworkPeer) bool {
+func getFailFast(peerCfg *fab.NetworkPeer) bool {
 	var failFast = true
 	if ff, ok := peerCfg.GRPCOptions["fail-fast"].(bool); ok {
 		failFast = cast.ToBool(ff)
@@ -170,7 +169,7 @@ func getFailFast(peerCfg *core.NetworkPeer) bool {
 	return failFast
 }
 
-func getKeepAliveOptions(peerCfg *core.NetworkPeer) keepalive.ClientParameters {
+func getKeepAliveOptions(peerCfg *fab.NetworkPeer) keepalive.ClientParameters {
 
 	var kap keepalive.ClientParameters
 	if kaTime, ok := peerCfg.GRPCOptions["keep-alive-time"]; ok {
@@ -185,7 +184,7 @@ func getKeepAliveOptions(peerCfg *core.NetworkPeer) keepalive.ClientParameters {
 	return kap
 }
 
-func isInsecureConnectionAllowed(peerCfg *core.NetworkPeer) bool {
+func isInsecureConnectionAllowed(peerCfg *fab.NetworkPeer) bool {
 	allowInsecure, ok := peerCfg.GRPCOptions["allow-insecure"].(bool)
 	if ok {
 		return allowInsecure

@@ -12,28 +12,28 @@ import (
 
 	"github.com/pkg/errors"
 
-	config "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
 
 // IdentityManager implements fab/IdentityManager
 type IdentityManager struct {
 	orgName         string
 	orgMSPID        string
-	config          core.Config
+	config          fab.EndpointConfig
 	cryptoSuite     core.CryptoSuite
-	embeddedUsers   map[string]core.TLSKeyPair
+	embeddedUsers   map[string]endpoint.TLSKeyPair
 	mspPrivKeyStore core.KVStore
 	mspCertStore    core.KVStore
 	userStore       msp.UserStore
 }
 
 // NewIdentityManager creates a new instance of IdentityManager
-func NewIdentityManager(orgName string, userStore msp.UserStore, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
+func NewIdentityManager(orgName string, userStore msp.UserStore, cryptoSuite core.CryptoSuite, endpointConfig fab.EndpointConfig) (*IdentityManager, error) {
 
-	netConfig, err := config.NetworkConfig()
+	netConfig, err := endpointConfig.NetworkConfig()
 	if err != nil {
 		return nil, errors.Wrapf(err, "network config retrieval failed")
 	}
@@ -54,7 +54,7 @@ func NewIdentityManager(orgName string, userStore msp.UserStore, cryptoSuite cor
 	orgCryptoPathTemplate := orgConfig.CryptoPath
 	if orgCryptoPathTemplate != "" {
 		if !filepath.IsAbs(orgCryptoPathTemplate) {
-			orgCryptoPathTemplate = filepath.Join(config.CryptoConfigPath(), orgCryptoPathTemplate)
+			orgCryptoPathTemplate = filepath.Join(endpointConfig.CryptoConfigPath(), orgCryptoPathTemplate)
 		}
 		mspPrivKeyStore, err = NewFileKeyStore(orgCryptoPathTemplate)
 		if err != nil {
@@ -71,7 +71,7 @@ func NewIdentityManager(orgName string, userStore msp.UserStore, cryptoSuite cor
 	mgr := &IdentityManager{
 		orgName:         orgName,
 		orgMSPID:        orgConfig.MSPID,
-		config:          config,
+		config:          endpointConfig,
 		cryptoSuite:     cryptoSuite,
 		mspPrivKeyStore: mspPrivKeyStore,
 		mspCertStore:    mspCertStore,

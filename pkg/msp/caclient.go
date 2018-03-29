@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
@@ -24,24 +25,23 @@ var logger = logging.NewLogger("fabsdk/msp")
 type CAClientImpl struct {
 	orgName         string
 	orgMSPID        string
-	config          core.Config
 	cryptoSuite     core.CryptoSuite
 	identityManager msp.IdentityManager
 	userStore       msp.UserStore
 	adapter         *fabricCAAdapter
-	registrar       core.EnrollCredentials
+	registrar       msp.EnrollCredentials
 }
 
 // NewCAClient creates a new CA CAClient instance
-func NewCAClient(orgName string, identityManager msp.IdentityManager, userStore msp.UserStore, cryptoSuite core.CryptoSuite, config core.Config) (*CAClientImpl, error) {
+func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 
-	netConfig, err := config.NetworkConfig()
+	netConfig, err := ctx.EndpointConfig().NetworkConfig()
 	if err != nil {
 		return nil, errors.Wrapf(err, "network config retrieval failed")
 	}
 
 	if orgName == "" {
-		clientConfig, err := config.Client()
+		clientConfig, err := ctx.IdentityConfig().Client()
 		if err != nil {
 			return nil, errors.Wrapf(err, "client config retrieval failed")
 		}
@@ -62,15 +62,15 @@ func NewCAClient(orgName string, identityManager msp.IdentityManager, userStore 
 		return nil, errors.New("no CAs configured")
 	}
 
-	var caConfig *core.CAConfig
+	var caConfig *msp.CAConfig
 	var adapter *fabricCAAdapter
-	var registrar core.EnrollCredentials
+	var registrar msp.EnrollCredentials
 
 	// Currently, an organization can be associated with only one CA
 	caName := orgConfig.CertificateAuthorities[0]
-	caConfig, err = config.CAConfig(orgName)
+	caConfig, err = ctx.IdentityConfig().CAConfig(orgName)
 	if err == nil {
-		adapter, err = newFabricCAAdapter(orgName, cryptoSuite, config)
+		adapter, err = newFabricCAAdapter(orgName, ctx.CryptoSuite(), ctx.IdentityConfig())
 		if err == nil {
 			registrar = caConfig.Registrar
 		} else {
@@ -80,13 +80,17 @@ func NewCAClient(orgName string, identityManager msp.IdentityManager, userStore 
 		return nil, errors.Wrapf(err, "error initializing CA [%s]", caName)
 	}
 
+	identityManager, ok := ctx.IdentityManager(orgName)
+	if !ok {
+		return nil, fmt.Errorf("identity manager not found for organization '%s", orgName)
+	}
+
 	mgr := &CAClientImpl{
 		orgName:         orgName,
 		orgMSPID:        orgConfig.MSPID,
-		config:          config,
-		cryptoSuite:     cryptoSuite,
+		cryptoSuite:     ctx.CryptoSuite(),
 		identityManager: identityManager,
-		userStore:       userStore,
+		userStore:       ctx.UserStore(),
 		adapter:         adapter,
 		registrar:       registrar,
 	}

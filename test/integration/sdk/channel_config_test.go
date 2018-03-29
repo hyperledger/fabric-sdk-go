@@ -12,10 +12,9 @@ import (
 	"testing"
 
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -48,7 +47,7 @@ func TestChannelConfig(t *testing.T) {
 		t.Fatalf("Failed to create new channel config: %s", err)
 	}
 
-	reqCtx, cancel := context.NewRequest(channelCtx, context.WithTimeoutType(core.PeerResponse))
+	reqCtx, cancel := context.NewRequest(channelCtx, context.WithTimeoutType(fab.PeerResponse))
 	defer cancel()
 
 	response, err := cfg.Query(reqCtx)
@@ -80,10 +79,19 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 		ChannelConfigFile: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
-	confProvider := config.FromFile(testSetup.ConfigFile)
+	configBackend, err := configImpl.FromFile(testSetup.ConfigFile)()
+	if err != nil {
+		t.Fatalf("Unexpected error from config backend: %v", err)
+	}
+
+	cryptoSuiteConfig, endpointConfig, identityConfig, err := configImpl.FromBackend(configBackend)()
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
 	// Create SDK setup for channel client with retrieve channel configuration from orderer
-	sdk, err := fabsdk.New(confProvider,
-		fabsdk.WithCorePkg(&ChannelConfigFromOrdererProviderFactory{orderer: setupOrderer(t, confProvider, "orderer.example.com:7050")}))
+	sdk, err := fabsdk.New(nil, fabsdk.WithConfigCryptoSuite(cryptoSuiteConfig), fabsdk.WithConfigEndpoint(endpointConfig), fabsdk.WithConfigIdentity(identityConfig),
+		fabsdk.WithCorePkg(&ChannelConfigFromOrdererProviderFactory{orderer: setupOrderer(t, endpointConfig, "orderer.example.com:7050")}))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -108,7 +116,7 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 		t.Fatalf("Failed to create new channel config: %s", err)
 	}
 
-	reqCtx, cancel := context.NewRequest(channelCtx, context.WithTimeoutType(core.OrdererResponse))
+	reqCtx, cancel := context.NewRequest(channelCtx, context.WithTimeoutType(fab.OrdererResponse))
 	defer cancel()
 
 	response, err := cfg.Query(reqCtx)
@@ -157,7 +165,7 @@ func (f *CustomInfraProvider) CreateChannelConfig(channelID string) (fab.Channel
 }
 
 // CreateInfraProvider returns a new default implementation of fabric primitives
-func (f *ChannelConfigFromOrdererProviderFactory) CreateInfraProvider(config core.Config) (fab.InfraProvider, error) {
+func (f *ChannelConfigFromOrdererProviderFactory) CreateInfraProvider(config fab.EndpointConfig) (fab.InfraProvider, error) {
 
 	fabProvider := fabpvdr.New(config)
 
@@ -168,15 +176,13 @@ func (f *ChannelConfigFromOrdererProviderFactory) CreateInfraProvider(config cor
 	return &cfp, nil
 }
 
-func setupOrderer(t *testing.T, confProvider core.ConfigProvider, address string) fab.Orderer {
-	conf, err := confProvider()
-	assert.Nil(t, err)
+func setupOrderer(t *testing.T, endPointConfig fab.EndpointConfig, address string) fab.Orderer {
 
 	//Get orderer config by orderer address
-	oCfg, err := conf.OrdererConfig(resolveOrdererAddress(address))
+	oCfg, err := endPointConfig.OrdererConfig(resolveOrdererAddress(address))
 	assert.Nil(t, err)
 
-	o, err := orderer.New(conf, orderer.FromOrdererConfig(oCfg))
+	o, err := orderer.New(endPointConfig, orderer.FromOrdererConfig(oCfg))
 	assert.Nil(t, err)
 
 	return o

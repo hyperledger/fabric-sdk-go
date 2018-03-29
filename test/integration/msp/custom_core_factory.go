@@ -26,16 +26,16 @@ func NewCustomCoreFactory(customCryptoSuite core.CryptoSuite) *CustomCoreFactory
 }
 
 // CreateCryptoSuiteProvider creates custom crypto provider
-func (f *CustomCoreFactory) CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
+func (f *CustomCoreFactory) CreateCryptoSuiteProvider(cryptoSuiteConfig core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	return f.customCryptoSuite, nil
 }
 
 // CreateSigningManager creates SigningManager
-func (f *CustomCoreFactory) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error) {
-	return f.defaultFactory.CreateSigningManager(cryptoProvider, config)
+func (f *CustomCoreFactory) CreateSigningManager(cryptoProvider core.CryptoSuite) (core.SigningManager, error) {
+	return f.defaultFactory.CreateSigningManager(cryptoProvider)
 }
 
 // CreateInfraProvider creates InfraProvider
-func (f *CustomCoreFactory) CreateInfraProvider(config core.Config) (fab.InfraProvider, error) {
+func (f *CustomCoreFactory) CreateInfraProvider(config fab.EndpointConfig) (fab.InfraProvider, error) {
 	return f.defaultFactory.CreateInfraProvider(config)
 }

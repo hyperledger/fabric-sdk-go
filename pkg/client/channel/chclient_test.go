@@ -20,7 +20,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -435,7 +434,7 @@ func TestDiscoveryGreylist(t *testing.T) {
 	testPeer1.Error = status.New(status.EndorserClientStatus,
 		status.ConnectionFailed.ToInt32(), "test", []interface{}{testPeer1.URL()})
 
-	selectionProvider, err := staticselection.New(fcmocks.NewMockConfig())
+	selectionProvider, err := staticselection.New(fcmocks.NewMockEndpointConfig())
 	assert.Nil(t, err, "Got error %s", err)
 
 	selectionService, err := selectionProvider.CreateSelectionService("mychannel")
@@ -470,7 +469,7 @@ func TestDiscoveryGreylist(t *testing.T) {
 	assert.EqualValues(t, status.NoPeersFound.ToInt32(), s.Code, "expected No Peers Found status on greylist")
 	assert.Equal(t, 1, testPeer1.ProcessProposalCalls, "expected peer 1 to be greylisted")
 	// Wait for greylist expiry
-	time.Sleep(chClient.context.Config().TimeoutOrDefault(core.DiscoveryGreylistExpiry))
+	time.Sleep(chClient.context.EndpointConfig().TimeoutOrDefault(fab.DiscoveryGreylistExpiry))
 	testPeer1.ProcessProposalCalls = 0
 	testPeer1.Error = status.New(status.EndorserServerStatus, int32(common.Status_SERVICE_UNAVAILABLE), "test", nil)
 	// Try again

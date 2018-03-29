@@ -12,18 +12,19 @@ import (
 	caapi "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 )
 
 // fabricCAAdapter translates between SDK lingo and native Fabric CA API
 type fabricCAAdapter struct {
-	config      core.Config
+	config      msp.IdentityConfig
 	cryptoSuite core.CryptoSuite
 	caClient    *calib.Client
 }
 
-func newFabricCAAdapter(orgName string, cryptoSuite core.CryptoSuite, config core.Config) (*fabricCAAdapter, error) {
+func newFabricCAAdapter(orgName string, cryptoSuite core.CryptoSuite, config msp.IdentityConfig) (*fabricCAAdapter, error) {
 
 	caClient, err := createFabricCAClient(orgName, cryptoSuite, config)
 	if err != nil {
@@ -150,7 +151,7 @@ func (c *fabricCAAdapter) Revoke(key core.Key, cert []byte, request *api.Revocat
 	}, nil
 }
 
-func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config core.Config) (*calib.Client, error) {
+func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config msp.IdentityConfig) (*calib.Client, error) {
 
 	// Create new Fabric-ca client without configs
 	c := &calib.Client{

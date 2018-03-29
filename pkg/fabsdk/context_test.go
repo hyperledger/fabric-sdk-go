@@ -9,7 +9,7 @@ package fabsdk
 import (
 	"testing"
 
-	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 )
 
 func TestWithUserValid(t *testing.T) {
-	sdk, err := New(configImpl.FromFile(identityOptConfigFile))
+	sdk, err := New(config.FromFile(identityOptConfigFile))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -34,7 +34,7 @@ func TestWithUserValid(t *testing.T) {
 }
 
 func TestWithIdentity(t *testing.T) {
-	sdk, err := New(configImpl.FromFile(identityOptConfigFile))
+	sdk, err := New(config.FromFile(identityOptConfigFile))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -62,7 +62,7 @@ func TestWithIdentity(t *testing.T) {
 
 func TestFabricSDKContext(t *testing.T) {
 
-	sdk, err := New(configImpl.FromFile(identityOptConfigFile))
+	sdk, err := New(config.FromFile(identityOptConfigFile))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}

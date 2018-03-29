@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"fmt"
+
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -50,15 +52,19 @@ m1KOnMry/mOZcnXnTIh2ASV4ss8VluzBcyHGAv7BCmxXxDkjcV9eybv8
 )
 
 func TestGetSigningIdentityWithEnrollment(t *testing.T) {
-	config, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
+	configBackend, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	clientCofig, err := config.Client()
+	cryptoConfig, endpointConfig, identityConfig, err := config.FromBackend(configBackend)()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+	clientCofig, err := identityConfig.Client()
 	if err != nil {
 		t.Fatalf("Unable to retrieve client config: %v", err)
 	}
-	netConfig, err := config.NetworkConfig()
+	netConfig, err := endpointConfig.NetworkConfig()
 	if err != nil {
 		t.Fatalf("NetworkConfig failed: %s", err)
 	}
@@ -71,17 +77,17 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 
 	// Delete all private keys from the crypto suite store
 	// and users from the user store
-	keyStorePath := config.KeyStorePath()
-	credentialStorePath := config.CredentialStorePath()
+	keyStorePath := cryptoConfig.KeyStorePath()
+	credentialStorePath := identityConfig.CredentialStorePath()
 	cleanupTestPath(t, keyStorePath)
 	defer cleanupTestPath(t, keyStorePath)
 	cleanupTestPath(t, credentialStorePath)
 	defer cleanupTestPath(t, credentialStorePath)
 
-	cs, err := sw.GetSuiteByConfig(config)
-	userStore := userStoreFromConfig(t, config)
+	cs, err := sw.GetSuiteByConfig(cryptoConfig)
+	userStore := userStoreFromConfig(t, identityConfig)
 
-	identityMgr, err := NewIdentityManager(orgName, userStore, cs, config)
+	identityMgr, err := NewIdentityManager(orgName, userStore, cs, endpointConfig)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

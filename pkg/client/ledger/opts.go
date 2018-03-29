@@ -11,9 +11,8 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/pkg/errors"
 )
 
@@ -38,12 +37,12 @@ type RequestOption func(ctx context.Client, opts *requestOptions) error
 
 //requestOptions contains options for operations performed by LedgerClient
 type requestOptions struct {
-	Targets       []fab.Peer                         // target peers
-	TargetFilter  fab.TargetFilter                   // target filter
-	MaxTargets    int                                // maximum number of targets to select
-	MinTargets    int                                // min number of targets that have to respond with no error (or agree on result)
-	Timeouts      map[core.TimeoutType]time.Duration //timeout options for ledger query operations
-	ParentContext reqContext.Context                 //parent grpc context for ledger operations
+	Targets       []fab.Peer                        // target peers
+	TargetFilter  fab.TargetFilter                  // target filter
+	MaxTargets    int                               // maximum number of targets to select
+	MinTargets    int                               // min number of targets that have to respond with no error (or agree on result)
+	Timeouts      map[fab.TimeoutType]time.Duration //timeout options for ledger query operations
+	ParentContext reqContext.Context                //parent grpc context for ledger operations
 }
 
 //WithTargets encapsulates fab.Peer targets to ledger RequestOption
@@ -64,7 +63,7 @@ func WithTargetURLs(urls ...string) RequestOption {
 
 		for _, url := range urls {
 
-			peerCfg, err := config.NetworkPeerConfigFromURL(ctx.Config(), url)
+			peerCfg, err := comm.NetworkPeerConfigFromURL(ctx.EndpointConfig(), url)
 			if err != nil {
 				return err
 			}
@@ -107,10 +106,10 @@ func WithMinTargets(minTargets int) RequestOption {
 
 //WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
 //for QueryInfo,QueryBlockByHash,QueryBlock,QueryTransaction,QueryConfig functions
-func WithTimeout(timeoutType core.TimeoutType, timeout time.Duration) RequestOption {
+func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		if o.Timeouts == nil {
-			o.Timeouts = make(map[core.TimeoutType]time.Duration)
+			o.Timeouts = make(map[fab.TimeoutType]time.Duration)
 		}
 		o.Timeouts[timeoutType] = timeout
 		return nil

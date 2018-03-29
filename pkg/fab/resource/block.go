@@ -34,7 +34,7 @@ func retrieveBlock(reqCtx reqContext.Context, orderers []fab.Orderer, channel st
 
 	channelHeaderOpts := txn.ChannelHeaderOpts{
 		TxnHeader:   th,
-		TLSCertHash: ccomm.TLSCertHash(ctx.Config()),
+		TLSCertHash: ccomm.TLSCertHash(ctx.EndpointConfig()),
 	}
 	seekInfoHeader, err := txn.CreateChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, channelHeaderOpts)
 	if err != nil {

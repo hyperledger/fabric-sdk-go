@@ -18,10 +18,10 @@ import (
 
 func TestCreateDiscoveryProvider(t *testing.T) {
 	ctx := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("testuser", "testuser"))
-	fabPvdr := fabpvdr.New(ctx.Config())
+	fabPvdr := fabpvdr.New(ctx.EndpointConfig())
 
 	factory := NewProviderFactory()
-	config := mocks.NewMockConfig()
+	config := mocks.NewMockEndpointConfig()
 
 	dp, err := factory.CreateDiscoveryProvider(config, fabPvdr)
 	if err != nil {
@@ -37,7 +37,7 @@ func TestCreateDiscoveryProvider(t *testing.T) {
 func TestCreateSelectionProvider(t *testing.T) {
 	factory := NewProviderFactory()
 
-	config := mocks.NewMockConfig()
+	config := mocks.NewMockEndpointConfig()
 
 	dp, err := factory.CreateSelectionProvider(config)
 	if err != nil {

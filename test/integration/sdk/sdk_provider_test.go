@@ -13,7 +13,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
@@ -103,6 +102,6 @@ type DynamicSelectionProviderFactory struct {
 }
 
 // CreateSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
+func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
 	return selection.New(config, f.ChannelUsers)
 }

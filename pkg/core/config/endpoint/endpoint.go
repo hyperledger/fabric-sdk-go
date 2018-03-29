@@ -58,6 +58,22 @@ func AttemptSecured(url string, allowInSecure bool) bool {
 	}
 }
 
+// MutualTLSConfig Mutual TLS configurations
+type MutualTLSConfig struct {
+	Pem []string
+	// Certfiles root certificates for TLS validation (Comma separated path list)
+	Path string
+
+	//Client TLS information
+	Client TLSKeyPair
+}
+
+// TLSKeyPair contains the private key and certificate for TLS encryption
+type TLSKeyPair struct {
+	Key  TLSConfig
+	Cert TLSConfig
+}
+
 // TLSConfig TLS configuration used in the sdk's configs.
 type TLSConfig struct {
 	// the following two fields are interchangeable.

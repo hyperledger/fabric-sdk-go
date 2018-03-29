@@ -14,7 +14,6 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
@@ -172,6 +171,6 @@ func getContext(sdk *fabsdk.FabricSDK, user string, orgName string) (reqContext.
 		return nil, nil, errors.WithMessage(err, "create context failed")
 	}
 
-	reqCtx, cancel := context.NewRequest(&context.Client{Providers: clientContext, SigningIdentity: clientContext}, context.WithTimeoutType(core.PeerResponse))
+	reqCtx, cancel := context.NewRequest(&context.Client{Providers: clientContext, SigningIdentity: clientContext}, context.WithTimeoutType(fab.PeerResponse))
 	return reqCtx, cancel, nil
 }

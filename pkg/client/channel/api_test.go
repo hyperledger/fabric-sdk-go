@@ -11,7 +11,7 @@ import (
 
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/stretchr/testify/assert"
@@ -23,12 +23,12 @@ func TestWithTargetURLsInvalid(t *testing.T) {
 
 	mockConfig := &fcmocks.MockConfig{}
 
-	oConfig := &core.PeerConfig{
+	oConfig := &fab.PeerConfig{
 		URL: "127.0.0.1:7050",
 	}
 
 	mockConfig.SetCustomPeerCfg(oConfig)
-	ctx.SetConfig(mockConfig)
+	ctx.SetEndpointConfig(mockConfig)
 
 	opts := requestOptions{}
 	err := opt(ctx, &opts)
@@ -41,27 +41,27 @@ func TestWithTargetURLsValid(t *testing.T) {
 
 	mockConfig := &fcmocks.MockConfig{}
 
-	pConfig1 := core.PeerConfig{
+	pConfig1 := fab.PeerConfig{
 		URL: "127.0.0.1:7050",
 	}
 
-	npConfig1 := core.NetworkPeer{
+	npConfig1 := fab.NetworkPeer{
 		PeerConfig: pConfig1,
 		MSPID:      "MYMSP",
 	}
 
-	pConfig2 := core.PeerConfig{
+	pConfig2 := fab.PeerConfig{
 		URL: "127.0.0.1:7051",
 	}
 
-	npConfig2 := core.NetworkPeer{
+	npConfig2 := fab.NetworkPeer{
 		PeerConfig: pConfig2,
 		MSPID:      "OTHERMSP",
 	}
 
 	mockConfig.SetCustomPeerCfg(&pConfig1)
-	mockConfig.SetCustomNetworkPeerCfg([]core.NetworkPeer{npConfig2, npConfig1})
-	ctx.SetConfig(mockConfig)
+	mockConfig.SetCustomNetworkPeerCfg([]fab.NetworkPeer{npConfig2, npConfig1})
+	ctx.SetEndpointConfig(mockConfig)
 
 	opts := requestOptions{}
 	err := opt(ctx, &opts)
@@ -82,20 +82,20 @@ func TestTimeoutOptions(t *testing.T) {
 
 	opts := requestOptions{}
 
-	options := []RequestOption{WithTimeout(core.PeerResponse, 20*time.Second),
-		WithTimeout(core.ResMgmt, 25*time.Second), WithTimeout(core.OrdererResponse, 30*time.Second),
-		WithTimeout(core.EventHubConnection, 35*time.Second), WithTimeout(core.Execute, 40*time.Second),
-		WithTimeout(core.Query, 45*time.Second)}
+	options := []RequestOption{WithTimeout(fab.PeerResponse, 20*time.Second),
+		WithTimeout(fab.ResMgmt, 25*time.Second), WithTimeout(fab.OrdererResponse, 30*time.Second),
+		WithTimeout(fab.EventHubConnection, 35*time.Second), WithTimeout(fab.Execute, 40*time.Second),
+		WithTimeout(fab.Query, 45*time.Second)}
 
 	for _, option := range options {
 		option(nil, &opts)
 	}
 
-	assert.True(t, opts.Timeouts[core.PeerResponse] == 20*time.Second, "timeout value by type didn't match with one supplied")
-	assert.True(t, opts.Timeouts[core.ResMgmt] == 25*time.Second, "timeout value by type didn't match with one supplied")
-	assert.True(t, opts.Timeouts[core.OrdererResponse] == 30*time.Second, "timeout value by type didn't match with one supplied")
-	assert.True(t, opts.Timeouts[core.EventHubConnection] == 35*time.Second, "timeout value by type didn't match with one supplied")
-	assert.True(t, opts.Timeouts[core.Execute] == 40*time.Second, "timeout value by type didn't match with one supplied")
-	assert.True(t, opts.Timeouts[core.Query] == 45*time.Second, "timeout value by type didn't match with one supplied")
+	assert.True(t, opts.Timeouts[fab.PeerResponse] == 20*time.Second, "timeout value by type didn't match with one supplied")
+	assert.True(t, opts.Timeouts[fab.ResMgmt] == 25*time.Second, "timeout value by type didn't match with one supplied")
+	assert.True(t, opts.Timeouts[fab.OrdererResponse] == 30*time.Second, "timeout value by type didn't match with one supplied")
+	assert.True(t, opts.Timeouts[fab.EventHubConnection] == 35*time.Second, "timeout value by type didn't match with one supplied")
+	assert.True(t, opts.Timeouts[fab.Execute] == 40*time.Second, "timeout value by type didn't match with one supplied")
+	assert.True(t, opts.Timeouts[fab.Query] == 45*time.Second, "timeout value by type didn't match with one supplied")
 
 }

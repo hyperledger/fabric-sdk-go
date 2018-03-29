@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -49,7 +49,7 @@ func TestRegisterEnroll(t *testing.T) {
 	// we have to enroll the CA registrar first. Otherwise,
 	// CA operations that require the registrar's identity
 	// will be rejected by the CA.
-	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, sdk.Config())
+	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, ctxProvider)
 	err = mspClient.Enroll(registrarEnrollID, msp.WithSecret(registrarEnrollSecret))
 	if err != nil {
 		t.Fatalf("Enroll failed: %v", err)
@@ -91,16 +91,21 @@ func TestRegisterEnroll(t *testing.T) {
 
 }
 
-func getRegistrarEnrollmentCredentials(t *testing.T, config core.Config) (string, string) {
+func getRegistrarEnrollmentCredentials(t *testing.T, ctxProvider context.ClientProvider) (string, string) {
 
-	clientConfig, err := config.Client()
+	ctx, err := ctxProvider()
+	if err != nil {
+		t.Fatalf("failed to get context: %v", err)
+	}
+
+	clientConfig, err := ctx.IdentityConfig().Client()
 	if err != nil {
 		t.Fatalf("config.Client() failed: %v", err)
 	}
 
 	myOrg := clientConfig.Organization
 
-	caConfig, err := config.CAConfig(myOrg)
+	caConfig, err := ctx.IdentityConfig().CAConfig(myOrg)
 	if err != nil {
 		t.Fatalf("CAConfig failed: %v", err)
 	}

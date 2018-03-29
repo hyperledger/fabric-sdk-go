@@ -12,9 +12,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
@@ -24,8 +23,8 @@ type requestOptions struct {
 	Targets       []fab.Peer // targets
 	TargetFilter  fab.TargetFilter
 	Retry         retry.Opts
-	Timeouts      map[core.TimeoutType]time.Duration //timeout options for channel client operations
-	ParentContext reqContext.Context                 //parent grpc context for channel client operations (query, execute, invokehandler)
+	Timeouts      map[fab.TimeoutType]time.Duration //timeout options for channel client operations
+	ParentContext reqContext.Context                //parent grpc context for channel client operations (query, execute, invokehandler)
 }
 
 // RequestOption func for each Opts argument
@@ -68,7 +67,7 @@ func WithTargetURLs(urls ...string) RequestOption {
 
 		for _, url := range urls {
 
-			peerCfg, err := config.NetworkPeerConfigFromURL(ctx.Config(), url)
+			peerCfg, err := comm.NetworkPeerConfigFromURL(ctx.EndpointConfig(), url)
 			if err != nil {
 				return err
 			}
@@ -102,10 +101,10 @@ func WithRetry(retryOpt retry.Opts) RequestOption {
 }
 
 //WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
-func WithTimeout(timeoutType core.TimeoutType, timeout time.Duration) RequestOption {
+func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		if o.Timeouts == nil {
-			o.Timeouts = make(map[core.TimeoutType]time.Duration)
+			o.Timeouts = make(map[fab.TimeoutType]time.Duration)
 		}
 		o.Timeouts[timeoutType] = timeout
 		return nil

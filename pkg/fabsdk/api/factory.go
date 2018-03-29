@@ -21,19 +21,19 @@ type Providers interface {
 
 // CoreProviderFactory allows overriding of primitives and the fabric core object provider
 type CoreProviderFactory interface {
-	CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error)
-	CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error)
-	CreateInfraProvider(config core.Config) (fab.InfraProvider, error)
+	CreateCryptoSuiteProvider(config core.CryptoSuiteConfig) (core.CryptoSuite, error)
+	CreateSigningManager(cryptoProvider core.CryptoSuite) (core.SigningManager, error)
+	CreateInfraProvider(config fab.EndpointConfig) (fab.InfraProvider, error)
 }
 
 // MSPProviderFactory allows overriding providers of MSP services
 type MSPProviderFactory interface {
-	CreateUserStore(config core.Config) (msp.UserStore, error)
-	CreateIdentityManagerProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error)
+	CreateUserStore(config msp.IdentityConfig) (msp.UserStore, error)
+	CreateIdentityManagerProvider(config fab.EndpointConfig, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error)
 }
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)
 type ServiceProviderFactory interface {
-	CreateDiscoveryProvider(config core.Config, fabPvdr fab.InfraProvider) (fab.DiscoveryProvider, error)
-	CreateSelectionProvider(config core.Config) (fab.SelectionProvider, error)
+	CreateDiscoveryProvider(config fab.EndpointConfig, fabPvdr fab.InfraProvider) (fab.DiscoveryProvider, error)
+	CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error)
 }

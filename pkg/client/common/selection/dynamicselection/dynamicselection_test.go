@@ -14,7 +14,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection/pgresolver"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -350,7 +349,7 @@ func TestDynamicSelection(t *testing.T) {
 
 	mychannelUser := ChannelUser{ChannelID: "mychannel", Username: "User1", OrgName: "Org1"}
 
-	selectionProvider, err := New(ctx.Config(), []ChannelUser{mychannelUser})
+	selectionProvider, err := New(ctx.EndpointConfig(), []ChannelUser{mychannelUser})
 	if err != nil {
 		t.Fatalf("Failed to setup selection provider: %s", err)
 	}
@@ -369,7 +368,7 @@ func TestDynamicSelection(t *testing.T) {
 
 	selectionProvider.providers = ctx
 	testLBPolicy(t, selectionProvider)
-	testCustomLBPolicy(t, ctx.Config(), mychannelUser)
+	testCustomLBPolicy(t, ctx.EndpointConfig(), mychannelUser)
 }
 
 func testLBPolicy(t *testing.T, selectionProvider *SelectionProvider) {
@@ -422,7 +421,7 @@ func testLBPolicy(t *testing.T, selectionProvider *SelectionProvider) {
 
 }
 
-func testCustomLBPolicy(t *testing.T, c core.Config, mychannelUser ChannelUser) {
+func testCustomLBPolicy(t *testing.T, c fab.EndpointConfig, mychannelUser ChannelUser) {
 
 	// Test custom load balancer
 	selectionProvider, err := New(c, []ChannelUser{mychannelUser}, WithLoadBalancePolicy(newCustomLBP()))
@@ -462,7 +461,7 @@ type DynamicSelectionProviderFactory struct {
 }
 
 // CreateSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
+func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
 	return f.selectionProvider, nil
 }
 

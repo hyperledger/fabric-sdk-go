@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package config
+package pathvar
 
 import (
 	"bytes"
@@ -24,11 +24,11 @@ func goPath() string {
 	return gps[0]
 }
 
-// SubstPathVars replaces instances of '${VARNAME}' (eg ${GOPATH}) with the variable.
+// Subst replaces instances of '${VARNAME}' (eg ${GOPATH}) with the variable.
 // As a special case, $GOPATH is also replaced.
 // NOTE: this function currently only performs substitution when the path string starts with $
 //       as the path variables are intended to assist with testing.
-func SubstPathVars(path string) string {
+func Subst(path string) string {
 	if !strings.HasPrefix(path, "$") {
 		return path
 	}

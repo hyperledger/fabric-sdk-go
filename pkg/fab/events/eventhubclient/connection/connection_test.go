@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
@@ -204,8 +204,8 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func newPeerConfig(eventURL string) *core.PeerConfig {
-	return &core.PeerConfig{
+func newPeerConfig(eventURL string) *fab.PeerConfig {
+	return &fab.PeerConfig{
 		EventURL:    eventURL,
 		GRPCOptions: make(map[string]interface{}),
 	}

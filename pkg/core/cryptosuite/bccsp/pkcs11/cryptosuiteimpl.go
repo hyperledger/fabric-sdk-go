@@ -19,7 +19,7 @@ import (
 var logger = logging.NewLogger("fabsdk/core")
 
 //GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
-func GetSuiteByConfig(config core.Config) (core.CryptoSuite, error) {
+func GetSuiteByConfig(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	// TODO: delete this check?
 	if config.SecurityProvider() != "PKCS11" {
 		return nil, errors.Errorf("Unsupported BCCSP Provider: %s", config.SecurityProvider())
@@ -45,7 +45,7 @@ func getBCCSPFromOpts(config *pkcs11.PKCS11Opts) (bccsp.BCCSP, error) {
 }
 
 //getOptsByConfig Returns Factory opts for given SDK config
-func getOptsByConfig(c core.Config) *pkcs11.PKCS11Opts {
+func getOptsByConfig(c core.CryptoSuiteConfig) *pkcs11.PKCS11Opts {
 	pkks := pkcs11.FileKeystoreOpts{KeyStorePath: c.KeyStorePath()}
 	opts := &pkcs11.PKCS11Opts{
 		SecLevel:     c.SecurityLevel(),

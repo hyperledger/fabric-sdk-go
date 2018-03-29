@@ -49,7 +49,7 @@ func WithOrg(org string) ContextOption {
 var ErrAnonymousIdentity = errors.New("missing credentials")
 
 func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.SigningIdentity, error) {
-	clientConfig, err := sdk.Config().Client()
+	clientConfig, err := sdk.provider.IdentityConfig().Client()
 	if err != nil {
 		return nil, errors.WithMessage(err, "retrieving client configuration failed")
 	}

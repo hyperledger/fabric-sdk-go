@@ -29,18 +29,18 @@ func NewProviderFactory() *ProviderFactory {
 }
 
 // CreateCryptoSuiteProvider returns a new default implementation of BCCSP
-func (f *ProviderFactory) CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
+func (f *ProviderFactory) CreateCryptoSuiteProvider(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	cryptoSuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(config)
 	return cryptoSuiteProvider, err
 }
 
 // CreateSigningManager returns a new default implementation of signing manager
-func (f *ProviderFactory) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error) {
-	return signingMgr.New(cryptoProvider, config)
+func (f *ProviderFactory) CreateSigningManager(cryptoProvider core.CryptoSuite) (core.SigningManager, error) {
+	return signingMgr.New(cryptoProvider)
 }
 
 // CreateInfraProvider returns a new default implementation of fabric primitives
-func (f *ProviderFactory) CreateInfraProvider(config core.Config) (fab.InfraProvider, error) {
+func (f *ProviderFactory) CreateInfraProvider(config fab.EndpointConfig) (fab.InfraProvider, error) {
 	return fabpvdr.New(config), nil
 }
 
