@@ -11,11 +11,10 @@ import (
 	"testing"
 
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -135,7 +134,7 @@ func getTransactor(sdk *fabsdk.FabricSDK, channelID string, user string, orgName
 		return nil, nil, nil, errors.WithMessage(err, "channel config retrieval failed")
 	}
 
-	reqCtx, cancel := context.NewRequest(channelContext, context.WithTimeoutType(core.PeerResponse))
+	reqCtx, cancel := context.NewRequest(channelContext, context.WithTimeoutType(fab.PeerResponse))
 	transactor, err := channel.NewTransactor(reqCtx, chConfig)
 
 	return reqCtx, cancel, transactor, err
@@ -163,7 +162,7 @@ func getProposalProcessors(sdk *fabsdk.FabricSDK, user string, orgName string, t
 
 func getPeer(ctx contextAPI.Client, url string) (fab.Peer, error) {
 
-	peerCfg, err := config.NetworkPeerConfigFromURL(ctx.Config(), url)
+	peerCfg, err := comm.NetworkPeerConfigFromURL(ctx.EndpointConfig(), url)
 	if err != nil {
 		return nil, err
 	}

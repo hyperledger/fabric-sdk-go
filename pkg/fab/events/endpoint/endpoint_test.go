@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -27,12 +26,12 @@ var p1 = fabmocks.NewMockPeer("p1", url1)
 var p2 = fabmocks.NewMockPeer("p2", url2)
 var p3 = fabmocks.NewMockPeer("p3", url3)
 
-var pc1 = core.PeerConfig{URL: url1}
-var pc2 = core.PeerConfig{URL: url2}
-var pc3 = core.PeerConfig{URL: url3}
+var pc1 = fab.PeerConfig{URL: url1}
+var pc2 = fab.PeerConfig{URL: url2}
+var pc3 = fab.PeerConfig{URL: url3}
 
 var peers = []fab.Peer{p1, p2, p3}
-var peerConfigs = []core.PeerConfig{pc1, pc2, pc3}
+var peerConfigs = []fab.PeerConfig{pc1, pc2, pc3}
 
 func TestEndpoint(t *testing.T) {
 	expectedEventURL := "localhost:7053"
@@ -43,9 +42,9 @@ func TestEndpoint(t *testing.T) {
 	expectedKeepAlivePermit := true
 	expectedNumOpts := 6
 
-	config := fabmocks.NewMockConfig()
+	config := fabmocks.NewMockEndpointConfig()
 	peer := fabmocks.NewMockPeer("p1", "localhost:7051")
-	peerConfig := &core.PeerConfig{
+	peerConfig := &fab.PeerConfig{
 		GRPCOptions: make(map[string]interface{}),
 		EventURL:    "localhost:7053",
 	}
@@ -128,10 +127,10 @@ func TestDiscoveryProviderWithTargetFilter(t *testing.T) {
 func TestDiscoveryProviderWithEventSource(t *testing.T) {
 	ctx := newMockContext()
 
-	chPeer2 := core.ChannelPeer{}
+	chPeer2 := fab.ChannelPeer{}
 	chPeer2.URL = p2.URL()
 	chPeer2.EventSource = false
-	ctx.SetConfig(newMockConfig(chPeer2))
+	ctx.SetEndpointConfig(newMockConfig(chPeer2))
 
 	expectedNumPeers := len(peers) - 1
 
@@ -151,18 +150,18 @@ func TestDiscoveryProviderWithEventSource(t *testing.T) {
 }
 
 type mockConfig struct {
-	core.Config
-	channelPeers []core.ChannelPeer
+	fab.EndpointConfig
+	channelPeers []fab.ChannelPeer
 }
 
-func newMockConfig(channelPeers ...core.ChannelPeer) *mockConfig {
+func newMockConfig(channelPeers ...fab.ChannelPeer) *mockConfig {
 	return &mockConfig{
-		Config:       fabmocks.NewMockConfig(),
-		channelPeers: channelPeers,
+		EndpointConfig: fabmocks.NewMockEndpointConfig(),
+		channelPeers:   channelPeers,
 	}
 }
 
-func (c *mockConfig) PeerConfigByURL(url string) (*core.PeerConfig, error) {
+func (c *mockConfig) PeerConfigByURL(url string) (*fab.PeerConfig, error) {
 	for _, pc := range peerConfigs {
 		if pc.URL == url {
 			return &pc, nil
@@ -171,7 +170,7 @@ func (c *mockConfig) PeerConfigByURL(url string) (*core.PeerConfig, error) {
 	return nil, nil
 }
 
-func (c *mockConfig) ChannelPeers(name string) ([]core.ChannelPeer, error) {
+func (c *mockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 	fmt.Printf("mockConfig.ChannelPeers - returning %#v", c.channelPeers)
 	return c.channelPeers, nil
 }
@@ -183,7 +182,7 @@ func newMockContext() *fabmocks.MockContext {
 		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 		discoveryProvider,
 	)
-	ctx.SetConfig(newMockConfig())
+	ctx.SetEndpointConfig(newMockConfig())
 	return ctx
 }
 

@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"fmt"
+
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -48,11 +50,15 @@ XdsmTcdRvJ3TS/6HCA==
 
 func TestGetSigningIdentity(t *testing.T) {
 
-	config, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
+	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	netConfig, err := config.NetworkConfig()
+	cryptoConfig, endpointConfig, identityConfig, err := config.FromBackend(configBackend)()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+	netConfig, err := endpointConfig.NetworkConfig()
 	if err != nil {
 		t.Fatalf("Failed to setup netConfig: %s", err)
 	}
@@ -62,24 +68,24 @@ func TestGetSigningIdentity(t *testing.T) {
 	}
 	mspID := orgConfig.MSPID
 
-	clientCofig, err := config.Client()
+	clientCofig, err := identityConfig.Client()
 	if err != nil {
 		t.Fatalf("Unable to retrieve client config: %v", err)
 	}
 
 	// Cleanup key store and user store
-	cleanupTestPath(t, config.KeyStorePath())
-	defer cleanupTestPath(t, config.KeyStorePath())
+	cleanupTestPath(t, cryptoConfig.KeyStorePath())
+	defer cleanupTestPath(t, cryptoConfig.KeyStorePath())
 	cleanupTestPath(t, clientCofig.CredentialStore.Path)
 	defer cleanupTestPath(t, clientCofig.CredentialStore.Path)
 
-	cryptoSuite, err := sw.GetSuiteByConfig(config)
+	cryptoSuite, err := sw.GetSuiteByConfig(cryptoConfig)
 	if err != nil {
 		t.Fatalf("Failed to setup cryptoSuite: %s", err)
 	}
 
-	userStore := userStoreFromConfig(t, config)
-	mgr, err := NewIdentityManager(orgName, userStore, cryptoSuite, config)
+	userStore := userStoreFromConfig(t, identityConfig)
+	mgr, err := NewIdentityManager(orgName, userStore, cryptoSuite, endpointConfig)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
@@ -148,14 +154,18 @@ func checkSigningIdentity(mgr msp.IdentityManager, user string) error {
 
 func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 
-	config, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
+	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	userStore := userStoreFromConfig(t, config)
+	_, endpointConfig, identityConfig, err := config.FromBackend(configBackend)()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+	userStore := userStoreFromConfig(t, identityConfig)
 
 	// Invalid Org
-	_, err = NewIdentityManager("invalidOrg", userStore, &fcmocks.MockCryptoSuite{}, config)
+	_, err = NewIdentityManager("invalidOrg", userStore, &fcmocks.MockCryptoSuite{}, endpointConfig)
 	if err == nil {
 		t.Fatalf("Should have failed to setup manager for invalid org")
 	}
@@ -164,13 +174,17 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 
 func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 
-	config, err := config.FromFile("../../pkg/core/config/testdata/config_test_embedded_pems.yaml")()
+	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test_embedded_pems.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	userStore := userStoreFromConfig(t, config)
+	_, endpointConfig, identityConfig, err := config.FromBackend(configBackend)()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+	userStore := userStoreFromConfig(t, identityConfig)
 
-	mgr, err := NewIdentityManager(orgName, userStore, cryptosuite.GetDefault(), config)
+	mgr, err := NewIdentityManager(orgName, userStore, cryptosuite.GetDefault(), endpointConfig)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}

@@ -15,7 +15,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 )
@@ -125,10 +125,14 @@ func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string) (bool, error) {
 }
 
 // OrgTargetPeers determines peer endpoints for orgs
-func OrgTargetPeers(config core.Config, orgs []string) ([]string, error) {
+func OrgTargetPeers(configProvider config.Provider, orgs []string) ([]string, error) {
+	_, endpointConfig, _, err := configProvider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "reading config failed")
+	}
 	var peers []string
 	for _, org := range orgs {
-		peerConfig, err := config.PeersConfig(org)
+		peerConfig, err := endpointConfig.PeersConfig(org)
 		if err != nil {
 			return nil, errors.WithMessage(err, "reading peer config failed")
 		}
@@ -169,9 +173,12 @@ func CleanupTestPath(t *testing.T, storePath string) {
 
 // CleanupUserData removes user data.
 func CleanupUserData(t *testing.T, sdk *fabsdk.FabricSDK) {
-	netConfig := sdk.Config()
-	keyStorePath := netConfig.KeyStorePath()
-	credentialStorePath := netConfig.CredentialStorePath()
+	cryptoSuiteConfig, _, identityConfig, err := sdk.Config()()
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyStorePath := cryptoSuiteConfig.KeyStorePath()
+	credentialStorePath := identityConfig.CredentialStorePath()
 	CleanupTestPath(t, keyStorePath)
 	CleanupTestPath(t, credentialStorePath)
 }

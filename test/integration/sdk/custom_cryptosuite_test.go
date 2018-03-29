@@ -61,15 +61,16 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 
 	testSetup, chainCodeID := customCryptoSuiteInit(t)
 
-	defaultConfig, err := testSetup.InitConfig()()
+	configBackend, err := testSetup.InitConfig()()
 
+	cryptoConfig, _, _, err := config.FromBackend(configBackend)()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to get default config [%s]", err))
 	}
 
 	//Get Test BCCSP,
 	// TODO Need to use external BCCSP here
-	customBccspProvider := getTestBCCSP(defaultConfig)
+	customBccspProvider := getTestBCCSP(cryptoConfig)
 
 	// Create SDK setup with custom cryptosuite provider factory
 	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile),
@@ -109,12 +110,12 @@ type CustomCryptoSuiteProviderFactory struct {
 }
 
 // CreateCryptoSuiteProvider returns a new default implementation of BCCSP
-func (f *CustomCryptoSuiteProviderFactory) CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
+func (f *CustomCryptoSuiteProviderFactory) CreateCryptoSuiteProvider(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	c := wrapper.NewCryptoSuite(f.bccspProvider)
 	return c, nil
 }
 
-func getTestBCCSP(config core.Config) bccsp.BCCSP {
+func getTestBCCSP(config core.CryptoSuiteConfig) bccsp.BCCSP {
 	opts := getOptsByConfig(config)
 	s, err := getBCCSPFromOpts(opts)
 	if err != nil {
@@ -130,7 +131,7 @@ func getBCCSPFromOpts(config *bccspSw.SwOpts) (bccsp.BCCSP, error) {
 	return f.Get(config)
 }
 
-func getOptsByConfig(c core.Config) *bccspSw.SwOpts {
+func getOptsByConfig(c core.CryptoSuiteConfig) *bccspSw.SwOpts {
 	opts := &bccspSw.SwOpts{
 		HashFamily: c.SecurityAlgorithm(),
 		SecLevel:   c.SecurityLevel(),

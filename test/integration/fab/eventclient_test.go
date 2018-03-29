@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -43,7 +43,7 @@ func TestEventClient(t *testing.T) {
 		t.Fatalf("error getting event service: %s", err)
 	}
 
-	if chContext.Config().EventServiceType() == core.DeliverEventServiceType {
+	if chContext.EndpointConfig().EventServiceType() == fab.DeliverEventServiceType {
 		t.Run("Deliver Filtered Block Events", func(t *testing.T) {
 			// Filtered block events are the default for the deliver event client
 			testEventService(t, testSetup, sdk, chainCodeID, false, eventService)

@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -28,7 +27,12 @@ func (df *mockFilter) Accept(peer fab.Peer) bool {
 
 func TestDiscoveryFilter(t *testing.T) {
 
-	config, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	configBackend, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	_, config, _, err := config.FromBackend(configBackend)()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -66,9 +70,9 @@ func TestDiscoveryFilter(t *testing.T) {
 }
 
 type defPeerCreator struct {
-	config core.Config
+	config fab.EndpointConfig
 }
 
-func (pc *defPeerCreator) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
+func (pc *defPeerCreator) CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.Peer, error) {
 	return peer.New(pc.config, peer.FromPeerConfig(peerCfg))
 }

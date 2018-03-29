@@ -17,7 +17,7 @@ import (
 
 func TestSigningManager(t *testing.T) {
 
-	signingMgr, err := New(&fcmocks.MockCryptoSuite{}, &fcmocks.MockConfig{})
+	signingMgr, err := New(&fcmocks.MockCryptoSuite{})
 	if err != nil {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}

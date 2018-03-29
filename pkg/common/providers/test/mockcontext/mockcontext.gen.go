@@ -48,18 +48,6 @@ func (mr *MockProvidersMockRecorder) ChannelProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChannelProvider", reflect.TypeOf((*MockProviders)(nil).ChannelProvider))
 }
 
-// Config mocks base method
-func (m *MockProviders) Config() core.Config {
-	ret := m.ctrl.Call(m, "Config")
-	ret0, _ := ret[0].(core.Config)
-	return ret0
-}
-
-// Config indicates an expected call of Config
-func (mr *MockProvidersMockRecorder) Config() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Config", reflect.TypeOf((*MockProviders)(nil).Config))
-}
-
 // CryptoSuite mocks base method
 func (m *MockProviders) CryptoSuite() core.CryptoSuite {
 	ret := m.ctrl.Call(m, "CryptoSuite")
@@ -72,6 +60,18 @@ func (mr *MockProvidersMockRecorder) CryptoSuite() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoSuite", reflect.TypeOf((*MockProviders)(nil).CryptoSuite))
 }
 
+// CryptoSuiteConfig mocks base method
+func (m *MockProviders) CryptoSuiteConfig() core.CryptoSuiteConfig {
+	ret := m.ctrl.Call(m, "CryptoSuiteConfig")
+	ret0, _ := ret[0].(core.CryptoSuiteConfig)
+	return ret0
+}
+
+// CryptoSuiteConfig indicates an expected call of CryptoSuiteConfig
+func (mr *MockProvidersMockRecorder) CryptoSuiteConfig() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoSuiteConfig", reflect.TypeOf((*MockProviders)(nil).CryptoSuiteConfig))
+}
+
 // DiscoveryProvider mocks base method
 func (m *MockProviders) DiscoveryProvider() fab.DiscoveryProvider {
 	ret := m.ctrl.Call(m, "DiscoveryProvider")
@@ -82,6 +82,30 @@ func (m *MockProviders) DiscoveryProvider() fab.DiscoveryProvider {
 // DiscoveryProvider indicates an expected call of DiscoveryProvider
 func (mr *MockProvidersMockRecorder) DiscoveryProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoveryProvider", reflect.TypeOf((*MockProviders)(nil).DiscoveryProvider))
+}
+
+// EndpointConfig mocks base method
+func (m *MockProviders) EndpointConfig() fab.EndpointConfig {
+	ret := m.ctrl.Call(m, "EndpointConfig")
+	ret0, _ := ret[0].(fab.EndpointConfig)
+	return ret0
+}
+
+// EndpointConfig indicates an expected call of EndpointConfig
+func (mr *MockProvidersMockRecorder) EndpointConfig() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EndpointConfig", reflect.TypeOf((*MockProviders)(nil).EndpointConfig))
+}
+
+// IdentityConfig mocks base method
+func (m *MockProviders) IdentityConfig() msp.IdentityConfig {
+	ret := m.ctrl.Call(m, "IdentityConfig")
+	ret0, _ := ret[0].(msp.IdentityConfig)
+	return ret0
+}
+
+// IdentityConfig indicates an expected call of IdentityConfig
+func (mr *MockProvidersMockRecorder) IdentityConfig() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityConfig", reflect.TypeOf((*MockProviders)(nil).IdentityConfig))
 }
 
 // IdentityManager mocks base method
@@ -180,18 +204,6 @@ func (mr *MockClientMockRecorder) ChannelProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChannelProvider", reflect.TypeOf((*MockClient)(nil).ChannelProvider))
 }
 
-// Config mocks base method
-func (m *MockClient) Config() core.Config {
-	ret := m.ctrl.Call(m, "Config")
-	ret0, _ := ret[0].(core.Config)
-	return ret0
-}
-
-// Config indicates an expected call of Config
-func (mr *MockClientMockRecorder) Config() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Config", reflect.TypeOf((*MockClient)(nil).Config))
-}
-
 // CryptoSuite mocks base method
 func (m *MockClient) CryptoSuite() core.CryptoSuite {
 	ret := m.ctrl.Call(m, "CryptoSuite")
@@ -204,6 +216,18 @@ func (mr *MockClientMockRecorder) CryptoSuite() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoSuite", reflect.TypeOf((*MockClient)(nil).CryptoSuite))
 }
 
+// CryptoSuiteConfig mocks base method
+func (m *MockClient) CryptoSuiteConfig() core.CryptoSuiteConfig {
+	ret := m.ctrl.Call(m, "CryptoSuiteConfig")
+	ret0, _ := ret[0].(core.CryptoSuiteConfig)
+	return ret0
+}
+
+// CryptoSuiteConfig indicates an expected call of CryptoSuiteConfig
+func (mr *MockClientMockRecorder) CryptoSuiteConfig() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoSuiteConfig", reflect.TypeOf((*MockClient)(nil).CryptoSuiteConfig))
+}
+
 // DiscoveryProvider mocks base method
 func (m *MockClient) DiscoveryProvider() fab.DiscoveryProvider {
 	ret := m.ctrl.Call(m, "DiscoveryProvider")
@@ -214,6 +238,18 @@ func (m *MockClient) DiscoveryProvider() fab.DiscoveryProvider {
 // DiscoveryProvider indicates an expected call of DiscoveryProvider
 func (mr *MockClientMockRecorder) DiscoveryProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoveryProvider", reflect.TypeOf((*MockClient)(nil).DiscoveryProvider))
+}
+
+// EndpointConfig mocks base method
+func (m *MockClient) EndpointConfig() fab.EndpointConfig {
+	ret := m.ctrl.Call(m, "EndpointConfig")
+	ret0, _ := ret[0].(fab.EndpointConfig)
+	return ret0
+}
+
+// EndpointConfig indicates an expected call of EndpointConfig
+func (mr *MockClientMockRecorder) EndpointConfig() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EndpointConfig", reflect.TypeOf((*MockClient)(nil).EndpointConfig))
 }
 
 // EnrollmentCertificate mocks base method
@@ -238,6 +274,18 @@ func (m *MockClient) Identifier() *msp.IdentityIdentifier {
 // Identifier indicates an expected call of Identifier
 func (mr *MockClientMockRecorder) Identifier() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Identifier", reflect.TypeOf((*MockClient)(nil).Identifier))
+}
+
+// IdentityConfig mocks base method
+func (m *MockClient) IdentityConfig() msp.IdentityConfig {
+	ret := m.ctrl.Call(m, "IdentityConfig")
+	ret0, _ := ret[0].(msp.IdentityConfig)
+	return ret0
+}
+
+// IdentityConfig indicates an expected call of IdentityConfig
+func (mr *MockClientMockRecorder) IdentityConfig() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityConfig", reflect.TypeOf((*MockClient)(nil).IdentityConfig))
 }
 
 // IdentityManager mocks base method

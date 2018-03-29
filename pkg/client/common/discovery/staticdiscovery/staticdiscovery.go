@@ -7,14 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package staticdiscovery
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
 	"github.com/pkg/errors"
 )
 
 type peerCreator interface {
-	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error)
+	CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.Peer, error)
 }
 
 /**
@@ -23,18 +22,18 @@ type peerCreator interface {
 
 // DiscoveryProvider implements discovery provider
 type DiscoveryProvider struct {
-	config  core.Config
+	config  fab.EndpointConfig
 	fabPvdr peerCreator
 }
 
 // discoveryService implements discovery service
 type discoveryService struct {
-	config core.Config
+	config fab.EndpointConfig
 	peers  []fab.Peer
 }
 
 // New returns discovery provider
-func New(config core.Config, fabPvdr peerCreator) (*DiscoveryProvider, error) {
+func New(config fab.EndpointConfig, fabPvdr peerCreator) (*DiscoveryProvider, error) {
 	return &DiscoveryProvider{config: config, fabPvdr: fabPvdr}, nil
 }
 

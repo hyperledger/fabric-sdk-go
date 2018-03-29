@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -65,8 +64,8 @@ func TestChannelConfigWithPeerWithRetries(t *testing.T) {
 	defRetryOpts.InitialBackoff = 5 * time.Millisecond
 	defRetryOpts.BackoffFactor = 1.0
 
-	chConfig := &core.ChannelConfig{
-		Policies: core.ChannelPolicies{QueryChannelConfig: core.QueryChannelConfigPolicy{
+	chConfig := &fab.ChannelNetworkConfig{
+		Policies: fab.ChannelPolicies{QueryChannelConfig: fab.QueryChannelConfigPolicy{
 			MinResponses: 2,
 			MaxTargets:   1, //Ignored since we pass targets
 			RetryOpts:    defRetryOpts,
@@ -74,7 +73,7 @@ func TestChannelConfigWithPeerWithRetries(t *testing.T) {
 	}
 
 	mockConfig := &customMockConfig{MockConfig: &mocks.MockConfig{}, chConfig: chConfig}
-	ctx.SetConfig(mockConfig)
+	ctx.SetEndpointConfig(mockConfig)
 
 	peer1 := getPeerWithConfigBlockPayload(t)
 	peer2 := getPeerWithConfigBlockPayload(t)
@@ -121,7 +120,7 @@ func TestChannelConfigWithPeerError(t *testing.T) {
 func TestChannelConfigWithOrdererError(t *testing.T) {
 
 	ctx := setupTestContext()
-	o, err := orderer.New(ctx.Config(), orderer.WithURL("localhost:9999"))
+	o, err := orderer.New(ctx.EndpointConfig(), orderer.WithURL("localhost:9999"))
 	assert.Nil(t, err)
 	channelConfig, err := New(channelID, WithOrderer(o))
 	if err != nil {
@@ -179,8 +178,8 @@ func TestResolveOptsFromConfig(t *testing.T) {
 
 	defRetryOpts := retry.DefaultOpts
 
-	chConfig := &core.ChannelConfig{
-		Policies: core.ChannelPolicies{QueryChannelConfig: core.QueryChannelConfigPolicy{
+	chConfig := &fab.ChannelNetworkConfig{
+		Policies: fab.ChannelPolicies{QueryChannelConfig: fab.QueryChannelConfigPolicy{
 			MinResponses: 8,
 			MaxTargets:   9,
 			RetryOpts:    defRetryOpts,
@@ -188,7 +187,7 @@ func TestResolveOptsFromConfig(t *testing.T) {
 	}
 
 	mockConfig := &customMockConfig{MockConfig: &mocks.MockConfig{}, chConfig: chConfig}
-	ctx.SetConfig(mockConfig)
+	ctx.SetEndpointConfig(mockConfig)
 
 	channelConfig, err := New(channelID, WithPeers([]fab.Peer{}))
 	if err != nil {
@@ -227,7 +226,7 @@ func TestResolveOptsDefaultValues(t *testing.T) {
 	ctx := mocks.NewMockContext(user)
 
 	mockConfig := &customMockConfig{MockConfig: &mocks.MockConfig{}, chConfig: nil}
-	ctx.SetConfig(mockConfig)
+	ctx.SetEndpointConfig(mockConfig)
 
 	channelConfig, err := New(channelID, WithPeers([]fab.Peer{}))
 	if err != nil {
@@ -245,7 +244,7 @@ func TestResolveOptsDefaultValues(t *testing.T) {
 func setupTestContext() context.Client {
 	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
-	ctx.SetConfig(mocks.NewMockConfig())
+	ctx.SetEndpointConfig(mocks.NewMockEndpointConfig())
 	return ctx
 }
 
@@ -289,11 +288,11 @@ func (pp *mockProposalProcessor) ProcessTransactionProposal(reqCtx reqContext.Co
 //customMockConfig to mock config to override channel configuration options
 type customMockConfig struct {
 	*mocks.MockConfig
-	chConfig *core.ChannelConfig
+	chConfig *fab.ChannelNetworkConfig
 	called   bool
 }
 
-func (c *customMockConfig) ChannelConfig(name string) (*core.ChannelConfig, error) {
+func (c *customMockConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, error) {
 	c.called = true
 	return c.chConfig, nil
 }

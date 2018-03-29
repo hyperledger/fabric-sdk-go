@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
-	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 )
@@ -23,7 +23,7 @@ const (
 
 func TestNewDefaultSDK(t *testing.T) {
 	// Test New SDK with valid config file
-	sdk, err := New(configImpl.FromFile(sdkConfigFile))
+	sdk, err := New(config.FromFile(sdkConfigFile))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -49,12 +49,9 @@ func verifySDK(t *testing.T, sdk *FabricSDK) {
 
 func TestWithConfigOpt(t *testing.T) {
 	// Test New SDK with valid config file
-	c, err := configImpl.FromFile(sdkConfigFile)()
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
+	c := config.FromFile(sdkConfigFile)
 
-	sdk, err := New(WithConfig(c))
+	sdk, err := New(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -63,7 +60,7 @@ func TestWithConfigOpt(t *testing.T) {
 }
 
 func TestNewDefaultTwoValidSDK(t *testing.T) {
-	sdk1, err := New(configImpl.FromFile(sdkConfigFile))
+	sdk1, err := New(config.FromFile(sdkConfigFile))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -73,7 +70,7 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	sdk1.provider.InfraProvider().(*fabpvdr.InfraProvider).SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
 	sdk1.provider.InfraProvider().(*fabpvdr.InfraProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
-	sdk2, err := New(configImpl.FromFile("./testdata/test.yaml"))
+	sdk2, err := New(config.FromFile("./testdata/test.yaml"))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -82,7 +79,12 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	sdk2.provider.InfraProvider().(*fabpvdr.InfraProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	// Default sdk with two channels
-	client1, err := sdk1.Config().Client()
+	_, _, identityConfig, err := sdk1.Config()()
+	if err != nil {
+		t.Fatalf("Error getting config from sdk: %s", err)
+	}
+
+	client1, err := identityConfig.Client()
 	if err != nil {
 		t.Fatalf("Error getting client from config: %s", err)
 	}
@@ -91,7 +93,12 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 		t.Fatalf("Unexpected org in config: %s", client1.Organization)
 	}
 
-	client2, err := sdk2.Config().Client()
+	_, _, identityConfig, err = sdk2.Config()()
+	if err != nil {
+		t.Fatalf("Error getting config from sdk: %s", err)
+	}
+
+	client2, err := identityConfig.Client()
 	if err != nil {
 		t.Fatalf("Error getting client from config: %s", err)
 	}

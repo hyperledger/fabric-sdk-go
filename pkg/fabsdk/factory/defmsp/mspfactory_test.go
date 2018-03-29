@@ -11,9 +11,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockcore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
@@ -23,7 +22,7 @@ import (
 func TestCreateUserStore(t *testing.T) {
 	factory := NewProviderFactory()
 
-	config := mocks.NewMockConfig()
+	config := mocks.NewMockIdentityConfig()
 
 	userStore, err := factory.CreateUserStore(config)
 	if err != nil {
@@ -41,10 +40,10 @@ func newMockUserStore(t *testing.T) msp.UserStore {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mockCore.NewMockConfig(mockCtrl)
+	mockConfig := mockmsp.NewMockIdentityConfig(mockCtrl)
 
-	mockClientConfig := core.ClientConfig{
-		CredentialStore: core.CredentialStoreType{
+	mockClientConfig := msp.ClientConfig{
+		CredentialStore: msp.CredentialStoreType{
 			Path: "/tmp/fabsdkgo_test/store",
 		},
 	}
@@ -70,9 +69,9 @@ func TestCreateUserStoreEmptyConfig(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mockCore.NewMockConfig(mockCtrl)
+	mockConfig := mockmsp.NewMockIdentityConfig(mockCtrl)
 
-	mockClientConfig := core.ClientConfig{}
+	mockClientConfig := msp.ClientConfig{}
 	mockConfig.EXPECT().Client().Return(&mockClientConfig, nil)
 
 	_, err := factory.CreateUserStore(mockConfig)
@@ -86,7 +85,7 @@ func TestCreateUserStoreFailConfig(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfig := mockCore.NewMockConfig(mockCtrl)
+	mockConfig := mockmsp.NewMockIdentityConfig(mockCtrl)
 
 	mockConfig.EXPECT().Client().Return(nil, errors.New("error"))
 
@@ -100,23 +99,28 @@ func TestCreateIdentityManager(t *testing.T) {
 
 	coreFactory := defcore.NewProviderFactory()
 
-	config, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	configBackend, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	cryptosuite, err := coreFactory.CreateCryptoSuiteProvider(config)
+	cryptoCfg, endpointCfg, identityCfg, err := config.FromBackend(configBackend)()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	cryptosuite, err := coreFactory.CreateCryptoSuiteProvider(cryptoCfg)
 	if err != nil {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
 	factory := NewProviderFactory()
-	userStore, err := factory.CreateUserStore(config)
+	userStore, err := factory.CreateUserStore(identityCfg)
 	if err != nil {
 		t.Fatalf("Unexpected error creating user store %v", err)
 	}
 
-	provider, err := factory.CreateIdentityManagerProvider(config, cryptosuite, userStore)
+	provider, err := factory.CreateIdentityManagerProvider(endpointCfg, cryptosuite, userStore)
 	if err != nil {
 		t.Fatalf("Unexpected error creating provider %v", err)
 	}

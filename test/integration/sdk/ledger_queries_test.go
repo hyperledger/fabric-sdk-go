@@ -53,7 +53,12 @@ func TestLedgerClientQueries(t *testing.T) {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
-	expectedPeerConfig, err := sdk.Config().PeerConfig(org1Name, "peer0.org1.example.com")
+	_, endpointConfig, _, err := sdk.Config()()
+	if err != nil {
+		t.Fatalf("failed to get config, error: %v", err)
+	}
+
+	expectedPeerConfig, err := endpointConfig.PeerConfig(org1Name, "peer0.org1.example.com")
 	if err != nil {
 		t.Fatalf("Unable to fetch Peer config for %s", "peer0.org1.example.com")
 	}

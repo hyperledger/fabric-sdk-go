@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc., Unchain B.V. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package mockcore
+package mockfab
 
 import (
 	tls "crypto/tls"
@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
 )
 
@@ -32,26 +32,26 @@ var CertPool = x509.NewCertPool()
 const ErrorMessage = "default error message"
 
 // DefaultMockConfig returns a default mock config for testing
-func DefaultMockConfig(mockCtrl *gomock.Controller) *MockConfig {
-	config := NewMockConfig(mockCtrl)
+func DefaultMockConfig(mockCtrl *gomock.Controller) *MockEndpointConfig {
+	config := NewMockEndpointConfig(mockCtrl)
 
 	config.EXPECT().TLSCACertPool(GoodCert).Return(CertPool, nil).AnyTimes()
 	config.EXPECT().TLSCACertPool(BadCert).Return(CertPool, errors.New(ErrorMessage)).AnyTimes()
 	config.EXPECT().TLSCACertPool().Return(CertPool, nil).AnyTimes()
-	config.EXPECT().TimeoutOrDefault(core.EndorserConnection).Return(time.Second * 5).AnyTimes()
+	config.EXPECT().TimeoutOrDefault(fab.EndorserConnection).Return(time.Second * 5).AnyTimes()
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{TLSCert}, nil).AnyTimes()
 
 	return config
 }
 
 // BadTLSClientMockConfig returns a mock config for testing with TLSClientCerts() that always returns an error
-func BadTLSClientMockConfig(mockCtrl *gomock.Controller) *MockConfig {
-	config := NewMockConfig(mockCtrl)
+func BadTLSClientMockConfig(mockCtrl *gomock.Controller) *MockEndpointConfig {
+	config := NewMockEndpointConfig(mockCtrl)
 
 	config.EXPECT().TLSCACertPool(GoodCert).Return(CertPool, nil).AnyTimes()
 	config.EXPECT().TLSCACertPool(BadCert).Return(CertPool, errors.New(ErrorMessage)).AnyTimes()
 	config.EXPECT().TLSCACertPool().Return(CertPool, nil).AnyTimes()
-	config.EXPECT().TimeoutOrDefault(core.EndorserConnection).Return(time.Second * 5).AnyTimes()
+	config.EXPECT().TimeoutOrDefault(fab.EndorserConnection).Return(time.Second * 5).AnyTimes()
 	config.EXPECT().TLSClientCerts().Return(nil, errors.Errorf(ErrorMessage)).AnyTimes()
 
 	return config

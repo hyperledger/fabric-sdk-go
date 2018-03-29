@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	mspimpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
@@ -23,15 +24,15 @@ type MSPProvider struct {
 }
 
 // New creates a MSP context provider
-func New(config core.Config, cryptoSuite core.CryptoSuite, userStore msp.UserStore) (*MSPProvider, error) {
+func New(endpointConfig fab.EndpointConfig, cryptoSuite core.CryptoSuite, userStore msp.UserStore) (*MSPProvider, error) {
 
 	identityManager := make(map[string]msp.IdentityManager)
-	netConfig, err := config.NetworkConfig()
+	netConfig, err := endpointConfig.NetworkConfig()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to retrieve network config")
 	}
 	for orgName := range netConfig.Organizations {
-		mgr, err := mspimpl.NewIdentityManager(orgName, userStore, cryptoSuite, config)
+		mgr, err := mspimpl.NewIdentityManager(orgName, userStore, cryptoSuite, endpointConfig)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to initialize identity manager for organization: %s", orgName)
 		}

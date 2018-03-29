@@ -14,7 +14,7 @@ import (
 	"encoding/hex"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
@@ -26,7 +26,12 @@ import (
 // TestWithCustomStores demonstrates the usage of custom key and cert stores
 // to manage user private keys and certificates.
 func TestWithCustomStores(t *testing.T) {
-	config, err := configImpl.FromFile("../" + integration.ConfigTestFile)()
+	configBackend, err := configImpl.FromFile("../" + integration.ConfigTestFile)()
+	if err != nil {
+		t.Fatalf("Unexpected error from config backend: %v", err)
+	}
+
+	cryptoConfig, endpointConfig, identityConfig, err := configImpl.FromBackend(configBackend)()
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
@@ -51,7 +56,7 @@ func TestWithCustomStores(t *testing.T) {
 	//
 
 	customKeyStore := mspimpl.NewMemoryKeyStore([]byte("password"))
-	customCryptoSuite, err := sw.GetSuite(config.SecurityLevel(), config.SecurityAlgorithm(), customKeyStore)
+	customCryptoSuite, err := sw.GetSuite(cryptoConfig.SecurityLevel(), cryptoConfig.SecurityAlgorithm(), customKeyStore)
 	if err != nil {
 		t.Fatalf("Unexpected error from GetSuiteByConfig: %v", err)
 	}
@@ -72,7 +77,7 @@ func TestWithCustomStores(t *testing.T) {
 
 	// Let's see if it works:)
 
-	sdk, err := fabsdk.New(fabsdk.WithConfig(config), fabsdk.WithCorePkg(customCoreSuite), fabsdk.WithMSPPkg(customMSPSuite))
+	sdk, err := fabsdk.New(nil, fabsdk.WithConfigCryptoSuite(cryptoConfig), fabsdk.WithConfigEndpoint(endpointConfig), fabsdk.WithConfigIdentity(identityConfig), fabsdk.WithCorePkg(customCoreSuite), fabsdk.WithMSPPkg(customMSPSuite))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -90,7 +95,7 @@ func TestWithCustomStores(t *testing.T) {
 	// we have to enroll the CA registrar first. Otherwise,
 	// CA operations that require the registrar's identity
 	// will be rejected by the CA.
-	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, sdk.Config())
+	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, ctxProvider)
 	err = mspClient.Enroll(registrarEnrollID, msp.WithSecret(registrarEnrollSecret))
 	if err != nil {
 		t.Fatalf("Enroll failed: %v", err)
@@ -123,7 +128,7 @@ func TestWithCustomStores(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUser failed: %v", err)
 	}
-	userDataFromStore, err := customUserStore.Load(mspctx.IdentityIdentifier{MSPID: getMyMSPID(t, config), ID: username})
+	userDataFromStore, err := customUserStore.Load(mspctx.IdentityIdentifier{MSPID: getMyMSPID(t, ctxProvider), ID: username})
 	if err != nil {
 		t.Fatalf("Load user failed: %v", err)
 	}
@@ -151,14 +156,19 @@ func TestWithCustomStores(t *testing.T) {
 
 }
 
-func getMyMSPID(t *testing.T, config core.Config) string {
+func getMyMSPID(t *testing.T, ctxProvider context.ClientProvider) string {
 
-	clientConfig, err := config.Client()
+	ctx, err := ctxProvider()
+	if err != nil {
+		t.Fatalf("failed to get context: %v", err)
+	}
+
+	clientConfig, err := ctx.IdentityConfig().Client()
 	if err != nil {
 		t.Fatalf("config.Client() failed: %v", err)
 	}
 
-	netConfig, err := config.NetworkConfig()
+	netConfig, err := ctx.EndpointConfig().NetworkConfig()
 	if err != nil {
 		t.Fatalf("NetworkConfig failed: %v", err)
 	}

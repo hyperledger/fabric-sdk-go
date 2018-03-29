@@ -14,7 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/spf13/cast"
 	"google.golang.org/grpc/keepalive"
@@ -55,7 +54,7 @@ func (e *EventEndpoint) Opts() []options.Opt {
 }
 
 // FromPeerConfig creates a new EventEndpoint from the given config
-func FromPeerConfig(config core.Config, peer fab.Peer, peerCfg *core.PeerConfig) (*EventEndpoint, error) {
+func FromPeerConfig(config fab.EndpointConfig, peer fab.Peer, peerCfg *fab.PeerConfig) (*EventEndpoint, error) {
 	certificate, err := peerCfg.TLSCACerts.TLSCert()
 	if err != nil {
 		//Ignore empty cert errors,
@@ -72,26 +71,26 @@ func FromPeerConfig(config core.Config, peer fab.Peer, peerCfg *core.PeerConfig)
 		Certificate:     certificate,
 		KeepAliveParams: getKeepAliveOptions(peerCfg),
 		FailFast:        getFailFast(peerCfg),
-		ConnectTimeout:  config.TimeoutOrDefault(core.EventHubConnection),
+		ConnectTimeout:  config.TimeoutOrDefault(fab.EventHubConnection),
 		AllowInsecure:   isInsecureAllowed(peerCfg),
 	}, nil
 }
 
-func getServerNameOverride(peerCfg *core.PeerConfig) string {
+func getServerNameOverride(peerCfg *fab.PeerConfig) string {
 	if str, ok := peerCfg.GRPCOptions["ssl-target-name-override"].(string); ok {
 		return str
 	}
 	return ""
 }
 
-func getFailFast(peerCfg *core.PeerConfig) bool {
+func getFailFast(peerCfg *fab.PeerConfig) bool {
 	if ff, ok := peerCfg.GRPCOptions["fail-fast"].(bool); ok {
 		return cast.ToBool(ff)
 	}
 	return false
 }
 
-func getKeepAliveOptions(peerCfg *core.PeerConfig) keepalive.ClientParameters {
+func getKeepAliveOptions(peerCfg *fab.PeerConfig) keepalive.ClientParameters {
 	var kap keepalive.ClientParameters
 	if kaTime, ok := peerCfg.GRPCOptions["keep-alive-time"]; ok {
 		kap.Time = cast.ToDuration(kaTime)
@@ -105,7 +104,7 @@ func getKeepAliveOptions(peerCfg *core.PeerConfig) keepalive.ClientParameters {
 	return kap
 }
 
-func isInsecureAllowed(peerCfg *core.PeerConfig) bool {
+func isInsecureAllowed(peerCfg *fab.PeerConfig) bool {
 	allowInsecure, ok := peerCfg.GRPCOptions["allow-insecure"].(bool)
 	if ok {
 		return allowInsecure

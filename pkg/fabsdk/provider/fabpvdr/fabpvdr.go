@@ -12,7 +12,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/membership"
@@ -50,12 +49,12 @@ type InfraProvider struct {
 }
 
 // New creates a InfraProvider enabling access to core Fabric objects and functionality.
-func New(config core.Config) *InfraProvider {
-	idleTime := config.TimeoutOrDefault(core.ConnectionIdle)
-	sweepTime := config.TimeoutOrDefault(core.CacheSweepInterval)
-	eventIdleTime := config.TimeoutOrDefault(core.EventServiceIdle)
-	chConfigRefresh := config.TimeoutOrDefault(core.ChannelConfigRefresh)
-	membershipRefresh := config.TimeoutOrDefault(core.ChannelMembershipRefresh)
+func New(config fab.EndpointConfig) *InfraProvider {
+	idleTime := config.TimeoutOrDefault(fab.ConnectionIdle)
+	sweepTime := config.TimeoutOrDefault(fab.CacheSweepInterval)
+	eventIdleTime := config.TimeoutOrDefault(fab.EventServiceIdle)
+	chConfigRefresh := config.TimeoutOrDefault(fab.ChannelConfigRefresh)
+	membershipRefresh := config.TimeoutOrDefault(fab.ChannelMembershipRefresh)
 
 	eventServiceCache := lazycache.New(
 		"Event_Service_Cache",
@@ -153,7 +152,7 @@ func (f *InfraProvider) CreateChannelMembership(ctx fab.ClientContext, channelID
 	if err != nil {
 		return nil, err
 	}
-	key, err := membership.NewCacheKey(membership.Context{Providers: f.providerContext},
+	key, err := membership.NewCacheKey(membership.Context{Providers: f.providerContext, EndpointConfig: ctx.EndpointConfig()},
 		chCfgRef.Reference, channelID)
 	if err != nil {
 		return nil, err
@@ -172,13 +171,13 @@ func (f *InfraProvider) CreateChannelTransactor(reqCtx reqContext.Context, cfg f
 }
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration
-func (f *InfraProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
-	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg))
+func (f *InfraProvider) CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.Peer, error) {
+	return peerImpl.New(f.providerContext.EndpointConfig(), peerImpl.FromPeerConfig(peerCfg))
 }
 
 // CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.
-func (f *InfraProvider) CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Orderer, error) {
-	newOrderer, err := orderer.New(f.providerContext.Config(), orderer.FromOrdererConfig(cfg))
+func (f *InfraProvider) CreateOrdererFromConfig(cfg *fab.OrdererConfig) (fab.Orderer, error) {
+	newOrderer, err := orderer.New(f.providerContext.EndpointConfig(), orderer.FromOrdererConfig(cfg))
 	if err != nil {
 		return nil, errors.WithMessage(err, "creating orderer failed")
 	}
@@ -201,13 +200,13 @@ func (f *InfraProvider) loadChannelCfgRef(ctx fab.ClientContext, channelID strin
 func getEventClient(ctx context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (fab.EventClient, error) {
 	// TODO: This logic should be based on the channel capabilities. For now,
 	// look at the EventServiceType specified in the config file.
-	switch ctx.Config().EventServiceType() {
-	case core.DeliverEventServiceType:
+	switch ctx.EndpointConfig().EventServiceType() {
+	case fab.DeliverEventServiceType:
 		return deliverclient.New(ctx, chConfig, opts...)
-	case core.EventHubEventServiceType:
+	case fab.EventHubEventServiceType:
 		logger.Debugf("Using event hub events")
 		return eventhubclient.New(ctx, chConfig, opts...)
 	default:
-		return nil, errors.Errorf("unsupported event service type: %d", ctx.Config().EventServiceType())
+		return nil, errors.Errorf("unsupported event service type: %d", ctx.EndpointConfig().EventServiceType())
 	}
 }

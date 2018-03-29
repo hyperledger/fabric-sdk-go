@@ -15,7 +15,9 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
@@ -37,11 +39,13 @@ const (
 var caServerURL string
 
 type textFixture struct {
-	config          core.Config
-	cryptoSuite     core.CryptoSuite
-	userStore       msp.UserStore
-	identityManager *IdentityManager
-	caClient        mspapi.CAClient
+	endpointConfig          fab.EndpointConfig
+	identityConfig          msp.IdentityConfig
+	cryptSuiteConfig        core.CryptoSuiteConfig
+	cryptoSuite             core.CryptoSuite
+	userStore               msp.UserStore
+	caClient                mspapi.CAClient
+	identityManagerProvider msp.IdentityManagerProvider
 }
 
 var caServer = &mockmsp.MockFabricCAServer{}
@@ -64,35 +68,61 @@ func (f *textFixture) setup(configPath string) {
 	}
 
 	cfgRaw := readConfigWithReplacement(configPath, "http://localhost:8050", caServerURL)
-	f.config, err = config.FromRaw(cfgRaw, "yaml")()
+	configBackend, err := config.FromRaw(cfgRaw, "yaml")()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
+		panic(fmt.Sprintf("Failed to read config backend: %v", err))
+	}
+
+	f.cryptSuiteConfig, f.endpointConfig, f.identityConfig, err = config.FromBackend(configBackend)()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config : %v", err))
 	}
 
 	// Delete all private keys from the crypto suite store
 	// and users from the user store
-	cleanup(f.config.KeyStorePath())
-	cleanup(f.config.CredentialStorePath())
+	cleanup(f.cryptSuiteConfig.KeyStorePath())
+	cleanup(f.identityConfig.CredentialStorePath())
 
-	f.cryptoSuite, err = sw.GetSuiteByConfig(f.config)
+	f.cryptoSuite, err = sw.GetSuiteByConfig(f.cryptSuiteConfig)
 	if f.cryptoSuite == nil {
 		panic(fmt.Sprintf("Failed initialize cryptoSuite: %v", err))
 	}
 
-	if f.config.CredentialStorePath() != "" {
-		f.userStore, err = NewCertFileUserStore(f.config.CredentialStorePath())
+	if f.identityConfig.CredentialStorePath() != "" {
+		f.userStore, err = NewCertFileUserStore(f.identityConfig.CredentialStorePath())
 		if err != nil {
 			panic(fmt.Sprintf("creating a user store failed: %v", err))
 		}
 	}
-	f.userStore = userStoreFromConfig(nil, f.config)
+	f.userStore = userStoreFromConfig(nil, f.identityConfig)
 
-	f.identityManager, err = NewIdentityManager("org1", f.userStore, f.cryptoSuite, f.config)
+	identityManagers := make(map[string]msp.IdentityManager)
+	netConfig, err := f.endpointConfig.NetworkConfig()
 	if err != nil {
-		panic(fmt.Sprintf("manager.NewManager returned error: %v", err))
+		panic(fmt.Sprintf("failed to get network config: %v", err))
+	}
+	for orgName := range netConfig.Organizations {
+		mgr, err := NewIdentityManager(orgName, f.userStore, f.cryptoSuite, f.endpointConfig)
+		if err != nil {
+			panic(fmt.Sprintf("failed to initialize identity manager for organization: %s, cause :%v", orgName, err))
+		}
+		identityManagers[orgName] = mgr
 	}
 
-	f.caClient, err = NewCAClient(org1, f.identityManager, f.userStore, f.cryptoSuite, f.config)
+	f.identityManagerProvider = &identityManagerProvider{identityManager: identityManagers}
+
+	ctxProvider := context.NewProvider(context.WithIdentityManagerProvider(f.identityManagerProvider),
+		context.WithUserStore(f.userStore), context.WithCryptoSuite(f.cryptoSuite),
+		context.WithCryptoSuiteConfig(f.cryptSuiteConfig), context.WithEndpointConfig(f.endpointConfig),
+		context.WithIdentityConfig(f.identityConfig))
+
+	ctx := &context.Client{Providers: ctxProvider}
+
+	if err != nil {
+		panic(fmt.Sprintf("failed to created context for test setup: %v", err))
+	}
+
+	f.caClient, err = NewCAClient(org1, ctx)
 	if err != nil {
 		panic(fmt.Sprintf("NewCAClient returned error: %v", err))
 	}
@@ -104,8 +134,8 @@ func (f *textFixture) setup(configPath string) {
 }
 
 func (f *textFixture) close() {
-	cleanup(f.config.CredentialStorePath())
-	cleanup(f.config.KeyStorePath())
+	cleanup(f.identityConfig.CredentialStorePath())
+	cleanup(f.cryptSuiteConfig.KeyStorePath())
 }
 
 // readCert Reads a random cert for testing
@@ -141,7 +171,7 @@ func cleanupTestPath(t *testing.T, storePath string) {
 	}
 }
 
-func mspIDByOrgName(t *testing.T, c core.Config, orgName string) string {
+func mspIDByOrgName(t *testing.T, c fab.EndpointConfig, orgName string) string {
 	netConfig, err := c.NetworkConfig()
 	if err != nil {
 		t.Fatalf("network config retrieval failed: %v", err)
@@ -155,7 +185,7 @@ func mspIDByOrgName(t *testing.T, c core.Config, orgName string) string {
 	return orgConfig.MSPID
 }
 
-func userStoreFromConfig(t *testing.T, config core.Config) msp.UserStore {
+func userStoreFromConfig(t *testing.T, config msp.IdentityConfig) msp.UserStore {
 	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: config.CredentialStorePath()})
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)
@@ -165,4 +195,17 @@ func userStoreFromConfig(t *testing.T, config core.Config) msp.UserStore {
 		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)
 	}
 	return userStore
+}
+
+type identityManagerProvider struct {
+	identityManager map[string]msp.IdentityManager
+}
+
+// IdentityManager returns the organization's identity manager
+func (p *identityManagerProvider) IdentityManager(orgName string) (msp.IdentityManager, bool) {
+	im, ok := p.identityManager[strings.ToLower(orgName)]
+	if !ok {
+		return nil, false
+	}
+	return im, true
 }

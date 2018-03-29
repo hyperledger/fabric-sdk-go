@@ -25,11 +25,10 @@ import (
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
@@ -62,7 +61,7 @@ func TestJoinChannelFail(t *testing.T) {
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	// Setup target peers
-	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr))
+	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL("grpc://"+addr))
 
 	// Test fail with send proposal error
 	endorserServer.ProposalError = errors.New("Test Error")
@@ -92,7 +91,7 @@ func TestJoinChannelSuccess(t *testing.T) {
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	// Setup target peers
-	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr))
+	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL("grpc://"+addr))
 
 	// Test valid join channel request (success)
 	err := rc.JoinChannel("mychannel", WithTargets(peer1))
@@ -128,7 +127,7 @@ func TestJoinChannelWithFilter(t *testing.T) {
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	// Setup target peers
-	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr))
+	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL("grpc://"+addr))
 
 	// Test valid join channel request (success)
 	err := rc.JoinChannel("mychannel", WithTargets(peer1))
@@ -143,7 +142,7 @@ func TestNoSigningUserFailure(t *testing.T) {
 	// Setup client without user context
 	fabCtx := fcmocks.NewMockContext(user)
 	config := getNetworkConfig(t)
-	fabCtx.SetConfig(config)
+	fabCtx.SetEndpointConfig(config)
 
 	clientCtx := createClientContext(contextImpl.Client{
 		Providers:       fabCtx,
@@ -170,7 +169,7 @@ func TestJoinChannelRequiredParameters(t *testing.T) {
 	// Setup test client with different msp (default targets cannot be calculated)
 	ctx := setupTestContext("test", "otherMSP")
 	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 
 	// Create new resource management client ("otherMSP")
 	rc = setupResMgmtClient(ctx, nil, t)
@@ -193,7 +192,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
 	ctx := setupTestContextWithDiscoveryError("test", "Org1MSP", nil)
 	network := getNetworkConfig(t)
-	ctx.SetConfig(network)
+	ctx.SetEndpointConfig(network)
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
@@ -211,7 +210,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	}
 
 	var peers []fab.Peer
-	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("grpc://"+addr), peer.WithMSPID("Org1MSP"))
+	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL("grpc://"+addr), peer.WithMSPID("Org1MSP"))
 	peers = append(peers, peer1)
 
 	// Test both targets and filter provided (error condition)
@@ -257,7 +256,7 @@ func TestJoinChannelDiscoveryError(t *testing.T) {
 	// Setup test client and config
 	ctx := setupTestContextWithDiscoveryError("test", "Org1MSP", errors.New("Test Error"))
 	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 
 	// Create resource management client with discovery service that will generate an error
 	rc := setupResMgmtClient(ctx, nil, t)
@@ -280,10 +279,13 @@ func TestOrdererConfigFail(t *testing.T) {
 	ctx := setupTestContext("test", "Org1MSP")
 
 	// No channel orderer, no global orderer
-	noOrdererConfig, err := config.FromFile("./testdata/noorderer_test.yaml")()
+	configBackend, err := configImpl.FromFile("./testdata/noorderer_test.yaml")()
 	assert.Nil(t, err)
 
-	ctx.SetConfig(noOrdererConfig)
+	_, noOrdererConfig, _, err := configImpl.FromBackend(configBackend)()
+	assert.Nil(t, err)
+
+	ctx.SetEndpointConfig(noOrdererConfig)
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	orderer, err := rc.ordererConfig("mychannel")
@@ -299,7 +301,7 @@ func TestOrdererConfigFromOpts(t *testing.T) {
 	noOrdererConfig, err := config.FromFile("./testdata/ccproposal_test.yaml")()
 	assert.Nil(t, err)
 
-	ctx.SetConfig(noOrdererConfig)
+	ctx.SetEndpointConfig(noOrdererConfig)
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	opts := Opts{}
@@ -313,22 +315,30 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	ctx := setupTestContext("test", "Org1MSP")
 
 	// No channel orderer, no global orderer
-	noOrdererConfig, err := config.FromFile("./testdata/noorderer_test.yaml")()
+	configBackend, err := configImpl.FromFile("./testdata/noorderer_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx.SetConfig(noOrdererConfig)
+	_, noOrdererConfig, _, err := configImpl.FromBackend(configBackend)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx.SetEndpointConfig(noOrdererConfig)
 	rc := setupResMgmtClient(ctx, nil, t)
 
 	err = rc.JoinChannel("mychannel")
 	assert.NotNil(t, err, "Should have failed to join channel since no orderer has been configured")
 
 	// Misconfigured channel orderer
-	invalidChOrdererConfig, err := config.FromFile("./testdata/invalidchorderer_test.yaml")()
+	configBackend, err = configImpl.FromFile("./testdata/invalidchorderer_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx.SetConfig(invalidChOrdererConfig)
+	_, invalidChOrdererConfig, _, err := configImpl.FromBackend(configBackend)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx.SetEndpointConfig(invalidChOrdererConfig)
 
 	rc = setupResMgmtClient(ctx, nil, t)
 
@@ -338,12 +348,16 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	}
 
 	// Misconfigured global orderer (cert cannot be loaded)
-	invalidOrdererConfig, err := config.FromFile("./testdata/invalidorderer_test.yaml")()
+	configBackend, err = configImpl.FromFile("./testdata/invalidorderer_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx.SetConfig(invalidOrdererConfig)
-	customFabProvider := fabpvdr.New(ctx.Config())
+	_, invalidOrdererConfig, _, err := configImpl.FromBackend(configBackend)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx.SetEndpointConfig(invalidOrdererConfig)
+	customFabProvider := fabpvdr.New(ctx.EndpointConfig())
 	customFabProvider.Initialize(ctx)
 	ctx.SetCustomInfraProvider(customFabProvider)
 
@@ -628,7 +642,7 @@ func TestInstallCCRequiredParameters(t *testing.T) {
 	// Setup test client with different msp (default targets cannot be calculated)
 	ctx := setupTestContext("test", "otherMSP")
 	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 
 	// Create new resource management client ("otherMSP")
 	rc = setupResMgmtClient(ctx, nil, t)
@@ -698,7 +712,7 @@ func TestInstallCCWithOptsRequiredParameters(t *testing.T) {
 	// Setup test client with different msp
 	ctx := setupTestContext("test", "otherMSP")
 	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 
 	// Create new resource management client ("otherMSP")
 	rc = setupResMgmtClient(ctx, nil, t)
@@ -721,7 +735,7 @@ func TestInstallCCDiscoveryError(t *testing.T) {
 	// Setup test client and config
 	ctx := setupTestContextWithDiscoveryError("test", "Org1MSP", errors.New("Test Error"))
 	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 
 	// Create resource management client with discovery service that will generate an error
 	rc := setupResMgmtClient(ctx, nil, t)
@@ -792,7 +806,7 @@ func TestInstantiateCCRequiredParameters(t *testing.T) {
 	// Setup test client with different msp (default targets cannot be calculated)
 	ctx := setupTestContext("test", "otherMSP")
 	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 
 	// Create new resource management client ("otherMSP")
 	rc = setupResMgmtClient(ctx, nil, t)
@@ -874,7 +888,7 @@ func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
 	// Setup test client with different msp
 	ctx := setupTestContext("test", "otherMSP")
 	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 
 	// Create new resource management client ("otherMSP")
 	rc = setupResMgmtClient(ctx, nil, t)
@@ -897,7 +911,7 @@ func TestInstantiateCCDiscoveryError(t *testing.T) {
 	// Setup test client and config
 	ctx := setupTestContext("test", "Org1MSP")
 	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 
 	// Create resource management client with discovery service that will generate an error
 	rc := setupResMgmtClient(ctx, errors.New("Test Error"), t)
@@ -998,7 +1012,7 @@ func TestUpgradeCCRequiredParameters(t *testing.T) {
 	// Setup test client with different msp (default targets cannot be calculated)
 	ctx := setupTestContext("test", "otherMSP")
 	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 
 	// Create new resource management client ("otherMSP")
 	rc = setupResMgmtClient(ctx, nil, t)
@@ -1080,7 +1094,7 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 	// Setup test client with different msp
 	ctx := setupTestContext("test", "otherMSP")
 	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 
 	// Create new resource management client ("otherMSP")
 	rc = setupResMgmtClient(ctx, nil, t)
@@ -1103,7 +1117,7 @@ func TestUpgradeCCDiscoveryError(t *testing.T) {
 	// Setup test client and config
 	ctx := setupTestContextWithDiscoveryError("test", "Org1MSP", nil)
 	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
+	ctx.SetEndpointConfig(config)
 
 	// Create resource management client with discovery service that will generate an error
 	rc := setupResMgmtClient(ctx, errors.New("Test Error"), t)
@@ -1166,15 +1180,19 @@ func TestCCProposal(t *testing.T) {
 	ctx := setupTestContext("Admin", "Org1MSP")
 
 	// Setup resource management client
-	cfg, err := config.FromFile("./testdata/ccproposal_test.yaml")()
+	configBackend, err := configImpl.FromFile("./testdata/ccproposal_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx.SetConfig(cfg)
+	_, cfg, _, err := configImpl.FromBackend(configBackend)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx.SetEndpointConfig(cfg)
 
 	// Setup target peers
 	var peers []fab.Peer
-	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL(addr))
+	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL(addr))
 	peers = append(peers, peer1)
 
 	// Create mock orderer
@@ -1237,11 +1255,15 @@ func TestCCProposal(t *testing.T) {
 	}
 
 	// Test no event source in config
-	cfg, err = config.FromFile("./testdata/event_source_missing_test.yaml")()
+	configBackend, err = configImpl.FromFile("./testdata/event_source_missing_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx.SetConfig(cfg)
+	_, cfg, _, err = configImpl.FromBackend(configBackend)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx.SetEndpointConfig(cfg)
 	rc = setupResMgmtClient(ctx, nil, t, getDefaultTargetFilterOption())
 	_, err = rc.InstantiateCC("mychannel", instantiateReq)
 	if err == nil {
@@ -1267,7 +1289,7 @@ func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryProvider,
 func setupDefaultResMgmtClient(t *testing.T) *Client {
 	ctx := setupTestContext("test", "Org1MSP")
 	network := getNetworkConfig(t)
-	ctx.SetConfig(network)
+	ctx.SetEndpointConfig(network)
 	return setupResMgmtClient(ctx, nil, t, getDefaultTargetFilterOption())
 }
 
@@ -1320,8 +1342,13 @@ func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*fcmocks.MockEn
 	return endorserServer, addr
 }
 
-func getNetworkConfig(t *testing.T) core.Config {
-	config, err := config.FromFile(networkCfg)()
+func getNetworkConfig(t *testing.T) fab.EndpointConfig {
+	configBackend, err := configImpl.FromFile(networkCfg)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, config, _, err := configImpl.FromBackend(configBackend)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1341,12 +1368,12 @@ func TestSaveChannelSuccess(t *testing.T) {
 	grpcOpts := make(map[string]interface{})
 	grpcOpts["allow-insecure"] = true
 
-	oConfig := &core.OrdererConfig{
+	oConfig := &fab.OrdererConfig{
 		URL:         addr,
 		GRPCOptions: grpcOpts,
 	}
 	mockConfig.SetCustomOrdererCfg(oConfig)
-	ctx.SetConfig(mockConfig)
+	ctx.SetEndpointConfig(mockConfig)
 
 	cc := setupResMgmtClient(ctx, nil, t)
 
@@ -1399,7 +1426,7 @@ func TestSaveChannelFailure(t *testing.T) {
 	user := mspmocks.NewMockSigningIdentity("test", "test")
 	errCtx := fcmocks.NewMockContext(user)
 	network := getNetworkConfig(t)
-	errCtx.SetConfig(network)
+	errCtx.SetEndpointConfig(network)
 	fabCtx := setupTestContext("user", "Org1Msp1")
 
 	clientCtx := createClientContext(contextImpl.Client{
@@ -1433,13 +1460,13 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	grpcOpts := make(map[string]interface{})
 	grpcOpts["allow-insecure"] = true
 
-	oConfig := &core.OrdererConfig{
+	oConfig := &fab.OrdererConfig{
 		URL:         addr,
 		GRPCOptions: grpcOpts,
 	}
 	mockConfig.SetCustomOrdererCfg(oConfig)
 	mockConfig.SetCustomRandomOrdererCfg(oConfig)
-	ctx.SetConfig(mockConfig)
+	ctx.SetEndpointConfig(mockConfig)
 
 	cc := setupResMgmtClient(ctx, nil, t)
 
@@ -1476,7 +1503,7 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r3}
 
 	mockConfig = &fcmocks.MockConfig{}
-	ctx.SetConfig(mockConfig)
+	ctx.SetEndpointConfig(mockConfig)
 
 	cc = setupResMgmtClient(ctx, nil, t)
 
@@ -1506,13 +1533,13 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	grpcOpts := make(map[string]interface{})
 	grpcOpts["allow-insecure"] = true
 
-	oConfig := &core.OrdererConfig{
+	oConfig := &fab.OrdererConfig{
 		URL:         addr,
 		GRPCOptions: grpcOpts,
 	}
 	mockConfig.SetCustomRandomOrdererCfg(oConfig)
 	mockConfig.SetCustomOrdererCfg(oConfig)
-	ctx.SetConfig(mockConfig)
+	ctx.SetEndpointConfig(mockConfig)
 
 	cc := setupResMgmtClient(ctx, nil, t)
 

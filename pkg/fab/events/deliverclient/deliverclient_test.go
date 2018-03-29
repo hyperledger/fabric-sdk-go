@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
@@ -442,17 +441,17 @@ func listenEvents(blockch <-chan *fab.BlockEvent, ccch <-chan *fab.CCEvent, wait
 }
 
 type mockConfig struct {
-	core.Config
+	fab.EndpointConfig
 }
 
 func newMockConfig() *mockConfig {
 	return &mockConfig{
-		Config: fabmocks.NewMockConfig(),
+		EndpointConfig: fabmocks.NewMockEndpointConfig(),
 	}
 }
 
-func (c *mockConfig) PeerConfigByURL(url string) (*core.PeerConfig, error) {
-	return &core.PeerConfig{}, nil
+func (c *mockConfig) PeerConfigByURL(url string) (*fab.PeerConfig, error) {
+	return &fab.PeerConfig{}, nil
 }
 
 func newMockContext() *fabmocks.MockContext {
@@ -460,6 +459,6 @@ func newMockContext() *fabmocks.MockContext {
 		mspmocks.NewMockSigningIdentity("user1", "test1"),
 		clientmocks.NewDiscoveryProvider(peer1, peer2),
 	)
-	ctx.SetConfig(newMockConfig())
+	ctx.SetEndpointConfig(newMockConfig())
 	return ctx
 }

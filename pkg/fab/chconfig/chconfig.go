@@ -150,7 +150,7 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 	targets := []fab.ProposalProcessor{}
 	if c.opts.Targets == nil {
 		// Calculate targets from config
-		chPeers, err := ctx.Config().ChannelPeers(c.channelID)
+		chPeers, err := ctx.EndpointConfig().ChannelPeers(c.channelID)
 		if err != nil {
 			return nil, errors.WithMessage(err, "read configuration for channel peers failed")
 		}
@@ -209,7 +209,7 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 	}
 
 	//If missing from opts, check config and update opts from config
-	chSdkCfg, err := ctx.Config().ChannelConfig(c.channelID)
+	chSdkCfg, err := ctx.EndpointConfig().ChannelConfig(c.channelID)
 	if err != nil {
 		//ver rare, but return default in case of error
 		return err

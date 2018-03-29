@@ -17,7 +17,7 @@ import (
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/pkg/errors"
 )
 
@@ -123,7 +123,7 @@ func (mgr *IdentityManager) GetUser(username string) (*User, error) {
 
 func (mgr *IdentityManager) getEmbeddedCertBytes(username string) ([]byte, error) {
 	certPem := mgr.embeddedUsers[strings.ToLower(username)].Cert.Pem
-	certPath := config.SubstPathVars(mgr.embeddedUsers[strings.ToLower(username)].Cert.Path)
+	certPath := pathvar.Subst(mgr.embeddedUsers[strings.ToLower(username)].Cert.Path)
 
 	if certPem == "" && certPath == "" {
 		return nil, msp.ErrUserNotFound
@@ -146,7 +146,7 @@ func (mgr *IdentityManager) getEmbeddedCertBytes(username string) ([]byte, error
 
 func (mgr *IdentityManager) getEmbeddedPrivateKey(username string) (core.Key, error) {
 	keyPem := mgr.embeddedUsers[strings.ToLower(username)].Key.Pem
-	keyPath := config.SubstPathVars(mgr.embeddedUsers[strings.ToLower(username)].Key.Path)
+	keyPath := pathvar.Subst(mgr.embeddedUsers[strings.ToLower(username)].Key.Path)
 
 	var privateKey core.Key
 	var pemBytes []byte

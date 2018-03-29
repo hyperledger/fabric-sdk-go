@@ -11,6 +11,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/modlog"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
@@ -25,21 +26,32 @@ type mockCorePkg struct {
 	infraProvider  fab.InfraProvider
 }
 
-func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
+func newMockCorePkg(configBackendProvider core.ConfigProvider) (*mockCorePkg, error) {
+
+	configBackend, err := configBackendProvider()
+	if err != nil {
+		return nil, err
+	}
+
+	cryptoSuiteConfig, endpointConfig, _, err := config.FromBackend(configBackend)()
+	if err != nil {
+		return nil, err
+	}
+
 	pkgSuite := defPkgSuite{}
 	sdkcore, err := pkgSuite.Core()
 	if err != nil {
 		return nil, err
 	}
-	cs, err := sdkcore.CreateCryptoSuiteProvider(config)
+	cs, err := sdkcore.CreateCryptoSuiteProvider(cryptoSuiteConfig)
 	if err != nil {
 		return nil, err
 	}
-	sm, err := sdkcore.CreateSigningManager(cs, config)
+	sm, err := sdkcore.CreateSigningManager(cs)
 	if err != nil {
 		return nil, err
 	}
-	fp, err := sdkcore.CreateInfraProvider(config)
+	fp, err := sdkcore.CreateInfraProvider(endpointConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -53,15 +65,15 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	return &c, nil
 }
 
-func (mc *mockCorePkg) CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error) {
+func (mc *mockCorePkg) CreateCryptoSuiteProvider(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	return mc.cryptoSuite, nil
 }
 
-func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error) {
+func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite) (core.SigningManager, error) {
 	return mc.signingManager, nil
 }
 
-func (mc *mockCorePkg) CreateInfraProvider(config core.Config) (fab.InfraProvider, error) {
+func (mc *mockCorePkg) CreateInfraProvider(config fab.EndpointConfig) (fab.InfraProvider, error) {
 	return mc.infraProvider, nil
 }
 

@@ -8,8 +8,12 @@ package fab
 
 import (
 	reqContext "context"
+	"crypto/tls"
+	"crypto/x509"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -33,8 +37,8 @@ type InfraProvider interface {
 	CreateChannelTransactor(reqCtx reqContext.Context, cfg ChannelCfg) (Transactor, error)
 	CreateChannelMembership(ctx ClientContext, channelID string) (ChannelMembership, error)
 	CreateEventService(ctx ClientContext, channelID string, opts ...options.Opt) (EventService, error)
-	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (Peer, error)
-	CreateOrdererFromConfig(cfg *core.OrdererConfig) (Orderer, error)
+	CreatePeerFromConfig(peerCfg *NetworkPeer) (Peer, error)
+	CreateOrdererFromConfig(cfg *OrdererConfig) (Orderer, error)
 	CommManager() CommManager
 	Close()
 }
@@ -75,10 +79,81 @@ type CommManager interface {
 	ReleaseConn(conn *grpc.ClientConn)
 }
 
+//EndpointConfig contains endpoint network configurations
+type EndpointConfig interface {
+	TimeoutOrDefault(TimeoutType) time.Duration
+	Timeout(TimeoutType) time.Duration
+	MSPID(org string) (string, error)
+	PeerMSPID(name string) (string, error)
+	OrderersConfig() ([]OrdererConfig, error)
+	//TODO to be removed, not a config item
+	RandomOrdererConfig() (*OrdererConfig, error)
+	OrdererConfig(name string) (*OrdererConfig, error)
+	PeersConfig(org string) ([]PeerConfig, error)
+	PeerConfig(org string, name string) (*PeerConfig, error)
+	PeerConfigByURL(url string) (*PeerConfig, error)
+	NetworkConfig() (*NetworkConfig, error)
+	NetworkPeers() ([]NetworkPeer, error)
+	ChannelConfig(name string) (*ChannelNetworkConfig, error)
+	ChannelPeers(name string) ([]ChannelPeer, error)
+	ChannelOrderers(name string) ([]OrdererConfig, error)
+	TLSCACertPool(certConfig ...*x509.Certificate) (*x509.CertPool, error)
+	EventServiceType() EventServiceType
+	TLSClientCerts() ([]tls.Certificate, error)
+	CryptoConfigPath() string
+}
+
+// TimeoutType enumerates the different types of outgoing connections
+type TimeoutType int
+
+const (
+	// EndorserConnection connection timeout
+	EndorserConnection TimeoutType = iota
+	// EventHubConnection connection timeout
+	EventHubConnection
+	// EventReg connection timeout
+	EventReg
+	// Query timeout
+	Query
+	// Execute timeout
+	Execute
+	// OrdererConnection orderer connection timeout
+	OrdererConnection
+	// OrdererResponse orderer response timeout
+	OrdererResponse
+	// DiscoveryGreylistExpiry discovery Greylist expiration period
+	DiscoveryGreylistExpiry
+	// ConnectionIdle is the timeout for closing idle connections
+	ConnectionIdle
+	// CacheSweepInterval is the duration between cache sweeps
+	CacheSweepInterval
+	// EventServiceIdle is the timeout for closing the event service connection
+	EventServiceIdle
+	// PeerResponse peer response timeout
+	PeerResponse
+	// ResMgmt timeout is default overall timeout for all resource management operations
+	ResMgmt
+	// ChannelConfigRefresh channel configuration refresh interval
+	ChannelConfigRefresh
+	// ChannelMembershipRefresh channel membership refresh interval
+	ChannelMembershipRefresh
+)
+
+// EventServiceType specifies the type of event service to use
+type EventServiceType int
+
+const (
+	// DeliverEventServiceType uses the Deliver Service for block and filtered-block events
+	DeliverEventServiceType EventServiceType = iota
+	// EventHubEventServiceType uses the Event Hub for block events
+	EventHubEventServiceType
+)
+
 // Providers represents the SDK configured service providers context.
 type Providers interface {
 	DiscoveryProvider() DiscoveryProvider
 	SelectionProvider() SelectionProvider
 	ChannelProvider() ChannelProvider
 	InfraProvider() InfraProvider
+	EndpointConfig() EndpointConfig
 }

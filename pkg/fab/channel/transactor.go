@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
 	reqContext "context"
@@ -70,7 +69,7 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 		if !ok {
 			logger.Debugf("Failed to get channel Cfg orderer [%s] from ordererDict, now trying orderer Matchers in Entity Matchers", target)
 			// Try to find a match from entityMatchers config
-			matchingOrdererConfig, matchErr := ctx.Config().OrdererConfig(strings.ToLower(target))
+			matchingOrdererConfig, matchErr := ctx.EndpointConfig().OrdererConfig(strings.ToLower(target))
 			if matchErr == nil && matchingOrdererConfig != nil {
 				logger.Debugf("Found matching ordererConfig from entity Matchers for channel Cfg Orderer [%s]", target)
 				oCfg = *matchingOrdererConfig
@@ -80,7 +79,7 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 		}
 		if !ok {
 			logger.Debugf("Unable to find matching ordererConfig from entity Matchers for channel Cfg Orderer [%s]", target)
-			oCfg = core.OrdererConfig{
+			oCfg = fab.OrdererConfig{
 				URL: target,
 			}
 			logger.Debugf("Created a new OrdererConfig with URL as [%s]", target)
@@ -96,9 +95,9 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 	return orderers, nil
 }
 
-func orderersByTarget(ctx context.Client) (map[string]core.OrdererConfig, error) {
-	ordererDict := map[string]core.OrdererConfig{}
-	orderersConfig, err := ctx.Config().OrderersConfig()
+func orderersByTarget(ctx context.Client) (map[string]fab.OrdererConfig, error) {
+	ordererDict := map[string]fab.OrdererConfig{}
+	orderersConfig, err := ctx.EndpointConfig().OrderersConfig()
 	if err != nil {
 		return nil, errors.WithMessage(err, "loading orderers config failed")
 	}
@@ -133,7 +132,7 @@ func (t *Transactor) SendTransactionProposal(proposal *fab.TransactionProposal, 
 		return nil, errors.New("failed get client context from reqContext for SendTransactionProposal")
 	}
 
-	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(core.PeerResponse), contextImpl.WithParent(t.reqCtx))
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(fab.PeerResponse), contextImpl.WithParent(t.reqCtx))
 	defer cancel()
 
 	return txn.SendProposal(reqCtx, proposal, targets)
@@ -152,7 +151,7 @@ func (t *Transactor) SendTransaction(tx *fab.Transaction) (*fab.TransactionRespo
 		return nil, errors.New("failed get client context from reqContext for SendTransaction")
 	}
 
-	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(core.OrdererResponse), contextImpl.WithParent(t.reqCtx))
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(fab.OrdererResponse), contextImpl.WithParent(t.reqCtx))
 	defer cancel()
 
 	return txn.Send(reqCtx, tx, t.orderers)

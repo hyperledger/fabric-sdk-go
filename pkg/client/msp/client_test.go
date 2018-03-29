@@ -18,6 +18,7 @@ import (
 	"os"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -134,7 +135,8 @@ func TestMSP(t *testing.T) {
 }
 
 type textFixture struct {
-	config core.Config
+	cryptoSuiteConfig core.CryptoSuiteConfig
+	identityConfig    msp.IdentityConfig
 }
 
 var caServer = &mockmsp.MockFabricCAServer{}
@@ -164,12 +166,15 @@ func (f *textFixture) setup() *fabsdk.FabricSDK {
 		panic(fmt.Sprintf("SDK init failed: %v", err))
 	}
 
-	f.config = sdk.Config()
+	f.cryptoSuiteConfig, _, f.identityConfig, err = sdk.Config()()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to get config: %v", err))
+	}
 
 	// Delete all private keys from the crypto suite store
 	// and users from the user store
-	cleanup(f.config.KeyStorePath())
-	cleanup(f.config.CredentialStorePath())
+	cleanup(f.cryptoSuiteConfig.KeyStorePath())
+	cleanup(f.identityConfig.CredentialStorePath())
 
 	ctxProvider := sdk.Context()
 	ctx, err := ctxProvider()
@@ -186,8 +191,8 @@ func (f *textFixture) setup() *fabsdk.FabricSDK {
 }
 
 func (f *textFixture) close() {
-	cleanup(f.config.CredentialStorePath())
-	cleanup(f.config.KeyStorePath())
+	cleanup(f.identityConfig.CredentialStorePath())
+	cleanup(f.cryptoSuiteConfig.KeyStorePath())
 }
 
 func readConfigWithReplacement(path string, origURL, newURL string) []byte {

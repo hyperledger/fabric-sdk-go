@@ -68,3 +68,8 @@ type Logger interface {
 type LoggerProvider interface {
 	GetLogger(module string) Logger
 }
+
+// LoggingType defines the level of logging in config
+type LoggingType struct {
+	Level string
+}

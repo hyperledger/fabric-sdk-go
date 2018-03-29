@@ -23,7 +23,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/pkg/errors"
@@ -365,14 +364,14 @@ func (c *Client) calculateTargets(opts requestOptions) ([]fab.Peer, error) {
 func (c *Client) createRequestContext(opts *requestOptions) (reqContext.Context, reqContext.CancelFunc) {
 
 	if opts.Timeouts == nil {
-		opts.Timeouts = make(map[core.TimeoutType]time.Duration)
+		opts.Timeouts = make(map[fab.TimeoutType]time.Duration)
 	}
 
-	if opts.Timeouts[core.PeerResponse] == 0 {
-		opts.Timeouts[core.PeerResponse] = c.ctx.Config().TimeoutOrDefault(core.PeerResponse)
+	if opts.Timeouts[fab.PeerResponse] == 0 {
+		opts.Timeouts[fab.PeerResponse] = c.ctx.EndpointConfig().TimeoutOrDefault(fab.PeerResponse)
 	}
 
-	return contextImpl.NewRequest(c.ctx, contextImpl.WithTimeout(opts.Timeouts[core.PeerResponse]), contextImpl.WithParent(opts.ParentContext))
+	return contextImpl.NewRequest(c.ctx, contextImpl.WithTimeout(opts.Timeouts[fab.PeerResponse]), contextImpl.WithParent(opts.ParentContext))
 }
 
 // filterTargets is helper method to filter peers

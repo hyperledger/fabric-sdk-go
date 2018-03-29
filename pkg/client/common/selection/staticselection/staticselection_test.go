@@ -24,7 +24,12 @@ type serviceInit interface {
 
 func TestStaticSelection(t *testing.T) {
 
-	config, err := config.FromFile("../../../../../test/fixtures/config/config_test.yaml")()
+	configBackend, err := config.FromFile("../../../../../test/fixtures/config/config_test.yaml")()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	_, config, _, err := config.FromBackend(configBackend)()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

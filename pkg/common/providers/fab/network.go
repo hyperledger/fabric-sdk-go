@@ -4,10 +4,11 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package core
+package fab
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
 
@@ -16,44 +17,17 @@ type NetworkConfig struct {
 	Name                   string
 	Description            string
 	Version                string
-	Client                 ClientConfig
-	Channels               map[string]ChannelConfig
+	Client                 msp.ClientConfig
+	Channels               map[string]ChannelNetworkConfig
 	Organizations          map[string]OrganizationConfig
 	Orderers               map[string]OrdererConfig
 	Peers                  map[string]PeerConfig
-	CertificateAuthorities map[string]CAConfig
+	CertificateAuthorities map[string]msp.CAConfig
 	EntityMatchers         map[string][]MatchConfig
 }
 
-// ClientConfig provides the definition of the client configuration
-type ClientConfig struct {
-	Organization    string
-	Logging         LoggingType
-	CryptoConfig    CCType
-	TLSCerts        MutualTLSConfig
-	CredentialStore CredentialStoreType
-}
-
-// LoggingType defines the level of logging
-type LoggingType struct {
-	Level string
-}
-
-// CCType defines the path to crypto keys and certs
-type CCType struct {
-	Path string
-}
-
-// CredentialStoreType defines pluggable KV store properties
-type CredentialStoreType struct {
-	Path        string
-	CryptoStore struct {
-		Path string
-	}
-}
-
-// ChannelConfig provides the definition of channels for the network
-type ChannelConfig struct {
+// ChannelNetworkConfig provides the definition of channels for the network
+type ChannelNetworkConfig struct {
 	// Orderers list of ordering service nodes
 	Orderers []string
 	// Peers a list of peer-channels that are part of this organization
@@ -100,7 +74,7 @@ type NetworkPeer struct {
 type OrganizationConfig struct {
 	MSPID                  string
 	CryptoPath             string
-	Users                  map[string]TLSKeyPair
+	Users                  map[string]endpoint.TLSKeyPair
 	Peers                  []string
 	CertificateAuthorities []string
 }
@@ -118,36 +92,6 @@ type PeerConfig struct {
 	EventURL    string
 	GRPCOptions map[string]interface{}
 	TLSCACerts  endpoint.TLSConfig
-}
-
-// CAConfig defines a CA configuration
-type CAConfig struct {
-	URL        string
-	TLSCACerts MutualTLSConfig
-	Registrar  EnrollCredentials
-	CAName     string
-}
-
-// EnrollCredentials holds credentials used for enrollment
-type EnrollCredentials struct {
-	EnrollID     string
-	EnrollSecret string
-}
-
-// MutualTLSConfig Mutual TLS configurations
-type MutualTLSConfig struct {
-	Pem []string
-	// Certfiles root certificates for TLS validation (Comma separated path list)
-	Path string
-
-	//Client TLS information
-	Client TLSKeyPair
-}
-
-// TLSKeyPair contains the private key and certificate for TLS encryption
-type TLSKeyPair struct {
-	Key  endpoint.TLSConfig
-	Cert endpoint.TLSConfig
 }
 
 // MatchConfig contains match pattern and substitution pattern

@@ -96,10 +96,15 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	return nil
 }
 
-func getOrgTargets(config core.Config, org string) ([]string, error) {
+func getOrgTargets(configProvider config.Provider, org string) ([]string, error) {
+	_, endpointConfig, _, err := configProvider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "reading config failed")
+	}
+
 	var targets []string
 
-	peerConfig, err := config.PeersConfig(org)
+	peerConfig, err := endpointConfig.PeersConfig(org)
 	if err != nil {
 		return nil, errors.WithMessage(err, "reading peer config failed")
 	}
@@ -133,7 +138,11 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "creating chaincode package failed")
 	}
 
-	mspID, err := sdk.Config().MSPID(orgName)
+	_, endpointConfig, _, err := sdk.Config()()
+	if err != nil {
+		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "failed to get config")
+	}
+	mspID, err := endpointConfig.MSPID(orgName)
 	if err != nil {
 		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "looking up MSP ID failed")
 	}

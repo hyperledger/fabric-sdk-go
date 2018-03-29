@@ -17,7 +17,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/pkg/errors"
@@ -48,7 +47,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, errors.WithMessage(err, "failed to create channel context")
 	}
 
-	greylistProvider := greylist.New(channelContext.Config().TimeoutOrDefault(core.DiscoveryGreylistExpiry))
+	greylistProvider := greylist.New(channelContext.EndpointConfig().TimeoutOrDefault(fab.DiscoveryGreylistExpiry))
 
 	if channelContext.ChannelService() == nil {
 		return nil, errors.New("channel service not initialized")
@@ -83,7 +82,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 
 // Query chaincode using request and optional options provided
 func (cc *Client) Query(request Request, options ...RequestOption) (Response, error) {
-	optsWithTimeout, err := cc.addDefaultTimeout(cc.context, core.Query, options...)
+	optsWithTimeout, err := cc.addDefaultTimeout(cc.context, fab.Query, options...)
 	if err != nil {
 		return Response{}, errors.WithMessage(err, "option failed")
 	}
@@ -93,7 +92,7 @@ func (cc *Client) Query(request Request, options ...RequestOption) (Response, er
 
 // Execute prepares and executes transaction using request and optional options provided
 func (cc *Client) Execute(request Request, options ...RequestOption) (Response, error) {
-	optsWithTimeout, err := cc.addDefaultTimeout(cc.context, core.Execute, options...)
+	optsWithTimeout, err := cc.addDefaultTimeout(cc.context, fab.Execute, options...)
 	if err != nil {
 		return Response{}, errors.WithMessage(err, "option failed")
 	}
@@ -154,15 +153,15 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 func (cc *Client) createReqContext(txnOpts *requestOptions) (reqContext.Context, reqContext.CancelFunc) {
 
 	if txnOpts.Timeouts == nil {
-		txnOpts.Timeouts = make(map[core.TimeoutType]time.Duration)
+		txnOpts.Timeouts = make(map[fab.TimeoutType]time.Duration)
 	}
 
 	//setting default timeouts when not provided
-	if txnOpts.Timeouts[core.Execute] == 0 {
-		txnOpts.Timeouts[core.Execute] = cc.context.Config().TimeoutOrDefault(core.Execute)
+	if txnOpts.Timeouts[fab.Execute] == 0 {
+		txnOpts.Timeouts[fab.Execute] = cc.context.EndpointConfig().TimeoutOrDefault(fab.Execute)
 	}
 
-	reqCtx, cancel := contextImpl.NewRequest(cc.context, contextImpl.WithTimeout(txnOpts.Timeouts[core.Execute]),
+	reqCtx, cancel := contextImpl.NewRequest(cc.context, contextImpl.WithTimeout(txnOpts.Timeouts[fab.Execute]),
 		contextImpl.WithParent(txnOpts.ParentContext))
 	//Add timeout overrides here as a value so that it can be used by immediate child contexts (in handlers/transactors)
 	reqCtx = reqContext.WithValue(reqCtx, contextImpl.ReqContextTimeoutOverrides, txnOpts.Timeouts)
@@ -229,7 +228,7 @@ func (cc *Client) prepareOptsFromOptions(ctx context.Client, options ...RequestO
 }
 
 //addDefaultTimeout adds given default timeout if it is missing in options
-func (cc *Client) addDefaultTimeout(ctx context.Client, timeOutType core.TimeoutType, options ...RequestOption) ([]RequestOption, error) {
+func (cc *Client) addDefaultTimeout(ctx context.Client, timeOutType fab.TimeoutType, options ...RequestOption) ([]RequestOption, error) {
 	txnOpts := requestOptions{}
 	for _, option := range options {
 		err := option(ctx, &txnOpts)
@@ -240,7 +239,7 @@ func (cc *Client) addDefaultTimeout(ctx context.Client, timeOutType core.Timeout
 
 	if txnOpts.Timeouts[timeOutType] == 0 {
 		//InvokeHandler relies on Execute timeout
-		return append(options, WithTimeout(core.Execute, cc.context.Config().TimeoutOrDefault(timeOutType))), nil
+		return append(options, WithTimeout(fab.Execute, cc.context.EndpointConfig().TimeoutOrDefault(timeOutType))), nil
 	}
 	return options, nil
 }

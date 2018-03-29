@@ -9,7 +9,6 @@ package chconfig
 import (
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazyref"
@@ -48,7 +47,7 @@ func (ref *Ref) initializer() lazyref.Initializer {
 			return nil, errors.WithMessage(err, "error creating channel config provider")
 		}
 
-		reqCtx, cancel := contextImpl.NewRequest(ref.ctx, contextImpl.WithTimeoutType(core.PeerResponse))
+		reqCtx, cancel := contextImpl.NewRequest(ref.ctx, contextImpl.WithTimeoutType(fab.PeerResponse))
 		defer cancel()
 
 		chConfig, err := chConfigProvider.Query(reqCtx)

@@ -14,7 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -54,7 +53,7 @@ func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvide
 	params := defaultParams()
 	options.Apply(params, opts)
 
-	dialOpts, err := newDialOpts(ctx.Config(), url, params)
+	dialOpts, err := newDialOpts(ctx.EndpointConfig(), url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +87,7 @@ func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvide
 		commManager: commManager,
 		conn:        grpcconn,
 		stream:      stream,
-		tlsCertHash: comm.TLSCertHash(ctx.Config()),
+		tlsCertHash: comm.TLSCertHash(ctx.EndpointConfig()),
 	}, nil
 }
 
@@ -139,7 +138,7 @@ func (c *GRPCConnection) Context() fabcontext.Client {
 	return c.context
 }
 
-func newDialOpts(config core.Config, url string, params *params) ([]grpc.DialOption, error) {
+func newDialOpts(config fab.EndpointConfig, url string, params *params) ([]grpc.DialOption, error) {
 	var dialOpts []grpc.DialOption
 
 	if params.keepAliveParams.Time > 0 || params.keepAliveParams.Timeout > 0 {

@@ -12,9 +12,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/pkg/errors"
 )
 
@@ -36,7 +35,7 @@ func WithTargetURLs(urls ...string) RequestOption {
 
 		for _, url := range urls {
 
-			peerCfg, err := config.NetworkPeerConfigFromURL(ctx.Config(), url)
+			peerCfg, err := comm.NetworkPeerConfigFromURL(ctx.EndpointConfig(), url)
 			if err != nil {
 				return err
 			}
@@ -63,10 +62,10 @@ func WithTargetFilter(targetFilter fab.TargetFilter) RequestOption {
 
 //WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
 //if not provided, default timeout configuration from config will be used
-func WithTimeout(timeoutType core.TimeoutType, timeout time.Duration) RequestOption {
+func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		if o.Timeouts == nil {
-			o.Timeouts = make(map[core.TimeoutType]time.Duration)
+			o.Timeouts = make(map[fab.TimeoutType]time.Duration)
 		}
 		o.Timeouts[timeoutType] = timeout
 		return nil
@@ -79,7 +78,7 @@ func WithTimeout(timeoutType core.TimeoutType, timeout time.Duration) RequestOpt
 func WithOrdererURL(url string) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 
-		ordererCfg, err := ctx.Config().OrdererConfig(url)
+		ordererCfg, err := ctx.EndpointConfig().OrdererConfig(url)
 		if err != nil {
 			return errors.WithMessage(err, "orderer not found")
 		}

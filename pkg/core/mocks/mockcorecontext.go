@@ -13,28 +13,24 @@ import (
 
 // MockCoreContext is a mock core context
 type MockCoreContext struct {
-	MockConfig         core.Config
-	MockCcryptoSuite   core.CryptoSuite
-	MockUserStore      msp.UserStore
-	MockSigningManager core.SigningManager
-}
-
-// Config ...
-func (m *MockCoreContext) Config() core.Config {
-	return m.MockConfig
+	MockConfig            core.CryptoSuiteConfig
+	MockCryptoSuite       core.CryptoSuite
+	MockUserStore         msp.UserStore
+	MockSigningManager    core.SigningManager
+	MockCryptoSuiteConfig core.CryptoSuiteConfig
 }
 
 // CryptoSuite ...
 func (m *MockCoreContext) CryptoSuite() core.CryptoSuite {
-	return m.MockCcryptoSuite
-}
-
-// UserStore ...
-func (m *MockCoreContext) UserStore() msp.UserStore {
-	return m.MockUserStore
+	return m.MockCryptoSuite
 }
 
 // SigningManager ...
 func (m *MockCoreContext) SigningManager() core.SigningManager {
 	return m.MockSigningManager
+}
+
+//CryptoSuiteConfig ...
+func (m *MockCoreContext) CryptoSuiteConfig() core.CryptoSuiteConfig {
+	return m.MockCryptoSuiteConfig
 }

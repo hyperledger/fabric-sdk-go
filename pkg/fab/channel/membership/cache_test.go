@@ -39,7 +39,7 @@ func TestMembershipCache(t *testing.T) {
 	cache := NewRefCache(time.Millisecond * 10)
 	assert.NotNil(t, cache)
 
-	key, err := NewCacheKey(Context{ctx}, lazyref.New(func() (interface{}, error) { return cfg, nil }), testChannelID)
+	key, err := NewCacheKey(Context{Providers: ctx, EndpointConfig: mocks.NewMockEndpointConfig()}, lazyref.New(func() (interface{}, error) { return cfg, nil }), testChannelID)
 	assert.Nil(t, err)
 	assert.NotNil(t, key)
 
@@ -78,7 +78,7 @@ func TestMembershipCacheBad(t *testing.T) {
 	assert.Equal(t, "unexpected cache key", err.Error())
 	assert.Nil(t, r)
 
-	key, err := NewCacheKey(Context{ctx}, lazyref.New(func() (interface{}, error) { return nil, testErr }), testChannelID)
+	key, err := NewCacheKey(Context{Providers: ctx, EndpointConfig: mocks.NewMockEndpointConfig()}, lazyref.New(func() (interface{}, error) { return nil, testErr }), testChannelID)
 	assert.Nil(t, err)
 	assert.NotNil(t, key)
 

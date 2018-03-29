@@ -61,7 +61,9 @@ func (c *Channel) ChannelID() string {
 
 //Provider implementation of Providers interface
 type Provider struct {
-	config            core.Config
+	cryptoSuiteConfig core.CryptoSuiteConfig
+	endpointConfig    fab.EndpointConfig
+	identityConfig    msp.IdentityConfig
 	userStore         msp.UserStore
 	cryptoSuite       core.CryptoSuite
 	discoveryProvider fab.DiscoveryProvider
@@ -72,14 +74,14 @@ type Provider struct {
 	channelProvider   fab.ChannelProvider
 }
 
-// Config returns the Config provider of sdk.
-func (c *Provider) Config() core.Config {
-	return c.config
-}
-
 // CryptoSuite returns the BCCSP provider of sdk.
 func (c *Provider) CryptoSuite() core.CryptoSuite {
 	return c.cryptoSuite
+}
+
+// CryptoSuiteConfig returns cryptosuite config.
+func (c *Provider) CryptoSuiteConfig() core.CryptoSuiteConfig {
+	return c.cryptoSuiteConfig
 }
 
 // IdentityManager returns identity manager for organization
@@ -95,6 +97,11 @@ func (c *Provider) SigningManager() core.SigningManager {
 // UserStore returns state store
 func (c *Provider) UserStore() msp.UserStore {
 	return c.userStore
+}
+
+//IdentityConfig returns the Identity config
+func (c *Provider) IdentityConfig() msp.IdentityConfig {
+	return c.identityConfig
 }
 
 // DiscoveryProvider returns discovery provider
@@ -117,45 +124,64 @@ func (c *Provider) InfraProvider() fab.InfraProvider {
 	return c.infraProvider
 }
 
+//EndpointConfig returns end point network config
+func (c *Provider) EndpointConfig() fab.EndpointConfig {
+	return c.endpointConfig
+}
+
 //SDKContextParams parameter for creating FabContext
 type SDKContextParams func(opts *Provider)
 
-//WithConfig sets config to FabContext
-func WithConfig(config core.Config) SDKContextParams {
+//WithCryptoSuiteConfig sets core cryptoSuite config to Context Provider
+func WithCryptoSuiteConfig(cryptoSuiteConfig core.CryptoSuiteConfig) SDKContextParams {
 	return func(ctx *Provider) {
-		ctx.config = config
+		ctx.cryptoSuiteConfig = cryptoSuiteConfig
 	}
 }
 
-// WithUserStore sets user store to FabContext
+//WithEndpointConfig sets fab endpoint network config to Context Provider
+func WithEndpointConfig(endpointConfig fab.EndpointConfig) SDKContextParams {
+	return func(ctx *Provider) {
+		ctx.endpointConfig = endpointConfig
+	}
+}
+
+//WithIdentityConfig sets msp identity config to Context Provider
+func WithIdentityConfig(identityConfig msp.IdentityConfig) SDKContextParams {
+	return func(ctx *Provider) {
+		ctx.identityConfig = identityConfig
+	}
+}
+
+// WithUserStore sets user store to Context Provider
 func WithUserStore(userStore msp.UserStore) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.userStore = userStore
 	}
 }
 
-//WithCryptoSuite sets cryptosuite parameter to FabContext
+//WithCryptoSuite sets cryptosuite parameter to Context Provider
 func WithCryptoSuite(cryptoSuite core.CryptoSuite) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.cryptoSuite = cryptoSuite
 	}
 }
 
-//WithDiscoveryProvider sets discoveryProvider to FabContext
+//WithDiscoveryProvider sets discoveryProvider to Context Provider
 func WithDiscoveryProvider(discoveryProvider fab.DiscoveryProvider) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.discoveryProvider = discoveryProvider
 	}
 }
 
-//WithSelectionProvider sets selectionProvider to FabContext
+//WithSelectionProvider sets selectionProvider to Context Provider
 func WithSelectionProvider(selectionProvider fab.SelectionProvider) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.selectionProvider = selectionProvider
 	}
 }
 
-//WithSigningManager sets signingManager to FabContext
+//WithSigningManager sets signingManager to Context Provider
 func WithSigningManager(signingManager core.SigningManager) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.signingManager = signingManager
@@ -169,14 +195,14 @@ func WithIdentityManagerProvider(provider msp.IdentityManagerProvider) SDKContex
 	}
 }
 
-//WithInfraProvider sets infraProvider maps to FabContext
+//WithInfraProvider sets infraProvider maps to Context Provider
 func WithInfraProvider(infraProvider fab.InfraProvider) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.infraProvider = infraProvider
 	}
 }
 
-//WithChannelProvider sets channelProvider to FabContext
+//WithChannelProvider sets channelProvider to Context Provider
 func WithChannelProvider(channelProvider fab.ChannelProvider) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.channelProvider = channelProvider
@@ -255,7 +281,7 @@ var reqContextCommManager = reqContextKey("commManager")
 var reqContextClient = reqContextKey("clientContext")
 
 //WithTimeoutType sets timeout by type defined in config to request context
-func WithTimeoutType(timeoutType core.TimeoutType) ReqContextOptions {
+func WithTimeoutType(timeoutType fab.TimeoutType) ReqContextOptions {
 	return func(ctx *requestContextOpts) {
 		ctx.timeoutType = timeoutType
 	}
@@ -279,7 +305,7 @@ func WithParent(context reqContext.Context) ReqContextOptions {
 type ReqContextOptions func(opts *requestContextOpts)
 
 type requestContextOpts struct {
-	timeoutType   core.TimeoutType
+	timeoutType   fab.TimeoutType
 	timeout       time.Duration
 	parentContext reqContext.Context
 }
@@ -305,7 +331,7 @@ func NewRequest(client context.Client, options ...ReqContextOptions) (reqContext
 	} else if timeoutOverride := requestTimeoutOverride(parentContext, reqCtxOpts.timeoutType); timeoutOverride > 0 {
 		timeout = timeoutOverride
 	} else {
-		timeout = client.Config().TimeoutOrDefault(reqCtxOpts.timeoutType)
+		timeout = client.EndpointConfig().TimeoutOrDefault(reqCtxOpts.timeoutType)
 	}
 
 	ctx := reqContext.WithValue(parentContext, reqContextCommManager, client.InfraProvider().CommManager())
@@ -328,8 +354,8 @@ func RequestClientContext(ctx reqContext.Context) (context.Client, bool) {
 }
 
 // requestTimeoutOverrides extracts the timeout from timeout override map from the request-scoped context.
-func requestTimeoutOverride(ctx reqContext.Context, timeoutType core.TimeoutType) time.Duration {
-	timeoutOverrides, ok := ctx.Value(ReqContextTimeoutOverrides).(map[core.TimeoutType]time.Duration)
+func requestTimeoutOverride(ctx reqContext.Context, timeoutType fab.TimeoutType) time.Duration {
+	timeoutOverrides, ok := ctx.Value(ReqContextTimeoutOverrides).(map[fab.TimeoutType]time.Duration)
 	if !ok {
 		return 0
 	}

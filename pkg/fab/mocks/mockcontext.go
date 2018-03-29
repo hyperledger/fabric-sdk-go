@@ -13,7 +13,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	config "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
@@ -28,7 +27,9 @@ import (
 
 // MockProviderContext holds core providers to enable mocking.
 type MockProviderContext struct {
-	config            config.Config
+	cryptoSuiteConfig core.CryptoSuiteConfig
+	endpointConfig    fab.EndpointConfig
+	identityConfig    msp.IdentityConfig
 	cryptoSuite       core.CryptoSuite
 	signingManager    core.SigningManager
 	userStore         msp.UserStore
@@ -86,7 +87,9 @@ func NewMockProviderContext(userOpts ...ProviderOption) *MockProviderContext {
 	}
 
 	context := MockProviderContext{
-		config:            NewMockConfig(),
+		cryptoSuiteConfig: NewMockCryptoConfig(),
+		endpointConfig:    NewMockEndpointConfig(),
+		identityConfig:    NewMockIdentityConfig(),
 		signingManager:    mocks.NewMockSigningManager(),
 		cryptoSuite:       &MockCryptoSuite{},
 		userStore:         &mspmocks.MockUserStore{},
@@ -101,30 +104,42 @@ func NewMockProviderContext(userOpts ...ProviderOption) *MockProviderContext {
 }
 
 // NewMockProviderContextCustom creates a MockProviderContext consisting of the arguments
-func NewMockProviderContextCustom(config config.Config, cryptoSuite core.CryptoSuite, signer core.SigningManager, userStore msp.UserStore, identityManager map[string]msp.IdentityManager) *MockProviderContext {
+func NewMockProviderContextCustom(cryptoConfig core.CryptoSuiteConfig, endpointConfig fab.EndpointConfig, identityConfig msp.IdentityConfig, cryptoSuite core.CryptoSuite, signer core.SigningManager, userStore msp.UserStore, identityManager map[string]msp.IdentityManager) *MockProviderContext {
 	context := MockProviderContext{
-		config:          config,
-		signingManager:  signer,
-		cryptoSuite:     cryptoSuite,
-		userStore:       userStore,
-		identityManager: identityManager,
+		cryptoSuiteConfig: cryptoConfig,
+		endpointConfig:    endpointConfig,
+		identityConfig:    identityConfig,
+		signingManager:    signer,
+		cryptoSuite:       cryptoSuite,
+		userStore:         userStore,
+		identityManager:   identityManager,
 	}
 	return &context
 }
 
-// Config returns the mock configuration.
-func (pc *MockProviderContext) Config() config.Config {
-	return pc.config
+// SetCryptoSuiteConfig sets the mock cryptosuite configuration.
+func (pc *MockProviderContext) SetCryptoSuiteConfig(config core.CryptoSuiteConfig) {
+	pc.cryptoSuiteConfig = config
 }
 
-// SetConfig sets the mock configuration.
-func (pc *MockProviderContext) SetConfig(config config.Config) {
-	pc.config = config
+// SetEndpointConfig sets the mock endpoint configuration.
+func (pc *MockProviderContext) SetEndpointConfig(config fab.EndpointConfig) {
+	pc.endpointConfig = config
+}
+
+// SetIdentityConfig sets the mock msp identity configuration.
+func (pc *MockProviderContext) SetIdentityConfig(config msp.IdentityConfig) {
+	pc.identityConfig = config
 }
 
 // CryptoSuite returns the mock crypto suite.
 func (pc *MockProviderContext) CryptoSuite() core.CryptoSuite {
 	return pc.cryptoSuite
+}
+
+// CryptoSuiteConfig ...
+func (pc *MockProviderContext) CryptoSuiteConfig() core.CryptoSuiteConfig {
+	return pc.cryptoSuiteConfig
 }
 
 // SigningManager returns the mock signing manager.
@@ -135,6 +150,11 @@ func (pc *MockProviderContext) SigningManager() core.SigningManager {
 // UserStore returns the mock usser store
 func (pc *MockProviderContext) UserStore() msp.UserStore {
 	return pc.userStore
+}
+
+//IdentityConfig returns the Identity config
+func (pc *MockProviderContext) IdentityConfig() msp.IdentityConfig {
+	return pc.identityConfig
 }
 
 // IdentityManager returns the identity manager
@@ -176,6 +196,11 @@ func (pc *MockProviderContext) ChannelProvider() fab.ChannelProvider {
 //InfraProvider returns fabric provider
 func (pc *MockProviderContext) InfraProvider() fab.InfraProvider {
 	return pc.infraProvider
+}
+
+//EndpointConfig returns mock end point config
+func (pc *MockProviderContext) EndpointConfig() fab.EndpointConfig {
+	return pc.endpointConfig
 }
 
 //SetCustomInfraProvider sets custom fabric provider for unit-test purposes

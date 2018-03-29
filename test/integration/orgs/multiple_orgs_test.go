@@ -19,7 +19,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
@@ -27,7 +26,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
@@ -37,6 +35,7 @@ import (
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
 
@@ -439,22 +438,22 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 		t.Fatalf("context creation failed: %s", err)
 	}
 
-	org1Peers, err := ctx.Config().PeersConfig(org1)
+	org1Peers, err := ctx.EndpointConfig().PeersConfig(org1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	org2Peers, err := ctx.Config().PeersConfig(org2)
+	org2Peers, err := ctx.EndpointConfig().PeersConfig(org2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	orgTestPeer0, err = ctx.InfraProvider().CreatePeerFromConfig(&core.NetworkPeer{PeerConfig: org1Peers[0]})
+	orgTestPeer0, err = ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{PeerConfig: org1Peers[0]})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	orgTestPeer1, err = ctx.InfraProvider().CreatePeerFromConfig(&core.NetworkPeer{PeerConfig: org2Peers[0]})
+	orgTestPeer1, err = ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{PeerConfig: org2Peers[0]})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -467,6 +466,6 @@ type DynamicSelectionProviderFactory struct {
 }
 
 // CreateSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config core.Config) (fab.SelectionProvider, error) {
+func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
 	return selection.New(config, f.ChannelUsers)
 }

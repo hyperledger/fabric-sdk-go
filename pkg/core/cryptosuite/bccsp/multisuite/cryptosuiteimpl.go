@@ -14,7 +14,7 @@ import (
 )
 
 //GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
-func GetSuiteByConfig(config core.Config) (core.CryptoSuite, error) {
+func GetSuiteByConfig(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	switch config.SecurityProvider() {
 	case "SW":
 		return sw.GetSuiteByConfig(config)

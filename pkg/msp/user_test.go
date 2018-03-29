@@ -21,18 +21,22 @@ func TestUserMethods(t *testing.T) {
 	testUserMSPID := "testUserMSPID"
 	testUsername := "testUsername"
 
-	config, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
+	configBackend, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
+	if err != nil {
+		t.Fatalf("Failed to read config: %v", err)
+	}
+	cryptoConfig, _, identityConfig, err := config.FromBackend(configBackend)()
 	if err != nil {
 		t.Fatalf("Failed to read config: %v", err)
 	}
 	// Delete all private keys from the crypto suite store
 	// and users from the user store
-	cleanupTestPath(t, config.KeyStorePath())
-	defer cleanupTestPath(t, config.KeyStorePath())
-	cleanupTestPath(t, config.CredentialStorePath())
-	defer cleanupTestPath(t, config.CredentialStorePath())
+	cleanupTestPath(t, cryptoConfig.KeyStorePath())
+	defer cleanupTestPath(t, cryptoConfig.KeyStorePath())
+	cleanupTestPath(t, identityConfig.CredentialStorePath())
+	defer cleanupTestPath(t, identityConfig.CredentialStorePath())
 
-	cryptoSuite, err := cryptosuiteimpl.GetSuiteByConfig(config)
+	cryptoSuite, err := cryptosuiteimpl.GetSuiteByConfig(cryptoConfig)
 	if cryptoSuite == nil {
 		t.Fatalf("Failed initialize cryptoSuite: %v", err)
 	}

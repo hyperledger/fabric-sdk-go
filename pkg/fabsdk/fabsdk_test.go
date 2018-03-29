@@ -64,12 +64,8 @@ func TestDoubleClose(t *testing.T) {
 
 func TestWithCorePkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c, err := configImpl.FromFile(sdkConfigFile)()
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(WithConfig(c))
+	c := configImpl.FromFile(sdkConfigFile)
+	sdk, err := New(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -79,11 +75,11 @@ func TestWithCorePkg(t *testing.T) {
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockCoreProviderFactory(mockCtrl)
 
-	factory.EXPECT().CreateCryptoSuiteProvider(c).Return(nil, nil)
-	factory.EXPECT().CreateSigningManager(nil, c).Return(nil, nil)
+	factory.EXPECT().CreateCryptoSuiteProvider(gomock.Any()).Return(nil, nil)
+	factory.EXPECT().CreateSigningManager(nil).Return(nil, nil)
 	factory.EXPECT().CreateInfraProvider(gomock.Any()).Return(nil, nil)
 
-	_, err = New(WithConfig(c), WithCorePkg(factory))
+	_, err = New(c, WithCorePkg(factory))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -91,12 +87,9 @@ func TestWithCorePkg(t *testing.T) {
 
 func TestWithMSPPkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c, err := configImpl.FromFile(sdkConfigFile)()
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
+	c := configImpl.FromFile(sdkConfigFile)
 
-	sdk, err := New(WithConfig(c))
+	sdk, err := New(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -106,10 +99,10 @@ func TestWithMSPPkg(t *testing.T) {
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockMSPProviderFactory(mockCtrl)
 
-	factory.EXPECT().CreateUserStore(c).Return(nil, nil)
-	factory.EXPECT().CreateIdentityManagerProvider(c, gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+	factory.EXPECT().CreateUserStore(gomock.Any()).Return(nil, nil)
+	factory.EXPECT().CreateIdentityManagerProvider(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 
-	_, err = New(WithConfig(c), WithMSPPkg(factory))
+	_, err = New(c, WithMSPPkg(factory))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -117,12 +110,9 @@ func TestWithMSPPkg(t *testing.T) {
 
 func TestWithServicePkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c, err := configImpl.FromFile(sdkConfigFile)()
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
+	c := configImpl.FromFile(sdkConfigFile)
 
-	sdk, err := New(WithConfig(c))
+	sdk, err := New(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -132,10 +122,10 @@ func TestWithServicePkg(t *testing.T) {
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockServiceProviderFactory(mockCtrl)
 
-	factory.EXPECT().CreateDiscoveryProvider(c, gomock.Any()).Return(nil, nil)
-	factory.EXPECT().CreateSelectionProvider(c).Return(nil, nil)
+	factory.EXPECT().CreateDiscoveryProvider(gomock.Any(), gomock.Any()).Return(nil, nil)
+	factory.EXPECT().CreateSelectionProvider(gomock.Any()).Return(nil, nil)
 
-	_, err = New(WithConfig(c), WithServicePkg(factory))
+	_, err = New(c, WithServicePkg(factory))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -143,23 +133,20 @@ func TestWithServicePkg(t *testing.T) {
 
 func TestWithSessionPkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c, err := configImpl.FromFile(sdkConfigFile)()
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
+	c := configImpl.FromFile(sdkConfigFile)
 
 	core, err := newMockCorePkg(c)
 	if err != nil {
 		t.Fatalf("Error initializing core factory: %s", err)
 	}
 
-	sdk, err := New(WithConfig(c))
+	sdk, err := New(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 	sdk.Close()
 
-	sdk, err = New(WithConfig(c), WithCorePkg(core))
+	sdk, err = New(c, WithCorePkg(core))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -176,12 +163,9 @@ func TestWithSessionPkg(t *testing.T) {
 func TestErrPkgSuite(t *testing.T) {
 	ps := mockPkgSuite{}
 
-	c, err := configImpl.FromFile(sdkConfigFile)()
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
+	c := configImpl.FromFile(sdkConfigFile)
 
-	_, err = fromPkgSuite(c, &ps)
+	_, err := fromPkgSuite(c, &ps)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -255,7 +239,12 @@ func TestWithConfigSuccess(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	client1, err := sdk.Config().Client()
+	_, _, identityConfig, err := sdk.Config()()
+	if err != nil {
+		t.Fatalf("Error getting config from sdk: %s", err)
+	}
+
+	client1, err := identityConfig.Client()
 	if err != nil {
 		t.Fatalf("Error getting client from config: %s", err)
 	}
