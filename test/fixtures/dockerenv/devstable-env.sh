@@ -12,14 +12,14 @@
 export ARCH=""
 export ARCH_SEP=""
 
-export FABRIC_FIXTURE_VERSION="v1.1"
+export FABRIC_FIXTURE_VERSION="v1.2"
 export FABRIC_CRYPTOCONFIG_VERSION="v1"
 
-export FABRIC_CA_FIXTURE_TAG="DEV_STABLE"
-export FABRIC_ORDERER_FIXTURE_TAG="DEV_STABLE"
-export FABRIC_PEER_FIXTURE_TAG="DEV_STABLE"
-export FABRIC_COUCHDB_FIXTURE_TAG="DEV_STABLE"
-export FABRIC_BUILDER_FIXTURE_TAG="DEV_STABLE"
+export FABRIC_CA_FIXTURE_TAG="latest"
+export FABRIC_ORDERER_FIXTURE_TAG="latest"
+export FABRIC_PEER_FIXTURE_TAG="latest"
+export FABRIC_COUCHDB_FIXTURE_TAG="latest"
+export FABRIC_BUILDER_FIXTURE_TAG="latest"
 
 # override SDK configuration that loads crypto-config
 export FABRIC_SDK_CLIENT_CRYPTOCONFIG_PATH='${GOPATH}'"/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
