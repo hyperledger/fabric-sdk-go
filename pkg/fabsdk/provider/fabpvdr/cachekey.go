@@ -55,8 +55,8 @@ func NewCacheKey(ctx fab.ClientContext, chConfig fab.ChannelCfg, opts ...options
 	options.Apply(params, opts)
 
 	h := sha256.New()
-	h.Write(identity) // nolint
-	hash := h.Sum([]byte(chConfig.ID() + params.getOptKey()))
+	h.Write(append(identity, []byte(params.getOptKey())...)) // nolint
+	hash := h.Sum([]byte(chConfig.ID()))
 
 	return &CacheKey{
 		key:      string(hash),

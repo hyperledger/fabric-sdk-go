@@ -25,17 +25,31 @@ func NewMockEventService() *MockEventService {
 
 // RegisterBlockEvent registers for block events.
 func (m *MockEventService) RegisterBlockEvent(filter ...fab.BlockFilter) (fab.Registration, <-chan *fab.BlockEvent, error) {
-	panic("not implemented")
+	eventCh := make(chan *fab.BlockEvent)
+	reg := &dispatcher.BlockReg{
+		Eventch: eventCh,
+	}
+	return reg, eventCh, nil
 }
 
 // RegisterFilteredBlockEvent registers for filtered block events.
 func (m *MockEventService) RegisterFilteredBlockEvent() (fab.Registration, <-chan *fab.FilteredBlockEvent, error) {
-	panic("not implemented")
+	eventCh := make(chan *fab.FilteredBlockEvent)
+	reg := &dispatcher.FilteredBlockReg{
+		Eventch: eventCh,
+	}
+	return reg, eventCh, nil
 }
 
 // RegisterChaincodeEvent registers for chaincode events.
 func (m *MockEventService) RegisterChaincodeEvent(ccID, eventFilter string) (fab.Registration, <-chan *fab.CCEvent, error) {
-	panic("not implemented")
+	eventCh := make(chan *fab.CCEvent)
+	reg := &dispatcher.ChaincodeReg{
+		Eventch:     eventCh,
+		ChaincodeID: ccID,
+		EventFilter: eventFilter,
+	}
+	return reg, eventCh, nil
 }
 
 // RegisterTxStatusEvent registers for transaction status events.
