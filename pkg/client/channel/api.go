@@ -40,13 +40,12 @@ type Request struct {
 
 //Response contains response parameters for query and execute an invocation transaction
 type Response struct {
-	Payload          []byte
+	Proposal         *fab.TransactionProposal
+	Responses        []*fab.TransactionProposalResponse
 	TransactionID    fab.TransactionID
 	TxValidationCode pb.TxValidationCode
-	Proposal         *fab.TransactionProposal
-	// ChaincodeStatus is the status returned by Chaincode
-	ChaincodeStatus int32
-	Responses       []*fab.TransactionProposalResponse
+	ChaincodeStatus  int32
+	Payload          []byte
 }
 
 //WithTargets encapsulates ProposalProcessors to Option

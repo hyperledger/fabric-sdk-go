@@ -29,6 +29,40 @@ func TestCCPolicyProvider(t *testing.T) {
 		t.Fatal("Failed to create context")
 	}
 
+	// All good
+	ccPolicyProvider, err := newCCPolicyProvider(context, "mychannel", "User1", "Org1")
+	if err != nil {
+		t.Fatalf("Failed to setup cc policy provider: %s", err)
+	}
+
+	// Empty chaincode ID
+	_, err = ccPolicyProvider.GetChaincodePolicy("")
+	if err == nil {
+		t.Fatalf("Should have failed to retrieve chaincode policy for empty chaincode id")
+	}
+
+	// Non-existent chaincode ID
+	_, err = ccPolicyProvider.GetChaincodePolicy("abc")
+	if err == nil {
+		t.Fatalf("Should have failed to retrieve non-existent cc policy")
+	}
+
+}
+
+func TestCCPolicyProviderNegative(t *testing.T) {
+	// Create SDK setup for channel client with dynamic selection
+	sdk, err := fabsdk.New(config.FromFile("../../../../../test/fixtures/config/config_test.yaml"))
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+	defer sdk.Close()
+
+	clientContext := sdk.Context(fabsdk.WithUser("User1"), fabsdk.WithOrg("Org1"))
+
+	context, err := clientContext()
+	if err != nil {
+		t.Fatal("Failed to create context")
+	}
 	// Nil sdk
 	_, err = newCCPolicyProvider(nil, "mychannel", "User1", "Org1")
 	if err == nil {
@@ -59,23 +93,6 @@ func TestCCPolicyProvider(t *testing.T) {
 		t.Fatalf("Should have failed for invalid channel name")
 	}
 
-	// All good
-	ccPolicyProvider, err := newCCPolicyProvider(context, "mychannel", "User1", "Org1")
-	if err != nil {
-		t.Fatalf("Failed to setup cc policy provider: %s", err)
-	}
-
-	// Empty chaincode ID
-	_, err = ccPolicyProvider.GetChaincodePolicy("")
-	if err == nil {
-		t.Fatalf("Should have failed to retrieve chaincode policy for empty chaincode id")
-	}
-
-	// Non-existent chaincode ID
-	_, err = ccPolicyProvider.GetChaincodePolicy("abc")
-	if err == nil {
-		t.Fatalf("Should have failed to retrieve non-existent cc policy")
-	}
 }
 
 func TestBadClient(t *testing.T) {

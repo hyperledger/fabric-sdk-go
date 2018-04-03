@@ -4,7 +4,6 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package resmgmt enables ability to update resources in a Fabric network.
 package resmgmt
 
 import (
@@ -152,9 +151,9 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 	}
 
 	for _, opt := range opts {
-		err := opt(resourceClient)
-		if err != nil {
-			return nil, err
+		err1 := opt(resourceClient)
+		if err1 != nil {
+			return nil, err1
 		}
 	}
 
@@ -354,8 +353,47 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		return nil, errors.WithStack(status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), "no targets available", nil))
 	}
 
-	responses := make([]InstallCCResponse, 0)
+	responses, newTargets, errs := rc.adjustTargets(targets, req, opts.Retry, parentReqCtx)
+
+	if len(newTargets) == 0 {
+		// CC is already installed on all targets and/or
+		// we are unable to verify if cc is installed on target(s)
+		return responses, errs.ToError()
+	}
+
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.ResMgmt), contextImpl.WithParent(parentReqCtx))
+	defer cancel()
+
+	responses = rc.sendIntallCCRequest(req, reqCtx, newTargets, responses)
+
+	if err != nil {
+		installErrs, ok := err.(multi.Errors)
+		if ok {
+			errs = append(errs, installErrs)
+		} else {
+			errs = append(errs, err)
+		}
+	}
+
+	return responses, errs.ToError()
+}
+
+func (rc *Client) sendIntallCCRequest(req InstallCCRequest, reqCtx reqContext.Context, newTargets []fab.Peer, responses []InstallCCResponse) []InstallCCResponse {
+	icr := api.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package}
+	transactionProposalResponse, _, _ := resource.InstallChaincode(reqCtx, icr, peer.PeersToTxnProcessors(newTargets))
+	for _, v := range transactionProposalResponse {
+		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v", req.Name, v.Endorser, v.Status)
+
+		response := InstallCCResponse{Target: v.Endorser, Status: v.Status}
+		responses = append(responses, response)
+	}
+	return responses
+}
+
+func (rc *Client) adjustTargets(targets []fab.Peer, req InstallCCRequest, retry retry.Opts, parentReqCtx reqContext.Context) ([]InstallCCResponse, []fab.Peer, multi.Errors) {
 	errs := multi.Errors{}
+
+	responses := make([]InstallCCResponse, 0)
 
 	// Targets will be adjusted if cc has already been installed
 	newTargets := make([]fab.Peer, 0)
@@ -363,10 +401,10 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.PeerResponse), contextImpl.WithParent(parentReqCtx))
 		defer cancel()
 
-		installed, err := rc.isChaincodeInstalled(reqCtx, req, target, opts.Retry)
-		if err != nil {
+		installed, err1 := rc.isChaincodeInstalled(reqCtx, req, target, retry)
+		if err1 != nil {
 			// Add to errors with unable to verify error message
-			errs = append(errs, errors.Errorf("unable to verify if cc is installed on %s. Got error: %s", target.URL(), err.Error()))
+			errs = append(errs, errors.Errorf("unable to verify if cc is installed on %s. Got error: %s", target.URL(), err1.Error()))
 			continue
 		}
 		if installed {
@@ -379,34 +417,8 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 		}
 	}
 
-	if len(newTargets) == 0 {
-		// CC is already installed on all targets and/or
-		// we are unable to verify if cc is installed on target(s)
-		return responses, errs.ToError()
-	}
+	return responses, newTargets, errs
 
-	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.ResMgmt), contextImpl.WithParent(parentReqCtx))
-	defer cancel()
-
-	icr := api.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package}
-	transactionProposalResponse, _, err := resource.InstallChaincode(reqCtx, icr, peer.PeersToTxnProcessors(newTargets))
-	for _, v := range transactionProposalResponse {
-		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v", req.Name, v.Endorser, v.Status)
-
-		response := InstallCCResponse{Target: v.Endorser, Status: v.Status}
-		responses = append(responses, response)
-	}
-
-	if err != nil {
-		installErrs, ok := err.(multi.Errors)
-		if ok {
-			errs = append(errs, installErrs)
-		} else {
-			errs = append(errs, err)
-		}
-	}
-
-	return responses, errs.ToError()
 }
 
 func checkRequiredInstallCCParams(req InstallCCRequest) error {
@@ -479,14 +491,14 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		target = opts.Targets[0]
 	} else {
 		// discover peers on this channel
-		discovery, err := rc.ctx.DiscoveryProvider().CreateDiscoveryService(channelID)
-		if err != nil {
-			return nil, errors.WithMessage(err, "failed to create channel discovery service")
+		discovery, err1 := rc.ctx.DiscoveryProvider().CreateDiscoveryService(channelID)
+		if err1 != nil {
+			return nil, errors.WithMessage(err1, "failed to create channel discovery service")
 		}
 		// default filter will be applied (if any)
-		targets, err := rc.getDefaultTargets(discovery)
-		if err != nil {
-			return nil, errors.WithMessage(err, "failed to get default target for query instantiated chaincodes")
+		targets, err2 := rc.getDefaultTargets(discovery)
+		if err2 != nil {
+			return nil, errors.WithMessage(err2, "failed to get default target for query instantiated chaincodes")
 		}
 
 		// select random channel peer
@@ -541,36 +553,76 @@ func (rc *Client) QueryChannels(options ...RequestOption) (*pb.ChannelQueryRespo
 
 }
 
-// sendCCProposal sends proposal for type  Instantiate, Upgrade
-func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chaincodeProposalType, channelID string, req InstantiateCCRequest, opts requestOptions) (fab.TransactionID, error) {
-
-	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
-		return fab.EmptyTransactionID, err
-	}
+// validateSendCCProposal
+func (rc *Client) getCCProposalTargets(channelID string, req InstantiateCCRequest, opts requestOptions) ([]fab.Peer, error) {
 
 	// per channel discovery service
 	discovery, err := rc.ctx.DiscoveryProvider().CreateDiscoveryService(channelID)
 	if err != nil {
-		return fab.EmptyTransactionID, errors.WithMessage(err, "failed to create channel discovery service")
+		return nil, errors.WithMessage(err, "failed to create channel discovery service")
 	}
 
 	//Default targets when targets are not provided in options
 	if len(opts.Targets) == 0 {
 		opts.Targets, err = rc.getDefaultTargets(discovery)
 		if err != nil {
-			return fab.EmptyTransactionID, errors.WithMessage(err, "failed to get default targets for cc proposal")
+			return nil, errors.WithMessage(err, "failed to get default targets for cc proposal")
 		}
 	}
 
 	targets, err := rc.calculateTargets(discovery, opts.Targets, opts.TargetFilter)
 	if err != nil {
-		return fab.EmptyTransactionID, errors.WithMessage(err, "failed to determine target peers for cc proposal")
+		return nil, errors.WithMessage(err, "failed to determine target peers for cc proposal")
 	}
 
 	if len(targets) == 0 {
-		return fab.EmptyTransactionID, errors.WithStack(status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), "no targets available", nil))
+		return nil, errors.WithStack(status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), "no targets available", nil))
+	}
+	return targets, nil
+}
+
+// createTP
+func (rc *Client) createTP(req InstantiateCCRequest, channelID string, ccProposalType chaincodeProposalType) (*fab.TransactionProposal, fab.TransactionID, error) {
+	deployProposal := chaincodeDeployRequest(req)
+
+	txID, err := txn.NewHeader(rc.ctx, channelID)
+	if err != nil {
+		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "create transaction ID failed")
 	}
 
+	tp, err := createChaincodeDeployProposal(txID, ccProposalType, channelID, deployProposal)
+	if err != nil {
+		return nil, txID.TransactionID(), errors.WithMessage(err, "creating chaincode deploy transaction proposal failed")
+	}
+	return tp, txID.TransactionID(), nil
+}
+
+func (rc *Client) verifyTPSignature(channelService fab.ChannelService, txProposalResponse []*fab.TransactionProposalResponse) error {
+	// Membership is required to verify signature
+	membership, err := channelService.Membership()
+	if err != nil {
+		return errors.WithMessage(err, "membership creation failed")
+	}
+
+	sv := &verifier.Signature{Membership: membership}
+	for _, r := range txProposalResponse {
+		if err := sv.Verify(r); err != nil {
+			return errors.WithMessage(err, "Failed to verify signature")
+		}
+	}
+	return nil
+}
+
+// sendCCProposal sends proposal for type  Instantiate, Upgrade
+func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chaincodeProposalType, channelID string, req InstantiateCCRequest, opts requestOptions) (fab.TransactionID, error) {
+	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
+		return fab.EmptyTransactionID, err
+	}
+
+	targets, err := rc.getCCProposalTargets(channelID, req, opts)
+	if err != nil {
+		return fab.EmptyTransactionID, err
+	}
 	// Get transactor on the channel to create and send the deploy proposal
 	channelService, err := rc.ctx.ChannelProvider().ChannelService(rc.ctx, channelID)
 	if err != nil {
@@ -587,16 +639,9 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 	}
 
 	// create a transaction proposal for chaincode deployment
-	deployProposal := chaincodeDeployRequest(req)
-
-	txID, err := txn.NewHeader(rc.ctx, channelID)
+	tp, txnID, err := rc.createTP(req, channelID, ccProposalType)
 	if err != nil {
-		return fab.EmptyTransactionID, errors.WithMessage(err, "create transaction ID failed")
-	}
-
-	tp, err := createChaincodeDeployProposal(txID, ccProposalType, channelID, deployProposal)
-	if err != nil {
-		return txID.TransactionID(), errors.WithMessage(err, "creating chaincode deploy transaction proposal failed")
+		return txnID, err
 	}
 
 	// Process and send transaction proposal
@@ -605,18 +650,10 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		return tp.TxnID, errors.WithMessage(err, "sending deploy transaction proposal failed")
 	}
 
-	// Membership is required to verify signature
-	membership, err := channelService.Membership()
-	if err != nil {
-		return tp.TxnID, errors.WithMessage(err, "membership creation failed")
-	}
-
 	// Verify signature(s)
-	sv := &verifier.Signature{Membership: membership}
-	for _, r := range txProposalResponse {
-		if err := sv.Verify(r); err != nil {
-			return tp.TxnID, errors.WithMessage(err, "Failed to verify signature")
-		}
+	err = rc.verifyTPSignature(channelService, txProposalResponse)
+	if err != nil {
+		return tp.TxnID, errors.WithMessage(err, "sending deploy transaction proposal failed")
 	}
 
 	eventService, err := channelService.EventService()
@@ -624,6 +661,13 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		return tp.TxnID, errors.WithMessage(err, "unable to get event service")
 	}
 
+	// send transaction and check event
+	return rc.sendTransactionAndCheckEvent(eventService, tp, txProposalResponse, transactor, reqCtx)
+
+}
+
+func (rc *Client) sendTransactionAndCheckEvent(eventService fab.EventService, tp *fab.TransactionProposal, txProposalResponse []*fab.TransactionProposalResponse,
+	transac fab.Transactor, reqCtx reqContext.Context) (fab.TransactionID, error) {
 	// Register for commit event
 	reg, statusNotifier, err := eventService.RegisterTxStatusEvent(string(tp.TxnID))
 	if err != nil {
@@ -635,7 +679,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		Proposal:          tp,
 		ProposalResponses: txProposalResponse,
 	}
-	if _, err = createAndSendTransaction(transactor, transactionRequest); err != nil {
+	if _, err := createAndSendTransaction(transac, transactionRequest); err != nil {
 		return tp.TxnID, errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
@@ -648,7 +692,6 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 	case <-reqCtx.Done():
 		return tp.TxnID, errors.New("instantiateOrUpgradeCC timed out or cancelled")
 	}
-
 }
 
 func checkRequiredCCProposalParams(channelID string, req InstantiateCCRequest) error {
@@ -698,35 +741,20 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	}
 
 	if req.ChannelConfigPath != "" {
-		configReader, err := os.Open(req.ChannelConfigPath)
-		if err != nil {
-			return SaveChannelResponse{}, errors.Wrapf(err, "opening channel config file failed")
+		configReader, err1 := os.Open(req.ChannelConfigPath)
+		if err1 != nil {
+			return SaveChannelResponse{}, errors.Wrapf(err1, "opening channel config file failed")
 		}
 		defer loggedClose(configReader)
 		req.ChannelConfig = configReader
 	}
 
-	if req.ChannelID == "" || req.ChannelConfig == nil {
-		return SaveChannelResponse{}, errors.New("must provide channel ID and channel config")
+	err = rc.validateSaveChannelRequest(req)
+	if err != nil {
+		return SaveChannelResponse{}, errors.WithMessage(err, "reading channel config file failed")
 	}
 
 	logger.Debugf("saving channel: %s", req.ChannelID)
-
-	// Signing user has to belong to one of configured channel organisations
-	// In case that order org is one of channel orgs we can use context user
-	var signers []msp.SigningIdentity
-
-	if len(req.SigningIdentities) > 0 {
-		for _, id := range req.SigningIdentities {
-			if id != nil {
-				signers = append(signers, id)
-			}
-		}
-	} else if rc.ctx != nil {
-		signers = append(signers, rc.ctx)
-	} else {
-		return SaveChannelResponse{}, errors.New("must provide signing user")
-	}
 
 	configTx, err := ioutil.ReadAll(req.ChannelConfig)
 	if err != nil {
@@ -738,24 +766,14 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		return SaveChannelResponse{}, errors.WithMessage(err, "extracting channel config failed")
 	}
 
-	var configSignatures []*common.ConfigSignature
-	for _, signer := range signers {
-
-		sigCtx := contextImpl.Client{
-			SigningIdentity: signer,
-			Providers:       rc.ctx,
-		}
-
-		configSignature, err := resource.CreateConfigSignature(&sigCtx, chConfig)
-		if err != nil {
-			return SaveChannelResponse{}, errors.WithMessage(err, "signing configuration failed")
-		}
-		configSignatures = append(configSignatures, configSignature)
-	}
-
 	orderer, err := rc.requestOrderer(&opts, req.ChannelID)
 	if err != nil {
 		return SaveChannelResponse{}, errors.WithMessage(err, "failed to find orderer for request")
+	}
+
+	configSignatures, err := rc.getConfigSignatures(req, chConfig)
+	if err != nil {
+		return SaveChannelResponse{}, err
 	}
 
 	request := api.CreateChannelRequest{
@@ -774,6 +792,51 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	}
 
 	return SaveChannelResponse{TransactionID: txID}, nil
+}
+
+func (rc *Client) validateSaveChannelRequest(req SaveChannelRequest) error {
+
+	if req.ChannelID == "" || req.ChannelConfig == nil {
+		return errors.New("must provide channel ID and channel config")
+	}
+	return nil
+}
+
+func (rc *Client) getConfigSignatures(req SaveChannelRequest, chConfig []byte) ([]*common.ConfigSignature, error) {
+
+	// Signing user has to belong to one of configured channel organisations
+	// In case that order org is one of channel orgs we can use context user
+	var signers []msp.SigningIdentity
+
+	if len(req.SigningIdentities) > 0 {
+		for _, id := range req.SigningIdentities {
+			if id != nil {
+				signers = append(signers, id)
+			}
+		}
+	} else if rc.ctx != nil {
+		signers = append(signers, rc.ctx)
+	} else {
+		return nil, errors.New("must provide signing user")
+	}
+
+	var configSignatures []*common.ConfigSignature
+	for _, signer := range signers {
+
+		sigCtx := contextImpl.Client{
+			SigningIdentity: signer,
+			Providers:       rc.ctx,
+		}
+
+		configSignature, err1 := resource.CreateConfigSignature(&sigCtx, chConfig)
+		if err1 != nil {
+			return nil, errors.WithMessage(err1, "signing configuration failed")
+		}
+		configSignatures = append(configSignatures, configSignature)
+	}
+
+	return configSignatures, nil
+
 }
 
 func loggedClose(c io.Closer) {

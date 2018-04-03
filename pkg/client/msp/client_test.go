@@ -17,8 +17,10 @@ import (
 	"fmt"
 	"os"
 
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -59,11 +61,61 @@ func TestMSP(t *testing.T) {
 		t.Fatalf("Enroll should return error for empty enrollment secret")
 	}
 
+	enrolledUser := getEnrolledUser(t, msp)
+
+	// Reenroll with empty user
+	err = msp.Reenroll("")
+	if err == nil {
+		t.Fatalf("Expected error with enpty user")
+	}
+	if err.Error() != "user name missing" {
+		t.Fatalf("Expected error user required. Got: %s", err.Error())
+	}
+
+	// Reenroll with appropriate user
+	err = msp.Reenroll(enrolledUser.Identifier().ID)
+	if err != nil {
+		t.Fatalf("Reenroll return error %v", err)
+	}
+
+	// Try with a non-default org
+	testWithOrg2(t, ctxProvider)
+
+}
+
+func testWithOrg2(t *testing.T, ctxProvider contextApi.ClientProvider) {
+	msp, err := New(ctxProvider, WithOrg("Org2"))
+	if err != nil {
+		t.Fatalf("failed to create CA client: %v", err)
+	}
+
+	org2lUsername := randomUsername()
+
+	err = msp.Enroll(org2lUsername, WithSecret("enrollmentSecret"))
+	if err != nil {
+		t.Fatalf("Enroll return error %v", err)
+	}
+
+	org2EnrolledUser, err := msp.GetSigningIdentity(org2lUsername)
+	if err != nil {
+		t.Fatalf("Expected to find user")
+	}
+
+	if org2EnrolledUser.Identifier().ID != org2lUsername {
+		t.Fatalf("Enrolled user name doesn't match")
+	}
+
+	if org2EnrolledUser.Identifier().MSPID != "Org2MSP" {
+		t.Fatalf("Enrolled user mspID doesn't match")
+	}
+}
+
+func getEnrolledUser(t *testing.T, msp *Client) mspctx.SigningIdentity {
 	// Successful enrollment scenario
 
 	enrollUsername := randomUsername()
 
-	_, err = msp.GetSigningIdentity(enrollUsername)
+	_, err := msp.GetSigningIdentity(enrollUsername)
 	if err != ErrUserNotFound {
 		t.Fatalf("Expected to not find user")
 	}
@@ -90,48 +142,7 @@ func TestMSP(t *testing.T) {
 	if enrolledUser.Identifier().MSPID != "Org1MSP" {
 		t.Fatalf("Enrolled user mspID doesn't match")
 	}
-
-	// Reenroll with empty user
-	err = msp.Reenroll("")
-	if err == nil {
-		t.Fatalf("Expected error with enpty user")
-	}
-	if err.Error() != "user name missing" {
-		t.Fatalf("Expected error user required. Got: %s", err.Error())
-	}
-
-	// Reenroll with appropriate user
-	err = msp.Reenroll(enrolledUser.Identifier().ID)
-	if err != nil {
-		t.Fatalf("Reenroll return error %v", err)
-	}
-
-	// Try with a non-default org
-	msp, err = New(ctxProvider, WithOrg("Org2"))
-	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
-	}
-
-	org2lUsername := randomUsername()
-
-	err = msp.Enroll(org2lUsername, WithSecret("enrollmentSecret"))
-	if err != nil {
-		t.Fatalf("Enroll return error %v", err)
-	}
-
-	org2EnrolledUser, err := msp.GetSigningIdentity(org2lUsername)
-	if err != nil {
-		t.Fatalf("Expected to find user")
-	}
-
-	if org2EnrolledUser.Identifier().ID != org2lUsername {
-		t.Fatalf("Enrolled user name doesn't match")
-	}
-
-	if org2EnrolledUser.Identifier().MSPID != "Org2MSP" {
-		t.Fatalf("Enrolled user mspID doesn't match")
-	}
-
+	return enrolledUser
 }
 
 type textFixture struct {
