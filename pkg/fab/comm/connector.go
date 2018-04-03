@@ -169,6 +169,10 @@ func (cc *CachingConnector) createConn(ctx context.Context, target string, opts 
 	cc.lock.Lock()
 	defer cc.lock.Unlock()
 
+	if cc.janitorDone == nil {
+		return nil, errors.New("caching connector is closed")
+	}
+
 	cconn, ok := cc.loadConn(target)
 	if ok {
 		return cconn, nil
@@ -224,6 +228,11 @@ func waitConn(ctx context.Context, conn *grpc.ClientConn, targetState connectivi
 func (cc *CachingConnector) shutdownConn(cconn *cachedConn) {
 	cc.lock.Lock()
 	defer cc.lock.Unlock()
+
+	if cc.janitorDone == nil {
+		logger.Debug("Connector already closed")
+		return
+	}
 
 	logger.Debugf("connection was shutdown [%s]", cconn.target)
 	cc.conns.Delete(cconn.target)
