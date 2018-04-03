@@ -423,7 +423,7 @@ entityMatchers:
       sslTargetOverrideUrlSubstitutionExp: $1.example.$2
       mappedHost: local.orderer.example.com
 
-  certificateAuthorities:
+  certificateAuthority:
     - pattern: (\w+).org1.example.(\w+)
       urlSubstitutionExp:
       mappedHost: local.ca.org1.example.com

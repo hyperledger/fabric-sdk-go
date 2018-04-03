@@ -887,8 +887,8 @@ func (c *EndpointConfig) compileMatchers() error {
 			}
 		}
 	}
-	if networkConfig.EntityMatchers["certificateauthorities"] != nil {
-		certMatchersConfig := networkConfig.EntityMatchers["certificateauthorities"]
+	if networkConfig.EntityMatchers["certificateauthority"] != nil {
+		certMatchersConfig := networkConfig.EntityMatchers["certificateauthority"]
 		for i := 0; i < len(certMatchersConfig); i++ {
 			if certMatchersConfig[i].Pattern != "" {
 				c.caMatchers[i], err = regexp.Compile(certMatchersConfig[i].Pattern)
