@@ -188,7 +188,7 @@ func TestResponseValidation(t *testing.T) {
 	assert.EqualValues(t, int32(status.EndorsementMismatch), s.Code, "expected endorsement mismatch")
 }
 
-func TestProposalProcessorHandler(t *testing.T) {
+func TestProposalProcessorHandlerError(t *testing.T) {
 	peer1 := fcmocks.NewMockPeer("p1", "peer1:7051")
 	peer2 := fcmocks.NewMockPeer("p2", "peer2:7051")
 	discoveryPeers := []fab.Peer{peer1, peer2}
@@ -204,21 +204,19 @@ func TestProposalProcessorHandler(t *testing.T) {
 	if requestContext.Error == nil || !strings.Contains(requestContext.Error.Error(), selectionErr.Error()) {
 		t.Fatal("Expected error: ", selectionErr, ", Received error:", requestContext.Error)
 	}
+}
 
-	requestContext = prepareRequestContext(request, Opts{}, t)
-	handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
-	if requestContext.Error != nil {
-		t.Fatalf("Got error: %s", requestContext.Error)
-	}
-	if len(requestContext.Opts.Targets) != len(discoveryPeers) {
-		t.Fatalf("Expecting %d proposal processors but got %d", len(discoveryPeers), len(requestContext.Opts.Targets))
-	}
-	if requestContext.Opts.Targets[0] != peer1 || requestContext.Opts.Targets[1] != peer2 {
-		t.Fatalf("Didn't get expected peers")
-	}
+func TestProposalProcessorHandlerPassDirectly(t *testing.T) {
+	peer1 := fcmocks.NewMockPeer("p1", "peer1:7051")
+	peer2 := fcmocks.NewMockPeer("p2", "peer2:7051")
+	discoveryPeers := []fab.Peer{peer1, peer2}
 
+	//Get query handler
+	handler := NewProposalProcessorHandler()
+
+	request := Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}
 	// Directly pass in the proposal processors. In this case it should use those directly
-	requestContext = prepareRequestContext(request, Opts{Targets: []fab.Peer{peer2}}, t)
+	requestContext := prepareRequestContext(request, Opts{Targets: []fab.Peer{peer2}}, t)
 	handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
 	if requestContext.Error != nil {
 		t.Fatalf("Got error: %s", requestContext.Error)
@@ -227,6 +225,26 @@ func TestProposalProcessorHandler(t *testing.T) {
 		t.Fatalf("Expecting 1 proposal processor but got %d", len(requestContext.Opts.Targets))
 	}
 	if requestContext.Opts.Targets[0] != peer2 {
+		t.Fatalf("Didn't get expected peers")
+	}
+}
+
+func TestProposalProcessorHandler(t *testing.T) {
+	peer1 := fcmocks.NewMockPeer("p1", "peer1:7051")
+	peer2 := fcmocks.NewMockPeer("p2", "peer2:7051")
+	discoveryPeers := []fab.Peer{peer1, peer2}
+
+	handler := NewProposalProcessorHandler()
+	request := Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}
+	requestContext := prepareRequestContext(request, Opts{}, t)
+	handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
+	if requestContext.Error != nil {
+		t.Fatalf("Got error: %s", requestContext.Error)
+	}
+	if len(requestContext.Opts.Targets) != len(discoveryPeers) {
+		t.Fatalf("Expecting %d proposal processors but got %d", len(discoveryPeers), len(requestContext.Opts.Targets))
+	}
+	if requestContext.Opts.Targets[0] != peer1 || requestContext.Opts.Targets[1] != peer2 {
 		t.Fatalf("Didn't get expected peers")
 	}
 

@@ -63,23 +63,34 @@ func TestQueryBlock(t *testing.T) {
 		t.Fatalf("Test ledger query block should have failed with '%s'", expected)
 	}
 
-	_, err = lc.QueryBlock(1, WithTargets(&peer1), WithTargetFilter(&mspFilter{mspID: "test"}))
-	expected = "If targets are provided, filter cannot be provided"
-	if err == nil || !strings.Contains(err.Error(), expected) {
-		t.Fatalf("Test ledger query block should have failed with '%s'", expected)
-	}
+}
 
-	expected = "Discovery Error"
-	lc = setupLedgerClientWithError(errors.New(expected), nil, []fab.Peer{&peer1, &peer2}, t)
-	_, err = lc.QueryBlock(1)
+func TestQueryBlockDiscoveryError(t *testing.T) {
+	peer1 := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200, MockMSP: "test"}
+	peer2 := mocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, Status: 200, MockMSP: "test"}
+
+	expected := "Discovery Error"
+	lc := setupLedgerClientWithError(errors.New(expected), nil, []fab.Peer{&peer1, &peer2}, t)
+	_, err := lc.QueryBlock(1)
 	if err == nil || !strings.Contains(err.Error(), expected) {
 		t.Fatalf("Test ledger query block should have failed with '%s'", expected)
 	}
+}
+
+func TestQueryBlockNegative(t *testing.T) {
+	peer1 := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200, MockMSP: "test"}
+	peer2 := mocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, Status: 200, MockMSP: "test"}
 
 	// Discovery service unable to discover peers
-	lc = setupLedgerClient([]fab.Peer{}, t)
-	expected = "no targets available"
-	_, err = lc.QueryBlock(1)
+	lc := setupLedgerClient([]fab.Peer{}, t)
+	expected := "no targets available"
+	_, err := lc.QueryBlock(1)
+	if err == nil || !strings.Contains(err.Error(), expected) {
+		t.Fatalf("Test ledger query block should have failed with '%s'", expected)
+	}
+
+	_, err = lc.QueryBlock(1, WithTargets(&peer1), WithTargetFilter(&mspFilter{mspID: "test"}))
+	expected = "If targets are provided, filter cannot be provided"
 	if err == nil || !strings.Contains(err.Error(), expected) {
 		t.Fatalf("Test ledger query block should have failed with '%s'", expected)
 	}
@@ -99,7 +110,6 @@ func TestQueryBlock(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), expected) {
 		t.Fatalf("Test ledger query block should have failed with '%s'", expected)
 	}
-
 }
 
 func TestQueryBlockByHash(t *testing.T) {

@@ -15,14 +15,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/pkg/errors"
 )
-
-var logger = logging.NewLogger("fabsdk/client")
 
 // Client enables access to a channel on a Fabric network.
 //
@@ -133,7 +130,7 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 
 	complete := make(chan bool)
 	go func() {
-		invoker.Invoke(
+		_, _ = invoker.Invoke(
 			func() (interface{}, error) {
 				handler.Handle(requestContext, clientContext)
 				return nil, requestContext.Error

@@ -29,7 +29,9 @@ func TestStaticSelection(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	_, config, _, err := config.FromBackend(configBackend)()
+	configProv := config.FromBackend(configBackend)
+
+	_, config, _, err := configProv()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

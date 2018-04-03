@@ -143,7 +143,7 @@ func TestFilteredBlockEvents(t *testing.T) {
 }
 
 func TestTxStatusEvents(t *testing.T) {
-	channelID := "mychannel"
+	chanID := "mychannel"
 	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withFilteredBlockLedger(sourceURL))
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -152,7 +152,7 @@ func TestTxStatusEvents(t *testing.T) {
 	defer eventService.Stop()
 
 	fabCtx := setupCustomTestContext(t, nil)
-	ctx := createChannelContext(fabCtx, channelID)
+	ctx := createChannelContext(fabCtx, chanID)
 
 	client, err := New(ctx)
 	if err != nil {
@@ -162,11 +162,9 @@ func TestTxStatusEvents(t *testing.T) {
 	client.eventService = eventService
 
 	txID1 := "1234"
-	txCode1 := pb.TxValidationCode_VALID
 	txID2 := "5678"
-	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
-	if _, _, err := client.RegisterTxStatusEvent(""); err == nil {
+	if _, _, err1 := client.RegisterTxStatusEvent(""); err1 == nil {
 		t.Fatalf("expecting error registering for TxStatus event without a TX ID but got none")
 	}
 
@@ -181,9 +179,15 @@ func TestTxStatusEvents(t *testing.T) {
 		t.Fatalf("error registering for TxStatus events: %s", err)
 	}
 	defer client.Unregister(reg2)
+	validateTxStatusEvents(t, eventProducer, eventch1, eventch2, chanID, txID1, txID2)
 
+}
+
+func validateTxStatusEvents(t *testing.T, eventProducer *servicemocks.MockProducer, eventch1 <-chan *fab.TxStatusEvent, eventch2 <-chan *fab.TxStatusEvent, chanID string, txID1 string, txID2 string) {
+	txCode1 := pb.TxValidationCode_VALID
+	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 	eventProducer.Ledger().NewFilteredBlock(
-		channelID,
+		chanID,
 		servicemocks.NewFilteredTx(txID1, txCode1),
 		servicemocks.NewFilteredTx(txID2, txCode2),
 	)
@@ -218,7 +222,7 @@ func TestTxStatusEvents(t *testing.T) {
 }
 
 func TestCCEvents(t *testing.T) {
-	channelID := "mychannel"
+	chanID := "mychannel"
 	eventService, eventProducer, err := newServiceWithMockProducer(defaultOpts, withFilteredBlockLedger(sourceURL))
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
@@ -227,7 +231,7 @@ func TestCCEvents(t *testing.T) {
 	defer eventService.Stop()
 
 	fabCtx := setupCustomTestContext(t, nil)
-	ctx := createChannelContext(fabCtx, channelID)
+	ctx := createChannelContext(fabCtx, chanID)
 
 	client, err := New(ctx)
 	if err != nil {
@@ -240,11 +244,8 @@ func TestCCEvents(t *testing.T) {
 	ccID2 := "mycc2"
 	ccFilter1 := "event1"
 	ccFilter2 := "event.*"
-	event1 := "event1"
-	event2 := "event2"
-	event3 := "event3"
 
-	if _, _, err := client.RegisterChaincodeEvent("", ccFilter1); err == nil {
+	if _, _, err1 := client.RegisterChaincodeEvent("", ccFilter1); err1 == nil {
 		t.Fatalf("expecting error registering for chaincode events without CC ID but got none")
 	}
 
@@ -259,9 +260,16 @@ func TestCCEvents(t *testing.T) {
 		t.Fatalf("error registering for chaincode events: %s", err)
 	}
 	defer client.Unregister(reg2)
+	validateCCEvents(t, eventProducer, eventch1, eventch2, chanID, ccID1, ccID2)
 
+}
+
+func validateCCEvents(t *testing.T, eventProducer *servicemocks.MockProducer, eventch1 <-chan *fab.CCEvent, eventch2 <-chan *fab.CCEvent, chanID string, ccID1 string, ccID2 string) {
+	event1 := "event1"
+	event2 := "event2"
+	event3 := "event3"
 	eventProducer.Ledger().NewFilteredBlock(
-		channelID,
+		chanID,
 		servicemocks.NewFilteredTxWithCCEvent("txid1", ccID1, event1),
 		servicemocks.NewFilteredTxWithCCEvent("txid2", ccID2, event2),
 		servicemocks.NewFilteredTxWithCCEvent("txid3", ccID2, event3),
@@ -404,12 +412,12 @@ func withFilteredBlockLedger(source string) producerOpt {
 }
 
 func newServiceWithMockProducer(opts []options.Opt, pOpts ...producerOpt) (*service.Service, *servicemocks.MockProducer, error) {
-	service := service.New(dispatcher.New(opts...), opts...)
-	if err := service.Start(); err != nil {
+	serv := service.New(dispatcher.New(opts...), opts...)
+	if err := serv.Start(); err != nil {
 		return nil, nil, err
 	}
 
-	eventch, err := service.Dispatcher().EventCh()
+	eventch, err := serv.Dispatcher().EventCh()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -437,5 +445,5 @@ func newServiceWithMockProducer(opts []options.Opt, pOpts ...producerOpt) (*serv
 		}
 	}()
 
-	return service, eventProducer, nil
+	return serv, eventProducer, nil
 }

@@ -32,13 +32,13 @@ func TestDiscoveryFilter(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	_, config, _, err := config.FromBackend(configBackend)()
+	_, config1, _, err := config.FromBackend(configBackend)()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	peerCreator := defPeerCreator{config: config}
-	discoveryProvider, err := staticdiscovery.New(config, &peerCreator)
+	peerCreator := defPeerCreator{defPeerConfig: config1}
+	discoveryProvider, err := staticdiscovery.New(config1, &peerCreator)
 	if err != nil {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}
@@ -70,9 +70,9 @@ func TestDiscoveryFilter(t *testing.T) {
 }
 
 type defPeerCreator struct {
-	config fab.EndpointConfig
+	defPeerConfig fab.EndpointConfig
 }
 
 func (pc *defPeerCreator) CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.Peer, error) {
-	return peer.New(pc.config, peer.FromPeerConfig(peerCfg))
+	return peer.New(pc.defPeerConfig, peer.FromPeerConfig(peerCfg))
 }

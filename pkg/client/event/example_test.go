@@ -43,12 +43,7 @@ func ExampleNew() {
 
 	ctx := mockChannelProvider("mychannel")
 
-	ec, err := New(ctx)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	ec, err = New(ctx, WithBlockEvents())
+	ec, err := New(ctx, WithBlockEvents())
 	if err != nil {
 		fmt.Println(err)
 	}

@@ -189,14 +189,7 @@ func (c *signaturePolicyCompiler) compile(sigPolicy *common.SignaturePolicy, ide
 
 	switch t := sigPolicy.Type.(type) {
 	case *common.SignaturePolicy_SignedBy:
-		return func(peerRetriever MSPPeerRetriever) (GroupOfGroups, error) {
-			mspID, err := mspPrincipalToString(identities[t.SignedBy])
-			if err != nil {
-				return nil, errors.WithMessage(err, "error getting MSP ID from MSP principal")
-			}
-			return NewGroupOfGroups([]Group{NewMSPPeerGroup(mspID, peerRetriever)}), nil
-		}, nil
-
+		return signaturePolicySignedBy(t, identities)
 	case *common.SignaturePolicy_NOutOf_:
 		nOutOfPolicy := t.NOutOf
 		var pfuncs []GroupRetriever
@@ -229,6 +222,16 @@ func (c *signaturePolicyCompiler) compile(sigPolicy *common.SignaturePolicy, ide
 		errMsg := fmt.Sprintf("unsupported signature policy type: %v", t)
 		return nil, errors.New(errMsg)
 	}
+}
+
+func signaturePolicySignedBy(t *common.SignaturePolicy_SignedBy, identities []*mb.MSPPrincipal) (GroupRetriever, error) {
+	return func(peerRetriever MSPPeerRetriever) (GroupOfGroups, error) {
+		mspID, err := mspPrincipalToString(identities[t.SignedBy])
+		if err != nil {
+			return nil, errors.WithMessage(err, "error getting MSP ID from MSP principal")
+		}
+		return NewGroupOfGroups([]Group{NewMSPPeerGroup(mspID, peerRetriever)}), nil
+	}, nil
 }
 
 func mspPrincipalToString(principal *mb.MSPPrincipal) (string, error) {

@@ -1170,13 +1170,6 @@ func TestUpgradeCCDiscoveryError(t *testing.T) {
 
 func TestCCProposal(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-
-	// Setup mock targets
-	endorserServer, addr := startEndorserServer(t, grpcServer)
-	time.Sleep(2 * time.Second)
-
 	ctx := setupTestContext("Admin", "Org1MSP")
 
 	// Setup resource management client
@@ -1192,7 +1185,7 @@ func TestCCProposal(t *testing.T) {
 
 	// Setup target peers
 	var peers []fab.Peer
-	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL(addr))
+	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL("127.0.0.1:0"))
 	peers = append(peers, peer1)
 
 	// Create mock orderer
@@ -1208,23 +1201,6 @@ func TestCCProposal(t *testing.T) {
 
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
 	instantiateReq := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
-
-	// Test failed proposal error handling (endorser returns an error)
-	endorserServer.ProposalError = errors.New("Test Error")
-
-	_, err = rc.InstantiateCC("mychannel", instantiateReq, WithTargets(peers...))
-	if err == nil {
-		t.Fatalf("Should have failed to instantiate cc due to endorser error")
-	}
-
-	upgradeRequest := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
-	_, err = rc.UpgradeCC("mychannel", upgradeRequest, WithTargets(peers...))
-	if err == nil {
-		t.Fatalf("Should have failed to upgrade cc due to endorser error")
-	}
-
-	// Remove endorser error
-	endorserServer.ProposalError = nil
 
 	// Test error connecting to event hub
 	_, err = rc.InstantiateCC("mychannel", instantiateReq)
@@ -1269,6 +1245,55 @@ func TestCCProposal(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Should have failed since no event source has been configured")
 	}
+}
+
+func TestCCProposalFailed(t *testing.T) {
+	grpcServer := grpc.NewServer()
+	defer grpcServer.Stop()
+
+	// Setup mock targets
+	endorserServer, address := startEndorserServer(t, grpcServer)
+	time.Sleep(2 * time.Second)
+
+	ctx := setupTestContext("Admin", "Org1MSP")
+
+	// Setup resource management client
+	configBackend, err := configImpl.FromFile("./testdata/ccproposal_test.yaml")()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, cfg, _, err := configImpl.FromBackend(configBackend)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx.SetEndpointConfig(cfg)
+
+	rc := setupResMgmtClient(ctx, nil, t)
+
+	// Setup target peers
+	var peers []fab.Peer
+	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL(address))
+	peers = append(peers, peer1)
+
+	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	instantiateReq := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
+
+	// Test failed proposal error handling (endorser returns an error)
+	endorserServer.ProposalError = errors.New("Test Error")
+
+	_, err = rc.InstantiateCC("mychannel", instantiateReq, WithTargets(peers...))
+	if err == nil {
+		t.Fatalf("Should have failed to instantiate cc due to endorser error")
+	}
+
+	upgradeRequest := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
+	_, err = rc.UpgradeCC("mychannel", upgradeRequest, WithTargets(peers...))
+	if err == nil {
+		t.Fatalf("Should have failed to upgrade cc due to endorser error")
+	}
+	// Remove endorser error
+	endorserServer.ProposalError = nil
+
 }
 
 func getDefaultTargetFilterOption() ClientOption {

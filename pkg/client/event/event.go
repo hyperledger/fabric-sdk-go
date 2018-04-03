@@ -15,14 +15,11 @@ SPDX-License-Identifier: Apache-2.0
 package event
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
 	"github.com/pkg/errors"
 )
-
-var logger = logging.NewLogger("fabsdk/client")
 
 // Client enables access to a channel events on a Fabric network.
 type Client struct {
@@ -42,8 +39,8 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 	eventClient := Client{}
 
 	for _, param := range opts {
-		err := param(&eventClient)
-		if err != nil {
+		err1 := param(&eventClient)
+		if err1 != nil {
 			return nil, errors.WithMessage(err, "option failed")
 		}
 	}
