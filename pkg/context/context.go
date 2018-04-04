@@ -338,7 +338,7 @@ func NewRequest(client context.Client, options ...ReqContextOptions) (reqContext
 	} else if timeoutOverride := requestTimeoutOverride(parentContext, reqCtxOpts.timeoutType); timeoutOverride > 0 {
 		timeout = timeoutOverride
 	} else {
-		timeout = client.EndpointConfig().TimeoutOrDefault(reqCtxOpts.timeoutType)
+		timeout = client.EndpointConfig().Timeout(reqCtxOpts.timeoutType)
 	}
 
 	ctx := reqContext.WithValue(parentContext, reqContextCommManager, client.InfraProvider().CommManager())

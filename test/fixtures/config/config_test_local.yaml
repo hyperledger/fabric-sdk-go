@@ -27,40 +27,10 @@ client:
   logging:
     level: info
 
-# Global configuration for peer, event service and orderer timeouts
-  peer:
-    timeout:
-      response: 40s
-      connection: 3s
-      queryResponse: 45s
-      executeTxResponse: 60s
-      discovery:
-        # Expiry period for discovery service greylist filter
-        # The channel client will greylist peers that are found to be offline
-        # to prevent re-selecting them in subsequent retries.
-        # This interval will define how long a peer is greylisted
-        greylistExpiry: 5s
   eventService:
     # Event service type (deliver|eventhub) - default: deliver
     # NOTE: This is temporary until the SDK starts making use of channel capabilities
     type: deliver
-    timeout:
-      connection: 3s
-      registrationResponse: 10s
-  orderer:
-    timeout:
-      connection: 3s
-      response: 10s
-  global:
-    timeout:
-      query: 45s
-      execute: 60s
-      resmgmt: 60s
-    cache:
-      connectionIdle: 30s
-      eventServiceIdle: 2m
-      channelConfig: 60s
-      channelMembership: 30s
 
   # Root of the MSP directories with keys and certs.
   cryptoconfig:

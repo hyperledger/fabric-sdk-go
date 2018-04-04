@@ -206,7 +206,7 @@ func testProcessProposal(t *testing.T, url string) (*fab.TransactionProposalResp
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mockfab.DefaultMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(gomock.Any()).Return(time.Second * 1).AnyTimes()
+	config.EXPECT().Timeout(gomock.Any()).Return(time.Second * 1).AnyTimes()
 
 	conn, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, true))
 	if err != nil {

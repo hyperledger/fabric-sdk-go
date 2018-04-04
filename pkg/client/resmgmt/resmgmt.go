@@ -931,7 +931,7 @@ func (rc *Client) createRequestContext(opts requestOptions, defaultTimeoutType f
 	rc.resolveTimeouts(&opts)
 
 	if opts.Timeouts[defaultTimeoutType] == 0 {
-		opts.Timeouts[defaultTimeoutType] = rc.ctx.EndpointConfig().TimeoutOrDefault(defaultTimeoutType)
+		opts.Timeouts[defaultTimeoutType] = rc.ctx.EndpointConfig().Timeout(defaultTimeoutType)
 	}
 
 	return contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[defaultTimeoutType]), contextImpl.WithParent(opts.ParentContext))
@@ -945,14 +945,14 @@ func (rc *Client) resolveTimeouts(opts *requestOptions) {
 	}
 
 	if opts.Timeouts[fab.ResMgmt] == 0 {
-		opts.Timeouts[fab.ResMgmt] = rc.ctx.EndpointConfig().TimeoutOrDefault(fab.ResMgmt)
+		opts.Timeouts[fab.ResMgmt] = rc.ctx.EndpointConfig().Timeout(fab.ResMgmt)
 	}
 
 	if opts.Timeouts[fab.OrdererResponse] == 0 {
-		opts.Timeouts[fab.OrdererResponse] = rc.ctx.EndpointConfig().TimeoutOrDefault(fab.OrdererResponse)
+		opts.Timeouts[fab.OrdererResponse] = rc.ctx.EndpointConfig().Timeout(fab.OrdererResponse)
 	}
 
 	if opts.Timeouts[fab.PeerResponse] == 0 {
-		opts.Timeouts[fab.PeerResponse] = rc.ctx.EndpointConfig().TimeoutOrDefault(fab.PeerResponse)
+		opts.Timeouts[fab.PeerResponse] = rc.ctx.EndpointConfig().Timeout(fab.PeerResponse)
 	}
 }

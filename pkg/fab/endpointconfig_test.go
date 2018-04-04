@@ -187,77 +187,165 @@ func TestTLSCAConfig(t *testing.T) {
 }
 
 func TestTimeouts(t *testing.T) {
-
 	customBackend := getCustomBackend()
-	customBackend.KeyValueMap["client.peer.timeout.connection"] = "2s"
+	customBackend.KeyValueMap["client.peer.timeout.connection"] = "12s"
 	customBackend.KeyValueMap["client.peer.timeout.response"] = "6s"
+	customBackend.KeyValueMap["client.peer.timeout.discovery.greylistExpiry"] = "5m"
 	customBackend.KeyValueMap["client.eventService.timeout.connection"] = "2m"
 	customBackend.KeyValueMap["client.eventService.timeout.registrationResponse"] = "2h"
 	customBackend.KeyValueMap["client.orderer.timeout.connection"] = "2ms"
+	customBackend.KeyValueMap["client.orderer.timeout.response"] = "6s"
 	customBackend.KeyValueMap["client.global.timeout.query"] = "7h"
 	customBackend.KeyValueMap["client.global.timeout.execute"] = "8h"
 	customBackend.KeyValueMap["client.global.timeout.resmgmt"] = "118s"
 	customBackend.KeyValueMap["client.global.cache.connectionIdle"] = "1m"
 	customBackend.KeyValueMap["client.global.cache.eventServiceIdle"] = "2m"
-	customBackend.KeyValueMap["client.orderer.timeout.response"] = "6s"
+	customBackend.KeyValueMap["client.global.cache.channelConfig"] = "3m"
+	customBackend.KeyValueMap["client.global.cache.channelMembership"] = "4m"
 
 	endpointConfig, err := ConfigFromBackend(customBackend)
 	if err != nil {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	t1 := endpointConfig.TimeoutOrDefault(fab.EndorserConnection)
-	if t1 != time.Second*2 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	errStr := "%s timeout not read correctly. Got: %s"
+	t1 := endpointConfig.Timeout(fab.EndorserConnection)
+	if t1 != time.Second*12 {
+		t.Fatalf(errStr, "EndorserConnection", t1)
 	}
-	t1 = endpointConfig.TimeoutOrDefault(fab.EventHubConnection)
+	t1 = endpointConfig.Timeout(fab.PeerResponse)
+	if t1 != time.Second*6 {
+		t.Fatalf(errStr, "PeerResponse", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.DiscoveryGreylistExpiry)
+	if t1 != time.Minute*5 {
+		t.Fatalf(errStr, "DiscoveryGreylistExpiry", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.EventHubConnection)
 	if t1 != time.Minute*2 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+		t.Fatalf(errStr, "EventHubConnection", t1)
 	}
-	t1 = endpointConfig.TimeoutOrDefault(fab.EventReg)
+	t1 = endpointConfig.Timeout(fab.EventReg)
 	if t1 != time.Hour*2 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+		t.Fatalf(errStr, "EventReg", t1)
 	}
-	t1 = endpointConfig.TimeoutOrDefault(fab.Query)
-	if t1 != time.Hour*7 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
-	}
-	t1 = endpointConfig.TimeoutOrDefault(fab.Execute)
-	if t1 != time.Hour*8 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
-	}
-	t1 = endpointConfig.TimeoutOrDefault(fab.OrdererConnection)
+	t1 = endpointConfig.Timeout(fab.OrdererConnection)
 	if t1 != time.Millisecond*2 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+		t.Fatalf(errStr, "OrdererConnection", t1)
 	}
-	t1 = endpointConfig.TimeoutOrDefault(fab.OrdererResponse)
+	t1 = endpointConfig.Timeout(fab.OrdererResponse)
 	if t1 != time.Second*6 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+		t.Fatalf(errStr, "OrdererResponse", t1)
 	}
-	t1 = endpointConfig.TimeoutOrDefault(fab.ConnectionIdle)
-	if t1 != time.Minute*1 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	t1 = endpointConfig.Timeout(fab.Query)
+	if t1 != time.Hour*7 {
+		t.Fatalf(errStr, "Query", t1)
 	}
-	t1 = endpointConfig.TimeoutOrDefault(fab.EventServiceIdle)
-	if t1 != time.Minute*2 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	t1 = endpointConfig.Timeout(fab.Execute)
+	if t1 != time.Hour*8 {
+		t.Fatalf(errStr, "Execute", t1)
 	}
-	t1 = endpointConfig.TimeoutOrDefault(fab.PeerResponse)
-	if t1 != time.Second*6 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
-	}
-	t1 = endpointConfig.TimeoutOrDefault(fab.ResMgmt)
+	t1 = endpointConfig.Timeout(fab.ResMgmt)
 	if t1 != time.Second*118 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+		t.Fatalf(errStr, "ResMgmt", t1)
 	}
+	t1 = endpointConfig.Timeout(fab.ConnectionIdle)
+	if t1 != time.Minute*1 {
+		t.Fatalf(errStr, "ConnectionIdle", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.EventServiceIdle)
+	if t1 != time.Minute*2 {
+		t.Fatalf(errStr, "EventServiceIdle", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.ChannelConfigRefresh)
+	if t1 != time.Minute*3 {
+		t.Fatalf(errStr, "ChannelConfigRefresh", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.ChannelMembershipRefresh)
+	if t1 != time.Minute*4 {
+		t.Fatalf(errStr, "ChannelMembershipRefresh", t1)
+	}
+}
 
-	// Test default
+func TestDefaultTimeouts(t *testing.T) {
+	customBackend := getCustomBackend()
+	customBackend.KeyValueMap["client.peer.timeout.connection"] = ""
+	customBackend.KeyValueMap["client.peer.timeout.response"] = ""
+	customBackend.KeyValueMap["client.peer.timeout.discovery.greylistExpiry"] = ""
+	customBackend.KeyValueMap["client.eventService.timeout.connection"] = ""
+	customBackend.KeyValueMap["client.eventService.timeout.registrationResponse"] = ""
 	customBackend.KeyValueMap["client.orderer.timeout.connection"] = ""
-	t1 = endpointConfig.TimeoutOrDefault(fab.OrdererConnection)
-	if t1 != time.Second*5 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	customBackend.KeyValueMap["client.orderer.timeout.response"] = ""
+	customBackend.KeyValueMap["client.global.timeout.query"] = ""
+	customBackend.KeyValueMap["client.global.timeout.execute"] = ""
+	customBackend.KeyValueMap["client.global.timeout.resmgmt"] = ""
+	customBackend.KeyValueMap["client.global.cache.connectionIdle"] = ""
+	customBackend.KeyValueMap["client.global.cache.eventServiceIdle"] = ""
+	customBackend.KeyValueMap["client.global.cache.channelConfig"] = ""
+	customBackend.KeyValueMap["client.global.cache.channelMembership"] = ""
+
+	endpointConfig, err := ConfigFromBackend(customBackend)
+	if err != nil {
+		t.Fatal("Failed to get endpoint config from backend")
 	}
 
+	errStr := "%s default timeout not read correctly. Got: %s"
+	t1 := endpointConfig.Timeout(fab.EndorserConnection)
+	if t1 != defaultEndorserConnectionTimeout {
+		t.Fatalf(errStr, "EndorserConnection", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.PeerResponse)
+	if t1 != defaultPeerResponseTimeout {
+		t.Fatalf(errStr, "PeerResponse", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.DiscoveryGreylistExpiry)
+	if t1 != defaultDiscoveryGreylistExpiryTimeout {
+		t.Fatalf(errStr, "DiscoveryGreylistExpiry", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.EventHubConnection)
+	if t1 != defaultEventHubConnectionTimeout {
+		t.Fatalf(errStr, "EventHubConnection", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.EventReg)
+	if t1 != defaultEventRegTimeout {
+		t.Fatalf(errStr, "EventReg", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.OrdererConnection)
+	if t1 != defaultOrdererConnectionTimeout {
+		t.Fatalf(errStr, "OrdererConnection", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.OrdererResponse)
+	if t1 != defaultOrdererResponseTimeout {
+		t.Fatalf(errStr, "OrdererResponse", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.Query)
+	if t1 != defaultQueryTimeout {
+		t.Fatalf(errStr, "Query", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.Execute)
+	if t1 != defaultExecuteTimeout {
+		t.Fatalf(errStr, "Execute", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.ResMgmt)
+	if t1 != defaultResMgmtTimeout {
+		t.Fatalf(errStr, "ResMgmt", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.ConnectionIdle)
+	if t1 != defaultConnIdleInterval {
+		t.Fatalf(errStr, "ConnectionIdle", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.EventServiceIdle)
+	if t1 != defaultEventServiceIdleInterval {
+		t.Fatalf(errStr, "EventServiceIdle", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.ChannelConfigRefresh)
+	if t1 != defaultChannelConfigRefreshInterval {
+		t.Fatalf(errStr, "ChannelConfigRefresh", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.ChannelMembershipRefresh)
+	if t1 != defaultChannelMemshpRefreshInterval {
+		t.Fatalf(errStr, "ChannelMembershipRefresh", t1)
+	}
 }
 
 func TestOrdererConfig(t *testing.T) {

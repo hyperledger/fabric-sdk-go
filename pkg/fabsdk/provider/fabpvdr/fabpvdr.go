@@ -50,11 +50,11 @@ type InfraProvider struct {
 
 // New creates a InfraProvider enabling access to core Fabric objects and functionality.
 func New(config fab.EndpointConfig) *InfraProvider {
-	idleTime := config.TimeoutOrDefault(fab.ConnectionIdle)
-	sweepTime := config.TimeoutOrDefault(fab.CacheSweepInterval)
-	eventIdleTime := config.TimeoutOrDefault(fab.EventServiceIdle)
-	chConfigRefresh := config.TimeoutOrDefault(fab.ChannelConfigRefresh)
-	membershipRefresh := config.TimeoutOrDefault(fab.ChannelMembershipRefresh)
+	idleTime := config.Timeout(fab.ConnectionIdle)
+	sweepTime := config.Timeout(fab.CacheSweepInterval)
+	eventIdleTime := config.Timeout(fab.EventServiceIdle)
+	chConfigRefresh := config.Timeout(fab.ChannelConfigRefresh)
+	membershipRefresh := config.Timeout(fab.ChannelMembershipRefresh)
 
 	eventServiceCache := lazycache.New(
 		"Event_Service_Cache",

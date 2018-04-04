@@ -33,31 +33,39 @@ client:
   logging:
     level: info
 
-# Global configuration for peer, event service and orderer timeouts
-  peer:
-    timeout:
-      response: 10s
-      connection: 3s
-      discovery:
-        greylistExpiry: 5s
+  # Global configuration for peer, event service and orderer timeouts
+  # if this this section is omitted, then default values will be used (same values as below)
+#  peer:
+#    timeout:
+#      connection: 10s
+#      response: 180s
+#      discovery:
+#        # Expiry period for discovery service greylist filter
+#        # The channel client will greylist peers that are found to be offline
+#        # to prevent re-selecting them in subsequent retries.
+#        # This interval will define how long a peer is greylisted
+#        greylistExpiry: 10s
   eventService:
-    timeout:
-      connection: 3s
-      registrationResponse: 3s
-  orderer:
-    timeout:
-      connection: 3s
-      response: 5s
-  global:
-    timeout:
-      query: 45s
-      execute: 60s
-      resmgmt: 60s
-    cache:
-      connectionIdle: 30s
-      eventServiceIdle: 2m
-      channelConfig: 60s
-      channelMembership: 30s
+    # Event service type (deliver|eventhub) - default: deliver
+    # NOTE: This is temporary until the SDK starts making use of channel capabilities
+    type: deliver
+#    timeout:
+#      connection: 15s
+#      registrationResponse: 15s
+#  orderer:
+#    timeout:
+#      connection: 15s
+#      response: 15s
+#  global:
+#    timeout:
+#      query: 180s
+#      execute: 180s
+#      resmgmt: 180s
+#    cache:
+#      connectionIdle: 30s
+#      eventServiceIdle: 2m
+#      channelConfig: 30m
+#      channelMembership: 30s
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:

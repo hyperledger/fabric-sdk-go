@@ -86,7 +86,7 @@ func New(config fab.EndpointConfig, opts ...Option) (*Orderer, error) {
 	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
 		grpc.MaxCallSendMsgSize(maxCallSendMsgSize)))
 
-	orderer.dialTimeout = config.TimeoutOrDefault(fab.OrdererConnection)
+	orderer.dialTimeout = config.Timeout(fab.OrdererConnection)
 	orderer.url = endpoint.ToAddress(orderer.url)
 	orderer.grpcDialOption = grpcOpts
 

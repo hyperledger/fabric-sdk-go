@@ -37,12 +37,22 @@ import (
 var logger = logging.NewLogger("fabsdk/fab")
 
 const (
-	defaultTimeout                 = time.Second * 5
-	defaultConnIdleTimeout         = time.Second * 30
-	defaultCacheSweepInterval      = time.Second * 15
-	defaultEventServiceIdleTimeout = time.Minute * 2
-	defaultResMgmtTimeout          = time.Second * 180
-	defaultExecuteTimeout          = time.Second * 180
+	defaultEndorserConnectionTimeout      = time.Second * 10
+	defaultPeerResponseTimeout            = time.Minute * 3
+	defaultDiscoveryGreylistExpiryTimeout = time.Second * 10
+	defaultEventHubConnectionTimeout      = time.Second * 15
+	defaultEventRegTimeout                = time.Second * 15
+	defaultOrdererConnectionTimeout       = time.Second * 15
+	defaultOrdererResponseTimeout         = time.Second * 15
+	defaultQueryTimeout                   = time.Minute * 3
+	defaultExecuteTimeout                 = time.Minute * 3
+	defaultResMgmtTimeout                 = time.Minute * 3
+	defaultConnIdleInterval               = time.Second * 30
+	defaultEventServiceIdleInterval       = time.Minute * 2
+	defaultChannelConfigRefreshInterval   = time.Minute * 30
+	defaultChannelMemshpRefreshInterval   = time.Second * 30
+
+	defaultCacheSweepInterval = time.Second * 15
 )
 
 //ConfigFromBackend returns endpoint config implementation for given backend
@@ -79,17 +89,8 @@ type EndpointConfig struct {
 	certPoolLock        sync.Mutex
 }
 
-// TimeoutOrDefault reads timeouts for the given timeout type, if not found, defaultTimeout is returned
-func (c *EndpointConfig) TimeoutOrDefault(tType fab.TimeoutType) time.Duration {
-	timeout := c.getTimeout(tType)
-	if timeout == 0 {
-		timeout = defaultTimeout
-	}
-
-	return timeout
-}
-
-// Timeout reads timeouts for the given timeout type, the default is 0 if type is not found in config
+// Timeout reads timeouts for the given timeout type, if type is not found in the config
+// then default is set as per the const value above for the corresponding type
 func (c *EndpointConfig) Timeout(tType fab.TimeoutType) time.Duration {
 	return c.getTimeout(tType)
 }
@@ -521,48 +522,79 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration {
 	switch tType {
 	case fab.EndorserConnection:
 		timeout = c.backend.GetDuration("client.peer.timeout.connection")
+		if timeout == 0 {
+			timeout = defaultEndorserConnectionTimeout
+		}
+	case fab.PeerResponse:
+		timeout = c.backend.GetDuration("client.peer.timeout.response")
+		if timeout == 0 {
+			timeout = defaultPeerResponseTimeout
+		}
+	case fab.DiscoveryGreylistExpiry:
+		timeout = c.backend.GetDuration("client.peer.timeout.discovery.greylistExpiry")
+		if timeout == 0 {
+			timeout = defaultDiscoveryGreylistExpiryTimeout
+		}
+	case fab.EventHubConnection:
+		timeout = c.backend.GetDuration("client.eventService.timeout.connection")
+		if timeout == 0 {
+			timeout = defaultEventHubConnectionTimeout
+		}
+	case fab.EventReg:
+		timeout = c.backend.GetDuration("client.eventService.timeout.registrationResponse")
+		if timeout == 0 {
+			timeout = defaultEventRegTimeout
+		}
+	case fab.OrdererConnection:
+		timeout = c.backend.GetDuration("client.orderer.timeout.connection")
+		if timeout == 0 {
+			timeout = defaultOrdererConnectionTimeout
+		}
+	case fab.OrdererResponse:
+		timeout = c.backend.GetDuration("client.orderer.timeout.response")
+		if timeout == 0 {
+			timeout = defaultOrdererResponseTimeout
+		}
 	case fab.Query:
 		timeout = c.backend.GetDuration("client.global.timeout.query")
+		if timeout == 0 {
+			timeout = defaultQueryTimeout
+		}
 	case fab.Execute:
 		timeout = c.backend.GetDuration("client.global.timeout.execute")
 		if timeout == 0 {
 			timeout = defaultExecuteTimeout
 		}
-	case fab.DiscoveryGreylistExpiry:
-		timeout = c.backend.GetDuration("client.peer.timeout.discovery.greylistExpiry")
-	case fab.PeerResponse:
-		timeout = c.backend.GetDuration("client.peer.timeout.response")
-	case fab.EventHubConnection:
-		timeout = c.backend.GetDuration("client.eventService.timeout.connection")
-	case fab.EventReg:
-		timeout = c.backend.GetDuration("client.eventService.timeout.registrationResponse")
-	case fab.OrdererConnection:
-		timeout = c.backend.GetDuration("client.orderer.timeout.connection")
-	case fab.OrdererResponse:
-		timeout = c.backend.GetDuration("client.orderer.timeout.response")
-	case fab.ChannelConfigRefresh:
-		timeout = c.backend.GetDuration("client.global.cache.channelConfig")
-	case fab.ChannelMembershipRefresh:
-		timeout = c.backend.GetDuration("client.global.cache.channelMembership")
-	case fab.CacheSweepInterval: // EXPERIMENTAL - do we need this to be configurable?
-		timeout = c.backend.GetDuration("client.cache.interval.sweep")
-		if timeout == 0 {
-			timeout = defaultCacheSweepInterval
-		}
-	case fab.ConnectionIdle:
-		timeout = c.backend.GetDuration("client.global.cache.connectionIdle")
-		if timeout == 0 {
-			timeout = defaultConnIdleTimeout
-		}
-	case fab.EventServiceIdle:
-		timeout = c.backend.GetDuration("client.global.cache.eventServiceIdle")
-		if timeout == 0 {
-			timeout = defaultEventServiceIdleTimeout
-		}
 	case fab.ResMgmt:
 		timeout = c.backend.GetDuration("client.global.timeout.resmgmt")
 		if timeout == 0 {
 			timeout = defaultResMgmtTimeout
+		}
+	case fab.ConnectionIdle:
+		timeout = c.backend.GetDuration("client.global.cache.connectionIdle")
+		if timeout == 0 {
+			timeout = defaultConnIdleInterval
+		}
+	case fab.EventServiceIdle:
+		timeout = c.backend.GetDuration("client.global.cache.eventServiceIdle")
+		if timeout == 0 {
+			timeout = defaultEventServiceIdleInterval
+		}
+	case fab.ChannelConfigRefresh:
+		timeout = c.backend.GetDuration("client.global.cache.channelConfig")
+		if timeout == 0 {
+			timeout = defaultChannelConfigRefreshInterval
+		}
+	case fab.ChannelMembershipRefresh:
+		timeout = c.backend.GetDuration("client.global.cache.channelMembership")
+		if timeout == 0 {
+			timeout = defaultChannelMemshpRefreshInterval
+		}
+
+	case fab.CacheSweepInterval: // EXPERIMENTAL - do we need this to be configurable?
+		timeout = c.backend.GetDuration("client.cache.interval.sweep")
+		if timeout == 0 {
+			timeout = defaultCacheSweepInterval
 		}
 	}
 

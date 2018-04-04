@@ -260,18 +260,6 @@ func (mr *MockEndpointConfigMockRecorder) Timeout(arg0 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Timeout", reflect.TypeOf((*MockEndpointConfig)(nil).Timeout), arg0)
 }
 
-// TimeoutOrDefault mocks base method
-func (m *MockEndpointConfig) TimeoutOrDefault(arg0 fab.TimeoutType) time.Duration {
-	ret := m.ctrl.Call(m, "TimeoutOrDefault", arg0)
-	ret0, _ := ret[0].(time.Duration)
-	return ret0
-}
-
-// TimeoutOrDefault indicates an expected call of TimeoutOrDefault
-func (mr *MockEndpointConfigMockRecorder) TimeoutOrDefault(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TimeoutOrDefault", reflect.TypeOf((*MockEndpointConfig)(nil).TimeoutOrDefault), arg0)
-}
-
 // MockProposalProcessor is a mock of ProposalProcessor interface
 type MockProposalProcessor struct {
 	ctrl     *gomock.Controller

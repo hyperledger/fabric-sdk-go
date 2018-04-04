@@ -71,7 +71,7 @@ func FromPeerConfig(config fab.EndpointConfig, peer fab.Peer, peerCfg *fab.PeerC
 		Certificate:     certificate,
 		KeepAliveParams: getKeepAliveOptions(peerCfg),
 		FailFast:        getFailFast(peerCfg),
-		ConnectTimeout:  config.TimeoutOrDefault(fab.EventHubConnection),
+		ConnectTimeout:  config.Timeout(fab.EventHubConnection),
 		AllowInsecure:   isInsecureAllowed(peerCfg),
 	}, nil
 }

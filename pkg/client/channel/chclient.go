@@ -44,7 +44,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, errors.WithMessage(err, "failed to create channel context")
 	}
 
-	greylistProvider := greylist.New(channelContext.EndpointConfig().TimeoutOrDefault(fab.DiscoveryGreylistExpiry))
+	greylistProvider := greylist.New(channelContext.EndpointConfig().Timeout(fab.DiscoveryGreylistExpiry))
 
 	if channelContext.ChannelService() == nil {
 		return nil, errors.New("channel service not initialized")
@@ -155,7 +155,7 @@ func (cc *Client) createReqContext(txnOpts *requestOptions) (reqContext.Context,
 
 	//setting default timeouts when not provided
 	if txnOpts.Timeouts[fab.Execute] == 0 {
-		txnOpts.Timeouts[fab.Execute] = cc.context.EndpointConfig().TimeoutOrDefault(fab.Execute)
+		txnOpts.Timeouts[fab.Execute] = cc.context.EndpointConfig().Timeout(fab.Execute)
 	}
 
 	reqCtx, cancel := contextImpl.NewRequest(cc.context, contextImpl.WithTimeout(txnOpts.Timeouts[fab.Execute]),
@@ -236,7 +236,7 @@ func (cc *Client) addDefaultTimeout(ctx context.Client, timeOutType fab.TimeoutT
 
 	if txnOpts.Timeouts[timeOutType] == 0 {
 		//InvokeHandler relies on Execute timeout
-		return append(options, WithTimeout(fab.Execute, cc.context.EndpointConfig().TimeoutOrDefault(timeOutType))), nil
+		return append(options, WithTimeout(fab.Execute, cc.context.EndpointConfig().Timeout(timeOutType))), nil
 	}
 	return options, nil
 }

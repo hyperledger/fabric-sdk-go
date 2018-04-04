@@ -368,7 +368,7 @@ func (c *Client) createRequestContext(opts *requestOptions) (reqContext.Context,
 	}
 
 	if opts.Timeouts[fab.PeerResponse] == 0 {
-		opts.Timeouts[fab.PeerResponse] = c.ctx.EndpointConfig().TimeoutOrDefault(fab.PeerResponse)
+		opts.Timeouts[fab.PeerResponse] = c.ctx.EndpointConfig().Timeout(fab.PeerResponse)
 	}
 
 	return contextImpl.NewRequest(c.ctx, contextImpl.WithTimeout(opts.Timeouts[fab.PeerResponse]), contextImpl.WithParent(opts.ParentContext))

@@ -346,7 +346,7 @@ func TestBroadcastBadDial(t *testing.T) {
 	defer mockCtrl.Finish()
 	config := mockfab.NewMockEndpointConfig(mockCtrl)
 
-	config.EXPECT().TimeoutOrDefault(fab.OrdererConnection).Return(time.Second * 1)
+	config.EXPECT().Timeout(fab.OrdererConnection).Return(time.Second * 1)
 	config.EXPECT().TLSCACertPool(gomock.Any()).Return(x509.NewCertPool(), nil).AnyTimes()
 
 	orderer, err := New(config, WithURL("grpc://127.0.0.1:0"))
@@ -524,7 +524,7 @@ func TestNewOrdererSecured(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	config := mockfab.DefaultMockConfig(mockCtrl)
-	config.EXPECT().TimeoutOrDefault(fab.OrdererConnection).Return(time.Second * 1).AnyTimes()
+	config.EXPECT().Timeout(fab.OrdererConnection).Return(time.Second * 1).AnyTimes()
 
 	//Test grpc URL
 	url := "grpc://0.0.0.0:1234"
