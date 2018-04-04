@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/test/mocksdkapi"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
 )
 
@@ -239,9 +240,14 @@ func TestWithConfigSuccess(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	_, _, identityConfig, err := sdk.Config()()
+	configBackend, err := sdk.Config()
 	if err != nil {
-		t.Fatalf("Error getting config from sdk: %s", err)
+		t.Fatalf("Error getting config backend from sdk: %s", err)
+	}
+
+	identityConfig, err := msp.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf("Error getting identity config: %s", err)
 	}
 
 	client1, err := identityConfig.Client()

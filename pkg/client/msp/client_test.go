@@ -22,7 +22,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
 
@@ -177,9 +179,15 @@ func (f *textFixture) setup() *fabsdk.FabricSDK {
 		panic(fmt.Sprintf("SDK init failed: %v", err))
 	}
 
-	f.cryptoSuiteConfig, _, f.identityConfig, err = sdk.Config()()
+	configBackend, err := sdk.Config()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to get config: %v", err))
+	}
+
+	f.cryptoSuiteConfig = cryptosuite.ConfigFromBackend(configBackend)
+	f.identityConfig, err = mspImpl.ConfigFromBackend(configBackend)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to get identity config: %v", err))
 	}
 
 	// Delete all private keys from the crypto suite store

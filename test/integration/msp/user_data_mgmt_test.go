@@ -17,7 +17,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	mspimpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -31,7 +33,14 @@ func TestWithCustomStores(t *testing.T) {
 		t.Fatalf("Unexpected error from config backend: %v", err)
 	}
 
-	cryptoConfig, endpointConfig, identityConfig, err := configImpl.FromBackend(configBackend)()
+	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend)
+
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	identityConfig, err := mspimpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}

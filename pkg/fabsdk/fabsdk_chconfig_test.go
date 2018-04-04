@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 )
 
 const (
@@ -79,9 +80,14 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	sdk2.provider.InfraProvider().(*fabpvdr.InfraProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	// Default sdk with two channels
-	_, _, identityConfig, err := sdk1.Config()()
+	configBackend, err := sdk1.Config()
 	if err != nil {
-		t.Fatalf("Error getting config from sdk: %s", err)
+		t.Fatalf("Error getting config backend from sdk: %s", err)
+	}
+
+	identityConfig, err := msp.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf("Error getting identity config: %s", err)
 	}
 
 	client1, err := identityConfig.Client()
@@ -93,9 +99,14 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 		t.Fatalf("Unexpected org in config: %s", client1.Organization)
 	}
 
-	_, _, identityConfig, err = sdk2.Config()()
+	configBackend, err = sdk2.Config()
 	if err != nil {
-		t.Fatalf("Error getting config from sdk: %s", err)
+		t.Fatalf("Error getting config backend from sdk: %s", err)
+	}
+
+	identityConfig, err = msp.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf("Error getting identity config : %s", err)
 	}
 
 	client2, err := identityConfig.Client()

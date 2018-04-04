@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
@@ -75,7 +76,16 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	}
 	setup.Identity = adminIdentity
 
-	targets, err := getOrgTargets(sdk.Config(), setup.OrgID)
+	configBackend, err := sdk.Config()
+	if err != nil {
+		//For some tests SDK may not have backend set, try with config file if backend is missing
+		configBackend, err = config.FromFile(setup.ConfigFile)()
+		if err != nil {
+			return errors.Wrapf(err, "failed to get config backend from config: %v", err)
+		}
+	}
+
+	targets, err := getOrgTargets(configBackend, setup.OrgID)
 	if err != nil {
 		return errors.Wrapf(err, "loading target peers from config failed")
 	}
@@ -96,8 +106,9 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	return nil
 }
 
-func getOrgTargets(configProvider config.Provider, org string) ([]string, error) {
-	_, endpointConfig, _, err := configProvider()
+func getOrgTargets(configBackend core.ConfigBackend, org string) ([]string, error) {
+
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
 	if err != nil {
 		return nil, errors.WithMessage(err, "reading config failed")
 	}
@@ -138,10 +149,16 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "creating chaincode package failed")
 	}
 
-	_, endpointConfig, _, err := sdk.Config()()
+	configBackend, err := sdk.Config()
 	if err != nil {
-		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "failed to get config")
+		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "failed to get config backend")
 	}
+
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	if err != nil {
+		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "failed to get endpoint config")
+	}
+
 	mspID, err := endpointConfig.MSPID(orgName)
 	if err != nil {
 		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "looking up MSP ID failed")

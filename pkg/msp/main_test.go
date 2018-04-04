@@ -19,7 +19,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	mspapi "github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -73,7 +75,14 @@ func (f *textFixture) setup(configPath string) {
 		panic(fmt.Sprintf("Failed to read config backend: %v", err))
 	}
 
-	f.cryptSuiteConfig, f.endpointConfig, f.identityConfig, err = config.FromBackend(configBackend)()
+	f.cryptSuiteConfig = cryptosuite.ConfigFromBackend(configBackend)
+
+	f.endpointConfig, err = fabImpl.ConfigFromBackend(configBackend)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config : %v", err))
+	}
+
+	f.identityConfig, err = ConfigFromBackend(configBackend)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config : %v", err))
 	}

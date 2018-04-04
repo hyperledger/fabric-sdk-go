@@ -197,14 +197,6 @@ func (c *MockConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 	return []fab.OrdererConfig{*oConfig}, err
 }
 
-// RandomOrdererConfig not implemented
-func (c *MockConfig) RandomOrdererConfig() (*fab.OrdererConfig, error) {
-	if c.customRandomOrdererCfg != nil {
-		return c.customRandomOrdererCfg, nil
-	}
-	return nil, nil
-}
-
 //SetCustomNetworkPeerCfg sets custom orderer config for unit-tests
 func (c *MockConfig) SetCustomNetworkPeerCfg(customNetworkPeerCfg []fab.NetworkPeer) {
 	c.customNetworkPeerCfg = customNetworkPeerCfg

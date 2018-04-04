@@ -4,18 +4,18 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package config
+package fab
 
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/pkg/errors"
@@ -26,14 +26,17 @@ import (
 
 	"io/ioutil"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	cs "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 )
 
+var logger = logging.NewLogger("fabsdk/fab")
+
 const (
-	cmdRoot                        = "FABRIC_SDK"
 	defaultTimeout                 = time.Second * 5
 	defaultConnIdleTimeout         = time.Second * 30
 	defaultCacheSweepInterval      = time.Second * 15
@@ -42,9 +45,31 @@ const (
 	defaultExecuteTimeout          = time.Second * 180
 )
 
+//ConfigFromBackend returns endpoint config implementation for given backend
+func ConfigFromBackend(coreBackend core.ConfigBackend) (fab.EndpointConfig, error) {
+
+	config := &EndpointConfig{backend: lookup.New(coreBackend)}
+
+	if err := config.cacheNetworkConfiguration(); err != nil {
+		return nil, errors.WithMessage(err, "network configuration load failed")
+	}
+
+	//Compile the entityMatchers
+	config.peerMatchers = make(map[int]*regexp.Regexp)
+	config.ordererMatchers = make(map[int]*regexp.Regexp)
+	config.caMatchers = make(map[int]*regexp.Regexp)
+
+	matchError := config.compileMatchers()
+	if matchError != nil {
+		return nil, matchError
+	}
+
+	return config, nil
+}
+
 // EndpointConfig represents the endpoint configuration for the client
 type EndpointConfig struct {
-	backend             *Backend
+	backend             *lookup.ConfigLookup
 	tlsCerts            []*x509.Certificate
 	networkConfig       *fab.NetworkConfig
 	networkConfigCached bool
@@ -126,7 +151,7 @@ func (c *EndpointConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 
 		if orderer.TLSCACerts.Path != "" {
 			orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
-		} else if len(orderer.TLSCACerts.Pem) == 0 && c.backend.getBool("client.tlsCerts.systemCertPool") == false {
+		} else if len(orderer.TLSCACerts.Pem) == 0 && c.backend.GetBool("client.tlsCerts.systemCertPool") == false {
 			errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
 		}
 
@@ -134,16 +159,6 @@ func (c *EndpointConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 	}
 
 	return orderers, nil
-}
-
-// RandomOrdererConfig returns a pseudo-random orderer from the network config
-func (c *EndpointConfig) RandomOrdererConfig() (*fab.OrdererConfig, error) {
-	orderers, err := c.OrderersConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	return randomOrdererConfig(orderers)
 }
 
 // OrdererConfig returns the requested orderer
@@ -431,7 +446,7 @@ func (c *EndpointConfig) TLSCACertPool(certs ...*x509.Certificate) (*x509.CertPo
 
 // EventServiceType returns the type of event service client to use
 func (c *EndpointConfig) EventServiceType() fab.EventServiceType {
-	etype := c.backend.getString("client.eventService.type")
+	etype := c.backend.GetString("client.eventService.type")
 	switch etype {
 	case "eventhub":
 		return fab.EventHubEventServiceType
@@ -498,54 +513,54 @@ func (c *EndpointConfig) TLSClientCerts() ([]tls.Certificate, error) {
 
 // CryptoConfigPath ...
 func (c *EndpointConfig) CryptoConfigPath() string {
-	return pathvar.Subst(c.backend.getString("client.cryptoconfig.path"))
+	return pathvar.Subst(c.backend.GetString("client.cryptoconfig.path"))
 }
 
 func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration {
 	var timeout time.Duration
 	switch tType {
 	case fab.EndorserConnection:
-		timeout = c.backend.getDuration("client.peer.timeout.connection")
+		timeout = c.backend.GetDuration("client.peer.timeout.connection")
 	case fab.Query:
-		timeout = c.backend.getDuration("client.global.timeout.query")
+		timeout = c.backend.GetDuration("client.global.timeout.query")
 	case fab.Execute:
-		timeout = c.backend.getDuration("client.global.timeout.execute")
+		timeout = c.backend.GetDuration("client.global.timeout.execute")
 		if timeout == 0 {
 			timeout = defaultExecuteTimeout
 		}
 	case fab.DiscoveryGreylistExpiry:
-		timeout = c.backend.getDuration("client.peer.timeout.discovery.greylistExpiry")
+		timeout = c.backend.GetDuration("client.peer.timeout.discovery.greylistExpiry")
 	case fab.PeerResponse:
-		timeout = c.backend.getDuration("client.peer.timeout.response")
+		timeout = c.backend.GetDuration("client.peer.timeout.response")
 	case fab.EventHubConnection:
-		timeout = c.backend.getDuration("client.eventService.timeout.connection")
+		timeout = c.backend.GetDuration("client.eventService.timeout.connection")
 	case fab.EventReg:
-		timeout = c.backend.getDuration("client.eventService.timeout.registrationResponse")
+		timeout = c.backend.GetDuration("client.eventService.timeout.registrationResponse")
 	case fab.OrdererConnection:
-		timeout = c.backend.getDuration("client.orderer.timeout.connection")
+		timeout = c.backend.GetDuration("client.orderer.timeout.connection")
 	case fab.OrdererResponse:
-		timeout = c.backend.getDuration("client.orderer.timeout.response")
+		timeout = c.backend.GetDuration("client.orderer.timeout.response")
 	case fab.ChannelConfigRefresh:
-		timeout = c.backend.getDuration("client.global.cache.channelConfig")
+		timeout = c.backend.GetDuration("client.global.cache.channelConfig")
 	case fab.ChannelMembershipRefresh:
-		timeout = c.backend.getDuration("client.global.cache.channelMembership")
+		timeout = c.backend.GetDuration("client.global.cache.channelMembership")
 	case fab.CacheSweepInterval: // EXPERIMENTAL - do we need this to be configurable?
-		timeout = c.backend.getDuration("client.cache.interval.sweep")
+		timeout = c.backend.GetDuration("client.cache.interval.sweep")
 		if timeout == 0 {
 			timeout = defaultCacheSweepInterval
 		}
 	case fab.ConnectionIdle:
-		timeout = c.backend.getDuration("client.global.cache.connectionIdle")
+		timeout = c.backend.GetDuration("client.global.cache.connectionIdle")
 		if timeout == 0 {
 			timeout = defaultConnIdleTimeout
 		}
 	case fab.EventServiceIdle:
-		timeout = c.backend.getDuration("client.global.cache.eventServiceIdle")
+		timeout = c.backend.GetDuration("client.global.cache.eventServiceIdle")
 		if timeout == 0 {
 			timeout = defaultEventServiceIdleTimeout
 		}
 	case fab.ResMgmt:
-		timeout = c.backend.getDuration("client.global.timeout.resmgmt")
+		timeout = c.backend.GetDuration("client.global.timeout.resmgmt")
 		if timeout == 0 {
 			timeout = defaultResMgmtTimeout
 		}
@@ -556,47 +571,47 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration {
 
 func (c *EndpointConfig) cacheNetworkConfiguration() error {
 	networkConfig := fab.NetworkConfig{}
-	networkConfig.Name = c.backend.getString("name")
-	networkConfig.Description = c.backend.getString("description")
-	networkConfig.Version = c.backend.getString("version")
+	networkConfig.Name = c.backend.GetString("name")
+	networkConfig.Description = c.backend.GetString("description")
+	networkConfig.Version = c.backend.GetString("version")
 
-	ok := c.backend.unmarshalKey("client", &networkConfig.Client)
+	ok := c.backend.UnmarshalKey("client", &networkConfig.Client)
 	logger.Debugf("Client is: %+v", networkConfig.Client)
 	if !ok {
 		return errors.New("failed to parse 'client' config item to networkConfig.Client type")
 	}
 
-	ok = c.backend.unmarshalKey("channels", &networkConfig.Channels)
+	ok = c.backend.UnmarshalKey("channels", &networkConfig.Channels)
 	logger.Debugf("channels are: %+v", networkConfig.Channels)
 	if !ok {
 		return errors.New("failed to parse 'channels' config item to networkConfig.Channels type")
 	}
 
-	ok = c.backend.unmarshalKey("organizations", &networkConfig.Organizations)
+	ok = c.backend.UnmarshalKey("organizations", &networkConfig.Organizations)
 	logger.Debugf("organizations are: %+v", networkConfig.Organizations)
 	if !ok {
 		return errors.New("failed to parse 'organizations' config item to networkConfig.Organizations type")
 	}
 
-	ok = c.backend.unmarshalKey("orderers", &networkConfig.Orderers)
+	ok = c.backend.UnmarshalKey("orderers", &networkConfig.Orderers)
 	logger.Debugf("orderers are: %+v", networkConfig.Orderers)
 	if !ok {
 		return errors.New("failed to parse 'orderers' config item to networkConfig.Orderers type")
 	}
 
-	ok = c.backend.unmarshalKey("peers", &networkConfig.Peers)
+	ok = c.backend.UnmarshalKey("peers", &networkConfig.Peers)
 	logger.Debugf("peers are: %+v", networkConfig.Peers)
 	if !ok {
 		return errors.New("failed to parse 'peers' config item to networkConfig.Peers type")
 	}
 
-	ok = c.backend.unmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
+	ok = c.backend.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 	logger.Debugf("certificateAuthorities are: %+v", networkConfig.CertificateAuthorities)
 	if !ok {
 		return errors.New("failed to parse 'certificateAuthorities' config item to networkConfig.CertificateAuthorities type")
 	}
 
-	ok = c.backend.unmarshalKey("entityMatchers", &networkConfig.EntityMatchers)
+	ok = c.backend.UnmarshalKey("entityMatchers", &networkConfig.EntityMatchers)
 	logger.Debugf("Matchers are: %+v", networkConfig.EntityMatchers)
 	if !ok {
 		return errors.New("failed to parse 'entityMatchers' config item to networkConfig.EntityMatchers type")
@@ -605,16 +620,6 @@ func (c *EndpointConfig) cacheNetworkConfiguration() error {
 	c.networkConfig = &networkConfig
 	c.networkConfigCached = true
 	return nil
-}
-
-// randomOrdererConfig returns a pseudo-random orderer from the list of orderers
-func randomOrdererConfig(orderers []fab.OrdererConfig) (*fab.OrdererConfig, error) {
-
-	rs := rand.NewSource(time.Now().Unix())
-	r := rand.New(rs)
-	randomNumber := r.Intn(len(orderers))
-
-	return &orderers[randomNumber], nil
 }
 
 func (c *EndpointConfig) getPortIfPresent(url string) (int, bool) {
@@ -923,7 +928,7 @@ func (c *EndpointConfig) verifyPeerConfig(p fab.PeerConfig, peerName string, tls
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
-	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && c.backend.getBool("client.tlsCerts.systemCertPool") == false {
+	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && c.backend.GetBool("client.tlsCerts.systemCertPool") == false {
 		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil
@@ -941,7 +946,7 @@ func (c *EndpointConfig) containsCert(newCert *x509.Certificate) bool {
 
 func (c *EndpointConfig) getCertPool() (*x509.CertPool, error) {
 	tlsCertPool := x509.NewCertPool()
-	if c.backend.getBool("client.tlsCerts.systemCertPool") == true {
+	if c.backend.GetBool("client.tlsCerts.systemCertPool") == true {
 		var err error
 		if tlsCertPool, err = x509.SystemCertPool(); err != nil {
 			return nil, err
@@ -965,6 +970,22 @@ func (c *EndpointConfig) client() (*msp.ClientConfig, error) {
 	client.TLSCerts.Client.Cert.Path = pathvar.Subst(client.TLSCerts.Client.Cert.Path)
 
 	return &client, nil
+}
+
+//Backend returns config lookup of endpoint config
+func (c *EndpointConfig) Backend() *lookup.ConfigLookup {
+	return c.backend
+}
+
+//CAMatchers returns CA matchers of endpoint config
+func (c *EndpointConfig) CAMatchers() map[int]*regexp.Regexp {
+	return c.caMatchers
+}
+
+//ResetNetworkConfig clears network config cache
+func (c *EndpointConfig) ResetNetworkConfig() {
+	c.networkConfig = nil
+	c.networkConfigCached = false
 }
 
 func loadByteKeyOrCertFromFile(c *msp.ClientConfig, isKey bool) ([]byte, error) {

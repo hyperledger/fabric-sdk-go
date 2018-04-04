@@ -79,11 +79,6 @@ func (c *Provider) CryptoSuite() core.CryptoSuite {
 	return c.cryptoSuite
 }
 
-// CryptoSuiteConfig returns cryptosuite config.
-func (c *Provider) CryptoSuiteConfig() core.CryptoSuiteConfig {
-	return c.cryptoSuiteConfig
-}
-
 // IdentityManager returns identity manager for organization
 func (c *Provider) IdentityManager(orgName string) (msp.IdentityManager, bool) {
 	return c.idMgmtProvider.IdentityManager(orgName)

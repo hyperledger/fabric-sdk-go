@@ -11,6 +11,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 )
 
@@ -21,7 +22,7 @@ func TestStaticDiscovery(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	_, config1, _, err := config.FromBackend(configBackend)()
+	config1, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -61,7 +62,7 @@ func TestStaticDiscoveryWhenChannelIsEmpty(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	_, config1, _, err := config.FromBackend(configBackend)()
+	config1, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

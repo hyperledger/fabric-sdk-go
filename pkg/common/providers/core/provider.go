@@ -24,8 +24,6 @@ type CryptoSuiteConfig interface {
 type Providers interface {
 	CryptoSuite() CryptoSuite
 	SigningManager() SigningManager
-	//TODO to be removed
-	CryptoSuiteConfig() CryptoSuiteConfig
 }
 
 //ConfigProvider provides config backend for SDK

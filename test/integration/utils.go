@@ -15,8 +15,11 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
 )
 
@@ -125,10 +128,10 @@ func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string) (bool, error) {
 }
 
 // OrgTargetPeers determines peer endpoints for orgs
-func OrgTargetPeers(configProvider config.Provider, orgs []string) ([]string, error) {
-	_, endpointConfig, _, err := configProvider()
+func OrgTargetPeers(configBackend core.ConfigBackend, orgs []string) ([]string, error) {
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
 	if err != nil {
-		return nil, errors.WithMessage(err, "reading config failed")
+		return nil, errors.WithMessage(err, "reading endpoint config failed")
 	}
 	var peers []string
 	for _, org := range orgs {
@@ -173,10 +176,17 @@ func CleanupTestPath(t *testing.T, storePath string) {
 
 // CleanupUserData removes user data.
 func CleanupUserData(t *testing.T, sdk *fabsdk.FabricSDK) {
-	cryptoSuiteConfig, _, identityConfig, err := sdk.Config()()
+	configBackend, err := sdk.Config()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend)
+	identityConfig, err := msp.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	keyStorePath := cryptoSuiteConfig.KeyStorePath()
 	credentialStorePath := identityConfig.CredentialStorePath()
 	CleanupTestPath(t, keyStorePath)

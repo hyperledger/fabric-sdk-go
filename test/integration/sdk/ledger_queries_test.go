@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
@@ -53,9 +54,14 @@ func TestLedgerClientQueries(t *testing.T) {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
-	_, endpointConfig, _, err := sdk.Config()()
+	configBackend, err := sdk.Config()
 	if err != nil {
-		t.Fatalf("failed to get config, error: %v", err)
+		t.Fatalf("failed to get config backend, error: %v", err)
+	}
+
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf("failed to get endpoint config, error: %v", err)
 	}
 
 	expectedPeerConfig, err := endpointConfig.PeerConfig(org1Name, "peer0.org1.example.com")

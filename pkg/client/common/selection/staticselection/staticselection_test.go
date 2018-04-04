@@ -14,6 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
@@ -29,9 +30,7 @@ func TestStaticSelection(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	configProv := config.FromBackend(configBackend)
-
-	_, config, _, err := configProv()
+	config, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

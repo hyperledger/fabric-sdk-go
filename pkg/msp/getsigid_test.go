@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/pkg/errors"
 )
@@ -54,10 +55,19 @@ func TestGetSigningIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	cryptoConfig, endpointConfig, identityConfig, err := config.FromBackend(configBackend)()
+
+	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend)
+
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
+
+	identityConfig, err := ConfigFromBackend(configBackend)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+
 	netConfig, err := endpointConfig.NetworkConfig()
 	if err != nil {
 		t.Fatalf("Failed to setup netConfig: %s", err)
@@ -158,7 +168,13 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	_, endpointConfig, identityConfig, err := config.FromBackend(configBackend)()
+
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+
+	identityConfig, err := ConfigFromBackend(configBackend)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
@@ -178,7 +194,12 @@ func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	_, endpointConfig, identityConfig, err := config.FromBackend(configBackend)()
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+
+	identityConfig, err := ConfigFromBackend(configBackend)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}

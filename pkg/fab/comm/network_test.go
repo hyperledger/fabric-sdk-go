@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +22,7 @@ func TestNetworkPeerConfigFromURL(t *testing.T) {
 		t.Fatalf("Unexpected error reading config backend: %v", err)
 	}
 
-	_, sampleConfig, _, err := config.FromBackend(configBackend)()
+	sampleConfig, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatalf("Unexpected error reading config: %v", err)
 	}

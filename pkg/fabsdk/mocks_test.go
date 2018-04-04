@@ -11,8 +11,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/modlog"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defmsp"
@@ -33,10 +34,12 @@ func newMockCorePkg(configBackendProvider core.ConfigProvider) (*mockCorePkg, er
 		return nil, err
 	}
 
-	cryptoSuiteConfig, endpointConfig, _, err := config.FromBackend(configBackend)()
+	endpointConfig, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		return nil, err
 	}
+
+	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend)
 
 	pkgSuite := defPkgSuite{}
 	sdkcore, err := pkgSuite.Core()

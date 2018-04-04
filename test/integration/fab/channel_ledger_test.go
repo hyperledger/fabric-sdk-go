@@ -47,7 +47,12 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []string) {
 		t.Fatalf("failed to load signing identity: %s", err)
 	}
 
-	targets, err := integration.OrgTargetPeers(sdk.Config(), []string{orgName})
+	configBackend, err := sdk.Config()
+	if err != nil {
+		t.Fatalf("failed to get config backend from SDK: %v", err)
+	}
+
+	targets, err := integration.OrgTargetPeers(configBackend, []string{orgName})
 	if err != nil {
 		t.Fatalf("creating peers failed: %v", err)
 	}

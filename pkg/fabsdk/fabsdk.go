@@ -19,10 +19,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
+	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
 )
 
@@ -42,6 +43,7 @@ type options struct {
 	CryptoSuiteConfig core.CryptoSuiteConfig
 	endpointConfig    fab.EndpointConfig
 	IdentityConfig    msp.IdentityConfig
+	ConfigBackend     core.ConfigBackend
 }
 
 // Option configures the SDK.
@@ -289,11 +291,12 @@ func (sdk *FabricSDK) Close() {
 	sdk.provider.InfraProvider().Close()
 }
 
-//Config returns config provider used by SDK
-func (sdk *FabricSDK) Config() config.Provider {
-	return func() (core.CryptoSuiteConfig, fab.EndpointConfig, msp.IdentityConfig, error) {
-		return sdk.provider.CryptoSuiteConfig(), sdk.provider.EndpointConfig(), sdk.provider.IdentityConfig(), nil
+//Config returns config backend used by all SDK config types
+func (sdk *FabricSDK) Config() (core.ConfigBackend, error) {
+	if sdk.opts.ConfigBackend == nil {
+		return nil, errors.New("unable to find config backend")
 	}
+	return sdk.opts.ConfigBackend, nil
 }
 
 //Context creates and returns context client which has all the necessary providers
@@ -331,23 +334,27 @@ func (sdk *FabricSDK) loadConfig(configProvider core.ConfigProvider) error {
 		if err != nil {
 			return errors.WithMessage(err, "unable to load config backend")
 		}
-		cryptoSuiteConfig, endpointConfig, identityConfig, err := config.FromBackend(configBackend)()
-		if err != nil {
-			return errors.WithMessage(err, "failed to initialize config from config backend")
-		}
 
 		//configs passed through opts takes priority
 		if sdk.opts.CryptoSuiteConfig == nil {
-			sdk.opts.CryptoSuiteConfig = cryptoSuiteConfig
+			sdk.opts.CryptoSuiteConfig = cryptosuite.ConfigFromBackend(configBackend)
 		}
 
 		if sdk.opts.endpointConfig == nil {
-			sdk.opts.endpointConfig = endpointConfig
+			sdk.opts.endpointConfig, err = fabImpl.ConfigFromBackend(configBackend)
+			if err != nil {
+				return errors.WithMessage(err, "failed to initialize endpoint config from config backend")
+			}
 		}
 
 		if sdk.opts.IdentityConfig == nil {
-			sdk.opts.IdentityConfig = identityConfig
+			sdk.opts.IdentityConfig, err = mspImpl.ConfigFromBackend(configBackend)
+			if err != nil {
+				return errors.WithMessage(err, "failed to initialize identity config from config backend")
+			}
 		}
+
+		sdk.opts.ConfigBackend = configBackend
 	}
 	return nil
 }

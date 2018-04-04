@@ -17,8 +17,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	coreMocks "github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/stretchr/testify/assert"
 )
@@ -86,7 +89,17 @@ func newInfraProvider(t *testing.T) *InfraProvider {
 		t.Fatalf("config.FromFile failed: %v", err)
 	}
 
-	cryptoCfg, endpointCfg, identityCfg, err := config.FromBackend(configBackend)()
+	cryptoCfg := cryptosuite.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	endpointCfg, err := fabImpl.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	identityCfg, err := mspImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package config
+package msp
 
 import (
 	"fmt"
@@ -16,14 +16,25 @@ import (
 	"sort"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 )
 
+//ConfigFromBackend returns identity config implementation of give backend
+func ConfigFromBackend(coreBackend core.ConfigBackend) (msp.IdentityConfig, error) {
+	endpointConfig, err := fabImpl.ConfigFromBackend(coreBackend)
+	if err != nil {
+		return nil, errors.New("failed load identity configuration")
+	}
+	return &IdentityConfig{endpointConfig.(*fabImpl.EndpointConfig)}, nil
+}
+
 // IdentityConfig represents the identity configuration for the client
 type IdentityConfig struct {
-	endpointConfig *EndpointConfig
+	endpointConfig *fabImpl.EndpointConfig
 }
 
 // Client returns the Client config
@@ -223,12 +234,12 @@ func (c *IdentityConfig) CAClientCertPath(org string) (string, error) {
 // 'keystore' directory added. This is done because the fabric-ca-client
 // adds this to the path
 func (c *IdentityConfig) CAKeyStorePath() string {
-	return pathvar.Subst(c.endpointConfig.backend.getString("client.credentialStore.cryptoStore.path"))
+	return pathvar.Subst(c.endpointConfig.Backend().GetString("client.credentialStore.cryptoStore.path"))
 }
 
 // CredentialStorePath returns the user store path
 func (c *IdentityConfig) CredentialStorePath() string {
-	return pathvar.Subst(c.endpointConfig.backend.getString("client.credentialStore.path"))
+	return pathvar.Subst(c.endpointConfig.Backend().GetString("client.credentialStore.path"))
 }
 
 // NetworkConfig returns the network configuration defined in the config file
@@ -245,20 +256,21 @@ func (c *IdentityConfig) tryMatchingCAConfig(caName string) (*msp.CAConfig, stri
 		return nil, "", err
 	}
 	//Return if no caMatchers are configured
-	if len(c.endpointConfig.caMatchers) == 0 {
+	caMatchers := c.endpointConfig.CAMatchers()
+	if len(caMatchers) == 0 {
 		return nil, "", errors.New("no CertAuthority entityMatchers are found")
 	}
 
 	//sort the keys
 	var keys []int
-	for k := range c.endpointConfig.caMatchers {
+	for k := range caMatchers {
 		keys = append(keys, k)
 	}
 	sort.Ints(keys)
 
 	//loop over certAuthorityEntityMatchers to find the matching Cert
 	for _, k := range keys {
-		v := c.endpointConfig.caMatchers[k]
+		v := caMatchers[k]
 		if v.MatchString(caName) {
 			// get the matching Config from the index number
 			certAuthorityMatchConfig := networkConfig.EntityMatchers["certificateauthorities"][k]

@@ -14,6 +14,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	cryptosuiteImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	mspimpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
@@ -104,7 +106,17 @@ func TestCreateIdentityManager(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	cryptoCfg, endpointCfg, identityCfg, err := config.FromBackend(configBackend)()
+	cryptoCfg := cryptosuiteImpl.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	endpointCfg, err := fab.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	identityCfg, err := mspimpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

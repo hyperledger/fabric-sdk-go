@@ -15,12 +15,15 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/assert"
@@ -84,7 +87,14 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 		t.Fatalf("Unexpected error from config backend: %v", err)
 	}
 
-	cryptoSuiteConfig, endpointConfig, identityConfig, err := configImpl.FromBackend(configBackend)()
+	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend)
+
+	endpointConfig, err := fabImpl.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	identityConfig, err := msp.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}

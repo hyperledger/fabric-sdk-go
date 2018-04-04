@@ -230,18 +230,6 @@ func (mr *MockProvidersMockRecorder) CryptoSuite() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoSuite", reflect.TypeOf((*MockProviders)(nil).CryptoSuite))
 }
 
-// CryptoSuiteConfig mocks base method
-func (m *MockProviders) CryptoSuiteConfig() core.CryptoSuiteConfig {
-	ret := m.ctrl.Call(m, "CryptoSuiteConfig")
-	ret0, _ := ret[0].(core.CryptoSuiteConfig)
-	return ret0
-}
-
-// CryptoSuiteConfig indicates an expected call of CryptoSuiteConfig
-func (mr *MockProvidersMockRecorder) CryptoSuiteConfig() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoSuiteConfig", reflect.TypeOf((*MockProviders)(nil).CryptoSuiteConfig))
-}
-
 // SigningManager mocks base method
 func (m *MockProviders) SigningManager() core.SigningManager {
 	ret := m.ctrl.Call(m, "SigningManager")

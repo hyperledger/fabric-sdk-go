@@ -29,6 +29,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
@@ -282,7 +283,7 @@ func TestOrdererConfigFail(t *testing.T) {
 	configBackend, err := configImpl.FromFile("./testdata/noorderer_test.yaml")()
 	assert.Nil(t, err)
 
-	_, noOrdererConfig, _, err := configImpl.FromBackend(configBackend)()
+	noOrdererConfig, err := fabImpl.ConfigFromBackend(configBackend)
 	assert.Nil(t, err)
 
 	ctx.SetEndpointConfig(noOrdererConfig)
@@ -319,7 +320,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, noOrdererConfig, _, err := configImpl.FromBackend(configBackend)()
+	noOrdererConfig, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -334,7 +335,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, invalidChOrdererConfig, _, err := configImpl.FromBackend(configBackend)()
+	invalidChOrdererConfig, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -352,7 +353,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, invalidOrdererConfig, _, err := configImpl.FromBackend(configBackend)()
+	invalidOrdererConfig, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1177,7 +1178,7 @@ func TestCCProposal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, cfg, _, err := configImpl.FromBackend(configBackend)()
+	cfg, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1235,7 +1236,7 @@ func TestCCProposal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, cfg, _, err = configImpl.FromBackend(configBackend)()
+	cfg, err = fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1262,7 +1263,8 @@ func TestCCProposalFailed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, cfg, _, err := configImpl.FromBackend(configBackend)()
+
+	cfg, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1373,7 +1375,7 @@ func getNetworkConfig(t *testing.T) fab.EndpointConfig {
 		t.Fatal(err)
 	}
 
-	_, config, _, err := configImpl.FromBackend(configBackend)()
+	config, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal(err)
 	}

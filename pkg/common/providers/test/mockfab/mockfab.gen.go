@@ -218,19 +218,6 @@ func (mr *MockEndpointConfigMockRecorder) PeersConfig(arg0 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeersConfig", reflect.TypeOf((*MockEndpointConfig)(nil).PeersConfig), arg0)
 }
 
-// RandomOrdererConfig mocks base method
-func (m *MockEndpointConfig) RandomOrdererConfig() (*fab.OrdererConfig, error) {
-	ret := m.ctrl.Call(m, "RandomOrdererConfig")
-	ret0, _ := ret[0].(*fab.OrdererConfig)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// RandomOrdererConfig indicates an expected call of RandomOrdererConfig
-func (mr *MockEndpointConfigMockRecorder) RandomOrdererConfig() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RandomOrdererConfig", reflect.TypeOf((*MockEndpointConfig)(nil).RandomOrdererConfig))
-}
-
 // TLSCACertPool mocks base method
 func (m *MockEndpointConfig) TLSCACertPool(arg0 ...*x509.Certificate) (*x509.CertPool, error) {
 	varargs := []interface{}{}

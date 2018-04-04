@@ -19,6 +19,7 @@ import (
 	mockmspApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/pkg/errors"
@@ -96,7 +97,12 @@ func TestWrongURL(t *testing.T) {
 		panic(fmt.Sprintf("Failed to read config backend: %v", err))
 	}
 
-	_, wrongURLEndpointConfig, wrongURLIdentityConfig, err := config.FromBackend(configBackend)()
+	wrongURLIdentityConfig, err := ConfigFromBackend(configBackend)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+
+	wrongURLEndpointConfig, err := fab.ConfigFromBackend(configBackend)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
@@ -139,7 +145,7 @@ func TestNoConfiguredCAs(t *testing.T) {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
 
-	_, wrongURLEndpointConfig, _, err := config.FromBackend(configBackend)()
+	wrongURLEndpointConfig, err := fab.ConfigFromBackend(configBackend)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}

@@ -7,12 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package config
 
 import (
-	"time"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 )
 
@@ -61,46 +58,4 @@ func (c *defConfigBackend) loadTemplateConfig() error {
 		return errors.Wrap(err, "loading config file failed")
 	}
 	return nil
-}
-
-//Backend backend for all config implementations
-type Backend struct {
-	coreBackend core.ConfigBackend
-}
-
-func (c *Backend) getBool(key string) bool {
-	value, ok := c.coreBackend.Lookup(key)
-	if !ok {
-		return false
-	}
-	return cast.ToBool(value)
-}
-
-func (c *Backend) getString(key string) string {
-	value, ok := c.coreBackend.Lookup(key)
-	if !ok {
-		return ""
-	}
-	return cast.ToString(value)
-}
-
-func (c *Backend) getInt(key string) int {
-	value, ok := c.coreBackend.Lookup(key)
-	if !ok {
-		return 0
-	}
-	return cast.ToInt(value)
-}
-
-func (c *Backend) getDuration(key string) time.Duration {
-	value, ok := c.coreBackend.Lookup(key)
-	if !ok {
-		return 0
-	}
-	return cast.ToDuration(value)
-}
-
-func (c *Backend) unmarshalKey(key string, rawVal interface{}) bool {
-	_, ok := c.coreBackend.Lookup(key, core.WithUnmarshalType(rawVal))
-	return ok
 }

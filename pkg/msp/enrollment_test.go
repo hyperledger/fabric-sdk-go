@@ -17,7 +17,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	apimocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmspapi"
 )
 
@@ -56,11 +58,20 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	cryptoConfig, endpointConfig, identityConfig, err := config.FromBackend(configBackend)()
+
+	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend)
+
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
-	clientCofig, err := identityConfig.Client()
+
+	identityConfig, err := ConfigFromBackend(configBackend)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+
+	clientConfig, err := identityConfig.Client()
 	if err != nil {
 		t.Fatalf("Unable to retrieve client config: %v", err)
 	}
@@ -97,7 +108,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	}
 
 	// Refers to the same location used by the IdentityManager
-	enrollmentTestUserStore, err = NewCertFileUserStore(clientCofig.CredentialStore.Path)
+	enrollmentTestUserStore, err = NewCertFileUserStore(clientConfig.CredentialStore.Path)
 	if err != nil {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}

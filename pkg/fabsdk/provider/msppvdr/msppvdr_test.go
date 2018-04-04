@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -25,7 +27,12 @@ func TestCreateMSPProvider(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	cryptoSuiteConfig, endpointConfig, _, err := config.FromBackend(configBackend)()
+	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

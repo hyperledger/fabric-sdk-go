@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
@@ -63,10 +64,7 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 
 	configBackend, err := testSetup.InitConfig()()
 
-	cryptoConfig, _, _, err := config.FromBackend(configBackend)()
-	if err != nil {
-		panic(fmt.Sprintf("Failed to get default config [%s]", err))
-	}
+	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend)
 
 	//Get Test BCCSP,
 	// TODO Need to use external BCCSP here

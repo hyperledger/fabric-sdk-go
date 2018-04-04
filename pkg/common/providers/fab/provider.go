@@ -86,8 +86,6 @@ type EndpointConfig interface {
 	MSPID(org string) (string, error)
 	PeerMSPID(name string) (string, error)
 	OrderersConfig() ([]OrdererConfig, error)
-	//TODO to be removed, not a config item
-	RandomOrdererConfig() (*OrdererConfig, error)
 	OrdererConfig(name string) (*OrdererConfig, error)
 	PeersConfig(org string) ([]PeerConfig, error)
 	PeerConfig(org string, name string) (*PeerConfig, error)
