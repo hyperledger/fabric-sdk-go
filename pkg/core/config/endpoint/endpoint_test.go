@@ -137,7 +137,7 @@ O94CDp7l2k7hMQI0zQ==
 	}
 }
 
-func TestTLSConfig_TLSCert(t *testing.T) {
+func TestTLSConfig_TLSCertPostive(t *testing.T) {
 	tlsConfig := &TLSConfig{
 		Path: "../../../../test/fixtures/config/mutual_tls/client_sdk_go.pem",
 		Pem:  "",
@@ -149,26 +149,6 @@ func TestTLSConfig_TLSCert(t *testing.T) {
 	}
 	if c == nil {
 		t.Fatalf("cert's TLSCert() call returned empty certificate")
-	}
-
-	// test with wrong path
-	tlsConfig.Path = "dummy/path"
-	c, e = tlsConfig.TLSCert()
-	if e == nil {
-		t.Fatal("expected error loading certificate for wrong cert path")
-	}
-	if c != nil {
-		t.Fatalf("cert's TLSCert() call returned non empty certificate for wrong cert path")
-	}
-
-	// test with empty path and empty pem
-	tlsConfig.Path = ""
-	c, e = tlsConfig.TLSCert()
-	if e == nil {
-		t.Fatal("expected error loading certificate for empty cert path and empty pem")
-	}
-	if c != nil {
-		t.Fatalf("cert's TLSCert() call returned non empty certificate for wrong cert path and empty pem")
 	}
 
 	// test with both correct pem and path set
@@ -196,6 +176,33 @@ O94CDp7l2k7hMQI0zQ==
 		t.Fatalf("cert's TLSCert() call returned empty certificate")
 	}
 
+}
+
+func TestTLSConfig_TLSCertNegative(t *testing.T) {
+
+	// test with wrong path
+	tlsConfig := &TLSConfig{
+		Path: "dummy/path",
+		Pem:  "",
+	}
+	c, e := tlsConfig.TLSCert()
+	if e == nil {
+		t.Fatal("expected error loading certificate for wrong cert path")
+	}
+	if c != nil {
+		t.Fatalf("cert's TLSCert() call returned non empty certificate for wrong cert path")
+	}
+
+	// test with empty path and empty pem
+	tlsConfig.Path = ""
+	c, e = tlsConfig.TLSCert()
+	if e == nil {
+		t.Fatal("expected error loading certificate for empty cert path and empty pem")
+	}
+	if c != nil {
+		t.Fatalf("cert's TLSCert() call returned non empty certificate for wrong cert path and empty pem")
+	}
+
 	// test with wrong pem and empty path
 	tlsConfig.Path = ""
 	tlsConfig.Pem = "wrongcertpem"
@@ -206,4 +213,5 @@ O94CDp7l2k7hMQI0zQ==
 	if c != nil {
 		t.Fatalf("cert's TLSCert() call returned non empty certificate")
 	}
+
 }

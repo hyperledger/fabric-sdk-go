@@ -251,21 +251,33 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 		channelService: channelService,
 		channelID:      channelID,
 	}
+	err = initialize(channel, channelService, discoveryService, selectionService)
+	if err != nil {
+		return nil, err
+	}
+	return channel, nil
+}
 
+func initialize(channel *Channel, channelService fab.ChannelService, discoveryService fab.DiscoveryService, selectionService fab.SelectionService) error {
 	//initialize
 	if pi, ok := channelService.(serviceInit); ok {
-		pi.Initialize(channel)
+		if err := pi.Initialize(channel); err != nil {
+			return err
+		}
 	}
 
 	if pi, ok := discoveryService.(serviceInit); ok {
-		pi.Initialize(channel)
+		if err := pi.Initialize(channel); err != nil {
+			return err
+		}
 	}
 
 	if pi, ok := selectionService.(serviceInit); ok {
-		pi.Initialize(channel)
+		if err := pi.Initialize(channel); err != nil {
+			return err
+		}
 	}
-
-	return channel, nil
+	return nil
 }
 
 type reqContextKey string

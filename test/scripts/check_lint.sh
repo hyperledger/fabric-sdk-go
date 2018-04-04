@@ -8,10 +8,16 @@
 
 set -e
 
+
+
 GO_CMD="${GO_CMD:-go}"
 GOLINT_CMD=golint
 GOFMT_CMD=gofmt
 GOIMPORTS_CMD=goimports
+GOMETALINT_CMD=gometalinter
+
+
+
 
 PROJECT_PATH=$GOPATH/src/github.com/hyperledger/fabric-sdk-go
 
@@ -53,4 +59,21 @@ do
       echo "END GOIMPORTS ERRORS"
       exit 1
    fi
+done
+
+
+
+
+declare -a arr1=(
+"./pkg/client"
+"./pkg/common"
+"./pkg/context"
+)
+
+
+echo "Running metalinters..."
+for i in "${arr1[@]}"
+do
+   echo "Checking $i"
+   $GOMETALINT_CMD $i/...
 done

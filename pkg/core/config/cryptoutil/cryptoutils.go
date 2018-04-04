@@ -43,7 +43,7 @@ func GetPrivateKeyFromCert(cert []byte, cs core.CryptoSuite) (core.Key, error) {
 		return nil, errors.WithMessage(err, "Could not find matching key for SKI")
 	}
 
-	if key != nil && key.Private() == false {
+	if key != nil && !key.Private() {
 		return nil, errors.Errorf("Found key is not private, SKI: %s", certPubK.SKI())
 	}
 

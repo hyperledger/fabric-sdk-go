@@ -494,12 +494,12 @@ func TestInstallCCWithOpts(t *testing.T) {
 	assert.Nil(t, err, "marshal should not have failed")
 
 	// Setup targets
-	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
+	peer1 := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
 		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Payload: responseBytes}
 
 	// Already installed chaincode request
 	req := InstallCCRequest{Name: "name", Version: "version", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	responses, err := rc.InstallCC(req, WithTargets(&peer))
+	responses, err := rc.InstallCC(req, WithTargets(&peer1))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -512,18 +512,18 @@ func TestInstallCCWithOpts(t *testing.T) {
 		t.Fatal("Should have 'already installed' info set")
 	}
 
-	if responses[0].Target != peer.MockURL {
-		t.Fatalf("Expecting %s target URL, got %s", peer.MockURL, responses[0].Target)
+	if responses[0].Target != peer1.MockURL {
+		t.Fatalf("Expecting %s target URL, got %s", peer1.MockURL, responses[0].Target)
 	}
 
 	// Chaincode not found request (it will be installed)
 	req = InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	responses, err = rc.InstallCC(req, WithTargets(&peer))
+	responses, err = rc.InstallCC(req, WithTargets(&peer1))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if responses[0].Target != peer.MockURL {
+	if responses[0].Target != peer1.MockURL {
 		t.Fatal("Wrong target URL set")
 	}
 
@@ -542,11 +542,11 @@ func TestInstallCCWithOpts(t *testing.T) {
 	response.Chaincodes = chaincodes
 	responseBytes, _ = proto.Marshal(response)
 
-	peer = fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
+	peer1 = fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
 		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Payload: responseBytes}
 
 	req = InstallCCRequest{Name: "error", Version: "v0", Path: "", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	_, err = rc.InstallCC(req, WithTargets(&peer))
+	_, err = rc.InstallCC(req, WithTargets(&peer1))
 	if err == nil {
 		t.Fatalf("Should have failed since install cc returns an error in the client")
 	}
@@ -571,12 +571,12 @@ func TestInstallError(t *testing.T) {
 func TestInstallCC(t *testing.T) {
 	rc := setupDefaultResMgmtClient(t)
 
-	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
+	peer2 := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
 		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
 
 	// Chaincode that is not installed already (it will be installed)
 	req := InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	responses, err := rc.InstallCC(req, WithTargets(&peer))
+	responses, err := rc.InstallCC(req, WithTargets(&peer2))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -701,8 +701,7 @@ func TestInstallCCWithOptsRequiredParameters(t *testing.T) {
 
 	// Setup targets
 	var peers []fab.Peer
-	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
-	peers = append(peers, &peer)
+	peers = append(peers, &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"})
 
 	// Test both targets and filter provided (error condition)
 	_, err = rc.InstallCC(req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
@@ -877,8 +876,7 @@ func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
 
 	// Setup targets
 	var peers []fab.Peer
-	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
-	peers = append(peers, &peer)
+	peers = append(peers, &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"})
 
 	// Test both targets and filter provided (error condition)
 	_, err = rc.InstantiateCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
@@ -1083,8 +1081,7 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 
 	// Setup targets
 	var peers []fab.Peer
-	peer := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
-	peers = append(peers, &peer)
+	peers = append(peers, &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"})
 
 	// Test both targets and filter provided (error condition)
 	_, err = rc.UpgradeCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))

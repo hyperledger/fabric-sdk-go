@@ -132,8 +132,7 @@ func TestTlsCertHash(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error decoding cert fingerprint %v", err)
 	}
-
-	if bytes.Compare(tlsCertHash, expectedHash) != 0 {
+	if !bytes.Equal(tlsCertHash, expectedHash) {
 		t.Fatal("Cert hash calculated incorrectly")
 	}
 }
