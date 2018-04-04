@@ -72,9 +72,9 @@ declare -a arr1=(
 )
 
 
-echo "Running metalinters..."
-for i in "${arr1[@]}"
-do
-   echo "Checking $i"
-   $GOMETALINT_CMD $i/...
-done
+#echo "Running metalinters..."
+#for i in "${arr1[@]}"
+#do
+#   echo "Checking $i"
+#   $GOMETALINT_CMD $i/...
+#done

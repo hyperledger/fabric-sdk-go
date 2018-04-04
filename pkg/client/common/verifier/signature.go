@@ -11,11 +11,17 @@ import (
 	"crypto/x509"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
+
+const loggerModule = "fabsdk/client"
+
+var logger = logging.NewLogger(loggerModule)
 
 // Signature verifies response signature
 type Signature struct {
@@ -61,7 +67,7 @@ func (v *Signature) Match(response []*fab.TransactionProposalResponse) error {
 //ValidateCertificateDates used to verify if certificate was expired or not valid until later date
 func ValidateCertificateDates(cert *x509.Certificate) error {
 	if cert == nil {
-		return errors.New("Nil certificate has been passed in")
+		return nil
 	}
 	if time.Now().UTC().Before(cert.NotBefore) {
 		return errors.New("Certificate provided is not valid until later date")
@@ -69,6 +75,35 @@ func ValidateCertificateDates(cert *x509.Certificate) error {
 
 	if time.Now().UTC().After(cert.NotAfter) {
 		return errors.New("Certificate provided has expired")
+	}
+	return nil
+}
+
+//VerifyPeerCertificate verifies raw certs and chain certs for expiry and not yet valid dates
+func VerifyPeerCertificate(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+	for _, chaincert := range rawCerts {
+		cert, err := utils.DERToX509Certificate(chaincert)
+		if err != nil {
+			logger.Warn("Got error while verifying cert")
+		}
+		if cert != nil {
+			err = ValidateCertificateDates(cert)
+			if err != nil {
+				//cert is expired or not valid
+				logger.Warn("%v", err)
+				return err
+			}
+		}
+	}
+	for _, certs := range verifiedChains {
+		for _, cert := range certs {
+			err := ValidateCertificateDates(cert)
+			if err != nil {
+				//cert is expired or not valid
+				logger.Warn("%v", err)
+				return err
+			}
+		}
 	}
 	return nil
 }

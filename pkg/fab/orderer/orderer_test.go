@@ -230,7 +230,7 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 	case block := <-blocks:
 		t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
 	case err := <-errors:
-		if err.Error() != "Orderer Server Status Code: (400) BAD_REQUEST. Description: error status from ordering service" {
+		if !strings.Contains(err.Error(), "BAD_REQUEST") {
 			t.Fatalf("Ordering service error is not received as expected, %s", err)
 		}
 	case <-time.After(time.Second * 5):

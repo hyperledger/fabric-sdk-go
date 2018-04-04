@@ -30,11 +30,11 @@ PKGS=`$GO_CMD list $REPO/test/integration/... 2> /dev/null | \
       grep -v ^$REPO/test/integration/orgs | \
       grep -v ^$REPO/test/integration/pkcs11 | \
       grep -v ^$REPO/test/integration/sdk | \
+      grep -v ^$REPO/test/integration/revoked | \
       grep -v ^$REPO/test/integration/expiredpeer | \
-      grep -v ^$REPO/test/integration/expiredorderer | \
       grep -v ^$REPO/test/integration\$`
 
-echo "Running integration tests for revoked certificates ..."
+echo "Running integration tests for expired orderer certificates ..."
 RACEFLAG=""
 ARCH=$(uname -m)
 

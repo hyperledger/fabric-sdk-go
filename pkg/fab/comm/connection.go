@@ -7,10 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
+	"crypto/x509"
 	"sync/atomic"
 
 	"github.com/pkg/errors"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -20,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -80,7 +83,23 @@ func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvide
 	if stream == nil {
 		return nil, errors.New("unexpected nil stream received from provider")
 	}
+	peer, ok := peer.FromContext(stream.Context())
+	if !ok || peer == nil {
+		//return error - certificate is not available
+		return nil, errors.Wrapf(err, "No peer cert in GRPC stream")
 
+	}
+	if peer.AuthInfo != nil {
+		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
+		for _, peercert := range tlsInfo.State.PeerCertificates {
+			err := verifier.ValidateCertificateDates(peercert)
+			if err != nil {
+				//log and return error
+				logger.Error(err)
+				return nil, errors.Wrapf(err, "Got error while validating certificate dates for [%v]", peercert.Subject)
+			}
+		}
+	}
 	return &GRPCConnection{
 		context:     ctx,
 		chConfig:    chConfig,
@@ -152,6 +171,11 @@ func newDialOpts(config fab.EndpointConfig, url string, params *params) ([]grpc.
 		if err != nil {
 			return nil, err
 		}
+		//verify if certificate was expired or not yet valid
+		tlsConfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+			return verifier.VerifyPeerCertificate(rawCerts, verifiedChains)
+		}
+
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 		logger.Debugf("Creating a secure connection to [%s] with TLS HostOverride [%s]", url, params.hostOverride)
 	} else {
