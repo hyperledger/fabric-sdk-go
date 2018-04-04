@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package config
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -20,22 +19,7 @@ type defConfigBackend struct {
 }
 
 // Lookup gets the config item value by Key
-func (c *defConfigBackend) Lookup(key string, opts ...core.LookupOption) (interface{}, bool) {
-	if len(opts) > 0 {
-		lookupOpts := &core.LookupOpts{}
-		for _, option := range opts {
-			option(lookupOpts)
-		}
-
-		if lookupOpts.UnmarshalType != nil {
-			err := c.configViper.UnmarshalKey(key, lookupOpts.UnmarshalType)
-			if err != nil {
-				//TODO may need debug logger here
-				return nil, false
-			}
-			return lookupOpts.UnmarshalType, true
-		}
-	}
+func (c *defConfigBackend) Lookup(key string) (interface{}, bool) {
 	value := c.configViper.Get(key)
 	if value == nil {
 		return nil, false

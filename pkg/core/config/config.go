@@ -19,8 +19,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 )
 
-var logger = logging.NewLogger("fabsdk/core")
-
 var logModules = [...]string{"fabsdk", "fabsdk/client", "fabsdk/core", "fabsdk/fab", "fabsdk/common",
 	"fabsdk/msp", "fabsdk/util", "fabsdk/context"}
 
@@ -61,9 +59,7 @@ func FromFile(name string, opts ...Option) core.ConfigProvider {
 
 		// If a config file is found, read it in.
 		err = backend.configViper.MergeInConfig()
-		if err == nil {
-			logger.Debugf("Using config file: %s", backend.configViper.ConfigFileUsed())
-		} else {
+		if err != nil {
 			return nil, errors.Wrap(err, "loading config file failed")
 		}
 
@@ -77,7 +73,6 @@ func FromFile(name string, opts ...Option) core.ConfigProvider {
 func FromRaw(configBytes []byte, configType string, opts ...Option) core.ConfigProvider {
 	return func() (core.ConfigBackend, error) {
 		buf := bytes.NewBuffer(configBytes)
-		logger.Debugf("config.FromRaw buf Len is %d, Cap is %d: %s", buf.Len(), buf.Cap(), buf)
 		return initFromReader(buf, configType, opts...)
 	}
 }
@@ -154,7 +149,6 @@ func setLogLevel(backend core.ConfigBackend) {
 	logLevel := logging.INFO
 	if loggingLevelString != nil {
 		const logModule = "fabsdk" // TODO: allow more flexability in setting levels for different modules
-		logger.Debugf("%s logging level from the config: %v", logModule, loggingLevelString)
 		var err error
 		logLevel, err = logging.LogLevel(loggingLevelString.(string))
 		if err != nil {

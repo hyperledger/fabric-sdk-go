@@ -178,21 +178,16 @@ func (m *MockConfigBackend) EXPECT() *MockConfigBackendMockRecorder {
 }
 
 // Lookup mocks base method
-func (m *MockConfigBackend) Lookup(arg0 string, arg1 ...core.LookupOption) (interface{}, bool) {
-	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "Lookup", varargs...)
+func (m *MockConfigBackend) Lookup(arg0 string) (interface{}, bool) {
+	ret := m.ctrl.Call(m, "Lookup", arg0)
 	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // Lookup indicates an expected call of Lookup
-func (mr *MockConfigBackendMockRecorder) Lookup(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{arg0}, arg1...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lookup", reflect.TypeOf((*MockConfigBackend)(nil).Lookup), varargs...)
+func (mr *MockConfigBackendMockRecorder) Lookup(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lookup", reflect.TypeOf((*MockConfigBackend)(nil).Lookup), arg0)
 }
 
 // MockProviders is a mock of Providers interface
