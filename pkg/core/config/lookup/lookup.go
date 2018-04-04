@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
 )
 
@@ -60,7 +61,19 @@ func (c *ConfigLookup) GetDuration(key string) time.Duration {
 }
 
 //UnmarshalKey unmarshals value for given key to rawval type
-func (c *ConfigLookup) UnmarshalKey(key string, rawVal interface{}) bool {
-	_, ok := c.backend.Lookup(key, core.WithUnmarshalType(rawVal))
-	return ok
+func (c *ConfigLookup) UnmarshalKey(key string, rawVal interface{}) error {
+	value, ok := c.backend.Lookup(key)
+	if !ok {
+		return nil
+	}
+
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		DecodeHook: mapstructure.StringToTimeDurationHookFunc(),
+		Result:     rawVal,
+	})
+	if err != nil {
+		return err
+	}
+
+	return decoder.Decode(value)
 }

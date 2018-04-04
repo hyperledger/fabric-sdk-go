@@ -575,46 +575,46 @@ func (c *EndpointConfig) cacheNetworkConfiguration() error {
 	networkConfig.Description = c.backend.GetString("description")
 	networkConfig.Version = c.backend.GetString("version")
 
-	ok := c.backend.UnmarshalKey("client", &networkConfig.Client)
+	err := c.backend.UnmarshalKey("client", &networkConfig.Client)
 	logger.Debugf("Client is: %+v", networkConfig.Client)
-	if !ok {
-		return errors.New("failed to parse 'client' config item to networkConfig.Client type")
+	if err != nil {
+		return errors.WithMessage(err, "failed to parse 'client' config item to networkConfig.Client type")
 	}
 
-	ok = c.backend.UnmarshalKey("channels", &networkConfig.Channels)
+	err = c.backend.UnmarshalKey("channels", &networkConfig.Channels)
 	logger.Debugf("channels are: %+v", networkConfig.Channels)
-	if !ok {
-		return errors.New("failed to parse 'channels' config item to networkConfig.Channels type")
+	if err != nil {
+		return errors.WithMessage(err, "failed to parse 'channels' config item to networkConfig.Channels type")
 	}
 
-	ok = c.backend.UnmarshalKey("organizations", &networkConfig.Organizations)
+	err = c.backend.UnmarshalKey("organizations", &networkConfig.Organizations)
 	logger.Debugf("organizations are: %+v", networkConfig.Organizations)
-	if !ok {
-		return errors.New("failed to parse 'organizations' config item to networkConfig.Organizations type")
+	if err != nil {
+		return errors.WithMessage(err, "failed to parse 'organizations' config item to networkConfig.Organizations type")
 	}
 
-	ok = c.backend.UnmarshalKey("orderers", &networkConfig.Orderers)
+	err = c.backend.UnmarshalKey("orderers", &networkConfig.Orderers)
 	logger.Debugf("orderers are: %+v", networkConfig.Orderers)
-	if !ok {
-		return errors.New("failed to parse 'orderers' config item to networkConfig.Orderers type")
+	if err != nil {
+		return errors.WithMessage(err, "failed to parse 'orderers' config item to networkConfig.Orderers type")
 	}
 
-	ok = c.backend.UnmarshalKey("peers", &networkConfig.Peers)
+	err = c.backend.UnmarshalKey("peers", &networkConfig.Peers)
 	logger.Debugf("peers are: %+v", networkConfig.Peers)
-	if !ok {
-		return errors.New("failed to parse 'peers' config item to networkConfig.Peers type")
+	if err != nil {
+		return errors.WithMessage(err, "failed to parse 'peers' config item to networkConfig.Peers type")
 	}
 
-	ok = c.backend.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
+	err = c.backend.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 	logger.Debugf("certificateAuthorities are: %+v", networkConfig.CertificateAuthorities)
-	if !ok {
-		return errors.New("failed to parse 'certificateAuthorities' config item to networkConfig.CertificateAuthorities type")
+	if err != nil {
+		return errors.WithMessage(err, "failed to parse 'certificateAuthorities' config item to networkConfig.CertificateAuthorities type")
 	}
 
-	ok = c.backend.UnmarshalKey("entityMatchers", &networkConfig.EntityMatchers)
+	err = c.backend.UnmarshalKey("entityMatchers", &networkConfig.EntityMatchers)
 	logger.Debugf("Matchers are: %+v", networkConfig.EntityMatchers)
-	if !ok {
-		return errors.New("failed to parse 'entityMatchers' config item to networkConfig.EntityMatchers type")
+	if err != nil {
+		return errors.WithMessage(err, "failed to parse 'entityMatchers' config item to networkConfig.EntityMatchers type")
 	}
 
 	c.networkConfig = &networkConfig

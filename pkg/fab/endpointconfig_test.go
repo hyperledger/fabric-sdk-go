@@ -132,16 +132,6 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	if coConfigs != nil || err == nil {
 		t.Fatal("Testing ChannelOrderers supposed to fail")
 	}
-
-	// test empty network objects
-
-	customBackend.KeyValueMap["channels"], _ = configBackend.Lookup("channels")
-	delete(customBackend.KeyValueMap, "organizations")
-	sampleEndpointConfig.networkConfigCached = false
-	_, err = sampleEndpointConfig.NetworkConfig()
-	if err == nil {
-		t.Fatalf("Organizations were empty, it should return an error")
-	}
 }
 
 func TestTLSCAConfig(t *testing.T) {

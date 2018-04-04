@@ -337,7 +337,7 @@ func (c *MockConfig) EventServiceType() fab.EventServiceType {
 }
 
 // Lookup gets the Value from config file by Key
-func (c *MockConfig) Lookup(key string, opts ...core.LookupOption) (interface{}, bool) {
+func (c *MockConfig) Lookup(key string) (interface{}, bool) {
 	if key == "invalid" {
 		return nil, false
 	}
