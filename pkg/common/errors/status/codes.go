@@ -48,9 +48,6 @@ const (
 	// MissingEndorsement is if an endoresement is missing
 	MissingEndorsement Code = 9
 
-	// ChaincodeError is for errors returned by Chaincode
-	ChaincodeError Code = 10
-
 	// NoMatchingCertificateAuthorityEntity is if entityMatchers are unable to find any matchingCertificateAuthority
 	NoMatchingCertificateAuthorityEntity Code = 21
 

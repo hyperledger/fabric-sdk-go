@@ -51,7 +51,7 @@ func TestInvokeError(t *testing.T) {
 	attempt := 0
 	expectedResp := "invoked"
 	firstErr := status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(), "", nil)
-	exepectedErr := status.New(status.EndorserClientStatus, status.ChaincodeError.ToInt32(), "", nil)
+	exepectedErr := status.New(status.ChaincodeStatus, int32(500), "", nil)
 	invoker := NewInvoker(r)
 	resp, err := invoker.Invoke(
 		func() (interface{}, error) {
