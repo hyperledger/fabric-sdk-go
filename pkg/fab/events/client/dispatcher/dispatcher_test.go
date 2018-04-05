@@ -79,26 +79,26 @@ func TestConnect(t *testing.T) {
 		t.Fatalf("Got nil connection")
 	}
 
+	testConn(dispatcherEventch, errch, t, dispatcher)
+}
+
+func testConn(dispatcherEventch chan<- interface{}, errch chan error, t *testing.T, dispatcher *Dispatcher) {
 	// Disconnect
 	dispatcherEventch <- NewDisconnectEvent(errch)
-	err = <-errch
+	err := <-errch
 	if err != nil {
 		t.Fatalf("Error disconnecting: %s", err)
 	}
-
 	if dispatcher.Connection() != nil {
 		t.Fatalf("Expecting nil connection")
 	}
-
 	// Disconnect again
 	dispatcherEventch <- NewDisconnectEvent(errch)
 	err = <-errch
 	if err == nil {
 		t.Fatalf("Expecting error disconnecting since the connection should already be closed")
 	}
-
 	time.Sleep(time.Second)
-
 	// Stop the dispatcher
 	stopResp := make(chan error)
 	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
@@ -175,48 +175,12 @@ func TestConnectionEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error getting event channel from dispatcher: %s", err)
 	}
-
 	expectedDisconnectErr := "simulated disconnect error"
-
 	// Register connection event
 	connch := make(chan *ConnectionEvent, 10)
 	errch := make(chan error)
 	state := ""
-	go func() {
-		for {
-			select {
-			case event, ok := <-connch:
-				if !ok {
-					if state != "disconnected" {
-						errch <- errors.New("unexpected closed channel")
-					} else {
-						errch <- nil
-					}
-					return
-				}
-				if event.Connected {
-					if state != "" {
-						errch <- errors.New("unexpected connected event")
-						return
-					}
-					state = "connected"
-				} else {
-					if state != "connected" {
-						errch <- errors.New("unexpected disconnected event")
-						return
-					}
-					if event.Err == nil || event.Err.Error() != expectedDisconnectErr {
-						errch <- errors.Errorf("unexpected disconnect error [%s] but got [%s]", expectedDisconnectErr, event.Err.Error())
-						return
-					}
-					state = "disconnected"
-				}
-			case <-time.After(5 * time.Second):
-				errch <- errors.New("timed out waiting for connection event")
-				return
-			}
-		}
-	}()
+	go checkEvent(connch, errch, state, expectedDisconnectErr)
 
 	// Register for connection events
 	regerrch := make(chan error)
@@ -227,8 +191,8 @@ func TestConnectionEvent(t *testing.T) {
 	case <-regch:
 		// No need get the registration to unregister since we're relying on the
 		// connch channel being closed when the dispatcher is stopped.
-	case err := <-regerrch:
-		t.Fatalf("Error registering for connection events: %s", err)
+	case err1 := <-regerrch:
+		t.Fatalf("Error registering for connection events: %s", err1)
 	}
 
 	// Connect
@@ -242,12 +206,51 @@ func TestConnectionEvent(t *testing.T) {
 	// Stop (should close the event channel)
 	stopResp := make(chan error)
 	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
-	if err := <-stopResp; err != nil {
-		t.Fatalf("Error stopping dispatcher: %s", err)
+	if err1 := <-stopResp; err1 != nil {
+		t.Fatalf("Error stopping dispatcher: %s", err1)
 	}
 
 	err = <-errch
 	if err != nil {
 		t.Fatal(err.Error())
+	}
+}
+func checkEvent(connch chan *ConnectionEvent, errch chan error, state, expectedDisconnectErr string) {
+	for {
+		select {
+		case event, ok := <-connch:
+			if !ok {
+				disconnect(state, errch)
+				return
+			}
+			if event.Connected {
+				if state != "" {
+					errch <- errors.New("unexpected connected event")
+					return
+				}
+				state = "connected"
+			} else {
+				if state != "connected" {
+					errch <- errors.New("unexpected disconnected event")
+					return
+				}
+				if event.Err == nil || event.Err.Error() != expectedDisconnectErr {
+					errch <- errors.Errorf("unexpected disconnect error [%s] but got [%s]", expectedDisconnectErr, event.Err.Error())
+					return
+				}
+				state = "disconnected"
+			}
+		case <-time.After(5 * time.Second):
+			errch <- errors.New("timed out waiting for connection event")
+			return
+		}
+	}
+}
+
+func disconnect(state string, errch chan error) {
+	if state != "disconnected" {
+		errch <- errors.New("unexpected closed channel")
+	} else {
+		errch <- nil
 	}
 }

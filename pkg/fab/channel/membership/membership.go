@@ -145,11 +145,9 @@ func loadMSPs(mspConfigs []*mb.MSPConfig, cs core.CryptoSuite) ([]msp.MSP, error
 		}
 
 		// get the application org names
-		var orgs []string
 		orgUnits := fabricConfig.OrganizationalUnitIdentifiers
 		for _, orgUnit := range orgUnits {
 			logger.Debugf("loadMSPs - found org of :: %s", orgUnit.OrganizationalUnitIdentifier)
-			orgs = append(orgs, orgUnit.OrganizationalUnitIdentifier)
 		}
 
 		// TODO: Do something with orgs
@@ -193,7 +191,10 @@ func addCertsToConfig(config fab.EndpointConfig, pemCerts []byte) {
 		if err != nil {
 			logger.Warn("%v", err)
 		}
-		config.TLSCACertPool(cert)
+		_, err = config.TLSCACertPool(cert)
+		if err != nil {
+			logger.Warnf("TLSCACertPool failed %v", err)
+		}
 
 	}
 }

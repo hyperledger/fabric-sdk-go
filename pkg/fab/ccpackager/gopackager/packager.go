@@ -21,6 +21,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/pkg/errors"
 
+	"fmt"
+
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -101,10 +103,8 @@ func findSource(goPath string, filePath string) ([]*Descriptor, error) {
 			return nil
 
 		})
-	if err != nil {
-		return descriptors, err
-	}
-	return descriptors, nil
+
+	return descriptors, err
 }
 
 // -------------------------------------------------------------------------
@@ -138,18 +138,28 @@ func generateTarGz(descriptors []*Descriptor) ([]byte, error) {
 		logger.Debugf("generateTarGz for %s", v.fqp)
 		err := packEntry(tw, gw, v)
 		if err != nil {
-			closeStream(tw, gw)
+			err1 := closeStream(tw, gw)
+			if err1 != nil {
+				return nil, errors.Wrap(err, fmt.Sprintf("packEntry failed and close error %v", err1))
+			}
 			return nil, errors.Wrap(err, "packEntry failed")
 		}
 	}
-	closeStream(tw, gw)
+	err := closeStream(tw, gw)
+	if err != nil {
+		return nil, errors.Wrap(err, "closeStream failed")
+	}
 	return codePackage.Bytes(), nil
 
 }
 
-func closeStream(tw *tar.Writer, gw *gzip.Writer) {
-	tw.Close()
-	gw.Close()
+func closeStream(tw io.Closer, gw io.Closer) error {
+	err := tw.Close()
+	if err != nil {
+		return err
+	}
+	err = gw.Close()
+	return err
 }
 
 func packEntry(tw *tar.Writer, gw *gzip.Writer, descriptor *Descriptor) error {
@@ -157,7 +167,13 @@ func packEntry(tw *tar.Writer, gw *gzip.Writer, descriptor *Descriptor) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			logger.Warnf("error file close %v", err)
+		}
+	}()
+
 	if stat, err := file.Stat(); err == nil {
 
 		// now lets create the header as needed for this file within the tarball
@@ -179,8 +195,12 @@ func packEntry(tw *tar.Writer, gw *gzip.Writer, descriptor *Descriptor) error {
 		if _, err := io.Copy(tw, file); err != nil {
 			return err
 		}
-		tw.Flush()
-		gw.Flush()
+		if err := tw.Flush(); err != nil {
+			return err
+		}
+		if err := gw.Flush(); err != nil {
+			return err
+		}
 
 	}
 	return nil

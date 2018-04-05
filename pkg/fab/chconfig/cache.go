@@ -43,7 +43,10 @@ func NewCacheKey(ctx fab.ClientContext, pvdr Provider, channelID string) (CacheK
 	}
 
 	h := sha256.New()
-	h.Write(identity)
+	_, err = h.Write(identity)
+	if err != nil {
+		return nil, err
+	}
 	hash := h.Sum([]byte(channelID))
 
 	return &cacheKey{

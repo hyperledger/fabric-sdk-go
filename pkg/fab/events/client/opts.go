@@ -14,15 +14,15 @@ import (
 )
 
 type params struct {
-	eventConsumerBufferSize uint
-	reconn                  bool
-	maxConnAttempts         uint
-	maxReconnAttempts       uint
+	connEventCh             chan *dispatcher.ConnectionEvent
 	reconnInitialDelay      time.Duration
 	timeBetweenConnAttempts time.Duration
-	connEventCh             chan *dispatcher.ConnectionEvent
 	respTimeout             time.Duration
+	eventConsumerBufferSize uint
+	maxConnAttempts         uint
+	maxReconnAttempts       uint
 	permitBlockEvents       bool
+	reconn                  bool
 }
 
 func defaultParams() *params {

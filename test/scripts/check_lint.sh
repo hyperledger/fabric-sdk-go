@@ -69,12 +69,16 @@ declare -a arr1=(
 "./pkg/common"
 "./pkg/context"
 "./pkg/core"
+"./pkg/fab/ccpackager"
+"./pkg/fab/channel"
+"./pkg/fab/chconfig"
+"./pkg/fab/comm"
 )
 
 
-#echo "Running metalinters..."
-#for i in "${arr1[@]}"
-#do
-#   echo "Checking $i"
-#   $GOMETALINT_CMD $i/...
-#done
+echo "Running metalinters..."
+for i in "${arr1[@]}"
+do
+   echo "Checking $i"
+   $GOMETALINT_CMD $i/...
+done

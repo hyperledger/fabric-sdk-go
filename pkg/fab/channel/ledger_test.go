@@ -6,11 +6,11 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	reqContext "context"
 	"errors"
 	"fmt"
 	"strings"
 	"testing"
-
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -175,13 +175,13 @@ func TestQueryConfig(t *testing.T) {
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: payload, Status: 200}
 
 	// fail with min endorsers
-	res, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, &TransactionProposalResponseVerifier{MinResponses: 2})
+	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, &TransactionProposalResponseVerifier{MinResponses: 2})
 	if err == nil {
 		t.Fatalf("Should have failed with since there's one endorser and at least two are required")
 	}
 
 	// success with one endorser
-	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, &TransactionProposalResponseVerifier{MinResponses: 1})
+	res, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, &TransactionProposalResponseVerifier{MinResponses: 1})
 	if err != nil || res == nil {
 		t.Fatalf("Test QueryConfig failed: %v", err)
 	}
@@ -196,6 +196,11 @@ func TestQueryConfig(t *testing.T) {
 	}
 
 	// Create different config block payload
+	createDifferentConfigBlockPayload(t, peer2, channel, reqCtx, peer)
+
+}
+
+func createDifferentConfigBlockPayload(t *testing.T, peer2 mocks.MockPeer, channel *Ledger, reqCtx reqContext.Context, peer mocks.MockPeer) {
 	builder2 := &mocks.MockConfigBlockBuilder{
 		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
 			ModPolicy: "Admins",
@@ -208,19 +213,16 @@ func TestQueryConfig(t *testing.T) {
 		Index:           0,
 		LastConfigIndex: 0,
 	}
-
 	payload2, err := proto.Marshal(builder2.Build())
 	if err != nil {
 		t.Fatalf("Failed to marshal mock block 2")
 	}
-
 	// peer 2 now had different payload; query config block should fail
 	peer2.Payload = payload2
-	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, &TransactionProposalResponseVerifier{MinResponses: 2})
+	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, &TransactionProposalResponseVerifier{MinResponses: 2})
 	if err == nil {
 		t.Fatalf("Should have failed for different block payloads")
 	}
-
 }
 
 func TestQueryConfigBlockDifferentMetadata(t *testing.T) {

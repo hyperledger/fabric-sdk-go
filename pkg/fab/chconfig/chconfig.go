@@ -12,23 +12,20 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
+	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
-	ab "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/orderer"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
-
-	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
-
-	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -150,22 +147,10 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 	targets := []fab.ProposalProcessor{}
 	if c.opts.Targets == nil {
 		// Calculate targets from config
-		chPeers, err := ctx.EndpointConfig().ChannelPeers(c.channelID)
+		targets, err = c.calculateTargetsFromConfig(ctx)
 		if err != nil {
-			return nil, errors.WithMessage(err, "read configuration for channel peers failed")
+			return nil, err
 		}
-
-		for _, p := range chPeers {
-			newPeer, err := ctx.InfraProvider().CreatePeerFromConfig((&p.NetworkPeer))
-			if err != nil || newPeer == nil {
-				return nil, errors.WithMessage(err, "NewPeer failed")
-			}
-
-			targets = append(targets, newPeer)
-		}
-
-		targets = randomMaxTargets(targets, c.opts.MaxTargets)
-
 	} else {
 		targets = peersToTxnProcessors(c.opts.Targets)
 	}
@@ -188,6 +173,26 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 	}
 	return extractConfig(c.channelID, block.(*common.Block))
 
+}
+
+func (c *ChannelConfig) calculateTargetsFromConfig(ctx context.Client) ([]fab.ProposalProcessor, error) {
+	targets := []fab.ProposalProcessor{}
+	chPeers, err := ctx.EndpointConfig().ChannelPeers(c.channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "read configuration for channel peers failed")
+	}
+
+	for _, p := range chPeers {
+		newPeer, err := ctx.InfraProvider().CreatePeerFromConfig((&p.NetworkPeer))
+		if err != nil || newPeer == nil {
+			return nil, errors.WithMessage(err, "NewPeer failed")
+		}
+
+		targets = append(targets, newPeer)
+	}
+
+	targets = randomMaxTargets(targets, c.opts.MaxTargets)
+	return targets, nil
 }
 
 func (c *ChannelConfig) queryOrderer(reqCtx reqContext.Context) (*ChannelCfg, error) {
@@ -223,7 +228,13 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 			c.opts.MaxTargets = defaultMaxTargets
 		}
 	}
+	c.resolveMinResponsesOptsFromConfig(chSdkCfg)
+	c.resolveRetryOptsFromConfig(chSdkCfg)
 
+	return nil
+}
+
+func (c *ChannelConfig) resolveMinResponsesOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
 	if c.opts.MinResponses == 0 {
 		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
 			c.opts.MinResponses = chSdkCfg.Policies.QueryChannelConfig.MinResponses
@@ -232,6 +243,10 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 			c.opts.MinResponses = defaultMinResponses
 		}
 	}
+
+}
+
+func (c *ChannelConfig) resolveRetryOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
 
 	if c.opts.RetryOpts.RetryableCodes == nil {
 		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
@@ -256,7 +271,6 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 		c.opts.RetryOpts.RetryableCodes = retry.ChannelConfigRetryableCodes
 	}
 
-	return nil
 }
 
 // WithPeers encapsulates peers to Option
@@ -337,7 +351,7 @@ func extractConfig(channelID string, block *common.Block) (*ChannelCfg, error) {
 		versions:    versions,
 	}
 
-	err = loadConfig(config, config.versions.Channel, group, "base", "", true)
+	err = loadConfig(config, config.versions.Channel, group, "base", "")
 	if err != nil {
 		return nil, errors.WithMessage(err, "load config items from config group failed")
 	}
@@ -348,7 +362,7 @@ func extractConfig(channelID string, block *common.Block) (*ChannelCfg, error) {
 
 }
 
-func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, group *common.ConfigGroup, name string, org string, top bool) error {
+func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, group *common.ConfigGroup, name string, org string) error {
 	logger.Debugf("loadConfigGroup - %s - START groups Org: %s", name, org)
 	if group == nil {
 		return nil
@@ -365,7 +379,10 @@ func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, grou
 			logger.Debugf("loadConfigGroup - %s - found config group ==> %s", name, key)
 			// The Application group is where config settings are that we want to find
 			versionsGroup.Groups[key] = &common.ConfigGroup{}
-			loadConfig(configItems, versionsGroup.Groups[key], configGroup, name+"."+key, key, false)
+			err := loadConfig(configItems, versionsGroup.Groups[key], configGroup, name+"."+key, key)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		logger.Debugf("loadConfigGroup - %s - no groups", name)
@@ -378,27 +395,44 @@ func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, grou
 		versionsGroup.Values = make(map[string]*common.ConfigValue)
 		for key, configValue := range values {
 			versionsGroup.Values[key] = &common.ConfigValue{}
-			loadConfigValue(configItems, key, versionsGroup.Values[key], configValue, name, org)
+			err := loadConfigValue(configItems, key, versionsGroup.Values[key], configValue, name, org)
+			if err != nil {
+				return err
+			}
+
 		}
 	} else {
 		logger.Debugf("loadConfigGroup - %s - no values", name)
 	}
 	logger.Debugf("loadConfigGroup - %s - << values", name)
 
+	err := loadConfigGroupPolicies(name, org, configItems, versionsGroup, group)
+	if err != nil {
+		return err
+	}
+
+	logger.Debugf("loadConfigGroup - %s - < group", name)
+	return nil
+}
+
+func loadConfigGroupPolicies(name, org string, configItems *ChannelCfg, versionsGroup *common.ConfigGroup, group *common.ConfigGroup) error {
 	logger.Debugf("loadConfigGroup - %s - >> policies", name)
 	policies := group.GetPolicies()
 	if policies != nil {
 		versionsGroup.Policies = make(map[string]*common.ConfigPolicy)
 		for key, configPolicy := range policies {
 			versionsGroup.Policies[key] = &common.ConfigPolicy{}
-			loadConfigPolicy(configItems, key, versionsGroup.Policies[key], configPolicy, name, org)
+			err := loadConfigPolicy(configItems, key, versionsGroup.Policies[key], configPolicy, name, org)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		logger.Debugf("loadConfigGroup - %s - no policies", name)
 	}
 	logger.Debugf("loadConfigGroup - %s - << policies", name)
-	logger.Debugf("loadConfigGroup - %s - < group", name)
 	return nil
+
 }
 
 func loadConfigPolicy(configItems *ChannelCfg, key string, versionsPolicy *common.ConfigPolicy, configPolicy *common.ConfigPolicy, groupName string, org string) error {
@@ -407,10 +441,10 @@ func loadConfigPolicy(configItems *ChannelCfg, key string, versionsPolicy *commo
 	logger.Debugf("loadConfigPolicy - %s - mod_policy: %s", groupName, configPolicy.ModPolicy)
 
 	versionsPolicy.Version = configPolicy.Version
-	return loadPolicy(configItems, versionsPolicy, key, configPolicy.Policy, groupName, org)
+	return loadPolicy(configPolicy.Policy, groupName)
 }
 
-func loadPolicy(configItems *ChannelCfg, versionsPolicy *common.ConfigPolicy, key string, policy *common.Policy, groupName string, org string) error {
+func loadPolicy(policy *common.Policy, groupName string) error {
 
 	policyType := common.Policy_PolicyType(policy.Type)
 
@@ -423,12 +457,10 @@ func loadPolicy(configItems *ChannelCfg, versionsPolicy *common.ConfigPolicy, ke
 		}
 		logger.Debugf("loadConfigPolicy - %s - policy SIGNATURE :: %v", groupName, sigPolicyEnv.Rule)
 		// TODO: Do something with this value
-		break
 
 	case common.Policy_MSP:
 		// TODO: Not implemented yet
 		logger.Debugf("loadConfigPolicy - %s - policy :: MSP POLICY NOT PARSED ", groupName)
-		break
 
 	case common.Policy_IMPLICIT_META:
 		implicitMetaPolicy := &common.ImplicitMetaPolicy{}
@@ -438,12 +470,66 @@ func loadPolicy(configItems *ChannelCfg, versionsPolicy *common.ConfigPolicy, ke
 		}
 		logger.Debugf("loadConfigPolicy - %s - policy IMPLICIT_META :: %v", groupName, implicitMetaPolicy)
 		// TODO: Do something with this value
-		break
+	case common.Policy_UNKNOWN:
+		// TODO: Not implemented yet
+		logger.Debugf("loadConfigPolicy - %s - policy UNKNOWN ", groupName)
 
 	default:
 		return errors.Errorf("unknown policy type %v", policyType)
 	}
 	return nil
+}
+
+func loadAnchorPeers(configValue *common.ConfigValue, configItems *ChannelCfg, groupName, org string) error {
+	anchorPeers := &pb.AnchorPeers{}
+	err := proto.Unmarshal(configValue.Value, anchorPeers)
+	if err != nil {
+		return errors.Wrap(err, "unmarshal anchor peers from config failed")
+	}
+
+	logger.Debugf("loadConfigValue - %s   - AnchorPeers :: %s", groupName, anchorPeers)
+
+	if len(anchorPeers.AnchorPeers) > 0 {
+		for _, anchorPeer := range anchorPeers.AnchorPeers {
+			oap := &fab.OrgAnchorPeer{Org: org, Host: anchorPeer.Host, Port: anchorPeer.Port}
+			configItems.anchorPeers = append(configItems.anchorPeers, oap)
+			logger.Debugf("loadConfigValue - %s   - AnchorPeer :: %s:%d:%s", groupName, oap.Host, oap.Port, oap.Org)
+		}
+	}
+	return nil
+}
+
+func loadMSPKey(configValue *common.ConfigValue, configItems *ChannelCfg, groupName string) error {
+	mspConfig := &mb.MSPConfig{}
+	err := proto.Unmarshal(configValue.Value, mspConfig)
+	if err != nil {
+		return errors.Wrap(err, "unmarshal MSPConfig from config failed")
+	}
+
+	logger.Debugf("loadConfigValue - %s   - MSP found", groupName)
+
+	mspType := imsp.ProviderType(mspConfig.Type)
+	if mspType != imsp.FABRIC {
+		return errors.Errorf("unsupported MSP type (%v)", mspType)
+	}
+
+	configItems.msps = append(configItems.msps, mspConfig)
+	return nil
+
+}
+
+func loadOrdererAddressesKey(configValue *common.ConfigValue, configItems *ChannelCfg, groupName string) error {
+	ordererAddresses := &common.OrdererAddresses{}
+	err := proto.Unmarshal(configValue.Value, ordererAddresses)
+	if err != nil {
+		return errors.Wrap(err, "unmarshal orderer addresses from config failed")
+	}
+	logger.Debugf("loadConfigValue - %s   - OrdererAddresses addresses value :: %s", groupName, ordererAddresses.Addresses)
+	if len(ordererAddresses.Addresses) > 0 {
+		configItems.orderers = append(configItems.orderers, ordererAddresses.Addresses...)
+	}
+	return nil
+
 }
 
 func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.ConfigValue, configValue *common.ConfigValue, groupName string, org string) error {
@@ -455,127 +541,83 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 
 	switch key {
 	case channelConfig.AnchorPeersKey:
-		anchorPeers := &pb.AnchorPeers{}
-		err := proto.Unmarshal(configValue.Value, anchorPeers)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal anchor peers from config failed")
+		if err := loadAnchorPeers(configValue, configItems, groupName, org); err != nil {
+			return err
 		}
-
-		logger.Debugf("loadConfigValue - %s   - AnchorPeers :: %s", groupName, anchorPeers)
-
-		if len(anchorPeers.AnchorPeers) > 0 {
-			for _, anchorPeer := range anchorPeers.AnchorPeers {
-				oap := &fab.OrgAnchorPeer{Org: org, Host: anchorPeer.Host, Port: anchorPeer.Port}
-				configItems.anchorPeers = append(configItems.anchorPeers, oap)
-				logger.Debugf("loadConfigValue - %s   - AnchorPeer :: %s:%d:%s", groupName, oap.Host, oap.Port, oap.Org)
-			}
-		}
-		break
-
 	case channelConfig.MSPKey:
-		mspConfig := &mb.MSPConfig{}
-		err := proto.Unmarshal(configValue.Value, mspConfig)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal MSPConfig from config failed")
+		if err := loadMSPKey(configValue, configItems, groupName); err != nil {
+			return err
 		}
+	//case channelConfig.ConsensusTypeKey:
+	//	consensusType := &ab.ConsensusType{}
+	//	err := proto.Unmarshal(configValue.Value, consensusType)
+	//	if err != nil {
+	//		return errors.Wrap(err, "unmarshal ConsensusType from config failed")
+	//	}
+	//
+	//	logger.Debugf("loadConfigValue - %s   - Consensus type value :: %s", groupName, consensusType.Type)
+	//	// TODO: Do something with this value
+	//case channelConfig.BatchSizeKey:
+	//	batchSize := &ab.BatchSize{}
+	//	err := proto.Unmarshal(configValue.Value, batchSize)
+	//	if err != nil {
+	//		return errors.Wrap(err, "unmarshal batch size from config failed")
+	//	}
+	//
+	//	logger.Debugf("loadConfigValue - %s   - BatchSize  maxMessageCount :: %d", groupName, batchSize.MaxMessageCount)
+	//	logger.Debugf("loadConfigValue - %s   - BatchSize  absoluteMaxBytes :: %d", groupName, batchSize.AbsoluteMaxBytes)
+	//	logger.Debugf("loadConfigValue - %s   - BatchSize  preferredMaxBytes :: %d", groupName, batchSize.PreferredMaxBytes)
+	//	// TODO: Do something with this value
 
-		logger.Debugf("loadConfigValue - %s   - MSP found", groupName)
+	//case channelConfig.BatchTimeoutKey:
+	//	batchTimeout := &ab.BatchTimeout{}
+	//	err := proto.Unmarshal(configValue.Value, batchTimeout)
+	//	if err != nil {
+	//		return errors.Wrap(err, "unmarshal batch timeout from config failed")
+	//	}
+	//	logger.Debugf("loadConfigValue - %s   - BatchTimeout timeout value :: %s", groupName, batchTimeout.Timeout)
+	//	// TODO: Do something with this value
 
-		mspType := imsp.ProviderType(mspConfig.Type)
-		if mspType != imsp.FABRIC {
-			return errors.Errorf("unsupported MSP type (%v)", mspType)
-		}
+	//case channelConfig.ChannelRestrictionsKey:
+	//	channelRestrictions := &ab.ChannelRestrictions{}
+	//	err := proto.Unmarshal(configValue.Value, channelRestrictions)
+	//	if err != nil {
+	//		return errors.Wrap(err, "unmarshal channel restrictions from config failed")
+	//	}
+	//	logger.Debugf("loadConfigValue - %s   - ChannelRestrictions max_count value :: %d", groupName, channelRestrictions.MaxCount)
+	//	// TODO: Do something with this value
 
-		configItems.msps = append(configItems.msps, mspConfig)
-		break
+	//case channelConfig.HashingAlgorithmKey:
+	//	hashingAlgorithm := &common.HashingAlgorithm{}
+	//	err := proto.Unmarshal(configValue.Value, hashingAlgorithm)
+	//	if err != nil {
+	//		return errors.Wrap(err, "unmarshal hashing algorithm from config failed")
+	//	}
+	//	logger.Debugf("loadConfigValue - %s   - HashingAlgorithm names value :: %s", groupName, hashingAlgorithm.Name)
+	//	// TODO: Do something with this value
 
-	case channelConfig.ConsensusTypeKey:
-		consensusType := &ab.ConsensusType{}
-		err := proto.Unmarshal(configValue.Value, consensusType)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal ConsensusType from config failed")
-		}
+	//case channelConfig.ConsortiumKey:
+	//	consortium := &common.Consortium{}
+	//	err := proto.Unmarshal(configValue.Value, consortium)
+	//	if err != nil {
+	//		return errors.Wrap(err, "unmarshal consortium from config failed")
+	//	}
+	//	logger.Debugf("loadConfigValue - %s   - Consortium names value :: %s", groupName, consortium.Name)
+	//	// TODO: Do something with this value
 
-		logger.Debugf("loadConfigValue - %s   - Consensus type value :: %s", groupName, consensusType.Type)
-		// TODO: Do something with this value
-		break
-
-	case channelConfig.BatchSizeKey:
-		batchSize := &ab.BatchSize{}
-		err := proto.Unmarshal(configValue.Value, batchSize)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal batch size from config failed")
-		}
-
-		logger.Debugf("loadConfigValue - %s   - BatchSize  maxMessageCount :: %d", groupName, batchSize.MaxMessageCount)
-		logger.Debugf("loadConfigValue - %s   - BatchSize  absoluteMaxBytes :: %d", groupName, batchSize.AbsoluteMaxBytes)
-		logger.Debugf("loadConfigValue - %s   - BatchSize  preferredMaxBytes :: %d", groupName, batchSize.PreferredMaxBytes)
-		// TODO: Do something with this value
-		break
-
-	case channelConfig.BatchTimeoutKey:
-		batchTimeout := &ab.BatchTimeout{}
-		err := proto.Unmarshal(configValue.Value, batchTimeout)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal batch timeout from config failed")
-		}
-		logger.Debugf("loadConfigValue - %s   - BatchTimeout timeout value :: %s", groupName, batchTimeout.Timeout)
-		// TODO: Do something with this value
-		break
-
-	case channelConfig.ChannelRestrictionsKey:
-		channelRestrictions := &ab.ChannelRestrictions{}
-		err := proto.Unmarshal(configValue.Value, channelRestrictions)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal channel restrictions from config failed")
-		}
-		logger.Debugf("loadConfigValue - %s   - ChannelRestrictions max_count value :: %d", groupName, channelRestrictions.MaxCount)
-		// TODO: Do something with this value
-		break
-
-	case channelConfig.HashingAlgorithmKey:
-		hashingAlgorithm := &common.HashingAlgorithm{}
-		err := proto.Unmarshal(configValue.Value, hashingAlgorithm)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal hashing algorithm from config failed")
-		}
-		logger.Debugf("loadConfigValue - %s   - HashingAlgorithm names value :: %s", groupName, hashingAlgorithm.Name)
-		// TODO: Do something with this value
-		break
-
-	case channelConfig.ConsortiumKey:
-		consortium := &common.Consortium{}
-		err := proto.Unmarshal(configValue.Value, consortium)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal consortium from config failed")
-		}
-		logger.Debugf("loadConfigValue - %s   - Consortium names value :: %s", groupName, consortium.Name)
-		// TODO: Do something with this value
-		break
-
-	case channelConfig.BlockDataHashingStructureKey:
-		bdhstruct := &common.BlockDataHashingStructure{}
-		err := proto.Unmarshal(configValue.Value, bdhstruct)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal block data hashing structure from config failed")
-		}
-		logger.Debugf("loadConfigValue - %s   - BlockDataHashingStructure width value :: %s", groupName, bdhstruct.Width)
-		// TODO: Do something with this value
-		break
+	//case channelConfig.BlockDataHashingStructureKey:
+	//	bdhstruct := &common.BlockDataHashingStructure{}
+	//	err := proto.Unmarshal(configValue.Value, bdhstruct)
+	//	if err != nil {
+	//		return errors.Wrap(err, "unmarshal block data hashing structure from config failed")
+	//	}
+	//	logger.Debugf("loadConfigValue - %s   - BlockDataHashingStructure width value :: %s", groupName, bdhstruct.Width)
+	//	// TODO: Do something with this value
 
 	case channelConfig.OrdererAddressesKey:
-		ordererAddresses := &common.OrdererAddresses{}
-		err := proto.Unmarshal(configValue.Value, ordererAddresses)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal orderer addresses from config failed")
+		if err := loadOrdererAddressesKey(configValue, configItems, groupName); err != nil {
+			return err
 		}
-		logger.Debugf("loadConfigValue - %s   - OrdererAddresses addresses value :: %s", groupName, ordererAddresses.Addresses)
-		if len(ordererAddresses.Addresses) > 0 {
-			for _, ordererAddress := range ordererAddresses.Addresses {
-				configItems.orderers = append(configItems.orderers, ordererAddress)
-			}
-		}
-		break
 
 	default:
 		logger.Debugf("loadConfigValue - %s   - value: %s", groupName, configValue.Value)

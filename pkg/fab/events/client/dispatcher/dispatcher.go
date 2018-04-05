@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
@@ -31,13 +30,10 @@ type Dispatcher struct {
 	params
 	context                context.Client
 	chConfig               fab.ChannelCfg
-	signingMgr             core.SigningManager
 	connection             api.Connection
 	connectionRegistration *ConnectionReg
 	connectionProvider     api.ConnectionProvider
 }
-
-type handler func(esdispatcher.Event)
 
 // New creates a new dispatcher
 func New(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {

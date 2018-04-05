@@ -228,15 +228,6 @@ func (c *Ledger) QueryConfigBlock(reqCtx reqContext.Context, targets []fab.Propo
 	return createCommonBlock(tprs[0])
 }
 
-func collectProposalResponses(tprs []*fab.TransactionProposalResponse) [][]byte {
-	responses := [][]byte{}
-	for _, tpr := range tprs {
-		responses = append(responses, tpr.ProposalResponse.GetResponse().Payload)
-	}
-
-	return responses
-}
-
 func queryChaincode(reqCtx reqContext.Context, channelID string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*fab.TransactionProposalResponse, error) {
 	ctx, ok := contextImpl.RequestClientContext(reqCtx)
 	if !ok {

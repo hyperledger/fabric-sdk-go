@@ -21,7 +21,6 @@ type Ref struct {
 	pvdr      Provider
 	ctx       fab.ClientContext
 	channelID string
-	closed    int32
 }
 
 // NewRef returns a new channel config reference

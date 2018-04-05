@@ -14,13 +14,6 @@ import (
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 
-var (
-	p1 = fabmocks.NewMockPeer("p1", "")
-	p2 = fabmocks.NewMockPeer("p2", "")
-	p3 = fabmocks.NewMockPeer("p3", "")
-	p4 = fabmocks.NewMockPeer("p4", "")
-)
-
 func TestRandom(t *testing.T) {
 	lbp := NewRandom()
 

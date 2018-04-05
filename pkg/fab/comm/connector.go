@@ -130,7 +130,9 @@ func (cc *CachingConnector) ReleaseConn(conn *grpc.ClientConn) {
 
 		if conn.GetState() != connectivity.Shutdown {
 			logger.Warn("Connection is not shutdown, trying to close ...")
-			conn.Close()
+			if err := conn.Close(); err != nil {
+				logger.Warnf("conn close failed err %v", err)
+			}
 		}
 		return
 	}
