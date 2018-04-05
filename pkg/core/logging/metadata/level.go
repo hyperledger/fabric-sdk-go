@@ -16,10 +16,10 @@ type ModuleLevels struct {
 // GetLevel returns the log level for the given module.
 func (l *ModuleLevels) GetLevel(module string) api.Level {
 	level, exists := l.levels[module]
-	if exists == false {
+	if !exists {
 		level, exists = l.levels[""]
 		// no configuration exists, default to info
-		if exists == false {
+		if !exists {
 			level = api.INFO
 		}
 	}

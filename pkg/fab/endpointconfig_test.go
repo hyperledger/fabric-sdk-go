@@ -816,31 +816,17 @@ func TestInitConfigFromRawWrongType(t *testing.T) {
 	}
 
 	// test init config with empty type
-	backend, err := config.FromRaw(cBytes, "")()
+	_, err = config.FromRaw(cBytes, "")()
 	if err == nil {
 		t.Fatalf("Expected error when initializing config with wrong config type but got no error.")
 	}
 
 	// test init config with wrong type
-	backend, err = config.FromRaw(cBytes, "json")()
-	if err != nil {
-		t.Fatalf("Failed to initialize config backend from bytes array. Error: %s", err)
+	_, err = config.FromRaw(cBytes, "json")()
+	if err == nil {
+		t.Fatalf("FromRaw didn't fail when config type is wrong")
 	}
 
-	endpointConfig, err := ConfigFromBackend(backend)
-	if err != nil {
-		t.Fatalf("Failed to initialize config from backend. Error: %s", err)
-	}
-
-	o, err := endpointConfig.OrderersConfig()
-	if len(o) > 0 {
-		t.Fatalf("Expected to get an empty list of orderers for wrong config type")
-	}
-
-	np, err := endpointConfig.NetworkPeers()
-	if len(np) > 0 {
-		t.Fatalf("Expected to get an empty list of peers for wrong config type")
-	}
 }
 
 func TestTLSClientCertsFromFiles(t *testing.T) {

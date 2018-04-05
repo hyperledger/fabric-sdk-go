@@ -18,6 +18,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	moduleName2 = "module-xyz-deftest"
+)
+
 //change the output to buffer for tests
 var buf bytes.Buffer
 
@@ -94,12 +98,12 @@ func TestDefaultLoggingPanic(t *testing.T) {
 	//Reset custom logger, need default one
 	logger := LoggerProvider().GetLogger(moduleName)
 	//change the output to buffer
-	var buf bytes.Buffer
-	logger.(*Log).ChangeOutput(&buf)
+	var buf1 bytes.Buffer
+	logger.(*Log).ChangeOutput(&buf1)
 
-	VerifyCriticalLoggings(t, api.CRITICAL, logger.Panic, nil, &buf)
-	VerifyCriticalLoggings(t, api.CRITICAL, logger.Panicln, nil, &buf)
-	VerifyCriticalLoggings(t, api.CRITICAL, nil, logger.Panicf, &buf)
+	VerifyCriticalLoggings(t, api.CRITICAL, logger.Panic, nil, &buf1)
+	VerifyCriticalLoggings(t, api.CRITICAL, logger.Panicln, nil, &buf1)
+	VerifyCriticalLoggings(t, api.CRITICAL, nil, logger.Panicf, &buf1)
 
 }
 

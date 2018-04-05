@@ -46,7 +46,6 @@ func getOptsByConfig(c core.CryptoSuiteConfig) *bccspSw.SwOpts {
 		},
 		Ephemeral: c.Ephemeral(),
 	}
-	logger.Debug("Initialized mock cryptosuite")
 
 	return opts
 }

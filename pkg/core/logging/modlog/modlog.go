@@ -395,19 +395,28 @@ func (l *Log) ChangeOutput(output io.Writer) {
 func (l *Log) logf(opts *loggerOpts, level api.Level, format string, args ...interface{}) {
 	//Format prefix to show function name and log level and to indicate that timezone used is UTC
 	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(opts), metadata.ParseString(level))
-	l.deflogger.Output(2, customPrefix+fmt.Sprintf(format, args...))
+	err := l.deflogger.Output(2, customPrefix+fmt.Sprintf(format, args...))
+	if err != nil {
+		fmt.Printf("error from deflogger.Output %v\n", err)
+	}
 }
 
 func (l *Log) log(opts *loggerOpts, level api.Level, args ...interface{}) {
 	//Format prefix to show function name and log level and to indicate that timezone used is UTC
 	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(opts), metadata.ParseString(level))
-	l.deflogger.Output(2, customPrefix+fmt.Sprint(args...))
+	err := l.deflogger.Output(2, customPrefix+fmt.Sprint(args...))
+	if err != nil {
+		fmt.Printf("error from deflogger.Output %v\n", err)
+	}
 }
 
 func (l *Log) logln(opts *loggerOpts, level api.Level, args ...interface{}) {
 	//Format prefix to show function name and log level and to indicate that timezone used is UTC
 	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(opts), metadata.ParseString(level))
-	l.deflogger.Output(2, customPrefix+fmt.Sprintln(args...))
+	err := l.deflogger.Output(2, customPrefix+fmt.Sprintln(args...))
+	if err != nil {
+		fmt.Printf("error from deflogger.Output %v\n", err)
+	}
 }
 
 func (l *Log) loadCustomLogger() bool {
