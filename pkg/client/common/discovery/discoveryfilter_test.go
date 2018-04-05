@@ -13,7 +13,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
 
 type mockFilter struct {
@@ -38,11 +39,11 @@ func TestDiscoveryFilter(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	peerCreator := defPeerCreator{defPeerConfig: config1}
-	discoveryProvider, err := staticdiscovery.New(config1, &peerCreator)
+	discoveryProvider, err := staticdiscovery.New(config1)
 	if err != nil {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}
+	discoveryProvider.Initialize(mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP")))
 
 	discoveryService, err := discoveryProvider.CreateDiscoveryService("mychannel")
 	if err != nil {
@@ -68,12 +69,4 @@ func TestDiscoveryFilter(t *testing.T) {
 		t.Fatalf("Expecting true, got false")
 	}
 
-}
-
-type defPeerCreator struct {
-	defPeerConfig fab.EndpointConfig
-}
-
-func (pc *defPeerCreator) CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.Peer, error) {
-	return peer.New(pc.defPeerConfig, peer.FromPeerConfig(peerCfg))
 }

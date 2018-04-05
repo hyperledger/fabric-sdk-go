@@ -9,10 +9,10 @@ package staticdiscovery
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
 
 func TestStaticDiscovery(t *testing.T) {
@@ -27,11 +27,11 @@ func TestStaticDiscovery(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	peerCreator := defPeerCreator{config: config1}
-	discoveryProvider, err := New(config1, &peerCreator)
+	discoveryProvider, err := New(config1)
 	if err != nil {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}
+	discoveryProvider.Initialize(mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP")))
 
 	_, err = discoveryProvider.CreateDiscoveryService("invalidChannel")
 	if err == nil {
@@ -67,8 +67,9 @@ func TestStaticDiscoveryWhenChannelIsEmpty(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	peerCreator := defPeerCreator{config: config1}
-	discoveryProvider, _ := New(config1, &peerCreator)
+	discoveryProvider, _ := New(config1)
+	discoveryProvider.Initialize(mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP")))
+
 	// If channel is empty discovery service will return all configured network peers
 	discoveryService, err := discoveryProvider.CreateDiscoveryService("")
 	if err != nil {
@@ -85,12 +86,4 @@ func TestStaticDiscoveryWhenChannelIsEmpty(t *testing.T) {
 	if len(peers) != expectedNumOfPeeers {
 		t.Fatalf("Expecting %d, got %d peers", expectedNumOfPeeers, len(peers))
 	}
-}
-
-type defPeerCreator struct {
-	config fab.EndpointConfig
-}
-
-func (pc *defPeerCreator) CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.Peer, error) {
-	return peer.New(pc.config, peer.FromPeerConfig(peerCfg))
 }

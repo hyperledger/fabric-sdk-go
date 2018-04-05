@@ -12,18 +12,14 @@ import (
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
-	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
 
 func TestCreateDiscoveryProvider(t *testing.T) {
-	ctx := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("testuser", "testuser"))
-	fabPvdr := fabpvdr.New(ctx.EndpointConfig())
 
 	factory := NewProviderFactory()
 	config := mocks.NewMockEndpointConfig()
 
-	dp, err := factory.CreateDiscoveryProvider(config, fabPvdr)
+	dp, err := factory.CreateDiscoveryProvider(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating discovery provider %v", err)
 	}
