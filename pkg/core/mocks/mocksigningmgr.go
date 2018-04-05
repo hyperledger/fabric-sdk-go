@@ -12,9 +12,6 @@ import (
 
 // MockSigningManager is mock signing manager
 type MockSigningManager struct {
-	cryptoProvider core.CryptoSuite
-	hashOpts       core.HashOpts
-	signerOpts     core.SignerOpts
 }
 
 // NewMockSigningManager Constructor for a mock signing manager.

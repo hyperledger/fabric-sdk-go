@@ -23,14 +23,13 @@ const (
 	printLevelOutputExpectedRegex               = "\\[%s\\] .* brown fox jumps over the lazy dog"
 	customLevelOutputExpectedRegex              = "\\[%s\\] .* CUSTOM LOG OUTPUT"
 	moduleName                                  = "module-xyz"
-	moduleName2                                 = "module-xyz-deftest"
 )
 
 type fn func(...interface{})
 type fnf func(string, ...interface{})
 
 //VerifyCriticalLoggings utility func which does job calling and verifying CRITICAL log level functions - PANIC
-func VerifyCriticalLoggings(t *testing.T, level api.Level, loggerFunc fn, loggerFuncf fnf, buf *bytes.Buffer) {
+func VerifyCriticalLoggings(t *testing.T, level api.Level, loggerFunc fn, loggerFuncf fnf, buf fmt.Stringer) {
 	//Handling panic as well as checking log output
 	defer func() {
 		if r := recover(); r == nil {
@@ -70,7 +69,7 @@ func VerifyBasicLogging(t *testing.T, level api.Level, loggerFunc fn, loggerFunc
 	}
 
 	//check output
-	regex := ""
+	var regex string
 	levelName := "print"
 
 	if verifyCustom {

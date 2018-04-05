@@ -15,7 +15,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -32,10 +31,10 @@ const (
 
 func TestFromRawSuccess(t *testing.T) {
 	// get a config byte for testing
-	cBytes, err := loadConfigBytesFromFile(t, configTestFilePath)
+	cBytes, _ := loadConfigBytesFromFile(t, configTestFilePath)
 
 	// test init config from bytes
-	_, err = FromRaw(cBytes, configType)()
+	_, err := FromRaw(cBytes, configType)()
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
@@ -43,11 +42,11 @@ func TestFromRawSuccess(t *testing.T) {
 
 func TestFromReaderSuccess(t *testing.T) {
 	// get a config byte for testing
-	cBytes, err := loadConfigBytesFromFile(t, configTestFilePath)
+	cBytes, _ := loadConfigBytesFromFile(t, configTestFilePath)
 	buf := bytes.NewBuffer(cBytes)
 
 	// test init config from bytes
-	_, err = FromReader(buf, configType)()
+	_, err := FromReader(buf, configType)()
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
@@ -65,7 +64,7 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 		t.Fatalf("Failed to read config file stat. Error: %s", err)
 	}
 	s := fi.Size()
-	cBytes := make([]byte, s, s)
+	cBytes := make([]byte, s)
 	n, err := f.Read(cBytes)
 	if err != nil {
 		t.Fatalf("Failed to read test config for bytes array testing. Error: %s", err)
@@ -101,14 +100,14 @@ func TestInitConfigWithCmdRoot(t *testing.T) {
 
 	logger.Infof("fileLoc right before calling InitConfigWithCmdRoot is %s", fileLoc)
 
-	configBackend, err := FromFile(fileLoc, WithEnvPrefix(cmdRoot))()
+	configBackend1, err := FromFile(fileLoc, WithEnvPrefix(cmdRoot))()
 	if err != nil {
 		t.Fatalf("Failed to initialize config backend with cmd root. Error: %s", err)
 	}
 
-	config := cryptosuite.ConfigFromBackend(configBackend)
+	config := cryptosuite.ConfigFromBackend(configBackend1)
 
-	secAlg, ok := configBackend.Lookup("client.BCCSP.security.hashAlgorithm")
+	secAlg, ok := configBackend1.Lookup("client.BCCSP.security.hashAlgorithm")
 	if !ok {
 		t.Fatal("supposed to get valid value")
 	}
@@ -158,7 +157,7 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testValue before config initialization got: %s", testValue1)
 	}
 	// initialize go sdk
-	configBackend, err := FromFile(configTestFilePath)()
+	configBackend1, err := FromFile(configTestFilePath)()
 	if err != nil {
 		t.Log(err.Error())
 	}
@@ -169,7 +168,7 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testvalue after config initialization")
 	}
 	// Make sure Go SDK config is unaffected
-	testValue3, ok := configBackend.Lookup("client.BCCSP.security.softVerify")
+	testValue3, ok := configBackend1.Lookup("client.BCCSP.security.softVerify")
 	if !ok {
 		t.Fatalf("Expected valid value")
 	}
@@ -210,12 +209,12 @@ func TestEnvironmentVariablesSpecificCmdRoot(t *testing.T) {
 		t.Log(err.Error())
 	}
 
-	configBackend, err := FromFile(configTestFilePath, WithEnvPrefix("test_root"))()
+	configBackend1, err := FromFile(configTestFilePath, WithEnvPrefix("test_root"))()
 	if err != nil {
 		t.Log(err.Error())
 	}
 
-	value, ok := configBackend.Lookup("env.test")
+	value, ok := configBackend1.Lookup("env.test")
 	if value != "456" || !ok {
 		t.Fatalf("Expected environment variable value but got: %s", testValue)
 	}
@@ -241,13 +240,6 @@ func setUp(m *testing.M) {
 func teardown() {
 	// do any teadown activities here ..
 	configBackend = nil
-}
-
-func crossCheckWithViperConfig(expected string, actual string, message string, t *testing.T) {
-	expected = pathvar.Subst(expected)
-	if actual != expected {
-		t.Fatalf(message)
-	}
 }
 
 func TestNewGoodOpt(t *testing.T) {

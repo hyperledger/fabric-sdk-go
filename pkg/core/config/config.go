@@ -90,8 +90,10 @@ func initFromReader(in io.Reader, configType string, opts ...Option) (core.Confi
 	// read config from bytes array, but must set ConfigType
 	// for viper to properly unmarshal the bytes array
 	backend.configViper.SetConfigType(configType)
-	backend.configViper.MergeConfig(in)
-
+	err = backend.configViper.MergeConfig(in)
+	if err != nil {
+		return nil, err
+	}
 	setLogLevel(backend)
 
 	return backend, nil
@@ -148,7 +150,6 @@ func setLogLevel(backend core.ConfigBackend) {
 	loggingLevelString, _ := backend.Lookup("client.logging.level")
 	logLevel := logging.INFO
 	if loggingLevelString != nil {
-		const logModule = "fabsdk" // TODO: allow more flexability in setting levels for different modules
 		var err error
 		logLevel, err = logging.LogLevel(loggingLevelString.(string))
 		if err != nil {

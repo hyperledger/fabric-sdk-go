@@ -86,7 +86,7 @@ func verifyHashFn(t *testing.T, c core.CryptoSuite) {
 		t.Fatalf("Not supposed to get error, but got: %v", err)
 	}
 
-	if bytes.Compare(a, e[:]) != 0 {
+	if !bytes.Equal(a, e[:]) {
 		t.Fatalf("Expected SHA 256 hash function")
 	}
 }
