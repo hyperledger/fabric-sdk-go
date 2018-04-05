@@ -21,7 +21,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
@@ -196,22 +195,15 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	// Call with a dummy function and expect a fail with multiple errors
 	response, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCQueryArgs()},
 		channel.WithRetry(retry.DefaultChClientOpts))
-	if err == nil {
-		t.Fatal("Should have failed with dummy function")
-	}
-	unWrappedError := errors.Cause(err)
-	if _, ok := unWrappedError.(multi.Errors); !ok {
-		t.Fatal("Should have got multiple errors")
-	}
-	for _, err := range unWrappedError.(multi.Errors) {
+	assert.Error(t, err, "Should have failed with dummy function")
+	s, ok := status.FromError(err)
+	assert.True(t, ok, "expected status error")
+	assert.Equal(t, s.Code, int32(status.MultipleErrors))
+	for _, err := range err.(multi.Errors) {
 		s, ok := status.FromError(err)
-		assert.True(t, ok, "expected GRPC status error")
-		assert.EqualValues(t, status.ChaincodeError, s.Code, "expected ChaincodeError")
-		assert.True(t, len(s.Details) > 0, "expected Details to exist in ChaincodeError")
-		chaincodeQueryStatus := s.Details[0].(*status.ChaincodeStatus)
-		if chaincodeQueryStatus.Code != 500 {
-			t.Fatalf("Expected 500 grpc status code in ChaincodeError")
-		}
+		assert.True(t, ok, "expected status error")
+		assert.EqualValues(t, int32(500), s.Code)
+		assert.Equal(t, status.ChaincodeStatus, s.Group)
 	}
 
 	// Org1 user queries initial value on both peers

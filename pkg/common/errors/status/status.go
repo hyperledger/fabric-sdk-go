@@ -72,6 +72,9 @@ const (
 	OrdererClientStatus
 	// ClientStatus is a generic client status
 	ClientStatus
+
+	// ChaincodeStatus defines the status codes returned by chaincode
+	ChaincodeStatus
 )
 
 // GroupName maps the groups in this packages to human-readable strings
@@ -163,16 +166,8 @@ func NewFromGRPCStatus(s *grpcstatus.Status) *Status {
 		Message: s.Message(), Details: details}
 }
 
-// ChaincodeStatus is for extracting Code and message from chaincode GRPC errors
-type ChaincodeStatus struct {
-	Code    int
-	Message string
-}
-
 // NewFromExtractedChaincodeError returns Status when a chaincode error occurs
 func NewFromExtractedChaincodeError(code int, message string) *Status {
-	status := &ChaincodeStatus{Code: code, Message: message}
-
-	return &Status{Group: ClientStatus, Code: ChaincodeError.ToInt32(),
-		Message: message, Details: []interface{}{status}}
+	return &Status{Group: ChaincodeStatus, Code: int32(code),
+		Message: message, Details: nil}
 }

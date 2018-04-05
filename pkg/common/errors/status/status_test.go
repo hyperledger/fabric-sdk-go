@@ -117,3 +117,9 @@ func TestStatusGroupString(t *testing.T) {
 	unknownGroup77377 := Group(73777)
 	assert.Equal(t, UnknownStatus.String(), unknownGroup77377.String())
 }
+
+func TestChaincodeStatus(t *testing.T) {
+	s := NewFromExtractedChaincodeError(500, "key not found")
+	assert.Equal(t, "key not found", s.Message)
+	assert.Equal(t, int32(500), s.Code)
+}

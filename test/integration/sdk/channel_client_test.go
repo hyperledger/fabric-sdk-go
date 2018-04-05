@@ -11,10 +11,12 @@ import (
 	"time"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -109,6 +111,9 @@ func TestChannelClient(t *testing.T) {
 
 	// Test invocation of custom handler
 	testInvokeHandler(chaincodeID, chClient, t)
+
+	// Test chaincode error
+	testChaincodeError(chaincodeID, chClient, t)
 
 	// Test receive event using separate client
 	listener, err := channel.New(org1ChannelClientContext)
@@ -306,4 +311,16 @@ func testChaincodeEventListener(ccID string, chClient *channel.Client, listener 
 		t.Fatalf("Did NOT receive CC for eventId(%s)\n", eventID)
 	}
 
+}
+
+func testChaincodeError(ccID string, client *channel.Client, t *testing.T) {
+	// Try calling unknown function call and expect an error
+	_, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
+	assert.Error(t, err)
+	s, ok := status.FromError(err)
+	assert.True(t, ok, "expected status error")
+	assert.EqualValues(t, status.ChaincodeStatus, s.Group, "expected ChaincodeStatus")
+	assert.Equal(t, int32(500), s.Code)
+	assert.Equal(t, "Unknown function call", s.Message)
 }
