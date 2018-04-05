@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package staticdiscovery
 
 import (
+	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
 	"github.com/pkg/errors"
@@ -33,8 +34,14 @@ type discoveryService struct {
 }
 
 // New returns discovery provider
-func New(config fab.EndpointConfig, fabPvdr peerCreator) (*DiscoveryProvider, error) {
-	return &DiscoveryProvider{config: config, fabPvdr: fabPvdr}, nil
+func New(config fab.EndpointConfig) (*DiscoveryProvider, error) {
+	return &DiscoveryProvider{config: config}, nil
+}
+
+// Initialize initializes the DiscoveryProvider
+func (dp *DiscoveryProvider) Initialize(fabPvdr contextAPI.Providers) error {
+	dp.fabPvdr = fabPvdr.InfraProvider()
+	return nil
 }
 
 // CreateDiscoveryService return discovery service for specific channel
@@ -51,7 +58,6 @@ func (dp *DiscoveryProvider) CreateDiscoveryService(channelID string) (fab.Disco
 		}
 
 		for _, p := range chPeers {
-
 			newPeer, err := dp.fabPvdr.CreatePeerFromConfig(&p.NetworkPeer)
 			if err != nil || newPeer == nil {
 				return nil, errors.WithMessage(err, "NewPeer failed")
