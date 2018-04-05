@@ -24,6 +24,11 @@ type ConfigLookup struct {
 	backend core.ConfigBackend
 }
 
+//Lookup returns value for given key
+func (c *ConfigLookup) Lookup(key string) (interface{}, bool) {
+	return c.backend.Lookup(key)
+}
+
 //GetBool returns bool value for given key
 func (c *ConfigLookup) GetBool(key string) bool {
 	value, ok := c.backend.Lookup(key)

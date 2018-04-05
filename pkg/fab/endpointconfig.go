@@ -351,13 +351,13 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 		return nil, err
 	}
 
+	peers := []fab.ChannelPeer{}
+
 	// viper lowercases all key maps
 	chConfig, ok := netConfig.Channels[strings.ToLower(name)]
 	if !ok {
-		return nil, errors.Errorf("channel config not found for %s", name)
+		return peers, nil
 	}
-
-	peers := []fab.ChannelPeer{}
 
 	for peerName, chPeerConfig := range chConfig.Peers {
 
@@ -379,6 +379,37 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 
 		if p.TLSCACerts.Path != "" {
 			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
+		}
+
+		// Assemble channel peer key
+		chPeerKey := "channels." + name + ".peers." + peerName
+
+		// Default value for endorsing peer key is true
+		endorsingPeerKey := strings.ToLower(chPeerKey + ".endorsingPeer")
+		_, ok = c.backend.Lookup(endorsingPeerKey)
+		if !ok {
+			chPeerConfig.EndorsingPeer = true
+		}
+
+		// Default value for chaincode query key is true
+		ccQueryKey := strings.ToLower(chPeerKey + ".chaincodeQuery")
+		_, ok = c.backend.Lookup(ccQueryKey)
+		if !ok {
+			chPeerConfig.ChaincodeQuery = true
+		}
+
+		// Default value for ledger query key is true
+		ledgerQueryKey := strings.ToLower(chPeerKey + ".ledgerQuery")
+		_, ok = c.backend.Lookup(ledgerQueryKey)
+		if !ok {
+			chPeerConfig.LedgerQuery = true
+		}
+
+		// Default value for event source key is true
+		eventSourceKey := strings.ToLower(chPeerKey + ".eventSource")
+		_, ok = c.backend.Lookup(eventSourceKey)
+		if !ok {
+			chPeerConfig.EventSource = true
 		}
 
 		mspID, err := c.PeerMSPID(peerName)

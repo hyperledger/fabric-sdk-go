@@ -7,11 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package sdk
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
@@ -21,24 +23,6 @@ func TestLedgerClientQueries(t *testing.T) {
 	// Using shared SDK instance to increase test speed.
 	sdk := mainSDK
 	testSetup := mainTestSetup
-
-	//testSetup := integration.BaseSetupImpl{
-	//	ConfigFile:    "../" + integration.ConfigTestFile,
-	//	ChannelID:     "mychannel",
-	//	OrgID:         org1Name,
-	//	ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	//}
-
-	// Create SDK setup for the integration tests
-	//sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
-	//if err != nil {
-	//	t.Fatalf("Failed to create new SDK: %s", err)
-	//}
-	//defer sdk.Close()
-
-	//if err := testSetup.Initialize(sdk); err != nil {
-	//	t.Fatalf(err.Error())
-	//}
 
 	//prepare contexts
 	org1AdminChannelContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
@@ -112,6 +96,32 @@ func TestLedgerClientQueries(t *testing.T) {
 	block, err = client.QueryBlock(12345678)
 	if err == nil {
 		t.Fatalf("QueryBlock should have failed to query non-existent block")
+	}
+
+}
+
+func TestNoLedgerEndpoints(t *testing.T) {
+
+	// Using shared SDK instance to increase test speed.
+	testSetup := mainTestSetup
+
+	sdk, err := fabsdk.New(config.FromFile("../../fixtures/config/config_test_endpoints.yaml"))
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create new SDK: %s", err))
+	}
+
+	//prepare contexts
+	org1AdminChannelContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
+
+	// Ledger client
+	client, err := ledger.New(org1AdminChannelContext)
+	if err != nil {
+		t.Fatalf("Failed to create new resource management client: %s", err)
+	}
+
+	_, err = client.QueryInfo()
+	if err == nil {
+		t.Fatalf("Should have failed due to no ledger query peers")
 	}
 
 }

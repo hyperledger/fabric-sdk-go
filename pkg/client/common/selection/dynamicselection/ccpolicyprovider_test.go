@@ -87,12 +87,6 @@ func TestCCPolicyProviderNegative(t *testing.T) {
 		t.Fatalf("Should have failed for nil sdk")
 	}
 
-	// Invalid channel
-	_, err = newCCPolicyProvider(context, "non-existent", "User1", "Org1")
-	if err == nil {
-		t.Fatalf("Should have failed for invalid channel name")
-	}
-
 }
 
 func TestBadClient(t *testing.T) {

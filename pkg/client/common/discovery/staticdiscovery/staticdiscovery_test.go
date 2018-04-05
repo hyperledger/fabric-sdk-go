@@ -33,11 +33,6 @@ func TestStaticDiscovery(t *testing.T) {
 	}
 	discoveryProvider.Initialize(mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP")))
 
-	_, err = discoveryProvider.CreateDiscoveryService("invalidChannel")
-	if err == nil {
-		t.Fatalf("Should have failed to setup discovery service for non-configured channel")
-	}
-
 	discoveryService, err := discoveryProvider.CreateDiscoveryService("mychannel")
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)

@@ -14,6 +14,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -34,10 +35,11 @@ import (
 // An application that requires interaction with multiple channels should create a separate
 // instance of the ledger client for each channel. Ledger client supports specific queries only.
 type Client struct {
-	ctx      context.Channel
-	filter   fab.TargetFilter
-	ledger   *channel.Ledger
-	verifier channel.ResponseVerifier
+	ctx       context.Channel
+	filter    fab.TargetFilter
+	ledger    *channel.Ledger
+	verifier  channel.ResponseVerifier
+	discovery fab.DiscoveryService
 }
 
 // mspFilter is default filter
@@ -72,10 +74,21 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, err
 	}
 
+	chpeers, err := channelContext.EndpointConfig().ChannelPeers(channelContext.ChannelID())
+	if err != nil {
+		return nil, status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), err.Error(), nil)
+	}
+
+	ledgerFilter := &ledgerFilter{ctx: channelContext, chPeers: chpeers}
+
+	// Apply filter to discovery service
+	discovery := discovery.NewDiscoveryFilterService(channelContext.DiscoveryService(), ledgerFilter)
+
 	ledgerClient := Client{
-		ctx:      channelContext,
-		ledger:   ledger,
-		verifier: &verifier.Signature{Membership: membership},
+		ctx:       channelContext,
+		ledger:    ledger,
+		verifier:  &verifier.Signature{Membership: membership},
+		discovery: discovery,
 	}
 
 	for _, opt := range opts {
@@ -326,7 +339,7 @@ func (c *Client) calculateTargets(opts requestOptions) ([]fab.Peer, error) {
 	var err error
 	if targets == nil {
 		// Retrieve targets from discovery
-		targets, err = c.ctx.DiscoveryService().GetPeers()
+		targets, err = c.discovery.GetPeers()
 		if err != nil {
 			return nil, err
 		}
@@ -406,4 +419,35 @@ func shuffle(a []fab.Peer) {
 		j := rand.Intn(i + 1)
 		a[i], a[j] = a[j], a[i]
 	}
+}
+
+// ledgerFilter filters based on ledgerQuery config option
+type ledgerFilter struct {
+	ctx     context.Channel
+	chPeers []fab.ChannelPeer // configured channel peers
+}
+
+// Accept returns false if this peer is to be excluded from the target list
+func (f *ledgerFilter) Accept(peer fab.Peer) bool {
+
+	peerConfig, err := f.ctx.EndpointConfig().PeerConfigByURL(peer.URL())
+	if err != nil || peerConfig == nil {
+		return true
+	}
+
+	chPeer := f.getChannelPeer(peerConfig)
+	if chPeer == nil {
+		return true
+	}
+
+	return chPeer.LedgerQuery
+}
+
+func (f *ledgerFilter) getChannelPeer(peerConfig *fab.PeerConfig) *fab.ChannelPeer {
+	for _, chpeer := range f.chPeers {
+		if chpeer.URL == peerConfig.URL {
+			return &chpeer
+		}
+	}
+	return nil
 }
