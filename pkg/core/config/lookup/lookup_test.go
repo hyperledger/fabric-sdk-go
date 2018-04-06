@@ -82,7 +82,7 @@ func TestUnmarshal(t *testing.T) {
 	networkConfig := fab.NetworkConfig{}
 	testLookup.UnmarshalKey("channels", &networkConfig.Channels)
 
-	assert.True(t, len(networkConfig.Channels) == 2)
+	assert.True(t, len(networkConfig.Channels) == 3)
 	assert.True(t, len(networkConfig.Channels["mychannel"].Peers) == 1)
 	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses == 1)
 	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets == 1)
@@ -132,12 +132,12 @@ func TestLookupUnmarshalAgainstViperUnmarshal(t *testing.T) {
 	/*
 		TEST NETWORK CONFIG CERTIFICATE AUTHORITIES
 	*/
-	//get orderers through backend lookup
+	//get certificate authorities through backend lookup
 	err = testLookup.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 	if err != nil {
 		t.Fatal(err)
 	}
-	//get orderers from viper
+	//get certificate authorities from viper
 	sampleViper.UnmarshalKey("certificateAuthorities", &networkConfigViper.CertificateAuthorities)
 	//now compare
 	assert.True(t, reflect.DeepEqual(&networkConfig.CertificateAuthorities, &networkConfigViper.CertificateAuthorities), "unmarshalled value from config lookup supposed to match unmarshalled value from viper")
@@ -145,12 +145,12 @@ func TestLookupUnmarshalAgainstViperUnmarshal(t *testing.T) {
 	/*
 		TEST NETWORK CONFIG ENTITY MATCHERS
 	*/
-	//get orderers through backend lookup
+	//get entityMatchers backend lookup
 	err = testLookup.UnmarshalKey("entityMatchers", &networkConfig.EntityMatchers)
 	if err != nil {
 		t.Fatal(err)
 	}
-	//get orderers from viper
+	//get entityMatchers from viper
 	sampleViper.UnmarshalKey("entityMatchers", &networkConfigViper.EntityMatchers)
 	//now compare
 	assert.True(t, reflect.DeepEqual(&networkConfig.EntityMatchers, &networkConfigViper.EntityMatchers), "unmarshalled value from config lookup supposed to match unmarshalled value from viper")
@@ -158,12 +158,12 @@ func TestLookupUnmarshalAgainstViperUnmarshal(t *testing.T) {
 	/*
 		TEST NETWORK CONFIG ORGANIZATIONS
 	*/
-	//get orderers through backend lookup
+	//get organizations through backend lookup
 	err = testLookup.UnmarshalKey("organizations", &networkConfig.Organizations)
 	if err != nil {
 		t.Fatal(err)
 	}
-	//get orderers from viper
+	//get organizations from viper
 	sampleViper.UnmarshalKey("organizations", &networkConfigViper.Organizations)
 	//now compare
 	assert.True(t, reflect.DeepEqual(&networkConfig.Organizations, &networkConfigViper.Organizations), "unmarshalled value from config lookup supposed to match unmarshalled value from viper")
@@ -171,12 +171,12 @@ func TestLookupUnmarshalAgainstViperUnmarshal(t *testing.T) {
 	/*
 		TEST NETWORK CONFIG CHANNELS
 	*/
-	//get orderers through backend lookup
+	//get channels through backend lookup
 	err = testLookup.UnmarshalKey("channels", &networkConfig.Channels)
 	if err != nil {
 		t.Fatal(err)
 	}
-	//get orderers from viper
+	//get channels from viper
 	sampleViper.UnmarshalKey("channels", &networkConfigViper.Channels)
 	//now compare
 	assert.True(t, reflect.DeepEqual(&networkConfig.Channels, &networkConfigViper.Channels), "unmarshalled value from config lookup supposed to match unmarshalled value from viper")
@@ -184,12 +184,12 @@ func TestLookupUnmarshalAgainstViperUnmarshal(t *testing.T) {
 	/*
 		TEST NETWORK CONFIG PEERS
 	*/
-	//get orderers through backend lookup
+	//get peers through backend lookup
 	err = testLookup.UnmarshalKey("peers", &networkConfig.Peers)
 	if err != nil {
 		t.Fatal(err)
 	}
-	//get orderers from viper
+	//get peers from viper
 	sampleViper.UnmarshalKey("peers", &networkConfigViper.Peers)
 	//now compare
 	assert.True(t, reflect.DeepEqual(&networkConfig.Peers, &networkConfigViper.Peers), "unmarshalled value from config lookup supposed to match unmarshalled value from viper")

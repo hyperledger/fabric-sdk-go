@@ -152,6 +152,19 @@ channels:
         ledgerQuery: true
         eventSource: true
 
+  # sample channel with channel matcher (sample*channel will return ch1 config where * can be any word or '')
+  ch1:
+
+    orderers:
+      - orderer.example.com
+
+    peers:
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
 #
 # list of participating organizations in this network
 #
@@ -408,3 +421,7 @@ entityMatchers:
     - pattern: (\w+).org2.example.(\w+)
       urlSubstitutionExp:
       mappedHost: local.ca.org2.example.com
+
+  channel:
+    - pattern: ^(sample)(\w*)(channel)$
+      mappedName: ch1

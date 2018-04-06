@@ -49,6 +49,10 @@ client:
     # Event service type (deliver|eventhub) - default: deliver
     # NOTE: This is temporary until the SDK starts making use of channel capabilities
     type: deliver
+    # the below timeouts are commented out to use the default values that are found in
+    # "pkg/fab/endpointconfig.go"
+    # the client is free to override the default values by uncommenting and resetting
+    # the values as they see fit in their config file
 #    timeout:
 #      connection: 15s
 #      registrationResponse: 15s
@@ -161,6 +165,19 @@ channels:
 #          maxBackoff: 5s
           #[Optional] he factor by which the initial back off is exponentially incremented
 #          backoffFactor: 2.0
+
+  # sample channel with channel matcher (sample*channel will return ch1 config where * can be any word or '')
+#  ch1:
+#
+#    orderers:
+#      - orderer.example.com
+#
+#    peers:
+#      peer0.org2.example.com:
+#        endorsingPeer: true
+#        chaincodeQuery: true
+#        ledgerQuery: true
+#        eventSource: true
 
 #
 # list of participating organizations in this network
@@ -330,3 +347,7 @@ entityMatchers:
     #- pattern: (\w+).org2.example.(\w+)
       #urlSubstitutionExp:
       #mappedHost: ca.org2.example.com
+
+#  channel:
+#    - pattern: ^(sample)(\w*)(channel)$
+#      mappedName: ch1

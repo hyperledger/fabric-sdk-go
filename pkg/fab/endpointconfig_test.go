@@ -500,6 +500,57 @@ func TestOrdererWithSubstitutedConfig_WithSubstituteUrlExpression(t *testing.T) 
 	}
 }
 
+func TestChannelConfigName_directMatching(t *testing.T) {
+	testMatchingConfigChannel(t, "ch1", "sampleachannel")
+	testMatchingConfigChannel(t, "ch1", "samplebchannel")
+	testMatchingConfigChannel(t, "ch1", "samplecchannel")
+	testMatchingConfigChannel(t, "ch1", "samplechannel")
+
+	testNonMatchingConfigChannel(t, "ch1", "mychannel")
+	testNonMatchingConfigChannel(t, "ch1", "orgchannel")
+}
+
+func testMatchingConfigChannel(t *testing.T, expectedConfigName string, fetchedConfigName string) (expectedConfig *fab.ChannelNetworkConfig, fetchedConfig *fab.ChannelNetworkConfig) {
+	e, f := testCommonConfigChannel(t, expectedConfigName, fetchedConfigName)
+	if !deepEquals(e, f) {
+		t.Fatalf("'expectedConfig' should be the same as 'fetchedConfig' for %s and %s.", expectedConfigName, fetchedConfigName)
+	}
+
+	return e, f
+}
+
+func testNonMatchingConfigChannel(t *testing.T, expectedConfigName string, fetchedConfigName string) (expectedConfig *fab.ChannelNetworkConfig, fetchedConfig *fab.ChannelNetworkConfig) {
+	e, f := testCommonConfigChannel(t, expectedConfigName, fetchedConfigName)
+	if deepEquals(e, f) {
+		t.Fatalf("'expectedConfig' should be different than 'fetchedConfig' for %s and %s but got same config.", expectedConfigName, fetchedConfigName)
+	}
+
+	return e, f
+}
+
+func testCommonConfigChannel(t *testing.T, expectedConfigName string, fetchedConfigName string) (expectedConfig *fab.ChannelNetworkConfig, fetchedConfig *fab.ChannelNetworkConfig) {
+	endpointConfig, err := ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatal("Failed to get endpoint config from backend")
+	}
+
+	expectedConfig, err = endpointConfig.ChannelConfig(expectedConfigName)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	fetchedConfig, err = endpointConfig.ChannelConfig(fetchedConfigName)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	return expectedConfig, fetchedConfig
+}
+
+func deepEquals(n, n2 interface{}) bool {
+	return reflect.DeepEqual(n, n2)
+}
+
 func TestPeersConfig(t *testing.T) {
 
 	endpointConfig, err := ConfigFromBackend(configBackend)
