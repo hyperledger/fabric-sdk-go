@@ -1,0 +1,192 @@
+/*
+Copyright SecureKey Technologies Inc. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package mocks
+
+import (
+	"context"
+	"time"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/discovery"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/gossip"
+	"github.com/pkg/errors"
+)
+
+// MockDiscoveryServer is a mock Discovery server
+type MockDiscoveryServer struct {
+	peersByOrg map[string]*discovery.Peers
+}
+
+// MockDiscoveryServerOpt is an option for the MockDiscoveryServer
+type MockDiscoveryServerOpt func(s *MockDiscoveryServer)
+
+// WithPeers adds a set of mock peers to the MockDiscoveryServer
+func WithPeers(peers ...*MockDiscoveryPeerEndpoint) MockDiscoveryServerOpt {
+	return func(s *MockDiscoveryServer) {
+		s.peersByOrg = asPeersByOrg(peers)
+	}
+}
+
+// NewServer returns a new MockDiscoveryServer
+func NewServer(opts ...MockDiscoveryServerOpt) *MockDiscoveryServer {
+	s := &MockDiscoveryServer{}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
+}
+
+// Discover Processes the given Discovery request and returns a mock response
+func (s *MockDiscoveryServer) Discover(ctx context.Context, request *discovery.SignedRequest) (*discovery.Response, error) {
+	if request == nil {
+		return nil, errors.New("nil request")
+	}
+
+	req := &discovery.Request{}
+	err := proto.Unmarshal(request.Payload, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed parsing request")
+	}
+	if req.Authentication == nil {
+		return nil, errors.New("access denied, no authentication info in request")
+	}
+	if len(req.Authentication.ClientIdentity) == 0 {
+		return nil, errors.New("access denied, client identity wasn't supplied")
+	}
+
+	var results []*discovery.QueryResult
+	for _, q := range req.Queries {
+		result := s.processQuery(q)
+		if result != nil {
+			results = append(results, result)
+		}
+	}
+	return &discovery.Response{
+		Results: results,
+	}, nil
+}
+
+func (s *MockDiscoveryServer) processQuery(q *discovery.Query) *discovery.QueryResult {
+	if query := q.GetPeerQuery(); query != nil {
+		return s.getPeerQueryResult(query)
+	}
+	if query := q.GetConfigQuery(); query != nil {
+		return s.getConfigQueryResult(query)
+	}
+	if query := q.GetCcQuery(); query != nil {
+		return s.getCCQueryResult(query)
+	}
+	return nil
+}
+
+func (s *MockDiscoveryServer) getPeerQueryResult(q *discovery.PeerMembershipQuery) *discovery.QueryResult {
+	if s.peersByOrg != nil {
+		return &discovery.QueryResult{
+			Result: &discovery.QueryResult_Members{
+				Members: &discovery.PeerMembershipResult{
+					PeersByOrg: s.peersByOrg,
+				},
+			},
+		}
+	}
+	return &discovery.QueryResult{
+		Result: &discovery.QueryResult_Error{
+			Error: &discovery.Error{
+				Content: "no peers",
+			},
+		},
+	}
+}
+
+func (s *MockDiscoveryServer) getConfigQueryResult(q *discovery.ConfigQuery) *discovery.QueryResult {
+	return &discovery.QueryResult{
+		Result: &discovery.QueryResult_Error{
+			Error: &discovery.Error{
+				Content: "not implemented",
+			},
+		},
+	}
+}
+
+func (s *MockDiscoveryServer) getCCQueryResult(q *discovery.ChaincodeQuery) *discovery.QueryResult {
+	return &discovery.QueryResult{
+		Result: &discovery.QueryResult_Error{
+			Error: &discovery.Error{
+				Content: "not implemented",
+			},
+		},
+	}
+}
+
+func asDiscoveryPeer(p *MockDiscoveryPeerEndpoint) *discovery.Peer {
+	memInfoMsg := &gossip.GossipMessage{
+		Content: &gossip.GossipMessage_AliveMsg{
+			AliveMsg: &gossip.AliveMessage{
+				Membership: &gossip.Member{
+					Endpoint: p.Endpoint,
+				},
+				Timestamp: &gossip.PeerTime{
+					SeqNum: uint64(1000),
+					IncNum: uint64(time.Now().UnixNano()),
+				},
+			},
+		},
+	}
+	memInfoPayload, err := proto.Marshal(memInfoMsg)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	stateInfoMsg := &gossip.GossipMessage{
+		Content: &gossip.GossipMessage_StateInfo{
+			StateInfo: &gossip.StateInfo{
+				Properties: &gossip.Properties{
+					Chaincodes:   nil,
+					LedgerHeight: p.LedgerHeight,
+				},
+				Timestamp: &gossip.PeerTime{
+					SeqNum: uint64(1000),
+					IncNum: uint64(time.Now().UnixNano()),
+				},
+			},
+		},
+	}
+	stateInfoPayload, err := proto.Marshal(stateInfoMsg)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return &discovery.Peer{
+		MembershipInfo: &gossip.Envelope{
+			Payload: memInfoPayload,
+		},
+		StateInfo: &gossip.Envelope{
+			Payload: stateInfoPayload,
+		},
+	}
+}
+
+// MockDiscoveryPeerEndpoint contains information about a Discover peer endpoint
+type MockDiscoveryPeerEndpoint struct {
+	MSPID        string
+	Endpoint     string
+	LedgerHeight uint64
+}
+
+func asPeersByOrg(peers []*MockDiscoveryPeerEndpoint) map[string]*discovery.Peers {
+	peersByOrg := make(map[string]*discovery.Peers)
+	for _, p := range peers {
+		peers, ok := peersByOrg[p.MSPID]
+		if !ok {
+			peers = &discovery.Peers{}
+			peersByOrg[p.MSPID] = peers
+		}
+
+		peers.Peers = append(peers.Peers, asDiscoveryPeer(p))
+	}
+	return peersByOrg
+}

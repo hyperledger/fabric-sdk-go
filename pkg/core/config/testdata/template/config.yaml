@@ -60,6 +60,9 @@ client:
 #    timeout:
 #      connection: 15s
 #      response: 15s
+#  discovery:
+#    timeout:
+#      connection: 15s
 #  global:
 #    timeout:
 #      query: 180s

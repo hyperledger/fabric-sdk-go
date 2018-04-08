@@ -16,16 +16,13 @@ import (
 )
 
 func TestConnection(t *testing.T) {
-	channelID := "testchannel"
-
 	context := newMockContext()
-	chConfig := fabmocks.NewMockChannelCfg(channelID)
 
-	_, err := NewConnection(context, chConfig, "")
+	_, err := NewConnection(context, "")
 	if err == nil {
 		t.Fatalf("expected error creating new connection with empty URL")
 	}
-	conn, err := NewConnection(context, chConfig, peerURL)
+	conn, err := NewConnection(context, peerURL)
 	if err != nil {
 		t.Fatalf("error creating new connection: %s", err)
 	}

@@ -45,6 +45,7 @@ const (
 	defaultQueryTimeout                   = time.Minute * 3
 	defaultExecuteTimeout                 = time.Minute * 3
 	defaultResMgmtTimeout                 = time.Minute * 3
+	defaultDiscoveryConnectionTimeout     = time.Second * 15
 	defaultConnIdleInterval               = time.Second * 30
 	defaultEventServiceIdleInterval       = time.Minute * 2
 	defaultChannelConfigRefreshInterval   = time.Minute * 90
@@ -612,6 +613,11 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration { //nol
 		timeout = c.backend.GetDuration("client.orderer.timeout.response")
 		if timeout == 0 {
 			timeout = defaultOrdererResponseTimeout
+		}
+	case fab.DiscoveryConnection:
+		timeout = c.backend.GetDuration("client.discovery.timeout.connection")
+		if timeout == 0 {
+			timeout = defaultDiscoveryConnectionTimeout
 		}
 	case fab.Query:
 		timeout = c.backend.GetDuration("client.global.timeout.query")

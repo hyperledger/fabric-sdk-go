@@ -35,7 +35,6 @@ const (
 // GRPCConnection manages the GRPC connection and client stream
 type GRPCConnection struct {
 	context     fabcontext.Client
-	chConfig    fab.ChannelCfg
 	conn        *grpc.ClientConn
 	commManager fab.CommManager
 	tlsCertHash []byte
@@ -43,7 +42,7 @@ type GRPCConnection struct {
 }
 
 // NewConnection creates a new connection
-func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, url string, opts ...options.Opt) (*GRPCConnection, error) {
+func NewConnection(ctx fabcontext.Client, url string, opts ...options.Opt) (*GRPCConnection, error) {
 	if url == "" {
 		return nil, errors.New("server URL not specified")
 	}
@@ -71,16 +70,10 @@ func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, url string, o
 
 	return &GRPCConnection{
 		context:     ctx,
-		chConfig:    chConfig,
 		commManager: commManager,
 		conn:        grpcconn,
 		tlsCertHash: comm.TLSCertHash(ctx.EndpointConfig()),
 	}, nil
-}
-
-// ChannelConfig returns the channel configuration
-func (c *GRPCConnection) ChannelConfig() fab.ChannelCfg {
-	return c.chConfig
 }
 
 // ClientConn returns the underlying GRPC connection

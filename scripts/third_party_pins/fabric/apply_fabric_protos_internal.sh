@@ -65,7 +65,7 @@ gofilter() {
 FILTERS_ENABLED="fn,gen,type"
 
 FILTER_FILENAME="protos/gossip/extensions.go"
-FILTER_FN="ToGossipMessage"
+FILTER_FN="ToGossipMessage,InternalEndpoint"
 FILTER_GEN="SignedGossipMessage"
 FILTER_TYPE="IMPORT,CONST"
 gofilter

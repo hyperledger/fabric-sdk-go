@@ -131,6 +131,7 @@ declare -a FILES=(
 
     "discovery/client/api.go"
     "discovery/client/client.go"
+    "discovery/client/selection.go"
 
     "gossip/util/misc.go"
 )

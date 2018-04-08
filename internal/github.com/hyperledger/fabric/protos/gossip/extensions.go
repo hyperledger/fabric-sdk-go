@@ -27,6 +27,17 @@ func (e *Envelope) ToGossipMessage() (*SignedGossipMessage, error) {
 	}, nil
 }
 
+// InternalEndpoint returns the internal endpoint
+// in the secret envelope, or an empty string
+// if a failure occurs.
+func (s *SecretEnvelope) InternalEndpoint() string {
+	secret := &Secret{}
+	if err := proto.Unmarshal(s.Payload, secret); err != nil {
+		return ""
+	}
+	return secret.GetInternalEndpoint()
+}
+
 // SignedGossipMessage contains a GossipMessage
 // and the Envelope from which it came from
 type SignedGossipMessage struct {

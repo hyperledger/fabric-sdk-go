@@ -204,6 +204,7 @@ func TestTimeouts(t *testing.T) {
 	customBackend.KeyValueMap["client.eventService.timeout.registrationResponse"] = "2h"
 	customBackend.KeyValueMap["client.orderer.timeout.connection"] = "2ms"
 	customBackend.KeyValueMap["client.orderer.timeout.response"] = "6s"
+	customBackend.KeyValueMap["client.discovery.timeout.connection"] = "20s"
 	customBackend.KeyValueMap["client.global.timeout.query"] = "7h"
 	customBackend.KeyValueMap["client.global.timeout.execute"] = "8h"
 	customBackend.KeyValueMap["client.global.timeout.resmgmt"] = "118s"
@@ -247,37 +248,23 @@ func TestTimeouts(t *testing.T) {
 
 func checkTimeouts(endpointConfig fab.EndpointConfig, t *testing.T, errStr string) {
 	t1 := endpointConfig.Timeout(fab.OrdererResponse)
-	if t1 != time.Second*6 {
-		t.Fatalf(errStr, "OrdererResponse", t1)
-	}
+	assert.Equal(t, time.Second*6, t1, "OrdererResponse")
 	t1 = endpointConfig.Timeout(fab.Query)
-	if t1 != time.Hour*7 {
-		t.Fatalf(errStr, "Query", t1)
-	}
+	assert.Equal(t, time.Hour*7, t1, "Query")
 	t1 = endpointConfig.Timeout(fab.Execute)
-	if t1 != time.Hour*8 {
-		t.Fatalf(errStr, "Execute", t1)
-	}
+	assert.Equal(t, time.Hour*8, t1, "Execute")
 	t1 = endpointConfig.Timeout(fab.ResMgmt)
-	if t1 != time.Second*118 {
-		t.Fatalf(errStr, "ResMgmt", t1)
-	}
+	assert.Equal(t, time.Second*118, t1, "ResMgmt")
 	t1 = endpointConfig.Timeout(fab.ConnectionIdle)
-	if t1 != time.Minute*1 {
-		t.Fatalf(errStr, "ConnectionIdle", t1)
-	}
+	assert.Equal(t, time.Minute, t1, "ConnectionIdle")
 	t1 = endpointConfig.Timeout(fab.EventServiceIdle)
-	if t1 != time.Minute*2 {
-		t.Fatalf(errStr, "EventServiceIdle", t1)
-	}
+	assert.Equal(t, time.Minute*2, t1, "EventServiceIdle")
 	t1 = endpointConfig.Timeout(fab.ChannelConfigRefresh)
-	if t1 != time.Minute*3 {
-		t.Fatalf(errStr, "ChannelConfigRefresh", t1)
-	}
+	assert.Equal(t, time.Minute*3, t1, "ChannelConfigRefresh")
 	t1 = endpointConfig.Timeout(fab.ChannelMembershipRefresh)
-	if t1 != time.Minute*4 {
-		t.Fatalf(errStr, "ChannelMembershipRefresh", t1)
-	}
+	assert.Equal(t, time.Minute*4, t1, "ChannelMembershipRefresh")
+	t1 = endpointConfig.Timeout(fab.DiscoveryConnection)
+	assert.Equal(t, time.Second*20, t1, "DiscoveryConnection")
 }
 
 func TestDefaultTimeouts(t *testing.T) {

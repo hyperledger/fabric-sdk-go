@@ -26,13 +26,14 @@ type StreamProvider func(conn *grpc.ClientConn) (grpc.ClientStream, error)
 // StreamConnection manages the GRPC connection and client stream
 type StreamConnection struct {
 	*GRPCConnection
-	stream grpc.ClientStream
-	lock   sync.Mutex
+	chConfig fab.ChannelCfg
+	stream   grpc.ClientStream
+	lock     sync.Mutex
 }
 
 // NewStreamConnection creates a new connection with stream
 func NewStreamConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvider StreamProvider, url string, opts ...options.Opt) (*StreamConnection, error) {
-	conn, err := NewConnection(ctx, chConfig, url, opts...)
+	conn, err := NewConnection(ctx, url, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +68,14 @@ func NewStreamConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamP
 
 	return &StreamConnection{
 		GRPCConnection: conn,
+		chConfig:       chConfig,
 		stream:         stream,
 	}, nil
+}
+
+// ChannelConfig returns the channel configuration
+func (c *StreamConnection) ChannelConfig() fab.ChannelCfg {
+	return c.chConfig
 }
 
 // Close closes the connection

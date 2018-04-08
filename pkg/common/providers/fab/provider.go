@@ -21,8 +21,6 @@ import (
 )
 
 // ClientContext contains the client context
-// TODO: This is a duplicate of context.Client since importing context.Client causes
-// a circular import error. This problem should be addressed in a future patch.
 type ClientContext interface {
 	core.Providers
 	msp.Providers
@@ -134,6 +132,8 @@ const (
 	ChannelConfigRefresh
 	// ChannelMembershipRefresh channel membership refresh interval
 	ChannelMembershipRefresh
+	// DiscoveryConnection discovery connection timeout
+	DiscoveryConnection
 )
 
 // EventServiceType specifies the type of event service to use
