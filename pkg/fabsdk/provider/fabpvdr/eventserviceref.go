@@ -148,7 +148,7 @@ func (ref *EventClientRef) initializer() lazyref.Initializer {
 }
 
 func (ref *EventClientRef) finalizer() lazyref.Finalizer {
-	return func() {
+	return func(interface{}) {
 		logger.Debug("Finalizer called")
 		if ref.eventClient != nil {
 			if ref.Closed() {

@@ -24,7 +24,7 @@ type Initializer func() (interface{}, error)
 
 // Finalizer is a function that is called when the reference
 // is closed
-type Finalizer func()
+type Finalizer func(value interface{})
 
 // ExpirationProvider is a function that returns the
 // expiration time of a reference
@@ -316,8 +316,12 @@ func (r *Reference) finalize() {
 	}
 
 	r.lock.Lock()
-	r.finalizer()
-	r.lock.Unlock()
+	defer r.lock.Unlock()
+
+	if r.isSet() {
+		value, _ := r.get()
+		r.finalizer(value)
+	}
 }
 
 func (r *Reference) handleExpiration() {
@@ -334,7 +338,8 @@ func (r *Reference) handleExpiration() {
 // lock so there's no need to lock
 func (r *Reference) resetValue() {
 	if r.finalizer != nil {
-		r.finalizer()
+		value, _ := r.get()
+		r.finalizer(value)
 	}
 	atomic.StorePointer(&r.ref, nil)
 }

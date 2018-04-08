@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleReference() {
@@ -169,9 +171,10 @@ func TestGetWithFinalizer(t *testing.T) {
 			return expectedValue, nil
 		},
 		WithFinalizer(
-			func() {
-				t.Logf("Finalizer called\n")
+			func(value interface{}) {
+				t.Logf("Finalizer called - value: %s\n", value)
 				atomic.AddInt32(&numTimesFinalized, 1)
+				assert.Equal(t, expectedValue, value, "got different value than expected in finalizer")
 			},
 		),
 	)
@@ -228,7 +231,7 @@ func TestExpiring(t *testing.T) {
 			return value, nil
 		},
 		WithFinalizer(
-			func() {
+			func(interface{}) {
 				atomic.AddInt32(&seq, 1)
 				atomic.AddInt32(&numTimesFinalized, 1)
 			},
@@ -299,7 +302,7 @@ func TestExpiringWithErr(t *testing.T) {
 			return value, nil
 		},
 		WithFinalizer(
-			func() {
+			func(interface{}) {
 				atomic.AddInt32(&numTimesFinalized, 1)
 				seq++
 			},
@@ -367,7 +370,7 @@ func TestExpiringOnIdle(t *testing.T) {
 			return value, nil
 		},
 		WithFinalizer(
-			func() {
+			func(interface{}) {
 				seq++
 				atomic.AddInt32(&numTimesFinalized, 1)
 			},
@@ -429,7 +432,7 @@ func TestProactiveRefresh(t *testing.T) {
 			return value, nil
 		},
 		WithFinalizer(
-			func() {
+			func(interface{}) {
 				atomic.AddInt32(&numTimesFinalized, 1)
 				t.Logf("Finalizer called")
 			},
