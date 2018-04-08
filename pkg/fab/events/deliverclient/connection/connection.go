@@ -39,7 +39,7 @@ type deliverStream interface {
 
 // DeliverConnection manages the connection to the deliver server
 type DeliverConnection struct {
-	comm.GRPCConnection
+	*comm.StreamConnection
 	url string
 }
 
@@ -61,7 +61,7 @@ var (
 // New returns a new Deliver Server connection
 func New(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvider StreamProvider, url string, opts ...options.Opt) (*DeliverConnection, error) {
 	logger.Debugf("Connecting to %s...", url)
-	connect, err := comm.NewConnection(
+	connect, err := comm.NewStreamConnection(
 		ctx, chConfig,
 		func(grpcconn *grpc.ClientConn) (grpc.ClientStream, error) {
 			return streamProvider(pb.NewDeliverClient(grpcconn))
@@ -73,8 +73,8 @@ func New(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvider StreamPr
 	}
 
 	return &DeliverConnection{
-		GRPCConnection: *connect,
-		url:            url,
+		StreamConnection: connect,
+		url:              url,
 	}, nil
 }
 

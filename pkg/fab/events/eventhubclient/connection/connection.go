@@ -32,13 +32,13 @@ var logger = logging.NewLogger("fabsdk/fab")
 // EventHubConnection manages the connection and client stream
 // to the event hub server
 type EventHubConnection struct {
-	comm.GRPCConnection
+	*comm.StreamConnection
 	url string
 }
 
 // New returns a new Connection to the event hub.
 func New(ctx fabcontext.Client, chConfig fab.ChannelCfg, url string, opts ...options.Opt) (*EventHubConnection, error) {
-	connect, err := comm.NewConnection(
+	connect, err := comm.NewStreamConnection(
 		ctx, chConfig,
 		func(grpcconn *grpc.ClientConn) (grpc.ClientStream, error) {
 			return pb.NewEventsClient(grpcconn).Chat(context.Background())
@@ -50,8 +50,8 @@ func New(ctx fabcontext.Client, chConfig fab.ChannelCfg, url string, opts ...opt
 	}
 
 	return &EventHubConnection{
-		GRPCConnection: *connect,
-		url:            url,
+		StreamConnection: connect,
+		url:              url,
 	}, nil
 }
 

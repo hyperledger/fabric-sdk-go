@@ -22,7 +22,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/peer"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -33,22 +32,18 @@ const (
 	maxCallSendMsgSize = 100 * 1024 * 1024
 )
 
-// StreamProvider creates a GRPC stream
-type StreamProvider func(conn *grpc.ClientConn) (grpc.ClientStream, error)
-
 // GRPCConnection manages the GRPC connection and client stream
 type GRPCConnection struct {
 	context     fabcontext.Client
 	chConfig    fab.ChannelCfg
 	conn        *grpc.ClientConn
-	stream      grpc.ClientStream
 	commManager fab.CommManager
 	tlsCertHash []byte
 	done        int32
 }
 
 // NewConnection creates a new connection
-func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvider StreamProvider, url string, opts ...options.Opt) (*GRPCConnection, error) {
+func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, url string, opts ...options.Opt) (*GRPCConnection, error) {
 	if url == "" {
 		return nil, errors.New("server URL not specified")
 	}
@@ -74,38 +69,11 @@ func NewConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvide
 		return nil, errors.Wrapf(err, "could not connect to %s", url)
 	}
 
-	stream, err := streamProvider(grpcconn)
-	if err != nil {
-		commManager.ReleaseConn(grpcconn)
-		return nil, errors.Wrapf(err, "could not create stream to %s", url)
-	}
-
-	if stream == nil {
-		return nil, errors.New("unexpected nil stream received from provider")
-	}
-	peer, ok := peer.FromContext(stream.Context())
-	if !ok || peer == nil {
-		//return error - certificate is not available
-		return nil, errors.Wrapf(err, "No peer cert in GRPC stream")
-
-	}
-	if peer.AuthInfo != nil {
-		tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
-		for _, peercert := range tlsInfo.State.PeerCertificates {
-			err := verifier.ValidateCertificateDates(peercert)
-			if err != nil {
-				//log and return error
-				logger.Error(err)
-				return nil, errors.Wrapf(err, "Got error while validating certificate dates for [%v]", peercert.Subject)
-			}
-		}
-	}
 	return &GRPCConnection{
 		context:     ctx,
 		chConfig:    chConfig,
 		commManager: commManager,
 		conn:        grpcconn,
-		stream:      stream,
 		tlsCertHash: comm.TLSCertHash(ctx.EndpointConfig()),
 	}, nil
 }
@@ -115,16 +83,16 @@ func (c *GRPCConnection) ChannelConfig() fab.ChannelCfg {
 	return c.chConfig
 }
 
+// ClientConn returns the underlying GRPC connection
+func (c *GRPCConnection) ClientConn() *grpc.ClientConn {
+	return c.conn
+}
+
 // Close closes the connection
 func (c *GRPCConnection) Close() {
 	if !c.setClosed() {
 		logger.Debugf("Already closed")
 		return
-	}
-
-	logger.Debug("Closing stream....")
-	if err := c.stream.CloseSend(); err != nil {
-		logger.Warnf("error closing GRPC stream: %s", err)
 	}
 
 	logger.Debug("Releasing connection....")
@@ -140,11 +108,6 @@ func (c *GRPCConnection) Closed() bool {
 
 func (c *GRPCConnection) setClosed() bool {
 	return atomic.CompareAndSwapInt32(&c.done, 0, 1)
-}
-
-// Stream returns the GRPC stream
-func (c *GRPCConnection) Stream() grpc.Stream {
-	return c.stream
 }
 
 // TLSCertHash returns the hash of the TLS cert
