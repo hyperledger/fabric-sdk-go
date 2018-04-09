@@ -122,7 +122,7 @@ func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string) (bool, error) {
 	}
 
 	if err = resMgmtClient.JoinChannel(name, resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
-		return false, nil
+		return false, err
 	}
 	return true, nil
 }
