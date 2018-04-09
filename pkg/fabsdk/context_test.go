@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	identityOptConfigFile = "testdata/test.yaml"
+	identityOptConfigFile = "../../test/fixtures/config/config_test.yaml"
 	identityValidOptUser  = "User1"
 	identityValidOptOrg   = "Org2"
 )

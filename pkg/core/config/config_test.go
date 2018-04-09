@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -23,10 +24,9 @@ import (
 var configBackend core.ConfigBackend
 
 const (
-	configTestFilePath         = "testdata/config_test.yaml"
-	configTestTemplateFilePath = "testdata/config_test_template.yaml"
-	configType                 = "yaml"
-	defaultConfigPath          = "testdata/template"
+	configTestFilePath = "testdata/config_test.yaml"
+	configType         = "yaml"
+	defaultConfigPath  = "testdata/template"
 )
 
 func TestFromRawSuccess(t *testing.T) {
@@ -146,7 +146,7 @@ func TestInitConfigInvalidLocation(t *testing.T) {
 // Test case to create a new viper instance to prevent conflict with existing
 // viper instances in applications that use the SDK
 func TestMultipleVipers(t *testing.T) {
-	viper.SetConfigFile("./test.yaml")
+	viper.SetConfigFile("./testdata/viper-test.yaml")
 	err := viper.ReadInConfig()
 	if err != nil {
 		t.Log(err.Error())
@@ -329,7 +329,7 @@ func badOpt() Option {
 }
 
 func TestConfigBackend_Lookup(t *testing.T) {
-	configBackend, err := FromFile(configTestTemplateFilePath)()
+	configBackend, err := FromFile(configTestFilePath)()
 	if err != nil {
 		t.Fatalf("Unexpected error reading config backend: %v", err)
 	}
@@ -362,13 +362,13 @@ func TestConfigBackend_Lookup(t *testing.T) {
 		t.Fatal("Expected x-type to be h1fv1")
 	}
 
-	value, ok = configBackend.Lookup("channels.mychannel.chaincodes")
+	value, ok = configBackend.Lookup("channels.mychannel.peers")
 	if !ok {
 		t.Fatal(err)
 	}
-	chaincodes := value.([]interface{})
-	if len(chaincodes) != 2 {
-		t.Fatal("Expected only 2 chaincodes")
+	peers := value.(map[string]interface{})
+	if len(peers) != 1 {
+		t.Fatal("Expected only 1 peer in test config")
 	}
 
 }

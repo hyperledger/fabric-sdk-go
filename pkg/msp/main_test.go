@@ -18,9 +18,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	mspapi "github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
@@ -28,14 +29,10 @@ import (
 )
 
 const (
-	org1                        = "Org1"
-	caServerURLListen           = "http://127.0.0.1:0"
-	dummyUserStorePath          = "/tmp/userstore"
-	fullConfigPath              = "testdata/config_test.yaml"
-	wrongURLConfigPath          = "testdata/config_wrong_url.yaml"
-	noCAConfigPath              = "testdata/config_no_ca.yaml"
-	embeddedRegistrarConfigPath = "testdata/config_embedded_registrar.yaml"
-	noRegistrarConfigPath       = "testdata/config_no_registrar.yaml"
+	org1               = "Org1"
+	caServerURLListen  = "http://127.0.0.1:0"
+	dummyUserStorePath = "/tmp/userstore"
+	configPath         = "../core/config/testdata/config_test.yaml"
 )
 
 var caServerURL string
@@ -52,10 +49,14 @@ type textFixture struct {
 
 var caServer = &mockmsp.MockFabricCAServer{}
 
-func (f *textFixture) setup(configPath string) {
+func (f *textFixture) setup(configBackend *mocks.MockConfigBackend) {
 
-	if configPath == "" {
-		configPath = fullConfigPath
+	if configBackend == nil {
+		backend, err := getCustomBackend(configPath)
+		if err != nil {
+			panic(err)
+		}
+		configBackend = backend
 	}
 
 	var lis net.Listener
@@ -69,11 +70,7 @@ func (f *textFixture) setup(configPath string) {
 		caServerURL = "http://" + lis.Addr().String()
 	}
 
-	cfgRaw := readConfigWithReplacement(configPath, "http://localhost:8050", caServerURL)
-	configBackend, err := config.FromRaw(cfgRaw, "yaml")()
-	if err != nil {
-		panic(fmt.Sprintf("Failed to read config backend: %v", err))
-	}
+	updateCAServerURL(caServerURL, configBackend)
 
 	f.cryptSuiteConfig = cryptosuite.ConfigFromBackend(configBackend)
 
@@ -217,4 +214,24 @@ func (p *identityManagerProvider) IdentityManager(orgName string) (msp.IdentityM
 		return nil, false
 	}
 	return im, true
+}
+
+func updateCAServerURL(caServerURL string, backend *mocks.MockConfigBackend) {
+
+	//get existing certificateAuthorities
+	networkConfig := fab.NetworkConfig{}
+	lookup.New(backend).UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
+
+	//update URLs
+	ca1Config := networkConfig.CertificateAuthorities["local.ca.org1.example.com"]
+	ca1Config.URL = caServerURL
+
+	ca2Config := networkConfig.CertificateAuthorities["local.ca.org2.example.com"]
+	ca2Config.URL = caServerURL
+
+	networkConfig.CertificateAuthorities["local.ca.org1.example.com"] = ca1Config
+	networkConfig.CertificateAuthorities["local.ca.org2.example.com"] = ca2Config
+
+	//update backend
+	backend.KeyValueMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
 }

@@ -12,7 +12,11 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
+	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
@@ -71,7 +75,17 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	sdk1.provider.InfraProvider().(*fabpvdr.InfraProvider).SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
 	sdk1.provider.InfraProvider().(*fabpvdr.InfraProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
-	sdk2, err := New(config.FromFile("./testdata/test.yaml"))
+	//prepare config backend for sdk2
+
+	customBackend, err := getCustomBackend()
+	if err != nil {
+		t.Fatalf("failed to get configbackend for test: %v", err)
+	}
+	configProvider := func() (core.ConfigBackend, error) {
+		return customBackend, nil
+	}
+
+	sdk2, err := New(configProvider)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -143,4 +157,27 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new 'orgchannel' channel client: %s", err)
 	}
+}
+
+func getCustomBackend() (*mockCore.MockConfigBackend, error) {
+	backend, err := config.FromFile(sdkConfigFile)()
+	if err != nil {
+		return nil, err
+	}
+
+	//read existing client config from config
+	clientConfig := &mspImpl.ClientConfig{}
+	configLookup := lookup.New(backend)
+	err = configLookup.UnmarshalKey("client", clientConfig)
+	if err != nil {
+		return nil, err
+	}
+	//update it
+	clientConfig.Organization = "org2"
+
+	//set it to backend map
+	backendMap := make(map[string]interface{})
+	backendMap["client"] = clientConfig
+
+	return &mockCore.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
 }

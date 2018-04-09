@@ -14,11 +14,15 @@ import (
 	"strings"
 
 	"github.com/golang/mock/gomock"
+	fabApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockcontext"
 	mockmspApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -29,7 +33,7 @@ import (
 func TestEnrollAndReenroll(t *testing.T) {
 
 	f := textFixture{}
-	f.setup("")
+	f.setup(nil)
 	defer f.close()
 
 	orgMSPID := mspIDByOrgName(t, f.endpointConfig, org1)
@@ -89,12 +93,12 @@ func TestEnrollAndReenroll(t *testing.T) {
 func TestWrongURL(t *testing.T) {
 
 	f := textFixture{}
-	f.setup("")
+	f.setup(nil)
 	defer f.close()
 
-	configBackend, err := config.FromFile(wrongURLConfigPath)()
+	configBackend, err := getInvalidURLBackend()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config backend: %v", err))
+		panic(fmt.Sprintf("Failed to get config backend: %v", err))
 	}
 
 	wrongURLIdentityConfig, err := ConfigFromBackend(configBackend)
@@ -133,16 +137,16 @@ func TestWrongURL(t *testing.T) {
 
 }
 
-// TestWrongURL tests creation of CAClient when there are no configured CAs
+// TestNoConfiguredCAs tests creation of CAClient when there are no configured CAs
 func TestNoConfiguredCAs(t *testing.T) {
 
 	f := textFixture{}
-	f.setup("")
+	f.setup(nil)
 	defer f.close()
 
-	configBackend, err := config.FromFile(noCAConfigPath)()
+	configBackend, err := getNoCAConfigBackend()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
+		panic(fmt.Sprintf("Failed to get config backend: %v", err))
 	}
 
 	wrongURLEndpointConfig, err := fab.ConfigFromBackend(configBackend)
@@ -171,7 +175,7 @@ func TestRegister(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	f := textFixture{}
-	f.setup("")
+	f.setup(nil)
 	defer f.close()
 
 	// Register with nil request
@@ -199,11 +203,16 @@ func TestRegister(t *testing.T) {
 	}
 }
 
-// TestEmbeddedRegistar tests registration with embedded registrar idenityt
+// TestEmbeddedRegistar tests registration with embedded registrar identity
 func TestEmbeddedRegistar(t *testing.T) {
 
+	embeddedRegistrarBackend, err := getEmbeddedRegistrarConfigBackend()
+	if err != nil {
+		t.Fatalf("Failed to get config backend, cause: %v", err)
+	}
+
 	f := textFixture{}
-	f.setup(embeddedRegistrarConfigPath)
+	f.setup(embeddedRegistrarBackend)
 	defer f.close()
 
 	// Register with valid request
@@ -222,12 +231,17 @@ func TestEmbeddedRegistar(t *testing.T) {
 // TestRegisterNoRegistrar tests registration with no configured registrar identity
 func TestRegisterNoRegistrar(t *testing.T) {
 
+	noRegistrarBackend, err := getNoRegistrarBackend()
+	if err != nil {
+		t.Fatalf("Failed to get config backend, cause: %v", err)
+	}
+
 	f := textFixture{}
-	f.setup(noRegistrarConfigPath)
+	f.setup(noRegistrarBackend)
 	defer f.close()
 
 	// Register with nil request
-	_, err := f.caClient.Register(nil)
+	_, err = f.caClient.Register(nil)
 	if err != api.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
@@ -253,7 +267,7 @@ func TestRegisterNoRegistrar(t *testing.T) {
 func TestRevoke(t *testing.T) {
 
 	f := textFixture{}
-	f.setup("")
+	f.setup(nil)
 	defer f.close()
 
 	// Revoke with nil request
@@ -277,7 +291,7 @@ func TestRevoke(t *testing.T) {
 func TestCAConfigError(t *testing.T) {
 
 	f := textFixture{}
-	f.setup("")
+	f.setup(nil)
 	defer f.close()
 
 	mockCtrl := gomock.NewController(t)
@@ -301,7 +315,7 @@ func TestCAConfigError(t *testing.T) {
 func TestCAServerCertPathsError(t *testing.T) {
 
 	f := textFixture{}
-	f.setup("")
+	f.setup(nil)
 	defer f.close()
 
 	mockCtrl := gomock.NewController(t)
@@ -327,7 +341,7 @@ func TestCAServerCertPathsError(t *testing.T) {
 func TestCAClientCertPathError(t *testing.T) {
 
 	f := textFixture{}
-	f.setup("")
+	f.setup(nil)
 	defer f.close()
 
 	mockCtrl := gomock.NewController(t)
@@ -354,7 +368,7 @@ func TestCAClientCertPathError(t *testing.T) {
 func TestCAClientKeyPathError(t *testing.T) {
 
 	f := textFixture{}
-	f.setup("")
+	f.setup(nil)
 	defer f.close()
 
 	mockCtrl := gomock.NewController(t)
@@ -388,4 +402,176 @@ func TestInterfaces(t *testing.T) {
 	if apiClient == nil {
 		t.Fatalf("this shouldn't happen.")
 	}
+}
+
+func getCustomBackend(configPath string) (*mocks.MockConfigBackend, error) {
+
+	backend, err := config.FromFile(configPath)()
+	if err != nil {
+		return nil, err
+	}
+	backendMap := make(map[string]interface{})
+	backendMap["client"], _ = backend.Lookup("client")
+	backendMap["certificateAuthorities"], _ = backend.Lookup("certificateAuthorities")
+	backendMap["entityMatchers"], _ = backend.Lookup("entityMatchers")
+	backendMap["peers"], _ = backend.Lookup("peers")
+	backendMap["organizations"], _ = backend.Lookup("organizations")
+	backendMap["orderers"], _ = backend.Lookup("orderers")
+	backendMap["channels"], _ = backend.Lookup("channels")
+
+	return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
+}
+
+func getInvalidURLBackend() (*mocks.MockConfigBackend, error) {
+
+	mockConfigBackend, err := getCustomBackend(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	//Create an invalid channel
+	networkConfig := fabApi.NetworkConfig{}
+	//get valid certificate authorities
+	err = lookup.New(mockConfigBackend).UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
+	if err != nil {
+		return nil, err
+	}
+
+	//tamper URLs
+	ca1Config := networkConfig.CertificateAuthorities["local.ca.org1.example.com"]
+	ca1Config.URL = "http://localhost:8091"
+	ca2Config := networkConfig.CertificateAuthorities["local.ca.org2.example.com"]
+	ca2Config.URL = "http://localhost:8091"
+
+	networkConfig.CertificateAuthorities["local.ca.org1.example.com"] = ca1Config
+	networkConfig.CertificateAuthorities["local.ca.org2.example.com"] = ca2Config
+
+	//Override backend with this new CertificateAuthorities config
+	mockConfigBackend.KeyValueMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
+
+	return mockConfigBackend, nil
+}
+
+func getNoRegistrarBackend() (*mocks.MockConfigBackend, error) {
+
+	mockConfigBackend, err := getCustomBackend(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	//Create an invalid channel
+	networkConfig := fabApi.NetworkConfig{}
+	//get valid certificate authorities
+	err = lookup.New(mockConfigBackend).UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
+	if err != nil {
+		return nil, err
+	}
+
+	//tamper URLs
+	ca1Config := networkConfig.CertificateAuthorities["ca.org1.example.com"]
+	ca1Config.Registrar = msp.EnrollCredentials{}
+	ca2Config := networkConfig.CertificateAuthorities["ca.org2.example.com"]
+	ca1Config.Registrar = msp.EnrollCredentials{}
+
+	networkConfig.CertificateAuthorities["ca.org1.example.com"] = ca1Config
+	networkConfig.CertificateAuthorities["ca.org2.example.com"] = ca2Config
+
+	//Override backend with this new CertificateAuthorities config
+	mockConfigBackend.KeyValueMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
+
+	return mockConfigBackend, nil
+}
+
+func getNoCAConfigBackend() (*mocks.MockConfigBackend, error) {
+
+	mockConfigBackend, err := getCustomBackend(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	//Create an empty network config
+	networkConfig := fabApi.NetworkConfig{}
+	//get valid certificate authorities
+	err = lookup.New(mockConfigBackend).UnmarshalKey("organizations", &networkConfig.Organizations)
+	if err != nil {
+		return nil, err
+	}
+	org1 := networkConfig.Organizations["org1"]
+
+	//clear certificate authorities
+	org1.CertificateAuthorities = []string{}
+	networkConfig.Organizations["org1"] = org1
+
+	//Override backend with organization config having empty CertificateAuthorities
+	mockConfigBackend.KeyValueMap["organizations"] = networkConfig.Organizations
+	//Override backend with this nil empty CertificateAuthorities config
+	mockConfigBackend.KeyValueMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
+
+	return mockConfigBackend, nil
+}
+
+func getEmbeddedRegistrarConfigBackend() (*mocks.MockConfigBackend, error) {
+
+	mockConfigBackend, err := getCustomBackend(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	embeddedRegistrarID := "embeddedregistrar"
+
+	//Create an empty network config
+	networkConfig := fabApi.NetworkConfig{}
+	//get valid certificate authorities
+	err = lookup.New(mockConfigBackend).UnmarshalKey("organizations", &networkConfig.Organizations)
+	if err != nil {
+		return nil, err
+	}
+	err = lookup.New(mockConfigBackend).UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
+	if err != nil {
+		return nil, err
+	}
+	//update with embedded registrar
+	org1 := networkConfig.Organizations["org1"]
+	org1.Users = make(map[string]endpoint.TLSKeyPair)
+	org1.Users[embeddedRegistrarID] = endpoint.TLSKeyPair{
+		Key: endpoint.TLSConfig{
+			Pem: `-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB
+5Ul+GpjM1P5rqc6RhjD5OkTgl5OhRANCAATyFT0voXX7cA4PPtNstWleaTpwjvbS
+J3+tMGTG67f+TdCfDxWYMpQYxLlE8VkbEzKWDwCYvDZRMKCQfv2ErNvb
+-----END PRIVATE KEY-----`,
+		},
+		Cert: endpoint.TLSConfig{
+			Pem: `-----BEGIN CERTIFICATE-----
+MIICGTCCAcCgAwIBAgIRALR/1GXtEud5GQL2CZykkOkwCgYIKoZIzj0EAwIwczEL
+MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
+cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
+Lm9yZzEuZXhhbXBsZS5jb20wHhcNMTcwNzI4MTQyNzIwWhcNMjcwNzI2MTQyNzIw
+WjBbMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
+U2FuIEZyYW5jaXNjbzEfMB0GA1UEAwwWVXNlcjFAb3JnMS5leGFtcGxlLmNvbTBZ
+MBMGByqGSM49AgEGCCqGSM49AwEHA0IABPIVPS+hdftwDg8+02y1aV5pOnCO9tIn
+f60wZMbrt/5N0J8PFZgylBjEuUTxWRsTMpYPAJi8NlEwoJB+/YSs29ujTTBLMA4G
+A1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1UdIwQkMCKAIIeR0TY+iVFf
+mvoEKwaToscEu43ZXSj5fTVJornjxDUtMAoGCCqGSM49BAMCA0cAMEQCID+dZ7H5
+AiaiI2BjxnL3/TetJ8iFJYZyWvK//an13WV/AiARBJd/pI5A7KZgQxJhXmmR8bie
+XdsmTcdRvJ3TS/6HCA==
+-----END CERTIFICATE-----`,
+		},
+	}
+	networkConfig.Organizations["org1"] = org1
+
+	//update network certificate authorities
+	ca1Config := networkConfig.CertificateAuthorities["local.ca.org1.example.com"]
+	ca1Config.Registrar = msp.EnrollCredentials{EnrollID: embeddedRegistrarID}
+	ca2Config := networkConfig.CertificateAuthorities["local.ca.org2.example.com"]
+	ca2Config.Registrar = msp.EnrollCredentials{EnrollID: embeddedRegistrarID}
+	networkConfig.CertificateAuthorities["local.ca.org1.example.com"] = ca1Config
+	networkConfig.CertificateAuthorities["local.ca.org2.example.com"] = ca2Config
+
+	//Override backend with updated organization config
+	mockConfigBackend.KeyValueMap["organizations"] = networkConfig.Organizations
+	//Override backend with updated certificate authorities config
+	mockConfigBackend.KeyValueMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
+
+	return mockConfigBackend, nil
 }

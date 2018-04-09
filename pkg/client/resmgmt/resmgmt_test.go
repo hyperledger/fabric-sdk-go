@@ -25,10 +25,13 @@ import (
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -40,8 +43,11 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-const channelConfig = "../../../test/fixtures/fabric/v1.0/channel/mychannel.tx"
-const networkCfg = "../../../test/fixtures/config/config_test.yaml"
+const (
+	channelConfig = "../../../test/fixtures/fabric/v1.0/channel/mychannel.tx"
+	networkCfg    = "../../../test/fixtures/config/config_test.yaml"
+	configPath    = "../../core/config/testdata/config_test.yaml"
+)
 
 func TestJoinChannelFail(t *testing.T) {
 
@@ -279,9 +285,11 @@ func TestOrdererConfigFail(t *testing.T) {
 
 	ctx := setupTestContext("test", "Org1MSP")
 
-	// No channel orderer, no global orderer
-	configBackend, err := configImpl.FromFile("./testdata/noorderer_test.yaml")()
+	backend, err := configImpl.FromFile(configPath)()
 	assert.Nil(t, err)
+
+	// remove channel orderer and global orderers from config backend
+	configBackend := getNoOrdererBackend(backend)
 
 	noOrdererConfig, err := fabImpl.ConfigFromBackend(configBackend)
 	assert.Nil(t, err)
@@ -316,10 +324,11 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	ctx := setupTestContext("test", "Org1MSP")
 
 	// No channel orderer, no global orderer
-	configBackend, err := configImpl.FromFile("./testdata/noorderer_test.yaml")()
-	if err != nil {
-		t.Fatal(err)
-	}
+	backend, err := configImpl.FromFile(configPath)()
+	assert.Nil(t, err)
+
+	// remove channel orderer and global orderers from config backend
+	configBackend := getNoOrdererBackend(backend)
 	noOrdererConfig, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal(err)
@@ -331,10 +340,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	assert.NotNil(t, err, "Should have failed to join channel since no orderer has been configured")
 
 	// Misconfigured channel orderer
-	configBackend, err = configImpl.FromFile("./testdata/invalidchorderer_test.yaml")()
-	if err != nil {
-		t.Fatal(err)
-	}
+	configBackend = getInvalidChannelOrdererBackend(backend)
 	invalidChOrdererConfig, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal(err)
@@ -349,10 +355,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	}
 
 	// Misconfigured global orderer (cert cannot be loaded)
-	configBackend, err = configImpl.FromFile("./testdata/invalidorderer_test.yaml")()
-	if err != nil {
-		t.Fatal(err)
-	}
+	configBackend = getInvalidOrdererBackend(backend)
 	invalidOrdererConfig, err := fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal(err)
@@ -368,6 +371,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Should have failed to join channel since global orderer certs are not configured properly")
 	}
+	fmt.Println(err)
 }
 
 func TestIsChaincodeInstalled(t *testing.T) {
@@ -1171,7 +1175,7 @@ func TestCCProposal(t *testing.T) {
 	ctx := setupTestContext("Admin", "Org1MSP")
 
 	// Setup resource management client
-	configBackend, err := configImpl.FromFile("./testdata/ccproposal_test.yaml")()
+	configBackend, err := configImpl.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1229,10 +1233,11 @@ func TestCCProposal(t *testing.T) {
 	}
 
 	// Test no event source in config
-	configBackend, err = configImpl.FromFile("./testdata/event_source_missing_test.yaml")()
+	backend, err := configImpl.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
+	configBackend = getNoEventSourceBackend(backend)
 	cfg, err = fabImpl.ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal(err)
@@ -1256,7 +1261,7 @@ func TestCCProposalFailed(t *testing.T) {
 	ctx := setupTestContext("Admin", "Org1MSP")
 
 	// Setup resource management client
-	configBackend, err := configImpl.FromFile("./testdata/ccproposal_test.yaml")()
+	configBackend, err := configImpl.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1593,4 +1598,81 @@ func createClientContext(fabCtx context.Client) context.ClientProvider {
 	return func() (context.Client, error) {
 		return fabCtx, nil
 	}
+}
+
+func getCustomBackend(backend core.ConfigBackend) *mocks.MockConfigBackend {
+
+	backendMap := make(map[string]interface{})
+	backendMap["client"], _ = backend.Lookup("client")
+	backendMap["certificateAuthorities"], _ = backend.Lookup("certificateAuthorities")
+	backendMap["entityMatchers"], _ = backend.Lookup("entityMatchers")
+	backendMap["peers"], _ = backend.Lookup("peers")
+	backendMap["organizations"], _ = backend.Lookup("organizations")
+	backendMap["orderers"], _ = backend.Lookup("orderers")
+	backendMap["channels"], _ = backend.Lookup("channels")
+
+	return &mocks.MockConfigBackend{KeyValueMap: backendMap}
+}
+
+func getNoOrdererBackend(backend core.ConfigBackend) *mocks.MockConfigBackend {
+
+	mockConfigBackend := getCustomBackend(backend)
+	mockConfigBackend.KeyValueMap["channels"] = nil
+	mockConfigBackend.KeyValueMap["orderers"] = nil
+
+	return mockConfigBackend
+}
+
+func getInvalidChannelOrdererBackend(backend core.ConfigBackend) *mocks.MockConfigBackend {
+
+	//Create an invalid channel
+	channels := make(map[string]fab.ChannelNetworkConfig)
+	mychannel := fab.ChannelNetworkConfig{
+		Orderers: []string{"invalid.orderer.com"},
+	}
+	channels["mychannel"] = mychannel
+
+	mockConfigBackend := getCustomBackend(backend)
+	mockConfigBackend.KeyValueMap["channels"] = channels
+
+	return mockConfigBackend
+}
+
+func getInvalidOrdererBackend(backend core.ConfigBackend) *mocks.MockConfigBackend {
+
+	//Create invalid orderer
+	networkConfig := fab.NetworkConfig{}
+	err := lookup.New(backend).UnmarshalKey("orderers", &networkConfig.Orderers)
+	if err != nil {
+		panic(err)
+	}
+	exampleOrderer := networkConfig.Orderers["local.orderer.example.com"]
+	exampleOrderer.TLSCACerts.Path = "/some/invalid/path"
+	exampleOrderer.TLSCACerts.Pem = ""
+	networkConfig.Orderers["local.orderer.example.com"] = exampleOrderer
+
+	mockConfigBackend := getCustomBackend(backend)
+	mockConfigBackend.KeyValueMap["orderers"] = networkConfig.Orderers
+
+	return mockConfigBackend
+}
+
+func getNoEventSourceBackend(backend core.ConfigBackend) *mocks.MockConfigBackend {
+
+	//Create no event source channels
+	networkConfig := fab.NetworkConfig{}
+	err := lookup.New(backend).UnmarshalKey("channels", &networkConfig.Channels)
+	if err != nil {
+		panic(err)
+	}
+	mychannel := networkConfig.Channels["mychannel"]
+	chPeer := mychannel.Peers["peer0.org1.example.com"]
+	chPeer.EventSource = false
+	mychannel.Peers["peer0.org1.example.com"] = chPeer
+	networkConfig.Channels["mychannel"] = mychannel
+
+	mockConfigBackend := getCustomBackend(backend)
+	mockConfigBackend.KeyValueMap["channels"] = networkConfig.Channels
+
+	return mockConfigBackend
 }

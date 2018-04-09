@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
-	"io/ioutil"
 	"math/rand"
 	"net"
 	"strconv"
@@ -19,10 +18,13 @@ import (
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -30,7 +32,7 @@ import (
 
 const (
 	caServerURLListen = "http://localhost:0"
-	configPath        = "testdata/config_test.yaml"
+	configPath        = "../../core/config/testdata/config_test.yaml"
 )
 
 var caServerURL string
@@ -167,10 +169,16 @@ func (f *textFixture) setup() *fabsdk.FabricSDK {
 		caServerURL = "http://" + lis.Addr().String()
 	}
 
-	cfgRaw := readConfigWithReplacement(configPath, "http://localhost:8050", caServerURL)
-	configProvider := config.FromRaw(cfgRaw, "yaml")
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
+		panic(err)
+	}
+
+	//Override ca matchers for this test
+	customBackend := getCustomBackend(backend)
+
+	configProvider := func() (core.ConfigBackend, error) {
+		return customBackend, nil
 	}
 
 	// Instantiate the SDK
@@ -214,16 +222,6 @@ func (f *textFixture) close() {
 	cleanup(f.cryptoSuiteConfig.KeyStorePath())
 }
 
-func readConfigWithReplacement(path string, origURL, newURL string) []byte {
-	cfgRaw, err := ioutil.ReadFile(path)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to read config [%s]", err))
-	}
-
-	updatedCfg := strings.Replace(string(cfgRaw), origURL, newURL, -1)
-	return []byte(updatedCfg)
-}
-
 func cleanup(storePath string) {
 	err := os.RemoveAll(storePath)
 	if err != nil {
@@ -233,4 +231,24 @@ func cleanup(storePath string) {
 
 func randomUsername() string {
 	return "user" + strconv.Itoa(rand.Intn(500000))
+}
+
+func getCustomBackend(backend core.ConfigBackend) *mocks.MockConfigBackend {
+	backendMap := make(map[string]interface{})
+
+	//Custom URLs for ca configs
+	networkConfig := fab.NetworkConfig{}
+	configLookup := lookup.New(backend)
+	configLookup.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
+
+	ca1Config := networkConfig.CertificateAuthorities["local.ca.org1.example.com"]
+	ca1Config.URL = caServerURL
+	ca2Config := networkConfig.CertificateAuthorities["local.ca.org2.example.com"]
+	ca2Config.URL = caServerURL
+
+	networkConfig.CertificateAuthorities["local.ca.org1.example.com"] = ca1Config
+	networkConfig.CertificateAuthorities["local.ca.org2.example.com"] = ca2Config
+	backendMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
+
+	return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}
 }

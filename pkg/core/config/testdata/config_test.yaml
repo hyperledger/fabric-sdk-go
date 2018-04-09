@@ -9,6 +9,11 @@
 # knowledge that must be acquired from out-of-band sources. This file provides such a source.
 #
 
+name: "global-trade-network"
+
+description: "The network that has all the configuration parameters"
+
+x-type: "h1fv1"
 
 #
 # Schema version of the content. Used by the SDK to apply the corresponding parsing rules.
