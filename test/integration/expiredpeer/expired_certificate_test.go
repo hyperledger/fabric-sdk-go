@@ -18,13 +18,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
-
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 )
 
 const (
@@ -34,13 +34,15 @@ const (
 	ordererOrgName   = "ordererorg"
 	org1AdminUser    = "Admin"
 	org2AdminUser    = "Admin"
+	configPath       = "../../fixtures/config/config_test.yaml"
+	expiredCertPath  = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/expiredtlsca/expired.pem"
 )
 
 // TestExpiredPeersCert - peer0.org1.example.com was configured with expired certificate
 func TestExpiredPeersCert(t *testing.T) {
 
 	// Create SDK setup for the integration tests
-	sdk, err := fabsdk.New(config.FromFile("../../fixtures/config/config_expired_peers_cert_test.yaml"))
+	sdk, err := fabsdk.New(getConfigBackend(t))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -93,13 +95,27 @@ func TestExpiredPeersCert(t *testing.T) {
 
 }
 
-// DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
-type DynamicSelectionProviderFactory struct {
-	defsvc.ProviderFactory
-	ChannelUsers []selection.ChannelUser
-}
+func getConfigBackend(t *testing.T) core.ConfigProvider {
 
-// CreateSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
-	return selection.New(config, f.ChannelUsers)
+	return func() (core.ConfigBackend, error) {
+		backend, err := config.FromFile(configPath)()
+		if err != nil {
+			t.Fatalf("failed to read config backend from file, %v", err)
+		}
+		backendMap := make(map[string]interface{})
+
+		networkConfig := fab.NetworkConfig{}
+		//get valid peer config
+		err = lookup.New(backend).UnmarshalKey("peers", &networkConfig.Peers)
+		if err != nil {
+			t.Fatalf("failed to unmarshal peer network config, %v", err)
+		}
+		//change cert path to expired one
+		peer1 := networkConfig.Peers["local.peer0.org1.example.com"]
+		peer1.TLSCACerts.Path = expiredCertPath
+		networkConfig.Peers["local.peer0.org1.example.com"] = peer1
+		backendMap["peers"] = networkConfig.Peers
+
+		return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
+	}
 }

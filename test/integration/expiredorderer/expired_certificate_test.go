@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"google.golang.org/grpc/grpclog"
@@ -23,6 +25,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 )
 
 const (
@@ -32,6 +36,8 @@ const (
 	ordererOrgName   = "ordererorg"
 	org1AdminUser    = "Admin"
 	org2AdminUser    = "Admin"
+	configPath       = "../../fixtures/config/config_test.yaml"
+	expiredCertPath  = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/expiredtlsca/expired.pem"
 )
 
 var logger = logging.NewLogger("test-logger")
@@ -44,7 +50,7 @@ func TestExpiredCert(t *testing.T) {
 	grpclog.SetLogger(logger)
 
 	// Create SDK setup for the integration tests
-	sdk, err := fabsdk.New(config.FromFile("../../fixtures/config/config_expired_orderers_cert_test.yaml"))
+	sdk, err := fabsdk.New(getConfigBackend(t))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -86,4 +92,29 @@ func TestExpiredCert(t *testing.T) {
 	}
 	time.Sleep(100 * time.Millisecond)
 
+}
+
+func getConfigBackend(t *testing.T) core.ConfigProvider {
+
+	return func() (core.ConfigBackend, error) {
+		backend, err := config.FromFile(configPath)()
+		if err != nil {
+			t.Fatalf("failed to read config backend from file, %v", err)
+		}
+		backendMap := make(map[string]interface{})
+
+		networkConfig := fab.NetworkConfig{}
+		//get valid orderers config
+		err = lookup.New(backend).UnmarshalKey("orderers", &networkConfig.Orderers)
+		if err != nil {
+			t.Fatalf("failed to unmarshal peer network config, %v", err)
+		}
+		//change cert path to expired one
+		orderer1 := networkConfig.Orderers["local.orderer.example.com"]
+		orderer1.TLSCACerts.Path = expiredCertPath
+		networkConfig.Orderers["local.orderer.example.com"] = orderer1
+		backendMap["orderers"] = networkConfig.Orderers
+
+		return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
+	}
 }
