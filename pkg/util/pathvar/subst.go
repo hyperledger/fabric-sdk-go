@@ -9,6 +9,7 @@ package pathvar
 import (
 	"bytes"
 	"go/build"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -25,63 +26,48 @@ func goPath() string {
 }
 
 // Subst replaces instances of '${VARNAME}' (eg ${GOPATH}) with the variable.
-// As a special case, $GOPATH is also replaced.
-// NOTE: this function currently only performs substitution when the path string starts with $
-//       as the path variables are intended to assist with testing.
+// Variables names that are not set by the SDK are replaced with the environment variable.
 func Subst(path string) string {
-	if !strings.HasPrefix(path, "$") {
-		return path
-	}
+	const (
+		sepPrefix = "${"
+		sepSuffix = "}"
+	)
 
-	splits := strings.Split(path, "$")
-
-	// Due to the first check above, the following code is currently not possible:
-	//if len(splits) == 1 && path == splits[0] {
-	//	// No variables are in the path
-	//	return path
-	//}
+	splits := strings.Split(path, sepPrefix)
 
 	var buffer bytes.Buffer
-	buffer.WriteString(splits[0]) // first split precedes the first $ so should always be written
+	buffer.WriteString(splits[0]) // first split precedes the first sepPrefix so should always be written
+
 	for _, s := range splits[1:] {
-		// special case for GOPATH
-		if strings.HasPrefix(s, "GOPATH") {
-			buffer.WriteString(goPath())
-			buffer.WriteString(s[6:]) // Skip "GOPATH"
-			continue
-		}
-
-		if !strings.HasPrefix(s, "{") {
-			// not a variable
-			buffer.WriteString("$")
-			buffer.WriteString(s)
-			continue
-		}
-
-		endPos := strings.Index(s, "}") // not worrying about embedded '{'
-		if endPos == -1 {
-			// not a variable
-			buffer.WriteString("$")
-			buffer.WriteString(s)
-			continue
-		}
-
-		subs, ok := substVar(s[1:endPos]) // fix if not ASCII variable names
-		if !ok {
-			// not a variable
-			buffer.WriteString("$")
-			buffer.WriteString(s)
-			continue
-		}
-
-		buffer.WriteString(subs)
-		buffer.WriteString(s[endPos+1:]) // fix if not ASCII variable names
+		subst, rest := substVar(s, sepPrefix, sepSuffix)
+		buffer.WriteString(subst)
+		buffer.WriteString(rest)
 	}
+
 	return buffer.String()
 }
 
-// substVar returns the substituted variable
-func substVar(v string) (s string, ok bool) {
+// substVar searches for an instance of a variables name and replaces them with their value.
+// The first return value is substituted portion of the string or noMatch if no replacement occurred.
+// The second return value is the unconsumed portion of s.
+func substVar(s string, noMatch string, sep string) (string, string) {
+	endPos := strings.Index(s, sep)
+	if endPos == -1 {
+		return noMatch, s
+	}
+
+	v, ok := lookupVar(s[:endPos])
+	if !ok {
+		return noMatch, s
+	}
+
+	return v, s[endPos+1:]
+}
+
+// lookupVar returns the value of the variable.
+// The local variable table is consulted first, followed by environment variables.
+// Returns false if the variable doesn't exist.
+func lookupVar(v string) (string, bool) {
 	// TODO: optimize if the number of variable names grows
 	switch v {
 	case "GOPATH":
@@ -89,5 +75,5 @@ func substVar(v string) (s string, ok bool) {
 	case "CRYPTOCONFIG_FIXTURES_PATH":
 		return metadata.CryptoConfigPath, true
 	}
-	return "", false
+	return os.LookupEnv(v)
 }
