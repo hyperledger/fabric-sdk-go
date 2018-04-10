@@ -48,20 +48,6 @@ func WithBlockNum(value uint64) options.Opt {
 	}
 }
 
-// withConnectionProvider is used only for testing
-func withConnectionProvider(connProvider api.ConnectionProvider) options.Opt {
-	return func(p options.Params) {
-		if setter, ok := p.(connectionProviderSetter); ok {
-			setter.SetConnectionProvider(connProvider)
-		}
-	}
-}
-
-// connectionProviderSetter is only used in unit tests
-type connectionProviderSetter interface {
-	SetConnectionProvider(value api.ConnectionProvider)
-}
-
 type seekTypeSetter interface {
 	SetSeekType(value seek.Type)
 }

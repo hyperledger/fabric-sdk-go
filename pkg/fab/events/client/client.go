@@ -210,29 +210,11 @@ func (c *Client) connect() error {
 		go c.monitorConnection()
 	})
 
-	handler := c.afterConnectHandler()
-	if handler != nil {
-		if err1 := handler(); err1 != nil {
-			logger.Warnf("Error invoking afterConnect handler: %s. Disconnecting...", err1)
-
-			err2 := c.Submit(dispatcher.NewDisconnectEvent(errch))
-			if err2 != nil {
-				logger.Warnf("Submit failed %v", err2)
-			}
-			select {
-			case disconnErr := <-errch:
-				if disconnErr != nil {
-					logger.Warnf("Received error from disconnect request: %s", disconnErr)
-				} else {
-					logger.Debugf("Received success from disconnect request")
-				}
-			case <-time.After(c.respTimeout):
-				logger.Warnf("Timed out waiting for disconnect response")
-			}
-
-			c.setConnectionState(Connecting, Disconnected)
-
-			return errors.WithMessage(err1, "error invoking afterConnect handler")
+	handlerImp := c.afterConnectHandler()
+	if handlerImp != nil {
+		err3 := c.t(handlerImp, errch)
+		if err3 != nil {
+			return err3
 		}
 	}
 
@@ -244,6 +226,32 @@ func (c *Client) connect() error {
 		logger.Warnf("Submit failed %v", err2)
 	}
 	return err
+}
+
+func (c *Client) t(handlerImp handler, errch chan error) error {
+	if err1 := handlerImp(); err1 != nil {
+		logger.Warnf("Error invoking afterConnect handler: %s. Disconnecting...", err1)
+
+		err2 := c.Submit(dispatcher.NewDisconnectEvent(errch))
+		if err2 != nil {
+			logger.Warnf("Submit failed %v", err2)
+		}
+		select {
+		case disconnErr := <-errch:
+			if disconnErr != nil {
+				logger.Warnf("Received error from disconnect request: %s", disconnErr)
+			} else {
+				logger.Debugf("Received success from disconnect request")
+			}
+		case <-time.After(c.respTimeout):
+			logger.Warnf("Timed out waiting for disconnect response")
+		}
+
+		c.setConnectionState(Connecting, Disconnected)
+
+		return errors.WithMessage(err1, "error invoking afterConnect handler")
+	}
+	return nil
 }
 
 func (c *Client) connectWithRetry(maxAttempts uint, timeBetweenAttempts time.Duration) error {
@@ -370,9 +378,9 @@ func (c *Client) reconnect() {
 
 	logger.Debugf("Attempting to reconnect event client...")
 
-	handler := c.beforeReconnectHandler()
-	if handler != nil {
-		if err := handler(); err != nil {
+	handlerImp := c.beforeReconnectHandler()
+	if handlerImp != nil {
+		if err := handlerImp(); err != nil {
 			logger.Errorf("Error invoking beforeReconnect handler: %s", err)
 			return
 		}

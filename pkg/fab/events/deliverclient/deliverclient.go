@@ -85,8 +85,10 @@ func (c *Client) seek() error {
 	}
 
 	errch := make(chan error)
-	c.Submit(dispatcher.NewSeekEvent(seekInfo, errch))
-
+	err1 := c.Submit(dispatcher.NewSeekEvent(seekInfo, errch))
+	if err1 != nil {
+		return err1
+	}
 	select {
 	case err = <-errch:
 	case <-time.After(c.respTimeout):

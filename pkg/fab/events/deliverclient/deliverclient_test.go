@@ -12,6 +12,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
@@ -32,8 +33,6 @@ const (
 )
 
 var (
-	defaultOpts = []options.Opt{}
-
 	peer1 = fabclientmocks.NewMockPeer("peer1", "peer1.example.com:7051")
 	peer2 = fabclientmocks.NewMockPeer("peer2", "peer2.example.com:7051")
 
@@ -461,4 +460,18 @@ func newMockContext() *fabmocks.MockContext {
 	)
 	ctx.SetEndpointConfig(newMockConfig())
 	return ctx
+}
+
+// withConnectionProvider is used only for testing
+func withConnectionProvider(connProvider api.ConnectionProvider) options.Opt {
+	return func(p options.Params) {
+		if setter, ok := p.(connectionProviderSetter); ok {
+			setter.SetConnectionProvider(connProvider)
+		}
+	}
+}
+
+// connectionProviderSetter is only used in unit tests
+type connectionProviderSetter interface {
+	SetConnectionProvider(value api.ConnectionProvider)
 }

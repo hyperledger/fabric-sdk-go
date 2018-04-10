@@ -23,13 +23,13 @@ import (
 // event URL, which, in the case of Eventhub, is different
 // from the peer endpoint
 type EventEndpoint struct {
+	Certificate *x509.Certificate
 	fab.Peer
 	EvtURL          string
 	HostOverride    string
-	Certificate     *x509.Certificate
 	KeepAliveParams keepalive.ClientParameters
-	FailFast        bool
 	ConnectTimeout  time.Duration
+	FailFast        bool
 	AllowInsecure   bool
 }
 

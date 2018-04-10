@@ -160,8 +160,8 @@ func TestCloseIfIdle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
-	if err := eventClient.Connect(); err != nil {
-		t.Fatalf("error connecting channel event client: %s", err)
+	if err1 := eventClient.Connect(); err1 != nil {
+		t.Fatalf("error connecting channel event client: %s", err1)
 	}
 
 	reg, _, err := eventClient.RegisterBlockEvent()
@@ -241,8 +241,8 @@ func TestBlockEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
-	if err := eventClient.Connect(); err != nil {
-		t.Fatalf("error connecting channel event client: %s", err)
+	if err1 := eventClient.Connect(); err1 != nil {
+		t.Fatalf("error connecting channel event client: %s", err1)
 	}
 	defer eventClient.Close()
 
@@ -257,7 +257,10 @@ func TestBlockEvents(t *testing.T) {
 		t.Fatalf("error registering for block events: %s", err)
 	}
 	defer eventClient.Unregister(registration2)
+	checkBlockEvent(t, channelID, conn, eventch1, eventch2)
+}
 
+func checkBlockEvent(t *testing.T, channelID string, conn mockconn.Connection, eventch1 <-chan *fab.BlockEvent, eventch2 <-chan *fab.BlockEvent) {
 	conn.Ledger().NewBlock(channelID,
 		servicemocks.NewTransaction("txID", pb.TxValidationCode_VALID, cb.HeaderType_ENDORSER_TRANSACTION),
 	)
@@ -299,8 +302,8 @@ func TestFilteredBlockEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
-	if err := eventClient.Connect(); err != nil {
-		t.Fatalf("error connecting channel event client: %s", err)
+	if err1 := eventClient.Connect(); err1 != nil {
+		t.Fatalf("error connecting channel event client: %s", err1)
 	}
 	defer eventClient.Close()
 
@@ -326,7 +329,10 @@ func TestFilteredBlockEvents(t *testing.T) {
 		servicemocks.NewFilteredTx(txID1, txCode1),
 		servicemocks.NewFilteredTx(txID2, txCode2),
 	)
+	checkFilteredBlockEvents(t, eventch1, eventch2, channelID)
+}
 
+func checkFilteredBlockEvents(t *testing.T, eventch1 <-chan *fab.FilteredBlockEvent, eventch2 <-chan *fab.FilteredBlockEvent, channelID string) {
 	numExpected := 2
 	numReceived := 0
 	for {
@@ -335,23 +341,13 @@ func TestFilteredBlockEvents(t *testing.T) {
 			if !ok {
 				t.Fatalf("unexpected closed channel")
 			}
-			if fbevent.FilteredBlock == nil {
-				t.Fatalf("Expecting filtered block but got nil")
-			}
-			if fbevent.FilteredBlock.ChannelId != channelID {
-				t.Fatalf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
-			}
+			checkFbEvent(t, fbevent, channelID)
 			numReceived++
 		case fbevent, ok := <-eventch2:
 			if !ok {
 				t.Fatalf("unexpected closed channel")
 			}
-			if fbevent.FilteredBlock == nil {
-				t.Fatalf("Expecting filtered block but got nil")
-			}
-			if fbevent.FilteredBlock.ChannelId != channelID {
-				t.Fatalf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
-			}
+			checkFbEvent(t, fbevent, channelID)
 			numReceived++
 		case <-time.After(2 * time.Second):
 			if numReceived != numExpected {
@@ -359,6 +355,15 @@ func TestFilteredBlockEvents(t *testing.T) {
 			}
 			return
 		}
+	}
+}
+
+func checkFbEvent(t *testing.T, fbevent *fab.FilteredBlockEvent, channelID string) {
+	if fbevent.FilteredBlock == nil {
+		t.Fatalf("Expecting filtered block but got nil")
+	}
+	if fbevent.FilteredBlock.ChannelId != channelID {
+		t.Fatalf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
 	}
 }
 
@@ -376,8 +381,8 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
-	if err := eventClient.Connect(); err != nil {
-		t.Fatalf("error connecting channel event client: %s", err)
+	if err1 := eventClient.Connect(); err1 != nil {
+		t.Fatalf("error connecting channel event client: %s", err1)
 	}
 	defer eventClient.Close()
 
@@ -412,7 +417,10 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 		servicemocks.NewTransaction(txID1, txCode1, cb.HeaderType_ENDORSER_TRANSACTION),
 		servicemocks.NewTransaction(txID2, txCode2, cb.HeaderType_ENDORSER_TRANSACTION),
 	)
+	checkBlockAndFilteredBlockEvents(t, channelID, fbeventch, beventch, tx1, tx2)
 
+}
+func checkBlockAndFilteredBlockEvents(t *testing.T, channelID string, fbeventch <-chan *fab.FilteredBlockEvent, beventch <-chan *fab.BlockEvent, tx1 *pb.FilteredTransaction, tx2 *pb.FilteredTransaction) {
 	numReceived := 0
 	numExpected := 2
 
@@ -454,8 +462,8 @@ func TestTxStatusEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
-	if err := eventClient.Connect(); err != nil {
-		t.Fatalf("error connecting channel event client: %s", err)
+	if err1 := eventClient.Connect(); err1 != nil {
+		t.Fatalf("error connecting channel event client: %s", err1)
 	}
 	defer eventClient.Close()
 
@@ -464,7 +472,7 @@ func TestTxStatusEvents(t *testing.T) {
 	txID2 := "5678"
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
-	if _, _, err := eventClient.RegisterTxStatusEvent(""); err == nil {
+	if _, _, err1 := eventClient.RegisterTxStatusEvent(""); err1 == nil {
 		t.Fatalf("expecting error registering for TxStatus event without a TX ID but got none")
 	}
 	reg1, _, err := eventClient.RegisterTxStatusEvent(txID1)
@@ -494,7 +502,10 @@ func TestTxStatusEvents(t *testing.T) {
 		servicemocks.NewFilteredTx(txID1, txCode1),
 		servicemocks.NewFilteredTx(txID2, txCode2),
 	)
+	checkTxStatusEvents(t, eventch1, eventch2, txID1, txID2, txCode1, txCode2)
+}
 
+func checkTxStatusEvents(t *testing.T, eventch1 <-chan *fab.TxStatusEvent, eventch2 <-chan *fab.TxStatusEvent, txID1, txID2 string, txCode1, txCode2 pb.TxValidationCode) {
 	numExpected := 2
 	numReceived := 0
 	done := false
@@ -538,8 +549,8 @@ func TestCCEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
-	if err := eventClient.Connect(); err != nil {
-		t.Fatalf("error connecting channel event client: %s", err)
+	if err1 := eventClient.Connect(); err1 != nil {
+		t.Fatalf("error connecting channel event client: %s", err1)
 	}
 	defer eventClient.Close()
 
@@ -551,13 +562,13 @@ func TestCCEvents(t *testing.T) {
 	event2 := "event2"
 	event3 := "event3"
 
-	if _, _, err := eventClient.RegisterChaincodeEvent("", ccFilter1); err == nil {
+	if _, _, err1 := eventClient.RegisterChaincodeEvent("", ccFilter1); err1 == nil {
 		t.Fatalf("expecting error registering for chaincode events without CC ID but got none")
 	}
-	if _, _, err := eventClient.RegisterChaincodeEvent(ccID1, ""); err == nil {
+	if _, _, err1 := eventClient.RegisterChaincodeEvent(ccID1, ""); err1 == nil {
 		t.Fatalf("expecting error registering for chaincode events without event filter but got none")
 	}
-	if _, _, err := eventClient.RegisterChaincodeEvent(ccID1, ".(xxx"); err == nil {
+	if _, _, err1 := eventClient.RegisterChaincodeEvent(ccID1, ".(xxx"); err1 == nil {
 		t.Fatalf("expecting error registering for chaincode events with invalid (regular expression) event filter but got none")
 	}
 	reg1, _, err := eventClient.RegisterChaincodeEvent(ccID1, ccFilter1)
@@ -588,7 +599,11 @@ func TestCCEvents(t *testing.T) {
 		servicemocks.NewFilteredTxWithCCEvent("txid2", ccID2, event2),
 		servicemocks.NewFilteredTxWithCCEvent("txid3", ccID2, event3),
 	)
+	checkCCEvents(t, eventch1, eventch2, ccID1, ccID2, event1, event2, event3)
 
+}
+
+func checkCCEvents(t *testing.T, eventch1 <-chan *fab.CCEvent, eventch2 <-chan *fab.CCEvent, ccID1, ccID2, event1, event2, event3 string) {
 	numExpected := 3
 	numReceived := 0
 	done := false
@@ -738,8 +753,8 @@ func TestConcurrentEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
-	if err := eventClient.Connect(); err != nil {
-		t.Fatalf("error connecting channel event client: %s", err)
+	if err1 := eventClient.Connect(); err1 != nil {
+		t.Fatalf("error connecting channel event client: %s", err1)
 	}
 
 	// First register for block, filtered block, and chaincode events ...
@@ -783,51 +798,78 @@ func TestConcurrentEvents(t *testing.T) {
 		}
 	}()
 
-	blockTestDone := false
-	fblockTestDone := false
-	ccTestDone := false
-	txStatusTestDone := false
+	checkConcurrentEvents(blockTestErr, t, fblockTestErr, ccTestErr, txStatusTestErr)
+}
 
+func checkConcurrentEvents(blockTestErr chan error, t *testing.T, fblockTestErr chan error, ccTestErr chan error, txStatusTestErr chan error) {
+	var blockTestDone, fblockTestDone, ccTestDone, txStatusTestDone bool
 	for {
 		select {
 		case err := <-blockTestErr:
-			if err != nil {
-				t.Fatalf("Block test returned error: %s", err)
-			}
-			blockTestDone = true
+			blockTestDone = checkBlockDone(err, t)
 		case err := <-fblockTestErr:
-			if err != nil {
-				t.Fatalf("Filtered Block test returned error: %s", err)
-			}
-			fblockTestDone = true
+			fblockTestDone = checkFblockDone(err, t)
 		case err := <-ccTestErr:
-			if err != nil {
-				t.Fatalf("Chaincode test returned error: %s", err)
-			}
-			ccTestDone = true
+			ccTestDone = checkCCDone(err, t)
 		case err := <-txStatusTestErr:
-			if err != nil {
-				t.Fatalf("TxStatus test returned error: %s", err)
-			}
-			txStatusTestDone = true
+			txStatusTestDone = checkTxStatusDone(err, t)
 		case <-time.After(10 * time.Second):
-			if !blockTestDone {
-				t.Fatalf("Timed out waiting for block test")
-			}
-			if !fblockTestDone {
-				t.Fatalf("Timed out waiting for filtered block test")
-			}
-			if !ccTestDone {
-				t.Fatalf("Timed out waiting for chaincode test")
-			}
-			if !txStatusTestDone {
-				t.Fatalf("Timed out waiting for TxStatus test")
-			}
+			checkEventsAreDone(t, blockTestDone, fblockTestDone, ccTestDone, txStatusTestDone)
 		}
-		if blockTestDone && fblockTestDone && ccTestDone && txStatusTestDone {
-			fmt.Printf("All tests completed successfully\n")
+		if checkIfAllEventsRecv(blockTestDone, fblockTestDone, ccTestDone, txStatusTestDone) {
 			break
 		}
+	}
+}
+
+func checkIfAllEventsRecv(blockTestDone bool, fblockTestDone bool, ccTestDone bool, txStatusTestDone bool) bool {
+	if blockTestDone && fblockTestDone && ccTestDone && txStatusTestDone {
+		fmt.Printf("All tests completed successfully\n")
+		return true
+	}
+	return false
+}
+
+func checkBlockDone(err error, t *testing.T) bool {
+	if err != nil {
+		t.Fatalf("Block test returned error: %s", err)
+	}
+	return true
+}
+
+func checkFblockDone(err error, t *testing.T) bool {
+	if err != nil {
+		t.Fatalf("Filtered Block test returned error: %s", err)
+	}
+	return true
+}
+
+func checkCCDone(err error, t *testing.T) bool {
+	if err != nil {
+		t.Fatalf("Chaincode test returned error: %s", err)
+	}
+	return true
+}
+
+func checkTxStatusDone(err error, t *testing.T) bool {
+	if err != nil {
+		t.Fatalf("TxStatus test returned error: %s", err)
+	}
+	return true
+}
+
+func checkEventsAreDone(t *testing.T, blockTestDone, fblockTestDone, ccTestDone, txStatusTestDone bool) {
+	if !blockTestDone {
+		t.Fatalf("Timed out waiting for block test")
+	}
+	if !fblockTestDone {
+		t.Fatalf("Timed out waiting for filtered block test")
+	}
+	if !ccTestDone {
+		t.Fatalf("Timed out waiting for chaincode test")
+	}
+	if !txStatusTestDone {
+		t.Fatalf("Timed out waiting for TxStatus test")
 	}
 }
 
@@ -1088,8 +1130,8 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents mockconn.NumBlo
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
-	if err := eventClient.Connect(); err != nil {
-		t.Fatalf("error connecting channel event client: %s", err)
+	if err1 := eventClient.Connect(); err1 != nil {
+		t.Fatalf("error connecting channel event client: %s", err1)
 	}
 	defer eventClient.Close()
 
@@ -1146,8 +1188,11 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents mockconn.NumBlo
 		)
 	}
 
-	var eventsReceived mockconn.Received
+	checkEvents(numCh, t, expectedBlockEvents, expectedCCEvents)
+}
 
+func checkEvents(numCh chan mockconn.Received, t *testing.T, expectedBlockEvents mockconn.NumBlock, expectedCCEvents mockconn.NumChaincode) {
+	var eventsReceived mockconn.Received
 	select {
 	case received, ok := <-numCh:
 		if !ok {
@@ -1158,7 +1203,6 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents mockconn.NumBlo
 	case <-time.After(20 * time.Second):
 		t.Fatalf("timed out waiting for events")
 	}
-
 	if eventsReceived.NumBlock != expectedBlockEvents {
 		t.Fatalf("Expecting to receive [%d] block events but received [%d]", expectedBlockEvents, eventsReceived.NumBlock)
 	}
@@ -1271,10 +1315,8 @@ func newClient(context context.Client, chConfig fab.ChannelCfg, connectionProvid
 	client.SetAfterConnectHandler(afterConnect)
 	client.SetBeforeReconnectHandler(beforeReconnect)
 
-	if err := client.Start(); err != nil {
-		return client, err
-	}
-	return client, nil
+	err := client.Start()
+	return client, err
 }
 
 func newClientWithMockConn(context context.Client, chConfig fab.ChannelCfg, clientProvider ClientProvider, connOpts ...mockconn.Opt) (*Client, mockconn.Connection, error) {
@@ -1334,7 +1376,7 @@ func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expecte
 	if event.ChaincodeID != expectedCCID {
 		t.Fatalf("expecting event for CC [%s] but received event for CC [%s]", expectedCCID, event.ChaincodeID)
 	}
-	if bytes.Compare(event.Payload, expectedPayload) != 0 {
+	if !bytes.Equal(event.Payload, expectedPayload) {
 		t.Fatalf("expecting payload [%s] but received payload [%s]", expectedPayload, event.Payload)
 	}
 

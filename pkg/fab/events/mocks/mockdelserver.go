@@ -60,12 +60,12 @@ func (s *MockDeliverServer) disconnectErr() error {
 func (s *MockDeliverServer) Deliver(srv pb.Deliver_DeliverServer) error {
 	status := s.Status()
 	if status != cb.Status_UNKNOWN {
-		srv.Send(&pb.DeliverResponse{
+		err := srv.Send(&pb.DeliverResponse{
 			Type: &pb.DeliverResponse_Status{
 				Status: status,
 			},
 		})
-		return errors.Errorf("returning error status: %s", status)
+		return errors.Errorf("returning error status: %s %v", status, err)
 	}
 
 	for {
@@ -79,11 +79,14 @@ func (s *MockDeliverServer) Deliver(srv pb.Deliver_DeliverServer) error {
 			return err
 		}
 
-		srv.Send(&pb.DeliverResponse{
+		err1 := srv.Send(&pb.DeliverResponse{
 			Type: &pb.DeliverResponse_Block{
 				Block: &cb.Block{},
 			},
 		})
+		if err1 != nil {
+			return err1
+		}
 	}
 	return nil
 }
@@ -91,12 +94,12 @@ func (s *MockDeliverServer) Deliver(srv pb.Deliver_DeliverServer) error {
 // DeliverFiltered delivers a stream of filtered blocks
 func (s *MockDeliverServer) DeliverFiltered(srv pb.Deliver_DeliverFilteredServer) error {
 	if s.status != cb.Status_UNKNOWN {
-		srv.Send(&pb.DeliverResponse{
+		err1 := srv.Send(&pb.DeliverResponse{
 			Type: &pb.DeliverResponse_Status{
 				Status: s.status,
 			},
 		})
-		return errors.Errorf("returning error status: %s", s.status)
+		return errors.Errorf("returning error status: %s %v", s.status, err1)
 	}
 
 	for {
@@ -110,11 +113,14 @@ func (s *MockDeliverServer) DeliverFiltered(srv pb.Deliver_DeliverFilteredServer
 			return err
 		}
 
-		srv.Send(&pb.DeliverResponse{
+		err1 := srv.Send(&pb.DeliverResponse{
 			Type: &pb.DeliverResponse_FilteredBlock{
 				FilteredBlock: &pb.FilteredBlock{},
 			},
 		})
+		if err1 != nil {
+			return err1
+		}
 	}
 	return nil
 }

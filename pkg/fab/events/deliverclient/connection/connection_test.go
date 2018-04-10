@@ -37,11 +37,6 @@ const (
 	streamTypeDeliverFiltered streamType = "DELIVER_FILTERED"
 )
 
-var (
-	peer        = fabmocks.NewMockPeer("peer1", peerURL)
-	invalidPeer = fabmocks.NewMockPeer("peer2", "grpcs://invalidhost:7051")
-)
-
 func TestInvalidConnectionOpts(t *testing.T) {
 	if _, err := New(newMockContext(), fabmocks.NewMockChannelCfg("mychannel"), Deliver, "grpcs://invalidhost:7051"); err == nil {
 		t.Fatalf("expecting error creating new connection with invaid address but got none")
@@ -163,10 +158,7 @@ func getStreamProvider(streamType streamType) StreamProvider {
 
 func testSend(t *testing.T, streamType streamType) {
 	channelID := "mychannel"
-	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), getStreamProvider(streamType), peerURL)
-	if err != nil {
-		t.Fatalf("error creating new connection: %s", err)
-	}
+	conn := createNewConn(channelID, streamType, t)
 
 	eventch := make(chan interface{})
 
@@ -176,6 +168,12 @@ func testSend(t *testing.T, streamType streamType) {
 		t.Fatalf("error sending seek request for channel [%s]: err", err)
 	}
 
+	checkEvents(eventch, t, streamType)
+
+	conn.Close()
+}
+
+func checkEvents(eventch chan interface{}, t *testing.T, streamType streamType) {
 	select {
 	case e, ok := <-eventch:
 		if !ok {
@@ -199,8 +197,14 @@ func testSend(t *testing.T, streamType streamType) {
 	case <-time.After(5 * time.Second):
 		t.Fatalf("timed out waiting for event")
 	}
+}
 
-	conn.Close()
+func createNewConn(channelID string, streamType streamType, t *testing.T) *DeliverConnection {
+	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), getStreamProvider(streamType), peerURL)
+	if err != nil {
+		t.Fatalf("error creating new connection: %s", err)
+	}
+	return conn
 }
 
 var deliverServer *eventmocks.MockDeliverServer

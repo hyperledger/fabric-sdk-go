@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
@@ -112,6 +111,12 @@ func TestSend(t *testing.T) {
 		t.Fatalf("Error sending unregister interest event: %s", err)
 	}
 
+	checkEvent(eventch, t)
+
+	conn.Close()
+}
+
+func checkEvent(eventch chan interface{}, t *testing.T) {
 	select {
 	case e, ok := <-eventch:
 		if !ok {
@@ -133,8 +138,6 @@ func TestSend(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatalf("timed out waiting for event")
 	}
-
-	conn.Close()
 }
 
 func TestDisconnected(t *testing.T) {
@@ -202,13 +205,6 @@ func TestMain(m *testing.M) {
 
 	time.Sleep(2 * time.Second)
 	os.Exit(m.Run())
-}
-
-func newPeerConfig(eventURL string) *fab.PeerConfig {
-	return &fab.PeerConfig{
-		EventURL:    eventURL,
-		GRPCOptions: make(map[string]interface{}),
-	}
 }
 
 func newMockContext() *fabmocks.MockContext {

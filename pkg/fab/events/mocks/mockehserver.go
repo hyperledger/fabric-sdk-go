@@ -60,13 +60,19 @@ func (s *MockEventhubServer) Chat(srv pb.Events_ChatServer) error {
 		switch emsg.Event.(type) {
 		case *pb.Event_Register:
 			// Send back the same event (which is what the event hub server currently does)
-			srv.Send(&emsg)
+			send(srv, emsg)
 		case *pb.Event_Unregister:
 			// Send back the same event (which is what the event hub server currently does)
-			srv.Send(&emsg)
+			send(srv, emsg)
 		default:
 			panic(fmt.Sprintf("Unsupported message type: %T", emsg))
 		}
 	}
 	return nil
+}
+
+func send(srv pb.Events_ChatServer, emsg pb.Event) {
+	if err := srv.Send(&emsg); err != nil {
+		panic(fmt.Sprintf("Error Send event: %s", err))
+	}
 }

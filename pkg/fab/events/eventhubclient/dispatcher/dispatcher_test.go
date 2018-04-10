@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -443,17 +442,6 @@ func TestFilteredBlockEvents(t *testing.T) {
 	if err := <-stopResp; err != nil {
 		t.Fatalf("Error stopping dispatcher: %s", err)
 	}
-}
-
-func newPeerConfig(peerURL string) *fab.PeerConfig {
-	return &fab.PeerConfig{
-		URL:         peerURL,
-		GRPCOptions: make(map[string]interface{}),
-	}
-}
-
-func newMockContext() context.Client {
-	return fabmocks.NewMockContext(mspmocks.NewMockSigningIdentity("user1", "Org1MSP"))
 }
 
 func newMockEventEndpoint(url string) api.EventEndpoint {

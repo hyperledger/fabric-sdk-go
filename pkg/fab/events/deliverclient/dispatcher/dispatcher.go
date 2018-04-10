@@ -25,7 +25,7 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 type dsConnection interface {
 	api.Connection
-	Send(*ab.SeekInfo) error
+	Send(seekInfo *ab.SeekInfo) error
 }
 
 // Dispatcher is responsible for handling all events, including connection and registration events originating from the client,
