@@ -68,6 +68,7 @@ func ConfigFromBackend(coreBackend core.ConfigBackend) (fab.EndpointConfig, erro
 	config.peerMatchers = make(map[int]*regexp.Regexp)
 	config.ordererMatchers = make(map[int]*regexp.Regexp)
 	config.caMatchers = make(map[int]*regexp.Regexp)
+	config.channelMatchers = make(map[int]*regexp.Regexp)
 
 	matchError := config.compileMatchers()
 	if matchError != nil {
@@ -86,6 +87,7 @@ type EndpointConfig struct {
 	peerMatchers        map[int]*regexp.Regexp
 	ordererMatchers     map[int]*regexp.Regexp
 	caMatchers          map[int]*regexp.Regexp
+	channelMatchers     map[int]*regexp.Regexp
 	certPoolLock        sync.Mutex
 }
 
@@ -328,6 +330,49 @@ func (c *EndpointConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
 	return netPeers, nil
 }
 
+// MappedChannelName will return channelName if it is an original channel name in the config
+// if it is not, then it will try to find a channelMatcher and return its MappedName.
+// If more than one matcher is found, then the first matcher in the list will be used.
+// TODO expose this function if it's needed elsewhere in the sdk
+func (c *EndpointConfig) mappedChannelName(channelName string) (string, error) {
+	networkConfig, err := c.NetworkConfig()
+	if err != nil {
+		return "", err
+	}
+	// if channelName is the original key found in the Channels map config, then return it as is
+	_, ok := networkConfig.Channels[strings.ToLower(channelName)]
+	if ok {
+		return channelName, nil
+	}
+
+	// if !ok, then find a channelMatcher for channelName
+
+	//Return if no channelMatchers are configured
+	if len(c.channelMatchers) == 0 {
+		return "", errors.New("no Channel entityMatchers found")
+	}
+
+	//sort the keys
+	var keys []int
+	for k := range c.channelMatchers {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
+	//loop over channelMatchers to find the matching channel name
+	for _, k := range keys {
+		v := c.channelMatchers[k]
+		if v.MatchString(channelName) {
+			// get the matching matchConfig from the index number
+			channelMatchConfig := networkConfig.EntityMatchers["channel"][k]
+			return channelMatchConfig.MappedName, nil
+		}
+	}
+
+	// not matchers found, return an error
+	return "", errors.WithStack(status.New(status.ClientStatus, status.NoMatchingChannelEntity.ToInt32(), "no matching channel config found", nil))
+}
+
 // ChannelConfig returns the channel configuration
 func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, error) {
 	config, err := c.NetworkConfig()
@@ -338,7 +383,11 @@ func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, 
 	// viper lowercases all key maps
 	ch, ok := config.Channels[strings.ToLower(name)]
 	if !ok {
-		return nil, nil
+		matchingChannel, _, matchErr := c.tryMatchingChannelConfig(name)
+		if matchErr != nil {
+			return nil, errors.WithMessage(matchErr, "channel config not found")
+		}
+		return matchingChannel, nil
 	}
 
 	return &ch, nil
@@ -356,7 +405,14 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 	// viper lowercases all key maps
 	chConfig, ok := netConfig.Channels[strings.ToLower(name)]
 	if !ok {
-		return peers, nil
+		matchingChannel, mappedChannel, matchErr := c.tryMatchingChannelConfig(name)
+		if matchErr != nil {
+			return peers, nil
+		}
+
+		// reset 'name' with the mappedChannel as it's referenced further below
+		name = mappedChannel
+		chConfig = *matchingChannel
 	}
 
 	for peerName, chPeerConfig := range chConfig.Peers {
@@ -880,6 +936,27 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererName string) (*fab.Orde
 	return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingOrdererEntity.ToInt32(), "no matching orderer config found", nil))
 }
 
+func (c *EndpointConfig) tryMatchingChannelConfig(channelName string) (*fab.ChannelNetworkConfig, string, error) {
+	networkConfig, err := c.NetworkConfig()
+	if err != nil {
+		return nil, "", err
+	}
+
+	// get the mapped channel Name
+	mappedChannelName, err := c.mappedChannelName(channelName)
+	if err != nil {
+		return nil, "", err
+	}
+
+	//Get the channelConfig from mappedChannelName
+	channelConfig, ok := networkConfig.Channels[strings.ToLower(mappedChannelName)]
+	if !ok {
+		return nil, "", errors.New("failed to load config from matched Channel")
+	}
+
+	return &channelConfig, mappedChannelName, nil
+}
+
 func copyPropertiesMap(origMap map[string]interface{}) map[string]interface{} {
 	newMap := make(map[string]interface{}, len(origMap))
 	for k, v := range origMap {
@@ -955,6 +1032,17 @@ func (c *EndpointConfig) compileMatchers() error {
 		for i := 0; i < len(certMatchersConfig); i++ {
 			if certMatchersConfig[i].Pattern != "" {
 				c.caMatchers[i], err = regexp.Compile(certMatchersConfig[i].Pattern)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	if networkConfig.EntityMatchers["channel"] != nil {
+		channelMatchers := networkConfig.EntityMatchers["channel"]
+		for i, matcher := range channelMatchers {
+			if matcher.Pattern != "" {
+				c.channelMatchers[i], err = regexp.Compile(matcher.Pattern)
 				if err != nil {
 					return err
 				}

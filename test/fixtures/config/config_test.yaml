@@ -43,6 +43,10 @@ client:
     # Event service type (deliver|eventhub) - default: deliver
     # NOTE: This is temporary until the SDK starts making use of channel capabilities
     type: deliver
+    # the below timeouts are commented out to use the default values that are found in
+    # "pkg/fab/endpointconfig.go"
+    # the client is free to override the default values by uncommenting and resetting
+    # the values as they see fit in their config file
 #    timeout:
 #      connection: 15s
 #      registrationResponse: 15s
@@ -449,3 +453,4 @@ entityMatchers:
     - pattern: (\w+).org2.example.(\w+)
       urlSubstitutionExp:
       mappedHost: local.ca.org2.example.com
+

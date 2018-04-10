@@ -95,11 +95,16 @@ type PeerConfig struct {
 }
 
 // MatchConfig contains match pattern and substitution pattern
-// for pattern matching of network configured hostnames with static config
+// for pattern matching of network configured hostnames or channel names with static config
 type MatchConfig struct {
-	Pattern                             string
+	Pattern string
+
+	// these are used for hostname mapping
 	URLSubstitutionExp                  string
 	EventURLSubstitutionExp             string
 	SSLTargetOverrideURLSubstitutionExp string
 	MappedHost                          string
+
+	// this is used for Name mapping instead of hostname mappings
+	MappedName string
 }

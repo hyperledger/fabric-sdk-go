@@ -60,6 +60,9 @@ const (
 	// PrematureChaincodeExecution indicates that an attempt was made to invoke a chaincode that's
 	// in the process of being launched.
 	PrematureChaincodeExecution Code = 24
+
+	// NoMatchingChannelEntity is if entityMatchers are unable to find any matchingChannel
+	NoMatchingChannelEntity Code = 25
 )
 
 // CodeName maps the codes in this packages to human-readable strings
@@ -79,6 +82,7 @@ var CodeName = map[int32]string{
 	22: "NO_MATCHING_PEER_ENTITY",
 	23: "NO_MATCHING_ORDERER_ENTITY",
 	24: "PREMATURE_CHAINCODE_EXECUTION",
+	25: "NO_MATCHING_CHANNEL_ENTITY",
 }
 
 // ToInt32 cast to int32
