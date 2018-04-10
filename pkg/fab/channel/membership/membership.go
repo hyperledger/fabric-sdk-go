@@ -127,21 +127,9 @@ func loadMSPs(mspConfigs []*mb.MSPConfig, cs core.CryptoSuite) ([]msp.MSP, error
 			return nil, errors.Errorf("MSP configuration missing the payload in the 'Config' property")
 		}
 
-		fabricConfig := &mb.FabricMSPConfig{}
-		err := proto.Unmarshal(config.Config, fabricConfig)
+		fabricConfig, err := getFabricConfig(config)
 		if err != nil {
-			return nil, errors.Wrap(err, "unmarshal FabricMSPConfig from config failed")
-		}
-
-		if fabricConfig.Name == "" {
-			return nil, errors.New("MSP Configuration missing name")
-		}
-
-		// with this method we are only dealing with verifying MSPs, not local MSPs. Local MSPs are instantiated
-		// from user enrollment materials (see User class). For verifying MSPs the root certificates are always
-		// required
-		if len(fabricConfig.RootCerts) == 0 {
-			return nil, errors.New("MSP Configuration missing root certificates required for validating signing certificates")
+			return nil, err
 		}
 
 		// get the application org names
@@ -161,7 +149,10 @@ func loadMSPs(mspConfigs []*mb.MSPConfig, cs core.CryptoSuite) ([]msp.MSP, error
 			return nil, errors.Wrap(err, "configure MSP failed")
 		}
 
-		mspID, _ := newMSP.GetIdentifier()
+		mspID, err1 := newMSP.GetIdentifier()
+		if err1 != nil {
+			return nil, errors.Wrap(err1, "failed to get identifier")
+		}
 		logger.Debugf("loadMSPs - adding msp=%s", mspID)
 
 		msps = append(msps, newMSP)
@@ -169,6 +160,28 @@ func loadMSPs(mspConfigs []*mb.MSPConfig, cs core.CryptoSuite) ([]msp.MSP, error
 
 	logger.Debugf("loadMSPs - loaded %d MSPs", len(msps))
 	return msps, nil
+}
+
+func getFabricConfig(config *mb.MSPConfig) (*mb.FabricMSPConfig, error) {
+
+	fabricConfig := &mb.FabricMSPConfig{}
+	err := proto.Unmarshal(config.Config, fabricConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal FabricMSPConfig from config failed")
+	}
+
+	if fabricConfig.Name == "" {
+		return nil, errors.New("MSP Configuration missing name")
+	}
+
+	// with this method we are only dealing with verifying MSPs, not local MSPs. Local MSPs are instantiated
+	// from user enrollment materials (see User class). For verifying MSPs the root certificates are always
+	// required
+	if len(fabricConfig.RootCerts) == 0 {
+		return nil, errors.New("MSP Configuration missing root certificates required for validating signing certificates")
+	}
+
+	return fabricConfig, nil
 }
 
 //addCertsToConfig adds cert bytes to config TLSCACertPool

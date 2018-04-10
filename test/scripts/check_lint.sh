@@ -80,5 +80,5 @@ echo "Running metalinters..."
 for i in "${arr1[@]}"
 do
    echo "Checking $i"
-   $GOMETALINT_CMD $i/...
+   $GOMETALINT_CMD --deadline=300s $i/...
 done

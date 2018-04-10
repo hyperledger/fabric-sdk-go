@@ -329,57 +329,43 @@ func badOpt() Option {
 }
 
 func TestConfigBackend_Lookup(t *testing.T) {
-	configBackend, err := FromFile(configTestFilePath)()
+	var err error
+	configBackend, err = FromFile(configTestFilePath)()
 	if err != nil {
 		t.Fatalf("Unexpected error reading config backend: %v", err)
 	}
 
-	value, ok := configBackend.Lookup("name")
+	checkConfigStringKey(t, "name", "global-trade-network", true)
+
+	checkConfigStringKey(t, "description", "", false)
+
+	checkConfigStringKey(t, "x-type", "h1fv1", true)
+
+	checkConfigMapKey(t, "channels.mychannel.peers", 1)
+
+	checkConfigMapKey(t, "organizations", 3)
+}
+
+func checkConfigStringKey(t *testing.T, configKey string, expectedValue string, checkNotEquals bool) {
+	value, ok := configBackend.Lookup(configKey)
 	if !ok {
-		t.Fatal(err)
+		t.Fatal(fmt.Sprintf("can't lookup key %s in the config", configKey))
 	}
-
-	name := value.(string)
-	if name != "global-trade-network" {
-		t.Fatal("Expected Name to be global-trade-network")
+	v := value.(string)
+	if v != expectedValue && checkNotEquals {
+		t.Fatal(fmt.Sprintf("Expected %s to be '%s' but got '%s'", configKey, expectedValue, v))
 	}
+}
 
-	value, ok = configBackend.Lookup("description")
+func checkConfigMapKey(t *testing.T, configKey string, expectedNumItems int) {
+	value, ok := configBackend.Lookup(configKey)
 	if !ok {
-		t.Fatal(err)
+		t.Fatal(fmt.Sprintf("can't lookup key %s in the config", configKey))
 	}
-	description := value.(string)
-	if description == "" {
-		t.Fatal("Expected non empty description")
+	v := value.(map[string]interface{})
+	if len(v) != expectedNumItems {
+		t.Fatal(fmt.Sprintf("Expected only %d %s but got %d", expectedNumItems, configKey, len(v)))
 	}
-
-	value, ok = configBackend.Lookup("x-type")
-	if !ok {
-		t.Fatal(err)
-	}
-	xType := value.(string)
-	if xType != "h1fv1" {
-		t.Fatal("Expected x-type to be h1fv1")
-	}
-
-	value, ok = configBackend.Lookup("channels.mychannel.peers")
-	if !ok {
-		t.Fatal(err)
-	}
-	peers := value.(map[string]interface{})
-	if len(peers) != 1 {
-		t.Fatal("Expected only 1 peer in test config")
-	}
-
-	value, ok = configBackend.Lookup("organizations")
-	if !ok {
-		t.Fatal(err)
-	}
-	orgs := value.(map[string]interface{})
-	if len(orgs) != 3 {
-		t.Fatal("Expected only 3 orgs")
-	}
-
 }
 
 /*
