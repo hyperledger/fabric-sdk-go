@@ -74,9 +74,6 @@ FIXTURE_DOCKER_REMOVE_FORCE ?= false
 # Options for exercising unit tests (overridable)
 FABRIC_SDK_DEPRECATED_UNITTEST   ?= false
 
-#config files
-INT_TESTS_LOCAL_CONFIG_FILE := config_test_local.yaml
-
 # Code levels to exercise integration/e2e tests against (overridable)
 FABRIC_STABLE_INTTEST         ?= true
 FABRIC_STABLE_PKCS11_INTTEST  ?= false
@@ -333,7 +330,7 @@ endif
 
 .PHONY: integration-tests-local
 integration-tests-local: temp-clean depend populate
-	FABRIC_CRYPTOCONFIG_VERSION=$(FABRIC_CRYPTOCONFIG_VER) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_CODELEVEL_TAG) CONFIG_FILE=$(INT_TESTS_LOCAL_CONFIG_FILE) $(TEST_SCRIPTS_PATH)/integration.sh
+	FABRIC_CRYPTOCONFIG_VERSION=$(FABRIC_CRYPTOCONFIG_VER) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_CODELEVEL_TAG) TEST_LOCAL=true  $(TEST_SCRIPTS_PATH)/integration.sh
 
 .PHONY: dockerenv-prev-up
 dockerenv-prev-up: clean

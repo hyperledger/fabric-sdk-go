@@ -14,7 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -79,7 +78,7 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	configBackend, err := sdk.Config()
 	if err != nil {
 		//For some tests SDK may not have backend set, try with config file if backend is missing
-		configBackend, err = config.FromFile(setup.ConfigFile)()
+		configBackend, err = ConfigBackend()
 		if err != nil {
 			return errors.Wrapf(err, "failed to get config backend from config: %v", err)
 		}
@@ -123,11 +122,6 @@ func getOrgTargets(configBackend core.ConfigBackend, org string) ([]string, erro
 		targets = append(targets, p.URL)
 	}
 	return targets, nil
-}
-
-// InitConfig ...
-func (setup *BaseSetupImpl) InitConfig() core.ConfigProvider {
-	return config.FromFile(setup.ConfigFile)
 }
 
 // GetDeployPath ..

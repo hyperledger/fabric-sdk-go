@@ -14,7 +14,6 @@ import (
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
@@ -76,13 +75,12 @@ func TestChannelConfig(t *testing.T) {
 func TestChannelConfigWithOrderer(t *testing.T) {
 
 	testSetup := integration.BaseSetupImpl{
-		ConfigFile:        "../" + integration.ConfigTestFile,
 		ChannelID:         "mychannel",
 		OrgID:             org1Name,
 		ChannelConfigFile: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
-	configBackend, err := configImpl.FromFile(testSetup.ConfigFile)()
+	configBackend, err := integration.ConfigBackend()
 	if err != nil {
 		t.Fatalf("Unexpected error from config backend: %v", err)
 	}

@@ -19,7 +19,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/stretchr/testify/assert"
 )
@@ -42,7 +41,7 @@ func TestDynamicSelection(t *testing.T) {
 	mychannelUser := selection.ChannelUser{ChannelID: testSetup.ChannelID, Username: "User1", OrgName: "Org1"}
 
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile),
+	sdk, err := fabsdk.New(integration.ConfigBackend,
 		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}))
 
 	if err != nil {

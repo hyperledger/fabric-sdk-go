@@ -15,7 +15,6 @@ import (
 	bccspSw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -62,16 +61,19 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 
 	testSetup, chainCodeID := customCryptoSuiteInit(t)
 
-	configBackend, err := testSetup.InitConfig()()
+	configBackend, err := integration.ConfigBackend()
 
 	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf("Failed to get config backend: %s", err)
+	}
 
 	//Get Test BCCSP,
 	// TODO Need to use external BCCSP here
 	customBccspProvider := getTestBCCSP(cryptoConfig)
 
 	// Create SDK setup with custom cryptosuite provider factory
-	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile),
+	sdk, err := fabsdk.New(integration.ConfigBackend,
 		fabsdk.WithCorePkg(&CustomCryptoSuiteProviderFactory{bccspProvider: customBccspProvider}))
 
 	if err != nil {

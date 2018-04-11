@@ -16,7 +16,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
@@ -28,7 +27,7 @@ import (
 // TestWithCustomStores demonstrates the usage of custom key and cert stores
 // to manage user private keys and certificates.
 func TestWithCustomStores(t *testing.T) {
-	configBackend, err := configImpl.FromFile("../" + integration.ConfigTestFile)()
+	configBackend, err := integration.ConfigBackend()
 	if err != nil {
 		t.Fatalf("Unexpected error from config backend: %v", err)
 	}
