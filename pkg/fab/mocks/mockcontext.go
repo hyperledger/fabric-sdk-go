@@ -334,7 +334,7 @@ type MockTransactionHeader struct {
 
 // TransactionID returns the transaction's computed identifier.
 func (th *MockTransactionHeader) TransactionID() fab.TransactionID {
-	return fab.TransactionID(th.MockID)
+	return th.MockID
 }
 
 // Creator returns the transaction creator's identity bytes.

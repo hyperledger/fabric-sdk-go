@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package txn
 
 import (
-	"crypto/rand"
+	reqContext "context"
 	"fmt"
 	"os"
 	"strconv"
@@ -106,39 +106,29 @@ func TestNewTransaction(t *testing.T) {
 	}
 
 	//Test repeated field header nil scenario
-	proposal = fab.TransactionProposal{
-		TxnID:    fab.TransactionID(th.id),
-		Proposal: &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
-	}
-
-	proposalResp = fab.TransactionProposalResponse{
-		Endorser:         "http://peer1.com",
-		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 200, Payload: []byte("")}},
-	}
-
-	txnReq = fab.TransactionRequest{
-		Proposal:          &proposal,
-		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
-	}
-	_, err = New(txnReq)
-	if err == nil || err.Error() != "repeated field endorsements has nil element" {
-		t.Fatal("Proposal response was supposed to fail in Create Transaction")
-	}
+	checkRepeatedFieldHeader(proposal, th, proposalResp, txnReq, t)
 
 	//TODO: Need actual sample payload for success case
 
 }
 
-type mockReader struct {
-	err error
-}
-
-func (r *mockReader) Read(p []byte) (int, error) {
-	if r.err != nil {
-		return 0, r.err
+func checkRepeatedFieldHeader(proposal fab.TransactionProposal, th TransactionHeader, proposalResp fab.TransactionProposalResponse, txnReq fab.TransactionRequest, t *testing.T) {
+	proposal = fab.TransactionProposal{
+		TxnID:    fab.TransactionID(th.id),
+		Proposal: &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
 	}
-	n, _ := rand.Read(p)
-	return n, nil
+	proposalResp = fab.TransactionProposalResponse{
+		Endorser:         "http://peer1.com",
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 200, Payload: []byte("")}},
+	}
+	txnReq = fab.TransactionRequest{
+		Proposal:          &proposal,
+		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
+	}
+	_, err := New(txnReq)
+	if err == nil || err.Error() != "repeated field endorsements has nil element" {
+		t.Fatal("Proposal response was supposed to fail in Create Transaction")
+	}
 }
 
 func TestBroadcastEnvelope(t *testing.T) {
@@ -191,27 +181,28 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 	// It should always succeed even though one of them has failed
 	for i := 0; i < broadcastCount; i++ {
-		if res, err := broadcastEnvelope(reqCtx, sigEnvelope, orderers); err != nil {
-			t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
+		if res, err1 := broadcastEnvelope(reqCtx, sigEnvelope, orderers); err1 != nil {
+			t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err1, res)
 		}
 	}
 
 	// Now, fail both and ensure any attempt fails
+	checkBroadcastCount(broadcastCount, orderer1, orderer2, reqCtx, sigEnvelope, orderers, t)
+}
+
+func checkBroadcastCount(broadcastCount int, orderer1 *mocks.MockOrderer, orderer2 *mocks.MockOrderer, reqCtx reqContext.Context, sigEnvelope *fab.SignedEnvelope, orderers []fab.Orderer, t *testing.T) {
 	for i := 0; i < broadcastCount; i++ {
 		orderer1.EnqueueSendBroadcastError(errors.New("Service Unavailable"))
 		orderer2.EnqueueSendBroadcastError(errors.New("Service Unavailable"))
 	}
-
 	for i := 0; i < broadcastCount; i++ {
-		_, err := broadcastEnvelope(reqCtx, sigEnvelope, orderers)
-		if !strings.Contains(err.Error(), "Service Unavailable") {
+		_, err1 := broadcastEnvelope(reqCtx, sigEnvelope, orderers)
+		if !strings.Contains(err1.Error(), "Service Unavailable") {
 			t.Fatal("Test Broadcast failed but didn't return the correct reason(should contain 'Service Unavailable')")
 		}
 	}
-
 	emptyOrderers := []fab.Orderer{}
-	_, err = broadcastEnvelope(reqCtx, sigEnvelope, emptyOrderers)
-
+	_, err := broadcastEnvelope(reqCtx, sigEnvelope, emptyOrderers)
 	if err == nil || err.Error() != "orderers not set" {
 		t.Fatal("orderers not set validation on broadcast envelope is not working as expected")
 	}
@@ -244,6 +235,10 @@ func TestSendTransaction(t *testing.T) {
 		t.Fatal("Test SendTransaction failed, it was supposed to fail with 'transaction is nil' error")
 	}
 
+	testSendTransaction(reqCtx, orderers, t)
+}
+
+func testSendTransaction(reqCtx reqContext.Context, orderers []fab.Orderer, t *testing.T) {
 	//Create tx with nil proposal
 	txn := fab.Transaction{
 		Proposal: &fab.TransactionProposal{
@@ -251,15 +246,12 @@ func TestSendTransaction(t *testing.T) {
 		},
 		Transaction: &pb.Transaction{},
 	}
-
 	//Call Send Transaction with nil proposal
-	response, err = Send(reqCtx, &txn, orderers)
-
+	response, err := Send(reqCtx, &txn, orderers)
 	//Expect proposal is nil error
 	if response != nil || err == nil || err.Error() != "proposal is nil" {
 		t.Fatal("Test SendTransaction failed, it was supposed to fail with 'proposal is nil' error")
 	}
-
 	//Create tx with improper proposal header
 	txn = fab.Transaction{
 		Proposal: &fab.TransactionProposal{
@@ -269,12 +261,10 @@ func TestSendTransaction(t *testing.T) {
 	}
 	//Call Send Transaction
 	response, err = Send(reqCtx, &txn, orderers)
-
 	//Expect header unmarshal error
 	if response != nil || err == nil || !strings.Contains(err.Error(), "unmarshal") {
 		t.Fatal("Test SendTransaction failed, it was supposed to fail with '...unmarshal...' error")
 	}
-
 	//Create tx with proper proposal header
 	txn = fab.Transaction{
 		Proposal: &fab.TransactionProposal{
@@ -282,10 +272,8 @@ func TestSendTransaction(t *testing.T) {
 		},
 		Transaction: &pb.Transaction{},
 	}
-
 	//Call Send Transaction
 	response, err = Send(reqCtx, &txn, orderers)
-
 	if response == nil || err != nil {
 		t.Fatalf("Test SendTransaction failed, reason : '%s'", err.Error())
 	}

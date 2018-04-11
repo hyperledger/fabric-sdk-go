@@ -163,7 +163,7 @@ func CreateChannelHeader(headerType common.HeaderType, opts ChannelHeaderOpts) (
 }
 
 // createHeader creates a Header from a ChannelHeader.
-func createHeader(th *TransactionHeader, channelHeader *common.ChannelHeader) (*common.Header, error) {
+func createHeader(th *TransactionHeader, channelHeader *common.ChannelHeader) (*common.Header, error) { //nolint
 
 	signatureHeader := &common.SignatureHeader{
 		Creator: th.creator,

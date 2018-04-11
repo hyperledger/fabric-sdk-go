@@ -109,24 +109,25 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 		t.Fatal("Testing PeersConfig supposed to fail")
 	}
 
+	checkCAConfigFailsByNetworkConfig(sampleEndpointConfig, t)
+}
+
+func checkCAConfigFailsByNetworkConfig(sampleEndpointConfig *EndpointConfig, t *testing.T) {
 	//Testing PeersConfig failure scenario
 	pConfig, err := sampleEndpointConfig.PeerConfig("peerorg1", "peer1")
 	if pConfig != nil || err == nil {
 		t.Fatal("Testing PeerConfig supposed to fail")
 	}
-
 	//Testing ChannelConfig failure scenario
 	chConfig, err := sampleEndpointConfig.ChannelConfig("invalid")
 	if chConfig != nil || err == nil {
 		t.Fatal("Testing ChannelConfig supposed to fail")
 	}
-
 	//Testing ChannelPeers failure scenario
 	cpConfigs, err := sampleEndpointConfig.ChannelPeers("invalid")
 	if cpConfigs != nil || err == nil {
 		t.Fatal("Testing ChannelPeeers supposed to fail")
 	}
-
 	//Testing ChannelOrderers failure scenario
 	coConfigs, err := sampleEndpointConfig.ChannelOrderers("invalid")
 	if coConfigs != nil || err == nil {
@@ -143,12 +144,12 @@ func TestTLSCAConfig(t *testing.T) {
 		t.Fatalf("Failed to get TLS CA Cert, reason: %v", err)
 	}
 
-	config, err := ConfigFromBackend(configBackend)
+	configBackend1, err := ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatalf("Failed to get endpoint config, reason: %v", err)
 	}
 
-	endpointConfig := config.(*EndpointConfig)
+	endpointConfig := configBackend1.(*EndpointConfig)
 
 	_, err = endpointConfig.TLSCACertPool(cert)
 	if err != nil {
@@ -175,6 +176,10 @@ func TestTLSCAConfig(t *testing.T) {
 
 	_, err = endpointConfig.TLSCACertPool(badCert)
 
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
 	keyConfig := endpoint.TLSConfig{Path: keyPath}
 
 	key, err := keyConfig.TLSCert()
@@ -184,6 +189,9 @@ func TestTLSCAConfig(t *testing.T) {
 	}
 
 	_, err = endpointConfig.TLSCACertPool(key)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 }
 
 func TestTimeouts(t *testing.T) {
@@ -233,7 +241,11 @@ func TestTimeouts(t *testing.T) {
 	if t1 != time.Millisecond*2 {
 		t.Fatalf(errStr, "OrdererConnection", t1)
 	}
-	t1 = endpointConfig.Timeout(fab.OrdererResponse)
+	checkTimeouts(endpointConfig, t, errStr)
+}
+
+func checkTimeouts(endpointConfig fab.EndpointConfig, t *testing.T, errStr string) {
+	t1 := endpointConfig.Timeout(fab.OrdererResponse)
 	if t1 != time.Second*6 {
 		t.Fatalf(errStr, "OrdererResponse", t1)
 	}
@@ -314,7 +326,11 @@ func TestDefaultTimeouts(t *testing.T) {
 	if t1 != defaultOrdererConnectionTimeout {
 		t.Fatalf(errStr, "OrdererConnection", t1)
 	}
-	t1 = endpointConfig.Timeout(fab.OrdererResponse)
+	checkDefaultTimeout(endpointConfig, t, errStr)
+}
+
+func checkDefaultTimeout(endpointConfig fab.EndpointConfig, t *testing.T, errStr string) {
+	t1 := endpointConfig.Timeout(fab.OrdererResponse)
 	if t1 != defaultOrdererResponseTimeout {
 		t.Fatalf(errStr, "OrdererResponse", t1)
 	}
@@ -406,12 +422,12 @@ func TestPeerConfigByUrl_entityMatchers(t *testing.T) {
 }
 
 func testCommonConfigPeerByURL(t *testing.T, expectedConfigURL string, fetchedConfigURL string) {
-	config, err := ConfigFromBackend(configBackend)
+	config1, err := ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	endpointConfig := config.(*EndpointConfig)
+	endpointConfig := config1.(*EndpointConfig)
 
 	expectedConfig, err := endpointConfig.peerConfig(expectedConfigURL)
 	if err != nil {
@@ -419,6 +435,9 @@ func testCommonConfigPeerByURL(t *testing.T, expectedConfigURL string, fetchedCo
 	}
 
 	fetchedConfig, err := endpointConfig.PeerConfigByURL(fetchedConfigURL)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 
 	if fetchedConfig.URL == "" {
 		t.Fatalf("Url value for the host is empty")
@@ -617,12 +636,12 @@ func TestPeerConfig(t *testing.T) {
 
 func testCommonConfigPeer(t *testing.T, expectedConfigHost string, fetchedConfigHost string) (expectedConfig *fab.PeerConfig, fetchedConfig *fab.PeerConfig) {
 
-	config, err := ConfigFromBackend(configBackend)
+	config1, err := ConfigFromBackend(configBackend)
 	if err != nil {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	endpointConfig := config.(*EndpointConfig)
+	endpointConfig := config1.(*EndpointConfig)
 
 	expectedConfig, err = endpointConfig.peerConfig(expectedConfigHost)
 	if err != nil {
@@ -781,19 +800,19 @@ func TestInitConfigFromRawWithPem(t *testing.T) {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
 
-	config, err := ConfigFromBackend(backend)
+	config1, err := ConfigFromBackend(backend)
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
 
-	endpointConfig := config.(*EndpointConfig)
+	endpointConfig := config1.(*EndpointConfig)
 
 	o, err := endpointConfig.OrderersConfig()
 	if err != nil {
 		t.Fatalf("Failed to load orderers from config. Error: %s", err)
 	}
 
-	if o == nil || len(o) == 0 {
+	if len(o) == 0 {
 		t.Fatalf("orderer cannot be nil or empty")
 	}
 
@@ -820,9 +839,14 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	if pc == nil || len(pc) == 0 {
+	if len(pc) == 0 {
 		t.Fatalf("peers list of %s cannot be nil or empty", org1)
 	}
+	checkPem(endpointConfig, t)
+
+}
+
+func checkPem(endpointConfig *EndpointConfig, t *testing.T) {
 	peer0 := "peer0.org1.example.com"
 	p0, err := endpointConfig.PeerConfig(org1, peer0)
 	if err != nil {
@@ -846,12 +870,11 @@ V842OVjxCYYQwCjPIY+5e9ORR+8pxVzcMAoGCCqGSM49BAMCA0cAMEQCIGZ+KTfS
 eezqv0ml1VeQEmnAEt5sJ2RJA58+LegUYMd6AiAfEe6BKqdY03qFUgEYmtKG+3Dr
 O94CDp7l2k7hMQI0zQ==
 -----END CERTIFICATE-----`
-
-	loadedPPem := strings.TrimSpace(p0.TLSCACerts.Pem) // viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
+	loadedPPem := strings.TrimSpace(p0.TLSCACerts.Pem)
+	// viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
 	if loadedPPem != pPem {
 		t.Fatalf("%s Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", peer0, pPem, loadedPPem)
 	}
-
 }
 
 func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
@@ -866,7 +889,7 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 		t.Fatalf("Failed to read config file stat. Error: %s", err)
 	}
 	s := fi.Size()
-	cBytes := make([]byte, s, s)
+	cBytes := make([]byte, s)
 	n, err := f.Read(cBytes)
 	if err != nil {
 		t.Fatalf("Failed to read test config for bytes array testing. Error: %s", err)
@@ -879,12 +902,12 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 
 func TestLoadConfigWithEmbeddedUsersWithPems(t *testing.T) {
 	// get a config file with embedded users
-	configBackend, err := config.FromFile(configEmbeddedUsersTestFilePath)()
+	configBackend1, err := config.FromFile(configEmbeddedUsersTestFilePath)()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	endpointConfig, err := ConfigFromBackend(configBackend)
+	endpointConfig, err := ConfigFromBackend(configBackend1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -914,12 +937,12 @@ func TestLoadConfigWithEmbeddedUsersWithPems(t *testing.T) {
 
 func TestLoadConfigWithEmbeddedUsersWithPaths(t *testing.T) {
 	// get a config file with embedded users
-	configBackend, err := config.FromFile(configEmbeddedUsersTestFilePath)()
+	configBackend1, err := config.FromFile(configEmbeddedUsersTestFilePath)()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	endpointConfig, err := ConfigFromBackend(configBackend)
+	endpointConfig, err := ConfigFromBackend(configBackend1)
 	if err != nil {
 		t.Fatal(err)
 	}

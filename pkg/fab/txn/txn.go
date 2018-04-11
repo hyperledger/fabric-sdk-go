@@ -100,7 +100,7 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 
 // Send send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
 func Send(reqCtx reqContext.Context, tx *fab.Transaction, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
-	if orderers == nil || len(orderers) == 0 {
+	if len(orderers) == 0 {
 		return nil, errors.New("orderers is nil")
 	}
 	if tx == nil {
@@ -162,9 +162,7 @@ func broadcastEnvelope(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, 
 
 	// Copy aside the ordering service endpoints
 	randOrderers := []fab.Orderer{}
-	for _, o := range orderers {
-		randOrderers = append(randOrderers, o)
-	}
+	randOrderers = append(randOrderers, orderers...)
 
 	// Iterate them in a random order and try broadcasting 1 by 1
 	var errResp error
@@ -193,7 +191,7 @@ func sendBroadcast(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, orde
 
 // SendPayload sends the given payload to each orderer and returns a block response
 func SendPayload(reqCtx reqContext.Context, payload *common.Payload, orderers []fab.Orderer) (*common.Block, error) {
-	if orderers == nil || len(orderers) == 0 {
+	if len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
 	}
 
@@ -208,9 +206,7 @@ func SendPayload(reqCtx reqContext.Context, payload *common.Payload, orderers []
 
 	// Copy aside the ordering service endpoints
 	randOrderers := []fab.Orderer{}
-	for _, o := range orderers {
-		randOrderers = append(randOrderers, o)
-	}
+	randOrderers = append(randOrderers, orderers...)
 
 	// Iterate them in a random order and try broadcasting 1 by 1
 	var errResp error

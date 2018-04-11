@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	msp_protos "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 )
 
@@ -71,11 +70,6 @@ func (id *MockIdentity) Verify(msg []byte, sig []byte) error {
 
 // Serialize returns a byte array representation of this identity
 func (id *MockIdentity) Serialize() ([]byte, error) {
-	return nil, nil
-}
-
-func (id *MockIdentity) getHashOpt(hashFamily string) (core.HashOpts, error) {
-
 	return nil, nil
 }
 

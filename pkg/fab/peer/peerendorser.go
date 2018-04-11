@@ -157,11 +157,11 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 		if ok {
 			code, message, extractErr := extractChaincodeError(rpcStatus)
 			if extractErr != nil {
-				code, message, extractErr := extractPrematureExecutionError(rpcStatus)
+				code, message1, extractErr := extractPrematureExecutionError(rpcStatus)
 				if extractErr != nil {
 					err = status.NewFromGRPCStatus(rpcStatus)
 				} else {
-					err = status.New(status.EndorserClientStatus, code, message, nil)
+					err = status.New(status.EndorserClientStatus, code, message1, nil)
 				}
 			} else {
 				err = status.NewFromExtractedChaincodeError(code, message)
@@ -184,14 +184,22 @@ func extractChaincodeError(status *grpcstatus.Status) (int, string, error) {
 		if i >= 0 {
 			j := strings.Index(status.Message()[i:], ",")
 			if j > statusLength {
-				i, err := strconv.Atoi(strings.TrimSpace(status.Message()[i+statusLength : i+j]))
+				i1, err := strconv.Atoi(strings.TrimSpace(status.Message()[i+statusLength : i+j]))
 				if err != nil {
-					return 0, "", errors.Errorf("Non-number returned as GRPC status [%s] ", strings.TrimSpace(status.Message()[i+statusLength:i+j]))
+					return 0, "", errors.Errorf("Non-number returned as GRPC status [%s] ", strings.TrimSpace(status.Message()[i1+statusLength:i1+j]))
 				}
-				code = i
+				code = i1
 			}
 		}
 	}
+	message = checkMessage(status, messageLength, message)
+	if code != 0 && message != "" {
+		return code, message, nil
+	}
+	return code, message, errors.Errorf("Unable to parse GRPC Status Message Code: %v Message: %v", code, message)
+}
+
+func checkMessage(status *grpcstatus.Status, messageLength int, message string) string {
 	if strings.Contains(status.Message(), "message:") {
 		i := strings.Index(status.Message(), "message:")
 		if i >= 0 {
@@ -201,10 +209,7 @@ func extractChaincodeError(status *grpcstatus.Status) (int, string, error) {
 			}
 		}
 	}
-	if code != 0 && message != "" {
-		return code, message, nil
-	}
-	return code, message, errors.Errorf("Unable to parse GRPC Status Message Code: %v Message: %v", code, message)
+	return message
 }
 
 func extractPrematureExecutionError(grpcstat *grpcstatus.Status) (int32, string, error) {

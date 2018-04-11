@@ -71,13 +71,21 @@ func (m *MockBroadcastServer) Deliver(server po.AtomicBroadcast_DeliverServer) e
 	}
 
 	if m.DeliverResponse != nil {
-		server.Recv()
-		server.SendMsg(m.DeliverResponse)
+		if _, err := server.Recv(); err != nil {
+			return err
+		}
+		if err := server.SendMsg(m.DeliverResponse); err != nil {
+			return err
+		}
 		return nil
 	}
 
-	server.Recv()
-	server.Send(TestBlock)
+	if _, err := server.Recv(); err != nil {
+		return err
+	}
+	if err := server.Send(TestBlock); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -92,7 +100,11 @@ func StartMockBroadcastServer(broadcastTestURL string, grpcServer *grpc.Server) 
 
 	broadcastServer := new(MockBroadcastServer)
 	po.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
-	go grpcServer.Serve(lis)
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			panic(err.Error())
+		}
+	}()
 
 	return broadcastServer, addr
 }

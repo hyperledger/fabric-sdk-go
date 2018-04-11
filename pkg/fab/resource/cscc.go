@@ -19,7 +19,7 @@ const (
 	csccChannels    = "GetChannels"
 )
 
-func createJoinChannelInvokeRequest(genesisBlock *common.Block) (fab.ChaincodeInvokeRequest, error) {
+func createJoinChannelInvokeRequest(genesisBlock *common.Block) (fab.ChaincodeInvokeRequest, error) { //nolint
 
 	genesisBlockBytes, err := proto.Marshal(genesisBlock)
 	if err != nil {

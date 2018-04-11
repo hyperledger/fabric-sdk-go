@@ -33,7 +33,11 @@ func StartMockEventServer(testAddress string) (*MockEventServer, error) {
 	eventServer := &MockEventServer{grpcServer: grpcServer}
 	pb.RegisterEventsServer(grpcServer, eventServer)
 	fmt.Printf("Starting mock event server\n")
-	go grpcServer.Serve(lis)
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			panic(err.Error())
+		}
+	}()
 
 	return eventServer, nil
 }
@@ -42,19 +46,26 @@ func StartMockEventServer(testAddress string) (*MockEventServer, error) {
 func (m *MockEventServer) Chat(srv pb.Events_ChatServer) error {
 	m.server = srv
 	m.channel = make(chan *pb.Event)
-	in, _ := srv.Recv()
+	in, err := srv.Recv()
+	if err != nil {
+		return err
+	}
 	evt := &pb.Event{}
-	err := proto.Unmarshal(in.EventBytes, evt)
+	err = proto.Unmarshal(in.EventBytes, evt)
 	if err != nil {
 		return fmt.Errorf("error unmarshaling the event bytes in the SignedEvent: %s", err)
 	}
 	switch evt.Event.(type) {
 	case *pb.Event_Register:
-		srv.Send(&pb.Event{Event: &pb.Event_Register{Register: &pb.Register{}}})
+		if err := srv.Send(&pb.Event{Event: &pb.Event_Register{Register: &pb.Register{}}}); err != nil {
+			return err
+		}
 	}
 	for {
 		event := <-m.channel
-		srv.Send(event)
+		if err := srv.Send(event); err != nil {
+			return err
+		}
 	}
 }
 

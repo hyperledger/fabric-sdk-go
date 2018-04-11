@@ -107,9 +107,9 @@ func CreateChannel(reqCtx reqContext.Context, request api.CreateChannelRequest, 
 		return fab.EmptyTransactionID, errors.WithMessage(err, "creation of transaction header failed")
 	}
 
-	options := getOpts(opts...)
+	optionsValue := getOpts(opts...)
 
-	_, err = retry.NewInvoker(retry.New(options.retry)).Invoke(
+	_, err = retry.NewInvoker(retry.New(optionsValue.retry)).Invoke(
 		func() (interface{}, error) {
 			return nil, createOrUpdateChannel(reqCtx, txh, request)
 		},
@@ -134,8 +134,8 @@ func createChannelFromEnvelope(reqCtx reqContext.Context, request api.CreateChan
 // GenesisBlockFromOrderer returns the genesis block from the defined orderer that may be
 // used in a join request
 func GenesisBlockFromOrderer(reqCtx reqContext.Context, channelName string, orderer fab.Orderer, opts ...Opt) (*common.Block, error) {
-	options := getOpts(opts...)
-	return retrieveBlock(reqCtx, []fab.Orderer{orderer}, channelName, newSpecificSeekPosition(0), options)
+	optionsValue := getOpts(opts...)
+	return retrieveBlock(reqCtx, []fab.Orderer{orderer}, channelName, newSpecificSeekPosition(0), optionsValue)
 }
 
 // LastConfigFromOrderer fetches the current configuration block for the specified channel
@@ -143,10 +143,10 @@ func GenesisBlockFromOrderer(reqCtx reqContext.Context, channelName string, orde
 func LastConfigFromOrderer(reqCtx reqContext.Context, channelName string, orderer fab.Orderer, opts ...Opt) (*common.Block, error) {
 	logger.Debugf("channelConfig - start for channel %s", channelName)
 
-	options := getOpts(opts...)
+	optionsValue := getOpts(opts...)
 
 	// Get the newest block
-	block, err := retrieveBlock(reqCtx, []fab.Orderer{orderer}, channelName, newNewestSeekPosition(), options)
+	block, err := retrieveBlock(reqCtx, []fab.Orderer{orderer}, channelName, newNewestSeekPosition(), optionsValue)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func LastConfigFromOrderer(reqCtx reqContext.Context, channelName string, ordere
 	logger.Debugf("channelConfig - Last config index: %d\n", lastConfig.Index)
 
 	// Get the last config block
-	block, err = retrieveBlock(reqCtx, []fab.Orderer{orderer}, channelName, newSpecificSeekPosition(lastConfig.Index), options)
+	block, err = retrieveBlock(reqCtx, []fab.Orderer{orderer}, channelName, newSpecificSeekPosition(lastConfig.Index), optionsValue)
 	if err != nil {
 		return nil, errors.WithMessage(err, "retrieve block failed")
 	}
@@ -182,14 +182,14 @@ func JoinChannel(reqCtx reqContext.Context, request api.JoinChannelRequest, targ
 		return errors.New("missing block input parameter with the required genesis block")
 	}
 
-	options := getOpts(opts...)
+	optionsValue := getOpts(opts...)
 
 	cir, err := createJoinChannelInvokeRequest(request.GenesisBlock)
 	if err != nil {
 		return errors.WithMessage(err, "creation of join channel invoke request failed")
 	}
 
-	var errors multi.Errors
+	var errors1 multi.Errors
 	var mutex sync.Mutex
 	var wg sync.WaitGroup
 
@@ -199,9 +199,9 @@ func JoinChannel(reqCtx reqContext.Context, request api.JoinChannelRequest, targ
 		target := t
 		go func() {
 			defer wg.Done()
-			if _, err := queryChaincodeWithTarget(reqCtx, cir, target, options); err != nil {
+			if _, err := queryChaincodeWithTarget(reqCtx, cir, target, optionsValue); err != nil {
 				mutex.Lock()
-				errors = append(errors, err)
+				errors1 = append(errors1, err)
 				mutex.Unlock()
 			}
 		}()
@@ -209,7 +209,7 @@ func JoinChannel(reqCtx reqContext.Context, request api.JoinChannelRequest, targ
 
 	wg.Wait()
 
-	return errors.ToError()
+	return errors1.ToError()
 }
 
 func extractSignedEnvelope(reqEnvelope []byte) (*fab.SignedEnvelope, error) {
@@ -269,10 +269,10 @@ func QueryChannels(reqCtx reqContext.Context, peer fab.ProposalProcessor, opts .
 		return nil, errors.New("peer required")
 	}
 
-	options := getOpts(opts...)
+	optionsValue := getOpts(opts...)
 
 	cir := createChannelsInvokeRequest()
-	payload, err := queryChaincodeWithTarget(reqCtx, cir, peer, options)
+	payload, err := queryChaincodeWithTarget(reqCtx, cir, peer, optionsValue)
 	if err != nil {
 		return nil, errors.WithMessage(err, "cscc.GetChannels failed")
 	}
@@ -293,10 +293,10 @@ func QueryInstalledChaincodes(reqCtx reqContext.Context, peer fab.ProposalProces
 		return nil, errors.New("peer required")
 	}
 
-	options := getOpts(opts...)
+	optionsValue := getOpts(opts...)
 
 	cir := createInstalledChaincodesInvokeRequest()
-	payload, err := queryChaincodeWithTarget(reqCtx, cir, peer, options)
+	payload, err := queryChaincodeWithTarget(reqCtx, cir, peer, optionsValue)
 	if err != nil {
 		return nil, errors.WithMessage(err, "lscc.getinstalledchaincodes failed")
 	}
@@ -351,9 +351,9 @@ func InstallChaincode(reqCtx reqContext.Context, req api.InstallChaincodeRequest
 		return nil, fab.EmptyTransactionID, errors.WithMessage(err, "creation of install chaincode proposal failed")
 	}
 
-	options := getOpts(opts...)
+	optionsValue := getOpts(opts...)
 
-	resp, err := retry.NewInvoker(retry.New(options.retry)).Invoke(
+	resp, err := retry.NewInvoker(retry.New(optionsValue.retry)).Invoke(
 		func() (interface{}, error) {
 			return txn.SendProposal(reqCtx, prop, targets)
 		},
@@ -411,9 +411,9 @@ func validateResponse(response *fab.TransactionProposalResponse) error {
 }
 
 func getOpts(opts ...Opt) options {
-	var options options
+	var optionsValue options
 	for _, opt := range opts {
-		opt(&options)
+		opt(&optionsValue)
 	}
-	return options
+	return optionsValue
 }

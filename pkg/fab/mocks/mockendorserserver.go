@@ -82,6 +82,10 @@ func StartEndorserServer(endorserTestURL string) *MockEndorserServer {
 	endorserServer := &MockEndorserServer{}
 	pb.RegisterEndorserServer(grpcServer, endorserServer)
 	fmt.Printf("Test endorser server started\n")
-	go grpcServer.Serve(lis)
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			panic(err.Error())
+		}
+	}()
 	return endorserServer
 }

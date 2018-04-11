@@ -8,7 +8,6 @@ package mocks
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
@@ -29,7 +28,7 @@ type MockChannelService struct {
 }
 
 // NewMockChannelProvider returns a mock ChannelProvider
-func NewMockChannelProvider(ctx context.Client) (*MockChannelProvider, error) {
+func NewMockChannelProvider(ctx core.Providers) (*MockChannelProvider, error) {
 	// Create a mock client with the mock channel
 	cp := MockChannelProvider{
 		ctx: ctx,
