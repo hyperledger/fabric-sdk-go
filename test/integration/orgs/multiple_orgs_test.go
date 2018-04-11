@@ -70,6 +70,9 @@ func TestOrgsEndToEnd(t *testing.T) {
 	integration.CleanupUserData(t, sdk)
 	defer integration.CleanupUserData(t, sdk)
 
+	// Load specific targets for move funds test
+	loadOrgPeers(t, sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1)))
+
 	expectedValue := testWithOrg1(t, sdk)
 	expectedValue = testWithOrg2(t, expectedValue)
 	verifyWithOrg1(t, sdk, expectedValue)
@@ -158,9 +161,6 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	instantiateResp, err := org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy}, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, instantiateResp, "transaction response should be populated")
-
-	// Load specific targets for move funds test
-	loadOrgPeers(t, org1AdminClientContext)
 
 	// Verify that example CC is instantiated on Org1 peer
 	chaincodeQueryResponse, err := org1ResMgmt.QueryInstantiatedChaincodes("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts))

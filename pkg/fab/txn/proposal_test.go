@@ -8,6 +8,7 @@ package txn
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -88,7 +89,12 @@ func TestSendTransactionProposal(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	tpr, err := SendProposal(reqCtx, tp, []fab.ProposalProcessor{&peer})
+	tpr, err := SendProposal(reqCtx, tp, []fab.ProposalProcessor{nil})
+	if err == nil || !strings.Contains(err.Error(), "target is nil") {
+		t.Fatalf("Should have failed due to nil target")
+	}
+
+	tpr, err = SendProposal(reqCtx, tp, []fab.ProposalProcessor{&peer})
 	if err != nil {
 		t.Fatalf("send transaction proposal failed: %s", err)
 	}

@@ -88,6 +88,12 @@ func SendProposal(reqCtx reqContext.Context, proposal *fab.TransactionProposal, 
 		return nil, errors.New("targets is required")
 	}
 
+	for _, p := range targets {
+		if p == nil {
+			return nil, errors.New("target is nil")
+		}
+	}
+
 	ctx, ok := context.RequestClientContext(reqCtx)
 	if !ok {
 		return nil, errors.New("failed get client context from reqContext for signProposal")

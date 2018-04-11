@@ -48,6 +48,14 @@ type requestOptions struct {
 //WithTargets encapsulates fab.Peer targets to ledger RequestOption
 func WithTargets(targets ...fab.Peer) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
+
+		// Validate targets
+		for _, t := range targets {
+			if t == nil {
+				return errors.New("target is nil")
+			}
+		}
+
 		opts.Targets = targets
 		return nil
 	}

@@ -8,6 +8,7 @@ package channel
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -172,6 +173,23 @@ func TestQueryWithOptTarget(t *testing.T) {
 
 	if response.Payload != nil {
 		t.Fatalf("Expecting nil, got %s", response.Payload)
+	}
+}
+
+func TestQueryWithNilTargets(t *testing.T) {
+	chClient := setupChannelClient(nil, t)
+
+	_, err := chClient.Query(Request{ChaincodeID: "testCC", Fcn: "invoke",
+		Args: [][]byte{[]byte("query"), []byte("b")}}, WithTargets(nil, nil))
+	if err == nil || !strings.Contains(err.Error(), "target is nil") {
+		t.Fatalf("Should have failed to invoke test cc due to nil target")
+	}
+
+	peers := []fab.Peer{fcmocks.NewMockPeer("Peer1", "http://peer1.com"), nil}
+	_, err = chClient.Query(Request{ChaincodeID: "testCC", Fcn: "invoke",
+		Args: [][]byte{[]byte("query"), []byte("b")}}, WithTargets(peers...))
+	if err == nil || !strings.Contains(err.Error(), "target is nil") {
+		t.Fatalf("Should have failed to invoke test cc due to nil target")
 	}
 }
 

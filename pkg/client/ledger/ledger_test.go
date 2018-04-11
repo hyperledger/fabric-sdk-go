@@ -65,6 +65,17 @@ func TestQueryBlock(t *testing.T) {
 
 }
 
+func TestQueryBlockWithNilTargets(t *testing.T) {
+
+	peer1 := &mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200, MockMSP: "test"}
+	lc := setupLedgerClient([]fab.Peer{peer1}, t)
+
+	_, err := lc.QueryBlock(1, WithTargets(peer1, nil))
+	if err == nil || !strings.Contains(err.Error(), "target is nil") {
+		t.Fatalf("Should have failed due to nil target")
+	}
+}
+
 func TestQueryBlockDiscoveryError(t *testing.T) {
 	peer1 := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200, MockMSP: "test"}
 	peer2 := mocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, Status: 200, MockMSP: "test"}

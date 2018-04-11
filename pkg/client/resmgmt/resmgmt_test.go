@@ -67,12 +67,18 @@ func TestJoinChannelFail(t *testing.T) {
 
 	rc := setupResMgmtClient(ctx, nil, t)
 
+	// Test nil target
+	err := rc.JoinChannel("mychannel", WithTargets(nil))
+	if err == nil || !strings.Contains(err.Error(), "target is nil") {
+		t.Fatalf("Should have failed due to nil target")
+	}
+
 	// Setup target peers
 	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL("grpc://"+addr))
 
 	// Test fail with send proposal error
 	endorserServer.ProposalError = errors.New("Test Error")
-	err := rc.JoinChannel("mychannel", WithTargets(peer1))
+	err = rc.JoinChannel("mychannel", WithTargets(peer1))
 
 	if err == nil {
 		t.Fatal("Should have failed to get genesis block")

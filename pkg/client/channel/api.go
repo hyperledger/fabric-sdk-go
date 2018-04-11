@@ -51,6 +51,14 @@ type Response struct {
 //WithTargets encapsulates ProposalProcessors to Option
 func WithTargets(targets ...fab.Peer) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
+
+		// Validate targets
+		for _, t := range targets {
+			if t == nil {
+				return errors.New("target is nil")
+			}
+		}
+
 		o.Targets = targets
 		return nil
 	}
