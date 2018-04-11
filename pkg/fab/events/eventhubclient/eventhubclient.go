@@ -74,7 +74,10 @@ func (c *Client) registerInterests() error {
 	logger.Debugf("sending register interests request....")
 
 	errch := make(chan error)
-	c.Submit(dispatcher.NewRegisterInterestsEvent(c.interests, errch))
+	if err := c.Submit(dispatcher.NewRegisterInterestsEvent(c.interests, errch)); err != nil {
+		logger.Errorf("unable to submit new register interests events: %s", err)
+		return err
+	}
 
 	var err error
 	select {

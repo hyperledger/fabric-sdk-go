@@ -9,7 +9,6 @@ package eventhubclient
 import (
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -29,19 +28,6 @@ func defaultParams() *params {
 		interests:    filteredBlockInterests,
 		respTimeout:  5 * time.Second,
 	}
-}
-
-// withConnectionProvider is used only for testing
-func withConnectionProvider(connProvider api.ConnectionProvider) options.Opt {
-	return func(p options.Params) {
-		if setter, ok := p.(connectionProviderSetter); ok {
-			setter.SetConnectionProvider(connProvider)
-		}
-	}
-}
-
-type connectionProviderSetter interface {
-	SetConnectionProvider(connProvider api.ConnectionProvider)
 }
 
 func (p *params) SetResponseTimeout(value time.Duration) {

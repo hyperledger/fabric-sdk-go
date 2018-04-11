@@ -25,26 +25,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Outcome string
-type State int32
-type NumBlockEvents uint
-type NumCCEvents uint
-
-type EventsReceived struct {
-	BlockEvents NumBlockEvents
-	CCEvents    NumCCEvents
-}
-
-const (
-	initialState State = -1
-
-	reconnectedOutcome Outcome = "reconnected"
-	terminatedOutcome  Outcome = "terminated"
-	timedOutOutcome    Outcome = "timeout"
-	connectedOutcome   Outcome = "connected"
-	errorOutcome       Outcome = "error"
-)
-
 var (
 	defaultOpts = []options.Opt{}
 	sourceURL   = "localhost:9051"
@@ -125,7 +105,11 @@ func TestBlockEventsWithFilter(t *testing.T) {
 	eventProducer.Ledger().NewBlock(channelID,
 		servicemocks.NewTransaction(txID2, txCode2, cb.HeaderType_ENDORSER_TRANSACTION),
 	)
+	checkBlockEventsWithFilter(t, beventch, fbeventch)
 
+}
+
+func checkBlockEventsWithFilter(t *testing.T, beventch <-chan *fab.BlockEvent, fbeventch <-chan *fab.FilteredBlockEvent) {
 	numBlockEventsReceived := 0
 	numBlockEventsExpected := 2
 	numFilteredBlockEventsReceived := 0
@@ -227,7 +211,11 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 		servicemocks.NewTransaction(txID1, txCode1, cb.HeaderType_CONFIG),
 		servicemocks.NewTransaction(txID2, txCode2, cb.HeaderType_CONFIG_UPDATE),
 	)
+	checkBlockAndFilteredBlockEvents(t, beventch, fbeventch, channelID)
 
+}
+
+func checkBlockAndFilteredBlockEvents(t *testing.T, beventch <-chan *fab.BlockEvent, fbeventch <-chan *fab.FilteredBlockEvent, channelID string) {
 	numReceived := 0
 	numExpected := 2
 
@@ -272,7 +260,7 @@ func TestTxStatusEvents(t *testing.T) {
 	txID2 := "5678"
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
-	if _, _, err := eventService.RegisterTxStatusEvent(""); err == nil {
+	if _, _, err1 := eventService.RegisterTxStatusEvent(""); err1 == nil {
 		t.Fatalf("expecting error registering for TxStatus event without a TX ID but got none")
 	}
 	reg1, _, err := eventService.RegisterTxStatusEvent(txID1)
@@ -303,6 +291,10 @@ func TestTxStatusEvents(t *testing.T) {
 		servicemocks.NewFilteredTx(txID2, txCode2),
 	)
 
+	checkTxStatusEvents(eventch1, t, txID1, txCode1, eventch2, txID2, txCode2)
+}
+
+func checkTxStatusEvents(eventch1 <-chan *fab.TxStatusEvent, t *testing.T, txID1 string, txCode1 pb.TxValidationCode, eventch2 <-chan *fab.TxStatusEvent, txID2 string, txCode2 pb.TxValidationCode) {
 	numExpected := 2
 	numReceived := 0
 	done := false
@@ -349,13 +341,13 @@ func TestCCEvents(t *testing.T) {
 	event2 := "event2"
 	event3 := "event3"
 
-	if _, _, err := eventService.RegisterChaincodeEvent("", ccFilter1); err == nil {
+	if _, _, err1 := eventService.RegisterChaincodeEvent("", ccFilter1); err1 == nil {
 		t.Fatalf("expecting error registering for chaincode events without CC ID but got none")
 	}
-	if _, _, err := eventService.RegisterChaincodeEvent(ccID1, ""); err == nil {
+	if _, _, err2 := eventService.RegisterChaincodeEvent(ccID1, ""); err2 == nil {
 		t.Fatalf("expecting error registering for chaincode events without event filter but got none")
 	}
-	if _, _, err := eventService.RegisterChaincodeEvent(ccID1, ".(xxx"); err == nil {
+	if _, _, err3 := eventService.RegisterChaincodeEvent(ccID1, ".(xxx"); err3 == nil {
 		t.Fatalf("expecting error registering for chaincode events with invalid (regular expression) event filter but got none")
 	}
 	reg1, _, err := eventService.RegisterChaincodeEvent(ccID1, ccFilter1)
@@ -387,6 +379,10 @@ func TestCCEvents(t *testing.T) {
 		servicemocks.NewFilteredTxWithCCEvent("txid3", ccID2, event3),
 	)
 
+	checkCCEvents(eventch1, t, ccID1, event1, eventch2, ccID2, event2, event3)
+}
+
+func checkCCEvents(eventch1 <-chan *fab.CCEvent, t *testing.T, ccID1 string, event1 string, eventch2 <-chan *fab.CCEvent, ccID2 string, event2 string, event3 string) {
 	numExpected := 3
 	numReceived := 0
 	done := false
@@ -506,15 +502,7 @@ func testConcurrentFilteredBlockEvents(channelID string, numEvents uint, eventSe
 	}
 	defer eventService.Unregister(registration)
 
-	go func() {
-		var i uint
-		for _ = 0; i < numEvents; i++ {
-			conn.Ledger().NewBlock(channelID,
-				servicemocks.NewTransaction(
-					fmt.Sprintf("txid_fb_%d", i), pb.TxValidationCode_VALID, cb.HeaderType_CONFIG_UPDATE),
-			)
-		}
-	}()
+	sendNewBlock(numEvents, conn, channelID)
 
 	var numReceived uint
 	done := false
@@ -546,6 +534,18 @@ func testConcurrentFilteredBlockEvents(channelID string, numEvents uint, eventSe
 	}
 
 	return nil
+}
+
+func sendNewBlock(numEvents uint, conn *servicemocks.MockProducer, channelID string) {
+	go func() {
+		var i uint
+		for _ = 0; i < numEvents; i++ {
+			conn.Ledger().NewBlock(channelID,
+				servicemocks.NewTransaction(
+					fmt.Sprintf("txid_fb_%d", i), pb.TxValidationCode_VALID, cb.HeaderType_CONFIG_UPDATE),
+			)
+		}
+	}()
 }
 
 func testConcurrentCCEvents(channelID string, numEvents uint, eventService fab.EventService, conn *servicemocks.MockProducer) error {
@@ -642,39 +642,6 @@ func testConcurrentTxStatusEvents(channelID string, numEvents uint, eventService
 		return errors.Errorf("Received %d events and %d errors. First error %s", receivedEvents, len(errs), errs[0])
 	}
 	return nil
-}
-
-func listenEvents(blockch <-chan *fab.BlockEvent, ccch <-chan *fab.CCEvent, waitDuration time.Duration, numEventsCh chan EventsReceived, expectedBlockEvents NumBlockEvents, expectedCCEvents NumCCEvents) {
-	var numBlockEventsReceived NumBlockEvents
-	var numCCEventsReceived NumCCEvents
-
-	for {
-		select {
-		case _, ok := <-blockch:
-			if ok {
-				numBlockEventsReceived++
-			} else {
-				// The channel was closed by the event client. Make a new channel so
-				// that we don't get into a tight loop
-				blockch = make(chan *fab.BlockEvent)
-			}
-		case _, ok := <-ccch:
-			if ok {
-				numCCEventsReceived++
-			} else {
-				// The channel was closed by the event client. Make a new channel so
-				// that we don't get into a tight loop
-				ccch = make(chan *fab.CCEvent)
-			}
-		case <-time.After(waitDuration):
-			numEventsCh <- EventsReceived{BlockEvents: numBlockEventsReceived, CCEvents: numCCEventsReceived}
-			return
-		}
-		if numBlockEventsReceived >= expectedBlockEvents && numCCEventsReceived >= expectedCCEvents {
-			numEventsCh <- EventsReceived{BlockEvents: numBlockEventsReceived, CCEvents: numCCEventsReceived}
-			return
-		}
-	}
 }
 
 func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {

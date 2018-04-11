@@ -79,7 +79,7 @@ func NewFilteredBlock(channelID string, filteredTx ...*pb.FilteredTransaction) *
 // NewFilteredTx returns a new mock filtered transaction
 func NewFilteredTx(txID string, txValidationCode pb.TxValidationCode) *pb.FilteredTransaction {
 	return &pb.FilteredTransaction{
-		Txid:             string(txID),
+		Txid:             txID,
 		TxValidationCode: txValidationCode,
 	}
 }
@@ -116,10 +116,13 @@ func newEnvelope(channelID string, txInfo *TxInfo) *cb.Envelope {
 
 	channelHeader := &cb.ChannelHeader{
 		ChannelId: channelID,
-		TxId:      string(txInfo.TxID),
+		TxId:      txInfo.TxID,
 		Type:      int32(txInfo.HeaderType),
 	}
-	channelHeaderBytes, _ := proto.Marshal(channelHeader)
+	channelHeaderBytes, err := proto.Marshal(channelHeader)
+	if err != nil {
+		panic(err)
+	}
 
 	payload := &cb.Payload{
 		Header: &cb.Header{
@@ -127,7 +130,10 @@ func newEnvelope(channelID string, txInfo *TxInfo) *cb.Envelope {
 		},
 		Data: txBytes,
 	}
-	payloadBytes, _ := proto.Marshal(payload)
+	payloadBytes, err := proto.Marshal(payload)
+	if err != nil {
+		panic(err)
+	}
 
 	return &cb.Envelope{
 		Payload: payloadBytes,
@@ -136,7 +142,7 @@ func newEnvelope(channelID string, txInfo *TxInfo) *cb.Envelope {
 
 func newTxAction(txID string, ccID string, eventName string, payload []byte) *pb.TransactionAction {
 	ccEvent := &pb.ChaincodeEvent{
-		TxId:        string(txID),
+		TxId:        txID,
 		ChaincodeId: ccID,
 		EventName:   eventName,
 		Payload:     payload,

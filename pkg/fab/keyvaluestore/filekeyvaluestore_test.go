@@ -46,8 +46,8 @@ func testFKVS(t *testing.T, KeySerializer KeySerializer) {
 	if err != nil {
 		t.Fatalf("New failed [%s]", err)
 	}
-	if err := cleanup(storePath); err != nil {
-		t.Fatalf("%s", err)
+	if err1 := cleanup(storePath); err1 != nil {
+		t.Fatalf("%s", err1)
 	}
 	defer cleanup(storePath)
 
@@ -64,45 +64,49 @@ func testFKVS(t *testing.T, KeySerializer KeySerializer) {
 	value1 := []byte("value1")
 	key2 := "key2"
 	value2 := []byte("value2")
-	if err := store.Store(key1, value1); err != nil {
-		t.Fatalf("SetValue %s failed [%s]", key1, err)
+	if err1 := store.Store(key1, value1); err1 != nil {
+		t.Fatalf("SetValue %s failed [%s]", key1, err1)
 	}
-	if err := store.Store(key2, value2); err != nil {
-		t.Fatalf("SetValue %s failed [%s]", key1, err)
+	if err1 := store.Store(key2, value2); err1 != nil {
+		t.Fatalf("SetValue %s failed [%s]", key1, err1)
 	}
 
 	// Check key1, value1
-	if err := checkStoreValue(store, key1, value1); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", key1, err)
-	}
-	if err := store.Delete(key1); err != nil {
-		t.Fatalf("Delete %s failed [%s]", key1, err)
-	}
-	if err := checkStoreValue(store, key1, nil); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", key1, err)
-	}
+	checkKeyValue(store, key1, value1, t)
 
 	// Check ke2, value2
-	if err := checkStoreValue(store, key2, value2); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", key2, err)
-	}
-	if err := store.Delete(key2); err != nil {
-		t.Fatalf("Delete %s failed [%s]", key2, err)
-	}
-	if err := checkStoreValue(store, key2, nil); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", key2, err)
-	}
+	checkKeyValue(store, key2, value2, t)
 
 	// Check non-existing key
-	_, err = store.Load("non-existing")
+	checkNonExistingKey(store, t)
+
+	// Check empty string value
+	checkEmptyStringValue(store, t)
+}
+
+func checkKeyValue(store core.KVStore, key string, value []byte, t *testing.T) {
+	if err := checkStoreValue(store, key, value); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", key, err)
+	}
+	if err := store.Delete(key); err != nil {
+		t.Fatalf("Delete %s failed [%s]", key, err)
+	}
+	if err := checkStoreValue(store, key, nil); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", key, err)
+	}
+}
+
+func checkNonExistingKey(store core.KVStore, t *testing.T) {
+	_, err := store.Load("non-existing")
 	if err == nil || err != core.ErrKeyValueNotFound {
 		t.Fatal("fetching value for non-existing key should return ErrNotFound")
 	}
+}
 
-	// Check empty string value
+func checkEmptyStringValue(store core.KVStore, t *testing.T) {
 	keyEmptyString := "empty-string"
 	valueEmptyString := []byte("")
-	err = store.Store(keyEmptyString, valueEmptyString)
+	err := store.Store(keyEmptyString, valueEmptyString)
 	if err != nil {
 		t.Fatal("setting an empty string value shouldn't fail")
 	}
@@ -163,11 +167,11 @@ func checkStoreValue(store core.KVStore, key interface{}, expected []byte) error
 		return err
 	}
 	if expected == nil {
-		_, err := os.Stat(file)
-		if err == nil {
+		_, err1 := os.Stat(file)
+		if err1 == nil {
 			return fmt.Errorf("path shouldn't exist [%s]", file)
 		}
-		if !os.IsNotExist(err) {
+		if !os.IsNotExist(err1) {
 			return errors.Wrapf(err, "stat file failed [%s]", file)
 		}
 		// Doesn't exist, OK
@@ -191,7 +195,7 @@ func compare(v interface{}, expected []byte) error {
 			return errors.New("value is not []byte")
 		}
 	}
-	if bytes.Compare(vbytes, expected) != 0 {
+	if !bytes.Equal(vbytes, expected) {
 		return errors.New("value from store comparison failed")
 	}
 	return nil

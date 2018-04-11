@@ -73,6 +73,8 @@ declare -a arr1=(
 "./pkg/fab/channel"
 "./pkg/fab/chconfig"
 "./pkg/fab/comm"
+"./pkg/fab/events"
+"./pkg/fab/keyvaluestore"
 )
 
 

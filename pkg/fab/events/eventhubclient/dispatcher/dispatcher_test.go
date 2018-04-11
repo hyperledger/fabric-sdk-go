@@ -58,35 +58,10 @@ func TestRegisterInterests(t *testing.T) {
 	}
 
 	// Connect
-	errch := make(chan error)
-	dispatcherEventch <- clientdisp.NewConnectEvent(errch)
-
-	select {
-	case err := <-errch:
-		if err != nil {
-			t.Fatalf("Error connecting: %s", err)
-		}
-	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for connection response")
-	}
+	errch, dispatcherEventch := connectToDispatcher(dispatcherEventch, t)
 
 	// Register interests
-	dispatcherEventch <- NewRegisterInterestsEvent(
-		[]*pb.Interest{
-			&pb.Interest{
-				EventType: pb.EventType_FILTEREDBLOCK,
-			},
-		},
-		errch)
-
-	select {
-	case err := <-errch:
-		if err != nil {
-			t.Fatalf("error registering interests: %s", err)
-		}
-	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for register interests response")
-	}
+	dispatcherEventch = registerFilteredBlockEvent(dispatcherEventch, errch, t)
 
 	// Unregister interests
 	dispatcherEventch <- NewUnregisterInterestsEvent(
@@ -103,7 +78,7 @@ func TestRegisterInterests(t *testing.T) {
 			t.Fatalf("error unregistering interests: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for unregister interests response")
+		t.Fatalf("timeout waiting for unregister interests response")
 	}
 
 	// Disconnect
@@ -114,7 +89,7 @@ func TestRegisterInterests(t *testing.T) {
 			t.Fatalf("Error disconnecting: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for connection response")
+		t.Fatalf("timeout waiting for connection response")
 	}
 
 	// Disconnected
@@ -130,24 +105,47 @@ func TestRegisterInterests(t *testing.T) {
 	}
 }
 
+func registerFilteredBlockEvent(dispatcherEventch chan<- interface{}, errch chan error, t *testing.T) chan<- interface{} {
+	dispatcherEventch <- NewRegisterInterestsEvent(
+		[]*pb.Interest{
+			&pb.Interest{
+				EventType: pb.EventType_FILTEREDBLOCK,
+			},
+		},
+		errch)
+	select {
+	case err := <-errch:
+		if err != nil {
+			t.Fatalf("error registering interests: %s", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timeout waiting for register interests response")
+	}
+	return dispatcherEventch
+}
+
+func checkFailedRegisterInterest(dispatcherEventch chan<- interface{}, errch chan error, t *testing.T) chan<- interface{} {
+	dispatcherEventch <- NewRegisterInterestsEvent(
+		[]*pb.Interest{
+			&pb.Interest{
+				EventType: pb.EventType_FILTEREDBLOCK,
+			},
+		},
+		errch)
+	select {
+	case err := <-errch:
+		if err == nil {
+			t.Fatalf("expecting error registering interests but got none")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timeout waiting for register interests response")
+	}
+	return dispatcherEventch
+}
+
 func TestRegisterInterestsInvalid(t *testing.T) {
 	channelID := "testchannel"
-	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
-			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
-		),
-		fabmocks.NewMockChannelCfg(channelID),
-		clientmocks.NewProviderFactory().Provider(
-			ehmocks.NewConnection(
-				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
-				clientmocks.WithResults(
-					clientmocks.NewResult(ehmocks.RegInterests, clientmocks.FailResult),
-					clientmocks.NewResult(ehmocks.UnregInterests, clientmocks.FailResult),
-				),
-			),
-		),
-	)
+	dispatcher := newDispatcher(channelID)
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
 	}
@@ -158,35 +156,10 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 	}
 
 	// Connect
-	errch := make(chan error)
-	dispatcherEventch <- clientdisp.NewConnectEvent(errch)
-
-	select {
-	case err := <-errch:
-		if err != nil {
-			t.Fatalf("Error connecting: %s", err)
-		}
-	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for connection response")
-	}
+	errch, dispatcherEventch := connectToDispatcher(dispatcherEventch, t)
 
 	// Register interests
-	dispatcherEventch <- NewRegisterInterestsEvent(
-		[]*pb.Interest{
-			&pb.Interest{
-				EventType: pb.EventType_FILTEREDBLOCK,
-			},
-		},
-		errch)
-
-	select {
-	case err := <-errch:
-		if err == nil {
-			t.Fatalf("expecting error registering interests but got none")
-		}
-	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for register interests response")
-	}
+	dispatcherEventch = checkFailedRegisterInterest(dispatcherEventch, errch, t)
 
 	// Unregister interests
 	dispatcherEventch <- NewUnregisterInterestsEvent(
@@ -203,7 +176,7 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 			t.Fatalf("expecting error unregistering interests but got none")
 		}
 	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for unregister interests response")
+		t.Fatalf("timeout waiting for unregister interests response")
 	}
 
 	// Disconnect
@@ -214,7 +187,7 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 			t.Fatalf("Error disconnecting: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for connection response")
+		t.Fatalf("timeout waiting for connection response")
 	}
 
 	// Disconnected
@@ -228,6 +201,39 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 	if err := <-stopResp; err != nil {
 		t.Fatalf("Error stopping dispatcher: %s", err)
 	}
+}
+
+func connectToDispatcher(dispatcherEventch chan<- interface{}, t *testing.T) (chan error, chan<- interface{}) {
+	errch := make(chan error)
+	dispatcherEventch <- clientdisp.NewConnectEvent(errch)
+	select {
+	case err := <-errch:
+		if err != nil {
+			t.Fatalf("Error connecting: %s", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timeout waiting for connection response")
+	}
+	return errch, dispatcherEventch
+}
+
+func newDispatcher(channelID string) *Dispatcher {
+	return New(
+		fabmocks.NewMockContextWithCustomDiscovery(
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewProviderFactory().Provider(
+			ehmocks.NewConnection(
+				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
+				clientmocks.WithResults(
+					clientmocks.NewResult(ehmocks.RegInterests, clientmocks.FailResult),
+					clientmocks.NewResult(ehmocks.UnregInterests, clientmocks.FailResult),
+				),
+			),
+		),
+	)
 }
 
 func TestTimedOutRegister(t *testing.T) {
@@ -266,7 +272,7 @@ func TestTimedOutRegister(t *testing.T) {
 			t.Fatalf("Error connecting: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for connection response")
+		t.Fatalf("timeout waiting for connection response")
 	}
 
 	// Register interests
@@ -284,7 +290,7 @@ func TestTimedOutRegister(t *testing.T) {
 			t.Fatalf("expecting error due to no response from register interests but got none")
 		}
 	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for register interests response")
+
 	}
 
 }
@@ -323,7 +329,7 @@ func TestBlockEvents(t *testing.T) {
 			t.Fatalf("Error connecting: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for connection response")
+		t.Fatalf("timeout waiting for connection response")
 	}
 
 	// Register for block events
@@ -341,6 +347,20 @@ func TestBlockEvents(t *testing.T) {
 	// Produce block - this should notify the connection
 	ledger.NewBlock(channelID)
 
+	checkBlockEvent(eventch, t)
+
+	// Unregister block events
+	dispatcherEventch <- esdispatcher.NewUnregisterEvent(reg)
+
+	// Stop
+	stopResp := make(chan error)
+	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
+	if err := <-stopResp; err != nil {
+		t.Fatalf("Error stopping dispatcher: %s", err)
+	}
+}
+
+func checkBlockEvent(eventch chan *fab.BlockEvent, t *testing.T) {
 	select {
 	case event, ok := <-eventch:
 		if !ok {
@@ -351,16 +371,6 @@ func TestBlockEvents(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatalf("timed out waiting for block event")
-	}
-
-	// Unregister block events
-	dispatcherEventch <- esdispatcher.NewUnregisterEvent(reg)
-
-	// Stop
-	stopResp := make(chan error)
-	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
-	if err := <-stopResp; err != nil {
-		t.Fatalf("Error stopping dispatcher: %s", err)
 	}
 }
 
@@ -399,7 +409,7 @@ func TestFilteredBlockEvents(t *testing.T) {
 			t.Fatalf("Error connecting: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		err = errors.New("timeout waiting for connection response")
+		t.Fatalf("timeout waiting for connection response")
 	}
 
 	// Register for filtered block events
@@ -418,6 +428,20 @@ func TestFilteredBlockEvents(t *testing.T) {
 	// Produce filtered block - this should notify the connection
 	ledger.NewFilteredBlock(channelID)
 
+	checkFilteredBlockEvent(eventch, t, channelID)
+
+	// Unregister filtered block events
+	dispatcherEventch <- esdispatcher.NewUnregisterEvent(reg)
+
+	// Stop
+	stopResp := make(chan error)
+	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
+	if err := <-stopResp; err != nil {
+		t.Fatalf("Error stopping dispatcher: %s", err)
+	}
+}
+
+func checkFilteredBlockEvent(eventch chan *fab.FilteredBlockEvent, t *testing.T, channelID string) {
 	select {
 	case event, ok := <-eventch:
 		if !ok {
@@ -431,16 +455,6 @@ func TestFilteredBlockEvents(t *testing.T) {
 		}
 	case <-time.After(10 * time.Second):
 		t.Fatalf("timed out waiting for filtered block event")
-	}
-
-	// Unregister filtered block events
-	dispatcherEventch <- esdispatcher.NewUnregisterEvent(reg)
-
-	// Stop
-	stopResp := make(chan error)
-	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
-	if err := <-stopResp; err != nil {
-		t.Fatalf("Error stopping dispatcher: %s", err)
 	}
 }
 

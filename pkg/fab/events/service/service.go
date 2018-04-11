@@ -8,10 +8,9 @@ package service
 
 import (
 	"runtime/debug"
-	"sync"
 	"time"
 
-	logging "github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/blockfilter"
@@ -50,8 +49,7 @@ type Dispatcher interface {
 // Service allows clients to register for channel events, such as filtered block, chaincode, and transaction status events.
 type Service struct {
 	params
-	dispatcher   Dispatcher
-	registerOnce sync.Once
+	dispatcher Dispatcher
 }
 
 // New returns a new event service initialized with the given Dispatcher

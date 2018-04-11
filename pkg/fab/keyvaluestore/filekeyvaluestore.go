@@ -11,7 +11,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/pkg/errors"
 )
@@ -20,8 +19,6 @@ const (
 	newDirMode  = 0700
 	newFileMode = 0600
 )
-
-var logger = logging.NewLogger("fabsdk/fab")
 
 // KeySerializer converts a key to a unique fila path
 type KeySerializer func(key interface{}) (string, error)
@@ -116,7 +113,7 @@ func (fkvs *FileKeyValueStore) Load(key interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := os.Stat(file); os.IsNotExist(err) {
+	if _, err1 := os.Stat(file); os.IsNotExist(err1) {
 		return nil, core.ErrKeyValueNotFound
 	}
 	bytes, err := ioutil.ReadFile(file)
@@ -142,9 +139,9 @@ func (fkvs *FileKeyValueStore) Store(key interface{}, value interface{}) error {
 		return err
 	}
 	if value == nil {
-		_, err := os.Stat(file)
-		if err != nil {
-			if !os.IsNotExist(err) {
+		_, err1 := os.Stat(file)
+		if err1 != nil {
+			if !os.IsNotExist(err1) {
 				return errors.Wrapf(err, "stat dir failed")
 			}
 			// Doesn't exist, OK
@@ -156,7 +153,10 @@ func (fkvs *FileKeyValueStore) Store(key interface{}, value interface{}) error {
 	if err != nil {
 		return err
 	}
-	os.MkdirAll(path.Dir(file), newDirMode)
+	err = os.MkdirAll(path.Dir(file), newDirMode)
+	if err != nil {
+		return err
+	}
 	return ioutil.WriteFile(file, valueBytes, newFileMode)
 }
 

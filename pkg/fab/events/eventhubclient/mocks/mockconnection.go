@@ -41,6 +41,13 @@ func (c *MockConnection) Send(emsg *pb.Event) error {
 		return errors.New("mock connection is closed")
 	}
 
+	if err := c.checkEvent(emsg); err != nil {
+		return err
+	}
+
+	return nil
+}
+func (c *MockConnection) checkEvent(emsg *pb.Event) error {
 	switch evt := emsg.Event.(type) {
 	case *pb.Event_Register:
 		result, exists := c.Result(RegInterests)
@@ -73,7 +80,6 @@ func (c *MockConnection) Send(emsg *pb.Event) error {
 	default:
 		panic(fmt.Sprintf("unsupported event type: %T", evt))
 	}
-
 	return nil
 }
 

@@ -14,6 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
@@ -34,8 +35,6 @@ const (
 )
 
 var (
-	defaultOpts = []options.Opt{}
-
 	peer1     = fabclientmocks.NewMockPeer("peer1", "peer1.example.com:7051")
 	peer2     = fabclientmocks.NewMockPeer("peer2", "peer2.example.com:7051")
 	eventURL1 = "peer1.example.com:7053"
@@ -292,16 +291,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 	}
 }
 
-// testReconnectRegistration tests the scenario when an events client is registered to receive events and the connection to the
-// event service is lost. After the connection is re-established, events should once again be received without the caller having to
-// re-register for those events.
-func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.NumBlock, expectedCCEvents clientmocks.NumChaincode, connectResults clientmocks.ConnectAttemptResults) {
-	channelID := "mychannel"
-	ccID := "mycc"
-
-	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)
-	cp := clientmocks.NewProviderFactory()
-
+func newEventClient(t *testing.T, channelID string, connectResults clientmocks.ConnectAttemptResults, ledger *servicemocks.MockLedger, cp *clientmocks.ProviderFactory) *Client {
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
@@ -324,6 +314,18 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 	if err != nil {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
+	return eventClient
+}
+
+// testReconnectRegistration tests the scenario when an events client is registered to receive events and the connection to the
+// event service is lost. After the connection is re-established, events should once again be received without the caller having to
+// re-register for those events.
+func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.NumBlock, expectedCCEvents clientmocks.NumChaincode, connectResults clientmocks.ConnectAttemptResults) {
+	channelID := "mychannel"
+	ccID := "mycc"
+	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)
+	cp := clientmocks.NewProviderFactory()
+	eventClient := newEventClient(t, channelID, connectResults, ledger, cp)
 	if err := eventClient.Connect(); err != nil {
 		t.Fatalf("error connecting channel event client: %s", err)
 	}
@@ -382,8 +384,11 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 		)
 	}
 
-	var eventsReceived clientmocks.Received
+	checkReceivedEvents(numCh, t, expectedBlockEvents, expectedCCEvents)
+}
 
+func checkReceivedEvents(numCh chan clientmocks.Received, t *testing.T, expectedBlockEvents clientmocks.NumBlock, expectedCCEvents clientmocks.NumChaincode) {
+	var eventsReceived clientmocks.Received
 	select {
 	case received, ok := <-numCh:
 		if !ok {
@@ -394,7 +399,6 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 	case <-time.After(30 * time.Second):
 		t.Fatalf("timed out waiting for events")
 	}
-
 	if eventsReceived.NumBlock != expectedBlockEvents {
 		t.Fatalf("Expecting to receive [%d] block events but received [%d]", expectedBlockEvents, eventsReceived.NumBlock)
 	}
@@ -491,4 +495,17 @@ func newMockContext() *fabmocks.MockContext {
 	config.setURL(peer2.URL(), eventURL2)
 	ctx.SetEndpointConfig(config)
 	return ctx
+}
+
+// withConnectionProvider is used only for testing
+func withConnectionProvider(connProvider api.ConnectionProvider) options.Opt {
+	return func(p options.Params) {
+		if setter, ok := p.(connectionProviderSetter); ok {
+			setter.SetConnectionProvider(connProvider)
+		}
+	}
+}
+
+type connectionProviderSetter interface {
+	SetConnectionProvider(connProvider api.ConnectionProvider)
 }
