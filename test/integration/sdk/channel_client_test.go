@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package sdk
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -300,4 +303,38 @@ func testChaincodeError(ccID string, client *channel.Client, t *testing.T) {
 	assert.EqualValues(t, status.ChaincodeStatus, s.Group, "expected ChaincodeStatus")
 	assert.Equal(t, int32(500), s.Code)
 	assert.Equal(t, "Unknown function call", s.Message)
+}
+
+func TestNoEndpoints(t *testing.T) {
+
+	// Using shared SDK instance to increase test speed.
+	testSetup := mainTestSetup
+
+	sdk, err := fabsdk.New(config.FromFile("../../fixtures/config/config_test_endpoints.yaml"))
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+
+	// Prepare channel context
+	org1AdminChannelContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
+
+	// Create new channel client
+	chClient, err := channel.New(org1AdminChannelContext)
+	if err != nil {
+		t.Fatalf("Failed to create new resource management client: %s", err)
+	}
+
+	// Test query chaincode: since peer has been disabled for chaincode query this query should fail
+	_, err = chClient.Query(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
+	if err == nil || !strings.Contains(err.Error(), "targets were not provided") {
+		t.Fatalf("Should have failed due to no chaincode query peers")
+	}
+
+	// Test execute transaction: since peer has been disabled for endorsement this transaction should fail
+	_, err = chClient.Execute(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
+	if err == nil || !strings.Contains(err.Error(), "targets were not provided") {
+		t.Fatalf("Should have failed due to no endorsing peers")
+	}
 }

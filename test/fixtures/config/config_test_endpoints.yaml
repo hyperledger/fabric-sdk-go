@@ -134,7 +134,7 @@ channels:
         # [Optional]. will this peer be the target of the SDK's listener registration? All peers can
         # produce events but the app typically only needs to connect to one to listen to events.
         # Default: true
-        eventSource: false
+        eventSource: true
 
 #
 # list of participating organizations in this network

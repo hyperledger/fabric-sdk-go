@@ -15,6 +15,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/filter"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -74,12 +75,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, err
 	}
 
-	chpeers, err := channelContext.EndpointConfig().ChannelPeers(channelContext.ChannelID())
-	if err != nil {
-		return nil, status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), err.Error(), nil)
-	}
-
-	ledgerFilter := &ledgerFilter{ctx: channelContext, chPeers: chpeers}
+	ledgerFilter := filter.NewEndpointFilter(channelContext, filter.LedgerQuery)
 
 	// Apply filter to discovery service
 	discovery := discovery.NewDiscoveryFilterService(channelContext.DiscoveryService(), ledgerFilter)
@@ -419,35 +415,4 @@ func shuffle(a []fab.Peer) {
 		j := rand.Intn(i + 1)
 		a[i], a[j] = a[j], a[i]
 	}
-}
-
-// ledgerFilter filters based on ledgerQuery config option
-type ledgerFilter struct {
-	ctx     context.Channel
-	chPeers []fab.ChannelPeer // configured channel peers
-}
-
-// Accept returns false if this peer is to be excluded from the target list
-func (f *ledgerFilter) Accept(peer fab.Peer) bool {
-
-	peerConfig, err := f.ctx.EndpointConfig().PeerConfigByURL(peer.URL())
-	if err != nil || peerConfig == nil {
-		return true
-	}
-
-	chPeer := f.getChannelPeer(peerConfig)
-	if chPeer == nil {
-		return true
-	}
-
-	return chPeer.LedgerQuery
-}
-
-func (f *ledgerFilter) getChannelPeer(peerConfig *fab.PeerConfig) *fab.ChannelPeer {
-	for _, chpeer := range f.chPeers {
-		if chpeer.URL == peerConfig.URL {
-			return &chpeer
-		}
-	}
-	return nil
 }

@@ -274,7 +274,18 @@ func (c *MockConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, erro
 
 // ChannelPeers returns the channel peers configuration
 func (c *MockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
-	return nil, nil
+
+	if name == "noChannelPeers" {
+		return nil, nil
+	}
+
+	peerChCfg := fab.PeerChannelConfig{EndorsingPeer: true, ChaincodeQuery: true, LedgerQuery: true, EventSource: true}
+	if name == "noEndpoints" {
+		peerChCfg = fab.PeerChannelConfig{EndorsingPeer: false, ChaincodeQuery: false, LedgerQuery: false, EventSource: false}
+	}
+
+	mockPeer := fab.ChannelPeer{PeerChannelConfig: peerChCfg, NetworkPeer: fab.NetworkPeer{PeerConfig: fab.PeerConfig{URL: "example.com"}}}
+	return []fab.ChannelPeer{mockPeer}, nil
 }
 
 // ChannelOrderers returns a list of channel orderers

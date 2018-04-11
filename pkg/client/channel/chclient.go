@@ -13,6 +13,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/filter"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -79,22 +80,39 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 
 // Query chaincode using request and optional options provided
 func (cc *Client) Query(request Request, options ...RequestOption) (Response, error) {
-	optsWithTimeout, err := cc.addDefaultTimeout(cc.context, fab.Query, options...)
-	if err != nil {
-		return Response{}, errors.WithMessage(err, "option failed")
-	}
 
-	return cc.InvokeHandler(invoke.NewQueryHandler(), request, optsWithTimeout...)
+	options = append(options, addDefaultTimeout(fab.Query))
+	options = append(options, addDefaultTargetFilter(cc.context, filter.ChaincodeQuery))
+
+	return cc.InvokeHandler(invoke.NewQueryHandler(), request, options...)
 }
 
 // Execute prepares and executes transaction using request and optional options provided
 func (cc *Client) Execute(request Request, options ...RequestOption) (Response, error) {
-	optsWithTimeout, err := cc.addDefaultTimeout(cc.context, fab.Execute, options...)
-	if err != nil {
-		return Response{}, errors.WithMessage(err, "option failed")
-	}
+	options = append(options, addDefaultTimeout(fab.Execute))
+	options = append(options, addDefaultTargetFilter(cc.context, filter.EndorsingPeer))
 
-	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, optsWithTimeout...)
+	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, options...)
+}
+
+// addDefaultTargetFilter adds default target filter if target filter is not specified
+func addDefaultTargetFilter(chCtx context.Channel, ft filter.EndpointType) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		if len(o.Targets) == 0 && o.TargetFilter == nil {
+			return WithTargetFilter(filter.NewEndpointFilter(chCtx, ft))(ctx, o)
+		}
+		return nil
+	}
+}
+
+// addDefaultTimeout adds default timeout if timeout is not specified
+func addDefaultTimeout(tt fab.TimeoutType) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		if o.Timeouts[tt] == 0 {
+			return WithTimeout(tt, ctx.EndpointConfig().Timeout(tt))(ctx, o)
+		}
+		return nil
+	}
 }
 
 //InvokeHandler invokes handler using request and options provided
@@ -222,23 +240,6 @@ func (cc *Client) prepareOptsFromOptions(ctx context.Client, options ...RequestO
 		}
 	}
 	return txnOpts, nil
-}
-
-//addDefaultTimeout adds given default timeout if it is missing in options
-func (cc *Client) addDefaultTimeout(ctx context.Client, timeOutType fab.TimeoutType, options ...RequestOption) ([]RequestOption, error) {
-	txnOpts := requestOptions{}
-	for _, option := range options {
-		err := option(ctx, &txnOpts)
-		if err != nil {
-			return nil, errors.WithMessage(err, "option failed")
-		}
-	}
-
-	if txnOpts.Timeouts[timeOutType] == 0 {
-		//InvokeHandler relies on Execute timeout
-		return append(options, WithTimeout(fab.Execute, cc.context.EndpointConfig().Timeout(timeOutType))), nil
-	}
-	return options, nil
 }
 
 // RegisterChaincodeEvent registers chain code event
