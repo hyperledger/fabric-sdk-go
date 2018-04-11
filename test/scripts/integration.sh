@@ -20,6 +20,7 @@ FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-stable}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
 FABRIC_FIXTURE_VERSION="${FABRIC_FIXTURE_VERSION:-v1.1}"
 CONFIG_FILE="${CONFIG_FILE:-config_test.yaml}"
+TEST_LOCAL="${TEST_LOCAL:-false}"
 # TODO: better default handling for FABRIC_CRYPTOCONFIG_VERSION
 
 REPO="github.com/hyperledger/fabric-sdk-go"
@@ -72,4 +73,4 @@ if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]; then
 fi
 
 GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_FIXTURE_VERSION}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
-$GO_CMD test $RACEFLAG -tags "$GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" $PKGS -p 1 -timeout=40m -count=1 configFile=${CONFIG_FILE}
+$GO_CMD test $RACEFLAG -tags "$GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" $PKGS -p 1 -timeout=40m -count=1 configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}

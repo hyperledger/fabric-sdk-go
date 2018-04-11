@@ -11,7 +11,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -30,14 +29,12 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	testSetup := integration.BaseSetupImpl{
-		ConfigFile: "../" + integration.ConfigTestFile,
-
 		ChannelID:         "mychannel",
 		OrgID:             org1Name,
 		ChannelConfigFile: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 	}
 
-	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
+	sdk, err := fabsdk.New(integration.ConfigBackend)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create new SDK: %s", err))
 	}

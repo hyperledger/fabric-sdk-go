@@ -14,13 +14,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
 func runWithNoOrdererConfigFixture(t *testing.T) {
-	runWithNoOrdererConfig(t, config.FromFile("../"+integration.ConfigChBlockTestFile))
+	runWithNoOrdererConfig(t, integration.ConfigNoOrdererBackend)
 }
 
 // RunWithNoOrdererConfig enables chclient scenarios using config and sdk options provided

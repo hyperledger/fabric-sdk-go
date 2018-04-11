@@ -35,14 +35,20 @@ const (
 	orgAdmin       = "Admin"
 	ordererOrgName = "ordererorg"
 	ccID           = "e2eExampleCC"
+	configPath     = "../../fixtures/config/config_test.yaml"
 )
 
 func runWithConfigFixture(t *testing.T) {
-	Run(t, config.FromFile("../"+integration.ConfigTestFile))
+	Run(t, config.FromFile(configPath))
 }
 
 // Run enables testing an end-to-end scenario against the supplied SDK options
 func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
+
+	if integration.IsLocal() {
+		//If it is a local test then add entity mapping to config backend to parse URLs
+		configOpt = integration.AddLocalEntityMapping(configOpt)
+	}
 
 	sdk, err := fabsdk.New(configOpt, sdkOpts...)
 	if err != nil {

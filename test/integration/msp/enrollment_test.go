@@ -11,7 +11,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
@@ -22,10 +21,8 @@ const (
 
 func TestRegisterEnroll(t *testing.T) {
 
-	configProvider := config.FromFile("../" + integration.ConfigTestFile)
-
 	// Instantiate the SDK
-	sdk, err := fabsdk.New(configProvider)
+	sdk, err := fabsdk.New(integration.ConfigBackend)
 
 	if err != nil {
 		t.Fatalf("SDK init failed: %v", err)

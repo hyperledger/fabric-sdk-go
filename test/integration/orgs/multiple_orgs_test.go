@@ -34,7 +34,6 @@ import (
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
 
@@ -60,7 +59,7 @@ var orgTestPeer1 fab.Peer
 // the result from an org1 peer
 func TestOrgsEndToEnd(t *testing.T) {
 	// Create SDK setup for the integration tests
-	sdk, err := fabsdk.New(config.FromFile("../" + integration.ConfigTestFile))
+	sdk, err := fabsdk.New(integration.ConfigBackend)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -356,7 +355,7 @@ func testWithOrg2(t *testing.T, expectedValue int) int {
 	mychannelUser := selection.ChannelUser{ChannelID: "orgchannel", Username: "User1", OrgName: "Org1"}
 
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(config.FromFile("../"+integration.ConfigTestFile),
+	sdk, err := fabsdk.New(integration.ConfigBackend,
 		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
