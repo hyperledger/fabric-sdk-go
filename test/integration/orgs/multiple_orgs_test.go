@@ -21,7 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
@@ -109,8 +109,8 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
 	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	assert.Nil(t, err, "error should be nil")
-	assert.NotEmpty(t, txID, "transaction ID should be populated")
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, txID, "transaction ID should be populated")
 
 	// Org1 resource management client (Org1 is default org)
 	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
@@ -159,8 +159,8 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
 	instantiateResp, err := org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy}, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	assert.Nil(t, err, "error should be nil")
-	assert.NotEmpty(t, instantiateResp, "transaction response should be populated")
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, instantiateResp, "transaction response should be populated")
 
 	// Verify that example CC is instantiated on Org1 peer
 	chaincodeQueryResponse, err := org1ResMgmt.QueryInstantiatedChaincodes("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts))
@@ -194,15 +194,15 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	// Call with a dummy function and expect a fail with multiple errors
 	response, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCQueryArgs()},
 		channel.WithRetry(retry.DefaultChClientOpts))
-	assert.Error(t, err, "Should have failed with dummy function")
+	require.Error(t, err, "Should have failed with dummy function")
 	s, ok := status.FromError(err)
-	assert.True(t, ok, "expected status error")
-	assert.Equal(t, s.Code, int32(status.MultipleErrors))
+	require.True(t, ok, "expected status error")
+	require.Equal(t, s.Code, int32(status.MultipleErrors))
 	for _, err := range err.(multi.Errors) {
 		s, ok := status.FromError(err)
-		assert.True(t, ok, "expected status error")
-		assert.EqualValues(t, int32(500), s.Code)
-		assert.Equal(t, status.ChaincodeStatus, s.Group)
+		require.True(t, ok, "expected status error")
+		require.EqualValues(t, int32(500), s.Code)
+		require.Equal(t, status.ChaincodeStatus, s.Group)
 	}
 
 	// Org1 user queries initial value on both peers
@@ -323,8 +323,8 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 
 	// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
 	upgradeResp, err := org1ResMgmt.UpgradeCC("orgchannel", resmgmt.UpgradeCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
-	assert.Nil(t, err, "error should be nil")
-	assert.NotEmpty(t, upgradeResp, "transaction response should be populated")
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, upgradeResp, "transaction response should be populated")
 
 	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
 	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1),

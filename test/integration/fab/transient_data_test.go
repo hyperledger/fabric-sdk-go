@@ -19,7 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestTransient ...
@@ -64,7 +64,7 @@ func TestTransient(t *testing.T) {
 	defer cancel()
 
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets[:1])
-	assert.Nil(t, err, "creating peers failed")
+	require.Nil(t, err, "creating peers failed")
 
 	transactionProposalResponse, _, err := createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), peers, transientDataMap)
 	if err != nil {

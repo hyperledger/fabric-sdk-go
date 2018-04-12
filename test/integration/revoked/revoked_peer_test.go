@@ -29,7 +29,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -91,8 +91,8 @@ func TestRevokedPeer(t *testing.T) {
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
 	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	assert.Nil(t, err, "error should be nil")
-	assert.NotEmpty(t, txID, "transaction ID should be populated")
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, txID, "transaction ID should be populated")
 
 	// Org1 resource management client (Org1 is default org)
 	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
@@ -143,8 +143,8 @@ func TestRevokedPeer(t *testing.T) {
 	resp, err := org1ResMgmt.InstantiateCC("orgchannel",
 		resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
 		resmgmt.WithTargetURLs("peer0.org1.example.com"))
-	assert.Nil(t, err, "error should be nil")
-	assert.NotEmpty(t, resp, "transaction response should be populated")
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, resp, "transaction response should be populated")
 
 	// Load specific targets for move funds test - one of the
 	//targets has its certificate revoked

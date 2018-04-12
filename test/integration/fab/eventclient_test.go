@@ -18,7 +18,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
@@ -71,7 +71,7 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 	defer cancel()
 
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
-	assert.Nil(t, err, "creating peers failed")
+	require.Nil(t, err, "creating peers failed")
 
 	tpResponses, prop, err := createAndSendTransactionProposal(
 		transactor,

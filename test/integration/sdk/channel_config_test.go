@@ -25,7 +25,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestChannelConfig(t *testing.T) {
@@ -188,10 +188,10 @@ func setupOrderer(t *testing.T, endPointConfig fab.EndpointConfig, address strin
 
 	//Get orderer config by orderer address
 	oCfg, err := endPointConfig.OrdererConfig(resolveOrdererAddress(address))
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	o, err := orderer.New(endPointConfig, orderer.FromOrdererConfig(oCfg))
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	return o
 }

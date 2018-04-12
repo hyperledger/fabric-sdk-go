@@ -22,7 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -75,7 +75,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 	defer cancel()
 
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
-	assert.Nil(t, err, "creating peers failed")
+	require.Nil(t, err, "creating peers failed")
 
 	if err := installCC(reqCtx, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, peers); err != nil {
 		t.Fatalf("installCC return error: %v", err)
@@ -126,7 +126,7 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricS
 	defer cancel()
 
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
-	assert.Nil(t, err, "creating peers failed")
+	require.Nil(t, err, "creating peers failed")
 
 	err = installCC(reqCtx, "install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg, peers)
 

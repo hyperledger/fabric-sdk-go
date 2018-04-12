@@ -12,7 +12,7 @@ import (
 	"time"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
@@ -297,12 +297,12 @@ func testChaincodeError(ccID string, client *channel.Client, t *testing.T) {
 	// Try calling unknown function call and expect an error
 	_, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxArgs()},
 		channel.WithRetry(retry.DefaultChClientOpts))
-	assert.Error(t, err)
+	require.Error(t, err)
 	s, ok := status.FromError(err)
-	assert.True(t, ok, "expected status error")
-	assert.EqualValues(t, status.ChaincodeStatus, s.Group, "expected ChaincodeStatus")
-	assert.Equal(t, int32(500), s.Code)
-	assert.Equal(t, "Unknown function call", s.Message)
+	require.True(t, ok, "expected status error")
+	require.EqualValues(t, status.ChaincodeStatus, s.Group, "expected ChaincodeStatus")
+	require.Equal(t, int32(500), s.Code)
+	require.Equal(t, "Unknown function call", s.Message)
 }
 
 func TestNoEndpoints(t *testing.T) {

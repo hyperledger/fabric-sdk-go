@@ -20,7 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDynamicSelection(t *testing.T) {
@@ -55,8 +55,8 @@ func TestDynamicSelection(t *testing.T) {
 
 	chainCodeID := integration.GenerateRandomID()
 	resp, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID)
-	assert.Nil(t, err, "InstallAndInstantiateExampleCC return error")
-	assert.NotEmpty(t, resp, "instantiate response should be populated")
+	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	require.NotEmpty(t, resp, "instantiate response should be populated")
 
 	//prepare contexts
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))

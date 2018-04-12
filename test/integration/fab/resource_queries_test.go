@@ -14,7 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestChannelQueries(t *testing.T) {
@@ -33,7 +33,7 @@ func TestChannelQueries(t *testing.T) {
 	defer cancel()
 
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets[:1])
-	assert.Nil(t, err, "creating peers failed")
+	require.Nil(t, err, "creating peers failed")
 
 	testQueryChannels(t, reqCtx, peers[0])
 

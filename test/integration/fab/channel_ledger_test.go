@@ -22,7 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -75,8 +75,8 @@ func TestLedgerQueries(t *testing.T) {
 
 	chaincodeID := integration.GenerateRandomID()
 	resp, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), orgName, chaincodeID)
-	assert.Nil(t, err, "InstallAndInstantiateExampleCC return error")
-	assert.NotEmpty(t, resp, "instantiate response should be populated")
+	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	require.NotEmpty(t, resp, "instantiate response should be populated")
 
 	//prepare required contexts
 
