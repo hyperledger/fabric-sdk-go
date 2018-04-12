@@ -98,39 +98,13 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error getting config backend from sdk: %s", err)
 	}
-
-	identityConfig, err := msp.ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatalf("Error getting identity config: %s", err)
-	}
-
-	client1, err := identityConfig.Client()
-	if err != nil {
-		t.Fatalf("Error getting client from config: %s", err)
-	}
-
-	if client1.Organization != sdkValidClientOrg1 {
-		t.Fatalf("Unexpected org in config: %s", client1.Organization)
-	}
+	checkClientOrg(configBackend, t, sdkValidClientOrg1)
 
 	configBackend, err = sdk2.Config()
 	if err != nil {
 		t.Fatalf("Error getting config backend from sdk: %s", err)
 	}
-
-	identityConfig, err = msp.ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatalf("Error getting identity config : %s", err)
-	}
-
-	client2, err := identityConfig.Client()
-	if err != nil {
-		t.Fatalf("Error getting client from config: %s", err)
-	}
-
-	if client2.Organization != sdkValidClientOrg2 {
-		t.Fatalf("Unexpected org in config: %s", client2.Organization)
-	}
+	checkClientOrg(configBackend, t, sdkValidClientOrg2)
 
 	// Get a common client context for the following tests
 	//cc1 := sdk1.NewClient(WithUser(sdkValidClientUser))
@@ -156,6 +130,20 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	_, err = channel.New(cc2CtxC)
 	if err != nil {
 		t.Fatalf("Failed to create new 'orgchannel' channel client: %s", err)
+	}
+}
+
+func checkClientOrg(configBackend core.ConfigBackend, t *testing.T, orgName string) {
+	identityConfig, err := msp.ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatalf("Error getting identity config : %s", err)
+	}
+	client, err := identityConfig.Client()
+	if err != nil {
+		t.Fatalf("Error getting client from config: %s", err)
+	}
+	if client.Organization != orgName {
+		t.Fatalf("Unexpected org in config: %s", client.Organization)
 	}
 }
 

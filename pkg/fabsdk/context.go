@@ -48,7 +48,7 @@ func WithOrg(org string) ContextOption {
 // don't include neither username nor identity
 var ErrAnonymousIdentity = errors.New("missing credentials")
 
-func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.SigningIdentity, error) {
+func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.SigningIdentity, error) { //nolint
 	clientConfig, err := sdk.provider.IdentityConfig().Client()
 	if err != nil {
 		return nil, errors.WithMessage(err, "retrieving client configuration failed")
@@ -59,9 +59,9 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.SigningIdentity
 	}
 
 	for _, option := range options {
-		err := option(&opts)
-		if err != nil {
-			return nil, errors.WithMessage(err, "error in option passed to create identity")
+		err1 := option(&opts)
+		if err1 != nil {
+			return nil, errors.WithMessage(err1, "error in option passed to create identity")
 		}
 	}
 

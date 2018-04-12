@@ -1,0 +1,31 @@
+{
+  "Deadline": "5m",
+  "Exclude": [
+    ".*seekInfo can be .*proto.Message.*"
+  ],
+  "EnableGC": true,
+  "WarnUnmatchedDirective": true,
+  "Enable": [
+    "deadcode",
+    "gocyclo",
+    "gotype",
+    "goimports",
+    "golint",
+    "gosimple",
+    "ineffassign",
+    "interfacer",
+    "misspell",
+    "unconvert",
+    "unused",
+    "vet",
+    "varcheck",
+    "maligned",
+    "errcheck",
+    "megacheck",
+    "goconst",
+    "gas",
+    "structcheck"
+  ],
+  "Cyclo": 10,
+  "Aggregate": true
+}

@@ -88,7 +88,7 @@ func (c *DeliverConnection) deliverStream() deliverStream {
 }
 
 // Send sends a seek request to the deliver server
-func (c *DeliverConnection) Send(seekInfo *ab.SeekInfo) error { //nolint
+func (c *DeliverConnection) Send(seekInfo *ab.SeekInfo) error {
 	if c.Closed() {
 		return errors.New("connection is closed")
 	}

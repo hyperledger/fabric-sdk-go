@@ -70,6 +70,7 @@ declare -a arr1=(
 "./pkg/context"
 "./pkg/core"
 "./pkg/fab"
+"./pkg/fabsdk"
 )
 
 
@@ -77,5 +78,5 @@ echo "Running metalinters..."
 for i in "${arr1[@]}"
 do
    echo "Checking $i"
-   $GOMETALINT_CMD --deadline=300s $i/...
+   $GOMETALINT_CMD --config=./gometalinter.json $i/...
 done

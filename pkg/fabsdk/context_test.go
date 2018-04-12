@@ -99,36 +99,36 @@ func TestFabricSDKContext(t *testing.T) {
 	}
 
 	// Valid user, invalid org
-	ctxProvider = sdk.Context(WithUser(identityValidOptUser), WithOrg("INVALID_ORG_NAME"))
+	checkValidUserAndInvalidOrg(sdk, t)
 
-	ctx, err = ctxProvider()
+	// Valid user and org
+	checkValidUserAndOrg(sdk, t)
 
+}
+
+func checkValidUserAndInvalidOrg(sdk *FabricSDK, t *testing.T) {
+	ctxProvider := sdk.Context(WithUser(identityValidOptUser), WithOrg("INVALID_ORG_NAME"))
+	ctx, err := ctxProvider()
 	if err == nil || err.Error() != "invalid options to create identity, invalid org name" {
 		t.Fatalf("getting context client supposed to fail with idenity error, err: %v", err)
 	}
-
 	if ctx == nil {
 		t.Fatal("context client will have providers even if idenity fails")
 	}
+}
 
-	// Valid user and org
-	ctxProvider = sdk.Context(WithUser(identityValidOptUser), WithOrg(identityValidOptOrg))
-
-	_, err = ctxProvider()
+func checkValidUserAndOrg(sdk *FabricSDK, t *testing.T) {
+	ctxProvider := sdk.Context(WithUser(identityValidOptUser), WithOrg(identityValidOptOrg))
+	_, err := ctxProvider()
 	if err != nil {
 		t.Fatalf("getting context supposed to succeed")
 	}
-
 	ctxProvider = sdk.Context(WithUser(identityValidOptUser))
-
-	ctx, err = ctxProvider()
-
+	ctx, err := ctxProvider()
 	if err != nil {
 		t.Fatalf("getting context supposed to succeed")
 	}
-
 	if ctx == nil || ctx.Identifier().MSPID == "" {
 		t.Fatalf("supposed to get valid context")
 	}
-
 }

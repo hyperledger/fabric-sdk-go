@@ -63,12 +63,12 @@ func New(configProvider core.ConfigProvider, opts ...Option) (*FabricSDK, error)
 // fromPkgSuite creates an SDK based on the implementations in the provided pkg suite.
 // TODO: For now leaving this method as private until we have more usage.
 func fromPkgSuite(configProvider core.ConfigProvider, pkgSuite pkgSuite, opts ...Option) (*FabricSDK, error) {
-	core, err := pkgSuite.Core()
+	coreProv, err := pkgSuite.Core()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to initialize core pkg")
 	}
 
-	msp, err := pkgSuite.MSP()
+	mspProv, err := pkgSuite.MSP()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to initialize core pkg")
 	}
@@ -85,8 +85,8 @@ func fromPkgSuite(configProvider core.ConfigProvider, pkgSuite pkgSuite, opts ..
 
 	sdk := FabricSDK{
 		opts: options{
-			Core:    core,
-			MSP:     msp,
+			Core:    coreProv,
+			MSP:     mspProv,
 			Service: svc,
 			Logger:  lg,
 		},
@@ -162,7 +162,7 @@ type providerInit interface {
 	Initialize(providers contextApi.Providers) error
 }
 
-func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) error {
+func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) error { //nolint
 	for _, option := range opts {
 		err := option(&sdk.opts)
 		if err != nil {

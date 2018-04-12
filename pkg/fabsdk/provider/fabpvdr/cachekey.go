@@ -34,10 +34,6 @@ func (p *params) PermitBlockEvents() {
 	p.permitBlockEvents = true
 }
 
-type permitBlockEventsSetter interface {
-	PermitBlockEvents()
-}
-
 func (p *params) getOptKey() string {
 	//	Construct opts portion
 	optKey := "blockEvents:" + strconv.FormatBool(p.permitBlockEvents)
