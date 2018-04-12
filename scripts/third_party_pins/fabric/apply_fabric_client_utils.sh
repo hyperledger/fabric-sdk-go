@@ -180,10 +180,6 @@ gofilter
 sed -i'' -e 's/&bccsp.SHA256Opts{}/factory.GetSHA256Opts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/factory"/factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
-FILTER_FILENAME="common/attrmgr/attrmgr.go"
-FILTER_FN=
-gofilter
-
 FILTER_FILENAME="common/channelconfig/applicationorg.go"
 FILTER_FN=
 gofilter

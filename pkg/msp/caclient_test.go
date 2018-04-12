@@ -192,8 +192,8 @@ func TestRegister(t *testing.T) {
 
 	// Register with valid request
 	var attributes []api.Attribute
-	attributes = append(attributes, api.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, api.Attribute{Key: "test2", Value: "test3"})
+	attributes = append(attributes, api.Attribute{Name: "test1", Value: "test2"})
+	attributes = append(attributes, api.Attribute{Name: "test2", Value: "test3"})
 	secret, err := f.caClient.Register(&api.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
 	if err != nil {
 		t.Fatalf("identityManager Register return error %v", err)
@@ -217,8 +217,8 @@ func TestEmbeddedRegistar(t *testing.T) {
 
 	// Register with valid request
 	var attributes []api.Attribute
-	attributes = append(attributes, api.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, api.Attribute{Key: "test2", Value: "test3"})
+	attributes = append(attributes, api.Attribute{Name: "test1", Value: "test2"})
+	attributes = append(attributes, api.Attribute{Name: "test2", Value: "test3"})
 	secret, err := f.caClient.Register(&api.RegistrationRequest{Name: "withEmbeddedRegistrar", Affiliation: "test", Attributes: attributes})
 	if err != nil {
 		t.Fatalf("identityManager Register return error %v", err)
@@ -254,8 +254,8 @@ func TestRegisterNoRegistrar(t *testing.T) {
 
 	// Register with valid request
 	var attributes []api.Attribute
-	attributes = append(attributes, api.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, api.Attribute{Key: "test2", Value: "test3"})
+	attributes = append(attributes, api.Attribute{Name: "test1", Value: "test2"})
+	attributes = append(attributes, api.Attribute{Name: "test2", Value: "test3"})
 	_, err = f.caClient.Register(&api.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
 	if err != api.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)

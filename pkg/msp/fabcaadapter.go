@@ -87,8 +87,7 @@ func (c *fabricCAAdapter) Register(key core.Key, cert []byte, request *api.Regis
 	// Contruct request for Fabric CA client
 	var attributes []caapi.Attribute
 	for i := range request.Attributes {
-		attributes = append(attributes, caapi.Attribute{Name: request.
-			Attributes[i].Key, Value: request.Attributes[i].Value})
+		attributes = append(attributes, caapi.Attribute{Name: request.Attributes[i].Name, Value: request.Attributes[i].Value, ECert: request.Attributes[i].ECert})
 	}
 	var req = caapi.RegistrationRequest{
 		CAName:         request.CAName,
