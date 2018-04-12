@@ -129,17 +129,17 @@ func (c *Client) Register(request *RegistrationRequest) (string, error) {
 		return "", err
 	}
 
-	// TODO - this code is unused.
-	//var a []mspapi.Attribute
-	//for i := range request.Attributes {
-	//	a = append(a, mspapi.Attribute{Name: request.Attributes[i].Name, Key: request.Attributes[i].Key, Value: request.Attributes[i].Value})
-	//}
+	var a []mspapi.Attribute
+	for i := range request.Attributes {
+		a = append(a, mspapi.Attribute{Name: request.Attributes[i].Name, Value: request.Attributes[i].Value, ECert: request.Attributes[i].ECert})
+	}
 
 	r := mspapi.RegistrationRequest{
 		Name:           request.Name,
 		Type:           request.Type,
 		MaxEnrollments: request.MaxEnrollments,
 		Affiliation:    request.Affiliation,
+		Attributes:     a,
 		CAName:         request.CAName,
 		Secret:         request.Secret,
 	}

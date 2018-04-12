@@ -9,6 +9,8 @@ package msp
 import (
 	"testing"
 
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -62,10 +64,24 @@ func TestRegisterEnroll(t *testing.T) {
 	// Generate a random user name
 	username := integration.GenerateRandomID()
 
+	testAttributes := []msp.Attribute{
+		msp.Attribute{
+			Name:  integration.GenerateRandomID(),
+			Value: fmt.Sprintf("%s:ecert", integration.GenerateRandomID()),
+			ECert: true,
+		},
+		msp.Attribute{
+			Name:  integration.GenerateRandomID(),
+			Value: fmt.Sprintf("%s:ecert", integration.GenerateRandomID()),
+			ECert: true,
+		},
+	}
+
 	// Register the new user
 	enrollmentSecret, err := mspClient.Register(&msp.RegistrationRequest{
-		Name: username,
-		Type: IdentityTypeUser,
+		Name:       username,
+		Type:       IdentityTypeUser,
+		Attributes: testAttributes,
 		// Affiliation is mandatory. "org1" and "org2" are hardcoded as CA defaults
 		// See https://github.com/hyperledger/fabric-ca/blob/release/cmd/fabric-ca-server/config.go
 		Affiliation: "org2",
@@ -81,10 +97,12 @@ func TestRegisterEnroll(t *testing.T) {
 	}
 
 	// Get the new user's signing identity
-	_, err = mspClient.GetSigningIdentity(username)
+	si, err := mspClient.GetSigningIdentity(username)
 	if err != nil {
 		t.Fatalf("GetSigningIdentity failed: %v", err)
 	}
+
+	checkCertAttributes(t, si.EnrollmentCertificate(), testAttributes)
 
 }
 

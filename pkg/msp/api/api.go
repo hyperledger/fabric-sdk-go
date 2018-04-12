@@ -53,8 +53,8 @@ type RegistrationRequest struct {
 // Attribute defines additional attributes that may be passed along during registration
 type Attribute struct {
 	Name  string
-	Key   string
 	Value string
+	ECert bool
 }
 
 // RevocationRequest defines the attributes required to revoke credentials with the CA
