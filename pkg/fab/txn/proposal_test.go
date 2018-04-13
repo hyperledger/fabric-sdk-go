@@ -72,7 +72,7 @@ func TestSendTransactionProposal(t *testing.T) {
 	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
-		Args:        [][]byte{[]byte{1, 2, 3}},
+		Args:        [][]byte{{1, 2, 3}},
 	}
 
 	txh, err := NewHeader(ctx, testChannel)

@@ -102,7 +102,7 @@ func StartMockBroadcastServer(broadcastTestURL string, grpcServer *grpc.Server) 
 	po.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
-			panic(err.Error())
+			fmt.Printf("StartMockBroadcastServer failed to start %v", err.Error())
 		}
 	}()
 

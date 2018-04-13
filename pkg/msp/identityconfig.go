@@ -15,6 +15,8 @@ import (
 
 	"sort"
 
+	"regexp"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -85,9 +87,7 @@ func (c *IdentityConfig) CAServerCertPems(org string) ([]string, error) {
 	}
 	certFilesPem := config.CertificateAuthorities[caName].TLSCACerts.Pem
 	certPems := make([]string, len(certFilesPem))
-	for i, v := range certFilesPem {
-		certPems[i] = string(v)
-	}
+	copy(certPems, certFilesPem)
 
 	return certPems, nil
 }
@@ -251,10 +251,6 @@ func (c *IdentityConfig) networkConfig() (*fab.NetworkConfig, error) {
 }
 
 func (c *IdentityConfig) tryMatchingCAConfig(caName string) (*msp.CAConfig, string, error) {
-	networkConfig, err := c.networkConfig()
-	if err != nil {
-		return nil, "", err
-	}
 	//Return if no caMatchers are configured
 	caMatchers := c.endpointConfig.CAMatchers()
 	if len(caMatchers) == 0 {
@@ -272,38 +268,46 @@ func (c *IdentityConfig) tryMatchingCAConfig(caName string) (*msp.CAConfig, stri
 	for _, k := range keys {
 		v := caMatchers[k]
 		if v.MatchString(caName) {
-			// get the matching Config from the index number
-			certAuthorityMatchConfig := networkConfig.EntityMatchers["certificateauthority"][k]
-			//Get the certAuthorityMatchConfig from mapped host
-			caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityMatchConfig.MappedHost)]
-			if !ok {
-				return nil, certAuthorityMatchConfig.MappedHost, errors.New("failed to load config from matched CertAuthority")
-			}
-			_, isPortPresentInCAName := c.getPortIfPresent(caName)
-			//if substitution url is empty, use the same network certAuthority url
-			if certAuthorityMatchConfig.URLSubstitutionExp == "" {
-				port, isPortPresent := c.getPortIfPresent(caConfig.URL)
-
-				caConfig.URL = caName
-				//append port of matched config
-				if isPortPresent && !isPortPresentInCAName {
-					caConfig.URL += ":" + strconv.Itoa(port)
-				}
-			} else {
-				//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
-				if strings.Index(certAuthorityMatchConfig.URLSubstitutionExp, "$") < 0 {
-					caConfig.URL = certAuthorityMatchConfig.URLSubstitutionExp
-				} else {
-					//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
-					caConfig.URL = v.ReplaceAllString(caName, certAuthorityMatchConfig.URLSubstitutionExp)
-				}
-			}
-
-			return &caConfig, certAuthorityMatchConfig.MappedHost, nil
+			return c.findMatchingCert(caName, v, k)
 		}
 	}
 
 	return nil, "", errors.WithStack(status.New(status.ClientStatus, status.NoMatchingCertificateAuthorityEntity.ToInt32(), "no matching certAuthority config found", nil))
+}
+
+func (c *IdentityConfig) findMatchingCert(caName string, v *regexp.Regexp, k int) (*msp.CAConfig, string, error) {
+	networkConfig, err := c.networkConfig()
+	if err != nil {
+		return nil, "", err
+	}
+	// get the matching Config from the index number
+	certAuthorityMatchConfig := networkConfig.EntityMatchers["certificateauthority"][k]
+	//Get the certAuthorityMatchConfig from mapped host
+	caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityMatchConfig.MappedHost)]
+	if !ok {
+		return nil, certAuthorityMatchConfig.MappedHost, errors.New("failed to load config from matched CertAuthority")
+	}
+	_, isPortPresentInCAName := c.getPortIfPresent(caName)
+	//if substitution url is empty, use the same network certAuthority url
+	if certAuthorityMatchConfig.URLSubstitutionExp == "" {
+		port, isPortPresent := c.getPortIfPresent(caConfig.URL)
+
+		caConfig.URL = caName
+		//append port of matched config
+		if isPortPresent && !isPortPresentInCAName {
+			caConfig.URL += ":" + strconv.Itoa(port)
+		}
+	} else {
+		//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
+		if !strings.Contains(certAuthorityMatchConfig.URLSubstitutionExp, "$") {
+			caConfig.URL = certAuthorityMatchConfig.URLSubstitutionExp
+		} else {
+			//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
+			caConfig.URL = v.ReplaceAllString(caName, certAuthorityMatchConfig.URLSubstitutionExp)
+		}
+	}
+
+	return &caConfig, certAuthorityMatchConfig.MappedHost, nil
 }
 
 func (c *IdentityConfig) getPortIfPresent(url string) (int, bool) {

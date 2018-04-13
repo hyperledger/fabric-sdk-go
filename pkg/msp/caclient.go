@@ -41,9 +41,9 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 	}
 
 	if orgName == "" {
-		clientConfig, err := ctx.IdentityConfig().Client()
-		if err != nil {
-			return nil, errors.Wrapf(err, "client config retrieval failed")
+		clientConfig, err1 := ctx.IdentityConfig().Client()
+		if err1 != nil {
+			return nil, errors.Wrapf(err1, "client config retrieval failed")
 		}
 		orgName = clientConfig.Organization
 	}

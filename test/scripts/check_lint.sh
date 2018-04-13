@@ -22,7 +22,6 @@ GOMETALINT_CMD=gometalinter
 PROJECT_PATH=$GOPATH/src/github.com/hyperledger/fabric-sdk-go
 
 declare -a arr=(
-"./pkg"
 "./test"
 )
 
@@ -65,12 +64,7 @@ done
 
 
 declare -a arr1=(
-"./pkg/client"
-"./pkg/common"
-"./pkg/context"
-"./pkg/core"
-"./pkg/fab"
-"./pkg/fabsdk"
+"./pkg"
 )
 
 

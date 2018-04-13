@@ -21,13 +21,6 @@ type CertFileUserStore struct {
 	store core.KVStore
 }
 
-func userIdentifierFromUser(user msp.UserData) msp.IdentityIdentifier {
-	return msp.IdentityIdentifier{
-		MSPID: user.MSPID,
-		ID:    user.ID,
-	}
-}
-
 func storeKeyFromUserIdentifier(key msp.IdentityIdentifier) string {
 	return key.ID + "@" + key.MSPID + "-cert.pem"
 }

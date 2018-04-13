@@ -44,7 +44,7 @@ func (m MockSigningIdentity) Serialize() ([]byte, error) {
 
 // SetEnrollmentCertificate sets yhe enrollment certificate.
 func (m MockSigningIdentity) SetEnrollmentCertificate(cert []byte) {
-	m.enrollmentCertificate = cert
+	m.enrollmentCertificate = cert //nolint
 }
 
 // EnrollmentCertificate Returns the underlying ECert representing this user’s identity.
@@ -64,7 +64,7 @@ func (m MockSigningIdentity) PublicVersion() msp.Identity {
 
 // SetPrivateKey sets the private key
 func (m MockSigningIdentity) SetPrivateKey(key core.Key) {
-	m.privateKey = key
+	m.privateKey = key //nolint
 }
 
 // PrivateKey returns the crypto suite representation of the private key

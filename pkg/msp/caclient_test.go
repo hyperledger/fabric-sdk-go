@@ -52,7 +52,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 
 	// Successful enrollment
 	enrollUsername := createRandomName()
-	enrolledUserData, err := f.userStore.Load(msp.IdentityIdentifier{MSPID: orgMSPID, ID: enrollUsername})
+	_, err = f.userStore.Load(msp.IdentityIdentifier{MSPID: orgMSPID, ID: enrollUsername})
 	if err != msp.ErrUserNotFound {
 		t.Fatalf("Expected to not find user in user store")
 	}
@@ -60,7 +60,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("identityManager Enroll return error %v", err)
 	}
-	enrolledUserData, err = f.userStore.Load(msp.IdentityIdentifier{MSPID: orgMSPID, ID: enrollUsername})
+	enrolledUserData, err := f.userStore.Load(msp.IdentityIdentifier{MSPID: orgMSPID, ID: enrollUsername})
 	if err != nil {
 		t.Fatalf("Expected to load user from user store")
 	}
@@ -75,6 +75,10 @@ func TestEnrollAndReenroll(t *testing.T) {
 	}
 
 	// Reenroll with appropriate user
+	reenrollWithAppropriateUser(f, t, enrolledUserData)
+}
+
+func reenrollWithAppropriateUser(f textFixture, t *testing.T, enrolledUserData *msp.UserData) {
 	iManager, ok := f.identityManagerProvider.IdentityManager("org1")
 	if !ok {
 		t.Fatalf("failed to get identity manager")

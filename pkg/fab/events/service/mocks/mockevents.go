@@ -92,7 +92,7 @@ func NewFilteredTxWithCCEvent(txID, ccID, event string) *pb.FilteredTransaction 
 		Data: &pb.FilteredTransaction_TransactionActions{
 			TransactionActions: &pb.FilteredTransactionActions{
 				ChaincodeActions: []*pb.FilteredChaincodeAction{
-					&pb.FilteredChaincodeAction{
+					{
 						ChaincodeEvent: &pb.ChaincodeEvent{
 							ChaincodeId: ccID,
 							EventName:   event,
