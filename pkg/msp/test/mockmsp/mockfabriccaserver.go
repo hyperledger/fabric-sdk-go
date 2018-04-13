@@ -112,25 +112,28 @@ func (s *MockFabricCAServer) Running() bool {
 func (s *MockFabricCAServer) addKeyToKeyStore(privateKey []byte) error {
 	// Import private key that matches the cert we will return
 	// from this mock service, so it can be looked up by SKI from the cert
-	_, err := util.ImportBCCSPKeyFromPEMBytes([]byte(privateKey), s.cryptoSuite, false)
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := util.ImportBCCSPKeyFromPEMBytes(privateKey, s.cryptoSuite, false)
+	return err
 }
 
 // Register user
 func (s *MockFabricCAServer) register(w http.ResponseWriter, req *http.Request) {
 	resp := &api.RegistrationResponseNet{RegistrationResponse: api.RegistrationResponse{Secret: "mockSecretValue"}}
-	cfsslapi.SendResponse(w, resp)
+	if err := cfsslapi.SendResponse(w, resp); err != nil {
+		logger.Error(err)
+	}
 }
 
 // Enroll user
 func (s *MockFabricCAServer) enroll(w http.ResponseWriter, req *http.Request) {
-	s.addKeyToKeyStore([]byte(privateKey))
+	if err := s.addKeyToKeyStore([]byte(privateKey)); err != nil {
+		logger.Error(err)
+	}
 	resp := &enrollmentResponseNet{Cert: util.B64Encode([]byte(ecert))}
 	fillCAInfo(&resp.ServerInfo)
-	cfapi.SendResponse(w, resp)
+	if err := cfapi.SendResponse(w, resp); err != nil {
+		logger.Error(err)
+	}
 }
 
 // Fill the CA info structure appropriately

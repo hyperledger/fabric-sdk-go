@@ -23,10 +23,6 @@ type User struct {
 	privateKey            core.Key
 }
 
-func userIdentifier(userData *msp.UserData) msp.IdentityIdentifier {
-	return msp.IdentityIdentifier{MSPID: userData.MSPID, ID: userData.ID}
-}
-
 // Identifier returns user identifier
 func (u *User) Identifier() *msp.IdentityIdentifier {
 	return &msp.IdentityIdentifier{MSPID: u.mspID, ID: u.id}

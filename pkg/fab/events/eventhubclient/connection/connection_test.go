@@ -64,7 +64,7 @@ func TestSend(t *testing.T) {
 		Event: &pb.Event_Register{
 			Register: &pb.Register{
 				Events: []*pb.Interest{
-					&pb.Interest{EventType: pb.EventType_FILTEREDBLOCK},
+					{EventType: pb.EventType_FILTEREDBLOCK},
 				},
 			},
 		},
@@ -100,7 +100,7 @@ func TestSend(t *testing.T) {
 		Event: &pb.Event_Unregister{
 			Unregister: &pb.Unregister{
 				Events: []*pb.Interest{
-					&pb.Interest{EventType: pb.EventType_FILTEREDBLOCK},
+					{EventType: pb.EventType_FILTEREDBLOCK},
 				},
 			},
 		},
@@ -155,7 +155,7 @@ func TestDisconnected(t *testing.T) {
 		Event: &pb.Event_Register{
 			Register: &pb.Register{
 				Events: []*pb.Interest{
-					&pb.Interest{EventType: pb.EventType_FILTEREDBLOCK},
+					{EventType: pb.EventType_FILTEREDBLOCK},
 				},
 			},
 		},

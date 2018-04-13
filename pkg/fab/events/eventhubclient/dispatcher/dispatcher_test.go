@@ -66,7 +66,7 @@ func TestRegisterInterests(t *testing.T) {
 	// Unregister interests
 	dispatcherEventch <- NewUnregisterInterestsEvent(
 		[]*pb.Interest{
-			&pb.Interest{
+			{
 				EventType: pb.EventType_FILTEREDBLOCK,
 			},
 		},
@@ -108,7 +108,7 @@ func TestRegisterInterests(t *testing.T) {
 func registerFilteredBlockEvent(dispatcherEventch chan<- interface{}, errch chan error, t *testing.T) chan<- interface{} {
 	dispatcherEventch <- NewRegisterInterestsEvent(
 		[]*pb.Interest{
-			&pb.Interest{
+			{
 				EventType: pb.EventType_FILTEREDBLOCK,
 			},
 		},
@@ -127,7 +127,7 @@ func registerFilteredBlockEvent(dispatcherEventch chan<- interface{}, errch chan
 func checkFailedRegisterInterest(dispatcherEventch chan<- interface{}, errch chan error, t *testing.T) chan<- interface{} {
 	dispatcherEventch <- NewRegisterInterestsEvent(
 		[]*pb.Interest{
-			&pb.Interest{
+			{
 				EventType: pb.EventType_FILTEREDBLOCK,
 			},
 		},
@@ -164,7 +164,7 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 	// Unregister interests
 	dispatcherEventch <- NewUnregisterInterestsEvent(
 		[]*pb.Interest{
-			&pb.Interest{
+			{
 				EventType: pb.EventType_FILTEREDBLOCK,
 			},
 		},
@@ -278,7 +278,7 @@ func TestTimedOutRegister(t *testing.T) {
 	// Register interests
 	dispatcherEventch <- NewRegisterInterestsEvent(
 		[]*pb.Interest{
-			&pb.Interest{
+			{
 				EventType: pb.EventType_FILTEREDBLOCK,
 			},
 		},

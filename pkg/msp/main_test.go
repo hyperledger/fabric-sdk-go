@@ -49,7 +49,7 @@ type textFixture struct {
 
 var caServer = &mockmsp.MockFabricCAServer{}
 
-func (f *textFixture) setup(configBackend *mocks.MockConfigBackend) {
+func (f *textFixture) setup(configBackend *mocks.MockConfigBackend) { //nolint
 
 	if configBackend == nil {
 		backend, err := getCustomBackend(configPath)
@@ -108,9 +108,9 @@ func (f *textFixture) setup(configBackend *mocks.MockConfigBackend) {
 		panic(fmt.Sprintf("failed to get network config: %v", err))
 	}
 	for orgName := range netConfig.Organizations {
-		mgr, err := NewIdentityManager(orgName, f.userStore, f.cryptoSuite, f.endpointConfig)
-		if err != nil {
-			panic(fmt.Sprintf("failed to initialize identity manager for organization: %s, cause :%v", orgName, err))
+		mgr, err1 := NewIdentityManager(orgName, f.userStore, f.cryptoSuite, f.endpointConfig)
+		if err1 != nil {
+			panic(fmt.Sprintf("failed to initialize identity manager for organization: %s, cause :%v", orgName, err1))
 		}
 		identityManagers[orgName] = mgr
 	}
@@ -151,16 +151,6 @@ func readCert(t *testing.T) []byte {
 		t.Fatalf("Error reading cert: %s", err.Error())
 	}
 	return cert
-}
-
-func readConfigWithReplacement(path string, origURL, newURL string) []byte {
-	cfgRaw, err := ioutil.ReadFile(path)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to read config [%s]", err))
-	}
-
-	updatedCfg := strings.Replace(string(cfgRaw), origURL, newURL, -1)
-	return []byte(updatedCfg)
 }
 
 func cleanup(storePath string) {

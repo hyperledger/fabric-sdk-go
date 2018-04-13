@@ -15,7 +15,10 @@ import (
 	"fmt"
 
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	providersFab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
@@ -51,33 +54,8 @@ XdsmTcdRvJ3TS/6HCA==
 
 func TestGetSigningIdentity(t *testing.T) {
 
-	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend)
-
-	endpointConfig, err := fab.ConfigFromBackend(configBackend)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
-	}
-
-	identityConfig, err := ConfigFromBackend(configBackend)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
-	}
-
-	netConfig, err := endpointConfig.NetworkConfig()
-	if err != nil {
-		t.Fatalf("Failed to setup netConfig: %s", err)
-	}
-	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
-	if !ok {
-		t.Fatalf("Failed to setup orgConfig: %s", err)
-	}
+	cryptoConfig, endpointConfig, identityConfig, orgConfig := getConfigs(t)
 	mspID := orgConfig.MSPID
-
 	clientCofig, err := identityConfig.Client()
 	if err != nil {
 		t.Fatalf("Unable to retrieve client config: %v", err)
@@ -113,12 +91,42 @@ func TestGetSigningIdentity(t *testing.T) {
 	testUsername := createRandomName()
 
 	// Should not find the user
-	if err := checkSigningIdentity(mgr, testUsername); err != msp.ErrUserNotFound {
-		t.Fatalf("expected ErrUserNotFound, got: %s", err)
+	if err1 := checkSigningIdentity(mgr, testUsername); err1 != msp.ErrUserNotFound {
+		t.Fatalf("expected ErrUserNotFound, got: %s", err1)
 	}
 
 	// "Manually" enroll User1
-	_, err = fabricCaUtil.ImportBCCSPKeyFromPEMBytes([]byte(testPrivKey), cryptoSuite, false)
+	enrollUser1(cryptoSuite, t, mspID, testUsername, userStore, mgr)
+}
+
+func getConfigs(t *testing.T) (core.CryptoSuiteConfig, providersFab.EndpointConfig, msp.IdentityConfig, providersFab.OrganizationConfig) {
+	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend)
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+	identityConfig, err := ConfigFromBackend(configBackend)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %v", err))
+	}
+	netConfig, err := endpointConfig.NetworkConfig()
+	if err != nil {
+		t.Fatalf("Failed to setup netConfig: %s", err)
+	}
+	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
+	if !ok {
+		t.Fatalf("Failed to setup orgConfig: %s", err)
+	}
+
+	return cryptoConfig, endpointConfig, identityConfig, orgConfig
+}
+
+func enrollUser1(cryptoSuite core.CryptoSuite, t *testing.T, mspID string, testUsername string, userStore msp.UserStore, mgr *IdentityManager) {
+	_, err := fabricCaUtil.ImportBCCSPKeyFromPEMBytes([]byte(testPrivKey), cryptoSuite, false)
 	if err != nil {
 		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed [%s]", err)
 	}
@@ -131,7 +139,6 @@ func TestGetSigningIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("userStore.Store: %s", err)
 	}
-
 	// Should succeed after enrollment
 	if err := checkSigningIdentity(mgr, testUsername); err != nil {
 		t.Fatalf("checkSigningIdentity failed: %s", err)
@@ -210,28 +217,27 @@ func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
 
-	_, err = mgr.GetSigningIdentity("")
+	checkSigningIdentityFromEmbeddedCryptoConfig(mgr, t)
+}
+
+func checkSigningIdentityFromEmbeddedCryptoConfig(mgr *IdentityManager, t *testing.T) {
+	_, err := mgr.GetSigningIdentity("")
 	if err == nil {
 		t.Fatalf("Should get error for empty user name")
 	}
-
 	_, err = mgr.GetSigningIdentity("Non-Existent")
 	if err != msp.ErrUserNotFound {
 		t.Fatalf("Should get ErrUserNotFound for non-existent user, got %v", err)
 	}
-
 	if err := checkSigningIdentity(mgr, "EmbeddedUser"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
-
 	if err := checkSigningIdentity(mgr, "EmbeddedUserWithPaths"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
-
 	if err := checkSigningIdentity(mgr, "EmbeddedUserMixed"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
-
 	if err := checkSigningIdentity(mgr, "EmbeddedUserMixed2"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}

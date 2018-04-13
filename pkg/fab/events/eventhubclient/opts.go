@@ -13,8 +13,8 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-var blockInterests = []*pb.Interest{&pb.Interest{EventType: pb.EventType_BLOCK}}
-var filteredBlockInterests = []*pb.Interest{&pb.Interest{EventType: pb.EventType_FILTEREDBLOCK}}
+var blockInterests = []*pb.Interest{{EventType: pb.EventType_BLOCK}}
+var filteredBlockInterests = []*pb.Interest{{EventType: pb.EventType_FILTEREDBLOCK}}
 
 type params struct {
 	connProvider api.ConnectionProvider

@@ -73,44 +73,52 @@ func TestStore(t *testing.T) {
 		EnrollmentCertificate: []byte(testCert2),
 	}
 
+	createStore(store, user1, t, user2)
+
+	// Check key1, value1
+	if err = checkStoreValue(store, user1, user1.EnrollmentCertificate); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", user1.ID, err)
+	}
+	if err = store.Delete(msp.IdentityIdentifier{MSPID: user1.MSPID, ID: user1.ID}); err != nil {
+		t.Fatalf("Delete %s failed [%s]", user1.ID, err)
+	}
+	if err = checkStoreValue(store, user2, user2.EnrollmentCertificate); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", user2.ID, err)
+	}
+	if err = checkStoreValue(store, user1, nil); err != msp.ErrUserNotFound {
+		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user1.ID, err)
+	}
+
+	// Check ke2, value2
+	if err = checkStoreValue(store, user2, user2.EnrollmentCertificate); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", user2.ID, err)
+	}
+	if err = store.Delete(msp.IdentityIdentifier{MSPID: user2.MSPID, ID: user2.ID}); err != nil {
+		t.Fatalf("Delete %s failed [%s]", user2.ID, err)
+	}
+	if err = checkStoreValue(store, user2, nil); err != msp.ErrUserNotFound {
+		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user2.ID, err)
+	}
+
+	// Check non-existing key
+	checkNonExistingKey(store, t)
+}
+
+func createStore(store *CertFileUserStore, user1 *msp.UserData, t *testing.T, user2 *msp.UserData) {
 	if err := store.Store(user1); err != nil {
 		t.Fatalf("Store %s failed [%s]", user1.ID, err)
 	}
 	if err := store.Store(user2); err != nil {
 		t.Fatalf("Store %s failed [%s]", user2.ID, err)
 	}
+}
 
-	// Check key1, value1
-	if err := checkStoreValue(store, user1, user1.EnrollmentCertificate); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", user1.ID, err)
-	}
-	if err := store.Delete(msp.IdentityIdentifier{MSPID: user1.MSPID, ID: user1.ID}); err != nil {
-		t.Fatalf("Delete %s failed [%s]", user1.ID, err)
-	}
-	if err := checkStoreValue(store, user2, user2.EnrollmentCertificate); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", user2.ID, err)
-	}
-	if err := checkStoreValue(store, user1, nil); err != msp.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user1.ID, err)
-	}
-
-	// Check ke2, value2
-	if err := checkStoreValue(store, user2, user2.EnrollmentCertificate); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", user2.ID, err)
-	}
-	if err := store.Delete(msp.IdentityIdentifier{MSPID: user2.MSPID, ID: user2.ID}); err != nil {
-		t.Fatalf("Delete %s failed [%s]", user2.ID, err)
-	}
-	if err := checkStoreValue(store, user2, nil); err != msp.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user2.ID, err)
-	}
-
-	// Check non-existing key
+func checkNonExistingKey(store *CertFileUserStore, t *testing.T) {
 	nonExistingKey := msp.IdentityIdentifier{
 		MSPID: "Orgx",
 		ID:    "userx",
 	}
-	_, err = store.Load(nonExistingKey)
+	_, err := store.Load(nonExistingKey)
 	if err == nil || err != msp.ErrUserNotFound {
 		t.Fatal("fetching value for non-existing key should return ErrUserNotFound")
 	}
@@ -139,7 +147,7 @@ func checkStoreValue(store *CertFileUserStore, user *msp.UserData, expected []by
 		return err
 	}
 	if expected == nil {
-		_, err := os.Stat(file)
+		_, err = os.Stat(file)
 		if err == nil {
 			return fmt.Errorf("path shouldn't exist [%s]", file)
 		}
@@ -167,8 +175,12 @@ func compare(v interface{}, expected []byte) error {
 			return errors.New("value is not []byte")
 		}
 	}
-	if bytes.Compare(vbytes, expected) != 0 {
+	if !bytes.Equal(vbytes, expected) {
 		return errors.New("value from store comparison failed")
 	}
 	return nil
+}
+
+func userIdentifier(userData *msp.UserData) msp.IdentityIdentifier {
+	return msp.IdentityIdentifier{MSPID: userData.MSPID, ID: userData.ID}
 }

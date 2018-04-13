@@ -64,10 +64,10 @@ func TestFutureValueGet(t *testing.T) {
 			defer wg.Done()
 			value, err := fv.Get()
 			if err != nil {
-				t.Fatalf("received error: %s", err)
+				fail(t, "received error: %s", err)
 			}
 			if value != expectedValue {
-				t.Fatalf("expecting value [%s] but received [%s]", expectedValue, value)
+				fail(t, "expecting value [%s] but received [%s]", expectedValue, value)
 			}
 		}()
 	}
@@ -97,7 +97,7 @@ func TestFutureValueGetWithError(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			if _, err := fv.Get(); err == nil {
-				t.Fatalf("expecting error but received none")
+				fail(t, "expecting error but received none")
 			}
 		}()
 	}
@@ -119,16 +119,23 @@ func TestMustGetPanic(t *testing.T) {
 	go func() {
 		defer func() {
 			if r := recover(); r == nil {
-				t.Fatalf("Expecting panic but got none")
+				fail(t, "Expecting panic but got none")
 			}
 			done <- true
 		}()
 		fv.MustGet()
-		t.Fatalf("Expecting panic but got none")
+		fail(t, "Expecting panic but got none")
 	}()
 
 	if _, err := fv.Initialize(); err == nil {
 		t.Fatalf("expecting error but received none")
 	}
 	<-done
+}
+
+// fail - as t.Fatalf() is not goroutine safe, this function behaves like t.Fatalf().
+func fail(t *testing.T, template string, args ...interface{}) {
+	fmt.Printf(template, args...)
+	fmt.Println()
+	t.Fail()
 }

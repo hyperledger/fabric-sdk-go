@@ -35,7 +35,7 @@ func StartMockEventServer(testAddress string) (*MockEventServer, error) {
 	fmt.Printf("Starting mock event server\n")
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
-			panic(err.Error())
+			fmt.Printf("StartMockEventServer failed %v", err.Error())
 		}
 	}()
 

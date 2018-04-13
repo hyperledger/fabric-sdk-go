@@ -68,19 +68,19 @@ var DefaultResMgmtOpts = Opts{
 // DefaultRetryableCodes these are the error codes, grouped by source of error,
 // that are considered to be transient error conditions by default
 var DefaultRetryableCodes = map[status.Group][]status.Code{
-	status.EndorserClientStatus: []status.Code{
+	status.EndorserClientStatus: {
 		status.EndorsementMismatch,
 		status.PrematureChaincodeExecution,
 	},
-	status.EndorserServerStatus: []status.Code{
+	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
 	},
-	status.OrdererServerStatus: []status.Code{
+	status.OrdererServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
 	},
-	status.EventServerStatus: []status.Code{
+	status.EventServerStatus: {
 		status.Code(pb.TxValidationCode_DUPLICATE_TXID),
 		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
@@ -88,7 +88,7 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 	},
 	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
 	// gRPC fail fast option, once available
-	status.GRPCTransportStatus: []status.Code{
+	status.GRPCTransportStatus: {
 		status.Code(grpcCodes.Unavailable),
 	},
 }
@@ -96,21 +96,21 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 // ResMgmtDefaultRetryableCodes are the suggested codes that should be treated as
 // transient by fabric-sdk-go/pkg/client/resmgmt.Client
 var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
-	status.EndorserClientStatus: []status.Code{
+	status.EndorserClientStatus: {
 		status.EndorsementMismatch,
 		status.PrematureChaincodeExecution,
 	},
-	status.EndorserServerStatus: []status.Code{
+	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
 	},
-	status.OrdererServerStatus: []status.Code{
+	status.OrdererServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
 		status.Code(common.Status_BAD_REQUEST),
 		status.Code(common.Status_NOT_FOUND),
 	},
-	status.EventServerStatus: []status.Code{
+	status.EventServerStatus: {
 		status.Code(pb.TxValidationCode_DUPLICATE_TXID),
 		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
@@ -118,7 +118,7 @@ var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
 	},
 	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
 	// gRPC fail fast option, once available
-	status.GRPCTransportStatus: []status.Code{
+	status.GRPCTransportStatus: {
 		status.Code(grpcCodes.Unavailable),
 	},
 }
@@ -126,22 +126,22 @@ var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
 // ChannelClientRetryableCodes are the suggested codes that should be treated as
 // transient by fabric-sdk-go/pkg/client/channel.Client
 var ChannelClientRetryableCodes = map[status.Group][]status.Code{
-	status.EndorserClientStatus: []status.Code{
+	status.EndorserClientStatus: {
 		status.ConnectionFailed, status.EndorsementMismatch,
 		status.PrematureChaincodeExecution,
 	},
-	status.EndorserServerStatus: []status.Code{
+	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
 	},
-	status.OrdererClientStatus: []status.Code{
+	status.OrdererClientStatus: {
 		status.ConnectionFailed,
 	},
-	status.OrdererServerStatus: []status.Code{
+	status.OrdererServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
 	},
-	status.EventServerStatus: []status.Code{
+	status.EventServerStatus: {
 		status.Code(pb.TxValidationCode_DUPLICATE_TXID),
 		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
@@ -149,12 +149,12 @@ var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 	},
 	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
 	// gRPC fail fast option, once available
-	status.GRPCTransportStatus: []status.Code{
+	status.GRPCTransportStatus: {
 		status.Code(grpcCodes.Unavailable),
 	},
 }
 
 // ChannelConfigRetryableCodes error codes to be taken into account for query channel config retry
 var ChannelConfigRetryableCodes = map[status.Group][]status.Code{
-	status.EndorserClientStatus: []status.Code{status.EndorsementMismatch},
+	status.EndorserClientStatus: {status.EndorsementMismatch},
 }

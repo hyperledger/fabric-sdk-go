@@ -15,6 +15,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	providersFab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
@@ -95,40 +96,39 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	cleanupTestPath(t, credentialStorePath)
 	defer cleanupTestPath(t, credentialStorePath)
 
-	cs, err := sw.GetSuiteByConfig(cryptoConfig)
-	userStore := userStoreFromConfig(t, identityConfig)
+	checkSigningIdentityWithEnrollment(cryptoConfig, t, identityConfig, orgName, endpointConfig, clientConfig)
+}
 
+func checkSigningIdentityWithEnrollment(cryptoConfig core.CryptoSuiteConfig, t *testing.T, identityConfig msp.IdentityConfig, orgName string, endpointConfig providersFab.EndpointConfig, clientConfig *msp.ClientConfig) {
+	cs, err := sw.GetSuiteByConfig(cryptoConfig)
+	if err != nil {
+		t.Fatalf("Failed to get suite by config: %s", err)
+	}
+	userStore := userStoreFromConfig(t, identityConfig)
 	identityMgr, err := NewIdentityManager(orgName, userStore, cs, endpointConfig)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
-
-	if err := checkSigningIdentity(identityMgr, "User1"); err != nil {
+	if err = checkSigningIdentity(identityMgr, "User1"); err != nil {
 		t.Fatalf("checkSigningIdentity failed: %s", err)
 	}
-
 	// Refers to the same location used by the IdentityManager
 	enrollmentTestUserStore, err = NewCertFileUserStore(clientConfig.CredentialStore.Path)
 	if err != nil {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
-
-	if err := checkSigningIdentity(identityMgr, userToEnroll); err == nil {
+	if err = checkSigningIdentity(identityMgr, userToEnroll); err == nil {
 		t.Fatalf("checkSigningIdentity should fail for user who hasn't been enrolled")
 	}
-
 	// Enroll the user
-
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	caClient := apimocks.NewMockCAClient(ctrl)
 	prepareForEnroll(t, caClient, cs)
-
 	err = caClient.Enroll(userToEnroll, "enrollmentSecret")
 	if err != nil {
 		t.Fatalf("fabricCAClient Enroll failed: %v", err)
 	}
-
 	if err := checkSigningIdentity(identityMgr, userToEnroll); err != nil {
 		t.Fatalf("checkSigningIdentity shouldn't fail for user who hasn been just enrolled: %s", err)
 	}

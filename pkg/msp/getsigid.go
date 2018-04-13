@@ -70,7 +70,7 @@ func (mgr *IdentityManager) GetSigningIdentity(id string) (msp.SigningIdentity, 
 }
 
 // GetUser returns a user for the given user name
-func (mgr *IdentityManager) GetUser(username string) (*User, error) {
+func (mgr *IdentityManager) GetUser(username string) (*User, error) { //nolint
 
 	u, err := mgr.loadUserFromStore(username)
 	if err != nil {
@@ -157,7 +157,7 @@ func (mgr *IdentityManager) getEmbeddedPrivateKey(username string) (core.Key, er
 		pemBytes = []byte(keyPem)
 	} else if keyPath != "" {
 		// Try importing from the Embedded Path
-		_, err := os.Stat(keyPath)
+		_, err = os.Stat(keyPath)
 		if err != nil {
 			if !os.IsNotExist(err) {
 				return nil, errors.WithMessage(err, "OS stat embedded path failed")
