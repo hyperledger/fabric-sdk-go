@@ -53,7 +53,9 @@ var orgTestPeer1 fab.Peer
 // TestRevokedPeer
 func TestRevokedPeer(t *testing.T) {
 	// Create SDK setup for the integration tests with revoked peer
-	sdk, err := fabsdk.New(getConfigBackend(t))
+	//TODO commented out below custom config backend function until endpointconfig.ChannelPeers issue with custom backend is solved
+	//sdk, err := fabsdk.New(getConfigBackend(t))
+	sdk, err := fabsdk.New(config.FromFile("../../fixtures/config/config_revoke_test.yaml"))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

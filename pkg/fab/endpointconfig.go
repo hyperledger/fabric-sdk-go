@@ -437,16 +437,16 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 		chPeerKey := "channels." + name + ".peers." + peerName
 
 		// Default value for endorsing peer key is true
-		setEndorsingPeer(chPeerKey, c, chPeerConfig)
+		setEndorsingPeer(chPeerKey, c, &chPeerConfig)
 
 		// Default value for chaincode query key is true
-		setChaincodeQuery(chPeerKey, c, chPeerConfig)
+		setChaincodeQuery(chPeerKey, c, &chPeerConfig)
 
 		// Default value for ledger query key is true
-		setLedgerQuery(chPeerKey, c, chPeerConfig)
+		setLedgerQuery(chPeerKey, c, &chPeerConfig)
 
 		// Default value for event source key is true
-		setEventSource(chPeerKey, c, chPeerConfig)
+		setEventSource(chPeerKey, c, &chPeerConfig)
 
 		mspID, err := c.PeerMSPID(peerName)
 		if err != nil {
@@ -464,7 +464,7 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 
 }
 
-func setEndorsingPeer(chPeerKey string, c *EndpointConfig, chPeerConfig fab.PeerChannelConfig) {
+func setEndorsingPeer(chPeerKey string, c *EndpointConfig, chPeerConfig *fab.PeerChannelConfig) {
 	endorsingPeerKey := strings.ToLower(chPeerKey + ".endorsingPeer")
 	_, ok := c.backend.Lookup(endorsingPeerKey)
 	if !ok {
@@ -472,7 +472,7 @@ func setEndorsingPeer(chPeerKey string, c *EndpointConfig, chPeerConfig fab.Peer
 	}
 }
 
-func setEventSource(chPeerKey string, c *EndpointConfig, chPeerConfig fab.PeerChannelConfig) {
+func setEventSource(chPeerKey string, c *EndpointConfig, chPeerConfig *fab.PeerChannelConfig) {
 	eventSourceKey := strings.ToLower(chPeerKey + ".eventSource")
 	_, ok := c.backend.Lookup(eventSourceKey)
 	if !ok {
@@ -480,7 +480,7 @@ func setEventSource(chPeerKey string, c *EndpointConfig, chPeerConfig fab.PeerCh
 	}
 }
 
-func setLedgerQuery(chPeerKey string, c *EndpointConfig, chPeerConfig fab.PeerChannelConfig) {
+func setLedgerQuery(chPeerKey string, c *EndpointConfig, chPeerConfig *fab.PeerChannelConfig) {
 	ledgerQueryKey := strings.ToLower(chPeerKey + ".ledgerQuery")
 	_, ok := c.backend.Lookup(ledgerQueryKey)
 	if !ok {
@@ -488,7 +488,7 @@ func setLedgerQuery(chPeerKey string, c *EndpointConfig, chPeerConfig fab.PeerCh
 	}
 }
 
-func setChaincodeQuery(chPeerKey string, c *EndpointConfig, chPeerConfig fab.PeerChannelConfig) {
+func setChaincodeQuery(chPeerKey string, c *EndpointConfig, chPeerConfig *fab.PeerChannelConfig) {
 	ccQueryKey := strings.ToLower(chPeerKey + ".chaincodeQuery")
 	_, ok := c.backend.Lookup(ccQueryKey)
 	if !ok {
