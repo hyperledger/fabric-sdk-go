@@ -39,7 +39,7 @@ const (
 	defaultEventHubConnectionTimeout      = time.Second * 15
 	defaultEventRegTimeout                = time.Second * 15
 	defaultOrdererConnectionTimeout       = time.Second * 15
-	defaultOrdererResponseTimeout         = time.Second * 15
+	defaultOrdererResponseTimeout         = time.Minute * 2
 	defaultQueryTimeout                   = time.Minute * 3
 	defaultExecuteTimeout                 = time.Minute * 3
 	defaultResMgmtTimeout                 = time.Minute * 3
