@@ -19,6 +19,22 @@ func New(coreBackend core.ConfigBackend) *ConfigLookup {
 	return &ConfigLookup{backend: coreBackend}
 }
 
+//unmarshalOpts opts for unmarshal key function
+type unmarshalOpts struct {
+	hookFunc mapstructure.DecodeHookFunc
+}
+
+// UnmarshalOption describes a functional parameter unmarshaling
+type UnmarshalOption func(o *unmarshalOpts)
+
+// WithUnmarshalHookFunction provides an option to pass Custom Decode Hook Func
+// for unmarshaling
+func WithUnmarshalHookFunction(hookFunction mapstructure.DecodeHookFunc) UnmarshalOption {
+	return func(o *unmarshalOpts) {
+		o.hookFunc = hookFunction
+	}
+}
+
 //ConfigLookup is wrapper for core.ConfigBackend which performs key lookup and unmarshalling
 type ConfigLookup struct {
 	backend core.ConfigBackend
@@ -66,19 +82,35 @@ func (c *ConfigLookup) GetDuration(key string) time.Duration {
 }
 
 //UnmarshalKey unmarshals value for given key to rawval type
-func (c *ConfigLookup) UnmarshalKey(key string, rawVal interface{}) error {
+func (c *ConfigLookup) UnmarshalKey(key string, rawVal interface{}, opts ...UnmarshalOption) error {
 	value, ok := c.backend.Lookup(key)
 	if !ok {
 		return nil
 	}
 
+	//mandatory hook func
+	hookFn := mapstructure.StringToTimeDurationHookFunc()
+
+	//check for opts
+	unmarshalOpts := unmarshalOpts{}
+	for _, param := range opts {
+		param(&unmarshalOpts)
+	}
+
+	//compose multiple hook funcs to one if found in opts
+	if unmarshalOpts.hookFunc != nil {
+		hookFn = mapstructure.ComposeDecodeHookFunc(hookFn, unmarshalOpts.hookFunc)
+	}
+
+	//build decoder
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		DecodeHook: mapstructure.StringToTimeDurationHookFunc(),
+		DecodeHook: hookFn,
 		Result:     rawVal,
 	})
 	if err != nil {
 		return err
 	}
 
+	//decode
 	return decoder.Decode(value)
 }

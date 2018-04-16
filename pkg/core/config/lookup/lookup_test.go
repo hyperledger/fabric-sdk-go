@@ -19,11 +19,14 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
 var sampleConfigFile = "../testdata/config_test.yaml"
+
+const orgChannelID = "orgchannel"
 
 var backend *mocks.MockConfigBackend
 
@@ -244,6 +247,39 @@ func setupCustomBackend() {
 	backend = &mocks.MockConfigBackend{KeyValueMap: backendMap}
 }
 
+func TestUnmarshalWithHookFunc(t *testing.T) {
+	testLookup := New(backend)
+	tamperPeerChannelConfig(backend)
+	//output struct
+	networkConfig := fab.NetworkConfig{}
+	testLookup.UnmarshalKey("channels", &networkConfig.Channels, WithUnmarshalHookFunction(setTrueDefaultForPeerChannelConfig()))
+
+	//Test if mandatory hook func is working as expected
+	assert.True(t, len(networkConfig.Channels) == 3)
+	assert.True(t, len(networkConfig.Channels["mychannel"].Peers) == 1)
+	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses == 1)
+	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets == 1)
+	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.MaxBackoff.String() == (5*time.Second).String())
+	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String() == (500*time.Millisecond).String())
+	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor == 2.0)
+
+	//Test if custom hook func is working
+	assert.True(t, len(networkConfig.Channels[orgChannelID].Peers) == 2)
+	//test orgchannel peer1 (EndorsingPeer should be true as set, remaining should be default = true)
+	orgChannelPeer1 := networkConfig.Channels[orgChannelID].Peers["peer0.org1.example.com"]
+	assert.True(t, orgChannelPeer1.EndorsingPeer)
+	assert.True(t, orgChannelPeer1.LedgerQuery)
+	assert.True(t, orgChannelPeer1.EventSource)
+	assert.True(t, orgChannelPeer1.ChaincodeQuery)
+
+	//test orgchannel peer1 (EndorsingPeer should be false as set, remaining should be default = true)
+	orgChannelPeer2 := networkConfig.Channels[orgChannelID].Peers["peer0.org2.example.com"]
+	assert.False(t, orgChannelPeer2.EndorsingPeer)
+	assert.True(t, orgChannelPeer2.LedgerQuery)
+	assert.True(t, orgChannelPeer2.EventSource)
+	assert.True(t, orgChannelPeer2.ChaincodeQuery)
+}
+
 func newViper() *viper.Viper {
 	myViper := viper.New()
 	replacer := strings.NewReplacer(".", "_")
@@ -254,4 +290,46 @@ func newViper() *viper.Viper {
 		panic(err)
 	}
 	return myViper
+}
+
+func tamperPeerChannelConfig(backend *mocks.MockConfigBackend) {
+	channelsMap := backend.KeyValueMap["channels"]
+	orgChannel := map[string]interface{}{
+		"orderers": []string{"orderer.example.com"},
+		"peers": map[string]interface{}{
+			"peer0.org1.example.com": map[string]interface{}{"endorsingpeer": true},
+			"peer0.org2.example.com": map[string]interface{}{"endorsingpeer": false},
+		},
+	}
+	(channelsMap.(map[string]interface{}))[orgChannelID] = orgChannel
+}
+
+func setTrueDefaultForPeerChannelConfig() mapstructure.DecodeHookFunc {
+	return func(
+		f reflect.Type,
+		t reflect.Type,
+		data interface{}) (interface{}, error) {
+
+		//If target is of type 'fab.PeerChannelConfig', then only hook should work
+		if t == reflect.TypeOf(fab.PeerChannelConfig{}) {
+			dataMap, ok := data.(map[string]interface{})
+			if ok {
+				setDefault(dataMap, "endorsingpeer", true)
+				setDefault(dataMap, "chaincodequery", true)
+				setDefault(dataMap, "ledgerquery", true)
+				setDefault(dataMap, "eventsource", true)
+
+				return dataMap, nil
+			}
+		}
+		return data, nil
+	}
+}
+
+//setDefault sets default value provided to map if given key not found
+func setDefault(dataMap map[string]interface{}, key string, defaultVal bool) {
+	_, ok := dataMap[key]
+	if !ok {
+		dataMap[key] = true
+	}
 }

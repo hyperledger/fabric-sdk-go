@@ -40,6 +40,7 @@ const (
 	configPemTestFilePath           = "../core/config/testdata/config_test_pem.yaml"
 	configEmbeddedUsersTestFilePath = "../core/config/testdata/config_test_embedded_pems.yaml"
 	configType                      = "yaml"
+	orgChannelID                    = "orgchannel"
 )
 
 var configBackend core.ConfigBackend
@@ -1255,4 +1256,60 @@ func TestTLSClientCertsNoCerts(t *testing.T) {
 	if !reflect.DeepEqual(certs[0], emptyCert) {
 		t.Fatalf("Actual cert is not equal to empty cert")
 	}
+}
+
+func TestPeerChannelConfig(t *testing.T) {
+	//get custom backend and tamper orgchannel values for test
+	backend := getCustomBackend()
+	tamperPeerChannelConfig(backend)
+
+	//get endpoint config
+	config, err := ConfigFromBackend(backend)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//get network config
+	networkConfig, err := config.NetworkConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//Test if channels config are working as expected, with time values parsed properly
+	assert.True(t, len(networkConfig.Channels) == 3)
+	assert.True(t, len(networkConfig.Channels["mychannel"].Peers) == 1)
+	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses == 1)
+	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets == 1)
+	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.MaxBackoff.String() == (5*time.Second).String())
+	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String() == (500*time.Millisecond).String())
+	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor == 2.0)
+
+	//Test if custom hook for (default=true) func is working
+	assert.True(t, len(networkConfig.Channels[orgChannelID].Peers) == 2)
+	//test orgchannel peer1 (EndorsingPeer should be true as set, remaining should be default = true)
+	orgChannelPeer1 := networkConfig.Channels[orgChannelID].Peers["peer0.org1.example.com"]
+	assert.True(t, orgChannelPeer1.EndorsingPeer)
+	assert.True(t, orgChannelPeer1.LedgerQuery)
+	assert.True(t, orgChannelPeer1.EventSource)
+	assert.True(t, orgChannelPeer1.ChaincodeQuery)
+
+	//test orgchannel peer1 (EndorsingPeer should be false as set, remaining should be default = true)
+	orgChannelPeer2 := networkConfig.Channels[orgChannelID].Peers["peer0.org2.example.com"]
+	assert.False(t, orgChannelPeer2.EndorsingPeer)
+	assert.True(t, orgChannelPeer2.LedgerQuery)
+	assert.True(t, orgChannelPeer2.EventSource)
+	assert.True(t, orgChannelPeer2.ChaincodeQuery)
+
+}
+
+func tamperPeerChannelConfig(backend *mocks.MockConfigBackend) {
+	channelsMap := backend.KeyValueMap["channels"]
+	orgChannel := map[string]interface{}{
+		"orderers": []string{"orderer.example.com"},
+		"peers": map[string]interface{}{
+			"peer0.org1.example.com": map[string]interface{}{"endorsingpeer": true},
+			"peer0.org2.example.com": map[string]interface{}{"endorsingpeer": false},
+		},
+	}
+	(channelsMap.(map[string]interface{}))[orgChannelID] = orgChannel
 }

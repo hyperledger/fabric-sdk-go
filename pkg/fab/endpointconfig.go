@@ -10,6 +10,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -27,6 +28,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 )
 
@@ -401,13 +403,12 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 	// viper lowercases all key maps
 	chConfig, ok := netConfig.Channels[strings.ToLower(name)]
 	if !ok {
-		matchingChannel, mappedChannel, matchErr := c.tryMatchingChannelConfig(name)
+		matchingChannel, _, matchErr := c.tryMatchingChannelConfig(name)
 		if matchErr != nil {
 			return peers, nil
 		}
 
 		// reset 'name' with the mappedChannel as it's referenced further below
-		name = mappedChannel
 		chConfig = *matchingChannel
 	}
 
@@ -433,21 +434,6 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
 		}
 
-		// Assemble channel peer key
-		chPeerKey := "channels." + name + ".peers." + peerName
-
-		// Default value for endorsing peer key is true
-		setEndorsingPeer(chPeerKey, c, &chPeerConfig)
-
-		// Default value for chaincode query key is true
-		setChaincodeQuery(chPeerKey, c, &chPeerConfig)
-
-		// Default value for ledger query key is true
-		setLedgerQuery(chPeerKey, c, &chPeerConfig)
-
-		// Default value for event source key is true
-		setEventSource(chPeerKey, c, &chPeerConfig)
-
 		mspID, err := c.PeerMSPID(peerName)
 		if err != nil {
 			return nil, errors.Errorf("failed to retrieve msp id for peer %s", peerName)
@@ -462,38 +448,6 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 
 	return peers, nil
 
-}
-
-func setEndorsingPeer(chPeerKey string, c *EndpointConfig, chPeerConfig *fab.PeerChannelConfig) {
-	endorsingPeerKey := strings.ToLower(chPeerKey + ".endorsingPeer")
-	_, ok := c.backend.Lookup(endorsingPeerKey)
-	if !ok {
-		chPeerConfig.EndorsingPeer = true
-	}
-}
-
-func setEventSource(chPeerKey string, c *EndpointConfig, chPeerConfig *fab.PeerChannelConfig) {
-	eventSourceKey := strings.ToLower(chPeerKey + ".eventSource")
-	_, ok := c.backend.Lookup(eventSourceKey)
-	if !ok {
-		chPeerConfig.EventSource = true
-	}
-}
-
-func setLedgerQuery(chPeerKey string, c *EndpointConfig, chPeerConfig *fab.PeerChannelConfig) {
-	ledgerQueryKey := strings.ToLower(chPeerKey + ".ledgerQuery")
-	_, ok := c.backend.Lookup(ledgerQueryKey)
-	if !ok {
-		chPeerConfig.LedgerQuery = true
-	}
-}
-
-func setChaincodeQuery(chPeerKey string, c *EndpointConfig, chPeerConfig *fab.PeerChannelConfig) {
-	ccQueryKey := strings.ToLower(chPeerKey + ".chaincodeQuery")
-	_, ok := c.backend.Lookup(ccQueryKey)
-	if !ok {
-		chPeerConfig.ChaincodeQuery = true
-	}
 }
 
 // ChannelOrderers returns a list of channel orderers
@@ -717,7 +671,7 @@ func (c *EndpointConfig) cacheNetworkConfiguration() error {
 		return errors.WithMessage(err, "failed to parse 'client' config item to networkConfig.Client type")
 	}
 
-	err = c.backend.UnmarshalKey("channels", &networkConfig.Channels)
+	err = c.backend.UnmarshalKey("channels", &networkConfig.Channels, lookup.WithUnmarshalHookFunction(peerChannelConfigHookFunc()))
 	logger.Debugf("channels are: %+v", networkConfig.Channels)
 	if err != nil {
 		return errors.WithMessage(err, "failed to parse 'channels' config item to networkConfig.Channels type")
@@ -1215,4 +1169,37 @@ func loadByteKeyOrCertFromFile(c *msp.ClientConfig, isKey bool) ([]byte, error) 
 		return nil, errors.Errorf("Error loading %s file from '%s' err: %v", a, path, err)
 	}
 	return bts, nil
+}
+
+//peerChannelConfigHookFunc returns hook function for unmarshalling 'fab.PeerChannelConfig'
+// Rule : default set to 'true' if not provided in config
+func peerChannelConfigHookFunc() mapstructure.DecodeHookFunc {
+	return func(
+		f reflect.Type,
+		t reflect.Type,
+		data interface{}) (interface{}, error) {
+
+		//If target is of type 'fab.PeerChannelConfig', then only hook should work
+		if t == reflect.TypeOf(fab.PeerChannelConfig{}) {
+			dataMap, ok := data.(map[string]interface{})
+			if ok {
+				setDefault(dataMap, "endorsingpeer", true)
+				setDefault(dataMap, "chaincodequery", true)
+				setDefault(dataMap, "ledgerquery", true)
+				setDefault(dataMap, "eventsource", true)
+
+				return dataMap, nil
+			}
+		}
+
+		return data, nil
+	}
+}
+
+//setDefault sets default value provided to map if given key not found
+func setDefault(dataMap map[string]interface{}, key string, defaultVal bool) {
+	_, ok := dataMap[key]
+	if !ok {
+		dataMap[key] = true
+	}
 }
