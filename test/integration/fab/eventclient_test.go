@@ -20,12 +20,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
 const (
-	org1User      = "User1"
-	org1AdminUser = "Admin"
+	org1User = "User1"
 )
 
 func TestEventClient(t *testing.T) {
@@ -49,11 +50,11 @@ func TestEventClient(t *testing.T) {
 			testEventService(t, testSetup, sdk, chainCodeID, false, eventService)
 		})
 		t.Run("Deliver Block Events", func(t *testing.T) {
-			eventService, err := chContext.ChannelService().EventService(client.WithBlockEvents())
+			eventServ, err := chContext.ChannelService().EventService(client.WithBlockEvents())
 			if err != nil {
 				t.Fatalf("error getting event service: %s", err)
 			}
-			testEventService(t, testSetup, sdk, chainCodeID, true, eventService)
+			testEventService(t, testSetup, sdk, chainCodeID, true, eventServ)
 		})
 	} else {
 		// Block events are the default for the event hub client
@@ -70,22 +71,7 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 	}
 	defer cancel()
 
-	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
-	require.Nil(t, err, "creating peers failed")
-
-	tpResponses, prop, err := createAndSendTransactionProposal(
-		transactor,
-		chainCodeID,
-		"invoke",
-		[][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("10")},
-		peers,
-		nil,
-	)
-	if err != nil {
-		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
-	}
-
-	txID := string(prop.TxnID)
+	tpResponses, prop, txID := sendTxProposal(sdk, testSetup, t, transactor, chainCodeID)
 
 	var wg sync.WaitGroup
 	var numExpected uint32
@@ -129,100 +115,12 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 	var numReceived uint32
 
 	if beventch != nil {
-		go func() {
-			defer wg.Done()
-			select {
-			case event, ok := <-beventch:
-				if !ok {
-					t.Fatalf("unexpected closed channel while waiting for Tx Status event")
-				}
-				t.Logf("Received block event: %#v", event)
-				if event.Block == nil {
-					t.Fatalf("Expecting block in block event but got nil")
-				}
-				atomic.AddUint32(&numReceived, 1)
-			case <-time.After(5 * time.Second):
-			}
-		}()
+		go checkBlockEvent(&wg, beventch, t, &numReceived)
 	}
 
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case event, ok := <-fbeventch:
-				if !ok {
-					t.Fatalf("unexpected closed channel while waiting for Tx Status event")
-				}
-				t.Logf("Received filtered block event: %#v", event)
-				if event.FilteredBlock == nil || len(event.FilteredBlock.FilteredTransactions) == 0 {
-					t.Fatalf("Expecting one transaction in filtered block but got none")
-				}
-				filteredTx := event.FilteredBlock.FilteredTransactions[0]
-				if filteredTx.Txid != string(txID) {
-					// Not our event
-					continue
-				}
-				atomic.AddUint32(&numReceived, 1)
-			case <-time.After(5 * time.Second):
-				return
-			}
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		select {
-		case event, ok := <-cceventch:
-			if !ok {
-				t.Fatalf("unexpected closed channel while waiting for Tx Status event")
-			}
-			t.Logf("Received chaincode event: %#v", event)
-			if event.ChaincodeID != chainCodeID {
-				t.Fatalf("Expecting event for CC ID [%s] but got event for CC ID [%s]", chainCodeID, event.ChaincodeID)
-			}
-			if blockEvents {
-				expectedPayload := []byte("Test Payload")
-				if bytes.Compare(event.Payload, expectedPayload) != 0 {
-					t.Fatalf("Expecting payload [%s] but got [%s]", []byte("Test Payload"), event.Payload)
-				}
-			} else if event.Payload != nil {
-				t.Fatalf("Expecting nil payload for filtered events but got [%s]", event.Payload)
-			}
-			if event.SourceURL == "" {
-				t.Fatalf("Expecting event source URL but got none")
-			}
-			if event.BlockNumber == 0 {
-				t.Fatalf("Expecting non-zero block number")
-			}
-			atomic.AddUint32(&numReceived, 1)
-		case <-time.After(5 * time.Second):
-			return
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		select {
-		case txStatus, ok := <-txstatusch:
-			if !ok {
-				t.Fatalf("unexpected closed channel while waiting for Tx Status event")
-			}
-			t.Logf("Received Tx Status event: %#v", txStatus)
-			if txStatus.TxID != string(txID) {
-				t.Fatalf("Expecting event for TxID [%s] but got event for TxID [%s]", txID, txStatus.TxID)
-			}
-			if txStatus.SourceURL == "" {
-				t.Fatalf("Expecting event source URL but got none")
-			}
-			if txStatus.BlockNumber == 0 {
-				t.Fatalf("Expecting non-zero block number")
-			}
-			atomic.AddUint32(&numReceived, 1)
-		case <-time.After(5 * time.Second):
-			return
-		}
-	}()
+	go checkFilteredBlockEvent(&wg, fbeventch, t, &numReceived, txID)
+	go checkCCEvent(&wg, cceventch, t, &numReceived, chainCodeID, blockEvents)
+	go checkTxStatusEvent(&wg, txstatusch, t, &numReceived, txID)
 
 	// Commit the transaction to generate events
 	_, err = createAndSendTransaction(transactor, prop, tpResponses)
@@ -234,6 +132,118 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 
 	if numReceived != numExpected {
 		t.Fatalf("expecting %d events but received %d", numExpected, numReceived)
+	}
+}
+
+func sendTxProposal(sdk *fabsdk.FabricSDK, testSetup *integration.BaseSetupImpl, t *testing.T, transactor fab.Transactor, chainCodeID string) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, string) {
+	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
+	require.Nil(t, err, "creating peers failed")
+	tpResponses, prop, err := createAndSendTransactionProposal(
+		transactor,
+		chainCodeID,
+		"invoke",
+		[][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("10")},
+		peers,
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
+	}
+	txID := string(prop.TxnID)
+	return tpResponses, prop, txID
+}
+
+func checkTxStatusEvent(wg *sync.WaitGroup, txstatusch <-chan *fab.TxStatusEvent, t *testing.T, numReceived *uint32, txID string) {
+	defer wg.Done()
+	select {
+	case txStatus, ok := <-txstatusch:
+		if !ok {
+			fail(t, "unexpected closed channel while waiting for Tx Status event")
+		}
+		t.Logf("Received Tx Status event: %#v", txStatus)
+		if txStatus.TxID != string(txID) {
+			fail(t, "Expecting event for TxID [%s] but got event for TxID [%s]", txID, txStatus.TxID)
+		}
+		if txStatus.SourceURL == "" {
+			fail(t, "Expecting event source URL but got none")
+		}
+		if txStatus.BlockNumber == 0 {
+			fail(t, "Expecting non-zero block number")
+		}
+		atomic.AddUint32(numReceived, 1)
+	case <-time.After(5 * time.Second):
+		return
+	}
+}
+
+func checkCCEvent(wg *sync.WaitGroup, cceventch <-chan *fab.CCEvent, t *testing.T, numReceived *uint32, chainCodeID string, blockEvents bool) {
+	defer wg.Done()
+	select {
+	case event, ok := <-cceventch:
+		if !ok {
+			fail(t, "unexpected closed channel while waiting for Tx Status event")
+		}
+		t.Logf("Received chaincode event: %#v", event)
+		if event.ChaincodeID != chainCodeID {
+			fail(t, "Expecting event for CC ID [%s] but got event for CC ID [%s]", chainCodeID, event.ChaincodeID)
+		}
+		if blockEvents {
+			expectedPayload := []byte("Test Payload")
+			if !bytes.Equal(event.Payload, expectedPayload) {
+				fail(t, "Expecting payload [%s] but got [%s]", []byte("Test Payload"), event.Payload)
+			}
+		} else if event.Payload != nil {
+			fail(t, "Expecting nil payload for filtered events but got [%s]", event.Payload)
+		}
+		if event.SourceURL == "" {
+			fail(t, "Expecting event source URL but got none")
+		}
+		if event.BlockNumber == 0 {
+			fail(t, "Expecting non-zero block number")
+		}
+		atomic.AddUint32(numReceived, 1)
+	case <-time.After(5 * time.Second):
+		return
+	}
+}
+
+func checkFilteredBlockEvent(wg *sync.WaitGroup, fbeventch <-chan *fab.FilteredBlockEvent, t *testing.T, numReceived *uint32, txID string) {
+	defer wg.Done()
+	for {
+		select {
+		case event, ok := <-fbeventch:
+			if !ok {
+				fail(t, "unexpected closed channel while waiting for Tx Status event")
+			}
+			t.Logf("Received filtered block event: %#v", event)
+			if event.FilteredBlock == nil || len(event.FilteredBlock.FilteredTransactions) == 0 {
+				fail(t, "Expecting one transaction in filtered block but got none")
+			}
+			filteredTx := event.FilteredBlock.FilteredTransactions[0]
+			if filteredTx.Txid != string(txID) {
+				// Not our event
+				continue
+			}
+			atomic.AddUint32(numReceived, 1)
+		case <-time.After(5 * time.Second):
+			return
+		}
+	}
+}
+
+func checkBlockEvent(wg *sync.WaitGroup, beventch <-chan *fab.BlockEvent, t *testing.T, numReceived *uint32) {
+	defer wg.Done()
+	select {
+	case event, ok := <-beventch:
+		if !ok {
+			fail(t, "unexpected closed channel while waiting for Tx Status event")
+		}
+		t.Logf("Received block event: %#v", event)
+		if event.Block == nil {
+			fail(t, "Expecting block in block event but got nil")
+		}
+		atomic.AddUint32(numReceived, 1)
+	case <-time.After(5 * time.Second):
 	}
 }
 
@@ -256,4 +266,11 @@ func createAndSendTransaction(transactor fab.Sender, proposal *fab.TransactionPr
 	}
 
 	return transactionResponse, nil
+}
+
+// fail - as t.Fatalf() is not goroutine safe, this function behaves like t.Fatalf().
+func fail(t *testing.T, template string, args ...interface{}) {
+	fmt.Printf(template, args...)
+	fmt.Println()
+	t.Fail()
 }

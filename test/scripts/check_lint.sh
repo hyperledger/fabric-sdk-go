@@ -65,6 +65,11 @@ done
 
 declare -a arr1=(
 "./pkg"
+"./test/integration/e2e"
+"./test/integration/expiredorderer"
+"./test/integration/expiredpeer"
+"./test/integration/fab"
+"./test/integration/msp"
 )
 
 
