@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package sdk
 
 import (
+	reqContext "context"
+
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -67,14 +70,17 @@ func TestParentContext(t *testing.T) {
 	}
 
 	// ledger client
+	testLedgerClient(org1AdminChannelContext, t, parentContext)
+
+}
+
+func testLedgerClient(org1AdminChannelContext contextApi.ChannelProvider, t *testing.T, parentContext reqContext.Context) {
 	legerClient, err := ledger.New(org1AdminChannelContext)
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
-
 	_, err = legerClient.QueryInfo(ledger.WithParentContext(parentContext))
 	if err == nil && !strings.Contains(err.Error(), "context canceled") {
 		t.Fatalf("expected context cancelled error but got: %v", err)
 	}
-
 }

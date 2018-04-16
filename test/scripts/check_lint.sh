@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright Greg Haskins, IBM Corp, SecureKey Technologies Inc. All Rights Reserved.
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -10,71 +10,19 @@ set -e
 
 
 
-GO_CMD="${GO_CMD:-go}"
-GOLINT_CMD=golint
-GOFMT_CMD=gofmt
-GOIMPORTS_CMD=goimports
 GOMETALINT_CMD=gometalinter
-
-
 
 
 PROJECT_PATH=$GOPATH/src/github.com/hyperledger/fabric-sdk-go
 
 declare -a arr=(
-"./test"
-)
-
-echo "Running linters..."
-for i in "${arr[@]}"
-do
-   echo "Checking $i"
-   OUTPUT="$($GOLINT_CMD $i/...)"
-   if [[ $OUTPUT ]]; then
-      echo "You should check the following golint suggestions:"
-      printf "$OUTPUT\n"
-      echo "end golint suggestions"
-   fi
-
-   OUTPUT="$($GO_CMD vet $i/...)"
-   if [[ $OUTPUT ]]; then
-      echo "You should check the following govet suggestions:"
-      printf "$OUTPUT\n"
-      echo "end govet suggestions"
-   fi
-
-   found=`$GOFMT_CMD -l \`find $i -name "*.go" |grep -v "./vendor"\` 2>&1`
-   if [ $? -ne 0 ]; then
-      echo "The following files need reformatting with '$GO_FMT -w <file>':"
-      printf "$badformat\n"
-      exit 1
-   fi
-
-   OUTPUT="$($GOIMPORTS_CMD -srcdir $PROJECT_PATH -l $i)"
-
-   if [[ $OUTPUT ]]; then
-      echo "YOU MUST FIX THE FOLLOWING GOIMPORTS ERRORS:"
-      printf "$OUTPUT\n"
-      echo "END GOIMPORTS ERRORS"
-      exit 1
-   fi
-done
-
-
-
-
-declare -a arr1=(
 "./pkg"
-"./test/integration/e2e"
-"./test/integration/expiredorderer"
-"./test/integration/expiredpeer"
-"./test/integration/fab"
-"./test/integration/msp"
+"./test"
 )
 
 
 echo "Running metalinters..."
-for i in "${arr1[@]}"
+for i in "${arr[@]}"
 do
    echo "Checking $i"
    $GOMETALINT_CMD --config=./gometalinter.json $i/...

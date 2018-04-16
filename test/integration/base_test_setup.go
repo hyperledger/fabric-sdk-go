@@ -10,6 +10,8 @@ import (
 	"os"
 	"path"
 
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -94,7 +96,12 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	if err != nil {
 		return errors.Wrapf(err, "opening channel config file failed")
 	}
-	defer r.Close()
+	defer func() {
+		if err = r.Close(); err != nil {
+			fmt.Printf("close error %v\n", err)
+		}
+
+	}()
 
 	// Create channel for tests
 	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: r, SigningIdentities: []msp.SigningIdentity{adminIdentity}}

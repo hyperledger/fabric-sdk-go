@@ -18,8 +18,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
-// RunWithNoOrdererConfig enables chclient scenarios using config and sdk options provided
-func RunWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
+// runWithNoOrdererConfig enables chclient scenarios using config and sdk options provided
+func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
 
 	sdk, err := fabsdk.New(configOpt, sdkOpts...)
 	if err != nil {

@@ -105,7 +105,7 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	if err := testSetup.Initialize(sdk); err != nil {
+	if err = testSetup.Initialize(sdk); err != nil {
 		t.Fatalf(err.Error())
 	}
 
@@ -124,14 +124,17 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 		t.Fatalf("Failed to create new channel config: %s", err)
 	}
 
+	queryChannelCfg(channelCtx, cfg, t)
+
+}
+
+func queryChannelCfg(channelCtx contextAPI.Channel, cfg fab.ChannelConfig, t *testing.T) {
 	reqCtx, cancel := context.NewRequest(channelCtx, context.WithTimeoutType(fab.OrdererResponse))
 	defer cancel()
-
 	response, err := cfg.Query(reqCtx)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-
 	expected := "orderer.example.com:7050"
 	found := false
 	for _, o := range response.Orderers() {
@@ -140,11 +143,9 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 			break
 		}
 	}
-
 	if !found {
 		t.Fatalf("Expected orderer %s, got %s", expected, response.Orderers())
 	}
-
 }
 
 // ChannelConfigFromOrdererProviderFactory is configured to retrieve channel config from orderer

@@ -3,7 +3,8 @@
   "Exclude": [
     ".*seekInfo can be .*proto.Message.*",
     "test/integration/msp/check_cert_attributes.go",
-    "test/integration/msp/check_cert_ser_attributes_prev.go"
+    "test/integration/msp/check_cert_ser_attributes_prev.go",
+    "test/fixtures/testdata/..."
   ],
   "EnableGC": true,
   "WarnUnmatchedDirective": true,

@@ -187,7 +187,7 @@ depend-install:
 	@FABRIC_SDKGO_DEPEND_INSTALL="true" $(TEST_SCRIPTS_PATH)/dependencies.sh
 
 .PHONY: checks
-checks: depend license lint spelling
+checks: depend license lint
 
 .PHONY: license
 license:
@@ -197,9 +197,6 @@ license:
 lint: populate
 	@$(TEST_SCRIPTS_PATH)/check_lint.sh
 
-.PHONY: spelling
-spelling:
-	@$(TEST_SCRIPTS_PATH)/check_spelling.sh
 
 .PHONY: build-softhsm2-image
 build-softhsm2-image:

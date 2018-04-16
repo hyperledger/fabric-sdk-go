@@ -19,9 +19,6 @@ if [ "$FABRIC_SDKGO_DEPEND_INSTALL" = "true" ]; then
     TMP=`mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir'`
     GOPATH=$TMP $GO_CMD get -u github.com/axw/gocov/...
     GOPATH=$TMP $GO_CMD get -u github.com/AlekSi/gocov-xml
-    GOPATH=$TMP $GO_CMD get -u github.com/client9/misspell/cmd/misspell
-    GOPATH=$TMP $GO_CMD get -u github.com/golang/lint/golint
-    GOPATH=$TMP $GO_CMD get -u golang.org/x/tools/cmd/goimports
     GOPATH=$TMP $GO_CMD get -u github.com/golang/mock/mockgen
     GOPATH=$TMP $GO_CMD get -u github.com/alecthomas/gometalinter
     mkdir -p $GOPATH/bin
@@ -47,9 +44,6 @@ fi
 # Check that Go tools are installed and help the user if they are missing
 type gocov >/dev/null 2>&1 || { echo >& 2 "gocov is not installed (go get -u github.com/axw/gocov/...)"; ABORT=1; }
 type gocov-xml >/dev/null 2>&1 || { echo >& 2 "gocov-xml is not installed (go get -u github.com/AlekSi/gocov-xml)"; ABORT=1; }
-type misspell >/dev/null 2>&1 || { echo >& 2 "misspell is not installed (go get -u github.com/client9/misspell/cmd/misspell)"; ABORT=1; }
-type golint >/dev/null 2>&1 || { echo >& 2 "golint is not installed (go get -u github.com/golang/lint/golint)"; ABORT=1; }
-type goimports >/dev/null 2>&1 || { echo >& 2 "goimports is not installed (go get -u golang.org/x/tools/cmd/goimports)"; ABORT=1; }
 type mockgen >/dev/null 2>&1 || { echo >& 2 "mockgen is not installed (go get -u github.com/golang/mock/mockgen)"; ABORT=1; }
 type $GO_DEP_CMD >/dev/null 2>&1 || { echo >& 2 "dep is not installed (go get -u github.com/golang/dep/cmd/dep)"; ABORT=1; }
 type gometalinter >/dev/null 2>&1 || { echo >& 2 "gometalinter is not installed (go get -u github.com/alecthomas/gometalinter)"; ABORT=1; }

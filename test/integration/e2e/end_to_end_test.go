@@ -19,5 +19,5 @@ func TestE2E(t *testing.T) {
 	Run(t, config.FromFile("../../fixtures/config/config_test.yaml"))
 
 	//Using setup done set above by end to end test, run below test with new config which has no orderer config inside
-	RunWithNoOrdererConfig(t, integration.ConfigNoOrdererBackend)
+	runWithNoOrdererConfig(t, integration.ConfigNoOrdererBackend)
 }

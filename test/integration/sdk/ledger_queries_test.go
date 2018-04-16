@@ -13,6 +13,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
+	providersFab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -68,6 +69,13 @@ func TestLedgerClientQueries(t *testing.T) {
 		t.Fatalf("Expecting same result from default peer and target peer")
 	}
 
+	testQueryBlockNumberByHash(client, ledgerInfo, t)
+
+	testQueryBlockNumber(client, t, 0)
+
+}
+
+func testQueryBlockNumberByHash(client *ledger.Client, ledgerInfo *providersFab.BlockchainInfoResponse, t *testing.T) {
 	// Test Query Block by Hash - retrieve current block by hash
 	block, err := client.QueryBlockByHash(ledgerInfo.BCI.CurrentBlockHash)
 	if err != nil {
@@ -76,28 +84,27 @@ func TestLedgerClientQueries(t *testing.T) {
 	if block.Data == nil {
 		t.Fatalf("QueryBlockByHash block data is nil")
 	}
-
 	// Test Query Block by Hash - retrieve block by non-existent hash
 	_, err = client.QueryBlockByHash([]byte("non-existent"))
 	if err == nil {
 		t.Fatalf("QueryBlockByHash non-existent didn't return an error")
 	}
+}
 
+func testQueryBlockNumber(client *ledger.Client, t *testing.T, blockNumber uint64) {
 	// Test Query Block by Number
-	block, err = client.QueryBlock(0)
+	block, err := client.QueryBlock(blockNumber)
 	if err != nil {
 		t.Fatalf("QueryBlockByHash return error: %v", err)
 	}
 	if block.Data == nil {
 		t.Fatalf("QueryBlockByHash block data is nil")
 	}
-
 	// Test Query Block by Number (non-existent)
-	block, err = client.QueryBlock(12345678)
+	_, err = client.QueryBlock(12345678)
 	if err == nil {
 		t.Fatalf("QueryBlock should have failed to query non-existent block")
 	}
-
 }
 
 func TestNoLedgerEndpoints(t *testing.T) {

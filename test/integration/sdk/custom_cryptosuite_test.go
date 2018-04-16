@@ -23,8 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const samplekey = "sample-key"
-
 func customCryptoSuiteInit(t *testing.T) (*integration.BaseSetupImpl, string) {
 
 	// Using shared SDK instance to increase test speed.
@@ -183,31 +181,3 @@ func TestCustomCryptoSuite(t *testing.T) {
 	}
 }
 */
-
-/*
-	BCCSP Wrapper for test
-*/
-
-func getBCCSPWrapper(bccsp bccsp.BCCSP) bccsp.BCCSP {
-	return &bccspWrapper{bccsp}
-}
-
-func getBCCSPKeyWrapper(key bccsp.Key) bccsp.Key {
-	return &bccspKeyWrapper{key}
-}
-
-type bccspWrapper struct {
-	bccsp.BCCSP
-}
-
-func (mock *bccspWrapper) KeyGen(opts bccsp.KeyGenOpts) (k bccsp.Key, err error) {
-	return getBCCSPKeyWrapper(nil), nil
-}
-
-type bccspKeyWrapper struct {
-	bccsp.Key
-}
-
-func (mock *bccspKeyWrapper) Bytes() ([]byte, error) {
-	return []byte("sample-key"), nil
-}

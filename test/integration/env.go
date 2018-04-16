@@ -99,9 +99,12 @@ func addLocalEntityMappingToBackend(backend core.ConfigBackend) (core.ConfigBack
 	networkConfig := fab.NetworkConfig{}
 	configLookup := lookup.New(backend)
 
-	configLookup.UnmarshalKey("orderers", &networkConfig.Orderers)
-	configLookup.UnmarshalKey("peers", &networkConfig.Peers)
-
+	if err = configLookup.UnmarshalKey("orderers", &networkConfig.Orderers); err != nil {
+		return nil, err
+	}
+	if err = configLookup.UnmarshalKey("peers", &networkConfig.Peers); err != nil {
+		return nil, err
+	}
 	orderer, ok := networkConfig.Orderers["local.orderer.example.com"]
 	if ok {
 		orderer.URL = re.ReplaceAllString(orderer.URL, "localhost:")

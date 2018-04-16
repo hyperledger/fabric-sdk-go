@@ -26,7 +26,6 @@ import (
 func TestDynamicSelection(t *testing.T) {
 
 	// Using shared SDK instance to increase test speed.
-	sdk := mainSDK
 	testSetup := mainTestSetup
 
 	//testSetup := integration.BaseSetupImpl{
@@ -49,7 +48,7 @@ func TestDynamicSelection(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	if err := testSetup.Initialize(sdk); err != nil {
+	if err = testSetup.Initialize(sdk); err != nil {
 		t.Fatalf(err.Error())
 	}
 

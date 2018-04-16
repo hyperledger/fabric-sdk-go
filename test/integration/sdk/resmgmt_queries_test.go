@@ -147,7 +147,7 @@ func testQueryConfigFromOrderer(t *testing.T, channelID string, client *resmgmt.
 		t.Fatalf("Expected orderer %s, got %s", expected, channelCfg.Orderers())
 	}
 
-	channelCfg, err = client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererURL("non-existent"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	_, err = client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererURL("non-existent"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err == nil {
 		t.Fatalf("QueryConfig should have failed for invalid orderer")
 	}

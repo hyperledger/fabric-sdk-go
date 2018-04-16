@@ -11,9 +11,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 
@@ -25,6 +23,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
@@ -43,8 +42,6 @@ const (
 	channelID        = "orgchannel"
 	configPath       = "../../fixtures/config/config_test.yaml"
 )
-
-var logger = logging.NewLogger("fabsdk/test")
 
 // Peers used for testing
 var orgTestPeer0 fab.Peer
@@ -87,12 +84,7 @@ func TestRevokedPeer(t *testing.T) {
 		t.Fatalf("failed to get org2AdminUser, err : %v", err)
 	}
 
-	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
-		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
-		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	require.Nil(t, err, "error should be nil")
-	require.NotEmpty(t, txID, "transaction ID should be populated")
+	createChannel(org1AdminUser, org2AdminUser, chMgmtClient, t)
 
 	// Org1 resource management client (Org1 is default org)
 	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
@@ -117,45 +109,22 @@ func TestRevokedPeer(t *testing.T) {
 	}
 
 	// Create chaincode package for example cc
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	installCCReq := resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Package: ccPkg}
-
-	// Install example cc to Org1 peers
-	_, err = org1ResMgmt.InstallCC(installCCReq)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Install example cc to Org2 peers
-	_, err = org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Set up chaincode policy to 'any of two msps'
-	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
-
-	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
-	resp, err := org1ResMgmt.InstantiateCC("orgchannel",
-		resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
-		resmgmt.WithTargetURLs("peer0.org1.example.com"))
-	require.Nil(t, err, "error should be nil")
-	require.NotEmpty(t, resp, "transaction response should be populated")
+	createCC(t, org1ResMgmt, org2ResMgmt)
 
 	// Load specific targets for move funds test - one of the
 	//targets has its certificate revoked
 	loadOrgPeers(t, org1AdminClientContext)
 
+	queryCC(org1ChannelClientContext, t)
+
+}
+
+func queryCC(org1ChannelClientContext contextAPI.ChannelProvider, t *testing.T) {
 	// Org1 user connects to 'orgchannel'
 	chClientOrg1User, err := channel.New(org1ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
 	}
-
 	// Org1 user queries initial value on both peers
 	// Since one of the peers on channel has certificate revoked, eror is expected here
 	// Error in container is :
@@ -165,7 +134,41 @@ func TestRevokedPeer(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error: '....Description: could not find chaincode with name 'exampleCC',,, ")
 	}
+}
 
+func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Client) {
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	installCCReq := resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Package: ccPkg}
+	// Install example cc to Org1 peers
+	_, err = org1ResMgmt.InstallCC(installCCReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Install example cc to Org2 peers
+	_, err = org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Set up chaincode policy to 'any of two msps'
+	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
+	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
+	resp, err := org1ResMgmt.InstantiateCC("orgchannel",
+		resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
+		resmgmt.WithTargetURLs("peer0.org1.example.com"))
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, resp, "transaction response should be populated")
+}
+
+func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningIdentity, chMgmtClient *resmgmt.Client, t *testing.T) {
+	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
+		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
+		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
+	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, txID, "transaction ID should be populated")
 }
 
 func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {

@@ -132,12 +132,12 @@ func testRegisterBlockEvent(ccID string, chClient *channel.Client, eventClient *
 	}
 
 	select {
-	case event, ok := <-beventch:
+	case e, ok := <-beventch:
 		if !ok {
 			t.Fatalf("unexpected closed channel while waiting for block event")
 		}
-		t.Logf("Received block event: %#v", event)
-		if event.Block == nil {
+		t.Logf("Received block event: %#v", e)
+		if e.Block == nil {
 			t.Fatalf("Expecting block in block event but got nil")
 		}
 	case <-time.After(time.Second * 20):

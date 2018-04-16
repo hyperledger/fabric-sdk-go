@@ -34,6 +34,7 @@ import (
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
 
@@ -105,12 +106,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 		t.Fatalf("failed to get org2AdminUser, err : %v", err)
 	}
 
-	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
-		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
-		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	require.Nil(t, err, "error should be nil")
-	require.NotEmpty(t, txID, "transaction ID should be populated")
+	createChannel(org1AdminUser, org2AdminUser, chMgmtClient, t)
 
 	// Org1 resource management client (Org1 is default org)
 	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
@@ -134,100 +130,156 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 		t.Fatalf("Org2 peers failed to JoinChannel: %s", err)
 	}
 
-	// Create chaincode package for example cc
 	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	installCCReq := resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Package: ccPkg}
+	// Create chaincode package for example cc
+	createCC(t, org1ResMgmt, org2ResMgmt, ccPkg)
 
-	// Install example cc to Org1 peers
-	_, err = org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	chClientOrg1User, chClientOrg2User := connectUserToOrgChannel(org1ChannelClientContext, t, org2ChannelClientContext)
+
+	// Call with a dummy function and expect a fail with multiple errors
+	verifyErrorFromCC(chClientOrg1User, t)
+
+	// Org1 user queries initial value on both peers
+	value := queryCC(chClientOrg1User, t)
+	initial, _ := strconv.Atoi(string(value))
+
+	ledgerClient, err := ledger.New(org1AdminChannelContext)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to create new ledger client: %s", err)
 	}
 
-	// Install example cc to Org2 peers
-	_, err = org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err != nil {
-		t.Fatal(err)
-	}
+	// Ledger client will verify blockchain info
+	ledgerInfoBefore := getBlockchainInfo(ledgerClient, t)
 
-	// Set up chaincode policy to 'any of two msps'
-	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
+	// Org2 user moves funds on org2 peer
+	transactionID := moveFunds(chClientOrg2User, t)
 
-	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
-	instantiateResp, err := org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy}, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	require.Nil(t, err, "error should be nil")
-	require.NotEmpty(t, instantiateResp, "transaction response should be populated")
+	// Assert that funds have changed value on org1 peer
+	verifyValue(t, chClientOrg1User, initial+1)
 
-	// Verify that example CC is instantiated on Org1 peer
-	chaincodeQueryResponse, err := org1ResMgmt.QueryInstantiatedChaincodes("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err != nil {
-		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
-	}
+	// Get latest block chain info
+	checkLedgerInfo(ledgerClient, t, ledgerInfoBefore, transactionID)
 
-	found := false
-	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
-		if chaincode.Name == "exampleCC" {
-			found = true
-		}
-	}
+	// Start chaincode upgrade process (install and instantiate new version of exampleCC)
+	upgradeCC(ccPkg, org1ResMgmt, t, org2ResMgmt)
 
-	if !found {
-		t.Fatalf("QueryInstantiatedChaincodes failed to find instantiated exampleCC chaincode")
-	}
+	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
+	testCCPolicy(chClientOrg2User, t)
 
+	// Assert that funds have changed value on org1 peer
+	beforeTxValue, _ := strconv.Atoi(integration.ExampleCCUpgradeB)
+	expectedValue := beforeTxValue + 1
+	verifyValue(t, chClientOrg1User, expectedValue)
+
+	return expectedValue
+}
+
+func connectUserToOrgChannel(org1ChannelClientContext contextAPI.ChannelProvider, t *testing.T, org2ChannelClientContext contextAPI.ChannelProvider) (*channel.Client, *channel.Client) {
 	// Org1 user connects to 'orgchannel'
 	chClientOrg1User, err := channel.New(org1ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
 	}
-
 	// Org2 user connects to 'orgchannel'
 	chClientOrg2User, err := channel.New(org2ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
 	}
+	return chClientOrg1User, chClientOrg2User
+}
 
-	// Call with a dummy function and expect a fail with multiple errors
-	response, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCQueryArgs()},
-		channel.WithRetry(retry.DefaultChClientOpts))
-	require.Error(t, err, "Should have failed with dummy function")
-	s, ok := status.FromError(err)
-	require.True(t, ok, "expected status error")
-	require.Equal(t, s.Code, int32(status.MultipleErrors))
-	for _, err := range err.(multi.Errors) {
-		s, ok := status.FromError(err)
-		require.True(t, ok, "expected status error")
-		require.EqualValues(t, int32(500), s.Code)
-		require.Equal(t, status.ChaincodeStatus, s.Group)
+func checkLedgerInfo(ledgerClient *ledger.Client, t *testing.T, ledgerInfoBefore *fab.BlockchainInfoResponse, transactionID fab.TransactionID) {
+	ledgerInfoAfter, err := ledgerClient.QueryInfo(ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	if err != nil {
+		t.Fatalf("QueryInfo return error: %v", err)
 	}
+	if ledgerInfoAfter.BCI.Height-ledgerInfoBefore.BCI.Height <= 0 {
+		t.Fatalf("Block size did not increase after transaction")
+	}
+	// Test Query Block by Hash - retrieve current block by number
+	block, err := ledgerClient.QueryBlock(ledgerInfoAfter.BCI.Height-1, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	if err != nil {
+		t.Fatalf("QueryBlock return error: %v", err)
+	}
+	if block == nil {
+		t.Fatalf("Block info not available")
+	}
+	// Get transaction info
+	transactionInfo, err := ledgerClient.QueryTransaction(transactionID, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	if err != nil {
+		t.Fatalf("QueryTransaction return error: %v", err)
+	}
+	if transactionInfo.TransactionEnvelope == nil {
+		t.Fatalf("Transaction info missing")
+	}
+}
 
-	// Org1 user queries initial value on both peers
-	response, err = chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningIdentity, chMgmtClient *resmgmt.Client, t *testing.T) {
+	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
+		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
+		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
+	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, txID, "transaction ID should be populated")
+}
+
+func testCCPolicy(chClientOrg2User *channel.Client, t *testing.T) {
+	_, err := chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1),
+		channel.WithRetry(retry.DefaultChClientOpts))
+	if err == nil {
+		t.Fatalf("Should have failed to move funds due to cc policy")
+	}
+	// Org2 user moves funds (cc policy ok since we have provided peers for both Orgs)
+	_, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer0, orgTestPeer1),
 		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
-		t.Fatalf("Failed to query funds: %s", err)
+		t.Fatalf("Failed to move funds: %s", err)
 	}
-	initial, _ := strconv.Atoi(string(response.Payload))
+}
 
+func upgradeCC(ccPkg *api.CCPackage, org1ResMgmt *resmgmt.Client, t *testing.T, org2ResMgmt *resmgmt.Client) {
+	installCCReq := resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Package: ccPkg}
+	// Install example cc version '1' to Org1 peers
+	_, err := org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Install example cc version '1' to Org2 peers
+	_, err = org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// New chaincode policy (both orgs have to approve)
+	org1Andorg2Policy, err := cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
+	upgradeResp, err := org1ResMgmt.UpgradeCC("orgchannel", resmgmt.UpgradeCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, upgradeResp, "transaction response should be populated")
+}
+
+func moveFunds(chClientOrgUser *channel.Client, t *testing.T) fab.TransactionID {
+	response, err := chClientOrgUser.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1),
+		channel.WithRetry(retry.DefaultChClientOpts))
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
+	}
 	if response.ChaincodeStatus == 0 {
 		t.Fatalf("Expected ChaincodeStatus")
 	}
-
 	if response.Responses[0].ChaincodeStatus != response.ChaincodeStatus {
 		t.Fatalf("Expected the chaincode status returned by successful Peer Endorsement to be same as Chaincode status for client response")
 	}
+	return response.TransactionID
+}
 
-	// Ledger client will verify blockchain info
-	ledgerClient, err := ledger.New(org1AdminChannelContext)
-
-	if err != nil {
-		t.Fatalf("Failed to create new ledger client: %s", err)
-	}
-
+func getBlockchainInfo(ledgerClient *ledger.Client, t *testing.T) *fab.BlockchainInfoResponse {
 	channelCfg, err := ledgerClient.QueryConfig(ledger.WithTargets(orgTestPeer0, orgTestPeer1), ledger.WithMinTargets(2))
 	if err != nil {
 		t.Fatalf("QueryConfig return error: %v", err)
@@ -239,12 +291,10 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	if !strings.Contains(channelCfg.Orderers()[0], expectedOrderer) {
 		t.Fatalf("Expecting %s, got %s", expectedOrderer, channelCfg.Orderers()[0])
 	}
-
 	ledgerInfoBefore, err := ledgerClient.QueryInfo(ledger.WithTargets(orgTestPeer0, orgTestPeer1), ledger.WithMinTargets(2), ledger.WithMaxTargets(3))
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
-
 	// Test Query Block by Hash - retrieve current block by hash
 	block, err := ledgerClient.QueryBlockByHash(ledgerInfoBefore.BCI.CurrentBlockHash, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
 	if err != nil {
@@ -253,99 +303,72 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	if block == nil {
 		t.Fatalf("Block info not available")
 	}
+	return ledgerInfoBefore
+}
 
-	// Org2 user moves funds on org2 peer
-	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1),
+func queryCC(chClientOrg1User *channel.Client, t *testing.T) []byte {
+	response, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
 		channel.WithRetry(retry.DefaultChClientOpts))
 	if err != nil {
-		t.Fatalf("Failed to move funds: %s", err)
+		t.Fatalf("Failed to query funds: %s", err)
 	}
-
 	if response.ChaincodeStatus == 0 {
 		t.Fatalf("Expected ChaincodeStatus")
 	}
-
 	if response.Responses[0].ChaincodeStatus != response.ChaincodeStatus {
 		t.Fatalf("Expected the chaincode status returned by successful Peer Endorsement to be same as Chaincode status for client response")
 	}
+	return response.Payload
+}
 
-	// Assert that funds have changed value on org1 peer
-	verifyValue(t, chClientOrg1User, initial+1)
-
-	// Get latest block chain info
-	ledgerInfoAfter, err := ledgerClient.QueryInfo(ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
-	if err != nil {
-		t.Fatalf("QueryInfo return error: %v", err)
+func verifyErrorFromCC(chClientOrg1User *channel.Client, t *testing.T) {
+	_, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCQueryArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
+	require.Error(t, err, "Should have failed with dummy function")
+	s, ok := status.FromError(err)
+	require.True(t, ok, "expected status error")
+	require.Equal(t, s.Code, int32(status.MultipleErrors))
+	for _, err := range err.(multi.Errors) {
+		s, ok := status.FromError(err)
+		require.True(t, ok, "expected status error")
+		require.EqualValues(t, int32(500), s.Code)
+		require.Equal(t, status.ChaincodeStatus, s.Group)
 	}
+}
 
-	if ledgerInfoAfter.BCI.Height-ledgerInfoBefore.BCI.Height <= 0 {
-		t.Fatalf("Block size did not increase after transaction")
-	}
-
-	// Test Query Block by Hash - retrieve current block by number
-	block, err = ledgerClient.QueryBlock(ledgerInfoAfter.BCI.Height-1, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
-	if err != nil {
-		t.Fatalf("QueryBlock return error: %v", err)
-	}
-	if block == nil {
-		t.Fatalf("Block info not available")
-	}
-
-	// Get transaction info
-	transactionInfo, err := ledgerClient.QueryTransaction(response.TransactionID, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
-	if err != nil {
-		t.Fatalf("QueryTransaction return error: %v", err)
-	}
-	if transactionInfo.TransactionEnvelope == nil {
-		t.Fatalf("Transaction info missing")
-	}
-
-	// Start chaincode upgrade process (install and instantiate new version of exampleCC)
-	installCCReq = resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Package: ccPkg}
-
-	// Install example cc version '1' to Org1 peers
-	_, err = org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Client, ccPkg *api.CCPackage) {
+	installCCReq := resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Package: ccPkg}
+	// Install example cc to Org1 peers
+	_, err := org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Install example cc version '1' to Org2 peers
+	// Install example cc to Org2 peers
 	_, err = org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// New chaincode policy (both orgs have to approve)
-	org1Andorg2Policy, err := cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
-	upgradeResp, err := org1ResMgmt.UpgradeCC("orgchannel", resmgmt.UpgradeCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
+	// Set up chaincode policy to 'any of two msps'
+	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
+	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
+	instantiateResp, err := org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy}, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	require.Nil(t, err, "error should be nil")
-	require.NotEmpty(t, upgradeResp, "transaction response should be populated")
-
-	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
-	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1),
-		channel.WithRetry(retry.DefaultChClientOpts))
-	if err == nil {
-		t.Fatalf("Should have failed to move funds due to cc policy")
-	}
-
-	// Org2 user moves funds (cc policy ok since we have provided peers for both Orgs)
-	response, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer0, orgTestPeer1),
-		channel.WithRetry(retry.DefaultChClientOpts))
+	require.NotEmpty(t, instantiateResp, "transaction response should be populated")
+	// Verify that example CC is instantiated on Org1 peer
+	chaincodeQueryResponse, err := org1ResMgmt.QueryInstantiatedChaincodes("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
-		t.Fatalf("Failed to move funds: %s", err)
+		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
+	}
+	found := false
+	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+		if chaincode.Name == "exampleCC" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("QueryInstantiatedChaincodes failed to find instantiated exampleCC chaincode")
 	}
 
-	// Assert that funds have changed value on org1 peer
-	beforeTxValue, _ := strconv.Atoi(integration.ExampleCCUpgradeB)
-	expectedValue := beforeTxValue + 1
-	verifyValue(t, chClientOrg1User, expectedValue)
-
-	return expectedValue
 }
 
 func testWithOrg2(t *testing.T, expectedValue int) int {
