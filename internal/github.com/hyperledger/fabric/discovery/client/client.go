@@ -17,21 +17,21 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/gossip/util"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/discovery"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/gossip"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	"github.com/pkg/errors"
 )
 
 var (
-	configTypes = []discovery.QueryType{discovery.ConfigQueryType, discovery.PeerMembershipQueryType, discovery.ChaincodeQueryType}
+	configTypes = []discovery.QueryType{discovery.ConfigQueryType, discovery.PeerMembershipQueryType, discovery.ChaincodeQueryType, discovery.LocalMembershipQueryType}
 )
 
-type client struct {
+// Client interacts with the discovery server
+type Client struct {
 	lastRequest      []byte
 	lastSignature    []byte
 	createConnection Dialer
-	authInfo         *discovery.AuthInfo
 	signRequest      Signer
 }
 
@@ -87,6 +87,18 @@ func (req *Request) AddEndorsersQuery(chaincodes ...string) *Request {
 	return req
 }
 
+// AddLocalPeersQuery adds to the request a local peer query
+func (req *Request) AddLocalPeersQuery() *Request {
+	q := &discovery.Query_LocalPeers{
+		LocalPeers: &discovery.LocalPeerQuery{},
+	}
+	req.Queries = append(req.Queries, &discovery.Query{
+		Query: q,
+	})
+	req.addQueryMapping(discovery.LocalMembershipQueryType, "")
+	return req
+}
+
 // AddPeersQuery adds to the request a peer query
 func (req *Request) AddPeersQuery() *Request {
 	ch := req.lastChannel
@@ -113,17 +125,17 @@ func (req *Request) addQueryMapping(queryType discovery.QueryType, key string) {
 }
 
 // Send sends the request and returns the response, or error on failure
-func (c *client) Send(ctx context.Context, req *Request) (Response, error) {
-	req.Authentication = c.authInfo
-	payload, err := proto.Marshal(req.Request)
+func (c *Client) Send(ctx context.Context, req *Request, auth *discovery.AuthInfo) (Response, error) {
+	reqToBeSent := *req.Request
+	reqToBeSent.Authentication = auth
+	payload, err := proto.Marshal(&reqToBeSent)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed marshaling Request to bytes")
 	}
-
 	sig := c.lastSignature
 	// Only sign the Request if it is different than the previous Request sent.
 	// Otherwise, use the last signature from the previous send.
-	// This is not only to save CPU cycles in the client-side,
+	// This is not only to save CPU cycles in the Client-side,
 	// but also for the server side to be able to memoize the signature verification.
 	// We have the use the previous signature, because many signature schemes are not deterministic.
 	if !bytes.Equal(c.lastRequest, payload) {
@@ -143,10 +155,6 @@ func (c *client) Send(ctx context.Context, req *Request) (Response, error) {
 		return nil, errors.Wrap(err, "failed connecting to discovery service")
 	}
 
-	defer func() {
-		req.Queries = nil
-	}()
-
 	cl := discovery.NewDiscoveryClient(conn)
 	resp, err := cl.Discover(ctx, &discovery.SignedRequest{
 		Payload:   payload,
@@ -165,6 +173,14 @@ type resultOrError interface {
 }
 
 type response map[key]resultOrError
+
+type localResponse struct {
+	response
+}
+
+func (cr *localResponse) Peers() ([]*Peer, error) {
+	return parsePeers(discovery.LocalMembershipQueryType, cr.response, "")
+}
 
 type channelResponse struct {
 	response
@@ -188,10 +204,10 @@ func (cr *channelResponse) Config() (*discovery.ConfigResult, error) {
 	return nil, res.(error)
 }
 
-func (cr *channelResponse) Peers() ([]*Peer, error) {
-	res, exists := cr.response[key{
-		queryType: discovery.PeerMembershipQueryType,
-		channel:   cr.channel,
+func parsePeers(queryType discovery.QueryType, r response, channel string) ([]*Peer, error) {
+	res, exists := r[key{
+		queryType: queryType,
+		channel:   channel,
 	}]
 
 	if !exists {
@@ -205,7 +221,11 @@ func (cr *channelResponse) Peers() ([]*Peer, error) {
 	return nil, res.(error)
 }
 
-func (cr *channelResponse) Endorsers(cc string) (Endorsers, error) {
+func (cr *channelResponse) Peers() ([]*Peer, error) {
+	return parsePeers(discovery.PeerMembershipQueryType, cr.response, cr.channel)
+}
+
+func (cr *channelResponse) Endorsers(cc string, ps PrioritySelector, ef ExclusionFilter) (Endorsers, error) {
 	// If we have a key that has no chaincode field,
 	// it means it's an error returned from the service
 	if err, exists := cr.response[key{
@@ -228,18 +248,39 @@ func (cr *channelResponse) Endorsers(cc string) (Endorsers, error) {
 
 	desc := res.(*endorsementDescriptor)
 	rand.Seed(time.Now().Unix())
-	randomLayoutIndex := rand.Intn(len(desc.layouts))
-	layout := desc.layouts[randomLayoutIndex]
+	// We iterate over all layouts to find one that we have enough peers to select
+	for _, index := range rand.Perm(len(desc.layouts)) {
+		layout := desc.layouts[index]
+		endorsers, canLayoutBeSatisfied := selectPeersForLayout(desc.endorsersByGroups, layout, ps, ef)
+		if canLayoutBeSatisfied {
+			return endorsers, nil
+		}
+	}
+	return nil, errors.New("no endorsement combination can be satisfied")
+}
+
+func selectPeersForLayout(endorsersByGroups map[string][]*Peer, layout map[string]int, ps PrioritySelector, ef ExclusionFilter) (Endorsers, bool) {
 	var endorsers []*Peer
 	for grp, count := range layout {
-		endorsersOfGrp := randomEndorsers(count, desc.endorsersByGroups[grp])
+		shuffledEndorsers := Endorsers(endorsersByGroups[grp]).Shuffle()
+		endorsersOfGrp := shuffledEndorsers.Filter(ef).Sort(ps)
+		// We couldn't select enough peers for this layout because the current group
+		// requires more peers than we have available to be selected
 		if len(endorsersOfGrp) < count {
-			return nil, errors.Errorf("layout has a group that requires at least %d peers, but only %d peers are known", count, len(endorsersOfGrp))
+			return nil, false
 		}
+		endorsersOfGrp = endorsersOfGrp[:count]
 		endorsers = append(endorsers, endorsersOfGrp...)
 	}
+	// The current (randomly chosen) layout can be satisfied, so return it
+	// instead of checking the next one.
+	return endorsers, true
+}
 
-	return endorsers, nil
+func (resp response) ForLocal() LocalResponse {
+	return &localResponse{
+		response: resp,
+	}
 }
 
 func (resp response) ForChannel(ch string) ChannelResponse {
@@ -265,7 +306,9 @@ func computeResponse(queryMapping map[discovery.QueryType]map[string]int, r *dis
 		case discovery.ChaincodeQueryType:
 			err = resp.mapEndorsers(channel2index, r)
 		case discovery.PeerMembershipQueryType:
-			err = resp.mapPeerMembership(channel2index, r)
+			err = resp.mapPeerMembership(channel2index, r, discovery.PeerMembershipQueryType)
+		case discovery.LocalMembershipQueryType:
+			err = resp.mapPeerMembership(channel2index, r, discovery.LocalMembershipQueryType)
 		}
 		if err != nil {
 			return nil, err
@@ -296,14 +339,14 @@ func (resp response) mapConfig(channel2index map[string]int, r *discovery.Respon
 	return nil
 }
 
-func (resp response) mapPeerMembership(channel2index map[string]int, r *discovery.Response) error {
+func (resp response) mapPeerMembership(channel2index map[string]int, r *discovery.Response, qt discovery.QueryType) error {
 	for ch, index := range channel2index {
 		membersRes, err := r.MembershipAt(index)
 		if membersRes == nil && err == nil {
 			return errors.Errorf("expected QueryResult of either PeerMembershipResult or Error but got %v instead", r.Results[index])
 		}
 		key := key{
-			queryType: discovery.PeerMembershipQueryType,
+			queryType: qt,
 			channel:   ch,
 		}
 
@@ -312,7 +355,7 @@ func (resp response) mapPeerMembership(channel2index map[string]int, r *discover
 			continue
 		}
 
-		peers, err2 := peersForChannel(membersRes)
+		peers, err2 := peersForChannel(membersRes, qt)
 		if err2 != nil {
 			return errors.Wrap(err2, "failed constructing peer membership out of response")
 		}
@@ -322,7 +365,7 @@ func (resp response) mapPeerMembership(channel2index map[string]int, r *discover
 	return nil
 }
 
-func peersForChannel(membersRes *discovery.PeerMembershipResult) ([]*Peer, error) {
+func peersForChannel(membersRes *discovery.PeerMembershipResult, qt discovery.QueryType) ([]*Peer, error) {
 	var peers []*Peer
 	for org, peersOfCurrentOrg := range membersRes.PeersByOrg {
 		for _, peer := range peersOfCurrentOrg.Peers {
@@ -330,9 +373,18 @@ func peersForChannel(membersRes *discovery.PeerMembershipResult) ([]*Peer, error
 			if err != nil {
 				return nil, errors.Wrap(err, "failed unmarshaling alive message")
 			}
-			stateInfoMsg, err := peer.StateInfo.ToGossipMessage()
-			if err != nil {
-				return nil, errors.Wrap(err, "failed unmarshaling stateInfo message")
+			var stateInfoMsg *gossip.SignedGossipMessage
+			if isStateInfoExpected(qt) {
+				stateInfoMsg, err = peer.StateInfo.ToGossipMessage()
+				if err != nil {
+					return nil, errors.Wrap(err, "failed unmarshaling stateInfo message")
+				}
+				if err := validateStateInfoMessage(stateInfoMsg); err != nil {
+					return nil, errors.Wrap(err, "failed validating stateInfo message")
+				}
+			}
+			if err := validateAliveMessage(aliveMsg); err != nil {
+				return nil, errors.Wrap(err, "failed validating alive message")
 			}
 			peers = append(peers, &Peer{
 				MSPID:            org,
@@ -343,6 +395,10 @@ func peersForChannel(membersRes *discovery.PeerMembershipResult) ([]*Peer, error
 		}
 	}
 	return peers, nil
+}
+
+func isStateInfoExpected(qt discovery.QueryType) bool {
+	return qt != discovery.LocalMembershipQueryType
 }
 
 func (resp response) mapEndorsers(channel2index map[string]int, r *discovery.Response) error {
@@ -430,24 +486,22 @@ func endorser(peer *discovery.Peer, chaincode, channel string) (*Peer, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed unmarshaling gossip envelope to state info message")
 	}
-	sId := &msp.SerializedIdentity{}
-	if err := proto.Unmarshal(peer.Identity, sId); err != nil {
+	if err := validateAliveMessage(aliveMsg); err != nil {
+		return nil, errors.Wrap(err, "failed validating alive message")
+	}
+	if err := validateStateInfoMessage(stateInfMsg); err != nil {
+		return nil, errors.Wrap(err, "failed validating stateInfo message")
+	}
+	sID := &msp.SerializedIdentity{}
+	if err := proto.Unmarshal(peer.Identity, sID); err != nil {
 		return nil, errors.Wrap(err, "failed unmarshaling peer's identity")
 	}
 	return &Peer{
 		Identity:         peer.Identity,
 		StateInfoMessage: stateInfMsg,
 		AliveMessage:     aliveMsg,
-		MSPID:            sId.Mspid,
+		MSPID:            sID.Mspid,
 	}, nil
-}
-
-func randomEndorsers(count int, totalPeers []*Peer) Endorsers {
-	var endorsers []*Peer
-	for _, index := range util.GetRandomIndices(count, len(totalPeers)-1) {
-		endorsers = append(endorsers, totalPeers[index])
-	}
-	return endorsers
 }
 
 type endorsementDescriptor struct {
@@ -455,10 +509,39 @@ type endorsementDescriptor struct {
 	layouts           []map[string]int
 }
 
-func NewClient(createConnection Dialer, authInfo *discovery.AuthInfo, s Signer) *client {
-	return &client{
+// NewClient creates a new Client instance
+func NewClient(createConnection Dialer, s Signer) *Client {
+	return &Client{
 		createConnection: createConnection,
-		authInfo:         authInfo,
 		signRequest:      s,
 	}
+}
+
+func validateAliveMessage(message *gossip.SignedGossipMessage) error {
+	am := message.GetAliveMsg()
+	if am == nil {
+		return errors.New("message isn't an alive message")
+	}
+	m := am.Membership
+	if m == nil {
+		return errors.New("membership is empty")
+	}
+	if am.Timestamp == nil {
+		return errors.New("timestamp is nil")
+	}
+	return nil
+}
+
+func validateStateInfoMessage(message *gossip.SignedGossipMessage) error {
+	si := message.GetStateInfo()
+	if si == nil {
+		return errors.New("message isn't a stateInfo message")
+	}
+	if si.Timestamp == nil {
+		return errors.New("timestamp is nil")
+	}
+	if si.Properties == nil {
+		return errors.New("properties is nil")
+	}
+	return nil
 }
