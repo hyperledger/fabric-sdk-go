@@ -84,6 +84,7 @@ func TestLedgerQueries(t *testing.T) {
 
 	// Get a ledger client.
 	ledgerClient, err := ledger.New(channelClientCtx)
+	require.Nil(t, err, "ledger new return error")
 
 	// Test Query Info - retrieve values before transaction
 	testTargets := targets[0:1]
@@ -124,6 +125,8 @@ func TestLedgerQueries(t *testing.T) {
 	clientCtx := sdk.Context(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
 
 	resmgmtClient, err := resmgmt.New(clientCtx)
+
+	require.Nil(t, err, "resmgmt new return error")
 
 	testInstantiatedChaincodes(t, chaincodeID, channelID, resmgmtClient, targets)
 

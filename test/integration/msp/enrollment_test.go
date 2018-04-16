@@ -65,12 +65,12 @@ func TestRegisterEnroll(t *testing.T) {
 	username := integration.GenerateRandomID()
 
 	testAttributes := []msp.Attribute{
-		msp.Attribute{
+		{
 			Name:  integration.GenerateRandomID(),
 			Value: fmt.Sprintf("%s:ecert", integration.GenerateRandomID()),
 			ECert: true,
 		},
-		msp.Attribute{
+		{
 			Name:  integration.GenerateRandomID(),
 			Value: fmt.Sprintf("%s:ecert", integration.GenerateRandomID()),
 			ECert: true,

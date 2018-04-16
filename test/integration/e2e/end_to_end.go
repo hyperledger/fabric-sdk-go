@@ -24,7 +24,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
@@ -35,12 +34,7 @@ const (
 	orgAdmin       = "Admin"
 	ordererOrgName = "ordererorg"
 	ccID           = "e2eExampleCC"
-	configPath     = "../../fixtures/config/config_test.yaml"
 )
-
-func runWithConfigFixture(t *testing.T) {
-	Run(t, config.FromFile(configPath))
-}
 
 // Run enables testing an end-to-end scenario against the supplied SDK options
 func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
@@ -75,17 +69,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 
 	// Org admin user is signing user for creating channel
 
-	adminIdentity, err := integration.GetSigningIdentity(sdk, orgAdmin, orgName)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
-		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-		SigningIdentities: []msp.SigningIdentity{adminIdentity}}
-	txID, err := resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	require.Nil(t, err, "error should be nil")
-	require.NotEmpty(t, txID, "transaction ID should be populated")
+	createChannel(sdk, t, resMgmtClient)
 
 	//prepare context
 	adminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName))
@@ -102,29 +86,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	}
 
 	// Create chaincode package for example cc
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Install example cc to org peers
-	installCCReq := resmgmt.InstallCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Package: ccPkg}
-	_, err = orgResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Set up chaincode policy
-	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP"})
-
-	// Org resource manager will instantiate 'example_cc' on channel
-	resp, err := orgResMgmt.InstantiateCC(
-		channelID,
-		resmgmt.InstantiateCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
-		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
-	)
-	require.Nil(t, err, "error should be nil")
-	require.NotEmpty(t, resp, "transaction response should be populated")
+	createCC(t, orgResMgmt)
 
 	// ************ Test setup complete ************** //
 
@@ -136,12 +98,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	response, err := client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
-		channel.WithRetry(retry.DefaultChClientOpts))
-	if err != nil {
-		t.Fatalf("Failed to query funds: %s", err)
-	}
-	value := response.Payload
+	value := queryCC(client, t)
 
 	eventID := "test([a-zA-Z]+)"
 
@@ -153,11 +110,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	defer client.UnregisterChaincodeEvent(reg)
 
 	// Move funds
-	response, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
-		channel.WithRetry(retry.DefaultChClientOpts))
-	if err != nil {
-		t.Fatalf("Failed to move funds: %s", err)
-	}
+	executeCC(client, t)
 
 	select {
 	case ccEvent := <-notifier:
@@ -167,15 +120,68 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	}
 
 	// Verify move funds transaction result
-	response, err = client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
-	if err != nil {
-		t.Fatalf("Failed to query funds after transaction: %s", err)
-	}
+	verifyFundsIsMoved(client, t, value)
 
+}
+
+func verifyFundsIsMoved(client *channel.Client, t *testing.T, value []byte) {
+	newValue := queryCC(client, t)
 	valueInt, _ := strconv.Atoi(string(value))
-	valueAfterInvokeInt, _ := strconv.Atoi(string(response.Payload))
+	valueAfterInvokeInt, _ := strconv.Atoi(string(newValue))
 	if valueInt+1 != valueAfterInvokeInt {
-		t.Fatalf("Execute failed. Before: %s, after: %s", value, response.Payload)
+		t.Fatalf("Execute failed. Before: %s, after: %s", value, newValue)
 	}
+}
 
+func executeCC(client *channel.Client, t *testing.T) {
+	_, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
+	}
+}
+
+func queryCC(client *channel.Client, t *testing.T) []byte {
+	response, err := client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+		channel.WithRetry(retry.DefaultChClientOpts))
+	if err != nil {
+		t.Fatalf("Failed to query funds: %s", err)
+	}
+	return response.Payload
+}
+
+func createCC(t *testing.T, orgResMgmt *resmgmt.Client) {
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Install example cc to org peers
+	installCCReq := resmgmt.InstallCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Package: ccPkg}
+	_, err = orgResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Set up chaincode policy
+	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP"})
+	// Org resource manager will instantiate 'example_cc' on channel
+	resp, err := orgResMgmt.InstantiateCC(
+		channelID,
+		resmgmt.InstantiateCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
+		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
+	)
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, resp, "transaction response should be populated")
+}
+
+func createChannel(sdk *fabsdk.FabricSDK, t *testing.T, resMgmtClient *resmgmt.Client) {
+	adminIdentity, err := integration.GetSigningIdentity(sdk, orgAdmin, orgName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
+		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		SigningIdentities: []msp.SigningIdentity{adminIdentity}}
+	txID, err := resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, txID, "transaction ID should be populated")
 }

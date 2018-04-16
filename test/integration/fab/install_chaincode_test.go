@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
@@ -86,17 +87,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
-	ccFound := false
-	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
-		if chaincode.Name == chainCodeName && chaincode.Path == chainCodePath && chaincode.Version == chainCodeVersion {
-			t.Logf("Found chaincode: %s", chaincode)
-			ccFound = true
-		}
-	}
-
-	if !ccFound {
-		t.Fatalf("Failed to retrieve installed chaincode.")
-	}
+	retrieveInstalledCC(chaincodeQueryResponse, chainCodeVersion, t)
 	//Install same chaincode again, should fail
 	err = installCC(reqCtx, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, peers)
 
@@ -105,6 +96,19 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 	}
 	if strings.Contains(err.Error(), "chaincodes/install.v"+chainCodeVersion+" exists") {
 		t.Fatalf("install same chaincode didn't return the correct error")
+	}
+}
+
+func retrieveInstalledCC(chaincodeQueryResponse *peer.ChaincodeQueryResponse, chainCodeVersion string, t *testing.T) {
+	ccFound := false
+	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+		if chaincode.Name == chainCodeName && chaincode.Path == chainCodePath && chaincode.Version == chainCodeVersion {
+			t.Logf("Found chaincode: %s", chaincode)
+			ccFound = true
+		}
+	}
+	if !ccFound {
+		t.Fatalf("Failed to retrieve installed chaincode.")
 	}
 }
 

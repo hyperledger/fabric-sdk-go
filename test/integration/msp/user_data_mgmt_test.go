@@ -132,25 +132,13 @@ func TestWithCustomStores(t *testing.T) {
 
 	// Let's try to find user's key and cert in our custom stores
 	// and compare them to what is returned by msp.GetUser()
-	user, err := mspClient.GetSigningIdentity(username)
-	if err != nil {
-		t.Fatalf("GetUser failed: %v", err)
-	}
-	userDataFromStore, err := customUserStore.Load(mspctx.IdentityIdentifier{MSPID: getMyMSPID(t, ctxProvider), ID: username})
-	if err != nil {
-		t.Fatalf("Load user failed: %v", err)
-	}
+	user := checkUserData(mspClient, username, t, customUserStore, ctxProvider)
 
-	if userDataFromStore.ID != user.Identifier().ID {
-		t.Fatalf("username doesn't match")
-	}
-	if userDataFromStore.MSPID != user.Identifier().MSPID {
-		t.Fatalf("username doesn't match")
-	}
-	if hex.EncodeToString(user.EnrollmentCertificate()) != hex.EncodeToString(userDataFromStore.EnrollmentCertificate) {
-		t.Fatalf("cert doesn't match")
-	}
+	checkPrivateKey(customKeyStore, user, t)
 
+}
+
+func checkPrivateKey(customKeyStore *mspimpl.MemoryKeyStore, user mspctx.SigningIdentity, t *testing.T) {
 	privateKey, err := customKeyStore.GetKey(user.PrivateKey().SKI())
 	if err != nil {
 		t.Fatalf("customKeyStore.GetKey failed: %v", err)
@@ -161,7 +149,27 @@ func TestWithCustomStores(t *testing.T) {
 	if hex.EncodeToString(privateKey.SKI()) != hex.EncodeToString(user.PrivateKey().SKI()) {
 		t.Fatalf("keys don't match")
 	}
+}
 
+func checkUserData(mspClient *msp.Client, username string, t *testing.T, customUserStore *mspimpl.MemoryUserStore, ctxProvider context.ClientProvider) mspctx.SigningIdentity {
+	user, err := mspClient.GetSigningIdentity(username)
+	if err != nil {
+		t.Fatalf("GetUser failed: %v", err)
+	}
+	userDataFromStore, err := customUserStore.Load(mspctx.IdentityIdentifier{MSPID: getMyMSPID(t, ctxProvider), ID: username})
+	if err != nil {
+		t.Fatalf("Load user failed: %v", err)
+	}
+	if userDataFromStore.ID != user.Identifier().ID {
+		t.Fatalf("username doesn't match")
+	}
+	if userDataFromStore.MSPID != user.Identifier().MSPID {
+		t.Fatalf("username doesn't match")
+	}
+	if hex.EncodeToString(user.EnrollmentCertificate()) != hex.EncodeToString(userDataFromStore.EnrollmentCertificate) {
+		t.Fatalf("cert doesn't match")
+	}
+	return user
 }
 
 func getMyMSPID(t *testing.T, ctxProvider context.ClientProvider) string {

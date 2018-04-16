@@ -18,12 +18,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
-func runWithNoOrdererConfigFixture(t *testing.T) {
-	runWithNoOrdererConfig(t, integration.ConfigNoOrdererBackend)
-}
-
 // RunWithNoOrdererConfig enables chclient scenarios using config and sdk options provided
-func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
+func RunWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
 
 	sdk, err := fabsdk.New(configOpt, sdkOpts...)
 	if err != nil {
@@ -74,24 +70,25 @@ func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts
 	defer client.UnregisterChaincodeEvent(reg)
 
 	// Move funds
-	response, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	moveFunds(response, client, t, notifier, eventID, value)
+}
+
+func moveFunds(response channel.Response, client *channel.Client, t *testing.T, notifier <-chan *fab.CCEvent, eventID string, value []byte) {
+	response, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
-
 	select {
 	case ccEvent := <-notifier:
 		t.Logf("Received CC event: %#v\n", ccEvent)
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
 	}
-
 	// Verify move funds transaction result
 	response, err = client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds after transaction: %s", err)
 	}
-
 	valueInt, _ := strconv.Atoi(string(value))
 	valueAfterInvokeInt, _ := strconv.Atoi(string(response.Payload))
 	if valueInt+1 != valueAfterInvokeInt {
