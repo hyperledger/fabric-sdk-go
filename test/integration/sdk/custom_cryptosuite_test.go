@@ -138,7 +138,6 @@ func getOptsByConfig(c core.CryptoSuiteConfig) *bccspSw.SwOpts {
 		FileKeystore: &bccspSw.FileKeystoreOpts{
 			KeyStorePath: c.KeyStorePath(),
 		},
-		Ephemeral: c.Ephemeral(),
 	}
 
 	return opts

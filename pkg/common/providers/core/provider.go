@@ -12,7 +12,6 @@ type CryptoSuiteConfig interface {
 	SecurityAlgorithm() string
 	SecurityLevel() int
 	SecurityProvider() string
-	Ephemeral() bool
 	SoftVerify() bool
 	SecurityProviderLibPath() string
 	SecurityProviderPin() string

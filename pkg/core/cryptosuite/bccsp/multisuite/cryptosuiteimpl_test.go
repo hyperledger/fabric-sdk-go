@@ -41,8 +41,7 @@ func TestCryptoSuiteByConfigSW(t *testing.T) {
 	mockConfig.EXPECT().SecurityProvider().Return("SW")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
-	mockConfig.EXPECT().KeyStorePath().Return("")
-	mockConfig.EXPECT().Ephemeral().Return(true)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
 
 	//Get cryptosuite using config
 	c, err := GetSuiteByConfig(mockConfig)
@@ -66,8 +65,7 @@ func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
-	mockConfig.EXPECT().KeyStorePath().Return("")
-	mockConfig.EXPECT().Ephemeral().Return(true)
+	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
 	mockConfig.EXPECT().SecurityProviderLibPath().Return(providerLib)
 	mockConfig.EXPECT().SecurityProviderLabel().Return(softHSMTokenLabel)
 	mockConfig.EXPECT().SecurityProviderPin().Return(softHSMPin)

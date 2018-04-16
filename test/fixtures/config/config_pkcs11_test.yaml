@@ -52,7 +52,6 @@ client:
       provider: "PKCS11"
      hashAlgorithm: "SHA2"
      softVerify: true
-     ephemeral: false
      level: 256
      pin: "98765432"
      label: "ForFabric"

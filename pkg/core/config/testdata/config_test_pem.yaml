@@ -57,7 +57,6 @@ client:
       provider: "SW"
      hashAlgorithm: "SHA2"
      softVerify: true
-     ephemeral: false
      level: 256
 
   tlsCerts:

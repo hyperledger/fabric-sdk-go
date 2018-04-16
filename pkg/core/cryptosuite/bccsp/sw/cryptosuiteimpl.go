@@ -72,7 +72,6 @@ func getOptsByConfig(c core.CryptoSuiteConfig) *bccspSw.SwOpts {
 		FileKeystore: &bccspSw.FileKeystoreOpts{
 			KeyStorePath: c.KeyStorePath(),
 		},
-		Ephemeral: c.Ephemeral(),
 	}
 	logger.Debug("Initialized SW cryptosuite")
 
@@ -83,7 +82,7 @@ func getEphemeralOpts() *bccspSw.SwOpts {
 	opts := &bccspSw.SwOpts{
 		HashFamily: "SHA2",
 		SecLevel:   256,
-		Ephemeral:  true,
+		Ephemeral:  false,
 	}
 	logger.Debug("Initialized ephemeral SW cryptosuite with default opts")
 

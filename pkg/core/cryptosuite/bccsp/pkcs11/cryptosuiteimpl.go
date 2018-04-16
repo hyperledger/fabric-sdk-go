@@ -50,7 +50,6 @@ func getOptsByConfig(c core.CryptoSuiteConfig) *pkcs11.PKCS11Opts {
 	opts := &pkcs11.PKCS11Opts{
 		SecLevel:     c.SecurityLevel(),
 		HashFamily:   c.SecurityAlgorithm(),
-		Ephemeral:    c.Ephemeral(),
 		FileKeystore: &pkks,
 		Library:      c.SecurityProviderLibPath(),
 		Pin:          c.SecurityProviderPin(),
