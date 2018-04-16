@@ -28,46 +28,46 @@ func NewMockSigningIdentity(id string, mspid string) *MockSigningIdentity {
 }
 
 // Identifier returns the identifier of that identity
-func (m MockSigningIdentity) Identifier() *msp.IdentityIdentifier {
+func (m *MockSigningIdentity) Identifier() *msp.IdentityIdentifier {
 	return &msp.IdentityIdentifier{ID: m.id, MSPID: m.mspid}
 }
 
 // Verify a signature over some message using this identity as reference
-func (m MockSigningIdentity) Verify(msg []byte, sig []byte) error {
+func (m *MockSigningIdentity) Verify(msg []byte, sig []byte) error {
 	return nil
 }
 
 // Serialize converts an identity to bytes
-func (m MockSigningIdentity) Serialize() ([]byte, error) {
+func (m *MockSigningIdentity) Serialize() ([]byte, error) {
 	return []byte("test"), nil
 }
 
 // SetEnrollmentCertificate sets yhe enrollment certificate.
-func (m MockSigningIdentity) SetEnrollmentCertificate(cert []byte) {
-	m.enrollmentCertificate = cert //nolint
+func (m *MockSigningIdentity) SetEnrollmentCertificate(cert []byte) {
+	m.enrollmentCertificate = cert
 }
 
 // EnrollmentCertificate Returns the underlying ECert representing this user’s identity.
-func (m MockSigningIdentity) EnrollmentCertificate() []byte {
+func (m *MockSigningIdentity) EnrollmentCertificate() []byte {
 	return m.enrollmentCertificate
 }
 
 // Sign the message
-func (m MockSigningIdentity) Sign(msg []byte) ([]byte, error) {
+func (m *MockSigningIdentity) Sign(msg []byte) ([]byte, error) {
 	return nil, nil
 }
 
 // PublicVersion returns the public parts of this identity
-func (m MockSigningIdentity) PublicVersion() msp.Identity {
+func (m *MockSigningIdentity) PublicVersion() msp.Identity {
 	return nil
 }
 
 // SetPrivateKey sets the private key
-func (m MockSigningIdentity) SetPrivateKey(key core.Key) {
-	m.privateKey = key //nolint
+func (m *MockSigningIdentity) SetPrivateKey(key core.Key) {
+	m.privateKey = key
 }
 
 // PrivateKey returns the crypto suite representation of the private key
-func (m MockSigningIdentity) PrivateKey() core.Key {
+func (m *MockSigningIdentity) PrivateKey() core.Key {
 	return m.privateKey
 }
