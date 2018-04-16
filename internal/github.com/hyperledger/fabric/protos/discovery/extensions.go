@@ -14,6 +14,7 @@ const (
 	ConfigQueryType
 	PeerMembershipQueryType
 	ChaincodeQueryType
+	LocalMembershipQueryType
 )
 
 // ConfigAt returns the ConfigResult at a given index in the Response,
