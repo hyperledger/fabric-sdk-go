@@ -46,10 +46,12 @@ const (
 	defaultExecuteTimeout                 = time.Minute * 3
 	defaultResMgmtTimeout                 = time.Minute * 3
 	defaultDiscoveryConnectionTimeout     = time.Second * 15
+	defaultDiscoveryResponseTimeout       = time.Second * 15
 	defaultConnIdleInterval               = time.Second * 30
 	defaultEventServiceIdleInterval       = time.Minute * 2
 	defaultChannelConfigRefreshInterval   = time.Minute * 90
 	defaultChannelMemshpRefreshInterval   = time.Second * 60
+	defaultDiscoveryRefreshInterval       = time.Second * 10
 
 	defaultCacheSweepInterval = time.Second * 15
 )
@@ -619,6 +621,11 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration { //nol
 		if timeout == 0 {
 			timeout = defaultDiscoveryConnectionTimeout
 		}
+	case fab.DiscoveryResponse:
+		timeout = c.backend.GetDuration("client.discovery.timeout.response")
+		if timeout == 0 {
+			timeout = defaultDiscoveryResponseTimeout
+		}
 	case fab.Query:
 		timeout = c.backend.GetDuration("client.global.timeout.query")
 		if timeout == 0 {
@@ -653,6 +660,11 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration { //nol
 		timeout = c.backend.GetDuration("client.global.cache.channelMembership")
 		if timeout == 0 {
 			timeout = defaultChannelMemshpRefreshInterval
+		}
+	case fab.DiscoveryServiceRefresh:
+		timeout = c.backend.GetDuration("client.global.cache.discovery")
+		if timeout == 0 {
+			timeout = defaultDiscoveryRefreshInterval
 		}
 
 	case fab.CacheSweepInterval: // EXPERIMENTAL - do we need this to be configurable?

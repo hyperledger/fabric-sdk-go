@@ -63,6 +63,7 @@ client:
 #  discovery:
 #    timeout:
 #      connection: 15s
+#      response: 15s
 #  global:
 #    timeout:
 #      query: 180s
@@ -73,6 +74,7 @@ client:
 #      eventServiceIdle: 2m
 #      channelConfig: 30m
 #      channelMembership: 30s
+#      discovery: 10s
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:

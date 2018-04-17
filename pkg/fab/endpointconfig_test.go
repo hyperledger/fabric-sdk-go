@@ -205,6 +205,7 @@ func TestTimeouts(t *testing.T) {
 	customBackend.KeyValueMap["client.orderer.timeout.connection"] = "2ms"
 	customBackend.KeyValueMap["client.orderer.timeout.response"] = "6s"
 	customBackend.KeyValueMap["client.discovery.timeout.connection"] = "20s"
+	customBackend.KeyValueMap["client.discovery.timeout.response"] = "20s"
 	customBackend.KeyValueMap["client.global.timeout.query"] = "7h"
 	customBackend.KeyValueMap["client.global.timeout.execute"] = "8h"
 	customBackend.KeyValueMap["client.global.timeout.resmgmt"] = "118s"
@@ -212,6 +213,7 @@ func TestTimeouts(t *testing.T) {
 	customBackend.KeyValueMap["client.global.cache.eventServiceIdle"] = "2m"
 	customBackend.KeyValueMap["client.global.cache.channelConfig"] = "3m"
 	customBackend.KeyValueMap["client.global.cache.channelMembership"] = "4m"
+	customBackend.KeyValueMap["client.global.cache.discovery"] = "15s"
 
 	endpointConfig, err := ConfigFromBackend(customBackend)
 	if err != nil {
@@ -263,8 +265,12 @@ func checkTimeouts(endpointConfig fab.EndpointConfig, t *testing.T, errStr strin
 	assert.Equal(t, time.Minute*3, t1, "ChannelConfigRefresh")
 	t1 = endpointConfig.Timeout(fab.ChannelMembershipRefresh)
 	assert.Equal(t, time.Minute*4, t1, "ChannelMembershipRefresh")
+	t1 = endpointConfig.Timeout(fab.DiscoveryServiceRefresh)
+	assert.Equal(t, time.Second*15, t1, "DiscoveryServiceRefresh")
 	t1 = endpointConfig.Timeout(fab.DiscoveryConnection)
 	assert.Equal(t, time.Second*20, t1, "DiscoveryConnection")
+	t1 = endpointConfig.Timeout(fab.DiscoveryResponse)
+	assert.Equal(t, time.Second*20, t1, "DiscoveryResponse")
 }
 
 func TestDefaultTimeouts(t *testing.T) {
