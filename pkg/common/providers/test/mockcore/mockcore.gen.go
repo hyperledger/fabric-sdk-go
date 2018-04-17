@@ -34,18 +34,6 @@ func (m *MockCryptoSuiteConfig) EXPECT() *MockCryptoSuiteConfigMockRecorder {
 	return m.recorder
 }
 
-// Ephemeral mocks base method
-func (m *MockCryptoSuiteConfig) Ephemeral() bool {
-	ret := m.ctrl.Call(m, "Ephemeral")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// Ephemeral indicates an expected call of Ephemeral
-func (mr *MockCryptoSuiteConfigMockRecorder) Ephemeral() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ephemeral", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).Ephemeral))
-}
-
 // IsSecurityEnabled mocks base method
 func (m *MockCryptoSuiteConfig) IsSecurityEnabled() bool {
 	ret := m.ctrl.Call(m, "IsSecurityEnabled")

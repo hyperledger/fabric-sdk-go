@@ -307,11 +307,6 @@ func (c *MockConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
 	return nil, errors.New("no config")
 }
 
-// Ephemeral flag
-func (c *MockConfig) Ephemeral() bool {
-	return false
-}
-
 // SecurityProvider ...
 func (c *MockConfig) SecurityProvider() string {
 	return "SW"

@@ -126,8 +126,14 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 
 func verifyFundsIsMoved(client *channel.Client, t *testing.T, value []byte) {
 	newValue := queryCC(client, t)
-	valueInt, _ := strconv.Atoi(string(value))
-	valueAfterInvokeInt, _ := strconv.Atoi(string(newValue))
+	valueInt, err := strconv.Atoi(string(value))
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	valueAfterInvokeInt, err := strconv.Atoi(string(newValue))
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	if valueInt+1 != valueAfterInvokeInt {
 		t.Fatalf("Execute failed. Before: %s, after: %s", value, newValue)
 	}

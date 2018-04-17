@@ -46,11 +46,6 @@ func (c *Config) SecurityProvider() string {
 	return c.backend.GetString("client.BCCSP.security.default.provider")
 }
 
-//Ephemeral flag
-func (c *Config) Ephemeral() bool {
-	return c.backend.GetBool("client.BCCSP.security.ephemeral")
-}
-
 //SoftVerify flag
 func (c *Config) SoftVerify() bool {
 	return c.backend.GetBool("client.BCCSP.security.softVerify")

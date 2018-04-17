@@ -54,7 +54,6 @@ func TestCryptoSuiteByConfig(t *testing.T) {
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
-	mockConfig.EXPECT().Ephemeral().Return(false)
 
 	//Get cryptosuite using config
 	samplecryptoSuite, err := getSuiteByConfig(mockConfig)
@@ -77,7 +76,6 @@ func TestCryptoSuiteByConfigFailures(t *testing.T) {
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(100)
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
-	mockConfig.EXPECT().Ephemeral().Return(false)
 
 	//Get cryptosuite using config
 	samplecryptoSuite, err := getSuiteByConfig(mockConfig)
@@ -100,7 +98,6 @@ func TestCreateInvalidBCCSPSecurityLevel(t *testing.T) {
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(100)
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
-	mockConfig.EXPECT().Ephemeral().Return(false)
 
 	_, err := getSuiteByConfig(mockConfig)
 	if !strings.Contains(err.Error(), "Security level not supported [100]") {
@@ -119,7 +116,6 @@ func TestCreateInvalidBCCSPHashFamily(t *testing.T) {
 	mockConfig.EXPECT().SecurityAlgorithm().Return("ABC")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
-	mockConfig.EXPECT().Ephemeral().Return(false)
 
 	_, err := getSuiteByConfig(mockConfig)
 	if !strings.Contains(err.Error(), "Hash Family not supported [ABC]") {

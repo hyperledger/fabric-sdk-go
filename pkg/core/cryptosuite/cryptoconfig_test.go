@@ -118,26 +118,6 @@ func TestCAConfigSecurityProvider(t *testing.T) {
 	}
 }
 
-func TestCAConfigEphemeralFlag(t *testing.T) {
-	backend, err := config.FromFile(configTestFilePath)()
-	if err != nil {
-		t.Fatal("Failed to get config backend")
-	}
-
-	customBackend := getCustomBackend(backend)
-
-	cryptoConfig := ConfigFromBackend(customBackend).(*Config)
-
-	// Test Ephemeral flag
-	val, ok := customBackend.Lookup("client.BCCSP.security.ephemeral")
-	if !ok || val == nil {
-		t.Fatal("expected valid value")
-	}
-	if val.(bool) != cryptoConfig.Ephemeral() {
-		t.Fatalf("Incorrect BCCSP Ephemeral flag")
-	}
-}
-
 func TestCAConfigSoftVerifyFlag(t *testing.T) {
 	backend, err := config.FromFile(configTestFilePath)()
 	if err != nil {

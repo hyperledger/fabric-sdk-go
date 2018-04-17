@@ -98,7 +98,6 @@ client:
      # hashAlgorithm: "SHA2"
      hashAlgorithm: ""
      softVerify: true
-     ephemeral: false
      level: 256
      pin: "somepin"
      label: "ForFabric"
