@@ -171,18 +171,18 @@ func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config msp.I
 	//set server URL
 	c.Config.URL = endpoint.ToAddress(conf.URL)
 	//certs file list
-	c.Config.TLS.CertFiles, err = config.CAServerCertPaths(org)
+	c.Config.TLS.CertFiles, err = config.CAServerCerts(org)
 	if err != nil {
 		return nil, err
 	}
 
 	// set key file and cert file
-	c.Config.TLS.Client.CertFile, err = config.CAClientCertPath(org)
+	c.Config.TLS.Client.CertFile, err = config.CAClientCert(org)
 	if err != nil {
 		return nil, err
 	}
 
-	c.Config.TLS.Client.KeyFile, err = config.CAClientKeyPath(org)
+	c.Config.TLS.Client.KeyFile, err = config.CAClientKey(org)
 	if err != nil {
 		return nil, err
 	}

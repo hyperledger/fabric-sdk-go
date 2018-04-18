@@ -112,11 +112,6 @@ func (c *Client) initHTTPClient() error {
 	if c.Config.TLS.Enabled {
 		log.Info("TLS Enabled")
 
-		err := tls.AbsTLSClient(&c.Config.TLS, c.HomeDir)
-		if err != nil {
-			return err
-		}
-
 		tlsConfig, err2 := tls.GetClientTLSConfig(&c.Config.TLS, c.csp)
 		if err2 != nil {
 			return fmt.Errorf("Failed to get client TLS config: %s", err2)

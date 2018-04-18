@@ -86,6 +86,11 @@ for i in {1..4}
 do
     sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 done
+START_LINE=`grep -n "err := tls.AbsTLSClient(&c.Config.TLS, c.HomeDir)" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..4}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
 
 FILTER_FILENAME="lib/identity.go"
 FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,GetName"
@@ -116,13 +121,37 @@ FILTER_FN="GetCertID,BytesToX509Cert,addQueryParm"
 gofilter
 
 FILTER_FILENAME="lib/tls/tls.go"
-FILTER_FN="GetClientTLSConfig,AbsTLSClient,checkCertDates"
+FILTER_FN="GetClientTLSConfig,checkCertDates"
 gofilter
 sed -i'' -e '/log "github.com\// a\
 "github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-
+START_LINE=`grep -n "// ServerTLSConfig defines key material for a TLS server" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..14}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+sed -i'' -e 's/CertFiles \[\]string `help:"A list of comma-separated PEM-encoded trusted certificate files (e.g. root1.pem,root2.pem)"`/CertFiles \[\]\[\]byte `help:"A list of comma-separated PEM-encoded trusted certificate bytes"`/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/KeyFile  string `help:"PEM-encoded key file when mutual authentication is enabled"`/KeyFile  []byte `help:"PEM-encoded key bytes when mutual authentication is enabled"`/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/CertFile string `help:"PEM-encoded certificate file when mutual authenticate is enabled"`/CertFile []byte `help:"PEM-encoded certificate bytes when mutual authenticate is enabled"`/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/\log.Debugf("Client Cert File:/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/\log.Debugf("Client Key File:/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/\log.Debugf("CA Files:/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/cfg.Client.CertFile != ""/cfg.Client.CertFile != nil/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "caCert, err := ioutil.ReadFile(cacert)" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..4}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+sed -i'' -e 's/caCert/cacert/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/errors.Errorf("Failed to process certificate from file %s", cacert)/errors.New("Failed to process certificate")/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/func checkCertDates(certFile string) error {/func checkCertDates(certPEM []byte) error {/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "certPEM, err := ioutil.ReadFile(certFile)" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..4}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
 
 FILTER_FILENAME="util/csp.go"
 FILTER_FN=",getBCCSPKeyOpts,ImportBCCSPKeyFromPEM,LoadX509KeyPair,GetSignerFromCert,BCCSPKeyRequestGenerate"
@@ -160,6 +189,20 @@ sed -i'' -e '/key, err := factory.PEMtoPrivateKey(keyBuff, nil)/ i\
 func ImportBCCSPKeyFromPEMBytes(keyBuff []byte, myCSP core.CryptoSuite, temporary bool) (core.Key, error) { \
 keyFile := "pem bytes" \
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/LoadX509KeyPair(certFile, keyFile string, csp core.CryptoSuite)/LoadX509KeyPair(certFile, keyFile []byte, csp core.CryptoSuite)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/certPEMBlock, err := ioutil.ReadFile(certFile)/ i\
+ certPEMBlock := certFile\
+ ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "certPEMBlock, err := ioutil.ReadFile(certFile)" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..4}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+sed -i'' -e 's/errors.Errorf("Failed to find PEM block in file %s", certFile)/errors.New("Failed to find PEM block in bytes")/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/errors.Errorf("Failed to find certificate PEM data in file %s, but did find a private key; PEM inputs may have been switched", certFile)/errors.New("Failed to find certificate PEM data in bytes, but did find a private key; PEM inputs may have been switched")/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/errors.Errorf("Failed to find \"CERTIFICATE\" PEM block in file %s after skipping PEM blocks of the following types: %v", certFile, skippedBlockTypes)/errors.Errorf("Failed to find \"CERTIFICATE\" PEM block in bytes after skipping PEM blocks of the following types: %v", skippedBlockTypes)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/keyFile != ""/keyFile != nil/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/tls.LoadX509KeyPair(certFile, keyFile)/tls.X509KeyPair(certFile, keyFile)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 
 FILTER_FILENAME="util/util.go"

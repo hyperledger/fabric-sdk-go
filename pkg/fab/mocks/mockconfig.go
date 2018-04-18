@@ -97,34 +97,19 @@ func (c *MockConfig) CAConfig(org string) (*msp.CAConfig, error) {
 	return &caConfig, nil
 }
 
-//CAServerCertPems Read configuration option for the server certificate embedded pems
-func (c *MockConfig) CAServerCertPems(org string) ([]string, error) {
+//CAServerCerts Read configuration option for the server certificates for given org
+func (c *MockConfig) CAServerCerts(org string) ([][]byte, error) {
 	return nil, nil
 }
 
-//CAServerCertPaths Read configuration option for the server certificate files
-func (c *MockConfig) CAServerCertPaths(org string) ([]string, error) {
+//CAClientKey Read configuration option for the fabric CA client key for given org
+func (c *MockConfig) CAClientKey(org string) ([]byte, error) {
 	return nil, nil
 }
 
-//CAClientKeyPem Read configuration option for the fabric CA client key from a string
-func (c *MockConfig) CAClientKeyPem(org string) (string, error) {
-	return "", nil
-}
-
-//CAClientKeyPath Read configuration option for the fabric CA client key file
-func (c *MockConfig) CAClientKeyPath(org string) (string, error) {
-	return "", nil
-}
-
-//CAClientCertPem Read configuration option for the fabric CA client cert from a string
-func (c *MockConfig) CAClientCertPem(org string) (string, error) {
-	return "", nil
-}
-
-//CAClientCertPath Read configuration option for the fabric CA client cert file
-func (c *MockConfig) CAClientCertPath(org string) (string, error) {
-	return "", nil
+//CAClientCert Read configuration option for the fabric CA client cert for given org
+func (c *MockConfig) CAClientCert(org string) ([]byte, error) {
+	return nil, nil
 }
 
 //TimeoutOrDefault not implemented

@@ -327,7 +327,7 @@ func TestCAServerCertPathsError(t *testing.T) {
 	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
 	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, nil).AnyTimes()
 	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
-	mockIdentityConfig.EXPECT().CAServerCertPaths(org1).Return(nil, errors.New("CAServerCertPaths error"))
+	mockIdentityConfig.EXPECT().CAServerCerts(org1).Return(nil, errors.New("CAServerCerts error"))
 
 	mockContext := mockcontext.NewMockClient(mockCtrl)
 	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
@@ -336,7 +336,7 @@ func TestCAServerCertPathsError(t *testing.T) {
 	mockContext.EXPECT().CryptoSuite().Return(f.cryptoSuite).AnyTimes()
 
 	_, err := NewCAClient(org1, mockContext)
-	if err == nil || !strings.Contains(err.Error(), "CAServerCertPaths error") {
+	if err == nil || !strings.Contains(err.Error(), "CAServerCerts error") {
 		t.Fatalf("Expected error from CAServerCertPaths. Got: %v", err)
 	}
 }
@@ -353,8 +353,8 @@ func TestCAClientCertPathError(t *testing.T) {
 	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
 	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, nil).AnyTimes()
 	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
-	mockIdentityConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
-	mockIdentityConfig.EXPECT().CAClientCertPath(org1).Return("", errors.New("CAClientCertPath error"))
+	mockIdentityConfig.EXPECT().CAServerCerts(org1).Return([][]byte{[]byte("test")}, nil)
+	mockIdentityConfig.EXPECT().CAClientCert(org1).Return(nil, errors.New("CAClientCertPath error"))
 
 	mockContext := mockcontext.NewMockClient(mockCtrl)
 	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
@@ -381,9 +381,9 @@ func TestCAClientKeyPathError(t *testing.T) {
 	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
 	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, nil).AnyTimes()
 	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
-	mockIdentityConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
-	mockIdentityConfig.EXPECT().CAClientCertPath(org1).Return("", nil)
-	mockIdentityConfig.EXPECT().CAClientKeyPath(org1).Return("", errors.New("CAClientKeyPath error"))
+	mockIdentityConfig.EXPECT().CAServerCerts(org1).Return([][]byte{[]byte("test")}, nil)
+	mockIdentityConfig.EXPECT().CAClientCert(org1).Return([]byte(""), nil)
+	mockIdentityConfig.EXPECT().CAClientKey(org1).Return(nil, errors.New("CAClientKeyPath error"))
 
 	mockContext := mockcontext.NewMockClient(mockCtrl)
 	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
@@ -472,13 +472,13 @@ func getNoRegistrarBackend() (*mocks.MockConfigBackend, error) {
 	}
 
 	//tamper URLs
-	ca1Config := networkConfig.CertificateAuthorities["ca.org1.example.com"]
+	ca1Config := networkConfig.CertificateAuthorities["local.ca.org1.example.com"]
 	ca1Config.Registrar = msp.EnrollCredentials{}
-	ca2Config := networkConfig.CertificateAuthorities["ca.org2.example.com"]
+	ca2Config := networkConfig.CertificateAuthorities["local.ca.org2.example.com"]
 	ca1Config.Registrar = msp.EnrollCredentials{}
 
-	networkConfig.CertificateAuthorities["ca.org1.example.com"] = ca1Config
-	networkConfig.CertificateAuthorities["ca.org2.example.com"] = ca2Config
+	networkConfig.CertificateAuthorities["local.ca.org1.example.com"] = ca1Config
+	networkConfig.CertificateAuthorities["local.ca.org2.example.com"] = ca2Config
 
 	//Override backend with this new CertificateAuthorities config
 	mockConfigBackend.KeyValueMap["certificateAuthorities"] = networkConfig.CertificateAuthorities

@@ -17,6 +17,8 @@ import (
 
 	"regexp"
 
+	"io/ioutil"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -71,52 +73,6 @@ func (c *IdentityConfig) CAConfig(org string) (*msp.CAConfig, error) {
 	return &caConfig, nil
 }
 
-// CAServerCertPems Read configuration option for the server certificates
-// will send a list of cert pem contents directly from the config bytes array
-func (c *IdentityConfig) CAServerCertPems(org string) ([]string, error) {
-	config, err := c.networkConfig()
-	if err != nil {
-		return nil, err
-	}
-	caName, err := c.getCAName(org)
-	if err != nil {
-		return nil, err
-	}
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
-		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
-	}
-	certFilesPem := config.CertificateAuthorities[caName].TLSCACerts.Pem
-	certPems := make([]string, len(certFilesPem))
-	copy(certPems, certFilesPem)
-
-	return certPems, nil
-}
-
-// CAServerCertPaths Read configuration option for the server certificates
-// will send a list of cert file paths
-func (c *IdentityConfig) CAServerCertPaths(org string) ([]string, error) {
-	config, err := c.networkConfig()
-	if err != nil {
-		return nil, err
-	}
-	caName, err := c.getCAName(org)
-	if err != nil {
-		return nil, err
-	}
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
-		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
-	}
-
-	certFiles := strings.Split(config.CertificateAuthorities[caName].TLSCACerts.Path, ",")
-
-	certFileModPath := make([]string, len(certFiles))
-	for i, v := range certFiles {
-		certFileModPath[i] = pathvar.Subst(v)
-	}
-
-	return certFileModPath, nil
-}
-
 func (c *IdentityConfig) getCAName(org string) (string, error) {
 	config, err := c.networkConfig()
 	if err != nil {
@@ -149,85 +105,91 @@ func (c *IdentityConfig) getCAName(org string) (string, error) {
 	return certAuthorityName, nil
 }
 
-// CAClientKeyPem Read configuration option for the fabric CA client key pem embedded in the client config
-func (c *IdentityConfig) CAClientKeyPem(org string) (string, error) {
+//CAClientCert read configuration for the fabric CA client cert bytes for given org
+func (c *IdentityConfig) CAClientCert(org string) ([]byte, error) {
 	config, err := c.networkConfig()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	caName, err := c.getCAName(org)
 	if err != nil {
-		return "", err
-	}
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
-		return "", errors.Errorf("CA Server Name '%s' not found", caName)
+		return nil, err
 	}
 
-	ca := config.CertificateAuthorities[strings.ToLower(caName)]
-	if len(ca.TLSCACerts.Client.Key.Pem) == 0 {
-		return "", errors.New("Empty Client Key Pem")
+	caConfig, ok := config.CertificateAuthorities[strings.ToLower(caName)]
+	if !ok {
+		return nil, errors.Errorf("CA Server Name %s not found", caName)
 	}
 
-	return ca.TLSCACerts.Client.Key.Pem, nil
+	//subst path
+	caConfig.TLSCACerts.Client.Cert.Path = pathvar.Subst(caConfig.TLSCACerts.Client.Cert.Path)
+
+	return caConfig.TLSCACerts.Client.Cert.Bytes()
 }
 
-// CAClientKeyPath Read configuration option for the fabric CA client key file
-func (c *IdentityConfig) CAClientKeyPath(org string) (string, error) {
+//CAClientKey read configuration for the fabric CA client key bytes for given org
+func (c *IdentityConfig) CAClientKey(org string) ([]byte, error) {
 	config, err := c.networkConfig()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	caName, err := c.getCAName(org)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
-		return "", errors.Errorf("CA Server Name '%s' not found", caName)
+
+	caConfig, ok := config.CertificateAuthorities[strings.ToLower(caName)]
+	if !ok {
+		return nil, errors.Errorf("CA Server Name %s not found", caName)
 	}
-	return pathvar.Subst(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Key.Path), nil
+
+	//subst path
+	caConfig.TLSCACerts.Client.Key.Path = pathvar.Subst(caConfig.TLSCACerts.Client.Key.Path)
+
+	return caConfig.TLSCACerts.Client.Key.Bytes()
 }
 
-// CAClientCertPem Read configuration option for the fabric CA client cert pem embedded in the client config
-func (c *IdentityConfig) CAClientCertPem(org string) (string, error) {
+// CAServerCerts Read configuration option for the server certificates
+// will send a list of cert bytes for given org
+func (c *IdentityConfig) CAServerCerts(org string) ([][]byte, error) {
 	config, err := c.networkConfig()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
 	caName, err := c.getCAName(org)
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+	caConfig, ok := config.CertificateAuthorities[strings.ToLower(caName)]
+	if !ok {
+		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
 	}
 
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
-		return "", errors.Errorf("CA Server Name '%s' not found", caName)
+	var serverCerts [][]byte
+
+	//check for pems first
+	pems := caConfig.TLSCACerts.Pem
+	if len(pems) > 0 {
+		serverCerts = make([][]byte, len(pems))
+		for i, pem := range pems {
+			serverCerts[i] = []byte(pem)
+		}
+		return serverCerts, nil
 	}
 
-	ca := config.CertificateAuthorities[strings.ToLower(caName)]
-	if len(ca.TLSCACerts.Client.Cert.Pem) == 0 {
-		return "", errors.New("Empty Client Cert Pem")
+	//check for files if pems not found
+	certFiles := strings.Split(config.CertificateAuthorities[caName].TLSCACerts.Path, ",")
+	serverCerts = make([][]byte, len(certFiles))
+	for i, certPath := range certFiles {
+		bytes, err := ioutil.ReadFile(pathvar.Subst(certPath))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to load pem bytes from path %s", certPath)
+		}
+		serverCerts[i] = bytes
 	}
-
-	return ca.TLSCACerts.Client.Cert.Pem, nil
-}
-
-// CAClientCertPath Read configuration option for the fabric CA client cert file
-func (c *IdentityConfig) CAClientCertPath(org string) (string, error) {
-	config, err := c.networkConfig()
-	if err != nil {
-		return "", err
-	}
-
-	caName, err := c.getCAName(org)
-	if err != nil {
-		return "", err
-	}
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
-		return "", errors.Errorf("CA Server Name %s not found", caName)
-	}
-	return pathvar.Subst(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Cert.Path), nil
+	return serverCerts, nil
 }
 
 // CAKeyStorePath returns the same path as KeyStorePath() without the

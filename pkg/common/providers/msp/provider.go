@@ -27,12 +27,9 @@ type IdentityManagerProvider interface {
 type IdentityConfig interface {
 	Client() (*ClientConfig, error)
 	CAConfig(org string) (*CAConfig, error)
-	CAServerCertPems(org string) ([]string, error)
-	CAServerCertPaths(org string) ([]string, error)
-	CAClientKeyPem(org string) (string, error)
-	CAClientKeyPath(org string) (string, error)
-	CAClientCertPem(org string) (string, error)
-	CAClientCertPath(org string) (string, error)
+	CAServerCerts(org string) ([][]byte, error)
+	CAClientKey(org string) ([]byte, error)
+	CAClientCert(org string) ([]byte, error)
 	CAKeyStorePath() string
 	CredentialStorePath() string
 }
