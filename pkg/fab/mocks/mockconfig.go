@@ -111,11 +111,6 @@ func (c *MockConfig) CAClientCert(org string) ([]byte, error) {
 	return nil, nil
 }
 
-//TimeoutOrDefault not implemented
-func (c *MockConfig) TimeoutOrDefault(arg fab.TimeoutType) time.Duration {
-	return time.Second * 5
-}
-
 //Timeout not implemented
 func (c *MockConfig) Timeout(arg fab.TimeoutType) time.Duration {
 	return time.Second * 10

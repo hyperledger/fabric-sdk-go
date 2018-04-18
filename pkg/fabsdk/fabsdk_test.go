@@ -8,11 +8,14 @@ package fabsdk
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/test/mocksdkapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
@@ -267,4 +270,95 @@ func TestWithConfigFailure(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected failure due to invalid config")
 	}
+}
+
+func TestBadConfigFile(t *testing.T) {
+	_, err := New(configImpl.FromFile("../../pkg/core/config/testdata/viper-test.yaml"))
+	if err == nil {
+		t.Fatalf("Expected error from New with bad config file")
+	}
+}
+
+func TestWithConfigEndpoint(t *testing.T) {
+	// Test New SDK with valid config file
+	c := configImpl.FromFile(sdkConfigFile)
+
+	np := &MockNetworkPeers{}
+	co := &MockChannelOrderers{}
+	// override EndpointConfig's NetworkConfig() function with np's and co's instances
+	sdk, err := New(c, WithConfigEndpoint(np, co))
+	if err != nil {
+		t.Fatalf("Error inializing sdk WithConfigEndpoint: %s", err)
+	}
+
+	// TODO: configBackend always uses default EndpointConfig... need to expose the final endpointConfig (with opts/default functions)
+	// without necessary fetching a backend as it is not used directly anymore if the user chooses
+	// to fully override EndpointConfig ...
+	// (ConfigFromBackend() should be hidden):
+	//configBackend, err := sdk.Config()
+	//if err != nil {
+	//	t.Fatalf("Error getting config backend from sdk: %s", err)
+	//}
+
+	// it is not safe to assume fabImpl.ConfigFromBackend(configBackend) will return the final
+	// EndpointConfig type intended by the user if they wish to override some or all of the interface, therefore:
+	//endpointConfig, err := fabImpl.ConfigFromBackend(configBackend)
+	//if err != nil {
+	//	t.Fatalf("Error getting identity config: %s", err)
+	//}
+	// will always use the default implementation for the set configBackend
+	// for the purpose of this test, we're getting endpointConfig from opts directly as we have overridden
+	// some functions by calling WithConfigEndpoint(np, mo) above
+	endpointConfig := sdk.opts.endpointConfig
+
+	network, err := endpointConfig.NetworkPeers()
+	if err != nil {
+		t.Fatalf("Error getting NetworkPeer from config: %s", err)
+	}
+	expectedNetwork, err := np.NetworkPeers()
+	if err != nil {
+		t.Fatalf("Error getting extecd NetworkPeer from direct config: %s", err)
+	}
+	if !reflect.DeepEqual(network, expectedNetwork) {
+		t.Fatalf("Expected NetworkPeer was not returned by the sdk's config. Expected: %s, Received: %s", expectedNetwork, network)
+	}
+
+	channelOrderers, err := endpointConfig.ChannelOrderers("")
+	if err != nil {
+		t.Fatalf("Error getting ChannelOrderers from config: %s", err)
+	}
+	expectedChannelOrderers, err := co.ChannelOrderers("")
+	if err != nil {
+		t.Fatalf("Error getting extecd ChannelOrderers from direct config: %s", err)
+	}
+	if !reflect.DeepEqual(channelOrderers, expectedChannelOrderers) {
+		t.Fatalf("Expected ChannelOrderers was not returned by the sdk's config. Expected: %s, Received: %s", expectedChannelOrderers, channelOrderers)
+	}
+
+}
+
+func TestWithConfigEndpointAndBadOpt(t *testing.T) {
+	c := configImpl.FromFile(sdkConfigFile)
+
+	np := &MockNetworkPeers{}
+	co := &MockChannelOrderers{}
+
+	var badOpt interface{}
+	// test bad opt
+	_, err := New(c, WithConfigEndpoint(np, co, badOpt))
+	if err == nil {
+		t.Fatal("expected empty endpointConfig during inializing sdk WithConfigEndpoint with a bad option but got no error")
+	}
+}
+
+type MockNetworkPeers struct{}
+
+func (M *MockNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, error) {
+	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, MSPID: ""}}, nil
+}
+
+type MockChannelOrderers struct{}
+
+func (M *MockChannelOrderers) ChannelOrderers(name string) ([]fab.OrdererConfig, error) {
+	return []fab.OrdererConfig{}, nil
 }

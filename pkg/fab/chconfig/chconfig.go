@@ -216,7 +216,7 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 	//If missing from opts, check config and update opts from config
 	chSdkCfg, err := ctx.EndpointConfig().ChannelConfig(c.channelID)
 	if err != nil {
-		//ver rare, but return default in case of error
+		//very rare, but return default in case of error
 		return err
 	}
 
