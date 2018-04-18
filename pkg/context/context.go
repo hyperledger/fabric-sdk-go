@@ -25,6 +25,19 @@ type Client struct {
 	msp.SigningIdentity
 }
 
+// Local supplies the configuration and signing identity to
+// clients that will be invoking the peer outside of a channel
+// context using an identity in the peer's local MSP.
+type Local struct {
+	context.Client
+	localDiscovery fab.DiscoveryService
+}
+
+//LocalDiscoveryService returns core discovery service
+func (c *Local) LocalDiscoveryService() fab.DiscoveryService {
+	return c.localDiscovery
+}
+
 //Channel supplies the configuration for channel context client
 type Channel struct {
 	context.Client
@@ -61,17 +74,18 @@ func (c *Channel) ChannelID() string {
 
 //Provider implementation of Providers interface
 type Provider struct {
-	cryptoSuiteConfig core.CryptoSuiteConfig
-	endpointConfig    fab.EndpointConfig
-	identityConfig    msp.IdentityConfig
-	userStore         msp.UserStore
-	cryptoSuite       core.CryptoSuite
-	discoveryProvider fab.DiscoveryProvider
-	selectionProvider fab.SelectionProvider
-	signingManager    core.SigningManager
-	idMgmtProvider    msp.IdentityManagerProvider
-	infraProvider     fab.InfraProvider
-	channelProvider   fab.ChannelProvider
+	cryptoSuiteConfig      core.CryptoSuiteConfig
+	endpointConfig         fab.EndpointConfig
+	identityConfig         msp.IdentityConfig
+	userStore              msp.UserStore
+	cryptoSuite            core.CryptoSuite
+	discoveryProvider      fab.DiscoveryProvider
+	localDiscoveryProvider fab.LocalDiscoveryProvider
+	selectionProvider      fab.SelectionProvider
+	signingManager         core.SigningManager
+	idMgmtProvider         msp.IdentityManagerProvider
+	infraProvider          fab.InfraProvider
+	channelProvider        fab.ChannelProvider
 }
 
 // CryptoSuite returns the BCCSP provider of sdk.
@@ -102,6 +116,11 @@ func (c *Provider) IdentityConfig() msp.IdentityConfig {
 // DiscoveryProvider returns discovery provider
 func (c *Provider) DiscoveryProvider() fab.DiscoveryProvider {
 	return c.discoveryProvider
+}
+
+// LocalDiscoveryProvider returns the local discovery provider
+func (c *Provider) LocalDiscoveryProvider() fab.LocalDiscoveryProvider {
+	return c.localDiscoveryProvider
 }
 
 // SelectionProvider returns selection provider
@@ -169,6 +188,13 @@ func WithDiscoveryProvider(discoveryProvider fab.DiscoveryProvider) SDKContextPa
 	}
 }
 
+//WithLocalDiscoveryProvider sets the local discovery provider
+func WithLocalDiscoveryProvider(discoveryProvider fab.LocalDiscoveryProvider) SDKContextParams {
+	return func(ctx *Provider) {
+		ctx.localDiscoveryProvider = discoveryProvider
+	}
+}
+
 //WithSelectionProvider sets selectionProvider to Context Provider
 func WithSelectionProvider(selectionProvider fab.SelectionProvider) SDKContextParams {
 	return func(ctx *Provider) {
@@ -214,8 +240,40 @@ func NewProvider(params ...SDKContextParams) *Provider {
 	return &ctxProvider
 }
 
+// localServiceInit interface allows for initializing services
+// with the provided local context
+type localServiceInit interface {
+	Initialize(context context.Local) error
+}
+
+//NewLocal returns a new local context
+func NewLocal(clientProvider context.ClientProvider) (*Local, error) {
+	client, err := clientProvider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get client context to create local context")
+	}
+
+	discoveryService, err := client.LocalDiscoveryProvider().CreateLocalDiscoveryService()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to create local discovery service")
+	}
+
+	local := &Local{
+		Client:         client,
+		localDiscovery: discoveryService,
+	}
+
+	if ci, ok := discoveryService.(localServiceInit); ok {
+		if err := ci.Initialize(local); err != nil {
+			return nil, err
+		}
+	}
+
+	return local, nil
+}
+
 // serviceInit interface allows for initializing services
-// with the provided context
+// with the provided channel context
 type serviceInit interface {
 	Initialize(context context.Channel) error
 }

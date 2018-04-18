@@ -13,6 +13,7 @@ import (
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStaticDiscovery(t *testing.T) {
@@ -65,20 +66,32 @@ func TestStaticDiscoveryWhenChannelIsEmpty(t *testing.T) {
 	discoveryProvider, _ := New(config1)
 	discoveryProvider.Initialize(mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP")))
 
-	// If channel is empty discovery service will return all configured network peers
-	discoveryService, err := discoveryProvider.CreateDiscoveryService("")
-	if err != nil {
-		t.Fatalf("Failed to setup discovery service: %s", err)
-	}
+	_, err = discoveryProvider.CreateDiscoveryService("")
+	assert.Error(t, err, "expecting error when channel ID is empty")
+}
+
+func TestStaticLocalDiscovery(t *testing.T) {
+	configBackend, err := config.FromFile("../../../../../test/fixtures/config/config_test.yaml")()
+	assert.NoError(t, err)
+
+	config1, err := fabImpl.ConfigFromBackend(configBackend)
+	assert.NoError(t, err)
+
+	discoveryProvider, err := New(config1)
+	assert.NoError(t, err)
+
+	clientCtx := mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP"))
+	discoveryProvider.Initialize(clientCtx)
+
+	discoveryService, err := discoveryProvider.CreateLocalDiscoveryService()
+	assert.NoError(t, err)
+
+	localCtx := mocks.NewMockLocalContext(clientCtx, discoveryProvider)
+
+	err = discoveryService.(*localDiscoveryService).Initialize(localCtx)
+	assert.NoError(t, err)
 
 	peers, err := discoveryService.GetPeers()
-	if err != nil {
-		t.Fatalf("Failed to get peers from discovery service: %s", err)
-	}
-
-	// Two peers are configured at network level
-	expectedNumOfPeeers := 2
-	if len(peers) != expectedNumOfPeeers {
-		t.Fatalf("Expecting %d, got %d peers", expectedNumOfPeeers, len(peers))
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(peers))
 }

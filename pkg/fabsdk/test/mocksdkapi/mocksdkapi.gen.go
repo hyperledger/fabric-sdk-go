@@ -160,6 +160,19 @@ func (mr *MockServiceProviderFactoryMockRecorder) CreateDiscoveryProvider(arg0 i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDiscoveryProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).CreateDiscoveryProvider), arg0)
 }
 
+// CreateLocalDiscoveryProvider mocks base method
+func (m *MockServiceProviderFactory) CreateLocalDiscoveryProvider(arg0 fab.EndpointConfig) (fab.LocalDiscoveryProvider, error) {
+	ret := m.ctrl.Call(m, "CreateLocalDiscoveryProvider", arg0)
+	ret0, _ := ret[0].(fab.LocalDiscoveryProvider)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateLocalDiscoveryProvider indicates an expected call of CreateLocalDiscoveryProvider
+func (mr *MockServiceProviderFactoryMockRecorder) CreateLocalDiscoveryProvider(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateLocalDiscoveryProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).CreateLocalDiscoveryProvider), arg0)
+}
+
 // CreateSelectionProvider mocks base method
 func (m *MockServiceProviderFactory) CreateSelectionProvider(arg0 fab.EndpointConfig) (fab.SelectionProvider, error) {
 	ret := m.ctrl.Call(m, "CreateSelectionProvider", arg0)

@@ -55,11 +55,11 @@ func TestDiscoveryService(t *testing.T) {
 		},
 	)
 
-	clientProvider = func(ctx contextAPI.Client) (discoverClient, error) {
+	clientProvider = func(ctx contextAPI.Client) (discoveryClient, error) {
 		return discClient, nil
 	}
 
-	membershipService := newService(
+	membershipService := newChannelService(
 		options{
 			refreshInterval: 500 * time.Millisecond,
 			responseTimeout: 2 * time.Second,

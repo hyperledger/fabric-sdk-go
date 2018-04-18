@@ -113,12 +113,12 @@ var logger = logging.NewLogger("fabsdk/client")
 
 // Client enables managing resources in Fabric network.
 type Client struct {
-	ctx       context.Client
-	discovery fab.DiscoveryService // global discovery service (detects all peers on the network)
-	filter    fab.TargetFilter
+	ctx              context.Client
+	filter           fab.TargetFilter
+	localCtxProvider context.LocalProvider
 }
 
-// mspFilter is default filter
+// mspFilter filters peers by MSP ID
 type mspFilter struct {
 	mspID string
 }
@@ -140,11 +140,15 @@ func WithDefaultTargetFilter(filter fab.TargetFilter) ClientOption {
 }
 
 // New returns a ResourceMgmtClient instance
-func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, error) {
+func New(ctxProvider context.ClientProvider, opts ...ClientOption) (*Client, error) {
 
-	ctx, err := clientProvider()
+	ctx, err := ctxProvider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create resmgmt client")
+	}
+
+	if ctx.Identifier().MSPID == "" {
+		return nil, errors.New("mspID not available in user context")
 	}
 
 	resourceClient := &Client{
@@ -158,21 +162,16 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 		}
 	}
 
-	// setup global discovery service
-	discovery, err := ctx.DiscoveryProvider().CreateDiscoveryService("")
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to create global discovery service")
-	}
-	resourceClient.discovery = discovery
-	//check if target filter was set - if not set the default
-	if resourceClient.filter == nil {
-		// Default target filter is based on user msp
-		if ctx.Identifier().MSPID == "" {
-			return nil, errors.New("mspID not available in user context")
+	if resourceClient.localCtxProvider == nil {
+		resourceClient.localCtxProvider = func() (context.Local, error) {
+			return contextImpl.NewLocal(
+				func() (context.Client, error) {
+					return resourceClient.ctx, nil
+				},
+			)
 		}
-		rcFilter := &mspFilter{mspID: ctx.Identifier().MSPID}
-		resourceClient.filter = rcFilter
 	}
+
 	return resourceClient, nil
 }
 
@@ -196,7 +195,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 	parentReqCtx = reqContext.WithValue(parentReqCtx, contextImpl.ReqContextTimeoutOverrides, opts.Timeouts)
 	defer parentReqCancel()
 
-	targets, err := rc.calculateTargets(rc.discovery, opts.Targets, opts.TargetFilter)
+	targets, err := rc.calculateTargets(opts.Targets, opts.TargetFilter)
 	if err != nil {
 		return errors.WithMessage(err, "failed to determine target peers for JoinChannel")
 	}
@@ -249,6 +248,27 @@ func filterTargets(peers []fab.Peer, filter fab.TargetFilter) []fab.Peer {
 	return filteredPeers
 }
 
+func (rc *Client) resolveDefaultTargets(opts *requestOptions) ([]fab.Peer, error) {
+	if len(opts.Targets) != 0 {
+		return opts.Targets, nil
+	}
+
+	localCtx, err := rc.localCtxProvider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to create local context")
+	}
+
+	targets, err := rc.getDefaultTargets(localCtx.LocalDiscoveryService())
+	if err != nil {
+		return nil, err
+	}
+	if len(targets) == 0 {
+		return nil, errors.WithMessage(err, "no local targets for InstallCC")
+	}
+
+	return targets, nil
+}
+
 // helper method for calculating default targets
 func (rc *Client) getDefaultTargets(discovery fab.DiscoveryService) ([]fab.Peer, error) {
 
@@ -266,19 +286,17 @@ func (rc *Client) getDefaultTargets(discovery fab.DiscoveryService) ([]fab.Peer,
 }
 
 // calculateTargets calculates targets based on targets and filter
-func (rc *Client) calculateTargets(discovery fab.DiscoveryService, peers []fab.Peer, filter fab.TargetFilter) ([]fab.Peer, error) {
+func (rc *Client) calculateTargets(targets []fab.Peer, filter fab.TargetFilter) ([]fab.Peer, error) {
 
-	if peers != nil && filter != nil {
-		return nil, errors.New("If targets are provided, filter cannot be provided")
-	}
-
-	targets := peers
 	targetFilter := filter
 
-	var err error
-	if targets == nil {
+	if len(targets) == 0 {
 		// Retrieve targets from discovery
-		targets, err = discovery.GetPeers()
+		localCtx, err := rc.localCtxProvider()
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create local context")
+		}
+		targets, err = localCtx.LocalDiscoveryService().GetPeers()
 		if err != nil {
 			return nil, err
 		}
@@ -338,14 +356,12 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	defer parentReqCancel()
 
 	//Default targets when targets are not provided in options
-	if len(opts.Targets) == 0 {
-		opts.Targets, err = rc.getDefaultTargets(rc.discovery)
-		if err != nil {
-			return nil, errors.WithMessage(err, "failed to get default targets for InstallCC")
-		}
+	defaultTargets, err := rc.resolveDefaultTargets(&opts)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get default targets for InstallCC")
 	}
 
-	targets, err := rc.calculateTargets(rc.discovery, opts.Targets, opts.TargetFilter)
+	targets, err := rc.calculateTargets(defaultTargets, opts.TargetFilter)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to determine target peers for install cc")
 	}
@@ -509,6 +525,13 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 			return nil, errors.WithMessage(err2, "failed to get default target for query instantiated chaincodes")
 		}
 
+		// Filter by MSP since the LSCC only allows local calls
+		targets = filterTargets(targets, &mspFilter{mspID: chCtx.Identifier().MSPID})
+
+		if len(targets) == 0 {
+			return nil, errors.Errorf("no targets in MSP [%s]", chCtx.Identifier().MSPID)
+		}
+
 		// select random channel peer
 		randomNumber := rand.Intn(len(targets))
 		target = targets[randomNumber]
@@ -582,7 +605,7 @@ func (rc *Client) getCCProposalTargets(channelID string, req InstantiateCCReques
 		}
 	}
 
-	targets, err := rc.calculateTargets(discovery, opts.Targets, opts.TargetFilter)
+	targets, err := rc.calculateTargets(opts.Targets, opts.TargetFilter)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to determine target peers for cc proposal")
 	}
@@ -933,6 +956,11 @@ func (rc *Client) prepareRequestOpts(options ...RequestOption) (requestOptions, 
 			return opts, errors.WithMessage(err, "failed to read opts in resmgmt")
 		}
 	}
+
+	if len(opts.Targets) > 0 && opts.TargetFilter != nil {
+		return opts, errors.New("If targets are provided, filter cannot be provided")
+	}
+
 	return opts, nil
 }
 

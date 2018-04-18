@@ -62,17 +62,29 @@ func New(config fab.EndpointConfig, opts ...Opt) *Provider {
 	}
 
 	return &Provider{
-		cache: lazycache.New("Discovery_Service_Cache", func(key lazycache.Key) (interface{}, error) {
-			return newService(options), nil
+		cache: lazycache.New("Dynamic_Discovery_Service_Cache", func(key lazycache.Key) (interface{}, error) {
+			if key.String() == "" {
+				return newLocalService(options), nil
+			}
+			return newChannelService(options), nil
 		}),
 	}
 }
 
-// CreateDiscoveryService will create a new membership service
+// CreateDiscoveryService returns a discovery service for the given channel
 func (p *Provider) CreateDiscoveryService(channelID string) (fab.DiscoveryService, error) {
 	ref, err := p.cache.Get(lazycache.NewStringKey(channelID))
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get discovery service from cache")
+	}
+	return ref.(fab.DiscoveryService), nil
+}
+
+// CreateLocalDiscoveryService returns a local discovery service
+func (p *Provider) CreateLocalDiscoveryService() (fab.DiscoveryService, error) {
+	ref, err := p.cache.Get(lazycache.NewStringKey(""))
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get local discovery service from cache")
 	}
 	return ref.(fab.DiscoveryService), nil
 }

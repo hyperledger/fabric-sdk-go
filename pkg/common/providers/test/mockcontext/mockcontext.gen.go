@@ -121,6 +121,18 @@ func (mr *MockProvidersMockRecorder) InfraProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InfraProvider", reflect.TypeOf((*MockProviders)(nil).InfraProvider))
 }
 
+// LocalDiscoveryProvider mocks base method
+func (m *MockProviders) LocalDiscoveryProvider() fab.LocalDiscoveryProvider {
+	ret := m.ctrl.Call(m, "LocalDiscoveryProvider")
+	ret0, _ := ret[0].(fab.LocalDiscoveryProvider)
+	return ret0
+}
+
+// LocalDiscoveryProvider indicates an expected call of LocalDiscoveryProvider
+func (mr *MockProvidersMockRecorder) LocalDiscoveryProvider() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LocalDiscoveryProvider", reflect.TypeOf((*MockProviders)(nil).LocalDiscoveryProvider))
+}
+
 // SelectionProvider mocks base method
 func (m *MockProviders) SelectionProvider() fab.SelectionProvider {
 	ret := m.ctrl.Call(m, "SelectionProvider")
@@ -287,6 +299,18 @@ func (m *MockClient) InfraProvider() fab.InfraProvider {
 // InfraProvider indicates an expected call of InfraProvider
 func (mr *MockClientMockRecorder) InfraProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InfraProvider", reflect.TypeOf((*MockClient)(nil).InfraProvider))
+}
+
+// LocalDiscoveryProvider mocks base method
+func (m *MockClient) LocalDiscoveryProvider() fab.LocalDiscoveryProvider {
+	ret := m.ctrl.Call(m, "LocalDiscoveryProvider")
+	ret0, _ := ret[0].(fab.LocalDiscoveryProvider)
+	return ret0
+}
+
+// LocalDiscoveryProvider indicates an expected call of LocalDiscoveryProvider
+func (mr *MockClientMockRecorder) LocalDiscoveryProvider() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LocalDiscoveryProvider", reflect.TypeOf((*MockClient)(nil).LocalDiscoveryProvider))
 }
 
 // PrivateKey mocks base method

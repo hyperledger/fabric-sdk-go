@@ -27,19 +27,20 @@ import (
 
 // MockProviderContext holds core providers to enable mocking.
 type MockProviderContext struct {
-	cryptoSuiteConfig core.CryptoSuiteConfig
-	endpointConfig    fab.EndpointConfig
-	identityConfig    msp.IdentityConfig
-	cryptoSuite       core.CryptoSuite
-	signingManager    core.SigningManager
-	userStore         msp.UserStore
-	identityManager   map[string]msp.IdentityManager
-	privateKey        core.Key
-	identity          msp.SigningIdentity
-	discoveryProvider fab.DiscoveryProvider
-	selectionProvider fab.SelectionProvider
-	infraProvider     fab.InfraProvider
-	channelProvider   fab.ChannelProvider
+	cryptoSuiteConfig      core.CryptoSuiteConfig
+	endpointConfig         fab.EndpointConfig
+	identityConfig         msp.IdentityConfig
+	cryptoSuite            core.CryptoSuite
+	signingManager         core.SigningManager
+	userStore              msp.UserStore
+	identityManager        map[string]msp.IdentityManager
+	privateKey             core.Key
+	identity               msp.SigningIdentity
+	discoveryProvider      fab.DiscoveryProvider
+	localDiscoveryProvider fab.LocalDiscoveryProvider
+	selectionProvider      fab.SelectionProvider
+	infraProvider          fab.InfraProvider
+	channelProvider        fab.ChannelProvider
 }
 
 // ProviderUsersOptions ...
@@ -181,6 +182,11 @@ func (pc *MockProviderContext) Sign(msg []byte) ([]byte, error) {
 //DiscoveryProvider returns discovery provider
 func (pc *MockProviderContext) DiscoveryProvider() fab.DiscoveryProvider {
 	return pc.discoveryProvider
+}
+
+//LocalDiscoveryProvider returns a local discovery provider
+func (pc *MockProviderContext) LocalDiscoveryProvider() fab.LocalDiscoveryProvider {
+	return pc.localDiscoveryProvider
 }
 
 //SelectionProvider returns selection provider

@@ -65,6 +65,11 @@ type DiscoveryService interface {
 	GetPeers() ([]Peer, error)
 }
 
+// LocalDiscoveryProvider is used to discover peers in the local MSP
+type LocalDiscoveryProvider interface {
+	CreateLocalDiscoveryService() (DiscoveryService, error)
+}
+
 // TargetFilter allows for filtering target peers
 type TargetFilter interface {
 	// Accept returns true if peer should be included in the list of target peers
@@ -153,6 +158,7 @@ const (
 // Providers represents the SDK configured service providers context.
 type Providers interface {
 	DiscoveryProvider() DiscoveryProvider
+	LocalDiscoveryProvider() LocalDiscoveryProvider
 	SelectionProvider() SelectionProvider
 	ChannelProvider() ChannelProvider
 	InfraProvider() InfraProvider

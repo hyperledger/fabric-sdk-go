@@ -161,7 +161,7 @@ func (c *mockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 }
 
 func newMockContext() *fabmocks.MockContext {
-	discoveryProvider, _ := fabmocks.NewMockDiscoveryProvider(nil, peers)
+	discoveryProvider := fabmocks.NewMockDiscoveryProvider(nil, peers)
 
 	ctx := fabmocks.NewMockContextWithCustomDiscovery(
 		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),

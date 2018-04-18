@@ -30,8 +30,8 @@ type MockStaticDiscoveryService struct {
 }
 
 // NewMockDiscoveryProvider returns mock discovery provider
-func NewMockDiscoveryProvider(err error, peers []fab.Peer) (*MockStaticDiscoveryProvider, error) {
-	return &MockStaticDiscoveryProvider{Error: err, Peers: peers}, nil
+func NewMockDiscoveryProvider(err error, peers []fab.Peer) *MockStaticDiscoveryProvider {
+	return &MockStaticDiscoveryProvider{Error: err, Peers: peers}
 }
 
 // CreateDiscoveryService return discovery service for specific channel
@@ -44,6 +44,16 @@ func (dp *MockStaticDiscoveryProvider) CreateDiscoveryService(channelID string) 
 	if channelID == "error" {
 		return nil, errors.New("Generate error when creating new discovery service")
 	}
+	return NewMockDiscoveryService(dp.Error, dp.Peers), nil
+}
+
+// CreateLocalDiscoveryService return local discovery service
+func (dp *MockStaticDiscoveryProvider) CreateLocalDiscoveryService() (fab.DiscoveryService, error) {
+
+	if dp.customDiscoveryService != nil {
+		return dp.customDiscoveryService, nil
+	}
+
 	return NewMockDiscoveryService(dp.Error, dp.Peers), nil
 }
 

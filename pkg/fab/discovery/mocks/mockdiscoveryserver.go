@@ -18,7 +18,8 @@ import (
 
 // MockDiscoveryServer is a mock Discovery server
 type MockDiscoveryServer struct {
-	peersByOrg map[string]*discovery.Peers
+	localPeersByOrg map[string]*discovery.Peers
+	peersByOrg      map[string]*discovery.Peers
 }
 
 // MockDiscoveryServerOpt is an option for the MockDiscoveryServer
@@ -28,6 +29,13 @@ type MockDiscoveryServerOpt func(s *MockDiscoveryServer)
 func WithPeers(peers ...*MockDiscoveryPeerEndpoint) MockDiscoveryServerOpt {
 	return func(s *MockDiscoveryServer) {
 		s.peersByOrg = asPeersByOrg(peers)
+	}
+}
+
+// WithLocalPeers adds a set of mock peers to the MockDiscoveryServer
+func WithLocalPeers(peers ...*MockDiscoveryPeerEndpoint) MockDiscoveryServerOpt {
+	return func(s *MockDiscoveryServer) {
+		s.localPeersByOrg = asPeersByOrg(peers)
 	}
 }
 
@@ -71,16 +79,41 @@ func (s *MockDiscoveryServer) Discover(ctx context.Context, request *discovery.S
 }
 
 func (s *MockDiscoveryServer) processQuery(q *discovery.Query) *discovery.QueryResult {
-	if query := q.GetPeerQuery(); query != nil {
-		return s.getPeerQueryResult(query)
-	}
-	if query := q.GetConfigQuery(); query != nil {
-		return s.getConfigQueryResult(query)
-	}
-	if query := q.GetCcQuery(); query != nil {
-		return s.getCCQueryResult(query)
+	if q.Channel == "" {
+		if query := q.GetLocalPeers(); query != nil {
+			return s.getLocalPeerQueryResult(query)
+		}
+	} else {
+		if query := q.GetPeerQuery(); query != nil {
+			return s.getPeerQueryResult(query)
+		}
+		if query := q.GetConfigQuery(); query != nil {
+			return s.getConfigQueryResult(query)
+		}
+		if query := q.GetCcQuery(); query != nil {
+			return s.getCCQueryResult(query)
+		}
 	}
 	return nil
+}
+
+func (s *MockDiscoveryServer) getLocalPeerQueryResult(q *discovery.LocalPeerQuery) *discovery.QueryResult {
+	if s.localPeersByOrg != nil {
+		return &discovery.QueryResult{
+			Result: &discovery.QueryResult_Members{
+				Members: &discovery.PeerMembershipResult{
+					PeersByOrg: s.localPeersByOrg,
+				},
+			},
+		}
+	}
+	return &discovery.QueryResult{
+		Result: &discovery.QueryResult_Error{
+			Error: &discovery.Error{
+				Content: "no peers",
+			},
+		},
+	}
 }
 
 func (s *MockDiscoveryServer) getPeerQueryResult(q *discovery.PeerMembershipQuery) *discovery.QueryResult {

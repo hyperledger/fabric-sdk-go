@@ -49,7 +49,14 @@ func TestDiscoveryProvider(t *testing.T) {
 
 	chCtx := mocks.NewMockChannelContext(ctx, ch)
 
-	err = service.(*Service).Initialize(chCtx)
+	err = service.(*channelService).Initialize(chCtx)
+	assert.NoError(t, err)
+
+	localService, err := p.CreateLocalDiscoveryService()
+	assert.NoError(t, err)
+
+	localCtx := mocks.NewMockLocalContext(ctx, nil)
+	err = localService.(*LocalService).Initialize(localCtx)
 	assert.NoError(t, err)
 }
 

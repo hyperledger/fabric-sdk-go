@@ -231,6 +231,12 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		return errors.WithMessage(err, "failed to create discovery provider")
 	}
 
+	// Initialize local discovery provider
+	localDiscoveryProvider, err := sdk.opts.Service.CreateLocalDiscoveryProvider(sdk.opts.endpointConfig)
+	if err != nil {
+		return errors.WithMessage(err, "failed to create local discovery provider")
+	}
+
 	// Initialize selection provider (for selecting endorsing peers)
 	selectionProvider, err := sdk.opts.Service.CreateSelectionProvider(sdk.opts.endpointConfig)
 	if err != nil {
@@ -250,6 +256,7 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		context.WithSigningManager(signingManager),
 		context.WithUserStore(userStore),
 		context.WithDiscoveryProvider(discoveryProvider),
+		context.WithLocalDiscoveryProvider(localDiscoveryProvider),
 		context.WithSelectionProvider(selectionProvider),
 		context.WithIdentityManagerProvider(identityManagerProvider),
 		context.WithInfraProvider(infraProvider),
@@ -270,6 +277,13 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		}
 	}
 
+	if pi, ok := localDiscoveryProvider.(providerInit); ok {
+		err = pi.Initialize(sdk.provider)
+		if err != nil {
+			return errors.WithMessage(err, "failed to initialize local discovery provider")
+		}
+	}
+
 	if pi, ok := selectionProvider.(providerInit); ok {
 		err = pi.Initialize(sdk.provider)
 		if err != nil {
@@ -283,6 +297,9 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 // Close frees up caches and connections being maintained by the SDK
 func (sdk *FabricSDK) Close() {
 	if pvdr, ok := sdk.provider.DiscoveryProvider().(closeable); ok {
+		pvdr.Close()
+	}
+	if pvdr, ok := sdk.provider.LocalDiscoveryProvider().(closeable); ok {
 		pvdr.Close()
 	}
 	if pvdr, ok := sdk.provider.SelectionProvider().(closeable); ok {

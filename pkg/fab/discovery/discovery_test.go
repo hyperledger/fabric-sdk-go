@@ -39,7 +39,7 @@ func TestDiscoveryClient(t *testing.T) {
 	client, err := New(clientCtx)
 	assert.NoError(t, err)
 
-	req := discclient.NewRequest().OfChannel(channelID).AddPeersQuery()
+	req := discclient.NewRequest().AddLocalPeersQuery().OfChannel(channelID).AddPeersQuery()
 
 	grpcOptions := map[string]interface{}{
 		"allow-insecure": true,
@@ -71,9 +71,14 @@ func TestDiscoveryClient(t *testing.T) {
 
 	response := responses[0]
 	assert.Equal(t, peerAddress, response.Target())
+	locResp := response.ForLocal()
+	peers, err := locResp.Peers()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(peers))
+	t.Logf("Got success response for local query from [%s]: Num Peers: %d", response.Target(), len(peers))
 
 	chResp := response.ForChannel(channelID)
-	peers, err := chResp.Peers()
+	peers, err = chResp.Peers()
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(peers))
 	t.Logf("Got success response from channel query [%s]: Num Peers: %d", response.Target(), len(peers))
@@ -94,6 +99,13 @@ func TestMain(m *testing.M) {
 	}
 
 	discoverServer = discmocks.NewServer(
+		discmocks.WithLocalPeers(
+			&discmocks.MockDiscoveryPeerEndpoint{
+				MSPID:        "Org1MSP",
+				Endpoint:     peerAddress,
+				LedgerHeight: 26,
+			},
+		),
 		discmocks.WithPeers(
 			&discmocks.MockDiscoveryPeerEndpoint{
 				MSPID:        "Org1MSP",

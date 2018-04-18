@@ -35,5 +35,6 @@ type MSPProviderFactory interface {
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)
 type ServiceProviderFactory interface {
 	CreateDiscoveryProvider(config fab.EndpointConfig) (fab.DiscoveryProvider, error)
+	CreateLocalDiscoveryProvider(config fab.EndpointConfig) (fab.LocalDiscoveryProvider, error)
 	CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error)
 }
