@@ -47,8 +47,8 @@ var DefaultOpts = Opts{
 	RetryableCodes: DefaultRetryableCodes,
 }
 
-// DefaultChClientOpts default retry options for the channel client
-var DefaultChClientOpts = Opts{
+// DefaultChannelOpts default retry options for the channel client
+var DefaultChannelOpts = Opts{
 	Attempts:       DefaultAttempts,
 	InitialBackoff: DefaultInitialBackoff,
 	MaxBackoff:     DefaultMaxBackoff,

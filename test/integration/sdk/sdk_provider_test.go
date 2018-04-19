@@ -66,7 +66,7 @@ func TestDynamicSelection(t *testing.T) {
 	}
 
 	response, err := chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
-		channel.WithRetry(retry.DefaultChClientOpts))
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
@@ -74,7 +74,7 @@ func TestDynamicSelection(t *testing.T) {
 
 	// Move funds
 	response, err = chClient.Execute(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
-		channel.WithRetry(retry.DefaultChClientOpts))
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}

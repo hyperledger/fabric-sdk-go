@@ -107,7 +107,7 @@ func TestChannelClient(t *testing.T) {
 func testQuery(expected string, ccID string, chClient *channel.Client, t *testing.T) {
 
 	response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
-		channel.WithRetry(retry.DefaultChClientOpts))
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to invoke example cc: %s", err)
 	}
@@ -119,7 +119,7 @@ func testQuery(expected string, ccID string, chClient *channel.Client, t *testin
 
 func testQueryWithOpts(expected string, ccID string, chClient *channel.Client, t *testing.T) {
 	response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
-		channel.WithRetry(retry.DefaultChClientOpts))
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Query returned error: %s", err)
 	}
@@ -130,7 +130,7 @@ func testQueryWithOpts(expected string, ccID string, chClient *channel.Client, t
 
 func testTransaction(ccID string, chClient *channel.Client, t *testing.T) {
 	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
-		channel.WithRetry(retry.DefaultChClientOpts))
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -296,7 +296,7 @@ func testChaincodeEventListener(ccID string, chClient *channel.Client, listener 
 func testChaincodeError(ccID string, client *channel.Client, t *testing.T) {
 	// Try calling unknown function call and expect an error
 	_, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxArgs()},
-		channel.WithRetry(retry.DefaultChClientOpts))
+		channel.WithRetry(retry.DefaultChannelOpts))
 	require.Error(t, err)
 	s, ok := status.FromError(err)
 	require.True(t, ok, "expected status error")
@@ -326,14 +326,14 @@ func TestNoEndpoints(t *testing.T) {
 
 	// Test query chaincode: since peer has been disabled for chaincode query this query should fail
 	_, err = chClient.Query(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
-		channel.WithRetry(retry.DefaultChClientOpts))
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err == nil || !strings.Contains(err.Error(), "targets were not provided") {
 		t.Fatalf("Should have failed due to no chaincode query peers")
 	}
 
 	// Test execute transaction: since peer has been disabled for endorsement this transaction should fail
 	_, err = chClient.Execute(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
-		channel.WithRetry(retry.DefaultChClientOpts))
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err == nil || !strings.Contains(err.Error(), "targets were not provided") {
 		t.Fatalf("Should have failed due to no endorsing peers")
 	}
