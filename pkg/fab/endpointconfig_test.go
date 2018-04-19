@@ -29,6 +29,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -1312,4 +1313,15 @@ func tamperPeerChannelConfig(backend *mocks.MockConfigBackend) {
 		},
 	}
 	(channelsMap.(map[string]interface{}))[orgChannelID] = orgChannel
+}
+
+func BenchmarkTLSCertPool(b *testing.B) {
+	customBackend := getCustomBackend()
+	customBackend.KeyValueMap["client.tlsCerts.systemCertPool"] = "true"
+	endpointConfig, err := ConfigFromBackend(customBackend)
+	require.NoError(b, err)
+
+	for n := 0; n < b.N; n++ {
+		endpointConfig.TLSCACertPool()
+	}
 }
