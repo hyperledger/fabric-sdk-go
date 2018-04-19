@@ -919,7 +919,7 @@ func (rc *Client) prepareRequestOpts(options ...RequestOption) (requestOptions, 
 	for _, option := range options {
 		err := option(rc.ctx, &opts)
 		if err != nil {
-			return opts, errors.WithMessage(err, "Failed to read opts")
+			return opts, errors.WithMessage(err, "failed to read opts in resmgmt")
 		}
 	}
 	return opts, nil

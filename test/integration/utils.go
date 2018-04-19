@@ -13,11 +13,14 @@ import (
 
 	"fmt"
 
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	fabApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
@@ -129,19 +132,19 @@ func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string) (bool, error) {
 
 // OrgTargetPeers determines peer endpoints for orgs
 func OrgTargetPeers(configBackend core.ConfigBackend, orgs []string) ([]string, error) {
-	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	networkConfig := fabApi.NetworkConfig{}
+	err := lookup.New(configBackend).UnmarshalKey("organizations", &networkConfig.Organizations)
 	if err != nil {
-		return nil, errors.WithMessage(err, "reading endpoint config failed")
+		return nil, errors.WithMessage(err, "failed to get organizations from config ")
 	}
+
 	var peers []string
 	for _, org := range orgs {
-		peerConfig, err := endpointConfig.PeersConfig(org)
-		if err != nil {
-			return nil, errors.WithMessage(err, "reading peer config failed")
+		orgConfig, ok := networkConfig.Organizations[strings.ToLower(org)]
+		if !ok {
+			continue
 		}
-		for _, p := range peerConfig {
-			peers = append(peers, p.URL)
-		}
+		peers = append(peers, orgConfig.Peers...)
 	}
 	return peers, nil
 }

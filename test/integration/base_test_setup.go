@@ -14,7 +14,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
@@ -86,7 +85,7 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 		}
 	}
 
-	targets, err := getOrgTargets(configBackend, setup.OrgID)
+	targets, err := OrgTargetPeers(configBackend, []string{setup.OrgID})
 	if err != nil {
 		return errors.Wrapf(err, "loading target peers from config failed")
 	}
@@ -110,25 +109,6 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	}
 
 	return nil
-}
-
-func getOrgTargets(configBackend core.ConfigBackend, org string) ([]string, error) {
-
-	endpointConfig, err := fab.ConfigFromBackend(configBackend)
-	if err != nil {
-		return nil, errors.WithMessage(err, "reading config failed")
-	}
-
-	var targets []string
-
-	peerConfig, err := endpointConfig.PeersConfig(org)
-	if err != nil {
-		return nil, errors.WithMessage(err, "reading peer config failed")
-	}
-	for _, p := range peerConfig {
-		targets = append(targets, p.URL)
-	}
-	return targets, nil
 }
 
 // GetDeployPath ..

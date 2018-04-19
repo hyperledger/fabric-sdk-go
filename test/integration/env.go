@@ -10,12 +10,8 @@ import (
 	"os"
 	"strings"
 
-	"regexp"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/spf13/viper"
@@ -92,42 +88,6 @@ func addLocalEntityMappingToBackend(backend core.ConfigBackend) (core.ConfigBack
 	}
 	backendMap := make(map[string]interface{})
 	backendMap["entityMatchers"] = myViper.Get("entityMatchers")
-
-	//TODO delete below lines once entity matchers issue is solved
-	// temporary fix starts here
-	re := regexp.MustCompile(".*:")
-	networkConfig := fab.NetworkConfig{}
-	configLookup := lookup.New(backend)
-
-	if err = configLookup.UnmarshalKey("orderers", &networkConfig.Orderers); err != nil {
-		return nil, err
-	}
-	if err = configLookup.UnmarshalKey("peers", &networkConfig.Peers); err != nil {
-		return nil, err
-	}
-	orderer, ok := networkConfig.Orderers["local.orderer.example.com"]
-	if ok {
-		orderer.URL = re.ReplaceAllString(orderer.URL, "localhost:")
-		networkConfig.Orderers["local.orderer.example.com"] = orderer
-	}
-
-	peer1, ok := networkConfig.Peers["local.peer0.org1.example.com"]
-	if ok {
-		peer1.URL = re.ReplaceAllString(peer1.URL, "localhost:")
-		peer1.EventURL = re.ReplaceAllString(peer1.EventURL, "localhost:")
-		networkConfig.Peers["local.peer0.org1.example.com"] = peer1
-	}
-
-	peer2, ok := networkConfig.Peers["local.peer0.org2.example.com"]
-	if ok {
-		peer2.URL = re.ReplaceAllString(peer2.URL, "localhost:")
-		peer2.EventURL = re.ReplaceAllString(peer2.EventURL, "localhost:")
-		networkConfig.Peers["local.peer0.org2.example.com"] = peer2
-	}
-
-	backendMap["orderers"] = networkConfig.Orderers
-	backendMap["peers"] = networkConfig.Peers
-	// temporary fix ends here
 
 	return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
 
