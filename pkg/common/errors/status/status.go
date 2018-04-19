@@ -79,16 +79,17 @@ const (
 
 // GroupName maps the groups in this packages to human-readable strings
 var GroupName = map[int32]string{
-	0: "Unknown",
-	1: "gRPC Transport Status",
-	2: "HTTP Transport Status",
-	3: "Endorser Server Status",
-	4: "Event Server Status",
-	5: "Orderer Server Status",
-	6: "Fabric CA Server Status",
-	7: "Endorser Client Status",
-	8: "Orderer Client Status",
-	9: "Client Status",
+	0:  "Unknown",
+	1:  "gRPC Transport Status",
+	2:  "HTTP Transport Status",
+	3:  "Endorser Server Status",
+	4:  "Event Server Status",
+	5:  "Orderer Server Status",
+	6:  "Fabric CA Server Status",
+	7:  "Endorser Client Status",
+	8:  "Orderer Client Status",
+	9:  "Client Status",
+	10: "Chaincode status",
 }
 
 func (g Group) String() string {

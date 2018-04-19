@@ -82,11 +82,12 @@ func (ref *Ref) initializer() lazyref.Initializer {
 
 		// Membership is refreshed only if we have a newer config block
 		if ref.mem == nil || cfg.BlockNumber() > ref.configBlockNumber {
-			logger.Debugf("Creating membership...")
+			logger.Debugf("Creating membership for channel [%s]...", cfg.ID())
 			ref.mem, err = New(ref.context, cfg)
 			if err != nil {
 				return nil, err
 			}
+			ref.configBlockNumber = cfg.BlockNumber()
 		}
 
 		return ref.mem, nil

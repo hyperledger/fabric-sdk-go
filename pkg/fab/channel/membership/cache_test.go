@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazyref"
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type badKey struct {
@@ -30,9 +31,11 @@ func (b *badKey) String() string {
 func TestMembershipCache(t *testing.T) {
 	testChannelID := "test"
 	goodMSPID := "GoodMSP"
+	testBlockNum := uint64(5)
 
 	cfg := mocks.NewMockChannelCfg(testChannelID)
 	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte(validRootCA))}
+	cfg.MockBlockNumber = testBlockNum
 
 	ctx := mocks.NewMockProviderContext()
 
@@ -50,8 +53,8 @@ func TestMembershipCache(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
 
-	mem, ok := r.(fab.ChannelMembership)
-	assert.True(t, ok)
+	mem, ok := r.(*Ref)
+	require.True(t, ok)
 
 	sID := &mb.SerializedIdentity{Mspid: goodMSPID, IdBytes: []byte(certPem)}
 	goodEndorser, err := proto.Marshal(sID)
@@ -62,6 +65,8 @@ func TestMembershipCache(t *testing.T) {
 
 	err = mem.Verify(goodEndorser, []byte("test"), []byte("test1"))
 	assert.Nil(t, err)
+
+	assert.Equal(t, testBlockNum, mem.configBlockNumber)
 }
 
 func TestMembershipCacheBad(t *testing.T) {

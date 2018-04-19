@@ -47,8 +47,8 @@ const (
 	defaultResMgmtTimeout                 = time.Minute * 3
 	defaultConnIdleInterval               = time.Second * 30
 	defaultEventServiceIdleInterval       = time.Minute * 2
-	defaultChannelConfigRefreshInterval   = time.Minute * 30
-	defaultChannelMemshpRefreshInterval   = time.Second * 30
+	defaultChannelConfigRefreshInterval   = time.Minute * 90
+	defaultChannelMemshpRefreshInterval   = time.Second * 60
 
 	defaultCacheSweepInterval = time.Second * 15
 )
