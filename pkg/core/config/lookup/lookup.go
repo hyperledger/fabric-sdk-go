@@ -9,6 +9,8 @@ package lookup
 import (
 	"time"
 
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
@@ -61,6 +63,15 @@ func (c *ConfigLookup) GetString(key string) string {
 		return ""
 	}
 	return cast.ToString(value)
+}
+
+//GetLowerString returns lower case string value for given key
+func (c *ConfigLookup) GetLowerString(key string) string {
+	value, ok := c.backend.Lookup(key)
+	if !ok {
+		return ""
+	}
+	return strings.ToLower(cast.ToString(value))
 }
 
 //GetInt returns int value for given key

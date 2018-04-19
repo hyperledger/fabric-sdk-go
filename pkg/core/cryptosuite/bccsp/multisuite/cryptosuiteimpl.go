@@ -16,9 +16,9 @@ import (
 //GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
 func GetSuiteByConfig(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	switch config.SecurityProvider() {
-	case "SW":
+	case "sw":
 		return sw.GetSuiteByConfig(config)
-	case "PKCS11":
+	case "pkcs11":
 		return pkcs11.GetSuiteByConfig(config)
 	}
 
