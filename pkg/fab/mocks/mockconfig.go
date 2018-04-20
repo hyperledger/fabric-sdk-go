@@ -294,7 +294,7 @@ func (c *MockConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
 
 // SecurityProvider ...
 func (c *MockConfig) SecurityProvider() string {
-	return "SW"
+	return "sw"
 }
 
 // SecurityProviderLabel ...

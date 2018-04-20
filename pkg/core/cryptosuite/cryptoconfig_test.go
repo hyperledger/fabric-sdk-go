@@ -10,6 +10,10 @@ import (
 	"path"
 	"testing"
 
+	"os"
+
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
@@ -113,8 +117,8 @@ func TestCAConfigSecurityProvider(t *testing.T) {
 	if !ok || val == nil {
 		t.Fatal("expected valid value")
 	}
-	if val.(string) != cryptoConfig.SecurityProvider() {
-		t.Fatalf("Incorrect BCCSP SecurityProvider provider")
+	if !strings.EqualFold(val.(string), cryptoConfig.SecurityProvider()) {
+		t.Fatalf("Incorrect BCCSP SecurityProvider provider : %s", cryptoConfig.SecurityProvider())
 	}
 }
 
@@ -175,6 +179,52 @@ func TestCAConfigSecurityProviderLabel(t *testing.T) {
 	}
 	if val.(string) != cryptoConfig.SecurityProviderLabel() {
 		t.Fatalf("Incorrect BCCSP SecurityProviderPin flag")
+	}
+}
+
+func TestCAConfigSecurityProviderCase(t *testing.T) {
+
+	// we expect the following values
+	const expectedPkcs11Value = "pkcs11"
+	const expectedSwValue = "sw"
+
+	// map key represents what we will input
+	providerTestValues := map[string]string{
+		// all upper case
+		"SW":     expectedSwValue,
+		"PKCS11": expectedPkcs11Value,
+		// all lower case
+		"sw":     expectedSwValue,
+		"pkcs11": expectedPkcs11Value,
+		// mixed case
+		"Sw":     expectedSwValue,
+		"Pkcs11": expectedPkcs11Value,
+	}
+
+	for inputValue, expectedValue := range providerTestValues {
+
+		// set the input value, overriding what's in file
+		os.Setenv("FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER", inputValue)
+
+		backend, err := config.FromFile(configTestFilePath)()
+		if err != nil {
+			t.Fatal("Failed to get config backend")
+		}
+
+		customBackend := getCustomBackend(backend)
+
+		cryptoConfig := ConfigFromBackend(customBackend).(*Config)
+
+		// expected values should be uppercase
+		if expectedValue != cryptoConfig.SecurityProvider() {
+			t.Fatalf(
+				"Incorrect BCCSP SecurityProvider - input:%s actual:%s, expected:%s",
+				inputValue,
+				cryptoConfig.SecurityProvider(),
+				expectedValue,
+			)
+		}
+
 	}
 }
 

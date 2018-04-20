@@ -37,8 +37,8 @@ func TestCryptoSuiteByConfigSW(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockConfig := mockcore.NewMockCryptoSuiteConfig(mockCtrl)
-	mockConfig.EXPECT().SecurityProvider().Return("SW")
-	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityProvider().Return("sw")
+	mockConfig.EXPECT().SecurityProvider().Return("sw")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
@@ -61,8 +61,8 @@ func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 	providerLib, softHSMPin, softHSMTokenLabel := pkcs11.FindPKCS11Lib()
 
 	mockConfig := mockcore.NewMockCryptoSuiteConfig(mockCtrl)
-	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
-	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
+	mockConfig.EXPECT().SecurityProvider().Return("pkcs11")
+	mockConfig.EXPECT().SecurityProvider().Return("pkcs11")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")

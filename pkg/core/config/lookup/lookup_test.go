@@ -55,10 +55,25 @@ func TestGetInt(t *testing.T) {
 func TestGetString(t *testing.T) {
 	testLookup := New(backend)
 	assert.True(t, testLookup.GetString("key.string.valid") == "valid-string", "expected lookup to return valid string value")
+	assert.True(t, testLookup.GetString("key.string.valid.lower.case") == "valid-string", "expected lookup to return valid string value")
+	assert.True(t, testLookup.GetString("key.string.valid.upper.case") == "VALID-STRING", "expected lookup to return valid string value")
+	assert.True(t, testLookup.GetString("key.string.valid.mixed.case") == "VaLiD-StRiNg", "expected lookup to return valid string value")
 	assert.True(t, testLookup.GetString("key.string.empty") == "", "expected lookup to return empty string value")
 	assert.True(t, testLookup.GetString("key.string.nil") == "", "expected lookup to return empty string value")
 	assert.True(t, testLookup.GetString("key.string.number") == "1234", "expected lookup to return valid string value")
 	assert.True(t, testLookup.GetString("key.string.not existing") == "", "expected lookup to return empty string value")
+}
+
+func TestGetLowerString(t *testing.T) {
+	testLookup := New(backend)
+	assert.True(t, testLookup.GetLowerString("key.string.valid") == "valid-string", "expected lookup to return valid lowercase string value")
+	assert.True(t, testLookup.GetLowerString("key.string.valid.lower.case") == "valid-string", "expected lookup to return valid lowercase string value")
+	assert.True(t, testLookup.GetLowerString("key.string.valid.upper.case") == "valid-string", "expected lookup to return valid lowercase string value")
+	assert.True(t, testLookup.GetLowerString("key.string.valid.mixed.case") == "valid-string", "expected lookup to return valid lowercase string value")
+	assert.True(t, testLookup.GetLowerString("key.string.empty") == "", "expected lookup to return empty string value")
+	assert.True(t, testLookup.GetLowerString("key.string.nil") == "", "expected lookup to return empty string value")
+	assert.True(t, testLookup.GetLowerString("key.string.number") == "1234", "expected lookup to return valid string value")
+	assert.True(t, testLookup.GetLowerString("key.string.not existing") == "", "expected lookup to return empty string value")
 }
 
 func TestGetDuration(t *testing.T) {
@@ -219,6 +234,9 @@ func setupCustomBackend() {
 	backendMap["key.int.invalid"] = "INVALID"
 
 	backendMap["key.string.valid"] = "valid-string"
+	backendMap["key.string.valid.mixed.case"] = "VaLiD-StRiNg"
+	backendMap["key.string.valid.lower.case"] = "valid-string"
+	backendMap["key.string.valid.upper.case"] = "VALID-STRING"
 	backendMap["key.string.empty"] = ""
 	backendMap["key.string.nil"] = nil
 	backendMap["key.string.number"] = 1234

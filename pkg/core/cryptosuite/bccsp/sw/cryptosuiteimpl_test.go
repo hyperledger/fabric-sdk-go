@@ -37,7 +37,7 @@ func TestCryptoSuiteByConfigSW(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockConfig := mockcore.NewMockCryptoSuiteConfig(mockCtrl)
-	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityProvider().Return("sw").AnyTimes()
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
@@ -56,7 +56,7 @@ func TestCryptoSuiteByBadConfigSW(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockConfig := mockcore.NewMockCryptoSuiteConfig(mockCtrl)
-	mockConfig.EXPECT().SecurityProvider().Return("SW")
+	mockConfig.EXPECT().SecurityProvider().Return("sw")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA0")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
 	mockConfig.EXPECT().KeyStorePath().Return("")
