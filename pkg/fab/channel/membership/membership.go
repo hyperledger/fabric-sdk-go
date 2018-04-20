@@ -204,10 +204,6 @@ func addCertsToConfig(config fab.EndpointConfig, pemCerts []byte) {
 		if err != nil {
 			logger.Warn("%v", err)
 		}
-		_, err = config.TLSCACertPool(cert)
-		if err != nil {
-			logger.Warnf("TLSCACertPool failed %v", err)
-		}
-
+		_ = config.TLSCACertPool(cert)
 	}
 }

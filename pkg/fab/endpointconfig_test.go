@@ -153,16 +153,13 @@ func TestTLSCAConfig(t *testing.T) {
 
 	endpointConfig := configBackend1.(*EndpointConfig)
 
-	_, err = endpointConfig.TLSCACertPool(cert)
-	if err != nil {
-		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
-	}
+	pool := endpointConfig.TLSCACertPool(cert)
+	assert.NotNil(t, pool)
+	assert.Len(t, endpointConfig.tlsCerts, 1)
 
 	//Try again with same cert
-	_, err = endpointConfig.TLSCACertPool(cert)
-	if err != nil {
-		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
-	}
+	pool = endpointConfig.TLSCACertPool(cert)
+	assert.NotNil(t, pool)
 
 	assert.False(t, len(endpointConfig.tlsCerts) > 1, "number of certs in cert list shouldn't accept duplicates")
 
@@ -176,11 +173,8 @@ func TestTLSCAConfig(t *testing.T) {
 		t.Fatalf("TLS CA cert pool was supposed to fail")
 	}
 
-	_, err = endpointConfig.TLSCACertPool(badCert)
-
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	pool = endpointConfig.TLSCACertPool(badCert)
+	assert.NotNil(t, pool)
 
 	keyConfig := endpoint.TLSConfig{Path: keyPath}
 
@@ -190,10 +184,8 @@ func TestTLSCAConfig(t *testing.T) {
 		t.Fatalf("TLS CA cert pool was supposed to fail when provided with wrong cert file")
 	}
 
-	_, err = endpointConfig.TLSCACertPool(key)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	pool = endpointConfig.TLSCACertPool(key)
+	assert.NotNil(t, pool)
 }
 
 func TestTimeouts(t *testing.T) {
@@ -766,10 +758,9 @@ func TestSystemCertPoolDisabled(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	certPool, err := endpointConfig.TLSCACertPool()
-	if err != nil {
-		t.Fatal("not supposed to get error")
-	}
+	certPool := endpointConfig.TLSCACertPool()
+	assert.NotNil(t, certPool)
+
 	// cert pool should be empty
 	if len(certPool.Subjects()) > 0 {
 		t.Fatal("Expecting empty tls cert pool due to disabled system cert pool")

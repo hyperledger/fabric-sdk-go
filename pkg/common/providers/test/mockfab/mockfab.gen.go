@@ -219,15 +219,14 @@ func (mr *MockEndpointConfigMockRecorder) PeersConfig(arg0 interface{}) *gomock.
 }
 
 // TLSCACertPool mocks base method
-func (m *MockEndpointConfig) TLSCACertPool(arg0 ...*x509.Certificate) (*x509.CertPool, error) {
+func (m *MockEndpointConfig) TLSCACertPool(arg0 ...*x509.Certificate) *x509.CertPool {
 	varargs := []interface{}{}
 	for _, a := range arg0 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "TLSCACertPool", varargs...)
 	ret0, _ := ret[0].(*x509.CertPool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // TLSCACertPool indicates an expected call of TLSCACertPool

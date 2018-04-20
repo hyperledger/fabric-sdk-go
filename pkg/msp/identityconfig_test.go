@@ -120,11 +120,8 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 		t.Fatalf("TLS CA cert parse failed, reason: %v", err)
 	}
 
-	_, err = identityConfig.endpointConfig.TLSCACertPool(cert)
-
-	if err != nil {
-		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
-	}
+	certPool := identityConfig.endpointConfig.TLSCACertPool(cert)
+	assert.NotNil(t, certPool)
 	//Test TLSCA Cert Pool (Negative test case)
 
 	badCertConfig := endpoint.TLSConfig{Pem: "some random invalid pem"}
@@ -135,10 +132,8 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 		t.Fatalf("TLS CA cert parse was supposed to fail")
 	}
 
-	_, err = identityConfig.endpointConfig.TLSCACertPool(badCert)
-	if err != nil {
-		t.Fatalf("TLSCACertPool failed %v", err)
-	}
+	certPool = identityConfig.endpointConfig.TLSCACertPool(badCert)
+	assert.NotNil(t, certPool)
 
 	keyPem, _ := identityConfig.CAClientKey(org1)
 

@@ -23,7 +23,6 @@ import (
 type MockConfig struct {
 	tlsEnabled             bool
 	mutualTLSEnabled       bool
-	errorCase              bool
 	customNetworkPeerCfg   []fab.NetworkPeer
 	customPeerCfg          *fab.PeerConfig
 	customOrdererCfg       *fab.OrdererConfig
@@ -46,18 +45,18 @@ func NewMockIdentityConfig() msp.IdentityConfig {
 }
 
 // NewMockCryptoConfigCustomized ...
-func NewMockCryptoConfigCustomized(tlsEnabled, mutualTLSEnabled, errorCase bool) core.CryptoSuiteConfig {
-	return &MockConfig{tlsEnabled: tlsEnabled, mutualTLSEnabled: mutualTLSEnabled, errorCase: errorCase}
+func NewMockCryptoConfigCustomized(tlsEnabled, mutualTLSEnabled bool) core.CryptoSuiteConfig {
+	return &MockConfig{tlsEnabled: tlsEnabled, mutualTLSEnabled: mutualTLSEnabled}
 }
 
 // NewMockEndpointConfigCustomized ...
-func NewMockEndpointConfigCustomized(tlsEnabled, mutualTLSEnabled, errorCase bool) fab.EndpointConfig {
-	return &MockConfig{tlsEnabled: tlsEnabled, mutualTLSEnabled: mutualTLSEnabled, errorCase: errorCase}
+func NewMockEndpointConfigCustomized(tlsEnabled, mutualTLSEnabled bool) fab.EndpointConfig {
+	return &MockConfig{tlsEnabled: tlsEnabled, mutualTLSEnabled: mutualTLSEnabled}
 }
 
 // NewMockIdentityConfigCustomized ...
-func NewMockIdentityConfigCustomized(tlsEnabled, mutualTLSEnabled, errorCase bool) msp.IdentityConfig {
-	return &MockConfig{tlsEnabled: tlsEnabled, mutualTLSEnabled: mutualTLSEnabled, errorCase: errorCase}
+func NewMockIdentityConfigCustomized(tlsEnabled, mutualTLSEnabled bool) msp.IdentityConfig {
+	return &MockConfig{tlsEnabled: tlsEnabled, mutualTLSEnabled: mutualTLSEnabled}
 }
 
 // Client ...
@@ -147,11 +146,8 @@ func (c *MockConfig) PeerConfigByURL(url string) (*fab.PeerConfig, error) {
 }
 
 // TLSCACertPool ...
-func (c *MockConfig) TLSCACertPool(cert ...*x509.Certificate) (*x509.CertPool, error) {
-	if c.errorCase {
-		return nil, errors.New("just to test error scenario")
-	}
-	return nil, nil
+func (c *MockConfig) TLSCACertPool(cert ...*x509.Certificate) *x509.CertPool {
+	return x509.NewCertPool()
 }
 
 // TcertBatchSize ...
