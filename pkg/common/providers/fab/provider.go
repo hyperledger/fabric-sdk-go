@@ -134,6 +134,10 @@ const (
 	ChannelMembershipRefresh
 	// DiscoveryConnection discovery connection timeout
 	DiscoveryConnection
+	// DiscoveryResponse discovery response timeout
+	DiscoveryResponse
+	// DiscoveryServiceRefresh discovery service refresh interval
+	DiscoveryServiceRefresh
 )
 
 // EventServiceType specifies the type of event service to use

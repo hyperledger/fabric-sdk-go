@@ -487,15 +487,22 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		return nil, err
 	}
 
+	chCtx, err := contextImpl.NewChannel(
+		func() (context.Client, error) {
+			return rc.ctx, nil
+		},
+		channelID,
+	)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to create channel context")
+	}
+
 	var target fab.ProposalProcessor
 	if len(opts.Targets) >= 1 {
 		target = opts.Targets[0]
 	} else {
 		// discover peers on this channel
-		discovery, err1 := rc.ctx.DiscoveryProvider().CreateDiscoveryService(channelID)
-		if err1 != nil {
-			return nil, errors.WithMessage(err1, "failed to create channel discovery service")
-		}
+		discovery := chCtx.DiscoveryService()
 		// default filter will be applied (if any)
 		targets, err2 := rc.getDefaultTargets(discovery)
 		if err2 != nil {
@@ -516,10 +523,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 	defer cancel()
 
 	// Channel service membership is required to verify signature
-	channelService, err := rc.ctx.ChannelProvider().ChannelService(rc.ctx, channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "Unable to get channel service")
-	}
+	channelService := chCtx.ChannelService()
 
 	membership, err := channelService.Membership()
 	if err != nil {
@@ -557,11 +561,18 @@ func (rc *Client) QueryChannels(options ...RequestOption) (*pb.ChannelQueryRespo
 // validateSendCCProposal
 func (rc *Client) getCCProposalTargets(channelID string, req InstantiateCCRequest, opts requestOptions) ([]fab.Peer, error) {
 
-	// per channel discovery service
-	discovery, err := rc.ctx.DiscoveryProvider().CreateDiscoveryService(channelID)
+	chCtx, err := contextImpl.NewChannel(
+		func() (context.Client, error) {
+			return rc.ctx, nil
+		},
+		channelID,
+	)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to create channel discovery service")
+		return nil, errors.WithMessage(err, "failed to create channel context")
 	}
+
+	// per channel discovery service
+	discovery := chCtx.DiscoveryService()
 
 	//Default targets when targets are not provided in options
 	if len(opts.Targets) == 0 {
