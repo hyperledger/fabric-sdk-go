@@ -58,26 +58,31 @@ const (
 
 //ConfigFromBackend returns endpoint config implementation for given backend
 func ConfigFromBackend(coreBackend core.ConfigBackend) (fab.EndpointConfig, error) {
-
 	config := &EndpointConfig{
-		backend:        lookup.New(coreBackend),
-		tlsCertsByName: make(map[string][]int),
+		backend:         lookup.New(coreBackend),
+		tlsCertsByName:  make(map[string][]int),
+		tlsCertPool:     x509.NewCertPool(),
+		peerMatchers:    make(map[int]*regexp.Regexp),
+		ordererMatchers: make(map[int]*regexp.Regexp),
+		caMatchers:      make(map[int]*regexp.Regexp),
+		channelMatchers: make(map[int]*regexp.Regexp),
 	}
 
 	if err := config.cacheNetworkConfiguration(); err != nil {
 		return nil, errors.WithMessage(err, "network configuration load failed")
 	}
 
-	if err := config.loadSystemCertPool(); err != nil {
-		return nil, errors.WithMessage(err, "system cert pool load failed")
+	// preemptively add all TLS certs to cert pool as adding them at request time
+	// is expensive
+	certs, err := config.loadTLSCerts()
+	if err != nil {
+		return nil, errors.WithMessage(err, "could not load TLS certs")
+	}
+	if _, err := config.TLSCACertPool(certs...); err != nil {
+		return nil, errors.WithMessage(err, "cert pool load failed")
 	}
 
 	//Compile the entityMatchers
-	config.peerMatchers = make(map[int]*regexp.Regexp)
-	config.ordererMatchers = make(map[int]*regexp.Regexp)
-	config.caMatchers = make(map[int]*regexp.Regexp)
-	config.channelMatchers = make(map[int]*regexp.Regexp)
-
 	matchError := config.compileMatchers()
 	if matchError != nil {
 		return nil, matchError
@@ -92,13 +97,13 @@ type EndpointConfig struct {
 	tlsCerts            []*x509.Certificate
 	networkConfig       *fab.NetworkConfig
 	networkConfigCached bool
-	systemCertPool      *x509.CertPool
+	tlsCertPool         *x509.CertPool
 	peerMatchers        map[int]*regexp.Regexp
 	ordererMatchers     map[int]*regexp.Regexp
 	caMatchers          map[int]*regexp.Regexp
 	channelMatchers     map[int]*regexp.Regexp
 	tlsCertsByName      map[string][]int
-	certPoolLock        sync.Mutex
+	certPoolLock        sync.RWMutex
 }
 
 // Timeout reads timeouts for the given timeout type, if type is not found in the config
@@ -458,25 +463,34 @@ func (c *EndpointConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, erro
 
 // TLSCACertPool returns the configured cert pool. If a certConfig
 // is provided, the certficate is added to the pool
-func (c *EndpointConfig) TLSCACertPool(certs ...*x509.Certificate) *x509.CertPool {
+func (c *EndpointConfig) TLSCACertPool(certs ...*x509.Certificate) (*x509.CertPool, error) {
+	c.certPoolLock.RLock()
+	if len(certs) == 0 || c.containsCerts(certs...) {
+		defer c.certPoolLock.RUnlock()
+		return c.tlsCertPool, nil
+	}
+	c.certPoolLock.RUnlock()
+
+	// We have a cert we have not encountered before, recreate the cert pool
+	tlsCertPool, err := c.loadSystemCertPool()
+	if err != nil {
+		return nil, err
+	}
 
 	c.certPoolLock.Lock()
 	defer c.certPoolLock.Unlock()
 
-	//add cert if it is not nil and doesn't exists already
+	//add certs to SDK cert list
 	for _, newCert := range certs {
 		c.addCert(newCert)
 	}
-
-	//get new or system cert pool
-	tlsCertPool := c.getCertPool()
-
-	//add all tls ca certs to cert pool
+	//add all certs to cert pool
 	for _, cert := range c.tlsCerts {
 		tlsCertPool.AddCert(cert)
 	}
+	c.tlsCertPool = tlsCertPool
 
-	return tlsCertPool
+	return c.tlsCertPool, nil
 }
 
 // EventServiceType returns the type of event service client to use
@@ -1066,6 +1080,33 @@ func (c *EndpointConfig) verifyPeerConfig(p fab.PeerConfig, peerName string, tls
 	return nil
 }
 
+func (c *EndpointConfig) loadTLSCerts() ([]*x509.Certificate, error) {
+	var certs []*x509.Certificate
+	orderers, err := c.OrderersConfig()
+	if err != nil {
+		return nil, err
+	}
+	peers, err := c.NetworkPeers()
+	if err != nil {
+		return nil, err
+	}
+	for _, peer := range peers {
+		cert, err := peer.TLSCACerts.TLSCert()
+		if err != nil {
+			return nil, err
+		}
+		certs = append(certs, cert)
+	}
+	for _, orderer := range orderers {
+		cert, err := orderer.TLSCACerts.TLSCert()
+		if err != nil {
+			return nil, err
+		}
+		certs = append(certs, cert)
+	}
+	return certs, nil
+}
+
 func (c *EndpointConfig) addCert(newCert *x509.Certificate) {
 	if newCert != nil && !c.containsCert(newCert) {
 		n := len(c.tlsCerts)
@@ -1088,26 +1129,26 @@ func (c *EndpointConfig) containsCert(newCert *x509.Certificate) bool {
 	return false
 }
 
-func (c *EndpointConfig) getCertPool() *x509.CertPool {
-	if c.systemCertPool != nil {
-		return c.systemCertPool
+func (c *EndpointConfig) containsCerts(certs ...*x509.Certificate) bool {
+	for _, cert := range certs {
+		if cert != nil && !c.containsCert(cert) {
+			return false
+		}
 	}
-
-	return x509.NewCertPool()
+	return true
 }
 
-func (c *EndpointConfig) loadSystemCertPool() error {
+func (c *EndpointConfig) loadSystemCertPool() (*x509.CertPool, error) {
 	if !c.backend.GetBool("client.tlsCerts.systemCertPool") {
-		return nil
+		return x509.NewCertPool(), nil
 	}
 	systemCertPool, err := x509.SystemCertPool()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	logger.Infof("Loaded system cert pool of size: %d", len(systemCertPool.Subjects()))
-	c.systemCertPool = systemCertPool
+	logger.Debugf("Loaded system cert pool of size: %d", len(systemCertPool.Subjects()))
 
-	return nil
+	return systemCertPool, nil
 }
 
 // Client returns the Client config

@@ -21,6 +21,22 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
 )
 
+func TestTLSConfigErrorAddingCertificate(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	config := mockfab.DefaultMockConfig(mockCtrl)
+
+	_, err := TLSConfig(mockfab.BadCert, "", config)
+	if err == nil {
+		t.Fatal("Expected failure adding invalid certificate")
+	}
+
+	if !strings.Contains(err.Error(), mockfab.ErrorMessage) {
+		t.Fatalf("Expected error: %s", mockfab.ErrorMessage)
+	}
+}
+
 func TestTLSConfigErrorFromClientCerts(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()

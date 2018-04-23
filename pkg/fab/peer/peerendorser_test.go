@@ -109,6 +109,21 @@ func TestNewPeerEndorserMutualTLSNoClientCerts(t *testing.T) {
 	}
 }
 
+// TestNewPeerEndorserTLSBadPool validates that a client configured with TLS
+// with a bad cert pool fails gracefully.
+func TestNewPeerEndorserTLSBadPool(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	config := mockfab.DefaultMockConfig(mockCtrl)
+
+	url := "grpcs://0.0.0.0:1234"
+	_, err := newPeerEndorser(getPeerEndorserRequest(url, mockfab.BadCert, "", config, kap, false, false))
+	if err == nil {
+		t.Fatalf("Peer conn construction should have failed")
+	}
+}
+
 // TestNewPeerEndorserSecured validates that secured and allowinsecure options
 func TestNewPeerEndorserSecured(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
@@ -150,6 +165,18 @@ func TestNewPeerEndorserBadParams(t *testing.T) {
 	_, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, false))
 	if err == nil {
 		t.Fatalf("Peer conn should not be constructed - bad params")
+	}
+}
+
+// TestNewPeerEndorserTLSBad validates that a client configured without
+// the cert pool fails
+func TestNewPeerEndorserTLSBad(t *testing.T) {
+	config := mocks.NewMockEndpointConfigCustomized(true, false, true)
+	url := "grpcs://0.0.0.0:1234"
+
+	_, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, false))
+	if err == nil {
+		t.Fatalf("Peer conn should not be constructed - bad cert pool")
 	}
 }
 

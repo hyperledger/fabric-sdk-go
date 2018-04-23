@@ -334,8 +334,8 @@ func (m *mockChannelOrderers) ChannelOrderers(name string) ([]fab.OrdererConfig,
 
 type mockTLSCACertPool struct{}
 
-func (m *mockTLSCACertPool) TLSCACertPool(certConfig ...*x509.Certificate) *x509.CertPool {
-	return nil
+func (m *mockTLSCACertPool) TLSCACertPool(certConfig ...*x509.Certificate) (*x509.CertPool, error) {
+	return nil, nil
 }
 
 type mockEventServiceType struct{}

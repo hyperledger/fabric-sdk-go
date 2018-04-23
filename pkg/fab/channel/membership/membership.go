@@ -99,15 +99,13 @@ func createMSPManager(ctx Context, cfg fab.ChannelCfg) (msp.MSPManager, error) {
 		if err := mspManager.Setup(msps); err != nil {
 			return nil, errors.WithMessage(err, "MSPManager Setup failed")
 		}
-
+		var certs [][]byte
 		for _, msp := range msps {
-			for _, cert := range msp.GetTLSRootCerts() {
-				addCertsToConfig(ctx.EndpointConfig, cert)
-			}
-
-			for _, cert := range msp.GetTLSIntermediateCerts() {
-				addCertsToConfig(ctx.EndpointConfig, cert)
-			}
+			certs = append(certs, msp.GetTLSRootCerts()...)
+			certs = append(certs, msp.GetTLSIntermediateCerts()...)
+		}
+		if len(certs) > 0 {
+			addCertsToConfig(ctx.EndpointConfig, certs)
 		}
 	}
 
@@ -185,25 +183,33 @@ func getFabricConfig(config *mb.MSPConfig) (*mb.FabricMSPConfig, error) {
 }
 
 //addCertsToConfig adds cert bytes to config TLSCACertPool
-func addCertsToConfig(config fab.EndpointConfig, pemCerts []byte) {
-	for len(pemCerts) > 0 {
-		var block *pem.Block
-		block, pemCerts = pem.Decode(pemCerts)
-		if block == nil {
-			break
-		}
-		if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
-			continue
-		}
+func addCertsToConfig(config fab.EndpointConfig, pemCertsList [][]byte) {
+	var certs []*x509.Certificate
+	for _, pemCerts := range pemCertsList {
+		for len(pemCerts) > 0 {
+			var block *pem.Block
+			block, pemCerts = pem.Decode(pemCerts)
+			if block == nil {
+				break
+			}
+			if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+				continue
+			}
 
-		cert, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			continue
+			cert, err := x509.ParseCertificate(block.Bytes)
+			if err != nil {
+				continue
+			}
+			err = verifier.ValidateCertificateDates(cert)
+			if err != nil {
+				logger.Warn("%v", err)
+			}
+
+			certs = append(certs, cert)
 		}
-		err = verifier.ValidateCertificateDates(cert)
-		if err != nil {
-			logger.Warn("%v", err)
-		}
-		_ = config.TLSCACertPool(cert)
+	}
+	_, err := config.TLSCACertPool(certs...)
+	if err != nil {
+		logger.Warnf("TLSCACertPool failed %v", err)
 	}
 }

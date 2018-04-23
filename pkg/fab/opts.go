@@ -102,7 +102,7 @@ type channelOrderers interface {
 
 // tlsCACertPool interface allows to uniquely override EndpointConfig interface's TLSCACertPool() function
 type tlsCACertPool interface {
-	TLSCACertPool(certConfig ...*x509.Certificate) *x509.CertPool
+	TLSCACertPool(certConfig ...*x509.Certificate) (*x509.CertPool, error)
 }
 
 // eventServiceType interface allows to uniquely override EndpointConfig interface's EventServiceType() function

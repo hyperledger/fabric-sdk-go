@@ -8,7 +8,6 @@ package peer
 
 import (
 	reqContext "context"
-	"crypto/x509"
 	"reflect"
 	"testing"
 	"time"
@@ -76,14 +75,11 @@ func TestNewPeerWithCertBadParams(t *testing.T) {
 
 // TestNewPeerTLSFromCertBad tests that bad parameters causes an expected failure
 func TestNewPeerTLSFromCertBad(t *testing.T) {
-	certPool := x509.NewCertPool()
-	certPool.AddCert(&x509.Certificate{Raw: []byte{0, 1, 2}})
-
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+
 	config := mockfab.NewMockEndpointConfig(mockCtrl)
-	config.EXPECT().TLSCACertPool(gomock.Any()).Return(certPool).AnyTimes()
-	config.EXPECT().TLSClientCerts().Return(nil, errors.New("failed to get client certs")).AnyTimes()
+	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("failed to get certpool")).AnyTimes()
 
 	url := "grpcs://0.0.0.0:1234"
 	_, err := New(config, WithURL(url))

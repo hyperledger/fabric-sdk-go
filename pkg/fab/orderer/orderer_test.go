@@ -145,10 +145,17 @@ func TestNewOrdererWithTLS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Testing New with TLS failed, cause [%s]", err)
 	}
-	orderer, err := New(mocks.NewMockEndpointConfigCustomized(true, false), WithURL("grpcs://"), WithTLSCert(cert))
+	orderer, err := New(mocks.NewMockEndpointConfigCustomized(true, false, false), WithURL("grpcs://"), WithTLSCert(cert))
 
 	if orderer == nil || err != nil {
 		t.Fatalf("Testing New with TLS failed, cause [%s]", err)
+	}
+
+	//Negative Test case
+	orderer, err = New(mocks.NewMockEndpointConfigCustomized(true, false, true), WithURL("grpcs://"))
+
+	if orderer != nil || err == nil {
+		t.Fatalf("Testing New with TLS was supposed to fail")
 	}
 }
 
@@ -162,13 +169,13 @@ func TestNewOrdererWithMutualTLS(t *testing.T) {
 		t.Fatalf("Testing New with TLS failed, cause [%s]", err)
 	}
 
-	orderer, err := New(mocks.NewMockEndpointConfigCustomized(true, true), WithURL("grpcs://"), WithTLSCert(cert))
+	orderer, err := New(mocks.NewMockEndpointConfigCustomized(true, true, false), WithURL("grpcs://"), WithTLSCert(cert))
 
 	if orderer == nil || err != nil {
 		t.Fatalf("Testing New with Mutual TLS failed, cause [%s]", err)
 	}
 	//Negative Test case
-	orderer, err = New(mocks.NewMockEndpointConfigCustomized(true, false), WithURL("grpcs://"), WithTLSCert(cert))
+	orderer, err = New(mocks.NewMockEndpointConfigCustomized(true, false, false), WithURL("grpcs://"), WithTLSCert(cert))
 
 	if orderer == nil || err != nil {
 		t.Fatalf("Testing New with Mutual TLS failed, cause [%s]", err)
@@ -340,7 +347,7 @@ func TestBroadcastBadDial(t *testing.T) {
 	config := mockfab.NewMockEndpointConfig(mockCtrl)
 
 	config.EXPECT().Timeout(fab.OrdererConnection).Return(time.Second * 1)
-	config.EXPECT().TLSCACertPool(gomock.Any()).Return(x509.NewCertPool()).AnyTimes()
+	config.EXPECT().TLSCACertPool(gomock.Any()).Return(x509.NewCertPool(), nil).AnyTimes()
 
 	orderer, err := New(config, WithURL("grpc://127.0.0.1:0"))
 	assert.Nil(t, err)
