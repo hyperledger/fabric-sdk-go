@@ -70,7 +70,7 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 			logger.Debugf("Failed to get channel Cfg orderer [%s] from ordererDict, now trying orderer Matchers in Entity Matchers", target)
 			// Try to find a match from entityMatchers config
 			matchingOrdererConfig, matchErr := ctx.EndpointConfig().OrdererConfig(strings.ToLower(target))
-			if matchErr == nil && matchingOrdererConfig != nil {
+			if matchErr == nil {
 				logger.Debugf("Found matching ordererConfig from entity Matchers for channel Cfg Orderer [%s]", target)
 				oCfg = *matchingOrdererConfig
 				ok = true

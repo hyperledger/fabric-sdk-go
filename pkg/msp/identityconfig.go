@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -19,7 +18,6 @@ import (
 
 	"io/ioutil"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -59,44 +57,40 @@ func (c *IdentityConfig) Client() (*msp.ClientConfig, error) {
 
 // CAConfig returns the CA configuration.
 func (c *IdentityConfig) CAConfig(org string) (*msp.CAConfig, error) {
-	config, err := c.networkConfig()
+	networkConfig, err := c.networkConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	caName, err := c.getCAName(org)
+	caName, err := c.getCAName(networkConfig, org)
 	if err != nil {
 		return nil, err
 	}
-	caConfig := config.CertificateAuthorities[strings.ToLower(caName)]
+	caConfig := networkConfig.CertificateAuthorities[strings.ToLower(caName)]
 
 	return &caConfig, nil
 }
 
-func (c *IdentityConfig) getCAName(org string) (string, error) {
-	config, err := c.networkConfig()
-	if err != nil {
-		return "", err
-	}
+func (c *IdentityConfig) getCAName(networkConfig *fab.NetworkConfig, org string) (string, error) {
 
 	logger.Debug("Getting cert authority for org: %s.", org)
 
-	if len(config.Organizations[strings.ToLower(org)].CertificateAuthorities) == 0 {
+	if len(networkConfig.Organizations[strings.ToLower(org)].CertificateAuthorities) == 0 {
 		return "", errors.Errorf("organization %s has no Certificate Authorities setup. Make sure each org has at least 1 configured", org)
 	}
 	//for now, we're only loading the first Cert Authority by default. TODO add logic to support passing the Cert Authority ID needed by the client.
-	certAuthorityName := config.Organizations[strings.ToLower(org)].CertificateAuthorities[0]
+	certAuthorityName := networkConfig.Organizations[strings.ToLower(org)].CertificateAuthorities[0]
 	logger.Debugf("Cert authority for org: %s is %s", org, certAuthorityName)
 
 	if certAuthorityName == "" {
 		return "", errors.Errorf("certificate authority empty for %s. Make sure each org has at least 1 non empty certificate authority name", org)
 	}
 
-	if _, ok := config.CertificateAuthorities[strings.ToLower(certAuthorityName)]; !ok {
+	if _, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityName)]; !ok {
 		logger.Debugf("Could not find Certificate Authority for [%s], trying with Entity Matchers", certAuthorityName)
-		_, mappedHost, err := c.tryMatchingCAConfig(strings.ToLower(certAuthorityName))
-		if err != nil {
-			return "", errors.WithMessage(err, fmt.Sprintf("CA Server Name %s not found", certAuthorityName))
+		_, mappedHost := c.tryMatchingCAConfig(networkConfig, strings.ToLower(certAuthorityName))
+		if mappedHost == "" {
+			return "", errors.Errorf("CA Server Name %s not found", certAuthorityName)
 		}
 		logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", certAuthorityName, mappedHost)
 		return mappedHost, nil
@@ -107,17 +101,17 @@ func (c *IdentityConfig) getCAName(org string) (string, error) {
 
 //CAClientCert read configuration for the fabric CA client cert bytes for given org
 func (c *IdentityConfig) CAClientCert(org string) ([]byte, error) {
-	config, err := c.networkConfig()
+	networkConfig, err := c.networkConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	caName, err := c.getCAName(org)
+	caName, err := c.getCAName(networkConfig, org)
 	if err != nil {
 		return nil, err
 	}
 
-	caConfig, ok := config.CertificateAuthorities[strings.ToLower(caName)]
+	caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(caName)]
 	if !ok {
 		return nil, errors.Errorf("CA Server Name %s not found", caName)
 	}
@@ -130,17 +124,17 @@ func (c *IdentityConfig) CAClientCert(org string) ([]byte, error) {
 
 //CAClientKey read configuration for the fabric CA client key bytes for given org
 func (c *IdentityConfig) CAClientKey(org string) ([]byte, error) {
-	config, err := c.networkConfig()
+	networkConfig, err := c.networkConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	caName, err := c.getCAName(org)
+	caName, err := c.getCAName(networkConfig, org)
 	if err != nil {
 		return nil, err
 	}
 
-	caConfig, ok := config.CertificateAuthorities[strings.ToLower(caName)]
+	caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(caName)]
 	if !ok {
 		return nil, errors.Errorf("CA Server Name %s not found", caName)
 	}
@@ -154,15 +148,15 @@ func (c *IdentityConfig) CAClientKey(org string) ([]byte, error) {
 // CAServerCerts Read configuration option for the server certificates
 // will send a list of cert bytes for given org
 func (c *IdentityConfig) CAServerCerts(org string) ([][]byte, error) {
-	config, err := c.networkConfig()
+	networkConfig, err := c.networkConfig()
 	if err != nil {
 		return nil, err
 	}
-	caName, err := c.getCAName(org)
+	caName, err := c.getCAName(networkConfig, org)
 	if err != nil {
 		return nil, err
 	}
-	caConfig, ok := config.CertificateAuthorities[strings.ToLower(caName)]
+	caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(caName)]
 	if !ok {
 		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
 	}
@@ -180,7 +174,7 @@ func (c *IdentityConfig) CAServerCerts(org string) ([][]byte, error) {
 	}
 
 	//check for files if pems not found
-	certFiles := strings.Split(config.CertificateAuthorities[caName].TLSCACerts.Path, ",")
+	certFiles := strings.Split(networkConfig.CertificateAuthorities[caName].TLSCACerts.Path, ",")
 	serverCerts = make([][]byte, len(certFiles))
 	for i, certPath := range certFiles {
 		bytes, err := ioutil.ReadFile(pathvar.Subst(certPath))
@@ -212,11 +206,11 @@ func (c *IdentityConfig) networkConfig() (*fab.NetworkConfig, error) {
 	return c.endpointConfig.NetworkConfig()
 }
 
-func (c *IdentityConfig) tryMatchingCAConfig(caName string) (*msp.CAConfig, string, error) {
+func (c *IdentityConfig) tryMatchingCAConfig(networkConfig *fab.NetworkConfig, caName string) (*msp.CAConfig, string) {
 	//Return if no caMatchers are configured
 	caMatchers := c.endpointConfig.CAMatchers()
 	if len(caMatchers) == 0 {
-		return nil, "", errors.New("no CertAuthority entityMatchers are found")
+		return nil, ""
 	}
 
 	//sort the keys
@@ -230,24 +224,20 @@ func (c *IdentityConfig) tryMatchingCAConfig(caName string) (*msp.CAConfig, stri
 	for _, k := range keys {
 		v := caMatchers[k]
 		if v.MatchString(caName) {
-			return c.findMatchingCert(caName, v, k)
+			return c.findMatchingCert(networkConfig, caName, v, k)
 		}
 	}
 
-	return nil, "", errors.WithStack(status.New(status.ClientStatus, status.NoMatchingCertificateAuthorityEntity.ToInt32(), "no matching certAuthority config found", nil))
+	return nil, ""
 }
 
-func (c *IdentityConfig) findMatchingCert(caName string, v *regexp.Regexp, k int) (*msp.CAConfig, string, error) {
-	networkConfig, err := c.networkConfig()
-	if err != nil {
-		return nil, "", err
-	}
+func (c *IdentityConfig) findMatchingCert(networkConfig *fab.NetworkConfig, caName string, v *regexp.Regexp, k int) (*msp.CAConfig, string) {
 	// get the matching Config from the index number
 	certAuthorityMatchConfig := networkConfig.EntityMatchers["certificateauthority"][k]
 	//Get the certAuthorityMatchConfig from mapped host
 	caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityMatchConfig.MappedHost)]
 	if !ok {
-		return nil, certAuthorityMatchConfig.MappedHost, errors.New("failed to load config from matched CertAuthority")
+		return nil, ""
 	}
 	_, isPortPresentInCAName := c.getPortIfPresent(caName)
 	//if substitution url is empty, use the same network certAuthority url
@@ -269,7 +259,7 @@ func (c *IdentityConfig) findMatchingCert(caName string, v *regexp.Regexp, k int
 		}
 	}
 
-	return &caConfig, certAuthorityMatchConfig.MappedHost, nil
+	return &caConfig, certAuthorityMatchConfig.MappedHost
 }
 
 func (c *IdentityConfig) getPortIfPresent(url string) (int, bool) {

@@ -175,9 +175,8 @@ func FromOrdererConfig(ordererCfg *fab.OrdererConfig) Option {
 func FromOrdererName(name string) Option {
 	return func(o *Orderer) error {
 		ordererCfg, err := o.config.OrdererConfig(name)
-
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "orderer config not found for orderer : %s", name)
 		}
 
 		return FromOrdererConfig(ordererCfg)(o)

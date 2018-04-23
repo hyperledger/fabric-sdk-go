@@ -110,9 +110,9 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 			t.Fatalf("failed to unmarshal peer network config, %v", err)
 		}
 		//change cert path to expired one
-		orderer1 := networkConfig.Orderers["local.orderer.example.com"]
+		orderer1 := networkConfig.Orderers["orderer.example.com"]
 		orderer1.TLSCACerts.Path = expiredCertPath
-		networkConfig.Orderers["local.orderer.example.com"] = orderer1
+		networkConfig.Orderers["orderer.example.com"] = orderer1
 		backendMap["orderers"] = networkConfig.Orderers
 
 		return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil

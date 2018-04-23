@@ -241,13 +241,13 @@ func getCustomBackend(backend core.ConfigBackend) *mocks.MockConfigBackend {
 	configLookup := lookup.New(backend)
 	configLookup.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 
-	ca1Config := networkConfig.CertificateAuthorities["local.ca.org1.example.com"]
+	ca1Config := networkConfig.CertificateAuthorities["ca.org1.example.com"]
 	ca1Config.URL = caServerURL
-	ca2Config := networkConfig.CertificateAuthorities["local.ca.org2.example.com"]
+	ca2Config := networkConfig.CertificateAuthorities["ca.org2.example.com"]
 	ca2Config.URL = caServerURL
 
-	networkConfig.CertificateAuthorities["local.ca.org1.example.com"] = ca1Config
-	networkConfig.CertificateAuthorities["local.ca.org2.example.com"] = ca2Config
+	networkConfig.CertificateAuthorities["ca.org1.example.com"] = ca1Config
+	networkConfig.CertificateAuthorities["ca.org2.example.com"] = ca2Config
 	backendMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
 
 	return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}

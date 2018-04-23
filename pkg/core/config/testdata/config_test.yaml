@@ -217,7 +217,7 @@ organizations:
 # SDK is implementation specific. Consult each SDK's documentation for its handling of orderers.
 #
 orderers:
-  local.orderer.example.com:
+  orderer.example.com:
     url: orderer.example.com:7050
 
     # these are standard properties defined by the gRPC library
@@ -244,7 +244,7 @@ orderers:
 # and event listener registration.
 #
 peers:
-  local.peer0.org1.example.com:
+  peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
     url: peer0.org1.example.com:7051
 
@@ -268,7 +268,7 @@ peers:
       # Certificate location absolute path
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
-  local.peer0.org2.example.com:
+  peer0.org2.example.com:
     url: peer0.org2.example.com:8051
     eventUrl: peer0.org2.example.com:8053
     #TODO to be moved to high level, common for all grpc connections
@@ -293,7 +293,7 @@ peers:
 # Certificate Authority instead of Fabric-CA, in which case this section would not be specified.
 #
 certificateAuthorities:
-  local.ca.org1.example.com:
+  ca.org1.example.com:
     url: https://ca.org1.example.com:7054
     tlsCACerts:
       # Comma-Separated list of paths
@@ -312,7 +312,7 @@ certificateAuthorities:
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
     caName: ca.org1.example.com
-  local.ca.org2.example.com:
+  ca.org2.example.com:
     url: https://ca.org2.example.com:8054
     tlsCACerts:
       # Comma-Separated list of paths
@@ -331,96 +331,3 @@ certificateAuthorities:
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
     caName: ca.org2.example.com
-
-# EntityMatchers enable substitution of network hostnames with static configurations
- # so that properties can be mapped. Regex can be used for this purpose
-# UrlSubstitutionExp can be empty which means the same network hostname will be used
-# UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
-# UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
- # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
-# EventUrlSubstitutionExp and sslTargetOverrideUrlSubstitutionExp follow in the same lines as
- # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
-# In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
-entityMatchers:
-  peer:
-    - pattern: (\w+).org1.example.(\w+)
-      urlSubstitutionExp: peer0.org1.example.com:7051
-      eventUrlSubstitutionExp: peer0.org1.example.com:7053
-      sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
-      mappedHost: local.peer0.org1.example.com
-
-    - pattern: (\w+).org2.example.(\w+)
-      urlSubstitutionExp: peer0.org2.example.com:8051
-      eventUrlSubstitutionExp: peer0.org2.example.com:8053
-      sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
-      mappedHost: local.peer0.org2.example.com
-
-    - pattern: (\w+).example5.(\w+)
-      urlSubstitutionExp: localhost:7051
-      eventUrlSubstitutionExp: localhost:7053
-      sslTargetOverrideUrlSubstitutionExp: localhost
-      mappedHost: local.peer0.org1.example.com
-
-    - pattern: (\w+).example2.(\w+):(\d+)
-      urlSubstitutionExp: localhost:7051
-      eventUrlSubstitutionExp: localhost:7053
-      sslTargetOverrideUrlSubstitutionExp: localhost
-      mappedHost: local.peer0.org2.example.com
-
-    - pattern: (\w+).example3.(\w+)
-      urlSubstitutionExp:
-      eventUrlSubstitutionExp:
-      sslTargetOverrideUrlSubstitutionExp:
-      mappedHost: local.peer0.org1.example.com
-
-    - pattern: (\w+).example4.(\w+):(\d+)
-      urlSubstitutionExp: $1.org1.example.$2:$3
-      eventUrlSubstitutionExp: $1.org1.example.$2:7053
-      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
-      mappedHost: local.peer0.org1.example.com
-
-    - pattern: (\w+).example2.com:(\d+)
-      urlSubstitutionExp: peer0.org2.example.com:7051
-      eventUrlSubstitutionExp:
-      sslTargetOverrideUrlSubstitutionExp:
-      mappedHost: local.peer0.org2.example.com
-
-    - pattern: (\w+).org1.example.(\w+):(\d+)
-      urlSubstitutionExp: peer0.org1.example.com:7051
-      eventUrlSubstitutionExp: peer0.org1.example.com:7053
-      sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
-      mappedHost: local.peer0.org1.example.com
-
-  orderer:
-    - pattern: (\w+).example2.(\w+)
-      urlSubstitutionExp: localhost:7050
-      sslTargetOverrideUrlSubstitutionExp: localhost
-      mappedHost: local.orderer.example.com
-
-    - pattern: (\w+).example.(\w+)
-      urlSubstitutionExp: orderer.example.com:7050
-      sslTargetOverrideUrlSubstitutionExp: orderer.example.com
-      mappedHost: local.orderer.example.com
-
-    - pattern: (\w+).example3.(\w+)
-      urlSubstitutionExp:
-      sslTargetOverrideUrlSubstitutionExp:
-      mappedHost: local.orderer.example.com
-
-    - pattern: (\w+).example4.(\w+):(\d+)
-      urlSubstitutionExp: $1.example.$2:$3
-      sslTargetOverrideUrlSubstitutionExp: $1.example.$2
-      mappedHost: local.orderer.example.com
-
-  certificateAuthority:
-    - pattern: (\w+).org1.example.(\w+)
-      urlSubstitutionExp:
-      mappedHost: local.ca.org1.example.com
-
-    - pattern: (\w+).org2.example.(\w+)
-      urlSubstitutionExp:
-      mappedHost: local.ca.org2.example.com
-
-  channel:
-    - pattern: ^(sample)(\w*)(channel)$
-      mappedName: ch1

@@ -217,16 +217,16 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		}
 
 		//customize peer0.org2 to peer1.org2
-		peer2 := networkConfig.Peers["local.peer0.org2.example.com"]
+		peer2 := networkConfig.Peers["peer0.org2.example.com"]
 		peer2.URL = "peer1.org2.example.com:9051"
 		peer2.EventURL = ""
 		peer2.GRPCOptions["ssl-target-name-override"] = "peer1.org2.example.com"
 
 		//remove peer0.org2
-		delete(networkConfig.Peers, "local.peer0.org2.example.com")
+		delete(networkConfig.Peers, "peer0.org2.example.com")
 
 		//add peer1.org2
-		networkConfig.Peers["local.peer1.org2.example.com"] = peer2
+		networkConfig.Peers["peer1.org2.example.com"] = peer2
 
 		//get valid org2
 		err = lookup.New(backend).UnmarshalKey("organizations", &networkConfig.Organizations)
@@ -256,28 +256,10 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		}
 		networkConfig.Channels[channelID] = orgChannel
 
-		//custom entity matchers
-		err = lookup.New(backend).UnmarshalKey("entityMatchers", &networkConfig.EntityMatchers)
-		if err != nil {
-			t.Fatalf("failed to unmarshal entityMatchers network config, %v", err)
-		}
-
-		peerEntityMatchers := networkConfig.EntityMatchers["peer"]
-		newMatch := fab.MatchConfig{
-			Pattern:                             "peer1.org2.example.com",
-			URLSubstitutionExp:                  "peer1.org2.example.com:9051",
-			EventURLSubstitutionExp:             "",
-			SSLTargetOverrideURLSubstitutionExp: "",
-			MappedHost:                          "local.peer1.org2.example.com",
-		}
-		peerEntityMatchers = append([]fab.MatchConfig{newMatch}, peerEntityMatchers...)
-		networkConfig.EntityMatchers["peer"] = peerEntityMatchers
-
 		//Customize backend with update peers, organizations, channels and entity matchers config
 		backendMap["peers"] = networkConfig.Peers
 		backendMap["organizations"] = networkConfig.Organizations
 		backendMap["channels"] = networkConfig.Channels
-		backendMap["entityMatchers"] = networkConfig.EntityMatchers
 
 		return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
 	}

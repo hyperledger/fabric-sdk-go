@@ -213,14 +213,14 @@ func updateCAServerURL(caServerURL string, backend *mocks.MockConfigBackend) {
 	lookup.New(backend).UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 
 	//update URLs
-	ca1Config := networkConfig.CertificateAuthorities["local.ca.org1.example.com"]
+	ca1Config := networkConfig.CertificateAuthorities["ca.org1.example.com"]
 	ca1Config.URL = caServerURL
 
-	ca2Config := networkConfig.CertificateAuthorities["local.ca.org2.example.com"]
+	ca2Config := networkConfig.CertificateAuthorities["ca.org2.example.com"]
 	ca2Config.URL = caServerURL
 
-	networkConfig.CertificateAuthorities["local.ca.org1.example.com"] = ca1Config
-	networkConfig.CertificateAuthorities["local.ca.org2.example.com"] = ca2Config
+	networkConfig.CertificateAuthorities["ca.org1.example.com"] = ca1Config
+	networkConfig.CertificateAuthorities[".ca.org2.example.com"] = ca2Config
 
 	//update backend
 	backend.KeyValueMap["certificateAuthorities"] = networkConfig.CertificateAuthorities

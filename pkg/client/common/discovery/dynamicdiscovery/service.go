@@ -114,15 +114,12 @@ func asPeers(ctx contextAPI.Client, endpoints []*discclient.Peer) []fab.Peer {
 
 		logger.Debugf("Adding endpoint [%s]", url)
 
-		peerConfig, err := ctx.EndpointConfig().PeerConfigByURL(url)
+		peerConfig, err := ctx.EndpointConfig().PeerConfig(url)
 		if err != nil {
 			logger.Warnf("Error getting peer config for url [%s]: %s", err)
 			continue
 		}
-		if peerConfig == nil {
-			logger.Warnf("Unable to resolve peer config for [%s]", url)
-			continue
-		}
+
 		peer, err := ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{PeerConfig: *peerConfig, MSPID: endpoint.MSPID})
 		if err != nil {
 			logger.Warnf("Unable to create peer config for [%s]: %s", url, err)

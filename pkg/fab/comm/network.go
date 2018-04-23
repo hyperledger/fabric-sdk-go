@@ -13,12 +13,9 @@ import (
 
 // NetworkPeerConfigFromURL fetches the peer configuration based on a URL.
 func NetworkPeerConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.NetworkPeer, error) {
-	peerCfg, err := cfg.PeerConfigByURL(url)
+	peerCfg, err := cfg.PeerConfig(url)
 	if err != nil {
 		return nil, errors.WithMessage(err, "peer not found")
-	}
-	if peerCfg == nil {
-		return nil, errors.New("peer not found")
 	}
 
 	// find MSP ID

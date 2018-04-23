@@ -442,13 +442,13 @@ func getInvalidURLBackend() (*mocks.MockConfigBackend, error) {
 	}
 
 	//tamper URLs
-	ca1Config := networkConfig.CertificateAuthorities["local.ca.org1.example.com"]
+	ca1Config := networkConfig.CertificateAuthorities["ca.org1.example.com"]
 	ca1Config.URL = "http://localhost:8091"
-	ca2Config := networkConfig.CertificateAuthorities["local.ca.org2.example.com"]
+	ca2Config := networkConfig.CertificateAuthorities["ca.org2.example.com"]
 	ca2Config.URL = "http://localhost:8091"
 
-	networkConfig.CertificateAuthorities["local.ca.org1.example.com"] = ca1Config
-	networkConfig.CertificateAuthorities["local.ca.org2.example.com"] = ca2Config
+	networkConfig.CertificateAuthorities["ca.org1.example.com"] = ca1Config
+	networkConfig.CertificateAuthorities["ca.org2.example.com"] = ca2Config
 
 	//Override backend with this new CertificateAuthorities config
 	mockConfigBackend.KeyValueMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
@@ -472,13 +472,13 @@ func getNoRegistrarBackend() (*mocks.MockConfigBackend, error) {
 	}
 
 	//tamper URLs
-	ca1Config := networkConfig.CertificateAuthorities["local.ca.org1.example.com"]
+	ca1Config := networkConfig.CertificateAuthorities["ca.org1.example.com"]
 	ca1Config.Registrar = msp.EnrollCredentials{}
-	ca2Config := networkConfig.CertificateAuthorities["local.ca.org2.example.com"]
+	ca2Config := networkConfig.CertificateAuthorities["ca.org2.example.com"]
 	ca1Config.Registrar = msp.EnrollCredentials{}
 
-	networkConfig.CertificateAuthorities["local.ca.org1.example.com"] = ca1Config
-	networkConfig.CertificateAuthorities["local.ca.org2.example.com"] = ca2Config
+	networkConfig.CertificateAuthorities["ca.org1.example.com"] = ca1Config
+	networkConfig.CertificateAuthorities["ca.org2.example.com"] = ca2Config
 
 	//Override backend with this new CertificateAuthorities config
 	mockConfigBackend.KeyValueMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
@@ -565,12 +565,12 @@ XdsmTcdRvJ3TS/6HCA==
 	networkConfig.Organizations["org1"] = org1
 
 	//update network certificate authorities
-	ca1Config := networkConfig.CertificateAuthorities["local.ca.org1.example.com"]
+	ca1Config := networkConfig.CertificateAuthorities["ca.org1.example.com"]
 	ca1Config.Registrar = msp.EnrollCredentials{EnrollID: embeddedRegistrarID}
-	ca2Config := networkConfig.CertificateAuthorities["local.ca.org2.example.com"]
+	ca2Config := networkConfig.CertificateAuthorities["ca.org2.example.com"]
 	ca2Config.Registrar = msp.EnrollCredentials{EnrollID: embeddedRegistrarID}
-	networkConfig.CertificateAuthorities["local.ca.org1.example.com"] = ca1Config
-	networkConfig.CertificateAuthorities["local.ca.org2.example.com"] = ca2Config
+	networkConfig.CertificateAuthorities["ca.org1.example.com"] = ca1Config
+	networkConfig.CertificateAuthorities["ca.org2.example.com"] = ca2Config
 
 	//Override backend with updated organization config
 	mockConfigBackend.KeyValueMap["organizations"] = networkConfig.Organizations

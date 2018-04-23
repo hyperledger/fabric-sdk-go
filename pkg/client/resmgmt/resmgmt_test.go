@@ -357,7 +357,6 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Should have failed to join channel since global orderer certs are not configured properly")
 	}
-	fmt.Println(err)
 }
 
 func TestIsChaincodeInstalled(t *testing.T) {
@@ -1642,10 +1641,10 @@ func getInvalidOrdererBackend(backend core.ConfigBackend) *mocks.MockConfigBacke
 	if err != nil {
 		panic(err)
 	}
-	exampleOrderer := networkConfig.Orderers["local.orderer.example.com"]
+	exampleOrderer := networkConfig.Orderers["orderer.example.com"]
 	exampleOrderer.TLSCACerts.Path = "/some/invalid/path"
 	exampleOrderer.TLSCACerts.Pem = ""
-	networkConfig.Orderers["local.orderer.example.com"] = exampleOrderer
+	networkConfig.Orderers["orderer.example.com"] = exampleOrderer
 
 	mockConfigBackend := getCustomBackend(backend)
 	mockConfigBackend.KeyValueMap["orderers"] = networkConfig.Orderers

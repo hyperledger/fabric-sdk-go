@@ -64,7 +64,7 @@ func TestWithTargetURLsValid(t *testing.T) {
 
 	opts := requestOptions{}
 	err := opt(ctx, &opts)
-	assert.Nil(t, err, "Should have failed for invalid target peer")
+	assert.Nil(t, err, "Should not have failed for invalid target peer")
 
 	assert.Equal(t, 1, len(opts.Targets), "should have one peer")
 	assert.Equal(t, pConfig1.URL, opts.Targets[0].URL(), "", "Wrong URL")

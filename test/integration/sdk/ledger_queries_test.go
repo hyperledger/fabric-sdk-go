@@ -49,7 +49,7 @@ func TestLedgerClientQueries(t *testing.T) {
 		t.Fatalf("failed to get endpoint config, error: %v", err)
 	}
 
-	expectedPeerConfig, err := endpointConfig.PeerConfig(org1Name, "peer0.org1.example.com")
+	expectedPeerConfig, err := endpointConfig.PeerConfig("peer0.org1.example.com")
 	if err != nil {
 		t.Fatalf("Unable to fetch Peer config for %s", "peer0.org1.example.com")
 	}

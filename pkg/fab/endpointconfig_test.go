@@ -33,15 +33,16 @@ import (
 )
 
 const (
-	org0                            = "org0"
-	org1                            = "org1"
-	configTestFilePath              = "../core/config/testdata/config_test.yaml"
-	certPath                        = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem"
-	keyPath                         = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem"
-	configPemTestFilePath           = "../core/config/testdata/config_test_pem.yaml"
-	configEmbeddedUsersTestFilePath = "../core/config/testdata/config_test_embedded_pems.yaml"
-	configType                      = "yaml"
-	orgChannelID                    = "orgchannel"
+	org0                             = "org0"
+	org1                             = "org1"
+	configTestFilePath               = "../core/config/testdata/config_test.yaml"
+	certPath                         = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem"
+	keyPath                          = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem"
+	configPemTestFilePath            = "../core/config/testdata/config_test_pem.yaml"
+	configEmbeddedUsersTestFilePath  = "../core/config/testdata/config_test_embedded_pems.yaml"
+	configTestEntityMatchersFilePath = "../core/config/testdata/config_test_entity_matchers.yaml"
+	configType                       = "yaml"
+	orgChannelID                     = "orgchannel"
 )
 
 var configBackend core.ConfigBackend
@@ -115,11 +116,6 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 }
 
 func checkCAConfigFailsByNetworkConfig(sampleEndpointConfig *EndpointConfig, t *testing.T) {
-	//Testing PeersConfig failure scenario
-	pConfig, err := sampleEndpointConfig.PeerConfig("peerorg1", "peer1")
-	if pConfig != nil || err == nil {
-		t.Fatal("Testing PeerConfig supposed to fail")
-	}
 	//Testing ChannelConfig failure scenario
 	chConfig, err := sampleEndpointConfig.ChannelConfig("invalid")
 	if chConfig != nil || err == nil {
@@ -357,8 +353,8 @@ func TestOrdererConfig(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	oConfig, err := endpointConfig.OrdererConfig("invalid")
-	if oConfig != nil || err == nil {
+	oConfig, _ := endpointConfig.OrdererConfig("invalid")
+	if oConfig != nil {
 		t.Fatal("Testing non-existing OrdererConfig failed")
 	}
 
@@ -409,19 +405,19 @@ func TestPeerConfigByUrl_entityMatchers(t *testing.T) {
 }
 
 func testCommonConfigPeerByURL(t *testing.T, expectedConfigURL string, fetchedConfigURL string) {
-	config1, err := ConfigFromBackend(configBackend)
+	config1, err := ConfigFromBackend(getMatcherConfig())
 	if err != nil {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
 	endpointConfig := config1.(*EndpointConfig)
 
-	expectedConfig, err := endpointConfig.peerConfig(expectedConfigURL)
+	expectedConfig, err := endpointConfig.PeerConfig(expectedConfigURL)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	fetchedConfig, err := endpointConfig.PeerConfigByURL(fetchedConfigURL)
+	fetchedConfig, err := endpointConfig.PeerConfig(fetchedConfigURL)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -441,7 +437,7 @@ func testCommonConfigPeerByURL(t *testing.T, expectedConfigURL string, fetchedCo
 
 func testCommonConfigOrderer(t *testing.T, expectedConfigHost string, fetchedConfigHost string) (expectedConfig *fab.OrdererConfig, fetchedConfig *fab.OrdererConfig) {
 
-	endpointConfig, err := ConfigFromBackend(configBackend)
+	endpointConfig, err := ConfigFromBackend(getMatcherConfig())
 	if err != nil {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
@@ -535,7 +531,7 @@ func testNonMatchingConfigChannel(t *testing.T, expectedConfigName string, fetch
 }
 
 func testCommonConfigChannel(t *testing.T, expectedConfigName string, fetchedConfigName string) (expectedConfig *fab.ChannelNetworkConfig, fetchedConfig *fab.ChannelNetworkConfig) {
-	endpointConfig, err := ConfigFromBackend(configBackend)
+	endpointConfig, err := ConfigFromBackend(getMatcherConfig())
 	if err != nil {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
@@ -593,49 +589,21 @@ func TestPeersConfig(t *testing.T) {
 	}
 }
 
-func TestPeerConfig(t *testing.T) {
-
-	endpointConfig, err := ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatal("Failed to get endpoint config from backend")
-	}
-
-	pc, err := endpointConfig.PeerConfig(org1, "peer0.org1.example.com")
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	if pc.URL == "" {
-		t.Fatalf("Url value for the host is empty")
-	}
-
-	if pc.TLSCACerts.Path != "" {
-		if !filepath.IsAbs(pc.TLSCACerts.Path) {
-			t.Fatalf("Expected cert path to be absolute")
-		}
-	} else if len(pc.TLSCACerts.Pem) == 0 {
-		t.Fatalf("Peer %s must have at least a TlsCACerts.Path or TlsCACerts.Pem set", "peer0")
-	}
-	if len(pc.GRPCOptions) == 0 || pc.GRPCOptions["ssl-target-name-override"] != "peer0.org1.example.com" {
-		t.Fatalf("Peer %s must have grpcOptions set in config_test.yaml", "peer0")
-	}
-}
-
 func testCommonConfigPeer(t *testing.T, expectedConfigHost string, fetchedConfigHost string) (expectedConfig *fab.PeerConfig, fetchedConfig *fab.PeerConfig) {
 
-	config1, err := ConfigFromBackend(configBackend)
+	config1, err := ConfigFromBackend(getMatcherConfig())
 	if err != nil {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
 	endpointConfig := config1.(*EndpointConfig)
 
-	expectedConfig, err = endpointConfig.peerConfig(expectedConfigHost)
+	expectedConfig, err = endpointConfig.PeerConfig(expectedConfigHost)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	fetchedConfig, err = endpointConfig.peerConfig(fetchedConfigHost)
+	fetchedConfig, err = endpointConfig.PeerConfig(fetchedConfigHost)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -716,18 +684,6 @@ func TestPeerWithSubstitutedConfig_WithMultipleMatchings(t *testing.T) {
 
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "localhost" {
 		t.Fatalf("Fetched config should have the ssl-target-name-override as per first suitable matcher in yaml file")
-	}
-}
-
-func TestPeerNotInOrgConfig(t *testing.T) {
-	endpointConfig, err := ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatal("Failed to get endpoint config from backend")
-	}
-
-	_, err = endpointConfig.PeerConfig(org1, "peer1.org0.example.com")
-	if err == nil {
-		t.Fatalf("Fetching peer config not for an unassigned org should fail")
 	}
 }
 
@@ -834,7 +790,7 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 
 func checkPem(endpointConfig *EndpointConfig, t *testing.T) {
 	peer0 := "peer0.org1.example.com"
-	p0, err := endpointConfig.PeerConfig(org1, peer0)
+	p0, err := endpointConfig.PeerConfig(peer0)
 	if err != nil {
 		t.Fatalf("Failed to load %s of %s from the config. Error: %s", peer0, org1, err)
 	}
@@ -1308,4 +1264,12 @@ func BenchmarkTLSCertPool(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		endpointConfig.TLSCACertPool()
 	}
+}
+
+func getMatcherConfig() core.ConfigBackend {
+	cfgBackend, err := config.FromFile(configTestEntityMatchersFilePath)()
+	if err != nil {
+		panic(fmt.Sprintf("Unexpected error reading config: %v", err))
+	}
+	return cfgBackend
 }

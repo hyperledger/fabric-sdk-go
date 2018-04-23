@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var sampleConfigFile = "../testdata/config_test.yaml"
+var sampleConfigFile = "../testdata/config_test_entity_matchers.yaml"
 
 const orgChannelID = "orgchannel"
 

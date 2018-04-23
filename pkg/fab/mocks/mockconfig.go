@@ -127,13 +127,9 @@ func (c *MockConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
 }
 
 // PeerConfig Retrieves a specific peer from the configuration by org and name
-func (c *MockConfig) PeerConfig(org string, name string) (*fab.PeerConfig, error) {
-	return nil, nil
-}
+func (c *MockConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
 
-// PeerConfigByURL retrieves PeerConfig by URL
-func (c *MockConfig) PeerConfigByURL(url string) (*fab.PeerConfig, error) {
-	if url == "invalid" {
+	if nameOrURL == "invalid" {
 		return nil, errors.New("no peer")
 	}
 	if c.customPeerCfg != nil {
