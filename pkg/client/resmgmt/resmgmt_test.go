@@ -87,7 +87,7 @@ func TestJoinChannelFail(t *testing.T) {
 	endorserServer.ProposalError = errors.New("Test Error")
 	err = rc.JoinChannel("mychannel", WithTargets(peer1))
 
-	if err == nil {
+	if err == nil && !strings.Contains(err.Error(), "Test Error") {
 		t.Fatal("Should have failed to get genesis block")
 	}
 
@@ -157,15 +157,38 @@ func TestJoinChannelWithFilter(t *testing.T) {
 }
 
 func TestNoSigningUserFailure(t *testing.T) {
-	user := mspmocks.NewMockSigningIdentity("test", "")
 
 	// Setup client without MSP
-	clientCtx := fcmocks.NewMockContext(user)
-	config := getNetworkConfig(t)
-	clientCtx.SetEndpointConfig(config)
+	clientCtx := fcmocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", ""))
 
 	_, err := New(createClientContext(clientCtx))
 	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "mspID not available in user context")
+
+}
+
+func TestContextFailure(t *testing.T) {
+
+	clientCtx := fcmocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", "Org1MSP"))
+
+	_, err := New(createClientContextWithError(clientCtx))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "due to context error")
+}
+
+func TestClientOptionFailure(t *testing.T) {
+
+	clientCtx := fcmocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", "Org1MSP"))
+
+	_, err := New(createClientContext(clientCtx), withOptionError())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Option Error")
+}
+
+func withOptionError() ClientOption {
+	return func(rmc *Client) error {
+		return errors.New("Option Error")
+	}
 }
 
 func TestJoinChannelRequiredParameters(t *testing.T) {
@@ -270,18 +293,9 @@ func TestJoinChannelDiscoveryError(t *testing.T) {
 	rc := setupResMgmtClientWithDiscoveryError(t, ctx, errors.New("Test Error"))
 
 	err := rc.JoinChannel("mychannel")
-	if err == nil {
-		t.Fatalf("Should have failed to join channel with discovery error")
-	} else {
-		t.Logf("Error: %s", err)
+	if err == nil || !strings.Contains(err.Error(), "Test Error") {
+		t.Fatalf("Should have failed to join channel with discovery error: %s", err)
 	}
-
-	// If targets are not provided discovery service is used
-	err = rc.JoinChannel("mychannel")
-	if err == nil {
-		t.Fatalf("Should have failed to join channel with discovery error")
-	}
-
 }
 
 func TestOrdererConfigFail(t *testing.T) {
@@ -322,12 +336,16 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	ctx.SetEndpointConfig(noOrdererConfig)
 	rc := setupResMgmtClient(t, ctx)
 
-	err = rc.JoinChannel("mychannel")
+	peer1 := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "grpc://peer1.com", MockMSP: "Org1MSP"}
+
+	err = rc.JoinChannel("mychannel", WithTargets(peer1))
 	assert.NotNil(t, err, "Should have failed to join channel since no orderer has been configured")
+	assert.Contains(t, err.Error(), "channel config not found")
 
 	// Misconfigured channel orderer
 	configBackend = getInvalidChannelOrdererBackend(backend)
 	invalidChOrdererConfig, err := fabImpl.ConfigFromBackend(configBackend)
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -335,8 +353,8 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 
 	rc = setupResMgmtClient(t, ctx)
 
-	err = rc.JoinChannel("mychannel")
-	if err == nil {
+	err = rc.JoinChannel("mychannel", WithTargets(peer1))
+	if err == nil || !strings.Contains(err.Error(), "no matching orderer config found") {
 		t.Fatalf("Should have failed to join channel since channel orderer has been misconfigured")
 	}
 
@@ -353,9 +371,9 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 
 	rc = setupResMgmtClient(t, ctx)
 
-	err = rc.JoinChannel("mychannel")
-	if err == nil {
-		t.Fatalf("Should have failed to join channel since global orderer certs are not configured properly")
+	err = rc.JoinChannel("mychannel", WithTargets(peer1))
+	if err == nil || !strings.Contains(err.Error(), "CONNECTION_FAILED") {
+		t.Fatalf("Should have failed to join channel since global orderer certs are not configured properly: %s", err)
 	}
 }
 
@@ -386,7 +404,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !installed {
-		t.Fatalf("CC should have been installed: %v", req)
+		t.Fatalf("CC should have been installed: %s", req)
 	}
 
 	// Chaincode not found request
@@ -403,8 +421,8 @@ func TestIsChaincodeInstalled(t *testing.T) {
 
 	// Test error retrieving installed cc info (peer is nil)
 	_, err = rc.isChaincodeInstalled(reqCtx, req, nil, retry.Opts{})
-	if err == nil {
-		t.Fatalf("Should have failed with error in get installed chaincodes")
+	if err == nil || !strings.Contains(err.Error(), "peer required") {
+		t.Fatalf("Should have failed with error in get installed chaincodes since peer is required: %s", err)
 	}
 
 }
@@ -538,24 +556,22 @@ func TestInstallCCWithOpts(t *testing.T) {
 		t.Fatal("Should not have 'already installed' info set since it was not previously installed")
 	}
 
-	// Chaincode that causes generic (system) error in installed chaincodes
+}
 
-	//prepare sample response
+func TestInstallCCWithOptsError(t *testing.T) {
 
-	//prepare sample response
-	response = new(pb.ChaincodeQueryResponse)
-	chaincodes = make([]*pb.ChaincodeInfo, 1)
-	chaincodes[0] = &pb.ChaincodeInfo{Name: "name1", Path: "path1", Version: "version1"}
-	response.Chaincodes = chaincodes
-	responseBytes, _ = proto.Marshal(response)
+	rc := setupDefaultResMgmtClient(t)
 
-	peer1 = fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
-		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Payload: responseBytes}
+	// Setup targets
+	peer1 := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
+		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
 
-	req = InstallCCRequest{Name: "error", Version: "v0", Path: "", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	_, err = rc.InstallCC(req, WithTargets(&peer1))
-	if err == nil {
-		t.Fatalf("Should have failed since install cc returns an error in the client")
+	req := InstallCCRequest{Name: "error", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+
+	// Test both targets and filter provided (error condition)
+	_, err := rc.InstallCC(req, WithTargets(&peer1), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
+	if err == nil || !strings.Contains(err.Error(), "If targets are provided, filter cannot be provided") {
+		t.Fatalf("Should have failed if both target and filter provided: %s", err)
 	}
 }
 
@@ -599,13 +615,6 @@ func TestInstallCC(t *testing.T) {
 	if responses[0].Status != http.StatusOK {
 		t.Fatalf("Expecting %d status, got %d", 0, responses[0].Status)
 	}
-
-	// Chaincode that causes generic (system) error in installed chaincodes
-	req = InstallCCRequest{Name: "error", Version: "v0", Path: "", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	_, err = rc.InstallCC(req)
-	if err == nil {
-		t.Fatalf("Should have failed since install cc returns an error in the client")
-	}
 }
 
 func TestInstallCCRequiredParameters(t *testing.T) {
@@ -647,122 +656,71 @@ func TestInstallCCRequiredParameters(t *testing.T) {
 		t.Fatalf("InstallCC should have failed for nil chaincode package")
 	}
 
-	// Setup test client with different msp (default targets cannot be calculated)
-	ctx := setupTestContext("test", "otherMSP")
-	config := getNetworkConfig(t)
-	ctx.SetEndpointConfig(config)
-
-	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClientWithLocalPeers(t, ctx, nil)
-	req = InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-
-	// Test missing default targets
-	_, err = rc.InstallCC(req)
-	if err == nil {
-		t.Fatalf("InstallCC should have failed with no default targets error")
-	}
-
 }
 
-func TestInstallCCWithOptsRequiredParameters(t *testing.T) {
+func TestInstallCCWithDifferentMSP(t *testing.T) {
 
-	rc := setupDefaultResMgmtClient(t)
-
-	// Test missing required parameters
-	req := InstallCCRequest{}
-	_, err := rc.InstallCC(req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty install cc request")
-	}
-
-	// Test missing chaincode ID
-	req = InstallCCRequest{Name: "", Version: "v0", Path: "path"}
-	_, err = rc.InstallCC(req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty cc ID")
-	}
-
-	// Test missing chaincode version
-	req = InstallCCRequest{Name: "ID", Version: "", Path: "path"}
-	_, err = rc.InstallCC(req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty cc version")
-	}
-
-	// Test missing chaincode path
-	req = InstallCCRequest{Name: "ID", Version: "v0", Path: ""}
-	_, err = rc.InstallCC(req)
-	if err == nil {
-		t.Fatalf("InstallCC should have failed for empty cc path")
-	}
-
-	// Test missing chaincode package
-	req = InstallCCRequest{Name: "ID", Version: "v0", Path: "path"}
-	_, err = rc.InstallCC(req)
-	if err == nil {
-		t.Fatalf("InstallCC should have failed for nil chaincode package")
-	}
+	// Setup test client with different msp (default targets cannot be calculated)
+	ctx := setupTestContext("test", "otherMSP")
+	rc := setupResMgmtClient(t, ctx)
 
 	// Valid request
-	req = InstallCCRequest{Name: "name", Version: "version", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+	req := InstallCCRequest{Name: "name", Version: "version", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
 
-	// Setup targets
-	var peers []fab.Peer
-	peers = append(peers, &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"})
-
-	// Test both targets and filter provided (error condition)
-	_, err = rc.InstallCC(req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
-	if err == nil {
-		t.Fatalf("Should have failed if both target and filter provided")
+	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
+	_, err := rc.InstallCC(req)
+	if err == nil || !strings.Contains(err.Error(), "no targets") {
+		t.Fatalf("Should have failed with no targets error: %s", err)
 	}
 
-	// Setup test client with different msp
-	ctx := setupTestContext("test", "otherMSP")
-	config := getNetworkConfig(t)
-	ctx.SetEndpointConfig(config)
+	ctx = setupTestContext("test", "Org1MSP")
+	// Setup targets
+	var peers []fab.Peer
 
-	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClientWithLocalPeers(t, ctx, nil)
+	peers = append(peers, &fcmocks.MockPeer{MockName: "Peer1", MockURL: "grpc://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: http.StatusOK})
+
+	// Create new resource management client with client level target filter ("otherMSP")
+	targetFilter := &mspFilter{mspID: "otherMSP"}
+	rc = setupResMgmtClientWithLocalPeers(t, ctx, peers, WithDefaultTargetFilter(targetFilter))
 
 	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
 	_, err = rc.InstallCC(req)
-	if err == nil {
-		t.Fatalf("Should have failed with no targets error")
+	if err == nil || !strings.Contains(err.Error(), "no targets") {
+		t.Fatalf("Should have failed with no targets error: %s", err)
 	}
 
-	// Test filter only provided (filter rejects discovery service peer msp)
+	rc = setupResMgmtClientWithLocalPeers(t, ctx, peers)
+
+	// Test filter only provided at request level (filter rejects discovery service peer msp)
 	_, err = rc.InstallCC(req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
-	if err == nil {
-		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
+	if err == nil || !strings.Contains(err.Error(), "no targets") {
+		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets: %s", err)
 	}
+
+	_, err = rc.InstallCC(req)
+	if err != nil {
+		t.Fatalf("Failed to install CC: %s", err)
+	}
+
 }
 
 func TestInstallCCDiscoveryError(t *testing.T) {
 
 	// Setup test client and config
 	ctx := setupTestContext("test", "Org1MSP")
-	config := getNetworkConfig(t)
-	ctx.SetEndpointConfig(config)
 
 	// Create resource management client with discovery service that will generate an error
 	rc := setupResMgmtClientWithDiscoveryError(t, ctx, errors.New("Test Error"))
 
 	// Test InstallCC discovery service error
 	req := InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
-	_, err := rc.InstallCC(req)
-	if err == nil {
-		t.Fatalf("Should have failed to install cc with discovery error")
-	} else {
-		t.Logf("Error: %s", err)
-	}
 
 	// Test InstallCC discovery service error
 	// if targets are not provided discovery service is used
-	_, err = rc.InstallCC(req)
-	if err == nil {
+	_, err := rc.InstallCC(req)
+	if err == nil || !strings.Contains(err.Error(), "Test Error") {
 		t.Fatalf("Should have failed to install cc with opts with discovery error")
 	}
-
 }
 
 func TestInstantiateCCRequiredParameters(t *testing.T) {
@@ -812,105 +770,52 @@ func TestInstantiateCCRequiredParameters(t *testing.T) {
 		t.Fatalf("Should have failed for nil chaincode policy")
 	}
 
+}
+
+func TestInstantiateCCWithDifferentMSP(t *testing.T) {
+
 	// Setup test client with different msp (default targets cannot be calculated)
 	ctx := setupTestContext("test", "otherMSP")
 	config := getNetworkConfig(t)
 	ctx.SetEndpointConfig(config)
 
 	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClient(t, ctx)
+	rc := setupResMgmtClient(t, ctx)
 
 	// Valid request
 	ccPolicy := cauthdsl.SignedByMspMember("otherMSP")
-	req = InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
+	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
-	// Test missing default targets
-	_, err = rc.InstantiateCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("InstallCC should have failed with no default targets error")
+	// Test filter only provided (filter rejects discovery service peer msp)
+	_, err := rc.InstantiateCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
+	if err == nil || !strings.Contains(err.Error(), "no targets") {
+		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
 	}
 
+	// Channel discovery service will return peer that belongs Org1MSP (valid for instantiate)
+	_, err = rc.InstantiateCC("mychannel", req)
+	if err != nil {
+		t.Fatalf("InstallCC error: %s", err)
+	}
 }
 
-func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
+func TestInstantiateCCWithOpts(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)
 
-	// Test missing required parameters
-	req := InstantiateCCRequest{}
-
-	// Test empty channel name
-	_, err := rc.InstantiateCC("", req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty channel name")
-	}
-
-	// Test empty request
-	_, err = rc.InstantiateCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty instantiate cc request")
-	}
-
-	// Test missing chaincode ID
-	req = InstantiateCCRequest{Name: "", Version: "v0", Path: "path"}
-	_, err = rc.InstantiateCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty cc name")
-	}
-
-	// Test missing chaincode version
-	req = InstantiateCCRequest{Name: "ID", Version: "", Path: "path"}
-	_, err = rc.InstantiateCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty cc version")
-	}
-
-	// Test missing chaincode path
-	req = InstantiateCCRequest{Name: "ID", Version: "v0", Path: ""}
-	_, err = rc.InstantiateCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty cc path")
-	}
-
-	// Test missing chaincode policy
-	req = InstantiateCCRequest{Name: "ID", Version: "v0", Path: "path"}
-	_, err = rc.InstantiateCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed for missing chaincode policy")
-	}
-
 	// Valid request
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	req = InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
+	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Setup targets
 	var peers []fab.Peer
 	peers = append(peers, &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"})
 
 	// Test both targets and filter provided (error condition)
-	_, err = rc.InstantiateCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
-	if err == nil {
-		t.Fatalf("Should have failed if both target and filter provided")
-	}
+	_, err := rc.InstantiateCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
 
-	// Setup test client with different msp
-	ctx := setupTestContext("test", "otherMSP")
-	config := getNetworkConfig(t)
-	ctx.SetEndpointConfig(config)
-
-	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClient(t, ctx)
-
-	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
-	_, err = rc.InstantiateCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed with no targets error")
-	}
-
-	// Test filter only provided (filter rejects discovery service peer msp)
-	_, err = rc.InstantiateCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
-	if err == nil {
-		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
+	if err == nil || !strings.Contains(err.Error(), "If targets are provided, filter cannot be provided") {
+		t.Fatalf("Should have failed if both target and filter provided: %s", err)
 	}
 }
 
@@ -918,56 +823,38 @@ func TestInstantiateCCDiscoveryError(t *testing.T) {
 
 	// Setup test client and config
 	ctx := setupTestContext("test", "Org1MSP")
-	config := getNetworkConfig(t)
-	ctx.SetEndpointConfig(config)
-
-	// Create resource management client with discovery service that will generate an error
 	rc := setupResMgmtClient(t, ctx)
-
-	orderer := fcmocks.NewMockOrderer("", nil)
-
-	transactor := txnmocks.MockTransactor{
-		Ctx:       ctx,
-		ChannelID: "mychannel",
-		Orderers:  []fab.Orderer{orderer},
-	}
-	rc.ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
-
-	// Start mock event hub
-	eventServer, err := fcmocks.StartMockEventServer(fmt.Sprintf("%s:%d", "127.0.0.1", 7053))
-	if err != nil {
-		t.Fatalf("Failed to start mock event hub: %v", err)
-	}
-	defer eventServer.Stop()
 
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
 	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
-	// Test InstantiateCC create new discovery service per channel error
-	_, err = rc.InstantiateCC("error", req)
-	if err == nil {
-		t.Fatalf("Should have failed to instantiate cc with create discovery service error")
-	}
-
-	// Test InstantiateCC discovery service get peers error
-	_, err = rc.InstantiateCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed to instantiate cc with get peers discovery error")
-	}
-
 	// Test InstantiateCCWithOpts create new discovery service per channel error
-	_, err = rc.InstantiateCC("error", req)
-	if err == nil {
-		t.Fatalf("Should have failed to instantiate cc with opts with create discovery service error")
+	_, err := rc.InstantiateCC("error", req)
+	if err == nil || !strings.Contains(err.Error(), "failed to get discovery service") {
+		t.Fatalf("Should have failed to instantiate cc with opts with get discovery service error: %s", err)
 	}
+}
 
-	// Test InstantiateCCWithOpts discovery service get peers error
-	// if targets are not provided discovery service is used
-	_, err = rc.InstantiateCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed to instantiate cc with opts with get peers discovery error")
+func TestInstantiateCCTransactorError(t *testing.T) {
+
+	// Setup test client
+	ctx := setupTestContext("test", "Org1MSP")
+	rc := setupResMgmtClient(t, ctx)
+
+	transactor := txnmocks.MockTransactor{
+		Ctx:       ctx,
+		ChannelID: "mychannel",
 	}
+	rc.ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
 
+	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
+
+	// Test InstantiateCC for transactor error
+	_, err := rc.InstantiateCC("mychannel", req)
+	if err == nil || !strings.Contains(err.Error(), "Failed to verify signature") {
+		t.Fatalf("Should have failed to instantiate cc with opts with get discovery service error: %s", err)
+	}
 }
 
 func TestUpgradeCCRequiredParameters(t *testing.T) {
@@ -1016,106 +903,49 @@ func TestUpgradeCCRequiredParameters(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Should have failed for nil chaincode policy")
 	}
+}
+
+func TestUpgradeCCWithDifferentMSP(t *testing.T) {
 
 	// Setup test client with different msp (default targets cannot be calculated)
 	ctx := setupTestContext("test", "otherMSP")
-	config := getNetworkConfig(t)
-	ctx.SetEndpointConfig(config)
 
 	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClient(t, ctx)
+	rc := setupResMgmtClient(t, ctx)
 
 	// Valid request
 	ccPolicy := cauthdsl.SignedByMspMember("otherMSP")
-	req = UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
+	req := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
-	// Test missing default targets
-	_, err = rc.UpgradeCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed with no default targets error")
+	// Test filter only provided (filter rejects discovery service peer msp)
+	_, err := rc.UpgradeCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
+	if err == nil || !strings.Contains(err.Error(), "no targets") {
+		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
 	}
 
+	// Channel discovery service will return peer that belongs Org1MSP (valid for upgrade)
+	_, err = rc.UpgradeCC("mychannel", req)
+	if err != nil {
+		t.Fatalf("UpgradeCC error: %s", err)
+	}
 }
 
-func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
+func TestUpgradeCCWithOpts(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)
 
-	// Test missing required parameters
-	req := UpgradeCCRequest{}
-
-	// Test empty channel name
-	_, err := rc.UpgradeCC("", req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty channel name")
-	}
-
-	// Test empty request
-	_, err = rc.UpgradeCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty upgrade cc request")
-	}
-
-	// Test missing chaincode ID
-	req = UpgradeCCRequest{Name: "", Version: "v0", Path: "path"}
-	_, err = rc.UpgradeCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty cc name")
-	}
-
-	// Test missing chaincode version
-	req = UpgradeCCRequest{Name: "ID", Version: "", Path: "path"}
-	_, err = rc.UpgradeCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed for empty cc version")
-	}
-
-	// Test missing chaincode path
-	req = UpgradeCCRequest{Name: "ID", Version: "v0", Path: ""}
-	_, err = rc.UpgradeCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("UpgradeCC should have failed for empty cc path")
-	}
-
-	// Test missing chaincode policy
-	req = UpgradeCCRequest{Name: "ID", Version: "v0", Path: "path"}
-	_, err = rc.UpgradeCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("UpgradeCC should have failed for missing chaincode policy")
-	}
-
 	// Valid request
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	req = UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
+	req := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Setup targets
 	var peers []fab.Peer
 	peers = append(peers, &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"})
 
 	// Test both targets and filter provided (error condition)
-	_, err = rc.UpgradeCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
-	if err == nil {
+	_, err := rc.UpgradeCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
+	if err == nil || !strings.Contains(err.Error(), "If targets are provided, filter cannot be provided") {
 		t.Fatalf("Should have failed if both target and filter provided")
-	}
-
-	// Setup test client with different msp
-	ctx := setupTestContext("test", "otherMSP")
-	config := getNetworkConfig(t)
-	ctx.SetEndpointConfig(config)
-
-	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClient(t, ctx)
-
-	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
-	_, err = rc.UpgradeCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed with no targets error")
-	}
-
-	// Test filter only provided (filter rejects discovery service peer msp)
-	_, err = rc.UpgradeCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
-	if err == nil {
-		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
 	}
 }
 
@@ -1123,56 +953,19 @@ func TestUpgradeCCDiscoveryError(t *testing.T) {
 
 	// Setup test client and config
 	ctx := setupTestContext("test", "Org1MSP")
-	config := getNetworkConfig(t)
-	ctx.SetEndpointConfig(config)
 
 	// Create resource management client with discovery service that will generate an error
 	rc := setupResMgmtClient(t, ctx)
-	orderer := fcmocks.NewMockOrderer("", nil)
-
-	transactor := txnmocks.MockTransactor{
-		Ctx:       ctx,
-		ChannelID: "mychannel",
-		Orderers:  []fab.Orderer{orderer},
-	}
-	rc.ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
-
-	// Start mock event hub
-	eventServer, err := fcmocks.StartMockEventServer(fmt.Sprintf("%s:%d", "127.0.0.1", 7053))
-	if err != nil {
-		t.Fatalf("Failed to start mock event hub: %v", err)
-	}
-	defer eventServer.Stop()
 
 	// Test UpgradeCC discovery service error
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
 	req := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test error while creating discovery service for channel "error"
-	_, err = rc.UpgradeCC("error", req)
+	_, err := rc.UpgradeCC("error", req)
 	if err == nil {
 		t.Fatalf("Should have failed to upgrade cc with discovery error")
 	}
-
-	// Test error in discovery service while getting peers
-	_, err = rc.UpgradeCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed to upgrade cc with discovery error")
-	}
-
-	// Test UpgradeCCWithOpts discovery service error when creating discovery service for channel 'error'
-	_, err = rc.UpgradeCC("error", req)
-	if err == nil {
-		t.Fatalf("Should have failed to upgrade cc with opts with discovery error")
-	}
-
-	// Test UpgradeCCWithOpts discovery service error
-	// if targets are not provided discovery service is used to get targets
-	_, err = rc.UpgradeCC("mychannel", req)
-	if err == nil {
-		t.Fatalf("Should have failed to upgrade cc with opts with discovery error")
-	}
-
 }
 
 func TestCCProposal(t *testing.T) {
@@ -1195,9 +988,22 @@ func TestCCProposal(t *testing.T) {
 	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL("127.0.0.1:0"))
 	peers = append(peers, peer1)
 
+	rc := setupResMgmtClient(t, ctx)
+
+	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	instantiateReq := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
+
+	// Test invalid function (only 'instatiate' and 'upgrade' are supported)
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
+	opts := requestOptions{Targets: peers}
+	_, err = rc.sendCCProposal(reqCtx, 3, "mychannel", instantiateReq, opts)
+	if err == nil || !strings.Contains(err.Error(), "chaincode deployment type unknown") {
+		t.Fatalf("Should have failed for invalid chaincode deployment type: %s", err)
+	}
+
 	// Create mock orderer
 	orderer := fcmocks.NewMockOrderer("", nil)
-	rc := setupResMgmtClient(t, ctx)
 
 	transactor := txnmocks.MockTransactor{
 		Ctx:       ctx,
@@ -1206,35 +1012,10 @@ func TestCCProposal(t *testing.T) {
 	}
 	rc.ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
 
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	instantiateReq := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
-
-	// Test error connecting to event hub
+	// Test error in transactor
 	_, err = rc.InstantiateCC("mychannel", instantiateReq)
-	if err == nil {
-		t.Fatalf("Should have failed to get event hub since not setup")
-	}
-
-	// Start mock event hub
-	eventServer, err := fcmocks.StartMockEventServer(fmt.Sprintf("%s:%d", "127.0.0.1", 7053))
-	if err != nil {
-		t.Fatalf("Failed to start mock event hub: %v", err)
-	}
-	defer eventServer.Stop()
-
-	// Test error in commit
-	_, err = rc.InstantiateCC("mychannel", instantiateReq)
-	if err == nil {
-		t.Fatalf("Should have failed due to error in commit")
-	}
-
-	// Test invalid function (only 'instatiate' and 'upgrade' are supported)
-	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(10*time.Second))
-	defer cancel()
-	opts := requestOptions{Targets: peers}
-	_, err = rc.sendCCProposal(reqCtx, 3, "mychannel", instantiateReq, opts)
-	if err == nil {
-		t.Fatalf("Should have failed for invalid function name")
+	if err == nil || !strings.Contains(err.Error(), "Failed to verify signature") {
+		t.Fatalf("Should have failed due to error in commit: %s", err)
 	}
 
 	// Test no event source in config
@@ -1250,59 +1031,10 @@ func TestCCProposal(t *testing.T) {
 	ctx.SetEndpointConfig(cfg)
 	rc = setupResMgmtClient(t, ctx, getDefaultTargetFilterOption())
 	_, err = rc.InstantiateCC("mychannel", instantiateReq)
+	// TODO: Add verification
 	if err == nil {
 		t.Fatalf("Should have failed since no event source has been configured")
 	}
-}
-
-func TestCCProposalFailed(t *testing.T) {
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-
-	// Setup mock targets
-	endorserServer, address := startEndorserServer(t, grpcServer)
-	time.Sleep(2 * time.Second)
-
-	ctx := setupTestContext("Admin", "Org1MSP")
-
-	// Setup resource management client
-	configBackend, err := configImpl.FromFile(configPath)()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cfg, err := fabImpl.ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx.SetEndpointConfig(cfg)
-
-	rc := setupResMgmtClient(t, ctx)
-
-	// Setup target peers
-	var peers []fab.Peer
-	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL(address))
-	peers = append(peers, peer1)
-
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	instantiateReq := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
-
-	// Test failed proposal error handling (endorser returns an error)
-	endorserServer.ProposalError = errors.New("Test Error")
-
-	_, err = rc.InstantiateCC("mychannel", instantiateReq, WithTargets(peers...))
-	if err == nil {
-		t.Fatalf("Should have failed to instantiate cc due to endorser error")
-	}
-
-	upgradeRequest := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
-	_, err = rc.UpgradeCC("mychannel", upgradeRequest, WithTargets(peers...))
-	if err == nil {
-		t.Fatalf("Should have failed to upgrade cc due to endorser error")
-	}
-	// Remove endorser error
-	endorserServer.ProposalError = nil
-
 }
 
 func getDefaultTargetFilterOption() ClientOption {
@@ -1409,6 +1141,7 @@ func TestSaveChannelSuccess(t *testing.T) {
 	// Test empty channel request
 	_, err := cc.SaveChannel(SaveChannelRequest{})
 	assert.NotNil(t, err, "Should have failed for empty channel request")
+	assert.Contains(t, err.Error(), "must provide channel ID and channel config")
 
 	r, err := os.Open(channelConfig)
 	assert.Nil(t, err, "opening channel config file failed")
@@ -1417,10 +1150,12 @@ func TestSaveChannelSuccess(t *testing.T) {
 	// Test empty channel name
 	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "", ChannelConfig: r})
 	assert.NotNil(t, err, "Should have failed for empty channel id")
+	assert.Contains(t, err.Error(), "must provide channel ID and channel config")
 
 	// Test empty channel config
 	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel"})
 	assert.NotNil(t, err, "Should have failed for empty channel config")
+	assert.Contains(t, err.Error(), "must provide channel ID and channel config")
 
 	// Test extract configuration error
 	r1, err := os.Open("./testdata/extractcherr.tx")
@@ -1429,6 +1164,7 @@ func TestSaveChannelSuccess(t *testing.T) {
 
 	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1})
 	assert.NotNil(t, err, "Should have failed to extract configuration")
+	assert.Contains(t, err.Error(), "unmarshal config envelope failed")
 
 	// Test sign channel error
 	r2, err := os.Open("./testdata/signcherr.tx")
@@ -1437,6 +1173,17 @@ func TestSaveChannelSuccess(t *testing.T) {
 
 	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2})
 	assert.NotNil(t, err, "Should have failed to sign configuration")
+	// TODO: Msg bellow should be 'signing configuration failed' ?
+	assert.Contains(t, err.Error(), "unmarshal config envelope failed")
+
+	// Test sign channel error
+	r3, err := os.Open("./testdata/non-existent.tx")
+	assert.NotNil(t, err, "opening channel config should have file failed")
+	defer r3.Close()
+
+	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r3})
+	assert.NotNil(t, err, "Should have failed to sign configuration")
+	assert.Contains(t, err.Error(), "reading channel config file failed")
 
 	// Test valid Save Channel request (success)
 	resp, err := cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererURL("example.com"))
@@ -1470,6 +1217,7 @@ func TestSaveChannelFailure(t *testing.T) {
 
 	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "Invalid", ChannelConfig: r})
 	assert.NotNil(t, err, "Should have failed with create channel error")
+	assert.Contains(t, err.Error(), "failed to find orderer for request")
 }
 
 func TestSaveChannelWithOpts(t *testing.T) {
@@ -1534,6 +1282,7 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	opts = WithOrdererURL("Invalid")
 	_, err = cc.SaveChannel(req, opts)
 	assert.NotNil(t, err, "Should have failed for invalid orderer ID")
+	assert.Contains(t, err.Error(), "failed to read opts in resmgmt: orderer not found for url")
 }
 
 func TestJoinChannelWithInvalidOpts(t *testing.T) {
@@ -1541,10 +1290,8 @@ func TestJoinChannelWithInvalidOpts(t *testing.T) {
 	cc := setupDefaultResMgmtClient(t)
 	opts := WithOrdererURL("Invalid")
 	err := cc.JoinChannel("mychannel", opts)
-	if err == nil {
-		t.Fatal("Should have failed for invalid orderer ID")
-	}
-
+	assert.NotNil(t, err, "Should have failed for invalid orderer ID")
+	assert.Contains(t, err.Error(), "failed to read opts in resmgmt: orderer not found for url")
 }
 
 func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
@@ -1573,7 +1320,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	defer r1.Close()
 
 	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1, SigningIdentities: []msp.SigningIdentity{}}
-	resp, err := cc.SaveChannel(req, WithOrdererURL(""))
+	resp, err := cc.SaveChannel(req)
 	assert.Nil(t, err, "Failed to save channel with default signing identity: %s", err)
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 
@@ -1592,6 +1339,12 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 func createClientContext(fabCtx context.Client) context.ClientProvider {
 	return func() (context.Client, error) {
 		return fabCtx, nil
+	}
+}
+
+func createClientContextWithError(fabCtx context.Client) context.ClientProvider {
+	return func() (context.Client, error) {
+		return nil, errors.New("Test Error")
 	}
 }
 

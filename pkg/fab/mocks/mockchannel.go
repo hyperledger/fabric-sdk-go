@@ -72,8 +72,7 @@ func NewMockChannel(channelID string) (*Channel, error) {
 		return nil, errors.WithMessage(err, "failed to create mock channel service")
 	}
 
-	peers := []fab.Peer{NewMockPeer("Peer1", "http://peer1.com")}
-
+	peers := []fab.Peer{NewMockPeer("Peer1", "example.com")}
 	// Set up mock discovery service
 	mockDiscovery := NewMockDiscoveryProvider(nil, peers)
 	discoveryService, err := mockDiscovery.CreateDiscoveryService(channelID)

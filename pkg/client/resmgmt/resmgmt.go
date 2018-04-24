@@ -144,7 +144,7 @@ func New(ctxProvider context.ClientProvider, opts ...ClientOption) (*Client, err
 
 	ctx, err := ctxProvider()
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to create resmgmt client")
+		return nil, errors.WithMessage(err, "failed to create resmgmt client due to context error")
 	}
 
 	if ctx.Identifier().MSPID == "" {
@@ -688,7 +688,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 	// Verify signature(s)
 	err = rc.verifyTPSignature(channelService, txProposalResponse)
 	if err != nil {
-		return tp.TxnID, errors.WithMessage(err, "sending deploy transaction proposal failed")
+		return tp.TxnID, errors.WithMessage(err, "sending deploy transaction proposal failed to verify signature")
 	}
 
 	eventService, err := channelService.EventService()

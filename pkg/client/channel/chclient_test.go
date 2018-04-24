@@ -369,17 +369,9 @@ func TestOrdererStatusError(t *testing.T) {
 func TestTransactionValidationError(t *testing.T) {
 	validationCode := pb.TxValidationCode_BAD_RWSET
 	mockEventService := fcmocks.NewMockEventService()
+	mockEventService.TxValidationCode = validationCode
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
 	peers := []fab.Peer{testPeer1}
-
-	go func() {
-		select {
-		case txStatusReg := <-mockEventService.TxStatusRegCh:
-			txStatusReg.Eventch <- &fab.TxStatusEvent{TxID: txStatusReg.TxID, TxValidationCode: validationCode}
-		case <-time.After(time.Second * 5):
-			panic("Timed out waiting for execute Tx to register event callback")
-		}
-	}()
 
 	chClient := setupChannelClient(peers, t)
 	chClient.eventService = mockEventService
@@ -390,6 +382,25 @@ func TestTransactionValidationError(t *testing.T) {
 	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error got %+v", err)
 	assert.EqualValues(t, validationCode, status.ToTransactionValidationCode(statusError.Code))
+}
+
+func TestTransactionTimeout(t *testing.T) {
+
+	mockEventService := fcmocks.NewMockEventService()
+	mockEventService.Timeout = true
+	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
+	peers := []fab.Peer{testPeer1}
+
+	chClient := setupChannelClient(peers, t)
+	chClient.eventService = mockEventService
+	response, err := chClient.Execute(Request{ChaincodeID: "test", Fcn: "invoke",
+		Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
+	assert.Nil(t, response.Payload, "Expected nil result on failed execute operation")
+	assert.NotNil(t, err, "expected error")
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error got %+v", err)
+
+	assert.EqualValues(t, statusError.Code, status.Timeout)
 }
 
 func TestExecuteTxWithRetries(t *testing.T) {

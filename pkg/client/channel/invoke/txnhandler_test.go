@@ -148,12 +148,19 @@ func TestExecuteTxHandlerErrors(t *testing.T) {
 func TestEndorsementHandler(t *testing.T) {
 	request := Request{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}}
 
-	requestContext := prepareRequestContext(request, Opts{Targets: []fab.Peer{fcmocks.NewMockPeer("p2", "")}}, t)
 	clientContext := setupChannelClientContext(nil, nil, nil, t)
+	requestContext := prepareRequestContext(request, Opts{Targets: nil}, t)
 
 	handler := NewEndorsementHandler()
 	handler.Handle(requestContext, clientContext)
+	assert.NotNil(t, requestContext.Error)
+
+	requestContext = prepareRequestContext(request, Opts{Targets: []fab.Peer{fcmocks.NewMockPeer("p2", "")}}, t)
+
+	handler = NewEndorsementHandler()
+	handler.Handle(requestContext, clientContext)
 	assert.Nil(t, requestContext.Error)
+
 }
 
 // Target filter

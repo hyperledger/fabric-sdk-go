@@ -8,6 +8,7 @@ package mocks
 
 import (
 	reqContex "context"
+	"net/http"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -28,8 +29,9 @@ func (t *MockTransactor) CreateTransactionHeader() (fab.TransactionHeader, error
 // SendTransactionProposal sends a TransactionProposal to the target peers.
 func (t *MockTransactor) SendTransactionProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
 	response := make([]*fab.TransactionProposalResponse, 1)
-	response[0] = &fab.TransactionProposalResponse{Endorser: "example.com", Status: 99,
-		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Payload: []byte("abc")}},
+	response[0] = &fab.TransactionProposalResponse{Endorser: "example.com", Status: 200,
+		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Payload: []byte("abc"), Status: http.StatusOK},
+			Endorsement: &pb.Endorsement{Endorser: []byte("example.com"), Signature: []byte("signature")}},
 	}
 	return response, nil
 }

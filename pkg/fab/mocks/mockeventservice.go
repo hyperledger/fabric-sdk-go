@@ -7,13 +7,18 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"time"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 // MockEventService implements a mock event service
 type MockEventService struct {
-	TxStatusRegCh chan *dispatcher.TxStatusReg
+	TxStatusRegCh    chan *dispatcher.TxStatusReg
+	TxValidationCode pb.TxValidationCode
+	Timeout          bool
 }
 
 // NewMockEventService returns a new mock event service
@@ -60,6 +65,20 @@ func (m *MockEventService) RegisterTxStatusEvent(txID string) (fab.Registration,
 		TxID:    txID,
 	}
 	m.TxStatusRegCh <- reg
+
+	if !m.Timeout {
+
+		go func() {
+			select {
+			case txStatusReg := <-m.TxStatusRegCh:
+				txStatusReg.Eventch <- &fab.TxStatusEvent{TxID: txStatusReg.TxID, TxValidationCode: m.TxValidationCode}
+			case <-time.After(5 * time.Second):
+				panic("time out not expected")
+			}
+		}()
+
+	}
+
 	return reg, eventCh, nil
 }
 

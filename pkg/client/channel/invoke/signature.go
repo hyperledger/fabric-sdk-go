@@ -28,7 +28,7 @@ func (f *SignatureValidationHandler) Handle(requestContext *RequestContext, clie
 	//Filter tx proposal responses
 	err := f.validate(requestContext.Response.Responses, clientContext)
 	if err != nil {
-		requestContext.Error = errors.WithMessage(err, "endorsement validation failed")
+		requestContext.Error = errors.WithMessage(err, "signature validation failed")
 		return
 	}
 
