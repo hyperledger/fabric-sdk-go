@@ -48,7 +48,7 @@ type Response struct {
 	Payload          []byte
 }
 
-//WithTargets encapsulates ProposalProcessors to Option
+//WithTargets allows overriding of the target peers for the request
 func WithTargets(targets ...fab.Peer) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 
@@ -118,7 +118,7 @@ func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOpti
 	}
 }
 
-//WithParentContext encapsulates grpc context parent to Options
+//WithParentContext encapsulates grpc parent context
 func WithParentContext(parentContext reqContext.Context) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		o.ParentContext = parentContext
