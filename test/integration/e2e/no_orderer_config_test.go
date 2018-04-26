@@ -21,6 +21,11 @@ import (
 // runWithNoOrdererConfig enables chclient scenarios using config and sdk options provided
 func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
 
+	if integration.IsLocal() {
+		//If it is a local test then add entity mapping to config backend to parse URLs
+		configOpt = integration.AddLocalEntityMapping(configOpt, integration.LocalOrdererPeersConfig)
+	}
+
 	sdk, err := fabsdk.New(configOpt, sdkOpts...)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)

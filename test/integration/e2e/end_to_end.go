@@ -41,7 +41,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 
 	if integration.IsLocal() {
 		//If it is a local test then add entity mapping to config backend to parse URLs
-		configOpt = integration.AddLocalEntityMapping(configOpt)
+		configOpt = integration.AddLocalEntityMapping(configOpt, integration.LocalOrdererPeersCAsConfig)
 	}
 
 	sdk, err := fabsdk.New(configOpt, sdkOpts...)

@@ -309,8 +309,14 @@ func TestNoEndpoints(t *testing.T) {
 
 	// Using shared SDK instance to increase test speed.
 	testSetup := mainTestSetup
+	configProvider := config.FromFile("../../fixtures/config/config_test_endpoints.yaml")
 
-	sdk, err := fabsdk.New(config.FromFile("../../fixtures/config/config_test_endpoints.yaml"))
+	if integration.IsLocal() {
+		//If it is a local test then add entity mapping to config backend to parse URLs
+		configProvider = integration.AddLocalEntityMapping(configProvider, integration.LocalOrdererPeersConfig)
+	}
+
+	sdk, err := fabsdk.New(configProvider)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -328,13 +334,13 @@ func TestNoEndpoints(t *testing.T) {
 	_, err = chClient.Query(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err == nil || !strings.Contains(err.Error(), "targets were not provided") {
-		t.Fatalf("Should have failed due to no chaincode query peers")
+		t.Fatal("Should have failed due to no chaincode query peers")
 	}
 
 	// Test execute transaction: since peer has been disabled for endorsement this transaction should fail
 	_, err = chClient.Execute(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err == nil || !strings.Contains(err.Error(), "targets were not provided") {
-		t.Fatalf("Should have failed due to no endorsing peers")
+		t.Fatal("Should have failed due to no endorsing peers")
 	}
 }

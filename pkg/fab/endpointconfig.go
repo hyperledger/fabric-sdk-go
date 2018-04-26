@@ -255,7 +255,10 @@ func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
 	} else {
 		for _, staticPeerConfig := range networkConfig.Peers {
 			if strings.EqualFold(staticPeerConfig.URL, nameOrURL) {
-				matchPeerConfig = &staticPeerConfig
+				matchPeerConfig = c.tryMatchingPeerConfig(networkConfig, nameOrURL)
+				if matchPeerConfig == nil {
+					matchPeerConfig = &staticPeerConfig
+				}
 				break
 			}
 		}

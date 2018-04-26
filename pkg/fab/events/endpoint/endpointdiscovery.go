@@ -100,7 +100,7 @@ func (s *discoveryService) GetPeers() ([]fab.Peer, error) {
 		} else {
 			peerConfig, err = s.ctx.EndpointConfig().PeerConfig(peer.URL())
 			if err != nil {
-				errStatus, ok := err.(*status.Status)
+				errStatus, ok := status.FromError(err)
 				if ok && errStatus.Code == status.NoMatchingPeerEntity.ToInt32() {
 					logger.Debugf("no peer found for URL :%s", peer.URL())
 					continue
