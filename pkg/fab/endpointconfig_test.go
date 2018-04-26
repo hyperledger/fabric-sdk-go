@@ -8,8 +8,6 @@ package fab
 
 import (
 	"crypto/tls"
-	"crypto/x509"
-	"strconv"
 	"testing"
 
 	"os"
@@ -27,11 +25,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -133,88 +129,6 @@ func checkCAConfigFailsByNetworkConfig(sampleEndpointConfig *EndpointConfig, t *
 	if coConfigs != nil || err == nil {
 		t.Fatal("Testing ChannelOrderers supposed to fail")
 	}
-}
-
-func TestTLSCAConfig(t *testing.T) {
-	//Test TLSCA Cert Pool (Positive test case)
-	certConfig := endpoint.TLSConfig{Path: pathvar.Subst(certPath)}
-
-	cert, err := certConfig.TLSCert()
-	if err != nil {
-		t.Fatalf("Failed to get TLS CA Cert, reason: %v", err)
-	}
-
-	configBackend1, err := ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatalf("Failed to get endpoint config, reason: %v", err)
-	}
-
-	endpointConfig := configBackend1.(*EndpointConfig)
-
-	_, err = endpointConfig.TLSCACertPool(cert)
-	if err != nil {
-		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
-	}
-
-	originalLength := len(endpointConfig.tlsCerts)
-	//Try again with same cert
-	_, err = endpointConfig.TLSCACertPool(cert)
-	assert.NoError(t, err, "TLS CA cert pool fetch failed")
-	assert.False(t, len(endpointConfig.tlsCerts) > originalLength, "number of certs in cert list shouldn't accept duplicates")
-
-	//Test TLSCA Cert Pool (Negative test case)
-	badCertConfig := endpoint.TLSConfig{Path: "some random invalid path"}
-	badCert, err := badCertConfig.TLSCert()
-	if err == nil {
-		t.Fatalf("TLS CA cert pool was supposed to fail")
-	}
-
-	_, err = endpointConfig.TLSCACertPool(badCert)
-
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	keyConfig := endpoint.TLSConfig{Path: keyPath}
-
-	key, err := keyConfig.TLSCert()
-
-	if err == nil {
-		t.Fatalf("TLS CA cert pool was supposed to fail when provided with wrong cert file")
-	}
-
-	_, err = endpointConfig.TLSCACertPool(key)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-}
-
-func TestTLSCAPoolManyCerts(t *testing.T) {
-	size := 50
-	var certs []*x509.Certificate
-
-	configBackend, err := ConfigFromBackend(configBackend)
-	assert.NoError(t, err)
-	endpointConfig := configBackend.(*EndpointConfig)
-
-	pool, err := endpointConfig.TLSCACertPool()
-	assert.NoError(t, err)
-	originalLen := len(pool.Subjects())
-
-	for i := 0; i < size; i++ {
-		cert := &x509.Certificate{
-			RawSubject: []byte(strconv.Itoa(i)),
-			Raw:        []byte(strconv.Itoa(i)),
-		}
-		certs = append(certs, cert)
-	}
-	pool, err = endpointConfig.TLSCACertPool(certs[0])
-	assert.NoError(t, err)
-	assert.Len(t, pool.Subjects(), originalLen+1)
-
-	pool, err = endpointConfig.TLSCACertPool(certs...)
-	assert.NoError(t, err)
-	assert.Len(t, pool.Subjects(), originalLen+size)
 }
 
 func TestTimeouts(t *testing.T) {
@@ -1283,46 +1197,6 @@ func tamperPeerChannelConfig(backend *mocks.MockConfigBackend) {
 		},
 	}
 	(channelsMap.(map[string]interface{}))[orgChannelID] = orgChannel
-}
-
-func BenchmarkTLSCertPool(b *testing.B) {
-	customBackend := getCustomBackend()
-	customBackend.KeyValueMap["client.tlsCerts.systemCertPool"] = "true"
-	endpointConfig, err := ConfigFromBackend(customBackend)
-	require.NoError(b, err)
-
-	for n := 0; n < b.N; n++ {
-		endpointConfig.TLSCACertPool()
-	}
-}
-
-func BenchmarkTLSCertPoolSameCert(b *testing.B) {
-	customBackend := getCustomBackend()
-	customBackend.KeyValueMap["client.tlsCerts.systemCertPool"] = "true"
-	endpointConfig, err := ConfigFromBackend(customBackend)
-	require.NoError(b, err)
-	certConfig := endpoint.TLSConfig{Path: pathvar.Subst(certPath)}
-	cert, err := certConfig.TLSCert()
-	require.NoError(b, err)
-
-	for n := 0; n < b.N; n++ {
-		endpointConfig.TLSCACertPool(cert)
-	}
-}
-
-func BenchmarkTLSCertPoolDifferentCert(b *testing.B) {
-	customBackend := getCustomBackend()
-	customBackend.KeyValueMap["client.tlsCerts.systemCertPool"] = "true"
-	endpointConfig, err := ConfigFromBackend(customBackend)
-	require.NoError(b, err)
-	certConfig := endpoint.TLSConfig{Path: pathvar.Subst(certPath)}
-	cert, err := certConfig.TLSCert()
-	require.NoError(b, err)
-
-	for n := 0; n < b.N; n++ {
-		cert.RawSubject = []byte(strconv.Itoa(n))
-		endpointConfig.TLSCACertPool(cert)
-	}
 }
 
 func getMatcherConfig() core.ConfigBackend {
