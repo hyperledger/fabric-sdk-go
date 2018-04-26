@@ -131,9 +131,9 @@ func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string) (bool, error) {
 }
 
 // OrgTargetPeers determines peer endpoints for orgs
-func OrgTargetPeers(configBackend core.ConfigBackend, orgs []string) ([]string, error) {
+func OrgTargetPeers(orgs []string, configBackend ...core.ConfigBackend) ([]string, error) {
 	networkConfig := fabApi.NetworkConfig{}
-	err := lookup.New(configBackend).UnmarshalKey("organizations", &networkConfig.Organizations)
+	err := lookup.New(configBackend...).UnmarshalKey("organizations", &networkConfig.Organizations)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get organizations from config ")
 	}

@@ -17,6 +17,7 @@ import (
 
 	"reflect"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/mitchellh/mapstructure"
@@ -31,17 +32,30 @@ const orgChannelID = "orgchannel"
 var backend *mocks.MockConfigBackend
 
 func TestMain(m *testing.M) {
-	setupCustomBackend()
+	backend = setupCustomBackend("key")
 	r := m.Run()
 	os.Exit(r)
 }
 
 func TestGetBool(t *testing.T) {
+	//Test single backend lookup
 	testLookup := New(backend)
 	assert.True(t, testLookup.GetBool("key.bool.true"), "expected lookup to return true")
 	assert.False(t, testLookup.GetBool("key.bool.false"), "expected lookup to return false")
 	assert.False(t, testLookup.GetBool("key.bool.invalid"), "expected lookup to return false for invalid value")
 	assert.False(t, testLookup.GetBool("key.bool.notexisting"), "expected lookup to return false for not existing value")
+
+	//Test With multiple backend
+	keyPrefixes := []string{"key1", "key2", "key3", "key4"}
+	backends := getMultipleCustomBackends(keyPrefixes)
+	testLookup = New(backends...)
+
+	for _, prefix := range keyPrefixes {
+		assert.True(t, testLookup.GetBool(prefix+".bool.true"), "expected lookup to return true")
+		assert.False(t, testLookup.GetBool(prefix+".bool.false"), "expected lookup to return false")
+		assert.False(t, testLookup.GetBool(prefix+".bool.invalid"), "expected lookup to return false for invalid value")
+		assert.False(t, testLookup.GetBool(prefix+".bool.notexisting"), "expected lookup to return false for not existing value")
+	}
 }
 
 func TestGetInt(t *testing.T) {
@@ -50,6 +64,18 @@ func TestGetInt(t *testing.T) {
 	assert.True(t, testLookup.GetInt("key.int.negative") == -5, "expected lookup to return valid negative value")
 	assert.True(t, testLookup.GetInt("key.int.invalid") == 0, "expected lookup to return 0")
 	assert.True(t, testLookup.GetInt("key.int.not.existing") == 0, "expected lookup to return 0")
+
+	//Test With multiple backend
+	keyPrefixes := []string{"key1", "key2", "key3", "key4"}
+	backends := getMultipleCustomBackends(keyPrefixes)
+	testLookup = New(backends...)
+
+	for _, prefix := range keyPrefixes {
+		assert.True(t, testLookup.GetInt(prefix+".int.positive") == 5, "expected lookup to return valid positive value")
+		assert.True(t, testLookup.GetInt(prefix+".int.negative") == -5, "expected lookup to return valid negative value")
+		assert.True(t, testLookup.GetInt(prefix+".int.invalid") == 0, "expected lookup to return 0")
+		assert.True(t, testLookup.GetInt(prefix+".int.not.existing") == 0, "expected lookup to return 0")
+	}
 }
 
 func TestGetString(t *testing.T) {
@@ -62,6 +88,22 @@ func TestGetString(t *testing.T) {
 	assert.True(t, testLookup.GetString("key.string.nil") == "", "expected lookup to return empty string value")
 	assert.True(t, testLookup.GetString("key.string.number") == "1234", "expected lookup to return valid string value")
 	assert.True(t, testLookup.GetString("key.string.not existing") == "", "expected lookup to return empty string value")
+
+	//Test With multiple backend
+	keyPrefixes := []string{"key1", "key2", "key3", "key4"}
+	backends := getMultipleCustomBackends(keyPrefixes)
+	testLookup = New(backends...)
+
+	for _, prefix := range keyPrefixes {
+		assert.True(t, testLookup.GetString(prefix+".string.valid") == "valid-string", "expected lookup to return valid string value")
+		assert.True(t, testLookup.GetString(prefix+".string.valid.lower.case") == "valid-string", "expected lookup to return valid string value")
+		assert.True(t, testLookup.GetString(prefix+".string.valid.upper.case") == "VALID-STRING", "expected lookup to return valid string value")
+		assert.True(t, testLookup.GetString(prefix+".string.valid.mixed.case") == "VaLiD-StRiNg", "expected lookup to return valid string value")
+		assert.True(t, testLookup.GetString(prefix+".string.empty") == "", "expected lookup to return empty string value")
+		assert.True(t, testLookup.GetString(prefix+".string.nil") == "", "expected lookup to return empty string value")
+		assert.True(t, testLookup.GetString(prefix+".string.number") == "1234", "expected lookup to return valid string value")
+		assert.True(t, testLookup.GetString(prefix+".string.not existing") == "", "expected lookup to return empty string value")
+	}
 }
 
 func TestGetLowerString(t *testing.T) {
@@ -74,6 +116,22 @@ func TestGetLowerString(t *testing.T) {
 	assert.True(t, testLookup.GetLowerString("key.string.nil") == "", "expected lookup to return empty string value")
 	assert.True(t, testLookup.GetLowerString("key.string.number") == "1234", "expected lookup to return valid string value")
 	assert.True(t, testLookup.GetLowerString("key.string.not existing") == "", "expected lookup to return empty string value")
+
+	//Test With multiple backends
+	keyPrefixes := []string{"key1", "key2", "key3", "key4"}
+	backends := getMultipleCustomBackends(keyPrefixes)
+	testLookup = New(backends...)
+
+	for _, prefix := range keyPrefixes {
+		assert.True(t, testLookup.GetLowerString(prefix+".string.valid") == "valid-string", "expected lookup to return valid lowercase string value")
+		assert.True(t, testLookup.GetLowerString(prefix+".string.valid.lower.case") == "valid-string", "expected lookup to return valid lowercase string value")
+		assert.True(t, testLookup.GetLowerString(prefix+".string.valid.upper.case") == "valid-string", "expected lookup to return valid lowercase string value")
+		assert.True(t, testLookup.GetLowerString(prefix+".string.valid.mixed.case") == "valid-string", "expected lookup to return valid lowercase string value")
+		assert.True(t, testLookup.GetLowerString(prefix+".string.empty") == "", "expected lookup to return empty string value")
+		assert.True(t, testLookup.GetLowerString(prefix+".string.nil") == "", "expected lookup to return empty string value")
+		assert.True(t, testLookup.GetLowerString(prefix+".string.number") == "1234", "expected lookup to return valid string value")
+		assert.True(t, testLookup.GetLowerString(prefix+".string.not existing") == "", "expected lookup to return empty string value")
+	}
 }
 
 func TestGetDuration(t *testing.T) {
@@ -91,6 +149,27 @@ func TestGetDuration(t *testing.T) {
 	assert.True(t, testLookup.GetDuration("key.duration.valid.empty").String() == (0*time.Second).String(), "expected valid  default time value")
 	//default when no time unit provided
 	assert.True(t, testLookup.GetDuration("key.duration.valid.no.unit").String() == (12*time.Nanosecond).String(), "expected valid default time value with default unit")
+
+	//Test With multiple backends
+	keyPrefixes := []string{"key1", "key2", "key3", "key4"}
+	backends := getMultipleCustomBackends(keyPrefixes)
+	testLookup = New(backends...)
+
+	for _, prefix := range keyPrefixes {
+		assert.True(t, testLookup.GetDuration(prefix+".duration.valid.hour").String() == (24*time.Hour).String(), "expected valid time value")
+		assert.True(t, testLookup.GetDuration(prefix+".duration.valid.minute").String() == (24*time.Minute).String(), "expected valid time value")
+		assert.True(t, testLookup.GetDuration(prefix+".duration.valid.second").String() == (24*time.Second).String(), "expected valid time value")
+		assert.True(t, testLookup.GetDuration(prefix+".duration.valid.millisecond").String() == (24*time.Millisecond).String(), "expected valid time value")
+		assert.True(t, testLookup.GetDuration(prefix+".duration.valid.microsecond").String() == (24*time.Microsecond).String(), "expected valid time value")
+		assert.True(t, testLookup.GetDuration(prefix+".duration.valid.nanosecond").String() == (24*time.Nanosecond).String(), "expected valid time value")
+		//default value tests
+		assert.True(t, testLookup.GetDuration(prefix+".duration.valid.not.existing").String() == (0*time.Second).String(), "expected valid default time value")
+		assert.True(t, testLookup.GetDuration(prefix+".duration.valid.invalid").String() == (0*time.Second).String(), "expected valid  default time value")
+		assert.True(t, testLookup.GetDuration(prefix+".duration.valid.nil").String() == (0*time.Second).String(), "expected valid  default time value")
+		assert.True(t, testLookup.GetDuration(prefix+".duration.valid.empty").String() == (0*time.Second).String(), "expected valid  default time value")
+		//default when no time unit provided
+		assert.True(t, testLookup.GetDuration(prefix+".duration.valid.no.unit").String() == (12*time.Nanosecond).String(), "expected valid default time value with default unit")
+	}
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -100,13 +179,102 @@ func TestUnmarshal(t *testing.T) {
 	networkConfig := fab.NetworkConfig{}
 	testLookup.UnmarshalKey("channels", &networkConfig.Channels)
 
-	assert.True(t, len(networkConfig.Channels) == 3)
-	assert.True(t, len(networkConfig.Channels["mychannel"].Peers) == 1)
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses == 1)
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets == 1)
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.MaxBackoff.String() == (5*time.Second).String())
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String() == (500*time.Millisecond).String())
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor == 2.0)
+	assert.Equal(t, len(networkConfig.Channels), 3)
+	assert.Equal(t, len(networkConfig.Channels["mychannel"].Peers), 1)
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses, 1)
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets, 1)
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.MaxBackoff.String(), (5 * time.Second).String())
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String(), (500 * time.Millisecond).String())
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor, 2.0)
+
+}
+
+func TestUnmarshalWithMultipleBackend(t *testing.T) {
+
+	sampleViper := newViper()
+
+	var backends []core.ConfigBackend
+	backendMap := make(map[string]interface{})
+	backendMap["client"] = sampleViper.Get("client")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["channels"] = sampleViper.Get("channels")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["certificateAuthorities"] = sampleViper.Get("certificateAuthorities")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["entityMatchers"] = sampleViper.Get("entityMatchers")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["organizations"] = sampleViper.Get("organizations")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["orderers"] = sampleViper.Get("orderers")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["peers"] = sampleViper.Get("peers")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	//create lookup with all 7 backends having 7 different entities
+	testLookup := New(backends...)
+
+	//output struct
+	networkConfig := fab.NetworkConfig{}
+	assert.Nil(t, testLookup.UnmarshalKey("client", &networkConfig.Client), "unmarshalKey supposed to succeed")
+	assert.Nil(t, testLookup.UnmarshalKey("channels", &networkConfig.Channels), "unmarshalKey supposed to succeed")
+	assert.Nil(t, testLookup.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities), "unmarshalKey supposed to succeed")
+	assert.Nil(t, testLookup.UnmarshalKey("entityMatchers", &networkConfig.EntityMatchers), "unmarshalKey supposed to succeed")
+	assert.Nil(t, testLookup.UnmarshalKey("organizations", &networkConfig.Organizations), "unmarshalKey supposed to succeed")
+	assert.Nil(t, testLookup.UnmarshalKey("orderers", &networkConfig.Orderers), "unmarshalKey supposed to succeed")
+	assert.Nil(t, testLookup.UnmarshalKey("peers", &networkConfig.Peers), "unmarshalKey supposed to succeed")
+
+	//Client
+	assert.True(t, networkConfig.Client.Organization == "org1")
+
+	//Channel
+	assert.Equal(t, len(networkConfig.Channels), 3)
+	assert.Equal(t, len(networkConfig.Channels["mychannel"].Peers), 1)
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses, 1)
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets, 1)
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.MaxBackoff.String(), (5 * time.Second).String())
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String(), (500 * time.Millisecond).String())
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor, 2.0)
+
+	//CertificateAuthorities
+	assert.Equal(t, len(networkConfig.CertificateAuthorities), 2)
+	assert.Equal(t, networkConfig.CertificateAuthorities["local.ca.org1.example.com"].URL, "https://ca.org1.example.com:7054")
+	assert.Equal(t, networkConfig.CertificateAuthorities["local.ca.org2.example.com"].URL, "https://ca.org2.example.com:8054")
+
+	//EntityMatchers
+	assert.Equal(t, len(networkConfig.EntityMatchers), 4)
+	assert.Equal(t, len(networkConfig.EntityMatchers["peer"]), 8)
+	assert.Equal(t, networkConfig.EntityMatchers["peer"][0].MappedHost, "local.peer0.org1.example.com")
+	assert.Equal(t, len(networkConfig.EntityMatchers["orderer"]), 4)
+	assert.Equal(t, networkConfig.EntityMatchers["orderer"][0].MappedHost, "local.orderer.example.com")
+	assert.Equal(t, len(networkConfig.EntityMatchers["certificateauthority"]), 2)
+	assert.Equal(t, networkConfig.EntityMatchers["certificateauthority"][0].MappedHost, "local.ca.org1.example.com")
+	assert.Equal(t, len(networkConfig.EntityMatchers["channel"]), 1)
+	assert.Equal(t, networkConfig.EntityMatchers["channel"][0].MappedName, "ch1")
+
+	//Organizations
+	assert.Equal(t, len(networkConfig.Organizations), 3)
+	assert.Equal(t, networkConfig.Organizations["org1"].MSPID, "Org1MSP")
+
+	//Orderer
+	assert.Equal(t, len(networkConfig.Orderers), 1)
+	assert.Equal(t, networkConfig.Orderers["local.orderer.example.com"].URL, "orderer.example.com:7050")
+
+	//Peer
+	assert.Equal(t, len(networkConfig.Peers), 2)
+	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].URL, "peer0.org1.example.com:7051")
+	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].EventURL, "peer0.org1.example.com:7053")
 
 }
 
@@ -222,35 +390,36 @@ func TestLookupUnmarshalAgainstViperUnmarshal(t *testing.T) {
 
 }
 
-func setupCustomBackend() {
+func setupCustomBackend(keyPrefix string) *mocks.MockConfigBackend {
+
 	backendMap := make(map[string]interface{})
 
-	backendMap["key.bool.true"] = true
-	backendMap["key.bool.false"] = false
-	backendMap["key.bool.invalid"] = "INVALID"
+	backendMap[keyPrefix+".bool.true"] = true
+	backendMap[keyPrefix+".bool.false"] = false
+	backendMap[keyPrefix+".bool.invalid"] = "INVALID"
 
-	backendMap["key.int.positive"] = 5
-	backendMap["key.int.negative"] = -5
-	backendMap["key.int.invalid"] = "INVALID"
+	backendMap[keyPrefix+".int.positive"] = 5
+	backendMap[keyPrefix+".int.negative"] = -5
+	backendMap[keyPrefix+".int.invalid"] = "INVALID"
 
-	backendMap["key.string.valid"] = "valid-string"
-	backendMap["key.string.valid.mixed.case"] = "VaLiD-StRiNg"
-	backendMap["key.string.valid.lower.case"] = "valid-string"
-	backendMap["key.string.valid.upper.case"] = "VALID-STRING"
-	backendMap["key.string.empty"] = ""
-	backendMap["key.string.nil"] = nil
-	backendMap["key.string.number"] = 1234
+	backendMap[keyPrefix+".string.valid"] = "valid-string"
+	backendMap[keyPrefix+".string.valid.mixed.case"] = "VaLiD-StRiNg"
+	backendMap[keyPrefix+".string.valid.lower.case"] = "valid-string"
+	backendMap[keyPrefix+".string.valid.upper.case"] = "VALID-STRING"
+	backendMap[keyPrefix+".string.empty"] = ""
+	backendMap[keyPrefix+".string.nil"] = nil
+	backendMap[keyPrefix+".string.number"] = 1234
 
-	backendMap["key.duration.valid.hour"] = "24h"
-	backendMap["key.duration.valid.minute"] = "24m"
-	backendMap["key.duration.valid.second"] = "24s"
-	backendMap["key.duration.valid.millisecond"] = "24ms"
-	backendMap["key.duration.valid.microsecond"] = "24µs"
-	backendMap["key.duration.valid.nanosecond"] = "24ns"
-	backendMap["key.duration.valid.no.unit"] = "12"
-	backendMap["key.duration.invalid"] = "24XYZ"
-	backendMap["key.duration.nil"] = nil
-	backendMap["key.duration.empty"] = ""
+	backendMap[keyPrefix+".duration.valid.hour"] = "24h"
+	backendMap[keyPrefix+".duration.valid.minute"] = "24m"
+	backendMap[keyPrefix+".duration.valid.second"] = "24s"
+	backendMap[keyPrefix+".duration.valid.millisecond"] = "24ms"
+	backendMap[keyPrefix+".duration.valid.microsecond"] = "24µs"
+	backendMap[keyPrefix+".duration.valid.nanosecond"] = "24ns"
+	backendMap[keyPrefix+".duration.valid.no.unit"] = "12"
+	backendMap[keyPrefix+".duration.invalid"] = "24XYZ"
+	backendMap[keyPrefix+".duration.nil"] = nil
+	backendMap[keyPrefix+".duration.empty"] = ""
 
 	//test fab network config
 	sampleViper := newViper()
@@ -262,7 +431,15 @@ func setupCustomBackend() {
 	backendMap["orderers"] = sampleViper.Get("orderers")
 	backendMap["peers"] = sampleViper.Get("peers")
 
-	backend = &mocks.MockConfigBackend{KeyValueMap: backendMap}
+	return &mocks.MockConfigBackend{KeyValueMap: backendMap}
+}
+
+func getMultipleCustomBackends(keyPrefixes []string) []core.ConfigBackend {
+	var backends []core.ConfigBackend
+	for _, prefix := range keyPrefixes {
+		backends = append(backends, setupCustomBackend(prefix))
+	}
+	return backends
 }
 
 func TestUnmarshalWithHookFunc(t *testing.T) {

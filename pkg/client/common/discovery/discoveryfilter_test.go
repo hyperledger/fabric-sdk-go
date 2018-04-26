@@ -34,7 +34,7 @@ func TestDiscoveryFilter(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	config1, err := fabImpl.ConfigFromBackend(configBackend)
+	config1, err := fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

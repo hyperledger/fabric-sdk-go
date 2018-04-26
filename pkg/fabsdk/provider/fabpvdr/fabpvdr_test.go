@@ -89,17 +89,17 @@ func newInfraProvider(t *testing.T) *InfraProvider {
 		t.Fatalf("config.FromFile failed: %v", err)
 	}
 
-	cryptoCfg := cryptosuite.ConfigFromBackend(configBackend)
+	cryptoCfg := cryptosuite.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	endpointCfg, err := fabImpl.ConfigFromBackend(configBackend)
+	endpointCfg, err := fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	identityCfg, err := mspImpl.ConfigFromBackend(configBackend)
+	identityCfg, err := mspImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

@@ -8,19 +8,17 @@ package integration
 
 import (
 	"os"
-	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
-	"github.com/spf13/viper"
 )
 
 const (
-	configPath          = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_test.yaml"
-	configPathNoOrderer = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_test_no_orderer.yaml"
-	entityMangerLocal   = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test//fixtures/config/entity_matchers_local.yaml"
+	configPath           = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_test.yaml"
+	configPathNoOrderer  = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_test_no_orderer.yaml"
+	entityMangerLocal    = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test//fixtures/config/local_entity_matchers.yaml"
+	localOrdererPeersCAs = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/local_orderers_peers_ca.yaml"
 )
 
 // ConfigBackend contains config backend for integration tests
@@ -36,12 +34,8 @@ func fetchConfigBackend(configPath string) core.ConfigProvider {
 	for _, arg := range args {
 		//If testlocal is enabled, then update config backend to run 'local' test
 		if arg == "testLocal=true" {
-			return func() (core.ConfigBackend, error) {
-				configBackend, err := configProvider()
-				if err != nil {
-					return nil, err
-				}
-				return addLocalEntityMappingToBackend(configBackend)
+			return func() ([]core.ConfigBackend, error) {
+				return appendLocalEntityMappingBackend(configProvider)
 			}
 		}
 	}
@@ -63,32 +57,36 @@ func IsLocal() bool {
 //AddLocalEntityMapping adds local test entity mapping to config backend
 // and returns updated config provider
 func AddLocalEntityMapping(configProvider core.ConfigProvider) core.ConfigProvider {
-	backend, err := configProvider()
-	if err != nil {
-		return func() (core.ConfigBackend, error) {
-			return nil, err
-		}
-	}
-	return func() (core.ConfigBackend, error) {
-		return addLocalEntityMappingToBackend(backend)
+	return func() ([]core.ConfigBackend, error) {
+		return appendLocalEntityMappingBackend(configProvider)
 	}
 }
 
-//addLocalEntityMappingToBackend adds local test entity mapping to config backend
-func addLocalEntityMappingToBackend(backend core.ConfigBackend) (core.ConfigBackend, error) {
-
-	//Read entity matchers through viper and add it to config backend
-	myViper := viper.New()
-	replacer := strings.NewReplacer(".", "_")
-	myViper.SetEnvKeyReplacer(replacer)
-	myViper.SetConfigFile(pathvar.Subst(entityMangerLocal))
-	err := myViper.MergeInConfig()
+//appendLocalEntityMappingBackend appends entity matcher backend to given config provider
+func appendLocalEntityMappingBackend(configProvider core.ConfigProvider) ([]core.ConfigBackend, error) {
+	//Current backend
+	currentBackends, err := configProvider()
 	if err != nil {
 		return nil, err
 	}
-	backendMap := make(map[string]interface{})
-	backendMap["entityMatchers"] = myViper.Get("entityMatchers")
 
-	return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
+	//Entity matcher config backend
+	configProvider = config.FromFile(pathvar.Subst(entityMangerLocal))
+	matcherBackends, err := configProvider()
+	if err != nil {
+		return nil, err
+	}
 
+	//Local orderer, peer, CA config backend
+	configProvider = config.FromFile(pathvar.Subst(localOrdererPeersCAs))
+	localBackends, err := configProvider()
+	if err != nil {
+		return nil, err
+	}
+
+	//backends should fal back in this order - matcherBackends, localBackends, currentBackends
+	localBackends = append(localBackends, matcherBackends...)
+	localBackends = append(localBackends, currentBackends...)
+
+	return localBackends, nil
 }

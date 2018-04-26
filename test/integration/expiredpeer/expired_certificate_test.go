@@ -97,7 +97,7 @@ func TestExpiredPeersCert(t *testing.T) {
 
 func getConfigBackend(t *testing.T) core.ConfigProvider {
 
-	return func() (core.ConfigBackend, error) {
+	return func() ([]core.ConfigBackend, error) {
 		backend, err := config.FromFile(configPath)()
 		if err != nil {
 			t.Fatalf("failed to read config backend from file, %v", err)
@@ -106,7 +106,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 
 		networkConfig := fab.NetworkConfig{}
 		//get valid peer config
-		err = lookup.New(backend).UnmarshalKey("peers", &networkConfig.Peers)
+		err = lookup.New(backend...).UnmarshalKey("peers", &networkConfig.Peers)
 		if err != nil {
 			t.Fatalf("failed to unmarshal peer network config, %v", err)
 		}
@@ -116,6 +116,6 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		networkConfig.Peers["peer0.org1.example.com"] = peer1
 		backendMap["peers"] = networkConfig.Peers
 
-		return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
+		return []core.ConfigBackend{&mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}}, nil
 	}
 }

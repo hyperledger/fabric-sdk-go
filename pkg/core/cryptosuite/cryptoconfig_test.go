@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	"github.com/stretchr/testify/assert"
 )
 
 const configTestFilePath = "../config/testdata/config_test.yaml"
@@ -27,7 +28,7 @@ func TestCAConfigKeyStorePath(t *testing.T) {
 		t.Fatal("Failed to get config backend")
 	}
 
-	customBackend := getCustomBackend(backend)
+	customBackend := getCustomBackend(backend...)
 
 	cryptoConfig := ConfigFromBackend(customBackend).(*Config)
 
@@ -48,7 +49,7 @@ func TestCAConfigBCCSPSecurityEnabled(t *testing.T) {
 		t.Fatal("Failed to get config backend")
 	}
 
-	customBackend := getCustomBackend(backend)
+	customBackend := getCustomBackend(backend...)
 
 	cryptoConfig := ConfigFromBackend(customBackend).(*Config)
 
@@ -68,7 +69,7 @@ func TestCAConfigSecurityAlgorithm(t *testing.T) {
 		t.Fatal("Failed to get config backend")
 	}
 
-	customBackend := getCustomBackend(backend)
+	customBackend := getCustomBackend(backend...)
 
 	cryptoConfig := ConfigFromBackend(customBackend).(*Config)
 
@@ -88,7 +89,7 @@ func TestCAConfigSecurityLevel(t *testing.T) {
 		t.Fatal("Failed to get config backend")
 	}
 
-	customBackend := getCustomBackend(backend)
+	customBackend := getCustomBackend(backend...)
 
 	cryptoConfig := ConfigFromBackend(customBackend).(*Config)
 
@@ -108,7 +109,7 @@ func TestCAConfigSecurityProvider(t *testing.T) {
 		t.Fatal("Failed to get config backend")
 	}
 
-	customBackend := getCustomBackend(backend)
+	customBackend := getCustomBackend(backend...)
 
 	cryptoConfig := ConfigFromBackend(customBackend).(*Config)
 
@@ -128,7 +129,7 @@ func TestCAConfigSoftVerifyFlag(t *testing.T) {
 		t.Fatal("Failed to get config backend")
 	}
 
-	customBackend := getCustomBackend(backend)
+	customBackend := getCustomBackend(backend...)
 
 	cryptoConfig := ConfigFromBackend(customBackend).(*Config)
 
@@ -148,7 +149,7 @@ func TestCAConfigSecurityProviderPin(t *testing.T) {
 		t.Fatal("Failed to get config backend")
 	}
 
-	customBackend := getCustomBackend(backend)
+	customBackend := getCustomBackend(backend...)
 
 	cryptoConfig := ConfigFromBackend(customBackend).(*Config)
 
@@ -168,7 +169,7 @@ func TestCAConfigSecurityProviderLabel(t *testing.T) {
 		t.Fatal("Failed to get config backend")
 	}
 
-	customBackend := getCustomBackend(backend)
+	customBackend := getCustomBackend(backend...)
 
 	cryptoConfig := ConfigFromBackend(customBackend).(*Config)
 
@@ -211,7 +212,7 @@ func TestCAConfigSecurityProviderCase(t *testing.T) {
 			t.Fatal("Failed to get config backend")
 		}
 
-		customBackend := getCustomBackend(backend)
+		customBackend := getCustomBackend(backend...)
 
 		cryptoConfig := ConfigFromBackend(customBackend).(*Config)
 
@@ -228,14 +229,55 @@ func TestCAConfigSecurityProviderCase(t *testing.T) {
 	}
 }
 
-//getCustomBackend returns custom backend to override config values and to avoid using new config file for test scenarios
-func getCustomBackend(configBackend core.ConfigBackend) *mocks.MockConfigBackend {
+func TestCryptoConfigWithMultipleBackends(t *testing.T) {
+	var backends []core.ConfigBackend
 	backendMap := make(map[string]interface{})
-	backendMap["client.BCCSP.security.enabled"], _ = configBackend.Lookup("client.BCCSP.security.enabled")
-	backendMap["client.BCCSP.security.hashAlgorithm"], _ = configBackend.Lookup("client.BCCSP.security.hashAlgorithm")
-	backendMap["client.BCCSP.security.default.provider"], _ = configBackend.Lookup("client.BCCSP.security.default.provider")
-	backendMap["client.BCCSP.security.ephemeral"], _ = configBackend.Lookup("client.BCCSP.security.ephemeral")
-	backendMap["client.BCCSP.security.softVerify"], _ = configBackend.Lookup("client.BCCSP.security.softVerify")
+	backendMap["client.BCCSP.security.enabled"] = true
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["client.BCCSP.security.hashAlgorithm"] = "SHA2"
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["client.BCCSP.security.default.provider"] = "PKCS11"
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["client.BCCSP.security.level"] = 2
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["client.BCCSP.security.pin"] = "1234"
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["client.credentialStore.cryptoStore.path"] = "/tmp"
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["client.BCCSP.security.label"] = "TESTLABEL"
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	cryptoConfig := ConfigFromBackend(backends...)
+
+	assert.Equal(t, cryptoConfig.IsSecurityEnabled(), true)
+	assert.Equal(t, cryptoConfig.SecurityAlgorithm(), "SHA2")
+	assert.Equal(t, cryptoConfig.SecurityProvider(), "pkcs11")
+	assert.Equal(t, cryptoConfig.SecurityLevel(), 2)
+	assert.Equal(t, cryptoConfig.SecurityProviderPin(), "1234")
+	assert.Equal(t, cryptoConfig.KeyStorePath(), "/tmp/keystore")
+	assert.Equal(t, cryptoConfig.SecurityProviderLabel(), "TESTLABEL")
+}
+
+//getCustomBackend returns custom backend to override config values and to avoid using new config file for test scenarios
+func getCustomBackend(configBackend ...core.ConfigBackend) *mocks.MockConfigBackend {
+	backendMap := make(map[string]interface{})
+	backendMap["client.BCCSP.security.enabled"], _ = configBackend[0].Lookup("client.BCCSP.security.enabled")
+	backendMap["client.BCCSP.security.hashAlgorithm"], _ = configBackend[0].Lookup("client.BCCSP.security.hashAlgorithm")
+	backendMap["client.BCCSP.security.default.provider"], _ = configBackend[0].Lookup("client.BCCSP.security.default.provider")
+	backendMap["client.BCCSP.security.ephemeral"], _ = configBackend[0].Lookup("client.BCCSP.security.ephemeral")
+	backendMap["client.BCCSP.security.softVerify"], _ = configBackend[0].Lookup("client.BCCSP.security.softVerify")
 	backendMap["client.BCCSP.security.level"] = 2
 	backendMap["client.BCCSP.security.pin"] = "1234"
 	backendMap["client.credentialStore.cryptoStore.path"] = "/tmp"

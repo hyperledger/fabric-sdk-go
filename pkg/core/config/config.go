@@ -37,14 +37,14 @@ type Option func(opts *options) error
 // FromReader loads configuration from in.
 // configType can be "json" or "yaml".
 func FromReader(in io.Reader, configType string, opts ...Option) core.ConfigProvider {
-	return func() (core.ConfigBackend, error) {
+	return func() ([]core.ConfigBackend, error) {
 		return initFromReader(in, configType, opts...)
 	}
 }
 
 // FromFile reads from named config file
 func FromFile(name string, opts ...Option) core.ConfigProvider {
-	return func() (core.ConfigBackend, error) {
+	return func() ([]core.ConfigBackend, error) {
 		backend, err := newBackend(opts...)
 		if err != nil {
 			return nil, err
@@ -65,19 +65,19 @@ func FromFile(name string, opts ...Option) core.ConfigProvider {
 
 		setLogLevel(backend)
 
-		return backend, nil
+		return []core.ConfigBackend{backend}, nil
 	}
 }
 
 // FromRaw will initialize the configs from a byte array
 func FromRaw(configBytes []byte, configType string, opts ...Option) core.ConfigProvider {
-	return func() (core.ConfigBackend, error) {
+	return func() ([]core.ConfigBackend, error) {
 		buf := bytes.NewBuffer(configBytes)
 		return initFromReader(buf, configType, opts...)
 	}
 }
 
-func initFromReader(in io.Reader, configType string, opts ...Option) (core.ConfigBackend, error) {
+func initFromReader(in io.Reader, configType string, opts ...Option) ([]core.ConfigBackend, error) {
 	backend, err := newBackend(opts...)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func initFromReader(in io.Reader, configType string, opts ...Option) (core.Confi
 	}
 	setLogLevel(backend)
 
-	return backend, nil
+	return []core.ConfigBackend{backend}, nil
 }
 
 // WithEnvPrefix defines the prefix for environment variable overrides.

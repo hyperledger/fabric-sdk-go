@@ -17,8 +17,8 @@ import (
 )
 
 //ConfigFromBackend returns CryptoSuite config implementation for given backend
-func ConfigFromBackend(coreBackend core.ConfigBackend) core.CryptoSuiteConfig {
-	return &Config{backend: lookup.New(coreBackend)}
+func ConfigFromBackend(coreBackend ...core.ConfigBackend) core.CryptoSuiteConfig {
+	return &Config{backend: lookup.New(coreBackend...)}
 }
 
 // Config represents the crypto suite configuration for the client

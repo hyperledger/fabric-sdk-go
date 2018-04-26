@@ -61,7 +61,7 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 
 	configBackend, err := integration.ConfigBackend()
 
-	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend)
+	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf("Failed to get config backend: %s", err)
 	}

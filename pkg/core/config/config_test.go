@@ -105,9 +105,13 @@ func TestInitConfigWithCmdRoot(t *testing.T) {
 		t.Fatalf("Failed to initialize config backend with cmd root. Error: %s", err)
 	}
 
-	config := cryptosuite.ConfigFromBackend(configBackend1)
+	if len(configBackend1) == 0 {
+		t.Fatal("invalid backend")
+	}
 
-	secAlg, ok := configBackend1.Lookup("client.BCCSP.security.hashAlgorithm")
+	config := cryptosuite.ConfigFromBackend(configBackend1...)
+
+	secAlg, ok := configBackend1[0].Lookup("client.BCCSP.security.hashAlgorithm")
 	if !ok {
 		t.Fatal("supposed to get valid value")
 	}
@@ -162,13 +166,17 @@ func TestMultipleVipers(t *testing.T) {
 		t.Log(err.Error())
 	}
 
+	if len(configBackend1) == 0 {
+		t.Fatal("invalid backend")
+	}
+
 	// Make sure initial value is unaffected
 	testValue2 := viper.GetString("test.testkey")
 	if testValue2 != "testvalue" {
 		t.Fatalf("Expected testvalue after config initialization")
 	}
 	// Make sure Go SDK config is unaffected
-	testValue3, ok := configBackend1.Lookup("client.BCCSP.security.softVerify")
+	testValue3, ok := configBackend1[0].Lookup("client.BCCSP.security.softVerify")
 	if !ok {
 		t.Fatalf("Expected valid value")
 	}
@@ -214,7 +222,11 @@ func TestEnvironmentVariablesSpecificCmdRoot(t *testing.T) {
 		t.Log(err.Error())
 	}
 
-	value, ok := configBackend1.Lookup("env.test")
+	if len(configBackend1) == 0 {
+		t.Fatal("invalid backend")
+	}
+
+	value, ok := configBackend1[0].Lookup("env.test")
 	if value != "456" || !ok {
 		t.Fatalf("Expected environment variable value but got: %s", testValue)
 	}
@@ -234,7 +246,10 @@ func setUp(m *testing.M) {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	configBackend = cfgBackend
+	if len(cfgBackend) != 1 {
+		panic("invalid backend found")
+	}
+	configBackend = cfgBackend[0]
 }
 
 func teardown() {
@@ -329,11 +344,6 @@ func badOpt() Option {
 }
 
 func TestConfigBackend_Lookup(t *testing.T) {
-	var err error
-	configBackend, err = FromFile(configTestFilePath)()
-	if err != nil {
-		t.Fatalf("Unexpected error reading config backend: %v", err)
-	}
 
 	checkConfigStringKey(t, "name", "global-trade-network", true)
 

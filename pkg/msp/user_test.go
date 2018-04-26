@@ -27,11 +27,11 @@ func TestUserMethods(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read config: %v", err)
 	}
-	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend)
+	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf("Failed to read config: %v", err)
 	}
-	identityConfig, err := ConfigFromBackend(configBackend)
+	identityConfig, err := ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf("Failed to read config: %v", err)
 	}

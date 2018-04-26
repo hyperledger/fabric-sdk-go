@@ -32,14 +32,14 @@ func TestWithCustomStores(t *testing.T) {
 		t.Fatalf("Unexpected error from config backend: %v", err)
 	}
 
-	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend)
+	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend...)
 
-	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	identityConfig, err := mspimpl.ConfigFromBackend(configBackend)
+	identityConfig, err := mspimpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}

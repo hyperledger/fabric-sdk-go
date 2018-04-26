@@ -23,7 +23,7 @@ func TestStaticDiscovery(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	config1, err := fabImpl.ConfigFromBackend(configBackend)
+	config1, err := fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -58,7 +58,7 @@ func TestStaticDiscoveryWhenChannelIsEmpty(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	config1, err := fabImpl.ConfigFromBackend(configBackend)
+	config1, err := fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -74,7 +74,7 @@ func TestStaticLocalDiscovery(t *testing.T) {
 	configBackend, err := config.FromFile("../../../../../test/fixtures/config/config_test.yaml")()
 	assert.NoError(t, err)
 
-	config1, err := fabImpl.ConfigFromBackend(configBackend)
+	config1, err := fabImpl.ConfigFromBackend(configBackend...)
 	assert.NoError(t, err)
 
 	discoveryProvider, err := New(config1)

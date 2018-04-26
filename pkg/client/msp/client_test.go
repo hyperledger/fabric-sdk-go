@@ -175,10 +175,10 @@ func (f *textFixture) setup() *fabsdk.FabricSDK {
 	}
 
 	//Override ca matchers for this test
-	customBackend := getCustomBackend(backend)
+	customBackend := getCustomBackend(backend...)
 
-	configProvider := func() (core.ConfigBackend, error) {
-		return customBackend, nil
+	configProvider := func() ([]core.ConfigBackend, error) {
+		return []core.ConfigBackend{customBackend}, nil
 	}
 
 	// Instantiate the SDK
@@ -233,12 +233,12 @@ func randomUsername() string {
 	return "user" + strconv.Itoa(rand.Intn(500000))
 }
 
-func getCustomBackend(backend core.ConfigBackend) *mocks.MockConfigBackend {
+func getCustomBackend(backend ...core.ConfigBackend) *mocks.MockConfigBackend {
 	backendMap := make(map[string]interface{})
 
 	//Custom URLs for ca configs
 	networkConfig := fab.NetworkConfig{}
-	configLookup := lookup.New(backend)
+	configLookup := lookup.New(backend...)
 	configLookup.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 
 	ca1Config := networkConfig.CertificateAuthorities["ca.org1.example.com"]

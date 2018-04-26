@@ -14,6 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
@@ -76,16 +77,19 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	}
 	setup.Identity = adminIdentity
 
+	var cfgBackends []core.ConfigBackend
 	configBackend, err := sdk.Config()
 	if err != nil {
 		//For some tests SDK may not have backend set, try with config file if backend is missing
-		configBackend, err = ConfigBackend()
+		cfgBackends, err = ConfigBackend()
 		if err != nil {
 			return errors.Wrapf(err, "failed to get config backend from config: %v", err)
 		}
+	} else {
+		cfgBackends = append(cfgBackends, configBackend)
 	}
 
-	targets, err := OrgTargetPeers(configBackend, []string{setup.OrgID})
+	targets, err := OrgTargetPeers([]string{setup.OrgID}, cfgBackends...)
 	if err != nil {
 		return errors.Wrapf(err, "loading target peers from config failed")
 	}

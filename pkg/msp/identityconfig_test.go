@@ -17,24 +17,30 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
 const (
-	configTestFilePath              = "../core/config/testdata/config_test.yaml"
-	configEmbeddedUsersTestFilePath = "../core/config/testdata/config_test_embedded_pems.yaml"
-	configPemTestFilePath           = "../core/config/testdata/config_test_pem.yaml"
-	configType                      = "yaml"
+	configTestFilePath               = "../core/config/testdata/config_test.yaml"
+	configEmbeddedUsersTestFilePath  = "../core/config/testdata/config_test_embedded_pems.yaml"
+	configPemTestFilePath            = "../core/config/testdata/config_test_pem.yaml"
+	configTestEntityMatchersFilePath = "../core/config/testdata/config_test_entity_matchers.yaml"
+	configType                       = "yaml"
 )
 
 func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	//Tamper 'client.network' value and use a new config to avoid conflicting with other tests
 
-	configBackend, err := config.FromFile(configTestFilePath)()
+	configBackends, err := config.FromFile(configTestFilePath)()
 	if err != nil {
 		t.Fatalf("Unexpected error reading config: %v", err)
 	}
+	if len(configBackends) != 1 {
+		t.Fatalf("expected 1 backend but got %d", len(configBackends))
+	}
+	configBackend := configBackends[0]
 
 	backendMap := make(map[string]interface{})
 	backendMap["client"], _ = configBackend.Lookup("client")
@@ -105,7 +111,7 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	}
 
 	//Test TLSCA Cert Pool (Positive test case)
-	config, err := ConfigFromBackend(embeddedBackend)
+	config, err := ConfigFromBackend(embeddedBackend...)
 	if err != nil {
 		t.Fatalf("Failed to initialize identity config , reason: %v", err)
 	}
@@ -164,7 +170,7 @@ func TestInitConfigFromRawWithPem(t *testing.T) {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
 
-	config, err := ConfigFromBackend(backend)
+	config, err := ConfigFromBackend(backend...)
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
@@ -314,7 +320,7 @@ func TestCAConfigCryptoFiles(t *testing.T) {
 		t.Fatal("Failed to get config backend")
 	}
 
-	config, err := ConfigFromBackend(backend)
+	config, err := ConfigFromBackend(backend...)
 	if err != nil {
 		t.Fatal("Failed to get identity config")
 	}
@@ -344,14 +350,14 @@ func TestCAConfig(t *testing.T) {
 		t.Fatal("Failed to get config backend")
 	}
 
-	config, err := ConfigFromBackend(backend)
+	config, err := ConfigFromBackend(backend...)
 	if err != nil {
 		t.Fatal("Failed to get identity config")
 	}
 	identityConfig := config.(*IdentityConfig)
 	//Test Crypto config path
 
-	val, ok := backend.Lookup("client.cryptoconfig.path")
+	val, ok := backend[0].Lookup("client.cryptoconfig.path")
 	if !ok || val == nil {
 		t.Fatal("expected valid value")
 	}
@@ -374,7 +380,7 @@ func TestCAConfig(t *testing.T) {
 	assert.NotNil(t, caConfig, "Get CA Config failed")
 
 	// Test CA KeyStore Path
-	testCAKeyStorePath(backend, t, identityConfig)
+	testCAKeyStorePath(backend[0], t, identityConfig)
 
 	// test Client
 	c, err := identityConfig.Client()
@@ -409,7 +415,7 @@ func TestCACertAndKeys(t *testing.T) {
 	}
 	orgIDs := []string{"org1", "org2"}
 
-	config, err := ConfigFromBackend(backend)
+	config, err := ConfigFromBackend(backend...)
 	if err != nil {
 		t.Fatal("Failed to get identity config")
 	}
@@ -432,4 +438,67 @@ func TestCACertAndKeys(t *testing.T) {
 		}
 	}
 
+}
+
+func TestIdentityConfigWithMultipleBackends(t *testing.T) {
+
+	sampleViper := newViper(configTestEntityMatchersFilePath)
+
+	var backends []core.ConfigBackend
+	backendMap := make(map[string]interface{})
+	backendMap["client"] = sampleViper.Get("client")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["channels"] = sampleViper.Get("channels")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["certificateAuthorities"] = sampleViper.Get("certificateAuthorities")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["entityMatchers"] = sampleViper.Get("entityMatchers")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["organizations"] = sampleViper.Get("organizations")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["orderers"] = sampleViper.Get("orderers")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["peers"] = sampleViper.Get("peers")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	//create endpointConfig with all 7 backends having 7 different entities
+	identityConfig, err := ConfigFromBackend(backends...)
+
+	assert.Nil(t, err, "ConfigFromBackend should have been successful for multiple backends")
+	assert.NotNil(t, identityConfig, "Invalid identity config from multiple backends")
+
+	//Client
+	client, err := identityConfig.Client()
+	assert.Nil(t, err, "identityConfig.Client() should have been successful for multiple backends")
+	assert.Equal(t, client.Organization, "org1")
+
+	//CA Config
+	caConfig, err := identityConfig.CAConfig("org1")
+	assert.Nil(t, err, "identityConfig.CAConfig(org1) should have been successful for multiple backends")
+	assert.Equal(t, caConfig.URL, "https://ca.org1.example.com:7054")
+
+}
+
+func newViper(path string) *viper.Viper {
+	myViper := viper.New()
+	replacer := strings.NewReplacer(".", "_")
+	myViper.SetEnvKeyReplacer(replacer)
+	myViper.SetConfigFile(path)
+	err := myViper.MergeInConfig()
+	if err != nil {
+		panic(err)
+	}
+	return myViper
 }

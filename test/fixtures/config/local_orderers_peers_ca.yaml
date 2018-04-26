@@ -1,0 +1,128 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+# The network connection profile provides client applications the information about the target
+# blockchain network that are necessary for the applications to interact with it. These are all
+# knowledge that must be acquired from out-of-band sources. This file provides such a source.
+#
+
+#
+# List of orderers to send transaction and channel create/update requests to. For the time
+# being only one orderer is needed. If more than one is defined, which one get used by the
+# SDK is implementation specific. Consult each SDK's documentation for its handling of orderers.
+#
+orderers:
+  local.orderer.example.com:
+    url: orderer.example.com:7050
+
+    # these are standard properties defined by the gRPC library
+    # they will be passed in as-is to gRPC client constructor
+    grpcOptions:
+      ssl-target-name-override: orderer.example.com
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+
+#
+# List of peers to send various requests to, including endorsement, query
+# and event listener registration.
+#
+peers:
+  local.peer0.org1.example.com:
+    # this URL is used to send endorsement and query requests
+    url: peer0.org1.example.com:7051
+    # eventUrl is only needed when using eventhub (default is delivery service)
+    eventUrl: peer0.org1.example.com:7053
+
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
+  local.peer0.org2.example.com:
+    url: peer0.org2.example.com:8051
+    # eventUrl is only needed when using eventhub (default is delivery service)
+    eventUrl: peer0.org2.example.com:8053
+    grpcOptions:
+      ssl-target-name-override: peer0.org2.example.com
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+
+#
+# Fabric-CA is a special kind of Certificate Authority provided by Hyperledger Fabric which allows
+# certificate management to be done via REST APIs. Application may choose to use a standard
+# Certificate Authority instead of Fabric-CA, in which case this section would not be specified.
+#
+certificateAuthorities:
+  local.ca.org1.example.com:
+    url: https://ca.org1.example.com:7054
+    tlsCACerts:
+      # Comma-Separated list of paths
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
+      # Client key and cert for SSL handshake with Fabric CA
+      client:
+        key:
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem
+        cert:
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem
+
+    # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
+    # needed to enroll and invoke new users.
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    # [Optional] The optional name of the CA.
+    caName: ca.org1.example.com
+  local.ca.org2.example.com:
+    url: https://ca.org2.example.com:8054
+    tlsCACerts:
+      # Comma-Separated list of paths
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
+      # Client key and cert for SSL handshake with Fabric CA
+      client:
+        key:
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem
+        cert:
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem
+
+     # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
+     # needed to enroll and invoke new users.
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    # [Optional] The optional name of the CA.
+    caName: ca.org2.example.com

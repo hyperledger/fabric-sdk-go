@@ -415,13 +415,13 @@ func getCustomBackend(configPath string) (*mocks.MockConfigBackend, error) {
 		return nil, err
 	}
 	backendMap := make(map[string]interface{})
-	backendMap["client"], _ = backend.Lookup("client")
-	backendMap["certificateAuthorities"], _ = backend.Lookup("certificateAuthorities")
-	backendMap["entityMatchers"], _ = backend.Lookup("entityMatchers")
-	backendMap["peers"], _ = backend.Lookup("peers")
-	backendMap["organizations"], _ = backend.Lookup("organizations")
-	backendMap["orderers"], _ = backend.Lookup("orderers")
-	backendMap["channels"], _ = backend.Lookup("channels")
+	backendMap["client"], _ = backend[0].Lookup("client")
+	backendMap["certificateAuthorities"], _ = backend[0].Lookup("certificateAuthorities")
+	backendMap["entityMatchers"], _ = backend[0].Lookup("entityMatchers")
+	backendMap["peers"], _ = backend[0].Lookup("peers")
+	backendMap["organizations"], _ = backend[0].Lookup("organizations")
+	backendMap["orderers"], _ = backend[0].Lookup("orderers")
+	backendMap["channels"], _ = backend[0].Lookup("channels")
 
 	return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
 }

@@ -26,7 +26,7 @@ type Providers interface {
 }
 
 //ConfigProvider provides config backend for SDK
-type ConfigProvider func() (ConfigBackend, error)
+type ConfigProvider func() ([]ConfigBackend, error)
 
 //ConfigBackend backend for all config types in SDK
 type ConfigBackend interface {

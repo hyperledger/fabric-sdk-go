@@ -85,14 +85,14 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 		t.Fatalf("Unexpected error from config backend: %v", err)
 	}
 
-	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend)
+	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend...)
 
-	endpointConfig, err := fabImpl.ConfigFromBackend(configBackend)
+	endpointConfig, err := fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	identityConfig, err := msp.ConfigFromBackend(configBackend)
+	identityConfig, err := msp.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}

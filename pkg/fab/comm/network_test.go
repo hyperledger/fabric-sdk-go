@@ -22,7 +22,7 @@ func TestNetworkPeerConfigFromURL(t *testing.T) {
 		t.Fatalf("Unexpected error reading config backend: %v", err)
 	}
 
-	sampleConfig, err := fabImpl.ConfigFromBackend(configBackend)
+	sampleConfig, err := fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf("Unexpected error reading config: %v", err)
 	}

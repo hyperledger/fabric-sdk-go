@@ -414,11 +414,11 @@ entityMatchers:
 
   certificateAuthority:
     - pattern: (\w+).org1.example.(\w+)
-      urlSubstitutionExp:
+      urlSubstitutionExp: https://ca.org1.example.com:7054
       mappedHost: local.ca.org1.example.com
 
     - pattern: (\w+).org2.example.(\w+)
-      urlSubstitutionExp:
+      urlSubstitutionExp: https://ca.org2.example.com:8054
       mappedHost: local.ca.org2.example.com
 
   channel:

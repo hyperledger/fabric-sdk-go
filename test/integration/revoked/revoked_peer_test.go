@@ -202,7 +202,7 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 
 func getConfigBackend(t *testing.T) core.ConfigProvider {
 
-	return func() (core.ConfigBackend, error) {
+	return func() ([]core.ConfigBackend, error) {
 		backend, err := config.FromFile(configPath)()
 		if err != nil {
 			t.Fatalf("failed to read config backend from file, %v", err)
@@ -211,7 +211,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 
 		networkConfig := fab.NetworkConfig{}
 		//get valid peer config
-		err = lookup.New(backend).UnmarshalKey("peers", &networkConfig.Peers)
+		err = lookup.New(backend...).UnmarshalKey("peers", &networkConfig.Peers)
 		if err != nil {
 			t.Fatalf("failed to unmarshal peer network config, %v", err)
 		}
@@ -229,7 +229,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		networkConfig.Peers["peer1.org2.example.com"] = peer2
 
 		//get valid org2
-		err = lookup.New(backend).UnmarshalKey("organizations", &networkConfig.Organizations)
+		err = lookup.New(backend...).UnmarshalKey("organizations", &networkConfig.Organizations)
 		if err != nil {
 			t.Fatalf("failed to unmarshal organizations network config, %v", err)
 		}
@@ -241,7 +241,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		networkConfig.Organizations["org2"] = org2
 
 		//custom channel
-		err = lookup.New(backend).UnmarshalKey("channels", &networkConfig.Channels)
+		err = lookup.New(backend...).UnmarshalKey("channels", &networkConfig.Channels)
 		if err != nil {
 			t.Fatalf("failed to unmarshal entityMatchers network config, %v", err)
 		}
@@ -261,6 +261,6 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		backendMap["organizations"] = networkConfig.Organizations
 		backendMap["channels"] = networkConfig.Channels
 
-		return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
+		return []core.ConfigBackend{&mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}}, nil
 	}
 }

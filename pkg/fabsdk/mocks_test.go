@@ -34,12 +34,12 @@ func newMockCorePkg(configBackendProvider core.ConfigProvider) (*mockCorePkg, er
 		return nil, err
 	}
 
-	endpointConfig, err := fabImpl.ConfigFromBackend(configBackend)
+	endpointConfig, err := fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		return nil, err
 	}
 
-	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend)
+	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend...)
 
 	pkgSuite := defPkgSuite{}
 	sdkcore, err := pkgSuite.Core()

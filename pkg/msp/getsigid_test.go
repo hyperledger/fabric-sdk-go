@@ -104,12 +104,12 @@ func getConfigs(t *testing.T) (core.CryptoSuiteConfig, providersFab.EndpointConf
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend)
-	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend...)
+	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
-	identityConfig, err := ConfigFromBackend(configBackend)
+	identityConfig, err := ConfigFromBackend(configBackend...)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
@@ -176,12 +176,12 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
 
-	identityConfig, err := ConfigFromBackend(configBackend)
+	identityConfig, err := ConfigFromBackend(configBackend...)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
@@ -201,12 +201,12 @@ func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
 
-	identityConfig, err := ConfigFromBackend(configBackend)
+	identityConfig, err := ConfigFromBackend(configBackend...)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}

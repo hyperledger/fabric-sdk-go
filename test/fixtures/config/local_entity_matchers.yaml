@@ -9,7 +9,6 @@
 # knowledge that must be acquired from out-of-band sources. This file provides such a source.
 #
 
-
 # EntityMatchers enable substitution of network hostnames with static configurations
  # so that properties can be mapped. Regex can be used for this purpose
 # UrlSubstitutionExp can be empty which means the same network hostname will be used
@@ -25,75 +24,43 @@ entityMatchers:
       urlSubstitutionExp: localhost:7051
       eventUrlSubstitutionExp: localhost:7053
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
-      mappedHost: peer0.org1.example.com
+      mappedHost: local.peer0.org1.example.com
 
     - pattern: (\w+).org2.example.(\w+)
       urlSubstitutionExp: localhost:8051
       eventUrlSubstitutionExp: localhost:8053
       sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
-      mappedHost: peer0.org2.example.com
+      mappedHost: local.peer0.org2.example.com
 
-    - pattern: (\w+).example.(\w+)
+    - pattern: (\w+).org1.example.(\w+):(\d+)
       urlSubstitutionExp: localhost:7051
       eventUrlSubstitutionExp: localhost:7053
-      sslTargetOverrideUrlSubstitutionExp: localhost
-      mappedHost: peer0.org1.example.com
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
+      mappedHost: local.peer0.org1.example.com
 
-    - pattern: (\w+).example2.(\w+):(\d+)
-      urlSubstitutionExp: localhost:7051
-      eventUrlSubstitutionExp: localhost:7053
-      sslTargetOverrideUrlSubstitutionExp: localhost
-      mappedHost: peer0.org2.example.com
-
-    - pattern: (\w+).example3.(\w+)
-      urlSubstitutionExp:
-      eventUrlSubstitutionExp:
-      sslTargetOverrideUrlSubstitutionExp:
-      mappedHost: peer0.org1.example.com
-
-    - pattern: (\w+).example4.(\w+):(\d+)
-      urlSubstitutionExp: $1.org1.example.$2:$3
-      eventUrlSubstitutionExp: $1.org1.example.$2:7053
-      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
-      mappedHost: peer0.org1.example.com
-
-    - pattern: (\w+).example2.com:(\d+)
-      urlSubstitutionExp: peer0.org2.example.com:7051
-      eventUrlSubstitutionExp:
-      sslTargetOverrideUrlSubstitutionExp:
-      mappedHost: peer0.org2.example.com
+    - pattern: (\w+).org2.example.(\w+):(\d+)
+      urlSubstitutionExp: localhost:8051
+      eventUrlSubstitutionExp: localhost:8053
+      sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
+      mappedHost: local.peer0.org2.example.com
 
   orderer:
-    - pattern: (\w+).example2.(\w+)
-      urlSubstitutionExp: localhost:7050
-      sslTargetOverrideUrlSubstitutionExp: localhost
-      mappedHost: orderer.example.com
 
     - pattern: (\w+).example.(\w+)
       urlSubstitutionExp: localhost:7050
       sslTargetOverrideUrlSubstitutionExp: orderer.example.com
-      mappedHost: orderer.example.com
+      mappedHost: local.orderer.example.com
 
     - pattern: (\w+).example.(\w+):(\d+)
       urlSubstitutionExp: localhost:7050
       sslTargetOverrideUrlSubstitutionExp: orderer.example.com
-      mappedHost: orderer.example.com
-
-    - pattern: (\w+).example3.(\w+)
-      urlSubstitutionExp:
-      sslTargetOverrideUrlSubstitutionExp:
-      mappedHost: orderer.example.com
-
-    - pattern: (\w+).example4.(\w+):(\d+)
-      urlSubstitutionExp: $1.example.$2:$3
-      sslTargetOverrideUrlSubstitutionExp: $1.example.$2
-      mappedHost: orderer.example.com
+      mappedHost: local.orderer.example.com
 
   certificateAuthority:
     - pattern: (\w+).org1.example.(\w+)
       urlSubstitutionExp: https://localhost:7054
-      mappedHost: ca.org1.example.com
+      mappedHost: local.ca.org1.example.com
 
     - pattern: (\w+).org2.example.(\w+)
       urlSubstitutionExp: https://localhost:8054
-      mappedHost: ca.org2.example.com
+      mappedHost: local.ca.org2.example.com

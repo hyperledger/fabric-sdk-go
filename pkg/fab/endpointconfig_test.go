@@ -27,6 +27,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,7 +51,10 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(fmt.Sprintf("Unexpected error reading config: %v", err))
 	}
-	configBackend = cfgBackend
+	if len(cfgBackend) != 1 {
+		panic(fmt.Sprintf("expected 1 backend but got %d", len(cfgBackend)))
+	}
+	configBackend = cfgBackend[0]
 	r := m.Run()
 	os.Exit(r)
 }
@@ -686,7 +690,7 @@ func TestInitConfigFromRawWithPem(t *testing.T) {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
 
-	config1, err := ConfigFromBackend(backend)
+	config1, err := ConfigFromBackend(backend...)
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
@@ -793,7 +797,7 @@ func TestLoadConfigWithEmbeddedUsersWithPems(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	endpointConfig, err := ConfigFromBackend(configBackend1)
+	endpointConfig, err := ConfigFromBackend(configBackend1...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -828,7 +832,7 @@ func TestLoadConfigWithEmbeddedUsersWithPaths(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	endpointConfig, err := ConfigFromBackend(configBackend1)
+	endpointConfig, err := ConfigFromBackend(configBackend1...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1187,6 +1191,93 @@ func TestPeerChannelConfig(t *testing.T) {
 
 }
 
+func TestEndpointConfigWithMultipleBackends(t *testing.T) {
+
+	sampleViper := newViper(configTestEntityMatchersFilePath)
+
+	var backends []core.ConfigBackend
+	backendMap := make(map[string]interface{})
+	backendMap["client"] = sampleViper.Get("client")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["channels"] = sampleViper.Get("channels")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["certificateAuthorities"] = sampleViper.Get("certificateAuthorities")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["entityMatchers"] = sampleViper.Get("entityMatchers")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["organizations"] = sampleViper.Get("organizations")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["orderers"] = sampleViper.Get("orderers")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	backendMap = make(map[string]interface{})
+	backendMap["peers"] = sampleViper.Get("peers")
+	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+
+	//create endpointConfig with all 7 backends having 7 different entities
+	endpointConfig, err := ConfigFromBackend(backends...)
+
+	assert.Nil(t, err, "ConfigFromBackend should have been successful for multiple backends")
+	assert.NotNil(t, endpointConfig, "Invalid endpoint config from multiple backends")
+
+	//Get network Config
+	networkConfig, err := endpointConfig.NetworkConfig()
+	assert.Nil(t, err, "failed to get network config")
+	assert.NotNil(t, networkConfig, "Invalid networkConfig")
+
+	//Client
+	assert.True(t, networkConfig.Client.Organization == "org1")
+
+	//Channel
+	assert.Equal(t, len(networkConfig.Channels), 3)
+	assert.Equal(t, len(networkConfig.Channels["mychannel"].Peers), 1)
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses, 1)
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets, 1)
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.MaxBackoff.String(), (5 * time.Second).String())
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String(), (500 * time.Millisecond).String())
+	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor, 2.0)
+
+	//CertificateAuthorities
+	assert.Equal(t, len(networkConfig.CertificateAuthorities), 2)
+	assert.Equal(t, networkConfig.CertificateAuthorities["local.ca.org1.example.com"].URL, "https://ca.org1.example.com:7054")
+	assert.Equal(t, networkConfig.CertificateAuthorities["local.ca.org2.example.com"].URL, "https://ca.org2.example.com:8054")
+
+	//EntityMatchers
+	assert.Equal(t, len(networkConfig.EntityMatchers), 4)
+	assert.Equal(t, len(networkConfig.EntityMatchers["peer"]), 8)
+	assert.Equal(t, networkConfig.EntityMatchers["peer"][0].MappedHost, "local.peer0.org1.example.com")
+	assert.Equal(t, len(networkConfig.EntityMatchers["orderer"]), 4)
+	assert.Equal(t, networkConfig.EntityMatchers["orderer"][0].MappedHost, "local.orderer.example.com")
+	assert.Equal(t, len(networkConfig.EntityMatchers["certificateauthority"]), 2)
+	assert.Equal(t, networkConfig.EntityMatchers["certificateauthority"][0].MappedHost, "local.ca.org1.example.com")
+	assert.Equal(t, len(networkConfig.EntityMatchers["channel"]), 1)
+	assert.Equal(t, networkConfig.EntityMatchers["channel"][0].MappedName, "ch1")
+
+	//Organizations
+	assert.Equal(t, len(networkConfig.Organizations), 3)
+	assert.Equal(t, networkConfig.Organizations["org1"].MSPID, "Org1MSP")
+
+	//Orderer
+	assert.Equal(t, len(networkConfig.Orderers), 1)
+	assert.Equal(t, networkConfig.Orderers["local.orderer.example.com"].URL, "orderer.example.com:7050")
+
+	//Peer
+	assert.Equal(t, len(networkConfig.Peers), 2)
+	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].URL, "peer0.org1.example.com:7051")
+	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].EventURL, "peer0.org1.example.com:7053")
+
+}
+
 func tamperPeerChannelConfig(backend *mocks.MockConfigBackend) {
 	channelsMap := backend.KeyValueMap["channels"]
 	orgChannel := map[string]interface{}{
@@ -1204,5 +1295,20 @@ func getMatcherConfig() core.ConfigBackend {
 	if err != nil {
 		panic(fmt.Sprintf("Unexpected error reading config: %v", err))
 	}
-	return cfgBackend
+	if len(cfgBackend) != 1 {
+		panic(fmt.Sprintf("expected 1 backend but got %d", len(cfgBackend)))
+	}
+	return cfgBackend[0]
+}
+
+func newViper(path string) *viper.Viper {
+	myViper := viper.New()
+	replacer := strings.NewReplacer(".", "_")
+	myViper.SetEnvKeyReplacer(replacer)
+	myViper.SetConfigFile(path)
+	err := myViper.MergeInConfig()
+	if err != nil {
+		panic(err)
+	}
+	return myViper
 }

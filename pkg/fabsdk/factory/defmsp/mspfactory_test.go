@@ -106,17 +106,17 @@ func TestCreateIdentityManager(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	cryptoCfg := cryptosuiteImpl.ConfigFromBackend(configBackend)
+	cryptoCfg := cryptosuiteImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	endpointCfg, err := fab.ConfigFromBackend(configBackend)
+	endpointCfg, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	identityCfg, err := mspimpl.ConfigFromBackend(configBackend)
+	identityCfg, err := mspimpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

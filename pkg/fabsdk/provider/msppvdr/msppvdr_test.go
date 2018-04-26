@@ -27,12 +27,12 @@ func TestCreateMSPProvider(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend)
+	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

@@ -30,7 +30,7 @@ func TestStaticSelection(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	config, err := fabImpl.ConfigFromBackend(configBackend)
+	config, err := fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
