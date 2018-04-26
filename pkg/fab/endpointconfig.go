@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -83,7 +84,7 @@ func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, e
 	// is expensive
 	certs, err := config.loadTLSCerts()
 	if err != nil {
-		return nil, errors.WithMessage(err, "could not load TLS certs")
+		logger.Infof("could not cache TLS certs", err.Error())
 	}
 	if _, err := config.TLSCACertPool(certs...); err != nil {
 		return nil, errors.WithMessage(err, "cert pool load failed")
@@ -1066,29 +1067,33 @@ func (c *EndpointConfig) verifyPeerConfig(p fab.PeerConfig, peerName string, tls
 
 func (c *EndpointConfig) loadTLSCerts() ([]*x509.Certificate, error) {
 	var certs []*x509.Certificate
+	errs := multi.Errors{}
+
 	orderers, err := c.OrderersConfig()
 	if err != nil {
-		return nil, err
+		errs = append(errs, err)
 	}
 	peers, err := c.NetworkPeers()
 	if err != nil {
-		return nil, err
+		errs = append(errs, err)
 	}
 	for _, peer := range peers {
 		cert, err := peer.TLSCACerts.TLSCert()
 		if err != nil {
-			return nil, err
+			errs = append(errs, errors.WithMessage(err, "for peer: "+peer.URL))
+			continue
 		}
 		certs = append(certs, cert)
 	}
 	for _, orderer := range orderers {
 		cert, err := orderer.TLSCACerts.TLSCert()
 		if err != nil {
-			return nil, err
+			errs = append(errs, errors.WithMessage(err, "for orderer: "+orderer.URL))
+			continue
 		}
 		certs = append(certs, cert)
 	}
-	return certs, nil
+	return certs, errs.ToError()
 }
 
 // Client returns the Client config

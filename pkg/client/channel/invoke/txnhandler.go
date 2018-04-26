@@ -154,11 +154,13 @@ func (c *CommitTxHandler) Handle(requestContext *RequestContext, clientContext *
 		requestContext.Response.TxValidationCode = txStatus.TxValidationCode
 
 		if txStatus.TxValidationCode != pb.TxValidationCode_VALID {
-			requestContext.Error = status.New(status.EventServerStatus, int32(txStatus.TxValidationCode), "received invalid transaction", nil)
+			requestContext.Error = status.New(status.EventServerStatus, int32(txStatus.TxValidationCode),
+				"received invalid transaction", nil)
 			return
 		}
 	case <-requestContext.Ctx.Done():
-		requestContext.Error = errors.New("Execute didn't receive block event")
+		requestContext.Error = status.New(status.ClientStatus, status.Timeout.ToInt32(),
+			"Execute didn't receive block event", nil)
 		return
 	}
 
