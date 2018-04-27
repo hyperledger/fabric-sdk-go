@@ -8,6 +8,7 @@ package orgs
 
 import (
 	"math"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -322,17 +323,32 @@ func queryCC(chClientOrg1User *channel.Client, t *testing.T) []byte {
 }
 
 func verifyErrorFromCC(chClientOrg1User *channel.Client, t *testing.T) {
-	_, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCQueryArgs()},
+	r, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
+	t.Logf("verifyErrorFromCC err: %s ***** responses: %s", err, r)
+
 	require.Error(t, err, "Should have failed with dummy function")
 	s, ok := status.FromError(err)
+	t.Logf("verifyErrorFromCC status.FromError s: %s, ok: %t", s, ok)
+
 	require.True(t, ok, "expected status error")
-	require.Equal(t, s.Code, int32(status.MultipleErrors))
-	for _, err := range err.(multi.Errors) {
+	// current DEVSTABLE Fabric version (v1.2) has a different error structure,
+	// below condition will work for DEV, PREV or PRERELEASE
+	// TODO remove the whole if condition when PREV becomes v1.2 and keep code in else condition
+	if os.Getenv("FABRIC_FIXTURE_VERSION") != "v1.2" {
+		require.Equal(t, s.Code, int32(status.MultipleErrors))
+
+		for _, err := range err.(multi.Errors) {
+			s, ok := status.FromError(err)
+			require.True(t, ok, "expected status error")
+			require.EqualValues(t, int32(500), s.Code)
+			require.Equal(t, status.ChaincodeStatus, s.Group)
+		}
+	} else {
+		// in v1.2, the error is not of type multi.Errors slice but rather 1 instance of errors.withMessage
 		s, ok := status.FromError(err)
 		require.True(t, ok, "expected status error")
 		require.EqualValues(t, int32(500), s.Code)
-		require.Equal(t, status.ChaincodeStatus, s.Group)
 	}
 }
 

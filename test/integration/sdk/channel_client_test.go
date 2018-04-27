@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package sdk
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -295,12 +296,19 @@ func testChaincodeEventListener(ccID string, chClient *channel.Client, listener 
 
 func testChaincodeError(ccID string, client *channel.Client, t *testing.T) {
 	// Try calling unknown function call and expect an error
-	_, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxArgs()},
+	r, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
+
+	t.Logf("testChaincodeError err: %s ***** responses: %s", err, r)
 	require.Error(t, err)
 	s, ok := status.FromError(err)
 	require.True(t, ok, "expected status error")
-	require.EqualValues(t, status.ChaincodeStatus, s.Group, "expected ChaincodeStatus")
+	// current DEVSTABLE Fabric version (v1.2) has a different error structure,
+	// below condition will work for DEV, PREV or PRERELEASE
+	// TODO remove this if condition when PREV becomes v1.2
+	if os.Getenv("FABRIC_FIXTURE_VERSION") != "v1.2" {
+		require.EqualValues(t, status.ChaincodeStatus, s.Group, "expected ChaincodeStatus")
+	}
 	require.Equal(t, int32(500), s.Code)
 	require.Equal(t, "Unknown function call", s.Message)
 }

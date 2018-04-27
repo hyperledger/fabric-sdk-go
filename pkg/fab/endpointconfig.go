@@ -461,7 +461,7 @@ func (c *EndpointConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, erro
 }
 
 // TLSCACertPool returns the configured cert pool. If a certConfig
-// is provided, the certficate is added to the pool
+// is provided, the certificate is added to the pool
 func (c *EndpointConfig) TLSCACertPool(certs ...*x509.Certificate) (*x509.CertPool, error) {
 	return c.tlsCertPool.Get(certs...)
 }

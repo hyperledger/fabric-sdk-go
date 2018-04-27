@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -78,7 +79,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
 	require.Nil(t, err, "creating peers failed")
 
-	if err := installCC(reqCtx, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, peers); err != nil {
+	if err := installCC(t, reqCtx, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, peers); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
@@ -89,13 +90,13 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 	}
 	retrieveInstalledCC(chaincodeQueryResponse, chainCodeVersion, t)
 	//Install same chaincode again, should fail
-	err = installCC(reqCtx, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, peers)
+	err = installCC(t, reqCtx, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, peers)
 
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
 	if strings.Contains(err.Error(), "chaincodes/install.v"+chainCodeVersion+" exists") {
-		t.Fatalf("install same chaincode didn't return the correct error")
+		t.Fatalf("install same chaincode didn't return the correct error. It returned: %s", err)
 	}
 }
 
@@ -132,14 +133,14 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricS
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
 	require.Nil(t, err, "creating peers failed")
 
-	err = installCC(reqCtx, "install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg, peers)
+	err = installCC(t, reqCtx, "install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg, peers)
 
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
 	//Install same chaincode again, should fail
-	err = installCC(reqCtx, "install", chainCodePath, chainCodeVersion, ccPkg, peers)
+	err = installCC(t, reqCtx, "install", chainCodePath, chainCodeVersion, ccPkg, peers)
 
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
@@ -150,15 +151,23 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricS
 }
 
 // installCC use low level client to install chaincode
-func installCC(reqCtx reqContext.Context, name string, path string, version string, ccPackage *api.CCPackage, targets []fab.ProposalProcessor) error {
+func installCC(t *testing.T, reqCtx reqContext.Context, name string, path string, version string, ccPackage *api.CCPackage, targets []fab.ProposalProcessor) error {
 
 	icr := api.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage}
 
-	_, _, err := resource.InstallChaincode(reqCtx, icr, targets, resource.WithRetry(retry.DefaultResMgmtOpts))
+	r, _, err := resource.InstallChaincode(reqCtx, icr, targets, resource.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		return errors.WithMessage(err, "InstallChaincode failed")
 	}
+	t.Logf("resource.InstallChaincode, responses: [%s]", r)
 
+	// check if response status is not success
+	for _, response := range r {
+		// return on first not success status
+		if response.Status != int32(common.Status_SUCCESS) {
+			return errors.Errorf("InstallChaincode returned response status: [%d], cc status: [%d], message: [%s]", response.Status, response.ChaincodeStatus, response.GetResponse().Message)
+		}
+	}
 	return nil
 }
 

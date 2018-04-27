@@ -13,9 +13,9 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-
+	configPath := "../../fixtures/config/config_test.yaml"
 	//End to End testing
-	Run(t, config.FromFile("../../fixtures/config/config_test.yaml"))
+	Run(t, config.FromFile(configPath))
 
 	//Using setup done set above by end to end test, run below test with new config which has no orderer config inside
 	runWithNoOrdererConfig(t, config.FromFile("../../fixtures/config/config_test_no_orderer.yaml"))
