@@ -55,8 +55,8 @@ func SearchPeerConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.PeerConfi
 			return nil, errors.Wrapf(err, "unable to get peer config from [%s]", url)
 		}
 	}
-
-	//May be url is already matched, search through all network peers
+	//If the given url is already parsed URL through entity matcher, then 'cfg.PeerConfig()'
+	//may return NoMatchingPeerEntity error. So retry with network peer URLs
 	networkPeers, err := cfg.NetworkPeers()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to load network peer config")

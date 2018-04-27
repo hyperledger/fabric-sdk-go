@@ -46,6 +46,9 @@ type ConfigLookup struct {
 func (c *ConfigLookup) Lookup(key string) (interface{}, bool) {
 	//loop through each backend to find the value by key, fallback to next one if not found
 	for _, backend := range c.backends {
+		if backend == nil {
+			continue
+		}
 		val, ok := backend.Lookup(key)
 		if ok {
 			return val, true

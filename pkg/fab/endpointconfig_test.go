@@ -1278,6 +1278,57 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 
 }
 
+func TestNetworkPeers(t *testing.T) {
+
+	endpointConfig, err := ConfigFromBackend(configBackend)
+	if err != nil {
+		t.Fatal("Failed to get endpoint config from backend")
+	}
+
+	testNetworkPeers(t, endpointConfig)
+}
+
+func TestNetworkPeersWithEntityMatchers(t *testing.T) {
+
+	endpointConfig, err := ConfigFromBackend(getMatcherConfig())
+	if err != nil {
+		t.Fatal("Failed to get endpoint config from backend")
+	}
+	testNetworkPeers(t, endpointConfig)
+
+}
+
+func testNetworkPeers(t *testing.T, endpointConfig fab.EndpointConfig) {
+	networkPeers, err := endpointConfig.NetworkPeers()
+
+	assert.Nil(t, err, "not suppopsed to get error")
+	assert.NotNil(t, networkPeers, "supposed to get valid network peers")
+	assert.Equal(t, 2, len(networkPeers), "supposed to get 2 network peers")
+	assert.NotEmpty(t, networkPeers[0].MSPID)
+	assert.NotEmpty(t, networkPeers[1].MSPID)
+	assert.NotEmpty(t, networkPeers[0].PeerConfig)
+	assert.NotEmpty(t, networkPeers[1].PeerConfig)
+
+	//cross check with peer config for org1
+	peerConfigOrg1, err := endpointConfig.PeersConfig("org1")
+	assert.Nil(t, err, "not suppopsed to get error")
+
+	//cross check with peer config for org2
+	peerConfigOrg2, err := endpointConfig.PeersConfig("org2")
+	assert.Nil(t, err, "not suppopsed to get error")
+
+	if networkPeers[0].MSPID == "Org1MSP" {
+		assert.Equal(t, peerConfigOrg1[0], networkPeers[0].PeerConfig)
+		assert.Equal(t, peerConfigOrg2[0], networkPeers[1].PeerConfig)
+
+	} else if networkPeers[0].MSPID == "Org2MSP" {
+		assert.Equal(t, peerConfigOrg2[0], networkPeers[0].PeerConfig)
+		assert.Equal(t, peerConfigOrg1[0], networkPeers[1].PeerConfig)
+	} else {
+		t.Fatal("invalid MSPID found")
+	}
+}
+
 func tamperPeerChannelConfig(backend *mocks.MockConfigBackend) {
 	channelsMap := backend.KeyValueMap["channels"]
 	orgChannel := map[string]interface{}{

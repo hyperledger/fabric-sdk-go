@@ -297,37 +297,23 @@ func (c *EndpointConfig) NetworkConfig() (*fab.NetworkConfig, error) {
 }
 
 // NetworkPeers returns the network peers configuration
+//returns network peers from all the peers from all the
 func (c *EndpointConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
 	netConfig, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	netPeers := []fab.NetworkPeer{}
-
-	for name, p := range netConfig.Peers {
-
-		matchedPeer := c.tryMatchingPeerConfig(netConfig, name)
-		if matchedPeer != nil {
-			//if found in entity matcher then use the matched one
-			p = *matchedPeer
-		}
-
-		if err = c.verifyPeerConfig(p, name, endpoint.IsTLSEnabled(p.URL)); err != nil {
+	var netPeers []fab.NetworkPeer
+	for org, orgConfig := range netConfig.Organizations {
+		orgPeers, err := c.PeersConfig(org)
+		if err != nil {
 			return nil, err
 		}
 
-		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
+		for _, orgPeer := range orgPeers {
+			netPeers = append(netPeers, fab.NetworkPeer{PeerConfig: orgPeer, MSPID: orgConfig.MSPID})
 		}
-
-		mspID, err := c.PeerMSPID(name)
-		if err != nil {
-			return nil, errors.Errorf("failed to retrieve msp id for peer %s", name)
-		}
-
-		netPeer := fab.NetworkPeer{PeerConfig: p, MSPID: mspID}
-		netPeers = append(netPeers, netPeer)
 	}
 
 	return netPeers, nil
