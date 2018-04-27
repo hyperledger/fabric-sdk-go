@@ -161,7 +161,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	// Assert that funds have changed value on org1 peer
 	verifyValue(t, chClientOrg1User, initial+1)
 
-	// Get latest block chain info
+	// Get latest blockchain info
 	checkLedgerInfo(ledgerClient, t, ledgerInfoBefore, transactionID)
 
 	// Start chaincode upgrade process (install and instantiate new version of exampleCC)

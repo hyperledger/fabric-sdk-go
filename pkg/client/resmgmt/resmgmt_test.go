@@ -87,7 +87,7 @@ func TestJoinChannelFail(t *testing.T) {
 	endorserServer.ProposalError = errors.New("Test Error")
 	err = rc.JoinChannel("mychannel", WithTargets(peer1))
 
-	if err == nil && !strings.Contains(err.Error(), "Test Error") {
+	if err == nil || !strings.Contains(err.Error(), "Test Error") {
 		t.Fatal("Should have failed to get genesis block")
 	}
 

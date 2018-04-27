@@ -4,7 +4,15 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package ledger enables ability to query ledger in a Fabric network.
+// Package ledger enables ledger queries on specified channel on a Fabric network.
+// An application that requires ledger queries from multiple channels should create a separate
+// instance of the ledger client for each channel. Ledger client supports the following queries:
+// QueryInfo, QueryBlock, QueryBlockByHash,  QueryBlockByTxID, QueryTransaction and QueryConfig.
+//
+//  Basic Flow:
+//  1) Prepare channel context
+//  2) Create ledger client
+//  3) Query ledger
 package ledger
 
 import (
@@ -31,10 +39,6 @@ import (
 )
 
 // Client enables ledger queries on a Fabric network.
-//
-// A ledger client instance provides a handler to query various info on specified channel.
-// An application that requires interaction with multiple channels should create a separate
-// instance of the ledger client for each channel. Ledger client supports specific queries only.
 type Client struct {
 	ctx       context.Channel
 	filter    fab.TargetFilter
@@ -53,7 +57,9 @@ func (f *mspFilter) Accept(peer fab.Peer) bool {
 	return peer.MSPID() == f.mspID
 }
 
-// New returns a Client instance.
+// New returns a ledger client instance. A ledger client instance provides a handler to query various info on specified channel.
+// An application that requires interaction with multiple channels should create a separate
+// instance of the ledger client for each channel. Ledger client supports specific queries only.
 func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client, error) {
 
 	channelContext, err := channelProvider()
@@ -107,8 +113,12 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 	return &ledgerClient, nil
 }
 
-// QueryInfo queries for various useful information on the state of the channel
-// (height, known peers).
+// QueryInfo queries for various useful blockchain information on this channel such as block height and current block hash.
+//  Parameters:
+//  options are optional request options
+//
+//  Returns:
+//  blockchain information
 func (c *Client) QueryInfo(options ...RequestOption) (*fab.BlockchainInfoResponse, error) {
 
 	targets, opts, err := c.prepareRequestParams(options...)
@@ -145,9 +155,13 @@ func (c *Client) QueryInfo(options ...RequestOption) (*fab.BlockchainInfoRespons
 	return response, nil
 }
 
-// QueryBlockByHash queries the ledger for Block by block hash.
-// This query will be made to specified targets.
-// Returns the block.
+// QueryBlockByHash queries the ledger for block by block hash.
+//  Parameters:
+//  blockHash is required block hash
+//  options hold optional request options
+//
+//  Returns:
+//  block information
 func (c *Client) QueryBlockByHash(blockHash []byte, options ...RequestOption) (*common.Block, error) {
 
 	targets, opts, err := c.prepareRequestParams(options...)
@@ -165,9 +179,13 @@ func (c *Client) QueryBlockByHash(blockHash []byte, options ...RequestOption) (*
 	return matchBlockData(responses, opts.MinTargets)
 }
 
-// QueryBlockByTxID returns a block which contains a transaction
-// This query will be made to specified targets.
-// Returns the block.
+// QueryBlockByTxID queries for block which contains a transaction.
+//  Parameters:
+//  txID is required transaction ID
+//  options hold optional request options
+//
+//  Returns:
+//  block information
 func (c *Client) QueryBlockByTxID(txID fab.TransactionID, options ...RequestOption) (*common.Block, error) {
 
 	targets, opts, err := c.prepareRequestParams(options...)
@@ -186,9 +204,12 @@ func (c *Client) QueryBlockByTxID(txID fab.TransactionID, options ...RequestOpti
 }
 
 // QueryBlock queries the ledger for Block by block number.
-// This query will be made to specified targets.
-// blockNumber: The number which is the ID of the Block.
-// It returns the block.
+//  Parameters:
+//  blockNumber is required block number(ID)
+//  options hold optional request options
+//
+//  Returns:
+//  block information
 func (c *Client) QueryBlock(blockNumber uint64, options ...RequestOption) (*common.Block, error) {
 
 	targets, opts, err := c.prepareRequestParams(options...)
@@ -241,9 +262,13 @@ func matchBlockData(responses []*common.Block, minTargets int) (*common.Block, e
 
 }
 
-// QueryTransaction queries the ledger for Transaction by number.
-// This query will be made to specified targets.
-// Returns the ProcessedTransaction information containing the transaction.
+// QueryTransaction queries the ledger for processed transaction by transaction ID.
+//  Parameters:
+//  txID is required transaction ID
+//  options hold optional request options
+//
+//  Returns:
+//  processed transaction information
 func (c *Client) QueryTransaction(transactionID fab.TransactionID, options ...RequestOption) (*pb.ProcessedTransaction, error) {
 
 	targets, opts, err := c.prepareRequestParams(options...)
@@ -277,7 +302,12 @@ func (c *Client) QueryTransaction(transactionID fab.TransactionID, options ...Re
 	return response, nil
 }
 
-// QueryConfig config returns channel configuration
+// QueryConfig queries for channel configuration.
+//  Parameters:
+//  options hold optional request options
+//
+//  Returns:
+//  channel configuration information
 func (c *Client) QueryConfig(options ...RequestOption) (fab.ChannelCfg, error) {
 
 	targets, opts, err := c.prepareRequestParams(options...)

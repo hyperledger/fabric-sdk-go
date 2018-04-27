@@ -45,7 +45,7 @@ type requestOptions struct {
 	ParentContext reqContext.Context                //parent grpc context for ledger operations
 }
 
-//WithTargets encapsulates fab.Peer targets to ledger RequestOption
+//WithTargets allows for overriding of the target peers per request.
 func WithTargets(targets ...fab.Peer) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 
@@ -61,9 +61,8 @@ func WithTargets(targets ...fab.Peer) RequestOption {
 	}
 }
 
-// WithTargetURLs allows overriding of the target peers for the request.
-// Targets are specified by URL, and the SDK will create the underlying peer
-// objects.
+// WithTargetURLs allows overriding of the target peers per request.
+// Targets are specified by URL, and the SDK will create the underlying peer objects.
 func WithTargetURLs(urls ...string) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 
@@ -88,7 +87,7 @@ func WithTargetURLs(urls ...string) RequestOption {
 	}
 }
 
-//WithTargetFilter encapsulates TargetFilter targets to ledger RequestOption
+// WithTargetFilter specifies a per-request target peer-filter.
 func WithTargetFilter(targetFilter fab.TargetFilter) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.TargetFilter = targetFilter
@@ -96,7 +95,8 @@ func WithTargetFilter(targetFilter fab.TargetFilter) RequestOption {
 	}
 }
 
-//WithMaxTargets encapsulates max targets to ledger RequestOption
+//WithMaxTargets specifies maximum number of targets to select per request.
+// Default value for maximum number of targets is 1.
 func WithMaxTargets(maxTargets int) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.MaxTargets = maxTargets
@@ -104,7 +104,8 @@ func WithMaxTargets(maxTargets int) RequestOption {
 	}
 }
 
-//WithMinTargets encapsulates min targets to ledger RequestOption
+//WithMinTargets specifies minimum number of targets that have to respond with no error (or agree on result).
+// Default value for minimum number of targets is 1.
 func WithMinTargets(minTargets int) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.MinTargets = minTargets
@@ -113,7 +114,7 @@ func WithMinTargets(minTargets int) RequestOption {
 }
 
 //WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
-//for QueryInfo,QueryBlockByHash,QueryBlock,QueryTransaction,QueryConfig functions
+//for QueryInfo, QueryBlock, QueryBlockByHash,  QueryBlockByTxID, QueryTransaction, QueryConfig functions
 func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		if o.Timeouts == nil {
@@ -124,7 +125,7 @@ func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOpti
 	}
 }
 
-//WithParentContext encapsulates grpc context parent to Options
+//WithParentContext encapsulates grpc parent context
 func WithParentContext(parentContext reqContext.Context) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		o.ParentContext = parentContext

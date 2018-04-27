@@ -59,7 +59,7 @@ func TestQueryMethods(t *testing.T) {
 	}
 }
 
-func TestChannelQueryBlock(t *testing.T) {
+func TestQueryBlock(t *testing.T) {
 
 	channel, _ := setupTestLedger()
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200}
@@ -72,7 +72,7 @@ func TestChannelQueryBlock(t *testing.T) {
 		t.Fatalf("Test channel query block failed: %s", err)
 	}
 
-	_, err = channel.QueryBlockByHash(reqCtx, []byte(""), []fab.ProposalProcessor{&peer}, nil)
+	_, err = channel.QueryBlockByHash(reqCtx, []byte("hash"), []fab.ProposalProcessor{&peer}, nil)
 	if err != nil {
 		t.Fatalf("Test channel query block by hash failed: %s", err)
 	}
