@@ -53,7 +53,7 @@ func TestParentContext(t *testing.T) {
 	}
 
 	_, err = resClient.QueryChannels(resmgmt.WithTargetURLs(target), resmgmt.WithParentContext(parentContext), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err == nil && !strings.Contains(err.Error(), "context canceled") {
+	if err == nil || !strings.Contains(err.Error(), "context canceled") {
 		t.Fatalf("expected context cancelled error but got: %v", err)
 	}
 
@@ -65,7 +65,7 @@ func TestParentContext(t *testing.T) {
 
 	_, err = chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
 		channel.WithParentContext(parentContext))
-	if err == nil && !strings.Contains(err.Error(), "context canceled") {
+	if err == nil || !strings.Contains(err.Error(), "request timed out or been cancelled") {
 		t.Fatalf("expected context cancelled error but got: %v", err)
 	}
 
@@ -80,7 +80,7 @@ func testLedgerClient(org1AdminChannelContext contextApi.ChannelProvider, t *tes
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
 	_, err = legerClient.QueryInfo(ledger.WithParentContext(parentContext))
-	if err == nil && !strings.Contains(err.Error(), "context canceled") {
+	if err == nil || !strings.Contains(err.Error(), "context canceled") {
 		t.Fatalf("expected context cancelled error but got: %v", err)
 	}
 }

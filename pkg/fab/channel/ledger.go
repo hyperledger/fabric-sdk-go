@@ -82,7 +82,7 @@ func createBlockchainInfo(tpr *fab.TransactionProposalResponse) (*common.Blockch
 // Returns the block.
 func (c *Ledger) QueryBlockByHash(reqCtx reqContext.Context, blockHash []byte, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*common.Block, error) {
 
-	if blockHash == nil {
+	if len(blockHash) == 0 {
 		return nil, errors.New("blockHash is required")
 	}
 

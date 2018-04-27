@@ -59,7 +59,7 @@ func NewMockChannel(channelID string) (*Channel, error) {
 
 	ctx := &mockClientContext{
 		Providers:       NewMockProviderContext(),
-		SigningIdentity: mspmocks.NewMockSigningIdentity("user", "user"),
+		SigningIdentity: mspmocks.NewMockSigningIdentity("user", "Org1MSP"),
 	}
 
 	// Set up mock channel service
