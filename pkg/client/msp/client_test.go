@@ -178,7 +178,7 @@ func (f *textFixture) setup() *fabsdk.FabricSDK {
 	customBackend := getCustomBackend(backend...)
 
 	configProvider := func() ([]core.ConfigBackend, error) {
-		return []core.ConfigBackend{customBackend}, nil
+		return customBackend, nil
 	}
 
 	// Instantiate the SDK
@@ -233,12 +233,12 @@ func randomUsername() string {
 	return "user" + strconv.Itoa(rand.Intn(500000))
 }
 
-func getCustomBackend(backend ...core.ConfigBackend) *mocks.MockConfigBackend {
+func getCustomBackend(currentBackends ...core.ConfigBackend) []core.ConfigBackend {
 	backendMap := make(map[string]interface{})
 
 	//Custom URLs for ca configs
 	networkConfig := fab.NetworkConfig{}
-	configLookup := lookup.New(backend...)
+	configLookup := lookup.New(currentBackends...)
 	configLookup.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 
 	ca1Config := networkConfig.CertificateAuthorities["ca.org1.example.com"]
@@ -250,5 +250,7 @@ func getCustomBackend(backend ...core.ConfigBackend) *mocks.MockConfigBackend {
 	networkConfig.CertificateAuthorities["ca.org2.example.com"] = ca2Config
 	backendMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
 
-	return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}
+	backends := append([]core.ConfigBackend{}, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+	return append(backends, currentBackends...)
+
 }

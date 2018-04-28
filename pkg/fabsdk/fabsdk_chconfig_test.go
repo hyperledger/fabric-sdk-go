@@ -82,7 +82,7 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 		t.Fatalf("failed to get configbackend for test: %v", err)
 	}
 	configProvider := func() ([]core.ConfigBackend, error) {
-		return []core.ConfigBackend{customBackend}, nil
+		return customBackend, nil
 	}
 
 	sdk2, err := New(configProvider)
@@ -147,7 +147,7 @@ func checkClientOrg(configBackend core.ConfigBackend, t *testing.T, orgName stri
 	}
 }
 
-func getCustomBackend() (*mockCore.MockConfigBackend, error) {
+func getCustomBackend() ([]core.ConfigBackend, error) {
 	backend, err := config.FromFile(sdkConfigFile)()
 	if err != nil {
 		return nil, err
@@ -167,5 +167,6 @@ func getCustomBackend() (*mockCore.MockConfigBackend, error) {
 	backendMap := make(map[string]interface{})
 	backendMap["client"] = clientConfig
 
-	return &mockCore.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
+	backends := append([]core.ConfigBackend{}, &mockCore.MockConfigBackend{KeyValueMap: backendMap})
+	return append(backends, backend...), nil
 }

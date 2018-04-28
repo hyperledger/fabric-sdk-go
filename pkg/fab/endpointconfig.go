@@ -296,8 +296,7 @@ func (c *EndpointConfig) NetworkConfig() (*fab.NetworkConfig, error) {
 	return c.networkConfig, nil
 }
 
-// NetworkPeers returns the network peers configuration
-//returns network peers from all the peers from all the
+// NetworkPeers returns the network peers configuration, all the peers from all the orgs in config.
 func (c *EndpointConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
 	netConfig, err := c.NetworkConfig()
 	if err != nil {

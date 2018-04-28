@@ -49,9 +49,9 @@ type textFixture struct {
 
 var caServer = &mockmsp.MockFabricCAServer{}
 
-func (f *textFixture) setup(configBackend *mocks.MockConfigBackend) { //nolint
+func (f *textFixture) setup(configBackend ...core.ConfigBackend) { //nolint
 
-	if configBackend == nil {
+	if len(configBackend) == 0 {
 		backend, err := getCustomBackend(configPath)
 		if err != nil {
 			panic(err)
@@ -70,16 +70,16 @@ func (f *textFixture) setup(configBackend *mocks.MockConfigBackend) { //nolint
 		caServerURL = "http://" + lis.Addr().String()
 	}
 
-	updateCAServerURL(caServerURL, configBackend)
+	configBackend = updateCAServerURL(caServerURL, configBackend)
 
-	f.cryptSuiteConfig = cryptosuite.ConfigFromBackend(configBackend)
+	f.cryptSuiteConfig = cryptosuite.ConfigFromBackend(configBackend...)
 
-	f.endpointConfig, err = fabImpl.ConfigFromBackend(configBackend)
+	f.endpointConfig, err = fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config : %v", err))
 	}
 
-	f.identityConfig, err = ConfigFromBackend(configBackend)
+	f.identityConfig, err = ConfigFromBackend(configBackend...)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config : %v", err))
 	}
@@ -206,11 +206,11 @@ func (p *identityManagerProvider) IdentityManager(orgName string) (msp.IdentityM
 	return im, true
 }
 
-func updateCAServerURL(caServerURL string, backend *mocks.MockConfigBackend) {
+func updateCAServerURL(caServerURL string, existingBackends []core.ConfigBackend) []core.ConfigBackend {
 
 	//get existing certificateAuthorities
 	networkConfig := fab.NetworkConfig{}
-	lookup.New(backend).UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
+	lookup.New(existingBackends...).UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 
 	//update URLs
 	ca1Config := networkConfig.CertificateAuthorities["ca.org1.example.com"]
@@ -223,5 +223,12 @@ func updateCAServerURL(caServerURL string, backend *mocks.MockConfigBackend) {
 	networkConfig.CertificateAuthorities[".ca.org2.example.com"] = ca2Config
 
 	//update backend
-	backend.KeyValueMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
+	backendMap := make(map[string]interface{})
+	//Override backend with updated certificate authorities config
+	backendMap["certificateAuthorities"] = networkConfig.CertificateAuthorities
+
+	backends := append([]core.ConfigBackend{}, &mocks.MockConfigBackend{KeyValueMap: backendMap})
+	backends = append(backends, existingBackends...)
+
+	return backends
 }
