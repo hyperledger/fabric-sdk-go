@@ -11,8 +11,13 @@ import (
 
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
+	mocksConfig "github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -135,4 +140,48 @@ func TestOrderersFromChannelCfgBadTLS(t *testing.T) {
 	o, err := orderersFromChannelCfg(ctx, chConfig)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, o)
+}
+
+// TestOrderersURLOverride tests orderer URL override from endpoint channels config
+func TestOrderersURLOverride(t *testing.T) {
+	sampleOrdererURL := "orderer.example.com.sample.url:100090"
+
+	//Create endpoint config
+	configBackends, err := config.FromFile("../../core/config/testdata/config_test.yaml")()
+	if err != nil {
+		t.Fatal("failed to get config backends")
+	}
+
+	//Override orderer URL in endpoint config
+	//Create an empty network config
+	networkConfig := fab.NetworkConfig{}
+	err = lookup.New(configBackends...).UnmarshalKey("orderers", &networkConfig.Orderers)
+	if err != nil {
+		t.Fatal("failed to unmarshal orderer")
+	}
+
+	orderer := networkConfig.Orderers["orderer.example.com"]
+	orderer.URL = sampleOrdererURL
+	networkConfig.Orderers["orderer.example.com"] = orderer
+
+	backendMap := make(map[string]interface{})
+	backendMap["orderers"] = networkConfig.Orderers
+	backends := append([]core.ConfigBackend{}, &mocksConfig.MockConfigBackend{KeyValueMap: backendMap})
+	backends = append(backends, configBackends...)
+	endpointCfg, err := fabImpl.ConfigFromBackend(backends...)
+	if err != nil {
+		t.Fatal("failed to get endpoint config")
+	}
+
+	user := mspmocks.NewMockSigningIdentity("test", "test")
+	ctx := mocks.NewMockContext(user)
+	ctx.SetEndpointConfig(endpointCfg)
+	chConfig := mocks.NewMockChannelCfg("mychannel")
+	chConfig.MockOrderers = []string{"example.com"}
+
+	o, err := orderersFromChannelCfg(ctx, chConfig)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, o)
+	assert.Equal(t, 1, len(o), "expected one orderer from response orderers list")
+	assert.Equal(t, sampleOrdererURL, o[0].URL(), "orderer URL override from endpointconfig channels is not working as expected")
 }

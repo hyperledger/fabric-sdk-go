@@ -16,6 +16,7 @@ import (
 
 	reqContext "context"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
@@ -54,18 +55,31 @@ func NewTransactor(reqCtx reqContext.Context, cfg fab.ChannelCfg) (*Transactor, 
 }
 
 func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Orderer, error) {
-	orderers := []fab.Orderer{}
+
+	//below call to get orderers from endpoint config 'channels.<CHANNEL-ID>.orderers' is not recommended.
+	//To override any orderer configuration items, entity matchers should be used.
+	orderers, err := orderersFromChannel(ctx, cfg.ID())
+	if err != nil {
+		return nil, err
+	}
+	if len(orderers) > 0 {
+		logger.Warn("Getting orderers from endpoint config channels.orderer is deprecated, use entity matchers to override orderer configuration")
+		logger.Warn("visit https://github.com/hyperledger/fabric-sdk-go/blob/master/test/fixtures/config/overrides/local_entity_matchers.yaml for samples")
+		return orderers, nil
+	}
+
 	ordererDict, err := orderersByTarget(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Add orderer if specified in config
+	// Add orderer if specified in channel config
 	for _, target := range cfg.Orderers() {
 
 		// Figure out orderer configuration
 		oCfg, ok := ordererDict[target]
 
+		//try entity matcher
 		if !ok {
 			logger.Debugf("Failed to get channel Cfg orderer [%s] from ordererDict, now trying orderer Matchers in Entity Matchers", target)
 			// Try to find a match from entityMatchers config
@@ -77,6 +91,7 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 			}
 
 		}
+		//create orderer using channel config block orderer address
 		if !ok {
 			logger.Debugf("Unable to find matching ordererConfig from entity Matchers for channel Cfg Orderer [%s]", target)
 			oCfg = fab.OrdererConfig{
@@ -91,6 +106,39 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 		}
 		orderers = append(orderers, o)
 
+	}
+	return orderers, nil
+}
+
+//deprecated
+//orderersFromChannel returns list of fab.Orderer by channel id
+//will return empty list when orderers are not found in endpoint config
+func orderersFromChannel(ctx context.Client, channelID string) ([]fab.Orderer, error) {
+
+	chNetworkConfig, err := ctx.EndpointConfig().ChannelConfig(channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get channel network config")
+	}
+
+	orderers := []fab.Orderer{}
+	for _, chOrderer := range chNetworkConfig.Orderers {
+
+		ordererConfig, err := ctx.EndpointConfig().OrdererConfig(chOrderer)
+		if err != nil {
+			s, ok := status.FromError(err)
+			if !ok || s.Code != status.NoMatchingOrdererEntity.ToInt32() {
+				return nil, errors.Wrapf(err, "unable to get orderer config from [%s]", chOrderer)
+			}
+			//continue if given channel orderer not found in endpoint config
+			continue
+		}
+
+		orderer, err := ctx.InfraProvider().CreateOrdererFromConfig(ordererConfig)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create orderer from config")
+		}
+
+		orderers = append(orderers, orderer)
 	}
 	return orderers, nil
 }

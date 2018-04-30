@@ -69,6 +69,10 @@ func (f *MockInfraProvider) CreateOrdererFromConfig(cfg *fab.OrdererConfig) (fab
 		return f.customOrderer, nil
 	}
 
+	if cfg.URL != "" {
+		return &MockOrderer{OrdererURL: cfg.URL}, nil
+	}
+
 	return &MockOrderer{}, nil
 }
 
