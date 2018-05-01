@@ -82,7 +82,6 @@ func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOpti
 
 // WithOrdererURL allows an orderer to be specified for the request.
 // The orderer will be looked-up based on the url argument.
-// A default orderer implementation will be used.
 func WithOrdererURL(url string) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 
@@ -108,7 +107,7 @@ func WithOrderer(orderer fab.Orderer) RequestOption {
 	}
 }
 
-//WithParentContext encapsulates grpc context parent to Options
+//WithParentContext encapsulates grpc parent context.
 func WithParentContext(parentContext reqContext.Context) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		o.ParentContext = parentContext
@@ -116,7 +115,7 @@ func WithParentContext(parentContext reqContext.Context) RequestOption {
 	}
 }
 
-// WithRetry sets retry options
+// WithRetry sets retry options.
 func WithRetry(retryOpt retry.Opts) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		o.Retry = retryOpt

@@ -299,7 +299,7 @@ func testChaincodeError(ccID string, client *channel.Client, t *testing.T) {
 	r, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 
-	t.Logf("testChaincodeError err: %s ***** responses: %s", err, r)
+	t.Logf("testChaincodeError err: %s ***** responses: %v", err, r)
 	require.Error(t, err)
 	s, ok := status.FromError(err)
 	require.True(t, ok, "expected status error")

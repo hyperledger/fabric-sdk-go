@@ -325,7 +325,7 @@ func queryCC(chClientOrg1User *channel.Client, t *testing.T) []byte {
 func verifyErrorFromCC(chClientOrg1User *channel.Client, t *testing.T) {
 	r, err := chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
-	t.Logf("verifyErrorFromCC err: %s ***** responses: %s", err, r)
+	t.Logf("verifyErrorFromCC err: %s ***** responses: %v", err, r)
 
 	require.Error(t, err, "Should have failed with dummy function")
 	s, ok := status.FromError(err)

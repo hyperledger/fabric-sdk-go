@@ -4,7 +4,19 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package resmgmt enables ability to update resources in a Fabric network.
+// Package resmgmt enables creation and update of resources on a Fabric network.
+// It allows administrators to create and/or update channnels, and for peers to join channels.
+// Administrators can also perform chaincode related operations on a peer, such as
+// installing, instantiating, and upgrading chaincode.
+//
+//  Basic Flow:
+//  1) Prepare client context
+//  2) Create resource managememt client
+//  3) Create new channel
+//  4) Peer(s) join channel
+//  5) Install chaincode onto peer(s) filesystem
+//  6) Instantiate chaincode on channel
+//  7) Query peer for channels, installed/instantiated chaincodes etc.
 package resmgmt
 
 import (
@@ -62,7 +74,7 @@ type InstantiateCCRequest struct {
 	CollConfig []*common.CollectionConfig
 }
 
-// InstantiateCCResponse contains response parameters for Instantiate
+// InstantiateCCResponse contains response parameters for instantiate chaincode
 type InstantiateCCResponse struct {
 	TransactionID fab.TransactionID
 }
@@ -77,7 +89,7 @@ type UpgradeCCRequest struct {
 	CollConfig []*common.CollectionConfig
 }
 
-// UpgradeCCResponse contains response parameters for Upgrade
+// UpgradeCCResponse contains response parameters for upgrade chaincode
 type UpgradeCCResponse struct {
 	TransactionID fab.TransactionID
 }
@@ -92,7 +104,7 @@ type requestOptions struct {
 	Retry         retry.Opts
 }
 
-//SaveChannelRequest used to save channel request
+//SaveChannelRequest holds parameters for save channel request
 type SaveChannelRequest struct {
 	ChannelID         string
 	ChannelConfig     io.Reader             // ChannelConfig data source
@@ -101,7 +113,7 @@ type SaveChannelRequest struct {
 	// TODO: support pre-signed signature blocks
 }
 
-// SaveChannelResponse contains response parameters for Save
+// SaveChannelResponse contains response parameters for save channel
 type SaveChannelResponse struct {
 	TransactionID fab.TransactionID
 }
@@ -131,7 +143,7 @@ func (f *mspFilter) Accept(peer fab.Peer) bool {
 // ClientOption describes a functional parameter for the New constructor
 type ClientOption func(*Client) error
 
-// WithDefaultTargetFilter option to configure new
+// WithDefaultTargetFilter option to configure default target filter per client
 func WithDefaultTargetFilter(filter fab.TargetFilter) ClientOption {
 	return func(rmc *Client) error {
 		rmc.filter = filter
@@ -139,7 +151,7 @@ func WithDefaultTargetFilter(filter fab.TargetFilter) ClientOption {
 	}
 }
 
-// New returns a ResourceMgmtClient instance
+// New returns a resource management client instance.
 func New(ctxProvider context.ClientProvider, opts ...ClientOption) (*Client, error) {
 
 	ctx, err := ctxProvider()
@@ -175,7 +187,13 @@ func New(ctxProvider context.ClientProvider, opts ...ClientOption) (*Client, err
 	return resourceClient, nil
 }
 
-// JoinChannel allows for peers to join existing channel with optional custom options (specific peers, filtered peers)
+// JoinChannel allows for peers to join existing channel with optional custom options (specific peers, filtered peers). If peer(s) are not specified in options it will default to all peers that belong to client's MSP.
+//  Parameters:
+//  channel is manadatory channel name
+//  options holds optional request options
+//
+//  Returns:
+//  an error if join fails
 func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error {
 
 	if channelID == "" {
@@ -332,7 +350,14 @@ func (rc *Client) isChaincodeInstalled(reqCtx reqContext.Context, req InstallCCR
 	return false, nil
 }
 
-// InstallCC installs chaincode with optional custom options (specific peers, filtered peers)
+// InstallCC allows administrators to install chaincode onto the filesystem of a peer.
+// If peer(s) are not specified in options it will default to all peers that belong to admin's MSP.
+//  Parameters:
+//  req holds info about mandatory chaincode name, path, version and policy
+//  options holds optional request options
+//
+//  Returns:
+//  install chaincode proposal responses from peer(s)
 func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]InstallCCResponse, error) {
 	// For each peer query if chaincode installed. If cc is installed treat as success with message 'already installed'.
 	// If cc is not installed try to install, and if that fails add to the list with error and peer name.
@@ -445,7 +470,15 @@ func checkRequiredInstallCCParams(req InstallCCRequest) error {
 	return nil
 }
 
-// InstantiateCC instantiates chaincode using default settings
+// InstantiateCC instantiates chaincode with optional custom options (specific peers, filtered peers, timeout). If peer(s) are not specified
+// in options it will default to all channel peers.
+//  Parameters:
+//  channel is manadatory channel name
+//  req holds info about mandatory chaincode name, path, version and policy
+//  options holds optional request options
+//
+//  Returns:
+//  instantiate chaincode response with transaction ID
 func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, options ...RequestOption) (InstantiateCCResponse, error) {
 
 	opts, err := rc.prepareRequestOpts(options...)
@@ -460,7 +493,15 @@ func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, opti
 	return InstantiateCCResponse{TransactionID: txID}, err
 }
 
-// UpgradeCC upgrades chaincode  with optional custom options (specific peers, filtered peers, timeout)
+// UpgradeCC upgrades chaincode with optional custom options (specific peers, filtered peers, timeout). If peer(s) are not specified in options
+// it will default to all channel peers.
+//  Parameters:
+//  channel is manadatory channel name
+//  req holds info about mandatory chaincode name, path, version and policy
+//  options holds optional request options
+//
+//  Returns:
+//  upgrade chaincode response with transaction ID
 func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...RequestOption) (UpgradeCCResponse, error) {
 
 	opts, err := rc.prepareRequestOpts(options...)
@@ -476,7 +517,12 @@ func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...R
 }
 
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
-// Returns the details of all chaincodes installed on a peer.
+//  Parameters:
+//  options hold optional request options
+//  Note: One target(peer) has to be specified using either WithTargetURLs or WithTargets request option
+//
+//  Returns:
+//  list of installed chaincodes on specified peer
 func (rc *Client) QueryInstalledChaincodes(options ...RequestOption) (*pb.ChaincodeQueryResponse, error) {
 
 	opts, err := rc.prepareRequestOpts(options...)
@@ -494,8 +540,13 @@ func (rc *Client) QueryInstalledChaincodes(options ...RequestOption) (*pb.Chainc
 	return resource.QueryInstalledChaincodes(reqCtx, opts.Targets[0], resource.WithRetry(opts.Retry))
 }
 
-// QueryInstantiatedChaincodes queries the instantiated chaincodes on a peer for specific channel.
-// Valid option is WithTarget. If not specified it will query any peer on this channel
+// QueryInstantiatedChaincodes queries the instantiated chaincodes on a peer for specific channel. If peer is not specified in options it will query random peer on this channel.
+//  Parameters:
+//  channel is manadatory channel name
+//  options hold optional request options
+//
+//  Returns:
+//  list of instantiated chaincodes
 func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...RequestOption) (*pb.ChaincodeQueryResponse, error) {
 
 	opts, err := rc.prepareRequestOpts(options...)
@@ -562,7 +613,12 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 }
 
 // QueryChannels queries the names of all the channels that a peer has joined.
-// Returns the details of all channels that peer has joined.
+//  Parameters:
+//  options hold optional request options
+//  Note: One target(peer) has to be specified using either WithTargetURLs or WithTargets request option
+//
+//  Returns:
+//  all channels that peer has joined
 func (rc *Client) QueryChannels(options ...RequestOption) (*pb.ChannelQueryResponse, error) {
 
 	opts, err := rc.prepareRequestOpts(options...)
@@ -767,7 +823,13 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 	return tpp
 }
 
-// SaveChannel creates or updates channel
+// SaveChannel creates or updates channel.
+//  Parameters:
+//  req holds info about mandatory channel name and configuration
+//  options holds optional request options
+//
+//  Returns:
+//  save channel response with transaction ID
 func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) (SaveChannelResponse, error) {
 
 	opts, err := rc.prepareRequestOpts(options...)
@@ -881,9 +943,13 @@ func loggedClose(c io.Closer) {
 	}
 }
 
-// QueryConfigFromOrderer config returns channel configuration from orderer
-// Valid request option is WithOrdererID
-// If orderer id is not provided orderer will be defaulted to channel orderer (if configured) or random orderer from config
+// QueryConfigFromOrderer config returns channel configuration from orderer. If orderer is not provided using options it will be defaulted to channel orderer (if configured) or random orderer from configuration.
+//  Parameters:
+//  channelID is mandatory channel ID
+//  options holds optional request options
+//
+//  Returns:
+//  channel configuration
 func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOption) (fab.ChannelCfg, error) {
 
 	opts, err := rc.prepareRequestOpts(options...)
