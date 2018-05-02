@@ -127,7 +127,7 @@ func TestChannelConfigWithOrdererError(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
+	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(1*time.Second))
 	defer cancel()
 
 	// Expecting error since orderer is not setup
