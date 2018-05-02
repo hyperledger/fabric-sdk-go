@@ -23,6 +23,8 @@ import (
 
 	"fmt"
 
+	"strings"
+
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -97,6 +99,9 @@ func findSource(goPath string, filePath string) ([]*Descriptor, error) {
 				relPath, err := filepath.Rel(goPath, path)
 				if err != nil {
 					return err
+				}
+				if strings.Contains(relPath, "/META-INF/") {
+					relPath = relPath[strings.Index(relPath, "/META-INF/")+1:]
 				}
 				descriptors = append(descriptors, &Descriptor{name: relPath, fqp: path})
 			}

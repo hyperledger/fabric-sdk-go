@@ -14,28 +14,28 @@ import (
 	"os"
 	"path"
 	"testing"
+
+	"strings"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // Test golang ChainCode packaging
 func TestNewCCPackage(t *testing.T) {
 	pwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("error from os.Getwd %v", err)
-	}
+	assert.Nil(t, err, "error from os.Getwd %v", err)
 
 	ccPackage, err := NewCCPackage("github.com", path.Join(pwd, "../../../../test/fixtures/testdata"))
-	if err != nil {
-		t.Fatalf("error from Create %v", err)
-	}
+	assert.Nil(t, err, "error from Create %v", err)
 
 	r := bytes.NewReader(ccPackage.Code)
+
 	gzf, err := gzip.NewReader(r)
-	if err != nil {
-		t.Fatalf("error from gzip.NewReader %v", err)
-	}
+	assert.Nil(t, err, "error from gzip.NewReader %v", err)
+
 	tarReader := tar.NewReader(gzf)
 	i := 0
-	exampleccExist := false
+	var exampleccExist, eventMetaInfExists, examplecc1MetaInfExists, fooMetaInfoExists, metaInfFooExists bool
 	for {
 		header, err := tarReader.Next()
 
@@ -43,20 +43,22 @@ func TestNewCCPackage(t *testing.T) {
 			break
 		}
 
-		if err != nil {
-			t.Fatalf("error from tarReader.Next() %v", err)
-		}
+		assert.Nil(t, err, "error from tarReader.Next() %v", err)
 
-		if header.Name == "src/github.com/example_cc/example_cc.go" {
-			exampleccExist = true
-		}
+		exampleccExist = exampleccExist || header.Name == "src/github.com/example_cc/example_cc.go"
+		eventMetaInfExists = eventMetaInfExists || header.Name == "META-INF/sample-json/event.json"
+		examplecc1MetaInfExists = examplecc1MetaInfExists || header.Name == "META-INF/example1.json"
+		fooMetaInfoExists = fooMetaInfoExists || strings.HasPrefix(header.Name, "foo-META-INF")
+		metaInfFooExists = metaInfFooExists || strings.HasPrefix(header.Name, "META-INF-foo")
+
 		i++
 	}
 
-	if !exampleccExist {
-		t.Fatalf("src/github.com/example_cc/example_cc.go not exist in tar file")
-	}
-
+	assert.True(t, exampleccExist, "src/github.com/example_cc/example_cc.go does not exists in tar file")
+	assert.True(t, eventMetaInfExists, "META-INF/event.json does not exists in tar file")
+	assert.True(t, examplecc1MetaInfExists, "META-INF/example1.json does not exists in tar file")
+	assert.False(t, fooMetaInfoExists, "invalid root directory found")
+	assert.False(t, metaInfFooExists, "invalid root directory found")
 }
 
 // Test Package Go ChainCode
