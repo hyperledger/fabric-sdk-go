@@ -50,7 +50,7 @@ const (
 	defaultDiscoveryResponseTimeout       = time.Second * 15
 	defaultConnIdleInterval               = time.Second * 30
 	defaultEventServiceIdleInterval       = time.Minute * 2
-	defaultChannelConfigRefreshInterval   = time.Minute * 90
+	defaultChannelConfigRefreshInterval   = time.Second * 90
 	defaultChannelMemshpRefreshInterval   = time.Second * 60
 	defaultDiscoveryRefreshInterval       = time.Second * 10
 
