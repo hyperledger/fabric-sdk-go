@@ -4,6 +4,10 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
+// Package multi is an error type that holds multiple errors. These errors
+// typically originate from operations that target multiple nodes.
+// For example, a transaction proposal with two endorsers could return
+// a multi error type if both endorsers return errors
 package multi
 
 import (

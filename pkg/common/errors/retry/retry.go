@@ -4,7 +4,13 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package retry provides retransmission capabilities to fabric-sdk-go
+// Package retry provides retransmission capabilities to fabric-sdk-go.
+// The only user interaction with this package is expected to be with the
+// defaults defined below.
+// They can be used in conjunction with the WithRetry setting offered by certain
+// clients in the SDK:
+// https://godoc.org/github.com/hyperledger/fabric-sdk-go/pkg/client/channel#WithRetry
+// https://godoc.org/github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt#WithRetry
 package retry
 
 import (

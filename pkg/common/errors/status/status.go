@@ -7,6 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 // Package status defines metadata for errors returned by fabric-sdk-go. This
 // information may be used by SDK users to make decisions about how to handle
 // certain error conditions.
+// Status codes are divided by group, where each group represents a particular
+// component and the codes correspond to those returned by the component.
+// These are defined in detail below.
 package status
 
 import (
