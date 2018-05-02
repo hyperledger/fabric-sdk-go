@@ -81,13 +81,14 @@ func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOpti
 }
 
 // WithOrdererURL allows an orderer to be specified for the request.
-// The orderer will be looked-up based on the url argument.
-func WithOrdererURL(url string) RequestOption {
+// The orderer will be looked-up based on the name/url argument.
+func WithOrdererURL(nameOrURL string) RequestOption {
+
 	return func(ctx context.Client, opts *requestOptions) error {
 
-		ordererCfg, err := ctx.EndpointConfig().OrdererConfig(url)
+		ordererCfg, err := ctx.EndpointConfig().OrdererConfig(nameOrURL)
 		if err != nil {
-			return errors.Wrapf(err, "orderer not found for url : %s", url)
+			return errors.Wrapf(err, "orderer not found for url : %s", nameOrURL)
 		}
 
 		orderer, err := ctx.InfraProvider().CreateOrdererFromConfig(ordererCfg)

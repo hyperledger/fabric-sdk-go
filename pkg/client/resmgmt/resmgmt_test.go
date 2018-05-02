@@ -252,7 +252,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	}
 
 	// Test targets only
-	err = rc.JoinChannel("mychannel", WithTargets(peers...))
+	err = rc.JoinChannel("mychannel", WithTargets(peers...), WithOrdererURL("orderer.example.com"))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

@@ -110,8 +110,9 @@ channels:
     # channel. This list can be a result of access control ("org1" can only access "ordererA"), or
     # operational decisions to share loads from applications among the orderers.  The values must
     # be "names" of orgs defined under "organizations/peers"
-    orderers:
-      - orderer.example.com
+    # deprecated: not recommended, to override any orderer configuration items, entity matchers should be used.
+#    orderers:
+#      - orderer.example.com
 
     # Required. list of peers from participating orgs
     peers:

@@ -88,7 +88,7 @@ type EndpointConfig interface {
 	MSPID(org string) (string, error)
 	PeerMSPID(name string) (string, error)
 	OrderersConfig() ([]OrdererConfig, error)
-	OrdererConfig(name string) (*OrdererConfig, error)
+	OrdererConfig(nameOrURL string) (*OrdererConfig, error)
 	PeersConfig(org string) ([]PeerConfig, error)
 	PeerConfig(nameOrURL string) (*PeerConfig, error)
 	NetworkConfig() (*NetworkConfig, error)

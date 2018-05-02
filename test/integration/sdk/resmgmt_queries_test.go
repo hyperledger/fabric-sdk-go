@@ -128,18 +128,8 @@ func testQueryChannels(t *testing.T, channelID string, target string, client *re
 }
 
 func testQueryConfigFromOrderer(t *testing.T, channelID string, client *resmgmt.Client) {
-
-	channelCfg, err := client.QueryConfigFromOrderer(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err != nil {
-		t.Fatalf("QueryConfig return error: %v", err)
-	}
-
 	expected := "orderer.example.com:7050"
-	if !contains(channelCfg.Orderers(), expected) {
-		t.Fatalf("Expected orderer %s, got %s", expected, channelCfg.Orderers())
-	}
-
-	channelCfg, err = client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererURL("orderer.example.com"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	channelCfg, err := client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererURL("orderer.example.com"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatalf("QueryConfig return error: %v", err)
 	}

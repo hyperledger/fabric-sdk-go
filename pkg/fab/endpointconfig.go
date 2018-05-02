@@ -185,19 +185,34 @@ func (c *EndpointConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 }
 
 // OrdererConfig returns the requested orderer
-func (c *EndpointConfig) OrdererConfig(name string) (*fab.OrdererConfig, error) {
+func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, error) {
 	networkConfig, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
 	}
-	orderer, ok := networkConfig.Orderers[strings.ToLower(name)]
+	orderer, ok := networkConfig.Orderers[strings.ToLower(nameOrURL)]
+
 	if !ok {
-		logger.Debugf("Could not find Orderer for [%s], trying with Entity Matchers", name)
-		matchingOrdererConfig := c.tryMatchingOrdererConfig(networkConfig, strings.ToLower(name))
+		ordererCfgs, err := c.OrderersConfig()
+		if err != nil {
+			return nil, err
+		}
+		for _, ordererCfg := range ordererCfgs {
+			if strings.EqualFold(ordererCfg.URL, nameOrURL) {
+				orderer = ordererCfg
+				ok = true
+				break
+			}
+		}
+	}
+
+	if !ok {
+		logger.Debugf("Could not find Orderer for [%s], trying with Entity Matchers", nameOrURL)
+		matchingOrdererConfig := c.tryMatchingOrdererConfig(networkConfig, strings.ToLower(nameOrURL))
 		if matchingOrdererConfig == nil {
 			return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingOrdererEntity.ToInt32(), "no matching orderer config found", nil))
 		}
-		logger.Debugf("Found matching Orderer Config for [%s]", name)
+		logger.Debugf("Found matching Orderer Config for [%s]", nameOrURL)
 		orderer = *matchingOrdererConfig
 	}
 
