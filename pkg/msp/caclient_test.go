@@ -8,7 +8,6 @@ package msp
 
 import (
 	"testing"
-	"time"
 
 	"fmt"
 	"strings"
@@ -177,8 +176,6 @@ func TestNoConfiguredCAs(t *testing.T) {
 // TestRegister tests multiple scenarios of registering a test (mocked or nil user) and their certs
 func TestRegister(t *testing.T) {
 
-	time.Sleep(2 * time.Second)
-
 	f := textFixture{}
 	f.setup()
 	defer f.close()
@@ -206,6 +203,149 @@ func TestRegister(t *testing.T) {
 	if secret != "mockSecretValue" {
 		t.Fatalf("identityManager Register return wrong value %s", secret)
 	}
+}
+
+// TestCreateIdentity tests creating identity
+func TestCreateIdentity(t *testing.T) {
+
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	// Create with nil request
+	_, err := f.caClient.CreateIdentity(nil)
+	if err == nil {
+		t.Fatalf("Expected error with nil request")
+	}
+
+	// Create without required parameters
+	_, err = f.caClient.CreateIdentity(&api.IdentityRequest{Affiliation: "Org1"})
+	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
+		t.Fatalf("Expected error due to missing required parameters")
+	}
+
+	_, err = f.caClient.CreateIdentity(&api.IdentityRequest{ID: "Some name"})
+	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
+		t.Fatalf("Expected error due to missing required parameters")
+	}
+
+	// Create identity with valid request
+	var attributes []api.Attribute
+	attributes = append(attributes, api.Attribute{Name: "test1", Value: "test2"})
+	attributes = append(attributes, api.Attribute{Name: "test2", Value: "test3"})
+	identity, err := f.caClient.CreateIdentity(&api.IdentityRequest{ID: "test", Affiliation: "test", Attributes: attributes})
+	if err != nil {
+		t.Fatalf("create identity return error %v", err)
+	}
+	if identity.Secret != "top-secret" {
+		t.Fatalf("create identity returned wrong value %s", identity.Secret)
+	}
+}
+
+// TestModifyIdentity tests updating identity
+func TestModifyIdentity(t *testing.T) {
+
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	// Update with nil request
+	_, err := f.caClient.ModifyIdentity(nil)
+	if err == nil {
+		t.Fatalf("Expected error with nil request")
+	}
+
+	// Update without required parameters
+	_, err = f.caClient.ModifyIdentity(&api.IdentityRequest{Affiliation: "Org1"})
+	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
+		t.Fatalf("Expected error due to missing required parameters")
+	}
+
+	_, err = f.caClient.ModifyIdentity(&api.IdentityRequest{ID: "Some name"})
+	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
+		t.Fatalf("Expected error due to missing required parameters")
+	}
+
+	// Update identity with valid request
+	identity, err := f.caClient.ModifyIdentity(&api.IdentityRequest{ID: "123", Affiliation: "org2", Secret: "new-top-secret"})
+	if err != nil {
+		t.Fatalf("update identity return error %v", err)
+	}
+	if identity.Secret != "new-top-secret" {
+		t.Fatalf("update identity returned wrong value: %s", identity.Secret)
+	}
+}
+
+// TestRemoveIdentity tests removing an identity
+func TestRemoveIdentity(t *testing.T) {
+
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	// Remove with nil request
+	_, err := f.caClient.RemoveIdentity(nil)
+	if err == nil {
+		t.Fatalf("Expected error with nil request")
+	}
+
+	// Remove without required parameters
+	_, err = f.caClient.RemoveIdentity(&api.RemoveIdentityRequest{Force: false})
+	if err == nil || !strings.Contains(err.Error(), "ID is required") {
+		t.Fatalf("Expected error due to missing required parameters")
+	}
+
+	// Remove identity with valid request
+	identity, err := f.caClient.RemoveIdentity(&api.RemoveIdentityRequest{ID: "123"})
+	if err != nil {
+		t.Fatalf("remove identity return error %v", err)
+	}
+	if identity.Secret != "" {
+		t.Fatalf("update identity returned wrong value: %s", identity.Secret)
+	}
+}
+
+// TestCreateIdentity tests retrieving an identity by id
+func TestGetIdentity(t *testing.T) {
+
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	// Get without required identity id parameter
+	_, err := f.caClient.GetIdentity("", "")
+	if err == nil || !strings.Contains(err.Error(), "id is required") {
+		t.Fatalf("Expected error due to missing required parameter")
+	}
+
+	// Get identity with valid request
+	response, err := f.caClient.GetIdentity("123", "")
+	if err != nil {
+		t.Fatalf("get identity return error %v", err)
+	}
+
+	if response == nil {
+		t.Fatalf("get identity response is nil")
+	}
+
+}
+
+// TestGetAllIdentities tests retrieving identities
+func TestGetAllIdentities(t *testing.T) {
+
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	responses, err := f.caClient.GetAllIdentities("")
+	if err != nil {
+		t.Fatalf("get identities return error %v", err)
+	}
+
+	if len(responses) != 2 {
+		t.Fatalf("expecting %d, got %d responses", 2, len(responses))
+	}
+
 }
 
 // TestEmbeddedRegistar tests registration with embedded registrar identity

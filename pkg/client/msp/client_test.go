@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"errors"
 	"math/rand"
 	"net"
 	"strconv"
@@ -87,6 +88,37 @@ func TestMSP(t *testing.T) {
 
 }
 
+// TestNewWithProviderError tests New with provider error
+func TestNewWithProviderError(t *testing.T) {
+
+	// Create msp client with client provider error
+	_, err := New(mockContextWithProviderError())
+	if err == nil {
+		t.Fatalf("Should have failed due to provider failure")
+	}
+}
+
+func mockContextWithProviderError() contextApi.ClientProvider {
+	return func() (contextApi.Client, error) {
+		return nil, errors.New("Test Error")
+	}
+}
+
+// TestNewWithProviderError tests error in client option
+func TestNewWithClientOptionError(t *testing.T) {
+	_, err := New(mockClientProvider(), WithClientOptionError())
+	if err == nil {
+		t.Fatalf("Should have failed due to client option failure")
+	}
+}
+
+// WithClientOptionError client option that generates error
+func WithClientOptionError() ClientOption {
+	return func(msp *Client) error {
+		return errors.New("Client option error")
+	}
+}
+
 func TestRegister(t *testing.T) {
 	f := testFixture{}
 	sdk := f.setup()
@@ -127,6 +159,100 @@ func TestRevoke(t *testing.T) {
 		t.Fatalf("Revoke return error %v", err)
 	}
 
+}
+
+// TestCreateIdentityFailure tests failures in CreateIdentity
+func TestCreateIdentityFailure(t *testing.T) {
+
+	// Create msp client
+	c, err := New(mockClientProvider())
+	if err != nil {
+		t.Fatalf("failed to create CA client: %v", err)
+	}
+
+	// Missing required affiliation
+	_, err = c.CreateIdentity(&IdentityRequest{ID: "123"})
+	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
+		t.Fatalf("Should have failed to create identity due to missing affiliation: %v", err)
+	}
+
+}
+
+// TestModifyIdentityFailure tests failures in ModifyIdentity
+func TestModifyIdentityFailure(t *testing.T) {
+
+	// Create msp client
+	c, err := New(mockClientProvider())
+	if err != nil {
+		t.Fatalf("failed to create CA client: %v", err)
+	}
+
+	// Missing required ID
+	_, err = c.ModifyIdentity(&IdentityRequest{Affiliation: "org2", Secret: "top-secret", Attributes: []Attribute{{Name: "attName1", Value: "attValue1"}}})
+	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
+		t.Fatalf("Should have failed to update identity due to missing id: %v", err)
+	}
+
+}
+
+// TestRemoveIdentityFailure tests different failures in RemoveIdentity
+func TestRemoveIdentityFailure(t *testing.T) {
+
+	// Create msp client
+	c, err := New(mockClientProvider())
+	if err != nil {
+		t.Fatalf("failed to create CA client: %v", err)
+	}
+
+	// Missing required ID
+	_, err = c.RemoveIdentity(&RemoveIdentityRequest{})
+	if err == nil || !strings.Contains(err.Error(), "ID is required") {
+		t.Fatalf("Should have failed to create identity due to missing id: %v", err)
+	}
+
+}
+
+// TestGetIdentityFailure tests failures in GetIdentity
+func TestGetIdentityFailure(t *testing.T) {
+
+	// Create msp client
+	c, err := New(mockClientProvider())
+	if err != nil {
+		t.Fatalf("failed to create CA client: %v", err)
+	}
+
+	_, err = c.GetIdentity("")
+	if err == nil || !strings.Contains(err.Error(), "id is required") {
+		t.Fatalf("Should have failed to get identity due to missing id: %v", err)
+	}
+
+	_, err = c.GetIdentity("123", withOptionError())
+	if err == nil {
+		t.Fatalf("Should have failed due to error in opton")
+	}
+}
+
+// TestGetAllIdentitiesFailure tests failures in GetAllIdentities
+func TestGetAllIdentitiesFailure(t *testing.T) {
+
+	// Create msp client
+	c, err := New(mockClientProvider())
+	if err != nil {
+		t.Fatalf("failed to create CA client: %v", err)
+	}
+
+	_, err = c.GetAllIdentities(withOptionError())
+	if err == nil {
+		t.Fatalf("Should have failed due to error in opton")
+	}
+
+}
+
+// withOptionError is request option that generates error
+func withOptionError() RequestOption {
+	return func(ctx contextApi.Client, o *requestOptions) error {
+		return errors.New("Option Error")
+	}
 }
 
 func testWithOrg2(t *testing.T, ctxProvider contextApi.ClientProvider) {

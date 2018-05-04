@@ -21,9 +21,10 @@ package signer
 
 import (
 	"crypto"
-	"io"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+
+	"io"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/pkg/errors"
