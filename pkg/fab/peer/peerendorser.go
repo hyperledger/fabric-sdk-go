@@ -26,6 +26,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
@@ -167,7 +168,11 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 				err = status.NewFromExtractedChaincodeError(code, message)
 			}
 		}
+	} else {
+		//check error from response (for :fabric v1.2 and later)
+		err = extractChaincodeErrorFromResponse(resp)
 	}
+
 	return resp, err
 }
 
@@ -197,6 +202,15 @@ func extractChaincodeError(status *grpcstatus.Status) (int, string, error) {
 		return code, message, nil
 	}
 	return code, message, errors.Errorf("Unable to parse GRPC Status Message Code: %v Message: %v", code, message)
+}
+
+//extractChaincodeErrorFromResponse extracts chaincode error from proposal response
+func extractChaincodeErrorFromResponse(resp *pb.ProposalResponse) error {
+	if resp.Response.Status != int32(common.Status_SUCCESS) {
+		details := []interface{}{resp.Endorsement, resp.Response.Payload}
+		return status.New(status.ChaincodeStatus, resp.Response.Status, resp.Response.Message, details)
+	}
+	return nil
 }
 
 func checkMessage(status *grpcstatus.Status, messageLength int, message string) string {

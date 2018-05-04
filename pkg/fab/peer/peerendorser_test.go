@@ -312,3 +312,25 @@ func TestExtractPrematureExecError(t *testing.T) {
 	assert.EqualValues(t, int32(status.PrematureChaincodeExecution), code, "Expected premature execution error")
 	assert.EqualValues(t, "premature execution - chaincode (somecc:v1) launched and waiting for registration", message, "Invalid message")
 }
+
+func TestChaincodeStatusFromResponse(t *testing.T) {
+	//For error response
+	response := &pb.ProposalResponse{
+		Response: &pb.Response{Status: 500, Payload: []byte("Unknown function"), Message: "Chaincode error"},
+	}
+	err := extractChaincodeErrorFromResponse(response)
+	s, ok := status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, "Chaincode error", s.Message)
+	assert.Equal(t, int32(500), s.Code)
+	assert.Equal(t, status.ChaincodeStatus, s.Group)
+	assert.Equal(t, []byte("Unknown function"), s.Details[1])
+
+	//For successful response
+	response = &pb.ProposalResponse{
+		Response: &pb.Response{Status: 200, Payload: []byte("TEST"), Message: "Success"},
+	}
+	err = extractChaincodeErrorFromResponse(response)
+	assert.True(t, ok)
+	assert.Nil(t, err)
+}
