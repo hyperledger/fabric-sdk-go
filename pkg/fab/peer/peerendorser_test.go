@@ -298,6 +298,7 @@ func TestExtractChainCodeError(t *testing.T) {
 }
 
 func TestExtractPrematureExecError(t *testing.T) {
+
 	err := grpcstatus.New(grpcCodes.Unknown, "some error")
 	_, _, e := extractPrematureExecutionError(err)
 	assert.EqualError(t, e, "not a premature execution error")
@@ -311,6 +312,26 @@ func TestExtractPrematureExecError(t *testing.T) {
 	code, message, _ = extractPrematureExecutionError(err)
 	assert.EqualValues(t, int32(status.PrematureChaincodeExecution), code, "Expected premature execution error")
 	assert.EqualValues(t, "premature execution - chaincode (somecc:v1) launched and waiting for registration", message, "Invalid message")
+}
+
+func TestExtractChaincodeAlreadyLaunchingError(t *testing.T) {
+
+	err := grpcstatus.New(grpcCodes.Unknown, "some error")
+	_, _, e := extractPrematureExecutionError(err)
+	assert.EqualError(t, e, "not a premature execution error")
+
+	err = grpcstatus.New(grpcCodes.Unknown, "error executing chaincode: error chaincode is already launching: somecc:v1")
+	code, message, extractErr := extractChaincodeAlreadyLaunchingError(err)
+	assert.EqualValues(t, int32(status.ChaincodeAlreadyLaunching), code, "Expected chaincode already launching error")
+	assert.EqualValues(t, "error chaincode is already launching: somecc:v1", message, "Invalid message")
+	assert.Nil(t, extractErr)
+
+	err = grpcstatus.New(grpcCodes.Unknown, "error executing chaincode: some random error: somecc:v1")
+	code, message, extractErr = extractChaincodeAlreadyLaunchingError(err)
+	assert.NotNil(t, extractErr)
+	assert.EqualValues(t, 0, code)
+	assert.Empty(t, message)
+
 }
 
 func TestChaincodeStatusFromResponse(t *testing.T) {

@@ -63,6 +63,9 @@ const (
 
 	// NoMatchingChannelEntity is if entityMatchers are unable to find any matchingChannel
 	NoMatchingChannelEntity Code = 25
+
+	// ChaincodeAlreadyLaunching indicates that an attempt for multiple simultaneous invokes was made to launch chaincode
+	ChaincodeAlreadyLaunching Code = 26
 )
 
 // CodeName maps the codes in this packages to human-readable strings

@@ -35,6 +35,7 @@ const (
 	// GRPC max message size (same as Fabric)
 	maxCallRecvMsgSize = 100 * 1024 * 1024
 	maxCallSendMsgSize = 100 * 1024 * 1024
+	statusCodeUnknown  = "Unknown"
 )
 
 // peerEndorser enables access to a GRPC-based endorser for running transaction proposal simulations
@@ -158,12 +159,20 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 		if ok {
 			code, message, extractErr := extractChaincodeError(rpcStatus)
 			if extractErr != nil {
+
 				code, message1, extractErr := extractPrematureExecutionError(rpcStatus)
+
+				if extractErr != nil {
+					//if not premation excution error, then look for chaincode already launching error
+					code, message1, extractErr = extractChaincodeAlreadyLaunchingError(rpcStatus)
+				}
+
 				if extractErr != nil {
 					err = status.NewFromGRPCStatus(rpcStatus)
 				} else {
 					err = status.New(status.EndorserClientStatus, code, message1, nil)
 				}
+
 			} else {
 				err = status.NewFromExtractedChaincodeError(code, message)
 			}
@@ -179,7 +188,7 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 func extractChaincodeError(status *grpcstatus.Status) (int, string, error) {
 	var code int
 	var message string
-	if status.Code().String() != "Unknown" || status.Message() == "" {
+	if status.Code().String() != statusCodeUnknown || status.Message() == "" {
 		return 0, "", errors.New("Unable to parse GRPC status message")
 	}
 	statusLength := len("status:")
@@ -227,7 +236,7 @@ func checkMessage(status *grpcstatus.Status, messageLength int, message string) 
 }
 
 func extractPrematureExecutionError(grpcstat *grpcstatus.Status) (int32, string, error) {
-	if grpcstat.Code().String() != "Unknown" || grpcstat.Message() == "" {
+	if grpcstat.Code().String() != statusCodeUnknown || grpcstat.Message() == "" {
 		return 0, "", errors.New("not a premature execution error")
 	}
 	index := strings.Index(grpcstat.Message(), "premature execution")
@@ -235,6 +244,17 @@ func extractPrematureExecutionError(grpcstat *grpcstatus.Status) (int32, string,
 		return 0, "", errors.New("not a premature execution error")
 	}
 	return int32(status.PrematureChaincodeExecution), grpcstat.Message()[index:], nil
+}
+
+func extractChaincodeAlreadyLaunchingError(grpcstat *grpcstatus.Status) (int32, string, error) {
+	if grpcstat.Code().String() != statusCodeUnknown || grpcstat.Message() == "" {
+		return 0, "", errors.New("not a chaincode already launching error")
+	}
+	index := strings.Index(grpcstat.Message(), "error chaincode is already launching:")
+	if index == -1 {
+		return 0, "", errors.New("not a chaincode already launching error")
+	}
+	return int32(status.ChaincodeAlreadyLaunching), grpcstat.Message()[index:], nil
 }
 
 // getChaincodeResponseStatus gets the actual response status from response.Payload.extension.Response.status, as fabric always returns actual 200

@@ -71,6 +71,7 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: {
 		status.EndorsementMismatch,
 		status.PrematureChaincodeExecution,
+		status.ChaincodeAlreadyLaunching,
 	},
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
@@ -99,6 +100,7 @@ var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: {
 		status.EndorsementMismatch,
 		status.PrematureChaincodeExecution,
+		status.ChaincodeAlreadyLaunching,
 	},
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
@@ -129,6 +131,7 @@ var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: {
 		status.ConnectionFailed, status.EndorsementMismatch,
 		status.PrematureChaincodeExecution,
+		status.ChaincodeAlreadyLaunching,
 	},
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
