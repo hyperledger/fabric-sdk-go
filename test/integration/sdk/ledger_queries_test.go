@@ -60,7 +60,7 @@ func TestLedgerClientQueries(t *testing.T) {
 
 	// Same query with target
 	target := testSetup.Targets[0]
-	ledgerInfoFromTarget, err := client.QueryInfo(ledger.WithTargetURLs(target))
+	ledgerInfoFromTarget, err := client.QueryInfo(ledger.WithTargetEndpoints(target))
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}

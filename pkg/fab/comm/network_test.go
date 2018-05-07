@@ -30,15 +30,15 @@ func TestNetworkPeerConfigFromURL(t *testing.T) {
 		t.Fatalf("Unexpected error reading config: %v", err)
 	}
 
-	_, err = NetworkPeerConfigFromURL(sampleConfig, "invalid")
+	_, err = NetworkPeerConfig(sampleConfig, "invalid")
 	assert.NotNil(t, err, "invalid url should return err")
 
-	np, err := NetworkPeerConfigFromURL(sampleConfig, "peer0.org2.example.com:8051")
+	np, err := NetworkPeerConfig(sampleConfig, "peer0.org2.example.com:8051")
 	assert.Nil(t, err, "valid url should not return err")
 	assert.Equal(t, "peer0.org2.example.com:8051", np.URL, "wrong URL")
 	assert.Equal(t, "Org2MSP", np.MSPID, "wrong MSP")
 
-	np, err = NetworkPeerConfigFromURL(sampleConfig, "peer0.org1.example.com:7051")
+	np, err = NetworkPeerConfig(sampleConfig, "peer0.org1.example.com:7051")
 	assert.Nil(t, err, "valid url should not return err")
 	assert.Equal(t, "peer0.org1.example.com:7051", np.URL, "wrong URL")
 	assert.Equal(t, "Org1MSP", np.MSPID, "wrong MSP")

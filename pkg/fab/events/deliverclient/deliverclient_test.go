@@ -449,10 +449,6 @@ func newMockConfig() *mockConfig {
 	}
 }
 
-func (c *mockConfig) PeerConfigByURL(url string) (*fab.PeerConfig, error) {
-	return &fab.PeerConfig{}, nil
-}
-
 func newMockContext() *fabmocks.MockContext {
 	ctx := fabmocks.NewMockContextWithCustomDiscovery(
 		mspmocks.NewMockSigningIdentity("user1", "test1"),

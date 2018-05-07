@@ -153,7 +153,7 @@ func OrgTargetPeers(orgs []string, configBackend ...core.ConfigBackend) ([]strin
 // It returns true if it has, false otherwise, or an error
 func HasPeerJoinedChannel(client *resmgmt.Client, target string, channel string) (bool, error) {
 	foundChannel := false
-	response, err := client.QueryChannels(resmgmt.WithTargetURLs(target), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	response, err := client.QueryChannels(resmgmt.WithTargetEndpoints(target), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		return false, errors.WithMessage(err, "failed to query channel for peer")
 	}

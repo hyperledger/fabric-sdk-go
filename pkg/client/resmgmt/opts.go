@@ -33,17 +33,17 @@ func WithTargets(targets ...fab.Peer) RequestOption {
 	}
 }
 
-// WithTargetURLs allows overriding of the target peers for the request.
-// Targets are specified by URL, and the SDK will create the underlying peer
+// WithTargetEndpoints allows overriding of the target peers for the request.
+// Targets are specified by name or URL, and the SDK will create the underlying peer
 // objects.
-func WithTargetURLs(urls ...string) RequestOption {
+func WithTargetEndpoints(keys ...string) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 
 		var targets []fab.Peer
 
-		for _, url := range urls {
+		for _, url := range keys {
 
-			peerCfg, err := comm.NetworkPeerConfigFromURL(ctx.EndpointConfig(), url)
+			peerCfg, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), url)
 			if err != nil {
 				return err
 			}
@@ -80,15 +80,16 @@ func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOpti
 	}
 }
 
-// WithOrdererURL allows an orderer to be specified for the request.
-// The orderer will be looked-up based on the name/url argument.
-func WithOrdererURL(nameOrURL string) RequestOption {
+// WithOrdererEndpoint allows an orderer to be specified for the request.
+// The orderer will be looked-up based on the key argument.
+// key argument can be a name or url
+func WithOrdererEndpoint(key string) RequestOption {
 
 	return func(ctx context.Client, opts *requestOptions) error {
 
-		ordererCfg, err := ctx.EndpointConfig().OrdererConfig(nameOrURL)
+		ordererCfg, err := ctx.EndpointConfig().OrdererConfig(key)
 		if err != nil {
-			return errors.Wrapf(err, "orderer not found for url : %s", nameOrURL)
+			return errors.Wrapf(err, "orderer not found for url : %s", key)
 		}
 
 		orderer, err := ctx.InfraProvider().CreateOrdererFromConfig(ordererCfg)
