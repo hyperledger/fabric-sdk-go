@@ -14,7 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	sdkCtx "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -50,7 +50,7 @@ func Example() {
 	}
 
 	// Install example chaincode to peer
-	installReq := InstallCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("bytes")}}
+	installReq := InstallCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Package: &resource.CCPackage{Type: 1, Code: []byte("bytes")}}
 	_, err = c.InstallCC(installReq, WithTargets(peer))
 	if err != nil {
 		fmt.Printf("failed to install chaincode: %v", err)
@@ -263,7 +263,7 @@ func ExampleClient_InstallCC() {
 		fmt.Println("failed to create client")
 	}
 
-	req := InstallCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("bytes")}}
+	req := InstallCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Package: &resource.CCPackage{Type: 1, Code: []byte("bytes")}}
 	responses, err := c.InstallCC(req, WithTargets(mockPeer()))
 	if err != nil {
 		fmt.Printf("failed to install chaincode: %v", err)

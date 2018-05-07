@@ -23,7 +23,6 @@ import (
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -66,7 +65,7 @@ func TestCreateChannel(t *testing.T) {
 	// Create channel without envelope
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
-	_, err = CreateChannel(reqCtx, api.CreateChannelRequest{
+	_, err = CreateChannel(reqCtx, CreateChannelRequest{
 		Orderer: orderer,
 		Name:    "mychannel",
 	})
@@ -75,7 +74,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without orderer
-	_, err = CreateChannel(reqCtx, api.CreateChannelRequest{
+	_, err = CreateChannel(reqCtx, CreateChannelRequest{
 		Envelope: configTx,
 		Name:     "mychannel",
 	})
@@ -84,7 +83,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without name
-	_, err = CreateChannel(reqCtx, api.CreateChannelRequest{
+	_, err = CreateChannel(reqCtx, CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 	})
@@ -93,7 +92,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Test with valid cofiguration
-	request := api.CreateChannelRequest{
+	request := CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 		Name:     "mychannel",
@@ -124,7 +123,7 @@ func TestJoinChannel(t *testing.T) {
 
 	genesisBlock := mocks.NewSimpleMockBlock()
 
-	request := api.JoinChannelRequest{}
+	request := JoinChannelRequest{}
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
 	err := JoinChannel(reqCtx, request, peers)
@@ -133,7 +132,7 @@ func TestJoinChannel(t *testing.T) {
 	}
 
 	// Test join channel with valid arguments
-	request = api.JoinChannelRequest{
+	request = JoinChannelRequest{
 		GenesisBlock: genesisBlock,
 	}
 	err = JoinChannel(reqCtx, request, peers)
@@ -143,7 +142,7 @@ func TestJoinChannel(t *testing.T) {
 
 	// Test failed proposal error handling
 	endorserServer.ProposalError = errors.New("Test Error")
-	request = api.JoinChannelRequest{}
+	request = JoinChannelRequest{}
 	err = JoinChannel(reqCtx, request, peers)
 	if err == nil {
 		t.Fatalf("Expected error")

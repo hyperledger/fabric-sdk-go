@@ -18,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -151,9 +150,9 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricS
 }
 
 // installCC use low level client to install chaincode
-func installCC(t *testing.T, reqCtx reqContext.Context, name string, path string, version string, ccPackage *api.CCPackage, targets []fab.ProposalProcessor) error {
+func installCC(t *testing.T, reqCtx reqContext.Context, name string, path string, version string, ccPackage *resource.CCPackage, targets []fab.ProposalProcessor) error {
 
-	icr := api.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage}
+	icr := resource.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage}
 
 	r, _, err := resource.InstallChaincode(reqCtx, icr, targets, resource.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {

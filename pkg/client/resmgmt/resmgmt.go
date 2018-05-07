@@ -43,7 +43,6 @@ import (
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -54,7 +53,7 @@ type InstallCCRequest struct {
 	Name    string
 	Path    string
 	Version string
-	Package *api.CCPackage
+	Package *resource.CCPackage
 }
 
 // InstallCCResponse contains install chaincode response status
@@ -235,7 +234,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		return errors.WithMessage(err, "genesis block retrieval failed")
 	}
 
-	joinChannelRequest := api.JoinChannelRequest{
+	joinChannelRequest := resource.JoinChannelRequest{
 		GenesisBlock: genesisBlock,
 	}
 
@@ -421,7 +420,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 }
 
 func (rc *Client) sendIntallCCRequest(req InstallCCRequest, reqCtx reqContext.Context, newTargets []fab.Peer, responses []InstallCCResponse) []InstallCCResponse {
-	icr := api.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package}
+	icr := resource.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package}
 	transactionProposalResponse, _, _ := resource.InstallChaincode(reqCtx, icr, peer.PeersToTxnProcessors(newTargets))
 	for _, v := range transactionProposalResponse {
 		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v", req.Name, v.Endorser, v.Status)
@@ -873,7 +872,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		return SaveChannelResponse{}, err
 	}
 
-	request := api.CreateChannelRequest{
+	request := resource.CreateChannelRequest{
 		Name:       req.ChannelID,
 		Orderer:    orderer,
 		Config:     chConfig,

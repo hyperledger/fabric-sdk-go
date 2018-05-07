@@ -35,7 +35,7 @@ import (
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
@@ -523,7 +523,7 @@ func TestInstallCCWithOpts(t *testing.T) {
 		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Payload: responseBytes}
 
 	// Already installed chaincode request
-	req := InstallCCRequest{Name: "name", Version: "version", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+	req := InstallCCRequest{Name: "name", Version: "version", Path: "path", Package: &resource.CCPackage{Type: 1, Code: []byte("code")}}
 	responses, err := rc.InstallCC(req, WithTargets(&peer1))
 	if err != nil {
 		t.Fatal(err)
@@ -542,7 +542,7 @@ func TestInstallCCWithOpts(t *testing.T) {
 	}
 
 	// Chaincode not found request (it will be installed)
-	req = InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+	req = InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &resource.CCPackage{Type: 1, Code: []byte("code")}}
 	responses, err = rc.InstallCC(req, WithTargets(&peer1))
 	if err != nil {
 		t.Fatal(err)
@@ -566,7 +566,7 @@ func TestInstallCCWithOptsError(t *testing.T) {
 	peer1 := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
 		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
 
-	req := InstallCCRequest{Name: "error", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+	req := InstallCCRequest{Name: "error", Version: "v0", Path: "path", Package: &resource.CCPackage{Type: 1, Code: []byte("code")}}
 
 	// Test both targets and filter provided (error condition)
 	_, err := rc.InstallCC(req, WithTargets(&peer1), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
@@ -585,7 +585,7 @@ func TestInstallError(t *testing.T) {
 	peer2 := fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com",
 		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
 
-	req := InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+	req := InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &resource.CCPackage{Type: 1, Code: []byte("code")}}
 	_, err := rc.InstallCC(req, WithTargets(&peer1, &peer2))
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), testErr.Error())
@@ -598,7 +598,7 @@ func TestInstallCC(t *testing.T) {
 		Status: http.StatusOK, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
 
 	// Chaincode that is not installed already (it will be installed)
-	req := InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+	req := InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &resource.CCPackage{Type: 1, Code: []byte("code")}}
 	responses, err := rc.InstallCC(req, WithTargets(&peer2))
 	if err != nil {
 		t.Fatal(err)
@@ -665,7 +665,7 @@ func TestInstallCCWithDifferentMSP(t *testing.T) {
 	rc := setupResMgmtClient(t, ctx)
 
 	// Valid request
-	req := InstallCCRequest{Name: "name", Version: "version", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+	req := InstallCCRequest{Name: "name", Version: "version", Path: "path", Package: &resource.CCPackage{Type: 1, Code: []byte("code")}}
 
 	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
 	_, err := rc.InstallCC(req)
@@ -713,7 +713,7 @@ func TestInstallCCDiscoveryError(t *testing.T) {
 	rc := setupResMgmtClientWithDiscoveryError(t, ctx, errors.New("Test Error"))
 
 	// Test InstallCC discovery service error
-	req := InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &api.CCPackage{Type: 1, Code: []byte("code")}}
+	req := InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &resource.CCPackage{Type: 1, Code: []byte("code")}}
 
 	// Test InstallCC discovery service error
 	// if targets are not provided discovery service is used

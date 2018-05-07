@@ -23,7 +23,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -77,7 +76,7 @@ func SignChannelConfig(ctx context.Client, config []byte, signer msp.SigningIden
 }
 
 // CreateChannel calls the orderer to start building the new channel.
-func CreateChannel(reqCtx reqContext.Context, request api.CreateChannelRequest, opts ...Opt) (fab.TransactionID, error) {
+func CreateChannel(reqCtx reqContext.Context, request CreateChannelRequest, opts ...Opt) (fab.TransactionID, error) {
 	if request.Orderer == nil {
 		return fab.EmptyTransactionID, errors.New("missing orderer request parameter for the initialize channel")
 	}
@@ -118,7 +117,7 @@ func CreateChannel(reqCtx reqContext.Context, request api.CreateChannelRequest, 
 }
 
 // TODO: this function was extracted from createOrUpdateChannel, but needs a closer examination.
-func createChannelFromEnvelope(reqCtx reqContext.Context, request api.CreateChannelRequest) (fab.TransactionID, error) {
+func createChannelFromEnvelope(reqCtx reqContext.Context, request CreateChannelRequest) (fab.TransactionID, error) {
 	env, err := extractSignedEnvelope(request.Envelope)
 	if err != nil {
 		return fab.EmptyTransactionID, errors.WithMessage(err, "signed envelope not valid")
@@ -176,7 +175,7 @@ func LastConfigFromOrderer(reqCtx reqContext.Context, channelName string, ordere
 // JoinChannel sends a join channel proposal to the target peer.
 //
 // TODO extract targets from request into parameter.
-func JoinChannel(reqCtx reqContext.Context, request api.JoinChannelRequest, targets []fab.ProposalProcessor, opts ...Opt) error {
+func JoinChannel(reqCtx reqContext.Context, request JoinChannelRequest, targets []fab.ProposalProcessor, opts ...Opt) error {
 
 	if request.GenesisBlock == nil {
 		return errors.New("missing block input parameter with the required genesis block")
@@ -226,7 +225,7 @@ func extractSignedEnvelope(reqEnvelope []byte) (*fab.SignedEnvelope, error) {
 }
 
 // createOrUpdateChannel creates a new channel or updates an existing channel.
-func createOrUpdateChannel(reqCtx reqContext.Context, txh *txn.TransactionHeader, request api.CreateChannelRequest) error {
+func createOrUpdateChannel(reqCtx reqContext.Context, txh *txn.TransactionHeader, request CreateChannelRequest) error {
 
 	configUpdateEnvelope := &common.ConfigUpdateEnvelope{
 		ConfigUpdate: request.Config,
@@ -311,7 +310,7 @@ func QueryInstalledChaincodes(reqCtx reqContext.Context, peer fab.ProposalProces
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
-func InstallChaincode(reqCtx reqContext.Context, req api.InstallChaincodeRequest, targets []fab.ProposalProcessor, opts ...Opt) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+func InstallChaincode(reqCtx reqContext.Context, req InstallChaincodeRequest, targets []fab.ProposalProcessor, opts ...Opt) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	if req.Name == "" {
 		return nil, fab.EmptyTransactionID, errors.New("chaincode name required")

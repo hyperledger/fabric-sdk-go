@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/pkg/errors"
 
 	"fmt"
@@ -42,7 +42,7 @@ var keep = []string{".c", ".h", ".s", ".go", ".yaml", ".json"}
 var logger = logging.NewLogger("fabsdk/fab")
 
 // NewCCPackage creates new go lang chaincode package
-func NewCCPackage(chaincodePath string, goPath string) (*api.CCPackage, error) {
+func NewCCPackage(chaincodePath string, goPath string) (*resource.CCPackage, error) {
 
 	if chaincodePath == "" {
 		return nil, errors.New("chaincode path must be provided")
@@ -75,7 +75,7 @@ func NewCCPackage(chaincodePath string, goPath string) (*api.CCPackage, error) {
 		return nil, err
 	}
 
-	ccPkg := &api.CCPackage{Type: pb.ChaincodeSpec_GOLANG, Code: tarBytes}
+	ccPkg := &resource.CCPackage{Type: pb.ChaincodeSpec_GOLANG, Code: tarBytes}
 
 	return ccPkg, nil
 }
