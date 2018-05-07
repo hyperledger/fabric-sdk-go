@@ -14,6 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/event"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
@@ -35,7 +36,7 @@ func TestDefaultEventClient(t *testing.T) {
 	}
 
 	// get default event client (with filtered block events)
-	eventClient, err := event.New(org1ChannelClientContext)
+	eventClient, err := event.New(org1ChannelClientContext, event.WithSeekType(seek.Newest))
 	if err != nil {
 		t.Fatalf("Failed to create new events client: %s", err)
 	}
@@ -70,7 +71,7 @@ func TestEventsClientWithBlockEvents(t *testing.T) {
 	}
 
 	// create event client with block events
-	eventClient, err := event.New(org1ChannelClientContext, event.WithBlockEvents())
+	eventClient, err := event.New(org1ChannelClientContext, event.WithBlockEvents(), event.WithSeekType(seek.Newest))
 	if err != nil {
 		t.Fatalf("Failed to create new events client with block events: %s", err)
 	}

@@ -6,6 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 
 package event
 
+import "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
+
 // ClientOption describes a functional parameter for the New constructor
 type ClientOption func(*Client) error
 
@@ -14,6 +16,24 @@ type ClientOption func(*Client) error
 func WithBlockEvents() ClientOption {
 	return func(c *Client) error {
 		c.permitBlockEvents = true
+		return nil
+	}
+}
+
+// WithBlockNum indicates the block number from which events are to be received.
+// Only deliverclient supports this
+func WithBlockNum(from uint64) ClientOption {
+	return func(c *Client) error {
+		c.fromBlock = from
+		return nil
+	}
+}
+
+// WithSeekType indicates the  type of seek desired - newest, oldest or from given block
+// Only deliverclient supports this
+func WithSeekType(seek seek.Type) ClientOption {
+	return func(c *Client) error {
+		c.seekType = seek
 		return nil
 	}
 }
