@@ -52,7 +52,7 @@ func TestParentContext(t *testing.T) {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
 
-	_, err = resClient.QueryChannels(resmgmt.WithTargetURLs(target), resmgmt.WithParentContext(parentContext), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	_, err = resClient.QueryChannels(resmgmt.WithTargetEndpoints(target), resmgmt.WithParentContext(parentContext), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err == nil || !strings.Contains(err.Error(), "context canceled") {
 		t.Fatalf("expected context cancelled error but got: %v", err)
 	}

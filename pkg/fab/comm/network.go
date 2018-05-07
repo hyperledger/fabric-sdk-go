@@ -12,9 +12,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NetworkPeerConfigFromURL fetches the peer configuration based on a URL.
-func NetworkPeerConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.NetworkPeer, error) {
-	peerCfg, err := cfg.PeerConfig(url)
+// NetworkPeerConfig fetches the peer configuration based on a key (name or URL).
+func NetworkPeerConfig(cfg fab.EndpointConfig, key string) (*fab.NetworkPeer, error) {
+	peerCfg, err := cfg.PeerConfig(key)
 	if err != nil {
 		return nil, errors.WithMessage(err, "peer not found")
 	}

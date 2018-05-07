@@ -26,12 +26,7 @@ var p1 = fabmocks.NewMockPeer("p1", url1)
 var p2 = fabmocks.NewMockPeer("p2", url2)
 var p3 = fabmocks.NewMockPeer("p3", url3)
 
-var pc1 = fab.PeerConfig{URL: url1}
-var pc2 = fab.PeerConfig{URL: url2}
-var pc3 = fab.PeerConfig{URL: url3}
-
 var peers = []fab.Peer{p1, p2, p3}
-var peerConfigs = []fab.PeerConfig{pc1, pc2, pc3}
 
 func TestEndpoint(t *testing.T) {
 	expectedEventURL := "localhost:7053"
@@ -144,15 +139,6 @@ func newMockConfig(channelPeers ...fab.ChannelPeer) *mockConfig {
 		EndpointConfig: fabmocks.NewMockEndpointConfig(),
 		channelPeers:   channelPeers,
 	}
-}
-
-func (c *mockConfig) PeerConfigByURL(url string) (*fab.PeerConfig, error) {
-	for _, pc := range peerConfigs {
-		if pc.URL == url {
-			return &pc, nil
-		}
-	}
-	return nil, nil
 }
 
 func (c *mockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {

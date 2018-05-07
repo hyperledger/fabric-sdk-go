@@ -45,7 +45,7 @@ func TestDiscoveryClientPeers(t *testing.T) {
 
 	req := discclient.NewRequest().OfChannel(testSetup.ChannelID).AddPeersQuery()
 
-	peerCfg1, err := comm.NetworkPeerConfigFromURL(ctx.EndpointConfig(), peer1URL)
+	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer1URL)
 	require.NoErrorf(t, err, "error getting peer config for [%s]", peer1URL)
 
 	responses, err := client.Send(reqCtx, req, peerCfg1.PeerConfig)
@@ -111,7 +111,7 @@ func TestDiscoveryClientLocalPeers(t *testing.T) {
 
 	req := discclient.NewRequest().AddLocalPeersQuery()
 
-	peerCfg1, err := comm.NetworkPeerConfigFromURL(ctx.EndpointConfig(), peer1URL)
+	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer1URL)
 	require.NoErrorf(t, err, "error getting peer config for [%s]", peer1URL)
 
 	responses, err := client.Send(reqCtx, req, peerCfg1.PeerConfig)

@@ -211,7 +211,7 @@ func ExampleClient_SaveChannel() {
 	// Output: Saved channel
 }
 
-func ExampleClient_SaveChannel_withOrdererURL() {
+func ExampleClient_SaveChannel_withOrdererEndpoint() {
 
 	c, err := New(mockClientProvider())
 	if err != nil {
@@ -224,7 +224,7 @@ func ExampleClient_SaveChannel_withOrdererURL() {
 	}
 	defer r.Close()
 
-	resp, err := c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererURL("example.com"))
+	resp, err := c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererEndpoint("example.com"))
 	if err != nil {
 		fmt.Printf("failed to save channel: %v", err)
 	}

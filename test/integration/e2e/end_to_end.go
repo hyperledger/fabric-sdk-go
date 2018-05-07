@@ -133,7 +133,7 @@ func createChannelAndCC(t *testing.T, sdk *fabsdk.FabricSDK) {
 	}
 
 	// Org peers join channel
-	if err = orgResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererURL("orderer.example.com")); err != nil {
+	if err = orgResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
 		t.Fatalf("Org peers failed to JoinChannel: %s", err)
 	}
 
@@ -204,7 +204,7 @@ func createChannel(sdk *fabsdk.FabricSDK, t *testing.T, resMgmtClient *resmgmt.C
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{adminIdentity}}
-	txID, err := resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererURL("orderer.example.com"))
+	txID, err := resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil")
 	require.NotEmpty(t, txID, "transaction ID should be populated")
 }

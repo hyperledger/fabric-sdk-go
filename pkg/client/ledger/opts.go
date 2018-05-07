@@ -61,16 +61,16 @@ func WithTargets(targets ...fab.Peer) RequestOption {
 	}
 }
 
-// WithTargetURLs allows overriding of the target peers per request.
-// Targets are specified by URL, and the SDK will create the underlying peer objects.
-func WithTargetURLs(urls ...string) RequestOption {
+// WithTargetEndpoints allows overriding of the target peers per request.
+// Targets are specified by name or URL, and the SDK will create the underlying peer objects.
+func WithTargetEndpoints(keys ...string) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 
 		var targets []fab.Peer
 
-		for _, url := range urls {
+		for _, url := range keys {
 
-			peerCfg, err := comm.NetworkPeerConfigFromURL(ctx.EndpointConfig(), url)
+			peerCfg, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), url)
 			if err != nil {
 				return err
 			}

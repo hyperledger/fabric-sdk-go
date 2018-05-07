@@ -18,7 +18,7 @@ import (
 
 func TestWithTargetURLsInvalid(t *testing.T) {
 	ctx := setupTestContext("test", "Org1MSP")
-	opt := WithTargetURLs("invalid")
+	opt := WithTargetEndpoints("invalid")
 
 	mockConfig := &fcmocks.MockConfig{}
 
@@ -36,7 +36,7 @@ func TestWithTargetURLsInvalid(t *testing.T) {
 
 func TestWithTargetURLsValid(t *testing.T) {
 	ctx := setupTestContext("test", "Org1MSP")
-	opt := WithTargetURLs("127.0.0.1:7050")
+	opt := WithTargetEndpoints("127.0.0.1:7050")
 
 	mockConfig := &fcmocks.MockConfig{}
 

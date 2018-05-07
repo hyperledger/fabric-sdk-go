@@ -254,7 +254,7 @@ func (c *EndpointConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
 	return peers, nil
 }
 
-// PeerConfig Retrieves a specific peer from the configuration by org and name
+// PeerConfig Retrieves a specific peer from the configuration by name or url
 func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
 	networkConfig, err := c.NetworkConfig()
 	if err != nil {

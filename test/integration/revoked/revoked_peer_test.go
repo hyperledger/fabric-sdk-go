@@ -93,7 +93,7 @@ func TestRevokedPeer(t *testing.T) {
 	}
 
 	// Org1 peers join channel
-	if err = org1ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererURL("orderer.example.com")); err != nil {
+	if err = org1ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
 		t.Fatalf("Org1 peers failed to JoinChannel: %s", err)
 	}
 
@@ -104,7 +104,7 @@ func TestRevokedPeer(t *testing.T) {
 	}
 
 	// Org2 peers join channel
-	if err = org2ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererURL("orderer.example.com")); err != nil {
+	if err = org2ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
 		t.Fatalf("Org2 peers failed to JoinChannel: %s", err)
 	}
 
@@ -157,7 +157,7 @@ func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Cl
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
 	resp, err := org1ResMgmt.InstantiateCC("orgchannel",
 		resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
-		resmgmt.WithTargetURLs("peer0.org1.example.com"))
+		resmgmt.WithTargetEndpoints("peer0.org1.example.com"))
 	require.Nil(t, err, "error should be nil")
 	require.NotEmpty(t, resp, "transaction response should be populated")
 }
@@ -166,7 +166,7 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererURL("orderer.example.com"))
+	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil")
 	require.NotEmpty(t, txID, "transaction ID should be populated")
 }

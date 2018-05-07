@@ -162,7 +162,7 @@ func getProposalProcessors(sdk *fabsdk.FabricSDK, user string, orgName string, t
 
 func getPeer(ctx contextAPI.Client, url string) (fab.Peer, error) {
 
-	peerCfg, err := comm.NetworkPeerConfigFromURL(ctx.EndpointConfig(), url)
+	peerCfg, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), url)
 	if err != nil {
 		return nil, err
 	}
