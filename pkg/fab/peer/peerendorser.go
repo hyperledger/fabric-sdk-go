@@ -163,7 +163,7 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 				code, message1, extractErr := extractPrematureExecutionError(rpcStatus)
 
 				if extractErr != nil {
-					//if not premation excution error, then look for chaincode already launching error
+					//if not premature execution error, then look for chaincode already launching error
 					code, message1, extractErr = extractChaincodeAlreadyLaunchingError(rpcStatus)
 				}
 
