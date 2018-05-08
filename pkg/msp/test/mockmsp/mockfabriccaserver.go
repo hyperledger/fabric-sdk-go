@@ -85,6 +85,7 @@ func (s *MockFabricCAServer) Start(lis net.Listener, cryptoSuite core.CryptoSuit
 	http.HandleFunc("/register", s.register)
 	http.HandleFunc("/enroll", s.enroll)
 	http.HandleFunc("/reenroll", s.enroll)
+	http.HandleFunc("/revoke", s.revoke)
 
 	server := &http.Server{
 		Addr:      addr,
@@ -98,7 +99,7 @@ func (s *MockFabricCAServer) Start(lis net.Listener, cryptoSuite core.CryptoSuit
 		}
 	}()
 	time.Sleep(1 * time.Second)
-	logger.Infof("HTTP Server started on %s", s.address)
+	logger.Debugf("HTTP Server started on %s", s.address)
 
 	s.running = true
 
@@ -119,6 +120,14 @@ func (s *MockFabricCAServer) addKeyToKeyStore(privateKey []byte) error {
 // Register user
 func (s *MockFabricCAServer) register(w http.ResponseWriter, req *http.Request) {
 	resp := &api.RegistrationResponseNet{RegistrationResponse: api.RegistrationResponse{Secret: "mockSecretValue"}}
+	if err := cfsslapi.SendResponse(w, resp); err != nil {
+		logger.Error(err)
+	}
+}
+
+// Revoke user
+func (s *MockFabricCAServer) revoke(w http.ResponseWriter, req *http.Request) {
+	resp := &api.RevocationResponse{}
 	if err := cfsslapi.SendResponse(w, resp); err != nil {
 		logger.Error(err)
 	}

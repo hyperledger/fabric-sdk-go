@@ -40,7 +40,7 @@ var caServerURL string
 // TestMSP is a unit test for Client enrollment and re-enrollment scenarios
 func TestMSP(t *testing.T) {
 
-	f := textFixture{}
+	f := testFixture{}
 	sdk := f.setup()
 	defer f.close()
 
@@ -84,6 +84,48 @@ func TestMSP(t *testing.T) {
 
 	// Try with a non-default org
 	testWithOrg2(t, ctxProvider)
+
+}
+
+func TestRegister(t *testing.T) {
+	f := testFixture{}
+	sdk := f.setup()
+	defer f.close()
+
+	ctxProvider := sdk.Context()
+
+	// Get the Client.
+	// Without WithOrg option, it uses default client organization.
+	msp, err := New(ctxProvider)
+	if err != nil {
+		t.Fatalf("failed to create CA client: %v", err)
+	}
+
+	_, err = msp.Register(&RegistrationRequest{Name: "testuser"})
+	if err != nil {
+		t.Fatalf("Register return error %v", err)
+	}
+
+}
+
+func TestRevoke(t *testing.T) {
+	f := testFixture{}
+	sdk := f.setup()
+	defer f.close()
+
+	ctxProvider := sdk.Context()
+
+	// Get the Client.
+	// Without WithOrg option, it uses default client organization.
+	msp, err := New(ctxProvider)
+	if err != nil {
+		t.Fatalf("failed to create CA client: %v", err)
+	}
+
+	_, err = msp.Revoke(&RevocationRequest{Name: "testuser"})
+	if err != nil {
+		t.Fatalf("Revoke return error %v", err)
+	}
 
 }
 
@@ -149,14 +191,14 @@ func getEnrolledUser(t *testing.T, msp *Client) mspctx.SigningIdentity {
 	return enrolledUser
 }
 
-type textFixture struct {
+type testFixture struct {
 	cryptoSuiteConfig core.CryptoSuiteConfig
 	identityConfig    msp.IdentityConfig
 }
 
 var caServer = &mockmsp.MockFabricCAServer{}
 
-func (f *textFixture) setup() *fabsdk.FabricSDK {
+func (f *testFixture) setup() *fabsdk.FabricSDK {
 
 	var lis net.Listener
 	var err error
@@ -217,7 +259,7 @@ func (f *textFixture) setup() *fabsdk.FabricSDK {
 	return sdk
 }
 
-func (f *textFixture) close() {
+func (f *testFixture) close() {
 	cleanup(f.identityConfig.CredentialStorePath())
 	cleanup(f.cryptoSuiteConfig.KeyStorePath())
 }

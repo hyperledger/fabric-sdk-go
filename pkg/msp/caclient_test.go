@@ -287,8 +287,8 @@ func TestRevoke(t *testing.T) {
 	user.SetPrivateKey(mockKey)
 
 	_, err = f.caClient.Revoke(&api.RevocationRequest{})
-	if err == nil {
-		t.Fatalf("Expected decoding error with test cert")
+	if err != nil {
+		t.Fatalf("Revoke return error %v", err)
 	}
 }
 

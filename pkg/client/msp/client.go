@@ -4,6 +4,15 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
+// Package msp enables creation and update of users on a Fabric network.
+// Msp client supports the following actions:
+// Enroll, Reenroll, Register,  Revoke and GetSigningIdentity.
+//
+//  Basic Flow:
+//  1) Prepare client context
+//  2) Create msp client
+//  3) Register user
+//  4) Enroll user
 package msp
 
 import (
@@ -91,9 +100,12 @@ func WithSecret(secret string) EnrollmentOption {
 // A new key pair is generated for the user. The private key and the
 // enrollment certificate issued by the CA are stored in SDK stores.
 // They can be retrieved by calling IdentityManager.GetSigningIdentity().
+//  Parameters:
+//  enrollmentID enrollment ID of a registered user
+//  opts are optional enrollment options
 //
-// enrollmentID enrollment ID of a registered user
-// opts represent enrollment options
+//  Returns:
+//  an error if enrollment fails
 func (c *Client) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
 
 	eo := enrollmentOptions{}
@@ -112,6 +124,11 @@ func (c *Client) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
 }
 
 // Reenroll reenrolls an enrolled user in order to obtain a new signed X509 certificate
+//  Parameters:
+//  enrollmentID enrollment ID of a registered user
+//
+//  Returns:
+//  an error if re-enrollment fails
 func (c *Client) Reenroll(enrollmentID string) error {
 	ca, err := newCAClient(c.ctx, c.orgName)
 	if err != nil {
@@ -121,8 +138,11 @@ func (c *Client) Reenroll(enrollmentID string) error {
 }
 
 // Register registers a User with the Fabric CA
-// request: Registration Request
-// Returns Enrolment Secret
+//  Parameters:
+//  request is registration request
+//
+//  Returns:
+//  enrolment secret
 func (c *Client) Register(request *RegistrationRequest) (string, error) {
 	ca, err := newCAClient(c.ctx, c.orgName)
 	if err != nil {
@@ -147,7 +167,11 @@ func (c *Client) Register(request *RegistrationRequest) (string, error) {
 }
 
 // Revoke revokes a User with the Fabric CA
-// request: Revocation Request
+//  Parameters:
+//  request is revocation request
+//
+//  Returns:
+//  revocation response
 func (c *Client) Revoke(request *RevocationRequest) (*RevocationResponse, error) {
 	ca, err := newCAClient(c.ctx, c.orgName)
 	if err != nil {
@@ -175,6 +199,11 @@ func (c *Client) Revoke(request *RevocationRequest) (*RevocationResponse, error)
 }
 
 // GetSigningIdentity returns signing identity for id
+//  Parameters:
+//  id is user id
+//
+//  Returns:
+//  signing identity
 func (c *Client) GetSigningIdentity(id string) (mspctx.SigningIdentity, error) {
 	im, _ := c.ctx.IdentityManager(c.orgName)
 	si, err := im.GetSigningIdentity(id)
