@@ -13,9 +13,11 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -59,7 +61,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	}
 
 	sampleIdentityConfig := identityCfg.(*IdentityConfig)
-	sampleIdentityConfig.endpointConfig.ResetNetworkConfig()
+	sampleIdentityConfig.endpointConfig.(*fab.EndpointConfig).ResetNetworkConfig()
 
 	customBackend.KeyValueMap["channels"] = "INVALID"
 	_, err = sampleIdentityConfig.networkConfig()
@@ -389,6 +391,61 @@ func TestCAConfig(t *testing.T) {
 
 }
 
+func TestCAConfigWithCustomEndpointConfig(t *testing.T) {
+	//Test config
+	backend, err := config.FromFile(configTestFilePath)()
+	if err != nil {
+		t.Fatal("Failed to get config backend")
+	}
+
+	endpointConfig, err := fab.ConfigFromBackend(backend...)
+	if err != nil {
+		t.Fatal("Failed to get endpoint config")
+	}
+
+	config, err := ConfigFromEndpointConfig(&customEndpointConfig{endpointConfig}, backend...)
+	if err != nil {
+		t.Fatal("Failed to get identity config")
+	}
+	identityConfig := config.(*IdentityConfig)
+	//Test Crypto config path
+
+	val, ok := backend[0].Lookup("client.cryptoconfig.path")
+	if !ok || val == nil {
+		t.Fatal("expected valid value")
+	}
+
+	assert.True(t, pathvar.Subst(val.(string)) == identityConfig.endpointConfig.CryptoConfigPath(), "Incorrect crypto config path", t)
+
+	//Testing MSPID
+	mspID, err := identityConfig.endpointConfig.MSPID(org1)
+	assert.Nil(t, err, "Get MSP ID failed")
+	assert.True(t, mspID == "Org1MSP", "Get MSP ID failed")
+
+	// testing empty OrgMSP
+	_, err = identityConfig.endpointConfig.MSPID("dummyorg1")
+	assert.NotNil(t, err, "Get MSP ID did not fail for dummyorg1")
+	assert.True(t, err.Error() == "MSP ID is empty for org: dummyorg1", "Get MSP ID did not fail for dummyorg1")
+
+	//Testing CAConfig
+	caConfig, err := identityConfig.CAConfig(org1)
+	assert.Nil(t, err, "Get CA Config failed")
+	assert.NotNil(t, caConfig, "Get CA Config failed")
+
+	// Test CA KeyStore Path
+	testCAKeyStorePath(backend[0], t, identityConfig)
+
+	// test Client
+	c, err := identityConfig.Client()
+	assert.Nil(t, err, "Received error when fetching Client info")
+	assert.NotNil(t, c, "Received error when fetching Client info")
+
+	client, err := identityConfig.Client()
+	assert.Nil(t, err)
+	assert.Equal(t, "custom-org1", client.Organization, "supposed to get custom org name from custom endpointconfig")
+
+}
+
 func testCAKeyStorePath(backend core.ConfigBackend, t *testing.T, identityConfig *IdentityConfig) {
 	// Test User Store Path
 	val, ok := backend.Lookup("client.credentialStore.path")
@@ -501,4 +558,18 @@ func newViper(path string) *viper.Viper {
 		panic(err)
 	}
 	return myViper
+}
+
+//customEndpointConfig to demonstrate custom endpoint config in identity config
+type customEndpointConfig struct {
+	fabImpl.EndpointConfig
+}
+
+func (c *customEndpointConfig) NetworkConfig() (*fabImpl.NetworkConfig, error) {
+	nConfig, err := c.EndpointConfig.NetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+	nConfig.Client.Organization = "CUSTOM-ORG1"
+	return nConfig, nil
 }

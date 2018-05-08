@@ -384,7 +384,7 @@ func (sdk *FabricSDK) loadConfigs(configProvider core.ConfigProvider) (*configs,
 		}
 
 		if c.identityConfig == nil {
-			c.identityConfig, err = mspImpl.ConfigFromBackend(configBackend...)
+			c.identityConfig, err = mspImpl.ConfigFromEndpointConfig(c.endpointConfig, configBackend...)
 			if err != nil {
 				return nil, errors.WithMessage(err, "failed to initialize identity config from config backend")
 			}
