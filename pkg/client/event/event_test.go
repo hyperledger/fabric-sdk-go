@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 package event
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
@@ -41,7 +43,7 @@ func TestNewEventClient(t *testing.T) {
 		t.Fatalf("Failed to create new event client: %s", err)
 	}
 
-	_, err = New(ctx, WithBlockEvents())
+	_, err = New(ctx, WithBlockEvents(), WithSeekType(seek.Newest), WithBlockNum(math.MaxUint64))
 	if err != nil {
 		t.Fatalf("Failed to create new event client: %s", err)
 	}
