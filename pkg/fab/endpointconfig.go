@@ -64,7 +64,6 @@ func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, e
 		backend:         lookup.New(coreBackend...),
 		peerMatchers:    make(map[int]*regexp.Regexp),
 		ordererMatchers: make(map[int]*regexp.Regexp),
-		caMatchers:      make(map[int]*regexp.Regexp),
 		channelMatchers: make(map[int]*regexp.Regexp),
 	}
 
@@ -101,7 +100,6 @@ type EndpointConfig struct {
 	networkConfigCached bool
 	peerMatchers        map[int]*regexp.Regexp
 	ordererMatchers     map[int]*regexp.Regexp
-	caMatchers          map[int]*regexp.Regexp
 	channelMatchers     map[int]*regexp.Regexp
 }
 
@@ -985,11 +983,6 @@ func (c *EndpointConfig) compileMatchers() error {
 		return err
 	}
 
-	err = c.compileCertificateAuthorityMatcher(networkConfig)
-	if err != nil {
-		return err
-	}
-
 	err = c.compileChannelMatcher(networkConfig)
 	return err
 }
@@ -1001,22 +994,6 @@ func (c *EndpointConfig) compileChannelMatcher(networkConfig *fab.NetworkConfig)
 		for i, matcher := range channelMatchers {
 			if matcher.Pattern != "" {
 				c.channelMatchers[i], err = regexp.Compile(matcher.Pattern)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func (c *EndpointConfig) compileCertificateAuthorityMatcher(networkConfig *fab.NetworkConfig) error {
-	var err error
-	if networkConfig.EntityMatchers["certificateauthority"] != nil {
-		certMatchersConfig := networkConfig.EntityMatchers["certificateauthority"]
-		for i := 0; i < len(certMatchersConfig); i++ {
-			if certMatchersConfig[i].Pattern != "" {
-				c.caMatchers[i], err = regexp.Compile(certMatchersConfig[i].Pattern)
 				if err != nil {
 					return err
 				}
@@ -1113,16 +1090,6 @@ func (c *EndpointConfig) client() (*msp.ClientConfig, error) {
 	client.TLSCerts.Client.Cert.Path = pathvar.Subst(client.TLSCerts.Client.Cert.Path)
 
 	return &client, nil
-}
-
-//Backend returns config lookup of endpoint config
-func (c *EndpointConfig) Backend() *lookup.ConfigLookup {
-	return c.backend
-}
-
-//CAMatchers returns CA matchers of endpoint config
-func (c *EndpointConfig) CAMatchers() map[int]*regexp.Regexp {
-	return c.caMatchers
 }
 
 //ResetNetworkConfig clears network config cache

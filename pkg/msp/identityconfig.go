@@ -21,22 +21,44 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 )
 
-//ConfigFromBackend returns identity config implementation of give backend
+//ConfigFromBackend returns identity config implementation of given backend
 func ConfigFromBackend(coreBackend ...core.ConfigBackend) (msp.IdentityConfig, error) {
+	//prepare underlying endpoint config
 	endpointConfig, err := fabImpl.ConfigFromBackend(coreBackend...)
 	if err != nil {
 		return nil, errors.New("failed load identity configuration")
 	}
-	return &IdentityConfig{endpointConfig.(*fabImpl.EndpointConfig)}, nil
+
+	return ConfigFromEndpointConfig(endpointConfig, coreBackend...)
+}
+
+//ConfigFromEndpointConfig returns identity config implementation of given endpoint config and backend
+func ConfigFromEndpointConfig(endpointConfig fab.EndpointConfig, coreBackend ...core.ConfigBackend) (msp.IdentityConfig, error) {
+
+	//create identity config
+	config := &IdentityConfig{endpointConfig: endpointConfig,
+		backend:    lookup.New(coreBackend...),
+		caMatchers: make(map[int]*regexp.Regexp)}
+
+	//compile CA matchers
+	err := config.compileMatchers()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to compile certificate authority matchers")
+	}
+
+	return config, nil
 }
 
 // IdentityConfig represents the identity configuration for the client
 type IdentityConfig struct {
-	endpointConfig *fabImpl.EndpointConfig
+	endpointConfig fab.EndpointConfig
+	backend        *lookup.ConfigLookup
+	caMatchers     map[int]*regexp.Regexp
 }
 
 // Client returns the Client config
@@ -171,12 +193,12 @@ func (c *IdentityConfig) CAServerCerts(org string) ([][]byte, error) {
 // 'keystore' directory added. This is done because the fabric-ca-client
 // adds this to the path
 func (c *IdentityConfig) CAKeyStorePath() string {
-	return pathvar.Subst(c.endpointConfig.Backend().GetString("client.credentialStore.cryptoStore.path"))
+	return pathvar.Subst(c.backend.GetString("client.credentialStore.cryptoStore.path"))
 }
 
 // CredentialStorePath returns the user store path
 func (c *IdentityConfig) CredentialStorePath() string {
-	return pathvar.Subst(c.endpointConfig.Backend().GetString("client.credentialStore.path"))
+	return pathvar.Subst(c.backend.GetString("client.credentialStore.path"))
 }
 
 // NetworkConfig returns the network configuration defined in the config file
@@ -189,21 +211,20 @@ func (c *IdentityConfig) networkConfig() (*fab.NetworkConfig, error) {
 
 func (c *IdentityConfig) tryMatchingCAConfig(networkConfig *fab.NetworkConfig, caName string) (*msp.CAConfig, string) {
 	//Return if no caMatchers are configured
-	caMatchers := c.endpointConfig.CAMatchers()
-	if len(caMatchers) == 0 {
+	if len(c.caMatchers) == 0 {
 		return nil, ""
 	}
 
 	//sort the keys
 	var keys []int
-	for k := range caMatchers {
+	for k := range c.caMatchers {
 		keys = append(keys, k)
 	}
 	sort.Ints(keys)
 
 	//loop over certAuthorityEntityMatchers to find the matching Cert
 	for _, k := range keys {
-		v := caMatchers[k]
+		v := c.caMatchers[k]
 		if v.MatchString(caName) {
 			return c.findMatchingCert(networkConfig, caName, v, k)
 		}
@@ -251,4 +272,23 @@ func (c *IdentityConfig) getPortIfPresent(url string) (int, bool) {
 		}
 	}
 	return 0, false
+}
+
+func (c *IdentityConfig) compileMatchers() error {
+	networkConfig, err := c.endpointConfig.NetworkConfig()
+	if err != nil {
+		return err
+	}
+	if networkConfig.EntityMatchers["certificateauthority"] != nil {
+		certMatchersConfig := networkConfig.EntityMatchers["certificateauthority"]
+		for i := 0; i < len(certMatchersConfig); i++ {
+			if certMatchersConfig[i].Pattern != "" {
+				c.caMatchers[i], err = regexp.Compile(certMatchersConfig[i].Pattern)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
