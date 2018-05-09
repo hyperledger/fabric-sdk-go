@@ -403,7 +403,8 @@ func TestCAConfigWithCustomEndpointConfig(t *testing.T) {
 		t.Fatal("Failed to get endpoint config")
 	}
 
-	config, err := ConfigFromEndpointConfig(&customEndpointConfig{endpointConfig}, backend...)
+	customEndpointCfg := &customEndpointConfig{endpointConfig}
+	config, err := ConfigFromEndpointConfig(customEndpointCfg, backend...)
 	if err != nil {
 		t.Fatal("Failed to get identity config")
 	}
@@ -444,6 +445,12 @@ func TestCAConfigWithCustomEndpointConfig(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "custom-org1", client.Organization, "supposed to get custom org name from custom endpointconfig")
 
+	//make sure 2 certpool instances are not created
+	actualCertPool, err := identityConfig.endpointConfig.TLSCACertPool()
+	assert.Nil(t, err)
+	expectedCertPool, err := customEndpointCfg.TLSCACertPool()
+	assert.Nil(t, err)
+	assert.Equal(t, actualCertPool, expectedCertPool)
 }
 
 func testCAKeyStorePath(backend core.ConfigBackend, t *testing.T, identityConfig *IdentityConfig) {
