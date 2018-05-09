@@ -4,6 +4,12 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
+// Package logging enables setting custom logger implementation.
+//
+//  Basic Flow:
+//  1) Initialize logger
+//  2) Create new logger for specific module
+//  3) Call log info
 package logging
 
 import (
@@ -80,21 +86,40 @@ func Initialize(l api.LoggerProvider) {
 }
 
 //SetLevel - setting log level for given module
+//  Parameters:
+//  module is module name
+//  level is logging level
 func SetLevel(module string, level Level) {
 	modlog.SetLevel(module, api.Level(level))
 }
 
 //GetLevel - getting log level for given module
+//  Parameters:
+//  module is module name
+//
+//  Returns:
+//  logging level
 func GetLevel(module string) Level {
 	return Level(modlog.GetLevel(module))
 }
 
 //IsEnabledFor - Check if given log level is enabled for given module
+//  Parameters:
+//  module is module name
+//  level is logging level
+//
+//  Returns:
+//  is logging enabled for this module and level
 func IsEnabledFor(module string, level Level) bool {
 	return modlog.IsEnabledFor(module, api.Level(level))
 }
 
 // LogLevel returns the log level from a string representation.
+//  Parameters:
+//  level is logging level in string representation
+//
+//  Returns:
+//  logging level
 func LogLevel(level string) (Level, error) {
 	l, err := metadata.ParseLevel(level)
 	return Level(l), err
@@ -210,15 +235,4 @@ func (l *Logger) logger() api.Logger {
 		l.instance = loggerProvider().GetLogger(l.module)
 	})
 	return l.instance
-}
-
-// ParseLevel returns the log level from a string representation.
-func ParseLevel(level string) (Level, error) {
-	l, err := metadata.ParseLevel(level)
-	return Level(l), err
-}
-
-//ParseString returns String repressentation of given log level
-func ParseString(level Level) string {
-	return metadata.ParseString(api.Level(level))
 }
