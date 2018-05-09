@@ -171,11 +171,6 @@ func getEnrolledUser(t *testing.T, msp *Client) mspctx.SigningIdentity {
 		t.Fatalf("Enroll return error %v", err)
 	}
 
-	_, err = msp.GetSigningIdentity(enrollUsername)
-	if err != nil {
-		t.Fatalf("Expected to find user")
-	}
-
 	enrolledUser, err := msp.GetSigningIdentity(enrollUsername)
 	if err != nil {
 		t.Fatalf("Expected to find user")
