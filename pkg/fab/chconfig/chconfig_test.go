@@ -23,11 +23,14 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/stretchr/testify/assert"
 )
 
 const (
-	channelID = "testChannel"
+	channelID          = "testChannel"
+	configTestFilePath = "../../core/config/testdata/config_test.yaml"
 )
 
 func TestChannelConfigWithPeer(t *testing.T) {
@@ -222,20 +225,35 @@ func TestResolveOptsFromConfig(t *testing.T) {
 }
 
 func TestResolveOptsDefaultValues(t *testing.T) {
+	testResolveOptsDefaultValues(t, channelID)
+}
+
+func TestResolveOptsDefaultValuesWithInvalidChannel(t *testing.T) {
+	//Should be successful even with invalid channel id
+	testResolveOptsDefaultValues(t, "INVALID-CHANNEL-ID")
+}
+
+func testResolveOptsDefaultValues(t *testing.T, channelID string) {
 	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
 
-	mockConfig := &customMockConfig{MockConfig: &mocks.MockConfig{}, chConfig: nil}
-	ctx.SetEndpointConfig(mockConfig)
+	backends, err := config.FromFile(configTestFilePath)()
+	if err != nil {
+		t.Fatal("supposed to get valid backends")
+	}
+	endpointCfg, err := fabImpl.ConfigFromBackend(backends...)
+	if err != nil {
+		t.Fatal("supposed to get valid endpoint config")
+	}
+	ctx.SetEndpointConfig(endpointCfg)
 
 	channelConfig, err := New(channelID, WithPeers([]fab.Peer{}))
 	if err != nil {
 		t.Fatal("Failed to create channel config")
 	}
+
 	err = channelConfig.resolveOptsFromConfig(ctx)
-	if err != nil {
-		t.Fatal("Failed to resolve opts from config")
-	}
+	assert.Nil(t, err, "Failed to resolve opts from config, %v", err)
 	assert.True(t, channelConfig.opts.MaxTargets == 2, "supposed to be loaded once opts resolved from config")
 	assert.True(t, channelConfig.opts.MinResponses == 1, "supposed to be loaded once opts resolved from config")
 	assert.True(t, channelConfig.opts.RetryOpts.RetryableCodes != nil, "supposed to be loaded once opts resolved from config")

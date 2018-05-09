@@ -335,22 +335,19 @@ func (c *EndpointConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
 // if it is not, then it will try to find a channelMatcher and return its MappedName.
 // If more than one matcher is found, then the first matcher in the list will be used.
 // TODO expose this function if it's needed elsewhere in the sdk
-func (c *EndpointConfig) mappedChannelName(channelName string) (string, error) {
-	networkConfig, err := c.NetworkConfig()
-	if err != nil {
-		return "", err
-	}
+func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, channelName string) string {
+
 	// if channelName is the original key found in the Channels map config, then return it as is
 	_, ok := networkConfig.Channels[strings.ToLower(channelName)]
 	if ok {
-		return channelName, nil
+		return channelName
 	}
 
 	// if !ok, then find a channelMatcher for channelName
 
 	//Return if no channelMatchers are configured
 	if len(c.channelMatchers) == 0 {
-		return "", errors.New("no Channel entityMatchers found")
+		return ""
 	}
 
 	//sort the keys
@@ -366,27 +363,27 @@ func (c *EndpointConfig) mappedChannelName(channelName string) (string, error) {
 		if v.MatchString(channelName) {
 			// get the matching matchConfig from the index number
 			channelMatchConfig := networkConfig.EntityMatchers["channel"][k]
-			return channelMatchConfig.MappedName, nil
+			return channelMatchConfig.MappedName
 		}
 	}
 
-	// not matchers found, return an error
-	return "", errors.WithStack(status.New(status.ClientStatus, status.NoMatchingChannelEntity.ToInt32(), "no matching channel config found", nil))
+	// not matchers found, return empty
+	return ""
 }
 
 // ChannelConfig returns the channel configuration
 func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, error) {
-	config, err := c.NetworkConfig()
+	networkConfig, err := c.NetworkConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	// viper lowercases all key maps
-	ch, ok := config.Channels[strings.ToLower(name)]
+	ch, ok := networkConfig.Channels[strings.ToLower(name)]
 	if !ok {
-		matchingChannel, _, matchErr := c.tryMatchingChannelConfig(name)
-		if matchErr != nil {
-			return nil, errors.WithMessage(matchErr, "channel config not found")
+		matchingChannel := c.tryMatchingChannelConfig(networkConfig, name)
+		if matchingChannel == nil {
+			return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingChannelEntity.ToInt32(), "no matching channel config found", nil))
 		}
 		return matchingChannel, nil
 	}
@@ -406,8 +403,8 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 	// viper lowercases all key maps
 	chConfig, ok := netConfig.Channels[strings.ToLower(name)]
 	if !ok {
-		matchingChannel, _, matchErr := c.tryMatchingChannelConfig(name)
-		if matchErr != nil {
+		matchingChannel := c.tryMatchingChannelConfig(netConfig, name)
+		if matchingChannel == nil {
 			return peers, nil
 		}
 
@@ -905,25 +902,21 @@ func (c *EndpointConfig) matchOrderer(networkConfig *fab.NetworkConfig, ordererN
 	return &ordererConfig
 }
 
-func (c *EndpointConfig) tryMatchingChannelConfig(channelName string) (*fab.ChannelNetworkConfig, string, error) {
-	networkConfig, err := c.NetworkConfig()
-	if err != nil {
-		return nil, "", err
-	}
+func (c *EndpointConfig) tryMatchingChannelConfig(networkConfig *fab.NetworkConfig, channelName string) *fab.ChannelNetworkConfig {
 
 	// get the mapped channel Name
-	mappedChannelName, err := c.mappedChannelName(channelName)
-	if err != nil {
-		return nil, "", err
+	mappedChannelName := c.mappedChannelName(networkConfig, channelName)
+	if mappedChannelName == "" {
+		return nil
 	}
 
 	//Get the channelConfig from mappedChannelName
 	channelConfig, ok := networkConfig.Channels[strings.ToLower(mappedChannelName)]
 	if !ok {
-		return nil, "", errors.New("failed to load config from matched Channel")
+		return nil
 	}
 
-	return &channelConfig, mappedChannelName, nil
+	return &channelConfig
 }
 
 func copyPropertiesMap(origMap map[string]interface{}) map[string]interface{} {

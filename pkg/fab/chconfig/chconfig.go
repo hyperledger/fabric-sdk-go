@@ -15,6 +15,7 @@ import (
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -216,10 +217,21 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 	//If missing from opts, check config and update opts from config
 	chSdkCfg, err := ctx.EndpointConfig().ChannelConfig(c.channelID)
 	if err != nil {
-		//very rare, but return default in case of error
-		return err
+		s, ok := status.FromError(err)
+		if !ok || s.Code != status.NoMatchingChannelEntity.ToInt32() {
+			return err
+		}
 	}
 
+	//resolve opts
+	c.resolveMaxResponsesOptsFromConfig(chSdkCfg)
+	c.resolveMinResponsesOptsFromConfig(chSdkCfg)
+	c.resolveRetryOptsFromConfig(chSdkCfg)
+
+	return nil
+}
+
+func (c *ChannelConfig) resolveMaxResponsesOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
 	if c.opts.MaxTargets == 0 {
 		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
 			c.opts.MaxTargets = chSdkCfg.Policies.QueryChannelConfig.MaxTargets
@@ -228,10 +240,6 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 			c.opts.MaxTargets = defaultMaxTargets
 		}
 	}
-	c.resolveMinResponsesOptsFromConfig(chSdkCfg)
-	c.resolveRetryOptsFromConfig(chSdkCfg)
-
-	return nil
 }
 
 func (c *ChannelConfig) resolveMinResponsesOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {

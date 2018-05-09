@@ -340,7 +340,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 
 	err = rc.JoinChannel("mychannel", WithTargets(peer1))
 	assert.NotNil(t, err, "Should have failed to join channel since no orderer has been configured")
-	assert.Contains(t, err.Error(), "channel config not found")
+	assert.Contains(t, err.Error(), "no matching channel config found")
 
 	// Misconfigured channel orderer
 	configBackend = getInvalidChannelOrdererBackend(backend...)
