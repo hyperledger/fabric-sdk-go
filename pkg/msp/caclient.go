@@ -132,6 +132,138 @@ func (c *CAClientImpl) Enroll(enrollmentID string, enrollmentSecret string) erro
 	return nil
 }
 
+// CreateIdentity create a new identity with the Fabric CA server. An enrollment secret is returned which can then be used,
+// along with the enrollment ID, to enroll a new identity.
+//  Parameters:
+//  request holds info about identity
+//
+//  Returns:
+//  Return identity info including secret
+func (c *CAClientImpl) CreateIdentity(request *api.IdentityRequest) (*api.IdentityResponse, error) {
+
+	if c.adapter == nil {
+		return nil, fmt.Errorf("no CAs configured for organization: %s", c.orgName)
+	}
+
+	if request == nil {
+		return nil, errors.New("must provide identity request")
+	}
+
+	// Checke required parameters (ID and affiliation)
+	if request.ID == "" || request.Affiliation == "" {
+		return nil, errors.New("ID and affiliation are required")
+	}
+
+	registrar, err := c.getRegistrar(c.registrar.EnrollID, c.registrar.EnrollSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.adapter.CreateIdentity(registrar.PrivateKey(), registrar.EnrollmentCertificate(), request)
+}
+
+// ModifyIdentity modifies identity with the Fabric CA server.
+//  Parameters:
+//  request holds info about identity
+//
+//  Returns:
+//  Return modified identity info
+func (c *CAClientImpl) ModifyIdentity(request *api.IdentityRequest) (*api.IdentityResponse, error) {
+
+	if c.adapter == nil {
+		return nil, fmt.Errorf("no CAs configured for organization: %s", c.orgName)
+	}
+
+	if request == nil {
+		return nil, errors.New("must provide identity request")
+	}
+
+	// Checke required parameters (ID and affiliation)
+	if request.ID == "" || request.Affiliation == "" {
+		return nil, errors.New("ID and affiliation are required")
+	}
+
+	registrar, err := c.getRegistrar(c.registrar.EnrollID, c.registrar.EnrollSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.adapter.ModifyIdentity(registrar.PrivateKey(), registrar.EnrollmentCertificate(), request)
+}
+
+// RemoveIdentity removes identity from the Fabric CA server.
+//  Parameters:
+//  request holds info about identity to be removed
+//
+//  Returns:
+//  Return removed identity info
+func (c *CAClientImpl) RemoveIdentity(request *api.RemoveIdentityRequest) (*api.IdentityResponse, error) {
+
+	if c.adapter == nil {
+		return nil, fmt.Errorf("no CAs configured for organization: %s", c.orgName)
+	}
+
+	if request == nil {
+		return nil, errors.New("must provide remove identity request")
+	}
+
+	// Checke required parameters (ID)
+	if request.ID == "" {
+		return nil, errors.New("ID is required")
+	}
+
+	registrar, err := c.getRegistrar(c.registrar.EnrollID, c.registrar.EnrollSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.adapter.RemoveIdentity(registrar.PrivateKey(), registrar.EnrollmentCertificate(), request)
+
+}
+
+// GetIdentity retrieves identity information.
+//  Parameters:
+//  id is required identity id
+//
+//  Returns:
+//  Returns identity information
+func (c *CAClientImpl) GetIdentity(id, caname string) (*api.IdentityResponse, error) {
+
+	if c.adapter == nil {
+		return nil, fmt.Errorf("no CAs configured for organization: %s", c.orgName)
+	}
+
+	// Checke required parameters (ID and affiliation)
+	if id == "" {
+		return nil, errors.New("id is required")
+	}
+
+	registrar, err := c.getRegistrar(c.registrar.EnrollID, c.registrar.EnrollSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.adapter.GetIdentity(registrar.PrivateKey(), registrar.EnrollmentCertificate(), id, caname)
+}
+
+// GetAllIdentities returns all identities that the caller is authorized to see
+//
+//  Returns:
+//  Response containing identities
+func (c *CAClientImpl) GetAllIdentities(caname string) ([]*api.IdentityResponse, error) {
+
+	if c.adapter == nil {
+		return nil, fmt.Errorf("no CAs configured for organization: %s", c.orgName)
+	}
+
+	registrar, err := c.getRegistrar(c.registrar.EnrollID, c.registrar.EnrollSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.adapter.GetAllIdentities(registrar.PrivateKey(), registrar.EnrollmentCertificate(), caname)
+}
+
 // Reenroll an enrolled user in order to obtain a new signed X509 certificate
 func (c *CAClientImpl) Reenroll(enrollmentID string) error {
 

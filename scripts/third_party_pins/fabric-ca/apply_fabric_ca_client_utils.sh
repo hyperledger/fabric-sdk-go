@@ -19,6 +19,7 @@ GOFILTER_CMD="go run scripts/_go/src/gofilter/cmd/gofilter/gofilter.go"
 declare -a PKGS=(
     "api"
     "lib"
+    "lib/streamer"
     "lib/tls"
     "sdkpatch/logbridge"
     "sdkpatch/cryptosuitebridge"
@@ -36,6 +37,8 @@ declare -a FILES=(
     "lib/util.go"
     "lib/serverrevoke.go"
     "lib/sdkpatch_serverstruct.go"
+
+    "lib/streamer/jsonstreamer.go"
 
     "lib/tls/tls.go"
 
@@ -71,7 +74,7 @@ FILTER_MODE="allow"
 FILTERS_ENABLED="fn"
 
 FILTER_FILENAME="lib/client.go"
-FILTER_FN="Enroll,GenCSR,SendReq,Init,newPost,newEnrollmentResponse,newCertificateRequest"
+FILTER_FN="Enroll,GenCSR,SendReq,Init,newPost,newEnrollmentResponse,newCertificateRequest,newPut,newGet,newDelete,StreamResponse"
 FILTER_FN+=",getURL,NormalizeURL,initHTTPClient,net2LocalServerInfo,NewIdentity,newCfsslBasicKeyRequest"
 gofilter
 sed -i'' -e 's/util.GetServerPort()/\"\"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
@@ -93,7 +96,7 @@ do
 done
 
 FILTER_FILENAME="lib/identity.go"
-FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,GetName"
+FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,GetName,GetAllIdentities,GetIdentity,AddIdentity,ModifyIdentity,RemoveIdentity,Get,Put,Delete,GetStreamResponse"
 gofilter
 sed -i'' -e 's/util.GetDefaultBCCSP()/nil/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/log "github.com\// a\
@@ -118,6 +121,10 @@ sed -i'' -e 's/*factory.FactoryOpts/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${F
 
 FILTER_FILENAME="lib/util.go"
 FILTER_FN="GetCertID,BytesToX509Cert,addQueryParm"
+gofilter
+
+FILTER_FILENAME="lib/streamer/jsonstreamer.go"
+FILTER_FN="StreamJSONArray,StreamJSON,stream,getNextName,skipToDelim,getSearchElement,getToken,errCB"
 gofilter
 
 FILTER_FILENAME="lib/tls/tls.go"

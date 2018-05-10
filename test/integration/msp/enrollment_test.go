@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	IdentityTypeUser = "User"
+	IdentityTypeUser = "user"
 )
 
 func TestRegisterEnroll(t *testing.T) {
