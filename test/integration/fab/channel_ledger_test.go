@@ -19,6 +19,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
+	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
@@ -42,7 +43,12 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []string) {
 	//	}
 	// Get signing identity that is used to sign create channel request
 
-	adminIdentity, err := integration.GetSigningIdentity(sdk, "Admin", orgName)
+	orgMspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(orgName))
+	if err != nil {
+		t.Fatalf("failed to create org2MspClient, err : %v", err)
+	}
+
+	adminIdentity, err := orgMspClient.GetSigningIdentity("Admin")
 	if err != nil {
 		t.Fatalf("failed to load signing identity: %s", err)
 	}

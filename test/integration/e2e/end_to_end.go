@@ -23,6 +23,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 
+	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -197,7 +199,11 @@ func createCC(t *testing.T, orgResMgmt *resmgmt.Client) {
 }
 
 func createChannel(sdk *fabsdk.FabricSDK, t *testing.T, resMgmtClient *resmgmt.Client) {
-	adminIdentity, err := integration.GetSigningIdentity(sdk, orgAdmin, orgName)
+	mspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(orgName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminIdentity, err := mspClient.GetSigningIdentity(orgAdmin)
 	if err != nil {
 		t.Fatal(err)
 	}

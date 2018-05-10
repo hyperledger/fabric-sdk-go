@@ -12,6 +12,7 @@ import (
 
 	"fmt"
 
+	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -71,7 +72,8 @@ func ExampleCCUpgradeArgs() [][]byte {
 // Initialize reads configuration from file and sets up client, channel and event hub
 func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 
-	adminIdentity, err := GetSigningIdentity(sdk, AdminUser, setup.OrgID)
+	mspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(setup.OrgID))
+	adminIdentity, err := mspClient.GetSigningIdentity(AdminUser)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get client context")
 	}
@@ -165,11 +167,4 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 
 	ccPolicy := cauthdsl.SignedByMspMember(mspID)
 	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy}, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-}
-
-// GetSigningIdentity returns signing identity
-//TODO : not a recommended way to get idenity, will be replaced
-func GetSigningIdentity(sdk *fabsdk.FabricSDK, user, orgID string) (msp.SigningIdentity, error) {
-	idenityContext := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrg(orgID))
-	return idenityContext()
 }

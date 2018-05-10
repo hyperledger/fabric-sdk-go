@@ -18,9 +18,14 @@ import (
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 
+	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
+
+	"os"
+
+	"runtime"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -28,6 +33,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,18 +49,57 @@ const (
 	configPath       = "../../fixtures/config/config_test.yaml"
 )
 
+// SDK
+var sdk *fabsdk.FabricSDK
+
+// Org MSP clients
+var org1MspClient *mspclient.Client
+var org2MspClient *mspclient.Client
+
 // Peers used for testing
 var orgTestPeer0 fab.Peer
 var orgTestPeer1 fab.Peer
 
+func TestMain(m *testing.M) {
+	err := setup()
+	defer teardown()
+	var r int
+	if err == nil {
+		r = m.Run()
+	}
+	defer os.Exit(r)
+	runtime.Goexit()
+}
+
+func setup() error {
+	// Create SDK setup for the integration tests
+	var err error
+	sdk, err = fabsdk.New(getConfigBackend())
+	if err != nil {
+		return errors.Wrap(err, "Failed to create new SDK")
+	}
+
+	org1MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org1))
+	if err != nil {
+		return errors.Wrap(err, "failed to create org1MspClient, err")
+	}
+
+	org2MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org2))
+	if err != nil {
+		return errors.Wrap(err, "failed to create org2MspClient, err")
+	}
+
+	return nil
+}
+
+func teardown() {
+	if sdk != nil {
+		sdk.Close()
+	}
+}
+
 // TestRevokedPeer
 func TestRevokedPeer(t *testing.T) {
-	// Create SDK setup for the integration tests with revoked peer
-	sdk, err := fabsdk.New(getConfigBackend(t))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
 
 	// Delete all private keys from the crypto suite store
 	// and users from the user store at the end
@@ -74,12 +119,12 @@ func TestRevokedPeer(t *testing.T) {
 	}
 
 	// Get signing identity that is used to sign create channel request
-	org1AdminUser, err := integration.GetSigningIdentity(sdk, org1AdminUser, org1)
+	org1AdminUser, err := org1MspClient.GetSigningIdentity(org1AdminUser)
 	if err != nil {
 		t.Fatalf("failed to get org1AdminUser, err : %v", err)
 	}
 
-	org2AdminUser, err := integration.GetSigningIdentity(sdk, org2AdminUser, org2)
+	org2AdminUser, err := org2MspClient.GetSigningIdentity(org2AdminUser)
 	if err != nil {
 		t.Fatalf("failed to get org2AdminUser, err : %v", err)
 	}
@@ -200,12 +245,12 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 
 }
 
-func getConfigBackend(t *testing.T) core.ConfigProvider {
+func getConfigBackend() core.ConfigProvider {
 
 	return func() ([]core.ConfigBackend, error) {
 		configBackends, err := config.FromFile(configPath)()
 		if err != nil {
-			t.Fatalf("failed to read config backend from file, %v", err)
+			return nil, errors.Wrap(err, "failed to read config backend from file, %v")
 		}
 		backendMap := make(map[string]interface{})
 
@@ -213,7 +258,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		//get valid peer config
 		err = lookup.New(configBackends...).UnmarshalKey("peers", &networkConfig.Peers)
 		if err != nil {
-			t.Fatalf("failed to unmarshal peer network config, %v", err)
+			return nil, errors.Wrap(err, "failed to unmarshal peer network config, %v")
 		}
 
 		//customize peer0.org2 to peer1.org2
@@ -231,7 +276,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		//get valid org2
 		err = lookup.New(configBackends...).UnmarshalKey("organizations", &networkConfig.Organizations)
 		if err != nil {
-			t.Fatalf("failed to unmarshal organizations network config, %v", err)
+			return nil, errors.Wrap(err, "failed to unmarshal organizations network config, %v")
 		}
 
 		//Customize org2
@@ -243,7 +288,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		//custom channel
 		err = lookup.New(configBackends...).UnmarshalKey("channels", &networkConfig.Channels)
 		if err != nil {
-			t.Fatalf("failed to unmarshal entityMatchers network config, %v", err)
+			return nil, errors.Wrap(err, "failed to unmarshal entityMatchers network config, %v")
 		}
 
 		orgChannel := networkConfig.Channels[channelID]

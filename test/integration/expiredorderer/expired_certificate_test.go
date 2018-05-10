@@ -11,6 +11,7 @@ import (
 	"path"
 	"testing"
 
+	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -71,13 +72,23 @@ func TestExpiredCert(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	org1MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org1))
+	if err != nil {
+		t.Fatalf("failed to create org1MspClient, err : %v", err)
+	}
+
 	// Get signing identity that is used to sign create channel request
-	org1AdminUser, err := integration.GetSigningIdentity(sdk, org1AdminUser, org1)
+	org1AdminUser, err := org1MspClient.GetSigningIdentity(org1AdminUser)
 	if err != nil {
 		t.Fatalf("failed to get org1AdminUser, err : %v", err)
 	}
 
-	org2AdminUser, err := integration.GetSigningIdentity(sdk, org2AdminUser, org2)
+	org2MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org2))
+	if err != nil {
+		t.Fatalf("failed to create org2MspClient, err : %v", err)
+	}
+
+	org2AdminUser, err := org2MspClient.GetSigningIdentity(org2AdminUser)
 	if err != nil {
 		t.Fatalf("failed to get org2AdminUser, err : %v", err)
 	}

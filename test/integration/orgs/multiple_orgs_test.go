@@ -9,6 +9,7 @@ package orgs
 import (
 	"math"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -21,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
@@ -33,7 +35,10 @@ import (
 
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 
+	"os"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
@@ -51,20 +56,59 @@ const (
 	channelID        = "orgchannel"
 )
 
+// SDK
+var sdk *fabsdk.FabricSDK
+
+// Org MSP clients
+var org1MspClient *mspclient.Client
+var org2MspClient *mspclient.Client
+
 // Peers
 var orgTestPeer0 fab.Peer
 var orgTestPeer1 fab.Peer
+
+func TestMain(m *testing.M) {
+	err := setup()
+	defer teardown()
+	var r int
+	if err == nil {
+		r = m.Run()
+	}
+	defer os.Exit(r)
+	runtime.Goexit()
+}
+
+func setup() error {
+	// Create SDK setup for the integration tests
+	var err error
+	sdk, err = fabsdk.New(integration.ConfigBackend)
+	if err != nil {
+		return errors.Wrap(err, "Failed to create new SDK")
+	}
+
+	org1MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org1))
+	if err != nil {
+		return errors.Wrap(err, "failed to create org1MspClient, err")
+	}
+
+	org2MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org2))
+	if err != nil {
+		return errors.Wrap(err, "failed to create org2MspClient, err")
+	}
+
+	return nil
+}
+
+func teardown() {
+	if sdk != nil {
+		sdk.Close()
+	}
+}
 
 // TestOrgsEndToEnd creates a channel with two organisations, installs chaincode
 // on each of them, and finally invokes a transaction on an org2 peer and queries
 // the result from an org1 peer
 func TestOrgsEndToEnd(t *testing.T) {
-	// Create SDK setup for the integration tests
-	sdk, err := fabsdk.New(integration.ConfigBackend)
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
 
 	// Delete all private keys from the crypto suite store
 	// and users from the user store at the end
@@ -96,12 +140,12 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Get signing identity that is used to sign create channel request
-	org1AdminUser, err := integration.GetSigningIdentity(sdk, org1AdminUser, org1)
+	org1AdminUser, err := org1MspClient.GetSigningIdentity(org1AdminUser)
 	if err != nil {
 		t.Fatalf("failed to get org1AdminUser, err : %v", err)
 	}
 
-	org2AdminUser, err := integration.GetSigningIdentity(sdk, org2AdminUser, org2)
+	org2AdminUser, err := org2MspClient.GetSigningIdentity(org2AdminUser)
 	if err != nil {
 		t.Fatalf("failed to get org2AdminUser, err : %v", err)
 	}
