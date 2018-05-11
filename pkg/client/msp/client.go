@@ -16,6 +16,10 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"fmt"
+
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
@@ -82,7 +86,17 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 		}
 		msp.orgName = clientConfig.Organization
 	}
-
+	if msp.orgName == "" {
+		return nil, errors.New("organization is not provided")
+	}
+	networkConfig, err := ctx.EndpointConfig().NetworkConfig()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get NetworkConfig")
+	}
+	_, ok := networkConfig.Organizations[strings.ToLower(msp.orgName)]
+	if !ok {
+		return nil, fmt.Errorf("non-existent organization: '%s'", msp.orgName)
+	}
 	return &msp, nil
 }
 

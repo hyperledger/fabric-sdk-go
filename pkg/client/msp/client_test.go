@@ -88,6 +88,19 @@ func TestMSP(t *testing.T) {
 
 }
 
+func TestWithNonExistentOrganization(t *testing.T) {
+	// Instantiate the SDK
+	sdk, err := fabsdk.New(config.FromFile(configPath))
+	if err != nil {
+		t.Fatalf("SDK init failed: %v", err)
+	}
+	_, err = New(sdk.Context(), WithOrg("nonExistentOrg"))
+	if err == nil {
+		t.Fatalf("Should have failed for non-existing organization")
+	}
+
+}
+
 // TestNewWithProviderError tests New with provider error
 func TestNewWithProviderError(t *testing.T) {
 
