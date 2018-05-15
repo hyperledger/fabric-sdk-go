@@ -93,12 +93,17 @@ func (s *channelService) evaluate(ctx contextAPI.Channel, responses []fabdiscove
 	// TODO: In a future patch:
 	// - validate the signatures in the responses
 	// - ensure N responses match according to the policy
-	// For now just pick the first response
-	response := responses[0]
-	endpoints, err := response.ForChannel(ctx.ChannelID()).Peers()
-	if err != nil {
-		return nil, errors.Wrapf(err, "error getting peers from discovery response")
-	}
+	// For now just pick the first successful response
 
-	return asPeers(ctx, endpoints), nil
+	var lastErr error
+	for _, response := range responses {
+		endpoints, err := response.ForChannel(ctx.ChannelID()).Peers()
+		if err != nil {
+			lastErr = errors.Wrapf(err, "error getting peers from discovery response")
+			logger.Warn(lastErr.Error())
+			continue
+		}
+		return asPeers(ctx, endpoints), nil
+	}
+	return nil, lastErr
 }
