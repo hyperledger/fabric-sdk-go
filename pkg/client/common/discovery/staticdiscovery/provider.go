@@ -64,7 +64,7 @@ func (dp *DiscoveryProvider) CreateDiscoveryService(channelID string) (fab.Disco
 }
 
 // CreateLocalDiscoveryService return a local discovery service
-func (dp *DiscoveryProvider) CreateLocalDiscoveryService() (fab.DiscoveryService, error) {
+func (dp *DiscoveryProvider) CreateLocalDiscoveryService(mspID string) (fab.DiscoveryService, error) {
 	peers := []fab.Peer{}
 
 	netPeers, err := dp.config.NetworkPeers()

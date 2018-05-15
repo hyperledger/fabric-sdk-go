@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	ch = "orgchannel"
+	ch  = "orgchannel"
+	ch2 = "channel2"
 
 	mspID1 = "Org1MSP"
 	mspID2 = "Org2MSP"
@@ -44,20 +45,36 @@ func TestDiscoveryProvider(t *testing.T) {
 	p := New(config, WithRefreshInterval(30*time.Second), WithResponseTimeout(10*time.Second))
 	defer p.Close()
 
-	service, err := p.CreateDiscoveryService(ch)
+	service1, err := p.CreateDiscoveryService(ch)
 	assert.NoError(t, err)
 
 	chCtx := mocks.NewMockChannelContext(ctx, ch)
 
-	err = service.(*channelService).Initialize(chCtx)
+	err = service1.(*channelService).Initialize(chCtx)
 	assert.NoError(t, err)
 
-	localService, err := p.CreateLocalDiscoveryService()
+	service2, err := p.CreateDiscoveryService(ch)
+	assert.NoError(t, err)
+	assert.Equal(t, service1, service2)
+
+	service2, err = p.CreateDiscoveryService(ch2)
+	assert.NoError(t, err)
+	assert.NotEqual(t, service1, service2)
+
+	localService1, err := p.CreateLocalDiscoveryService(mspID1)
 	assert.NoError(t, err)
 
 	localCtx := mocks.NewMockLocalContext(ctx, nil)
-	err = localService.(*LocalService).Initialize(localCtx)
+	err = localService1.(*LocalService).Initialize(localCtx)
 	assert.NoError(t, err)
+
+	localService2, err := p.CreateLocalDiscoveryService(mspID1)
+	assert.NoError(t, err)
+	assert.Equal(t, localService1, localService2)
+
+	localService2, err = p.CreateLocalDiscoveryService(mspID2)
+	assert.NoError(t, err)
+	assert.NotEqual(t, localService1, localService2)
 }
 
 type config struct {

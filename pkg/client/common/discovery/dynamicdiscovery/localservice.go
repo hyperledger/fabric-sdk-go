@@ -18,19 +18,23 @@ import (
 // Fabric's Discovery service for the peers that are in the local MSP.
 type LocalService struct {
 	*service
+	mspID string
 }
 
 // newLocalService creates a Local Discovery Service to query the list of member peers in the local MSP.
-func newLocalService(options options) *LocalService {
+func newLocalService(mspID string, options options) *LocalService {
 	logger.Debugf("Creating new dynamic discovery service with cache refresh interval %s", options.refreshInterval)
 
-	s := &LocalService{}
+	s := &LocalService{mspID: mspID}
 	s.service = newService(s.queryPeers, options)
 	return s
 }
 
 // Initialize initializes the service with local context
 func (s *LocalService) Initialize(ctx contextAPI.Local) error {
+	if ctx.Identifier().MSPID != s.mspID {
+		return errors.Errorf("expecting context for MSP [%s] but got [%s]", s.mspID, ctx.Identifier().MSPID)
+	}
 	return s.service.Initialize(ctx)
 }
 

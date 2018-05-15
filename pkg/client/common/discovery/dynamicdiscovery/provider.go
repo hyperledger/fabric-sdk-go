@@ -63,8 +63,8 @@ func New(config fab.EndpointConfig, opts ...Opt) *Provider {
 
 	return &Provider{
 		cache: lazycache.New("Dynamic_Discovery_Service_Cache", func(key lazycache.Key) (interface{}, error) {
-			if key.String() == "" {
-				return newLocalService(options), nil
+			if mk, ok := key.(*mspKey); ok {
+				return newLocalService(mk.mspID, options), nil
 			}
 			return newChannelService(options), nil
 		}),
@@ -81,8 +81,8 @@ func (p *Provider) CreateDiscoveryService(channelID string) (fab.DiscoveryServic
 }
 
 // CreateLocalDiscoveryService returns a local discovery service
-func (p *Provider) CreateLocalDiscoveryService() (fab.DiscoveryService, error) {
-	ref, err := p.cache.Get(lazycache.NewStringKey(""))
+func (p *Provider) CreateLocalDiscoveryService(mspID string) (fab.DiscoveryService, error) {
+	ref, err := p.cache.Get(newMSPKey(mspID))
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get local discovery service from cache")
 	}
@@ -92,4 +92,16 @@ func (p *Provider) CreateLocalDiscoveryService() (fab.DiscoveryService, error) {
 // Close will close the cache and all services contained by the cache.
 func (p *Provider) Close() {
 	p.cache.Close()
+}
+
+type mspKey struct {
+	mspID string
+}
+
+func newMSPKey(mspID string) *mspKey {
+	return &mspKey{mspID: mspID}
+}
+
+func (k *mspKey) String() string {
+	return k.mspID
 }

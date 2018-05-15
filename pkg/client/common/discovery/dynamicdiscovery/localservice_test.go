@@ -49,7 +49,16 @@ func TestLocalDiscoveryService(t *testing.T) {
 		return discClient, nil
 	}
 
+	// Test initialize with invalid MSP ID
 	service := newLocalService(
+		mspID2,
+		options{},
+	)
+	err := service.Initialize(localCtx)
+	assert.Error(t, err)
+
+	service = newLocalService(
+		mspID1,
 		options{
 			refreshInterval: 500 * time.Millisecond,
 			responseTimeout: 2 * time.Second,
@@ -57,7 +66,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 	)
 	defer service.Close()
 
-	err := service.Initialize(localCtx)
+	err = service.Initialize(localCtx)
 	assert.NoError(t, err)
 	// Initialize again should produce no error
 	err = service.Initialize(localCtx)

@@ -83,7 +83,7 @@ func TestStaticLocalDiscovery(t *testing.T) {
 	clientCtx := mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP"))
 	discoveryProvider.Initialize(clientCtx)
 
-	discoveryService, err := discoveryProvider.CreateLocalDiscoveryService()
+	discoveryService, err := discoveryProvider.CreateLocalDiscoveryService(clientCtx.Identifier().MSPID)
 	assert.NoError(t, err)
 
 	localCtx := mocks.NewMockLocalContext(clientCtx, discoveryProvider)

@@ -253,7 +253,7 @@ func NewLocal(clientProvider context.ClientProvider) (*Local, error) {
 		return nil, errors.WithMessage(err, "failed to get client context to create local context")
 	}
 
-	discoveryService, err := client.LocalDiscoveryProvider().CreateLocalDiscoveryService()
+	discoveryService, err := client.LocalDiscoveryProvider().CreateLocalDiscoveryService(client.Identifier().MSPID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create local discovery service")
 	}

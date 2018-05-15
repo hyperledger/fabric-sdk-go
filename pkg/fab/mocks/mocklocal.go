@@ -28,7 +28,7 @@ func NewMockLocalContext(client *MockContext, discoveryProvider fab.LocalDiscove
 	var localDiscovery fab.DiscoveryService
 	if discoveryProvider != nil {
 		var err error
-		localDiscovery, err = discoveryProvider.CreateLocalDiscoveryService()
+		localDiscovery, err = discoveryProvider.CreateLocalDiscoveryService(client.Identifier().MSPID)
 		if err != nil {
 			panic(fmt.Sprintf("error creating local discovery service: %s", err))
 		}

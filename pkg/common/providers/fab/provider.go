@@ -67,7 +67,7 @@ type DiscoveryService interface {
 
 // LocalDiscoveryProvider is used to discover peers in the local MSP
 type LocalDiscoveryProvider interface {
-	CreateLocalDiscoveryService() (DiscoveryService, error)
+	CreateLocalDiscoveryService(mspID string) (DiscoveryService, error)
 }
 
 // TargetFilter allows for filtering target peers

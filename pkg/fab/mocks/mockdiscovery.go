@@ -48,7 +48,7 @@ func (dp *MockStaticDiscoveryProvider) CreateDiscoveryService(channelID string) 
 }
 
 // CreateLocalDiscoveryService return local discovery service
-func (dp *MockStaticDiscoveryProvider) CreateLocalDiscoveryService() (fab.DiscoveryService, error) {
+func (dp *MockStaticDiscoveryProvider) CreateLocalDiscoveryService(mspID string) (fab.DiscoveryService, error) {
 
 	if dp.customDiscoveryService != nil {
 		return dp.customDiscoveryService, nil
