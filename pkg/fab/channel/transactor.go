@@ -117,6 +117,10 @@ func orderersFromChannel(ctx context.Client, channelID string) ([]fab.Orderer, e
 
 	chNetworkConfig, err := ctx.EndpointConfig().ChannelConfig(channelID)
 	if err != nil {
+		s, ok := status.FromError(err)
+		if ok && s.Code == status.NoMatchingChannelEntity.ToInt32() {
+			return []fab.Orderer{}, nil
+		}
 		return nil, errors.WithMessage(err, "failed to get channel network config")
 	}
 

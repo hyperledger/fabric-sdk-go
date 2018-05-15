@@ -130,6 +130,18 @@ func TestOrderersFromChannelCfg(t *testing.T) {
 	assert.NotEmpty(t, o)
 }
 
+// TestOrderersFromChannel - tests scenario where err should not be returned if channel config is not found
+//instead, empty orderers list should be returned
+func TestOrderersFromChannel(t *testing.T) {
+	user := mspmocks.NewMockSigningIdentity("test", "test")
+	ctx := mocks.NewMockContext(user)
+
+	o, err := orderersFromChannel(ctx, "invalid-channel-id")
+	assert.Nil(t, err)
+	assert.NotNil(t, o)
+	assert.Zero(t, len(o))
+}
+
 // TestOrderersFromChannelCfg uses an orderer that does not exist in the configuration.
 func TestOrderersFromChannelCfgBadTLS(t *testing.T) {
 	user := mspmocks.NewMockSigningIdentity("test", "test")
