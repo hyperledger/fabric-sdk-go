@@ -1,0 +1,198 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+# The network connection profile provides client applications the information about the target
+# blockchain network that are necessary for the applications to interact with it. These are all
+# knowledge that must be acquired from out-of-band sources. This file provides such a source.
+#
+
+
+#
+# Schema version of the content. Used by the SDK to apply the corresponding parsing rules.
+#
+version: 1.0.0
+
+#
+# The client section used by GO SDK.
+#
+client:
+
+  organization: org1
+
+  logging:
+    level: info
+
+  # Root of the MSP directories with keys and certs.
+  cryptoconfig:
+    path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}
+
+  # Some SDKs support pluggable KV stores, the properties under "credentialStore"
+  # are implementation specific
+  credentialStore:
+    # [Optional]. Used by user store. Not needed if all credentials are embedded in configuration
+    # and enrollments are performed elswhere.
+    path: "/tmp/state-store"
+
+    # [Optional]. Specific to the CryptoSuite implementation used by GO SDK. Software-based implementations
+    # requiring a key store. PKCS#11 based implementations does not.
+    cryptoStore:
+      # Specific to the underlying KeyValueStore that backs the crypto key store.
+      path: /tmp/msp
+
+   # BCCSP config for the client. Used by GO SDK.
+  BCCSP:
+    security:
+     enabled: true
+     default:
+      provider: "SW"
+     hashAlgorithm: "SHA2"
+     softVerify: true
+     level: 256
+
+  tlsCerts:
+    # [Optional]. Use system certificate pool when connecting to peers, orderers (for negotiating TLS) Default: false
+    systemCertPool: true
+
+    # [Optional]. Client key and cert for TLS handshake with peers and orderers
+    client:
+      key:
+        path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go-key.pem
+      cert:
+        path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go.pem
+
+channels:
+  # multi-org test channel
+  orgchannel:
+
+    # anchor peers only for the bootstrap config is required, other org's peers will be discovered
+    peers:
+      peer0.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+    policies:
+      queryChannelConfig:
+        minResponses: 1
+        maxTargets: 1
+        retryOpts:
+          attempts: 5
+          initialBackoff: 500ms
+          maxBackoff: 5s
+          backoffFactor: 2.0
+
+
+#
+# list of participating organizations in this network
+#
+organizations:
+  org1:
+    mspid: Org1MSP
+
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
+    cryptoPath:  peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp
+
+    peers:
+      - peer0.org1.example.com
+
+  org2:
+    mspid: Org2MSP
+
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
+    cryptoPath:  peerOrganizations/org2.example.com/users/{username}@org2.example.com/msp
+
+    peers:
+      - peer0.org2.example.com
+
+  # Orderer Org name
+  ordererorg:
+    # Membership Service Provider ID for this organization
+    mspID: "OrdererOrg"
+
+    # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+    cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
+
+#
+# List of peers to send various requests to, including endorsement, query
+# and event listener registration.
+#
+peers:
+  # defining bootstrap peers only
+  peer0.org1.example.com:
+    url: peer0.org1.example.com:7051
+    eventUrl: peer0.org1.example.com:7053
+
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      allow-insecure: false
+
+    tlsCACerts:
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
+  peer0.org2.example.com:
+    url: peer0.org2.example.com:8051
+    eventUrl: peer0.org2.example.com:8053
+    grpcOptions:
+      ssl-target-name-override: peer0.org2.example.com
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      allow-insecure: false
+
+    tlsCACerts:
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+
+#
+# List of orderers to send transaction and channel create/update requests to. For the time
+# being only one orderer is needed. If more than one is defined, which one get used by the
+# SDK is implementation specific. Consult each SDK's documentation for its handling of orderers.
+#
+orderers:
+  # needed to fetch the ordrerer config for create channel
+  orderer.example.com:
+    url: orderer.example.com:7050
+
+    grpcOptions:
+      ssl-target-name-override: orderer.example.com
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      allow-insecure: false
+
+    tlsCACerts:
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+
+
+# EntityMatchers enable substitution of network hostnames with static configurations
+ # so that properties can be mapped. Regex can be used for this purpose
+# UrlSubstitutionExp can be empty which means the same network hostname will be used
+# UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
+# UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
+ # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
+# EventUrlSubstitutionExp and sslTargetOverrideUrlSubstitutionExp follow in the same lines as
+ # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
+# In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
+entityMatchers:
+  peer:
+    # the below matcher will allow dynamic discovery to use the anchor peer (peer0.org1.example.com)
+    # as a template for all org1 discovered peers config
+    - pattern: (\w+).org1.example.com:(\d+)
+      urlSubstitutionExp: $1.org1.example.com:$2
+      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
+      mappedHost: peer0.org1.example.com

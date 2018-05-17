@@ -107,13 +107,13 @@ services:
       - CORE_VM_DOCKER_ATTACHSTDOUT=true
       - CORE_PEER_LOCALMSPID=Org1MSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
-      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
-      - CORE_PEER_ADDRESS=0.0.0.0:7051
+      - CORE_PEER_LISTENADDRESS=peer0.org1.example.com:7051
+      - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
       - CORE_PEER_CHAINCODELISTENADDRESS=peer0.org1.example.com:7052
       - CORE_PEER_ADDRESSAUTODETECT=true
-      - CORE_PEER_GOSSIP_BOOTSTRAP=127.0.0.1:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org1.example.com:7151
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.example.com:7051
-      - CORE_PEER_EVENTS_ADDRESS=0.0.0.0:7053
+      - CORE_PEER_EVENTS_ADDRESS=peer0.org1.example.com:7053
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
@@ -151,6 +151,67 @@ services:
       - builder
       - golangruntime
 
+  org1peer2:
+    image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_PEER_FIXTURE_IMAGE}:${ARCH}${ARCH_SEP}${FABRIC_PEER_FIXTURE_TAG}
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_PEER_ID=peer1.org1.example.com
+      - CORE_LOGGING_PEER=debug
+      # - CORE_LOGGING_GRPC=debug
+      # - CORE_LOGGING_GOSSIP=debug
+      # - CORE_CHAINCODE_STARTUPTIMEOUT=30s
+      - CORE_CHAINCODE_LOGGING_SHIM=debug
+      - CORE_CHAINCODE_LOGGING_LEVEL=debug
+      - CORE_CHAINCODE_BUILDER=${FABRIC_DOCKER_REGISTRY}${FABRIC_BUILDER_FIXTURE_IMAGE}:${ARCH}${ARCH_SEP}${FABRIC_BUILDER_FIXTURE_TAG}
+      - CORE_CHAINCODE_GOLANG_RUNTIME=${FABRIC_DOCKER_REGISTRY}${FABRIC_BASEOS_FIXTURE_IMAGE}:${BASE_ARCH}-${FABRIC_BASEOS_FIXTURE_TAG}
+      ## the following setting redirects chaincode container logs to the peer container logs
+      - CORE_VM_DOCKER_ATTACHSTDOUT=true
+      - CORE_PEER_LOCALMSPID=Org1MSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
+      - CORE_PEER_LISTENADDRESS=peer1.org1.example.com:7151
+      - CORE_PEER_ADDRESS=peer1.org1.example.com:7151
+      - CORE_PEER_CHAINCODELISTENADDRESS=peer1.org1.example.com:7152
+      - CORE_PEER_ADDRESSAUTODETECT=true
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org1.example.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.org1.example.com:7151
+      - CORE_PEER_EVENTS_ADDRESS=peer1.org1.example.com:7153
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/tls/peer/ca.crt
+      - CORE_PEER_TLS_CLIENTAUTHREQUIRED
+      - CORE_PEER_TLS_CLIENTROOTCAS_FILES
+      # # the following setting starts chaincode containers on the same
+      # # bridge network as the peers
+      # # https://docs.docker.com/compose/networking/
+      - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default
+    #comment out logging.driver in order to render the debug logs
+    logging:
+      driver: none
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: peer node start
+    ports:
+      - "7151:7151"
+      - "7153:7153"
+    expose:
+      - "7151"
+      - "7152"
+      - "7153"
+    volumes:
+        - /var/run/:/host/var/run/
+        - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/msp:/etc/hyperledger/msp/peer
+        - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/tls:/etc/hyperledger/tls/peer
+        - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/mutual_tls:/etc/hyperledger/mutual_tls/peer
+    networks:
+      default:
+        aliases:
+          - peer1.org1.example.com
+    depends_on:
+      - orderer1
+      - builder
+      - golangruntime
+
   org2peer1:
     image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_PEER_FIXTURE_IMAGE}:${ARCH}${ARCH_SEP}${FABRIC_PEER_FIXTURE_TAG}
     environment:
@@ -169,13 +230,13 @@ services:
       - CORE_VM_DOCKER_ATTACHSTDOUT=true
       - CORE_PEER_LOCALMSPID=Org2MSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
-      - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
-      - CORE_PEER_ADDRESS=0.0.0.0:8051
+      - CORE_PEER_LISTENADDRESS=peer0.org2.example.com:8051
+      - CORE_PEER_ADDRESS=peer0.org2.example.com:8051
       - CORE_PEER_CHAINCODELISTENADDRESS=peer0.org2.example.com:7052
       - CORE_PEER_ADDRESSAUTODETECT=true
-      - CORE_PEER_GOSSIP_BOOTSTRAP=127.0.0.1:8051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org2.example.com:9051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org2.example.com:8051
-      - CORE_PEER_EVENTS_ADDRESS=0.0.0.0:8053
+      - CORE_PEER_EVENTS_ADDRESS=peer0.org2.example.com:8053
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
@@ -231,13 +292,13 @@ services:
       - CORE_VM_DOCKER_ATTACHSTDOUT=true
       - CORE_PEER_LOCALMSPID=Org2MSP
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
-      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
-      - CORE_PEER_ADDRESS=0.0.0.0:9051
+      - CORE_PEER_LISTENADDRESS=peer1.org2.example.com:9051
+      - CORE_PEER_ADDRESS=peer1.org2.example.com:9051
       - CORE_PEER_CHAINCODELISTENADDRESS=peer1.org2.example.com:9052
       - CORE_PEER_ADDRESSAUTODETECT=true
-      - CORE_PEER_GOSSIP_BOOTSTRAP=127.0.0.1:9051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.example.com:8051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.org2.example.com:9051
-      - CORE_PEER_EVENTS_ADDRESS=0.0.0.0:9053
+      - CORE_PEER_EVENTS_ADDRESS=peer1.org2.example.com:9053
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
