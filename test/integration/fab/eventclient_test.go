@@ -13,8 +13,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
@@ -44,7 +46,8 @@ func TestEventClient(t *testing.T) {
 		t.Fatalf("error getting event service: %s", err)
 	}
 
-	if chContext.EndpointConfig().EventServiceType() == fab.DeliverEventServiceType {
+	if testWithDeliverEvents(t, chContext) {
+		t.Log("Testing Deliver events")
 		t.Run("Deliver Filtered Block Events", func(t *testing.T) {
 			// Filtered block events are the default for the deliver event client
 			testEventService(t, testSetup, sdk, chainCodeID, false, eventService)
@@ -57,6 +60,7 @@ func TestEventClient(t *testing.T) {
 			testEventService(t, testSetup, sdk, chainCodeID, true, eventServ)
 		})
 	} else {
+		t.Log("Testing Event Hub events")
 		// Block events are the default for the event hub client
 		t.Run("Event Hub Block Events", func(t *testing.T) {
 			testEventService(t, testSetup, sdk, chainCodeID, true, eventService)
@@ -273,4 +277,22 @@ func fail(t *testing.T, template string, args ...interface{}) {
 	fmt.Printf(template, args...)
 	fmt.Println()
 	t.Fail()
+}
+
+func testWithDeliverEvents(t *testing.T, chContext context.Channel) bool {
+	chConfig, err := chContext.ChannelService().ChannelConfig()
+	assert.NoError(t, err)
+	config := chContext.EndpointConfig()
+
+	switch config.EventServiceType() {
+	case fab.DeliverEventServiceType:
+		return true
+	case fab.EventHubEventServiceType:
+		return false
+	case fab.AutoDetectEventServiceType:
+		return chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_1Capability)
+	default:
+		t.Fatalf("unsupported event service type: %d", config.EventServiceType())
+		return false
+	}
 }

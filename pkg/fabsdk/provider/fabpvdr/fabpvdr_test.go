@@ -83,6 +83,21 @@ func TestCreateMembership(t *testing.T) {
 	assert.NotNil(t, m)
 }
 
+func TestResolveEventServiceType(t *testing.T) {
+	ctx := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", "Org1MSP"))
+	chConfig := mocks.NewMockChannelCfg("mychannel")
+
+	useDeliver, err := useDeliverEvents(ctx, chConfig)
+	assert.NoError(t, err)
+	assert.Falsef(t, useDeliver, "expecting deliver events not to be used")
+
+	chConfig.MockCapabilities[fab.ApplicationGroupKey][fab.V1_1Capability] = true
+
+	useDeliver, err = useDeliverEvents(ctx, chConfig)
+	assert.NoError(t, err)
+	assert.Truef(t, useDeliver, "expecting deliver events to be used")
+}
+
 func newInfraProvider(t *testing.T) *InfraProvider {
 	configBackend, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {

@@ -32,10 +32,10 @@ client:
   logging:
     level: info
 
-  eventService:
-    # Event service type (deliver|eventhub) - default: eventhub
-    # NOTE: This is temporary until the SDK starts making use of channel capabilities
-    type: eventhub
+  # eventService:
+  #   # Event service type (optional). If not specified then the type is automatically
+  #   # determined from channel capabilities.
+  #   type: (deliver|eventhub)
 
   # Root of the MSP directories with keys and certs.
   cryptoconfig:

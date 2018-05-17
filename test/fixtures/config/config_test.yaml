@@ -39,10 +39,10 @@ client:
 #        # to prevent re-selecting them in subsequent retries.
 #        # This interval will define how long a peer is greylisted
 #        greylistExpiry: 10s
-  eventService:
-    # Event service type (deliver|eventhub) - default: deliver
-    # NOTE: This is temporary until the SDK starts making use of channel capabilities
-    type: deliver
+#  eventService:
+#    # Event service type (optional). If not specified then the type is automatically
+#    # determined from channel capabilities.
+#    type: (deliver|eventhub)
     # the below timeouts are commented out to use the default values that are found in
     # "pkg/fab/endpointconfig.go"
     # the client is free to override the default values by uncommenting and resetting

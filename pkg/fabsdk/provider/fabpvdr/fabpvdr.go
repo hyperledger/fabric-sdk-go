@@ -198,15 +198,30 @@ func (f *InfraProvider) loadChannelCfgRef(ctx fab.ClientContext, channelID strin
 }
 
 func getEventClient(ctx context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (fab.EventClient, error) {
-	// TODO: This logic should be based on the channel capabilities. For now,
-	// look at the EventServiceType specified in the config file.
+	useDeliver, err := useDeliverEvents(ctx, chConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	if useDeliver {
+		logger.Debugf("Using deliver events for channel [%s]", chConfig.ID())
+		return deliverclient.New(ctx, chConfig, opts...)
+	}
+
+	logger.Debugf("Using event hub events for channel [%s]", chConfig.ID())
+	return eventhubclient.New(ctx, chConfig, opts...)
+}
+
+func useDeliverEvents(ctx context.Client, chConfig fab.ChannelCfg) (bool, error) {
 	switch ctx.EndpointConfig().EventServiceType() {
 	case fab.DeliverEventServiceType:
-		return deliverclient.New(ctx, chConfig, opts...)
+		return true, nil
 	case fab.EventHubEventServiceType:
-		logger.Debugf("Using event hub events")
-		return eventhubclient.New(ctx, chConfig, opts...)
+		return false, nil
+	case fab.AutoDetectEventServiceType:
+		logger.Debugf("Determining event service type from channel capabilities...")
+		return chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_1Capability), nil
 	default:
-		return nil, errors.Errorf("unsupported event service type: %d", ctx.EndpointConfig().EventServiceType())
+		return false, errors.Errorf("unsupported event service type: %d", ctx.EndpointConfig().EventServiceType())
 	}
 }

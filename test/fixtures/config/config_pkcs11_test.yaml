@@ -26,10 +26,10 @@ client:
   logging:
     level: info
 
-  eventService:
-    # Event service type (deliver|eventhub) - default: deliver
-    # NOTE: This is temporary until the SDK starts making use of channel capabilities
-    type: deliver
+  # eventService:
+  #   # Event service type (optional). If not specified then the type is automatically
+  #   # determined from channel capabilities.
+  #   type: (deliver|eventhub)
 
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"
   # are implementation specific

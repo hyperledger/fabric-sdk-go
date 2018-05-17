@@ -148,8 +148,10 @@ const (
 type EventServiceType int
 
 const (
+	// AutoDetectEventServiceType uses channel capabilities to determine which event service to use
+	AutoDetectEventServiceType EventServiceType = iota
 	// DeliverEventServiceType uses the Deliver Service for block and filtered-block events
-	DeliverEventServiceType EventServiceType = iota
+	DeliverEventServiceType
 	// EventHubEventServiceType uses the Event Hub for block events
 	EventHubEventServiceType
 )

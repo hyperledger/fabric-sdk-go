@@ -485,8 +485,10 @@ func (c *EndpointConfig) EventServiceType() fab.EventServiceType {
 	switch etype {
 	case "eventhub":
 		return fab.EventHubEventServiceType
-	default:
+	case "deliver":
 		return fab.DeliverEventServiceType
+	default:
+		return fab.AutoDetectEventServiceType
 	}
 }
 

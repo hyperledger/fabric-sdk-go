@@ -28,6 +28,7 @@ type MockConfig struct {
 	customPeerCfg          *fab.PeerConfig
 	customOrdererCfg       *fab.OrdererConfig
 	customRandomOrdererCfg *fab.OrdererConfig
+	EvtServiceType         fab.EventServiceType
 }
 
 // NewMockCryptoConfig ...
@@ -315,7 +316,7 @@ func (c *MockConfig) TLSClientCerts() ([]tls.Certificate, error) {
 
 // EventServiceType returns the type of event service client to use
 func (c *MockConfig) EventServiceType() fab.EventServiceType {
-	return fab.DeliverEventServiceType
+	return c.EvtServiceType
 }
 
 // Lookup gets the Value from config file by Key
