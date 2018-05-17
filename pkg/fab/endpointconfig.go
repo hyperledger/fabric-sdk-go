@@ -89,6 +89,9 @@ func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, e
 		return nil, errors.WithMessage(err, "cert pool load failed")
 	}
 
+	//print deprecated warning
+	detectDeprecatedNetworkConfig(config)
+
 	return config, nil
 }
 
@@ -1139,5 +1142,23 @@ func setDefault(dataMap map[string]interface{}, key string, defaultVal bool) {
 	_, ok := dataMap[key]
 	if !ok {
 		dataMap[key] = true
+	}
+}
+
+//detectDeprecatedConfigOptions detects deprecated config options and prints warnings
+// currently detects: if channels.orderers are defined
+func detectDeprecatedNetworkConfig(endpointConfig *EndpointConfig) {
+
+	if endpointConfig.networkConfig == nil {
+		return
+	}
+
+	//detect if channels orderers are mentioned
+	for _, v := range endpointConfig.networkConfig.Channels {
+		if len(v.Orderers) > 0 {
+			logger.Warn("Getting orderers from endpoint config channels.orderer is deprecated, use entity matchers to override orderer configuration")
+			logger.Warn("visit https://github.com/hyperledger/fabric-sdk-go/blob/master/test/fixtures/config/overrides/local_entity_matchers.yaml for samples")
+			break
+		}
 	}
 }

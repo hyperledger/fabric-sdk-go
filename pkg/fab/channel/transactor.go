@@ -63,8 +63,7 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 		return nil, err
 	}
 	if len(orderers) > 0 {
-		logger.Warn("Getting orderers from endpoint config channels.orderer is deprecated, use entity matchers to override orderer configuration")
-		logger.Warn("visit https://github.com/hyperledger/fabric-sdk-go/blob/master/test/fixtures/config/overrides/local_entity_matchers.yaml for samples")
+
 		return orderers, nil
 	}
 
