@@ -53,12 +53,15 @@ func NewMockGenesisBlock() *common.Block {
 
 // MockConfigGroupBuilder is used to build a mock ConfigGroup
 type MockConfigGroupBuilder struct {
-	Version        uint64
-	ModPolicy      string
-	OrdererAddress string
-	MSPNames       []string
-	RootCA         string
-	Groups         map[string]*common.ConfigGroup
+	Version                 uint64
+	ModPolicy               string
+	OrdererAddress          string
+	MSPNames                []string
+	RootCA                  string
+	Groups                  map[string]*common.ConfigGroup
+	ChannelCapabilities     []string
+	ApplicationCapabilities []string
+	OrdererCapabilities     []string
 }
 
 // MockConfigBlockBuilder is used to build a mock Chain configuration block
@@ -180,6 +183,7 @@ func (b *MockConfigGroupBuilder) buildConfigGroup() *common.ConfigGroup {
 		},
 		Values: map[string]*common.ConfigValue{
 			channelConfig.OrdererAddressesKey: b.buildOrdererAddressesConfigValue(),
+			channelConfig.CapabilitiesKey:     b.buildCapabilitiesConfigValue(b.ChannelCapabilities),
 		},
 		Version:   b.Version,
 		ModPolicy: b.ModPolicy,
@@ -218,6 +222,7 @@ func (b *MockConfigGroupBuilder) buildOrdererGroup() *common.ConfigGroup {
 			channelConfig.ChannelRestrictionsKey:       b.buildChannelRestrictionsConfigValue(),
 			channelConfig.HashingAlgorithmKey:          b.buildHashingAlgorithmConfigValue(),
 			channelConfig.BlockDataHashingStructureKey: b.buildBlockDataHashingStructureConfigValue(),
+			channelConfig.CapabilitiesKey:              b.buildCapabilitiesConfigValue(b.OrdererCapabilities),
 		},
 		Version:   b.Version,
 		ModPolicy: b.ModPolicy,
@@ -297,6 +302,13 @@ func (b *MockConfigGroupBuilder) buildBlockDataHashingStructureConfigValue() *co
 		Value:     marshalOrPanic(b.buildBlockDataHashingStructure())}
 }
 
+func (b *MockConfigGroupBuilder) buildCapabilitiesConfigValue(capabilityNames []string) *common.ConfigValue {
+	return &common.ConfigValue{
+		Version:   b.Version,
+		ModPolicy: b.ModPolicy,
+		Value:     marshalOrPanic(b.buildCapabilities(capabilityNames))}
+}
+
 func (b *MockConfigGroupBuilder) buildBatchSize() *ab.BatchSize {
 	return &ab.BatchSize{
 		MaxMessageCount:   10,
@@ -339,6 +351,16 @@ func (b *MockConfigGroupBuilder) buildHashingAlgorithm() *common.HashingAlgorith
 func (b *MockConfigGroupBuilder) buildBlockDataHashingStructure() *common.BlockDataHashingStructure {
 	return &common.BlockDataHashingStructure{
 		Width: 64,
+	}
+}
+
+func (b *MockConfigGroupBuilder) buildCapabilities(capabilityNames []string) *common.Capabilities {
+	capabilities := make(map[string]*common.Capability)
+	for _, capability := range capabilityNames {
+		capabilities[capability] = &common.Capability{}
+	}
+	return &common.Capabilities{
+		Capabilities: capabilities,
 	}
 }
 
@@ -406,7 +428,8 @@ func (b *MockConfigGroupBuilder) buildApplicationGroup() *common.ConfigGroup {
 			"Readers": b.buildSignatureConfigPolicy(),
 		},
 		Values: map[string]*common.ConfigValue{
-			channelConfig.BatchSizeKey: b.buildBatchSizeConfigValue(),
+			channelConfig.BatchSizeKey:    b.buildBatchSizeConfigValue(),
+			channelConfig.CapabilitiesKey: b.buildCapabilitiesConfigValue(b.ApplicationCapabilities),
 			// TODO: More
 		},
 		Version:   b.Version,

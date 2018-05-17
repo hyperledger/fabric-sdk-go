@@ -26,6 +26,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -231,6 +232,39 @@ func TestResolveOptsDefaultValues(t *testing.T) {
 func TestResolveOptsDefaultValuesWithInvalidChannel(t *testing.T) {
 	//Should be successful even with invalid channel id
 	testResolveOptsDefaultValues(t, "INVALID-CHANNEL-ID")
+}
+
+func TestCapabilities(t *testing.T) {
+	capability1 := fab.V1_1Capability
+	capability2 := fab.V1_2Capability
+	capability3 := "V1_1_PVTDATA_EXPERIMENTAL"
+	capability4 := "V1_1_RESOURCETREE_EXPERIMENTAL"
+
+	builder := &mocks.MockConfigBlockBuilder{
+		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
+			ModPolicy: "Admins",
+			MSPNames: []string{
+				"Org1MSP",
+				"Org2MSP",
+			},
+			OrdererAddress:          "localhost:9999",
+			RootCA:                  validRootCA,
+			ChannelCapabilities:     []string{capability1},
+			OrdererCapabilities:     []string{capability1},
+			ApplicationCapabilities: []string{capability2, capability3},
+		},
+		Index:           0,
+		LastConfigIndex: 0,
+	}
+
+	chConfig, err := extractConfig("mychannel", builder.Build())
+	require.NoError(t, err)
+
+	assert.Truef(t, chConfig.HasCapability(fab.ChannelGroupKey, capability1), "expecting channel capability [%s]", capability1)
+	assert.Truef(t, chConfig.HasCapability(fab.OrdererGroupKey, capability1), "expecting orderer capability [%s]", capability1)
+	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, capability2), "expecting application capability [%s]", capability2)
+	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, capability3), "expecting application capability [%s]", capability3)
+	assert.Falsef(t, chConfig.HasCapability(fab.ApplicationGroupKey, capability4), "not expecting application capability [%s]", capability4)
 }
 
 func testResolveOptsDefaultValues(t *testing.T, channelID string) {

@@ -65,12 +65,13 @@ type ChannelConfig struct {
 
 // ChannelCfg contains channel configuration
 type ChannelCfg struct {
-	id          string
-	blockNumber uint64
-	msps        []*mb.MSPConfig
-	anchorPeers []*fab.OrgAnchorPeer
-	orderers    []string
-	versions    *fab.Versions
+	id           string
+	blockNumber  uint64
+	msps         []*mb.MSPConfig
+	anchorPeers  []*fab.OrgAnchorPeer
+	orderers     []string
+	versions     *fab.Versions
+	capabilities map[fab.ConfigGroupKey]map[string]bool
 }
 
 // NewChannelCfg creates channel cfg
@@ -109,6 +110,22 @@ func (cfg *ChannelCfg) Versions() *fab.Versions {
 	return cfg.versions
 }
 
+// HasCapability indicates whether or not the given group has the given capability
+func (cfg *ChannelCfg) HasCapability(group fab.ConfigGroupKey, capability string) bool {
+	groupCapabilities, ok := cfg.capabilities[group]
+	if !ok {
+		return false
+	}
+	if groupCapabilities[capability] {
+		return true
+	}
+	if capability == fab.V1_1Capability {
+		// If V1_2 capability is supported then V1_1 is also supported
+		return groupCapabilities[fab.V1_2Capability]
+	}
+	return false
+}
+
 // New channel config implementation
 func New(channelID string, options ...Option) (*ChannelConfig, error) {
 	opts, err := prepareOpts(options...)
@@ -130,7 +147,6 @@ func (c *ChannelConfig) Query(reqCtx reqContext.Context) (fab.ChannelCfg, error)
 }
 
 func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, error) {
-
 	ctx, ok := contextImpl.RequestClientContext(reqCtx)
 	if !ok {
 		return nil, errors.New("failed get client context from reqContext for signPayload")
@@ -351,15 +367,16 @@ func extractConfig(channelID string, block *common.Block) (*ChannelCfg, error) {
 	}
 
 	config := &ChannelCfg{
-		id:          channelID,
-		blockNumber: block.Header.Number,
-		msps:        []*mb.MSPConfig{},
-		anchorPeers: []*fab.OrgAnchorPeer{},
-		orderers:    []string{},
-		versions:    versions,
+		id:           channelID,
+		blockNumber:  block.Header.Number,
+		msps:         []*mb.MSPConfig{},
+		anchorPeers:  []*fab.OrgAnchorPeer{},
+		orderers:     []string{},
+		versions:     versions,
+		capabilities: make(map[fab.ConfigGroupKey]map[string]bool),
 	}
 
-	err = loadConfig(config, config.versions.Channel, group, "base", "")
+	err = loadConfig(config, config.versions.Channel, group, "", "")
 	if err != nil {
 		return nil, errors.WithMessage(err, "load config items from config group failed")
 	}
@@ -387,7 +404,7 @@ func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, grou
 			logger.Debugf("loadConfigGroup - %s - found config group ==> %s", name, key)
 			// The Application group is where config settings are that we want to find
 			versionsGroup.Groups[key] = &common.ConfigGroup{}
-			err := loadConfig(configItems, versionsGroup.Groups[key], configGroup, name+"."+key, key)
+			err := loadConfig(configItems, versionsGroup.Groups[key], configGroup, key, key)
 			if err != nil {
 				return err
 			}
@@ -540,6 +557,21 @@ func loadOrdererAddressesKey(configValue *common.ConfigValue, configItems *Chann
 
 }
 
+func loadCapabilities(configValue *common.ConfigValue, configItems *ChannelCfg, groupName string) error {
+	capabilities := &common.Capabilities{}
+	err := proto.Unmarshal(configValue.Value, capabilities)
+	if err != nil {
+		return errors.Wrap(err, "unmarshal capabilities from config failed")
+	}
+	capabilityMap := make(map[string]bool)
+	for capability := range capabilities.Capabilities {
+		logger.Debugf("Adding capability for group [%s]: [%s]", groupName, capability)
+		capabilityMap[capability] = true
+	}
+	configItems.capabilities[fab.ConfigGroupKey(groupName)] = capabilityMap
+	return nil
+}
+
 func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.ConfigValue, configValue *common.ConfigValue, groupName string, org string) error {
 	logger.Debugf("loadConfigValue - %s - START value name: %s", groupName, key)
 	logger.Debugf("loadConfigValue - %s   - version: %d", groupName, configValue.Version)
@@ -554,6 +586,10 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 		}
 	case channelConfig.MSPKey:
 		if err := loadMSPKey(configValue, configItems, groupName); err != nil {
+			return err
+		}
+	case channelConfig.CapabilitiesKey:
+		if err := loadCapabilities(configValue, configItems, groupName); err != nil {
 			return err
 		}
 	//case channelConfig.ConsensusTypeKey:
