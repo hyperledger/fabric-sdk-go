@@ -7,9 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package resource
 
 import (
-	"time"
-
-	"github.com/golang/protobuf/ptypes"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -50,15 +47,10 @@ func CreateChaincodeInstallProposal(txh fab.TransactionHeader, request Chaincode
 func createInstallInvokeRequest(request ChaincodeInstallRequest) (fab.ChaincodeInvokeRequest, error) {
 	// Generate arguments for install
 	args := [][]byte{}
-	timestamp := time.Now()
-	ts, err := ptypes.TimestampProto(timestamp)
-	if err != nil {
-		return fab.ChaincodeInvokeRequest{}, errors.Wrap(err, "failed to create timestamp in install proposal")
-	}
 
 	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
 		Type: request.Package.Type, ChaincodeId: &pb.ChaincodeID{Name: request.Name, Path: request.Path, Version: request.Version}},
-		CodePackage: request.Package.Code, EffectiveDate: ts}
+		CodePackage: request.Package.Code}
 
 	ccdsBytes, err := protos_utils.Marshal(ccds)
 	if err != nil {

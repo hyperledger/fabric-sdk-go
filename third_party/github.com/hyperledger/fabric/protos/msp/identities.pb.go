@@ -28,6 +28,8 @@ It has these top-level messages:
 	MSPPrincipal
 	OrganizationUnit
 	MSPRole
+	MSPIdentityAnonymity
+	CombinedPrincipal
 */
 package msp
 

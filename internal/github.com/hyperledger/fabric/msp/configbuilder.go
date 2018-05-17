@@ -56,8 +56,9 @@ const (
 )
 
 const (
-	IdemixConfigDirMsp              = "msp"
-	IdemixConfigDirUser             = "user"
-	IdemixConfigFileIssuerPublicKey = "IssuerPublicKey"
-	IdemixConfigFileSigner          = "SignerConfig"
+	IdemixConfigDirMsp                  = "msp"
+	IdemixConfigDirUser                 = "user"
+	IdemixConfigFileIssuerPublicKey     = "IssuerPublicKey"
+	IdemixConfigFileRevocationPublicKey = "RevocationPublicKey"
+	IdemixConfigFileSigner              = "SignerConfig"
 )

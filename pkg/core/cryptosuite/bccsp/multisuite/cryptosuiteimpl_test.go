@@ -49,7 +49,7 @@ func TestCryptoSuiteByConfigSW(t *testing.T) {
 		t.Fatalf("Not supposed to get error, but got: %v", err)
 	}
 
-	verifySuiteType(t, c, "*sw.impl")
+	verifySuiteType(t, c, "*sw.CSP")
 }
 
 func TestCryptoSuiteByConfigPKCS11(t *testing.T) {

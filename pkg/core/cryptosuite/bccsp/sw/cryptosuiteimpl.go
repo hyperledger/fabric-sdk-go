@@ -57,7 +57,7 @@ func getBCCSPFromOpts(config *bccspSw.SwOpts) (bccsp.BCCSP, error) {
 // GetSuite returns a new instance of the software-based BCCSP
 // set at the passed security level, hash family and KeyStore.
 func GetSuite(securityLevel int, hashFamily string, keyStore bccsp.KeyStore) (core.CryptoSuite, error) {
-	bccsp, err := sw.New(securityLevel, hashFamily, keyStore)
+	bccsp, err := sw.NewWithParams(securityLevel, hashFamily, keyStore)
 	if err != nil {
 		return nil, err
 	}

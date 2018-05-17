@@ -75,9 +75,12 @@ func (req *Request) AddConfigQuery() *Request {
 func (req *Request) AddEndorsersQuery(chaincodes ...string) *Request {
 	ch := req.lastChannel
 	q := &discovery.Query_CcQuery{
-		CcQuery: &discovery.ChaincodeQuery{
-			Chaincodes: chaincodes,
-		},
+		CcQuery: &discovery.ChaincodeQuery{},
+	}
+	for _, cc := range chaincodes {
+		q.CcQuery.Interests = append(q.CcQuery.Interests, &discovery.ChaincodeInterest{
+			Chaincodes: []*discovery.ChaincodeCall{{Name: cc}},
+		})
 	}
 	req.Queries = append(req.Queries, &discovery.Query{
 		Channel: ch,

@@ -25,11 +25,10 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/hex"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-
 	"encoding/pem"
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 
 	"github.com/golang/protobuf/proto"
 	bccsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
@@ -133,6 +132,10 @@ func (id *identity) GetOrganizationalUnits() []*OUIdentifier {
 	}
 
 	return res
+}
+
+func (id *identity) Anonymous() bool {
+	return false
 }
 
 // Verify checks against a signature and a message

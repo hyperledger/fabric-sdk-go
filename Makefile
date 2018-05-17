@@ -66,7 +66,7 @@ FABRIC_DEV_REGISTRY_PRE_CMD ?= docker login -u docker -p docker nexus3.hyperledg
 THIRDPARTY_FABRIC_CA_BRANCH ?= master
 THIRDPARTY_FABRIC_CA_COMMIT ?= v1.1.0
 THIRDPARTY_FABRIC_BRANCH    ?= master
-THIRDPARTY_FABRIC_COMMIT    ?= a8cc2c46d8cec1ad199741c0630a46ccb24084ac
+THIRDPARTY_FABRIC_COMMIT    ?= d78be9f4567d98e8c14542446a85ec5f8fcb5e5a
 
 # Force removal of images in cleanup (overridable)
 FIXTURE_DOCKER_REMOVE_FORCE ?= false

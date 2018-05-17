@@ -73,6 +73,11 @@ func (id *MockIdentity) Serialize() ([]byte, error) {
 	return nil, nil
 }
 
+// Anonymous ...
+func (id *MockIdentity) Anonymous() bool {
+	return false
+}
+
 // MockSigningIdentity ...
 type MockSigningIdentity struct {
 	// we embed everything from a base identity

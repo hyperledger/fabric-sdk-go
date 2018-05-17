@@ -60,3 +60,8 @@ type cachedMSP struct {
 
 	spcMutex sync.Mutex // synchronize access to cache
 }
+
+type cachedIdentity struct {
+	msp.Identity
+	cache *cachedMSP
+}

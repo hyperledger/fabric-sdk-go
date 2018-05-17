@@ -292,7 +292,7 @@ func (ks *fileBasedKeyStore) storePrivateKey(alias string, privateKey interface{
 		return err
 	}
 
-	err = ioutil.WriteFile(ks.getPathForAlias(alias, "sk"), rawKey, 0700)
+	err = ioutil.WriteFile(ks.getPathForAlias(alias, "sk"), rawKey, 0600)
 	if err != nil {
 		logger.Errorf("Failed storing private key [%s]: [%s]", alias, err)
 		return err
@@ -308,7 +308,7 @@ func (ks *fileBasedKeyStore) storePublicKey(alias string, publicKey interface{})
 		return err
 	}
 
-	err = ioutil.WriteFile(ks.getPathForAlias(alias, "pk"), rawKey, 0700)
+	err = ioutil.WriteFile(ks.getPathForAlias(alias, "pk"), rawKey, 0600)
 	if err != nil {
 		logger.Errorf("Failed storing private key [%s]: [%s]", alias, err)
 		return err
@@ -324,7 +324,7 @@ func (ks *fileBasedKeyStore) storeKey(alias string, key []byte) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(ks.getPathForAlias(alias, "key"), pem, 0700)
+	err = ioutil.WriteFile(ks.getPathForAlias(alias, "key"), pem, 0600)
 	if err != nil {
 		logger.Errorf("Failed storing key [%s]: [%s]", alias, err)
 		return err

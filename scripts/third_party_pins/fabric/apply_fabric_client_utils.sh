@@ -84,6 +84,7 @@ declare -a FILES=(
     "bccsp/sw/keyderiv.go"
     "bccsp/sw/keygen.go"
     "bccsp/sw/keyimport.go"
+    "bccsp/sw/new.go"
     "bccsp/sw/rsa.go"
     "bccsp/sw/rsakey.go"
 
@@ -231,7 +232,7 @@ gofilter
 FILTER_FILENAME="msp/identities.go"
 FILTER_FN="newIdentity,newSigningIdentity,ExpiresAt,GetIdentifier,GetMSPIdentifier"
 FILTER_FN+=",GetOrganizationalUnits,SatisfiesPrincipal,Serialize,Validate,Verify"
-FILTER_FN+=",getHashOpt,GetPublicVersion,Sign"
+FILTER_FN+=",getHashOpt,GetPublicVersion,Sign,Anonymous"
 gofilter
 sed -i'' -e '/"encoding\/hex/ a\
 "github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\

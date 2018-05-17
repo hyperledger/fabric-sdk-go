@@ -91,7 +91,7 @@ FILTER_FN+=",collHashedRwSetFromProtoMsg,collPvtRwSetFromProtoMsg"
 gofilter
 
 FILTER_FILENAME="core/ledger/util/txvalidationflags.go"
-FILTER_FN="IsValid,IsInvalid,Flag,IsSetTo,NewTxValidationFlags"
+FILTER_FN="IsValid,IsInvalid,Flag,IsSetTo,NewTxValidationFlags,newTxValidationFlagsSetValue"
 gofilter
 
 # Apply patching

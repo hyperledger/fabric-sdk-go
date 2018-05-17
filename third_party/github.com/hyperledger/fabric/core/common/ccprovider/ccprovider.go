@@ -131,6 +131,30 @@ func (cccid *CCContext) String() string {
 		cccid.ChainID, cccid.Name, cccid.Version, cccid.TxID, cccid.Syscc, cccid.Proposal, cccid.canonicalName)
 }
 
+//-------- ChaincodeDefinition - interface for ChaincodeData ------
+// ChaincodeDefinition describes all of the necessary information for a peer to decide whether to endorse
+// a proposal and whether to validate a transaction, for a particular chaincode.
+type ChaincodeDefinition interface {
+	// CCName returns the name of this chaincode (the name it was put in the ChaincodeRegistry with).
+	CCName() string
+
+	// Hash returns the hash of the chaincode.
+	Hash() []byte
+
+	// CCVersion returns the version of the chaincode.
+	CCVersion() string
+
+	// Validation returns how to validate transactions for this chaincode.
+	// The string returned is the name of the validation method (usually 'vscc')
+	// and the bytes returned are the argument to the validation (in the case of
+	// 'vscc', this is a marshaled pb.VSCCArgs message).
+	Validation() (string, []byte)
+
+	// Endorsement returns how to endorse proposals for this chaincode.
+	// The string returns is the name of the endorsement method (usually 'escc').
+	Endorsement() string
+}
+
 //-------- ChaincodeData is stored on the LSCC -------
 
 // ChaincodeData defines the datastructure for chaincodes to be serialized by proto
@@ -174,6 +198,12 @@ func (cd *ChaincodeData) String() string { return proto.CompactTextString(cd) }
 // ProtoMessage just exists to make proto happy
 func (*ChaincodeData) ProtoMessage() {}
 
+// ChaincodeSpecGetter normalizes getting a chaincode spec from an
+// ChaincodeInvocationSpec or a ChaincodeDeploymentSpec.
+type ChaincodeSpecGetter interface {
+	GetChaincodeSpec() *pb.ChaincodeSpec
+}
+
 // ChaincodeProvider provides an abstraction layer that is
 // used for different packages to interact with code in the
 // chaincode package without importing it; more methods
@@ -183,22 +213,10 @@ type ChaincodeProvider interface {
 	// caller's responsability to release the simulator by calling its
 	// done method once it is no longer useful
 	GetContext(ledger ledger.PeerLedger, txid string) (context.Context, ledger.TxSimulator, error)
-	// GetCCContext returns an opaque chaincode context
-	GetCCContext(cid, name, version, txid string, syscc bool, signedProp *pb.SignedProposal, prop *pb.Proposal) interface{}
 	// ExecuteChaincode executes the chaincode given context and args
-	ExecuteChaincode(ctxt context.Context, cccid interface{}, args [][]byte) (*pb.Response, *pb.ChaincodeEvent, error)
+	ExecuteChaincode(ctxt context.Context, cccid *CCContext, args [][]byte) (*pb.Response, *pb.ChaincodeEvent, error)
 	// Execute executes the chaincode given context and spec (invocation or deploy)
-	Execute(ctxt context.Context, cccid interface{}, spec interface{}) (*pb.Response, *pb.ChaincodeEvent, error)
-	// ExecuteWithErrorFilter executes the chaincode given context and spec and returns payload
-	ExecuteWithErrorFilter(ctxt context.Context, cccid interface{}, spec interface{}) ([]byte, *pb.ChaincodeEvent, error)
+	Execute(ctxt context.Context, cccid *CCContext, spec ChaincodeSpecGetter) (*pb.Response, *pb.ChaincodeEvent, error)
 	// Stop stops the chaincode given context and deployment spec
-	Stop(ctxt context.Context, cccid interface{}, spec *pb.ChaincodeDeploymentSpec) error
-}
-
-var ccFactory ChaincodeProviderFactory
-
-// ChaincodeProviderFactory defines a factory interface so
-// that the actual implementation can be injected
-type ChaincodeProviderFactory interface {
-	NewChaincodeProvider() ChaincodeProvider
+	Stop(ctxt context.Context, cccid *CCContext, spec *pb.ChaincodeDeploymentSpec) error
 }
