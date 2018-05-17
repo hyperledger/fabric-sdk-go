@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 
 	go grpcServer.Serve(lis)
 
-	srvs, addrs, err := startEndorsers(2, endorserAddress)
+	srvs, addrs, err := startEndorsers(30, endorserAddress)
 	if err != nil {
 		panic(fmt.Sprintf("Error starting endorser %s", err))
 	}
@@ -80,7 +80,7 @@ func startEndorserServer(grpcServer *grpc.Server, address string) (*mocks.MockEn
 
 	endorserServer := &mocks.MockEndorserServer{}
 	pb.RegisterEndorserServer(grpcServer, endorserServer)
-	fmt.Printf("Starting test server on %s", addr)
+	fmt.Printf("Starting test server on %s\n", addr)
 	go grpcServer.Serve(lis)
 	return endorserServer, addr, true
 }

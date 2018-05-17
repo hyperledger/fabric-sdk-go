@@ -15,7 +15,9 @@ import (
 	"unsafe"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
@@ -25,8 +27,8 @@ const (
 
 	normalSweepTime = 5 * time.Second
 	normalIdleTime  = 10 * time.Second
-	shortSweepTime  = 100 * time.Millisecond
-	shortIdleTime   = 200 * time.Millisecond
+	shortSweepTime  = 10 * time.Nanosecond
+	shortIdleTime   = 15 * time.Nanosecond
 	shortSleepTime  = 1000
 )
 
@@ -139,7 +141,7 @@ func TestConnectorShouldJanitorRestart(t *testing.T) {
 	assert.Nil(t, err, "DialContext should have succeeded")
 
 	connector.ReleaseConn(conn1)
-	time.Sleep(shortIdleTime * 3)
+	time.Sleep(shortSleepTime * time.Millisecond)
 
 	ctx, cancel = context.WithTimeout(context.Background(), normalTimeout)
 	conn2, err := connector.DialContext(ctx, endorserAddr[0], grpc.WithInsecure())
@@ -164,7 +166,7 @@ func TestConnectorShouldSweep(t *testing.T) {
 	assert.Nil(t, err, "DialContext should have succeeded")
 
 	connector.ReleaseConn(conn1)
-	time.Sleep(shortIdleTime * 3)
+	time.Sleep(shortSleepTime * time.Millisecond)
 	assert.Equal(t, connectivity.Shutdown, conn1.GetState(), "connection should be shutdown")
 	assert.NotEqual(t, connectivity.Shutdown, conn3.GetState(), "connection should not be shutdown")
 
@@ -176,8 +178,8 @@ func TestConnectorShouldSweep(t *testing.T) {
 	assert.NotEqual(t, unsafe.Pointer(conn1), unsafe.Pointer(conn4), "connections should be different due to disconnect")
 }
 
-func TestConnectorConcurrent(t *testing.T) {
-	const goroutines = 50
+func TestConnectorConcurrent1(t *testing.T) {
+	const goroutines = 500
 
 	connector := NewCachingConnector(shortSweepTime, shortIdleTime)
 	defer connector.Close()
@@ -186,50 +188,119 @@ func TestConnectorConcurrent(t *testing.T) {
 
 	// Test immediate release
 	wg.Add(goroutines)
+	errChan := make(chan error, goroutines)
 	for i := 0; i < goroutines; i++ {
-		go testDial(t, &wg, connector, endorserAddr[i%2], 0, 1)
+		go testDial(t, &wg, errChan, connector, endorserAddr[i%len(endorserAddr)], 0, 1)
 	}
 	wg.Wait()
+	select {
+	case err := <-errChan:
+		t.Fatalf("testDial failed %s", err)
+	default:
+	}
 
 	// Test long intervals for releasing connection
 	wg.Add(goroutines)
+	errChan = make(chan error, goroutines)
 	for i := 0; i < goroutines; i++ {
-		go testDial(t, &wg, connector, endorserAddr[i%2], shortSleepTime*3, 1)
+		go testDial(t, &wg, errChan, connector, endorserAddr[i%len(endorserAddr)], shortSleepTime*3, 1)
 	}
 	wg.Wait()
+	select {
+	case err := <-errChan:
+		t.Fatalf("testDial failed %s", err)
+	default:
+	}
+}
 
+func TestConnectorConcurrent2(t *testing.T) {
+	const goroutines = 500
+
+	connector := NewCachingConnector(shortSweepTime, shortIdleTime)
+	defer connector.Close()
+
+	wg := sync.WaitGroup{}
 	// Test mixed intervals for releasing connection
 	wg.Add(goroutines)
+	errChan := make(chan error, goroutines)
 	for i := 0; i < goroutines/2; i++ {
-		go testDial(t, &wg, connector, endorserAddr[0], 0, 1)
-		go testDial(t, &wg, connector, endorserAddr[1], shortSleepTime*3, 1)
+		go testDial(t, &wg, errChan, connector, endorserAddr[0], 0, 1)
+		go testDial(t, &wg, errChan, connector, endorserAddr[1], shortSleepTime*3, 1)
 	}
 	wg.Wait()
+	select {
+	case err := <-errChan:
+		t.Fatalf("testDial failed %s", err)
+	default:
+	}
 
 	// Test random intervals for releasing connection
 	wg.Add(goroutines)
+	errChan = make(chan error, goroutines)
+
 	for i := 0; i < goroutines; i++ {
-		go testDial(t, &wg, connector, endorserAddr[i%2], 0, shortSleepTime*3)
+		go testDial(t, &wg, errChan, connector, endorserAddr[i%len(endorserAddr)], 0, shortSleepTime*3)
 	}
 	wg.Wait()
+	select {
+	case err := <-errChan:
+		t.Fatalf("testDial failed %s", err)
+	default:
+	}
 }
 
-func testDial(t *testing.T, wg *sync.WaitGroup, connector *CachingConnector, addr string, minSleepBeforeRelease int, maxSleepBeforeRelease int) {
-	defer wg.Done()
+func TestConnectorConcurrentSweep(t *testing.T) {
+	const goroutines = 500
 
-	ctx, cancel := context.WithTimeout(context.Background(), normalTimeout)
+	connector := NewCachingConnector(shortSweepTime, shortIdleTime)
+	defer connector.Close()
+
+	wg := sync.WaitGroup{}
+	errChan := make(chan error, goroutines)
+
+	for j := 0; j < len(endorserAddr); j++ {
+		wg.Add(goroutines)
+		for i := 0; i < goroutines; i++ {
+			go testDial(t, &wg, errChan, connector, endorserAddr[0], 0, 0)
+		}
+		wg.Wait()
+		select {
+		case err := <-errChan:
+			t.Fatalf("testDial failed %s", err)
+		default:
+		}
+
+		//Sleeping to wait for sweep
+		time.Sleep(shortIdleTime)
+	}
+}
+
+func testDial(t *testing.T, wg *sync.WaitGroup, errChan chan error, connector *CachingConnector, addr string, minSleepBeforeRelease int, maxSleepBeforeRelease int) {
+	defer wg.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), normalTimeout*10)
 	conn, err := connector.DialContext(ctx, addr, grpc.WithInsecure())
 	cancel()
-	assert.Nil(t, err, "DialContext should have succeeded")
+	if err != nil {
+		errChan <- errors.WithMessage(err, "Connect failed for target "+addr)
+		return
+	}
 	defer connector.ReleaseConn(conn)
 
 	endorserClient := pb.NewEndorserClient(conn)
 	proposal := pb.SignedProposal{}
-	resp, err := endorserClient.ProcessProposal(context.Background(), &proposal)
+	resp, err := endorserClient.ProcessProposal(context.Background(), &proposal, grpc.FailFast(false))
+	if err != nil {
+		errChan <- errors.WithMessage(err, "RPC failed for target "+addr)
+		return
+	}
+	require.NotNil(t, resp)
+	require.Equal(t, int32(200), resp.GetResponse().Status)
 
-	assert.Nil(t, err, "peer process proposal should not have error")
-	assert.Equal(t, int32(200), resp.GetResponse().Status)
-
-	randomSleep := rand.Intn(maxSleepBeforeRelease)
+	var randomSleep int
+	if maxSleepBeforeRelease == 0 {
+		randomSleep = 0
+	} else {
+		randomSleep = rand.Intn(maxSleepBeforeRelease)
+	}
 	time.Sleep(time.Duration(minSleepBeforeRelease)*time.Millisecond + time.Duration(randomSleep)*time.Millisecond)
 }
