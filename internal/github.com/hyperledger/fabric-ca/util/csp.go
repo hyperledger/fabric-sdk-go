@@ -35,6 +35,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/cloudflare/cfssl/csr"
+	"github.com/cloudflare/cfssl/helpers"
 	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -142,6 +143,7 @@ func ImportBCCSPKeyFromPEM(keyFile string, myCSP core.CryptoSuite, temporary boo
 // ImportBCCSPKeyFromPEMBytes attempts to create a private BCCSP key from a pem byte slice
 func ImportBCCSPKeyFromPEMBytes(keyBuff []byte, myCSP core.CryptoSuite, temporary bool) (core.Key, error) {
 	keyFile := "pem bytes"
+
 	key, err := factory.PEMtoPrivateKey(keyBuff, nil)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("Failed parsing private key from %s", keyFile))
@@ -223,4 +225,16 @@ func LoadX509KeyPair(certFile, keyFile []byte, csp core.CryptoSuite) (*tls.Certi
 	}
 
 	return cert, nil
+}
+
+// GetSignerFromCertFile load skiFile and load private key represented by ski and return bccsp signer that conforms to crypto.Signer
+func GetSignerFromCertFile(certBytes []byte, csp core.CryptoSuite) (core.Key, crypto.Signer, *x509.Certificate, error) {
+	// Parse certificate
+	parsedCa, err := helpers.ParseCertificatePEM(certBytes)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	// Get the signer from the cert
+	key, cspSigner, err := GetSignerFromCert(parsedCa, csp)
+	return key, cspSigner, parsedCa, err
 }

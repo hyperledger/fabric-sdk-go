@@ -32,7 +32,7 @@ declare -a FILES=(
 
     "lib/client.go"
     "lib/identity.go"
-    "lib/signer.go"
+#    "lib/signer.go"
     "lib/clientconfig.go"
     "lib/util.go"
     "lib/serverrevoke.go"
@@ -70,6 +70,15 @@ gofilter() {
 } 
 
 echo "Filtering Go sources for allowed functions ..."
+
+FILTER_FILENAME="api/net.go"
+START_LINE=`grep -n "IdemixEnrollmentRequestNet is" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..5}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+
+
 FILTER_MODE="allow"
 FILTERS_ENABLED="fn"
 
@@ -103,14 +112,6 @@ sed -i'' -e '/log "github.com\// a\
 "github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-
-FILTER_FILENAME="lib/signer.go"
-FILTER_FN="newSigner,Key,Cert"
-gofilter
-sed -i'' -e '/"github.com\/cloudflare/ a\
-"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
-' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="lib/clientconfig.go"

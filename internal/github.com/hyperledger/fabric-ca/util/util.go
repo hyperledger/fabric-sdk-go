@@ -31,6 +31,10 @@ import (
 	"io/ioutil"
 	"math/big"
 	mrand "math/rand"
+
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+
 	"net/http"
 	"path/filepath"
 	"reflect"
@@ -38,10 +42,9 @@ import (
 	"strings"
 	"time"
 
-	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-
 	"github.com/pkg/errors"
+
+	"os"
 
 	"golang.org/x/crypto/ocsp"
 )
@@ -314,4 +317,19 @@ func GetMaskedURL(url string) string {
 		url = url[:matchIdxs[0]] + matchStr + url[matchIdxs[1]:len(url)]
 	}
 	return url
+}
+
+// WriteFile writes a file
+func WriteFile(file string, buf []byte, perm os.FileMode) error {
+	return ioutil.WriteFile(file, buf, perm)
+}
+
+// FileExists checks to see if a file exists
+func FileExists(name string) bool {
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
 }

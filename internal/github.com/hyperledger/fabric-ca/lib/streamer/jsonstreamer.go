@@ -45,7 +45,7 @@ type SearchElement struct {
 
 // StreamJSONArray searches the JSON stream for an array matching 'path'.
 // For each element of this array, it streams one element at a time.
-func StreamJSONArray(decoder *json.Decoder, path string, cb func(*json.Decoder) error) error {
+func StreamJSONArray(decoder *json.Decoder, path string, cb func(*json.Decoder) error) (bool, error) {
 	ses := []SearchElement{
 		SearchElement{Path: path, CB: cb},
 		SearchElement{Path: "errors", CB: errCB},
@@ -55,15 +55,17 @@ func StreamJSONArray(decoder *json.Decoder, path string, cb func(*json.Decoder) 
 
 // StreamJSON searches the JSON stream for arrays matching a search element.
 // For each array that it finds, it streams them one element at a time.
-func StreamJSON(decoder *json.Decoder, search []SearchElement) error {
+func StreamJSON(decoder *json.Decoder, search []SearchElement) (bool, error) {
 	js := &jsonStream{decoder: decoder, search: search, stack: []string{}}
-	return js.stream()
+	err := js.stream()
+	return js.gotResults, err
 }
 
 type jsonStream struct {
-	decoder *json.Decoder
-	search  []SearchElement
-	stack   []string
+	decoder    *json.Decoder
+	search     []SearchElement
+	stack      []string
+	gotResults bool
 }
 
 func (js *jsonStream) stream() error {
@@ -85,6 +87,7 @@ func (js *jsonStream) stream() error {
 				if err != nil {
 					return err
 				}
+				js.gotResults = true
 			}
 		}
 		err = js.skipToDelim("]")

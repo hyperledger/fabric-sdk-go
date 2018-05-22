@@ -13,6 +13,8 @@ import (
 
 	caapi "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential/x509"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
@@ -67,7 +69,7 @@ func (c *fabricCAAdapter) Reenroll(key core.Key, cert []byte) ([]byte, error) {
 	careq := &caapi.ReenrollmentRequest{
 		CAName: c.caClient.Config.CAName,
 	}
-	caidentity, err := c.caClient.NewIdentity(key, cert)
+	caidentity, err := c.newIdentity(key, cert)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create CA signing identity")
 	}
@@ -100,7 +102,7 @@ func (c *fabricCAAdapter) Register(key core.Key, cert []byte, request *api.Regis
 		Secret:         request.Secret,
 		Attributes:     attributes}
 
-	registrar, err := c.caClient.NewIdentity(key, cert)
+	registrar, err := c.newIdentity(key, cert)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create CA signing identity")
 	}
@@ -127,7 +129,7 @@ func (c *fabricCAAdapter) Revoke(key core.Key, cert []byte, request *api.Revocat
 		Reason: request.Reason,
 	}
 
-	registrar, err := c.caClient.NewIdentity(key, cert)
+	registrar, err := c.newIdentity(key, cert)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create CA signing identity")
 	}
@@ -175,7 +177,7 @@ func (c *fabricCAAdapter) CreateIdentity(key core.Key, cert []byte, request *api
 		Secret:         request.Secret,
 	}
 
-	registrar, err := c.caClient.NewIdentity(key, cert)
+	registrar, err := c.newIdentity(key, cert)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create CA signing identity")
 	}
@@ -211,7 +213,7 @@ func (c *fabricCAAdapter) ModifyIdentity(key core.Key, cert []byte, request *api
 		Secret:         request.Secret,
 	}
 
-	registrar, err := c.caClient.NewIdentity(key, cert)
+	registrar, err := c.newIdentity(key, cert)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create CA signing identity")
 	}
@@ -238,7 +240,7 @@ func (c *fabricCAAdapter) RemoveIdentity(key core.Key, cert []byte, request *api
 		ID:     request.ID,
 	}
 
-	registrar, err := c.caClient.NewIdentity(key, cert)
+	registrar, err := c.newIdentity(key, cert)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create CA signing identity")
 	}
@@ -278,7 +280,7 @@ func (c *fabricCAAdapter) GetIdentity(key core.Key, cert []byte, id, caname stri
 
 	logger.Debugf("Retrieving identity [%s]", id)
 
-	registrar, err := c.caClient.NewIdentity(key, cert)
+	registrar, err := c.newIdentity(key, cert)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create CA signing identity")
 	}
@@ -311,7 +313,7 @@ func (c *fabricCAAdapter) GetAllIdentities(key core.Key, cert []byte, caname str
 
 	logger.Debug("Retrieving all identities")
 
-	registrar, err := c.caClient.NewIdentity(key, cert)
+	registrar, err := c.newIdentity(key, cert)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create CA signing identity")
 	}
@@ -334,6 +336,22 @@ func (c *fabricCAAdapter) GetAllIdentities(key core.Key, cert []byte, caname str
 	}
 
 	return getIdentityResponses(c.caClient.Config.CAName, identities), nil
+}
+
+func (c *fabricCAAdapter) newIdentity(key core.Key, cert []byte) (*calib.Identity, error) {
+	x509Cred := x509.NewCredential(key, cert, c.caClient)
+
+	signer, err := x509.NewSigner(key, cert)
+	if err != nil {
+		return nil, err
+	}
+
+	err = x509Cred.SetVal(signer)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.caClient.NewIdentity([]credential.Credential{x509Cred})
 }
 
 func getIdentityResponses(ca string, responses []caapi.IdentityInfo) []*api.IdentityResponse {

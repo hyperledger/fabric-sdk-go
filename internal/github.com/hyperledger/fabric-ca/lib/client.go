@@ -1,17 +1,7 @@
 /*
-Copyright IBM Corp. 2016 All Rights Reserved.
+Copyright IBM Corp. All Rights Reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-                 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+SPDX-License-Identifier: Apache-2.0
 */
 /*
 Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
@@ -38,6 +28,9 @@ import (
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential"
+	x509cred "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential/x509"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/common"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/streamer"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/tls"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
@@ -55,11 +48,30 @@ type Client struct {
 	// Denotes if the client object is already initialized
 	initialized bool
 	// File and directory paths
-	keyFile, certFile, caCertsDir string
+	keyFile, certFile, idemixCredFile, idemixCredsDir, ipkFile, caCertsDir string
 	// The crypto service provider (BCCSP)
 	csp core.CryptoSuite
 	// HTTP client associated with this Fabric CA client
 	httpClient *http.Client
+}
+
+// GetCAInfoResponse is the response from the GetCAInfo call
+type GetCAInfoResponse struct {
+	// CAName is the name of the CA
+	CAName string
+	// CAChain is the PEM-encoded bytes of the fabric-ca-server's CA chain.
+	// The 1st element of the chain is the root CA cert
+	CAChain []byte
+	// Idemix issuer public key of the CA
+	IssuerPublicKey []byte
+	// Version of the server
+	Version string
+}
+
+// EnrollmentResponse is the response from Client.Enroll and Identity.Reenroll
+type EnrollmentResponse struct {
+	Identity *Identity
+	CAInfo   GetCAInfoResponse
 }
 
 // Init initializes the client
@@ -82,6 +94,7 @@ func (c *Client) Init() error {
 			return errors.Wrap(err, "Failed to create keystore directory")
 		}
 		c.keyFile = path.Join(keyDir, "key.pem")
+
 		// Cert directory and file
 		certDir := path.Join(mspDir, "signcerts")
 		err = os.MkdirAll(certDir, 0755)
@@ -89,12 +102,14 @@ func (c *Client) Init() error {
 			return errors.Wrap(err, "Failed to create signcerts directory")
 		}
 		c.certFile = path.Join(certDir, "cert.pem")
+
 		// CA certs directory
 		c.caCertsDir = path.Join(mspDir, "cacerts")
 		err = os.MkdirAll(c.caCertsDir, 0755)
 		if err != nil {
 			return errors.Wrap(err, "Failed to create cacerts directory")
 		}
+
 		c.csp = cfg.CSP
 		// Create http.Client object and associate it with this client
 		err = c.initHTTPClient()
@@ -121,104 +136,6 @@ func (c *Client) initHTTPClient() error {
 	}
 	c.httpClient = &http.Client{Transport: tr}
 	return nil
-}
-
-// GetServerInfoResponse is the response from the GetServerInfo call
-type GetServerInfoResponse struct {
-	// CAName is the name of the CA
-	CAName string
-	// CAChain is the PEM-encoded bytes of the fabric-ca-server's CA chain.
-	// The 1st element of the chain is the root CA cert
-	CAChain []byte
-	// Version of the server
-	Version string
-}
-
-// Convert from network to local server information
-func (c *Client) net2LocalServerInfo(net *serverInfoResponseNet, local *GetServerInfoResponse) error {
-	caChain, err := util.B64Decode(net.CAChain)
-	if err != nil {
-		return err
-	}
-	local.CAName = net.CAName
-	local.CAChain = caChain
-	local.Version = net.Version
-	return nil
-}
-
-// EnrollmentResponse is the response from Client.Enroll and Identity.Reenroll
-type EnrollmentResponse struct {
-	Identity   *Identity
-	ServerInfo GetServerInfoResponse
-}
-
-// Enroll enrolls a new identity
-// @param req The enrollment request
-func (c *Client) Enroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error) {
-	log.Debugf("Enrolling %+v", req)
-
-	err := c.Init()
-	if err != nil {
-		return nil, err
-	}
-
-	// Generate the CSR
-	csrPEM, key, err := c.GenCSR(req.CSR, req.Name)
-	if err != nil {
-		return nil, errors.WithMessage(err, "Failure generating CSR")
-	}
-
-	reqNet := &api.EnrollmentRequestNet{
-		CAName:   req.CAName,
-		AttrReqs: req.AttrReqs,
-	}
-
-	if req.CSR != nil {
-		reqNet.SignRequest.Hosts = req.CSR.Hosts
-	}
-	reqNet.SignRequest.Request = string(csrPEM)
-	reqNet.SignRequest.Profile = req.Profile
-	reqNet.SignRequest.Label = req.Label
-
-	body, err := util.Marshal(reqNet, "SignRequest")
-	if err != nil {
-		return nil, err
-	}
-
-	// Send the CSR to the fabric-ca server with basic auth header
-	post, err := c.newPost("enroll", body)
-	if err != nil {
-		return nil, err
-	}
-	post.SetBasicAuth(req.Name, req.Secret)
-	var result enrollmentResponseNet
-	err = c.SendReq(post, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create the enrollment response
-	return c.newEnrollmentResponse(&result, req.Name, key)
-}
-
-// newEnrollmentResponse creates a client enrollment response from a network response
-// @param result The result from server
-// @param id Name of identity being enrolled or reenrolled
-// @param key The private key which was used to sign the request
-func (c *Client) newEnrollmentResponse(result *enrollmentResponseNet, id string, key core.Key) (*EnrollmentResponse, error) {
-	log.Debugf("newEnrollmentResponse %s", id)
-	certByte, err := util.B64Decode(result.Cert)
-	if err != nil {
-		return nil, errors.WithMessage(err, "Invalid response format from server")
-	}
-	resp := &EnrollmentResponse{
-		Identity: newIdentity(c, id, key, certByte),
-	}
-	err = c.net2LocalServerInfo(&result.ServerInfo, &resp.ServerInfo)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
 }
 
 // GenCSR generates a CSR (Certificate Signing Request)
@@ -252,6 +169,71 @@ func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, core.Key, error) {
 	return csrPEM, key, nil
 }
 
+// Enroll enrolls a new identity
+// @param req The enrollment request
+func (c *Client) Enroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error) {
+	log.Debugf("Enrolling %+v", req)
+
+	err := c.Init()
+	if err != nil {
+		return nil, err
+	}
+
+	if strings.ToLower(req.Type) == "idemix" {
+		return c.handleIdemixEnroll(req)
+	}
+	return c.handleX509Enroll(req)
+}
+
+// Convert from network to local server information
+func (c *Client) net2LocalServerInfo(net *common.CAInfoResponseNet, local *GetCAInfoResponse) error {
+	caChain, err := util.B64Decode(net.CAChain)
+	if err != nil {
+		return err
+	}
+	if net.IssuerPublicKey != "" {
+		ipk, err := util.B64Decode(net.IssuerPublicKey)
+		if err != nil {
+			return err
+		}
+		local.IssuerPublicKey = ipk
+	}
+	local.CAName = net.CAName
+	local.CAChain = caChain
+	local.Version = net.Version
+	return nil
+}
+
+// newEnrollmentResponse creates a client enrollment response from a network response
+// @param result The result from server
+// @param id Name of identity being enrolled or reenrolled
+// @param key The private key which was used to sign the request
+func (c *Client) newEnrollmentResponse(result *common.EnrollmentResponseNet, id string, key core.Key) (*EnrollmentResponse, error) {
+	log.Debugf("newEnrollmentResponse %s", id)
+	certByte, err := util.B64Decode(result.Cert)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Invalid response format from server")
+	}
+	signer, err := x509cred.NewSigner(key, certByte)
+	if err != nil {
+		return nil, err
+	}
+
+	x509Cred := x509cred.NewCredential(key, certByte, c)
+	err = x509Cred.SetVal(signer)
+	if err != nil {
+		return nil, err
+	}
+	resp := &EnrollmentResponse{
+		Identity: NewIdentity(c, id, []credential.Credential{x509Cred}),
+	}
+	err = c.net2LocalServerInfo(&result.ServerInfo, &resp.CAInfo)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // newCertificateRequest creates a certificate request which is used to generate
 // a CSR (Certificate Signing Request)
 func (c *Client) newCertificateRequest(req *api.CSRInfo) *csr.CertificateRequest {
@@ -280,12 +262,29 @@ func (c *Client) newCertificateRequest(req *api.CSRInfo) *csr.CertificateRequest
 }
 
 // NewIdentity creates a new identity
-func (c *Client) NewIdentity(key core.Key, cert []byte) (*Identity, error) {
-	name, err := util.GetEnrollmentIDFromPEM(cert)
+func (c *Client) NewIdentity(creds []credential.Credential) (*Identity, error) {
+	if len(creds) == 0 {
+		return nil, errors.New("No credentials spcified. Atleast one credential must be specified")
+	}
+	name, err := creds[0].EnrollmentID()
 	if err != nil {
 		return nil, err
 	}
-	return newIdentity(c, name, key, cert), nil
+	if len(creds) == 1 {
+		return NewIdentity(c, name, creds), nil
+	}
+
+	//TODO: Get the enrollment ID from the creds...they all should return same value
+	// for i := 1; i < len(creds); i++ {
+	// 	localid, err := creds[i].EnrollmentID()
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	if localid != name {
+	// 		return nil, errors.New("Specified credentials belong to different identities, they should be long to same identity")
+	// 	}
+	// }
+	return NewIdentity(c, name, creds), nil
 }
 
 // newGet create a new GET request
@@ -424,11 +423,13 @@ func (c *Client) StreamResponse(req *http.Request, stream string, cb func(*json.
 	defer resp.Body.Close()
 
 	dec := json.NewDecoder(resp.Body)
-	err = streamer.StreamJSONArray(dec, stream, cb)
+	results, err := streamer.StreamJSONArray(dec, stream, cb)
 	if err != nil {
 		return err
 	}
-
+	if !results {
+		fmt.Println("No results returned")
+	}
 	return nil
 }
 
@@ -479,4 +480,87 @@ func NormalizeURL(addr string) (*url.URL, error) {
 		}
 	}
 	return u, nil
+}
+
+// Handles enrollment request for an Idemix credential
+// 1. Sends a request with empty body to the /api/v1/idemix/credentail REST endpoint
+//    of the server to get a Nonce from the CA
+// 2. Constructs a credential request using the nonce, CA's idemix public key
+// 3. Sends a request with the CredentialRequest object in the body to the
+//    /api/v1/idemix/credentail REST endpoint to get a credential
+func (c *Client) handleIdemixEnroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error) {
+	log.Debugf("Getting nonce from CA %s", req.CAName)
+	return nil, errors.New("idemix enroll not supported")
+}
+
+func (c *Client) checkX509Enrollment() error {
+	keyFileExists := util.FileExists(c.keyFile)
+	certFileExists := util.FileExists(c.certFile)
+	if keyFileExists && certFileExists {
+		return nil
+	}
+	// If key file does not exist, but certFile does, key file is probably
+	// stored by bccsp, so check to see if this is the case
+	if certFileExists {
+		certBytes, err := util.ReadFile(c.certFile)
+		if err != nil {
+			return err
+		}
+		_, _, _, err = util.GetSignerFromCertFile(certBytes, c.csp)
+		if err == nil {
+			// Yes, the key is stored by BCCSP
+			return nil
+		}
+	}
+	return errors.New("X509 enrollment information does not exist")
+}
+
+func (c *Client) handleX509Enroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error) {
+	// Generate the CSR
+	csrPEM, key, err := c.GenCSR(req.CSR, req.Name)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failure generating CSR")
+	}
+
+	reqNet := &api.EnrollmentRequestNet{
+		CAName:   req.CAName,
+		AttrReqs: req.AttrReqs,
+	}
+
+	if req.CSR != nil {
+		reqNet.SignRequest.Hosts = req.CSR.Hosts
+	}
+	reqNet.SignRequest.Request = string(csrPEM)
+	reqNet.SignRequest.Profile = req.Profile
+	reqNet.SignRequest.Label = req.Label
+
+	body, err := util.Marshal(reqNet, "SignRequest")
+	if err != nil {
+		return nil, err
+	}
+
+	// Send the CSR to the fabric-ca server with basic auth header
+	post, err := c.newPost("enroll", body)
+	if err != nil {
+		return nil, err
+	}
+	post.SetBasicAuth(req.Name, req.Secret)
+	var result common.EnrollmentResponseNet
+	err = c.SendReq(post, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the enrollment response
+	return c.newEnrollmentResponse(&result, req.Name, key)
+}
+
+// GetCSP returns BCCSP instance associated with this client
+func (c *Client) GetCSP() core.CryptoSuite {
+	return c.csp
+}
+
+// NewX509Identity creates a new identity
+func (c *Client) NewX509Identity(name string, creds []credential.Credential) x509cred.Identity {
+	return NewIdentity(c, name, creds)
 }

@@ -1,17 +1,7 @@
 /*
-Copyright IBM Corp. 2016 All Rights Reserved.
+Copyright IBM Corp. All Rights Reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-                 http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+SPDX-License-Identifier: Apache-2.0
 */
 /*
 Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
@@ -29,30 +19,27 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential/x509"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/common"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 )
 
-func newIdentity(client *Client, name string, key core.Key, cert []byte) *Identity {
+// NewIdentity is the constructor for identity
+func NewIdentity(client *Client, name string, creds []credential.Credential) *Identity {
 	id := new(Identity)
 	id.name = name
-	id.ecert = newSigner(key, cert, id)
 	id.client = client
-	if client != nil {
-		id.CSP = client.csp
-	} else {
-		id.CSP = nil
-	}
+	id.creds = creds
 	return id
 }
 
 // Identity is fabric-ca's implementation of an identity
 type Identity struct {
 	name   string
-	ecert  *Signer
 	client *Client
-	CSP    core.CryptoSuite
+	creds  []credential.Credential
 }
 
 // GetName returns the identity name
@@ -61,8 +48,18 @@ func (i *Identity) GetName() string {
 }
 
 // GetECert returns the enrollment certificate signer for this identity
-func (i *Identity) GetECert() *Signer {
-	return i.ecert
+// Returns nil if the identity does not have a X509 credential
+func (i *Identity) GetECert() *x509.Signer {
+	for _, cred := range i.creds {
+		if cred.Type() == x509.CredType {
+			v, _ := cred.Val()
+			if v != nil {
+				s, _ := v.(*x509.Signer)
+				return s
+			}
+		}
+	}
+	return nil
 }
 
 // Register registers a new identity
@@ -116,7 +113,7 @@ func (i *Identity) Reenroll(req *api.ReenrollmentRequest) (*EnrollmentResponse, 
 	if err != nil {
 		return nil, err
 	}
-	var result enrollmentResponseNet
+	var result common.EnrollmentResponseNet
 	err = i.Post("reenroll", body, &result, nil)
 	if err != nil {
 		return nil, err
@@ -160,7 +157,9 @@ func (i *Identity) GetIdentity(id, caname string) (*api.GetIDResponse, error) {
 // GetAllIdentities returns all identities that the caller is authorized to see
 func (i *Identity) GetAllIdentities(caname string, cb func(*json.Decoder) error) error {
 	log.Debugf("Entering identity.GetAllIdentities")
-	err := i.GetStreamResponse("identities", caname, "result.identities", cb)
+	queryParam := make(map[string]string)
+	queryParam["ca"] = caname
+	err := i.GetStreamResponse("identities", queryParam, "result.identities", cb)
 	if err != nil {
 		return err
 	}
@@ -253,13 +252,17 @@ func (i *Identity) Get(endpoint, caname string, result interface{}) error {
 }
 
 // GetStreamResponse sends a request to an endpoint and streams the response
-func (i *Identity) GetStreamResponse(endpoint, caname, stream string, cb func(*json.Decoder) error) error {
+func (i *Identity) GetStreamResponse(endpoint string, queryParam map[string]string, stream string, cb func(*json.Decoder) error) error {
 	req, err := i.client.newGet(endpoint)
 	if err != nil {
 		return err
 	}
-	if caname != "" {
-		addQueryParm(req, "ca", caname)
+	if queryParam != nil {
+		for key, value := range queryParam {
+			if value != "" {
+				addQueryParm(req, key, value)
+			}
+		}
 	}
 	err = i.addTokenAuthHdr(req, nil)
 	if err != nil {
@@ -327,11 +330,15 @@ func (i *Identity) Post(endpoint string, reqBody []byte, result interface{}, que
 
 func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
 	log.Debug("Adding token-based authorization header")
-	cert := i.ecert.cert
-	key := i.ecert.key
-	token, err := util.CreateToken(i.CSP, cert, key, body)
-	if err != nil {
-		return errors.WithMessage(err, "Failed to add token authorization header")
+	var token string
+	var err error
+	for _, cred := range i.creds {
+		if cred.Type() == x509.CredType {
+			token, err = cred.CreateToken(req, body)
+			if err != nil {
+				return errors.WithMessage(err, "Failed to add token authorization header")
+			}
+		}
 	}
 	req.Header.Set("authorization", token)
 	return nil

@@ -99,6 +99,11 @@ type ModifyAffiliationRequestNet struct {
 	ModifyAffiliationRequest
 }
 
+// GetCertificatesRequestNet is a network request for getting certificates
+type GetCertificatesRequestNet struct {
+	GetCertificatesRequest
+}
+
 // KeySig is a public key, signature, and signature algorithm tuple
 type KeySig struct {
 	// Key is a public key
