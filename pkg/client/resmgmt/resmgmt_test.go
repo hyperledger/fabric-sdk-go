@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
-	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -836,28 +835,6 @@ func TestInstantiateCCDiscoveryError(t *testing.T) {
 	}
 }
 
-func TestInstantiateCCTransactorError(t *testing.T) {
-
-	// Setup test client
-	ctx := setupTestContext("test", "Org1MSP")
-	rc := setupResMgmtClient(t, ctx)
-
-	transactor := txnmocks.MockTransactor{
-		Ctx:       ctx,
-		ChannelID: "mychannel",
-	}
-	rc.ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
-
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
-
-	// Test InstantiateCC for transactor error
-	_, err := rc.InstantiateCC("mychannel", req)
-	if err == nil || !strings.Contains(err.Error(), "Failed to verify signature") {
-		t.Fatalf("Should have failed to instantiate cc with opts with get discovery service error: %s", err)
-	}
-}
-
 func TestUpgradeCCRequiredParameters(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)
@@ -1003,22 +980,6 @@ func TestCCProposal(t *testing.T) {
 		t.Fatalf("Should have failed for invalid chaincode deployment type: %s", err)
 	}
 
-	// Create mock orderer
-	orderer := fcmocks.NewMockOrderer("", nil)
-
-	transactor := txnmocks.MockTransactor{
-		Ctx:       ctx,
-		ChannelID: "mychannel",
-		Orderers:  []fab.Orderer{orderer},
-	}
-	rc.ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
-
-	// Test error in transactor
-	_, err = rc.InstantiateCC("mychannel", instantiateReq)
-	if err == nil || !strings.Contains(err.Error(), "Failed to verify signature") {
-		t.Fatalf("Should have failed due to error in commit: %s", err)
-	}
-
 	// Test no event source in config
 	backends, err := configImpl.FromFile(configPath)()
 	if err != nil {
@@ -1032,10 +993,7 @@ func TestCCProposal(t *testing.T) {
 	ctx.SetEndpointConfig(cfg)
 	rc = setupResMgmtClient(t, ctx, getDefaultTargetFilterOption())
 	_, err = rc.InstantiateCC("mychannel", instantiateReq)
-	// TODO: Add verification
-	if err == nil {
-		t.Fatalf("Should have failed since no event source has been configured")
-	}
+	assert.NoError(t, err)
 }
 
 func getDefaultTargetFilterOption() ClientOption {

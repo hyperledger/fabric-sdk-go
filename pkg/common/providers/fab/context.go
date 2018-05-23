@@ -6,7 +6,11 @@ SPDX-License-Identifier: Apache-2.0
 
 package fab
 
-import "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+import (
+	reqContext "context"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+)
 
 // ChannelService supplies services related to a channel.
 type ChannelService interface {
@@ -14,6 +18,7 @@ type ChannelService interface {
 	EventService(opts ...options.Opt) (EventService, error)
 	Membership() (ChannelMembership, error)
 	ChannelConfig() (ChannelCfg, error)
+	Transactor(reqCtx reqContext.Context) (Transactor, error)
 }
 
 // Transactor supplies methods for sending transaction proposals and transactions.

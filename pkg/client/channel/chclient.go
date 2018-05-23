@@ -218,11 +218,7 @@ func (cc *Client) prepareHandlerContexts(reqCtx reqContext.Context, request Requ
 		return nil, nil, errors.New("ChaincodeID and Fcn are required")
 	}
 
-	chConfig, err := cc.context.ChannelService().ChannelConfig()
-	if err != nil {
-		return nil, nil, errors.WithMessage(err, "failed to retrieve channel config")
-	}
-	transactor, err := cc.context.InfraProvider().CreateChannelTransactor(reqCtx, chConfig)
+	transactor, err := cc.context.ChannelService().Transactor(reqCtx)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "failed to create transactor")
 	}

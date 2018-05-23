@@ -147,6 +147,19 @@ func (m *MockServiceProviderFactory) EXPECT() *MockServiceProviderFactoryMockRec
 	return m.recorder
 }
 
+// CreateChannelProvider mocks base method
+func (m *MockServiceProviderFactory) CreateChannelProvider(arg0 fab.EndpointConfig) (fab.ChannelProvider, error) {
+	ret := m.ctrl.Call(m, "CreateChannelProvider", arg0)
+	ret0, _ := ret[0].(fab.ChannelProvider)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateChannelProvider indicates an expected call of CreateChannelProvider
+func (mr *MockServiceProviderFactoryMockRecorder) CreateChannelProvider(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateChannelProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).CreateChannelProvider), arg0)
+}
+
 // CreateDiscoveryProvider mocks base method
 func (m *MockServiceProviderFactory) CreateDiscoveryProvider(arg0 fab.EndpointConfig) (fab.DiscoveryProvider, error) {
 	ret := m.ctrl.Call(m, "CreateDiscoveryProvider", arg0)

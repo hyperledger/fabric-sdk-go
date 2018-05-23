@@ -346,9 +346,8 @@ func setupCustomTestContext(t *testing.T, orderers []fab.Orderer) context.Client
 		Orderers:  orderers,
 	}
 
-	ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
-
 	testChannelSvc, err := setupTestChannelService(ctx, orderers)
+	testChannelSvc.(*fcmocks.MockChannelService).SetTransactor(&transactor)
 	assert.Nil(t, err, "Got error %s", err)
 
 	channelProvider := ctx.MockProviderContext.ChannelProvider()

@@ -547,10 +547,11 @@ func setupCustomTestContext(t *testing.T, selectionService fab.SelectionService,
 		Orderers:  orderers,
 	}
 
-	ctx.InfraProvider().(*fcmocks.MockInfraProvider).SetCustomTransactor(&transactor)
-
 	testChannelSvc, err := setupTestChannelService(ctx, orderers)
 	assert.Nil(t, err, "Got error %s", err)
+
+	mockChService := testChannelSvc.(*fcmocks.MockChannelService)
+	mockChService.SetTransactor(&transactor)
 
 	//Modify for custom mockcore to test scenarios
 	selectionProvider := ctx.MockProviderContext.SelectionProvider()

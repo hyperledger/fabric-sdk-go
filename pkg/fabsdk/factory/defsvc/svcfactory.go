@@ -11,6 +11,7 @@ import (
 
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 )
 
 // ProviderFactory represents the default SDK provider factory for services.
@@ -30,6 +31,11 @@ func (f *ProviderFactory) CreateDiscoveryProvider(config fab.EndpointConfig) (fa
 // CreateLocalDiscoveryProvider returns a new default implementation of the local discovery provider
 func (f *ProviderFactory) CreateLocalDiscoveryProvider(config fab.EndpointConfig) (fab.LocalDiscoveryProvider, error) {
 	return discovery.New(config)
+}
+
+// CreateChannelProvider returns a new default implementation of channel provider
+func (f *ProviderFactory) CreateChannelProvider(config fab.EndpointConfig) (fab.ChannelProvider, error) {
+	return chpvdr.New(config)
 }
 
 // CreateSelectionProvider returns a new default implementation of selection service

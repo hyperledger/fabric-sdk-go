@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	reqContext "context"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -14,9 +16,9 @@ import (
 
 // MockChannelProvider holds a mock channel provider.
 type MockChannelProvider struct {
-	ctx                    core.Providers
-	transactor             fab.Transactor
-	customSelectionService fab.ChannelService
+	ctx                  core.Providers
+	transactor           fab.Transactor
+	customChannelService fab.ChannelService
 }
 
 // MockChannelService holds a mock channel service.
@@ -44,8 +46,8 @@ func (cp *MockChannelProvider) SetTransactor(transactor fab.Transactor) {
 // ChannelService returns a mock ChannelService
 func (cp *MockChannelProvider) ChannelService(ctx fab.ClientContext, channelID string) (fab.ChannelService, error) {
 
-	if cp.customSelectionService != nil {
-		return cp.customSelectionService, nil
+	if cp.customChannelService != nil {
+		return cp.customChannelService, nil
 	}
 
 	cs := MockChannelService{
@@ -57,8 +59,8 @@ func (cp *MockChannelProvider) ChannelService(ctx fab.ClientContext, channelID s
 }
 
 // SetCustomChannelService sets custom channel service for unit-test purposes
-func (cp *MockChannelProvider) SetCustomChannelService(customSelectionService fab.ChannelService) {
-	cp.customSelectionService = customSelectionService
+func (cp *MockChannelProvider) SetCustomChannelService(customChannelService fab.ChannelService) {
+	cp.customChannelService = customChannelService
 }
 
 // SetOrderers sets orderes to mock channel service for unit-test purposes
@@ -74,6 +76,14 @@ func (cs *MockChannelService) EventService(opts ...options.Opt) (fab.EventServic
 // SetTransactor changes the return value of Transactor
 func (cs *MockChannelService) SetTransactor(t fab.Transactor) {
 	cs.transactor = t
+}
+
+// Transactor returns a mock transactor
+func (cs *MockChannelService) Transactor(reqCtx reqContext.Context) (fab.Transactor, error) {
+	if cs.transactor != nil {
+		return cs.transactor, nil
+	}
+	return &MockTransactor{ChannelID: cs.channelID, Ctx: reqCtx}, nil
 }
 
 // Config ...

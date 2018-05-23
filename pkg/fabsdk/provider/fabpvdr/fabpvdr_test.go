@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -23,13 +22,7 @@ import (
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
-	"github.com/stretchr/testify/assert"
 )
-
-type mockClientContext struct {
-	context.Providers
-	msp.SigningIdentity
-}
 
 func TestCreateInfraProvider(t *testing.T) {
 	newInfraProvider(t)
@@ -67,35 +60,6 @@ func TestCreatePeerFromConfig(t *testing.T) {
 	}
 
 	verifyPeer(t, peer, url)
-}
-
-func TestCreateMembership(t *testing.T) {
-	p := newInfraProvider(t)
-	ctx := mocks.NewMockProviderContext()
-	user := mspmocks.NewMockSigningIdentity("user", "user")
-	clientCtx := &mockClientContext{
-		Providers:       ctx,
-		SigningIdentity: user,
-	}
-
-	m, err := p.CreateChannelMembership(clientCtx, "test")
-	assert.Nil(t, err)
-	assert.NotNil(t, m)
-}
-
-func TestResolveEventServiceType(t *testing.T) {
-	ctx := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", "Org1MSP"))
-	chConfig := mocks.NewMockChannelCfg("mychannel")
-
-	useDeliver, err := useDeliverEvents(ctx, chConfig)
-	assert.NoError(t, err)
-	assert.Falsef(t, useDeliver, "expecting deliver events not to be used")
-
-	chConfig.MockCapabilities[fab.ApplicationGroupKey][fab.V1_1Capability] = true
-
-	useDeliver, err = useDeliverEvents(ctx, chConfig)
-	assert.NoError(t, err)
-	assert.Truef(t, useDeliver, "expecting deliver events to be used")
 }
 
 func newInfraProvider(t *testing.T) *InfraProvider {

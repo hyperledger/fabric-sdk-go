@@ -719,11 +719,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		return fab.EmptyTransactionID, errors.WithMessage(err, "Unable to get channel service")
 	}
 
-	chConfig, err := channelService.ChannelConfig()
-	if err != nil {
-		return fab.EmptyTransactionID, errors.WithMessage(err, "get channel config failed")
-	}
-	transactor, err := rc.ctx.InfraProvider().CreateChannelTransactor(reqCtx, chConfig)
+	transactor, err := channelService.Transactor(reqCtx)
 	if err != nil {
 		return fab.EmptyTransactionID, errors.WithMessage(err, "get channel transactor failed")
 	}

@@ -37,4 +37,5 @@ type ServiceProviderFactory interface {
 	CreateDiscoveryProvider(config fab.EndpointConfig) (fab.DiscoveryProvider, error)
 	CreateLocalDiscoveryProvider(config fab.EndpointConfig) (fab.LocalDiscoveryProvider, error)
 	CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error)
+	CreateChannelProvider(config fab.EndpointConfig) (fab.ChannelProvider, error)
 }
