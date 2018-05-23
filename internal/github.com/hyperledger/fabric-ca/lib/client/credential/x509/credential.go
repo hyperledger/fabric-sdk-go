@@ -3,19 +3,26 @@ Copyright IBM Corp. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
+/*
+Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
+Please review third_party pinning scripts and patches for more details.
+*/
 
 package x509
 
 import (
 	"encoding/hex"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+
 	"net/http"
 
-	"github.com/cloudflare/cfssl/log"
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
+	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
+
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential"
-	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/pkg/errors"
 )
 
@@ -86,7 +93,6 @@ func (cred *Credential) SetVal(val interface{}) error {
 // loaded from the location specified by the keyFile attribute, if the
 // private key is not found in the keystore managed by BCCSP
 func (cred *Credential) Load() error {
-
 	var err error
 	cred.val, err = NewSigner(cred.keyFile, cred.certFile)
 	if err != nil {

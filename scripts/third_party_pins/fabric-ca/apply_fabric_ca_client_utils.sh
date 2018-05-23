@@ -21,6 +21,10 @@ declare -a PKGS=(
     "lib"
     "lib/streamer"
     "lib/tls"
+    "lib/client"
+    "lib/client/credential"
+    "lib/client/credential/x509"
+    "lib/common"
     "sdkpatch/logbridge"
     "sdkpatch/cryptosuitebridge"
     "util"
@@ -32,7 +36,6 @@ declare -a FILES=(
 
     "lib/client.go"
     "lib/identity.go"
-#    "lib/signer.go"
     "lib/clientconfig.go"
     "lib/util.go"
     "lib/serverrevoke.go"
@@ -41,6 +44,12 @@ declare -a FILES=(
     "lib/streamer/jsonstreamer.go"
 
     "lib/tls/tls.go"
+
+    "lib/client/credential/credential.go"
+    "lib/client/credential/x509/credential.go"
+    "lib/client/credential/x509/signer.go"
+
+    "lib/common/serverresponses.go"
 
     "sdkpatch/logbridge/logbridge.go"
     "sdkpatch/logbridge/syslogwriter.go"
@@ -85,6 +94,7 @@ FILTERS_ENABLED="fn"
 FILTER_FILENAME="lib/client.go"
 FILTER_FN="Enroll,GenCSR,SendReq,Init,newPost,newEnrollmentResponse,newCertificateRequest,newPut,newGet,newDelete,StreamResponse"
 FILTER_FN+=",getURL,NormalizeURL,initHTTPClient,net2LocalServerInfo,NewIdentity,newCfsslBasicKeyRequest"
+FILTER_FN+=",handleIdemixEnroll,checkX509Enrollment,handleX509Enroll,GetCSP,NewX509Identity"
 gofilter
 sed -i'' -e 's/util.GetServerPort()/\"\"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/log "github.com\// a\
@@ -103,9 +113,19 @@ for i in {1..4}
 do
     sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 done
+sed -i'' -e 's/func NewCredential(certFile, keyFile string, c Client)/func NewCredential(keyFile core.Key, certFile []byte, c Client)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "func (c \*Client) handleIdemixEnroll(req" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+let "START_LINE+=1"
+for i in {1..68}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+sed -i'' -e 's/return c.newIdemixEnrollmentResponse(identity, &result, sk, req.Name)/return nil, errors.New("idemix enroll not supported")/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/x509Cred := x509cred.NewCredential(c.certFile, c.keyFile, c)/x509Cred := x509cred.NewCredential(key, certByte, c)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
 
 FILTER_FILENAME="lib/identity.go"
-FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,GetName,GetAllIdentities,GetIdentity,AddIdentity,ModifyIdentity,RemoveIdentity,Get,Put,Delete,GetStreamResponse"
+FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,GetName,GetAllIdentities,GetIdentity,AddIdentity,ModifyIdentity,RemoveIdentity,Get,Put,Delete,GetStreamResponse,NewIdentity"
 gofilter
 sed -i'' -e 's/util.GetDefaultBCCSP()/nil/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/log "github.com\// a\
@@ -161,8 +181,50 @@ do
     sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 done
 
+FILTER_FILENAME="lib/client/credential/x509/credential.go"
+FILTER_FN=",NewCredential,Type,Val,EnrollmentID,SetVal,Load,Store,CreateToken,RevokeSelf,getCSP"
+gofilter
+sed -i'' -e '/"encoding\/hex"/ a\
+"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/"github.com\/cloudflare/ a\
+factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca\/sdkpatch\/cryptosuitebridge"\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/return util.GetDefaultBCCSP()/return factory.GetDefault()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/certFile string/certFile []byte/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/keyFile  string/keyFile  core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/func NewCredential(certFile, keyFile string, c Client)/func NewCredential(keyFile core.Key, certFile []byte, c Client)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "func (cred \*Credential) Load() error {" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+let "START_LINE+=1"
+for i in {1..15}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+sed -i'' -e 's/cred.val, err = NewSigner(key, cert)/var err error \
+    cred.val, err = NewSigner(cred.keyFile, cred.certFile)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "func (cred \*Credential) Store() error {" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+let "START_LINE+=1"
+for i in {1..7}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+sed -i'' -e 's/log.Infof("Stored client certificate at %s", cred.certFile)/log.Debugf("Credential.Store() not supported")/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+
+
+
+FILTER_FILENAME="lib/client/credential/x509/signer.go"
+FILTER_FN=",NewSigner,Key,Cert,GetX509Cert,GetName,Attributes"
+gofilter
+sed -i'' -e '/"github.com\/cloudflare/ a\
+"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+
 FILTER_FILENAME="util/csp.go"
-FILTER_FN=",getBCCSPKeyOpts,ImportBCCSPKeyFromPEM,LoadX509KeyPair,GetSignerFromCert,BCCSPKeyRequestGenerate"
+FILTER_FN=",getBCCSPKeyOpts,ImportBCCSPKeyFromPEM,LoadX509KeyPair,GetSignerFromCert,BCCSPKeyRequestGenerate,GetSignerFromCertFile"
 gofilter
 sed -i'' -e '/_.\"time\"/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/\"github.com\/cloudflare\/cfssl\/cli\"/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
@@ -213,12 +275,13 @@ sed -i'' -e 's/keyFile != ""/keyFile != nil/g' "${TMP_PROJECT_PATH}/${FILTER_FIL
 sed -i'' -e 's/tls.LoadX509KeyPair(certFile, keyFile)/tls.X509KeyPair(certFile, keyFile)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 
+
 FILTER_FILENAME="util/util.go"
 FILTER_FN="ReadFile,HTTPRequestToString,HTTPResponseToString"
 FILTER_FN+=",GetX509CertificateFromPEM,GetSerialAsHex,GetEnrollmentIDFromPEM"
 FILTER_FN+=",MakeFileAbs,Marshal,StructToString,LoadX509KeyPair,CreateToken"
 FILTER_FN+=",GenECDSAToken,GetEnrollmentIDFromX509Certificate,B64Encode,B64Decode"
-FILTER_FN+=",GetMaskedURL"
+FILTER_FN+=",GetMaskedURL,WriteFile,FileExists"
 gofilter
 sed -i'' -e '/log "golang.org\/x/ a\
 "github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\

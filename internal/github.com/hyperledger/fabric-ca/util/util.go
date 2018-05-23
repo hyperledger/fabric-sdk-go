@@ -36,6 +36,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 
 	"net/http"
+	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -43,8 +44,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
-	"os"
 
 	"golang.org/x/crypto/ocsp"
 )
@@ -90,6 +89,21 @@ type ECDSASignature struct {
 // ReadFile reads a file
 func ReadFile(file string) ([]byte, error) {
 	return ioutil.ReadFile(file)
+}
+
+// WriteFile writes a file
+func WriteFile(file string, buf []byte, perm os.FileMode) error {
+	return ioutil.WriteFile(file, buf, perm)
+}
+
+// FileExists checks to see if a file exists
+func FileExists(name string) bool {
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
 }
 
 // Marshal to bytes
@@ -317,19 +331,4 @@ func GetMaskedURL(url string) string {
 		url = url[:matchIdxs[0]] + matchStr + url[matchIdxs[1]:len(url)]
 	}
 	return url
-}
-
-// WriteFile writes a file
-func WriteFile(file string, buf []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(file, buf, perm)
-}
-
-// FileExists checks to see if a file exists
-func FileExists(name string) bool {
-	if _, err := os.Stat(name); err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-	}
-	return true
 }

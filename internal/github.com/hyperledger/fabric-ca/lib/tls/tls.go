@@ -33,6 +33,16 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 )
 
+// DefaultCipherSuites is a set of strong TLS cipher suites
+var DefaultCipherSuites = []uint16{
+	tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+	tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+	tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+	tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+	tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+	tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+}
+
 // ClientTLSConfig defines the key material for a TLS client
 type ClientTLSConfig struct {
 	Enabled   bool     `skip:"true"`
