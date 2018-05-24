@@ -286,9 +286,9 @@ func TestWithConfigEndpoint(t *testing.T) {
 	np := &MockNetworkPeers{}
 	co := &MockChannelOrderers{}
 	// override EndpointConfig's NetworkConfig() function with np's and co's instances
-	sdk, err := New(c, WithConfigEndpoint(np, co))
+	sdk, err := New(c, WithEndpointConfig(np, co))
 	if err != nil {
-		t.Fatalf("Error inializing sdk WithConfigEndpoint: %s", err)
+		t.Fatalf("Error inializing sdk WithEndpointConfig: %s", err)
 	}
 
 	// TODO: configBackend always uses default EndpointConfig... need to expose the final endpointConfig (with opts/default functions)
@@ -308,7 +308,7 @@ func TestWithConfigEndpoint(t *testing.T) {
 	//}
 	// will always use the default implementation for the set configBackend
 	// for the purpose of this test, we're getting endpointConfig from opts directly as we have overridden
-	// some functions by calling WithConfigEndpoint(np, mo) above
+	// some functions by calling WithEndpointConfig(np, mo) above
 	endpointConfig := sdk.opts.endpointConfig
 
 	network, err := endpointConfig.NetworkPeers()
@@ -345,9 +345,9 @@ func TestWithConfigEndpointAndBadOpt(t *testing.T) {
 
 	var badOpt interface{}
 	// test bad opt
-	_, err := New(c, WithConfigEndpoint(np, co, badOpt))
+	_, err := New(c, WithEndpointConfig(np, co, badOpt))
 	if err == nil {
-		t.Fatal("expected empty endpointConfig during inializing sdk WithConfigEndpoint with a bad option but got no error")
+		t.Fatal("expected empty endpointConfig during inializing sdk WithEndpointConfig with a bad option but got no error")
 	}
 }
 

@@ -85,7 +85,7 @@ func TestWithCustomStores(t *testing.T) {
 
 	// Let's see if it works:)
 
-	sdk, err := fabsdk.New(nil, fabsdk.WithConfigCryptoSuite(cryptoConfig), fabsdk.WithConfigEndpoint(endpointConfig), fabsdk.WithConfigIdentity(identityConfig), fabsdk.WithCorePkg(customCoreSuite), fabsdk.WithMSPPkg(customMSPSuite))
+	sdk, err := fabsdk.New(nil, fabsdk.WithCryptoSuiteConfig(cryptoConfig), fabsdk.WithEndpointConfig(endpointConfig), fabsdk.WithIdentityConfig(identityConfig), fabsdk.WithCorePkg(customCoreSuite), fabsdk.WithMSPPkg(customMSPSuite))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}

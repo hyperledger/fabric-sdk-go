@@ -107,22 +107,26 @@ func fromPkgSuite(configProvider core.ConfigProvider, pkgSuite pkgSuite, opts ..
 	return &sdk, err
 }
 
-// WithConfigCryptoSuite injects a CryptoSuiteConfig interface to the SDK
-func WithConfigCryptoSuite(cryptoConfig core.CryptoSuiteConfig) Option {
+// WithCryptoSuiteConfig injects a CryptoSuiteConfig interface to the SDK
+// it accepts either a full interface of CryptoSuiteConfig or a list
+// of sub interfaces each implementing one (or more) function(s) of CryptoSuiteConfig
+func WithCryptoSuiteConfig(cryptoConfigs ...interface{}) Option {
 	return func(opts *options) error {
-		opts.CryptoSuiteConfig = cryptoConfig
+		c, err := cryptosuite.BuildCryptoSuiteConfigFromOptions(cryptoConfigs...)
+		if err != nil {
+			return err
+		}
+		opts.CryptoSuiteConfig = c
 		return nil
 	}
 }
 
-// WithConfigEndpoint injects a EndpointConfig interface to the SDK
-// it accepts either a full interface of EndpointEconfig or a list
+// WithEndpointConfig injects a EndpointConfig interface to the SDK
+// it accepts either a full interface of EndpointConfig or a list
 // of sub interfaces each implementing one (or more) function(s) of EndpointConfig
-func WithConfigEndpoint(endpointConfigs ...interface{}) Option {
+func WithEndpointConfig(endpointConfigs ...interface{}) Option {
 	return func(opts *options) error {
 		c, err := fabImpl.BuildConfigEndpointFromOptions(endpointConfigs...)
-		// since EndpointConfig is the seed to the sdk's initialization
-		// if building an instance from options fails, then return an error immediately
 		if err != nil {
 			return err
 		}
@@ -131,10 +135,16 @@ func WithConfigEndpoint(endpointConfigs ...interface{}) Option {
 	}
 }
 
-// WithConfigIdentity injects a IdentityConfig interface to the SDK
-func WithConfigIdentity(identityConfig msp.IdentityConfig) Option {
+// WithIdentityConfig injects a IdentityConfig interface to the SDK
+// it accepts either a full interface of IdentityConfig or a list
+// of sub interfaces each implementing one (or more) function(s) of IdentityConfig
+func WithIdentityConfig(identityConfigs ...interface{}) Option {
 	return func(opts *options) error {
-		opts.IdentityConfig = identityConfig
+		c, err := mspImpl.BuildIdentityConfigFromOptions(identityConfigs...)
+		if err != nil {
+			return err
+		}
+		opts.IdentityConfig = c
 		return nil
 	}
 }
@@ -367,31 +377,33 @@ func (sdk *FabricSDK) loadConfigs(configProvider core.ConfigProvider) (*configs,
 		cryptoSuiteConfig: sdk.opts.CryptoSuiteConfig,
 	}
 
-	if c.cryptoSuiteConfig == nil || c.endpointConfig == nil || c.identityConfig == nil {
-		configBackend, err := configProvider()
+	var configBackend []core.ConfigBackend
+	var err error
+
+	if configProvider != nil {
+		configBackend, err = configProvider()
 		if err != nil {
 			return nil, errors.WithMessage(err, "unable to load config backend")
 		}
-
-		//configs passed through opts take priority over default ones
-		if c.cryptoSuiteConfig == nil {
-			c.cryptoSuiteConfig = cryptosuite.ConfigFromBackend(configBackend...)
-		}
-
-		c.endpointConfig, err = sdk.loadEndpointConfig(configBackend...)
-		if err != nil {
-			return nil, errors.WithMessage(err, "unable to load endpoint config")
-		}
-
-		if c.identityConfig == nil {
-			c.identityConfig, err = mspImpl.ConfigFromEndpointConfig(c.endpointConfig, configBackend...)
-			if err != nil {
-				return nil, errors.WithMessage(err, "failed to initialize identity config from config backend")
-			}
-		}
-
-		sdk.opts.ConfigBackend = configBackend
 	}
+
+	//configs passed through opts take priority over default ones
+	c.cryptoSuiteConfig, err = sdk.loadCryptoConfig(configBackend...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to load crypto suite config")
+	}
+
+	c.endpointConfig, err = sdk.loadEndpointConfig(configBackend...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to load endpoint config")
+	}
+
+	c.identityConfig, err = sdk.loadIdentityConfig(c.endpointConfig, configBackend...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unalbe to load identity config")
+	}
+
+	sdk.opts.ConfigBackend = configBackend
 
 	return c, nil
 }
@@ -420,4 +432,47 @@ func (sdk *FabricSDK) loadEndpointConfig(configBackend ...core.ConfigBackend) (f
 		return nil, errors.New("failed to retrieve config endpoint from opts")
 	}
 	return endpointConfigOpt, nil
+}
+
+func (sdk *FabricSDK) loadCryptoConfig(configBackend ...core.ConfigBackend) (core.CryptoSuiteConfig, error) {
+	cryptoConfigOpt, ok := sdk.opts.CryptoSuiteConfig.(*cryptosuite.CryptoConfigOptions)
+
+	if sdk.opts.CryptoSuiteConfig == nil || (ok && !cryptosuite.IsCryptoConfigFullyOverridden(cryptoConfigOpt)) {
+		defCryptoConfig := cryptosuite.ConfigFromBackend(configBackend...)
+
+		if sdk.opts.CryptoSuiteConfig == nil {
+			return defCryptoConfig, nil
+		}
+
+		return cryptosuite.UpdateMissingOptsWithDefaultConfig(cryptoConfigOpt, defCryptoConfig), nil
+	}
+
+	if !ok {
+		return nil, errors.New("failed to retrieve crypto suite configs from opts")
+	}
+
+	return cryptoConfigOpt, nil
+}
+
+func (sdk *FabricSDK) loadIdentityConfig(endpointConfig fab.EndpointConfig, configBackend ...core.ConfigBackend) (msp.IdentityConfig, error) {
+	identityConfigOpt, ok := sdk.opts.IdentityConfig.(*mspImpl.IdentityConfigOptions)
+
+	if sdk.opts.IdentityConfig == nil || (ok && !mspImpl.IsIdentityConfigFullyOverridden(identityConfigOpt)) {
+		defIdentityConfig, err := mspImpl.ConfigFromEndpointConfig(endpointConfig, configBackend...)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to initialize identity config from config backend")
+		}
+
+		if sdk.opts.IdentityConfig == nil {
+			return defIdentityConfig, nil
+		}
+
+		return mspImpl.UpdateMissingOptsWithDefaultConfig(identityConfigOpt, defIdentityConfig), nil
+	}
+
+	if !ok {
+		return nil, errors.New("failed to retrieve identity configs from opts")
+	}
+
+	return identityConfigOpt, nil
 }

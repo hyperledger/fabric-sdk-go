@@ -98,7 +98,7 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 	}
 
 	// Create SDK setup for channel client with retrieve channel configuration from orderer
-	sdk, err := fabsdk.New(nil, fabsdk.WithConfigCryptoSuite(cryptoSuiteConfig), fabsdk.WithConfigEndpoint(endpointConfig), fabsdk.WithConfigIdentity(identityConfig),
+	sdk, err := fabsdk.New(nil, fabsdk.WithCryptoSuiteConfig(cryptoSuiteConfig), fabsdk.WithEndpointConfig(endpointConfig), fabsdk.WithIdentityConfig(identityConfig),
 		fabsdk.WithCorePkg(&ChannelConfigFromOrdererProviderFactory{orderer: setupOrderer(t, endpointConfig, "orderer.example.com:7050")}))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)

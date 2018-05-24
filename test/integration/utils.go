@@ -179,19 +179,29 @@ func CleanupTestPath(t *testing.T, storePath string) {
 
 // CleanupUserData removes user data.
 func CleanupUserData(t *testing.T, sdk *fabsdk.FabricSDK) {
+	var keyStorePath, credentialStorePath string
+
 	configBackend, err := sdk.Config()
 	if err != nil {
-		t.Fatal(err)
+		// if an error is returned from Config, it means configBackend was nil, in this case simply hard code
+		// the keyStorePath and credentialStorePath to the default values
+		// This case is mostly happening due to configless test that is not passing a ConfigProvider to the SDK
+		// which makes configBackend = nil.
+		// Since configless test uses the same config values as the default ones (config_test.yaml), it's safe to
+		// hard code these paths here
+		keyStorePath = "/tmp/msp/keystore"
+		credentialStorePath = "/tmp/state-store"
+	} else {
+		cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend)
+		identityConfig, err := msp.ConfigFromBackend(configBackend)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		keyStorePath = cryptoSuiteConfig.KeyStorePath()
+		credentialStorePath = identityConfig.CredentialStorePath()
 	}
 
-	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend)
-	identityConfig, err := msp.ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	keyStorePath := cryptoSuiteConfig.KeyStorePath()
-	credentialStorePath := identityConfig.CredentialStorePath()
 	CleanupTestPath(t, keyStorePath)
 	CleanupTestPath(t, credentialStorePath)
 }
