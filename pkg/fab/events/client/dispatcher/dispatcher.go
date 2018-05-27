@@ -33,10 +33,11 @@ type Dispatcher struct {
 	connection             api.Connection
 	connectionRegistration *ConnectionReg
 	connectionProvider     api.ConnectionProvider
+	discoveryService       fab.DiscoveryService
 }
 
 // New creates a new dispatcher
-func New(context context.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {
+func New(context context.Client, chConfig fab.ChannelCfg, discoveryService fab.DiscoveryService, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {
 	params := defaultParams()
 	options.Apply(params, opts)
 
@@ -45,6 +46,7 @@ func New(context context.Client, chConfig fab.ChannelCfg, connectionProvider api
 		params:             *params,
 		context:            context,
 		chConfig:           chConfig,
+		discoveryService:   discoveryService,
 		connectionProvider: connectionProvider,
 	}
 }
@@ -95,13 +97,7 @@ func (ed *Dispatcher) HandleConnectEvent(e esdispatcher.Event) {
 		return
 	}
 
-	discoveryService, err := ed.context.DiscoveryProvider().CreateDiscoveryService(ed.chConfig.ID())
-	if err != nil {
-		evt.ErrCh <- nil
-		return
-	}
-
-	peers, err := discoveryService.GetPeers()
+	peers, err := ed.discoveryService.GetPeers()
 	if err != nil {
 		evt.ErrCh <- err
 		return

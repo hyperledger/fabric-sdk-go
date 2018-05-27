@@ -41,8 +41,6 @@ func (c *Local) LocalDiscoveryService() fab.DiscoveryService {
 //Channel supplies the configuration for channel context client
 type Channel struct {
 	context.Client
-	discovery      fab.DiscoveryService
-	selection      fab.SelectionService
 	channelService fab.ChannelService
 	channelID      string
 }
@@ -50,16 +48,6 @@ type Channel struct {
 //Providers returns core providers
 func (c *Channel) Providers() context.Client {
 	return c
-}
-
-//DiscoveryService returns core discovery service
-func (c *Channel) DiscoveryService() fab.DiscoveryService {
-	return c.discovery
-}
-
-//SelectionService returns selection service
-func (c *Channel) SelectionService() fab.SelectionService {
-	return c.selection
 }
 
 //ChannelService returns channel service
@@ -79,9 +67,7 @@ type Provider struct {
 	identityConfig         msp.IdentityConfig
 	userStore              msp.UserStore
 	cryptoSuite            core.CryptoSuite
-	discoveryProvider      fab.DiscoveryProvider
 	localDiscoveryProvider fab.LocalDiscoveryProvider
-	selectionProvider      fab.SelectionProvider
 	signingManager         core.SigningManager
 	idMgmtProvider         msp.IdentityManagerProvider
 	infraProvider          fab.InfraProvider
@@ -113,19 +99,9 @@ func (c *Provider) IdentityConfig() msp.IdentityConfig {
 	return c.identityConfig
 }
 
-// DiscoveryProvider returns discovery provider
-func (c *Provider) DiscoveryProvider() fab.DiscoveryProvider {
-	return c.discoveryProvider
-}
-
 // LocalDiscoveryProvider returns the local discovery provider
 func (c *Provider) LocalDiscoveryProvider() fab.LocalDiscoveryProvider {
 	return c.localDiscoveryProvider
-}
-
-// SelectionProvider returns selection provider
-func (c *Provider) SelectionProvider() fab.SelectionProvider {
-	return c.selectionProvider
 }
 
 // ChannelProvider provides channel services.
@@ -181,24 +157,10 @@ func WithCryptoSuite(cryptoSuite core.CryptoSuite) SDKContextParams {
 	}
 }
 
-//WithDiscoveryProvider sets discoveryProvider to Context Provider
-func WithDiscoveryProvider(discoveryProvider fab.DiscoveryProvider) SDKContextParams {
-	return func(ctx *Provider) {
-		ctx.discoveryProvider = discoveryProvider
-	}
-}
-
 //WithLocalDiscoveryProvider sets the local discovery provider
 func WithLocalDiscoveryProvider(discoveryProvider fab.LocalDiscoveryProvider) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.localDiscoveryProvider = discoveryProvider
-	}
-}
-
-//WithSelectionProvider sets selectionProvider to Context Provider
-func WithSelectionProvider(selectionProvider fab.SelectionProvider) SDKContextParams {
-	return func(ctx *Provider) {
-		ctx.selectionProvider = selectionProvider
 	}
 }
 
@@ -292,50 +254,17 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 		return nil, errors.WithMessage(err, "failed to get channel service to create channel client")
 	}
 
-	discoveryService, err := client.DiscoveryProvider().CreateDiscoveryService(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get discovery service to create channel client")
-	}
-
-	selectionService, err := client.SelectionProvider().CreateSelectionService(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get selection service to create channel client")
-	}
-
 	channel := &Channel{
 		Client:         client,
-		selection:      selectionService,
-		discovery:      discoveryService,
 		channelService: channelService,
 		channelID:      channelID,
 	}
-	err = initialize(channel, channelService, discoveryService, selectionService)
-	if err != nil {
-		return nil, err
-	}
-	return channel, nil
-}
-
-func initialize(channel *Channel, channelService fab.ChannelService, discoveryService fab.DiscoveryService, selectionService fab.SelectionService) error {
-	//initialize
 	if pi, ok := channelService.(serviceInit); ok {
 		if err := pi.Initialize(channel); err != nil {
-			return err
+			return nil, err
 		}
 	}
-
-	if pi, ok := discoveryService.(serviceInit); ok {
-		if err := pi.Initialize(channel); err != nil {
-			return err
-		}
-	}
-
-	if pi, ok := selectionService.(serviceInit); ok {
-		if err := pi.Initialize(channel); err != nil {
-			return err
-		}
-	}
-	return nil
+	return channel, nil
 }
 
 type reqContextKey string

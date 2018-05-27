@@ -83,8 +83,13 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 
 	ledgerFilter := filter.NewEndpointFilter(channelContext, filter.LedgerQuery)
 
+	discoveryService, err := channelContext.ChannelService().Discovery()
+	if err != nil {
+		return nil, err
+	}
+
 	// Apply filter to discovery service
-	discovery := discovery.NewDiscoveryFilterService(channelContext.DiscoveryService(), ledgerFilter)
+	discovery := discovery.NewDiscoveryFilterService(discoveryService, ledgerFilter)
 
 	ledgerClient := Client{
 		ctx:       channelContext,

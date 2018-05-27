@@ -44,6 +44,7 @@ func TestOptionsInNewClient(t *testing.T) {
 	client, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		client.WithBlockEvents(),
 	)
 	if err != nil {
@@ -57,6 +58,7 @@ func TestClientConnect(t *testing.T) {
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		client.WithBlockEvents(),
 		withConnectionProvider(
 			clientmocks.NewProviderFactory().Provider(
@@ -185,6 +187,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		client.WithBlockEvents(),
 		withConnectionProvider(
 			cp.FlakeyProvider(
@@ -225,6 +228,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		client.WithBlockEvents(),
 		withConnectionProvider(
 			cp.FlakeyProvider(
@@ -295,6 +299,7 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		client.WithBlockEvents(),
 		withConnectionProvider(
 			cp.FlakeyProvider(
@@ -450,9 +455,8 @@ func newMockConfig() *mockConfig {
 }
 
 func newMockContext() *fabmocks.MockContext {
-	ctx := fabmocks.NewMockContextWithCustomDiscovery(
+	ctx := fabmocks.NewMockContext(
 		mspmocks.NewMockSigningIdentity("user1", "test1"),
-		clientmocks.NewDiscoveryProvider(peer1, peer2),
 	)
 	ctx.SetEndpointConfig(newMockConfig())
 	return ctx

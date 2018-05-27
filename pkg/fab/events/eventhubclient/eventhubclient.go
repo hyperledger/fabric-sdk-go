@@ -40,7 +40,7 @@ type Client struct {
 }
 
 // New returns a new event hub client
-func New(context context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (*Client, error) {
+func New(context context.Client, chConfig fab.ChannelCfg, discovery fab.DiscoveryService, opts ...options.Opt) (*Client, error) {
 	params := defaultParams()
 
 	// FIXME: Temporarily set the default to block events since Fabric 1.0 does
@@ -49,14 +49,19 @@ func New(context context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (
 
 	options.Apply(params, opts)
 
-	// Use a context that returns a custom Discovery Provider which
-	// produces event endpoints containing the event URL and
+	// Use a custom Discovery Service which wraps the given discovery service
+	// and produces event endpoints containing the event URL and
 	// additional GRPC options.
-	ehCtx := newEventHubContext(context)
+	discoveryWrapper, err := endpoint.NewEndpointDiscoveryWrapper(
+		context, chConfig.ID(), discovery,
+		endpoint.WithTargetFilter(newMSPFilter(context.Identifier().MSPID)))
+	if err != nil {
+		return nil, err
+	}
 
 	client := &Client{
 		Client: *client.New(
-			dispatcher.New(ehCtx, chConfig, params.connProvider, opts...),
+			dispatcher.New(context, chConfig, discoveryWrapper, params.connProvider, opts...),
 			opts...,
 		),
 		params: *params,
@@ -93,25 +98,6 @@ func (c *Client) registerInterests() error {
 
 	logger.Debugf("successfully sent register interests")
 	return nil
-}
-
-// ehContext overrides the DiscoveryProvider by returning
-// the event hub discovery provider
-type ehContext struct {
-	context.Client
-}
-
-func newEventHubContext(ctx context.Client) context.Client {
-	return &ehContext{
-		Client: ctx,
-	}
-}
-
-// DiscoveryProvider returns a custom discovery provider for the event hub
-// that provides additional connection options and filters by
-// the current MSP ID
-func (ctx *ehContext) DiscoveryProvider() fab.DiscoveryProvider {
-	return endpoint.NewDiscoveryProvider(ctx.Client, endpoint.WithTargetFilter(newMSPFilter(ctx.Identifier().MSPID)))
 }
 
 type mspFilter struct {

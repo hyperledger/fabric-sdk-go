@@ -36,11 +36,6 @@ type InfraProvider interface {
 	Close()
 }
 
-// SelectionProvider is used to select peers for endorsement
-type SelectionProvider interface {
-	CreateSelectionService(channelID string) (SelectionService, error)
-}
-
 // SelectionService selects peers for endorsement and commit events
 type SelectionService interface {
 	// GetEndorsersForChaincode returns a set of peers that should satisfy the endorsement
@@ -48,11 +43,6 @@ type SelectionService interface {
 	// A set of options may be provided to the selection service. Note that the type of options
 	// may vary depending on the specific selection service implementation.
 	GetEndorsersForChaincode(chaincodeIDs []string, opts ...options.Opt) ([]Peer, error)
-}
-
-// DiscoveryProvider is used to discover peers on the network
-type DiscoveryProvider interface {
-	CreateDiscoveryService(channelID string) (DiscoveryService, error)
 }
 
 // DiscoveryService is used to discover eligible peers on specific channel
@@ -135,6 +125,8 @@ const (
 	DiscoveryResponse
 	// DiscoveryServiceRefresh discovery service refresh interval
 	DiscoveryServiceRefresh
+	// SelectionServiceRefresh selection service refresh interval
+	SelectionServiceRefresh
 )
 
 // EventServiceType specifies the type of event service to use
@@ -151,9 +143,7 @@ const (
 
 // Providers represents the SDK configured service providers context.
 type Providers interface {
-	DiscoveryProvider() DiscoveryProvider
 	LocalDiscoveryProvider() LocalDiscoveryProvider
-	SelectionProvider() SelectionProvider
 	ChannelProvider() ChannelProvider
 	InfraProvider() InfraProvider
 	EndpointConfig() EndpointConfig

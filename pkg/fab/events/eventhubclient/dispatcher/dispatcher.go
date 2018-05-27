@@ -36,9 +36,9 @@ type Dispatcher struct {
 }
 
 // New creates a new event hub dispatcher
-func New(context fabcontext.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {
+func New(context fabcontext.Client, chConfig fab.ChannelCfg, discovery fab.DiscoveryService, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {
 	return &Dispatcher{
-		Dispatcher: *clientdisp.New(context, chConfig, connectionProvider, opts...),
+		Dispatcher: *clientdisp.New(context, chConfig, discovery, connectionProvider, opts...),
 	}
 }
 

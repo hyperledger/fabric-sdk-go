@@ -39,22 +39,16 @@ func TestDiscoveryFilter(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	discoveryProvider, err := staticdiscovery.New(config1)
-	if err != nil {
-		t.Fatalf("Failed to  setup discovery provider: %s", err)
-	}
-	discoveryProvider.Initialize(mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP")))
-
-	discoveryService, err := discoveryProvider.CreateDiscoveryService("mychannel")
+	discoveryService, err := staticdiscovery.NewService(config1, mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP")).InfraProvider(), "mychannel")
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
 	discoveryFilter := &mockFilter{called: false}
 
-	discoveryService = NewDiscoveryFilterService(discoveryService, discoveryFilter)
+	filteredService := NewDiscoveryFilterService(discoveryService, discoveryFilter)
 
-	peers, err := discoveryService.GetPeers()
+	peers, err := filteredService.GetPeers()
 	if err != nil {
 		t.Fatalf("Failed to get peers from discovery service: %s", err)
 	}

@@ -7,18 +7,17 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicselection
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection/pgresolver"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
@@ -80,7 +79,46 @@ func TestGetEndorsersForChaincodeOneCC(t *testing.T) {
 		// Org1
 		pg(p1), pg(p2),
 	}
-	verify(t, service, expected, channel1, cc1)
+	verify(t, service, expected, channel1, nil, cc1)
+}
+
+func TestGetEndorsersWithPeerFilter(t *testing.T) {
+
+	channelPeers := []fab.Peer{p1, p2, p3, p4, p5, p6, p7, p8}
+
+	service, err := newMockSelectionService(
+		newMockCCDataProvider(channel1).
+			add(cc1, getPolicy1()),
+		pgresolver.NewRoundRobinLBP(),
+		newMockDiscoveryService(channelPeers...),
+	)
+	if err != nil {
+		t.Fatalf("got error creating selection service: %s", err)
+	}
+
+	// Channel1(Policy(cc1)) = Org1
+	expected := []pgresolver.PeerGroup{
+		// Org1
+		pg(p1),
+	}
+	opts := []coptions.Opt{
+		options.WithPeerFilter(func(peer fab.Peer) bool {
+			return peer.URL() == p1.URL()
+		}),
+	}
+	verify(t, service, expected, channel1, opts, cc1)
+
+	// Channel1(Policy(cc1)) = Org1
+	expected = []pgresolver.PeerGroup{
+		// Org1
+		pg(p2),
+	}
+	opts = []coptions.Opt{
+		options.WithPeerFilter(func(peer fab.Peer) bool {
+			return peer.URL() == p2.URL()
+		}),
+	}
+	verify(t, service, expected, channel1, opts, cc1)
 }
 
 func TestGetEndorsersForChaincodeTwoCCs(t *testing.T) {
@@ -109,7 +147,7 @@ func TestGetEndorsersForChaincodeTwoCCs(t *testing.T) {
 		pg(p1, p5, p8), pg(p1, p5, p9), pg(p1, p5, p10), pg(p1, p6, p8), pg(p1, p6, p9), pg(p1, p6, p10), pg(p1, p7, p8), pg(p1, p7, p9), pg(p1, p7, p10),
 		pg(p2, p5, p8), pg(p2, p5, p9), pg(p2, p5, p10), pg(p2, p6, p8), pg(p2, p6, p9), pg(p2, p6, p10), pg(p2, p7, p8), pg(p2, p7, p9), pg(p2, p7, p10),
 	}
-	verify(t, service, expected, channel1, cc1, cc2)
+	verify(t, service, expected, channel1, nil, cc1, cc2)
 }
 
 func TestGetEndorsersForChaincodeTwoCCsTwoChannels(t *testing.T) {
@@ -139,7 +177,7 @@ func TestGetEndorsersForChaincodeTwoCCsTwoChannels(t *testing.T) {
 		pg(p2, p5, p8), pg(p2, p5, p9), pg(p2, p5, p10), pg(p2, p6, p8), pg(p2, p6, p9), pg(p2, p6, p10), pg(p2, p7, p8), pg(p2, p7, p9), pg(p2, p7, p10),
 	}
 
-	verify(t, service, expected, channel1, cc1, cc2)
+	verify(t, service, expected, channel1, nil, cc1, cc2)
 
 	channel2Peers := []fab.Peer{p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12}
 	service, err = newMockSelectionService(
@@ -169,10 +207,10 @@ func TestGetEndorsersForChaincodeTwoCCsTwoChannels(t *testing.T) {
 		pg(p12, p5, p8), pg(p12, p5, p9), pg(p12, p5, p10), pg(p12, p6, p8), pg(p12, p6, p9), pg(p12, p6, p10), pg(p12, p7, p8), pg(p12, p7, p9), pg(p12, p7, p10),
 	}
 
-	verify(t, service, expected, channel2, cc1, cc2)
+	verify(t, service, expected, channel2, nil, cc1, cc2)
 }
 
-func verify(t *testing.T, service fab.SelectionService, expectedPeerGroups []pgresolver.PeerGroup, channelID string, chaincodeIDs ...string) {
+func verify(t *testing.T, service fab.SelectionService, expectedPeerGroups []pgresolver.PeerGroup, channelID string, getEndorsersOpts []coptions.Opt, chaincodeIDs ...string) {
 	// Set the log level to WARNING since the following spits out too much info in DEBUG
 	module := "pg-resolver"
 	level := logging.GetLevel(module)
@@ -180,7 +218,7 @@ func verify(t *testing.T, service fab.SelectionService, expectedPeerGroups []pgr
 	defer logging.SetLevel(module, level)
 
 	for i := 0; i < len(expectedPeerGroups); i++ {
-		peers, err := service.GetEndorsersForChaincode(chaincodeIDs)
+		peers, err := service.GetEndorsersForChaincode(chaincodeIDs, getEndorsersOpts...)
 		if err != nil {
 			t.Fatalf("error getting endorsers: %s", err)
 		}
@@ -233,7 +271,16 @@ func peer(name string, mspID string) fab.Peer {
 }
 
 func newMockSelectionService(ccPolicyProvider CCPolicyProvider, lbp pgresolver.LoadBalancePolicy, discoveryService fab.DiscoveryService) (fab.SelectionService, error) {
-	service, err := newSelectionService("", lbp, ccPolicyProvider, 5*time.Second)
+	context := mocks.NewMockContext(
+		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+	)
+	service, err := newService(context, "testchannel", discoveryService,
+		func() (CCPolicyProvider, error) {
+			return ccPolicyProvider, nil
+		},
+		WithCacheTimeout(5*time.Second),
+		WithLoadBalancePolicy(lbp),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -330,154 +377,6 @@ func toString(peers []fab.Peer) string {
 	}
 	str += "]"
 	return str
-}
-
-func TestDynamicSelection(t *testing.T) {
-
-	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(config.FromFile("../../../../../test/fixtures/config/config_test.yaml"))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
-
-	clientContext := sdk.Context(fabsdk.WithUser("User1"), fabsdk.WithOrg("Org1"))
-	ctx, err := clientContext()
-	if err != nil {
-		t.Fatalf("Failed to to get client context: %s", err)
-	}
-
-	mychannelUser := ChannelUser{ChannelID: "mychannel", Username: "User1", OrgName: "Org1"}
-
-	selectionProvider, err := New(ctx.EndpointConfig(), []ChannelUser{mychannelUser})
-	if err != nil {
-		t.Fatalf("Failed to setup selection provider: %s", err)
-	}
-
-	selectionProvider.providers = ctx
-	_, err = selectionProvider.CreateSelectionService("")
-	if err == nil {
-		t.Fatalf("Should have failed for empty channel name")
-	}
-
-	selectionProvider.providers = nil
-	_, err = selectionProvider.CreateSelectionService("mychannel")
-	if err == nil {
-		t.Fatalf("Should have failed since sdk not provided")
-	}
-
-	selectionProvider.providers = ctx
-	testLBPolicy(t, selectionProvider)
-	testCustomLBPolicy(t, ctx.EndpointConfig(), mychannelUser)
-}
-
-func testLBPolicy(t *testing.T, selectionProvider *SelectionProvider) {
-	factory := DynamicSelectionProviderFactory{
-		selectionProvider: selectionProvider,
-	}
-
-	// Create SDK setup for channel client with dynamic selection
-	// This step is performed during the test to allow normal SDK-based initialized of the selection provider
-	sdk, err := fabsdk.New(
-		config.FromFile("../../../../../test/fixtures/config/config_test.yaml"),
-		fabsdk.WithServicePkg(&factory))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
-
-	selectionService, err := selectionProvider.CreateSelectionService("mychannel")
-	if err != nil {
-		t.Fatalf("Failed to create new selection service for channel: %s", err)
-	}
-
-	if selectionProvider.lbp == nil {
-		t.Fatalf("Default load balancing policy is nil")
-	}
-
-	if got, want := reflect.TypeOf(selectionProvider.lbp), reflect.TypeOf(pgresolver.NewRandomLBP()); got != want {
-		t.Fatalf("Default load balancing policy is wrong type. Want %v, Got %v", want, got)
-	}
-
-	_, err = selectionService.GetEndorsersForChaincode(nil)
-	if err == nil {
-		t.Fatalf("Should have failed for no chaincode IDs provided")
-	}
-
-	_, err = selectionService.GetEndorsersForChaincode([]string{""})
-	if err == nil {
-		t.Fatalf("Should have failed since no channel peers are provided")
-	}
-
-	_, err = selectionService.GetEndorsersForChaincode([]string{""})
-	if err == nil {
-		t.Fatalf("Should have failed since empty cc ID provided")
-	}
-
-	_, err = selectionService.GetEndorsersForChaincode([]string{"abc"})
-	if err == nil {
-		t.Fatalf("Should have failed for non-existent cc ID")
-	}
-
-}
-
-func testCustomLBPolicy(t *testing.T, c fab.EndpointConfig, mychannelUser ChannelUser) {
-
-	// Test custom load balancer
-	selectionProvider, err := New(c, []ChannelUser{mychannelUser}, WithLoadBalancePolicy(newCustomLBP()))
-	if err != nil {
-		t.Fatalf("Failed to setup selection provider: %s", err)
-	}
-
-	factory := DynamicSelectionProviderFactory{
-		selectionProvider: selectionProvider,
-	}
-
-	// Create SDK setup for channel client with dynamic selection
-	// This step is performed during the test to allow normal SDK-based initialized of the selection provider
-	sdk, err := fabsdk.New(
-		config.FromFile("../../../../../test/fixtures/config/config_test.yaml"),
-		fabsdk.WithServicePkg(&factory))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
-
-	if selectionProvider.lbp == nil {
-		t.Fatalf("Failed to set load balancing policy")
-	}
-
-	// Check correct load balancer policy
-	if got, want := reflect.TypeOf(selectionProvider.lbp), reflect.TypeOf(&customLBP{}); got != want {
-		t.Fatalf("Failed to set load balancing policy. Want %v, Got %v", want, got)
-	}
-
-}
-
-// DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
-type DynamicSelectionProviderFactory struct {
-	defsvc.ProviderFactory
-	selectionProvider fab.SelectionProvider
-}
-
-// CreateSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
-	return f.selectionProvider, nil
-}
-
-type customLBP struct {
-}
-
-// newCustomLBP returns a test load-balance policy
-func newCustomLBP() pgresolver.LoadBalancePolicy {
-	return &customLBP{}
-}
-
-func (lbp *customLBP) Choose(peerGroups []pgresolver.PeerGroup) pgresolver.PeerGroup {
-	if len(peerGroups) == 0 {
-		return pgresolver.NewPeerGroup()
-	}
-	return peerGroups[0]
 }
 
 type mockDiscoveryService struct {

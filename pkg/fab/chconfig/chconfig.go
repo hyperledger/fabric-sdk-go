@@ -204,7 +204,10 @@ func (c *ChannelConfig) calculateTargetsFromConfig(ctx context.Client) ([]fab.Pr
 			return nil, errors.WithMessage(err, "NewPeer failed")
 		}
 
-		targets = append(targets, newPeer)
+		// Pick peers in the same MSP as the context since only they can query system chaincode
+		if newPeer.MSPID() == ctx.Identifier().MSPID {
+			targets = append(targets, newPeer)
+		}
 	}
 
 	targets = randomMaxTargets(targets, c.opts.MaxTargets)

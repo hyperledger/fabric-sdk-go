@@ -7,112 +7,45 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicselection
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+var (
+	peer1 = mocks.NewMockPeer("p1", "peer1.example.com:9999")
+	peer2 = mocks.NewMockPeer("p2", "peer2.example.com:9999")
 )
 
 func TestCCPolicyProvider(t *testing.T) {
-	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(config.FromFile("../../../../../test/fixtures/config/config_test.yaml"))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
-
-	clientContext := sdk.Context(fabsdk.WithUser("User1"), fabsdk.WithOrg("Org1"))
-
-	context, err := clientContext()
-	if err != nil {
-		t.Fatal("Failed to create context")
-	}
+	context := mocks.NewMockContext(
+		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+	)
 
 	// All good
-	ccPolicyProvider, err := newCCPolicyProvider(context, "mychannel", "User1", "Org1")
-	if err != nil {
-		t.Fatalf("Failed to setup cc policy provider: %s", err)
-	}
+	ccPolicyProvider, err := newCCPolicyProvider(context, mocks.NewMockDiscoveryService(nil, peer1, peer2), "mychannel")
+	require.NoErrorf(t, err, "Failed to setup cc policy provider")
+	require.NotNilf(t, ccPolicyProvider, "Policy provider is nil")
 
 	// Empty chaincode ID
 	_, err = ccPolicyProvider.GetChaincodePolicy("")
-	if err == nil {
-		t.Fatalf("Should have failed to retrieve chaincode policy for empty chaincode id")
-	}
+	assert.Errorf(t, err, "Should have failed to retrieve chaincode policy for empty chaincode id")
 
 	// Non-existent chaincode ID
 	_, err = ccPolicyProvider.GetChaincodePolicy("abc")
-	if err == nil {
-		t.Fatalf("Should have failed to retrieve non-existent cc policy")
-	}
-
+	assert.Errorf(t, err, "Should have failed to retrieve non-existent cc policy")
 }
 
 func TestCCPolicyProviderNegative(t *testing.T) {
-	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(config.FromFile("../../../../../test/fixtures/config/config_test.yaml"))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
-
-	clientContext := sdk.Context(fabsdk.WithUser("User1"), fabsdk.WithOrg("Org1"))
-
-	context, err := clientContext()
-	if err != nil {
-		t.Fatal("Failed to create context")
-	}
-	// Nil sdk
-	_, err = newCCPolicyProvider(nil, "mychannel", "User1", "Org1")
-	if err == nil {
-		t.Fatalf("Should have failed for nil sdk")
-	}
+	context := mocks.NewMockContext(
+		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+	)
 
 	// Invalid channelID
-	_, err = newCCPolicyProvider(context, "", "User1", "Org1")
-	if err == nil {
-		t.Fatalf("Should have failed for empty channel")
-	}
-
-	// Empty user name
-	_, err = newCCPolicyProvider(context, "mychannel", "", "Prg1")
-	if err == nil {
-		t.Fatalf("Should have failed for empty user name")
-	}
-
-	// Empty org name
-	_, err = newCCPolicyProvider(context, "mychannel", "User1", "")
-	if err == nil {
-		t.Fatalf("Should have failed for nil sdk")
-	}
-
-}
-
-func TestBadClient(t *testing.T) {
-	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(config.FromFile("../../../../../test/fixtures/config/config_test.yaml"))
-	if err != nil {
-		t.Fatalf("Failed to create new SDK: %s", err)
-	}
-	defer sdk.Close()
-
-	clientContext := sdk.Context(fabsdk.WithUser("User1"), fabsdk.WithOrg("Org1"))
-
-	context, err := clientContext()
-	if err != nil {
-		t.Fatal("Failed to create context")
-	}
-
-	// Non-existent user
-	_, err = newCCPolicyProvider(context, "mychannel", "Invalid", "Org1")
-	if !strings.Contains(err.Error(), "user not found") {
-		t.Fatalf("Should have failed for invalid user name: %v", err)
-	}
-
-	// Invalid org
-	_, err = newCCPolicyProvider(context, "mychannel", "User1", "Invalid")
-	if !strings.Contains(err.Error(), "invalid org name") {
-		t.Fatalf("Should have failed for invalid org name")
-	}
+	ccPolicyProvider, err := newCCPolicyProvider(context, mocks.NewMockDiscoveryService(nil, peer1, peer2), "")
+	require.Errorf(t, err, "Expected error for invalid channel ID")
+	require.Nilf(t, ccPolicyProvider, "Expected policy provider to be nil")
 }

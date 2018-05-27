@@ -12,8 +12,10 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -69,12 +71,9 @@ func TestDiscoveryProvider(t *testing.T) {
 
 	expectedNumPeers := len(peers)
 
-	discoveryProvider := NewDiscoveryProvider(ctx)
+	discoveryService, err := NewEndpointDiscoveryWrapper(ctx, "testchannel", clientmocks.NewDiscoveryService(peers...))
+	assert.NoErrorf(t, err, "error creating discovery wrapper")
 
-	discoveryService, err := discoveryProvider.CreateDiscoveryService("testchannel")
-	if err != nil {
-		t.Fatalf("error creating discovery service: %s", err)
-	}
 	peers, err = discoveryService.GetPeers()
 	if err != nil {
 		t.Fatalf("error getting peers: %s", err)
@@ -89,12 +88,9 @@ func TestDiscoveryProviderWithTargetFilter(t *testing.T) {
 
 	expectedNumPeers := len(peers) - 1
 
-	discoveryProvider := NewDiscoveryProvider(ctx, WithTargetFilter(newMockFilter(p3)))
+	discoveryService, err := NewEndpointDiscoveryWrapper(ctx, "testchannel", clientmocks.NewDiscoveryService(peers...), WithTargetFilter(newMockFilter(p3)))
+	assert.NoErrorf(t, err, "error creating discovery wrapper")
 
-	discoveryService, err := discoveryProvider.CreateDiscoveryService("testchannel")
-	if err != nil {
-		t.Fatalf("error creating discovery service: %s", err)
-	}
 	peers, err = discoveryService.GetPeers()
 	if err != nil {
 		t.Fatalf("error getting peers: %s", err)
@@ -114,12 +110,9 @@ func TestDiscoveryProviderWithEventSource(t *testing.T) {
 
 	expectedNumPeers := len(peers) - 1
 
-	discoveryProvider := NewDiscoveryProvider(ctx)
+	discoveryService, err := NewEndpointDiscoveryWrapper(ctx, "testchannel", clientmocks.NewDiscoveryService(peers...))
+	assert.NoErrorf(t, err, "error creating discovery wrapper")
 
-	discoveryService, err := discoveryProvider.CreateDiscoveryService("testchannel")
-	if err != nil {
-		t.Fatalf("error creating discovery service: %s", err)
-	}
 	peers, err = discoveryService.GetPeers()
 	if err != nil {
 		t.Fatalf("error getting peers: %s", err)
@@ -147,11 +140,8 @@ func (c *mockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
 }
 
 func newMockContext() *fabmocks.MockContext {
-	discoveryProvider := fabmocks.NewMockDiscoveryProvider(nil, peers)
-
-	ctx := fabmocks.NewMockContextWithCustomDiscovery(
+	ctx := fabmocks.NewMockContext(
 		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-		discoveryProvider,
 	)
 	ctx.SetEndpointConfig(newMockConfig())
 	return ctx

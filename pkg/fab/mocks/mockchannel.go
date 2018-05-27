@@ -18,8 +18,6 @@ import (
 //Channel supplies the configuration for channel context client
 type Channel struct {
 	context.Client
-	discovery      fab.DiscoveryService
-	selection      fab.SelectionService
 	channelService fab.ChannelService
 	channelID      string
 }
@@ -27,16 +25,6 @@ type Channel struct {
 //Providers returns core providers
 func (c *Channel) Providers() context.Client {
 	return c
-}
-
-//DiscoveryService returns discovery service
-func (c *Channel) DiscoveryService() fab.DiscoveryService {
-	return c.discovery
-}
-
-//SelectionService returns selection service
-func (c *Channel) SelectionService() fab.SelectionService {
-	return c.selection
 }
 
 //ChannelService returns channel service
@@ -72,28 +60,13 @@ func NewMockChannel(channelID string) (*Channel, error) {
 		return nil, errors.WithMessage(err, "failed to create mock channel service")
 	}
 
-	peers := []fab.Peer{NewMockPeer("Peer1", "example.com")}
-	// Set up mock discovery service
-	mockDiscovery := NewMockDiscoveryProvider(nil, peers)
-	discoveryService, err := mockDiscovery.CreateDiscoveryService(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to create discovery service")
-	}
+	peer := NewMockPeer("Peer1", "example.com")
 
-	// Set up mock selection service
-	mockSelection, err := NewMockSelectionProvider(nil, peers)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewMockSelectinProvider failed")
-	}
-	selectionService, err := mockSelection.CreateSelectionService("mychannel")
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to create selection service")
-	}
+	channelService.(*MockChannelService).SetDiscovery(NewMockDiscoveryService(nil, peer))
+	channelService.(*MockChannelService).SetSelection(NewMockSelectionService(nil, peer))
 
 	channel := &Channel{
 		Client:         ctx,
-		selection:      selectionService,
-		discovery:      discoveryService,
 		channelService: channelService,
 		channelID:      channelID,
 	}

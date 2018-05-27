@@ -34,11 +34,11 @@ func TestSeek(t *testing.T) {
 	channelID := "testchannel"
 
 	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		clientmocks.NewProviderFactory().Provider(
 			delivermocks.NewConnection(
 				clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)),
@@ -95,11 +95,11 @@ func TestUnauthorized(t *testing.T) {
 	channelID := "testchannel"
 
 	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		clientmocks.NewProviderFactory().Provider(
 			delivermocks.NewConnection(
 				clientmocks.WithResults(
@@ -162,11 +162,11 @@ func TestBlockEvents(t *testing.T) {
 	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)
 
 	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		clientmocks.NewProviderFactory().Provider(
 			delivermocks.NewConnection(
 				clientmocks.WithLedger(ledger),
@@ -236,11 +236,11 @@ func TestFilteredBlockEvents(t *testing.T) {
 	ledger := servicemocks.NewMockLedger(delivermocks.FilteredBlockEventFactory, sourceURL)
 
 	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		clientmocks.NewProviderFactory().Provider(
 			delivermocks.NewConnection(
 				clientmocks.WithLedger(ledger),

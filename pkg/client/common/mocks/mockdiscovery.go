@@ -7,8 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
@@ -34,17 +32,14 @@ func NewMockDiscoveryProvider(err error, peers []fab.Peer) (*MockStaticDiscovery
 	return &MockStaticDiscoveryProvider{Error: err, Peers: peers}, nil
 }
 
-// CreateDiscoveryService return discovery service for specific channel
-func (dp *MockStaticDiscoveryProvider) CreateDiscoveryService(channelID string) (fab.DiscoveryService, error) {
-	if channelID == "error" {
-		return nil, errors.New("Generate error when creating new discovery service")
-	}
-	return &MockStaticDiscoveryService{Error: dp.Error, Peers: dp.Peers}, nil
-}
-
 // CreateLocalDiscoveryService return discovery service for specific channel
 func (dp *MockStaticDiscoveryProvider) CreateLocalDiscoveryService(mspID string) (fab.DiscoveryService, error) {
 	return &MockStaticDiscoveryService{Error: dp.Error, Peers: dp.Peers}, nil
+}
+
+// NewMockDiscoveryService returns mock discovery service
+func NewMockDiscoveryService(err error, peers ...fab.Peer) *MockStaticDiscoveryService {
+	return &MockStaticDiscoveryService{Error: err, Peers: peers}
 }
 
 // GetPeers is used to discover eligible peers for chaincode

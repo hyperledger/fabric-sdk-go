@@ -32,11 +32,11 @@ func TestConnect(t *testing.T) {
 	channelID := "testchannel"
 
 	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		clientmocks.NewProviderFactory().Provider(
 			clientmocks.NewMockConnection(
 				clientmocks.WithLedger(
@@ -111,11 +111,11 @@ func TestConnectNoPeers(t *testing.T) {
 	channelID := "testchannel"
 
 	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(), // Add no peers to discovery service
 		),
-		fabmocks.NewMockChannelCfg(channelID),
+		fabmocks.NewMockChannelCfg(channelID), // Add no peers to discovery service
+		clientmocks.NewDiscoveryService(),
 		clientmocks.NewProviderFactory().Provider(
 			clientmocks.NewMockConnection(
 				clientmocks.WithLedger(
@@ -154,11 +154,11 @@ func TestConnectionEvent(t *testing.T) {
 	channelID := "testchannel"
 
 	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(peer1, peer2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		clientmocks.NewProviderFactory().Provider(
 			clientmocks.NewMockConnection(
 				clientmocks.WithLedger(

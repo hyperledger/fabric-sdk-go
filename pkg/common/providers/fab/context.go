@@ -19,6 +19,8 @@ type ChannelService interface {
 	Membership() (ChannelMembership, error)
 	ChannelConfig() (ChannelCfg, error)
 	Transactor(reqCtx reqContext.Context) (Transactor, error)
+	Discovery() (DiscoveryService, error)
+	Selection() (SelectionService, error)
 }
 
 // Transactor supplies methods for sending transaction proposals and transactions.

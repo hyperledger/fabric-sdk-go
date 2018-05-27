@@ -14,12 +14,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 
-// MockSelectionProvider implements mock selection provider
-type MockSelectionProvider struct {
-	Error error
-	Peers []fab.Peer
-}
-
 // MockSelectionService implements mock selection service
 type MockSelectionService struct {
 	Error          error
@@ -27,14 +21,9 @@ type MockSelectionService struct {
 	ChannelContext context.Channel
 }
 
-// NewMockSelectionProvider returns mock selection provider
-func NewMockSelectionProvider(err error, peers []fab.Peer) (*MockSelectionProvider, error) {
-	return &MockSelectionProvider{Error: err, Peers: peers}, nil
-}
-
-// CreateSelectionService returns mock selection service
-func (dp *MockSelectionProvider) CreateSelectionService(channelID string) (*MockSelectionService, error) {
-	return &MockSelectionService{Error: dp.Error, Peers: dp.Peers}, nil
+// NewMockSelectionService returns mock selection service
+func NewMockSelectionService(err error, peers ...fab.Peer) *MockSelectionService {
+	return &MockSelectionService{Error: err, Peers: peers}
 }
 
 // GetEndorsersForChaincode mockcore retrieving endorsing peers
@@ -49,7 +38,11 @@ func (ds *MockSelectionService) GetEndorsersForChaincode(chaincodeIDs []string, 
 	var peers []fab.Peer
 	if ds.ChannelContext != nil {
 		var err error
-		peers, err = ds.ChannelContext.DiscoveryService().GetPeers()
+		discovery, err := ds.ChannelContext.ChannelService().Discovery()
+		if err != nil {
+			return nil, err
+		}
+		peers, err = discovery.GetPeers()
 		if err != nil {
 			return nil, err
 		}

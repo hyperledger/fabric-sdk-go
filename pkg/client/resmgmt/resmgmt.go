@@ -568,7 +568,10 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		target = opts.Targets[0]
 	} else {
 		// discover peers on this channel
-		discovery := chCtx.DiscoveryService()
+		discovery, err := chCtx.ChannelService().Discovery()
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to get discovery service")
+		}
 		// default filter will be applied (if any)
 		targets, err2 := rc.getDefaultTargets(discovery)
 		if err2 != nil {
@@ -650,7 +653,10 @@ func (rc *Client) getCCProposalTargets(channelID string, req InstantiateCCReques
 	}
 
 	// per channel discovery service
-	discovery := chCtx.DiscoveryService()
+	discovery, err := chCtx.ChannelService().Discovery()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get discovery service")
+	}
 
 	//Default targets when targets are not provided in options
 	if len(opts.Targets) == 0 {

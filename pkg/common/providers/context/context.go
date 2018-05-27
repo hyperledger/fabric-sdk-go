@@ -31,8 +31,6 @@ type Local interface {
 // Channel supplies the configuration for channel context client
 type Channel interface {
 	Client
-	DiscoveryService() fab.DiscoveryService
-	SelectionService() fab.SelectionService
 	ChannelService() fab.ChannelService
 	ChannelID() string
 }

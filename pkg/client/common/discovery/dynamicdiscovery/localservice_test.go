@@ -50,19 +50,14 @@ func TestLocalDiscoveryService(t *testing.T) {
 	}
 
 	// Test initialize with invalid MSP ID
-	service := newLocalService(
-		mspID2,
-		options{},
-	)
+	service := newLocalService(config, mspID2)
 	err := service.Initialize(localCtx)
 	assert.Error(t, err)
 
 	service = newLocalService(
-		mspID1,
-		options{
-			refreshInterval: 500 * time.Millisecond,
-			responseTimeout: 2 * time.Second,
-		},
+		config, mspID1,
+		WithRefreshInterval(500*time.Millisecond),
+		WithResponseTimeout(2*time.Second),
 	)
 	defer service.Close()
 
@@ -92,7 +87,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 
 	peers, err = service.GetPeers()
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(peers))
+	assert.Equal(t, 1, len(peers), "Expecting 1 peer")
 
 	discClient.SetResponses(
 		&dyndiscmocks.MockDiscoverEndpointResponse{
@@ -120,7 +115,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 
 	peers, err = service.GetPeers()
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(peers))
+	assert.Equal(t, 2, len(peers), "Expecting 2 peers")
 
 	for _, p := range peers {
 		assert.Equalf(t, mspID1, p.MSPID(), "Expecting peer to be in MSP [%s]", mspID1)

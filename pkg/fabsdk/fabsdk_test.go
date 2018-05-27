@@ -126,9 +126,7 @@ func TestWithServicePkg(t *testing.T) {
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockServiceProviderFactory(mockCtrl)
 
-	factory.EXPECT().CreateDiscoveryProvider(gomock.Any()).Return(nil, nil)
 	factory.EXPECT().CreateLocalDiscoveryProvider(gomock.Any()).Return(nil, nil)
-	factory.EXPECT().CreateSelectionProvider(gomock.Any()).Return(nil, nil)
 	factory.EXPECT().CreateChannelProvider(gomock.Any()).Return(nil, nil)
 
 	_, err = New(c, WithServicePkg(factory))

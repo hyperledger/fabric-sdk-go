@@ -273,6 +273,7 @@ var defaultTypes = map[fab.TimeoutType]time.Duration{
 	fab.ChannelConfigRefresh:     time.Minute * 90,
 	fab.ChannelMembershipRefresh: time.Second * 60,
 	fab.DiscoveryServiceRefresh:  time.Second * 10,
+	fab.SelectionServiceRefresh:  time.Minute * 15,
 	// EXPERIMENTAL - do we need this to be configurable?
 	fab.CacheSweepInterval: time.Second * 15,
 }
@@ -473,6 +474,11 @@ func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool)
 	pcfg, ok := peersConfig[nameOrURL]
 	if ok {
 		return &pcfg, true
+	}
+
+	i := strings.Index(nameOrURL, ":")
+	if i > 0 {
+		return m.PeerConfig(nameOrURL[0:i])
 	}
 
 	return nil, false

@@ -292,18 +292,6 @@ func (mr *MockProvidersMockRecorder) ChannelProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChannelProvider", reflect.TypeOf((*MockProviders)(nil).ChannelProvider))
 }
 
-// DiscoveryProvider mocks base method
-func (m *MockProviders) DiscoveryProvider() fab.DiscoveryProvider {
-	ret := m.ctrl.Call(m, "DiscoveryProvider")
-	ret0, _ := ret[0].(fab.DiscoveryProvider)
-	return ret0
-}
-
-// DiscoveryProvider indicates an expected call of DiscoveryProvider
-func (mr *MockProvidersMockRecorder) DiscoveryProvider() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoveryProvider", reflect.TypeOf((*MockProviders)(nil).DiscoveryProvider))
-}
-
 // EndpointConfig mocks base method
 func (m *MockProviders) EndpointConfig() fab.EndpointConfig {
 	ret := m.ctrl.Call(m, "EndpointConfig")
@@ -338,16 +326,4 @@ func (m *MockProviders) LocalDiscoveryProvider() fab.LocalDiscoveryProvider {
 // LocalDiscoveryProvider indicates an expected call of LocalDiscoveryProvider
 func (mr *MockProvidersMockRecorder) LocalDiscoveryProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LocalDiscoveryProvider", reflect.TypeOf((*MockProviders)(nil).LocalDiscoveryProvider))
-}
-
-// SelectionProvider mocks base method
-func (m *MockProviders) SelectionProvider() fab.SelectionProvider {
-	ret := m.ctrl.Call(m, "SelectionProvider")
-	ret0, _ := ret[0].(fab.SelectionProvider)
-	return ret0
-}
-
-// SelectionProvider indicates an expected call of SelectionProvider
-func (mr *MockProvidersMockRecorder) SelectionProvider() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectionProvider", reflect.TypeOf((*MockProviders)(nil).SelectionProvider))
 }

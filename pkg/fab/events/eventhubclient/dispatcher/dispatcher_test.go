@@ -37,11 +37,11 @@ var (
 func TestRegisterInterests(t *testing.T) {
 	channelID := "testchannel"
 	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
 				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
@@ -219,11 +219,11 @@ func connectToDispatcher(dispatcherEventch chan<- interface{}, t *testing.T) (ch
 
 func newDispatcher(channelID string) *Dispatcher {
 	return New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
 				clientmocks.WithLedger(servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)),
@@ -239,11 +239,11 @@ func newDispatcher(channelID string) *Dispatcher {
 func TestTimedOutRegister(t *testing.T) {
 	channelID := "testchannel"
 	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
 				clientmocks.WithResults(
@@ -299,11 +299,11 @@ func TestBlockEvents(t *testing.T) {
 	channelID := "testchannel"
 	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)
 	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
 				clientmocks.WithLedger(ledger),
@@ -378,11 +378,11 @@ func TestFilteredBlockEvents(t *testing.T) {
 	channelID := "testchannel"
 	ledger := servicemocks.NewMockLedger(ehmocks.FilteredBlockEventFactory, sourceURL)
 	dispatcher := New(
-		fabmocks.NewMockContextWithCustomDiscovery(
+		fabmocks.NewMockContext(
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-			clientmocks.NewDiscoveryProvider(endpoint1, endpoint2),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(endpoint1, endpoint2),
 		clientmocks.NewProviderFactory().Provider(
 			ehmocks.NewConnection(
 				clientmocks.WithLedger(ledger),

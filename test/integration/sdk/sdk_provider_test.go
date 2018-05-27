@@ -13,12 +13,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/stretchr/testify/require"
 )
@@ -28,20 +29,9 @@ func TestDynamicSelection(t *testing.T) {
 	// Using shared SDK instance to increase test speed.
 	testSetup := mainTestSetup
 
-	//testSetup := integration.BaseSetupImpl{
-	//	ConfigFile:    "../" + integration.ConfigTestFile,
-	//	ChannelID:     "mychannel",
-	//	OrgID:         org1Name,
-	//	ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	//}
-
-	// Specify user that will be used by dynamic selection service (to retrieve chanincode policy information)
-	// This user has to have privileges to query lscc for chaincode data
-	mychannelUser := selection.ChannelUser{ChannelID: testSetup.ChannelID, Username: "User1", OrgName: "Org1"}
-
 	// Create SDK setup for channel client with dynamic selection
 	sdk, err := fabsdk.New(integration.ConfigBackend,
-		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}))
+		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{}))
 
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
@@ -96,10 +86,83 @@ func TestDynamicSelection(t *testing.T) {
 // DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
 type DynamicSelectionProviderFactory struct {
 	defsvc.ProviderFactory
-	ChannelUsers []selection.ChannelUser
 }
 
-// CreateSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
-	return selection.New(config, f.ChannelUsers)
+// CreateChannelProvider returns a new default implementation of channel provider
+func (f *DynamicSelectionProviderFactory) CreateChannelProvider(config fab.EndpointConfig) (fab.ChannelProvider, error) {
+	chProvider, err := chpvdr.New(config)
+	if err != nil {
+		return nil, err
+	}
+	return &dynamicSelectionChannelProvider{
+		ChannelProvider: chProvider,
+		services:        make(map[string]*dynamicselection.SelectionService),
+	}, nil
+}
+
+type dynamicSelectionChannelProvider struct {
+	fab.ChannelProvider
+	services map[string]*dynamicselection.SelectionService
+}
+
+type initializer interface {
+	Initialize(providers context.Providers) error
+}
+
+// Initialize sets the provider context
+func (cp *dynamicSelectionChannelProvider) Initialize(providers context.Providers) error {
+	if init, ok := cp.ChannelProvider.(initializer); ok {
+		init.Initialize(providers)
+	}
+	return nil
+}
+
+type closable interface {
+	Close()
+}
+
+// Close frees resources and caches.
+func (cp *dynamicSelectionChannelProvider) Close() {
+	if c, ok := cp.ChannelProvider.(closable); ok {
+		c.Close()
+	}
+
+	for _, service := range cp.services {
+		service.Close()
+	}
+}
+
+// ChannelService creates a ChannelService
+func (cp *dynamicSelectionChannelProvider) ChannelService(ctx fab.ClientContext, channelID string) (fab.ChannelService, error) {
+	chService, err := cp.ChannelProvider.ChannelService(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+
+	selection, ok := cp.services[channelID]
+	if !ok {
+		discovery, err := chService.Discovery()
+		if err != nil {
+			return nil, err
+		}
+		selection, err := dynamicselection.NewService(ctx, channelID, discovery)
+		if err != nil {
+			return nil, err
+		}
+		cp.services[channelID] = selection
+	}
+
+	return &dynamicSelectionChannelService{
+		ChannelService: chService,
+		selection:      selection,
+	}, nil
+}
+
+type dynamicSelectionChannelService struct {
+	fab.ChannelService
+	selection fab.SelectionService
+}
+
+func (cs *dynamicSelectionChannelService) Selection() (fab.SelectionService, error) {
+	return cs.selection, nil
 }

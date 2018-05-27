@@ -10,7 +10,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 )
 
@@ -23,22 +22,13 @@ func NewProviderFactory() *ProviderFactory {
 	return &f
 }
 
-// CreateDiscoveryProvider returns a new default implementation of discovery provider
-func (f *ProviderFactory) CreateDiscoveryProvider(config fab.EndpointConfig) (fab.DiscoveryProvider, error) {
-	return discovery.New(config)
-}
-
-// CreateLocalDiscoveryProvider returns a new default implementation of the local discovery provider
+// CreateLocalDiscoveryProvider returns a static local discovery provider. This should be changed
+// to use the dynamic provider when Fabric 1.1 is no longer supported
 func (f *ProviderFactory) CreateLocalDiscoveryProvider(config fab.EndpointConfig) (fab.LocalDiscoveryProvider, error) {
-	return discovery.New(config)
+	return discovery.NewLocalProvider(config)
 }
 
 // CreateChannelProvider returns a new default implementation of channel provider
 func (f *ProviderFactory) CreateChannelProvider(config fab.EndpointConfig) (fab.ChannelProvider, error) {
 	return chpvdr.New(config)
-}
-
-// CreateSelectionProvider returns a new default implementation of selection service
-func (f *ProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
-	return selection.New(config)
 }

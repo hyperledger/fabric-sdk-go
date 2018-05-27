@@ -10,7 +10,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	copts "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
@@ -18,32 +17,18 @@ const loggerModule = "fabsdk/client"
 
 var logger = logging.NewLogger(loggerModule)
 
-// SelectionProvider implements selection provider
-type SelectionProvider struct {
-	config fab.EndpointConfig
-}
-
-// New returns static selection provider
-func New(config fab.EndpointConfig) (*SelectionProvider, error) {
-	return &SelectionProvider{config: config}, nil
-}
-
-// selectionService implements static selection service
-type selectionService struct {
+// SelectionService implements static selection service
+type SelectionService struct {
 	discoveryService fab.DiscoveryService
 }
 
-// CreateSelectionService creates a static selection service
-func (p *SelectionProvider) CreateSelectionService(channelID string) (fab.SelectionService, error) {
-	return &selectionService{}, nil
+// NewService creates a static selection service
+func NewService(discovery fab.DiscoveryService) (fab.SelectionService, error) {
+	return &SelectionService{discoveryService: discovery}, nil
 }
 
-func (s *selectionService) Initialize(context contextAPI.Channel) error {
-	s.discoveryService = context.DiscoveryService()
-	return nil
-}
-
-func (s *selectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...copts.Opt) ([]fab.Peer, error) {
+// GetEndorsersForChaincode returns a set of endorsing peers
+func (s *SelectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...copts.Opt) ([]fab.Peer, error) {
 	params := options.NewParams(opts)
 
 	channelPeers, err := s.discoveryService.GetPeers()

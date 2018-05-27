@@ -13,10 +13,12 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,15 +50,13 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 		org1AdminClientContext: sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1)),
 		org2AdminClientContext: sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2)),
 		ccName:                 bootStrapCC,
+		ccVersion:              "0",
 	}
 
 	// create channel and join orderer/orgs peers to it if was not done already
 	setupClientContextsAndChannel(t, sdk, &mc)
 
-	// wait some time to allow the gossip to propagate the peers discovery
-	time.Sleep(10 * time.Second)
-
-	testDynamicDiscovery(t, sdk)
+	testDynamicDiscovery(t, sdk, &mc)
 
 	// now run the same test as multiple_orgs_test.go to make sure it works with bootstrap config..
 
@@ -68,30 +68,46 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 	verifyWithOrg1(t, sdk, expectedValue, mc.ccName)
 }
 
-func testDynamicDiscovery(t *testing.T, sdk *fabsdk.FabricSDK) {
+func testDynamicDiscovery(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) {
+	peersList := discoverLocalPeers(t, sdk, mc.org1AdminClientContext, 2)
+	assert.Equal(t, 2, len(peersList), "Expected exactly 2 peers as per %s's channel and %s's org configs", channelID, org1)
+	peersList = discoverLocalPeers(t, sdk, mc.org2AdminClientContext, 1)
+	assert.Equal(t, 1, len(peersList), "Expected exactly 1 peer as per %s's channel and %s's org configs", channelID, org2)
+
 	// example discovering the peers from the bootstap peer
 	// there should be three peers returned from discovery:
 	// 1 org1 anchor peer (peer0.org1.example.com)
 	// 1 discovered peer (not in config: peer1.org1.example.com)
 	// 1 org2 anchor peer (peer0.org2.example.com)
-	peersList := discoverPeers(t, sdk)
+	peersList = discoverPeers(t, sdk)
 	assert.Equal(t, 3, len(peersList), "Expected exactly 3 peers as per %s's channel and %s's org configs", channelID, org2)
 }
 
 func discoverPeers(t *testing.T, sdk *fabsdk.FabricSDK) []fab.Peer {
-	// any user from the network can access the discovery service, user org2User is selected for the test.
-	chProvider := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
+	// any user from the network can access the discovery service, user org1User is selected for the test.
+	chProvider := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 	chCtx, err := chProvider()
 	require.NoError(t, err, "Error creating channel context")
 
 	chCtx.ChannelService()
-	peers, err := chCtx.DiscoveryService().GetPeers()
-	require.NoErrorf(t, err, "Error getting peers for channel [%s]", channelID)
-	require.NotEmptyf(t, peers, "No peers were found for channel [%s]", channelID)
+	discovery, err := chCtx.ChannelService().Discovery()
+	require.NoErrorf(t, err, "Error getting discovery service for channel [%s]", channelID)
 
-	t.Logf("Peers of channel [%s]:", channelID)
-	for i, p := range peers {
-		t.Logf("%d- [%s] - MSP [%s]", i, p.URL(), p.MSPID())
+	var peers []fab.Peer
+	for i := 0; i < 10; i++ {
+		peers, err = discovery.GetPeers()
+		require.NoErrorf(t, err, "Error getting peers for channel [%s]", channelID)
+
+		t.Logf("Peers of channel [%s]:", channelID)
+		for i, p := range peers {
+			t.Logf("%d- [%s] - MSP [%s]", i, p.URL(), p.MSPID())
+		}
+		if len(peers) >= 3 {
+			break
+		}
+
+		// wait some time to allow the gossip to propagate the peers discovery
+		time.Sleep(3 * time.Second)
 	}
 	return peers
 }
@@ -101,12 +117,82 @@ type DynamicDiscoveryProviderFactory struct {
 	defsvc.ProviderFactory
 }
 
-// CreateDiscoveryProvider returns a new dynamic discovery provider
-func (f *DynamicDiscoveryProviderFactory) CreateDiscoveryProvider(config fab.EndpointConfig) (fab.DiscoveryProvider, error) {
-	return dynamicdiscovery.New(config), nil
-}
-
 // CreateLocalDiscoveryProvider returns a new local dynamic discovery provider
 func (f *DynamicDiscoveryProviderFactory) CreateLocalDiscoveryProvider(config fab.EndpointConfig) (fab.LocalDiscoveryProvider, error) {
-	return dynamicdiscovery.New(config), nil
+	return dynamicdiscovery.NewLocalProvider(config), nil
+}
+
+// CreateChannelProvider returns a new default implementation of channel provider
+func (f *DynamicDiscoveryProviderFactory) CreateChannelProvider(config fab.EndpointConfig) (fab.ChannelProvider, error) {
+	chProvider, err := chpvdr.New(config)
+	if err != nil {
+		return nil, err
+	}
+	return &channelProvider{
+		ChannelProvider: chProvider,
+		services:        make(map[string]*dynamicdiscovery.ChannelService),
+	}, nil
+}
+
+type channelProvider struct {
+	fab.ChannelProvider
+	services map[string]*dynamicdiscovery.ChannelService
+}
+
+type initializer interface {
+	Initialize(providers context.Providers) error
+}
+
+// Initialize sets the provider context
+func (cp *channelProvider) Initialize(providers context.Providers) error {
+	init, ok := cp.ChannelProvider.(initializer)
+	if ok {
+		init.Initialize(providers)
+	}
+	return nil
+}
+
+type channelService struct {
+	fab.ChannelService
+	discovery fab.DiscoveryService
+}
+
+type closable interface {
+	Close()
+}
+
+// Close frees resources and caches.
+func (cp *channelProvider) Close() {
+	if c, ok := cp.ChannelProvider.(closable); ok {
+		c.Close()
+	}
+	for _, discovery := range cp.services {
+		discovery.Close()
+	}
+}
+
+// ChannelService creates a ChannelService for an identity
+func (cp *channelProvider) ChannelService(ctx fab.ClientContext, channelID string) (fab.ChannelService, error) {
+	chService, err := cp.ChannelProvider.ChannelService(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+
+	discovery, ok := cp.services[channelID]
+	if !ok {
+		discovery, err = dynamicdiscovery.NewChannelService(ctx, channelID)
+		if err != nil {
+			return nil, err
+		}
+		cp.services[channelID] = discovery
+	}
+
+	return &channelService{
+		ChannelService: chService,
+		discovery:      discovery,
+	}, nil
+}
+
+func (cs *channelService) Discovery() (fab.DiscoveryService, error) {
+	return cs.discovery, nil
 }

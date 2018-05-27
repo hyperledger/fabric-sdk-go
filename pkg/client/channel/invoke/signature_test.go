@@ -74,16 +74,6 @@ func setupContextForSignatureValidation(verifyErr, validateErr error, peers []fa
 	membership.ValidateErr = validateErr
 	membership.VerifyErr = verifyErr
 
-	discoveryService, err := setupTestDiscovery(nil, nil)
-	if err != nil {
-		t.Fatalf("Failed to setup discovery service: %s", err)
-	}
-
-	selectionService, err := setupTestSelection(nil, peers)
-	if err != nil {
-		t.Fatalf("Failed to setup discovery service: %s", err)
-	}
-
 	transactor := txnmocks.MockTransactor{
 		Ctx:       ctx,
 		ChannelID: "",
@@ -91,8 +81,8 @@ func setupContextForSignatureValidation(verifyErr, validateErr error, peers []fa
 
 	return &ClientContext{
 		Membership: membership,
-		Discovery:  discoveryService,
-		Selection:  selectionService,
+		Discovery:  fcmocks.NewMockDiscoveryService(nil),
+		Selection:  fcmocks.NewMockSelectionService(nil, peers...),
 		Transactor: &transactor,
 	}
 

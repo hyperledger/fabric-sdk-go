@@ -60,18 +60,6 @@ func (mr *MockProvidersMockRecorder) CryptoSuite() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoSuite", reflect.TypeOf((*MockProviders)(nil).CryptoSuite))
 }
 
-// DiscoveryProvider mocks base method
-func (m *MockProviders) DiscoveryProvider() fab.DiscoveryProvider {
-	ret := m.ctrl.Call(m, "DiscoveryProvider")
-	ret0, _ := ret[0].(fab.DiscoveryProvider)
-	return ret0
-}
-
-// DiscoveryProvider indicates an expected call of DiscoveryProvider
-func (mr *MockProvidersMockRecorder) DiscoveryProvider() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoveryProvider", reflect.TypeOf((*MockProviders)(nil).DiscoveryProvider))
-}
-
 // EndpointConfig mocks base method
 func (m *MockProviders) EndpointConfig() fab.EndpointConfig {
 	ret := m.ctrl.Call(m, "EndpointConfig")
@@ -131,18 +119,6 @@ func (m *MockProviders) LocalDiscoveryProvider() fab.LocalDiscoveryProvider {
 // LocalDiscoveryProvider indicates an expected call of LocalDiscoveryProvider
 func (mr *MockProvidersMockRecorder) LocalDiscoveryProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LocalDiscoveryProvider", reflect.TypeOf((*MockProviders)(nil).LocalDiscoveryProvider))
-}
-
-// SelectionProvider mocks base method
-func (m *MockProviders) SelectionProvider() fab.SelectionProvider {
-	ret := m.ctrl.Call(m, "SelectionProvider")
-	ret0, _ := ret[0].(fab.SelectionProvider)
-	return ret0
-}
-
-// SelectionProvider indicates an expected call of SelectionProvider
-func (mr *MockProvidersMockRecorder) SelectionProvider() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectionProvider", reflect.TypeOf((*MockProviders)(nil).SelectionProvider))
 }
 
 // SigningManager mocks base method
@@ -214,18 +190,6 @@ func (m *MockClient) CryptoSuite() core.CryptoSuite {
 // CryptoSuite indicates an expected call of CryptoSuite
 func (mr *MockClientMockRecorder) CryptoSuite() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoSuite", reflect.TypeOf((*MockClient)(nil).CryptoSuite))
-}
-
-// DiscoveryProvider mocks base method
-func (m *MockClient) DiscoveryProvider() fab.DiscoveryProvider {
-	ret := m.ctrl.Call(m, "DiscoveryProvider")
-	ret0, _ := ret[0].(fab.DiscoveryProvider)
-	return ret0
-}
-
-// DiscoveryProvider indicates an expected call of DiscoveryProvider
-func (mr *MockClientMockRecorder) DiscoveryProvider() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoveryProvider", reflect.TypeOf((*MockClient)(nil).DiscoveryProvider))
 }
 
 // EndpointConfig mocks base method
@@ -335,18 +299,6 @@ func (m *MockClient) PublicVersion() msp.Identity {
 // PublicVersion indicates an expected call of PublicVersion
 func (mr *MockClientMockRecorder) PublicVersion() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublicVersion", reflect.TypeOf((*MockClient)(nil).PublicVersion))
-}
-
-// SelectionProvider mocks base method
-func (m *MockClient) SelectionProvider() fab.SelectionProvider {
-	ret := m.ctrl.Call(m, "SelectionProvider")
-	ret0, _ := ret[0].(fab.SelectionProvider)
-	return ret0
-}
-
-// SelectionProvider indicates an expected call of SelectionProvider
-func (mr *MockClientMockRecorder) SelectionProvider() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectionProvider", reflect.TypeOf((*MockClient)(nil).SelectionProvider))
 }
 
 // Serialize mocks base method

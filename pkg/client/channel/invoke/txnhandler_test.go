@@ -290,16 +290,6 @@ func prepareRequestContext(request Request, opts Opts, t *testing.T) *RequestCon
 func setupChannelClientContext(discErr error, selectionErr error, peers []fab.Peer, t *testing.T) *ClientContext {
 	membership := fcmocks.NewMockMembership()
 
-	discoveryService, err := setupTestDiscovery(discErr, nil)
-	if err != nil {
-		t.Fatalf("Failed to setup discovery service: %s", err)
-	}
-
-	selectionService, err := setupTestSelection(selectionErr, peers)
-	if err != nil {
-		t.Fatalf("Failed to setup discovery service: %s", err)
-	}
-
 	ctx := setupTestContext()
 	orderer := fcmocks.NewMockOrderer("", nil)
 	transactor := txnmocks.MockTransactor{
@@ -310,8 +300,8 @@ func setupChannelClientContext(discErr error, selectionErr error, peers []fab.Pe
 
 	return &ClientContext{
 		Membership: membership,
-		Discovery:  discoveryService,
-		Selection:  selectionService,
+		Discovery:  txnmocks.NewMockDiscoveryService(discErr),
+		Selection:  txnmocks.NewMockSelectionService(selectionErr, peers...),
 		Transactor: &transactor,
 	}
 
@@ -321,23 +311,4 @@ func setupTestContext() context.Client {
 	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := fcmocks.NewMockContext(user)
 	return ctx
-}
-
-func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryService, error) {
-
-	mockDiscovery, err := txnmocks.NewMockDiscoveryProvider(discErr, peers)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewMockDiscoveryProvider failed")
-	}
-	return mockDiscovery.CreateDiscoveryService("mychannel")
-}
-
-func setupTestSelection(discErr error, peers []fab.Peer) (*txnmocks.MockSelectionService, error) {
-
-	mockSelection, err := txnmocks.NewMockSelectionProvider(discErr, peers)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewMockSelectinProvider failed")
-	}
-
-	return mockSelection.CreateSelectionService("mychannel")
 }

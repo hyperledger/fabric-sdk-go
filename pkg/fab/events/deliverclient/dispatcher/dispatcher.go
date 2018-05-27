@@ -37,9 +37,9 @@ type Dispatcher struct {
 }
 
 // New returns a new deliver dispatcher
-func New(context fabcontext.Client, chConfig fab.ChannelCfg, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {
+func New(context fabcontext.Client, chConfig fab.ChannelCfg, discoveryService fab.DiscoveryService, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {
 	return &Dispatcher{
-		Dispatcher: *clientdisp.New(context, chConfig, connectionProvider, opts...),
+		Dispatcher: *clientdisp.New(context, chConfig, discoveryService, connectionProvider, opts...),
 	}
 }
 

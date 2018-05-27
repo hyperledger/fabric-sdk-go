@@ -223,6 +223,16 @@ func (cc *Client) prepareHandlerContexts(reqCtx reqContext.Context, request Requ
 		return nil, nil, errors.WithMessage(err, "failed to create transactor")
 	}
 
+	selection, err := cc.context.ChannelService().Selection()
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "failed to create selection service")
+	}
+
+	discovery, err := cc.context.ChannelService().Discovery()
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "failed to create discovery service")
+	}
+
 	peerFilter := func(peer fab.Peer) bool {
 		if !cc.greylist.Accept(peer) {
 			return false
@@ -234,8 +244,8 @@ func (cc *Client) prepareHandlerContexts(reqCtx reqContext.Context, request Requ
 	}
 
 	clientContext := &invoke.ClientContext{
-		Selection:    cc.context.SelectionService(),
-		Discovery:    cc.context.DiscoveryService(),
+		Selection:    selection,
+		Discovery:    discovery,
 		Membership:   cc.membership,
 		Transactor:   transactor,
 		EventService: cc.eventService,

@@ -8,9 +8,11 @@ package revoked
 
 import (
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -198,14 +200,25 @@ func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Cl
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Set up chaincode policy to 'any of two msps'
-	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
+	// Set up chaincode policy to 'two-of-two msps'
+	ccPolicy, err := cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
+	require.NoErrorf(t, err, "Error creating cc policy with both orgs to approve")
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
-	resp, err := org1ResMgmt.InstantiateCC("orgchannel",
-		resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
-		resmgmt.WithTargetEndpoints("peer0.org1.example.com"))
-	require.Nil(t, err, "error should be nil")
-	require.NotEmpty(t, resp, "transaction response should be populated")
+	_, err = org1ResMgmt.InstantiateCC(
+		"orgchannel",
+		resmgmt.InstantiateCCRequest{
+			Name:    "exampleCC",
+			Path:    "github.com/example_cc",
+			Version: "0",
+			Args:    integration.ExampleCCInitArgs(),
+			Policy:  ccPolicy,
+		},
+	)
+	require.Errorf(t, err, "Expecting error instantiating CC on peer with revoked certificate")
+	stat, ok := status.FromError(err)
+	require.Truef(t, ok, "Expecting error to be a status error")
+	require.Equalf(t, stat.Code, int32(status.SignatureVerificationFailed), "Expecting signature verification error due to revoked cert")
+	require.Truef(t, strings.Contains(err.Error(), "the creator certificate is not valid"), "Expecting error message to contain 'the creator certificate is not valid'")
 }
 
 func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningIdentity, chMgmtClient *resmgmt.Client, t *testing.T) {

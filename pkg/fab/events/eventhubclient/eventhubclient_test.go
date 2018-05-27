@@ -47,6 +47,7 @@ func TestOptionsInNewClient(t *testing.T) {
 	client, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		client.WithBlockEvents(),
 	)
 	if err != nil {
@@ -60,6 +61,7 @@ func TestClientConnect(t *testing.T) {
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		withConnectionProvider(
 			clientmocks.NewProviderFactory().Provider(
 				ehclientmocks.NewConnection(
@@ -92,6 +94,7 @@ func TestTimeoutClientConnect(t *testing.T) {
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		withConnectionProvider(
 			clientmocks.NewProviderFactory().Provider(
 				ehclientmocks.NewConnection(
@@ -205,6 +208,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		client.WithBlockEvents(),
 		withConnectionProvider(
 			clientmocks.NewProviderFactory().FlakeyProvider(
@@ -245,6 +249,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		client.WithBlockEvents(),
 		withConnectionProvider(
 			cp.FlakeyProvider(
@@ -295,6 +300,7 @@ func newEventClient(t *testing.T, channelID string, connectResults clientmocks.C
 	eventClient, err := New(
 		newMockContext(),
 		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
 		client.WithBlockEvents(),
 		withConnectionProvider(
 			cp.FlakeyProvider(
@@ -486,9 +492,8 @@ func (c *mockEventURLConfig) PeerConfigByURL(url string) (*fab.PeerConfig, error
 }
 
 func newMockContext() *fabmocks.MockContext {
-	ctx := fabmocks.NewMockContextWithCustomDiscovery(
+	ctx := fabmocks.NewMockContext(
 		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-		clientmocks.NewDiscoveryProvider(peer1, peer2),
 	)
 	config := newMockEventURLConfig()
 	config.setURL(peer1.URL(), eventURL1)

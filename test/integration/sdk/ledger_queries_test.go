@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLedgerClientQueries(t *testing.T) {
@@ -49,13 +50,13 @@ func TestLedgerClientQueries(t *testing.T) {
 		t.Fatalf("failed to get endpoint config, error: %v", err)
 	}
 
-	expectedPeerConfig, ok := endpointConfig.PeerConfig("peer0.org1.example.com")
-	if !ok {
-		t.Fatalf("Unable to fetch Peer config for %s", "peer0.org1.example.com")
-	}
+	expectedPeerConfig1, ok := endpointConfig.PeerConfig("peer0.org1.example.com")
+	require.Truef(t, ok, "Unable to fetch Peer config for %s", "peer0.org1.example.com")
+	expectedPeerConfig2, ok := endpointConfig.PeerConfig("peer1.org1.example.com")
+	require.Truef(t, ok, "Unable to fetch Peer config for %s", "peer1.org1.example.com")
 
-	if !strings.Contains(ledgerInfo.Endorser, expectedPeerConfig.URL) {
-		t.Fatalf("Expecting %s, got %s", expectedPeerConfig.URL, ledgerInfo.Endorser)
+	if !strings.Contains(ledgerInfo.Endorser, expectedPeerConfig1.URL) && !strings.Contains(ledgerInfo.Endorser, expectedPeerConfig2.URL) {
+		t.Fatalf("Expecting %s or %s, got %s", expectedPeerConfig1.URL, expectedPeerConfig2.URL, ledgerInfo.Endorser)
 	}
 
 	// Same query with target

@@ -75,6 +75,7 @@ client:
 #      channelConfig: 30m
 #      channelMembership: 30s
 #      discovery: 10s
+#      selection: 10m
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:

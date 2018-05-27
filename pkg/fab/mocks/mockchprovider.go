@@ -17,7 +17,6 @@ import (
 // MockChannelProvider holds a mock channel provider.
 type MockChannelProvider struct {
 	ctx                  core.Providers
-	transactor           fab.Transactor
 	customChannelService fab.ChannelService
 }
 
@@ -27,6 +26,8 @@ type MockChannelService struct {
 	channelID    string
 	transactor   fab.Transactor
 	mockOrderers []string
+	discovery    fab.DiscoveryService
+	selection    fab.SelectionService
 }
 
 // NewMockChannelProvider returns a mock ChannelProvider
@@ -36,11 +37,6 @@ func NewMockChannelProvider(ctx core.Providers) (*MockChannelProvider, error) {
 		ctx: ctx,
 	}
 	return &cp, nil
-}
-
-// SetTransactor sets the default transactor for all mock channel services
-func (cp *MockChannelProvider) SetTransactor(transactor fab.Transactor) {
-	cp.transactor = transactor
 }
 
 // ChannelService returns a mock ChannelService
@@ -53,7 +49,9 @@ func (cp *MockChannelProvider) ChannelService(ctx fab.ClientContext, channelID s
 	cs := MockChannelService{
 		provider:   cp,
 		channelID:  channelID,
-		transactor: cp.transactor,
+		transactor: &MockTransactor{},
+		discovery:  NewMockDiscoveryService(nil),
+		selection:  NewMockSelectionService(nil),
 	}
 	return &cs, nil
 }
@@ -99,4 +97,24 @@ func (cs *MockChannelService) Membership() (fab.ChannelMembership, error) {
 //ChannelConfig returns channel config
 func (cs *MockChannelService) ChannelConfig() (fab.ChannelCfg, error) {
 	return &MockChannelCfg{MockID: cs.channelID, MockOrderers: cs.mockOrderers}, nil
+}
+
+// Discovery returns a mock DiscoveryService
+func (cs *MockChannelService) Discovery() (fab.DiscoveryService, error) {
+	return cs.discovery, nil
+}
+
+// SetDiscovery sets the mock DiscoveryService
+func (cs *MockChannelService) SetDiscovery(discovery fab.DiscoveryService) {
+	cs.discovery = discovery
+}
+
+// Selection returns a mock SelectionService
+func (cs *MockChannelService) Selection() (fab.SelectionService, error) {
+	return cs.selection, nil
+}
+
+// SetSelection sets the mock SelectionService
+func (cs *MockChannelService) SetSelection(selection fab.SelectionService) {
+	cs.selection = selection
 }

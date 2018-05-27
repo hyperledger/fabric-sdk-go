@@ -8,6 +8,7 @@ package dynamicdiscovery
 
 import (
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
+	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	reqContext "github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -22,11 +23,11 @@ type LocalService struct {
 }
 
 // newLocalService creates a Local Discovery Service to query the list of member peers in the local MSP.
-func newLocalService(mspID string, options options) *LocalService {
-	logger.Debugf("Creating new dynamic discovery service with cache refresh interval %s", options.refreshInterval)
+func newLocalService(config fab.EndpointConfig, mspID string, opts ...coptions.Opt) *LocalService {
+	logger.Debugf("Creating new local discovery service")
 
 	s := &LocalService{mspID: mspID}
-	s.service = newService(s.queryPeers, options)
+	s.service = newService(config, s.queryPeers, opts...)
 	return s
 }
 
@@ -35,7 +36,13 @@ func (s *LocalService) Initialize(ctx contextAPI.Local) error {
 	if ctx.Identifier().MSPID != s.mspID {
 		return errors.Errorf("expecting context for MSP [%s] but got [%s]", s.mspID, ctx.Identifier().MSPID)
 	}
-	return s.service.Initialize(ctx)
+	return s.service.initialize(ctx)
+}
+
+// Close releases resources
+func (s *LocalService) Close() {
+	logger.Debugf("Closing local discovery service for MSP [%s]", s.mspID)
+	s.service.Close()
 }
 
 func (s *LocalService) localContext() contextAPI.Local {

@@ -50,7 +50,8 @@ const (
 	defaultEventServiceIdleInterval       = time.Minute * 2
 	defaultChannelConfigRefreshInterval   = time.Second * 90
 	defaultChannelMemshpRefreshInterval   = time.Second * 60
-	defaultDiscoveryRefreshInterval       = time.Second * 10
+	defaultDiscoveryRefreshInterval       = time.Second * 5
+	defaultSelectionRefreshInterval       = time.Minute * 10
 	defaultCacheSweepInterval             = time.Second * 15
 )
 
@@ -583,6 +584,11 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration { //nol
 		if timeout == 0 {
 			timeout = defaultDiscoveryRefreshInterval
 		}
+	case fab.SelectionServiceRefresh:
+		timeout = c.backend.GetDuration("client.global.cache.selection")
+		if timeout == 0 {
+			timeout = defaultSelectionRefreshInterval
+		}
 
 	case fab.CacheSweepInterval: // EXPERIMENTAL - do we need this to be configurable?
 		timeout = c.backend.GetDuration("client.cache.interval.sweep")
@@ -802,9 +808,12 @@ func (c *EndpointConfig) tryMatchingPeerConfig(networkConfig *fab.NetworkConfig,
 	//loop over peerentityMatchers to find the matching peer
 	for _, k := range keys {
 		v := c.peerMatchers[k]
+		logger.Debugf("Trying to match peer [%s] with matcher [%s]", peerName, v.String())
 		if v.MatchString(peerName) {
+			logger.Debugf("Peer [%s] matched using matcher [%s]", peerName, v.String())
 			return c.matchPeer(networkConfig, peerName, k, v)
 		}
+		logger.Debugf("Peer [%s] did not match using matcher [%s]", peerName, v.String())
 	}
 
 	return nil

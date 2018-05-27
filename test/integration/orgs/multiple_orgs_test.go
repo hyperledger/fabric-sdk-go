@@ -23,17 +23,15 @@ import (
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
-
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 
 	"os"
 
@@ -41,7 +39,6 @@ import (
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -81,6 +78,7 @@ type multiorgContext struct {
 	org1ResMgmt            *resmgmt.Client
 	org2ResMgmt            *resmgmt.Client
 	ccName                 string
+	ccVersion              string
 }
 
 func TestMain(m *testing.M) {
@@ -140,7 +138,13 @@ func TestOrgsEndToEnd(t *testing.T) {
 		org1AdminClientContext: sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1)),
 		org2AdminClientContext: sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2)),
 		ccName:                 exampleCC, // basic multi orgs test uses exampleCC for testing
+		ccVersion:              "0",
 	}
+
+	peersList := discoverLocalPeers(t, sdk, mc.org1AdminClientContext, 2)
+	assert.Equal(t, 2, len(peersList), "Expected exactly 2 peers for MSP [%s]", org1)
+	peersList = discoverLocalPeers(t, sdk, mc.org2AdminClientContext, 1)
+	assert.Equal(t, 1, len(peersList), "Expected exactly 1 peer for MSP [%s]", org2)
 
 	expectedValue := testWithOrg1(t, sdk, &mc)
 	expectedValue = testWithOrg2(t, expectedValue, mc.ccName)
@@ -185,6 +189,33 @@ func setupClientContextsAndChannel(t *testing.T, sdk *fabsdk.FabricSDK, mc *mult
 	}
 }
 
+func discoverLocalPeers(t *testing.T, sdk *fabsdk.FabricSDK, ctxProvider contextAPI.ClientProvider, expected int) []fab.Peer {
+	ctx, err := ctxProvider()
+	require.NoError(t, err, "Error creating context")
+
+	discoveryProvider := ctx.LocalDiscoveryProvider()
+	discovery, err := discoveryProvider.CreateLocalDiscoveryService(ctx.Identifier().MSPID)
+	require.NoErrorf(t, err, "Error creating local discovery service")
+
+	var peers []fab.Peer
+	for i := 0; i < 10; i++ {
+		peers, err = discovery.GetPeers()
+		require.NoErrorf(t, err, "Error getting peers for MSP [%s]", ctx.Identifier().MSPID)
+
+		t.Logf("Peers for MSP [%s]:", ctx.Identifier().MSPID)
+		for i, p := range peers {
+			t.Logf("%d- [%s]", i, p.URL())
+		}
+		if len(peers) >= expected {
+			break
+		}
+
+		// wait some time to allow the gossip to propagate the peers discovery
+		time.Sleep(3 * time.Second)
+	}
+	return peers
+}
+
 func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int {
 
 	org1AdminChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
@@ -199,7 +230,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	}
 
 	// Create chaincode package for example cc
-	createCC(t, mc.org1ResMgmt, mc.org2ResMgmt, ccPkg, mc.ccName)
+	createCC(t, mc.org1ResMgmt, mc.org2ResMgmt, ccPkg, mc.ccName, mc.ccVersion)
 
 	chClientOrg1User, chClientOrg2User := connectUserToOrgChannel(org1ChannelClientContext, t, org2ChannelClientContext)
 
@@ -218,7 +249,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	// Ledger client will verify blockchain info
 	ledgerInfoBefore := getBlockchainInfo(ledgerClient, t)
 
-	// Org2 user moves funds on org2 peer
+	// Org2 user moves funds
 	transactionID := moveFunds(chClientOrg2User, t, mc.ccName)
 
 	// Assert that funds have changed value on org1 peer
@@ -228,7 +259,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	checkLedgerInfo(ledgerClient, t, ledgerInfoBefore, transactionID)
 
 	// Start chaincode upgrade process (install and instantiate new version of exampleCC)
-	upgradeCC(ccPkg, mc.org1ResMgmt, t, mc.org2ResMgmt, mc.ccName)
+	upgradeCC(ccPkg, mc.org1ResMgmt, t, mc.org2ResMgmt, mc.ccName, "1")
 
 	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
 	testCCPolicy(chClientOrg2User, t, mc.ccName)
@@ -322,15 +353,14 @@ func testCCPolicy(chClientOrg2User *channel.Client, t *testing.T, ccName string)
 		t.Fatalf("Should have failed to move funds due to cc policy")
 	}
 	// Org2 user moves funds (cc policy ok since we have provided peers for both Orgs)
-	_, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: ccName, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer0, orgTestPeer1),
-		channel.WithRetry(retry.DefaultChannelOpts))
+	_, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: ccName, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
 }
 
-func upgradeCC(ccPkg *resource.CCPackage, org1ResMgmt *resmgmt.Client, t *testing.T, org2ResMgmt *resmgmt.Client, ccName string) {
-	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: "github.com/example_cc", Version: "1", Package: ccPkg}
+func upgradeCC(ccPkg *resource.CCPackage, org1ResMgmt *resmgmt.Client, t *testing.T, org2ResMgmt *resmgmt.Client, ccName, ccVersion string) {
+	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: "github.com/example_cc", Version: ccVersion, Package: ccPkg}
 	// Install example cc version '1' to Org1 peers
 	_, err := org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	require.Nil(t, err, "error should be nil for InstallCC version '1' or Org1 peers")
@@ -344,14 +374,13 @@ func upgradeCC(ccPkg *resource.CCPackage, org1ResMgmt *resmgmt.Client, t *testin
 	require.Nil(t, err, "error should be nil for getting cc policy with both orgs to approve")
 
 	// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
-	upgradeResp, err := org1ResMgmt.UpgradeCC(channelID, resmgmt.UpgradeCCRequest{Name: ccName, Path: "github.com/example_cc", Version: "1", Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
+	upgradeResp, err := org1ResMgmt.UpgradeCC(channelID, resmgmt.UpgradeCCRequest{Name: ccName, Path: "github.com/example_cc", Version: ccVersion, Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
 	require.Nil(t, err, "error should be nil for UpgradeCC version '1' on 'orgchannel'")
 	require.NotEmpty(t, upgradeResp, "transaction response should be populated")
 }
 
 func moveFunds(chClientOrgUser *channel.Client, t *testing.T, ccName string) fab.TransactionID {
-	response, err := chClientOrgUser.Execute(channel.Request{ChaincodeID: ccName, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1),
-		channel.WithRetry(retry.DefaultChannelOpts))
+	response, err := chClientOrgUser.Execute(channel.Request{ChaincodeID: ccName, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -414,7 +443,7 @@ func verifyErrorFromCC(chClientOrg1User *channel.Client, t *testing.T, ccName st
 	t.Logf("verifyErrorFromCC status.FromError s: %s, ok: %t", s, ok)
 
 	require.True(t, ok, "expected status error")
-	require.Equal(t, s.Code, int32(status.MultipleErrors))
+	require.Equal(t, int32(status.MultipleErrors), s.Code)
 
 	for _, err := range err.(multi.Errors) {
 		s, ok := status.FromError(err)
@@ -424,8 +453,8 @@ func verifyErrorFromCC(chClientOrg1User *channel.Client, t *testing.T, ccName st
 	}
 }
 
-func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Client, ccPkg *resource.CCPackage, ccName string) {
-	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: "github.com/example_cc", Version: "0", Package: ccPkg}
+func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Client, ccPkg *resource.CCPackage, ccName, ccVersion string) {
+	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: "github.com/example_cc", Version: ccVersion, Package: ccPkg}
 
 	// Install example cc to Org1 peers
 	_, err := org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
@@ -435,38 +464,46 @@ func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Cl
 	_, err = org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	require.NoError(t, err, "InstallCC for Org2 failed")
 
-	instantiateCC(t, org1ResMgmt, []string{"peer0.org1.example.com"}, ccName)
-	// instantiateCC above will propagate the call to the other peers through gossip, so no need to call it on the other peers.
-
-	// Verify that example CC is instantiated on Org1 peer
-	chaincodeQueryResponse, err := org1ResMgmt.QueryInstantiatedChaincodes(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	require.NoError(t, err, "QueryInstantiatedChaincodes return error")
+	instantiateCC(t, org1ResMgmt, ccName, ccVersion)
 
 	found := false
-	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
-		if chaincode.Name == ccName {
-			found = true
+	for i := 0; i < 5; i++ {
+		// Verify that example CC is instantiated on Org1 peer
+		chaincodeQueryResponse, err := org1ResMgmt.QueryInstantiatedChaincodes(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+		require.NoError(t, err, "QueryInstantiatedChaincodes return error")
+
+		t.Logf("Found %d instantiated chaincodes:", len(chaincodeQueryResponse.Chaincodes))
+		for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+			t.Logf("Found instantiated chaincode Name: [%s], Version: [%s], Path: [%s]", chaincode.Name, chaincode.Version, chaincode.Path)
+			if chaincode.Name == ccName {
+				found = true
+				break
+			}
 		}
+		if found {
+			break
+		}
+		time.Sleep(5 * time.Second)
 	}
 	require.True(t, found, "QueryInstantiatedChaincodes failed to find instantiated '%s' chaincode", ccName)
-
 }
 
-func instantiateCC(t *testing.T, resMgmt *resmgmt.Client, targets []string, ccName string) {
+func instantiateCC(t *testing.T, resMgmt *resmgmt.Client, ccName, ccVersion string) {
 	// Set up chaincode policy to 'any of two msps'
-	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
+	ccPolicy, err := cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
+	require.NoErrorf(t, err, "Error creating CC policy")
+
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
 	instantiateResp, err := resMgmt.InstantiateCC(
 		channelID,
 		resmgmt.InstantiateCCRequest{
 			Name:    ccName,
 			Path:    "github.com/example_cc",
-			Version: "0",
+			Version: ccVersion,
 			Args:    integration.ExampleCCInitArgs(),
 			Policy:  ccPolicy,
 		},
 		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
-		resmgmt.WithTargetEndpoints(targets...),
 	)
 
 	require.Nil(t, err, "error should be nil for instantiateCC")
@@ -474,13 +511,8 @@ func instantiateCC(t *testing.T, resMgmt *resmgmt.Client, targets []string, ccNa
 }
 
 func testWithOrg2(t *testing.T, expectedValue int, ccName string) int {
-	// Specify user that will be used by dynamic selection service (to retrieve chanincode policy information)
-	// This user has to have privileges to query lscc for chaincode data
-	mychannelUser := selection.ChannelUser{ChannelID: channelID, Username: "User1", OrgName: "Org1"}
-
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(integration.ConfigBackend,
-		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}))
+	sdk, err := fabsdk.New(integration.ConfigBackend)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -567,15 +599,4 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 	if err != nil {
 		t.Fatal(err)
 	}
-}
-
-// DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
-type DynamicSelectionProviderFactory struct {
-	defsvc.ProviderFactory
-	ChannelUsers []selection.ChannelUser
-}
-
-// CreateSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
-	return selection.New(config, f.ChannelUsers)
 }

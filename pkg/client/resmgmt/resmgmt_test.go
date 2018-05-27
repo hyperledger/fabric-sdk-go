@@ -819,22 +819,6 @@ func TestInstantiateCCWithOpts(t *testing.T) {
 	}
 }
 
-func TestInstantiateCCDiscoveryError(t *testing.T) {
-
-	// Setup test client and config
-	ctx := setupTestContext("test", "Org1MSP")
-	rc := setupResMgmtClient(t, ctx)
-
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
-
-	// Test InstantiateCCWithOpts create new discovery service per channel error
-	_, err := rc.InstantiateCC("error", req)
-	if err == nil || !strings.Contains(err.Error(), "failed to get discovery service") {
-		t.Fatalf("Should have failed to instantiate cc with opts with get discovery service error: %s", err)
-	}
-}
-
 func TestUpgradeCCRequiredParameters(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)
@@ -924,25 +908,6 @@ func TestUpgradeCCWithOpts(t *testing.T) {
 	_, err := rc.UpgradeCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
 	if err == nil || !strings.Contains(err.Error(), "If targets are provided, filter cannot be provided") {
 		t.Fatalf("Should have failed if both target and filter provided")
-	}
-}
-
-func TestUpgradeCCDiscoveryError(t *testing.T) {
-
-	// Setup test client and config
-	ctx := setupTestContext("test", "Org1MSP")
-
-	// Create resource management client with discovery service that will generate an error
-	rc := setupResMgmtClient(t, ctx)
-
-	// Test UpgradeCC discovery service error
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	req := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
-
-	// Test error while creating discovery service for channel "error"
-	_, err := rc.UpgradeCC("error", req)
-	if err == nil {
-		t.Fatalf("Should have failed to upgrade cc with discovery error")
 	}
 }
 

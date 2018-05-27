@@ -64,6 +64,8 @@ client:
 #      eventServiceIdle: 2m
 #      channelConfig: 30m
 #      channelMembership: 30s
+#      discovery: 10s
+#      selection: 10m
 
   # Root of the MSP directories with keys and certs.
   cryptoconfig:
@@ -174,6 +176,12 @@ channels:
         ledgerQuery: true
         eventSource: true
 
+      peer1.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
       peer0.org2.example.com:
         endorsingPeer: true
         chaincodeQuery: true
@@ -212,6 +220,7 @@ organizations:
 
     peers:
       - peer0.org1.example.com
+      - peer1.org1.example.com
 
     # [Optional]. Certificate Authorities issue certificates for identification purposes in a Fabric based
     # network. Typically certificates provisioning is done in a separate process outside of the
@@ -301,6 +310,28 @@ peers:
       # Certificate location absolute path
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
+  peer1.org1.example.com:
+    # this URL is used to send endorsement and query requests
+    url: peer1.org1.example.com:7151
+    # eventUrl is only needed when using eventhub (default is delivery service)
+    eventUrl: peer1.org1.example.com:7153
+
+    grpcOptions:
+      ssl-target-name-override: peer1.org1.example.com
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
   peer0.org2.example.com:
     url: peer0.org2.example.com:8051
     # eventUrl is only needed when using eventhub (default is delivery service)
@@ -375,7 +406,18 @@ certificateAuthorities:
  # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 #entityMatchers:
-#  peer:
+entityMatchers:
+  peer:
+    - pattern: (\w+).org1.example.com:(\d+)
+      urlSubstitutionExp: $1.org1.example.com:$2
+      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
+      mappedHost: peer0.org1.example.com
+
+    - pattern: (\w+).org2.example.com:(\d+)
+      urlSubstitutionExp: $1.org2.example.com:$2
+      sslTargetOverrideUrlSubstitutionExp: $1.org2.example.com
+      mappedHost: peer0.org2.example.com
+
 #    - pattern: (\w+).org1.example.(\w+)
 #      urlSubstitutionExp: peer0.org1.example.com:7051
 #      eventUrlSubstitutionExp: peer0.org1.example.com:7053

@@ -453,31 +453,19 @@ func TestMultiErrorPropogation(t *testing.T) {
 	assert.Equal(t, "Multiple errors occurred: \nTest Error\nTest Error", statusError.Message, "Expected multi error message")
 }
 
-type serviceInit interface {
-	Initialize(context context.Channel) error
-}
-
 func TestDiscoveryGreylist(t *testing.T) {
 
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
 	testPeer1.Error = status.New(status.EndorserClientStatus,
 		status.ConnectionFailed.ToInt32(), "test", []interface{}{testPeer1.URL()})
 
-	selectionProvider, err := staticselection.New(fcmocks.NewMockEndpointConfig())
-	assert.Nil(t, err, "Got error %s", err)
+	discoveryService := txnmocks.NewMockDiscoveryService(nil, testPeer1)
 
-	selectionService, err := selectionProvider.CreateSelectionService("mychannel")
-	assert.Nil(t, err, "Got error %s", err)
-
-	discoveryService, err := setupTestDiscovery(nil, []fab.Peer{testPeer1})
+	selectionService, err := staticselection.NewService(discoveryService)
 	assert.Nil(t, err, "Got error %s", err)
 
 	fabCtx := setupCustomTestContext(t, selectionService, discoveryService, nil)
 	ctx := createChannelContext(fabCtx, channelID)
-
-	channelCtx, err := ctx()
-	assert.Nil(t, err, "Got error %s", err)
-	selectionService.(serviceInit).Initialize(channelCtx)
 
 	chClient, err := New(ctx)
 	assert.Nil(t, err, "Got error %s", err)
@@ -552,38 +540,13 @@ func setupCustomTestContext(t *testing.T, selectionService fab.SelectionService,
 
 	mockChService := testChannelSvc.(*fcmocks.MockChannelService)
 	mockChService.SetTransactor(&transactor)
-
-	//Modify for custom mockcore to test scenarios
-	selectionProvider := ctx.MockProviderContext.SelectionProvider()
-	selectionProvider.(*fcmocks.MockSelectionProvider).SetCustomSelectionService(selectionService)
+	mockChService.SetDiscovery(discoveryService)
+	mockChService.SetSelection(selectionService)
 
 	channelProvider := ctx.MockProviderContext.ChannelProvider()
 	channelProvider.(*fcmocks.MockChannelProvider).SetCustomChannelService(testChannelSvc)
 
-	discoveryProvider := ctx.MockProviderContext.DiscoveryProvider()
-	discoveryProvider.(*fcmocks.MockStaticDiscoveryProvider).SetCustomDiscoveryService(discoveryService)
-
 	return createClientContext(ctx)
-}
-
-func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryService, error) {
-
-	mockDiscovery, err := txnmocks.NewMockDiscoveryProvider(discErr, peers)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewMockDiscoveryProvider failed")
-	}
-
-	return mockDiscovery.CreateDiscoveryService("mychannel")
-}
-
-func setupTestSelection(discErr error, peers []fab.Peer) (*txnmocks.MockSelectionService, error) {
-
-	mockSelection, err := txnmocks.NewMockSelectionProvider(discErr, peers)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewMockSelectinProvider failed")
-	}
-
-	return mockSelection.CreateSelectionService("mychannel")
 }
 
 func setupChannelClient(peers []fab.Peer, t *testing.T) *Client {
@@ -593,17 +556,7 @@ func setupChannelClient(peers []fab.Peer, t *testing.T) *Client {
 
 func setupChannelClientWithError(discErr error, selectionErr error, peers []fab.Peer, t *testing.T) *Client {
 
-	discoveryService, err := setupTestDiscovery(discErr, nil)
-	if err != nil {
-		t.Fatalf("Failed to setup discovery service: %s", err)
-	}
-
-	selectionService, err := setupTestSelection(selectionErr, peers)
-	if err != nil {
-		t.Fatalf("Failed to setup discovery service: %s", err)
-	}
-
-	fabCtx := setupCustomTestContext(t, selectionService, discoveryService, nil)
+	fabCtx := setupCustomTestContext(t, txnmocks.NewMockSelectionService(selectionErr, peers...), txnmocks.NewMockDiscoveryService(discErr), nil)
 
 	ctx := createChannelContext(fabCtx, channelID)
 
@@ -618,13 +571,7 @@ func setupChannelClientWithError(discErr error, selectionErr error, peers []fab.
 func setupChannelClientWithNodes(peers []fab.Peer,
 	orderers []fab.Orderer, t *testing.T) *Client {
 
-	discoveryService, err := setupTestDiscovery(nil, nil)
-	assert.Nil(t, err, "Failed to setup discovery service")
-
-	selectionService, err := setupTestSelection(nil, peers)
-	assert.Nil(t, err, "Failed to setup discovery service")
-
-	fabCtx := setupCustomTestContext(t, selectionService, discoveryService, orderers)
+	fabCtx := setupCustomTestContext(t, txnmocks.NewMockSelectionService(nil, peers...), txnmocks.NewMockDiscoveryService(nil), orderers)
 
 	ctx := createChannelContext(fabCtx, channelID)
 

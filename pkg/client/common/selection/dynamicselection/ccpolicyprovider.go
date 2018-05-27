@@ -20,9 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
@@ -36,57 +34,33 @@ const (
 	ccDataProviderfunction = "getccdata"
 )
 
-type peerCreator interface {
-	CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.Peer, error)
-}
-
 // CCPolicyProvider retrieves policy for the given chaincode ID
 type CCPolicyProvider interface {
 	GetChaincodePolicy(chaincodeID string) (*common.SignaturePolicyEnvelope, error)
 }
 
 // NewCCPolicyProvider creates new chaincode policy data provider
-func newCCPolicyProvider(providers api.Providers, channelID string, username string, orgName string) (CCPolicyProvider, error) {
-	if providers == nil || channelID == "" || username == "" || orgName == "" {
-		return nil, errors.New("Must provide providers, channel ID, user name and organisation for cc policy provider")
-	}
-
-	//Get identity
-	mgr, ok := providers.IdentityManager(orgName)
-	if !ok {
-		return nil, errors.New("invalid options to create identity, invalid org name")
-	}
-
-	identity, err := mgr.GetSigningIdentity(username)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to create identity for ccl policy provider")
-	}
-
-	discovery, err := providers.DiscoveryProvider().CreateDiscoveryService(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to create discovery service for ccl policy provider")
+func newCCPolicyProvider(ctx context.Client, discovery fab.DiscoveryService, channelID string) (CCPolicyProvider, error) {
+	if channelID == "" {
+		return nil, errors.New("Must provide channel ID for cc policy provider")
 	}
 
 	cpp := ccPolicyProvider{
-		providers: providers,
+		context:   ctx,
 		channelID: channelID,
-		identity:  identity,
 		discovery: discovery,
 		ccDataMap: make(map[string]*ccprovider.ChaincodeData),
-		provider:  providers.InfraProvider(),
 	}
 
 	return &cpp, nil
 }
 
 type ccPolicyProvider struct {
-	providers context.Providers
+	context   context.Client
 	channelID string
-	identity  msp.SigningIdentity
 	discovery fab.DiscoveryService
 	ccDataMap map[string]*ccprovider.ChaincodeData // TODO: Add expiry and configurable timeout for map entries
 	mutex     sync.RWMutex
-	provider  peerCreator
 }
 
 func (dp *ccPolicyProvider) GetChaincodePolicy(chaincodeID string) (*common.SignaturePolicyEnvelope, error) {
@@ -212,7 +186,7 @@ func (dp *ccPolicyProvider) getChannelContext() context.ChannelProvider {
 	return func() (context.Channel, error) {
 		//Get Client Context
 		clientProvider := func() (context.Client, error) {
-			return &contextImpl.Client{Providers: dp.providers, SigningIdentity: dp.identity}, nil
+			return dp.context, nil
 		}
 
 		return contextImpl.NewChannel(clientProvider, dp.channelID)
