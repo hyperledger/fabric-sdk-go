@@ -73,9 +73,9 @@ func (s *channelService) queryPeers() ([]fab.Peer, error) {
 func (s *channelService) getTargets(ctx contextAPI.Channel) ([]fab.PeerConfig, error) {
 	// TODO: The number of peers to query should be retrieved from the channel policy.
 	// This will done in a future patch.
-	chpeers, err := ctx.EndpointConfig().ChannelPeers(ctx.ChannelID())
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get peer configs for channel [%s]", ctx.ChannelID())
+	chpeers, ok := ctx.EndpointConfig().ChannelPeers(ctx.ChannelID())
+	if !ok {
+		return nil, errors.Errorf("failed to get peer configs for channel [%s]", ctx.ChannelID())
 	}
 	targets := make([]fab.PeerConfig, len(chpeers))
 	for i := 0; i < len(targets); i++ {

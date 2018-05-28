@@ -7,22 +7,21 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
 )
 
 // NetworkPeerConfig fetches the peer configuration based on a key (name or URL).
 func NetworkPeerConfig(cfg fab.EndpointConfig, key string) (*fab.NetworkPeer, error) {
-	peerCfg, err := cfg.PeerConfig(key)
-	if err != nil {
-		return nil, errors.WithMessage(err, "peer not found")
+	peerCfg, ok := cfg.PeerConfig(key)
+	if !ok {
+		return nil, errors.Errorf("peer not found")
 	}
 
 	// find MSP ID
-	networkPeers, err := cfg.NetworkPeers()
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to load network peer config")
+	networkPeers, ok := cfg.NetworkPeers()
+	if !ok {
+		return nil, errors.New("unable to load network peer config")
 	}
 
 	var mspID string
@@ -43,23 +42,17 @@ func NetworkPeerConfig(cfg fab.EndpointConfig, key string) (*fab.NetworkPeer, er
 
 // SearchPeerConfigFromURL searches for the peer configuration based on a URL.
 func SearchPeerConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.PeerConfig, error) {
-	peerCfg, err := cfg.PeerConfig(url)
+	peerCfg, ok := cfg.PeerConfig(url)
 
-	if peerCfg != nil {
+	if ok {
 		return peerCfg, nil
 	}
 
-	if err != nil {
-		s, ok := status.FromError(err)
-		if !ok || s.Code != status.NoMatchingPeerEntity.ToInt32() {
-			return nil, errors.Wrapf(err, "unable to get peer config from [%s]", url)
-		}
-	}
 	//If the given url is already parsed URL through entity matcher, then 'cfg.PeerConfig()'
 	//may return NoMatchingPeerEntity error. So retry with network peer URLs
-	networkPeers, err := cfg.NetworkPeers()
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to load network peer config")
+	networkPeers, ok := cfg.NetworkPeers()
+	if !ok {
+		return nil, errors.New("unable to load network peer config")
 	}
 
 	for _, peer := range networkPeers {

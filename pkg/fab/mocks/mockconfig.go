@@ -119,23 +119,23 @@ func (c *MockConfig) Timeout(arg fab.TimeoutType) time.Duration {
 }
 
 // PeersConfig Retrieves the fabric peers from the config file provided
-func (c *MockConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
-	return nil, nil
+func (c *MockConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
+	return nil, false
 }
 
 // PeerConfig Retrieves a specific peer from the configuration by org and name
-func (c *MockConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
+func (c *MockConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
 
 	if nameOrURL == "invalid" {
-		return nil, errors.New("no peer")
+		return nil, false
 	}
 	if c.customPeerCfg != nil {
-		return c.customPeerCfg, nil
+		return c.customPeerCfg, true
 	}
 	cfg := fab.PeerConfig{
 		URL: "example.com",
 	}
-	return &cfg, nil
+	return &cfg, true
 }
 
 // TLSCACertPool ...
@@ -168,10 +168,9 @@ func (c *MockConfig) SecurityProviderLibPath() string {
 }
 
 // OrderersConfig returns a list of defined orderers
-func (c *MockConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
-	oConfig, err := c.OrdererConfig("")
-
-	return []fab.OrdererConfig{*oConfig}, err
+func (c *MockConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
+	oConfig, _ := c.OrdererConfig("")
+	return []fab.OrdererConfig{*oConfig}, true
 }
 
 //SetCustomNetworkPeerCfg sets custom orderer config for unit-tests
@@ -195,28 +194,28 @@ func (c *MockConfig) SetCustomRandomOrdererCfg(customRandomOrdererCfg *fab.Order
 }
 
 // OrdererConfig not implemented
-func (c *MockConfig) OrdererConfig(name string) (*fab.OrdererConfig, error) {
+func (c *MockConfig) OrdererConfig(name string) (*fab.OrdererConfig, bool) {
 	if name == "Invalid" {
-		return nil, errors.New("no orderer")
+		return nil, false
 	}
 	if c.customOrdererCfg != nil {
-		return c.customOrdererCfg, nil
+		return c.customOrdererCfg, true
 	}
 	oConfig := fab.OrdererConfig{
 		URL: "example.com",
 	}
 
-	return &oConfig, nil
+	return &oConfig, true
 }
 
 // MSPID not implemented
-func (c *MockConfig) MSPID(org string) (string, error) {
-	return "", nil
+func (c *MockConfig) MSPID(org string) (string, bool) {
+	return "", false
 }
 
 // PeerMSPID not implemented
-func (c *MockConfig) PeerMSPID(name string) (string, error) {
-	return "", nil
+func (c *MockConfig) PeerMSPID(name string) (string, bool) {
+	return "", false
 }
 
 // KeyStorePath ...
@@ -240,20 +239,20 @@ func (c *MockConfig) CryptoConfigPath() string {
 }
 
 // NetworkConfig not implemented
-func (c *MockConfig) NetworkConfig() (*fab.NetworkConfig, error) {
-	return nil, nil
+func (c *MockConfig) NetworkConfig() (*fab.NetworkConfig, bool) {
+	return nil, false
 }
 
 // ChannelConfig returns the channel configuration
-func (c *MockConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, error) {
-	return &fab.ChannelNetworkConfig{Policies: fab.ChannelPolicies{}}, nil
+func (c *MockConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool) {
+	return &fab.ChannelNetworkConfig{Policies: fab.ChannelPolicies{}}, true
 }
 
 // ChannelPeers returns the channel peers configuration
-func (c *MockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
+func (c *MockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
 
 	if name == "noChannelPeers" {
-		return nil, nil
+		return nil, false
 	}
 
 	peerChCfg := fab.PeerChannelConfig{EndorsingPeer: true, ChaincodeQuery: true, LedgerQuery: true, EventSource: true}
@@ -262,26 +261,26 @@ func (c *MockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 	}
 
 	mockPeer := fab.ChannelPeer{PeerChannelConfig: peerChCfg, NetworkPeer: fab.NetworkPeer{PeerConfig: fab.PeerConfig{URL: "example.com"}}}
-	return []fab.ChannelPeer{mockPeer}, nil
+	return []fab.ChannelPeer{mockPeer}, true
 }
 
 // ChannelOrderers returns a list of channel orderers
-func (c *MockConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, error) {
+func (c *MockConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, bool) {
 	if name == "Invalid" {
-		return nil, errors.New("no orderer")
+		return nil, false
 	}
 
-	oConfig, err := c.OrdererConfig("")
+	oConfig, _ := c.OrdererConfig("")
 
-	return []fab.OrdererConfig{*oConfig}, err
+	return []fab.OrdererConfig{*oConfig}, true
 }
 
 // NetworkPeers returns the mock network peers configuration
-func (c *MockConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
+func (c *MockConfig) NetworkPeers() ([]fab.NetworkPeer, bool) {
 	if c.customNetworkPeerCfg != nil {
-		return c.customNetworkPeerCfg, nil
+		return c.customNetworkPeerCfg, true
 	}
-	return nil, errors.New("no config")
+	return nil, false
 }
 
 // SecurityProvider ...

@@ -174,9 +174,9 @@ func FromOrdererConfig(ordererCfg *fab.OrdererConfig) Option {
 // by name from the apiconfig.Config supplied to the constructor, and then constructs a new orderer from it
 func FromOrdererName(name string) Option {
 	return func(o *Orderer) error {
-		ordererCfg, err := o.config.OrdererConfig(name)
-		if err != nil {
-			return errors.Wrapf(err, "orderer config not found for orderer : %s", name)
+		ordererCfg, found := o.config.OrdererConfig(name)
+		if !found {
+			return errors.Errorf("orderer config not found for orderer : %s", name)
 		}
 
 		return FromOrdererConfig(ordererCfg)(o)

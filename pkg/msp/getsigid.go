@@ -107,9 +107,9 @@ func (mgr *IdentityManager) GetUser(username string) (*User, error) { //nolint
 		if privateKey == nil {
 			return nil, fmt.Errorf("unable to find private key for user [%s]", username)
 		}
-		mspID, err := mgr.config.MSPID(mgr.orgName)
-		if err != nil {
-			return nil, errors.WithMessage(err, "MSP ID config read failed")
+		mspID, ok := mgr.config.MSPID(mgr.orgName)
+		if !ok {
+			return nil, errors.New("MSP ID config read failed")
 		}
 		u = &User{
 			id:    username,

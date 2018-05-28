@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -67,7 +66,7 @@ func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, e
 		channelMatchers: make(map[int]*regexp.Regexp),
 	}
 
-	if err := config.cacheNetworkConfiguration(); err != nil {
+	if err := config.loadNetworkConfiguration(); err != nil {
 		return nil, errors.WithMessage(err, "network configuration load failed")
 	}
 
@@ -97,13 +96,12 @@ func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, e
 
 // EndpointConfig represents the endpoint configuration for the client
 type EndpointConfig struct {
-	backend             *lookup.ConfigLookup
-	networkConfig       *fab.NetworkConfig
-	tlsCertPool         commtls.CertPool
-	networkConfigCached bool
-	peerMatchers        map[int]*regexp.Regexp
-	ordererMatchers     map[int]*regexp.Regexp
-	channelMatchers     map[int]*regexp.Regexp
+	backend         *lookup.ConfigLookup
+	networkConfig   *fab.NetworkConfig
+	tlsCertPool     commtls.CertPool
+	peerMatchers    map[int]*regexp.Regexp
+	ordererMatchers map[int]*regexp.Regexp
+	channelMatchers map[int]*regexp.Regexp
 }
 
 // Timeout reads timeouts for the given timeout type, if type is not found in the config
@@ -113,61 +111,58 @@ func (c *EndpointConfig) Timeout(tType fab.TimeoutType) time.Duration {
 }
 
 // MSPID returns the MSP ID for the requested organization
-func (c *EndpointConfig) MSPID(org string) (string, error) {
-	config, err := c.NetworkConfig()
-	if err != nil {
-		return "", err
+func (c *EndpointConfig) MSPID(org string) (string, bool) {
+	config, ok := c.NetworkConfig()
+	if !ok {
+		return "", false
 	}
 	// viper lowercases all key maps, org is lower case
 	mspID := config.Organizations[strings.ToLower(org)].MSPID
 	if mspID == "" {
-		return "", errors.Errorf("MSP ID is empty for org: %s", org)
+		return "", false
 	}
 
-	return mspID, nil
+	return mspID, true
 }
 
 // PeerMSPID returns msp that peer belongs to
-func (c *EndpointConfig) PeerMSPID(name string) (string, error) {
-	netConfig, err := c.NetworkConfig()
-	if err != nil {
-		return "", err
+func (c *EndpointConfig) PeerMSPID(name string) (string, bool) {
+	netConfig, ok := c.NetworkConfig()
+	if !ok {
+		return "", false
 	}
-
-	var mspID string
 
 	// Find organisation/msp that peer belongs to
 	for _, org := range netConfig.Organizations {
 		for i := 0; i < len(org.Peers); i++ {
 			if strings.EqualFold(org.Peers[i], name) {
 				// peer belongs to this org add org msp
-				mspID = org.MSPID
-				break
-			} else {
-				peer, err := c.findMatchingPeer(org.Peers[i])
-				if err == nil && strings.EqualFold(peer, name) {
-					mspID = org.MSPID
-					break
-				}
+				return org.MSPID, true
+			}
+
+			peer, ok := c.findMatchingPeer(org.Peers[i])
+			if ok && strings.EqualFold(peer, name) {
+				return org.MSPID, true
 			}
 		}
 	}
 
-	return mspID, nil
+	return "", false
 
 }
 
 // OrderersConfig returns a list of defined orderers
-func (c *EndpointConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
-	orderers := []fab.OrdererConfig{}
-	config, err := c.NetworkConfig()
-	if err != nil {
-		return nil, err
+func (c *EndpointConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
+
+	networkConfig, ok := c.NetworkConfig()
+	if !ok {
+		return nil, false
 	}
 
-	for name, orderer := range config.Orderers {
+	orderers := []fab.OrdererConfig{}
+	for name, orderer := range networkConfig.Orderers {
 
-		matchedOrderer := c.tryMatchingOrdererConfig(config, name)
+		matchedOrderer := c.tryMatchingOrdererConfig(networkConfig, name)
 		if matchedOrderer != nil {
 			//if found in entity matcher then use the matched one
 			orderer = *matchedOrderer
@@ -176,27 +171,27 @@ func (c *EndpointConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 		if orderer.TLSCACerts.Path != "" {
 			orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
 		} else if len(orderer.TLSCACerts.Pem) == 0 && !c.backend.GetBool("client.tlsCerts.systemCertPool") {
-			return nil, errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
+			logger.Debugf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
+			return nil, false
 		}
-
 		orderers = append(orderers, orderer)
 	}
 
-	return orderers, nil
+	return orderers, true
 }
 
 // OrdererConfig returns the requested orderer
-func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, error) {
-	networkConfig, err := c.NetworkConfig()
-	if err != nil {
-		return nil, err
-	}
-	orderer, ok := networkConfig.Orderers[strings.ToLower(nameOrURL)]
-
+func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, bool) {
+	networkConfig, ok := c.NetworkConfig()
 	if !ok {
-		ordererCfgs, err := c.OrderersConfig()
-		if err != nil {
-			return nil, err
+		return nil, false
+	}
+
+	orderer, ok := networkConfig.Orderers[strings.ToLower(nameOrURL)]
+	if !ok {
+		ordererCfgs, found := c.OrderersConfig()
+		if !found {
+			return nil, false
 		}
 		for _, ordererCfg := range ordererCfgs {
 			if strings.EqualFold(ordererCfg.URL, nameOrURL) {
@@ -211,7 +206,7 @@ func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, er
 		logger.Debugf("Could not find Orderer for [%s], trying with Entity Matchers", nameOrURL)
 		matchingOrdererConfig := c.tryMatchingOrdererConfig(networkConfig, strings.ToLower(nameOrURL))
 		if matchingOrdererConfig == nil {
-			return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingOrdererEntity.ToInt32(), "no matching orderer config found", nil))
+			return nil, false
 		}
 		logger.Debugf("Found matching Orderer Config for [%s]", nameOrURL)
 		orderer = *matchingOrdererConfig
@@ -221,20 +216,21 @@ func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, er
 		orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
 	}
 
-	return &orderer, nil
+	return &orderer, true
 }
 
 // PeersConfig Retrieves the fabric peers for the specified org from the
 // config file provided
-func (c *EndpointConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
-	networkConfig, err := c.NetworkConfig()
-	if err != nil {
-		return nil, err
+func (c *EndpointConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
+	networkConfig, ok := c.NetworkConfig()
+	if !ok {
+		return nil, false
 	}
 
 	peersConfig := networkConfig.Organizations[strings.ToLower(org)].Peers
 	peers := []fab.PeerConfig{}
 
+	var err error
 	for _, peerName := range peersConfig {
 		p := networkConfig.Peers[strings.ToLower(peerName)]
 		if err = c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
@@ -252,14 +248,20 @@ func (c *EndpointConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
 
 		peers = append(peers, p)
 	}
-	return peers, nil
+
+	if len(peers) > 0 {
+		return peers, true
+	}
+
+	return nil, false
 }
 
 // PeerConfig Retrieves a specific peer from the configuration by name or url
-func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
-	networkConfig, err := c.NetworkConfig()
-	if err != nil {
-		return nil, err
+func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
+
+	networkConfig, ok := c.NetworkConfig()
+	if !ok {
+		return nil, false
 	}
 
 	//lookup by name in config
@@ -288,7 +290,7 @@ func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
 	}
 
 	if matchPeerConfig == nil {
-		return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingPeerEntity.ToInt32(), "no matching peer config found", nil))
+		return nil, false
 	}
 
 	logger.Debugf("Found MatchingPeerConfig for name/url [%s]", nameOrURL)
@@ -297,33 +299,26 @@ func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
 		matchPeerConfig.TLSCACerts.Path = pathvar.Subst(peerConfig.TLSCACerts.Path)
 	}
 
-	return matchPeerConfig, nil
+	return matchPeerConfig, true
 }
 
 // NetworkConfig returns the network configuration defined in the config file
-func (c *EndpointConfig) NetworkConfig() (*fab.NetworkConfig, error) {
-	if c.networkConfigCached {
-		return c.networkConfig, nil
-	}
-
-	if err := c.cacheNetworkConfiguration(); err != nil {
-		return nil, errors.WithMessage(err, "network configuration load failed")
-	}
-	return c.networkConfig, nil
+func (c *EndpointConfig) NetworkConfig() (*fab.NetworkConfig, bool) {
+	return c.networkConfig, c.networkConfig != nil
 }
 
 // NetworkPeers returns the network peers configuration, all the peers from all the orgs in config.
-func (c *EndpointConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
-	netConfig, err := c.NetworkConfig()
-	if err != nil {
-		return nil, err
+func (c *EndpointConfig) NetworkPeers() ([]fab.NetworkPeer, bool) {
+	netConfig, ok := c.NetworkConfig()
+	if !ok {
+		return nil, false
 	}
 
 	var netPeers []fab.NetworkPeer
 	for org, orgConfig := range netConfig.Organizations {
-		orgPeers, err := c.PeersConfig(org)
-		if err != nil {
-			return nil, err
+		orgPeers, found := c.PeersConfig(org)
+		if !found {
+			continue
 		}
 
 		for _, orgPeer := range orgPeers {
@@ -331,7 +326,11 @@ func (c *EndpointConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
 		}
 	}
 
-	return netPeers, nil
+	if len(netPeers) > 0 {
+		return netPeers, true
+	}
+
+	return nil, false
 }
 
 // MappedChannelName will return channelName if it is an original channel name in the config
@@ -375,10 +374,10 @@ func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, cha
 }
 
 // ChannelConfig returns the channel configuration
-func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, error) {
-	networkConfig, err := c.NetworkConfig()
-	if err != nil {
-		return nil, err
+func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool) {
+	networkConfig, ok := c.NetworkConfig()
+	if !ok {
+		return nil, false
 	}
 
 	// viper lowercases all key maps
@@ -386,31 +385,29 @@ func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, 
 	if !ok {
 		matchingChannel := c.tryMatchingChannelConfig(networkConfig, name)
 		if matchingChannel == nil {
-			return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingChannelEntity.ToInt32(), "no matching channel config found", nil))
+			return nil, false
 		}
-		return matchingChannel, nil
+		return matchingChannel, true
 	}
 
-	return &ch, nil
+	return &ch, true
 }
 
 // ChannelPeers returns the channel peers configuration
-func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
-	netConfig, err := c.NetworkConfig()
-	if err != nil {
-		return nil, err
+func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
+	netConfig, ok := c.NetworkConfig()
+	if !ok {
+		return nil, false
 	}
 
 	peers := []fab.ChannelPeer{}
-
 	// viper lowercases all key maps
 	chConfig, ok := netConfig.Channels[strings.ToLower(name)]
 	if !ok {
 		matchingChannel := c.tryMatchingChannelConfig(netConfig, name)
 		if matchingChannel == nil {
-			return peers, nil
+			return nil, false
 		}
-
 		// reset 'name' with the mappedChannel as it's referenced further below
 		chConfig = *matchingChannel
 	}
@@ -429,17 +426,18 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 			p = *matchingPeerConfig
 		}
 
-		if err = c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
-			return nil, err
+		if err := c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
+			logger.Debugf("Verify PeerConfig failed for peer [%s], cause : [%v]", peerName, err)
+			return nil, false
 		}
 
 		if p.TLSCACerts.Path != "" {
 			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
 		}
 
-		mspID, err := c.PeerMSPID(peerName)
-		if err != nil {
-			return nil, errors.Errorf("failed to retrieve msp id for peer %s", peerName)
+		mspID, ok := c.PeerMSPID(peerName)
+		if !ok {
+			return nil, false
 		}
 
 		networkPeer := fab.NetworkPeer{PeerConfig: p, MSPID: mspID}
@@ -449,28 +447,30 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 		peers = append(peers, peer)
 	}
 
-	return peers, nil
+	return peers, true
 
 }
 
 // ChannelOrderers returns a list of channel orderers
-func (c *EndpointConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, error) {
+func (c *EndpointConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, bool) {
 	orderers := []fab.OrdererConfig{}
-	channel, err := c.ChannelConfig(name)
-	if err != nil || channel == nil {
-		return nil, errors.Errorf("Unable to retrieve channel config: %s", err)
+	channel, ok := c.ChannelConfig(name)
+	if !ok {
+		return nil, false
 	}
 
 	for _, chOrderer := range channel.Orderers {
-		orderer, err := c.OrdererConfig(chOrderer)
-		if err != nil || orderer == nil {
-			return nil, errors.Errorf("unable to retrieve orderer config: %s", err)
+		orderer, ok := c.OrdererConfig(chOrderer)
+		if !ok {
+			return nil, false
 		}
-
 		orderers = append(orderers, *orderer)
 	}
 
-	return orderers, nil
+	if len(orderers) == 0 {
+		return nil, false
+	}
+	return orderers, true
 }
 
 // TLSCACertPool returns the configured cert pool. If a certConfig
@@ -657,7 +657,7 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration { //nol
 	return timeout
 }
 
-func (c *EndpointConfig) cacheNetworkConfiguration() error {
+func (c *EndpointConfig) loadNetworkConfiguration() error {
 	networkConfig := fab.NetworkConfig{}
 	networkConfig.Name = c.backend.GetString("name")
 	networkConfig.Description = c.backend.GetString("description")
@@ -706,7 +706,6 @@ func (c *EndpointConfig) cacheNetworkConfiguration() error {
 	}
 
 	c.networkConfig = &networkConfig
-	c.networkConfigCached = true
 	return nil
 }
 
@@ -932,14 +931,15 @@ func copyPropertiesMap(origMap map[string]interface{}) map[string]interface{} {
 	return newMap
 }
 
-func (c *EndpointConfig) findMatchingPeer(peerName string) (string, error) {
-	networkConfig, err := c.NetworkConfig()
-	if err != nil {
-		return "", err
+func (c *EndpointConfig) findMatchingPeer(peerName string) (string, bool) {
+	networkConfig, ok := c.NetworkConfig()
+	if !ok {
+		return "", false
 	}
+
 	//Return if no peerMatchers are configured
 	if len(c.peerMatchers) == 0 {
-		return "", errors.New("no Peer entityMatchers are found")
+		return "", false
 	}
 
 	//sort the keys
@@ -955,24 +955,25 @@ func (c *EndpointConfig) findMatchingPeer(peerName string) (string, error) {
 		if v.MatchString(peerName) {
 			// get the matching matchConfig from the index number
 			peerMatchConfig := networkConfig.EntityMatchers["peer"][k]
-			return peerMatchConfig.MappedHost, nil
+			return peerMatchConfig.MappedHost, true
 		}
 	}
 
-	return "", errors.WithStack(status.New(status.ClientStatus, status.NoMatchingPeerEntity.ToInt32(), "no matching peer config found", nil))
+	return "", false
 }
 
 func (c *EndpointConfig) compileMatchers() error {
-	networkConfig, err := c.NetworkConfig()
-	if err != nil {
-		return err
+	networkConfig, ok := c.NetworkConfig()
+	if !ok {
+		return errors.New("failed to get network config")
 	}
+
 	//return no error if entityMatchers is not configured
 	if networkConfig.EntityMatchers == nil {
 		return nil
 	}
 
-	err = c.compilePeerMatcher(networkConfig)
+	err := c.compilePeerMatcher(networkConfig)
 	if err != nil {
 		return err
 	}
@@ -1047,13 +1048,13 @@ func (c *EndpointConfig) loadTLSCerts() ([]*x509.Certificate, error) {
 	var certs []*x509.Certificate
 	errs := multi.Errors{}
 
-	orderers, err := c.OrderersConfig()
-	if err != nil {
-		errs = append(errs, err)
+	orderers, ok := c.OrderersConfig()
+	if !ok {
+		errs = append(errs, errors.New("OrderersConfig not found"))
 	}
-	peers, err := c.NetworkPeers()
-	if err != nil {
-		errs = append(errs, err)
+	peers, ok := c.NetworkPeers()
+	if !ok {
+		errs = append(errs, errors.New("failed to get network peers"))
 	}
 	for _, peer := range peers {
 		cert, err := peer.TLSCACerts.TLSCert()
@@ -1076,10 +1077,11 @@ func (c *EndpointConfig) loadTLSCerts() ([]*x509.Certificate, error) {
 
 // Client returns the Client config
 func (c *EndpointConfig) client() (*msp.ClientConfig, error) {
-	config, err := c.NetworkConfig()
-	if err != nil {
-		return nil, err
+	config, ok := c.NetworkConfig()
+	if !ok {
+		return nil, errors.New("failed to get network config")
 	}
+
 	client := config.Client
 
 	client.Organization = strings.ToLower(client.Organization)
@@ -1091,9 +1093,9 @@ func (c *EndpointConfig) client() (*msp.ClientConfig, error) {
 }
 
 //ResetNetworkConfig clears network config cache
-func (c *EndpointConfig) ResetNetworkConfig() {
+func (c *EndpointConfig) ResetNetworkConfig() error {
 	c.networkConfig = nil
-	c.networkConfigCached = false
+	return c.loadNetworkConfiguration()
 }
 
 func loadByteKeyOrCertFromFile(c *msp.ClientConfig, isKey bool) ([]byte, error) {

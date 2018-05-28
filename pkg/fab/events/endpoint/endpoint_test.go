@@ -141,9 +141,9 @@ func newMockConfig(channelPeers ...fab.ChannelPeer) *mockConfig {
 	}
 }
 
-func (c *mockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
+func (c *mockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
 	fmt.Printf("mockConfig.ChannelPeers - returning %#v", c.channelPeers)
-	return c.channelPeers, nil
+	return c.channelPeers, true
 }
 
 func newMockContext() *fabmocks.MockContext {

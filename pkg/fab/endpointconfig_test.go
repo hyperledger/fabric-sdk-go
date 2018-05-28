@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	org0                             = "org0"
+	org2                             = "org2"
 	org1                             = "org1"
 	configTestFilePath               = "../core/config/testdata/config_test.yaml"
 	certPath                         = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem"
@@ -88,29 +88,30 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	}
 
 	sampleEndpointConfig := endpointCfg.(*EndpointConfig)
-	sampleEndpointConfig.networkConfigCached = false
-
 	customBackend.KeyValueMap["channels"] = "INVALID"
-	_, err = sampleEndpointConfig.NetworkConfig()
-	if err == nil {
+	err = sampleEndpointConfig.ResetNetworkConfig()
+	assert.NotNil(t, err)
+
+	_, ok := sampleEndpointConfig.NetworkConfig()
+	if ok {
 		t.Fatal("Network config load supposed to fail")
 	}
 
 	//Testing MSPID failure scenario
-	mspID, err := sampleEndpointConfig.MSPID("peerorg1")
-	if mspID != "" || err == nil {
+	mspID, ok := sampleEndpointConfig.MSPID("peerorg1")
+	if mspID != "" || ok {
 		t.Fatal("Get MSP ID supposed to fail")
 	}
 
 	//Testing OrdererConfig failure scenario
-	oConfig, err := sampleEndpointConfig.OrdererConfig("peerorg1")
-	if oConfig != nil || err == nil {
+	oConfig, ok := sampleEndpointConfig.OrdererConfig("peerorg1")
+	if oConfig != nil || ok {
 		t.Fatal("Testing get OrdererConfig supposed to fail")
 	}
 
 	//Testing PeersConfig failure scenario
-	pConfigs, err := sampleEndpointConfig.PeersConfig("peerorg1")
-	if pConfigs != nil || err == nil {
+	pConfigs, ok := sampleEndpointConfig.PeersConfig("peerorg1")
+	if pConfigs != nil || ok {
 		t.Fatal("Testing PeersConfig supposed to fail")
 	}
 
@@ -119,18 +120,18 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 func checkCAConfigFailsByNetworkConfig(sampleEndpointConfig *EndpointConfig, t *testing.T) {
 	//Testing ChannelConfig failure scenario
-	chConfig, err := sampleEndpointConfig.ChannelConfig("invalid")
-	if chConfig != nil || err == nil {
+	chConfig, ok := sampleEndpointConfig.ChannelConfig("invalid")
+	if chConfig != nil || ok {
 		t.Fatal("Testing ChannelConfig supposed to fail")
 	}
 	//Testing ChannelPeers failure scenario
-	cpConfigs, err := sampleEndpointConfig.ChannelPeers("invalid")
-	if cpConfigs != nil || err == nil {
+	cpConfigs, ok := sampleEndpointConfig.ChannelPeers("invalid")
+	if cpConfigs != nil || ok {
 		t.Fatal("Testing ChannelPeeers supposed to fail")
 	}
 	//Testing ChannelOrderers failure scenario
-	coConfigs, err := sampleEndpointConfig.ChannelOrderers("invalid")
-	if coConfigs != nil || err == nil {
+	coConfigs, ok := sampleEndpointConfig.ChannelOrderers("invalid")
+	if coConfigs != nil || ok {
 		t.Fatal("Testing ChannelOrderers supposed to fail")
 	}
 }
@@ -309,9 +310,9 @@ func TestOrdererConfig(t *testing.T) {
 		t.Fatal("Testing non-existing OrdererConfig failed")
 	}
 
-	orderers, err := endpointConfig.OrderersConfig()
-	if err != nil {
-		t.Fatal(err)
+	orderers, ok := endpointConfig.OrderersConfig()
+	if !ok {
+		t.Fatal("Failed to get orderer config")
 	}
 
 	if orderers[0].TLSCACerts.Path != "" {
@@ -329,8 +330,8 @@ func TestChannelOrderers(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	orderers, err := endpointConfig.ChannelOrderers("mychannel")
-	if orderers == nil || err != nil {
+	orderers, ok := endpointConfig.ChannelOrderers("mychannel")
+	if orderers == nil || !ok {
 		t.Fatal("Testing ChannelOrderers failed")
 	}
 
@@ -363,15 +364,11 @@ func testCommonConfigPeerByURL(t *testing.T, expectedConfigURL string, fetchedCo
 
 	endpointConfig := config1.(*EndpointConfig)
 
-	expectedConfig, err := endpointConfig.PeerConfig(expectedConfigURL)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	expectedConfig, ok := endpointConfig.PeerConfig(expectedConfigURL)
+	assert.True(t, ok, "getting peerconfig supposed to be successful")
 
-	fetchedConfig, err := endpointConfig.PeerConfig(fetchedConfigURL)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	fetchedConfig, ok := endpointConfig.PeerConfig(fetchedConfigURL)
+	assert.True(t, ok, "getting peerconfig supposed to be successful")
 
 	if fetchedConfig.URL == "" {
 		t.Fatalf("Url value for the host is empty")
@@ -393,15 +390,11 @@ func testCommonConfigOrderer(t *testing.T, expectedConfigHost string, fetchedCon
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	expectedConfig, err = endpointConfig.OrdererConfig(expectedConfigHost)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	expectedConfig, ok := endpointConfig.OrdererConfig(expectedConfigHost)
+	assert.True(t, ok)
 
-	fetchedConfig, err = endpointConfig.OrdererConfig(fetchedConfigHost)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	fetchedConfig, ok = endpointConfig.OrdererConfig(fetchedConfigHost)
+	assert.True(t, ok)
 
 	if expectedConfig.URL == "" {
 		t.Fatalf("Url value for the host is empty")
@@ -487,15 +480,11 @@ func testCommonConfigChannel(t *testing.T, expectedConfigName string, fetchedCon
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	expectedConfig, err = endpointConfig.ChannelConfig(expectedConfigName)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	expectedConfig, ok := endpointConfig.ChannelConfig(expectedConfigName)
+	assert.True(t, ok)
 
-	fetchedConfig, err = endpointConfig.ChannelConfig(fetchedConfigName)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	fetchedConfig, ok = endpointConfig.ChannelConfig(fetchedConfigName)
+	assert.True(t, ok)
 
 	return expectedConfig, fetchedConfig
 }
@@ -511,10 +500,9 @@ func TestPeersConfig(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	pc, err := endpointConfig.PeersConfig(org0)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	pc, ok := endpointConfig.PeersConfig(org2)
+	fmt.Println(ok, pc)
+	assert.True(t, ok)
 
 	for _, value := range pc {
 		if value.URL == "" {
@@ -525,10 +513,8 @@ func TestPeersConfig(t *testing.T) {
 		}
 	}
 
-	pc, err = endpointConfig.PeersConfig(org1)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	pc, ok = endpointConfig.PeersConfig(org1)
+	assert.True(t, ok)
 
 	for _, value := range pc {
 		if value.URL == "" {
@@ -549,15 +535,11 @@ func testCommonConfigPeer(t *testing.T, expectedConfigHost string, fetchedConfig
 
 	endpointConfig := config1.(*EndpointConfig)
 
-	expectedConfig, err = endpointConfig.PeerConfig(expectedConfigHost)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	expectedConfig, ok := endpointConfig.PeerConfig(expectedConfigHost)
+	assert.True(t, ok, "getting peerconfig supposed to be successful")
 
-	fetchedConfig, err = endpointConfig.PeerConfig(fetchedConfigHost)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	fetchedConfig, ok = endpointConfig.PeerConfig(fetchedConfigHost)
+	assert.True(t, ok, "getting peerconfig supposed to be successful")
 
 	if expectedConfig.URL == "" {
 		t.Fatalf("Url value for the host is empty")
@@ -644,10 +626,9 @@ func TestNetworkConfig(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	conf, err := endpointConfig.NetworkConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	conf, ok := endpointConfig.NetworkConfig()
+	assert.True(t, ok)
+
 	if len(conf.Orderers) == 0 {
 		t.Fatal("Expected orderers to be set")
 	}
@@ -697,9 +678,9 @@ func TestInitConfigFromRawWithPem(t *testing.T) {
 
 	endpointConfig := config1.(*EndpointConfig)
 
-	o, err := endpointConfig.OrderersConfig()
-	if err != nil {
-		t.Fatalf("Failed to load orderers from config. Error: %s", err)
+	o, ok := endpointConfig.OrderersConfig()
+	if !ok {
+		t.Fatalf("Failed to load orderers from config.")
 	}
 
 	if len(o) == 0 {
@@ -725,9 +706,9 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 		t.Fatalf("Orderer Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", oPem, loadedOPem)
 	}
 
-	pc, err := endpointConfig.PeersConfig(org1)
-	if err != nil {
-		t.Fatalf(err.Error())
+	pc, ok := endpointConfig.PeersConfig(org1)
+	if !ok {
+		t.Fatalf("unexpected error while getting peerConfig")
 	}
 	if len(pc) == 0 {
 		t.Fatalf("peers list of %s cannot be nil or empty", org1)
@@ -738,9 +719,9 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 
 func checkPem(endpointConfig *EndpointConfig, t *testing.T) {
 	peer0 := "peer0.org1.example.com"
-	p0, err := endpointConfig.PeerConfig(peer0)
-	if err != nil {
-		t.Fatalf("Failed to load %s of %s from the config. Error: %s", peer0, org1, err)
+	p0, ok := endpointConfig.PeerConfig(peer0)
+	if !ok {
+		t.Fatalf("Failed to load %s of %s from the config.", peer0, org1)
 	}
 	if p0 == nil {
 		t.Fatalf("%s of %s cannot be nil", peer0, org1)
@@ -802,11 +783,8 @@ func TestLoadConfigWithEmbeddedUsersWithPems(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	conf, err := endpointConfig.NetworkConfig()
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	conf, ok := endpointConfig.NetworkConfig()
+	assert.True(t, ok)
 
 	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Cert.Pem == "" {
 		t.Fatal("Failed to parse the embedded cert for user EmbeddedUser")
@@ -837,11 +815,9 @@ func TestLoadConfigWithEmbeddedUsersWithPaths(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	conf, err := endpointConfig.NetworkConfig()
+	conf, ok := endpointConfig.NetworkConfig()
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.True(t, ok)
 
 	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUserWithPaths")].Cert.Path == "" {
 		t.Fatal("Failed to parse the embedded cert for user EmbeddedUserWithPaths")
@@ -1159,10 +1135,8 @@ func TestPeerChannelConfig(t *testing.T) {
 	}
 
 	//get network config
-	networkConfig, err := config.NetworkConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	networkConfig, ok := config.NetworkConfig()
+	assert.True(t, ok)
 
 	//Test if channels config are working as expected, with time values parsed properly
 	assert.True(t, len(networkConfig.Channels) == 3)
@@ -1231,8 +1205,8 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	assert.NotNil(t, endpointConfig, "Invalid endpoint config from multiple backends")
 
 	//Get network Config
-	networkConfig, err := endpointConfig.NetworkConfig()
-	assert.Nil(t, err, "failed to get network config")
+	networkConfig, ok := endpointConfig.NetworkConfig()
+	assert.True(t, ok, "failed to get network config")
 	assert.NotNil(t, networkConfig, "Invalid networkConfig")
 
 	//Client
@@ -1299,9 +1273,9 @@ func TestNetworkPeersWithEntityMatchers(t *testing.T) {
 }
 
 func testNetworkPeers(t *testing.T, endpointConfig fab.EndpointConfig) {
-	networkPeers, err := endpointConfig.NetworkPeers()
+	networkPeers, ok := endpointConfig.NetworkPeers()
 
-	assert.Nil(t, err, "not suppopsed to get error")
+	assert.True(t, ok, "supposed to be successful")
 	assert.NotNil(t, networkPeers, "supposed to get valid network peers")
 	assert.Equal(t, 2, len(networkPeers), "supposed to get 2 network peers")
 	assert.NotEmpty(t, networkPeers[0].MSPID)
@@ -1310,12 +1284,12 @@ func testNetworkPeers(t *testing.T, endpointConfig fab.EndpointConfig) {
 	assert.NotEmpty(t, networkPeers[1].PeerConfig)
 
 	//cross check with peer config for org1
-	peerConfigOrg1, err := endpointConfig.PeersConfig("org1")
-	assert.Nil(t, err, "not suppopsed to get error")
+	peerConfigOrg1, ok := endpointConfig.PeersConfig("org1")
+	assert.True(t, ok, "not suppopsed to get false")
 
 	//cross check with peer config for org2
-	peerConfigOrg2, err := endpointConfig.PeersConfig("org2")
-	assert.Nil(t, err, "not suppopsed to get error")
+	peerConfigOrg2, ok := endpointConfig.PeersConfig("org2")
+	assert.True(t, ok, "not suppopsed to get false")
 
 	if networkPeers[0].MSPID == "Org1MSP" {
 		assert.Equal(t, peerConfigOrg1[0], networkPeers[0].PeerConfig)

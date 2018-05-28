@@ -47,57 +47,57 @@ type timeout interface {
 
 // mspID interface allows to uniquely override EndpointConfig interface's MSPID() function
 type mspID interface {
-	MSPID(org string) (string, error)
+	MSPID(org string) (string, bool)
 }
 
 // peerMSPID interface allows to uniquely override EndpointConfig interface's PeerMSPID() function
 type peerMSPID interface {
-	PeerMSPID(name string) (string, error)
+	PeerMSPID(name string) (string, bool)
 }
 
 // orderersConfig interface allows to uniquely override EndpointConfig interface's OrderersConfig() function
 type orderersConfig interface {
-	OrderersConfig() ([]fab.OrdererConfig, error)
+	OrderersConfig() ([]fab.OrdererConfig, bool)
 }
 
 // ordererConfig interface allows to uniquely override EndpointConfig interface's OrdererConfig() function
 type ordererConfig interface {
-	OrdererConfig(name string) (*fab.OrdererConfig, error)
+	OrdererConfig(name string) (*fab.OrdererConfig, bool)
 }
 
 // peersConfig interface allows to uniquely override EndpointConfig interface's PeersConfig() function
 type peersConfig interface {
-	PeersConfig(org string) ([]fab.PeerConfig, error)
+	PeersConfig(org string) ([]fab.PeerConfig, bool)
 }
 
 // peerConfig interface allows to uniquely override EndpointConfig interface's PeerConfig() function
 type peerConfig interface {
-	PeerConfig(nameOrURL string) (*fab.PeerConfig, error)
+	PeerConfig(nameOrURL string) (*fab.PeerConfig, bool)
 }
 
 // networkConfig interface allows to uniquely override EndpointConfig interface's NetworkConfig() function
 type networkConfig interface {
-	NetworkConfig() (*fab.NetworkConfig, error)
+	NetworkConfig() (*fab.NetworkConfig, bool)
 }
 
 // networkPeers interface allows to uniquely override EndpointConfig interface's NetworkPeers() function
 type networkPeers interface {
-	NetworkPeers() ([]fab.NetworkPeer, error)
+	NetworkPeers() ([]fab.NetworkPeer, bool)
 }
 
 // channelConfig interface allows to uniquely override EndpointConfig interface's ChannelConfig() function
 type channelConfig interface {
-	ChannelConfig(name string) (*fab.ChannelNetworkConfig, error)
+	ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool)
 }
 
 // channelPeers interface allows to uniquely override EndpointConfig interface's ChannelPeers() function
 type channelPeers interface {
-	ChannelPeers(name string) ([]fab.ChannelPeer, error)
+	ChannelPeers(name string) ([]fab.ChannelPeer, bool)
 }
 
 // channelOrderers interface allows to uniquely override EndpointConfig interface's ChannelOrderers() function
 type channelOrderers interface {
-	ChannelOrderers(name string) ([]fab.OrdererConfig, error)
+	ChannelOrderers(name string) ([]fab.OrdererConfig, bool)
 }
 
 // tlsCACertPool interface allows to uniquely override EndpointConfig interface's TLSCACertPool() function

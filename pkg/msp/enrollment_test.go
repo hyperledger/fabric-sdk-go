@@ -76,9 +76,9 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to retrieve client config: %v", err)
 	}
-	netConfig, err := endpointConfig.NetworkConfig()
-	if err != nil {
-		t.Fatalf("NetworkConfig failed: %s", err)
+	netConfig, ok := endpointConfig.NetworkConfig()
+	if !ok {
+		t.Fatal("Failed to get network config")
 	}
 	orgName := "Org1"
 	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]

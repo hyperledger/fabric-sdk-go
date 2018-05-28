@@ -311,25 +311,25 @@ func TestWithConfigEndpoint(t *testing.T) {
 	// some functions by calling WithEndpointConfig(np, mo) above
 	endpointConfig := sdk.opts.endpointConfig
 
-	network, err := endpointConfig.NetworkPeers()
-	if err != nil {
-		t.Fatalf("Error getting NetworkPeer from config: %s", err)
+	network, ok := endpointConfig.NetworkPeers()
+	if !ok {
+		t.Fatal("Error getting NetworkPeer from config")
 	}
-	expectedNetwork, err := np.NetworkPeers()
-	if err != nil {
-		t.Fatalf("Error getting extecd NetworkPeer from direct config: %s", err)
+	expectedNetwork, ok := np.NetworkPeers()
+	if !ok {
+		t.Fatal("Error getting extecd NetworkPeer from direct config")
 	}
 	if !reflect.DeepEqual(network, expectedNetwork) {
 		t.Fatalf("Expected NetworkPeer was not returned by the sdk's config. Expected: %s, Received: %s", expectedNetwork, network)
 	}
 
-	channelOrderers, err := endpointConfig.ChannelOrderers("")
-	if err != nil {
-		t.Fatalf("Error getting ChannelOrderers from config: %s", err)
+	channelOrderers, ok := endpointConfig.ChannelOrderers("")
+	if !ok {
+		t.Fatal("Error getting ChannelOrderers from config")
 	}
-	expectedChannelOrderers, err := co.ChannelOrderers("")
-	if err != nil {
-		t.Fatalf("Error getting extecd ChannelOrderers from direct config: %s", err)
+	expectedChannelOrderers, ok := co.ChannelOrderers("")
+	if !ok {
+		t.Fatal("Error getting extecd ChannelOrderers from direct config")
 	}
 	if !reflect.DeepEqual(channelOrderers, expectedChannelOrderers) {
 		t.Fatalf("Expected ChannelOrderers was not returned by the sdk's config. Expected: %s, Received: %s", expectedChannelOrderers, channelOrderers)
@@ -353,12 +353,12 @@ func TestWithConfigEndpointAndBadOpt(t *testing.T) {
 
 type MockNetworkPeers struct{}
 
-func (M *MockNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, error) {
-	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, MSPID: ""}}, nil
+func (M *MockNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
+	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, MSPID: ""}}, true
 }
 
 type MockChannelOrderers struct{}
 
-func (M *MockChannelOrderers) ChannelOrderers(name string) ([]fab.OrdererConfig, error) {
-	return []fab.OrdererConfig{}, nil
+func (M *MockChannelOrderers) ChannelOrderers(name string) ([]fab.OrdererConfig, bool) {
+	return []fab.OrdererConfig{}, true
 }

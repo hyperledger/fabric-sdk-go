@@ -85,17 +85,17 @@ type CommManager interface {
 //EndpointConfig contains endpoint network configurations
 type EndpointConfig interface {
 	Timeout(TimeoutType) time.Duration
-	MSPID(org string) (string, error)
-	PeerMSPID(name string) (string, error)
-	OrderersConfig() ([]OrdererConfig, error)
-	OrdererConfig(nameOrURL string) (*OrdererConfig, error)
-	PeersConfig(org string) ([]PeerConfig, error)
-	PeerConfig(nameOrURL string) (*PeerConfig, error)
-	NetworkConfig() (*NetworkConfig, error)
-	NetworkPeers() ([]NetworkPeer, error)
-	ChannelConfig(name string) (*ChannelNetworkConfig, error)
-	ChannelPeers(name string) ([]ChannelPeer, error)
-	ChannelOrderers(name string) ([]OrdererConfig, error)
+	MSPID(org string) (string, bool)
+	PeerMSPID(name string) (string, bool)
+	OrderersConfig() ([]OrdererConfig, bool)
+	OrdererConfig(nameOrURL string) (*OrdererConfig, bool)
+	PeersConfig(org string) ([]PeerConfig, bool)
+	PeerConfig(nameOrURL string) (*PeerConfig, bool)
+	NetworkConfig() (*NetworkConfig, bool)
+	NetworkPeers() ([]NetworkPeer, bool)
+	ChannelConfig(name string) (*ChannelNetworkConfig, bool)
+	ChannelPeers(name string) ([]ChannelPeer, bool)
+	ChannelOrderers(name string) ([]OrdererConfig, bool)
 	TLSCACertPool(certConfig ...*x509.Certificate) (*x509.CertPool, error)
 	EventServiceType() EventServiceType
 	TLSClientCerts() ([]tls.Certificate, error)

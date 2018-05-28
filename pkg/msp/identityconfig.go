@@ -206,7 +206,11 @@ func (c *IdentityConfig) networkConfig() (*fab.NetworkConfig, error) {
 	if c.endpointConfig == nil {
 		return nil, errors.New("network config not initialized for identity config")
 	}
-	return c.endpointConfig.NetworkConfig()
+	networkConfig, ok := c.endpointConfig.NetworkConfig()
+	if !ok {
+		return nil, errors.New("network config not initialized for identity config")
+	}
+	return networkConfig, nil
 }
 
 func (c *IdentityConfig) tryMatchingCAConfig(networkConfig *fab.NetworkConfig, caName string) (*msp.CAConfig, string) {
@@ -275,12 +279,13 @@ func (c *IdentityConfig) getPortIfPresent(url string) (int, bool) {
 }
 
 func (c *IdentityConfig) compileMatchers() error {
-	networkConfig, err := c.endpointConfig.NetworkConfig()
-	if err != nil {
-		return err
+	networkConfig, ok := c.endpointConfig.NetworkConfig()
+	if !ok {
+		return errors.New("failed to get network config")
 	}
 	if networkConfig.EntityMatchers["certificateauthority"] != nil {
 		certMatchersConfig := networkConfig.EntityMatchers["certificateauthority"]
+		var err error
 		for i := 0; i < len(certMatchersConfig); i++ {
 			if certMatchersConfig[i].Pattern != "" {
 				c.caMatchers[i], err = regexp.Compile(certMatchersConfig[i].Pattern)

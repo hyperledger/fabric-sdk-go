@@ -61,9 +61,9 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	}
 
 	sampleIdentityConfig := identityCfg.(*IdentityConfig)
-	sampleIdentityConfig.endpointConfig.(*fab.EndpointConfig).ResetNetworkConfig()
-
 	customBackend.KeyValueMap["channels"] = "INVALID"
+	err = sampleIdentityConfig.endpointConfig.(*fab.EndpointConfig).ResetNetworkConfig()
+	assert.NotNil(t, err)
 	_, err = sampleIdentityConfig.networkConfig()
 	if err == nil {
 		t.Fatal("Network config load supposed to fail")
@@ -179,13 +179,13 @@ func TestInitConfigFromRawWithPem(t *testing.T) {
 
 	idConfig := config.(*IdentityConfig)
 
-	o, err := idConfig.endpointConfig.OrderersConfig()
-	if err != nil {
-		t.Fatalf("Failed to load orderers from config. Error: %s", err)
+	o, ok := idConfig.endpointConfig.OrderersConfig()
+	if !ok {
+		t.Fatal("Failed to load orderers from config")
 	}
 
 	if len(o) == 0 {
-		t.Fatalf("orderer cannot be nil or empty")
+		t.Fatal("orderer cannot be nil or empty")
 	}
 
 	oPem := `-----BEGIN CERTIFICATE-----
@@ -207,10 +207,8 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 		t.Fatalf("Orderer Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", oPem, loadedOPem)
 	}
 
-	pc, err := idConfig.endpointConfig.PeersConfig(org1)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	pc, ok := idConfig.endpointConfig.PeersConfig(org1)
+	assert.True(t, ok)
 	if len(pc) == 0 {
 		t.Fatalf("peers list of %s cannot be nil or empty", org1)
 	}
@@ -237,10 +235,8 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 }
 
 func checkPeerPem(org string, idConfig *IdentityConfig, peer string, t *testing.T) {
-	p0, err := idConfig.endpointConfig.PeerConfig(peer)
-	if err != nil {
-		t.Fatalf("Failed to load %s of %s from the config. Error: %s", peer, org, err)
-	}
+	p0, ok := idConfig.endpointConfig.PeerConfig(peer)
+	assert.True(t, ok)
 	if p0 == nil {
 		t.Fatalf("%s of %s cannot be nil", peer, org)
 	}
@@ -367,14 +363,13 @@ func TestCAConfig(t *testing.T) {
 	assert.True(t, pathvar.Subst(val.(string)) == identityConfig.endpointConfig.CryptoConfigPath(), "Incorrect crypto config path", t)
 
 	//Testing MSPID
-	mspID, err := identityConfig.endpointConfig.MSPID(org1)
-	assert.Nil(t, err, "Get MSP ID failed")
+	mspID, ok := identityConfig.endpointConfig.MSPID(org1)
+	assert.True(t, ok, "Get MSP ID failed")
 	assert.True(t, mspID == "Org1MSP", "Get MSP ID failed")
 
 	// testing empty OrgMSP
-	_, err = identityConfig.endpointConfig.MSPID("dummyorg1")
-	assert.NotNil(t, err, "Get MSP ID did not fail for dummyorg1")
-	assert.True(t, err.Error() == "MSP ID is empty for org: dummyorg1", "Get MSP ID did not fail for dummyorg1")
+	_, ok = identityConfig.endpointConfig.MSPID("dummyorg1")
+	assert.False(t, ok, "Get MSP ID did not fail for dummyorg1")
 
 	//Testing CAConfig
 	caConfig, err := identityConfig.CAConfig(org1)
@@ -419,14 +414,13 @@ func TestCAConfigWithCustomEndpointConfig(t *testing.T) {
 	assert.True(t, pathvar.Subst(val.(string)) == identityConfig.endpointConfig.CryptoConfigPath(), "Incorrect crypto config path", t)
 
 	//Testing MSPID
-	mspID, err := identityConfig.endpointConfig.MSPID(org1)
-	assert.Nil(t, err, "Get MSP ID failed")
+	mspID, ok := identityConfig.endpointConfig.MSPID(org1)
+	assert.True(t, ok, "Get MSP ID failed")
 	assert.True(t, mspID == "Org1MSP", "Get MSP ID failed")
 
 	// testing empty OrgMSP
-	_, err = identityConfig.endpointConfig.MSPID("dummyorg1")
-	assert.NotNil(t, err, "Get MSP ID did not fail for dummyorg1")
-	assert.True(t, err.Error() == "MSP ID is empty for org: dummyorg1", "Get MSP ID did not fail for dummyorg1")
+	_, ok = identityConfig.endpointConfig.MSPID("dummyorg1")
+	assert.False(t, ok, "Get MSP ID did not fail for dummyorg1")
 
 	//Testing CAConfig
 	caConfig, err := identityConfig.CAConfig(org1)
@@ -572,11 +566,11 @@ type customEndpointConfig struct {
 	fabImpl.EndpointConfig
 }
 
-func (c *customEndpointConfig) NetworkConfig() (*fabImpl.NetworkConfig, error) {
-	nConfig, err := c.EndpointConfig.NetworkConfig()
-	if err != nil {
-		return nil, err
+func (c *customEndpointConfig) NetworkConfig() (*fabImpl.NetworkConfig, bool) {
+	nConfig, ok := c.EndpointConfig.NetworkConfig()
+	if !ok {
+		return nil, ok
 	}
 	nConfig.Client.Organization = "CUSTOM-ORG1"
-	return nConfig, nil
+	return nConfig, true
 }

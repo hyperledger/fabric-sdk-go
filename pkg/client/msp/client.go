@@ -89,11 +89,11 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 	if msp.orgName == "" {
 		return nil, errors.New("organization is not provided")
 	}
-	networkConfig, err := ctx.EndpointConfig().NetworkConfig()
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get NetworkConfig")
+	networkConfig, ok := ctx.EndpointConfig().NetworkConfig()
+	if !ok {
+		return nil, errors.New("failed to get NetworkConfig")
 	}
-	_, ok := networkConfig.Organizations[strings.ToLower(msp.orgName)]
+	_, ok = networkConfig.Organizations[strings.ToLower(msp.orgName)]
 	if !ok {
 		return nil, fmt.Errorf("non-existent organization: '%s'", msp.orgName)
 	}

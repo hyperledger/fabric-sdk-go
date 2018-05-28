@@ -340,7 +340,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 
 	err = rc.JoinChannel("mychannel", WithTargets(peer1))
 	assert.NotNil(t, err, "Should have failed to join channel since no orderer has been configured")
-	assert.Contains(t, err.Error(), "no matching channel config found")
+	assert.Contains(t, err.Error(), "orderer not found: orderers lookup failed")
 
 	// Misconfigured channel orderer
 	configBackend = getInvalidChannelOrdererBackend(backend...)
@@ -354,7 +354,8 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	rc = setupResMgmtClient(t, ctx)
 
 	err = rc.JoinChannel("mychannel", WithTargets(peer1))
-	if err == nil || !strings.Contains(err.Error(), "no matching orderer config found") {
+
+	if err == nil || !strings.Contains(err.Error(), "failed to find orderer for request: orderer not found: orderers lookup failed") {
 		t.Fatalf("Should have failed to join channel since channel orderer has been misconfigured")
 	}
 

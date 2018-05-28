@@ -114,9 +114,9 @@ func asPeers(ctx contextAPI.Client, endpoints []*discclient.Peer) []fab.Peer {
 
 		logger.Debugf("Adding endpoint [%s]", url)
 
-		peerConfig, err := ctx.EndpointConfig().PeerConfig(url)
-		if err != nil {
-			logger.Warnf("Error getting peer config for url [%s]: %s", url, err)
+		peerConfig, found := ctx.EndpointConfig().PeerConfig(url)
+		if !found {
+			logger.Warnf("Peer config not found for url [%s]", url)
 			continue
 		}
 

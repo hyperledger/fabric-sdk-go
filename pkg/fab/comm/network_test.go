@@ -64,8 +64,8 @@ func TestSearchPeerConfigFromURL(t *testing.T) {
 		t.Fatalf("Unexpected error reading config: %v", err)
 	}
 
-	peer0Org1, err := sampleConfig.PeerConfig("peer0.org1.example.com")
-	assert.Nil(t, err, "supposed to get no error")
+	peer0Org1, ok := sampleConfig.PeerConfig("peer0.org1.example.com")
+	assert.True(t, ok, "peerconfig search was expected to be successful")
 
 	//Positive scenario,
 	// peerconfig should be found using matched URL

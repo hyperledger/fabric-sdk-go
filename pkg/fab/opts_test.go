@@ -67,16 +67,16 @@ func TestCreateCustomEndpointConfig(t *testing.T) {
 	if tmout < 0 {
 		t.Fatalf("EndpointConfig was supposed to have Timeout function overridden from Options but was not %+v. Timeout: %s", eco, tmout)
 	}
-	m, err := eco.MSPID("")
-	if err != nil {
-		t.Fatalf("MSPID returned unexpected error %s", err)
+	m, ok := eco.MSPID("")
+	if !ok {
+		t.Fatalf("Failed to get MSP ID")
 	}
 	if m != "testMSP" {
 		t.Fatalf("MSPID did not return expected interface value. Expected: %s, Received: %s", "testMSP", m)
 	}
-	m, err = eco.PeerMSPID("")
-	if err != nil {
-		t.Fatalf("PeerMSPID returned unexpected error %s", err)
+	m, ok = eco.PeerMSPID("")
+	if !ok {
+		t.Fatalf("PeerMSPID supposed to pass")
 	}
 	if m != "testPeerMSP" {
 		t.Fatalf("MSPID did not return expected interface value. Expected: %s, Received: %s", "testPeerMSP", m)
@@ -103,9 +103,9 @@ func TestCreateCustomEndpointConfigRemainingFunctions(t *testing.T) {
 		t.Fatalf("build ConfigEndpointOption returned is nil")
 	}
 	// verify that their functions are available
-	p, err := eco.ChannelPeers("")
-	if err != nil {
-		t.Fatalf("ChannelPeers returned unexpected error %s", err)
+	p, ok := eco.ChannelPeers("")
+	if !ok {
+		t.Fatalf("ChannelPeers expected to succeed")
 	}
 	if len(p) != 1 {
 		t.Fatalf("ChannelPeers did not return expected interface value. Expected: 1 ChannelPeer, Received: %d", len(p))
@@ -157,9 +157,9 @@ func TestCreateCustomEndpointConfigWithSomeDefaultFunctions(t *testing.T) {
 	if tmout != expectedTimeout {
 		t.Fatalf("EndpointConfig was supposed to have Timeout function overridden from Options but was not %+v. Timeout: [expected: %s, received: %s]", eco, expectedTimeout, tmout)
 	}
-	m, err := endpointConfigOptionWithSomeDefaults.MSPID("")
-	if err != nil {
-		t.Fatalf("MSPID returned unexpected error %s", err)
+	m, ok := endpointConfigOptionWithSomeDefaults.MSPID("")
+	if !ok {
+		t.Fatalf("Failed to get MSPID")
 	}
 	if m != "testMSP" {
 		t.Fatalf("MSPID did not return expected interface value. Expected: %s, Received: %s", "testMSP", m)
@@ -268,68 +268,68 @@ func (m *mockTimeoutConfig) Timeout(timeoutType fab.TimeoutType) time.Duration {
 
 type mockMspID struct{}
 
-func (m *mockMspID) MSPID(org string) (string, error) {
-	return "testMSP", nil
+func (m *mockMspID) MSPID(org string) (string, bool) {
+	return "testMSP", true
 }
 
 type mockPeerMSPID struct{}
 
-func (m *mockPeerMSPID) PeerMSPID(name string) (string, error) {
-	return "testPeerMSP", nil
+func (m *mockPeerMSPID) PeerMSPID(name string) (string, bool) {
+	return "testPeerMSP", true
 }
 
 type mockrderersConfig struct{}
 
-func (m *mockrderersConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
-	return []fab.OrdererConfig{{URL: "orderer1.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}}, nil
+func (m *mockrderersConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
+	return []fab.OrdererConfig{{URL: "orderer1.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}}, true
 }
 
 type mockOrdererConfig struct{}
 
-func (m *mockOrdererConfig) OrdererConfig(name string) (*fab.OrdererConfig, error) {
-	return &fab.OrdererConfig{URL: "o.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, nil
+func (m *mockOrdererConfig) OrdererConfig(name string) (*fab.OrdererConfig, bool) {
+	return &fab.OrdererConfig{URL: "o.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, true
 }
 
 type mockPeersConfig struct{}
 
-func (m *mockPeersConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
-	return []fab.PeerConfig{{URL: "peer.com", EventURL: "event.peer.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}}, nil
+func (m *mockPeersConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
+	return []fab.PeerConfig{{URL: "peer.com", EventURL: "event.peer.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}}, true
 }
 
 type mockPeerConfig struct{}
 
-func (m *mockPeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
-	return &fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, nil
+func (m *mockPeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
+	return &fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, true
 }
 
 type mockNetworkConfig struct{}
 
-func (m *mockNetworkConfig) NetworkConfig() (*fab.NetworkConfig, error) {
-	return &fab.NetworkConfig{}, nil
+func (m *mockNetworkConfig) NetworkConfig() (*fab.NetworkConfig, bool) {
+	return &fab.NetworkConfig{}, true
 }
 
 type mockNetworkPeers struct{}
 
-func (m *mockNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, error) {
-	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, MSPID: ""}}, nil
+func (m *mockNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
+	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, MSPID: ""}}, true
 }
 
 type mockChannelConfig struct{}
 
-func (m *mockChannelConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, error) {
-	return &fab.ChannelNetworkConfig{}, nil
+func (m *mockChannelConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool) {
+	return &fab.ChannelNetworkConfig{}, true
 }
 
 type mockChannelPeers struct{}
 
-func (m *mockChannelPeers) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
-	return []fab.ChannelPeer{{}}, nil
+func (m *mockChannelPeers) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
+	return []fab.ChannelPeer{{}}, true
 }
 
 type mockChannelOrderers struct{}
 
-func (m *mockChannelOrderers) ChannelOrderers(name string) ([]fab.OrdererConfig, error) {
-	return []fab.OrdererConfig{}, nil
+func (m *mockChannelOrderers) ChannelOrderers(name string) ([]fab.OrdererConfig, bool) {
+	return []fab.OrdererConfig{}, true
 }
 
 type mockTLSCACertPool struct{}

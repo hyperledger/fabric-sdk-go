@@ -41,6 +41,7 @@ import (
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -551,15 +552,11 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 		t.Fatalf("context creation failed: %s", err)
 	}
 
-	org1Peers, err := ctx.EndpointConfig().PeersConfig(org1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	org1Peers, ok := ctx.EndpointConfig().PeersConfig(org1)
+	assert.True(t, ok)
 
-	org2Peers, err := ctx.EndpointConfig().PeersConfig(org2)
-	if err != nil {
-		t.Fatal(err)
-	}
+	org2Peers, ok := ctx.EndpointConfig().PeersConfig(org2)
+	assert.True(t, ok)
 
 	orgTestPeer0, err = ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{PeerConfig: org1Peers[0]})
 	if err != nil {

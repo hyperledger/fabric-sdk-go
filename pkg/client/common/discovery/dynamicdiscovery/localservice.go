@@ -77,9 +77,9 @@ func (s *LocalService) queryPeers() ([]fab.Peer, error) {
 }
 
 func (s *LocalService) getTarget(ctx contextAPI.Client) (*fab.PeerConfig, error) {
-	peers, err := ctx.EndpointConfig().NetworkPeers()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get peer configs")
+	peers, ok := ctx.EndpointConfig().NetworkPeers()
+	if !ok {
+		return nil, errors.New("failed to get network peers")
 	}
 	mspID := ctx.Identifier().MSPID
 	for _, p := range peers {

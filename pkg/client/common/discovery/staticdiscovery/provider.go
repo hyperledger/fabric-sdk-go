@@ -45,9 +45,9 @@ func (dp *DiscoveryProvider) CreateDiscoveryService(channelID string) (fab.Disco
 	}
 
 	// Use configured channel peers
-	chPeers, err := dp.config.ChannelPeers(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to read configuration for channel peers")
+	chPeers, ok := dp.config.ChannelPeers(channelID)
+	if !ok {
+		return nil, errors.New("unable to read configuration for channel peers")
 	}
 
 	peers := []fab.Peer{}
@@ -67,9 +67,9 @@ func (dp *DiscoveryProvider) CreateDiscoveryService(channelID string) (fab.Disco
 func (dp *DiscoveryProvider) CreateLocalDiscoveryService(mspID string) (fab.DiscoveryService, error) {
 	peers := []fab.Peer{}
 
-	netPeers, err := dp.config.NetworkPeers()
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to read configuration for network peers")
+	netPeers, ok := dp.config.NetworkPeers()
+	if !ok {
+		return nil, errors.New("unable to read configuration for network peers")
 	}
 
 	for _, p := range netPeers {

@@ -48,24 +48,12 @@ const (
 	// MissingEndorsement is if an endoresement is missing
 	MissingEndorsement Code = 9
 
-	// NoMatchingCertificateAuthorityEntity is if entityMatchers are unable to find any matchingCertificateAuthority
-	NoMatchingCertificateAuthorityEntity Code = 21
-
-	// NoMatchingPeerEntity is if entityMatchers are unable to find any matchingPeer
-	NoMatchingPeerEntity Code = 22
-
-	// NoMatchingOrdererEntity is if entityMatchers are unable to find any matchingOrderer
-	NoMatchingOrdererEntity Code = 23
-
 	// PrematureChaincodeExecution indicates that an attempt was made to invoke a chaincode that's
 	// in the process of being launched.
-	PrematureChaincodeExecution Code = 24
-
-	// NoMatchingChannelEntity is if entityMatchers are unable to find any matchingChannel
-	NoMatchingChannelEntity Code = 25
+	PrematureChaincodeExecution Code = 21
 
 	// ChaincodeAlreadyLaunching indicates that an attempt for multiple simultaneous invokes was made to launch chaincode
-	ChaincodeAlreadyLaunching Code = 26
+	ChaincodeAlreadyLaunching Code = 22
 )
 
 // CodeName maps the codes in this packages to human-readable strings

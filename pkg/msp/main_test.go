@@ -103,9 +103,9 @@ func (f *textFixture) setup(configBackend ...core.ConfigBackend) { //nolint
 	f.userStore = userStoreFromConfig(nil, f.identityConfig)
 
 	identityManagers := make(map[string]msp.IdentityManager)
-	netConfig, err := f.endpointConfig.NetworkConfig()
-	if err != nil {
-		panic(fmt.Sprintf("failed to get network config: %v", err))
+	netConfig, ok := f.endpointConfig.NetworkConfig()
+	if !ok {
+		panic("failed to get network config")
 	}
 	for orgName := range netConfig.Organizations {
 		mgr, err1 := NewIdentityManager(orgName, f.userStore, f.cryptoSuite, f.endpointConfig)
@@ -168,15 +168,15 @@ func cleanupTestPath(t *testing.T, storePath string) {
 }
 
 func mspIDByOrgName(t *testing.T, c fab.EndpointConfig, orgName string) string {
-	netConfig, err := c.NetworkConfig()
-	if err != nil {
-		t.Fatalf("network config retrieval failed: %v", err)
+	netConfig, ok := c.NetworkConfig()
+	if !ok {
+		t.Fatal("network config retrieval failed")
 	}
 
 	// viper keys are case insensitive
 	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
 	if !ok {
-		t.Fatalf("org config retrieval failed: %v", err)
+		t.Fatal("org config retrieval failed ")
 	}
 	return orgConfig.MSPID
 }

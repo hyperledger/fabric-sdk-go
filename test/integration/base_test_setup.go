@@ -146,9 +146,9 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "failed to get endpoint config")
 	}
 
-	mspID, err := endpointConfig.MSPID(orgName)
-	if err != nil {
-		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "looking up MSP ID failed")
+	mspID, ok := endpointConfig.MSPID(orgName)
+	if !ok {
+		return resmgmt.InstantiateCCResponse{}, errors.New("looking up MSP ID failed")
 	}
 
 	//prepare context

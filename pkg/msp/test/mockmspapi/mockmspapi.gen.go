@@ -34,6 +34,19 @@ func (m *MockCAClient) EXPECT() *MockCAClientMockRecorder {
 	return m.recorder
 }
 
+// CreateIdentity mocks base method
+func (m *MockCAClient) CreateIdentity(arg0 *api.IdentityRequest) (*api.IdentityResponse, error) {
+	ret := m.ctrl.Call(m, "CreateIdentity", arg0)
+	ret0, _ := ret[0].(*api.IdentityResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateIdentity indicates an expected call of CreateIdentity
+func (mr *MockCAClientMockRecorder) CreateIdentity(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentity", reflect.TypeOf((*MockCAClient)(nil).CreateIdentity), arg0)
+}
+
 // Enroll mocks base method
 func (m *MockCAClient) Enroll(arg0, arg1 string) error {
 	ret := m.ctrl.Call(m, "Enroll", arg0, arg1)
@@ -44,6 +57,45 @@ func (m *MockCAClient) Enroll(arg0, arg1 string) error {
 // Enroll indicates an expected call of Enroll
 func (mr *MockCAClientMockRecorder) Enroll(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enroll", reflect.TypeOf((*MockCAClient)(nil).Enroll), arg0, arg1)
+}
+
+// GetAllIdentities mocks base method
+func (m *MockCAClient) GetAllIdentities(arg0 string) ([]*api.IdentityResponse, error) {
+	ret := m.ctrl.Call(m, "GetAllIdentities", arg0)
+	ret0, _ := ret[0].([]*api.IdentityResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllIdentities indicates an expected call of GetAllIdentities
+func (mr *MockCAClientMockRecorder) GetAllIdentities(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllIdentities", reflect.TypeOf((*MockCAClient)(nil).GetAllIdentities), arg0)
+}
+
+// GetIdentity mocks base method
+func (m *MockCAClient) GetIdentity(arg0, arg1 string) (*api.IdentityResponse, error) {
+	ret := m.ctrl.Call(m, "GetIdentity", arg0, arg1)
+	ret0, _ := ret[0].(*api.IdentityResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIdentity indicates an expected call of GetIdentity
+func (mr *MockCAClientMockRecorder) GetIdentity(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdentity", reflect.TypeOf((*MockCAClient)(nil).GetIdentity), arg0, arg1)
+}
+
+// ModifyIdentity mocks base method
+func (m *MockCAClient) ModifyIdentity(arg0 *api.IdentityRequest) (*api.IdentityResponse, error) {
+	ret := m.ctrl.Call(m, "ModifyIdentity", arg0)
+	ret0, _ := ret[0].(*api.IdentityResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ModifyIdentity indicates an expected call of ModifyIdentity
+func (mr *MockCAClientMockRecorder) ModifyIdentity(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModifyIdentity", reflect.TypeOf((*MockCAClient)(nil).ModifyIdentity), arg0)
 }
 
 // Reenroll mocks base method
@@ -69,6 +121,19 @@ func (m *MockCAClient) Register(arg0 *api.RegistrationRequest) (string, error) {
 // Register indicates an expected call of Register
 func (mr *MockCAClientMockRecorder) Register(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockCAClient)(nil).Register), arg0)
+}
+
+// RemoveIdentity mocks base method
+func (m *MockCAClient) RemoveIdentity(arg0 *api.RemoveIdentityRequest) (*api.IdentityResponse, error) {
+	ret := m.ctrl.Call(m, "RemoveIdentity", arg0)
+	ret0, _ := ret[0].(*api.IdentityResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RemoveIdentity indicates an expected call of RemoveIdentity
+func (mr *MockCAClientMockRecorder) RemoveIdentity(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveIdentity", reflect.TypeOf((*MockCAClient)(nil).RemoveIdentity), arg0)
 }
 
 // Revoke mocks base method

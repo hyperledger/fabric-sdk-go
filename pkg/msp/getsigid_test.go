@@ -113,9 +113,9 @@ func getConfigs(t *testing.T) (core.CryptoSuiteConfig, providersFab.EndpointConf
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %v", err))
 	}
-	netConfig, err := endpointConfig.NetworkConfig()
-	if err != nil {
-		t.Fatalf("Failed to setup netConfig: %s", err)
+	netConfig, ok := endpointConfig.NetworkConfig()
+	if !ok {
+		t.Fatal("Failed to setup netConfig")
 	}
 	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
 	if !ok {

@@ -35,9 +35,9 @@ type CAClientImpl struct {
 // NewCAClient creates a new CA CAClient instance
 func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 
-	netConfig, err := ctx.EndpointConfig().NetworkConfig()
-	if err != nil {
-		return nil, errors.Wrapf(err, "network config retrieval failed")
+	netConfig, ok := ctx.EndpointConfig().NetworkConfig()
+	if !ok {
+		return nil, errors.New("network config retrieval failed")
 	}
 
 	if orgName == "" {
@@ -65,6 +65,7 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 	var caConfig *msp.CAConfig
 	var adapter *fabricCAAdapter
 	var registrar msp.EnrollCredentials
+	var err error
 
 	// Currently, an organization can be associated with only one CA
 	caName := orgConfig.CertificateAuthorities[0]

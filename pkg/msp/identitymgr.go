@@ -33,9 +33,9 @@ type IdentityManager struct {
 // NewIdentityManager creates a new instance of IdentityManager
 func NewIdentityManager(orgName string, userStore msp.UserStore, cryptoSuite core.CryptoSuite, endpointConfig fab.EndpointConfig) (*IdentityManager, error) {
 
-	netConfig, err := endpointConfig.NetworkConfig()
-	if err != nil {
-		return nil, errors.Wrapf(err, "network config retrieval failed")
+	netConfig, ok := endpointConfig.NetworkConfig()
+	if !ok {
+		return nil, errors.New("network config retrieval failed")
 	}
 
 	// viper keys are case insensitive
@@ -53,6 +53,7 @@ func NewIdentityManager(orgName string, userStore msp.UserStore, cryptoSuite cor
 
 	orgCryptoPathTemplate := orgConfig.CryptoPath
 	if orgCryptoPathTemplate != "" {
+		var err error
 		if !filepath.IsAbs(orgCryptoPathTemplate) {
 			orgCryptoPathTemplate = filepath.Join(endpointConfig.CryptoConfigPath(), orgCryptoPathTemplate)
 		}

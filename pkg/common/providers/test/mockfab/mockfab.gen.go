@@ -39,10 +39,10 @@ func (m *MockEndpointConfig) EXPECT() *MockEndpointConfigMockRecorder {
 }
 
 // ChannelConfig mocks base method
-func (m *MockEndpointConfig) ChannelConfig(arg0 string) (*fab.ChannelNetworkConfig, error) {
+func (m *MockEndpointConfig) ChannelConfig(arg0 string) (*fab.ChannelNetworkConfig, bool) {
 	ret := m.ctrl.Call(m, "ChannelConfig", arg0)
 	ret0, _ := ret[0].(*fab.ChannelNetworkConfig)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
@@ -52,10 +52,10 @@ func (mr *MockEndpointConfigMockRecorder) ChannelConfig(arg0 interface{}) *gomoc
 }
 
 // ChannelOrderers mocks base method
-func (m *MockEndpointConfig) ChannelOrderers(arg0 string) ([]fab.OrdererConfig, error) {
+func (m *MockEndpointConfig) ChannelOrderers(arg0 string) ([]fab.OrdererConfig, bool) {
 	ret := m.ctrl.Call(m, "ChannelOrderers", arg0)
 	ret0, _ := ret[0].([]fab.OrdererConfig)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
@@ -65,10 +65,10 @@ func (mr *MockEndpointConfigMockRecorder) ChannelOrderers(arg0 interface{}) *gom
 }
 
 // ChannelPeers mocks base method
-func (m *MockEndpointConfig) ChannelPeers(arg0 string) ([]fab.ChannelPeer, error) {
+func (m *MockEndpointConfig) ChannelPeers(arg0 string) ([]fab.ChannelPeer, bool) {
 	ret := m.ctrl.Call(m, "ChannelPeers", arg0)
 	ret0, _ := ret[0].([]fab.ChannelPeer)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
@@ -102,10 +102,10 @@ func (mr *MockEndpointConfigMockRecorder) EventServiceType() *gomock.Call {
 }
 
 // MSPID mocks base method
-func (m *MockEndpointConfig) MSPID(arg0 string) (string, error) {
+func (m *MockEndpointConfig) MSPID(arg0 string) (string, bool) {
 	ret := m.ctrl.Call(m, "MSPID", arg0)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
@@ -115,10 +115,10 @@ func (mr *MockEndpointConfigMockRecorder) MSPID(arg0 interface{}) *gomock.Call {
 }
 
 // NetworkConfig mocks base method
-func (m *MockEndpointConfig) NetworkConfig() (*fab.NetworkConfig, error) {
+func (m *MockEndpointConfig) NetworkConfig() (*fab.NetworkConfig, bool) {
 	ret := m.ctrl.Call(m, "NetworkConfig")
 	ret0, _ := ret[0].(*fab.NetworkConfig)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
@@ -128,10 +128,10 @@ func (mr *MockEndpointConfigMockRecorder) NetworkConfig() *gomock.Call {
 }
 
 // NetworkPeers mocks base method
-func (m *MockEndpointConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
+func (m *MockEndpointConfig) NetworkPeers() ([]fab.NetworkPeer, bool) {
 	ret := m.ctrl.Call(m, "NetworkPeers")
 	ret0, _ := ret[0].([]fab.NetworkPeer)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
@@ -141,10 +141,10 @@ func (mr *MockEndpointConfigMockRecorder) NetworkPeers() *gomock.Call {
 }
 
 // OrdererConfig mocks base method
-func (m *MockEndpointConfig) OrdererConfig(arg0 string) (*fab.OrdererConfig, error) {
+func (m *MockEndpointConfig) OrdererConfig(arg0 string) (*fab.OrdererConfig, bool) {
 	ret := m.ctrl.Call(m, "OrdererConfig", arg0)
 	ret0, _ := ret[0].(*fab.OrdererConfig)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
@@ -154,10 +154,10 @@ func (mr *MockEndpointConfigMockRecorder) OrdererConfig(arg0 interface{}) *gomoc
 }
 
 // OrderersConfig mocks base method
-func (m *MockEndpointConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
+func (m *MockEndpointConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
 	ret := m.ctrl.Call(m, "OrderersConfig")
 	ret0, _ := ret[0].([]fab.OrdererConfig)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
@@ -167,10 +167,10 @@ func (mr *MockEndpointConfigMockRecorder) OrderersConfig() *gomock.Call {
 }
 
 // PeerConfig mocks base method
-func (m *MockEndpointConfig) PeerConfig(arg0 string) (*fab.PeerConfig, error) {
+func (m *MockEndpointConfig) PeerConfig(arg0 string) (*fab.PeerConfig, bool) {
 	ret := m.ctrl.Call(m, "PeerConfig", arg0)
 	ret0, _ := ret[0].(*fab.PeerConfig)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
@@ -180,10 +180,10 @@ func (mr *MockEndpointConfigMockRecorder) PeerConfig(arg0 interface{}) *gomock.C
 }
 
 // PeerMSPID mocks base method
-func (m *MockEndpointConfig) PeerMSPID(arg0 string) (string, error) {
+func (m *MockEndpointConfig) PeerMSPID(arg0 string) (string, bool) {
 	ret := m.ctrl.Call(m, "PeerMSPID", arg0)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
@@ -193,10 +193,10 @@ func (mr *MockEndpointConfigMockRecorder) PeerMSPID(arg0 interface{}) *gomock.Ca
 }
 
 // PeersConfig mocks base method
-func (m *MockEndpointConfig) PeersConfig(arg0 string) ([]fab.PeerConfig, error) {
+func (m *MockEndpointConfig) PeersConfig(arg0 string) ([]fab.PeerConfig, bool) {
 	ret := m.ctrl.Call(m, "PeersConfig", arg0)
 	ret0, _ := ret[0].([]fab.PeerConfig)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 

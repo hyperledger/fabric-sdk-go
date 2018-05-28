@@ -307,29 +307,26 @@ func (m *exampleTimeout) Timeout(tType fab.TimeoutType) time.Duration {
 type exampleMSPID struct{}
 
 //MSPID overrides EndpointConfig's MSPID function which returns the mspID for the given org name in the arg
-func (m *exampleMSPID) MSPID(org string) (string, error) {
+func (m *exampleMSPID) MSPID(org string) (string, bool) {
 	//lowercase org name to make it case insensitive, depends on application preference, for the sake of this example, make it case in-sensitive
 	mspID := orgsConfig[strings.ToLower(org)].MSPID
 	if mspID == "" {
-		return "", errors.Errorf("MSP ID is empty for org: %s", org)
+		return "", false
 	}
 
-	return mspID, nil
+	return mspID, true
 }
 
 type examplePeerMSPID struct{}
 
 //PeerMSPID overrides EndpointConfig's PeerMSPID function which returns the mspID for the given org name in the arg
-func (m *examplePeerMSPID) PeerMSPID(name string) (string, error) {
-	var mspID string
-
+func (m *examplePeerMSPID) PeerMSPID(name string) (string, bool) {
 	// Find organisation/msp that peer belongs to
 	for _, org := range orgsConfig {
 		for i := 0; i < len(org.Peers); i++ {
 			if strings.EqualFold(org.Peers[i], name) {
 				// peer belongs to this org add org msp
-				mspID = org.MSPID
-				break
+				return org.MSPID, true
 				// EntityMatchers are not used in this implementation, below is an example of how to use them if needed
 				//} else {
 				//
@@ -342,7 +339,7 @@ func (m *examplePeerMSPID) PeerMSPID(name string) (string, error) {
 		}
 	}
 
-	return mspID, nil
+	return "", false
 }
 
 func verifyIsLocalCAsURLs(caConfigs map[string]msp.CAConfig) map[string]msp.CAConfig {
@@ -407,7 +404,7 @@ type exampleOrderersConfig struct {
 }
 
 //OrderersConfig overrides EndpointConfig's OrderersConfig function which returns the ordererConfigs list
-func (m *exampleOrderersConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
+func (m *exampleOrderersConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
 	orderers := []fab.OrdererConfig{}
 
 	for _, orderer := range orderersConfig {
@@ -415,19 +412,18 @@ func (m *exampleOrderersConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 		if orderer.TLSCACerts.Path != "" {
 			orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
 		} else if len(orderer.TLSCACerts.Pem) == 0 && !m.isSystemCertPool {
-			return nil, errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
+			return nil, false
 		}
-
 		orderers = append(orderers, orderer)
 	}
 
-	return orderers, nil
+	return orderers, true
 }
 
 type exampleOrdererConfig struct{}
 
 //OrdererConfig overrides EndpointConfig's OrdererConfig function which returns the ordererConfig instance for the name/URL arg
-func (m *exampleOrdererConfig) OrdererConfig(ordererNameOrURL string) (*fab.OrdererConfig, error) {
+func (m *exampleOrdererConfig) OrdererConfig(ordererNameOrURL string) (*fab.OrdererConfig, bool) {
 	orderer, ok := networkConfig.Orderers[strings.ToLower(ordererNameOrURL)]
 	if !ok {
 		// EntityMatchers are not used in this implementation, below is an example of how to use them if needed, see default implementation for live example
@@ -436,14 +432,14 @@ func (m *exampleOrdererConfig) OrdererConfig(ordererNameOrURL string) (*fab.Orde
 		//	return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingOrdererEntity.ToInt32(), "no matching orderer config found", nil))
 		//}
 		//orderer = *matchingOrdererConfig
-		return nil, errors.Errorf("orderer '%s' not found in the configs", ordererNameOrURL)
+		return nil, false
 	}
 
 	if orderer.TLSCACerts.Path != "" {
 		orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
 	}
 
-	return &orderer, nil
+	return &orderer, true
 }
 
 type examplePeersConfig struct {
@@ -478,7 +474,7 @@ func newPeersConfigImpl() *examplePeersConfig {
 }
 
 //PeersConfig overrides EndpointConfig's PeersConfig function which returns the peersConfig list
-func (m *examplePeersConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
+func (m *examplePeersConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
 	orgPeers := orgsConfig[strings.ToLower(org)].Peers
 	peers := []fab.PeerConfig{}
 
@@ -492,7 +488,7 @@ func (m *examplePeersConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
 			//}
 			//
 			//p = *matchingPeerConfig
-			return nil, err
+			return nil, false
 		}
 		if p.TLSCACerts.Path != "" {
 			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
@@ -500,7 +496,7 @@ func (m *examplePeersConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
 
 		peers = append(peers, p)
 	}
-	return peers, nil
+	return peers, true
 }
 
 func (m *examplePeersConfig) verifyPeerConfig(p fab.PeerConfig, peerName string, tlsEnabled bool) error {
@@ -516,10 +512,10 @@ func (m *examplePeersConfig) verifyPeerConfig(p fab.PeerConfig, peerName string,
 type examplePeerConfig struct{}
 
 // PeerConfig overrides EndpointConfig's PeerConfig function which returns the peerConfig instance for the name/URL arg
-func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
+func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
 	pcfg, ok := peersConfig[nameOrURL]
 	if ok {
-		return &pcfg, nil
+		return &pcfg, true
 	}
 	if pcfg.TLSCACerts.Path != "" {
 		pcfg.TLSCACerts.Path = pathvar.Subst(pcfg.TLSCACerts.Path)
@@ -527,14 +523,14 @@ func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error
 	// EntityMatchers are not used in this implementation
 	// see default implementation (pkg/fab/endpointconfig.go) to see how they're used
 
-	return nil, errors.Errorf("peer '%s' not found in the configs", nameOrURL)
+	return nil, false
 }
 
 type exampleNetworkConfig struct{}
 
 // NetworkConfig overrides EndpointConfig's NetworkConfig function which returns the full network Config instance
-func (m *exampleNetworkConfig) NetworkConfig() (*fab.NetworkConfig, error) {
-	return &networkConfig, nil
+func (m *exampleNetworkConfig) NetworkConfig() (*fab.NetworkConfig, bool) {
+	return &networkConfig, true
 }
 
 type exampleNetworkPeers struct {
@@ -542,7 +538,7 @@ type exampleNetworkPeers struct {
 }
 
 //NetworkPeers overrides EndpointConfig's NetworkPeers function which returns the networkPeers list
-func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, error) {
+func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
 	netPeers := []fab.NetworkPeer{}
 	// referencing another interface to call PeerMSPID to match config yaml content
 	peerMSPID := &examplePeerMSPID{}
@@ -550,23 +546,23 @@ func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, error) {
 	for name, p := range networkConfig.Peers {
 
 		if err := m.verifyPeerConfig(p, name, endpoint.IsTLSEnabled(p.URL)); err != nil {
-			return nil, err
+			return nil, false
 		}
 
 		if p.TLSCACerts.Path != "" {
 			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
 		}
 
-		mspID, err := peerMSPID.PeerMSPID(name)
-		if err != nil {
-			return nil, errors.Errorf("failed to retrieve msp id for peer %s", name)
+		mspID, ok := peerMSPID.PeerMSPID(name)
+		if !ok {
+			return nil, false
 		}
 
 		netPeer := fab.NetworkPeer{PeerConfig: p, MSPID: mspID}
 		netPeers = append(netPeers, netPeer)
 	}
 
-	return netPeers, nil
+	return netPeers, true
 }
 func (m *exampleNetworkPeers) verifyPeerConfig(p fab.PeerConfig, peerName string, tlsEnabled bool) error {
 	if p.URL == "" {
@@ -581,7 +577,7 @@ func (m *exampleNetworkPeers) verifyPeerConfig(p fab.PeerConfig, peerName string
 type exampleChannelConfig struct{}
 
 // ChannelConfig overrides EndpointConfig's ChannelConfig function which returns the channelConfig instance for the channel name arg
-func (m *exampleChannelConfig) ChannelConfig(channelName string) (*fab.ChannelNetworkConfig, error) {
+func (m *exampleChannelConfig) ChannelConfig(channelName string) (*fab.ChannelNetworkConfig, bool) {
 	ch, ok := channelsConfig[strings.ToLower(channelName)]
 	if !ok {
 		// EntityMatchers are not used in this implementation, below is an example of how to use them if needed
@@ -590,10 +586,10 @@ func (m *exampleChannelConfig) ChannelConfig(channelName string) (*fab.ChannelNe
 		//	return nil, errors.WithMessage(matchErr, "channel config not found")
 		//}
 		//return matchingChannel, nil
-		return nil, errors.Errorf("No channel found for '%s'", channelName)
+		return nil, false
 	}
 
-	return &ch, nil
+	return &ch, true
 }
 
 type exampleChannelPeers struct {
@@ -601,7 +597,7 @@ type exampleChannelPeers struct {
 }
 
 // ChannelPeers overrides EndpointConfig's ChannelPeers function which returns the list of peers for the channel name arg
-func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPeer, error) {
+func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPeer, bool) {
 	peers := []fab.ChannelPeer{}
 	// referencing another interface to call PeerMSPID to match config yaml content
 	peerMSPID := &examplePeerMSPID{}
@@ -616,7 +612,7 @@ func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPee
 		//
 		//// reset 'name' with the mappedChannel as it's referenced further below
 		//chConfig = *matchingChannel
-		return nil, errors.Errorf("No channel found for '%s'", channelName)
+		return nil, false
 	}
 
 	for peerName, chPeerConfig := range chConfig.Peers {
@@ -630,20 +626,20 @@ func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPee
 			//	continue
 			//}
 			//p = *matchingPeerConfig
-			return nil, errors.Errorf("No peer found '%s'", peerName)
+			return nil, false
 		}
 
 		if err := m.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
-			return nil, err
+			return nil, false
 		}
 
 		if p.TLSCACerts.Path != "" {
 			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
 		}
 
-		mspID, err := peerMSPID.PeerMSPID(peerName)
-		if err != nil {
-			return nil, errors.Errorf("failed to retrieve msp id for peer %s", peerName)
+		mspID, ok := peerMSPID.PeerMSPID(peerName)
+		if !ok {
+			return nil, false
 		}
 
 		networkPeer := fab.NetworkPeer{PeerConfig: p, MSPID: mspID}
@@ -653,7 +649,7 @@ func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPee
 		peers = append(peers, peer)
 	}
 
-	return peers, nil
+	return peers, true
 
 }
 func (m *exampleChannelPeers) verifyPeerConfig(p fab.PeerConfig, peerName string, tlsEnabled bool) error {
@@ -669,27 +665,27 @@ func (m *exampleChannelPeers) verifyPeerConfig(p fab.PeerConfig, peerName string
 type exampleChannelOrderers struct{}
 
 // ChannelOrderers overrides EndpointConfig's ChannelOrderers function which returns the list of orderers for the channel name arg
-func (m *exampleChannelOrderers) ChannelOrderers(channelName string) ([]fab.OrdererConfig, error) {
+func (m *exampleChannelOrderers) ChannelOrderers(channelName string) ([]fab.OrdererConfig, bool) {
 	// referencing other interfaces to call ChannelConfig and OrdererConfig to match config yaml content
 	chCfg := &exampleChannelConfig{}
 	oCfg := &exampleOrdererConfig{}
 
 	orderers := []fab.OrdererConfig{}
-	channel, err := chCfg.ChannelConfig(channelName)
-	if err != nil || channel == nil {
-		return nil, errors.Errorf("Unable to retrieve channel config: %s", err)
+	channel, ok := chCfg.ChannelConfig(channelName)
+	if !ok || channel == nil {
+		return nil, false
 	}
 
 	for _, chOrderer := range channel.Orderers {
-		orderer, err := oCfg.OrdererConfig(chOrderer)
-		if err != nil || orderer == nil {
-			return nil, errors.Errorf("unable to retrieve orderer config: %s", err)
+		orderer, ok := oCfg.OrdererConfig(chOrderer)
+		if !ok || orderer == nil {
+			return nil, false
 		}
 
 		orderers = append(orderers, *orderer)
 	}
 
-	return orderers, nil
+	return orderers, true
 }
 
 type exampleTLSCACertPool struct {

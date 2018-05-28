@@ -15,7 +15,6 @@ import (
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -194,9 +193,9 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 
 func (c *ChannelConfig) calculateTargetsFromConfig(ctx context.Client) ([]fab.ProposalProcessor, error) {
 	targets := []fab.ProposalProcessor{}
-	chPeers, err := ctx.EndpointConfig().ChannelPeers(c.channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "read configuration for channel peers failed")
+	chPeers, ok := ctx.EndpointConfig().ChannelPeers(c.channelID)
+	if !ok {
+		return nil, errors.New("read configuration for channel peers failed")
 	}
 
 	for _, p := range chPeers {
@@ -231,70 +230,67 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 	}
 
 	//If missing from opts, check config and update opts from config
-	chSdkCfg, err := ctx.EndpointConfig().ChannelConfig(c.channelID)
-	if err != nil {
-		s, ok := status.FromError(err)
-		if !ok || s.Code != status.NoMatchingChannelEntity.ToInt32() {
-			return err
-		}
+	chSdkCfg, ok := ctx.EndpointConfig().ChannelConfig(c.channelID)
+	if ok {
+		//resolve opts
+		c.resolveMaxResponsesOptsFromConfig(chSdkCfg)
+		c.resolveMinResponsesOptsFromConfig(chSdkCfg)
+		c.resolveRetryOptsFromConfig(chSdkCfg)
 	}
 
-	//resolve opts
-	c.resolveMaxResponsesOptsFromConfig(chSdkCfg)
-	c.resolveMinResponsesOptsFromConfig(chSdkCfg)
-	c.resolveRetryOptsFromConfig(chSdkCfg)
+	//apply default to missing opts
+	c.applyDefaultOpts()
 
 	return nil
 }
 
 func (c *ChannelConfig) resolveMaxResponsesOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
-	if c.opts.MaxTargets == 0 {
-		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
-			c.opts.MaxTargets = chSdkCfg.Policies.QueryChannelConfig.MaxTargets
-		}
-		if c.opts.MaxTargets == 0 {
-			c.opts.MaxTargets = defaultMaxTargets
-		}
+	if c.opts.MaxTargets == 0 && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+		c.opts.MaxTargets = chSdkCfg.Policies.QueryChannelConfig.MaxTargets
 	}
 }
 
 func (c *ChannelConfig) resolveMinResponsesOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
-	if c.opts.MinResponses == 0 {
-		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
-			c.opts.MinResponses = chSdkCfg.Policies.QueryChannelConfig.MinResponses
-		}
-		if c.opts.MinResponses == 0 {
-			c.opts.MinResponses = defaultMinResponses
-		}
+	if c.opts.MinResponses == 0 && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+		c.opts.MinResponses = chSdkCfg.Policies.QueryChannelConfig.MinResponses
 	}
-
 }
 
 func (c *ChannelConfig) resolveRetryOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
-
 	if c.opts.RetryOpts.RetryableCodes == nil {
-		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+		if c.opts.RetryOpts.RetryableCodes == nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
 			c.opts.RetryOpts = chSdkCfg.Policies.QueryChannelConfig.RetryOpts
 		}
-		if c.opts.RetryOpts.Attempts == 0 {
-			c.opts.RetryOpts.Attempts = retry.DefaultAttempts
-		}
-
-		if c.opts.RetryOpts.InitialBackoff == 0 {
-			c.opts.RetryOpts.InitialBackoff = retry.DefaultInitialBackoff
-		}
-
-		if c.opts.RetryOpts.BackoffFactor == 0 {
-			c.opts.RetryOpts.BackoffFactor = retry.DefaultBackoffFactor
-		}
-
-		if c.opts.RetryOpts.MaxBackoff == 0 {
-			c.opts.RetryOpts.MaxBackoff = retry.DefaultMaxBackoff
-		}
-
 		c.opts.RetryOpts.RetryableCodes = retry.ChannelConfigRetryableCodes
 	}
+}
 
+func (c *ChannelConfig) applyDefaultOpts() {
+	if c.opts.MaxTargets == 0 {
+		c.opts.MaxTargets = defaultMaxTargets
+	}
+	if c.opts.MinResponses == 0 {
+		c.opts.MinResponses = defaultMinResponses
+	}
+	if c.opts.RetryOpts.Attempts == 0 {
+		c.opts.RetryOpts.Attempts = retry.DefaultAttempts
+	}
+
+	if c.opts.RetryOpts.InitialBackoff == 0 {
+		c.opts.RetryOpts.InitialBackoff = retry.DefaultInitialBackoff
+	}
+
+	if c.opts.RetryOpts.BackoffFactor == 0 {
+		c.opts.RetryOpts.BackoffFactor = retry.DefaultBackoffFactor
+	}
+
+	if c.opts.RetryOpts.MaxBackoff == 0 {
+		c.opts.RetryOpts.MaxBackoff = retry.DefaultMaxBackoff
+	}
+
+	if c.opts.RetryOpts.RetryableCodes == nil {
+		c.opts.RetryOpts.RetryableCodes = retry.ChannelConfigRetryableCodes
+	}
 }
 
 // WithPeers encapsulates peers to Option
