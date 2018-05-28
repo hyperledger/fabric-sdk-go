@@ -54,14 +54,14 @@ func TestUserMethods(t *testing.T) {
 	}
 	_, err = newUser(userData, cryptoSuite)
 	if err == nil {
-		t.Fatalf("Expected newUser to fail when missing enrollment cert")
+		t.Fatal("Expected newUser to fail when missing enrollment cert")
 	}
 
 	// User not enrolled (have cert, but private key is not in crypto store)
 	userData.EnrollmentCertificate = generatedCertBytes
 	_, err = newUser(userData, cryptoSuite)
 	if err == nil {
-		t.Fatalf("Expected newUser to fail when user is not enrolled")
+		t.Fatal("Expected newUser to fail when user is not enrolled")
 	}
 
 	// Import the key into the crypto suite's private key storage.
@@ -85,7 +85,7 @@ func verifyUserIdentity(cryptoSuite core.CryptoSuite, t *testing.T, userData *ms
 	}
 	// Check Name
 	if user.Identifier().ID != testUsername {
-		t.Fatalf("NewUser create wrong user")
+		t.Fatal("NewUser create wrong user")
 	}
 	// Check EnrolmentCert
 	verifyBytes(t, user.EnrollmentCertificate(), generatedCertBytes)
@@ -101,11 +101,11 @@ func verifyBytes(t *testing.T, v interface{}, expected []byte) error {
 	} else {
 		vbytes, ok = v.([]byte)
 		if !ok {
-			t.Fatalf("value is not []byte")
+			t.Fatal("value is not []byte")
 		}
 	}
 	if !bytes.Equal(vbytes, expected) {
-		t.Fatalf("value from store comparison failed")
+		t.Fatal("value from store comparison failed")
 	}
 	return nil
 }

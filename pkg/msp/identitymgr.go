@@ -58,11 +58,11 @@ func NewIdentityManager(orgName string, userStore msp.UserStore, cryptoSuite cor
 		}
 		mspPrivKeyStore, err = NewFileKeyStore(orgCryptoPathTemplate)
 		if err != nil {
-			return nil, errors.Wrapf(err, "creating a private key store failed")
+			return nil, errors.Wrap(err, "creating a private key store failed")
 		}
 		mspCertStore, err = NewFileCertStore(orgCryptoPathTemplate)
 		if err != nil {
-			return nil, errors.Wrapf(err, "creating a cert store failed")
+			return nil, errors.Wrap(err, "creating a cert store failed")
 		}
 	} else {
 		logger.Warnf("Cryptopath not provided for organization [%s], MSP stores not created", orgName)

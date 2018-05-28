@@ -179,7 +179,7 @@ func (mgr *IdentityManager) getEmbeddedPrivateKey(username string) (core.Key, er
 			// Try as a pem
 			privateKey, err = fabricCaUtil.ImportBCCSPKeyFromPEMBytes(pemBytes, mgr.cryptoSuite, true)
 			if err != nil {
-				return nil, errors.Wrapf(err, "import private key failed %v", keyPem)
+				return nil, errors.Wrap(err, "import private key failed")
 			}
 		}
 	}

@@ -160,7 +160,6 @@ func ImportBCCSPKeyFromPEM(keyFile string, myCSP core.CryptoSuite, temporary boo
 // ImportBCCSPKeyFromPEMBytes attempts to create a private BCCSP key from a pem byte slice
 func ImportBCCSPKeyFromPEMBytes(keyBuff []byte, myCSP core.CryptoSuite, temporary bool) (core.Key, error) {
 	keyFile := "pem bytes"
-
 	key, err := factory.PEMtoPrivateKey(keyBuff, nil)
 	if err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("Failed parsing private key from %s", keyFile))
@@ -229,10 +228,10 @@ func LoadX509KeyPair(certFile, keyFile []byte, csp core.CryptoSuite) (*tls.Certi
 	if err != nil {
 		if keyFile != nil {
 			log.Debugf("Could not load TLS certificate with BCCSP: %s", err)
-			log.Debugf("Attempting fallback with certfile %s and keyfile %s", certFile, keyFile)
+			log.Debug("Attempting fallback with provided certfile and keyfile")
 			fallbackCerts, err := tls.X509KeyPair(certFile, keyFile)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Could not get the private key %s that matches %s", keyFile, certFile)
+				return nil, errors.Wrap(err, "Could not get the private key that matches the provided cert")
 			}
 			cert = &fallbackCerts
 		} else {

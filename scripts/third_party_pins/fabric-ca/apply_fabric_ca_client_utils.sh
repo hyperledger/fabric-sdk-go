@@ -273,8 +273,8 @@ sed -i'' -e 's/errors.Errorf("Failed to find certificate PEM data in file %s, bu
 sed -i'' -e 's/errors.Errorf("Failed to find \"CERTIFICATE\" PEM block in file %s after skipping PEM blocks of the following types: %v", certFile, skippedBlockTypes)/errors.Errorf("Failed to find \"CERTIFICATE\" PEM block in bytes after skipping PEM blocks of the following types: %v", skippedBlockTypes)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/keyFile != ""/keyFile != nil/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/tls.LoadX509KeyPair(certFile, keyFile)/tls.X509KeyPair(certFile, keyFile)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-
-
+sed -i'' -e 's/log.Debugf("Attempting fallback with certfile %s and keyfile %s", certFile, keyFile)/log.Debug("Attempting fallback with provided certfile and keyfile")/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/return nil, errors.Wrapf(err, "Could not get the private key %s that matches %s", keyFile, certFile)/return nil, errors.Wrap(err, "Could not get the private key that matches the provided cert")/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="util/util.go"
 FILTER_FN="ReadFile,HTTPRequestToString,HTTPResponseToString"
