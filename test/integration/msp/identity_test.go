@@ -20,7 +20,8 @@ import (
 
 func TestIdentity(t *testing.T) {
 
-	mspClient := setupClient(t)
+	mspClient, sdk := setupClient(t)
+	defer integration.CleanupUserData(t, sdk)
 
 	// Generate a random user name
 	username := integration.GenerateRandomID()
@@ -86,7 +87,8 @@ func TestIdentity(t *testing.T) {
 
 func TestUpdateIdentity(t *testing.T) {
 
-	mspClient := setupClient(t)
+	mspClient, sdk := setupClient(t)
+	defer integration.CleanupUserData(t, sdk)
 
 	// Generate a random user name
 	username := integration.GenerateRandomID()
@@ -158,7 +160,8 @@ func TestUpdateIdentity(t *testing.T) {
 }
 func TestGetAllIdentities(t *testing.T) {
 
-	mspClient := setupClient(t)
+	mspClient, sdk := setupClient(t)
+	defer integration.CleanupUserData(t, sdk)
 
 	testAttributes := []msp.Attribute{
 		{
@@ -232,7 +235,7 @@ func containsIdentity(identities []*msp.IdentityResponse, request *msp.IdentityR
 	return false
 }
 
-func setupClient(t *testing.T) *msp.Client {
+func setupClient(t *testing.T) (*msp.Client, *fabsdk.FabricSDK) {
 
 	// Instantiate the SDK
 	sdk, err := fabsdk.New(integration.ConfigBackend)
@@ -244,7 +247,6 @@ func setupClient(t *testing.T) *msp.Client {
 	// Delete all private keys from the crypto suite store
 	// and users from the user store at the end
 	integration.CleanupUserData(t, sdk)
-	defer integration.CleanupUserData(t, sdk)
 
 	ctxProvider := sdk.Context()
 
@@ -272,7 +274,7 @@ func setupClient(t *testing.T) *msp.Client {
 	// (state store). The CAClient will lookup the
 	// registrar's identity information in these stores.
 
-	return mspClient
+	return mspClient, sdk
 
 }
 
