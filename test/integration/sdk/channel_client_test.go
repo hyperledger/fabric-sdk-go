@@ -302,9 +302,27 @@ func testChaincodeError(ccID string, client *channel.Client, t *testing.T) {
 	require.Error(t, err)
 	s, ok := status.FromError(err)
 	require.True(t, ok, "expected status error")
-	require.EqualValues(t, status.ChaincodeStatus, s.Group, "expected ChaincodeStatus")
-	require.Equal(t, int32(500), s.Code)
-	require.Equal(t, "Unknown function call", s.Message)
+
+	checkError := func(s *status.Status) {
+		require.EqualValues(t, status.ChaincodeStatus, s.Group, "expected ChaincodeStatus")
+		require.Equal(t, int32(500), s.Code)
+		require.Equal(t, "Unknown function call", s.Message)
+	}
+
+	if s.Code == int32(status.MultipleErrors) {
+		t.Logf("Received multiple errors from endorsement:")
+		for i, d := range s.Details {
+			err, ok := d.(error)
+			require.Truef(t, ok, "expecting error from status detail")
+			s, ok = status.FromError(err)
+			require.True(t, ok, "expected status error")
+			t.Logf("(%d) - %#v", i, s)
+			checkError(s)
+		}
+	} else {
+		t.Logf("Received single error from endorsement: %#v", s)
+		checkError(s)
+	}
 }
 
 func TestNoEndpoints(t *testing.T) {

@@ -9,9 +9,9 @@ package chpvdr
 import (
 	reqContext "context"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
-
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -144,6 +144,9 @@ func (cp *ChannelProvider) createEventClient(ctx context.Client, chConfig fab.Ch
 }
 
 func (cp *ChannelProvider) createDiscoveryService(ctx context.Client, chConfig fab.ChannelCfg) (fab.DiscoveryService, error) {
+	if chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_2Capability) {
+		return dynamicdiscovery.NewChannelService(ctx, chConfig.ID())
+	}
 	return staticdiscovery.NewService(ctx.EndpointConfig(), ctx.InfraProvider(), chConfig.ID())
 }
 

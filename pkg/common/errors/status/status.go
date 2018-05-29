@@ -116,7 +116,12 @@ func FromError(err error) (s *Status, ok bool) {
 		return s, true
 	}
 	if m, ok := unwrappedErr.(multi.Errors); ok {
-		return New(ClientStatus, MultipleErrors.ToInt32(), m.Error(), nil), true
+		// Return all of the errors in the details
+		var errors []interface{}
+		for _, err := range m {
+			errors = append(errors, err)
+		}
+		return New(ClientStatus, MultipleErrors.ToInt32(), m.Error(), errors), true
 	}
 
 	return nil, false

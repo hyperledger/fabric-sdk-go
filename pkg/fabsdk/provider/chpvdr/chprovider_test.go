@@ -11,6 +11,7 @@ package chpvdr
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
 
@@ -47,8 +48,12 @@ func TestBasicValidChannel(t *testing.T) {
 	err = cp.Initialize(ctx)
 	assert.NoError(t, err)
 
+	testChannelCfg := mocks.NewMockChannelCfg("testchannel")
+	testChannelCfg.MockCapabilities[fab.ApplicationGroupKey][fab.V1_2Capability] = true
+
 	mockChConfigCache := newMockChCfgCache(chconfig.NewChannelCfg(""))
 	mockChConfigCache.Put(chconfig.NewChannelCfg("mychannel"))
+	mockChConfigCache.Put(testChannelCfg)
 	cp.chCfgCache = mockChConfigCache
 
 	// System channel
@@ -90,6 +95,16 @@ func TestBasicValidChannel(t *testing.T) {
 	require.NotNil(t, selection)
 	_, ok = selection.(*staticselection.SelectionService)
 	assert.Truef(t, ok, "Expecting selection to be Static")
+
+	// testchannel has v1_2 capabilities
+	channelService, err = cp.ChannelService(clientCtx, "testchannel")
+	require.NoError(t, err)
+	require.NotNil(t, channelService)
+	discovery, err = channelService.Discovery()
+	require.NoError(t, err)
+	require.NotNil(t, discovery)
+	_, ok = discovery.(*dynamicdiscovery.ChannelService)
+	assert.Truef(t, ok, "Expecting discovery to be Dynamic for v1_2")
 }
 
 func TestResolveEventServiceType(t *testing.T) {
