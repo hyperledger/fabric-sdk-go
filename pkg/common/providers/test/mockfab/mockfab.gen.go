@@ -101,19 +101,6 @@ func (mr *MockEndpointConfigMockRecorder) EventServiceType() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EventServiceType", reflect.TypeOf((*MockEndpointConfig)(nil).EventServiceType))
 }
 
-// MSPID mocks base method
-func (m *MockEndpointConfig) MSPID(arg0 string) (string, bool) {
-	ret := m.ctrl.Call(m, "MSPID", arg0)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// MSPID indicates an expected call of MSPID
-func (mr *MockEndpointConfigMockRecorder) MSPID(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MSPID", reflect.TypeOf((*MockEndpointConfig)(nil).MSPID), arg0)
-}
-
 // NetworkConfig mocks base method
 func (m *MockEndpointConfig) NetworkConfig() (*fab.NetworkConfig, bool) {
 	ret := m.ctrl.Call(m, "NetworkConfig")
@@ -177,19 +164,6 @@ func (m *MockEndpointConfig) PeerConfig(arg0 string) (*fab.PeerConfig, bool) {
 // PeerConfig indicates an expected call of PeerConfig
 func (mr *MockEndpointConfigMockRecorder) PeerConfig(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerConfig", reflect.TypeOf((*MockEndpointConfig)(nil).PeerConfig), arg0)
-}
-
-// PeerMSPID mocks base method
-func (m *MockEndpointConfig) PeerMSPID(arg0 string) (string, bool) {
-	ret := m.ctrl.Call(m, "PeerMSPID", arg0)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// PeerMSPID indicates an expected call of PeerMSPID
-func (mr *MockEndpointConfigMockRecorder) PeerMSPID(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerMSPID", reflect.TypeOf((*MockEndpointConfig)(nil).PeerMSPID), arg0)
 }
 
 // PeersConfig mocks base method

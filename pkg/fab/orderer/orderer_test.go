@@ -139,9 +139,12 @@ func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.
 
 func TestNewOrdererWithTLS(t *testing.T) {
 	tlsConfig := endpoint.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+	err := tlsConfig.LoadBytes()
+	if err != nil {
+		t.Fatalf("tlsConfig.LoadBytes() failed, cause [%s]", err)
+	}
 
 	cert, err := tlsConfig.TLSCert()
-
 	if err != nil {
 		t.Fatalf("Testing New with TLS failed, cause [%s]", err)
 	}
@@ -162,6 +165,10 @@ func TestNewOrdererWithTLS(t *testing.T) {
 func TestNewOrdererWithMutualTLS(t *testing.T) {
 	//Positive Test case
 	tlsConfig := endpoint.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+	err := tlsConfig.LoadBytes()
+	if err != nil {
+		t.Fatalf("tlsConfig.LoadBytes() failed, cause [%s]", err)
+	}
 
 	cert, err := tlsConfig.TLSCert()
 

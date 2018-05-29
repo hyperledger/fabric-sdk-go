@@ -23,7 +23,6 @@ type NetworkConfig struct {
 	Orderers               map[string]OrdererConfig
 	Peers                  map[string]PeerConfig
 	CertificateAuthorities map[string]msp.CAConfig
-	EntityMatchers         map[string][]MatchConfig
 }
 
 // ChannelNetworkConfig provides the definition of channels for the network

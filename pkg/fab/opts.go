@@ -19,8 +19,6 @@ import (
 // if a function is not overridden, the default EndpointConfig implementation will be used.
 type EndpointConfigOptions struct {
 	timeout
-	mspID
-	peerMSPID
 	orderersConfig
 	ordererConfig
 	peersConfig
@@ -43,16 +41,6 @@ type setter struct{ isSet bool }
 // timeout interface allows to uniquely override EndpointConfig interface's Timeout() function
 type timeout interface {
 	Timeout(fab.TimeoutType) time.Duration
-}
-
-// mspID interface allows to uniquely override EndpointConfig interface's MSPID() function
-type mspID interface {
-	MSPID(org string) (string, bool)
-}
-
-// peerMSPID interface allows to uniquely override EndpointConfig interface's PeerMSPID() function
-type peerMSPID interface {
-	PeerMSPID(name string) (string, bool)
 }
 
 // orderersConfig interface allows to uniquely override EndpointConfig interface's OrderersConfig() function
@@ -142,8 +130,6 @@ func UpdateMissingOptsWithDefaultConfig(c *EndpointConfigOptions, d fab.Endpoint
 	s := &setter{}
 
 	s.set(c.timeout, nil, func() { c.timeout = d })
-	s.set(c.mspID, nil, func() { c.mspID = d })
-	s.set(c.peerMSPID, nil, func() { c.peerMSPID = d })
 	s.set(c.orderersConfig, nil, func() { c.orderersConfig = d })
 	s.set(c.ordererConfig, nil, func() { c.ordererConfig = d })
 	s.set(c.peersConfig, nil, func() { c.peersConfig = d })
@@ -164,7 +150,7 @@ func UpdateMissingOptsWithDefaultConfig(c *EndpointConfigOptions, d fab.Endpoint
 // IsEndpointConfigFullyOverridden will return true if all of the argument's sub interfaces is not nil
 // (ie EndpointConfig interface not fully overridden)
 func IsEndpointConfigFullyOverridden(c *EndpointConfigOptions) bool {
-	return !anyNil(c.timeout, c.mspID, c.peerMSPID, c.orderersConfig, c.ordererConfig, c.peersConfig, c.peerConfig, c.networkConfig,
+	return !anyNil(c.timeout, c.orderersConfig, c.ordererConfig, c.peersConfig, c.peerConfig, c.networkConfig,
 		c.networkPeers, c.channelConfig, c.channelPeers, c.channelOrderers, c.tlsCACertPool, c.eventServiceType, c.tlsClientCerts, c.cryptoConfigPath)
 }
 
@@ -173,8 +159,6 @@ func setEndpointConfigWithOptionInterface(c *EndpointConfigOptions, o interface{
 	s := &setter{}
 
 	s.set(c.timeout, func() bool { _, ok := o.(timeout); return ok }, func() { c.timeout = o.(timeout) })
-	s.set(c.mspID, func() bool { _, ok := o.(mspID); return ok }, func() { c.mspID = o.(mspID) })
-	s.set(c.peerMSPID, func() bool { _, ok := o.(peerMSPID); return ok }, func() { c.peerMSPID = o.(peerMSPID) })
 	s.set(c.orderersConfig, func() bool { _, ok := o.(orderersConfig); return ok }, func() { c.orderersConfig = o.(orderersConfig) })
 	s.set(c.ordererConfig, func() bool { _, ok := o.(ordererConfig); return ok }, func() { c.ordererConfig = o.(ordererConfig) })
 	s.set(c.peersConfig, func() bool { _, ok := o.(peersConfig); return ok }, func() { c.peersConfig = o.(peersConfig) })

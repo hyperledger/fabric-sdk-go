@@ -19,8 +19,6 @@ import (
 var (
 	m0  = &EndpointConfig{}
 	m1  = &mockTimeoutConfig{}
-	m2  = &mockMspID{}
-	m3  = &mockPeerMSPID{}
 	m4  = &mockrderersConfig{}
 	m5  = &mockOrdererConfig{}
 	m6  = &mockPeersConfig{}
@@ -51,7 +49,7 @@ func TestCreateCustomFullEndpointConfig(t *testing.T) {
 
 func TestCreateCustomEndpointConfig(t *testing.T) {
 	// try to build with partial interfaces
-	endpointConfigOption, err := BuildConfigEndpointFromOptions(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10)
+	endpointConfigOption, err := BuildConfigEndpointFromOptions(m1, m4, m5, m6, m7, m8, m9, m10)
 	if err != nil {
 		t.Fatalf("BuildConfigEndpointFromOptions returned unexpected error %s", err)
 	}
@@ -66,20 +64,6 @@ func TestCreateCustomEndpointConfig(t *testing.T) {
 	tmout := eco.Timeout(fab.EndorserConnection)
 	if tmout < 0 {
 		t.Fatalf("EndpointConfig was supposed to have Timeout function overridden from Options but was not %+v. Timeout: %s", eco, tmout)
-	}
-	m, ok := eco.MSPID("")
-	if !ok {
-		t.Fatalf("Failed to get MSP ID")
-	}
-	if m != "testMSP" {
-		t.Fatalf("MSPID did not return expected interface value. Expected: %s, Received: %s", "testMSP", m)
-	}
-	m, ok = eco.PeerMSPID("")
-	if !ok {
-		t.Fatalf("PeerMSPID supposed to pass")
-	}
-	if m != "testPeerMSP" {
-		t.Fatalf("MSPID did not return expected interface value. Expected: %s, Received: %s", "testPeerMSP", m)
 	}
 
 	// verify if an interface was not passed as an option but was not nil, it should be nil
@@ -134,7 +118,7 @@ func TestCreateCustomEndpointConfigRemainingFunctions(t *testing.T) {
 
 func TestCreateCustomEndpointConfigWithSomeDefaultFunctions(t *testing.T) {
 	// create a config with the first 7 interfaces to be overridden
-	endpointConfigOption, err := BuildConfigEndpointFromOptions(m1, m2, m3, m4, m5, m6, m7)
+	endpointConfigOption, err := BuildConfigEndpointFromOptions(m1, m4, m5, m6, m7)
 	if err != nil {
 		t.Fatalf("BuildConfigEndpointFromOptions returned unexpected error %s", err)
 	}
@@ -157,13 +141,6 @@ func TestCreateCustomEndpointConfigWithSomeDefaultFunctions(t *testing.T) {
 	if tmout != expectedTimeout {
 		t.Fatalf("EndpointConfig was supposed to have Timeout function overridden from Options but was not %+v. Timeout: [expected: %s, received: %s]", eco, expectedTimeout, tmout)
 	}
-	m, ok := endpointConfigOptionWithSomeDefaults.MSPID("")
-	if !ok {
-		t.Fatalf("Failed to get MSPID")
-	}
-	if m != "testMSP" {
-		t.Fatalf("MSPID did not return expected interface value. Expected: %s, Received: %s", "testMSP", m)
-	}
 
 	// now check if interfaces that are not updated are defaulted with m0
 	if eco, ok = endpointConfigOptionWithSomeDefaults.(*EndpointConfigOptions); !ok {
@@ -181,7 +158,7 @@ func TestCreateCustomEndpointConfigWithSomeDefaultFunctions(t *testing.T) {
 
 func TestIsEndpointConfigFullyOverridden(t *testing.T) {
 	// test with the some interfaces
-	endpointConfigOption, err := BuildConfigEndpointFromOptions(m1, m2, m3)
+	endpointConfigOption, err := BuildConfigEndpointFromOptions(m1)
 	if err != nil {
 		t.Fatalf("BuildConfigEndpointFromOptions returned unexpected error %s", err)
 	}
@@ -214,7 +191,7 @@ func TestIsEndpointConfigFullyOverridden(t *testing.T) {
 	}
 
 	// now try with all opts, expected value is true this time
-	endpointConfigOption, err = BuildConfigEndpointFromOptions(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16)
+	endpointConfigOption, err = BuildConfigEndpointFromOptions(m1, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16)
 	if err != nil {
 		t.Fatalf("BuildConfigEndpointFromOptions returned unexpected error %s", err)
 	}
@@ -264,18 +241,6 @@ type mockTimeoutConfig struct{}
 
 func (m *mockTimeoutConfig) Timeout(timeoutType fab.TimeoutType) time.Duration {
 	return 10 * time.Second
-}
-
-type mockMspID struct{}
-
-func (m *mockMspID) MSPID(org string) (string, bool) {
-	return "testMSP", true
-}
-
-type mockPeerMSPID struct{}
-
-func (m *mockPeerMSPID) PeerMSPID(name string) (string, bool) {
-	return "testPeerMSP", true
 }
 
 type mockrderersConfig struct{}

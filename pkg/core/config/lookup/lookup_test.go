@@ -31,6 +31,10 @@ const orgChannelID = "orgchannel"
 
 var backend *mocks.MockConfigBackend
 
+type testEntityMatchers struct {
+	matchers map[string][]fab.MatchConfig
+}
+
 func TestMain(m *testing.M) {
 	backend = setupCustomBackend("key")
 	r := m.Run()
@@ -227,10 +231,12 @@ func TestUnmarshalWithMultipleBackend(t *testing.T) {
 
 	//output struct
 	networkConfig := fab.NetworkConfig{}
+	entityMatchers := testEntityMatchers{}
+
 	assert.Nil(t, testLookup.UnmarshalKey("client", &networkConfig.Client), "unmarshalKey supposed to succeed")
 	assert.Nil(t, testLookup.UnmarshalKey("channels", &networkConfig.Channels), "unmarshalKey supposed to succeed")
 	assert.Nil(t, testLookup.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities), "unmarshalKey supposed to succeed")
-	assert.Nil(t, testLookup.UnmarshalKey("entityMatchers", &networkConfig.EntityMatchers), "unmarshalKey supposed to succeed")
+	assert.Nil(t, testLookup.UnmarshalKey("entityMatchers", &entityMatchers.matchers), "unmarshalKey supposed to succeed")
 	assert.Nil(t, testLookup.UnmarshalKey("organizations", &networkConfig.Organizations), "unmarshalKey supposed to succeed")
 	assert.Nil(t, testLookup.UnmarshalKey("orderers", &networkConfig.Orderers), "unmarshalKey supposed to succeed")
 	assert.Nil(t, testLookup.UnmarshalKey("peers", &networkConfig.Peers), "unmarshalKey supposed to succeed")
@@ -253,15 +259,15 @@ func TestUnmarshalWithMultipleBackend(t *testing.T) {
 	assert.Equal(t, networkConfig.CertificateAuthorities["local.ca.org2.example.com"].URL, "https://ca.org2.example.com:8054")
 
 	//EntityMatchers
-	assert.Equal(t, len(networkConfig.EntityMatchers), 4)
-	assert.Equal(t, len(networkConfig.EntityMatchers["peer"]), 8)
-	assert.Equal(t, networkConfig.EntityMatchers["peer"][0].MappedHost, "local.peer0.org1.example.com")
-	assert.Equal(t, len(networkConfig.EntityMatchers["orderer"]), 4)
-	assert.Equal(t, networkConfig.EntityMatchers["orderer"][0].MappedHost, "local.orderer.example.com")
-	assert.Equal(t, len(networkConfig.EntityMatchers["certificateauthority"]), 2)
-	assert.Equal(t, networkConfig.EntityMatchers["certificateauthority"][0].MappedHost, "local.ca.org1.example.com")
-	assert.Equal(t, len(networkConfig.EntityMatchers["channel"]), 1)
-	assert.Equal(t, networkConfig.EntityMatchers["channel"][0].MappedName, "ch1")
+	assert.Equal(t, len(entityMatchers.matchers), 4)
+	assert.Equal(t, len(entityMatchers.matchers["peer"]), 8)
+	assert.Equal(t, entityMatchers.matchers["peer"][0].MappedHost, "local.peer0.org1.example.com")
+	assert.Equal(t, len(entityMatchers.matchers["orderer"]), 4)
+	assert.Equal(t, entityMatchers.matchers["orderer"][0].MappedHost, "local.orderer.example.com")
+	assert.Equal(t, len(entityMatchers.matchers["certificateauthority"]), 2)
+	assert.Equal(t, entityMatchers.matchers["certificateauthority"][0].MappedHost, "local.ca.org1.example.com")
+	assert.Equal(t, len(entityMatchers.matchers["channel"]), 1)
+	assert.Equal(t, entityMatchers.matchers["channel"][0].MappedName, "ch1")
 
 	//Organizations
 	assert.Equal(t, len(networkConfig.Organizations), 3)
@@ -331,15 +337,17 @@ func TestLookupUnmarshalAgainstViperUnmarshal(t *testing.T) {
 	/*
 		TEST NETWORK CONFIG ENTITY MATCHERS
 	*/
+	entityMatchers := testEntityMatchers{}
 	//get entityMatchers backend lookup
-	err = testLookup.UnmarshalKey("entityMatchers", &networkConfig.EntityMatchers)
+	err = testLookup.UnmarshalKey("entityMatchers", &entityMatchers.matchers)
 	if err != nil {
 		t.Fatal(err)
 	}
 	//get entityMatchers from viper
-	sampleViper.UnmarshalKey("entityMatchers", &networkConfigViper.EntityMatchers)
+	viperEntityMatchers := testEntityMatchers{}
+	sampleViper.UnmarshalKey("entityMatchers", &viperEntityMatchers.matchers)
 	//now compare
-	assert.True(t, reflect.DeepEqual(&networkConfig.EntityMatchers, &networkConfigViper.EntityMatchers), "unmarshalled value from config lookup supposed to match unmarshalled value from viper")
+	assert.True(t, reflect.DeepEqual(&entityMatchers, &viperEntityMatchers), "unmarshalled value from config lookup supposed to match unmarshalled value from viper")
 
 	/*
 		TEST NETWORK CONFIG ORGANIZATIONS
@@ -382,10 +390,10 @@ func TestLookupUnmarshalAgainstViperUnmarshal(t *testing.T) {
 
 	//Just to make sure that empty values are not being compared
 	assert.True(t, len(networkConfigViper.Channels) > 0, "expected to get valid unmarshalled value")
-	assert.True(t, len(networkConfigViper.Organizations) > 0, "expected to get valid unmarshalled value")
+	assert.True(t, len(viperEntityMatchers.matchers) > 0, "expected to get valid unmarshalled value")
 	assert.True(t, len(networkConfigViper.Orderers) > 0, "expected to get valid unmarshalled value")
 	assert.True(t, len(networkConfigViper.Peers) > 0, "expected to get valid unmarshalled value")
-	assert.True(t, len(networkConfigViper.EntityMatchers) > 0, "expected to get valid unmarshalled value")
+	assert.True(t, len(entityMatchers.matchers) > 0, "expected to get valid unmarshalled value")
 	assert.True(t, networkConfigViper.Client.Organization != "", "expected to get valid unmarshalled value")
 
 }
