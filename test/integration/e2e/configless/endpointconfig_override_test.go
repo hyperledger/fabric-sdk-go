@@ -732,6 +732,10 @@ func (m *exampleTLSClientCerts) TLSClientCerts() ([]tls.Certificate, error) {
 		m.RWLock = &sync.RWMutex{}
 	}
 	var clientCerts tls.Certificate
+	err := clientConfig.TLSCerts.Client.Cert.LoadBytes()
+	if err != nil {
+		return nil, err
+	}
 	cb := clientConfig.TLSCerts.Client.Cert.Bytes()
 
 	if len(cb) == 0 {
@@ -760,10 +764,14 @@ func (m *exampleTLSClientCerts) TLSClientCerts() ([]tls.Certificate, error) {
 }
 func (m *exampleTLSClientCerts) loadPrivateKeyFromConfig(clientConfig *msp.ClientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
 
+	err := clientConfig.TLSCerts.Client.Key.LoadBytes()
+	if err != nil {
+		return nil, err
+	}
 	kb := clientConfig.TLSCerts.Client.Key.Bytes()
 
 	// load the key/cert pair from []byte
-	clientCerts, err := tls.X509KeyPair(cb, kb)
+	clientCerts, err = tls.X509KeyPair(cb, kb)
 	if err != nil {
 		return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
 	}
