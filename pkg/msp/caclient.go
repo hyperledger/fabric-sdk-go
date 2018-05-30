@@ -62,14 +62,12 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 		return nil, errors.New("no CAs configured")
 	}
 
-	var caConfig *msp.CAConfig
 	var adapter *fabricCAAdapter
 	var registrar msp.EnrollCredentials
-	var err error
 
 	// Currently, an organization can be associated with only one CA
 	caName := orgConfig.CertificateAuthorities[0]
-	caConfig, err = ctx.IdentityConfig().CAConfig(orgName)
+	caConfig, err := ctx.IdentityConfig().CAConfig(orgName)
 	if err == nil {
 		adapter, err = newFabricCAAdapter(orgName, ctx.CryptoSuite(), ctx.IdentityConfig())
 		if err == nil {

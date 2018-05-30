@@ -9,6 +9,8 @@ package endpoint
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIsTLSEnabled(t *testing.T) {
@@ -105,10 +107,11 @@ O94CDp7l2k7hMQI0zQ==
 		Pem:  pPem,
 	}
 
-	b, e := tlsConfig.Bytes()
+	e := tlsConfig.LoadBytes()
 	if e != nil {
 		t.Fatalf("error loading bytes for sample cert %s", e)
 	}
+	b := tlsConfig.Bytes()
 	if len(b) == 0 {
 		t.Fatalf("cert's Bytes() call returned empty byte array")
 	}
@@ -118,20 +121,23 @@ O94CDp7l2k7hMQI0zQ==
 
 	// test with empty pem
 	tlsConfig.Pem = ""
-	b, e = tlsConfig.Bytes()
+	tlsConfig.Path = "../testdata/config_test.yaml"
+	e = tlsConfig.LoadBytes()
 	if e != nil {
 		t.Fatalf("error loading bytes for empty pem cert %s", e)
 	}
-	if len(b) > 0 {
-		t.Fatalf("cert's Bytes() call returned non empty byte array for empty pem")
+	b = tlsConfig.Bytes()
+	if len(b) == 0 {
+		t.Fatalf("cert's Bytes() call returned empty byte array")
 	}
 
 	// test with wrong pem
 	tlsConfig.Pem = "wrongpemvalue"
-	b, e = tlsConfig.Bytes()
+	e = tlsConfig.LoadBytes()
 	if e != nil {
 		t.Fatalf("error loading bytes for wrong pem cert %s", e)
 	}
+	b = tlsConfig.Bytes()
 	if len(b) != len([]byte("wrongpemvalue")) {
 		t.Fatalf("cert's Bytes() call returned different byte array for wrong pem")
 	}
@@ -141,6 +147,11 @@ func TestTLSConfig_TLSCertPostive(t *testing.T) {
 	tlsConfig := &TLSConfig{
 		Path: "../../../../test/fixtures/config/mutual_tls/client_sdk_go.pem",
 		Pem:  "",
+	}
+
+	e := tlsConfig.LoadBytes()
+	if e != nil {
+		t.Fatalf("error loading certificate for sample cert path %s", e)
 	}
 
 	c, e := tlsConfig.TLSCert()
@@ -213,5 +224,37 @@ func TestTLSConfig_TLSCertNegative(t *testing.T) {
 	if c != nil {
 		t.Fatalf("cert's TLSCert() call returned non empty certificate")
 	}
+
+}
+
+func TestTLSConfigBytes(t *testing.T) {
+
+	// test with wrong path
+	tlsConfig := &TLSConfig{
+		Path: "../testdata/config_test.yaml",
+		Pem:  "",
+	}
+
+	err := tlsConfig.LoadBytes()
+	bytes1 := tlsConfig.Bytes()
+	assert.Nil(t, err, "tlsConfig.Bytes supposed to succeed")
+	assert.NotEmpty(t, bytes1, "supposed to get valid bytes")
+
+	tlsConfig.Path = "../testdata/config_test_pem.yaml"
+	bytes2 := tlsConfig.Bytes()
+	assert.Nil(t, err, "tlsConfig.Bytes supposed to succeed")
+	assert.NotEmpty(t, bytes2, "supposed to get valid bytes")
+
+	//even after changing path, it should return previous bytes
+	assert.Equal(t, bytes1, bytes2, "any update to tlsconfig path after load bytes call should not take effect")
+
+	//call preload now
+	err = tlsConfig.LoadBytes()
+	bytes2 = tlsConfig.Bytes()
+	assert.Nil(t, err, "tlsConfig.Bytes supposed to succeed")
+	assert.NotEmpty(t, bytes2, "supposed to get valid bytes")
+
+	//even after changing path, it should return previous bytes
+	assert.NotEqual(t, bytes1, bytes2, "tlsConfig.LoadBytes() should refresh bytes")
 
 }

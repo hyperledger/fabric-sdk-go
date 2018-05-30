@@ -208,16 +208,6 @@ func (c *MockConfig) OrdererConfig(name string) (*fab.OrdererConfig, bool) {
 	return &oConfig, true
 }
 
-// MSPID not implemented
-func (c *MockConfig) MSPID(org string) (string, bool) {
-	return "", false
-}
-
-// PeerMSPID not implemented
-func (c *MockConfig) PeerMSPID(name string) (string, bool) {
-	return "", false
-}
-
 // KeyStorePath ...
 func (c *MockConfig) KeyStorePath() string {
 	return "/tmp/fabsdkgo_test"

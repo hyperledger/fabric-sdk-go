@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -107,7 +108,7 @@ func (mgr *IdentityManager) GetUser(username string) (*User, error) { //nolint
 		if privateKey == nil {
 			return nil, fmt.Errorf("unable to find private key for user [%s]", username)
 		}
-		mspID, ok := mgr.config.MSPID(mgr.orgName)
+		mspID, ok := comm.MSPID(mgr.config, mgr.orgName)
 		if !ok {
 			return nil, errors.New("MSP ID config read failed")
 		}

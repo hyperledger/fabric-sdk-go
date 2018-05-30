@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
 )
@@ -62,4 +64,19 @@ func SearchPeerConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.PeerConfi
 	}
 
 	return nil, errors.Errorf("unable to get peerconfig for given url : %s", url)
+}
+
+// MSPID returns the MSP ID for the requested organization
+func MSPID(cfg fab.EndpointConfig, org string) (string, bool) {
+	networkConfig, ok := cfg.NetworkConfig()
+	if !ok {
+		return "", false
+	}
+	// viper lowercases all key maps, org is lower case
+	mspID := networkConfig.Organizations[strings.ToLower(org)].MSPID
+	if mspID == "" {
+		return "", false
+	}
+
+	return mspID, true
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -121,6 +122,11 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	identityConfig := config.(*IdentityConfig)
 	certPem, _ := identityConfig.CAClientCert(org1)
 	certConfig := endpoint.TLSConfig{Pem: string(certPem)}
+
+	err = certConfig.LoadBytes()
+	if err != nil {
+		t.Fatalf("TLS CA cert parse failed, reason: %v", err)
+	}
 
 	cert, err := certConfig.TLSCert()
 
@@ -363,12 +369,12 @@ func TestCAConfig(t *testing.T) {
 	assert.True(t, pathvar.Subst(val.(string)) == identityConfig.endpointConfig.CryptoConfigPath(), "Incorrect crypto config path", t)
 
 	//Testing MSPID
-	mspID, ok := identityConfig.endpointConfig.MSPID(org1)
+	mspID, ok := comm.MSPID(identityConfig.endpointConfig, org1)
 	assert.True(t, ok, "Get MSP ID failed")
 	assert.True(t, mspID == "Org1MSP", "Get MSP ID failed")
 
 	// testing empty OrgMSP
-	_, ok = identityConfig.endpointConfig.MSPID("dummyorg1")
+	_, ok = comm.MSPID(identityConfig.endpointConfig, "dummyorg1")
 	assert.False(t, ok, "Get MSP ID did not fail for dummyorg1")
 
 	//Testing CAConfig
@@ -414,12 +420,12 @@ func TestCAConfigWithCustomEndpointConfig(t *testing.T) {
 	assert.True(t, pathvar.Subst(val.(string)) == identityConfig.endpointConfig.CryptoConfigPath(), "Incorrect crypto config path", t)
 
 	//Testing MSPID
-	mspID, ok := identityConfig.endpointConfig.MSPID(org1)
+	mspID, ok := comm.MSPID(identityConfig.endpointConfig, org1)
 	assert.True(t, ok, "Get MSP ID failed")
 	assert.True(t, mspID == "Org1MSP", "Get MSP ID failed")
 
 	// testing empty OrgMSP
-	_, ok = identityConfig.endpointConfig.MSPID("dummyorg1")
+	_, ok = comm.MSPID(identityConfig.endpointConfig, "dummyorg1")
 	assert.False(t, ok, "Get MSP ID did not fail for dummyorg1")
 
 	//Testing CAConfig
@@ -437,7 +443,7 @@ func TestCAConfigWithCustomEndpointConfig(t *testing.T) {
 
 	client, err := identityConfig.Client()
 	assert.Nil(t, err)
-	assert.Equal(t, "custom-org1", client.Organization, "supposed to get custom org name from custom endpointconfig")
+	assert.Equal(t, "CUSTOM-ORG1", client.Organization, "supposed to get custom org name from custom endpointconfig")
 
 	//make sure 2 certpool instances are not created
 	actualCertPool, err := identityConfig.endpointConfig.TLSCACertPool()

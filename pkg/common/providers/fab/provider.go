@@ -80,8 +80,6 @@ type CommManager interface {
 //EndpointConfig contains endpoint network configurations
 type EndpointConfig interface {
 	Timeout(TimeoutType) time.Duration
-	MSPID(org string) (string, bool)
-	PeerMSPID(name string) (string, bool)
 	OrderersConfig() ([]OrdererConfig, bool)
 	OrdererConfig(nameOrURL string) (*OrdererConfig, bool)
 	PeersConfig(org string) ([]PeerConfig, bool)

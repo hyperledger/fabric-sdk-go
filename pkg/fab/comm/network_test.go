@@ -88,3 +88,24 @@ func TestSearchPeerConfigFromURL(t *testing.T) {
 	assert.Equal(t, peer0Org1.EventURL, peerConfig.EventURL)
 
 }
+
+func TestMSPID(t *testing.T) {
+	configBackend, err := config.FromFile(configTestFilePath)()
+	if err != nil {
+		t.Fatalf("Unexpected error reading config backend: %v", err)
+	}
+
+	sampleConfig, err := fabImpl.ConfigFromBackend(configBackend...)
+	if err != nil {
+		t.Fatalf("Unexpected error reading config: %v", err)
+	}
+
+	mspID, ok := MSPID(sampleConfig, "invalid")
+	assert.False(t, ok, "supposed to fail for invalid org name")
+	assert.Empty(t, mspID, "supposed to get valid MSP ID")
+
+	mspID, ok = MSPID(sampleConfig, "org1")
+	assert.True(t, ok, "supposed to pass with valid org name")
+	assert.NotEmpty(t, mspID, "supposed to get valid MSP ID")
+	assert.Equal(t, "Org1MSP", mspID, "supposed to get valid MSP ID")
+}

@@ -129,8 +129,9 @@ func (m *exampleCaClientKey) CAClientKey(org string) ([]byte, error) {
 
 	//subst path
 	caConfig.TLSCACerts.Client.Key.Path = pathvar.Subst(caConfig.TLSCACerts.Client.Key.Path)
+	err = caConfig.TLSCACerts.Client.Key.LoadBytes()
 
-	return caConfig.TLSCACerts.Client.Key.Bytes()
+	return caConfig.TLSCACerts.Client.Key.Bytes(), err
 }
 
 type exampleCaClientCert struct{}
@@ -143,8 +144,9 @@ func (m *exampleCaClientCert) CAClientCert(org string) ([]byte, error) {
 
 	//subst path
 	caConfig.TLSCACerts.Client.Cert.Path = pathvar.Subst(caConfig.TLSCACerts.Client.Cert.Path)
+	err = caConfig.TLSCACerts.Client.Cert.LoadBytes()
 
-	return caConfig.TLSCACerts.Client.Cert.Bytes()
+	return caConfig.TLSCACerts.Client.Cert.Bytes(), err
 }
 
 type exampleCaKeyStorePath struct{}

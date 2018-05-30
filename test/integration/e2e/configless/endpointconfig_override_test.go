@@ -9,7 +9,6 @@ package configless
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -236,8 +235,6 @@ var (
 
 	// creating instances of each interface to be referenced in the integration tests:
 	timeoutImpl          = &exampleTimeout{}
-	mspIDImpl            = &exampleMSPID{}
-	peerMSPIDImpl        = &examplePeerMSPID{}
 	orderersConfigImpl   = newOrderersConfigImpl()
 	ordererConfigImpl    = &exampleOrdererConfig{}
 	peersConfigImpl      = newPeersConfigImpl()
@@ -253,8 +250,6 @@ var (
 	cryptoConfigPathImpl = &exampleCryptoConfigPath{}
 	endpointConfigImpls  = []interface{}{
 		timeoutImpl,
-		mspIDImpl,
-		peerMSPIDImpl,
 		orderersConfigImpl,
 		ordererConfigImpl,
 		peersConfigImpl,
@@ -304,23 +299,8 @@ func (m *exampleTimeout) Timeout(tType fab.TimeoutType) time.Duration {
 	return t
 }
 
-type exampleMSPID struct{}
-
-//MSPID overrides EndpointConfig's MSPID function which returns the mspID for the given org name in the arg
-func (m *exampleMSPID) MSPID(org string) (string, bool) {
-	//lowercase org name to make it case insensitive, depends on application preference, for the sake of this example, make it case in-sensitive
-	mspID := orgsConfig[strings.ToLower(org)].MSPID
-	if mspID == "" {
-		return "", false
-	}
-
-	return mspID, true
-}
-
-type examplePeerMSPID struct{}
-
-//PeerMSPID overrides EndpointConfig's PeerMSPID function which returns the mspID for the given org name in the arg
-func (m *examplePeerMSPID) PeerMSPID(name string) (string, bool) {
+//PeerMSPID  returns the mspID for the given org name in the arg
+func PeerMSPID(name string) (string, bool) {
 	// Find organisation/msp that peer belongs to
 	for _, org := range orgsConfig {
 		for i := 0; i < len(org.Peers); i++ {
@@ -414,6 +394,10 @@ func (m *exampleOrderersConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
 		} else if len(orderer.TLSCACerts.Pem) == 0 && !m.isSystemCertPool {
 			return nil, false
 		}
+		err := orderer.TLSCACerts.LoadBytes()
+		if err != nil {
+			return nil, false
+		}
 		orderers = append(orderers, orderer)
 	}
 
@@ -438,7 +422,10 @@ func (m *exampleOrdererConfig) OrdererConfig(ordererNameOrURL string) (*fab.Orde
 	if orderer.TLSCACerts.Path != "" {
 		orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
 	}
-
+	err := orderer.TLSCACerts.LoadBytes()
+	if err != nil {
+		return nil, false
+	}
 	return &orderer, true
 }
 
@@ -493,6 +480,10 @@ func (m *examplePeersConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
 		if p.TLSCACerts.Path != "" {
 			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
 		}
+		err := p.TLSCACerts.LoadBytes()
+		if err != nil {
+			return nil, false
+		}
 
 		peers = append(peers, p)
 	}
@@ -520,6 +511,10 @@ func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool)
 	if pcfg.TLSCACerts.Path != "" {
 		pcfg.TLSCACerts.Path = pathvar.Subst(pcfg.TLSCACerts.Path)
 	}
+	err := pcfg.TLSCACerts.LoadBytes()
+	if err != nil {
+		return nil, false
+	}
 	// EntityMatchers are not used in this implementation
 	// see default implementation (pkg/fab/endpointconfig.go) to see how they're used
 
@@ -541,7 +536,6 @@ type exampleNetworkPeers struct {
 func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
 	netPeers := []fab.NetworkPeer{}
 	// referencing another interface to call PeerMSPID to match config yaml content
-	peerMSPID := &examplePeerMSPID{}
 
 	for name, p := range networkConfig.Peers {
 
@@ -553,7 +547,12 @@ func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
 			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
 		}
 
-		mspID, ok := peerMSPID.PeerMSPID(name)
+		err := p.TLSCACerts.LoadBytes()
+		if err != nil {
+			return nil, false
+		}
+
+		mspID, ok := PeerMSPID(name)
 		if !ok {
 			return nil, false
 		}
@@ -599,8 +598,6 @@ type exampleChannelPeers struct {
 // ChannelPeers overrides EndpointConfig's ChannelPeers function which returns the list of peers for the channel name arg
 func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPeer, bool) {
 	peers := []fab.ChannelPeer{}
-	// referencing another interface to call PeerMSPID to match config yaml content
-	peerMSPID := &examplePeerMSPID{}
 
 	chConfig, ok := channelsConfig[strings.ToLower(channelName)]
 	if !ok {
@@ -637,7 +634,12 @@ func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPee
 			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
 		}
 
-		mspID, ok := peerMSPID.PeerMSPID(peerName)
+		err := p.TLSCACerts.LoadBytes()
+		if err != nil {
+			return nil, false
+		}
+
+		mspID, ok := PeerMSPID(peerName)
 		if !ok {
 			return nil, false
 		}
@@ -652,6 +654,7 @@ func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPee
 	return peers, true
 
 }
+
 func (m *exampleChannelPeers) verifyPeerConfig(p fab.PeerConfig, peerName string, tlsEnabled bool) error {
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
@@ -681,7 +684,10 @@ func (m *exampleChannelOrderers) ChannelOrderers(channelName string) ([]fab.Orde
 		if !ok || orderer == nil {
 			return nil, false
 		}
-
+		err := orderer.TLSCACerts.LoadBytes()
+		if err != nil {
+			return nil, false
+		}
 		orderers = append(orderers, *orderer)
 	}
 
@@ -726,11 +732,7 @@ func (m *exampleTLSClientCerts) TLSClientCerts() ([]tls.Certificate, error) {
 		m.RWLock = &sync.RWMutex{}
 	}
 	var clientCerts tls.Certificate
-	var cb []byte
-	cb, err := clientConfig.TLSCerts.Client.Cert.Bytes()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load tls client cert")
-	}
+	cb := clientConfig.TLSCerts.Client.Cert.Bytes()
 
 	if len(cb) == 0 {
 		// if no cert found in the config, return empty cert chain
@@ -757,41 +759,16 @@ func (m *exampleTLSClientCerts) TLSClientCerts() ([]tls.Certificate, error) {
 	return []tls.Certificate{clientCerts}, nil
 }
 func (m *exampleTLSClientCerts) loadPrivateKeyFromConfig(clientConfig *msp.ClientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
-	var kb []byte
-	var err error
-	if clientConfig.TLSCerts.Client.Key.Pem != "" {
-		kb = []byte(clientConfig.TLSCerts.Client.Key.Pem)
-	} else if clientConfig.TLSCerts.Client.Key.Path != "" {
-		kb, err = loadByteKeyOrCertFromFile(clientConfig, true)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to load key from file path '%s'", clientConfig.TLSCerts.Client.Key.Path)
-		}
-	}
+
+	kb := clientConfig.TLSCerts.Client.Key.Bytes()
 
 	// load the key/cert pair from []byte
-	clientCerts, err = tls.X509KeyPair(cb, kb)
+	clientCerts, err := tls.X509KeyPair(cb, kb)
 	if err != nil {
 		return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
 	}
 
 	return []tls.Certificate{clientCerts}, nil
-}
-func loadByteKeyOrCertFromFile(c *msp.ClientConfig, isKey bool) ([]byte, error) {
-	var path string
-	a := "key"
-	if isKey {
-		path = pathvar.Subst(c.TLSCerts.Client.Key.Path)
-		c.TLSCerts.Client.Key.Path = path
-	} else {
-		a = "cert"
-		path = pathvar.Subst(c.TLSCerts.Client.Cert.Path)
-		c.TLSCerts.Client.Cert.Path = path
-	}
-	bts, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, errors.Errorf("Error loading %s file from '%s' err: %v", a, path, err)
-	}
-	return bts, nil
 }
 
 type exampleCryptoConfigPath struct{}

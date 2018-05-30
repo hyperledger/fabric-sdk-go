@@ -25,7 +25,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -98,7 +100,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	}
 
 	//Testing MSPID failure scenario
-	mspID, ok := sampleEndpointConfig.MSPID("peerorg1")
+	mspID, ok := comm.MSPID(sampleEndpointConfig, "peerorg1")
 	if mspID != "" || ok {
 		t.Fatal("Get MSP ID supposed to fail")
 	}
@@ -501,7 +503,6 @@ func TestPeersConfig(t *testing.T) {
 	}
 
 	pc, ok := endpointConfig.PeersConfig(org2)
-	fmt.Println(ok, pc)
 	assert.True(t, ok)
 
 	for _, value := range pc {
@@ -886,26 +887,27 @@ func TestTLSClientCertsFromFiles(t *testing.T) {
 }
 
 func TestTLSClientCertsFromFilesIncorrectPaths(t *testing.T) {
-	config, err := ConfigFromBackend(configBackend)
-	if err != nil {
+
+	nwConfig := fab.NetworkConfig{}
+	testlookup := lookup.New(configBackend)
+	testlookup.UnmarshalKey("client", &nwConfig.Client)
+
+	//Set client tls paths to empty strings
+	nwConfig.Client.TLSCerts.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	nwConfig.Client.TLSCerts.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	nwConfig.Client.TLSCerts.Client.Cert.Pem = ""
+	nwConfig.Client.TLSCerts.Client.Key.Pem = ""
+
+	//Create backend override
+	configBackendOverride := &mocks.MockConfigBackend{}
+	configBackendOverride.KeyValueMap = make(map[string]interface{})
+	configBackendOverride.KeyValueMap["client"] = nwConfig.Client
+
+	_, err := ConfigFromBackend(configBackendOverride, configBackend)
+	if err == nil || !strings.Contains(err.Error(), "failed to load client key: failed to load pem bytes from path") {
 		t.Fatal(err)
 	}
 
-	endpointConfig := config.(*EndpointConfig)
-	// incorrect paths to files
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Pem = ""
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Pem = ""
-
-	_, err = endpointConfig.TLSClientCerts()
-	if err == nil {
-		t.Fatalf("Expected error but got no errors instead")
-	}
-
-	if !strings.Contains(err.Error(), "no such file or directory") {
-		t.Fatalf("Expected no such file or directory error")
-	}
 }
 
 func TestTLSClientCertsFromPem(t *testing.T) {
@@ -1096,18 +1098,28 @@ YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
 }
 
 func TestTLSClientCertsNoCerts(t *testing.T) {
-	config, err := ConfigFromBackend(configBackend)
+
+	nwConfig := fab.NetworkConfig{}
+	testlookup := lookup.New(configBackend)
+	testlookup.UnmarshalKey("client", &nwConfig.Client)
+
+	//Set client tls paths to empty strings
+	nwConfig.Client.TLSCerts.Client.Cert.Path = ""
+	nwConfig.Client.TLSCerts.Client.Key.Path = ""
+	nwConfig.Client.TLSCerts.Client.Cert.Pem = ""
+	nwConfig.Client.TLSCerts.Client.Key.Pem = ""
+
+	//Create backend override
+	configBackendOverride := &mocks.MockConfigBackend{}
+	configBackendOverride.KeyValueMap = make(map[string]interface{})
+	configBackendOverride.KeyValueMap["client"] = nwConfig.Client
+
+	config, err := ConfigFromBackend(configBackendOverride, configBackend)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	endpointConfig := config.(*EndpointConfig)
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Path = ""
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Path = ""
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Pem = ""
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Pem = ""
-
-	certs, err := endpointConfig.TLSClientCerts()
+	certs, err := config.TLSClientCerts()
 	if err != nil {
 		t.Fatalf("Expected no errors but got error instead: %s", err)
 	}
@@ -1226,17 +1238,6 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	assert.Equal(t, networkConfig.CertificateAuthorities["local.ca.org1.example.com"].URL, "https://ca.org1.example.com:7054")
 	assert.Equal(t, networkConfig.CertificateAuthorities["local.ca.org2.example.com"].URL, "https://ca.org2.example.com:8054")
 
-	//EntityMatchers
-	assert.Equal(t, len(networkConfig.EntityMatchers), 4)
-	assert.Equal(t, len(networkConfig.EntityMatchers["peer"]), 8)
-	assert.Equal(t, networkConfig.EntityMatchers["peer"][0].MappedHost, "local.peer0.org1.example.com")
-	assert.Equal(t, len(networkConfig.EntityMatchers["orderer"]), 4)
-	assert.Equal(t, networkConfig.EntityMatchers["orderer"][0].MappedHost, "local.orderer.example.com")
-	assert.Equal(t, len(networkConfig.EntityMatchers["certificateauthority"]), 2)
-	assert.Equal(t, networkConfig.EntityMatchers["certificateauthority"][0].MappedHost, "local.ca.org1.example.com")
-	assert.Equal(t, len(networkConfig.EntityMatchers["channel"]), 1)
-	assert.Equal(t, networkConfig.EntityMatchers["channel"][0].MappedName, "ch1")
-
 	//Organizations
 	assert.Equal(t, len(networkConfig.Organizations), 3)
 	assert.Equal(t, networkConfig.Organizations["org1"].MSPID, "Org1MSP")
@@ -1249,6 +1250,18 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	assert.Equal(t, len(networkConfig.Peers), 2)
 	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].URL, "peer0.org1.example.com:7051")
 	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].EventURL, "peer0.org1.example.com:7053")
+
+	//EntityMatchers
+	endpointConfigImpl := endpointConfig.(*EndpointConfig)
+	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers), 4)
+	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers["peer"]), 8)
+	assert.Equal(t, endpointConfigImpl.entityMatchers.matchers["peer"][0].MappedHost, "local.peer0.org1.example.com")
+	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers["orderer"]), 4)
+	assert.Equal(t, endpointConfigImpl.entityMatchers.matchers["orderer"][0].MappedHost, "local.orderer.example.com")
+	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers["certificateauthority"]), 2)
+	assert.Equal(t, endpointConfigImpl.entityMatchers.matchers["certificateauthority"][0].MappedHost, "local.ca.org1.example.com")
+	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers["channel"]), 1)
+	assert.Equal(t, endpointConfigImpl.entityMatchers.matchers["channel"][0].MappedName, "ch1")
 
 }
 

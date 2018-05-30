@@ -77,43 +77,40 @@ type TLSConfig struct {
 	// If Path is available, then it will be used to load the cert
 	// if Pem is available, then it has the raw data of the cert it will be used as-is
 	// Certificate root certificate path
+	// If both Path and Pem are available, pem takes the precedence
 	Path string
 	// Certificate actual content
 	Pem string
+	//bytes from Pem/Path
+	bytes []byte
 }
 
-// Bytes returns the tls certificate as a byte array by loading it either from the embedded Pem or Path
-func (cfg TLSConfig) Bytes() ([]byte, error) {
-	var bytes []byte
+// Bytes returns the tls certificate as a byte array
+func (cfg *TLSConfig) Bytes() []byte {
+	return cfg.bytes
+}
+
+//LoadBytes preloads bytes from Pem/Path
+//Pem takes precedence over Path
+//TODO to be removed since separate TLSConfig should only be used in parsing
+func (cfg *TLSConfig) LoadBytes() error {
 	var err error
-
 	if cfg.Pem != "" {
-		bytes = []byte(cfg.Pem)
+		cfg.bytes = []byte(cfg.Pem)
 	} else if cfg.Path != "" {
-		bytes, err = ioutil.ReadFile(cfg.Path)
-
+		cfg.bytes, err = ioutil.ReadFile(cfg.Path)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to load pem bytes from path %s", cfg.Path)
+			return errors.Wrapf(err, "failed to load pem bytes from path %s", cfg.Path)
 		}
 	}
-
-	return bytes, nil
+	return nil
 }
 
 // TLSCert returns the tls certificate as a *x509.Certificate by loading it either from the embedded Pem or Path
-func (cfg TLSConfig) TLSCert() (*x509.Certificate, error) {
-	bytes, err := cfg.Bytes()
+//TODO to be removed since separate TLSConfig should only be used in parsing
+func (cfg *TLSConfig) TLSCert() (*x509.Certificate, error) {
 
-	if err != nil {
-		return nil, err
-	}
-
-	return loadCert(bytes)
-}
-
-// loadCAKey
-func loadCert(rawData []byte) (*x509.Certificate, error) {
-	block, _ := pem.Decode(rawData)
+	block, _ := pem.Decode(cfg.bytes)
 
 	if block != nil {
 		pub, err := x509.ParseCertificate(block.Bytes)
