@@ -6,7 +6,7 @@
 #
 
 # This file contains environment overrides to enable testing
-# against the stable dev-stable target.
+# against the latest dev-stable target.
 
 # Uses nexus registry (see https://nexus3.hyperledger.org/#browse/browse/components:docker.snapshot)
 export ARCH=""
