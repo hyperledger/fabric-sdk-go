@@ -380,21 +380,16 @@ func extractConfig(channelID string, block *common.Block) (*ChannelCfg, error) {
 		return nil, errors.WithMessage(err, "load config items from config group failed")
 	}
 
-	logger.Debugf("channel config: %v", config)
+	logger.Debugf("loaded channel config: %v", config)
 
 	return config, err
 
 }
 
 func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, group *common.ConfigGroup, name string, org string) error {
-	logger.Debugf("loadConfigGroup - %s - START groups Org: %s", name, org)
 	if group == nil {
 		return nil
 	}
-
-	logger.Debugf("loadConfigGroup - %s   - version %v", name, group.Version)
-	logger.Debugf("loadConfigGroup - %s   - mod policy %s", name, group.ModPolicy)
-	logger.Debugf("loadConfigGroup - %s - >> groups", name)
 
 	groups := group.GetGroups()
 	if groups != nil {
@@ -408,12 +403,8 @@ func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, grou
 				return err
 			}
 		}
-	} else {
-		logger.Debugf("loadConfigGroup - %s - no groups", name)
 	}
-	logger.Debugf("loadConfigGroup - %s - << groups", name)
 
-	logger.Debugf("loadConfigGroup - %s - >> values", name)
 	values := group.GetValues()
 	if values != nil {
 		versionsGroup.Values = make(map[string]*common.ConfigValue)
@@ -425,22 +416,12 @@ func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, grou
 			}
 
 		}
-	} else {
-		logger.Debugf("loadConfigGroup - %s - no values", name)
-	}
-	logger.Debugf("loadConfigGroup - %s - << values", name)
-
-	err := loadConfigGroupPolicies(name, org, configItems, versionsGroup, group)
-	if err != nil {
-		return err
 	}
 
-	logger.Debugf("loadConfigGroup - %s - < group", name)
-	return nil
+	return loadConfigGroupPolicies(name, org, configItems, versionsGroup, group)
 }
 
 func loadConfigGroupPolicies(name, org string, configItems *ChannelCfg, versionsGroup *common.ConfigGroup, group *common.ConfigGroup) error {
-	logger.Debugf("loadConfigGroup - %s - >> policies", name)
 	policies := group.GetPolicies()
 	if policies != nil {
 		versionsGroup.Policies = make(map[string]*common.ConfigPolicy)
@@ -451,19 +432,13 @@ func loadConfigGroupPolicies(name, org string, configItems *ChannelCfg, versions
 				return err
 			}
 		}
-	} else {
-		logger.Debugf("loadConfigGroup - %s - no policies", name)
 	}
-	logger.Debugf("loadConfigGroup - %s - << policies", name)
+
 	return nil
 
 }
 
 func loadConfigPolicy(configItems *ChannelCfg, key string, versionsPolicy *common.ConfigPolicy, configPolicy *common.ConfigPolicy, groupName string, org string) error {
-	logger.Debugf("loadConfigPolicy - %s - name: %s", groupName, key)
-	logger.Debugf("loadConfigPolicy - %s - version: %d", groupName, configPolicy.Version)
-	logger.Debugf("loadConfigPolicy - %s - mod_policy: %s", groupName, configPolicy.ModPolicy)
-
 	versionsPolicy.Version = configPolicy.Version
 	return loadPolicy(configPolicy.Policy, groupName)
 }
@@ -479,12 +454,10 @@ func loadPolicy(policy *common.Policy, groupName string) error {
 		if err != nil {
 			return errors.Wrap(err, "unmarshal signature policy envelope from config failed")
 		}
-		logger.Debugf("loadConfigPolicy - %s - policy SIGNATURE :: %v", groupName, sigPolicyEnv.Rule)
 		// TODO: Do something with this value
 
 	case common.Policy_MSP:
 		// TODO: Not implemented yet
-		logger.Debugf("loadConfigPolicy - %s - policy :: MSP POLICY NOT PARSED ", groupName)
 
 	case common.Policy_IMPLICIT_META:
 		implicitMetaPolicy := &common.ImplicitMetaPolicy{}
@@ -492,11 +465,9 @@ func loadPolicy(policy *common.Policy, groupName string) error {
 		if err != nil {
 			return errors.Wrap(err, "unmarshal implicit meta policy from config failed")
 		}
-		logger.Debugf("loadConfigPolicy - %s - policy IMPLICIT_META :: %v", groupName, implicitMetaPolicy)
 		// TODO: Do something with this value
 	case common.Policy_UNKNOWN:
 		// TODO: Not implemented yet
-		logger.Debugf("loadConfigPolicy - %s - policy UNKNOWN ", groupName)
 
 	default:
 		return errors.Errorf("unknown policy type %v", policyType)
@@ -511,13 +482,10 @@ func loadAnchorPeers(configValue *common.ConfigValue, configItems *ChannelCfg, g
 		return errors.Wrap(err, "unmarshal anchor peers from config failed")
 	}
 
-	logger.Debugf("loadConfigValue - %s   - AnchorPeers :: %s", groupName, anchorPeers)
-
 	if len(anchorPeers.AnchorPeers) > 0 {
 		for _, anchorPeer := range anchorPeers.AnchorPeers {
 			oap := &fab.OrgAnchorPeer{Org: org, Host: anchorPeer.Host, Port: anchorPeer.Port}
 			configItems.anchorPeers = append(configItems.anchorPeers, oap)
-			logger.Debugf("loadConfigValue - %s   - AnchorPeer :: %s:%d:%s", groupName, oap.Host, oap.Port, oap.Org)
 		}
 	}
 	return nil
@@ -529,8 +497,6 @@ func loadMSPKey(configValue *common.ConfigValue, configItems *ChannelCfg, groupN
 	if err != nil {
 		return errors.Wrap(err, "unmarshal MSPConfig from config failed")
 	}
-
-	logger.Debugf("loadConfigValue - %s   - MSP found", groupName)
 
 	mspType := imsp.ProviderType(mspConfig.Type)
 	if mspType != imsp.FABRIC {
@@ -548,7 +514,6 @@ func loadOrdererAddressesKey(configValue *common.ConfigValue, configItems *Chann
 	if err != nil {
 		return errors.Wrap(err, "unmarshal orderer addresses from config failed")
 	}
-	logger.Debugf("loadConfigValue - %s   - OrdererAddresses addresses value :: %s", groupName, ordererAddresses.Addresses)
 	if len(ordererAddresses.Addresses) > 0 {
 		configItems.orderers = append(configItems.orderers, ordererAddresses.Addresses...)
 	}
@@ -564,7 +529,6 @@ func loadCapabilities(configValue *common.ConfigValue, configItems *ChannelCfg, 
 	}
 	capabilityMap := make(map[string]bool)
 	for capability := range capabilities.Capabilities {
-		logger.Debugf("Adding capability for group [%s]: [%s]", groupName, capability)
 		capabilityMap[capability] = true
 	}
 	configItems.capabilities[fab.ConfigGroupKey(groupName)] = capabilityMap
@@ -572,10 +536,6 @@ func loadCapabilities(configValue *common.ConfigValue, configItems *ChannelCfg, 
 }
 
 func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.ConfigValue, configValue *common.ConfigValue, groupName string, org string) error {
-	logger.Debugf("loadConfigValue - %s - START value name: %s", groupName, key)
-	logger.Debugf("loadConfigValue - %s   - version: %d", groupName, configValue.Version)
-	logger.Debugf("loadConfigValue - %s   - modPolicy: %s", groupName, configValue.ModPolicy)
-
 	versionsValue.Version = configValue.Version
 
 	switch key {
@@ -607,9 +567,6 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 	//		return errors.Wrap(err, "unmarshal batch size from config failed")
 	//	}
 	//
-	//	logger.Debugf("loadConfigValue - %s   - BatchSize  maxMessageCount :: %d", groupName, batchSize.MaxMessageCount)
-	//	logger.Debugf("loadConfigValue - %s   - BatchSize  absoluteMaxBytes :: %d", groupName, batchSize.AbsoluteMaxBytes)
-	//	logger.Debugf("loadConfigValue - %s   - BatchSize  preferredMaxBytes :: %d", groupName, batchSize.PreferredMaxBytes)
 	//	// TODO: Do something with this value
 
 	//case channelConfig.BatchTimeoutKey:
@@ -618,7 +575,6 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 	//	if err != nil {
 	//		return errors.Wrap(err, "unmarshal batch timeout from config failed")
 	//	}
-	//	logger.Debugf("loadConfigValue - %s   - BatchTimeout timeout value :: %s", groupName, batchTimeout.Timeout)
 	//	// TODO: Do something with this value
 
 	//case channelConfig.ChannelRestrictionsKey:
@@ -627,7 +583,6 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 	//	if err != nil {
 	//		return errors.Wrap(err, "unmarshal channel restrictions from config failed")
 	//	}
-	//	logger.Debugf("loadConfigValue - %s   - ChannelRestrictions max_count value :: %d", groupName, channelRestrictions.MaxCount)
 	//	// TODO: Do something with this value
 
 	//case channelConfig.HashingAlgorithmKey:
@@ -636,7 +591,6 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 	//	if err != nil {
 	//		return errors.Wrap(err, "unmarshal hashing algorithm from config failed")
 	//	}
-	//	logger.Debugf("loadConfigValue - %s   - HashingAlgorithm names value :: %s", groupName, hashingAlgorithm.Name)
 	//	// TODO: Do something with this value
 
 	//case channelConfig.ConsortiumKey:
@@ -645,7 +599,6 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 	//	if err != nil {
 	//		return errors.Wrap(err, "unmarshal consortium from config failed")
 	//	}
-	//	logger.Debugf("loadConfigValue - %s   - Consortium names value :: %s", groupName, consortium.Name)
 	//	// TODO: Do something with this value
 
 	//case channelConfig.BlockDataHashingStructureKey:
@@ -654,7 +607,6 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 	//	if err != nil {
 	//		return errors.Wrap(err, "unmarshal block data hashing structure from config failed")
 	//	}
-	//	logger.Debugf("loadConfigValue - %s   - BlockDataHashingStructure width value :: %s", groupName, bdhstruct.Width)
 	//	// TODO: Do something with this value
 
 	case channelConfig.OrdererAddressesKey:
@@ -663,7 +615,6 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 		}
 
 	default:
-		logger.Debugf("loadConfigValue - %s   - value: %s", groupName, configValue.Value)
 	}
 	return nil
 }
