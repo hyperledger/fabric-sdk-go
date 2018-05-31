@@ -94,7 +94,7 @@ FILTERS_ENABLED="fn"
 FILTER_FILENAME="lib/client.go"
 FILTER_FN="Enroll,GenCSR,SendReq,Init,newPost,newEnrollmentResponse,newCertificateRequest,newPut,newGet,newDelete,StreamResponse"
 FILTER_FN+=",getURL,NormalizeURL,initHTTPClient,net2LocalServerInfo,NewIdentity,newCfsslBasicKeyRequest"
-FILTER_FN+=",handleIdemixEnroll,checkX509Enrollment,handleX509Enroll,GetCSP,NewX509Identity"
+FILTER_FN+=",handleIdemixEnroll,checkX509Enrollment,handleX509Enroll,GetCSP,NewX509Identity,net2LocalCAInfo"
 gofilter
 sed -i'' -e 's/util.GetServerPort()/\"\"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/log "github.com\// a\

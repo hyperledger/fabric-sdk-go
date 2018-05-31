@@ -115,7 +115,7 @@ func (cr *channelResponse) Peers() ([]*discclient.Peer, error) {
 }
 
 // Endorsers returns the response for an endorser query
-func (cr *channelResponse) Endorsers(cc string, ps discclient.PrioritySelector, ef discclient.ExclusionFilter) (discclient.Endorsers, error) {
+func (cr *channelResponse) Endorsers(invocationChain discclient.InvocationChain, ps discclient.PrioritySelector, ef discclient.ExclusionFilter) (discclient.Endorsers, error) {
 	panic("not implemented")
 }
 

@@ -254,7 +254,7 @@ FILTER_FN+=",getValidationChain,GetSigningIdentity"
 FILTER_FN+=",GetTLSIntermediateCerts,GetTLSRootCerts,GetType,Setup"
 FILTER_FN+=",getCertFromPem,getIdentityFromConf,getSigningIdentityFromConf"
 FILTER_FN+=",newBccspMsp,IsWellFormed,GetVersion"
-FILTER_FN+=",hasOURole,hasOURoleInternal"
+FILTER_FN+=",hasOURole,hasOURoleInternal,collectPrincipals,satisfiesPrincipalInternalV13,satisfiesPrincipalInternalPreV13"
 gofilter
 # TODO - adapt to msp/factory.go rather than changing newBccspMsp
 sed -i'' -e 's/newBccspMsp/NewBccspMsp/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"

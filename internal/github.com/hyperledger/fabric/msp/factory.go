@@ -15,6 +15,7 @@ type MSPVersion int
 const (
 	MSPv1_0 = iota
 	MSPv1_1
+	MSPv1_3
 )
 
 // NewOpts represent

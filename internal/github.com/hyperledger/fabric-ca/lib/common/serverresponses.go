@@ -10,14 +10,21 @@ Please review third_party pinning scripts and patches for more details.
 
 package common
 
+const (
+	// IdemixTokenVersion1 represents version 1 of the authorization token created using Idemix credential
+	IdemixTokenVersion1 = "1"
+)
+
 // CAInfoResponseNet is the response to the GET /info request
 type CAInfoResponseNet struct {
 	// CAName is a unique name associated with fabric-ca-server's CA
 	CAName string
 	// Base64 encoding of PEM-encoded certificate chain
 	CAChain string
-	// Base64 encoding of idemix issuer public key
+	// Base64 encoding of Idemix issuer public key
 	IssuerPublicKey string
+	// Base64 encoding of PEM-encoded Idemix issuer revocation public key
+	IssuerRevocationPublicKey string
 	// Version of the server
 	Version string
 }

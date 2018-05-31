@@ -65,6 +65,8 @@ type GetCAInfoResponse struct {
 	CAChain []byte
 	// Idemix issuer public key of the CA
 	IssuerPublicKey []byte
+	// Idemix issuer revocation public key of the CA
+	IssuerRevocationPublicKey []byte
 	// Version of the server
 	Version string
 }
@@ -199,18 +201,25 @@ func (c *Client) Enroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error)
 	return c.handleX509Enroll(req)
 }
 
-// Convert from network to local server information
-func (c *Client) net2LocalServerInfo(net *common.CAInfoResponseNet, local *GetCAInfoResponse) error {
+// Convert from network to local CA information
+func (c *Client) net2LocalCAInfo(net *common.CAInfoResponseNet, local *GetCAInfoResponse) error {
 	caChain, err := util.B64Decode(net.CAChain)
 	if err != nil {
-		return err
+		return errors.WithMessage(err, "Failed to decode CA chain")
 	}
 	if net.IssuerPublicKey != "" {
 		ipk, err := util.B64Decode(net.IssuerPublicKey)
 		if err != nil {
-			return err
+			return errors.WithMessage(err, "Failed to decode issuer public key")
 		}
 		local.IssuerPublicKey = ipk
+	}
+	if net.IssuerRevocationPublicKey != "" {
+		rpk, err := util.B64Decode(net.IssuerRevocationPublicKey)
+		if err != nil {
+			return errors.WithMessage(err, "Failed to decode issuer revocation key")
+		}
+		local.IssuerRevocationPublicKey = rpk
 	}
 	local.CAName = net.CAName
 	local.CAChain = caChain
@@ -290,7 +299,7 @@ func (c *Client) newEnrollmentResponse(result *common.EnrollmentResponseNet, id 
 	resp := &EnrollmentResponse{
 		Identity: NewIdentity(c, id, []credential.Credential{x509Cred}),
 	}
-	err = c.net2LocalServerInfo(&result.ServerInfo, &resp.CAInfo)
+	err = c.net2LocalCAInfo(&result.ServerInfo, &resp.CAInfo)
 	if err != nil {
 		return nil, err
 	}

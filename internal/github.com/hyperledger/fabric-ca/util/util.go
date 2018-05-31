@@ -33,6 +33,7 @@ import (
 	mrand "math/rand"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -92,6 +93,14 @@ func ReadFile(file string) ([]byte, error) {
 
 // WriteFile writes a file
 func WriteFile(file string, buf []byte, perm os.FileMode) error {
+	dir := path.Dir(file)
+	// Create the directory if it doesn't exist
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to create directory '%s' for file '%s'", dir, file)
+		}
+	}
 	return ioutil.WriteFile(file, buf, perm)
 }
 
