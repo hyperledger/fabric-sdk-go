@@ -11,7 +11,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -171,7 +171,7 @@ func (cp *ChannelProvider) createSelectionService(ctx context.Client, chConfig f
 	if err != nil {
 		return nil, err
 	}
-	return staticselection.NewService(discovery)
+	return dynamicselection.NewService(ctx, chConfig.ID(), discovery)
 }
 
 func (cp *ChannelProvider) getSelectionService(context fab.ClientContext, channelID string) (fab.SelectionService, error) {
