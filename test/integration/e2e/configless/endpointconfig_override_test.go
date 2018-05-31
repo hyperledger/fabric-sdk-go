@@ -9,6 +9,7 @@ package configless
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -49,11 +50,11 @@ var (
 	clientConfig = msp.ClientConfig{
 		Organization:    "org1",
 		Logging:         api.LoggingType{Level: "info"},
-		CryptoConfig:    msp.CCType{Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}"},
+		CryptoConfig:    msp.CCType{Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}")},
 		CredentialStore: msp.CredentialStoreType{Path: "/tmp/msp"},
 		TLSCerts: endpoint.MutualTLSConfig{Client: endpoint.TLSKeyPair{
-			Key:  endpoint.TLSConfig{Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go-key.pem")},
-			Cert: endpoint.TLSConfig{Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go.pem")}}},
+			Key:  newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"),
+			Cert: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go.pem")}},
 	}
 
 	channelsConfig = map[string]fab.ChannelNetworkConfig{
@@ -140,9 +141,7 @@ var (
 				"fail-fast":                false,
 				"allow-insecure":           false,
 			},
-			TLSCACerts: endpoint.TLSConfig{
-				Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem",
-			},
+			TLSCACerts: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem"),
 		},
 	}
 
@@ -158,9 +157,7 @@ var (
 				"fail-fast":                false,
 				"allow-insecure":           false,
 			},
-			TLSCACerts: endpoint.TLSConfig{
-				Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem",
-			},
+			TLSCACerts: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
 		},
 		"peer0.org2.example.com": {
 			URL:      "peer0.org2.example.com:8051",
@@ -173,9 +170,7 @@ var (
 				"fail-fast":                false,
 				"allow-insecure":           false,
 			},
-			TLSCACerts: endpoint.TLSConfig{
-				Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem",
-			},
+			TLSCACerts: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem"),
 		},
 	}
 
@@ -183,14 +178,10 @@ var (
 		"ca.org1.example.com": {
 			URL: "https://ca.org1.example.com:7054",
 			TLSCACerts: endpoint.MutualTLSConfig{
-				Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem",
+				Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem"),
 				Client: endpoint.TLSKeyPair{
-					Key: endpoint.TLSConfig{
-						Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem",
-					},
-					Cert: endpoint.TLSConfig{
-						Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem",
-					},
+					Key:  newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem"),
+					Cert: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem"),
 				},
 			},
 			Registrar: msp.EnrollCredentials{
@@ -202,14 +193,10 @@ var (
 		"ca.org2.example.com": {
 			URL: "https://ca.org2.example.com:8054",
 			TLSCACerts: endpoint.MutualTLSConfig{
-				Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem",
+				Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem"),
 				Client: endpoint.TLSKeyPair{
-					Key: endpoint.TLSConfig{
-						Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem",
-					},
-					Cert: endpoint.TLSConfig{
-						Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem",
-					},
+					Key:  newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem"),
+					Cert: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem"),
 				},
 			},
 			Registrar: msp.EnrollCredentials{
@@ -389,13 +376,7 @@ func (m *exampleOrderersConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
 
 	for _, orderer := range orderersConfig {
 
-		if orderer.TLSCACerts.Path != "" {
-			orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
-		} else if len(orderer.TLSCACerts.Pem) == 0 && !m.isSystemCertPool {
-			return nil, false
-		}
-		err := orderer.TLSCACerts.LoadBytes()
-		if err != nil {
+		if orderer.TLSCACerts.Path == "" && len(orderer.TLSCACerts.Pem) == 0 && !m.isSystemCertPool {
 			return nil, false
 		}
 		orderers = append(orderers, orderer)
@@ -419,13 +400,6 @@ func (m *exampleOrdererConfig) OrdererConfig(ordererNameOrURL string) (*fab.Orde
 		return nil, false
 	}
 
-	if orderer.TLSCACerts.Path != "" {
-		orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
-	}
-	err := orderer.TLSCACerts.LoadBytes()
-	if err != nil {
-		return nil, false
-	}
 	return &orderer, true
 }
 
@@ -477,14 +451,6 @@ func (m *examplePeersConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
 			//p = *matchingPeerConfig
 			return nil, false
 		}
-		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
-		}
-		err := p.TLSCACerts.LoadBytes()
-		if err != nil {
-			return nil, false
-		}
-
 		peers = append(peers, p)
 	}
 	return peers, true
@@ -508,15 +474,6 @@ func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool)
 	if ok {
 		return &pcfg, true
 	}
-	if pcfg.TLSCACerts.Path != "" {
-		pcfg.TLSCACerts.Path = pathvar.Subst(pcfg.TLSCACerts.Path)
-	}
-	err := pcfg.TLSCACerts.LoadBytes()
-	if err != nil {
-		return nil, false
-	}
-	// EntityMatchers are not used in this implementation
-	// see default implementation (pkg/fab/endpointconfig.go) to see how they're used
 
 	return nil, false
 }
@@ -543,15 +500,6 @@ func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
 			return nil, false
 		}
 
-		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
-		}
-
-		err := p.TLSCACerts.LoadBytes()
-		if err != nil {
-			return nil, false
-		}
-
 		mspID, ok := PeerMSPID(name)
 		if !ok {
 			return nil, false
@@ -563,6 +511,7 @@ func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
 
 	return netPeers, true
 }
+
 func (m *exampleNetworkPeers) verifyPeerConfig(p fab.PeerConfig, peerName string, tlsEnabled bool) error {
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
@@ -630,15 +579,6 @@ func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPee
 			return nil, false
 		}
 
-		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
-		}
-
-		err := p.TLSCACerts.LoadBytes()
-		if err != nil {
-			return nil, false
-		}
-
 		mspID, ok := PeerMSPID(peerName)
 		if !ok {
 			return nil, false
@@ -684,10 +624,6 @@ func (m *exampleChannelOrderers) ChannelOrderers(channelName string) ([]fab.Orde
 		if !ok || orderer == nil {
 			return nil, false
 		}
-		err := orderer.TLSCACerts.LoadBytes()
-		if err != nil {
-			return nil, false
-		}
 		orderers = append(orderers, *orderer)
 	}
 
@@ -723,19 +659,12 @@ func (m *exampleEventServiceType) EventServiceType() fab.EventServiceType {
 }
 
 type exampleTLSClientCerts struct {
-	RWLock *sync.RWMutex
+	RWLock sync.RWMutex
 }
 
 // TLSClientCerts overrides EndpointConfig's TLSClientCerts function which will return the list of configured client certs
 func (m *exampleTLSClientCerts) TLSClientCerts() ([]tls.Certificate, error) {
-	if m.RWLock == nil {
-		m.RWLock = &sync.RWMutex{}
-	}
 	var clientCerts tls.Certificate
-	err := clientConfig.TLSCerts.Client.Cert.LoadBytes()
-	if err != nil {
-		return nil, err
-	}
 	cb := clientConfig.TLSCerts.Client.Cert.Bytes()
 
 	if len(cb) == 0 {
@@ -764,14 +693,10 @@ func (m *exampleTLSClientCerts) TLSClientCerts() ([]tls.Certificate, error) {
 }
 func (m *exampleTLSClientCerts) loadPrivateKeyFromConfig(clientConfig *msp.ClientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
 
-	err := clientConfig.TLSCerts.Client.Key.LoadBytes()
-	if err != nil {
-		return nil, err
-	}
 	kb := clientConfig.TLSCerts.Client.Key.Bytes()
 
 	// load the key/cert pair from []byte
-	clientCerts, err = tls.X509KeyPair(cb, kb)
+	clientCerts, err := tls.X509KeyPair(cb, kb)
 	if err != nil {
 		return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
 	}
@@ -782,5 +707,13 @@ func (m *exampleTLSClientCerts) loadPrivateKeyFromConfig(clientConfig *msp.Clien
 type exampleCryptoConfigPath struct{}
 
 func (m *exampleCryptoConfigPath) CryptoConfigPath() string {
-	return pathvar.Subst(clientConfig.CryptoConfig.Path)
+	return clientConfig.CryptoConfig.Path
+}
+
+func newTLSConfig(path string) endpoint.TLSConfig {
+	config := endpoint.TLSConfig{Path: pathvar.Subst(path)}
+	if err := config.LoadBytes(); err != nil {
+		panic(fmt.Sprintf("error loading bytes: %s", err))
+	}
+	return config
 }

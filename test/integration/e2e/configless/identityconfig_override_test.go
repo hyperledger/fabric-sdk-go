@@ -12,7 +12,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/pkg/errors"
 )
 
@@ -49,9 +48,6 @@ func (m *exampleClient) Client() (*msp.ClientConfig, error) {
 	client := networkConfig.Client
 
 	client.Organization = strings.ToLower(client.Organization)
-	client.TLSCerts.Path = pathvar.Subst(client.TLSCerts.Path)
-	client.TLSCerts.Client.Key.Path = pathvar.Subst(client.TLSCerts.Client.Key.Path)
-	client.TLSCerts.Client.Cert.Path = pathvar.Subst(client.TLSCerts.Client.Cert.Path)
 
 	return &client, nil
 }
@@ -110,7 +106,7 @@ func (m *exampleCaServerCerts) CAServerCerts(org string) ([][]byte, error) {
 	certFiles := strings.Split(caConfig.TLSCACerts.Path, ",")
 	serverCerts = make([][]byte, len(certFiles))
 	for i, certPath := range certFiles {
-		bytes, err := ioutil.ReadFile(pathvar.Subst(certPath))
+		bytes, err := ioutil.ReadFile(certPath)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to load pem bytes from path %s", certPath)
 		}
@@ -127,10 +123,6 @@ func (m *exampleCaClientKey) CAClientKey(org string) ([]byte, error) {
 		return nil, err
 	}
 
-	//subst path
-	caConfig.TLSCACerts.Client.Key.Path = pathvar.Subst(caConfig.TLSCACerts.Client.Key.Path)
-	err = caConfig.TLSCACerts.Client.Key.LoadBytes()
-
 	return caConfig.TLSCACerts.Client.Key.Bytes(), err
 }
 
@@ -141,10 +133,6 @@ func (m *exampleCaClientCert) CAClientCert(org string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	//subst path
-	caConfig.TLSCACerts.Client.Cert.Path = pathvar.Subst(caConfig.TLSCACerts.Client.Cert.Path)
-	err = caConfig.TLSCACerts.Client.Cert.LoadBytes()
 
 	return caConfig.TLSCACerts.Client.Cert.Bytes(), err
 }
