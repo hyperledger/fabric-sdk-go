@@ -70,12 +70,12 @@ type CommManager interface {
 //EndpointConfig contains endpoint network configurations
 type EndpointConfig interface {
 	Timeout(TimeoutType) time.Duration
-	OrderersConfig() ([]OrdererConfig, bool)
+	OrderersConfig() []OrdererConfig
 	OrdererConfig(nameOrURL string) (*OrdererConfig, bool)
 	PeersConfig(org string) ([]PeerConfig, bool)
 	PeerConfig(nameOrURL string) (*PeerConfig, bool)
-	NetworkConfig() (*NetworkConfig, bool)
-	NetworkPeers() ([]NetworkPeer, bool)
+	NetworkConfig() *NetworkConfig
+	NetworkPeers() []NetworkPeer
 	ChannelConfig(name string) (*ChannelNetworkConfig, bool)
 	ChannelPeers(name string) ([]ChannelPeer, bool)
 	ChannelOrderers(name string) ([]OrdererConfig, bool)

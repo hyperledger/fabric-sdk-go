@@ -21,10 +21,7 @@ func NetworkPeerConfig(cfg fab.EndpointConfig, key string) (*fab.NetworkPeer, er
 	}
 
 	// find MSP ID
-	networkPeers, ok := cfg.NetworkPeers()
-	if !ok {
-		return nil, errors.New("unable to load network peer config")
-	}
+	networkPeers := cfg.NetworkPeers()
 
 	var mspID string
 	for _, peer := range networkPeers {
@@ -52,11 +49,7 @@ func SearchPeerConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.PeerConfi
 
 	//If the given url is already parsed URL through entity matcher, then 'cfg.PeerConfig()'
 	//may return NoMatchingPeerEntity error. So retry with network peer URLs
-	networkPeers, ok := cfg.NetworkPeers()
-	if !ok {
-		return nil, errors.New("unable to load network peer config")
-	}
-
+	networkPeers := cfg.NetworkPeers()
 	for _, peer := range networkPeers {
 		if peer.URL == url {
 			return &peer.PeerConfig, nil
@@ -68,8 +61,8 @@ func SearchPeerConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.PeerConfi
 
 // MSPID returns the MSP ID for the requested organization
 func MSPID(cfg fab.EndpointConfig, org string) (string, bool) {
-	networkConfig, ok := cfg.NetworkConfig()
-	if !ok {
+	networkConfig := cfg.NetworkConfig()
+	if networkConfig == nil {
 		return "", false
 	}
 	// viper lowercases all key maps, org is lower case

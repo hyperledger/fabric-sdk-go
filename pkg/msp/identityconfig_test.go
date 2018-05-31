@@ -185,11 +185,7 @@ func TestInitConfigFromRawWithPem(t *testing.T) {
 
 	idConfig := config.(*IdentityConfig)
 
-	o, ok := idConfig.endpointConfig.OrderersConfig()
-	if !ok {
-		t.Fatal("Failed to load orderers from config")
-	}
-
+	o := idConfig.endpointConfig.OrderersConfig()
 	if len(o) == 0 {
 		t.Fatal("orderer cannot be nil or empty")
 	}
@@ -572,11 +568,8 @@ type customEndpointConfig struct {
 	fabImpl.EndpointConfig
 }
 
-func (c *customEndpointConfig) NetworkConfig() (*fabImpl.NetworkConfig, bool) {
-	nConfig, ok := c.EndpointConfig.NetworkConfig()
-	if !ok {
-		return nil, ok
-	}
+func (c *customEndpointConfig) NetworkConfig() *fabImpl.NetworkConfig {
+	nConfig := c.EndpointConfig.NetworkConfig()
 	nConfig.Client.Organization = "CUSTOM-ORG1"
-	return nConfig, true
+	return nConfig
 }

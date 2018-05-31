@@ -198,8 +198,8 @@ func (c *IdentityConfig) networkConfig() (*fab.NetworkConfig, error) {
 	if c.endpointConfig == nil {
 		return nil, errors.New("network config not initialized for identity config")
 	}
-	networkConfig, ok := c.endpointConfig.NetworkConfig()
-	if !ok {
+	networkConfig := c.endpointConfig.NetworkConfig()
+	if networkConfig == nil {
 		return nil, errors.New("network config not initialized for identity config")
 	}
 	return networkConfig, nil

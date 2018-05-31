@@ -343,19 +343,10 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 
 	// Misconfigured channel orderer
 	configBackend = getInvalidChannelOrdererBackend(backend...)
-	invalidChOrdererConfig, err := fabImpl.ConfigFromBackend(configBackend)
+	_, err = fabImpl.ConfigFromBackend(configBackend)
 
-	if err != nil {
+	if err == nil || !strings.Contains(err.Error(), "failed to load channel orderers: Could not find Orderer Config for channel orderer") {
 		t.Fatal(err)
-	}
-	ctx.SetEndpointConfig(invalidChOrdererConfig)
-
-	rc = setupResMgmtClient(t, ctx)
-
-	err = rc.JoinChannel("mychannel", WithTargets(peer1))
-
-	if err == nil || !strings.Contains(err.Error(), "failed to find orderer for request: orderer not found: orderers lookup failed") {
-		t.Fatalf("Should have failed to join channel since channel orderer has been misconfigured")
 	}
 
 	// Misconfigured global orderer (cert cannot be loaded)
