@@ -62,6 +62,7 @@ func SearchPeerConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.PeerConfi
 // MSPID returns the MSP ID for the requested organization
 func MSPID(cfg fab.EndpointConfig, org string) (string, bool) {
 	networkConfig := cfg.NetworkConfig()
+	//check for nil since any endpointconfig implementation can be passed here
 	if networkConfig == nil {
 		return "", false
 	}

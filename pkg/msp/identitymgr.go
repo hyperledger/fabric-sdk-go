@@ -34,10 +34,6 @@ type IdentityManager struct {
 func NewIdentityManager(orgName string, userStore msp.UserStore, cryptoSuite core.CryptoSuite, endpointConfig fab.EndpointConfig) (*IdentityManager, error) {
 
 	netConfig := endpointConfig.NetworkConfig()
-	if netConfig == nil {
-		return nil, errors.New("network config retrieval failed")
-	}
-
 	// viper keys are case insensitive
 	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
 	if !ok {
