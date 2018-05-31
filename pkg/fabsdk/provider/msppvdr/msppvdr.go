@@ -27,10 +27,7 @@ type MSPProvider struct {
 func New(endpointConfig fab.EndpointConfig, cryptoSuite core.CryptoSuite, userStore msp.UserStore) (*MSPProvider, error) {
 
 	identityManager := make(map[string]msp.IdentityManager)
-	netConfig, ok := endpointConfig.NetworkConfig()
-	if !ok {
-		return nil, errors.New("failed to retrieve network config")
-	}
+	netConfig := endpointConfig.NetworkConfig()
 	for orgName := range netConfig.Organizations {
 		mgr, err := mspimpl.NewIdentityManager(orgName, userStore, cryptoSuite, endpointConfig)
 		if err != nil {

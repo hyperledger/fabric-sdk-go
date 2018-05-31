@@ -44,11 +44,7 @@ func (dp *LocalProvider) Initialize(fabPvdr contextAPI.Providers) error {
 // CreateLocalDiscoveryService return a local discovery service
 func (dp *LocalProvider) CreateLocalDiscoveryService(mspID string) (fab.DiscoveryService, error) {
 	peers := []fab.Peer{}
-
-	netPeers, ok := dp.config.NetworkPeers()
-	if !ok {
-		return nil, errors.New("unable to read configuration for network peers")
-	}
+	netPeers := dp.config.NetworkPeers()
 
 	logger.Debugf("Found %d peers", len(netPeers))
 

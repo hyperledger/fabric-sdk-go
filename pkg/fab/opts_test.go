@@ -245,8 +245,8 @@ func (m *mockTimeoutConfig) Timeout(timeoutType fab.TimeoutType) time.Duration {
 
 type mockrderersConfig struct{}
 
-func (m *mockrderersConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
-	return []fab.OrdererConfig{{URL: "orderer1.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}}, true
+func (m *mockrderersConfig) OrderersConfig() []fab.OrdererConfig {
+	return []fab.OrdererConfig{{URL: "orderer1.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}}
 }
 
 type mockOrdererConfig struct{}
@@ -269,14 +269,14 @@ func (m *mockPeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
 
 type mockNetworkConfig struct{}
 
-func (m *mockNetworkConfig) NetworkConfig() (*fab.NetworkConfig, bool) {
-	return &fab.NetworkConfig{}, true
+func (m *mockNetworkConfig) NetworkConfig() *fab.NetworkConfig {
+	return &fab.NetworkConfig{}
 }
 
 type mockNetworkPeers struct{}
 
-func (m *mockNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
-	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, MSPID: ""}}, true
+func (m *mockNetworkPeers) NetworkPeers() []fab.NetworkPeer {
+	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, MSPID: ""}}
 }
 
 type mockChannelConfig struct{}

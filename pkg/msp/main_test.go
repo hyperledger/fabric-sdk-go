@@ -103,8 +103,8 @@ func (f *textFixture) setup(configBackend ...core.ConfigBackend) { //nolint
 	f.userStore = userStoreFromConfig(nil, f.identityConfig)
 
 	identityManagers := make(map[string]msp.IdentityManager)
-	netConfig, ok := f.endpointConfig.NetworkConfig()
-	if !ok {
+	netConfig := f.endpointConfig.NetworkConfig()
+	if netConfig == nil {
 		panic("failed to get network config")
 	}
 	for orgName := range netConfig.Organizations {
@@ -168,8 +168,8 @@ func cleanupTestPath(t *testing.T, storePath string) {
 }
 
 func mspIDByOrgName(t *testing.T, c fab.EndpointConfig, orgName string) string {
-	netConfig, ok := c.NetworkConfig()
-	if !ok {
+	netConfig := c.NetworkConfig()
+	if netConfig == nil {
 		t.Fatal("network config retrieval failed")
 	}
 

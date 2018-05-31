@@ -102,11 +102,10 @@ func (mr *MockEndpointConfigMockRecorder) EventServiceType() *gomock.Call {
 }
 
 // NetworkConfig mocks base method
-func (m *MockEndpointConfig) NetworkConfig() (*fab.NetworkConfig, bool) {
+func (m *MockEndpointConfig) NetworkConfig() *fab.NetworkConfig {
 	ret := m.ctrl.Call(m, "NetworkConfig")
 	ret0, _ := ret[0].(*fab.NetworkConfig)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	return ret0
 }
 
 // NetworkConfig indicates an expected call of NetworkConfig
@@ -115,11 +114,10 @@ func (mr *MockEndpointConfigMockRecorder) NetworkConfig() *gomock.Call {
 }
 
 // NetworkPeers mocks base method
-func (m *MockEndpointConfig) NetworkPeers() ([]fab.NetworkPeer, bool) {
+func (m *MockEndpointConfig) NetworkPeers() []fab.NetworkPeer {
 	ret := m.ctrl.Call(m, "NetworkPeers")
 	ret0, _ := ret[0].([]fab.NetworkPeer)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	return ret0
 }
 
 // NetworkPeers indicates an expected call of NetworkPeers
@@ -141,11 +139,10 @@ func (mr *MockEndpointConfigMockRecorder) OrdererConfig(arg0 interface{}) *gomoc
 }
 
 // OrderersConfig mocks base method
-func (m *MockEndpointConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
+func (m *MockEndpointConfig) OrderersConfig() []fab.OrdererConfig {
 	ret := m.ctrl.Call(m, "OrderersConfig")
 	ret0, _ := ret[0].([]fab.OrdererConfig)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	return ret0
 }
 
 // OrderersConfig indicates an expected call of OrderersConfig

@@ -35,11 +35,6 @@ type CAClientImpl struct {
 // NewCAClient creates a new CA CAClient instance
 func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 
-	netConfig, ok := ctx.EndpointConfig().NetworkConfig()
-	if !ok {
-		return nil, errors.New("network config retrieval failed")
-	}
-
 	if orgName == "" {
 		clientConfig, err1 := ctx.IdentityConfig().Client()
 		if err1 != nil {
@@ -52,8 +47,8 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 		return nil, errors.New("organization is missing")
 	}
 
+	netConfig := ctx.EndpointConfig().NetworkConfig()
 	// viper keys are case insensitive
-	//
 	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
 	if !ok {
 		return nil, errors.New("org config retrieval failed")

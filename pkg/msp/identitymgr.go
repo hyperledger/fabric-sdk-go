@@ -33,8 +33,8 @@ type IdentityManager struct {
 // NewIdentityManager creates a new instance of IdentityManager
 func NewIdentityManager(orgName string, userStore msp.UserStore, cryptoSuite core.CryptoSuite, endpointConfig fab.EndpointConfig) (*IdentityManager, error) {
 
-	netConfig, ok := endpointConfig.NetworkConfig()
-	if !ok {
+	netConfig := endpointConfig.NetworkConfig()
+	if netConfig == nil {
 		return nil, errors.New("network config retrieval failed")
 	}
 

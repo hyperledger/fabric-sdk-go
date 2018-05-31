@@ -310,14 +310,8 @@ func TestWithConfigEndpoint(t *testing.T) {
 	// some functions by calling WithEndpointConfig(np, mo) above
 	endpointConfig := sdk.opts.endpointConfig
 
-	network, ok := endpointConfig.NetworkPeers()
-	if !ok {
-		t.Fatal("Error getting NetworkPeer from config")
-	}
-	expectedNetwork, ok := np.NetworkPeers()
-	if !ok {
-		t.Fatal("Error getting extecd NetworkPeer from direct config")
-	}
+	network := endpointConfig.NetworkPeers()
+	expectedNetwork := np.NetworkPeers()
 	if !reflect.DeepEqual(network, expectedNetwork) {
 		t.Fatalf("Expected NetworkPeer was not returned by the sdk's config. Expected: %s, Received: %s", expectedNetwork, network)
 	}
@@ -352,8 +346,8 @@ func TestWithConfigEndpointAndBadOpt(t *testing.T) {
 
 type MockNetworkPeers struct{}
 
-func (M *MockNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
-	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, MSPID: ""}}, true
+func (M *MockNetworkPeers) NetworkPeers() []fab.NetworkPeer {
+	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, MSPID: ""}}
 }
 
 type MockChannelOrderers struct{}

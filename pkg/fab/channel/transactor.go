@@ -139,10 +139,7 @@ func orderersFromChannel(ctx context.Client, channelID string) ([]fab.Orderer, e
 
 func orderersByTarget(ctx context.Client) (map[string]fab.OrdererConfig, error) {
 	ordererDict := map[string]fab.OrdererConfig{}
-	orderersConfig, ok := ctx.EndpointConfig().OrderersConfig()
-	if !ok {
-		return nil, errors.New("loading orderers config failed")
-	}
+	orderersConfig := ctx.EndpointConfig().OrderersConfig()
 
 	for _, oc := range orderersConfig {
 		address := endpoint.ToAddress(oc.URL)
