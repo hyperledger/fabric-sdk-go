@@ -32,7 +32,7 @@ var eventURL string
 
 func TestInvalidConnectionOpts(t *testing.T) {
 	if _, err := New(newMockContext(), fabmocks.NewMockChannelCfg("channelid"), "grpcs://invalidhost:7053"); err == nil {
-		t.Fatalf("expecting error creating new connection with invaid address but got none")
+		t.Fatal("expecting error creating new connection with invaid address but got none")
 	}
 }
 
@@ -70,7 +70,7 @@ func TestSend(t *testing.T) {
 		},
 	}
 
-	t.Logf("Sending register event...")
+	t.Log("Sending register event...")
 	if err := conn.Send(emsg); err != nil {
 		t.Fatalf("Error sending register interest event: %s", err)
 	}
@@ -78,7 +78,7 @@ func TestSend(t *testing.T) {
 	select {
 	case e, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed connection")
+			t.Fatal("unexpected closed connection")
 		}
 		t.Logf("Got response: %#v", e)
 		eventHubEvent, ok := e.(*Event)
@@ -93,7 +93,7 @@ func TestSend(t *testing.T) {
 			t.Fatalf("expected register response but got %T", evt.Event)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for event")
+		t.Fatal("timed out waiting for event")
 	}
 
 	emsg = &pb.Event{
@@ -106,7 +106,7 @@ func TestSend(t *testing.T) {
 		},
 	}
 
-	t.Logf("Sending unregister event...")
+	t.Log("Sending unregister event...")
 	if err := conn.Send(emsg); err != nil {
 		t.Fatalf("Error sending unregister interest event: %s", err)
 	}
@@ -120,7 +120,7 @@ func checkEvent(eventch chan interface{}, t *testing.T) {
 	select {
 	case e, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed connection")
+			t.Fatal("unexpected closed connection")
 		}
 		t.Logf("Got response: %#v", e)
 		eventHubEvent, ok := e.(*Event)
@@ -136,7 +136,7 @@ func checkEvent(eventch chan interface{}, t *testing.T) {
 			t.Fatalf("expected unregister response but got %T", evt.Event)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for event")
+		t.Fatal("timed out waiting for event")
 	}
 }
 
@@ -170,14 +170,14 @@ func TestDisconnected(t *testing.T) {
 	select {
 	case e, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed connection")
+			t.Fatal("unexpected closed connection")
 		}
 		_, ok = e.(*clientdisp.DisconnectedEvent)
 		if !ok {
 			t.Fatalf("expected DisconnectedEvent but got %T", e)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for event")
+		t.Fatal("timed out waiting for event")
 	}
 
 	conn.Close()

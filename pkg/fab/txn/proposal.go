@@ -119,7 +119,7 @@ func SendProposal(reqCtx reqContext.Context, proposal *fab.TransactionProposal, 
 			//resp, err := processor.ProcessTransactionProposal(context.NewRequestOLD(ctx), request)
 			resp, err := processor.ProcessTransactionProposal(reqCtx, request)
 			if err != nil {
-				logger.Debugf("Received error response from txn proposal processing: %v", err)
+				logger.Debugf("Received error response from txn proposal processing: %s", err)
 				responseMtx.Lock()
 				errs = append(errs, err)
 				responseMtx.Unlock()

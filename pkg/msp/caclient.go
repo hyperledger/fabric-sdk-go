@@ -38,7 +38,7 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 	if orgName == "" {
 		clientConfig, err1 := ctx.IdentityConfig().Client()
 		if err1 != nil {
-			return nil, errors.Wrapf(err1, "client config retrieval failed")
+			return nil, errors.Wrap(err1, "client config retrieval failed")
 		}
 		orgName = clientConfig.Organization
 	}
@@ -265,7 +265,7 @@ func (c *CAClientImpl) Reenroll(enrollmentID string) error {
 		return fmt.Errorf("no CAs configured for organization: %s", c.orgName)
 	}
 	if enrollmentID == "" {
-		logger.Infof("invalid re-enroll request, missing enrollmentID")
+		logger.Info("invalid re-enroll request, missing enrollmentID")
 		return errors.New("user name missing")
 	}
 

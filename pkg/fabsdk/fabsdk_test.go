@@ -31,7 +31,7 @@ func TestNewGoodOpt(t *testing.T) {
 	sdk, err := New(configImpl.FromFile(sdkConfigFile),
 		goodOpt())
 	if err != nil {
-		t.Fatalf("Expected no error from New, but got %v", err)
+		t.Fatalf("Expected no error from New, but got %s", err)
 	}
 	sdk.Close()
 }
@@ -46,7 +46,7 @@ func TestNewBadOpt(t *testing.T) {
 	_, err := New(configImpl.FromFile(sdkConfigFile),
 		badOpt())
 	if err == nil {
-		t.Fatalf("Expected error from New")
+		t.Fatal("Expected error from New")
 	}
 }
 
@@ -60,7 +60,7 @@ func TestDoubleClose(t *testing.T) {
 	sdk, err := New(configImpl.FromFile(sdkConfigFile),
 		goodOpt())
 	if err != nil {
-		t.Fatalf("Expected no error from New, but got %v", err)
+		t.Fatalf("Expected no error from New, but got %s", err)
 	}
 	sdk.Close()
 	sdk.Close()
@@ -178,21 +178,21 @@ func TestErrPkgSuite(t *testing.T) {
 	ps.errOnCore = true
 	_, err = fromPkgSuite(c, &ps)
 	if err == nil {
-		t.Fatalf("Expected error initializing SDK")
+		t.Fatal("Expected error initializing SDK")
 	}
 	ps.errOnCore = false
 
 	ps.errOnService = true
 	_, err = fromPkgSuite(c, &ps)
 	if err == nil {
-		t.Fatalf("Expected error initializing SDK")
+		t.Fatal("Expected error initializing SDK")
 	}
 	ps.errOnService = false
 
 	ps.errOnLogger = true
 	_, err = fromPkgSuite(c, &ps)
 	if err == nil {
-		t.Fatalf("Expected error initializing SDK")
+		t.Fatal("Expected error initializing SDK")
 	}
 	ps.errOnLogger = false
 }
@@ -209,7 +209,7 @@ func TestNewDefaultSDKFromByte(t *testing.T) {
 	}
 
 	if sdk == nil {
-		t.Fatalf("SDK should not be empty when initialized")
+		t.Fatal("SDK should not be empty when initialized")
 	}
 	sdk.Close()
 }
@@ -232,7 +232,7 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 		t.Fatalf("Failed to read test config for bytes array testing. Error: %s", err)
 	}
 	if n == 0 {
-		t.Fatalf("Failed to read test config for bytes array testing. Mock bytes array is empty")
+		t.Fatal("Failed to read test config for bytes array testing. Mock bytes array is empty")
 	}
 	return cBytes, err
 }
@@ -274,7 +274,7 @@ func TestWithConfigFailure(t *testing.T) {
 func TestBadConfigFile(t *testing.T) {
 	_, err := New(configImpl.FromFile("../../pkg/core/config/testdata/viper-test.yaml"))
 	if err == nil {
-		t.Fatalf("Expected error from New with bad config file")
+		t.Fatal("Expected error from New with bad config file")
 	}
 }
 

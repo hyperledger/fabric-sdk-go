@@ -23,15 +23,15 @@ import (
 // Test golang ChainCode packaging
 func TestNewCCPackage(t *testing.T) {
 	pwd, err := os.Getwd()
-	assert.Nil(t, err, "error from os.Getwd %v", err)
+	assert.Nil(t, err, "error from os.Getwd %s", err)
 
 	ccPackage, err := NewCCPackage("github.com", path.Join(pwd, "../../../../test/fixtures/testdata"))
-	assert.Nil(t, err, "error from Create %v", err)
+	assert.Nil(t, err, "error from Create %s", err)
 
 	r := bytes.NewReader(ccPackage.Code)
 
 	gzf, err := gzip.NewReader(r)
-	assert.Nil(t, err, "error from gzip.NewReader %v", err)
+	assert.Nil(t, err, "error from gzip.NewReader %s", err)
 
 	tarReader := tar.NewReader(gzf)
 	i := 0
@@ -43,7 +43,7 @@ func TestNewCCPackage(t *testing.T) {
 			break
 		}
 
-		assert.Nil(t, err, "error from tarReader.Next() %v", err)
+		assert.Nil(t, err, "error from tarReader.Next() %s", err)
 
 		exampleccExist = exampleccExist || header.Name == "src/github.com/example_cc/example_cc.go"
 		eventMetaInfExists = eventMetaInfExists || header.Name == "META-INF/sample-json/event.json"
@@ -66,7 +66,7 @@ func TestEmptyCreate(t *testing.T) {
 
 	_, err := NewCCPackage("", "")
 	if err == nil {
-		t.Fatalf("Package Empty GoLang CC must return an error.")
+		t.Fatal("Package Empty GoLang CC must return an error.")
 	}
 }
 
@@ -74,12 +74,12 @@ func TestEmptyCreate(t *testing.T) {
 func TestBadPackagePathGoLangCC(t *testing.T) {
 	pwd, err := os.Getwd()
 	if err != nil {
-		t.Fatalf("error from os.Getwd %v", err)
+		t.Fatalf("error from os.Getwd %s", err)
 	}
 
 	_, err = NewCCPackage("github.com", path.Join(pwd, "../../../../test/fixturesABC"))
 	if err == nil {
-		t.Fatalf("error expected from Create %v", err)
+		t.Fatalf("error expected from Create %s", err)
 	}
 }
 

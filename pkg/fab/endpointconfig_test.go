@@ -51,7 +51,7 @@ var configBackend core.ConfigBackend
 func TestMain(m *testing.M) {
 	cfgBackend, err := config.FromFile(configTestFilePath)()
 	if err != nil {
-		panic(fmt.Sprintf("Unexpected error reading config: %v", err))
+		panic(fmt.Sprintf("Unexpected error reading config: %s", err))
 	}
 	if len(cfgBackend) != 1 {
 		panic(fmt.Sprintf("expected 1 backend but got %d", len(cfgBackend)))
@@ -86,7 +86,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	endpointCfg, err := ConfigFromBackend(customBackend)
 	if err != nil {
-		t.Fatalf("Unexpected error initializing endpoint config: %v", err)
+		t.Fatalf("Unexpected error initializing endpoint config: %s", err)
 	}
 
 	sampleEndpointConfig := endpointCfg.(*EndpointConfig)
@@ -108,7 +108,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	customBackend.KeyValueMap["channels"], _ = configBackend.Lookup("channels")
 	err = sampleEndpointConfig.ResetNetworkConfig()
 	if err != nil {
-		t.Fatalf("failed to reset network config, cause:%v", err)
+		t.Fatalf("failed to reset network config, cause:%s", err)
 	}
 	//Testing OrdererConfig failure scenario
 	oConfig, ok := sampleEndpointConfig.OrdererConfig("peerorg1")
@@ -336,7 +336,7 @@ func TestOrdererConfig(t *testing.T) {
 			t.Fatal("Expected GOPATH relative path to be replaced")
 		}
 	} else if len(orderers[0].TLSCACerts.Pem) == 0 {
-		t.Fatalf("Orderer %v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
+		t.Fatalf("Orderer %+v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
 	}
 }
 
@@ -387,15 +387,15 @@ func testCommonConfigPeerByURL(t *testing.T, expectedConfigURL string, fetchedCo
 	assert.True(t, ok, "getting peerconfig supposed to be successful")
 
 	if fetchedConfig.URL == "" {
-		t.Fatalf("Url value for the host is empty")
+		t.Fatal("Url value for the host is empty")
 	}
 
 	if len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) || fetchedConfig.TLSCACerts.Pem != expectedConfig.TLSCACerts.Pem {
-		t.Fatalf("Expected Config and fetched config differ")
+		t.Fatal("Expected Config and fetched config differ")
 	}
 
 	if fetchedConfig.URL != expectedConfig.URL || fetchedConfig.EventURL != expectedConfig.EventURL || fetchedConfig.GRPCOptions["ssl-target-name-override"] != expectedConfig.GRPCOptions["ssl-target-name-override"] {
-		t.Fatalf("Expected Config and fetched config differ")
+		t.Fatal("Expected Config and fetched config differ")
 	}
 }
 
@@ -413,14 +413,14 @@ func testCommonConfigOrderer(t *testing.T, expectedConfigHost string, fetchedCon
 	assert.True(t, ok)
 
 	if expectedConfig.URL == "" {
-		t.Fatalf("Url value for the host is empty")
+		t.Fatal("Url value for the host is empty")
 	}
 	if fetchedConfig.URL == "" {
-		t.Fatalf("Url value for the host is empty")
+		t.Fatal("Url value for the host is empty")
 	}
 
 	if len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) || fetchedConfig.TLSCACerts.Pem != expectedConfig.TLSCACerts.Pem {
-		t.Fatalf("Expected Config and fetched config differ")
+		t.Fatal("Expected Config and fetched config differ")
 	}
 
 	return expectedConfig, fetchedConfig
@@ -430,11 +430,11 @@ func TestOrdererWithSubstitutedConfig_WithADifferentSubstituteUrl(t *testing.T) 
 	expectedConfig, fetchedConfig := testCommonConfigOrderer(t, "orderer.example.com", "orderer.example2.com")
 
 	if fetchedConfig.URL == "orderer.example2.com:7050" || fetchedConfig.URL == expectedConfig.URL {
-		t.Fatalf("Expected Config should have url that is given in urlSubstitutionExp of match pattern")
+		t.Fatal("Expected Config should have url that is given in urlSubstitutionExp of match pattern")
 	}
 
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "localhost" {
-		t.Fatalf("Config should have got localhost as its ssl-target-name-override url as per the matched config")
+		t.Fatal("Config should have got localhost as its ssl-target-name-override url as per the matched config")
 	}
 }
 
@@ -442,11 +442,11 @@ func TestOrdererWithSubstitutedConfig_WithEmptySubstituteUrl(t *testing.T) {
 	_, fetchedConfig := testCommonConfigOrderer(t, "orderer.example.com", "orderer.example3.com")
 
 	if fetchedConfig.URL != "orderer.example3.com:7050" {
-		t.Fatalf("Fetched Config should have the same url")
+		t.Fatal("Fetched Config should have the same url")
 	}
 
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "orderer.example3.com" {
-		t.Fatalf("Fetched config should have the same ssl-target-name-override as its hostname")
+		t.Fatal("Fetched config should have the same ssl-target-name-override as its hostname")
 	}
 }
 
@@ -454,11 +454,11 @@ func TestOrdererWithSubstitutedConfig_WithSubstituteUrlExpression(t *testing.T) 
 	expectedConfig, fetchedConfig := testCommonConfigOrderer(t, "orderer.example.com", "orderer.example4.com:7050")
 
 	if fetchedConfig.URL != expectedConfig.URL {
-		t.Fatalf("fetched Config url should be same as expected config url as given in the substituteexp in yaml file")
+		t.Fatal("fetched Config url should be same as expected config url as given in the substituteexp in yaml file")
 	}
 
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "orderer.example.com" {
-		t.Fatalf("Fetched config should have the ssl-target-name-override as per sslTargetOverrideUrlSubstitutionExp in yaml file")
+		t.Fatal("Fetched config should have the ssl-target-name-override as per sslTargetOverrideUrlSubstitutionExp in yaml file")
 	}
 }
 
@@ -521,10 +521,10 @@ func TestPeersConfig(t *testing.T) {
 
 	for _, value := range pc {
 		if value.URL == "" {
-			t.Fatalf("Url value for the host is empty")
+			t.Fatal("Url value for the host is empty")
 		}
 		if value.EventURL == "" {
-			t.Fatalf("EventUrl value is empty")
+			t.Fatal("EventUrl value is empty")
 		}
 	}
 
@@ -533,10 +533,10 @@ func TestPeersConfig(t *testing.T) {
 
 	for _, value := range pc {
 		if value.URL == "" {
-			t.Fatalf("Url value for the host is empty")
+			t.Fatal("Url value for the host is empty")
 		}
 		if value.EventURL == "" {
-			t.Fatalf("EventUrl value is empty")
+			t.Fatal("EventUrl value is empty")
 		}
 	}
 }
@@ -557,14 +557,14 @@ func testCommonConfigPeer(t *testing.T, expectedConfigHost string, fetchedConfig
 	assert.True(t, ok, "getting peerconfig supposed to be successful")
 
 	if expectedConfig.URL == "" {
-		t.Fatalf("Url value for the host is empty")
+		t.Fatal("Url value for the host is empty")
 	}
 	if fetchedConfig.URL == "" {
-		t.Fatalf("Url value for the host is empty")
+		t.Fatal("Url value for the host is empty")
 	}
 
 	if fetchedConfig.TLSCACerts.Path != expectedConfig.TLSCACerts.Path || len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) {
-		t.Fatalf("Expected Config and fetched config differ")
+		t.Fatal("Expected Config and fetched config differ")
 	}
 
 	return expectedConfig, fetchedConfig
@@ -574,15 +574,15 @@ func TestPeerWithSubstitutedConfig_WithADifferentSubstituteUrl(t *testing.T) {
 	expectedConfig, fetchedConfig := testCommonConfigPeer(t, "peer0.org1.example.com", "peer3.org1.example5.com")
 
 	if fetchedConfig.URL == "peer3.org1.example5.com:7051" || fetchedConfig.URL == expectedConfig.URL {
-		t.Fatalf("Expected Config should have url that is given in urlSubstitutionExp of match pattern")
+		t.Fatal("Expected Config should have url that is given in urlSubstitutionExp of match pattern")
 	}
 
 	if fetchedConfig.EventURL == "peer3.org1.example5.com:7053" || fetchedConfig.EventURL == expectedConfig.EventURL {
-		t.Fatalf("Expected Config should have event url that is given in eventUrlSubstitutionExp of match pattern")
+		t.Fatal("Expected Config should have event url that is given in eventUrlSubstitutionExp of match pattern")
 	}
 
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "localhost" {
-		t.Fatalf("Config should have got localhost as its ssl-target-name-override url as per the matched config")
+		t.Fatal("Config should have got localhost as its ssl-target-name-override url as per the matched config")
 	}
 }
 
@@ -590,15 +590,15 @@ func TestPeerWithSubstitutedConfig_WithEmptySubstituteUrl(t *testing.T) {
 	_, fetchedConfig := testCommonConfigPeer(t, "peer0.org1.example.com", "peer4.org1.example3.com")
 
 	if fetchedConfig.URL != "peer4.org1.example3.com:7051" {
-		t.Fatalf("Fetched Config should have the same url")
+		t.Fatal("Fetched Config should have the same url")
 	}
 
 	if fetchedConfig.EventURL != "peer4.org1.example3.com:7053" {
-		t.Fatalf("Fetched Config should have the same event url")
+		t.Fatal("Fetched Config should have the same event url")
 	}
 
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "peer4.org1.example3.com" {
-		t.Fatalf("Fetched config should have the same ssl-target-name-override as its hostname")
+		t.Fatal("Fetched config should have the same ssl-target-name-override as its hostname")
 	}
 }
 
@@ -606,15 +606,15 @@ func TestPeerWithSubstitutedConfig_WithSubstituteUrlExpression(t *testing.T) {
 	_, fetchedConfig := testCommonConfigPeer(t, "peer0.org1.example.com", "peer5.example4.com:1234")
 
 	if fetchedConfig.URL != "peer5.org1.example.com:1234" {
-		t.Fatalf("fetched Config url should change to include org1 as given in the substituteexp in yaml file")
+		t.Fatal("fetched Config url should change to include org1 as given in the substituteexp in yaml file")
 	}
 
 	if fetchedConfig.EventURL != "peer5.org1.example.com:7053" {
-		t.Fatalf("fetched Config event url should change to include org1 as given in the eventsubstituteexp in yaml file")
+		t.Fatal("fetched Config event url should change to include org1 as given in the eventsubstituteexp in yaml file")
 	}
 
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "peer5.org1.example.com" {
-		t.Fatalf("Fetched config should have the ssl-target-name-override as per sslTargetOverrideUrlSubstitutionExp in yaml file")
+		t.Fatal("Fetched config should have the ssl-target-name-override as per sslTargetOverrideUrlSubstitutionExp in yaml file")
 	}
 }
 
@@ -623,15 +623,15 @@ func TestPeerWithSubstitutedConfig_WithMultipleMatchings(t *testing.T) {
 
 	//Both 2nd and 5th entityMatchers match, however we are only taking 2nd one as its the first one to match
 	if fetchedConfig.URL == "peer0.org2.example.com:7051" {
-		t.Fatalf("fetched Config url should be matched with the first suitable matcher")
+		t.Fatal("fetched Config url should be matched with the first suitable matcher")
 	}
 
 	if fetchedConfig.EventURL != "localhost:7053" {
-		t.Fatalf("fetched Config event url should have the config from first suitable matcher")
+		t.Fatal("fetched Config event url should have the config from first suitable matcher")
 	}
 
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "localhost" {
-		t.Fatalf("Fetched config should have the ssl-target-name-override as per first suitable matcher in yaml file")
+		t.Fatal("Fetched config should have the ssl-target-name-override as per first suitable matcher in yaml file")
 	}
 }
 
@@ -695,7 +695,7 @@ func TestInitConfigFromRawWithPem(t *testing.T) {
 
 	o := endpointConfig.OrderersConfig()
 	if len(o) == 0 {
-		t.Fatalf("orderer cannot be nil or empty")
+		t.Fatal("orderer cannot be nil or empty")
 	}
 
 	oPem := `-----BEGIN CERTIFICATE-----
@@ -714,12 +714,12 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 -----END CERTIFICATE-----`
 	loadedOPem := strings.TrimSpace(o[0].TLSCACerts.Pem) // viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
 	if loadedOPem != oPem {
-		t.Fatalf("Orderer Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", oPem, loadedOPem)
+		t.Fatalf("Orderer Pem doesn't match. Expected ['%s'], but got ['%s']", oPem, loadedOPem)
 	}
 
 	pc, ok := endpointConfig.PeersConfig(org1)
 	if !ok {
-		t.Fatalf("unexpected error while getting peerConfig")
+		t.Fatal("unexpected error while getting peerConfig")
 	}
 	if len(pc) == 0 {
 		t.Fatalf("peers list of %s cannot be nil or empty", org1)
@@ -755,7 +755,7 @@ O94CDp7l2k7hMQI0zQ==
 	loadedPPem := strings.TrimSpace(p0.TLSCACerts.Pem)
 	// viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
 	if loadedPPem != pPem {
-		t.Fatalf("%s Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", peer0, pPem, loadedPPem)
+		t.Fatalf("%s Pem doesn't match. Expected ['%s'], but got ['%s']", peer0, pPem, loadedPPem)
 	}
 }
 
@@ -777,7 +777,7 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 		t.Fatalf("Failed to read test config for bytes array testing. Error: %s", err)
 	}
 	if n == 0 {
-		t.Fatalf("Failed to read test config for bytes array testing. Mock bytes array is empty")
+		t.Fatal("Failed to read test config for bytes array testing. Mock bytes array is empty")
 	}
 	return cBytes, err
 }
@@ -857,13 +857,13 @@ func TestInitConfigFromRawWrongType(t *testing.T) {
 	// test init config with empty type
 	_, err = config.FromRaw(cBytes, "")()
 	if err == nil {
-		t.Fatalf("Expected error when initializing config with wrong config type but got no error.")
+		t.Fatal("Expected error when initializing config with wrong config type but got no error.")
 	}
 
 	// test init config with wrong type
 	_, err = config.FromRaw(cBytes, "json")()
 	if err == nil {
-		t.Fatalf("FromRaw didn't fail when config type is wrong")
+		t.Fatal("FromRaw didn't fail when config type is wrong")
 	}
 
 }
@@ -886,13 +886,13 @@ func TestTLSClientCertsFromFiles(t *testing.T) {
 	}
 
 	if len(certs) != 1 {
-		t.Fatalf("Expected only one tls cert struct")
+		t.Fatal("Expected only one tls cert struct")
 	}
 
 	emptyCert := tls.Certificate{}
 
 	if reflect.DeepEqual(certs[0], emptyCert) {
-		t.Fatalf("Actual cert is empty")
+		t.Fatal("Actual cert is empty")
 	}
 }
 
@@ -962,13 +962,13 @@ YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
 	}
 
 	if len(certs) != 1 {
-		t.Fatalf("Expected only one tls cert struct")
+		t.Fatal("Expected only one tls cert struct")
 	}
 
 	emptyCert := tls.Certificate{}
 
 	if reflect.DeepEqual(certs[0], emptyCert) {
-		t.Fatalf("Actual cert is empty")
+		t.Fatal("Actual cert is empty")
 	}
 }
 
@@ -1009,13 +1009,13 @@ NRCHI3uXUJ5/3zDZM3qtV8UYHou4KDS35Q==
 	}
 
 	if len(certs) != 1 {
-		t.Fatalf("Expected only one tls cert struct")
+		t.Fatal("Expected only one tls cert struct")
 	}
 
 	emptyCert := tls.Certificate{}
 
 	if reflect.DeepEqual(certs[0], emptyCert) {
-		t.Fatalf("Actual cert is empty")
+		t.Fatal("Actual cert is empty")
 	}
 }
 
@@ -1044,13 +1044,13 @@ nFoUptdom8LjgRus6rnHbXxGqcIN6oA=
 	}
 
 	if len(certs) != 1 {
-		t.Fatalf("Expected only one tls cert struct")
+		t.Fatal("Expected only one tls cert struct")
 	}
 
 	emptyCert := tls.Certificate{}
 
 	if reflect.DeepEqual(certs[0], emptyCert) {
-		t.Fatalf("Actual cert is empty")
+		t.Fatal("Actual cert is empty")
 	}
 }
 
@@ -1097,13 +1097,13 @@ YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
 	}
 
 	if len(certs) != 1 {
-		t.Fatalf("Expected only one tls cert struct")
+		t.Fatal("Expected only one tls cert struct")
 	}
 
 	emptyCert := tls.Certificate{}
 
 	if reflect.DeepEqual(certs[0], emptyCert) {
-		t.Fatalf("Actual cert is empty")
+		t.Fatal("Actual cert is empty")
 	}
 }
 
@@ -1135,13 +1135,13 @@ func TestTLSClientCertsNoCerts(t *testing.T) {
 	}
 
 	if len(certs) != 1 {
-		t.Fatalf("Expected only empty tls cert struct")
+		t.Fatal("Expected only empty tls cert struct")
 	}
 
 	emptyCert := tls.Certificate{}
 
 	if !reflect.DeepEqual(certs[0], emptyCert) {
-		t.Fatalf("Actual cert is not equal to empty cert")
+		t.Fatal("Actual cert is not equal to empty cert")
 	}
 }
 
@@ -1337,7 +1337,7 @@ func tamperPeerChannelConfig(backend *mocks.MockConfigBackend) {
 func getMatcherConfig() core.ConfigBackend {
 	cfgBackend, err := config.FromFile(configTestEntityMatchersFilePath)()
 	if err != nil {
-		panic(fmt.Sprintf("Unexpected error reading config: %v", err))
+		panic(fmt.Sprintf("Unexpected error reading config: %s", err))
 	}
 	if len(cfgBackend) != 1 {
 		panic(fmt.Sprintf("expected 1 backend but got %d", len(cfgBackend)))

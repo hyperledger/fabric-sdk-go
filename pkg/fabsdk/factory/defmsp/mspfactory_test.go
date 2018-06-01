@@ -28,12 +28,12 @@ func TestCreateUserStore(t *testing.T) {
 
 	userStore, err := factory.CreateUserStore(config)
 	if err != nil {
-		t.Fatalf("Unexpected error creating state store %v", err)
+		t.Fatalf("Unexpected error creating state store %s", err)
 	}
 
 	_, ok := userStore.(*mspimpl.CertFileUserStore)
 	if !ok {
-		t.Fatalf("Unexpected state store created")
+		t.Fatal("Unexpected state store created")
 	}
 }
 
@@ -53,7 +53,7 @@ func newMockUserStore(t *testing.T) msp.UserStore {
 
 	userStore, err := factory.CreateUserStore(mockConfig)
 	if err != nil {
-		t.Fatalf("Unexpected error creating user store %v", err)
+		t.Fatalf("Unexpected error creating user store %s", err)
 	}
 	return userStore
 }
@@ -62,7 +62,7 @@ func TestCreateUserStoreByConfig(t *testing.T) {
 
 	_, ok := userStore.(*mspimpl.CertFileUserStore)
 	if !ok {
-		t.Fatalf("Unexpected user store created")
+		t.Fatal("Unexpected user store created")
 	}
 }
 
@@ -103,47 +103,47 @@ func TestCreateIdentityManager(t *testing.T) {
 
 	configBackend, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	cryptoCfg := cryptosuiteImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	endpointCfg, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	identityCfg, err := mspimpl.ConfigFromBackend(configBackend...)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	cryptosuite, err := coreFactory.CreateCryptoSuiteProvider(cryptoCfg)
 	if err != nil {
-		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
+		t.Fatalf("Unexpected error creating cryptosuite provider %s", err)
 	}
 
 	factory := NewProviderFactory()
 	userStore, err := factory.CreateUserStore(identityCfg)
 	if err != nil {
-		t.Fatalf("Unexpected error creating user store %v", err)
+		t.Fatalf("Unexpected error creating user store %s", err)
 	}
 
 	provider, err := factory.CreateIdentityManagerProvider(endpointCfg, cryptosuite, userStore)
 	if err != nil {
-		t.Fatalf("Unexpected error creating provider %v", err)
+		t.Fatalf("Unexpected error creating provider %s", err)
 	}
 
 	mgr, ok := provider.IdentityManager("Org1")
 	if !ok {
-		t.Fatalf("Unexpected error creating identity manager %v", err)
+		t.Fatalf("Unexpected error creating identity manager %s", err)
 	}
 
 	_, ok = mgr.(msp.IdentityManager)
 	if !ok {
-		t.Fatalf("Unexpected signing manager created")
+		t.Fatal("Unexpected signing manager created")
 	}
 }

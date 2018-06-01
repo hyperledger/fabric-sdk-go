@@ -713,7 +713,7 @@ func (m *exampleTLSClientCerts) loadPrivateKeyFromConfig(clientConfig *msp.Clien
 	// load the key/cert pair from []byte
 	clientCerts, err := tls.X509KeyPair(cb, kb)
 	if err != nil {
-		return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+		return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %s", err)
 	}
 
 	return []tls.Certificate{clientCerts}, nil

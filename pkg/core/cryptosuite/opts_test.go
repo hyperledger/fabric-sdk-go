@@ -34,7 +34,7 @@ func TestCreateCustomFullCryptotConfig(t *testing.T) {
 		t.Fatalf("BuildCryptoSuiteConfigFromOptions returned unexpected error %s", err)
 	}
 	if cryptoConfigOption == nil {
-		t.Fatalf("BuildCryptoSuiteConfigFromOptions call returned nil")
+		t.Fatal("BuildCryptoSuiteConfigFromOptions call returned nil")
 	}
 }
 
@@ -167,7 +167,7 @@ func TestCreateCustomCryptoConfigWithSomeDefaultFunctions(t *testing.T) {
 	require.Equal(t, "SW", a, "SecurityProvider did not return expected interface value")
 
 	if cco, ok = cryptoConfigOptionWithSomeDefaults.(*CryptoConfigOptions); !ok {
-		t.Fatalf("UpdateMissingOptsWithDefaultConfig() call did not return an implementation of CryptoConfigOptions")
+		t.Fatal("UpdateMissingOptsWithDefaultConfig() call did not return an implementation of CryptoConfigOptions")
 	}
 
 	// now check if implementations that were not injected when building the config (ref first line in this function) are defaulted with m0 this time

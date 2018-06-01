@@ -51,7 +51,7 @@ func TestNewPeerEndorserTLS(t *testing.T) {
 	conn, err := newPeerEndorser(getPeerEndorserRequest(url, mockfab.GoodCert, "", config, kap, false, false))
 
 	if err != nil {
-		t.Fatalf("Peer conn should be constructed")
+		t.Fatal("Peer conn should be constructed")
 	}
 
 	optInsecure := reflect.ValueOf(grpc.WithInsecure())
@@ -59,7 +59,7 @@ func TestNewPeerEndorserTLS(t *testing.T) {
 	for _, opt := range conn.grpcDialOption {
 		optr := reflect.ValueOf(opt)
 		if optr.Pointer() == optInsecure.Pointer() {
-			t.Fatalf("TLS enabled - insecure not allowed")
+			t.Fatal("TLS enabled - insecure not allowed")
 		}
 	}
 }
@@ -83,7 +83,7 @@ func TestNewPeerEndorserMutualTLS(t *testing.T) {
 	conn, err := newPeerEndorser(getPeerEndorserRequest(url, mockfab.GoodCert, "", config, kap, false, false))
 
 	if err != nil {
-		t.Fatalf("Peer conn should be constructed: %v", err)
+		t.Fatalf("Peer conn should be constructed: %s", err)
 	}
 
 	optInsecure := reflect.ValueOf(grpc.WithInsecure())
@@ -91,7 +91,7 @@ func TestNewPeerEndorserMutualTLS(t *testing.T) {
 	for _, opt := range conn.grpcDialOption {
 		optr := reflect.ValueOf(opt)
 		if optr.Pointer() == optInsecure.Pointer() {
-			t.Fatalf("TLS enabled - insecure not allowed")
+			t.Fatal("TLS enabled - insecure not allowed")
 		}
 	}
 }
@@ -105,7 +105,7 @@ func TestNewPeerEndorserMutualTLSNoClientCerts(t *testing.T) {
 	url := "grpcs://0.0.0.0:1234"
 	_, err := newPeerEndorser(getPeerEndorserRequest(url, mockfab.GoodCert, "", config, kap, false, false))
 	if err != nil {
-		t.Fatalf("Peer conn should be constructed: %v", err)
+		t.Fatalf("Peer conn should be constructed: %s", err)
 	}
 }
 
@@ -120,7 +120,7 @@ func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 	url := "grpcs://0.0.0.0:1234"
 	_, err := newPeerEndorser(getPeerEndorserRequest(url, mockfab.BadCert, "", config, kap, false, false))
 	if err == nil {
-		t.Fatalf("Peer conn construction should have failed")
+		t.Fatal("Peer conn construction should have failed")
 	}
 }
 
@@ -134,21 +134,21 @@ func TestNewPeerEndorserSecured(t *testing.T) {
 	url := "grpc://0.0.0.0:1234"
 	_, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, false))
 	if err != nil {
-		t.Fatalf("Peer conn should be constructed")
+		t.Fatal("Peer conn should be constructed")
 	}
 
 	url = "grpcs://0.0.0.0:1234"
 
 	_, err = newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, true))
 	if err != nil {
-		t.Fatalf("Peer conn should be constructed")
+		t.Fatal("Peer conn should be constructed")
 	}
 
 	url = "0.0.0.0:1234"
 
 	_, err = newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, true))
 	if err != nil {
-		t.Fatalf("Peer conn should be constructed")
+		t.Fatal("Peer conn should be constructed")
 	}
 
 }
@@ -164,7 +164,7 @@ func TestNewPeerEndorserBadParams(t *testing.T) {
 	url := ""
 	_, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, false))
 	if err == nil {
-		t.Fatalf("Peer conn should not be constructed - bad params")
+		t.Fatal("Peer conn should not be constructed - bad params")
 	}
 }
 
@@ -176,7 +176,7 @@ func TestNewPeerEndorserTLSBad(t *testing.T) {
 
 	_, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, false))
 	if err == nil {
-		t.Fatalf("Peer conn should not be constructed - bad cert pool")
+		t.Fatal("Peer conn should not be constructed - bad cert pool")
 	}
 }
 
@@ -185,7 +185,7 @@ func TestNewPeerEndorserTLSBad(t *testing.T) {
 func TestProcessProposalBadDial(t *testing.T) {
 	_, err := testProcessProposal(t, "grpc://"+testAddress)
 	if err == nil {
-		t.Fatalf("Process proposal should have failed")
+		t.Fatal("Process proposal should have failed")
 	}
 }
 
@@ -198,7 +198,7 @@ func TestProcessProposalGoodDial(t *testing.T) {
 
 	_, err := testProcessProposal(t, "grpc://"+addr)
 	if err != nil {
-		t.Fatalf("Process proposal failed (%v)", err)
+		t.Fatalf("Process proposal failed (%s)", err)
 	}
 }
 
@@ -210,7 +210,7 @@ func testProcessProposal(t *testing.T, url string) (*fab.TransactionProposalResp
 
 	conn, err := newPeerEndorser(getPeerEndorserRequest(url, nil, "", config, kap, false, true))
 	if err != nil {
-		t.Fatalf("Peer conn construction error (%v)", err)
+		t.Fatalf("Peer conn construction error (%s)", err)
 	}
 
 	ctx, cancel := reqContext.WithTimeout(reqContext.Background(), normalTimeout)
@@ -290,10 +290,10 @@ func TestExtractChainCodeError(t *testing.T) {
 	error := grpcstatus.New(grpcCodes.Unknown, expectedMsg)
 	code, message, _ := extractChaincodeError(error)
 	if code != 500 {
-		t.Fatalf("Expected code to be 500")
+		t.Fatal("Expected code to be 500")
 	}
 	if message != "Invalid function (dummy) call" {
-		t.Fatalf("Expected message not found")
+		t.Fatal("Expected message not found")
 	}
 }
 

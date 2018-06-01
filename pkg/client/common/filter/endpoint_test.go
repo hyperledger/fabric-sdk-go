@@ -24,7 +24,7 @@ func TestInvalidOpt(t *testing.T) {
 
 	peer := mocks.NewMockPeer("Peer1", "example.com")
 	if !ef.Accept(peer) {
-		t.Fatalf("Should have accepted peer")
+		t.Fatal("Should have accepted peer")
 	}
 
 }
@@ -39,13 +39,13 @@ func TestChaincodeQueryFilter(t *testing.T) {
 	ef := NewEndpointFilter(channel, ChaincodeQuery)
 
 	if !ef.Accept(mocks.NewMockPeer("Peer1", "non-configured.com")) {
-		t.Fatalf("Should have accepted peer that is not configured")
+		t.Fatal("Should have accepted peer that is not configured")
 	}
 
 	// Configured peer
 	peer := mocks.NewMockPeer("Peer1", "example.com")
 	if !ef.Accept(peer) {
-		t.Fatalf("Should have accepted peer")
+		t.Fatal("Should have accepted peer")
 	}
 
 	channel, err = mocks.NewMockChannel("noEndpoints")
@@ -54,7 +54,7 @@ func TestChaincodeQueryFilter(t *testing.T) {
 		t.Fatalf("Failed to create mock channel: %s", err)
 	}
 	if ef.Accept(peer) {
-		t.Fatalf("Should NOT have accepted peer since peers chaincode query option is configured to false")
+		t.Fatal("Should NOT have accepted peer since peers chaincode query option is configured to false")
 	}
 
 	channel, err = mocks.NewMockChannel("noChannelPeers")
@@ -63,7 +63,7 @@ func TestChaincodeQueryFilter(t *testing.T) {
 		t.Fatalf("Failed to create mock channel: %s", err)
 	}
 	if !ef.Accept(peer) {
-		t.Fatalf("Should have accepted peer since no peers configured")
+		t.Fatal("Should have accepted peer since no peers configured")
 	}
 
 }
@@ -79,7 +79,7 @@ func TestLedgerQueryFilter(t *testing.T) {
 
 	peer := mocks.NewMockPeer("Peer1", "example.com")
 	if !ef.Accept(peer) {
-		t.Fatalf("Should have accepted peer")
+		t.Fatal("Should have accepted peer")
 	}
 
 }
@@ -95,7 +95,7 @@ func TestEndorsingPeerFilter(t *testing.T) {
 
 	peer := mocks.NewMockPeer("Peer1", "example.com")
 	if !ef.Accept(peer) {
-		t.Fatalf("Should have accepted peer")
+		t.Fatal("Should have accepted peer")
 	}
 
 }
@@ -111,7 +111,7 @@ func TestEventSourceFilter(t *testing.T) {
 
 	peer := mocks.NewMockPeer("Peer1", "example.com")
 	if !ef.Accept(peer) {
-		t.Fatalf("Should have accepted peer")
+		t.Fatal("Should have accepted peer")
 	}
 
 }

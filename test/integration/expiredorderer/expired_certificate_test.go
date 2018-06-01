@@ -74,23 +74,23 @@ func TestExpiredCert(t *testing.T) {
 
 	org1MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org1))
 	if err != nil {
-		t.Fatalf("failed to create org1MspClient, err : %v", err)
+		t.Fatalf("failed to create org1MspClient, err : %s", err)
 	}
 
 	// Get signing identity that is used to sign create channel request
 	org1AdminUser, err := org1MspClient.GetSigningIdentity(org1AdminUser)
 	if err != nil {
-		t.Fatalf("failed to get org1AdminUser, err : %v", err)
+		t.Fatalf("failed to get org1AdminUser, err : %s", err)
 	}
 
 	org2MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org2))
 	if err != nil {
-		t.Fatalf("failed to create org2MspClient, err : %v", err)
+		t.Fatalf("failed to create org2MspClient, err : %s", err)
 	}
 
 	org2AdminUser, err := org2MspClient.GetSigningIdentity(org2AdminUser)
 	if err != nil {
-		t.Fatalf("failed to get org2AdminUser, err : %v", err)
+		t.Fatalf("failed to get org2AdminUser, err : %s", err)
 	}
 
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
@@ -99,7 +99,7 @@ func TestExpiredCert(t *testing.T) {
 	_, err = chMgmtClient.SaveChannel(req)
 	//error in GRPC log is ' Failed to dial orderer.example.com:7050: connection error: desc = "transport: authentication handshake failed: x509: certificate has expiredorderer or is not yet valid"; '
 	if err == nil {
-		t.Fatalf("Expected error: calling orderer 'orderer.example.com:7050' failed: Orderer Client Status Code: (2) CONNECTION_FAILED....")
+		t.Fatal("Expected error: calling orderer 'orderer.example.com:7050' failed: Orderer Client Status Code: (2) CONNECTION_FAILED....")
 	}
 	time.Sleep(100 * time.Millisecond)
 
@@ -109,7 +109,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 	return func() ([]core.ConfigBackend, error) {
 		configBackends, err := config.FromFile(configPath)()
 		if err != nil {
-			t.Fatalf("failed to read config backend from file, %v", err)
+			t.Fatalf("failed to read config backend from file, %s", err)
 		}
 		backendMap := make(map[string]interface{})
 
@@ -117,7 +117,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		//get valid orderers config
 		err = lookup.New(configBackends...).UnmarshalKey("orderers", &networkConfig.Orderers)
 		if err != nil {
-			t.Fatalf("failed to unmarshal peer network config, %v", err)
+			t.Fatalf("failed to unmarshal peer network config, %s", err)
 		}
 		//change cert path to expired one
 		orderer1 := networkConfig.Orderers["orderer.example.com"]

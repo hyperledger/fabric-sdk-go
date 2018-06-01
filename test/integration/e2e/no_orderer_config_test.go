@@ -62,7 +62,7 @@ func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts
 
 	//Test if discovery filter is being called
 	if !discoveryFilter.called {
-		t.Fatalf("discoveryFilter not called")
+		t.Fatal("discoveryFilter not called")
 	}
 
 	eventID := "test([a-zA-Z]+)"

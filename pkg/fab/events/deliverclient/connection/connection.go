@@ -108,7 +108,7 @@ func (c *DeliverConnection) Receive(eventch chan<- interface{}) {
 	for {
 		stream := c.deliverStream()
 		if stream == nil {
-			logger.Warnf("The stream has closed. Terminating loop.")
+			logger.Warn("The stream has closed. Terminating loop.")
 			break
 		}
 
@@ -123,7 +123,7 @@ func (c *DeliverConnection) Receive(eventch chan<- interface{}) {
 
 		if err == io.EOF {
 			// This signifies that the stream has been terminated at the client-side. No need to send an event.
-			logger.Debugf("Received EOF from stream.")
+			logger.Debug("Received EOF from stream.")
 			break
 		}
 
@@ -135,7 +135,7 @@ func (c *DeliverConnection) Receive(eventch chan<- interface{}) {
 
 		eventch <- NewEvent(in, c.url)
 	}
-	logger.Debugf("Exiting stream listener")
+	logger.Debug("Exiting stream listener")
 }
 
 func (c *DeliverConnection) createSignedEnvelope(msg proto.Message) (*cb.Envelope, error) {

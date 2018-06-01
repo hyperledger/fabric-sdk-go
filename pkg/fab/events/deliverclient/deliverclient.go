@@ -80,7 +80,7 @@ func New(context fabcontext.Client, chConfig fab.ChannelCfg, discoveryService fa
 }
 
 func (c *Client) seek() error {
-	logger.Debugf("Sending seek request....")
+	logger.Debug("Sending seek request....")
 
 	seekInfo, err := c.seekInfo()
 	if err != nil {
@@ -103,7 +103,7 @@ func (c *Client) seek() error {
 		return err
 	}
 
-	logger.Debugf("Successfully sent seek")
+	logger.Debug("Successfully sent seek")
 	return nil
 }
 

@@ -43,12 +43,12 @@ func TestTransient(t *testing.T) {
 	//defer sdk.Close()
 
 	//if err := testSetup.Initialize(sdk); err != nil {
-	//	t.Fatalf(err.Error())
+	//	t.Fatal(err)
 	//}
 
 	//chaincodeID := integration.GenerateRandomID()
 	//if _, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
-	//	t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
+	//	t.Fatalf("InstallAndInstantiateExampleCC return error: %s", err)
 	//}
 
 	fcn := "invoke"
@@ -68,7 +68,7 @@ func TestTransient(t *testing.T) {
 
 	transactionProposalResponse, _, err := createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), peers, transientDataMap)
 	if err != nil {
-		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
+		t.Fatalf("CreateAndSendTransactionProposal return error: %s", err)
 	}
 	strResponse := string(transactionProposalResponse[0].ProposalResponse.GetResponse().Payload)
 	//validate transient data exists in proposal
@@ -84,7 +84,7 @@ func TestTransient(t *testing.T) {
 	transientDataMap["result"] = []byte{}
 	transactionProposalResponse, _, err = createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), peers, transientDataMap)
 	if err != nil {
-		t.Fatalf("CreateAndSendTransactionProposal with empty transient data return an error: %v", err)
+		t.Fatalf("CreateAndSendTransactionProposal with empty transient data return an error: %s", err)
 	}
 	//validate that transient data does not exist in proposal
 	strResponse = string(transactionProposalResponse[0].ProposalResponse.GetResponse().Payload)

@@ -39,7 +39,7 @@ func TestDynamicSelection(t *testing.T) {
 	defer sdk.Close()
 
 	if err = testSetup.Initialize(sdk); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	chainCodeID := integration.GenerateRandomID()

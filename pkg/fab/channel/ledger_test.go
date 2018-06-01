@@ -50,12 +50,12 @@ func TestQueryMethods(t *testing.T) {
 
 	_, err := channel.QueryBlockByHash(reqCtx, nil, []fab.ProposalProcessor{&peer}, nil)
 	if err == nil {
-		t.Fatalf("Query hash cannot be nil")
+		t.Fatal("Query hash cannot be nil")
 	}
 
 	_, err = channel.QueryBlockByTxID(reqCtx, "", []fab.ProposalProcessor{&peer}, nil)
 	if err == nil || !strings.Contains(err.Error(), "txID is required") {
-		t.Fatalf("Tx ID cannot be nil")
+		t.Fatal("Tx ID cannot be nil")
 	}
 }
 
@@ -94,7 +94,7 @@ func TestQueryInstantiatedChaincodes(t *testing.T) {
 	res, err := channel.QueryInstantiatedChaincodes(reqCtx, []fab.ProposalProcessor{&peer}, nil)
 
 	if err != nil || res == nil {
-		t.Fatalf("Test QueryInstatiated chaincode failed: %v", err)
+		t.Fatalf("Test QueryInstatiated chaincode failed: %s", err)
 	}
 
 }
@@ -123,7 +123,7 @@ func TestQueryInfo(t *testing.T) {
 	res, err := channel.QueryInfo(reqCtx, []fab.ProposalProcessor{&peer}, nil)
 
 	if err != nil || res == nil {
-		t.Fatalf("Test QueryInfo failed: %v", err)
+		t.Fatalf("Test QueryInfo failed: %s", err)
 	}
 }
 
@@ -136,19 +136,19 @@ func TestQueryConfig(t *testing.T) {
 	// empty targets
 	_, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{}, nil)
 	if err == nil {
-		t.Fatalf("Should have failed due to empty targets")
+		t.Fatal("Should have failed due to empty targets")
 	}
 
 	// min endorsers <= 0
 	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, &TransactionProposalResponseVerifier{})
 	if err == nil {
-		t.Fatalf("Should have failed due to empty targets")
+		t.Fatal("Should have failed due to empty targets")
 	}
 
 	// peer without payload
 	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, &TransactionProposalResponseVerifier{MinResponses: 1})
 	if err == nil {
-		t.Fatalf("Should have failed due to nil block metadata")
+		t.Fatal("Should have failed due to nil block metadata")
 	}
 
 	// create config block builder in order to create valid payload
@@ -168,7 +168,7 @@ func TestQueryConfig(t *testing.T) {
 
 	payload, err := proto.Marshal(builder.Build())
 	if err != nil {
-		t.Fatalf("Failed to marshal mock block")
+		t.Fatal("Failed to marshal mock block")
 	}
 
 	// peer with valid config block payload
@@ -177,13 +177,13 @@ func TestQueryConfig(t *testing.T) {
 	// fail with min endorsers
 	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, &TransactionProposalResponseVerifier{MinResponses: 2})
 	if err == nil {
-		t.Fatalf("Should have failed with since there's one endorser and at least two are required")
+		t.Fatal("Should have failed with since there's one endorser and at least two are required")
 	}
 
 	// success with one endorser
 	res, err := channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer}, &TransactionProposalResponseVerifier{MinResponses: 1})
 	if err != nil || res == nil {
-		t.Fatalf("Test QueryConfig failed: %v", err)
+		t.Fatalf("Test QueryConfig failed: %s", err)
 	}
 
 	// create second endorser with same payload
@@ -192,7 +192,7 @@ func TestQueryConfig(t *testing.T) {
 	// success with two endorsers
 	res, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, &TransactionProposalResponseVerifier{MinResponses: 2})
 	if err != nil || res == nil {
-		t.Fatalf("Test QueryConfig failed: %v", err)
+		t.Fatalf("Test QueryConfig failed: %s", err)
 	}
 
 	// Create different config block payload
@@ -215,13 +215,13 @@ func createDifferentConfigBlockPayload(t *testing.T, peer2 mocks.MockPeer, chann
 	}
 	payload2, err := proto.Marshal(builder2.Build())
 	if err != nil {
-		t.Fatalf("Failed to marshal mock block 2")
+		t.Fatal("Failed to marshal mock block 2")
 	}
 	// peer 2 now had different payload; query config block should fail
 	peer2.Payload = payload2
 	_, err = channel.QueryConfigBlock(reqCtx, []fab.ProposalProcessor{&peer, &peer2}, &TransactionProposalResponseVerifier{MinResponses: 2})
 	if err == nil {
-		t.Fatalf("Should have failed for different block payloads")
+		t.Fatal("Should have failed for different block payloads")
 	}
 }
 

@@ -84,7 +84,7 @@ func (c *GRPCConnection) ClientConn() *grpc.ClientConn {
 // Close closes the connection
 func (c *GRPCConnection) Close() {
 	if !c.setClosed() {
-		logger.Debugf("Already closed")
+		logger.Debug("Already closed")
 		return
 	}
 

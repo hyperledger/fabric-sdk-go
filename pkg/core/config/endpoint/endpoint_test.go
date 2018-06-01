@@ -16,73 +16,73 @@ import (
 func TestIsTLSEnabled(t *testing.T) {
 	b := IsTLSEnabled("https://some.url/")
 	if !b {
-		t.Fatalf("IsTLSEnabled reutrned false for https://")
+		t.Fatal("IsTLSEnabled reutrned false for https://")
 	}
 	b = IsTLSEnabled("http://some.url/")
 	if b {
-		t.Fatalf("IsTLSEnabled reutrned true for http://")
+		t.Fatal("IsTLSEnabled reutrned true for http://")
 	}
 	b = IsTLSEnabled("grpcs://some.url/")
 	if !b {
-		t.Fatalf("IsTLSEnabled reutrned false for grpcs://")
+		t.Fatal("IsTLSEnabled reutrned false for grpcs://")
 	}
 	b = IsTLSEnabled("grpc://some.url/")
 	if b {
-		t.Fatalf("IsTLSEnabled reutrned true for grpc://")
+		t.Fatal("IsTLSEnabled reutrned true for grpc://")
 	}
 }
 
 func TestToAddress(t *testing.T) {
 	u := ToAddress("grpcs://some.url")
 	if strings.HasPrefix(u, "grpcs://") {
-		t.Fatalf("expected url to have protocol trimmed")
+		t.Fatal("expected url to have protocol trimmed")
 	}
 	u = ToAddress("grpc://some.url")
 	if strings.HasPrefix(u, "grpc://") {
-		t.Fatalf("expected url to have protocol trimmed")
+		t.Fatal("expected url to have protocol trimmed")
 	}
 	u = ToAddress("https://some.url")
 	if !strings.HasPrefix(u, "https://") {
-		t.Fatalf("expected url to have kept https:// protocol as prefix")
+		t.Fatal("expected url to have kept https:// protocol as prefix")
 	}
 	u = ToAddress("http://some.url")
 	if !strings.HasPrefix(u, "http://") {
-		t.Fatalf("expected url to have kept http:// protocol as prefix")
+		t.Fatal("expected url to have kept http:// protocol as prefix")
 	}
 }
 
 func TestAttemptSecured(t *testing.T) {
 	b := AttemptSecured("http://some.url", true)
 	if b {
-		t.Fatalf("trying to attempt non secured with http:// but got true")
+		t.Fatal("trying to attempt non secured with http:// but got true")
 	}
 	b = AttemptSecured("http://some.url", false)
 	if b {
-		t.Fatalf("trying to attempt non secured with http:// but got true")
+		t.Fatal("trying to attempt non secured with http:// but got true")
 	}
 	b = AttemptSecured("grpc://some.url", true)
 	if b {
-		t.Fatalf("trying to attempt non secured with grpc:// but got true")
+		t.Fatal("trying to attempt non secured with grpc:// but got true")
 	}
 	b = AttemptSecured("grpc://some.url", false)
 	if b {
-		t.Fatalf("trying to attempt secured with grpc:// but got true")
+		t.Fatal("trying to attempt secured with grpc:// but got true")
 	}
 	b = AttemptSecured("grpcs://some.url", true)
 	if !b {
-		t.Fatalf("trying to attempt non secured with grpcs://, but got false")
+		t.Fatal("trying to attempt non secured with grpcs://, but got false")
 	}
 	b = AttemptSecured("grpcs://some.url", false)
 	if !b {
-		t.Fatalf("trying to attempt secured with grpcs://, but got false")
+		t.Fatal("trying to attempt secured with grpcs://, but got false")
 	}
 	b = AttemptSecured("some.url", true)
 	if b {
-		t.Fatalf("trying to attempt non secured with no protocol in url, but got true")
+		t.Fatal("trying to attempt non secured with no protocol in url, but got true")
 	}
 	b = AttemptSecured("some.url", false)
 	if !b {
-		t.Fatalf("trying to attempt secured with no protocol in url, but got false")
+		t.Fatal("trying to attempt secured with no protocol in url, but got false")
 	}
 }
 
@@ -113,10 +113,10 @@ O94CDp7l2k7hMQI0zQ==
 	}
 	b := tlsConfig.Bytes()
 	if len(b) == 0 {
-		t.Fatalf("cert's Bytes() call returned empty byte array")
+		t.Fatal("cert's Bytes() call returned empty byte array")
 	}
 	if len(b) != len([]byte(pPem)) {
-		t.Fatalf("cert's Bytes() call returned different byte array for correct pem")
+		t.Fatal("cert's Bytes() call returned different byte array for correct pem")
 	}
 
 	// test with empty pem
@@ -128,7 +128,7 @@ O94CDp7l2k7hMQI0zQ==
 	}
 	b = tlsConfig.Bytes()
 	if len(b) == 0 {
-		t.Fatalf("cert's Bytes() call returned empty byte array")
+		t.Fatal("cert's Bytes() call returned empty byte array")
 	}
 
 	// test with wrong pem
@@ -139,7 +139,7 @@ O94CDp7l2k7hMQI0zQ==
 	}
 	b = tlsConfig.Bytes()
 	if len(b) != len([]byte("wrongpemvalue")) {
-		t.Fatalf("cert's Bytes() call returned different byte array for wrong pem")
+		t.Fatal("cert's Bytes() call returned different byte array for wrong pem")
 	}
 }
 
@@ -159,7 +159,7 @@ func TestTLSConfig_TLSCertPostive(t *testing.T) {
 		t.Fatalf("error loading certificate for sample cert path %s", e)
 	}
 	if c == nil {
-		t.Fatalf("cert's TLSCert() call returned empty certificate")
+		t.Fatal("cert's TLSCert() call returned empty certificate")
 	}
 
 	// test with both correct pem and path set
@@ -184,7 +184,7 @@ O94CDp7l2k7hMQI0zQ==
 		t.Fatalf("error loading certificate for sample cert path and pem %s", e)
 	}
 	if c == nil {
-		t.Fatalf("cert's TLSCert() call returned empty certificate")
+		t.Fatal("cert's TLSCert() call returned empty certificate")
 	}
 
 }
@@ -201,7 +201,7 @@ func TestTLSConfig_TLSCertNegative(t *testing.T) {
 		t.Fatal("expected error loading certificate for wrong cert path")
 	}
 	if c != nil {
-		t.Fatalf("cert's TLSCert() call returned non empty certificate for wrong cert path")
+		t.Fatal("cert's TLSCert() call returned non empty certificate for wrong cert path")
 	}
 
 	// test with empty path and empty pem
@@ -211,7 +211,7 @@ func TestTLSConfig_TLSCertNegative(t *testing.T) {
 		t.Fatal("expected error loading certificate for empty cert path and empty pem")
 	}
 	if c != nil {
-		t.Fatalf("cert's TLSCert() call returned non empty certificate for wrong cert path and empty pem")
+		t.Fatal("cert's TLSCert() call returned non empty certificate for wrong cert path and empty pem")
 	}
 
 	// test with wrong pem and empty path
@@ -222,7 +222,7 @@ func TestTLSConfig_TLSCertNegative(t *testing.T) {
 		t.Fatalf("error loading certificate for empty cert path and and wrong pem %s", e)
 	}
 	if c != nil {
-		t.Fatalf("cert's TLSCert() call returned non empty certificate")
+		t.Fatal("cert's TLSCert() call returned non empty certificate")
 	}
 
 }

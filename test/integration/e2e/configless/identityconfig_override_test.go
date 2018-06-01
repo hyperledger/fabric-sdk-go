@@ -61,13 +61,13 @@ func (m *exampleCaConfig) CAConfig(org string) (*msp.CAConfig, error) {
 // the below function is used in multiple implementations, this is fine because networkConfig is the same for all of them
 func getCAConfig(networkConfig *fab.NetworkConfig, org string) (*msp.CAConfig, error) {
 	if len(networkConfig.Organizations[strings.ToLower(org)].CertificateAuthorities) == 0 {
-		return nil, errors.Errorf("organization %s has no Certificate Authorities setup. Make sure each org has at least 1 configured", org)
+		return nil, errors.Errorf("organization [%s] has no Certificate Authorities setup. Make sure each org has at least 1 configured", org)
 	}
 	//for now, we're only loading the first Cert Authority by default. TODO add logic to support passing the Cert Authority ID needed by the client.
 	certAuthorityName := networkConfig.Organizations[strings.ToLower(org)].CertificateAuthorities[0]
 
 	if certAuthorityName == "" {
-		return nil, errors.Errorf("certificate authority empty for %s. Make sure each org has at least 1 non empty certificate authority name", org)
+		return nil, errors.Errorf("certificate authority empty for [%s]. Make sure each org has at least 1 non empty certificate authority name", org)
 	}
 
 	caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityName)]
@@ -75,7 +75,7 @@ func getCAConfig(networkConfig *fab.NetworkConfig, org string) (*msp.CAConfig, e
 		// EntityMatchers are not supported in this implementation. If needed, uncomment the below lines
 		//caConfig, mappedHost := m.tryMatchingCAConfig(networkConfig, strings.ToLower(certAuthorityName))
 		//if mappedHost == "" {
-		return nil, errors.Errorf("CA Server Name %s not found", certAuthorityName)
+		return nil, errors.Errorf("CA Server Name [%s] not found", certAuthorityName)
 		//}
 		//return caConfig, nil
 	}
@@ -108,7 +108,7 @@ func (m *exampleCaServerCerts) CAServerCerts(org string) ([][]byte, error) {
 	for i, certPath := range certFiles {
 		bytes, err := ioutil.ReadFile(certPath)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to load pem bytes from path %s", certPath)
+			return nil, errors.Wrapf(err, "failed to load pem bytes from path '%s'", certPath)
 		}
 		serverCerts[i] = bytes
 	}

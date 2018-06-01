@@ -76,7 +76,7 @@ func TestConnect(t *testing.T) {
 	}
 
 	if dispatcher.Connection() == nil {
-		t.Fatalf("Got nil connection")
+		t.Fatal("Got nil connection")
 	}
 
 	testConn(dispatcherEventch, errch, t, dispatcher)
@@ -90,13 +90,13 @@ func testConn(dispatcherEventch chan<- interface{}, errch chan error, t *testing
 		t.Fatalf("Error disconnecting: %s", err)
 	}
 	if dispatcher.Connection() != nil {
-		t.Fatalf("Expecting nil connection")
+		t.Fatal("Expecting nil connection")
 	}
 	// Disconnect again
 	dispatcherEventch <- NewDisconnectEvent(errch)
 	err = <-errch
 	if err == nil {
-		t.Fatalf("Expecting error disconnecting since the connection should already be closed")
+		t.Fatal("Expecting error disconnecting since the connection should already be closed")
 	}
 	time.Sleep(time.Second)
 	// Stop the dispatcher
@@ -139,7 +139,7 @@ func TestConnectNoPeers(t *testing.T) {
 	dispatcherEventch <- NewConnectEvent(errch)
 	err = <-errch
 	if err == nil {
-		t.Fatalf("Expecting error connecting with no peers but got none")
+		t.Fatal("Expecting error connecting with no peers but got none")
 	}
 
 	// Stop the dispatcher

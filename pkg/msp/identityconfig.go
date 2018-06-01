@@ -87,17 +87,17 @@ func (c *IdentityConfig) CAConfig(org string) (*msp.CAConfig, error) {
 
 func (c *IdentityConfig) getCAConfig(networkConfig *fab.NetworkConfig, org string) (*msp.CAConfig, error) {
 
-	logger.Debug("Getting cert authority for org: %s.", org)
+	logger.Debugf("Getting cert authority for org: %s.", org)
 
 	if len(networkConfig.Organizations[strings.ToLower(org)].CertificateAuthorities) == 0 {
-		return nil, errors.Errorf("organization %s has no Certificate Authorities setup. Make sure each org has at least 1 configured", org)
+		return nil, errors.Errorf("organization [%s] has no Certificate Authorities setup. Make sure each org has at least 1 configured", org)
 	}
 	//for now, we're only loading the first Cert Authority by default. TODO add logic to support passing the Cert Authority ID needed by the client.
 	certAuthorityName := networkConfig.Organizations[strings.ToLower(org)].CertificateAuthorities[0]
-	logger.Debugf("Cert authority for org: %s is %s", org, certAuthorityName)
+	logger.Debugf("Cert authority for org: [%s] is [%s]", org, certAuthorityName)
 
 	if certAuthorityName == "" {
-		return nil, errors.Errorf("certificate authority empty for %s. Make sure each org has at least 1 non empty certificate authority name", org)
+		return nil, errors.Errorf("certificate authority empty for [%s]. Make sure each org has at least 1 non empty certificate authority name", org)
 	}
 
 	caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityName)]
@@ -105,7 +105,7 @@ func (c *IdentityConfig) getCAConfig(networkConfig *fab.NetworkConfig, org strin
 		logger.Debugf("Could not find Certificate Authority for [%s], trying with Entity Matchers", certAuthorityName)
 		caConfig, mappedHost := c.tryMatchingCAConfig(networkConfig, strings.ToLower(certAuthorityName))
 		if mappedHost == "" {
-			return nil, errors.Errorf("CA Server Name %s not found", certAuthorityName)
+			return nil, errors.Errorf("CA Server Name [%s] not found", certAuthorityName)
 		}
 		logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", certAuthorityName, mappedHost)
 		return caConfig, nil
@@ -174,7 +174,7 @@ func (c *IdentityConfig) CAServerCerts(org string) ([][]byte, error) {
 	for i, certPath := range certFiles {
 		bytes, err := ioutil.ReadFile(pathvar.Subst(certPath))
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to load pem bytes from path %s", certPath)
+			return nil, errors.Wrapf(err, "failed to load pem bytes from path '%s'", certPath)
 		}
 		serverCerts[i] = bytes
 	}

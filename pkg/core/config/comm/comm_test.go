@@ -120,7 +120,7 @@ func TestTlsCertHash(t *testing.T) {
 
 	cert, err := tls.LoadX509KeyPair("testdata/server.crt", "testdata/server.key")
 	if err != nil {
-		t.Fatalf("Unexpected error loading cert %v", err)
+		t.Fatalf("Unexpected error loading cert %s", err)
 	}
 
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{cert}, nil)
@@ -130,7 +130,7 @@ func TestTlsCertHash(t *testing.T) {
 	// SHA256 Fingerprint=0D:D5:90:B8:A5:0E:A6:04:3E:A8:75:16:BF:77:A8:FE:E7:C5:62:2D:4C:B3:CB:99:12:74:72:2A:D8:BA:B8:92
 	expectedHash, err := hex.DecodeString("0DD590B8A50EA6043EA87516BF77A8FEE7C5622D4CB3CB991274722AD8BAB892")
 	if err != nil {
-		t.Fatalf("Unexpected error decoding cert fingerprint %v", err)
+		t.Fatalf("Unexpected error decoding cert fingerprint %s", err)
 	}
 	if !bytes.Equal(tlsCertHash, expectedHash) {
 		t.Fatal("Cert hash calculated incorrectly")

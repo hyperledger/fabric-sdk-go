@@ -43,7 +43,7 @@ func TestCreateCustomFullEndpointConfig(t *testing.T) {
 		t.Fatalf("BuildConfigEndpointFromOptions returned unexpected error %s", err)
 	}
 	if endpointConfigOption == nil {
-		t.Fatalf("BuildConfigEndpointFromOptions call returned nil")
+		t.Fatal("BuildConfigEndpointFromOptions call returned nil")
 	}
 }
 
@@ -59,7 +59,7 @@ func TestCreateCustomEndpointConfig(t *testing.T) {
 		t.Fatalf("BuildConfigEndpointFromOptions did not return a Options instance %T", endpointConfigOption)
 	}
 	if eco == nil {
-		t.Fatalf("build ConfigEndpointOption returned is nil")
+		t.Fatal("build ConfigEndpointOption returned is nil")
 	}
 	tmout := eco.Timeout(fab.EndorserConnection)
 	if tmout < 0 {
@@ -84,12 +84,12 @@ func TestCreateCustomEndpointConfigRemainingFunctions(t *testing.T) {
 		t.Fatalf("BuildConfigEndpointFromOptions did not return a Options instance %T", endpointConfigOption)
 	}
 	if eco == nil {
-		t.Fatalf("build ConfigEndpointOption returned is nil")
+		t.Fatal("build ConfigEndpointOption returned is nil")
 	}
 	// verify that their functions are available
 	p, ok := eco.ChannelPeers("")
 	if !ok {
-		t.Fatalf("ChannelPeers expected to succeed")
+		t.Fatal("ChannelPeers expected to succeed")
 	}
 	if len(p) != 1 {
 		t.Fatalf("ChannelPeers did not return expected interface value. Expected: 1 ChannelPeer, Received: %d", len(p))
@@ -112,7 +112,7 @@ func TestCreateCustomEndpointConfigRemainingFunctions(t *testing.T) {
 	var badType interface{}
 	_, err = BuildConfigEndpointFromOptions(m12, m13, badType)
 	if err == nil {
-		t.Fatalf("BuildConfigEndpointFromOptions did not return error with badType")
+		t.Fatal("BuildConfigEndpointFromOptions did not return error with badType")
 	}
 }
 
@@ -129,7 +129,7 @@ func TestCreateCustomEndpointConfigWithSomeDefaultFunctions(t *testing.T) {
 		t.Fatalf("BuildConfigEndpointFromOptions did not return a Options instance %T", endpointConfigOption)
 	}
 	if eco == nil {
-		t.Fatalf("build ConfigEndpointOption returned is nil")
+		t.Fatal("build ConfigEndpointOption returned is nil")
 	}
 
 	// now inject default interfaces (using m0 as default interface for the sake of this test) for the ones that were not overridden by options above
@@ -148,11 +148,11 @@ func TestCreateCustomEndpointConfigWithSomeDefaultFunctions(t *testing.T) {
 	}
 	// cryptoConfigPath (m17) is among the interfaces that were not updated by options
 	if eco.cryptoConfigPath == nil {
-		t.Fatalf("UpdateMissingOptsWithDefaultConfig did not set CryptoConfigPath() with default function implementation")
+		t.Fatal("UpdateMissingOptsWithDefaultConfig did not set CryptoConfigPath() with default function implementation")
 	}
 	// tlsClientCerts (m16) is among the interfaces that were not updated by options
 	if eco.tlsClientCerts == nil {
-		t.Fatalf("UpdateMissingOptsWithDefaultConfig did not set TLSClientCerts() with default function implementation")
+		t.Fatal("UpdateMissingOptsWithDefaultConfig did not set TLSClientCerts() with default function implementation")
 	}
 }
 
@@ -173,7 +173,7 @@ func TestIsEndpointConfigFullyOverridden(t *testing.T) {
 	// only 3 interfaces were overridden, so expected value is false
 	isFullyOverridden := IsEndpointConfigFullyOverridden(eco)
 	if isFullyOverridden {
-		t.Fatalf("Expected not fully overridden EndpointConfig interface, but received fully overridden.")
+		t.Fatal("Expected not fully overridden EndpointConfig interface, but received fully overridden.")
 	}
 
 	// now try with no opts, expected value is also false
@@ -187,7 +187,7 @@ func TestIsEndpointConfigFullyOverridden(t *testing.T) {
 
 	isFullyOverridden = IsEndpointConfigFullyOverridden(eco)
 	if isFullyOverridden {
-		t.Fatalf("Expected not fully overridden EndpointConfig interface, but received fully overridden.")
+		t.Fatal("Expected not fully overridden EndpointConfig interface, but received fully overridden.")
 	}
 
 	// now try with all opts, expected value is true this time
@@ -201,7 +201,7 @@ func TestIsEndpointConfigFullyOverridden(t *testing.T) {
 
 	isFullyOverridden = IsEndpointConfigFullyOverridden(eco)
 	if !isFullyOverridden {
-		t.Fatalf("Expected fully overridden EndpointConfig interface, but received not fully overridden.")
+		t.Fatal("Expected fully overridden EndpointConfig interface, but received not fully overridden.")
 	}
 }
 
@@ -218,7 +218,7 @@ func TestCreateCustomEndpointConfigWithSomeDefaultFunctionsRemainingFunctions(t 
 		t.Fatalf("BuildConfigEndpointFromOptions did not return a Options instance %T", endpointConfigOption)
 	}
 	if eco == nil {
-		t.Fatalf("build ConfigEndpointOption returned is nil")
+		t.Fatal("build ConfigEndpointOption returned is nil")
 	}
 
 	// now inject default interfaces

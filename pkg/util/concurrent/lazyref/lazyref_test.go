@@ -109,7 +109,7 @@ func TestMustGet(t *testing.T) {
 
 	ref := New(func() (interface{}, error) {
 		atomic.AddInt32(&numTimesInitialized, 1)
-		t.Logf("Initializing Reference...\n")
+		t.Log("Initializing Reference...\n")
 		return expectedValue, nil
 	})
 
@@ -144,7 +144,7 @@ func TestMustGet(t *testing.T) {
 func TestMustGetPanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
-			t.Fatalf("Expecting panic but got none")
+			t.Fatal("Expecting panic but got none")
 		}
 	}()
 
@@ -153,7 +153,7 @@ func TestMustGetPanic(t *testing.T) {
 	})
 
 	ref.MustGet()
-	t.Fatalf("Expecting panic but got none")
+	t.Fatal("Expecting panic but got none")
 }
 
 func TestGetWithFinalizer(t *testing.T) {
@@ -166,7 +166,7 @@ func TestGetWithFinalizer(t *testing.T) {
 
 	ref := New(
 		func() (interface{}, error) {
-			t.Logf("Initializing Reference...\n")
+			t.Log("Initializing Reference...\n")
 			atomic.AddInt32(&numTimesInitialized, 1)
 			return expectedValue, nil
 		},
@@ -434,7 +434,7 @@ func TestProactiveRefresh(t *testing.T) {
 		WithFinalizer(
 			func(interface{}) {
 				atomic.AddInt32(&numTimesFinalized, 1)
-				t.Logf("Finalizer called")
+				t.Log("Finalizer called")
 			},
 		),
 		WithRefreshInterval(InitImmediately, 500*time.Millisecond),

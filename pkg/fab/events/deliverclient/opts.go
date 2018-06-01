@@ -57,7 +57,7 @@ type fromBlockSetter interface {
 }
 
 func (p *params) PermitBlockEvents() {
-	logger.Debugf("PermitBlockEvents")
+	logger.Debug("PermitBlockEvents")
 	p.connProvider = deliverProvider
 }
 

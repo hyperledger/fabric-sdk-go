@@ -81,7 +81,7 @@ func (s *service) initialize(ctx contextAPI.Client) error {
 
 	discoveryClient, err := clientProvider(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "error creating discover client")
+		return errors.Wrap(err, "error creating discover client")
 	}
 
 	logger.Debugf("Initializing with context: %#v", ctx)
@@ -92,7 +92,7 @@ func (s *service) initialize(ctx contextAPI.Client) error {
 
 // Close stops the lazyref background refresh
 func (s *service) Close() {
-	logger.Debugf("Closing peers ref...")
+	logger.Debug("Closing peers ref...")
 	s.peersRef.Close()
 }
 

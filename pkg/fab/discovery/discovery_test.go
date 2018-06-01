@@ -84,7 +84,7 @@ func TestDiscoveryClient(t *testing.T) {
 	t.Logf("Got success response from channel query [%s]: Num Peers: %d", response.Target(), len(peers))
 
 	assert.Equal(t, 2, len(errs))
-	t.Logf("Got error responses: %v", errs)
+	t.Logf("Got error responses: %s", errs)
 }
 
 var discoverServer *discmocks.MockDiscoveryServer

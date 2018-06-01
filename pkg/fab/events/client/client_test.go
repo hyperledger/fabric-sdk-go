@@ -68,7 +68,7 @@ func TestConnect(t *testing.T) {
 		t.Fatalf("error connecting: %s", err)
 	}
 	if err := eventClient.Connect(); err == nil {
-		t.Fatalf("expecting error connecting since the client is already connected")
+		t.Fatal("expecting error connecting since the client is already connected")
 	} else {
 		t.Logf("Got expected error: %s", err)
 	}
@@ -101,7 +101,7 @@ func TestFailConnect(t *testing.T) {
 		t.Fatalf("error creating client: %s", err)
 	}
 	if err := eventClient.Connect(); err == nil {
-		t.Fatalf("expecting error connecting client but got none")
+		t.Fatal("expecting error connecting client but got none")
 	}
 }
 
@@ -127,19 +127,19 @@ func TestCallsOnClosedClient(t *testing.T) {
 	eventClient.Close()
 
 	if err := eventClient.Connect(); err == nil {
-		t.Fatalf("expecting error connecting to closed channel event client but got none")
+		t.Fatal("expecting error connecting to closed channel event client but got none")
 	}
 
 	if _, _, err := eventClient.RegisterFilteredBlockEvent(); err == nil {
-		t.Fatalf("expecting error registering for block events on closed channel event client but got none")
+		t.Fatal("expecting error registering for block events on closed channel event client but got none")
 	}
 
 	if _, _, err := eventClient.RegisterChaincodeEvent("ccid", "event"); err == nil {
-		t.Fatalf("expecting error registering for chaincode events on closed channel event client but got none")
+		t.Fatal("expecting error registering for chaincode events on closed channel event client but got none")
 	}
 
 	if _, _, err := eventClient.RegisterTxStatusEvent("txid"); err == nil {
-		t.Fatalf("expecting error registering for TX events on closed channel event client but got none")
+		t.Fatal("expecting error registering for TX events on closed channel event client but got none")
 	}
 
 	// Make sure the client doesn't panic when calling unregister on disconnected client
@@ -170,13 +170,13 @@ func TestCloseIfIdle(t *testing.T) {
 	}
 
 	if eventClient.CloseIfIdle() {
-		t.Fatalf("expecting client to not close since there's an outstanding registration")
+		t.Fatal("expecting client to not close since there's an outstanding registration")
 	}
 
 	eventClient.Unregister(reg)
 
 	if !eventClient.CloseIfIdle() {
-		t.Fatalf("expecting client to close since there are no outstanding registrations")
+		t.Fatal("expecting client to close since there are no outstanding registrations")
 	}
 }
 
@@ -223,7 +223,7 @@ func TestUnauthorizedBlockEvents(t *testing.T) {
 	defer eventClient.Close()
 
 	if _, _, err := eventClient.RegisterBlockEvent(); err == nil {
-		t.Fatalf("expecting error registering for block events on a filtered client")
+		t.Fatal("expecting error registering for block events on a filtered client")
 	}
 }
 
@@ -271,12 +271,12 @@ func checkBlockEvent(t *testing.T, channelID string, conn mockconn.Connection, e
 		select {
 		case _, ok := <-eventch1:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			numReceived++
 		case _, ok := <-eventch2:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			numReceived++
 		case <-time.After(2 * time.Second):
@@ -339,13 +339,13 @@ func checkFilteredBlockEvents(t *testing.T, eventch1 <-chan *fab.FilteredBlockEv
 		select {
 		case fbevent, ok := <-eventch1:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			checkFbEvent(t, fbevent, channelID)
 			numReceived++
 		case fbevent, ok := <-eventch2:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			checkFbEvent(t, fbevent, channelID)
 			numReceived++
@@ -360,7 +360,7 @@ func checkFilteredBlockEvents(t *testing.T, eventch1 <-chan *fab.FilteredBlockEv
 
 func checkFbEvent(t *testing.T, fbevent *fab.FilteredBlockEvent, channelID string) {
 	if fbevent.FilteredBlock == nil {
-		t.Fatalf("Expecting filtered block but got nil")
+		t.Fatal("Expecting filtered block but got nil")
 	}
 	if fbevent.FilteredBlock.ChannelId != channelID {
 		t.Fatalf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
@@ -428,14 +428,14 @@ func checkBlockAndFilteredBlockEvents(t *testing.T, channelID string, fbeventch 
 		select {
 		case fbevent, ok := <-fbeventch:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			numReceived++
 			checkFilteredBlock(t, fbevent.FilteredBlock, channelID, tx1, tx2)
 
 		case _, ok := <-beventch:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			numReceived++
 
@@ -473,7 +473,7 @@ func TestTxStatusEvents(t *testing.T) {
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	if _, _, err1 := eventClient.RegisterTxStatusEvent(""); err1 == nil {
-		t.Fatalf("expecting error registering for TxStatus event without a TX ID but got none")
+		t.Fatal("expecting error registering for TxStatus event without a TX ID but got none")
 	}
 	reg1, _, err := eventClient.RegisterTxStatusEvent(txID1)
 	if err != nil {
@@ -513,14 +513,14 @@ func checkTxStatusEvents(t *testing.T, eventch1 <-chan *fab.TxStatusEvent, event
 		select {
 		case event, ok := <-eventch1:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkTxStatusEvent(t, event, txID1, txCode1)
 				numReceived++
 			}
 		case event, ok := <-eventch2:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkTxStatusEvent(t, event, txID2, txCode2)
 				numReceived++
@@ -563,13 +563,13 @@ func TestCCEvents(t *testing.T) {
 	event3 := "event3"
 
 	if _, _, err1 := eventClient.RegisterChaincodeEvent("", ccFilter1); err1 == nil {
-		t.Fatalf("expecting error registering for chaincode events without CC ID but got none")
+		t.Fatal("expecting error registering for chaincode events without CC ID but got none")
 	}
 	if _, _, err1 := eventClient.RegisterChaincodeEvent(ccID1, ""); err1 == nil {
-		t.Fatalf("expecting error registering for chaincode events without event filter but got none")
+		t.Fatal("expecting error registering for chaincode events without event filter but got none")
 	}
 	if _, _, err1 := eventClient.RegisterChaincodeEvent(ccID1, ".(xxx"); err1 == nil {
-		t.Fatalf("expecting error registering for chaincode events with invalid (regular expression) event filter but got none")
+		t.Fatal("expecting error registering for chaincode events with invalid (regular expression) event filter but got none")
 	}
 	reg1, _, err := eventClient.RegisterChaincodeEvent(ccID1, ccFilter1)
 	if err != nil {
@@ -611,14 +611,14 @@ func checkCCEvents(t *testing.T, eventch1 <-chan *fab.CCEvent, eventch2 <-chan *
 		select {
 		case event, ok := <-eventch1:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkCCEvent(t, event, ccID1, nil, event1)
 				numReceived++
 			}
 		case event, ok := <-eventch2:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkCCEvent(t, event, ccID2, nil, event2, event3)
 				numReceived++
@@ -772,7 +772,7 @@ func TestConcurrentEvents(t *testing.T) {
 
 	ccreg, cceventch, err := eventClient.RegisterChaincodeEvent(ccID, ccFilter)
 	if err != nil {
-		t.Fatalf("error registering for chaincode events")
+		t.Fatal("error registering for chaincode events")
 	}
 	defer eventClient.Unregister(ccreg)
 
@@ -824,7 +824,7 @@ func checkConcurrentEvents(blockTestErr chan error, t *testing.T, fblockTestErr 
 
 func checkIfAllEventsRecv(blockTestDone bool, fblockTestDone bool, ccTestDone bool, txStatusTestDone bool) bool {
 	if blockTestDone && fblockTestDone && ccTestDone && txStatusTestDone {
-		fmt.Printf("All tests completed successfully\n")
+		fmt.Print("All tests completed successfully\n")
 		return true
 	}
 	return false
@@ -860,16 +860,16 @@ func checkTxStatusDone(err error, t *testing.T) bool {
 
 func checkEventsAreDone(t *testing.T, blockTestDone, fblockTestDone, ccTestDone, txStatusTestDone bool) {
 	if !blockTestDone {
-		t.Fatalf("Timed out waiting for block test")
+		t.Fatal("Timed out waiting for block test")
 	}
 	if !fblockTestDone {
-		t.Fatalf("Timed out waiting for filtered block test")
+		t.Fatal("Timed out waiting for filtered block test")
 	}
 	if !ccTestDone {
-		t.Fatalf("Timed out waiting for chaincode test")
+		t.Fatal("Timed out waiting for chaincode test")
 	}
 	if !txStatusTestDone {
-		t.Fatalf("Timed out waiting for TxStatus test")
+		t.Fatal("Timed out waiting for TxStatus test")
 	}
 }
 
@@ -880,7 +880,7 @@ func listenBlockEvents(channelID string, eventch <-chan *fab.BlockEvent, expecte
 		select {
 		case _, ok := <-eventch:
 			if !ok {
-				fmt.Printf("Block events channel was closed \n")
+				fmt.Print("Block events channel was closed \n")
 				return
 			}
 			numReceived++
@@ -903,7 +903,7 @@ func listenFilteredBlockEvents(channelID string, eventch <-chan *fab.FilteredBlo
 		select {
 		case fbevent, ok := <-eventch:
 			if !ok {
-				fmt.Printf("Filtered block events channel was closed \n")
+				fmt.Print("Filtered block events channel was closed \n")
 				return
 			}
 			if fbevent.FilteredBlock == nil {
@@ -935,7 +935,7 @@ func listenChaincodeEvents(channelID string, eventch <-chan *fab.CCEvent, expect
 		select {
 		case event, ok := <-eventch:
 			if !ok {
-				fmt.Printf("CC events channel was closed \n")
+				fmt.Print("CC events channel was closed \n")
 				return
 			}
 			if event.BlockNumber > 0 && event.BlockNumber <= lastBlockNum {
@@ -1196,12 +1196,12 @@ func checkEvents(numCh chan mockconn.Received, t *testing.T, expectedBlockEvents
 	select {
 	case received, ok := <-numCh:
 		if !ok {
-			t.Fatalf("connection closed prematurely")
+			t.Fatal("connection closed prematurely")
 		} else {
 			eventsReceived = received
 		}
 	case <-time.After(20 * time.Second):
-		t.Fatalf("timed out waiting for events")
+		t.Fatal("timed out waiting for events")
 	}
 	if eventsReceived.NumBlock != expectedBlockEvents {
 		t.Fatalf("Expecting to receive [%d] block events but received [%d]", expectedBlockEvents, eventsReceived.NumBlock)
@@ -1216,9 +1216,9 @@ func listenConnection(eventch chan *dispatcher.ConnectionEvent, outcome chan moc
 
 	for {
 		e, ok := <-eventch
-		fmt.Printf("listenConnection - got event [%v] - ok=[%v]\n", e, ok)
+		fmt.Printf("listenConnection - got event [%+v] - ok=[%t]\n", e, ok)
 		if !ok {
-			fmt.Printf("listenConnection - Returning terminated outcome\n")
+			fmt.Print("listenConnection - Returning terminated outcome\n")
 			outcome <- mockconn.ClosedOutcome
 			break
 		}
@@ -1273,11 +1273,11 @@ var clientProvider = func(context context.Client, chConfig fab.ChannelCfg, disco
 	opts = append(opts, WithBlockEvents())
 	return newClient(context, chConfig, discoveryService, connectionProvider, opts,
 		func() error {
-			fmt.Printf("AfterConnect called")
+			fmt.Print("AfterConnect called")
 			return nil
 		},
 		func() error {
-			fmt.Printf("BeforeReconnect called")
+			fmt.Print("BeforeReconnect called")
 			return nil
 		})
 }
@@ -1294,11 +1294,11 @@ var failAfterConnectClientProvider = func(context context.Client, chConfig fab.C
 var filteredClientProvider = func(context context.Client, chConfig fab.ChannelCfg, discoveryService fab.DiscoveryService, connectionProvider api.ConnectionProvider, opts []options.Opt) (*Client, error) {
 	return newClient(context, chConfig, discoveryService, connectionProvider, opts,
 		func() error {
-			fmt.Printf("AfterConnect called")
+			fmt.Print("AfterConnect called")
 			return nil
 		},
 		func() error {
-			fmt.Printf("BeforeReconnect called")
+			fmt.Print("BeforeReconnect called")
 			return nil
 		})
 }
@@ -1338,7 +1338,7 @@ func newClientWithMockConnAndOpts(context context.Client, chConfig fab.ChannelCf
 
 func checkFilteredBlock(t *testing.T, fblock *pb.FilteredBlock, expectedChannelID string, expectedFilteredTxs ...*pb.FilteredTransaction) {
 	if fblock == nil {
-		t.Fatalf("Expecting filtered block but got nil")
+		t.Fatal("Expecting filtered block but got nil")
 	}
 	if fblock.ChannelId != expectedChannelID {
 		t.Fatalf("Expecting channel [%s] but got [%s]", expectedChannelID, fblock.ChannelId)

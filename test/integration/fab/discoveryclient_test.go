@@ -86,7 +86,7 @@ func TestDiscoveryClientPeers(t *testing.T) {
 
 		t.Logf("--- Ledger Height: %d\n", stateInfo.Properties.LedgerHeight)
 		t.Logf("--- LeftChannel: %t\n", stateInfo.Properties.LeftChannel)
-		t.Logf("--- Chaincodes:\n")
+		t.Log("--- Chaincodes:\n")
 		for _, cc := range stateInfo.Properties.Chaincodes {
 			t.Logf("------ %s:%s\n", cc.Name, cc.Version)
 		}
@@ -125,7 +125,7 @@ func TestDiscoveryClientLocalPeers(t *testing.T) {
 	peers, err := locResp.Peers()
 	require.NoError(t, err, "error getting local peers")
 
-	t.Logf("*** Local Peers:\n")
+	t.Log("*** Local Peers:\n")
 	for _, peer := range peers {
 		aliveMsg := peer.AliveMessage.GetAliveMsg()
 		if !assert.NotNil(t, aliveMsg, "got nil AliveMessage") {

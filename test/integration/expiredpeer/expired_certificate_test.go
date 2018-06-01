@@ -66,23 +66,23 @@ func TestExpiredPeersCert(t *testing.T) {
 
 	org1MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org1))
 	if err != nil {
-		t.Fatalf("failed to create org1MspClient, err : %v", err)
+		t.Fatalf("failed to create org1MspClient, err : %s", err)
 	}
 
 	// Get signing identity that is used to sign create channel request
 	org1AdminUser, err := org1MspClient.GetSigningIdentity(org1AdminUser)
 	if err != nil {
-		t.Fatalf("failed to get org1AdminUser, err : %v", err)
+		t.Fatalf("failed to get org1AdminUser, err : %s", err)
 	}
 
 	org2MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org2))
 	if err != nil {
-		t.Fatalf("failed to create org2MspClient, err : %v", err)
+		t.Fatalf("failed to create org2MspClient, err : %s", err)
 	}
 
 	org2AdminUser, err := org2MspClient.GetSigningIdentity(org2AdminUser)
 	if err != nil {
-		t.Fatalf("failed to get org2AdminUser, err : %v", err)
+		t.Fatalf("failed to get org2AdminUser, err : %s", err)
 	}
 
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
@@ -101,7 +101,7 @@ func TestExpiredPeersCert(t *testing.T) {
 	err = org1ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err == nil {
 		//full error from GRPC log 'Failed to dial peer0.org1.example.com:7051: connection error: desc = "transport: authentication handshake failed: x509: certificate has expiredorderer or is not yet valid"; please retry.'
-		t.Fatalf("Expected error: 'Error join channel failed: SendProposal failed...")
+		t.Fatal("Expected error: 'Error join channel failed: SendProposal failed...")
 	}
 
 }
@@ -111,7 +111,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 	return func() ([]core.ConfigBackend, error) {
 		configBackends, err := config.FromFile(configPath)()
 		if err != nil {
-			t.Fatalf("failed to read config backend from file, %v", err)
+			t.Fatalf("failed to read config backend from file, %s", err)
 		}
 		backendMap := make(map[string]interface{})
 
@@ -119,7 +119,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		//get valid peer config
 		err = lookup.New(configBackends...).UnmarshalKey("peers", &networkConfig.Peers)
 		if err != nil {
-			t.Fatalf("failed to unmarshal peer network config, %v", err)
+			t.Fatalf("failed to unmarshal peer network config, %s", err)
 		}
 		//change cert path to expired one
 		peer1 := networkConfig.Peers["peer0.org1.example.com"]

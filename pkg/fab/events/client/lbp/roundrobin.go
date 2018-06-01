@@ -29,7 +29,7 @@ func NewRoundRobin() *RoundRobin {
 // Choose chooses from the list of peers in round-robin fashion
 func (lbp *RoundRobin) Choose(peers []fab.Peer) (fab.Peer, error) {
 	if len(peers) == 0 {
-		logger.Warnf("No peers to choose from!")
+		logger.Warn("No peers to choose from!")
 		return nil, nil
 	}
 

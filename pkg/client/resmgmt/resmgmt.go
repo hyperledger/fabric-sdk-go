@@ -338,7 +338,7 @@ func (rc *Client) isChaincodeInstalled(reqCtx reqContext.Context, req InstallCCR
 		return false, err
 	}
 
-	logger.Debugf("isChaincodeInstalled: %v", chaincodeQueryResponse)
+	logger.Debugf("isChaincodeInstalled: %+v", chaincodeQueryResponse)
 
 	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
 		if chaincode.Name == req.Name && chaincode.Version == req.Version && chaincode.Path == req.Path {
@@ -445,7 +445,7 @@ func (rc *Client) adjustTargets(targets []fab.Peer, req InstallCCRequest, retry 
 		installed, err1 := rc.isChaincodeInstalled(reqCtx, req, target, retry)
 		if err1 != nil {
 			// Add to errors with unable to verify error message
-			errs = append(errs, errors.Errorf("unable to verify if cc is installed on %s. Got error: %s", target.URL(), err1.Error()))
+			errs = append(errs, errors.Errorf("unable to verify if cc is installed on %s. Got error: %s", target.URL(), err1))
 			continue
 		}
 		if installed {

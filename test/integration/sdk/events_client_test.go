@@ -50,7 +50,7 @@ func TestDefaultEventClient(t *testing.T) {
 	// default event client (with filtered blocks) is not allowed to register for block events
 	_, _, err = eventClient.RegisterBlockEvent()
 	if err == nil {
-		t.Fatalf("Default events client should have failed to register for block events")
+		t.Fatal("Default events client should have failed to register for block events")
 	}
 }
 
@@ -105,7 +105,7 @@ func testCCEvent(ccID string, chClient *channel.Client, eventClient *event.Clien
 	case ccEvent := <-notifier:
 		t.Logf("Received cc event: %#v", ccEvent)
 		if expectPayload && string(ccEvent.Payload[:]) != payload {
-			t.Fatalf("Did not receive 'Test Payload'")
+			t.Fatal("Did not receive 'Test Payload'")
 		}
 
 		if !expectPayload && string(ccEvent.Payload[:]) != "" {
@@ -135,11 +135,11 @@ func testRegisterBlockEvent(ccID string, chClient *channel.Client, eventClient *
 	select {
 	case e, ok := <-beventch:
 		if !ok {
-			t.Fatalf("unexpected closed channel while waiting for block event")
+			t.Fatal("unexpected closed channel while waiting for block event")
 		}
 		t.Logf("Received block event: %#v", e)
 		if e.Block == nil {
-			t.Fatalf("Expecting block in block event but got nil")
+			t.Fatal("Expecting block in block event but got nil")
 		}
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive block event for txID(%s)\n", response.TransactionID)
@@ -162,10 +162,10 @@ func testRegisterFilteredBlockEvent(ccID string, chClient *channel.Client, event
 	select {
 	case event, ok := <-fbeventch:
 		if !ok {
-			t.Fatalf("unexpected closed channel while waiting for filtered block event")
+			t.Fatal("unexpected closed channel while waiting for filtered block event")
 		}
 		if event.FilteredBlock == nil {
-			t.Fatalf("Expecting filtered block in filtered block event but got nil")
+			t.Fatal("Expecting filtered block in filtered block event but got nil")
 		}
 		t.Logf("Received filtered block event: %#v", event)
 

@@ -38,7 +38,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	configBackends, err := config.FromFile(configTestFilePath)()
 	if err != nil {
-		t.Fatalf("Unexpected error reading config: %v", err)
+		t.Fatalf("Unexpected error reading config: %s", err)
 	}
 	if len(configBackends) != 1 {
 		t.Fatalf("expected 1 backend but got %d", len(configBackends))
@@ -58,7 +58,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	identityCfg, err := ConfigFromBackend(customBackend)
 	if err != nil {
-		t.Fatalf("Unexpected error initializing endpoint config: %v", err)
+		t.Fatalf("Unexpected error initializing endpoint config: %s", err)
 	}
 
 	sampleIdentityConfig := identityCfg.(*IdentityConfig)
@@ -116,7 +116,7 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	//Test TLSCA Cert Pool (Positive test case)
 	config, err := ConfigFromBackend(embeddedBackend...)
 	if err != nil {
-		t.Fatalf("Failed to initialize identity config , reason: %v", err)
+		t.Fatalf("Failed to initialize identity config , reason: %s", err)
 	}
 
 	identityConfig := config.(*IdentityConfig)
@@ -125,19 +125,19 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 
 	err = certConfig.LoadBytes()
 	if err != nil {
-		t.Fatalf("TLS CA cert parse failed, reason: %v", err)
+		t.Fatalf("TLS CA cert parse failed, reason: %s", err)
 	}
 
 	cert, err := certConfig.TLSCert()
 
 	if err != nil {
-		t.Fatalf("TLS CA cert parse failed, reason: %v", err)
+		t.Fatalf("TLS CA cert parse failed, reason: %s", err)
 	}
 
 	_, err = identityConfig.endpointConfig.TLSCACertPool(cert)
 
 	if err != nil {
-		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
+		t.Fatalf("TLS CA cert pool fetch failed, reason: %s", err)
 	}
 	//Test TLSCA Cert Pool (Negative test case)
 
@@ -146,12 +146,12 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	badCert, err := badCertConfig.TLSCert()
 
 	if err == nil {
-		t.Fatalf("TLS CA cert parse was supposed to fail")
+		t.Fatal("TLS CA cert parse was supposed to fail")
 	}
 
 	_, err = identityConfig.endpointConfig.TLSCACertPool(badCert)
 	if err != nil {
-		t.Fatalf("TLSCACertPool failed %v", err)
+		t.Fatalf("TLSCACertPool failed %s", err)
 	}
 
 	keyPem, _ := identityConfig.CAClientKey(org1)
@@ -160,7 +160,7 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 
 	_, err = keyConfig.TLSCert()
 	if err == nil {
-		t.Fatalf("TLS CA cert pool was supposed to fail when provided with wrong cert file")
+		t.Fatal("TLS CA cert pool was supposed to fail when provided with wrong cert file")
 	}
 
 }
@@ -206,7 +206,7 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 -----END CERTIFICATE-----`
 	loadedOPem := strings.TrimSpace(o[0].TLSCACerts.Pem) // viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
 	if loadedOPem != oPem {
-		t.Fatalf("Orderer Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", oPem, loadedOPem)
+		t.Fatalf("Orderer Pem doesn't match. Expected [%s], but got [%s]", oPem, loadedOPem)
 	}
 
 	pc, ok := idConfig.endpointConfig.PeersConfig(org1)
@@ -260,7 +260,7 @@ O94CDp7l2k7hMQI0zQ==
 	loadedPPem := strings.TrimSpace(p0.TLSCACerts.Pem)
 	// viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
 	if loadedPPem != pPem {
-		t.Fatalf("%s Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", peer, pPem, loadedPPem)
+		t.Fatalf("%s Pem doesn't match. Expected [%s], but got [%s]", peer, pPem, loadedPPem)
 	}
 }
 
@@ -270,7 +270,7 @@ func checkCAServerCerts(org string, idConfig *IdentityConfig, t *testing.T) {
 		t.Fatalf("Failed to load CAServerCertPems from config. Error: %s", err)
 	}
 	if len(certs) == 0 {
-		t.Fatalf("Got empty PEM certs for CAServerCertPems")
+		t.Fatal("Got empty PEM certs for CAServerCertPems")
 	}
 }
 
@@ -308,7 +308,7 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 		t.Fatalf("Failed to read test config for bytes array testing. Error: %s", err)
 	}
 	if n == 0 {
-		t.Fatalf("Failed to read test config for bytes array testing. Mock bytes array is empty")
+		t.Fatal("Failed to read test config for bytes array testing. Mock bytes array is empty")
 	}
 	return cBytes, err
 }
@@ -456,14 +456,14 @@ func testCAKeyStorePath(backend core.ConfigBackend, t *testing.T, identityConfig
 		t.Fatal("expected valid value")
 	}
 	if val.(string) != identityConfig.CredentialStorePath() {
-		t.Fatalf("Incorrect User Store path")
+		t.Fatal("Incorrect User Store path")
 	}
 	val, ok = backend.Lookup("client.credentialStore.cryptoStore.path")
 	if !ok || val == nil {
 		t.Fatal("expected valid value")
 	}
 	if val.(string) != identityConfig.CAKeyStorePath() {
-		t.Fatalf("Incorrect CA keystore path")
+		t.Fatal("Incorrect CA keystore path")
 	}
 }
 

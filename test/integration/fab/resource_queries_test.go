@@ -47,7 +47,7 @@ func testQueryChannels(t *testing.T, reqCtx reqContext.Context, target fab.Propo
 	t.Logf("****QueryChannels for %s", target)
 	channelQueryResponse, err := resource.QueryChannels(reqCtx, target, resource.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
-		t.Fatalf("QueryChannels return error: %v", err)
+		t.Fatalf("QueryChannels return error: %s", err)
 	}
 
 	for _, channel := range channelQueryResponse.Channels {
@@ -63,7 +63,7 @@ func testInstalledChaincodes(t *testing.T, reqCtx reqContext.Context, ccID strin
 
 	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, target, resource.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
-		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
+		t.Fatalf("QueryInstalledChaincodes return error: %s", err)
 	}
 
 	found := false

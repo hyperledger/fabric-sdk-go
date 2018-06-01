@@ -140,6 +140,6 @@ func send(eventch chan<- interface{}, event interface{}) {
 	select {
 	case eventch <- event:
 	case <-time.After(5 * time.Second):
-		fmt.Printf("***** Timed out sending event.\n")
+		fmt.Print("***** Timed out sending event.\n")
 	}
 }

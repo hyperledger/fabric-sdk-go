@@ -31,7 +31,7 @@ func TestCreateInfraProvider(t *testing.T) {
 func verifyPeer(t *testing.T, peer fab.Peer, url string) {
 	_, ok := peer.(*peerImpl.Peer)
 	if !ok {
-		t.Fatalf("Unexpected peer impl created")
+		t.Fatal("Unexpected peer impl created")
 	}
 
 	// Brittle tests follow
@@ -56,7 +56,7 @@ func TestCreatePeerFromConfig(t *testing.T) {
 	peer, err := p.CreatePeerFromConfig(&peerCfg)
 
 	if err != nil {
-		t.Fatalf("Unexpected error creating peer %v", err)
+		t.Fatalf("Unexpected error creating peer %s", err)
 	}
 
 	verifyPeer(t, peer, url)
@@ -65,7 +65,7 @@ func TestCreatePeerFromConfig(t *testing.T) {
 func newInfraProvider(t *testing.T) *InfraProvider {
 	configBackend, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
-		t.Fatalf("config.FromFile failed: %v", err)
+		t.Fatalf("config.FromFile failed: %s", err)
 	}
 
 	cryptoCfg := cryptosuite.ConfigFromBackend(configBackend...)
@@ -85,7 +85,7 @@ func newInfraProvider(t *testing.T) *InfraProvider {
 
 	cryptoSuite, err := sw.GetSuiteByConfig(cryptoCfg)
 	if err != nil {
-		panic(fmt.Sprintf("cryptosuiteimpl.GetSuiteByConfig: %v", err))
+		panic(fmt.Sprintf("cryptosuiteimpl.GetSuiteByConfig: %s", err))
 	}
 	im := make(map[string]msp.IdentityManager)
 	im[""] = &mocks.MockIdentityManager{}

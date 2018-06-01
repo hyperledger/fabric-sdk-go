@@ -75,7 +75,7 @@ func TestBlockEvents(t *testing.T) {
 			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for block event")
+		t.Fatal("timed out waiting for block event")
 	}
 
 	dispatcherEventch <- NewUnregisterEvent(reg)
@@ -162,12 +162,12 @@ func checkBlockEventsWithFilter(beventch chan *fab.BlockEvent, t *testing.T, num
 		select {
 		case _, ok := <-beventch:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			numBlockEventsReceived++
 		case _, ok := <-fbeventch:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			numFilteredBlockEventsReceived++
 		case <-time.After(2 * time.Second):
@@ -232,10 +232,10 @@ func checkFbEvent(fbeventch chan *fab.FilteredBlockEvent, t *testing.T, channelI
 	select {
 	case fbevent, ok := <-fbeventch:
 		if !ok {
-			t.Fatalf("unexpected closed channel")
+			t.Fatal("unexpected closed channel")
 		}
 		if fbevent.FilteredBlock == nil {
-			t.Fatalf("Expecting filtered block but got nil")
+			t.Fatal("Expecting filtered block but got nil")
 		}
 		if fbevent.FilteredBlock.ChannelId != channelID {
 			t.Fatalf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
@@ -244,7 +244,7 @@ func checkFbEvent(fbeventch chan *fab.FilteredBlockEvent, t *testing.T, channelI
 			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, fbevent.SourceURL)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for filtered block event")
+		t.Fatal("timed out waiting for filtered block event")
 	}
 }
 
@@ -314,10 +314,10 @@ func checkBlockAndFilteredBlockEvents(fbeventch chan *fab.FilteredBlockEvent, t 
 		select {
 		case fbevent, ok := <-fbeventch:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			if fbevent.FilteredBlock == nil {
-				t.Fatalf("Expecting filtered block but got nil")
+				t.Fatal("Expecting filtered block but got nil")
 			}
 			if fbevent.FilteredBlock.ChannelId != channelID {
 				t.Fatalf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
@@ -325,7 +325,7 @@ func checkBlockAndFilteredBlockEvents(fbeventch chan *fab.FilteredBlockEvent, t 
 			numReceived++
 		case _, ok := <-beventch:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			numReceived++
 		case <-time.After(2 * time.Second):
@@ -372,12 +372,12 @@ func TestTxStatusEvents(t *testing.T) {
 
 	select {
 	case <-regch:
-		t.Fatalf("expecting error registering multiple times for TxStatus events but got registration")
+		t.Fatal("expecting error registering multiple times for TxStatus events but got registration")
 	case err = <-errch:
 	}
 
 	if err == nil {
-		t.Fatalf("expecting error registering multiple times for TxStatus events")
+		t.Fatal("expecting error registering multiple times for TxStatus events")
 	}
 
 	dispatcherEventch <- NewUnregisterEvent(reg1)
@@ -428,7 +428,7 @@ func checkTxStatusEvents(fblockEvent *fab.FilteredBlockEvent, eventch1 chan *fab
 			numReceived = checkEventCh1(ok, t, event, txID1, txCode1, numReceived, expectedBlockNumber)
 		case event, ok := <-eventch2:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkTxStatusEvent(t, event, txID2, txCode2)
 				numReceived++
@@ -451,7 +451,7 @@ func checkTxStatusEvents(fblockEvent *fab.FilteredBlockEvent, eventch1 chan *fab
 
 func checkEventCh1(ok bool, t *testing.T, event *fab.TxStatusEvent, txID1 string, txCode1 pb.TxValidationCode, numReceived int, expectedBlockNumber uint64) int {
 	if !ok {
-		t.Fatalf("unexpected closed channel")
+		t.Fatal("unexpected closed channel")
 	} else {
 		checkTxStatusEvent(t, event, txID1, txCode1)
 		numReceived++
@@ -498,12 +498,12 @@ func TestCCEventsUnfiltered(t *testing.T) {
 
 	select {
 	case reg1 = <-fbrespch:
-		t.Fatalf("expecting error registering multiple times for chaincode events but got registration")
+		t.Fatal("expecting error registering multiple times for chaincode events but got registration")
 	case err = <-errch:
 	}
 
 	if err == nil {
-		t.Fatalf("expecting error registering multiple times for chaincode events")
+		t.Fatal("expecting error registering multiple times for chaincode events")
 	}
 
 	dispatcherEventch <- NewUnregisterEvent(reg1)
@@ -633,12 +633,12 @@ func TestCCEventsFiltered(t *testing.T) {
 
 	select {
 	case reg1 = <-fbrespch:
-		t.Fatalf("expecting error registering multiple times for chaincode events but got registration")
+		t.Fatal("expecting error registering multiple times for chaincode events but got registration")
 	case err = <-errch:
 	}
 
 	if err == nil {
-		t.Fatalf("expecting error registering multiple times for chaincode events")
+		t.Fatal("expecting error registering multiple times for chaincode events")
 	}
 
 	dispatcherEventch <- NewUnregisterEvent(reg1)
@@ -692,14 +692,14 @@ func checkCCEventsFiltered(eventch1 chan *fab.CCEvent, t *testing.T, ccID1 strin
 		select {
 		case event, ok := <-eventch1:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkCCEvent(t, event, ccID1, nil, event1)
 				numReceived++
 			}
 		case event, ok := <-eventch2:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkCCEvent(t, event, ccID2, nil, event2, event3)
 				numReceived++
@@ -777,7 +777,7 @@ func checkEvent(eventch chan *RegistrationInfo, t *testing.T, totalRegistrations
 	select {
 	case regInfo, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed channel")
+			t.Fatal("unexpected closed channel")
 		}
 		if checkTotalRegistrations && regInfo.TotalRegistrations != totalRegistrations {
 			t.Fatalf("expecting total registrations to be [%d] but received [%d]", totalRegistrations, regInfo.TotalRegistrations)
@@ -789,7 +789,7 @@ func checkEvent(eventch chan *RegistrationInfo, t *testing.T, totalRegistrations
 			t.Fatalf("expecting number of filtered block registrations to be [%d] but received [%d]", numFilteredBlockRegistrations, regInfo.NumFilteredBlockRegistrations)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for registration info")
+		t.Fatal("timed out waiting for registration info")
 	}
 }
 

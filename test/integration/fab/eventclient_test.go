@@ -129,7 +129,7 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 	// Commit the transaction to generate events
 	_, err = createAndSendTransaction(transactor, prop, tpResponses)
 	if err != nil {
-		t.Fatalf("First invoke failed err: %v", err)
+		t.Fatalf("First invoke failed err: %s", err)
 	}
 
 	wg.Wait()
@@ -151,7 +151,7 @@ func sendTxProposal(sdk *fabsdk.FabricSDK, testSetup *integration.BaseSetupImpl,
 		nil,
 	)
 	if err != nil {
-		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
+		t.Fatalf("CreateAndSendTransactionProposal return error: %s", err)
 	}
 	txID := string(prop.TxnID)
 	return tpResponses, prop, txID

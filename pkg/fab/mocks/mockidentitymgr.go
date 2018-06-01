@@ -60,7 +60,7 @@ func NewMockIdentityManager(opts ...UsersOption) msp.IdentityManager {
 	for _, param := range opts {
 		err := param(&usersOptions)
 		if err != nil {
-			panic(fmt.Errorf("failed to create IdentityManager: %v", err))
+			panic(fmt.Errorf("failed to create IdentityManager: %s", err))
 		}
 	}
 	if usersOptions.users != nil {

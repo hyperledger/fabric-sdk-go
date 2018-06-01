@@ -139,7 +139,7 @@ func (c *Client) QueryInfo(options ...RequestOption) (*fab.BlockchainInfoRespons
 	}
 
 	if len(responses) < opts.MinTargets {
-		return nil, errors.Errorf("Number of responses %d is less than MinTargets %d. Targets: %v, Error: %v", len(responses), opts.MinTargets, targets, err)
+		return nil, errors.Errorf("Number of responses %d is less than MinTargets %d. Targets: %v, Error: %s", len(responses), opts.MinTargets, targets, err)
 	}
 
 	response := responses[0]

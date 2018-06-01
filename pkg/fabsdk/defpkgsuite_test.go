@@ -13,33 +13,33 @@ func TestNewPkgSuite(t *testing.T) {
 
 	core, err := pkgsuite.Core()
 	if err != nil {
-		t.Fatalf("Unexpected error getting default core factory")
+		t.Fatal("Unexpected error getting default core factory")
 	}
 	if core == nil {
-		t.Fatalf("Core is nil")
+		t.Fatal("Core is nil")
 	}
 
 	msp, err := pkgsuite.MSP()
 	if err != nil {
-		t.Fatalf("Unexpected error getting default MSP factory")
+		t.Fatal("Unexpected error getting default MSP factory")
 	}
 	if msp == nil {
-		t.Fatalf("MSP is nil")
+		t.Fatal("MSP is nil")
 	}
 
 	service, err := pkgsuite.Service()
 	if err != nil {
-		t.Fatalf("Unexpected error getting default service factory")
+		t.Fatal("Unexpected error getting default service factory")
 	}
 	if service == nil {
-		t.Fatalf("service is nil")
+		t.Fatal("service is nil")
 	}
 
 	logger, err := pkgsuite.Logger()
 	if err != nil {
-		t.Fatalf("Unexpected error getting default logger factory")
+		t.Fatal("Unexpected error getting default logger factory")
 	}
 	if logger == nil {
-		t.Fatalf("logger is nil")
+		t.Fatal("logger is nil")
 	}
 }

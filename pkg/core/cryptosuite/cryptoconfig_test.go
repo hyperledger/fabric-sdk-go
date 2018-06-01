@@ -39,7 +39,7 @@ func TestCAConfigKeyStorePath(t *testing.T) {
 	}
 
 	if path.Join(val.(string), "keystore") != cryptoConfig.KeyStorePath() {
-		t.Fatalf("Incorrect keystore path ")
+		t.Fatal("Incorrect keystore path")
 	}
 }
 
@@ -59,7 +59,7 @@ func TestCAConfigBCCSPSecurityEnabled(t *testing.T) {
 		t.Fatal("expected valid value")
 	}
 	if val.(bool) != cryptoConfig.IsSecurityEnabled() {
-		t.Fatalf("Incorrect BCCSP Security enabled flag")
+		t.Fatal("Incorrect BCCSP Security enabled flag")
 	}
 }
 
@@ -79,7 +79,7 @@ func TestCAConfigSecurityAlgorithm(t *testing.T) {
 		t.Fatal("expected valid value")
 	}
 	if val.(string) != cryptoConfig.SecurityAlgorithm() {
-		t.Fatalf("Incorrect BCCSP Security Hash algorithm")
+		t.Fatal("Incorrect BCCSP Security Hash algorithm")
 	}
 }
 
@@ -99,7 +99,7 @@ func TestCAConfigSecurityLevel(t *testing.T) {
 		t.Fatal("expected valid value")
 	}
 	if val.(int) != cryptoConfig.SecurityLevel() {
-		t.Fatalf("Incorrect BCCSP Security Level")
+		t.Fatal("Incorrect BCCSP Security Level")
 	}
 }
 
@@ -139,7 +139,7 @@ func TestCAConfigSoftVerifyFlag(t *testing.T) {
 		t.Fatal("expected valid value")
 	}
 	if val.(bool) != cryptoConfig.SoftVerify() {
-		t.Fatalf("Incorrect BCCSP Ephemeral flag")
+		t.Fatal("Incorrect BCCSP Ephemeral flag")
 	}
 }
 
@@ -159,7 +159,7 @@ func TestCAConfigSecurityProviderPin(t *testing.T) {
 		t.Fatal("expected valid value")
 	}
 	if val.(string) != cryptoConfig.SecurityProviderPin() {
-		t.Fatalf("Incorrect BCCSP SecurityProviderPin flag")
+		t.Fatal("Incorrect BCCSP SecurityProviderPin flag")
 	}
 }
 
@@ -179,7 +179,7 @@ func TestCAConfigSecurityProviderLabel(t *testing.T) {
 		t.Fatal("expected valid value")
 	}
 	if val.(string) != cryptoConfig.SecurityProviderLabel() {
-		t.Fatalf("Incorrect BCCSP SecurityProviderPin flag")
+		t.Fatal("Incorrect BCCSP SecurityProviderPin flag")
 	}
 }
 

@@ -39,7 +39,7 @@ const (
 
 func TestInvalidConnectionOpts(t *testing.T) {
 	if _, err := New(newMockContext(), fabmocks.NewMockChannelCfg("mychannel"), Deliver, "grpcs://invalidhost:7051"); err == nil {
-		t.Fatalf("expecting error creating new connection with invaid address but got none")
+		t.Fatal("expecting error creating new connection with invaid address but got none")
 	}
 }
 
@@ -94,14 +94,14 @@ func TestForbiddenConnection(t *testing.T) {
 	select {
 	case e, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed connection")
+			t.Fatal("unexpected closed connection")
 		}
 		statusResponse := e.(*Event).Event.(*pb.DeliverResponse).Type.(*pb.DeliverResponse_Status)
 		if statusResponse.Status != expectedStatus {
 			t.Fatalf("expecting status %s but got %s", expectedStatus, statusResponse.Status)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for event")
+		t.Fatal("timed out waiting for event")
 	}
 
 	conn.Close()
@@ -136,14 +136,14 @@ func TestDisconnected(t *testing.T) {
 	select {
 	case e, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed connection")
+			t.Fatal("unexpected closed connection")
 		}
 		_, ok = e.(*clientdisp.DisconnectedEvent)
 		if !ok {
 			t.Fatalf("expected DisconnectedEvent but got %T", e)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for event")
+		t.Fatal("timed out waiting for event")
 	}
 
 	conn.Close()
@@ -177,7 +177,7 @@ func checkEvents(eventch chan interface{}, t *testing.T, streamType streamType) 
 	select {
 	case e, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed connection")
+			t.Fatal("unexpected closed connection")
 		}
 		deliverEvent, ok := e.(*Event)
 		if !ok {
@@ -189,13 +189,13 @@ func checkEvents(eventch chan interface{}, t *testing.T, streamType streamType) 
 		}
 
 		if streamType == streamTypeDeliver && deliverResponse.GetBlock() == nil {
-			t.Fatalf("expected deliver response block but got none")
+			t.Fatal("expected deliver response block but got none")
 		}
 		if streamType == streamTypeDeliverFiltered && deliverResponse.GetFilteredBlock() == nil {
-			t.Fatalf("expected deliver response filtered block but got none")
+			t.Fatal("expected deliver response filtered block but got none")
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for event")
+		t.Fatal("timed out waiting for event")
 	}
 }
 

@@ -380,7 +380,7 @@ func extractConfig(channelID string, block *common.Block) (*ChannelCfg, error) {
 		return nil, errors.WithMessage(err, "load config items from config group failed")
 	}
 
-	logger.Debugf("loaded channel config: %v", config)
+	logger.Debugf("loaded channel config: %+v", config)
 
 	return config, err
 

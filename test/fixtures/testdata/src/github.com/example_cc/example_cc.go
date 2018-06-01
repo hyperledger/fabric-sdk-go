@@ -30,7 +30,8 @@ type SimpleChaincode struct {
 
 // Init ...
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("########### example_cc Init ###########")
+	txID := stub.GetTxID()
+	fmt.Printf("[txID %s] ########### example_cc Init ###########\n", txID)
 	_, args := stub.GetFunctionAndParameters()
 	var A, B string    // Entities
 	var Aval, Bval int // Asset holdings
@@ -51,7 +52,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	if err != nil {
 		return shim.Error("Expecting integer value for asset holding")
 	}
-	fmt.Printf("Aval = %d, Bval = %d\n", Aval, Bval)
+	fmt.Printf("[txID %s] Aval = %d, Bval = %d\n", txID, Aval, Bval)
 
 	// Write the state to the ledger
 	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
@@ -66,7 +67,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
 	if transientMap, err := stub.GetTransient(); err == nil {
 		if transientData, ok := transientMap["result"]; ok {
-			fmt.Printf("Transient data in 'init' : %s\n", transientData)
+			fmt.Printf("[txID %s] Transient data in 'init' : %s\n", txID, transientData)
 			return shim.Success(transientData)
 		}
 	}
@@ -82,7 +83,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface) pb.Response {
 // Invoke ...
 // Transaction makes payment of X units from A to B
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("########### example_cc Invoke ###########")
+	fmt.Printf("[txID %s] ########### example_cc Invoke ###########\n", stub.GetTxID())
 	function, args := stub.GetFunctionAndParameters()
 
 	if function != "invoke" {
@@ -116,6 +117,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	txID := stub.GetTxID()
 	// must be an invoke
 	var A, B string    // Entities
 	var Aval, Bval int // Asset holdings
@@ -155,7 +157,7 @@ func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) 
 	}
 	Aval = Aval - X
 	Bval = Bval + X
-	fmt.Printf("Aval = %d, Bval = %d\n", Aval, Bval)
+	fmt.Printf("[txID %s] Aval = %d, Bval = %d\n", txID, Aval, Bval)
 
 	// Write the state back to the ledger
 	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
@@ -170,7 +172,7 @@ func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) 
 
 	if transientMap, err := stub.GetTransient(); err == nil {
 		if transientData, ok := transientMap["result"]; ok {
-			fmt.Printf("Transient data in 'move' : %s\n", transientData)
+			fmt.Printf("[txID %s] Transient data in 'move' : %s\n", txID, transientData)
 			return shim.Success(transientData)
 		}
 	}
@@ -218,7 +220,7 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 	}
 
 	jsonResp := "{\"Name\":\"" + A + "\",\"Amount\":\"" + string(Avalbytes) + "\"}"
-	fmt.Printf("Query Response:%s\n", jsonResp)
+	fmt.Printf("[txID %s] Query Response:%s\n", stub.GetTxID(), jsonResp)
 	return shim.Success(Avalbytes)
 }
 

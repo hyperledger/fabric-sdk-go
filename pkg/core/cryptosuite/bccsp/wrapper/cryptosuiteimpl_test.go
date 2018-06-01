@@ -101,7 +101,7 @@ func TestCreateInvalidBCCSPSecurityLevel(t *testing.T) {
 
 	_, err := getSuiteByConfig(mockConfig)
 	if !strings.Contains(err.Error(), "Security level not supported [100]") {
-		t.Fatalf("Expected invalid security level error, but got %v", err.Error())
+		t.Fatalf("Expected invalid security level error, but got %s", err)
 	}
 
 }
@@ -119,7 +119,7 @@ func TestCreateInvalidBCCSPHashFamily(t *testing.T) {
 
 	_, err := getSuiteByConfig(mockConfig)
 	if !strings.Contains(err.Error(), "Hash Family not supported [ABC]") {
-		t.Fatalf("Expected invalid hash family error, but got %v", err.Error())
+		t.Fatalf("Expected invalid hash family error, but got %s", err)
 	}
 }
 
@@ -128,7 +128,7 @@ func TestCreateInvalidSecurityProviderPanic(t *testing.T) {
 
 	defer func() {
 		if r := recover(); r == nil {
-			t.Errorf("was supposed to panic")
+			t.Error("was supposed to panic")
 		}
 	}()
 
@@ -140,7 +140,7 @@ func TestCreateInvalidSecurityProviderPanic(t *testing.T) {
 	mockConfig.EXPECT().SecurityProvider().Return("XYZ")
 
 	getSuiteByConfig(mockConfig)
-	t.Fatalf("Getting cryptosuite with invalid security provider supposed to panic")
+	t.Fatal("Getting cryptosuite with invalid security provider supposed to panic")
 }
 
 func verifyCryptoSuite(t *testing.T, samplecryptoSuite core.CryptoSuite) {

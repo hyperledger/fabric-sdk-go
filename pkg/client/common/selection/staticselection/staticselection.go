@@ -56,7 +56,7 @@ func (s *SelectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts 
 				str += ","
 			}
 		}
-		logger.Debugf("Available peers:\n%s\n", str)
+		logger.Debugf("Available peers: [%s]", str)
 	}
 
 	return channelPeers, nil

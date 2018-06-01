@@ -37,17 +37,17 @@ func TestLedgerClientQueries(t *testing.T) {
 
 	ledgerInfo, err := client.QueryInfo()
 	if err != nil {
-		t.Fatalf("QueryInfo return error: %v", err)
+		t.Fatalf("QueryInfo return error: %s", err)
 	}
 
 	configBackend, err := sdk.Config()
 	if err != nil {
-		t.Fatalf("failed to get config backend, error: %v", err)
+		t.Fatalf("failed to get config backend, error: %s", err)
 	}
 
 	endpointConfig, err := fab.ConfigFromBackend(configBackend)
 	if err != nil {
-		t.Fatalf("failed to get endpoint config, error: %v", err)
+		t.Fatalf("failed to get endpoint config, error: %s", err)
 	}
 
 	expectedPeerConfig1, ok := endpointConfig.PeerConfig("peer0.org1.example.com")
@@ -63,11 +63,11 @@ func TestLedgerClientQueries(t *testing.T) {
 	target := testSetup.Targets[0]
 	ledgerInfoFromTarget, err := client.QueryInfo(ledger.WithTargetEndpoints(target))
 	if err != nil {
-		t.Fatalf("QueryInfo return error: %v", err)
+		t.Fatalf("QueryInfo return error: %s", err)
 	}
 
 	if !proto.Equal(ledgerInfoFromTarget.BCI, ledgerInfo.BCI) {
-		t.Fatalf("Expecting same result from default peer and target peer")
+		t.Fatal("Expecting same result from default peer and target peer")
 	}
 
 	testQueryBlockNumberByHash(client, ledgerInfo, t)
@@ -80,15 +80,15 @@ func testQueryBlockNumberByHash(client *ledger.Client, ledgerInfo *providersFab.
 	// Test Query Block by Hash - retrieve current block by hash
 	block, err := client.QueryBlockByHash(ledgerInfo.BCI.CurrentBlockHash)
 	if err != nil {
-		t.Fatalf("QueryBlockByHash return error: %v", err)
+		t.Fatalf("QueryBlockByHash return error: %s", err)
 	}
 	if block.Data == nil {
-		t.Fatalf("QueryBlockByHash block data is nil")
+		t.Fatal("QueryBlockByHash block data is nil")
 	}
 	// Test Query Block by Hash - retrieve block by non-existent hash
 	_, err = client.QueryBlockByHash([]byte("non-existent"))
 	if err == nil {
-		t.Fatalf("QueryBlockByHash non-existent didn't return an error")
+		t.Fatal("QueryBlockByHash non-existent didn't return an error")
 	}
 }
 
@@ -96,15 +96,15 @@ func testQueryBlockNumber(client *ledger.Client, t *testing.T, blockNumber uint6
 	// Test Query Block by Number
 	block, err := client.QueryBlock(blockNumber)
 	if err != nil {
-		t.Fatalf("QueryBlockByHash return error: %v", err)
+		t.Fatalf("QueryBlockByHash return error: %s", err)
 	}
 	if block.Data == nil {
-		t.Fatalf("QueryBlockByHash block data is nil")
+		t.Fatal("QueryBlockByHash block data is nil")
 	}
 	// Test Query Block by Number (non-existent)
 	_, err = client.QueryBlock(12345678)
 	if err == nil {
-		t.Fatalf("QueryBlock should have failed to query non-existent block")
+		t.Fatal("QueryBlock should have failed to query non-existent block")
 	}
 }
 
@@ -129,7 +129,7 @@ func TestNoLedgerEndpoints(t *testing.T) {
 
 	_, err = client.QueryInfo()
 	if err == nil {
-		t.Fatalf("Should have failed due to no ledger query peers")
+		t.Fatal("Should have failed due to no ledger query peers")
 	}
 
 }

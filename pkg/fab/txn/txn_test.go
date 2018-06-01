@@ -154,7 +154,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	res, err := broadcastEnvelope(reqCtx, sigEnvelope, orderers)
 
 	if err != nil {
-		t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
+		t.Fatalf("Test Broadcast Envelope Failed, cause %s %+v", err, res)
 	}
 
 	// Ensure only 1 orderer was selected for broadcast
@@ -171,7 +171,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 
 	if firstSelected+secondSelected != 1 {
-		t.Fatal("Both or none orderers were selected for broadcast:", firstSelected+secondSelected)
+		t.Fatalf("Both or none orderers were selected for broadcast: %d", firstSelected+secondSelected)
 	}
 
 	// Now make 1 of them fail and repeatedly broadcast
@@ -182,7 +182,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	// It should always succeed even though one of them has failed
 	for i := 0; i < broadcastCount; i++ {
 		if res, err1 := broadcastEnvelope(reqCtx, sigEnvelope, orderers); err1 != nil {
-			t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err1, res)
+			t.Fatalf("Test Broadcast Envelope Failed, cause %s %+v", err1, res)
 		}
 	}
 
@@ -275,7 +275,7 @@ func testSendTransaction(reqCtx reqContext.Context, orderers []fab.Orderer, t *t
 	//Call Send Transaction
 	response, err = Send(reqCtx, &txn, orderers)
 	if response == nil || err != nil {
-		t.Fatalf("Test SendTransaction failed, reason : '%s'", err.Error())
+		t.Fatalf("Test SendTransaction failed, reason : '%s'", err)
 	}
 }
 
@@ -294,7 +294,7 @@ func TestBuildChannelHeader(t *testing.T) {
 	header, err := CreateChannelHeader(common.HeaderType_CHAINCODE_PACKAGE, o)
 
 	if err != nil || header == nil {
-		t.Fatalf("Test Build Channel Header failed, cause : '%s'", err.Error())
+		t.Fatalf("Test Build Channel Header failed, cause : '%s'", err)
 	}
 
 }

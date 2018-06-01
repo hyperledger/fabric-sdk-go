@@ -19,7 +19,7 @@ func NewRandomLBP() LoadBalancePolicy {
 }
 
 func (lbp *randomLBP) Choose(peerGroups []PeerGroup) PeerGroup {
-	logger.Debugf("Invoking random LBP\n")
+	logger.Debug("Invoking random LBP\n")
 
 	if len(peerGroups) == 0 {
 		logger.Warn("No available peer groups\n")

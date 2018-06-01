@@ -42,6 +42,6 @@ func (p *params) SetConnectionProvider(connProvider api.ConnectionProvider) {
 }
 
 func (p *params) PermitBlockEvents() {
-	logger.Debugf("PermitBlockEvents")
+	logger.Debug("PermitBlockEvents")
 	p.interests = blockInterests
 }

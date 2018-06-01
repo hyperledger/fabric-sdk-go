@@ -48,19 +48,19 @@ func TestGroupEquals(t *testing.T) {
 	g4 := g(a, c)
 
 	if !g1.Equals(g1) {
-		t.Fatalf("expecting Equals to return true")
+		t.Fatal("expecting Equals to return true")
 	}
 	if !g1.Equals(g2) {
-		t.Fatalf("expecting Equals to return true")
+		t.Fatal("expecting Equals to return true")
 	}
 	if g1.Equals(g3) {
-		t.Fatalf("expecting Equals to return false")
+		t.Fatal("expecting Equals to return false")
 	}
 	if g3.Equals(g4) {
-		t.Fatalf("expecting Equals to return false")
+		t.Fatal("expecting Equals to return false")
 	}
 	if !g3.Equals(g3) {
-		t.Fatalf("expecting Equals to return true")
+		t.Fatal("expecting Equals to return true")
 	}
 }
 
@@ -122,16 +122,16 @@ func TestGOGEquals(t *testing.T) {
 	gog4 := gog(g3, g4)
 
 	if !gog1.Equals(gog1) {
-		t.Fatalf("expecting Equals to return true")
+		t.Fatal("expecting Equals to return true")
 	}
 	if !gog1.Equals(gog2) {
-		t.Fatalf("expecting Equals to return true")
+		t.Fatal("expecting Equals to return true")
 	}
 	if gog1.Equals(gog3) {
-		t.Fatalf("expecting Equals to return false")
+		t.Fatal("expecting Equals to return false")
 	}
 	if !gog3.Equals(gog4) {
-		t.Fatalf("expecting Equals to return true")
+		t.Fatal("expecting Equals to return true")
 	}
 }
 

@@ -59,7 +59,7 @@ func TestSendDeliverHappy(t *testing.T) {
 	case err := <-errs:
 		t.Fatalf("Unexpected error from SendDeliver(): %s", err)
 	case <-time.After(time.Second * 5):
-		t.Fatalf("Did not receive block or error from SendDeliver")
+		t.Fatal("Did not receive block or error from SendDeliver")
 	}
 }
 
@@ -84,7 +84,7 @@ func TestSendDeliverErr(t *testing.T) {
 			t.Fatalf("Expected test error when OS Recv() fails, got: %s", err)
 		}
 	case <-time.After(time.Second * 5):
-		t.Fatalf("Did not receive block or error from SendDeliver")
+		t.Fatal("Did not receive block or error from SendDeliver")
 	}
 }
 
@@ -102,7 +102,7 @@ func TestSendDeliver(t *testing.T) {
 	case err := <-errs:
 		t.Logf("There is an error as expected : %s", err)
 	case <-time.After(time.Second * 5):
-		t.Fatalf("Did not receive error from SendDeliver")
+		t.Fatal("Did not receive error from SendDeliver")
 	}
 
 }
@@ -158,7 +158,7 @@ func TestNewOrdererWithTLS(t *testing.T) {
 	orderer, err = New(mocks.NewMockEndpointConfigCustomized(true, false, true), WithURL("grpcs://"))
 
 	if orderer != nil || err == nil {
-		t.Fatalf("Testing New with TLS was supposed to fail")
+		t.Fatal("Testing New with TLS was supposed to fail")
 	}
 }
 
@@ -206,7 +206,7 @@ func TestSendBroadcastTimeout(t *testing.T) {
 
 	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
 	if err == nil {
-		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded'")
+		t.Fatal("Expected error 'Orderer Client Status 2 context deadline exceeded'")
 	}
 	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error")
@@ -241,7 +241,7 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 			t.Fatalf("Ordering service error is not received as expected, %s", err)
 		}
 	case <-time.After(time.Second * 5):
-		t.Fatalf("Did not receive error from SendDeliver")
+		t.Fatal("Did not receive error from SendDeliver")
 	}
 }
 
@@ -268,12 +268,12 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 	select {
 	case block := <-blocks:
 		if block != nil {
-			t.Fatalf("This usecase was not supposed to get valid block")
+			t.Fatal("This usecase was not supposed to get valid block")
 		}
 	case err := <-errors:
-		t.Fatalf("This usecase was not supposed to get error : %s ", err.Error())
+		t.Fatalf("This usecase was not supposed to get error : %s ", err)
 	case <-time.After(time.Second * 5):
-		t.Fatalf("Did not receive block from SendDeliver")
+		t.Fatal("Did not receive block from SendDeliver")
 	}
 }
 
@@ -294,10 +294,10 @@ func TestSendDeliverFailure(t *testing.T) {
 
 	select {
 	case block := <-blocks:
-		t.Fatalf("This usecase was not supposed to get valid block %v", block)
+		t.Fatalf("This usecase was not supposed to get valid block %+v", block)
 	case err := <-errors:
 		if err == nil || !strings.HasPrefix(err.Error(), "unknown response type from ordering service") {
-			t.Fatalf("Error response is not working as expected : '%s' ", err.Error())
+			t.Fatalf("Error response is not working as expected : '%s' ", err)
 		}
 	case <-time.After(time.Second * 5):
 		t.Fatal("Did not receive any response or error from SendDeliver")
@@ -318,7 +318,7 @@ func TestSendBroadcastServerBadResponse(t *testing.T) {
 	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
 
 	if err == nil {
-		t.Fatalf("Expected error")
+		t.Fatal("Expected error")
 	}
 	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error")
@@ -364,7 +364,7 @@ func TestBroadcastBadDial(t *testing.T) {
 	assert.NotNil(t, err)
 
 	if err == nil || !strings.Contains(err.Error(), "CONNECTION_FAILED") {
-		t.Fatal("Expected connection issues, but got ", err)
+		t.Fatalf("Expected connection issues, but got %s ", err)
 	}
 
 }
@@ -381,10 +381,10 @@ func TestGetKeepAliveOptions(t *testing.T) {
 	}
 	kap := getKeepAliveOptions(ordererConfig)
 	if kap.Time != 0 {
-		t.Fatalf("Expected 0 time for incorrect keep-alive-time")
+		t.Fatal("Expected 0 time for incorrect keep-alive-time")
 	}
 	if kap.Timeout != 2*time.Second {
-		t.Fatalf("Expected 2 seconds for keep-alive-timeout")
+		t.Fatal("Expected 2 seconds for keep-alive-timeout")
 	}
 	assert.EqualValues(t, kap.Time, 0)
 	assert.EqualValues(t, kap.Timeout, 2*time.Second)
@@ -448,7 +448,7 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 	orderer.dialTimeout = 5 * time.Second
 	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
 	if err == nil {
-		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded' %v", err)
+		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded' %s", err)
 	}
 
 	orderer, _ = New(mocks.NewMockEndpointConfig(), WithURL("grpc://"+ordererAddr), WithInsecure())
@@ -466,7 +466,7 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 	case err := <-errs:
 		t.Fatalf("Unexpected error from SendDeliver(): %s", err)
 	case <-time.After(time.Second * 5):
-		t.Fatalf("Did not receive block or error from SendDeliver")
+		t.Fatal("Did not receive block or error from SendDeliver")
 	}
 
 }
@@ -479,7 +479,7 @@ func TestForGRPCErrorsWithKeepAliveOptsFailFast(t *testing.T) {
 	orderer.dialTimeout = 2 * time.Second
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 	if err == nil {
-		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded'")
+		t.Fatal("Expected error 'Orderer Client Status 2 context deadline exceeded'")
 	}
 	//expect here GRPC unavaialble since fail fast is set to true
 	statusError, ok := status.FromError(err)
@@ -497,7 +497,7 @@ func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
 	orderer.dialTimeout = 2 * time.Second
 	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
 	if err == nil {
-		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded'")
+		t.Fatal("Expected error 'Orderer Client Status 2 context deadline exceeded'")
 	}
 	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error")
@@ -521,7 +521,7 @@ func TestNewOrdererFromConfig(t *testing.T) {
 	}
 	_, err := New(mocks.NewMockEndpointConfig(), FromOrdererConfig(ordererConfig))
 	if err != nil {
-		t.Fatalf("Failed to get new orderer from config%v", err)
+		t.Fatalf("Failed to get new orderer from config. Error: %s", err)
 	}
 }
 
@@ -537,21 +537,21 @@ func TestNewOrdererSecured(t *testing.T) {
 	url := "grpc://0.0.0.0:1234"
 	_, err := New(config, WithURL(url), WithInsecure())
 	if err != nil {
-		t.Fatalf("Peer conn should be constructed")
+		t.Fatal("Peer conn should be constructed")
 	}
 
 	//Test grpcs URL
 	url = "grpcs://0.0.0.0:1234"
 	_, err = New(config, WithURL(url), WithInsecure())
 	if err != nil {
-		t.Fatalf("Peer conn should be constructed")
+		t.Fatal("Peer conn should be constructed")
 	}
 
 	//Test URL without protocol
 	url = "0.0.0.0:1234"
 	_, err = New(config, WithURL(url), WithInsecure())
 	if err != nil {
-		t.Fatalf("Peer conn should be constructed")
+		t.Fatal("Peer conn should be constructed")
 	}
 
 }

@@ -20,24 +20,24 @@ func TestConnection(t *testing.T) {
 
 	_, err := NewConnection(context, "")
 	if err == nil {
-		t.Fatalf("expected error creating new connection with empty URL")
+		t.Fatal("expected error creating new connection with empty URL")
 	}
 	conn, err := NewConnection(context, peerURL)
 	if err != nil {
 		t.Fatalf("error creating new connection: %s", err)
 	}
 	if conn.Closed() {
-		t.Fatalf("expected connection to be open")
+		t.Fatal("expected connection to be open")
 	}
 	if _, err := context.Serialize(); err != nil {
-		t.Fatalf("error getting identity")
+		t.Fatal("error getting identity")
 	}
 
 	time.Sleep(1 * time.Second)
 
 	conn.Close()
 	if !conn.Closed() {
-		t.Fatalf("expected connection to be closed")
+		t.Fatal("expected connection to be closed")
 	}
 
 	// Calling close again should be ignored

@@ -124,12 +124,12 @@ func TestRevokedPeer(t *testing.T) {
 	// Get signing identity that is used to sign create channel request
 	org1AdminUser, err := org1MspClient.GetSigningIdentity(org1AdminUser)
 	if err != nil {
-		t.Fatalf("failed to get org1AdminUser, err : %v", err)
+		t.Fatalf("failed to get org1AdminUser, err : %s", err)
 	}
 
 	org2AdminUser, err := org2MspClient.GetSigningIdentity(org2AdminUser)
 	if err != nil {
-		t.Fatalf("failed to get org2AdminUser, err : %v", err)
+		t.Fatalf("failed to get org2AdminUser, err : %s", err)
 	}
 
 	createChannel(org1AdminUser, org2AdminUser, chMgmtClient, t)
@@ -180,7 +180,7 @@ func queryCC(org1ChannelClientContext contextAPI.ChannelProvider, t *testing.T) 
 	// Could not validate identity against certification chain, err The certificate has been revoked
 	_, err = chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err == nil {
-		t.Fatalf("Expected error: '....Description: could not find chaincode with name 'exampleCC',,, ")
+		t.Fatal("Expected error: '....Description: could not find chaincode with name 'exampleCC',,, ")
 	}
 }
 

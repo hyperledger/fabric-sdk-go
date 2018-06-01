@@ -26,7 +26,7 @@ type ChannelService struct {
 
 // NewChannelService creates a Discovery Service to query the list of member peers on a given channel.
 func NewChannelService(ctx contextAPI.Client, channelID string, opts ...coptions.Opt) (*ChannelService, error) {
-	logger.Debugf("Creating new dynamic discovery service")
+	logger.Debug("Creating new dynamic discovery service")
 	s := &ChannelService{
 		channelID: channelID,
 	}
@@ -99,7 +99,7 @@ func (s *ChannelService) evaluate(ctx contextAPI.Client, responses []fabdiscover
 	for _, response := range responses {
 		endpoints, err := response.ForChannel(s.channelID).Peers()
 		if err != nil {
-			lastErr = errors.Wrapf(err, "error getting peers from discovery response")
+			lastErr = errors.Wrap(err, "error getting peers from discovery response")
 			logger.Warn(lastErr.Error())
 			continue
 		}

@@ -232,7 +232,7 @@ func TestProposalProcessorHandlerPassDirectly(t *testing.T) {
 		t.Fatalf("Expecting 1 proposal processor but got %d", len(requestContext.Opts.Targets))
 	}
 	if requestContext.Opts.Targets[0] != peer2 {
-		t.Fatalf("Didn't get expected peers")
+		t.Fatal("Didn't get expected peers")
 	}
 }
 
@@ -252,7 +252,7 @@ func TestProposalProcessorHandler(t *testing.T) {
 		t.Fatalf("Expecting %d proposal processors but got %d", len(discoveryPeers), len(requestContext.Opts.Targets))
 	}
 	if requestContext.Opts.Targets[0] != peer1 || requestContext.Opts.Targets[1] != peer2 {
-		t.Fatalf("Didn't get expected peers")
+		t.Fatal("Didn't get expected peers")
 	}
 
 	requestContext = prepareRequestContext(request, Opts{TargetFilter: &filter{peer: peer2}}, t)
@@ -264,7 +264,7 @@ func TestProposalProcessorHandler(t *testing.T) {
 		t.Fatalf("Expecting 1 proposal processor but got %d", len(requestContext.Opts.Targets))
 	}
 	if requestContext.Opts.Targets[0] != peer2 {
-		t.Fatalf("Didn't get expected peers")
+		t.Fatal("Didn't get expected peers")
 	}
 }
 

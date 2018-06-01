@@ -75,7 +75,7 @@ func delivery(o *MockOrderer) {
 		case error:
 			o.DeliveryErrors <- value.(error)
 		default:
-			panic(fmt.Sprintf("Value not *common.Block nor error: %v", value))
+			panic(fmt.Sprintf("Value not *common.Block nor error: %+v", value))
 		}
 	}
 }
@@ -126,6 +126,6 @@ func (o *MockOrderer) EnqueueForSendDeliver(value interface{}) {
 	case error:
 		o.DeliveryQueue <- value
 	default:
-		panic(fmt.Sprintf("Value not *common.Block nor error: %v", value))
+		panic(fmt.Sprintf("Value not *common.Block nor error: %+v", value))
 	}
 }

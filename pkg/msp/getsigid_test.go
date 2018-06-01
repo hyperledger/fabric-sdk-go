@@ -58,7 +58,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	mspID := orgConfig.MSPID
 	clientCofig, err := identityConfig.Client()
 	if err != nil {
-		t.Fatalf("Unable to retrieve client config: %v", err)
+		t.Fatalf("Unable to retrieve client config: %s", err)
 	}
 
 	// Cleanup key store and user store
@@ -102,16 +102,16 @@ func TestGetSigningIdentity(t *testing.T) {
 func getConfigs(t *testing.T) (core.CryptoSuiteConfig, providersFab.EndpointConfig, msp.IdentityConfig, providersFab.OrganizationConfig) {
 	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend...)
 	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
+		panic(fmt.Sprintf("Failed to read config: %s", err))
 	}
 	identityConfig, err := ConfigFromBackend(configBackend...)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
+		panic(fmt.Sprintf("Failed to read config: %s", err))
 	}
 	netConfig := endpointConfig.NetworkConfig()
 	if netConfig == nil {
@@ -173,17 +173,17 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 
 	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
+		panic(fmt.Sprintf("Failed to read config: %s", err))
 	}
 
 	identityConfig, err := ConfigFromBackend(configBackend...)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
+		panic(fmt.Sprintf("Failed to read config: %s", err))
 	}
 	userStore := userStoreFromConfig(t, identityConfig)
 
@@ -199,16 +199,16 @@ func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 
 	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test_embedded_pems.yaml")()
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
+		panic(fmt.Sprintf("Failed to read config: %s", err))
 	}
 
 	identityConfig, err := ConfigFromBackend(configBackend...)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
+		panic(fmt.Sprintf("Failed to read config: %s", err))
 	}
 	userStore := userStoreFromConfig(t, identityConfig)
 
@@ -223,11 +223,11 @@ func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 func checkSigningIdentityFromEmbeddedCryptoConfig(mgr *IdentityManager, t *testing.T) {
 	_, err := mgr.GetSigningIdentity("")
 	if err == nil {
-		t.Fatalf("Should get error for empty user name")
+		t.Fatal("Should get error for empty user name")
 	}
 	_, err = mgr.GetSigningIdentity("Non-Existent")
 	if err != msp.ErrUserNotFound {
-		t.Fatalf("Should get ErrUserNotFound for non-existent user, got %v", err)
+		t.Fatalf("Should get ErrUserNotFound for non-existent user, got %s", err)
 	}
 	if err := checkSigningIdentity(mgr, "EmbeddedUser"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)

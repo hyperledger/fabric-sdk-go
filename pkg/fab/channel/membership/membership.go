@@ -44,7 +44,7 @@ func New(ctx Context, cfg fab.ChannelCfg) (fab.ChannelMembership, error) {
 func (i *identityImpl) Validate(serializedID []byte) error {
 	err := areCertDatesValid(serializedID)
 	if err != nil {
-		logger.Errorf("Cert error %v", err)
+		logger.Errorf("Cert error %s", err)
 		return err
 	}
 
@@ -82,7 +82,7 @@ func areCertDatesValid(serializedID []byte) error {
 	}
 	err = verifier.ValidateCertificateDates(cert)
 	if err != nil {
-		logger.Warnf("Certificate error '%v' for cert '%v'", err, cert.SerialNumber)
+		logger.Warnf("Certificate error '%s' for cert '%v'", err, cert.SerialNumber)
 		return err
 	}
 	return nil
@@ -210,6 +210,6 @@ func addCertsToConfig(config fab.EndpointConfig, pemCertsList [][]byte) {
 	}
 	_, err := config.TLSCACertPool(certs...)
 	if err != nil {
-		logger.Warnf("TLSCACertPool failed %v", err)
+		logger.Warnf("TLSCACertPool failed %s", err)
 	}
 }

@@ -78,7 +78,7 @@ func TestRegisterInterests(t *testing.T) {
 			t.Fatalf("error unregistering interests: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatalf("timeout waiting for unregister interests response")
+		t.Fatal("timeout waiting for unregister interests response")
 	}
 
 	// Disconnect
@@ -89,7 +89,7 @@ func TestRegisterInterests(t *testing.T) {
 			t.Fatalf("Error disconnecting: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatalf("timeout waiting for connection response")
+		t.Fatal("timeout waiting for connection response")
 	}
 
 	// Disconnected
@@ -119,7 +119,7 @@ func registerFilteredBlockEvent(dispatcherEventch chan<- interface{}, errch chan
 			t.Fatalf("error registering interests: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatalf("timeout waiting for register interests response")
+		t.Fatal("timeout waiting for register interests response")
 	}
 	return dispatcherEventch
 }
@@ -138,7 +138,7 @@ func checkFailedRegisterInterest(dispatcherEventch chan<- interface{}, errch cha
 			t.Fatalf("expecting error registering interests but got none")
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatalf("timeout waiting for register interests response")
+		t.Fatal("timeout waiting for register interests response")
 	}
 	return dispatcherEventch
 }
@@ -173,7 +173,7 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 	select {
 	case err := <-errch:
 		if err == nil {
-			t.Fatalf("expecting error unregistering interests but got none")
+			t.Fatal("expecting error unregistering interests but got none")
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatalf("timeout waiting for unregister interests response")
@@ -187,7 +187,7 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 			t.Fatalf("Error disconnecting: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatalf("timeout waiting for connection response")
+		t.Fatal("timeout waiting for connection response")
 	}
 
 	// Disconnected
@@ -212,7 +212,7 @@ func connectToDispatcher(dispatcherEventch chan<- interface{}, t *testing.T) (ch
 			t.Fatalf("Error connecting: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatalf("timeout waiting for connection response")
+		t.Fatal("timeout waiting for connection response")
 	}
 	return errch, dispatcherEventch
 }
@@ -272,7 +272,7 @@ func TestTimedOutRegister(t *testing.T) {
 			t.Fatalf("Error connecting: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatalf("timeout waiting for connection response")
+		t.Fatal("timeout waiting for connection response")
 	}
 
 	// Register interests
@@ -287,7 +287,7 @@ func TestTimedOutRegister(t *testing.T) {
 	select {
 	case err := <-errch:
 		if err == nil {
-			t.Fatalf("expecting error due to no response from register interests but got none")
+			t.Fatal("expecting error due to no response from register interests but got none")
 		}
 	case <-time.After(2 * time.Second):
 
@@ -329,7 +329,7 @@ func TestBlockEvents(t *testing.T) {
 			t.Fatalf("Error connecting: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatalf("timeout waiting for connection response")
+		t.Fatal("timeout waiting for connection response")
 	}
 
 	// Register for block events
@@ -364,13 +364,13 @@ func checkBlockEvent(eventch chan *fab.BlockEvent, t *testing.T) {
 	select {
 	case event, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed channel")
+			t.Fatal("unexpected closed channel")
 		}
 		if event.SourceURL != sourceURL {
 			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for block event")
+		t.Fatal("timed out waiting for block event")
 	}
 }
 
@@ -409,7 +409,7 @@ func TestFilteredBlockEvents(t *testing.T) {
 			t.Fatalf("Error connecting: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatalf("timeout waiting for connection response")
+		t.Fatal("timeout waiting for connection response")
 	}
 
 	// Register for filtered block events
@@ -445,7 +445,7 @@ func checkFilteredBlockEvent(eventch chan *fab.FilteredBlockEvent, t *testing.T,
 	select {
 	case event, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed channel")
+			t.Fatal("unexpected closed channel")
 		}
 		if event.FilteredBlock.ChannelId != channelID {
 			t.Fatalf("expecting channelID [%s] but got [%s]", channelID, event.FilteredBlock.ChannelId)
@@ -454,7 +454,7 @@ func checkFilteredBlockEvent(eventch chan *fab.FilteredBlockEvent, t *testing.T,
 			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
 		}
 	case <-time.After(10 * time.Second):
-		t.Fatalf("timed out waiting for filtered block event")
+		t.Fatal("timed out waiting for filtered block event")
 	}
 }
 

@@ -41,12 +41,12 @@ func TestSignChannelConfig(t *testing.T) {
 
 	_, err = SignChannelConfig(ctx, nil, nil)
 	if err == nil {
-		t.Fatalf("Expected 'channel configuration required")
+		t.Fatal("Expected 'channel configuration required")
 	}
 
 	_, err = SignChannelConfig(ctx, configTx, nil)
 	if err != nil {
-		t.Fatalf("Expected 'channel configuration required %v", err)
+		t.Fatalf("Expected 'channel configuration required %s", err)
 	}
 }
 
@@ -70,7 +70,7 @@ func TestCreateChannel(t *testing.T) {
 		Name:    "mychannel",
 	})
 	if err == nil {
-		t.Fatalf("Expected error creating channel without envelope")
+		t.Fatal("Expected error creating channel without envelope")
 	}
 
 	// Create channel without orderer
@@ -79,7 +79,7 @@ func TestCreateChannel(t *testing.T) {
 		Name:     "mychannel",
 	})
 	if err == nil {
-		t.Fatalf("Expected error creating channel without orderer")
+		t.Fatal("Expected error creating channel without orderer")
 	}
 
 	// Create channel without name
@@ -88,7 +88,7 @@ func TestCreateChannel(t *testing.T) {
 		Orderer:  orderer,
 	})
 	if err == nil {
-		t.Fatalf("Expected error creating channel without name")
+		t.Fatal("Expected error creating channel without name")
 	}
 
 	// Test with valid cofiguration
@@ -99,13 +99,13 @@ func TestCreateChannel(t *testing.T) {
 	}
 	_, err = CreateChannel(reqCtx, request)
 	if err != nil {
-		t.Fatalf("Did not expect error from create channel. Got error: %v", err)
+		t.Fatalf("Did not expect error from create channel. Got error: %s", err)
 	}
 	select {
 	case b := <-verifyBroadcast:
 		logger.Debugf("Verified broadcast: %v", b)
 	case <-time.After(time.Second):
-		t.Fatalf("Expected broadcast")
+		t.Fatal("Expected broadcast")
 	}
 }
 
@@ -128,7 +128,7 @@ func TestJoinChannel(t *testing.T) {
 	defer cancel()
 	err := JoinChannel(reqCtx, request, peers)
 	if err == nil {
-		t.Fatalf("Should not have been able to join channel because of missing GenesisBlock parameter")
+		t.Fatal("Should not have been able to join channel because of missing GenesisBlock parameter")
 	}
 
 	// Test join channel with valid arguments
@@ -145,7 +145,7 @@ func TestJoinChannel(t *testing.T) {
 	request = JoinChannelRequest{}
 	err = JoinChannel(reqCtx, request, peers)
 	if err == nil {
-		t.Fatalf("Expected error")
+		t.Fatal("Expected error")
 	}
 }
 
@@ -190,7 +190,7 @@ func TestQueryByChaincodeBadStatus(t *testing.T) {
 	defer cancel()
 	_, err := queryChaincodeWithTarget(reqCtx, request, &peer, options{})
 	if err == nil {
-		t.Fatalf("expected failure due to bad status")
+		t.Fatal("expected failure due to bad status")
 	}
 }
 
@@ -208,7 +208,7 @@ func TestQueryByChaincodeError(t *testing.T) {
 	defer cancel()
 	_, err := queryChaincodeWithTarget(reqCtx, request, &peer, options{})
 	if err == nil {
-		t.Fatalf("expected failure due to error")
+		t.Fatal("expected failure due to error")
 	}
 }
 

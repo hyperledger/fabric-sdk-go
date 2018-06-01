@@ -181,7 +181,7 @@ func sendBroadcast(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, orde
 	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
 	// Send request
 	if _, err := orderer.SendBroadcast(reqCtx, envelope); err != nil {
-		logger.Debugf("Receive Error Response from orderer :%v\n", err)
+		logger.Debugf("Receive Error Response from orderer :%s\n", err)
 		return nil, errors.Wrapf(err, "calling orderer '%s' failed", orderer.URL())
 	}
 
@@ -238,7 +238,7 @@ func sendEnvelope(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, order
 			}
 			block = b
 		case err := <-errs:
-			return nil, errors.Wrapf(err, "error from orderer")
+			return nil, errors.Wrap(err, "error from orderer")
 		}
 	}
 }

@@ -59,7 +59,7 @@ func (ref *EventClientRef) Close() {
 		return
 	}
 
-	logger.Debugf("Closing the event client")
+	logger.Debug("Closing the event client")
 	ref.ref.Close()
 }
 
@@ -107,7 +107,7 @@ func (ref *EventClientRef) RegisterTxStatusEvent(txID string) (fab.Registration,
 // Unregister removes the given registration and closes the event channel.
 func (ref *EventClientRef) Unregister(reg fab.Registration) {
 	if service, err := ref.get(); err != nil {
-		logger.Warnf("Error unregistering event registration: %s")
+		logger.Warnf("Error unregistering event registration: %s", err)
 	} else {
 		service.Unregister(reg)
 	}
@@ -132,17 +132,17 @@ func (ref *EventClientRef) initializer() lazyref.Initializer {
 			return ref.eventClient, nil
 		}
 
-		logger.Debugf("Creating event client...")
+		logger.Debug("Creating event client...")
 		eventClient, err := ref.provider()
 		if err != nil {
 			return nil, err
 		}
-		logger.Debugf("...connecting event client...")
+		logger.Debug("...connecting event client...")
 		if err := eventClient.Connect(); err != nil {
 			return nil, err
 		}
 		ref.eventClient = eventClient
-		logger.Debugf("...event client successfully connected.")
+		logger.Debug("...event client successfully connected.")
 		return eventClient, nil
 	}
 }
@@ -155,14 +155,14 @@ func (ref *EventClientRef) finalizer() lazyref.Finalizer {
 				logger.Debug("Forcing close the event client")
 				ref.eventClient.Close()
 			} else {
-				logger.Debugf("Closing the event client if no outstanding connections...")
+				logger.Debug("Closing the event client if no outstanding connections...")
 
 				// Only close the client if there are not outstanding registrations
 				if ref.eventClient.CloseIfIdle() {
-					logger.Debugf("... closed event client.")
+					logger.Debug("... closed event client.")
 					ref.eventClient = nil
 				} else {
-					logger.Debugf("... event client was not closed since there are outstanding registrations.")
+					logger.Debug("... event client was not closed since there are outstanding registrations.")
 				}
 			}
 		}

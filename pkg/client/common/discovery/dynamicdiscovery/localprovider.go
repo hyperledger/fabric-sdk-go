@@ -43,6 +43,6 @@ func (p *LocalProvider) CreateLocalDiscoveryService(mspID string) (fab.Discovery
 
 // Close will close the cache and all services contained by the cache.
 func (p *LocalProvider) Close() {
-	logger.Debugf("Closing local provider cache")
+	logger.Debug("Closing local provider cache")
 	p.cache.Close()
 }

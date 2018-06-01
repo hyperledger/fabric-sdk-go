@@ -36,7 +36,7 @@ func TestStreamConnection(t *testing.T) {
 
 	_, err := NewStreamConnection(context, chConfig, testStream, "")
 	if err == nil {
-		t.Fatalf("expected error creating new connection with empty URL")
+		t.Fatal("expected error creating new connection with empty URL")
 	}
 	_, err = NewStreamConnection(context, chConfig, testStream, "invalidhost:0000",
 		WithFailFast(true),
@@ -47,11 +47,11 @@ func TestStreamConnection(t *testing.T) {
 		WithConnectTimeout(3*time.Second),
 	)
 	if err == nil {
-		t.Fatalf("expected error creating new connection with invalid URL")
+		t.Fatal("expected error creating new connection with invalid URL")
 	}
 	_, err = NewStreamConnection(context, chConfig, invalidStream, peerURL)
 	if err == nil {
-		t.Fatalf("expected error creating new connection with invalid stream but got none")
+		t.Fatal("expected error creating new connection with invalid stream but got none")
 	}
 
 	conn, err := NewStreamConnection(context, chConfig, testStream, peerURL)
@@ -59,20 +59,20 @@ func TestStreamConnection(t *testing.T) {
 		t.Fatalf("error creating new connection: %s", err)
 	}
 	if conn.Closed() {
-		t.Fatalf("expected connection to be open")
+		t.Fatal("expected connection to be open")
 	}
 	if conn.Stream() == nil {
-		t.Fatalf("got invalid stream")
+		t.Fatal("got invalid stream")
 	}
 	if _, err := context.Serialize(); err != nil {
-		t.Fatalf("error getting identity")
+		t.Fatal("error getting identity")
 	}
 
 	time.Sleep(1 * time.Second)
 
 	conn.Close()
 	if !conn.Closed() {
-		t.Fatalf("expected connection to be closed")
+		t.Fatal("expected connection to be closed")
 	}
 
 	// Calling close again should be ignored

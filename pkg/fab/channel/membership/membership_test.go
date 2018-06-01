@@ -49,7 +49,7 @@ func TestCertSignedWithUnknownAuthority(t *testing.T) {
 	assert.Nil(t, err)
 	err = m.Validate(goodEndorser)
 	if !strings.Contains(err.Error(), "certificate signed by unknown authority") {
-		t.Fatalf("Expected error:'supplied identity is not valid: x509: certificate signed by unknown authority'")
+		t.Fatal("Expected error:'supplied identity is not valid: x509: certificate signed by unknown authority'")
 	}
 }
 
@@ -60,7 +60,7 @@ func TestRevokedCertificate(t *testing.T) {
 	ctx := mocks.NewMockProviderContext()
 	cfg := mocks.NewMockChannelCfg("")
 	if err != nil {
-		t.Fatalf("Error %v", err)
+		t.Fatalf("Error %s", err)
 	}
 	// Test good config input
 	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte(orgTwoCA))}
@@ -77,7 +77,7 @@ func TestRevokedCertificate(t *testing.T) {
 	err = m.Validate(goodEndorser)
 	assert.NotNil(t, err)
 	if !strings.Contains(err.Error(), "The certificate has been revoked") {
-		t.Fatalf("Expected error for revoked certificate")
+		t.Fatal("Expected error for revoked certificate")
 	}
 
 }
@@ -89,7 +89,7 @@ func TestCertificateDates(t *testing.T) {
 	ctx := mocks.NewMockProviderContext()
 	cfg := mocks.NewMockChannelCfg("")
 	if err != nil {
-		t.Fatalf("Error %v", err)
+		t.Fatalf("Error %s", err)
 	}
 	// Test good config input
 	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte(orgTwoCA))}
@@ -104,7 +104,7 @@ func TestCertificateDates(t *testing.T) {
 	assert.Nil(t, err)
 	err = m.Validate(goodEndorser)
 	if !strings.Contains(err.Error(), "Certificate provided is not valid until later date") {
-		t.Fatalf("Expected error 'Certificate provided is not valid until later date'")
+		t.Fatal("Expected error 'Certificate provided is not valid until later date'")
 	}
 
 	// Certificate is in the past
@@ -114,7 +114,7 @@ func TestCertificateDates(t *testing.T) {
 	assert.Nil(t, err)
 	err = m.Validate(goodEndorser)
 	if !strings.Contains(err.Error(), "Certificate provided has expired") {
-		t.Fatalf("Expected error 'Certificate provided has expired'")
+		t.Fatal("Expected error 'Certificate provided has expired'")
 	}
 }
 
@@ -311,7 +311,7 @@ type certificate struct {
 func encodeCertToMemory(c certificate) string {
 	b, err := asn1.Marshal(c)
 	if err != nil {
-		return fmt.Sprintf("Failed marshaling cert: %v", err)
+		return fmt.Sprintf("Failed marshaling cert: %s", err)
 	}
 	block := &pem.Block{
 		Bytes: b,

@@ -161,7 +161,7 @@ func (h *testHandler) Handle(requestContext *invoke.RequestContext, clientContex
 		h.t.Logf("Custom handler writing TxValidationCode [%s]", *h.txValidationCode)
 	}
 	if h.next != nil {
-		h.t.Logf("Custom handler invoking next handler")
+		h.t.Log("Custom handler invoking next handler")
 		h.next.Handle(requestContext, clientContext)
 	}
 }
@@ -204,7 +204,7 @@ func testInvokeHandler(ccID string, chClient *channel.Client, t *testing.T) {
 		t.Fatalf("Failed to invoke example cc asynchronously: %s", err)
 	}
 	if len(response.Responses) == 0 {
-		t.Fatalf("Expecting more than one endorsement responses but got none")
+		t.Fatal("Expecting more than one endorsement responses but got none")
 	}
 	if txID != string(response.TransactionID) {
 		t.Fatalf("Expecting TxID [%s] but got [%s]", string(response.TransactionID), txID)

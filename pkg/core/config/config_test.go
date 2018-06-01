@@ -70,7 +70,7 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 		t.Fatalf("Failed to read test config for bytes array testing. Error: %s", err)
 	}
 	if n == 0 {
-		t.Fatalf("Failed to read test config for bytes array testing. Mock bytes array is empty")
+		t.Fatal("Failed to read test config for bytes array testing. Mock bytes array is empty")
 	}
 	return cBytes, err
 }
@@ -78,7 +78,7 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 func TestFromFileEmptyFilename(t *testing.T) {
 	_, err := FromFile("")()
 	if err == nil {
-		t.Fatalf("Expected error when passing empty string to FromFile")
+		t.Fatal("Expected error when passing empty string to FromFile")
 	}
 }
 
@@ -153,7 +153,7 @@ func TestMultipleVipers(t *testing.T) {
 	viper.SetConfigFile("./testdata/viper-test.yaml")
 	err := viper.ReadInConfig()
 	if err != nil {
-		t.Log(err.Error())
+		t.Log(err)
 	}
 	testValue1 := viper.GetString("test.testkey")
 	// Read initial value from test.yaml
@@ -163,7 +163,7 @@ func TestMultipleVipers(t *testing.T) {
 	// initialize go sdk
 	configBackend1, err := FromFile(configTestFilePath)()
 	if err != nil {
-		t.Log(err.Error())
+		t.Log(err)
 	}
 
 	if len(configBackend1) == 0 {
@@ -173,15 +173,15 @@ func TestMultipleVipers(t *testing.T) {
 	// Make sure initial value is unaffected
 	testValue2 := viper.GetString("test.testkey")
 	if testValue2 != "testvalue" {
-		t.Fatalf("Expected testvalue after config initialization")
+		t.Fatal("Expected testvalue after config initialization")
 	}
 	// Make sure Go SDK config is unaffected
 	testValue3, ok := configBackend1[0].Lookup("client.BCCSP.security.softVerify")
 	if !ok {
-		t.Fatalf("Expected valid value")
+		t.Fatal("Expected valid value")
 	}
 	if testValue3 != true {
-		t.Fatalf("Expected existing config value to remain unchanged")
+		t.Fatal("Expected existing config value to remain unchanged")
 	}
 }
 
@@ -195,7 +195,7 @@ func TestEnvironmentVariablesDefaultCmdRoot(t *testing.T) {
 	defer os.Unsetenv("FABRIC_SDK_ENV_TEST")
 
 	if err != nil {
-		t.Log(err.Error())
+		t.Log(err)
 	}
 
 	testValue, ok := configBackend.Lookup("env.test")
@@ -214,12 +214,12 @@ func TestEnvironmentVariablesSpecificCmdRoot(t *testing.T) {
 	defer os.Unsetenv("TEST_ROOT_ENV_TEST")
 
 	if err != nil {
-		t.Log(err.Error())
+		t.Log(err)
 	}
 
 	configBackend1, err := FromFile(configTestFilePath, WithEnvPrefix("test_root"))()
 	if err != nil {
-		t.Log(err.Error())
+		t.Log(err)
 	}
 
 	if len(configBackend1) == 0 {
@@ -260,24 +260,24 @@ func teardown() {
 func TestNewGoodOpt(t *testing.T) {
 	_, err := FromFile("../../../test/fixtures/config/config_test.yaml", goodOpt())()
 	if err != nil {
-		t.Fatalf("Expected no error from New, but got %v", err)
+		t.Fatalf("Expected no error from New, but got %s", err)
 	}
 
 	cBytes, err := loadConfigBytesFromFile(t, configTestFilePath)
 	if err != nil || len(cBytes) == 0 {
-		t.Fatalf("Unexpected error from loadConfigBytesFromFile")
+		t.Fatal("Unexpected error from loadConfigBytesFromFile")
 	}
 
 	buf := bytes.NewBuffer(cBytes)
 
 	_, err = FromReader(buf, configType, goodOpt())()
 	if err != nil {
-		t.Fatalf("Unexpected error from FromReader: %v", err)
+		t.Fatalf("Unexpected error from FromReader: %s", err)
 	}
 
 	_, err = FromRaw(cBytes, configType, goodOpt())()
 	if err != nil {
-		t.Fatalf("Unexpected error from FromRaw %v", err)
+		t.Fatalf("Unexpected error from FromRaw %s", err)
 	}
 
 	err = os.Setenv("FABRIC_SDK_CONFIG_PATH", defaultConfigPath)
@@ -289,7 +289,7 @@ func TestNewGoodOpt(t *testing.T) {
 	/*
 		_, err = FromDefaultPath(goodOpt())
 		if err != nil {
-			t.Fatalf("Unexpected error from FromRaw: %v", err)
+			t.Fatalf("Unexpected error from FromRaw: %s", err)
 		}
 	*/
 }
@@ -303,24 +303,24 @@ func goodOpt() Option {
 func TestNewBadOpt(t *testing.T) {
 	_, err := FromFile("../../../test/fixtures/config/config_test.yaml", badOpt())()
 	if err == nil {
-		t.Fatalf("Expected error from FromFile")
+		t.Fatal("Expected error from FromFile")
 	}
 
 	cBytes, err := loadConfigBytesFromFile(t, configTestFilePath)
 	if err != nil || len(cBytes) == 0 {
-		t.Fatalf("Unexpected error from loadConfigBytesFromFile")
+		t.Fatal("Unexpected error from loadConfigBytesFromFile")
 	}
 
 	buf := bytes.NewBuffer(cBytes)
 
 	_, err = FromReader(buf, configType, badOpt())()
 	if err == nil {
-		t.Fatalf("Expected error from FromReader")
+		t.Fatal("Expected error from FromReader")
 	}
 
 	_, err = FromRaw(cBytes, configType, badOpt())()
 	if err == nil {
-		t.Fatalf("Expected error from FromRaw")
+		t.Fatal("Expected error from FromRaw")
 	}
 
 	err = os.Setenv("FABRIC_SDK_CONFIG_PATH", defaultConfigPath)
@@ -359,22 +359,22 @@ func TestConfigBackend_Lookup(t *testing.T) {
 func checkConfigStringKey(t *testing.T, configKey string, expectedValue string, checkNotEquals bool) {
 	value, ok := configBackend.Lookup(configKey)
 	if !ok {
-		t.Fatal(fmt.Sprintf("can't lookup key %s in the config", configKey))
+		t.Fatalf("can't lookup key %s in the config", configKey)
 	}
 	v := value.(string)
 	if v != expectedValue && checkNotEquals {
-		t.Fatal(fmt.Sprintf("Expected %s to be '%s' but got '%s'", configKey, expectedValue, v))
+		t.Fatalf("Expected %s to be '%s' but got '%s'", configKey, expectedValue, v)
 	}
 }
 
 func checkConfigMapKey(t *testing.T, configKey string, expectedNumItems int) {
 	value, ok := configBackend.Lookup(configKey)
 	if !ok {
-		t.Fatal(fmt.Sprintf("can't lookup key %s in the config", configKey))
+		t.Fatalf("can't lookup key %s in the config", configKey)
 	}
 	v := value.(map[string]interface{})
 	if len(v) != expectedNumItems {
-		t.Fatal(fmt.Sprintf("Expected only %d %s but got %d", expectedNumItems, configKey, len(v)))
+		t.Fatalf("Expected only %d %s but got %d", expectedNumItems, configKey, len(v))
 	}
 }
 
@@ -388,7 +388,7 @@ func TestDefaultConfigFromFile(t *testing.T) {
 
 	n, err := c.NetworkConfig()
 	if err != nil {
-		t.Fatalf("Failed to load default network config: %v", err)
+		t.Fatalf("Failed to load default network config: %s", err)
 	}
 
 	if n.Name != "default-network" {
@@ -410,7 +410,7 @@ func TestDefaultConfigFromRaw(t *testing.T) {
 
 	n, err := c.NetworkConfig()
 	if err != nil {
-		t.Fatalf("Failed to load default network config: %v", err)
+		t.Fatalf("Failed to load default network config: %s", err)
 	}
 
 	if n.Name != "default-network" {
@@ -472,7 +472,7 @@ func TestFromDefaultPathEmptyFailure(t *testing.T) {
 	// test init config from bytes
 	_, err := FromDefaultPath()
 	if err == nil {
-		t.Fatalf("Expected failure from unset FABRIC_SDK_CONFIG_PATH")
+		t.Fatal("Expected failure from unset FABRIC_SDK_CONFIG_PATH")
 	}
 }
 
@@ -486,7 +486,7 @@ func TestFromDefaultPathFailure(t *testing.T) {
 	// test init config from bytes
 	_, err = FromDefaultPath()
 	if err == nil {
-		t.Fatalf("Expected failure from bad default path")
+		t.Fatal("Expected failure from bad default path")
 	}
 }
 */

@@ -23,7 +23,7 @@ func TestRandom(t *testing.T) {
 		t.Fatalf("error choosing peer with random load-balance policy: %s", err)
 	}
 	if peer != nil {
-		t.Fatalf("expecting chosen peer to be nil with empty set of peers")
+		t.Fatal("expecting chosen peer to be nil with empty set of peers")
 	}
 
 	peers := newMockPeers(10)
@@ -47,7 +47,7 @@ func TestRandom(t *testing.T) {
 	}
 
 	if !differentPeerChosen {
-		t.Fatalf("the same peer was chosen every time")
+		t.Fatal("the same peer was chosen every time")
 	}
 }
 
@@ -60,7 +60,7 @@ func TestRoundRobin(t *testing.T) {
 		t.Fatalf("error choosing peer with random load-balance policy: %s", err)
 	}
 	if peer != nil {
-		t.Fatalf("expecting chosen peer to be nil with empty set of peers")
+		t.Fatal("expecting chosen peer to be nil with empty set of peers")
 	}
 
 	peers := newMockPeers(10)

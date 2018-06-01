@@ -51,7 +51,7 @@ func TestNewEventClient(t *testing.T) {
 	ctxErr := createChannelContextWithError(fabCtx, channelID)
 	_, err = New(ctxErr)
 	if err == nil {
-		t.Fatalf("Should have failed with 'Test Error'")
+		t.Fatal("Should have failed with 'Test Error'")
 	}
 }
 
@@ -88,7 +88,7 @@ func TestBlockEvents(t *testing.T) {
 			t.Fatalf("unexpected closed channel")
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for block event")
+		t.Fatal("timed out waiting for block event")
 	}
 }
 
@@ -131,16 +131,16 @@ func TestFilteredBlockEvents(t *testing.T) {
 	select {
 	case fbevent, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed channel")
+			t.Fatal("unexpected closed channel")
 		}
 		if fbevent.FilteredBlock == nil {
-			t.Fatalf("Expecting filtered block but got nil")
+			t.Fatal("Expecting filtered block but got nil")
 		}
 		if fbevent.FilteredBlock.ChannelId != channelID {
 			t.Fatalf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for filtered block event")
+		t.Fatal("timed out waiting for filtered block event")
 	}
 }
 
@@ -167,7 +167,7 @@ func TestTxStatusEvents(t *testing.T) {
 	txID2 := "5678"
 
 	if _, _, err1 := client.RegisterTxStatusEvent(""); err1 == nil {
-		t.Fatalf("expecting error registering for TxStatus event without a TX ID but got none")
+		t.Fatal("expecting error registering for TxStatus event without a TX ID but got none")
 	}
 
 	reg1, eventch1, err := client.RegisterTxStatusEvent(txID1)
@@ -201,14 +201,14 @@ func validateTxStatusEvents(t *testing.T, eventProducer *servicemocks.MockProduc
 		select {
 		case event, ok := <-eventch1:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkTxStatusEvent(t, event, txID1, txCode1)
 				numReceived++
 			}
 		case event, ok := <-eventch2:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkTxStatusEvent(t, event, txID2, txCode2)
 				numReceived++
@@ -248,7 +248,7 @@ func TestCCEvents(t *testing.T) {
 	ccFilter2 := "event.*"
 
 	if _, _, err1 := client.RegisterChaincodeEvent("", ccFilter1); err1 == nil {
-		t.Fatalf("expecting error registering for chaincode events without CC ID but got none")
+		t.Fatal("expecting error registering for chaincode events without CC ID but got none")
 	}
 
 	reg1, eventch1, err := client.RegisterChaincodeEvent(ccID1, ccFilter1)
@@ -284,14 +284,14 @@ func validateCCEvents(t *testing.T, eventProducer *servicemocks.MockProducer, ev
 		select {
 		case event, ok := <-eventch1:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkCCEvent(t, event, ccID1, event1)
 				numReceived++
 			}
 		case event, ok := <-eventch2:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkCCEvent(t, event, ccID2, event2, event3)
 				numReceived++

@@ -24,17 +24,17 @@ func TestSigningManager(t *testing.T) {
 
 	_, err = signingMgr.Sign(nil, nil)
 	if err == nil {
-		t.Fatalf("Should have failed to sign nil object")
+		t.Fatal("Should have failed to sign nil object")
 	}
 
 	_, err = signingMgr.Sign([]byte(""), nil)
 	if err == nil {
-		t.Fatalf("Should have failed to sign object empty object")
+		t.Fatal("Should have failed to sign object empty object")
 	}
 
 	_, err = signingMgr.Sign([]byte("Hello"), nil)
 	if err == nil {
-		t.Fatalf("Should have failed to sign object with nil key")
+		t.Fatal("Should have failed to sign object with nil key")
 	}
 
 	signedObj, err := signingMgr.Sign([]byte("Hello"), bccspwrapper.GetKey(&mockmsp.MockKey{}))

@@ -49,7 +49,7 @@ func setup() {
 
 	chaincodeID := integration.GenerateRandomID()
 	if _, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
-		panic(fmt.Sprintf("InstallAndInstantiateExampleCC return error: %v", err))
+		panic(fmt.Sprintf("InstallAndInstantiateExampleCC return error: %s", err))
 	}
 
 	mainSDK = sdk

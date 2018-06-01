@@ -17,12 +17,12 @@ import (
 func TestExtractChannelConfig(t *testing.T) {
 	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	_, err = ExtractChannelConfig(configTx)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
@@ -31,11 +31,11 @@ func TestCreateConfigSignature(t *testing.T) {
 
 	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	_, err = CreateConfigSignature(ctx, configTx)
 	if err != nil {
-		t.Fatalf("Expected 'channel configuration required %v", err)
+		t.Fatalf("Expected 'channel configuration required %s", err)
 	}
 }

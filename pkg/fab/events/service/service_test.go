@@ -62,10 +62,10 @@ func TestBlockEvents(t *testing.T) {
 	select {
 	case _, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed channel")
+			t.Fatal("unexpected closed channel")
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for block event")
+		t.Fatal("timed out waiting for block event")
 	}
 }
 
@@ -119,12 +119,12 @@ func checkBlockEventsWithFilter(t *testing.T, beventch <-chan *fab.BlockEvent, f
 		select {
 		case _, ok := <-beventch:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			numBlockEventsReceived++
 		case _, ok := <-fbeventch:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			numFilteredBlockEventsReceived++
 		case <-time.After(2 * time.Second):
@@ -168,16 +168,16 @@ func TestFilteredBlockEvents(t *testing.T) {
 	select {
 	case fbevent, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed channel")
+			t.Fatal("unexpected closed channel")
 		}
 		if fbevent.FilteredBlock == nil {
-			t.Fatalf("Expecting filtered block but got nil")
+			t.Fatal("Expecting filtered block but got nil")
 		}
 		if fbevent.FilteredBlock.ChannelId != channelID {
 			t.Fatalf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for filtered block event")
+		t.Fatal("timed out waiting for filtered block event")
 	}
 }
 
@@ -223,10 +223,10 @@ func checkBlockAndFilteredBlockEvents(t *testing.T, beventch <-chan *fab.BlockEv
 		select {
 		case fbevent, ok := <-fbeventch:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			if fbevent.FilteredBlock == nil {
-				t.Fatalf("Expecting filtered block but got nil")
+				t.Fatal("Expecting filtered block but got nil")
 			}
 			if fbevent.FilteredBlock.ChannelId != channelID {
 				t.Fatalf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
@@ -234,7 +234,7 @@ func checkBlockAndFilteredBlockEvents(t *testing.T, beventch <-chan *fab.BlockEv
 			numReceived++
 		case _, ok := <-beventch:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			}
 			numReceived++
 		case <-time.After(2 * time.Second):
@@ -261,7 +261,7 @@ func TestTxStatusEvents(t *testing.T) {
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	if _, _, err1 := eventService.RegisterTxStatusEvent(""); err1 == nil {
-		t.Fatalf("expecting error registering for TxStatus event without a TX ID but got none")
+		t.Fatal("expecting error registering for TxStatus event without a TX ID but got none")
 	}
 	reg1, _, err := eventService.RegisterTxStatusEvent(txID1)
 	if err != nil {
@@ -302,14 +302,14 @@ func checkTxStatusEvents(eventch1 <-chan *fab.TxStatusEvent, t *testing.T, txID1
 		select {
 		case event, ok := <-eventch1:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkTxStatusEvent(t, event, txID1, txCode1)
 				numReceived++
 			}
 		case event, ok := <-eventch2:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkTxStatusEvent(t, event, txID2, txCode2)
 				numReceived++
@@ -342,13 +342,13 @@ func TestCCEvents(t *testing.T) {
 	event3 := "event3"
 
 	if _, _, err1 := eventService.RegisterChaincodeEvent("", ccFilter1); err1 == nil {
-		t.Fatalf("expecting error registering for chaincode events without CC ID but got none")
+		t.Fatal("expecting error registering for chaincode events without CC ID but got none")
 	}
 	if _, _, err2 := eventService.RegisterChaincodeEvent(ccID1, ""); err2 == nil {
-		t.Fatalf("expecting error registering for chaincode events without event filter but got none")
+		t.Fatal("expecting error registering for chaincode events without event filter but got none")
 	}
 	if _, _, err3 := eventService.RegisterChaincodeEvent(ccID1, ".(xxx"); err3 == nil {
-		t.Fatalf("expecting error registering for chaincode events with invalid (regular expression) event filter but got none")
+		t.Fatal("expecting error registering for chaincode events with invalid (regular expression) event filter but got none")
 	}
 	reg1, _, err := eventService.RegisterChaincodeEvent(ccID1, ccFilter1)
 	if err != nil {
@@ -390,14 +390,14 @@ func checkCCEvents(eventch1 <-chan *fab.CCEvent, t *testing.T, ccID1 string, eve
 		select {
 		case event, ok := <-eventch1:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkCCEvent(t, event, ccID1, event1)
 				numReceived++
 			}
 		case event, ok := <-eventch2:
 			if !ok {
-				t.Fatalf("unexpected closed channel")
+				t.Fatal("unexpected closed channel")
 			} else {
 				checkCCEvent(t, event, ccID2, event2, event3)
 				numReceived++

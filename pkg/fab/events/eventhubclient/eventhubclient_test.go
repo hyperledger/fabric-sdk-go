@@ -109,7 +109,7 @@ func TestTimeoutClientConnect(t *testing.T) {
 		t.Fatalf("error creating channel event client: %s", err)
 	}
 	if err := eventClient.Connect(); err == nil {
-		t.Fatalf("expecting error connecting due to timeout registering interests")
+		t.Fatal("expecting error connecting due to timeout registering interests")
 	}
 }
 
@@ -398,12 +398,12 @@ func checkReceivedEvents(numCh chan clientmocks.Received, t *testing.T, expected
 	select {
 	case received, ok := <-numCh:
 		if !ok {
-			t.Fatalf("connection closed prematurely")
+			t.Fatal("connection closed prematurely")
 		} else {
 			eventsReceived = received
 		}
 	case <-time.After(30 * time.Second):
-		t.Fatalf("timed out waiting for events")
+		t.Fatal("timed out waiting for events")
 	}
 	if eventsReceived.NumBlock != expectedBlockEvents {
 		t.Fatalf("Expecting to receive [%d] block events but received [%d]", expectedBlockEvents, eventsReceived.NumBlock)
@@ -420,13 +420,13 @@ func listenConnection(t *testing.T, eventch chan *clientdisp.ConnectionEvent, ou
 		e, ok := <-eventch
 		t.Logf("Got event [%v] - ok=[%v]", e, ok)
 		if !ok {
-			t.Logf("Returning terminated outcome")
+			t.Log("Returning terminated outcome")
 			outcome <- clientmocks.ClosedOutcome
 			break
 		}
 		if e.Connected {
 			if state == client.Disconnected {
-				t.Logf("Returning reconnected outcome")
+				t.Log("Returning reconnected outcome")
 				outcome <- clientmocks.ReconnectedOutcome
 			}
 			state = client.Connected

@@ -30,7 +30,7 @@ type SimpleChaincode struct {
 
 // Init ...
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("########### example_cc Init -- upgrade ###########")
+	fmt.Printf("[txID %s] ########### example_cc1 Init ###########\n", stub.GetTxID())
 
 	// test the transient map support with chaincode instantiation
 	tm, err := stub.GetTransient()
@@ -53,7 +53,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface) pb.Response {
 
 // Invoke ... Transaction makes payment of X units from A to B
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("########### example_cc upgrade Invoke ###########")
+	fmt.Printf("[txID %s] ########### example_cc1 Invoke ###########\n", stub.GetTxID())
 
 	function, args := stub.GetFunctionAndParameters()
 
@@ -128,7 +128,7 @@ func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) 
 	}
 	Aval = Aval - X
 	Bval = Bval + X + 10 //new version chaincode gives a bonus
-	fmt.Printf("Aval = %d, Bval = %d\n", Aval, Bval)
+	fmt.Printf("[txID %s] Aval = %d, Bval = %d\n", stub.GetTxID(), Aval, Bval)
 
 	// Write the state back to the ledger
 	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
@@ -186,7 +186,7 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 	}
 
 	jsonResp := "{\"Name\":\"" + A + "\",\"Amount\":\"" + string(Avalbytes) + "\"}"
-	fmt.Printf("Query Response:%s\n", jsonResp)
+	fmt.Printf("[txID %s] Query Response:%s\n", stub.GetTxID(), jsonResp)
 	return shim.Success(Avalbytes)
 }
 

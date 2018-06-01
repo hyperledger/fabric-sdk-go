@@ -24,7 +24,7 @@ type LocalService struct {
 
 // newLocalService creates a Local Discovery Service to query the list of member peers in the local MSP.
 func newLocalService(config fab.EndpointConfig, mspID string, opts ...coptions.Opt) *LocalService {
-	logger.Debugf("Creating new local discovery service")
+	logger.Debug("Creating new local discovery service")
 
 	s := &LocalService{mspID: mspID}
 	s.service = newService(config, s.queryPeers, opts...)
@@ -50,7 +50,7 @@ func (s *LocalService) localContext() contextAPI.Local {
 }
 
 func (s *LocalService) queryPeers() ([]fab.Peer, error) {
-	logger.Debugf("Refreshing local peers from discovery service...")
+	logger.Debug("Refreshing local peers from discovery service...")
 
 	ctx := s.localContext()
 	if ctx == nil {
@@ -68,16 +68,16 @@ func (s *LocalService) queryPeers() ([]fab.Peer, error) {
 	req := discclient.NewRequest().AddLocalPeersQuery()
 	responses, err := s.discoveryClient().Send(reqCtx, req, *target)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error calling discover service send")
+		return nil, errors.Wrap(err, "error calling discover service send")
 	}
 	if len(responses) == 0 {
-		return nil, errors.Wrapf(err, "expecting 1 response from discover service send but got none")
+		return nil, errors.Wrap(err, "expecting 1 response from discover service send but got none")
 	}
 
 	response := responses[0]
 	endpoints, err := response.ForLocal().Peers()
 	if err != nil {
-		return nil, errors.Wrapf(err, "error getting peers from discovery response")
+		return nil, errors.Wrap(err, "error getting peers from discovery response")
 	}
 
 	return s.filterLocalMSP(asPeers(ctx, endpoints)), nil

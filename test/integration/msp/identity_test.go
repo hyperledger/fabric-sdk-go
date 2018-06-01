@@ -51,7 +51,7 @@ func TestIdentity(t *testing.T) {
 	// Create new identity
 	newIdentity, err := mspClient.CreateIdentity(req)
 	if err != nil {
-		t.Fatalf("Create identity failed: %v", err)
+		t.Fatalf("Create identity failed: %s", err)
 	}
 
 	if newIdentity.Secret == "" {
@@ -60,7 +60,7 @@ func TestIdentity(t *testing.T) {
 
 	identity, err := mspClient.GetIdentity(username)
 	if err != nil {
-		t.Fatalf("get identity failed: %v", err)
+		t.Fatalf("get identity failed: %s", err)
 	}
 
 	t.Logf("Get Identity: [%v]:", identity)
@@ -72,13 +72,13 @@ func TestIdentity(t *testing.T) {
 	// Enroll the new user
 	err = mspClient.Enroll(username, msp.WithSecret(newIdentity.Secret))
 	if err != nil {
-		t.Fatalf("Enroll failed: %v", err)
+		t.Fatalf("Enroll failed: %s", err)
 	}
 
 	// Get the new user's signing identity
 	si, err := mspClient.GetSigningIdentity(username)
 	if err != nil {
-		t.Fatalf("GetSigningIdentity failed: %v", err)
+		t.Fatalf("GetSigningIdentity failed: %s", err)
 	}
 
 	checkCertAttributes(t, si.EnrollmentCertificate(), testAttributes)
@@ -118,7 +118,7 @@ func TestUpdateIdentity(t *testing.T) {
 	// Create new identity
 	newIdentity, err := mspClient.CreateIdentity(req)
 	if err != nil {
-		t.Fatalf("Create identity failed: %v", err)
+		t.Fatalf("Create identity failed: %s", err)
 	}
 
 	// Update secret
@@ -126,28 +126,28 @@ func TestUpdateIdentity(t *testing.T) {
 
 	identity, err := mspClient.ModifyIdentity(req)
 	if err != nil {
-		t.Fatalf("modify identity failed: %v", err)
+		t.Fatalf("modify identity failed: %s", err)
 	}
 
 	if identity.Secret != "top-secret" {
-		t.Fatalf("update identity failed: %v", err)
+		t.Fatalf("update identity failed: %s", err)
 	}
 
 	// Enroll the new user with old secret
 	err = mspClient.Enroll(username, msp.WithSecret(newIdentity.Secret))
 	if err == nil {
-		t.Fatalf("Enroll should have failed since secret has been updated")
+		t.Fatal("Enroll should have failed since secret has been updated")
 	}
 
 	// Enroll the new user with updated secret
 	err = mspClient.Enroll(username, msp.WithSecret(identity.Secret))
 	if err != nil {
-		t.Fatalf("Enroll failed: %v", err)
+		t.Fatalf("Enroll failed: %s", err)
 	}
 
 	removed, err := mspClient.RemoveIdentity(&msp.RemoveIdentityRequest{ID: username})
 	if err != nil {
-		t.Fatalf("remove identity failed: %v", err)
+		t.Fatalf("remove identity failed: %s", err)
 	}
 
 	t.Logf("Removed identity [%v]", removed)
@@ -181,7 +181,7 @@ func TestGetAllIdentities(t *testing.T) {
 	// Create first identity
 	identity, err := mspClient.CreateIdentity(req1)
 	if err != nil {
-		t.Fatalf("Create identity failed: %v", err)
+		t.Fatalf("Create identity failed: %s", err)
 	}
 	t.Logf("First identity created: [%v]", identity)
 
@@ -193,13 +193,13 @@ func TestGetAllIdentities(t *testing.T) {
 	}
 	identity, err = mspClient.CreateIdentity(req2)
 	if err != nil {
-		t.Fatalf("Create identity failed: %v", err)
+		t.Fatalf("Create identity failed: %s", err)
 	}
 	t.Logf("Second identity created: [%v]", identity)
 
 	identities, err := mspClient.GetAllIdentities()
 	if err != nil {
-		t.Fatalf("Retrieve identities failed: %v", err)
+		t.Fatalf("Retrieve identities failed: %s", err)
 	}
 
 	for _, id := range identities {
@@ -207,12 +207,12 @@ func TestGetAllIdentities(t *testing.T) {
 	}
 
 	if !containsIdentities(identities, req1, req2) {
-		t.Fatalf("Unable to retrieve newly created identities")
+		t.Fatal("Unable to retrieve newly created identities")
 	}
 
 	_, err = mspClient.GetAllIdentities(msp.WithCA("invalid"))
 	if err == nil {
-		t.Fatalf("Should have failed for invalid CA")
+		t.Fatal("Should have failed for invalid CA")
 	}
 }
 
@@ -241,7 +241,7 @@ func setupClient(t *testing.T) (*msp.Client, *fabsdk.FabricSDK) {
 	sdk, err := fabsdk.New(integration.ConfigBackend)
 
 	if err != nil {
-		t.Fatalf("SDK init failed: %v", err)
+		t.Fatalf("SDK init failed: %s", err)
 	}
 
 	// Delete all private keys from the crypto suite store
@@ -254,7 +254,7 @@ func setupClient(t *testing.T) (*msp.Client, *fabsdk.FabricSDK) {
 	// Without WithOrg option, uses default client organization.
 	mspClient, err := msp.New(ctxProvider)
 	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
+		t.Fatalf("failed to create CA client: %s", err)
 	}
 
 	// As this integration test spawns a fresh CA instance,
@@ -264,7 +264,7 @@ func setupClient(t *testing.T) (*msp.Client, *fabsdk.FabricSDK) {
 	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, ctxProvider)
 	err = mspClient.Enroll(registrarEnrollID, msp.WithSecret(registrarEnrollSecret))
 	if err != nil {
-		t.Fatalf("Enroll failed: %v", err)
+		t.Fatalf("Enroll failed: %s", err)
 	}
 
 	// The enrollment process generates a new private key and

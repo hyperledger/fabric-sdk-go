@@ -44,6 +44,6 @@ type peerFilterSetter interface {
 
 // SetPeerFilter sets the peer filter
 func (p *Params) SetPeerFilter(value PeerFilter) {
-	logger.Debugf("PeerFilter: %#v", value)
+	logger.Debugf("PeerFilter: %#+v", value)
 	p.PeerFilter = value
 }

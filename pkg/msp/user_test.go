@@ -25,15 +25,15 @@ func TestUserMethods(t *testing.T) {
 
 	configBackend, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
-		t.Fatalf("Failed to read config: %v", err)
+		t.Fatalf("Failed to read config: %s", err)
 	}
 	cryptoConfig := cryptosuite.ConfigFromBackend(configBackend...)
 	if err != nil {
-		t.Fatalf("Failed to read config: %v", err)
+		t.Fatalf("Failed to read config: %s", err)
 	}
 	identityConfig, err := ConfigFromBackend(configBackend...)
 	if err != nil {
-		t.Fatalf("Failed to read config: %v", err)
+		t.Fatalf("Failed to read config: %s", err)
 	}
 	// Delete all private keys from the crypto suite store
 	// and users from the user store
@@ -44,7 +44,7 @@ func TestUserMethods(t *testing.T) {
 
 	cryptoSuite, err := cryptosuiteimpl.GetSuiteByConfig(cryptoConfig)
 	if cryptoSuite == nil {
-		t.Fatalf("Failed initialize cryptoSuite: %v", err)
+		t.Fatalf("Failed initialize cryptoSuite: %s", err)
 	}
 
 	// Missing enrollment cert
@@ -73,11 +73,11 @@ func TestUserMethods(t *testing.T) {
 func verifyUserIdentity(cryptoSuite core.CryptoSuite, t *testing.T, userData *msp.UserData, testUserMSPID string, testUsername string) {
 	generatedKey, err := util.ImportBCCSPKeyFromPEMBytes(generatedKeyBytes, cryptoSuite, false)
 	if err != nil {
-		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed %v", err)
+		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed %s", err)
 	}
 	user, err := newUser(userData, cryptoSuite)
 	if err != nil {
-		t.Fatalf("newUser failed: %v", err)
+		t.Fatalf("newUser failed: %s", err)
 	}
 	// Check MSPID
 	if user.Identifier().MSPID != testUserMSPID {

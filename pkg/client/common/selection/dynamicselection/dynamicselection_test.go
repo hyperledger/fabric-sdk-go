@@ -223,7 +223,7 @@ func verify(t *testing.T, service fab.SelectionService, expectedPeerGroups []pgr
 			t.Fatalf("error getting endorsers: %s", err)
 		}
 		if !containsPeerGroup(expectedPeerGroups, peers) {
-			t.Fatalf("peer group %s is not one of the expected peer groups: %v", toString(peers), expectedPeerGroups)
+			t.Fatalf("peer group %s is not one of the expected peer groups: %+v", toString(peers), expectedPeerGroups)
 		}
 	}
 

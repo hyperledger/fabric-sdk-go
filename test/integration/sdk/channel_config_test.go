@@ -39,7 +39,7 @@ func TestChannelConfig(t *testing.T) {
 
 	channelCtx, err := org1ChannelClientContext()
 	if err != nil {
-		t.Fatalf("Failed to get channel client context: %v", err)
+		t.Fatalf("Failed to get channel client context: %s", err)
 	}
 
 	cs := channelCtx.ChannelService()
@@ -54,7 +54,7 @@ func TestChannelConfig(t *testing.T) {
 
 	response, err := cfg.Query(reqCtx)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	expected := "orderer.example.com:7050"
@@ -82,19 +82,19 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 
 	configBackend, err := integration.ConfigBackend()
 	if err != nil {
-		t.Fatalf("Unexpected error from config backend: %v", err)
+		t.Fatalf("Unexpected error from config backend: %s", err)
 	}
 
 	cryptoSuiteConfig := cryptosuite.ConfigFromBackend(configBackend...)
 
 	endpointConfig, err := fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
+		t.Fatalf("Unexpected error from config: %s", err)
 	}
 
 	identityConfig, err := msp.ConfigFromBackend(configBackend...)
 	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
+		t.Fatalf("Unexpected error from config: %s", err)
 	}
 
 	// Create SDK setup for channel client with retrieve channel configuration from orderer
@@ -106,7 +106,7 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 	defer sdk.Close()
 
 	if err = testSetup.Initialize(sdk); err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	//prepare contexts
@@ -114,7 +114,7 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 
 	channelCtx, err := org1ChannelClientContext()
 	if err != nil {
-		t.Fatalf("Failed to get channel client context: %v", err)
+		t.Fatalf("Failed to get channel client context: %s", err)
 	}
 
 	cs := channelCtx.ChannelService()
@@ -133,7 +133,7 @@ func queryChannelCfg(channelCtx contextAPI.Channel, cfg fab.ChannelConfig, t *te
 	defer cancel()
 	response, err := cfg.Query(reqCtx)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	expected := "orderer.example.com:7050"
 	found := false

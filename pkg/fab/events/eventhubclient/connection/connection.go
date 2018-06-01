@@ -103,22 +103,22 @@ func (c *EventHubConnection) Send(emsg *pb.Event) error {
 // Receive receives events from the event hub server
 func (c *EventHubConnection) Receive(eventch chan<- interface{}) {
 	for {
-		logger.Debugf("Listening for events...")
+		logger.Debug("Listening for events...")
 		if c.EventHubStream() == nil {
-			logger.Warnf("The stream has closed. Terminating loop.")
+			logger.Warn("The stream has closed. Terminating loop.")
 			break
 		}
 
 		in, err := c.EventHubStream().Recv()
 
 		if c.Closed() {
-			logger.Debugf("The connection has closed. Terminating loop.")
+			logger.Debug("The connection has closed. Terminating loop.")
 			break
 		}
 
 		if err == io.EOF {
 			// This signifies that the stream has been terminated at the client-side. No need to send an event.
-			logger.Debugf("Received EOF from stream.")
+			logger.Debug("Received EOF from stream.")
 			break
 		}
 
@@ -130,7 +130,7 @@ func (c *EventHubConnection) Receive(eventch chan<- interface{}) {
 		logger.Debugf("Got event %#v", in)
 		eventch <- NewEvent(in, c.url)
 	}
-	logger.Debugf("Exiting stream listener")
+	logger.Debug("Exiting stream listener")
 }
 
 // Event contains the event hub event as well as the event source

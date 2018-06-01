@@ -86,7 +86,7 @@ func TestStore(t *testing.T) {
 		t.Fatalf("checkStoreValue %s failed [%s]", user2.ID, err)
 	}
 	if err = checkStoreValue(store, user1, nil); err != msp.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user1.ID, err)
+		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %s", user1.ID, err)
 	}
 
 	// Check ke2, value2
@@ -97,7 +97,7 @@ func TestStore(t *testing.T) {
 		t.Fatalf("Delete %s failed [%s]", user2.ID, err)
 	}
 	if err = checkStoreValue(store, user2, nil); err != msp.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %v", user2.ID, err)
+		t.Fatalf("checkStoreValue %s failed, expected core.ErrUserNotFound, got: %s", user2.ID, err)
 	}
 
 	// Check non-existing key

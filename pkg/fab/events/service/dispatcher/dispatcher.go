@@ -56,7 +56,7 @@ type Dispatcher struct {
 
 // New creates a new Dispatcher.
 func New(opts ...options.Opt) *Dispatcher {
-	logger.Debugf("Creating new dispatcher.")
+	logger.Debug("Creating new dispatcher.")
 
 	params := defaultParams()
 	options.Apply(params, opts)
@@ -117,10 +117,10 @@ func (ed *Dispatcher) Start() error {
 				break
 			}
 
-			logger.Debugf("Received event: %v", reflect.TypeOf(e))
+			logger.Debugf("Received event: %+v", reflect.TypeOf(e))
 
 			if handler, ok := ed.handlers[reflect.TypeOf(e)]; ok {
-				logger.Debugf("Dispatching event: %v", reflect.TypeOf(e))
+				logger.Debugf("Dispatching event: %+v", reflect.TypeOf(e))
 				handler(e)
 			} else {
 				logger.Errorf("Handler not found for: %s", reflect.TypeOf(e))
@@ -264,7 +264,7 @@ func (ed *Dispatcher) handleUnregisterEvent(e Event) {
 	case *TxStatusReg:
 		err = ed.unregisterTXEvents(registration)
 	default:
-		err = errors.Errorf("Unsupported registration type: %v", reflect.TypeOf(registration))
+		err = errors.Errorf("Unsupported registration type: %+v", reflect.TypeOf(registration))
 	}
 	if err != nil {
 		logger.Warnf("Error in unregister: %s", err)
@@ -319,7 +319,7 @@ func (ed *Dispatcher) HandleFilteredBlock(fblock *pb.FilteredBlock, sourceURL st
 		return
 	}
 
-	logger.Debugf("Publishing filtered block event...")
+	logger.Debug("Publishing filtered block event...")
 	ed.publishFilteredBlockEvents(fblock, sourceURL)
 }
 
@@ -385,7 +385,7 @@ func (ed *Dispatcher) publishBlockEvents(block *cb.Block, sourceURL string) {
 			select {
 			case reg.Eventch <- NewBlockEvent(block, sourceURL):
 			default:
-				logger.Warnf("Unable to send to block event channel.")
+				logger.Warn("Unable to send to block event channel.")
 			}
 		} else if ed.eventConsumerTimeout == 0 {
 			reg.Eventch <- NewBlockEvent(block, sourceURL)
@@ -393,7 +393,7 @@ func (ed *Dispatcher) publishBlockEvents(block *cb.Block, sourceURL string) {
 			select {
 			case reg.Eventch <- NewBlockEvent(block, sourceURL):
 			case <-time.After(ed.eventConsumerTimeout):
-				logger.Warnf("Timed out sending block event.")
+				logger.Warn("Timed out sending block event.")
 			}
 		}
 	}
@@ -401,7 +401,7 @@ func (ed *Dispatcher) publishBlockEvents(block *cb.Block, sourceURL string) {
 
 func (ed *Dispatcher) publishFilteredBlockEvents(fblock *pb.FilteredBlock, sourceURL string) {
 	if fblock == nil {
-		logger.Warnf("Filtered block is nil. Event will not be published")
+		logger.Warn("Filtered block is nil. Event will not be published")
 		return
 	}
 
@@ -433,7 +433,7 @@ func checkFilteredBlockRegistrations(ed *Dispatcher, fblock *pb.FilteredBlock, s
 			select {
 			case reg.Eventch <- NewFilteredBlockEvent(fblock, sourceURL):
 			default:
-				logger.Warnf("Unable to send to filtered block event channel.")
+				logger.Warn("Unable to send to filtered block event channel.")
 			}
 		} else if ed.eventConsumerTimeout == 0 {
 			reg.Eventch <- NewFilteredBlockEvent(fblock, sourceURL)
@@ -441,7 +441,7 @@ func checkFilteredBlockRegistrations(ed *Dispatcher, fblock *pb.FilteredBlock, s
 			select {
 			case reg.Eventch <- NewFilteredBlockEvent(fblock, sourceURL):
 			case <-time.After(ed.eventConsumerTimeout):
-				logger.Warnf("Timed out sending filtered block event.")
+				logger.Warn("Timed out sending filtered block event.")
 			}
 		}
 	}
@@ -456,7 +456,7 @@ func (ed *Dispatcher) publishTxStatusEvents(tx *pb.FilteredTransaction, blockNum
 			select {
 			case reg.Eventch <- NewTxStatusEvent(tx.Txid, tx.TxValidationCode, blockNum, sourceURL):
 			default:
-				logger.Warnf("Unable to send to Tx Status event channel.")
+				logger.Warn("Unable to send to Tx Status event channel.")
 			}
 		} else if ed.eventConsumerTimeout == 0 {
 			reg.Eventch <- NewTxStatusEvent(tx.Txid, tx.TxValidationCode, blockNum, sourceURL)
@@ -464,7 +464,7 @@ func (ed *Dispatcher) publishTxStatusEvents(tx *pb.FilteredTransaction, blockNum
 			select {
 			case reg.Eventch <- NewTxStatusEvent(tx.Txid, tx.TxValidationCode, blockNum, sourceURL):
 			case <-time.After(ed.eventConsumerTimeout):
-				logger.Warnf("Timed out sending Tx Status event.")
+				logger.Warn("Timed out sending Tx Status event.")
 			}
 		}
 	}
@@ -480,7 +480,7 @@ func (ed *Dispatcher) publishCCEvents(ccEvent *pb.ChaincodeEvent, blockNum uint6
 				select {
 				case reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId, ccEvent.Payload, blockNum, sourceURL):
 				default:
-					logger.Warnf("Unable to send to CC event channel.")
+					logger.Warn("Unable to send to CC event channel.")
 				}
 			} else if ed.eventConsumerTimeout == 0 {
 				reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId, ccEvent.Payload, blockNum, sourceURL)
@@ -488,7 +488,7 @@ func (ed *Dispatcher) publishCCEvents(ccEvent *pb.ChaincodeEvent, blockNum uint6
 				select {
 				case reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId, ccEvent.Payload, blockNum, sourceURL):
 				case <-time.After(ed.eventConsumerTimeout):
-					logger.Warnf("Timed out sending CC event.")
+					logger.Warn("Timed out sending CC event.")
 				}
 			}
 		}
@@ -518,7 +518,7 @@ func toFilteredBlock(block *cb.Block) *pb.FilteredBlock {
 	for i, data := range block.Data.Data {
 		filteredTx, chID, err := getFilteredTx(data, txFilter.Flag(i))
 		if err != nil {
-			logger.Warnf("error extracting Envelope from block: %v", err)
+			logger.Warnf("error extracting Envelope from block: %s", err)
 			continue
 		}
 		channelID = chID

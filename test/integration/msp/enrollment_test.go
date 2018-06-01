@@ -27,7 +27,7 @@ func TestRegisterEnroll(t *testing.T) {
 	sdk, err := fabsdk.New(integration.ConfigBackend)
 
 	if err != nil {
-		t.Fatalf("SDK init failed: %v", err)
+		t.Fatalf("SDK init failed: %s", err)
 	}
 
 	// Delete all private keys from the crypto suite store
@@ -41,7 +41,7 @@ func TestRegisterEnroll(t *testing.T) {
 	// Without WithOrg option, uses default client organization.
 	mspClient, err := msp.New(ctxProvider)
 	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
+		t.Fatalf("failed to create CA client: %s", err)
 	}
 
 	// As this integration test spawns a fresh CA instance,
@@ -51,7 +51,7 @@ func TestRegisterEnroll(t *testing.T) {
 	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, ctxProvider)
 	err = mspClient.Enroll(registrarEnrollID, msp.WithSecret(registrarEnrollSecret))
 	if err != nil {
-		t.Fatalf("Enroll failed: %v", err)
+		t.Fatalf("Enroll failed: %s", err)
 	}
 
 	// The enrollment process generates a new private key and
@@ -87,19 +87,19 @@ func TestRegisterEnroll(t *testing.T) {
 		Affiliation: "org2",
 	})
 	if err != nil {
-		t.Fatalf("Registration failed: %v", err)
+		t.Fatalf("Registration failed: %s", err)
 	}
 
 	// Enroll the new user
 	err = mspClient.Enroll(username, msp.WithSecret(enrollmentSecret))
 	if err != nil {
-		t.Fatalf("Enroll failed: %v", err)
+		t.Fatalf("Enroll failed: %s", err)
 	}
 
 	// Get the new user's signing identity
 	si, err := mspClient.GetSigningIdentity(username)
 	if err != nil {
-		t.Fatalf("GetSigningIdentity failed: %v", err)
+		t.Fatalf("GetSigningIdentity failed: %s", err)
 	}
 
 	checkCertAttributes(t, si.EnrollmentCertificate(), testAttributes)
@@ -110,19 +110,19 @@ func getRegistrarEnrollmentCredentials(t *testing.T, ctxProvider context.ClientP
 
 	ctx, err := ctxProvider()
 	if err != nil {
-		t.Fatalf("failed to get context: %v", err)
+		t.Fatalf("failed to get context: %s", err)
 	}
 
 	clientConfig, err := ctx.IdentityConfig().Client()
 	if err != nil {
-		t.Fatalf("config.Client() failed: %v", err)
+		t.Fatalf("config.Client() failed: %s", err)
 	}
 
 	myOrg := clientConfig.Organization
 
 	caConfig, err := ctx.IdentityConfig().CAConfig(myOrg)
 	if err != nil {
-		t.Fatalf("CAConfig failed: %v", err)
+		t.Fatalf("CAConfig failed: %s", err)
 	}
 
 	return caConfig.Registrar.EnrollID, caConfig.Registrar.EnrollSecret

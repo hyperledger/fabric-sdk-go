@@ -79,7 +79,7 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 
 	customBackend, err := getCustomBackend()
 	if err != nil {
-		t.Fatalf("failed to get configbackend for test: %v", err)
+		t.Fatalf("failed to get configbackend for test: %s", err)
 	}
 	configProvider := func() ([]core.ConfigBackend, error) {
 		return customBackend, nil

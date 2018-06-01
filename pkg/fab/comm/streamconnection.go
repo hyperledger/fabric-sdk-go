@@ -51,7 +51,7 @@ func NewStreamConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamP
 	peer, ok := peer.FromContext(stream.Context())
 	if !ok || peer == nil {
 		//return error - certificate is not available
-		return nil, errors.Wrapf(err, "No peer cert in GRPC stream")
+		return nil, errors.Wrap(err, "No peer cert in GRPC stream")
 
 	}
 

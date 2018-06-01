@@ -97,7 +97,7 @@ func (p *params) SetCertificate(value *x509.Certificate) {
 	if value != nil {
 		logger.Debugf("setting certificate [subject: %s, serial: %s]", value.Subject, value.SerialNumber)
 	} else {
-		logger.Debugf("setting nil certificate")
+		logger.Debug("setting nil certificate")
 	}
 	p.certificate = value
 }

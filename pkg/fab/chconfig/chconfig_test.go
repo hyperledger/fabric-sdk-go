@@ -96,7 +96,7 @@ func TestChannelConfigWithPeerWithRetries(t *testing.T) {
 
 	_, err = channelConfig.Query(reqCtx)
 	if err == nil || !strings.Contains(err.Error(), "ENDORSEMENT_MISMATCH") {
-		t.Fatalf("Supposed to fail with ENDORSEMENT_MISMATCH. Description: payloads for config block do not match")
+		t.Fatal("Supposed to fail with ENDORSEMENT_MISMATCH. Description: payloads for config block do not match")
 	}
 
 	assert.True(t, overrideRetryHandler.(*customRetryHandler).retries-1 == numberOfAttempts, "number of attempts missmatching")
@@ -117,7 +117,7 @@ func TestChannelConfigWithPeerError(t *testing.T) {
 
 	_, err = channelConfig.Query(reqCtx)
 	if err == nil {
-		t.Fatalf("Should have failed with since there's one endorser and at least two are required")
+		t.Fatal("Should have failed with since there's one endorser and at least two are required")
 	}
 }
 
@@ -137,7 +137,7 @@ func TestChannelConfigWithOrdererError(t *testing.T) {
 	// Expecting error since orderer is not setup
 	_, err = channelConfig.Query(reqCtx)
 	if err == nil {
-		t.Fatalf("Should have failed since orderer is not available")
+		t.Fatal("Should have failed since orderer is not available")
 	}
 
 }
@@ -319,7 +319,7 @@ func getPeerWithConfigBlockPayload(t *testing.T) fab.Peer {
 
 	payload, err := proto.Marshal(builder.Build())
 	if err != nil {
-		t.Fatalf("Failed to marshal mock block")
+		t.Fatal("Failed to marshal mock block")
 	}
 
 	// peer with valid config block payload

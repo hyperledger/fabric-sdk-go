@@ -44,7 +44,7 @@ func customCryptoSuiteInit(t *testing.T) (*integration.BaseSetupImpl, string) {
 	//defer sdk.Close()
 
 	//if err := testSetup.Initialize(sdk); err != nil {
-	//	t.Fatalf(err.Error())
+	//	t.Fatal(err)
 	//}
 
 	chaincodeID := integration.GenerateRandomID()
@@ -96,7 +96,7 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 
 	// Check the Query value
 	if string(response.Payload) != "200" {
-		t.Fatalf("channel client query operation failed, upexpected query value")
+		t.Fatal("channel client query operation failed, upexpected query value")
 	}
 
 }

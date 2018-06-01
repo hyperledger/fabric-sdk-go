@@ -375,12 +375,12 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 	select {
 	case received, ok := <-numCh:
 		if !ok {
-			t.Fatalf("connection closed prematurely")
+			t.Fatal("connection closed prematurely")
 		} else {
 			eventsReceived = received
 		}
 	case <-time.After(20 * time.Second):
-		t.Fatalf("timed out waiting for events")
+		t.Fatal("timed out waiting for events")
 	}
 
 	if eventsReceived.NumBlock != expectedBlockEvents {

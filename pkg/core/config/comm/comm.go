@@ -37,7 +37,7 @@ func TLSConfig(cert *x509.Certificate, serverName string, config fab.EndpointCon
 
 	clientCerts, err := config.TLSClientCerts()
 	if err != nil {
-		return nil, errors.Errorf("Error loading cert/key pair for TLS client credentials: %v", err)
+		return nil, errors.Errorf("Error loading cert/key pair for TLS client credentials: %s", err)
 	}
 
 	return &tls.Config{RootCAs: tlsCaCertPool, Certificates: clientCerts, ServerName: serverName}, nil

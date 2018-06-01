@@ -35,7 +35,7 @@ func TestCreateCustomFullIdentitytConfig(t *testing.T) {
 		t.Fatalf("BuildIdentityConfigFromOptions returned unexpected error %s", err)
 	}
 	if identityConfigOption == nil {
-		t.Fatalf("BuildIdentityConfigFromOptions call returned nil")
+		t.Fatal("BuildIdentityConfigFromOptions call returned nil")
 	}
 }
 
@@ -167,7 +167,7 @@ func TestCreateCustomIdentityConfigWithSomeDefaultFunctions(t *testing.T) {
 	require.Equal(t, []byte("testCAclientkey"), c, "CAClientKey did not return the right cert")
 
 	if ico, ok = identityConfigOptionWithSomeDefaults.(*IdentityConfigOptions); !ok {
-		t.Fatalf("UpdateMissingOptsWithDefaultConfig() call did not return an implementation of IdentityConfigOptions")
+		t.Fatal("UpdateMissingOptsWithDefaultConfig() call did not return an implementation of IdentityConfigOptions")
 	}
 
 	// now check if implementations that were not injected when building the config (ref first line in this function) are defaulted with m0 this time

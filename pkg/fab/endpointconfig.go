@@ -75,7 +75,7 @@ func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, e
 	// is expensive
 	certs, err := config.loadTLSCerts()
 	if err != nil {
-		logger.Infof("could not cache TLS certs", err.Error())
+		logger.Infof("could not cache TLS certs: %s", err)
 	}
 	if _, err := config.TLSCACertPool(certs...); err != nil {
 		return nil, errors.WithMessage(err, "cert pool load failed")
@@ -335,7 +335,7 @@ func (c *EndpointConfig) loadPrivateKeyFromConfig(clientConfig *msp.ClientConfig
 	// load the key/cert pair from []byte
 	clientCerts, err := tls.X509KeyPair(cb, kb)
 	if err != nil {
-		return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+		return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %s", err)
 	}
 
 	logger.Debug("pk read from config successfully")
@@ -516,7 +516,7 @@ func (c *EndpointConfig) preloadConfigEntities(networkConfig *fab.NetworkConfig)
 	//preload all TLS configs
 	err := c.preloadAllTLSConfig(networkConfig)
 	if err != nil {
-		return errors.WithMessage(err, "failed to load network TLSConfig ")
+		return errors.WithMessage(err, "failed to load network TLSConfig")
 	}
 
 	//preload peer configs by org dictionary
@@ -763,7 +763,7 @@ func (c *EndpointConfig) preloadChannelPeers(networkConfig *fab.NetworkConfig) e
 			}
 
 			if err := c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
-				logger.Debugf("Verify PeerConfig failed for peer [%s], cause : [%v]", peerName, err)
+				logger.Debugf("Verify PeerConfig failed for peer [%s], cause : [%s]", peerName, err)
 				return err
 			}
 
@@ -1034,7 +1034,7 @@ func (c *EndpointConfig) compileMatchers() error {
 
 	//return no error if entityMatchers is not configured
 	if len(entityMatchers.matchers) == 0 {
-		logger.Debugf("Entity matchers are not configured")
+		logger.Debug("Entity matchers are not configured")
 		return nil
 	}
 

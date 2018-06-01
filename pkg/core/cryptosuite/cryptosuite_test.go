@@ -64,7 +64,7 @@ func TestGetDefault(t *testing.T) {
 
 	s, err := sw.GetSuiteWithDefaultEphemeral()
 	if err != nil {
-		t.Fatalf("Unable to get default cryptosuite")
+		t.Fatal("Unable to get default cryptosuite")
 	}
 
 	err = SetDefault(s)

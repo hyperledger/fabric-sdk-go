@@ -103,7 +103,7 @@ func TestFutureValueGetWithError(t *testing.T) {
 	}
 
 	if _, err := fv.Initialize(); err == nil {
-		t.Fatalf("expecting error but received none")
+		t.Fatal("expecting error but received none")
 	}
 
 	wg.Wait()
@@ -128,7 +128,7 @@ func TestMustGetPanic(t *testing.T) {
 	}()
 
 	if _, err := fv.Initialize(); err == nil {
-		t.Fatalf("expecting error but received none")
+		t.Fatal("expecting error but received none")
 	}
 	<-done
 }

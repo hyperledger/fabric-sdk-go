@@ -60,7 +60,7 @@ func (ed *Dispatcher) handleSeekEvent(e esdispatcher.Event) {
 	evt := e.(*SeekEvent)
 
 	if ed.Connection() == nil {
-		logger.Warnf("Unable to register channel since no connection was established.")
+		logger.Warn("Unable to register channel since no connection was established.")
 		return
 	}
 

@@ -55,7 +55,7 @@ func (c *Config) SoftVerify() bool {
 func (c *Config) SecurityProviderLibPath() string {
 	configuredLibs := c.backend.GetString("client.BCCSP.security.library")
 	libPaths := strings.Split(configuredLibs, ",")
-	logger.Debug("Configured BCCSP Lib Paths %v", libPaths)
+	logger.Debugf("Configured BCCSP Lib Paths %s", libPaths)
 	var lib string
 	for _, path := range libPaths {
 		if _, err := os.Stat(strings.TrimSpace(path)); !os.IsNotExist(err) {
@@ -64,7 +64,7 @@ func (c *Config) SecurityProviderLibPath() string {
 		}
 	}
 	if lib != "" {
-		logger.Debug("Found softhsm library: %s", lib)
+		logger.Debugf("Found softhsm library: %s", lib)
 	} else {
 		logger.Debug("Softhsm library was not found")
 	}

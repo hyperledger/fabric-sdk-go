@@ -145,7 +145,7 @@ func generateTarGz(descriptors []*Descriptor) ([]byte, error) {
 		if err != nil {
 			err1 := closeStream(tw, gw)
 			if err1 != nil {
-				return nil, errors.Wrap(err, fmt.Sprintf("packEntry failed and close error %v", err1))
+				return nil, errors.Wrap(err, fmt.Sprintf("packEntry failed and close error %s", err1))
 			}
 			return nil, errors.Wrap(err, "packEntry failed")
 		}
@@ -175,7 +175,7 @@ func packEntry(tw *tar.Writer, gw *gzip.Writer, descriptor *Descriptor) error {
 	defer func() {
 		err := file.Close()
 		if err != nil {
-			logger.Warnf("error file close %v", err)
+			logger.Warnf("error file close %s", err)
 		}
 	}()
 

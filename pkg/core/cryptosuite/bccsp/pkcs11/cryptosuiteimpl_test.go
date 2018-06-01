@@ -39,7 +39,7 @@ func TestBadConfig(t *testing.T) {
 	//Get cryptosuite using config
 	_, err := GetSuiteByConfig(mockConfig)
 	if err == nil {
-		t.Fatalf("Unknown security provider should return error")
+		t.Fatal("Unknown security provider should return error")
 	}
 }
 func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
@@ -63,7 +63,7 @@ func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 	//Get cryptosuite using config
 	c, err := GetSuiteByConfig(mockConfig)
 	if err != nil {
-		t.Fatalf("Not supposed to get error, but got: %v", err)
+		t.Fatalf("Not supposed to get error, but got: %s", err)
 	}
 
 	verifyHashFn(t, c)
@@ -100,9 +100,9 @@ func TestPKCS11CSPConfigWithValidOptions(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	if csp == nil {
-		t.Fatalf("BCCSP PKCS11 was not configured")
+		t.Fatal("BCCSP PKCS11 was not configured")
 	}
-	t.Logf("TestPKCS11CSPConfigWithValidOptions passed. BCCSP PKCS11 provider was configured (%v)", csp)
+	t.Logf("TestPKCS11CSPConfigWithValidOptions passed. BCCSP PKCS11 provider was configured (%+v)", csp)
 
 }
 
@@ -114,9 +114,9 @@ func TestPKCS11CSPConfigWithEmptyHashFamily(t *testing.T) {
 	t.Logf("PKCS11 factory name: %s", f.Name())
 	_, err := f.Get(opts)
 	if err == nil {
-		t.Fatalf("Expected error 'Hash Family not supported'")
+		t.Fatal("Expected error 'Hash Family not supported'")
 	}
-	t.Log("TestPKCS11CSPConfigWithEmptyHashFamily passed. ")
+	t.Log("TestPKCS11CSPConfigWithEmptyHashFamily passed.")
 
 }
 
@@ -128,7 +128,7 @@ func TestPKCS11CSPConfigWithIncorrectLevel(t *testing.T) {
 	t.Logf("PKCS11 factory name: %s", f.Name())
 	_, err := f.Get(opts)
 	if err == nil {
-		t.Fatalf("Expected error 'Failed initializing configuration'")
+		t.Fatal("Expected error 'Failed initializing configuration'")
 	}
 
 }
@@ -164,10 +164,10 @@ func verifyHashFn(t *testing.T, c core.CryptoSuite) {
 	e := sha256.Sum256(msg)
 	a, err := c.Hash(msg, &bccsp.SHA256Opts{})
 	if err != nil {
-		t.Fatalf("Not supposed to get error, but got: %v", err)
+		t.Fatalf("Not supposed to get error, but got: %s", err)
 	}
 
 	if !bytes.Equal(a, e[:]) {
-		t.Fatalf("Expected SHA 256 hash function")
+		t.Fatal("Expected SHA 256 hash function")
 	}
 }

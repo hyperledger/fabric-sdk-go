@@ -64,7 +64,7 @@ func (c *fabricCAAdapter) Enroll(enrollmentID string, enrollmentSecret string) (
 // Reenroll handles re-enrollment
 func (c *fabricCAAdapter) Reenroll(key core.Key, cert []byte) ([]byte, error) {
 
-	logger.Debugf("Enrolling user [%s]")
+	logger.Debugf("Re Enrolling user with provided key/cert pair for CA [%s]", c.caClient.Config.CAName)
 
 	careq := &caapi.ReenrollmentRequest{
 		CAName: c.caClient.Config.CAName,
@@ -388,7 +388,7 @@ func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config msp.I
 	}
 
 	if conf == nil {
-		return nil, errors.Errorf("Orgnization %s have no corresponding CA in the configs", org)
+		return nil, errors.Errorf("Organization [%s] have no corresponding CA in the configs", org)
 	}
 
 	//set server CAName
@@ -427,7 +427,7 @@ func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config msp.I
 
 	err = c.Init()
 	if err != nil {
-		return nil, errors.Wrap(err, "init failed")
+		return nil, errors.Wrap(err, "CA Client init failed")
 	}
 
 	return c, nil

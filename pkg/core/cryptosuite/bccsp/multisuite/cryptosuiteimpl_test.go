@@ -46,7 +46,7 @@ func TestCryptoSuiteByConfigSW(t *testing.T) {
 	//Get cryptosuite using config
 	c, err := GetSuiteByConfig(mockConfig)
 	if err != nil {
-		t.Fatalf("Not supposed to get error, but got: %v", err)
+		t.Fatalf("Not supposed to get error, but got: %s", err)
 	}
 
 	verifySuiteType(t, c, "*sw.CSP")
@@ -74,7 +74,7 @@ func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 	//Get cryptosuite using config
 	c, err := GetSuiteByConfig(mockConfig)
 	if err != nil {
-		t.Fatalf("Not supposed to get error, but got: %v", err)
+		t.Fatalf("Not supposed to get error, but got: %s", err)
 	}
 
 	verifySuiteType(t, c, "*pkcs11.impl")

@@ -87,7 +87,7 @@ func main() {
 	fileset := token.NewFileSet()
 	astFile, err := parser.ParseFile(fileset, *filename, nil, parser.ParseComments)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error paring file: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error paring file: %s\n", err)
 		os.Exit(1)
 	}
 
@@ -117,7 +117,7 @@ func main() {
 	// output the filtered source code
 	var buf bytes.Buffer
 	if err := format.Node(&buf, fileset, astFile); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to output filtered source code: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to output filtered source code: %s", err)
 		os.Exit(1)
 	}
 	fmt.Printf("%s", buf.Bytes())

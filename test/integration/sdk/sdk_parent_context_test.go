@@ -54,7 +54,7 @@ func TestParentContext(t *testing.T) {
 
 	_, err = resClient.QueryChannels(resmgmt.WithTargetEndpoints(target), resmgmt.WithParentContext(parentContext), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err == nil || !strings.Contains(err.Error(), "context canceled") {
-		t.Fatalf("expected context cancelled error but got: %v", err)
+		t.Fatalf("expected context cancelled error but got: %s", err)
 	}
 
 	// Channel client
@@ -66,7 +66,7 @@ func TestParentContext(t *testing.T) {
 	_, err = chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
 		channel.WithParentContext(parentContext))
 	if err == nil || !strings.Contains(err.Error(), "request timed out or been cancelled") {
-		t.Fatalf("expected context cancelled error but got: %v", err)
+		t.Fatalf("expected context cancelled error but got: %s", err)
 	}
 
 	// ledger client
@@ -81,6 +81,6 @@ func testLedgerClient(org1AdminChannelContext contextApi.ChannelProvider, t *tes
 	}
 	_, err = legerClient.QueryInfo(ledger.WithParentContext(parentContext))
 	if err == nil || !strings.Contains(err.Error(), "context canceled") {
-		t.Fatalf("expected context cancelled error but got: %v", err)
+		t.Fatalf("expected context cancelled error but got: %s", err)
 	}
 }

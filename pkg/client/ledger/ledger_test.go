@@ -72,7 +72,7 @@ func TestQueryBlockWithNilTargets(t *testing.T) {
 
 	_, err := lc.QueryBlock(1, WithTargets(peer1, nil))
 	if err == nil || !strings.Contains(err.Error(), "target is nil") {
-		t.Fatalf("Should have failed due to nil target")
+		t.Fatal("Should have failed due to nil target")
 	}
 }
 

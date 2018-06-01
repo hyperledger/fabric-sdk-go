@@ -59,7 +59,7 @@ func (ed *Dispatcher) handleRegInterestsEvent(e esdispatcher.Event) {
 	evt := e.(*RegisterInterestsEvent)
 
 	if ed.Connection() == nil {
-		logger.Warnf("Unable to register interests since no connection was established.")
+		logger.Warn("Unable to register interests since no connection was established.")
 		return
 	}
 
@@ -83,7 +83,7 @@ func (ed *Dispatcher) handleUnregInterestsEvent(e esdispatcher.Event) {
 	evt := e.(*UnregisterInterestsEvent)
 
 	if ed.Connection() == nil {
-		logger.Warnf("Unable to unregister interests since no connection was established.")
+		logger.Warn("Unable to unregister interests since no connection was established.")
 		return
 	}
 

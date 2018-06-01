@@ -36,12 +36,12 @@ func TestResMgmtClientQueries(t *testing.T) {
 	//defer sdk.Close()
 
 	//if err := testSetup.Initialize(sdk); err != nil {
-	//	t.Fatalf(err.Error())
+	//	t.Fatal(err)
 	//}
 
 	//ccID := integration.GenerateRandomID()
 	//if _, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, ccID); err != nil {
-	//	t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
+	//	t.Fatalf("InstallAndInstantiateExampleCC return error: %s", err)
 	//}
 
 	//prepare contexts
@@ -70,7 +70,7 @@ func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, tar
 
 	chaincodeQueryResponse, err := client.QueryInstantiatedChaincodes(channelID, resmgmt.WithTargetEndpoints(target), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
-		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
+		t.Fatalf("QueryInstantiatedChaincodes return error: %s", err)
 	}
 
 	found := false
@@ -90,7 +90,7 @@ func testInstalledChaincodes(t *testing.T, ccID string, target string, client *r
 
 	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(resmgmt.WithTargetEndpoints(target), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
-		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
+		t.Fatalf("QueryInstalledChaincodes return error: %s", err)
 	}
 
 	found := false
@@ -110,7 +110,7 @@ func testQueryChannels(t *testing.T, channelID string, target string, client *re
 
 	channelQueryResponse, err := client.QueryChannels(resmgmt.WithTargetEndpoints(target), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
-		t.Fatalf("QueryChannels return error: %v", err)
+		t.Fatalf("QueryChannels return error: %s", err)
 	}
 
 	found := false
@@ -131,7 +131,7 @@ func testQueryConfigFromOrderer(t *testing.T, channelID string, client *resmgmt.
 	expected := "orderer.example.com:7050"
 	channelCfg, err := client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererEndpoint("orderer.example.com"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
-		t.Fatalf("QueryConfig return error: %v", err)
+		t.Fatalf("QueryConfig return error: %s", err)
 	}
 	if !contains(channelCfg.Orderers(), expected) {
 		t.Fatalf("Expected orderer %s, got %s", expected, channelCfg.Orderers())
@@ -139,7 +139,7 @@ func testQueryConfigFromOrderer(t *testing.T, channelID string, client *resmgmt.
 
 	_, err = client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererEndpoint("non-existent"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err == nil {
-		t.Fatalf("QueryConfig should have failed for invalid orderer")
+		t.Fatal("QueryConfig should have failed for invalid orderer")
 	}
 
 }

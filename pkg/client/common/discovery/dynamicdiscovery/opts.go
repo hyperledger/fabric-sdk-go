@@ -21,7 +21,7 @@ type options struct {
 // peer cache is refreshed
 func WithRefreshInterval(value time.Duration) coptions.Opt {
 	return func(p coptions.Params) {
-		logger.Debugf("Checking refreshIntervalSetter")
+		logger.Debug("Checking refreshIntervalSetter")
 		if setter, ok := p.(refreshIntervalSetter); ok {
 			setter.SetRefreshInterval(value)
 		}
@@ -31,7 +31,7 @@ func WithRefreshInterval(value time.Duration) coptions.Opt {
 // WithResponseTimeout sets the Discover service response timeout
 func WithResponseTimeout(value time.Duration) coptions.Opt {
 	return func(p coptions.Params) {
-		logger.Debugf("Checking responseTimeoutSetter")
+		logger.Debug("Checking responseTimeoutSetter")
 		if setter, ok := p.(responseTimeoutSetter); ok {
 			setter.SetResponseTimeout(value)
 		}

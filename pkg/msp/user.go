@@ -63,5 +63,5 @@ func (u *User) PublicVersion() msp.Identity {
 
 // Sign the message
 func (u *User) Sign(msg []byte) ([]byte, error) {
-	return nil, errors.New("not implemented")
+	return nil, errors.New("Sign() function not implemented")
 }

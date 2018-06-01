@@ -79,7 +79,7 @@ func (c *peerGroupResolver) Resolve(peers []fab.Peer) (PeerGroup, error) {
 		} else {
 			s = "\n\n***** Available Peer Groups:\n"
 			for i, grp := range peerGroups {
-				s += fmt.Sprintf("%d - %s", i, grp)
+				s += fmt.Sprintf("%d - %+v", i, grp)
 				if i+1 < len(peerGroups) {
 					s += fmt.Sprintf(" OR\n")
 				}
@@ -105,7 +105,7 @@ func (c *peerGroupResolver) getPeerGroups(peerRetriever MSPPeerRetriever) ([]Pee
 	if logging.IsEnabledFor(loggerModule, logging.DEBUG) {
 		s := "\n***** Org Groups:\n"
 		for i, g := range mspGroups {
-			s += fmt.Sprintf("%s", g)
+			s += fmt.Sprintf("%+v", g)
 			if i+1 < len(mspGroups) {
 				s += fmt.Sprintf("  OR\n")
 			}

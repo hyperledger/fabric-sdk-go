@@ -22,14 +22,14 @@ import (
 func checkCertAttributes(t *testing.T, certBytes []byte, expected []msp.Attribute) {
 	decoded, _ := pem.Decode(certBytes)
 	if decoded == nil {
-		t.Fatalf("Failed cert decoding")
+		t.Fatal("Failed cert decoding")
 	}
 	cert, err := x509.ParseCertificate(decoded.Bytes)
 	if err != nil {
-		t.Fatalf("failed to parse certificate: %v", err)
+		t.Fatalf("failed to parse certificate: %s", err)
 	}
 	if cert == nil {
-		t.Fatalf("failed to parse certificate: %v", err)
+		t.Fatalf("failed to parse certificate: %s", err)
 	}
 	mgr := attrmgr.New()
 	attrs, err := mgr.GetAttributesFromCert(cert)

@@ -28,13 +28,13 @@ func Example() {
 
 	enrollmentSecret, err := c.Register(&RegistrationRequest{Name: username})
 	if err != nil {
-		fmt.Printf("Register return error %v", err)
+		fmt.Printf("Register return error %s", err)
 		return
 	}
 
 	err = c.Enroll(username, WithSecret(enrollmentSecret))
 	if err != nil {
-		fmt.Printf("failed to enroll user: %v", err)
+		fmt.Printf("failed to enroll user: %s", err)
 		return
 	}
 	fmt.Println("enroll user is completed")
@@ -92,7 +92,7 @@ func ExampleWithSecret() {
 
 	err = c.Enroll(randomUsername(), WithSecret("enrollmentSecret"))
 	if err != nil {
-		fmt.Printf("failed to enroll user: %v", err)
+		fmt.Printf("failed to enroll user: %s", err)
 		return
 	}
 	fmt.Println("enroll user is completed")
@@ -114,7 +114,7 @@ func ExampleClient_Register() {
 
 	_, err = c.Register(&RegistrationRequest{Name: randomUsername()})
 	if err != nil {
-		fmt.Printf("Register return error %v", err)
+		fmt.Printf("Register return error %s", err)
 		return
 	}
 	fmt.Println("register user is completed")
@@ -135,7 +135,7 @@ func ExampleClient_Enroll() {
 
 	err = c.Enroll(randomUsername(), WithSecret("enrollmentSecret"))
 	if err != nil {
-		fmt.Printf("failed to enroll user: %v", err)
+		fmt.Printf("failed to enroll user: %s", err)
 		return
 	}
 	fmt.Println("enroll user is completed")
@@ -158,13 +158,13 @@ func ExampleClient_Reenroll() {
 
 	err = c.Enroll(username, WithSecret("enrollmentSecret"))
 	if err != nil {
-		fmt.Printf("failed to enroll user: %v", err)
+		fmt.Printf("failed to enroll user: %s", err)
 		return
 	}
 
 	err = c.Reenroll(username)
 	if err != nil {
-		fmt.Printf("failed to reenroll user: %v", err)
+		fmt.Printf("failed to reenroll user: %s", err)
 		return
 	}
 
@@ -189,12 +189,12 @@ func ExampleClient_GetSigningIdentity() {
 
 	err = c.Enroll(username, WithSecret("enrollmentSecret"))
 	if err != nil {
-		fmt.Printf("failed to enroll user: %v", err)
+		fmt.Printf("failed to enroll user: %s", err)
 		return
 	}
 	enrolledUser, err := c.GetSigningIdentity(username)
 	if err != nil {
-		fmt.Printf("user not found %v", err)
+		fmt.Printf("user not found %s", err)
 		return
 	}
 
@@ -221,7 +221,7 @@ func ExampleClient_Revoke() {
 
 	_, err = c.Revoke(&RevocationRequest{Name: "testuser"})
 	if err != nil {
-		fmt.Printf("revoke return error %v", err)
+		fmt.Printf("revoke return error %s", err)
 	}
 	fmt.Println("revoke user is completed")
 
@@ -239,7 +239,7 @@ func ExampleWithCA() {
 
 	results, err := c.GetAllIdentities(WithCA("CA"))
 	if err != nil {
-		fmt.Printf("Get identities return error %v", err)
+		fmt.Printf("Get identities return error %s", err)
 		return
 	}
 	fmt.Printf("%d identities retrieved", len(results))
@@ -259,7 +259,7 @@ func ExampleClient_CreateIdentity() {
 	identity, err := c.CreateIdentity(&IdentityRequest{ID: "123", Affiliation: "org2",
 		Attributes: []Attribute{{Name: "attName1", Value: "attValue1"}}})
 	if err != nil {
-		fmt.Printf("Create identity return error %v", err)
+		fmt.Printf("Create identity return error %s", err)
 		return
 	}
 	fmt.Printf("identity '%s' created", identity.ID)
@@ -278,7 +278,7 @@ func ExampleClient_ModifyIdentity() {
 
 	identity, err := c.ModifyIdentity(&IdentityRequest{ID: "123", Affiliation: "org2", Secret: "top-secret"})
 	if err != nil {
-		fmt.Printf("Modify identity return error %v", err)
+		fmt.Printf("Modify identity return error %s", err)
 		return
 	}
 	fmt.Printf("identity '%s' modified", identity.ID)
@@ -297,7 +297,7 @@ func ExampleClient_RemoveIdentity() {
 
 	identity, err := c.RemoveIdentity(&RemoveIdentityRequest{ID: "123"})
 	if err != nil {
-		fmt.Printf("Remove identity return error %v", err)
+		fmt.Printf("Remove identity return error %s", err)
 		return
 	}
 	fmt.Printf("identity '%s' removed", identity.ID)
@@ -316,7 +316,7 @@ func ExampleClient_GetIdentity() {
 
 	identity, err := c.GetIdentity("123")
 	if err != nil {
-		fmt.Printf("Get identity return error %v", err)
+		fmt.Printf("Get identity return error %s", err)
 		return
 	}
 	fmt.Printf("identity '%s' retrieved", identity.ID)
@@ -335,7 +335,7 @@ func ExampleClient_GetAllIdentities() {
 
 	results, err := c.GetAllIdentities()
 	if err != nil {
-		fmt.Printf("Get identities return error %v", err)
+		fmt.Printf("Get identities return error %s", err)
 		return
 	}
 	fmt.Printf("%d identities retrieved", len(results))

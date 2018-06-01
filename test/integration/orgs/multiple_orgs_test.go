@@ -155,12 +155,12 @@ func setupClientContextsAndChannel(t *testing.T, sdk *fabsdk.FabricSDK, mc *mult
 	// Get signing identity that is used to sign create channel request
 	org1AdminUser, err := org1MspClient.GetSigningIdentity(org1AdminUser)
 	if err != nil {
-		t.Fatalf("failed to get org1AdminUser, err : %v", err)
+		t.Fatalf("failed to get org1AdminUser, err : %s", err)
 	}
 
 	org2AdminUser, err := org2MspClient.GetSigningIdentity(org2AdminUser)
 	if err != nil {
-		t.Fatalf("failed to get org2AdminUser, err : %v", err)
+		t.Fatalf("failed to get org2AdminUser, err : %s", err)
 	}
 
 	// Org1 resource management client (Org1 is default org)
@@ -289,26 +289,26 @@ func connectUserToOrgChannel(org1ChannelClientContext contextAPI.ChannelProvider
 func checkLedgerInfo(ledgerClient *ledger.Client, t *testing.T, ledgerInfoBefore *fab.BlockchainInfoResponse, transactionID fab.TransactionID) {
 	ledgerInfoAfter, err := ledgerClient.QueryInfo(ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
 	if err != nil {
-		t.Fatalf("QueryInfo return error: %v", err)
+		t.Fatalf("QueryInfo return error: %s", err)
 	}
 	if ledgerInfoAfter.BCI.Height-ledgerInfoBefore.BCI.Height <= 0 {
-		t.Fatalf("Block size did not increase after transaction")
+		t.Fatal("Block size did not increase after transaction")
 	}
 	// Test Query Block by Hash - retrieve current block by number
 	block, err := ledgerClient.QueryBlock(ledgerInfoAfter.BCI.Height-1, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
 	if err != nil {
-		t.Fatalf("QueryBlock return error: %v", err)
+		t.Fatalf("QueryBlock return error: %s", err)
 	}
 	if block == nil {
-		t.Fatalf("Block info not available")
+		t.Fatal("Block info not available")
 	}
 	// Get transaction info
 	transactionInfo, err := ledgerClient.QueryTransaction(transactionID, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
 	if err != nil {
-		t.Fatalf("QueryTransaction return error: %v", err)
+		t.Fatalf("QueryTransaction return error: %s", err)
 	}
 	if transactionInfo.TransactionEnvelope == nil {
-		t.Fatalf("Transaction info missing")
+		t.Fatal("Transaction info missing")
 	}
 }
 
@@ -350,7 +350,7 @@ func testCCPolicy(chClientOrg2User *channel.Client, t *testing.T, ccName string)
 	_, err := chClientOrg2User.Execute(channel.Request{ChaincodeID: ccName, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithTargets(orgTestPeer1),
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err == nil {
-		t.Fatalf("Should have failed to move funds due to cc policy")
+		t.Fatal("Should have failed to move funds due to cc policy")
 	}
 	// Org2 user moves funds (cc policy ok since we have provided peers for both Orgs)
 	_, err = chClientOrg2User.Execute(channel.Request{ChaincodeID: ccName, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, channel.WithRetry(retry.DefaultChannelOpts))
@@ -385,10 +385,10 @@ func moveFunds(chClientOrgUser *channel.Client, t *testing.T, ccName string) fab
 		t.Fatalf("Failed to move funds: %s", err)
 	}
 	if response.ChaincodeStatus == 0 {
-		t.Fatalf("Expected ChaincodeStatus")
+		t.Fatal("Expected ChaincodeStatus")
 	}
 	if response.Responses[0].ChaincodeStatus != response.ChaincodeStatus {
-		t.Fatalf("Expected the chaincode status returned by successful Peer Endorsement to be same as Chaincode status for client response")
+		t.Fatal("Expected the chaincode status returned by successful Peer Endorsement to be same as Chaincode status for client response")
 	}
 	return response.TransactionID
 }
@@ -396,10 +396,10 @@ func moveFunds(chClientOrgUser *channel.Client, t *testing.T, ccName string) fab
 func getBlockchainInfo(ledgerClient *ledger.Client, t *testing.T) *fab.BlockchainInfoResponse {
 	channelCfg, err := ledgerClient.QueryConfig(ledger.WithTargets(orgTestPeer0, orgTestPeer1), ledger.WithMinTargets(2))
 	if err != nil {
-		t.Fatalf("QueryConfig return error: %v", err)
+		t.Fatalf("QueryConfig return error: %s", err)
 	}
 	if len(channelCfg.Orderers()) == 0 {
-		t.Fatalf("Failed to retrieve channel orderers")
+		t.Fatal("Failed to retrieve channel orderers")
 	}
 	expectedOrderer := "orderer.example.com"
 	if !strings.Contains(channelCfg.Orderers()[0], expectedOrderer) {
@@ -407,15 +407,15 @@ func getBlockchainInfo(ledgerClient *ledger.Client, t *testing.T) *fab.Blockchai
 	}
 	ledgerInfoBefore, err := ledgerClient.QueryInfo(ledger.WithTargets(orgTestPeer0, orgTestPeer1), ledger.WithMinTargets(2), ledger.WithMaxTargets(3))
 	if err != nil {
-		t.Fatalf("QueryInfo return error: %v", err)
+		t.Fatalf("QueryInfo return error: %s", err)
 	}
 	// Test Query Block by Hash - retrieve current block by hash
 	block, err := ledgerClient.QueryBlockByHash(ledgerInfoBefore.BCI.CurrentBlockHash, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
 	if err != nil {
-		t.Fatalf("QueryBlockByHash return error: %v", err)
+		t.Fatalf("QueryBlockByHash return error: %s", err)
 	}
 	if block == nil {
-		t.Fatalf("Block info not available")
+		t.Fatal("Block info not available")
 	}
 	return ledgerInfoBefore
 }

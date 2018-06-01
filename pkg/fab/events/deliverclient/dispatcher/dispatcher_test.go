@@ -69,7 +69,7 @@ func TestSeek(t *testing.T) {
 			t.Fatalf("error from seek request: %s", err)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatalf("timeout waiting for deliver status response")
+		t.Fatal("timeout waiting for deliver status response")
 	}
 
 	// Disconnect
@@ -136,7 +136,7 @@ func TestUnauthorized(t *testing.T) {
 		select {
 		case event := <-conneventch:
 			if event.Connected {
-				t.Logf("Got connected event")
+				t.Log("Got connected event")
 			} else {
 				t.Logf("Got disconnected event with error [%s]", event.Err)
 				return
@@ -221,13 +221,13 @@ func checkBlockEvents(eventch chan *fab.BlockEvent, t *testing.T) {
 	select {
 	case event, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed channel")
+			t.Fatal("unexpected closed channel")
 		}
 		if event.SourceURL != sourceURL {
 			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatalf("timed out waiting for block event")
+		t.Fatal("timed out waiting for block event")
 	}
 }
 
@@ -295,7 +295,7 @@ func checkFilteredBlockEvents(eventch chan *fab.FilteredBlockEvent, t *testing.T
 	select {
 	case event, ok := <-eventch:
 		if !ok {
-			t.Fatalf("unexpected closed channel")
+			t.Fatal("unexpected closed channel")
 		}
 		if event.FilteredBlock.ChannelId != channelID {
 			t.Fatalf("expecting channelID [%s] but got [%s]", channelID, event.FilteredBlock.ChannelId)
@@ -304,6 +304,6 @@ func checkFilteredBlockEvents(eventch chan *fab.FilteredBlockEvent, t *testing.T
 			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
 		}
 	case <-time.After(10 * time.Second):
-		t.Fatalf("timed out waiting for filtered block event")
+		t.Fatal("timed out waiting for filtered block event")
 	}
 }

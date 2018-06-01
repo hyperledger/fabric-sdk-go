@@ -51,7 +51,7 @@ func TestChaincodeInstal(t *testing.T) {
 	//defer sdk.Close()
 
 	//if err := testSetup.Initialize(sdk); err != nil {
-	//	t.Fatalf(err.Error())
+	//	t.Fatal(err)
 	//}
 
 	testChaincodeInstallUsingChaincodePath(t, sdk, testSetup)
@@ -65,7 +65,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 
 	ccPkg, err := packager.NewCCPackage(chainCodePath, integration.GetDeployPath())
 	if err != nil {
-		t.Fatalf("Failed to package chaincode")
+		t.Fatal("Failed to package chaincode")
 	}
 
 	// Low level resource
@@ -79,20 +79,20 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 	require.Nil(t, err, "creating peers failed")
 
 	if err := installCC(t, reqCtx, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, peers); err != nil {
-		t.Fatalf("installCC return error: %v", err)
+		t.Fatalf("installCC return error: %s", err)
 	}
 
 	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, peers[0], resource.WithRetry(retry.DefaultResMgmtOpts))
 
 	if err != nil {
-		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
+		t.Fatalf("QueryInstalledChaincodes return error: %s", err)
 	}
 	retrieveInstalledCC(chaincodeQueryResponse, chainCodeVersion, t)
 	//Install same chaincode again, should fail
 	err = installCC(t, reqCtx, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, peers)
 
 	if err == nil {
-		t.Fatalf("install same chaincode didn't return error")
+		t.Fatal("install same chaincode didn't return error")
 	}
 	if strings.Contains(err.Error(), "chaincodes/install.v"+chainCodeVersion+" exists") {
 		t.Fatalf("install same chaincode didn't return the correct error. It returned: %s", err)
@@ -108,7 +108,7 @@ func retrieveInstalledCC(chaincodeQueryResponse *peer.ChaincodeQueryResponse, ch
 		}
 	}
 	if !ccFound {
-		t.Fatalf("Failed to retrieve installed chaincode.")
+		t.Fatal("Failed to retrieve installed chaincode.")
 	}
 }
 
@@ -135,17 +135,17 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricS
 	err = installCC(t, reqCtx, "install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg, peers)
 
 	if err != nil {
-		t.Fatalf("installCC return error: %v", err)
+		t.Fatalf("installCC return error: %s", err)
 	}
 
 	//Install same chaincode again, should fail
 	err = installCC(t, reqCtx, "install", chainCodePath, chainCodeVersion, ccPkg, peers)
 
 	if err == nil {
-		t.Fatalf("install same chaincode didn't return error")
+		t.Fatal("install same chaincode didn't return error")
 	}
 	if strings.Contains(err.Error(), "chaincodes/install.v"+chainCodeVersion+" exists") {
-		t.Fatalf("install same chaincode didn't return the correct error")
+		t.Fatal("install same chaincode didn't return the correct error")
 	}
 }
 

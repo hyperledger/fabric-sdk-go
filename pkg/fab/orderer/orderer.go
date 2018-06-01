@@ -354,7 +354,7 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 	}()
 
 	// Send block request envelope
-	logger.Debugf("Requesting blocks from ordering service")
+	logger.Debug("Requesting blocks from ordering service")
 	err = broadcastClient.Send(&common.Envelope{
 		Payload:   envelope.Payload,
 		Signature: envelope.Signature,

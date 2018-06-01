@@ -76,7 +76,7 @@ func TestJoinChannelFail(t *testing.T) {
 	// Test nil target
 	err := rc.JoinChannel("mychannel", WithTargets(nil))
 	if err == nil || !strings.Contains(err.Error(), "target is nil") {
-		t.Fatalf("Should have failed due to nil target")
+		t.Fatal("Should have failed due to nil target")
 	}
 
 	// Setup target peers
@@ -196,7 +196,7 @@ func TestJoinChannelRequiredParameters(t *testing.T) {
 	// Test empty channel name
 	err := rc.JoinChannel("")
 	if err == nil {
-		t.Fatalf("Should have failed for empty channel name")
+		t.Fatal("Should have failed for empty channel name")
 	}
 
 	// Setup test client with different msp (default targets cannot be calculated)
@@ -237,7 +237,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	// Test empty channel name for request with no opts
 	err := rc.JoinChannel("")
 	if err == nil {
-		t.Fatalf("Should have failed for empty channel name")
+		t.Fatal("Should have failed for empty channel name")
 	}
 
 	var peers []fab.Peer
@@ -247,13 +247,13 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	// Test both targets and filter provided (error condition)
 	err = rc.JoinChannel("mychannel", WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "MSPID"}))
 	if err == nil || !strings.Contains(err.Error(), "If targets are provided, filter cannot be provided") {
-		t.Fatalf("Should have failed if both target and filter provided")
+		t.Fatal("Should have failed if both target and filter provided")
 	}
 
 	// Test targets only
 	err = rc.JoinChannel("mychannel", WithTargets(peers...), WithOrdererEndpoint("orderer.example.com"))
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	// Test filter only (filter has no match)
@@ -276,7 +276,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
 	err = rc.JoinChannel("mychannel")
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 }
@@ -425,7 +425,7 @@ func TestQueryInstalledChaincodes(t *testing.T) {
 	// Test error
 	_, err := rc.QueryInstalledChaincodes()
 	if err == nil {
-		t.Fatalf("QueryInstalledChaincodes: peer cannot be nil")
+		t.Fatal("QueryInstalledChaincodes: peer cannot be nil")
 	}
 
 	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: http.StatusOK}
@@ -444,7 +444,7 @@ func TestQueryInstantiatedChaincodes(t *testing.T) {
 	// Test error
 	_, err := rc.QueryInstantiatedChaincodes("mychannel")
 	if err == nil {
-		t.Fatalf("QueryInstalledChaincodes: peer cannot be nil")
+		t.Fatal("QueryInstalledChaincodes: peer cannot be nil")
 	}
 
 	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: http.StatusOK}
@@ -474,7 +474,7 @@ func TestQueryChannels(t *testing.T) {
 	// Test error
 	_, err = rc.QueryChannels()
 	if err == nil {
-		t.Fatalf("QueryChannels: peer cannot be nil")
+		t.Fatal("QueryChannels: peer cannot be nil")
 	}
 
 	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: http.StatusOK, Payload: responseBytes}
@@ -616,35 +616,35 @@ func TestInstallCCRequiredParameters(t *testing.T) {
 	req := InstallCCRequest{}
 	_, err := rc.InstallCC(req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty install cc request")
+		t.Fatal("Should have failed for empty install cc request")
 	}
 
 	// Test missing chaincode ID
 	req = InstallCCRequest{Name: "", Version: "v0", Path: "path"}
 	_, err = rc.InstallCC(req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty cc ID")
+		t.Fatal("Should have failed for empty cc ID")
 	}
 
 	// Test missing chaincode version
 	req = InstallCCRequest{Name: "ID", Version: "", Path: "path"}
 	_, err = rc.InstallCC(req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty cc version")
+		t.Fatal("Should have failed for empty cc version")
 	}
 
 	// Test missing chaincode path
 	req = InstallCCRequest{Name: "ID", Version: "v0", Path: ""}
 	_, err = rc.InstallCC(req)
 	if err == nil {
-		t.Fatalf("InstallCC should have failed for empty cc path")
+		t.Fatal("InstallCC should have failed for empty cc path")
 	}
 
 	// Test missing chaincode package
 	req = InstallCCRequest{Name: "ID", Version: "v0", Path: "path"}
 	_, err = rc.InstallCC(req)
 	if err == nil {
-		t.Fatalf("InstallCC should have failed for nil chaincode package")
+		t.Fatal("InstallCC should have failed for nil chaincode package")
 	}
 
 }
@@ -710,7 +710,7 @@ func TestInstallCCDiscoveryError(t *testing.T) {
 	// if targets are not provided discovery service is used
 	_, err := rc.InstallCC(req)
 	if err == nil || !strings.Contains(err.Error(), "Test Error") {
-		t.Fatalf("Should have failed to install cc with opts with discovery error")
+		t.Fatal("Should have failed to install cc with opts with discovery error")
 	}
 }
 
@@ -724,41 +724,41 @@ func TestInstantiateCCRequiredParameters(t *testing.T) {
 	// Test empty channel name
 	_, err := rc.InstantiateCC("", req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty request")
+		t.Fatal("Should have failed for empty request")
 	}
 
 	// Test empty request
 	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty request")
+		t.Fatal("Should have failed for empty request")
 	}
 
 	// Test missing chaincode ID
 	req = InstantiateCCRequest{Name: "", Version: "v0", Path: "path"}
 	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty cc name")
+		t.Fatal("Should have failed for empty cc name")
 	}
 
 	// Test missing chaincode version
 	req = InstantiateCCRequest{Name: "ID", Version: "", Path: "path"}
 	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty cc version")
+		t.Fatal("Should have failed for empty cc version")
 	}
 
 	// Test missing chaincode path
 	req = InstantiateCCRequest{Name: "ID", Version: "v0", Path: ""}
 	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty cc path")
+		t.Fatal("Should have failed for empty cc path")
 	}
 
 	// Test missing chaincode policy
 	req = InstantiateCCRequest{Name: "ID", Version: "v0", Path: "path"}
 	_, err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
-		t.Fatalf("Should have failed for nil chaincode policy")
+		t.Fatal("Should have failed for nil chaincode policy")
 	}
 
 }
@@ -780,7 +780,7 @@ func TestInstantiateCCWithDifferentMSP(t *testing.T) {
 	// Test filter only provided (filter rejects discovery service peer msp)
 	_, err := rc.InstantiateCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
 	if err == nil || !strings.Contains(err.Error(), "no targets") {
-		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
+		t.Fatal("Should have failed with no targets since filter rejected all discovery targets")
 	}
 
 	// Channel discovery service will return peer that belongs Org1MSP (valid for instantiate)
@@ -820,41 +820,41 @@ func TestUpgradeCCRequiredParameters(t *testing.T) {
 	// Test empty channel name
 	_, err := rc.UpgradeCC("", req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty channel name")
+		t.Fatal("Should have failed for empty channel name")
 	}
 
 	// Test empty request
 	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty upgrade cc request")
+		t.Fatal("Should have failed for empty upgrade cc request")
 	}
 
 	// Test missing chaincode ID
 	req = UpgradeCCRequest{Name: "", Version: "v0", Path: "path"}
 	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty cc name")
+		t.Fatal("Should have failed for empty cc name")
 	}
 
 	// Test missing chaincode version
 	req = UpgradeCCRequest{Name: "ID", Version: "", Path: "path"}
 	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty cc version")
+		t.Fatal("Should have failed for empty cc version")
 	}
 
 	// Test missing chaincode path
 	req = UpgradeCCRequest{Name: "ID", Version: "v0", Path: ""}
 	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
-		t.Fatalf("Should have failed for empty cc path")
+		t.Fatal("Should have failed for empty cc path")
 	}
 
 	// Test missing chaincode policy
 	req = UpgradeCCRequest{Name: "ID", Version: "v0", Path: "path"}
 	_, err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
-		t.Fatalf("Should have failed for nil chaincode policy")
+		t.Fatal("Should have failed for nil chaincode policy")
 	}
 }
 
@@ -873,7 +873,7 @@ func TestUpgradeCCWithDifferentMSP(t *testing.T) {
 	// Test filter only provided (filter rejects discovery service peer msp)
 	_, err := rc.UpgradeCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
 	if err == nil || !strings.Contains(err.Error(), "no targets") {
-		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
+		t.Fatal("Should have failed with no targets since filter rejected all discovery targets")
 	}
 
 	// Channel discovery service will return peer that belongs Org1MSP (valid for upgrade)
@@ -898,7 +898,7 @@ func TestUpgradeCCWithOpts(t *testing.T) {
 	// Test both targets and filter provided (error condition)
 	_, err := rc.UpgradeCC("mychannel", req, WithTargets(peers...), WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
 	if err == nil || !strings.Contains(err.Error(), "If targets are provided, filter cannot be provided") {
-		t.Fatalf("Should have failed if both target and filter provided")
+		t.Fatal("Should have failed if both target and filter provided")
 	}
 }
 
@@ -985,7 +985,7 @@ func setupResMgmtClientWithLocalPeersAndError(t *testing.T, fabCtx *fcmocks.Mock
 	opts = append(opts, withLocalContextProvider(localProvider))
 	resClient, err := New(createClientContext(fabCtx), opts...)
 	if err != nil {
-		t.Fatalf("Failed to create new client with options: %s %v", err, opts)
+		t.Fatalf("Failed to create new client with options: %s %+v", err, opts)
 	}
 
 	return resClient

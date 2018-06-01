@@ -42,7 +42,7 @@ func TestBasicValidChannel(t *testing.T) {
 
 	cp, err := New(clientCtx.EndpointConfig())
 	if err != nil {
-		t.Fatalf("Unexpected error creating Channel Provider: %v", err)
+		t.Fatalf("Unexpected error creating Channel Provider: %s", err)
 	}
 
 	err = cp.Initialize(ctx)
@@ -59,12 +59,12 @@ func TestBasicValidChannel(t *testing.T) {
 	// System channel
 	channelService, err := cp.ChannelService(clientCtx, "")
 	if err != nil {
-		t.Fatalf("Unexpected error creating Channel Service: %v", err)
+		t.Fatalf("Unexpected error creating Channel Service: %s", err)
 	}
 
 	channelService, err = cp.ChannelService(clientCtx, "mychannel")
 	if err != nil {
-		t.Fatalf("Unexpected error creating Channel Service: %v", err)
+		t.Fatalf("Unexpected error creating Channel Service: %s", err)
 	}
 
 	m, err := channelService.Membership()

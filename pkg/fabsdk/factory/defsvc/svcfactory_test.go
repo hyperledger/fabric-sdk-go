@@ -20,11 +20,11 @@ func TestCreateLocalDiscoveryProvider(t *testing.T) {
 
 	dp, err := factory.CreateLocalDiscoveryProvider(config)
 	if err != nil {
-		t.Fatalf("Unexpected error creating local discovery provider %v", err)
+		t.Fatalf("Unexpected error creating local discovery provider %s", err)
 	}
 
 	_, ok := dp.(*staticdiscovery.LocalProvider)
 	if !ok {
-		t.Fatalf("Unexpected local discovery provider created")
+		t.Fatal("Unexpected local discovery provider created")
 	}
 }

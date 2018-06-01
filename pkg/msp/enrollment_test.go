@@ -64,17 +64,17 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 
 	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
+		panic(fmt.Sprintf("Failed to read config: %s", err))
 	}
 
 	identityConfig, err := ConfigFromBackend(configBackend...)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %v", err))
+		panic(fmt.Sprintf("Failed to read config: %s", err))
 	}
 
 	clientConfig, err := identityConfig.Client()
 	if err != nil {
-		t.Fatalf("Unable to retrieve client config: %v", err)
+		t.Fatalf("Unable to retrieve client config: %s", err)
 	}
 	netConfig := endpointConfig.NetworkConfig()
 	if netConfig == nil {
@@ -127,7 +127,7 @@ func checkSigningIdentityWithEnrollment(cryptoConfig core.CryptoSuiteConfig, t *
 	prepareForEnroll(t, caClient, cs)
 	err = caClient.Enroll(userToEnroll, "enrollmentSecret")
 	if err != nil {
-		t.Fatalf("fabricCAClient Enroll failed: %v", err)
+		t.Fatalf("fabricCAClient Enroll failed: %s", err)
 	}
 	if err := checkSigningIdentity(identityMgr, userToEnroll); err != nil {
 		t.Fatalf("checkSigningIdentity shouldn't fail for user who hasn been just enrolled: %s", err)

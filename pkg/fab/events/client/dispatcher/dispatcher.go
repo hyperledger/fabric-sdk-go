@@ -137,7 +137,7 @@ func (ed *Dispatcher) HandleDisconnectEvent(e esdispatcher.Event) {
 		return
 	}
 
-	logger.Debugf("Closing connection...")
+	logger.Debug("Closing connection...")
 
 	ed.connection.Close()
 	ed.connection = nil
@@ -162,13 +162,13 @@ func (ed *Dispatcher) HandleRegisterConnectionEvent(e esdispatcher.Event) {
 func (ed *Dispatcher) HandleConnectedEvent(e esdispatcher.Event) {
 	evt := e.(*ConnectedEvent)
 
-	logger.Debugf("Handling connected event: %v", evt)
+	logger.Debugf("Handling connected event: %+v", evt)
 
 	if ed.connectionRegistration != nil && ed.connectionRegistration.Eventch != nil {
 		select {
 		case ed.connectionRegistration.Eventch <- NewConnectionEvent(true, nil):
 		default:
-			logger.Warnf("Unable to send to connection event channel.")
+			logger.Warn("Unable to send to connection event channel.")
 		}
 	}
 }
@@ -189,7 +189,7 @@ func (ed *Dispatcher) HandleDisconnectedEvent(e esdispatcher.Event) {
 		select {
 		case ed.connectionRegistration.Eventch <- NewConnectionEvent(false, evt.Err):
 		default:
-			logger.Warnf("Unable to send to connection event channel.")
+			logger.Warn("Unable to send to connection event channel.")
 		}
 	} else {
 		logger.Warnf("Disconnected from event server: %s", evt.Err)
@@ -210,7 +210,7 @@ func (ed *Dispatcher) registerHandlers() {
 
 func (ed *Dispatcher) clearConnectionRegistration() {
 	if ed.connectionRegistration != nil {
-		logger.Debugf("Closing connection registration event channel.")
+		logger.Debug("Closing connection registration event channel.")
 		close(ed.connectionRegistration.Eventch)
 		ed.connectionRegistration = nil
 	}

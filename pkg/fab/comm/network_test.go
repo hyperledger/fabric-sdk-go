@@ -22,12 +22,12 @@ const localOverrideEntityMatcher = "../../../test/fixtures/config/overrides/loca
 func TestNetworkPeerConfigFromURL(t *testing.T) {
 	configBackend, err := config.FromFile(configTestFilePath)()
 	if err != nil {
-		t.Fatalf("Unexpected error reading config backend: %v", err)
+		t.Fatalf("Unexpected error reading config backend: %s", err)
 	}
 
 	sampleConfig, err := fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
-		t.Fatalf("Unexpected error reading config: %v", err)
+		t.Fatalf("Unexpected error reading config: %s", err)
 	}
 
 	_, err = NetworkPeerConfig(sampleConfig, "invalid")
@@ -47,12 +47,12 @@ func TestNetworkPeerConfigFromURL(t *testing.T) {
 func TestSearchPeerConfigFromURL(t *testing.T) {
 	configBackend1, err := config.FromFile(localOverrideEntityMatcher)()
 	if err != nil {
-		t.Fatalf("Unexpected error reading config backend: %v", err)
+		t.Fatalf("Unexpected error reading config backend: %s", err)
 	}
 
 	configBackend2, err := config.FromFile(entityMatcherTestFilePath)()
 	if err != nil {
-		t.Fatalf("Unexpected error reading config backend: %v", err)
+		t.Fatalf("Unexpected error reading config backend: %s", err)
 	}
 
 	//override entitymatcher
@@ -61,7 +61,7 @@ func TestSearchPeerConfigFromURL(t *testing.T) {
 
 	sampleConfig, err := fabImpl.ConfigFromBackend(backends...)
 	if err != nil {
-		t.Fatalf("Unexpected error reading config: %v", err)
+		t.Fatalf("Unexpected error reading config: %s", err)
 	}
 
 	peer0Org1, ok := sampleConfig.PeerConfig("peer0.org1.example.com")
@@ -92,12 +92,12 @@ func TestSearchPeerConfigFromURL(t *testing.T) {
 func TestMSPID(t *testing.T) {
 	configBackend, err := config.FromFile(configTestFilePath)()
 	if err != nil {
-		t.Fatalf("Unexpected error reading config backend: %v", err)
+		t.Fatalf("Unexpected error reading config backend: %s", err)
 	}
 
 	sampleConfig, err := fabImpl.ConfigFromBackend(configBackend...)
 	if err != nil {
-		t.Fatalf("Unexpected error reading config: %v", err)
+		t.Fatalf("Unexpected error reading config: %s", err)
 	}
 
 	mspID, ok := MSPID(sampleConfig, "invalid")

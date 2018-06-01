@@ -87,9 +87,9 @@ func (cc *CachingConnector) Close() {
 
 	select {
 	case <-cc.janitorClosed:
-		logger.Debugf("janitor not running")
+		logger.Debug("janitor not running")
 	default:
-		logger.Debugf("janitor running")
+		logger.Debug("janitor running")
 		cc.janitorDone <- true
 		cc.waitgroup.Wait()
 	}
@@ -100,7 +100,7 @@ func (cc *CachingConnector) Close() {
 	if len(cc.index) > 0 {
 		logger.Debugf("flushing connection cache with open connections [%d]", len(cc.index))
 	} else {
-		logger.Debugf("flushing connection cache")
+		logger.Debug("flushing connection cache")
 	}
 
 	cc.flush()
@@ -148,7 +148,7 @@ func (cc *CachingConnector) ReleaseConn(conn *grpc.ClientConn) {
 		if conn.GetState() != connectivity.Shutdown {
 			logger.Warn("Connection is not shutdown, trying to close ...")
 			if err := conn.Close(); err != nil {
-				logger.Warnf("conn close failed err %v", err)
+				logger.Warnf("conn close failed err %s", err)
 			}
 		}
 		return
@@ -274,11 +274,11 @@ func (cc *CachingConnector) removeConn(c *cachedConn) {
 func (cc *CachingConnector) ensureJanitorStarted() {
 	select {
 	case <-cc.janitorClosed:
-		logger.Debugf("janitor not started")
+		logger.Debug("janitor not started")
 		cc.waitgroup.Add(1)
 		go cc.janitor()
 	default:
-		logger.Debugf("janitor already started")
+		logger.Debug("janitor already started")
 	}
 }
 
@@ -296,7 +296,7 @@ func (cc *CachingConnector) ensureJanitorStarted() {
 //    decrements the "wg" waitgroup when exiting.
 //    writes to the "done" go channel when closing due to becoming empty.
 func (cc *CachingConnector) janitor() {
-	logger.Debugf("starting connection janitor")
+	logger.Debug("starting connection janitor")
 	defer cc.waitgroup.Done()
 
 	ticker := time.NewTicker(cc.sweepTime)
@@ -310,7 +310,7 @@ func (cc *CachingConnector) janitor() {
 			numConn := len(cc.index)
 			cc.lock.Unlock()
 			if numConn == 0 {
-				logger.Debugf("closing connection janitor")
+				logger.Debug("closing connection janitor")
 				cc.janitorClosed <- true
 				return
 			}

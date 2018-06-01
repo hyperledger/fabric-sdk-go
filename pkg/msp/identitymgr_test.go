@@ -21,6 +21,6 @@ func TestManagerInterfaces(t *testing.T) {
 
 	apiIM = &im
 	if apiIM == nil {
-		t.Fatalf("this shouldn't happen.")
+		t.Fatal("this shouldn't happen.")
 	}
 }

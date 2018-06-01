@@ -86,7 +86,7 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 		//For some tests SDK may not have backend set, try with config file if backend is missing
 		cfgBackends, err = ConfigBackend()
 		if err != nil {
-			return errors.Wrapf(err, "failed to get config backend from config: %v", err)
+			return errors.Wrapf(err, "failed to get config backend from config: %s", err)
 		}
 	} else {
 		cfgBackends = append(cfgBackends, configBackend)

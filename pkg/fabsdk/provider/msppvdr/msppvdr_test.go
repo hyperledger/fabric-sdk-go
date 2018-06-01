@@ -39,7 +39,7 @@ func TestCreateMSPProvider(t *testing.T) {
 
 	cryptosuite, err := coreFactory.CreateCryptoSuiteProvider(cryptoSuiteConfig)
 	if err != nil {
-		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
+		t.Fatalf("Unexpected error creating cryptosuite provider %s", err)
 	}
 
 	userStore := &mockmsp.MockUserStore{}
@@ -48,16 +48,16 @@ func TestCreateMSPProvider(t *testing.T) {
 	assert.Nil(t, err, "New should not have failed")
 
 	if provider.UserStore() != userStore {
-		t.Fatalf("Invalid user store returned")
+		t.Fatal("Invalid user store returned")
 	}
 
 	mgr, ok := provider.IdentityManager("Org1")
 	if !ok {
-		t.Fatalf("Expected to return idnetity manager")
+		t.Fatal("Expected to return idnetity manager")
 	}
 
 	_, ok = mgr.(*msp.IdentityManager)
 	if !ok {
-		t.Fatalf("Unexpected signing manager created")
+		t.Fatal("Unexpected signing manager created")
 	}
 }

@@ -28,7 +28,7 @@ func TestBadConfig(t *testing.T) {
 	//Get cryptosuite using config
 	_, err := GetSuiteByConfig(mockConfig)
 	if err == nil {
-		t.Fatalf("Unknown security provider should return error")
+		t.Fatal("Unknown security provider should return error")
 	}
 }
 
@@ -45,7 +45,7 @@ func TestCryptoSuiteByConfigSW(t *testing.T) {
 	//Get cryptosuite using config
 	c, err := GetSuiteByConfig(mockConfig)
 	if err != nil {
-		t.Fatalf("Not supposed to get error, but got: %v", err)
+		t.Fatalf("Not supposed to get error, but got: %s", err)
 	}
 
 	verifyHashFn(t, c)
@@ -64,14 +64,14 @@ func TestCryptoSuiteByBadConfigSW(t *testing.T) {
 	//Get cryptosuite using config
 	_, err := GetSuiteByConfig(mockConfig)
 	if err == nil {
-		t.Fatalf("Bad configuration should return error")
+		t.Fatal("Bad configuration should return error")
 	}
 }
 
 func TestCryptoSuiteDefaultEphemeral(t *testing.T) {
 	c, err := GetSuiteWithDefaultEphemeral()
 	if err != nil {
-		t.Fatalf("Not supposed to get error, but got: %v", err)
+		t.Fatalf("Not supposed to get error, but got: %s", err)
 	}
 	verifyHashFn(t, c)
 }
@@ -81,10 +81,10 @@ func verifyHashFn(t *testing.T, c core.CryptoSuite) {
 	e := sha256.Sum256(msg)
 	a, err := c.Hash(msg, &bccsp.SHA256Opts{})
 	if err != nil {
-		t.Fatalf("Not supposed to get error, but got: %v", err)
+		t.Fatalf("Not supposed to get error, but got: %s", err)
 	}
 
 	if !bytes.Equal(a, e[:]) {
-		t.Fatalf("Expected SHA 256 hash function")
+		t.Fatal("Expected SHA 256 hash function")
 	}
 }

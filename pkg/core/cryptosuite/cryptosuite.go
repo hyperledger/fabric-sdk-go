@@ -47,11 +47,11 @@ func GetDefault() core.CryptoSuite {
 	// Use SW as the default cryptosuite when not initialized properly - should be for testing only
 	s, err := sw.GetSuiteWithDefaultEphemeral()
 	if err != nil {
-		logger.Panicf("Could not initialize default cryptosuite: %v", err)
+		logger.Panicf("Could not initialize default cryptosuite: %s", err)
 	}
 	err = initSuite(s)
 	if err != nil {
-		logger.Panicf("Could not set default cryptosuite: %v", err)
+		logger.Panicf("Could not set default cryptosuite: %s", err)
 	}
 
 	return defaultCryptoSuite

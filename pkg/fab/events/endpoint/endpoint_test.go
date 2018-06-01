@@ -72,7 +72,7 @@ func TestDiscoveryProvider(t *testing.T) {
 	expectedNumPeers := len(peers)
 
 	discoveryService, err := NewEndpointDiscoveryWrapper(ctx, "testchannel", clientmocks.NewDiscoveryService(peers...))
-	assert.NoErrorf(t, err, "error creating discovery wrapper")
+	assert.NoError(t, err, "error creating discovery wrapper")
 
 	peers, err = discoveryService.GetPeers()
 	if err != nil {
@@ -89,7 +89,7 @@ func TestDiscoveryProviderWithTargetFilter(t *testing.T) {
 	expectedNumPeers := len(peers) - 1
 
 	discoveryService, err := NewEndpointDiscoveryWrapper(ctx, "testchannel", clientmocks.NewDiscoveryService(peers...), WithTargetFilter(newMockFilter(p3)))
-	assert.NoErrorf(t, err, "error creating discovery wrapper")
+	assert.NoError(t, err, "error creating discovery wrapper")
 
 	peers, err = discoveryService.GetPeers()
 	if err != nil {
@@ -111,7 +111,7 @@ func TestDiscoveryProviderWithEventSource(t *testing.T) {
 	expectedNumPeers := len(peers) - 1
 
 	discoveryService, err := NewEndpointDiscoveryWrapper(ctx, "testchannel", clientmocks.NewDiscoveryService(peers...))
-	assert.NoErrorf(t, err, "error creating discovery wrapper")
+	assert.NoError(t, err, "error creating discovery wrapper")
 
 	peers, err = discoveryService.GetPeers()
 	if err != nil {

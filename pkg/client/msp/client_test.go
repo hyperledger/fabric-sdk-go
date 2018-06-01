@@ -51,19 +51,19 @@ func TestMSP(t *testing.T) {
 	// Without WithOrg option, it uses default client organization.
 	msp, err := New(ctxProvider)
 	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
+		t.Fatalf("failed to create CA client: %s", err)
 	}
 
 	// Empty enrollment ID
 	err = msp.Enroll("", WithSecret("user1"))
 	if err == nil {
-		t.Fatalf("Enroll should return error for empty enrollment ID")
+		t.Fatal("Enroll should return error for empty enrollment ID")
 	}
 
 	// Empty enrollment secret
 	err = msp.Enroll("enrolledUsername", WithSecret(""))
 	if err == nil {
-		t.Fatalf("Enroll should return error for empty enrollment secret")
+		t.Fatal("Enroll should return error for empty enrollment secret")
 	}
 
 	enrolledUser := getEnrolledUser(t, msp)
@@ -71,16 +71,16 @@ func TestMSP(t *testing.T) {
 	// Reenroll with empty user
 	err = msp.Reenroll("")
 	if err == nil {
-		t.Fatalf("Expected error with enpty user")
+		t.Fatal("Expected error with enpty user")
 	}
 	if err.Error() != "user name missing" {
-		t.Fatalf("Expected error user required. Got: %s", err.Error())
+		t.Fatalf("Expected error user required. Got: %s", err)
 	}
 
 	// Reenroll with appropriate user
 	err = msp.Reenroll(enrolledUser.Identifier().ID)
 	if err != nil {
-		t.Fatalf("Reenroll return error %v", err)
+		t.Fatalf("Reenroll return error %s", err)
 	}
 
 	// Try with a non-default org
@@ -92,11 +92,11 @@ func TestWithNonExistentOrganization(t *testing.T) {
 	// Instantiate the SDK
 	sdk, err := fabsdk.New(config.FromFile(configPath))
 	if err != nil {
-		t.Fatalf("SDK init failed: %v", err)
+		t.Fatalf("SDK init failed: %s", err)
 	}
 	_, err = New(sdk.Context(), WithOrg("nonExistentOrg"))
 	if err == nil {
-		t.Fatalf("Should have failed for non-existing organization")
+		t.Fatal("Should have failed for non-existing organization")
 	}
 
 }
@@ -107,7 +107,7 @@ func TestNewWithProviderError(t *testing.T) {
 	// Create msp client with client provider error
 	_, err := New(mockContextWithProviderError())
 	if err == nil {
-		t.Fatalf("Should have failed due to provider failure")
+		t.Fatal("Should have failed due to provider failure")
 	}
 }
 
@@ -121,7 +121,7 @@ func mockContextWithProviderError() contextApi.ClientProvider {
 func TestNewWithClientOptionError(t *testing.T) {
 	_, err := New(mockClientProvider(), WithClientOptionError())
 	if err == nil {
-		t.Fatalf("Should have failed due to client option failure")
+		t.Fatal("Should have failed due to client option failure")
 	}
 }
 
@@ -143,12 +143,12 @@ func TestRegister(t *testing.T) {
 	// Without WithOrg option, it uses default client organization.
 	msp, err := New(ctxProvider)
 	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
+		t.Fatalf("failed to create CA client: %s", err)
 	}
 
 	_, err = msp.Register(&RegistrationRequest{Name: "testuser"})
 	if err != nil {
-		t.Fatalf("Register return error %v", err)
+		t.Fatalf("Register return error %s", err)
 	}
 
 }
@@ -164,12 +164,12 @@ func TestRevoke(t *testing.T) {
 	// Without WithOrg option, it uses default client organization.
 	msp, err := New(ctxProvider)
 	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
+		t.Fatalf("failed to create CA client: %s", err)
 	}
 
 	_, err = msp.Revoke(&RevocationRequest{Name: "testuser"})
 	if err != nil {
-		t.Fatalf("Revoke return error %v", err)
+		t.Fatalf("Revoke return error %s", err)
 	}
 
 }
@@ -180,13 +180,13 @@ func TestCreateIdentityFailure(t *testing.T) {
 	// Create msp client
 	c, err := New(mockClientProvider())
 	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
+		t.Fatalf("failed to create CA client: %s", err)
 	}
 
 	// Missing required affiliation
 	_, err = c.CreateIdentity(&IdentityRequest{ID: "123"})
 	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
-		t.Fatalf("Should have failed to create identity due to missing affiliation: %v", err)
+		t.Fatalf("Should have failed to create identity due to missing affiliation: %s", err)
 	}
 
 }
@@ -197,13 +197,13 @@ func TestModifyIdentityFailure(t *testing.T) {
 	// Create msp client
 	c, err := New(mockClientProvider())
 	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
+		t.Fatalf("failed to create CA client: %s", err)
 	}
 
 	// Missing required ID
 	_, err = c.ModifyIdentity(&IdentityRequest{Affiliation: "org2", Secret: "top-secret", Attributes: []Attribute{{Name: "attName1", Value: "attValue1"}}})
 	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
-		t.Fatalf("Should have failed to update identity due to missing id: %v", err)
+		t.Fatalf("Should have failed to update identity due to missing id: %s", err)
 	}
 
 }
@@ -214,13 +214,13 @@ func TestRemoveIdentityFailure(t *testing.T) {
 	// Create msp client
 	c, err := New(mockClientProvider())
 	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
+		t.Fatalf("failed to create CA client: %s", err)
 	}
 
 	// Missing required ID
 	_, err = c.RemoveIdentity(&RemoveIdentityRequest{})
 	if err == nil || !strings.Contains(err.Error(), "ID is required") {
-		t.Fatalf("Should have failed to create identity due to missing id: %v", err)
+		t.Fatalf("Should have failed to create identity due to missing id: %s", err)
 	}
 
 }
@@ -231,17 +231,17 @@ func TestGetIdentityFailure(t *testing.T) {
 	// Create msp client
 	c, err := New(mockClientProvider())
 	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
+		t.Fatalf("failed to create CA client: %s", err)
 	}
 
 	_, err = c.GetIdentity("")
 	if err == nil || !strings.Contains(err.Error(), "id is required") {
-		t.Fatalf("Should have failed to get identity due to missing id: %v", err)
+		t.Fatalf("Should have failed to get identity due to missing id: %s", err)
 	}
 
 	_, err = c.GetIdentity("123", withOptionError())
 	if err == nil {
-		t.Fatalf("Should have failed due to error in opton")
+		t.Fatal("Should have failed due to error in opton")
 	}
 }
 
@@ -251,12 +251,12 @@ func TestGetAllIdentitiesFailure(t *testing.T) {
 	// Create msp client
 	c, err := New(mockClientProvider())
 	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
+		t.Fatalf("failed to create CA client: %s", err)
 	}
 
 	_, err = c.GetAllIdentities(withOptionError())
 	if err == nil {
-		t.Fatalf("Should have failed due to error in opton")
+		t.Fatal("Should have failed due to error in opton")
 	}
 
 }
@@ -271,27 +271,27 @@ func withOptionError() RequestOption {
 func testWithOrg2(t *testing.T, ctxProvider contextApi.ClientProvider) {
 	msp, err := New(ctxProvider, WithOrg("Org2"))
 	if err != nil {
-		t.Fatalf("failed to create CA client: %v", err)
+		t.Fatalf("failed to create CA client: %s", err)
 	}
 
 	org2lUsername := randomUsername()
 
 	err = msp.Enroll(org2lUsername, WithSecret("enrollmentSecret"))
 	if err != nil {
-		t.Fatalf("Enroll return error %v", err)
+		t.Fatalf("Enroll return error %s", err)
 	}
 
 	org2EnrolledUser, err := msp.GetSigningIdentity(org2lUsername)
 	if err != nil {
-		t.Fatalf("Expected to find user")
+		t.Fatal("Expected to find user")
 	}
 
 	if org2EnrolledUser.Identifier().ID != org2lUsername {
-		t.Fatalf("Enrolled user name doesn't match")
+		t.Fatal("Enrolled user name doesn't match")
 	}
 
 	if org2EnrolledUser.Identifier().MSPID != "Org2MSP" {
-		t.Fatalf("Enrolled user mspID doesn't match")
+		t.Fatal("Enrolled user mspID doesn't match")
 	}
 }
 
@@ -302,25 +302,25 @@ func getEnrolledUser(t *testing.T, msp *Client) mspctx.SigningIdentity {
 
 	_, err := msp.GetSigningIdentity(enrollUsername)
 	if err != ErrUserNotFound {
-		t.Fatalf("Expected to not find user")
+		t.Fatal("Expected to not find user")
 	}
 
 	err = msp.Enroll(enrollUsername, WithSecret("enrollmentSecret"))
 	if err != nil {
-		t.Fatalf("Enroll return error %v", err)
+		t.Fatalf("Enroll return error %s", err)
 	}
 
 	enrolledUser, err := msp.GetSigningIdentity(enrollUsername)
 	if err != nil {
-		t.Fatalf("Expected to find user")
+		t.Fatal("Expected to find user")
 	}
 
 	if enrolledUser.Identifier().ID != enrollUsername {
-		t.Fatalf("Enrolled user name doesn't match")
+		t.Fatal("Enrolled user name doesn't match")
 	}
 
 	if enrolledUser.Identifier().MSPID != "Org1MSP" {
-		t.Fatalf("Enrolled user mspID doesn't match")
+		t.Fatal("Enrolled user mspID doesn't match")
 	}
 	return enrolledUser
 }
@@ -360,18 +360,18 @@ func (f *testFixture) setup() *fabsdk.FabricSDK {
 	// Instantiate the SDK
 	sdk, err := fabsdk.New(configProvider)
 	if err != nil {
-		panic(fmt.Sprintf("SDK init failed: %v", err))
+		panic(fmt.Sprintf("SDK init failed: %s", err))
 	}
 
 	configBackend, err := sdk.Config()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to get config: %v", err))
+		panic(fmt.Sprintf("Failed to get config: %s", err))
 	}
 
 	f.cryptoSuiteConfig = cryptosuite.ConfigFromBackend(configBackend)
 	f.identityConfig, err = mspImpl.ConfigFromBackend(configBackend)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to get identity config: %v", err))
+		panic(fmt.Sprintf("Failed to get identity config: %s", err))
 	}
 
 	// Delete all private keys from the crypto suite store
@@ -382,7 +382,7 @@ func (f *testFixture) setup() *fabsdk.FabricSDK {
 	ctxProvider := sdk.Context()
 	ctx, err := ctxProvider()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to init context: %v", err))
+		panic(fmt.Sprintf("Failed to init context: %s", err))
 	}
 
 	// Start Http Server if it's not running
@@ -401,7 +401,7 @@ func (f *testFixture) close() {
 func cleanup(storePath string) {
 	err := os.RemoveAll(storePath)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to remove dir %s: %v\n", storePath, err))
+		panic(fmt.Sprintf("Failed to remove dir %s: %s\n", storePath, err))
 	}
 }
 

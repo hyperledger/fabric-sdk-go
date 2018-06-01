@@ -305,7 +305,7 @@ func useDeliverEvents(ctx context.Client, chConfig fab.ChannelCfg) (bool, error)
 	case fab.EventHubEventServiceType:
 		return false, nil
 	case fab.AutoDetectEventServiceType:
-		logger.Debugf("Determining event service type from channel capabilities...")
+		logger.Debug("Determining event service type from channel capabilities...")
 		return chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_1Capability), nil
 	default:
 		return false, errors.Errorf("unsupported event service type: %d", ctx.EndpointConfig().EventServiceType())

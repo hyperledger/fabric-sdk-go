@@ -60,7 +60,7 @@ func TestDiscoveryFilter(t *testing.T) {
 	}
 
 	if !discoveryFilter.called {
-		t.Fatalf("Expecting true, got false")
+		t.Fatal("Expecting true, got false")
 	}
 
 }

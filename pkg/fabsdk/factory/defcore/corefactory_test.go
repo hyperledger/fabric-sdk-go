@@ -22,12 +22,12 @@ func TestCreateCryptoSuiteProvider(t *testing.T) {
 
 	cryptosuite, err := factory.CreateCryptoSuiteProvider(config)
 	if err != nil {
-		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
+		t.Fatalf("Unexpected error creating cryptosuite provider %s", err)
 	}
 
 	_, ok := cryptosuite.(*cryptosuitewrapper.CryptoSuite)
 	if !ok {
-		t.Fatalf("Unexpected cryptosuite provider created")
+		t.Fatal("Unexpected cryptosuite provider created")
 	}
 }
 
@@ -37,17 +37,17 @@ func TestCreateSigningManager(t *testing.T) {
 
 	cryptosuite, err := factory.CreateCryptoSuiteProvider(config)
 	if err != nil {
-		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
+		t.Fatalf("Unexpected error creating cryptosuite provider %s", err)
 	}
 
 	signer, err := factory.CreateSigningManager(cryptosuite)
 	if err != nil {
-		t.Fatalf("Unexpected error creating signing manager %v", err)
+		t.Fatalf("Unexpected error creating signing manager %s", err)
 	}
 
 	_, ok := signer.(*signingMgr.SigningManager)
 	if !ok {
-		t.Fatalf("Unexpected signing manager created")
+		t.Fatal("Unexpected signing manager created")
 	}
 }
 
@@ -57,12 +57,12 @@ func TestNewFactoryInfraProvider(t *testing.T) {
 
 	infraProvider, err := factory.CreateInfraProvider(ctx.EndpointConfig())
 	if err != nil {
-		t.Fatalf("Unexpected error creating fabric provider %v", err)
+		t.Fatalf("Unexpected error creating fabric provider %s", err)
 	}
 
 	_, ok := infraProvider.(*fabpvdr.InfraProvider)
 	if !ok {
-		t.Fatalf("Unexpected fabric provider created")
+		t.Fatal("Unexpected fabric provider created")
 	}
 }
 
@@ -71,6 +71,6 @@ func TestNewLoggingProvider(t *testing.T) {
 
 	_, ok := logger.(*modlog.Provider)
 	if !ok {
-		t.Fatalf("Unexpected logger provider created")
+		t.Fatal("Unexpected logger provider created")
 	}
 }

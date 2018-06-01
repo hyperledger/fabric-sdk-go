@@ -90,7 +90,7 @@ func VerifyPeerCertificate(rawCerts [][]byte, verifiedChains [][]*x509.Certifica
 			err = ValidateCertificateDates(cert)
 			if err != nil {
 				//cert is expired or not valid
-				logger.Warn("%v", err)
+				logger.Warn(err.Error())
 				return err
 			}
 		}
@@ -100,7 +100,7 @@ func VerifyPeerCertificate(rawCerts [][]byte, verifiedChains [][]*x509.Certifica
 			err := ValidateCertificateDates(cert)
 			if err != nil {
 				//cert is expired or not valid
-				logger.Warn("%v", err)
+				logger.Warn(err.Error())
 				return err
 			}
 		}

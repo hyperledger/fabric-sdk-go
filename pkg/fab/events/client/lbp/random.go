@@ -27,7 +27,7 @@ func NewRandom() *Random {
 // Choose randomly chooses a peer from the list of peers
 func (lbp *Random) Choose(peers []fab.Peer) (fab.Peer, error) {
 	if len(peers) == 0 {
-		logger.Warnf("No peers to choose from!")
+		logger.Warn("No peers to choose from!")
 		return nil, nil
 	}
 

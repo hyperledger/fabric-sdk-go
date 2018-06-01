@@ -76,7 +76,7 @@ func NewMockProviderContext(userOpts ...ProviderOption) *MockProviderContext {
 	for _, param := range userOpts {
 		err := param(&users)
 		if err != nil {
-			panic(fmt.Errorf("error creating MockProviderContext: %v", err))
+			panic(fmt.Errorf("error creating MockProviderContext: %s", err))
 		}
 	}
 

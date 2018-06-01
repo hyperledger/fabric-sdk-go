@@ -19,27 +19,27 @@ func TestGetPrivateKeyFromCert(t *testing.T) {
 
 	_, err := GetPrivateKeyFromCert([]byte(""), cs)
 	if err == nil {
-		t.Fatalf("Should have failed for not a cert")
+		t.Fatal("Should have failed for not a cert")
 	}
 
 	_, err = GetPrivateKeyFromCert([]byte(emptyCert), cs)
 	if err == nil {
-		t.Fatalf("Should have failed for empty cert")
+		t.Fatal("Should have failed for empty cert")
 	}
 
 	_, err = GetPrivateKeyFromCert([]byte(malformedCert), cs)
 	if err == nil {
-		t.Fatalf("Should have failed for malformed cert")
+		t.Fatal("Should have failed for malformed cert")
 	}
 
 	_, err = GetPrivateKeyFromCert([]byte(dsa2048), cs)
 	if err == nil {
-		t.Fatalf("Should have failed since supported key public key type is [ECDSA, RSA]")
+		t.Fatal("Should have failed since supported key public key type is [ECDSA, RSA]")
 	}
 
 	_, err = GetPrivateKeyFromCert([]byte(ecdsaCert), cs)
 	if err == nil {
-		t.Fatalf("Should have failed since key is not imported")
+		t.Fatal("Should have failed since key is not imported")
 	}
 }
 
@@ -50,19 +50,19 @@ func TestX509KeyPair(t *testing.T) {
 	// Not a cert
 	_, err := X509KeyPair([]byte(""), nil, cs)
 	if err == nil {
-		t.Fatalf("Should have failed for not a cert")
+		t.Fatal("Should have failed for not a cert")
 	}
 
 	// Malformed cert
 	_, err = X509KeyPair([]byte(malformedCert), nil, cs)
 	if err == nil {
-		t.Fatalf("Should have failed for malformed cert")
+		t.Fatal("Should have failed for malformed cert")
 	}
 
 	// DSA Cert
 	_, err = X509KeyPair([]byte(dsa2048), nil, cs)
 	if err == nil {
-		t.Fatalf("Should have failed for DSA algorithm")
+		t.Fatal("Should have failed for DSA algorithm")
 	}
 
 	// ECSDA Cert
@@ -86,19 +86,19 @@ func TestPrivateKey(t *testing.T) {
 
 	publicKey := pk.Public()
 	if publicKey != nil {
-		t.Fatalf("Key should be nil")
+		t.Fatal("Key should be nil")
 	}
 
 	_, err := pk.Sign(nil, []byte("Hello"), nil)
 	if err == nil {
-		t.Fatalf("Should have failed since crypto suite is nil")
+		t.Fatal("Should have failed since crypto suite is nil")
 	}
 
 	// Private key without private key
 	pk = &PrivateKey{cryptosuite.GetDefault(), nil, nil}
 	_, err = pk.Sign(nil, []byte("Hello"), nil)
 	if err == nil {
-		t.Fatalf("Should have failed since private key is nil")
+		t.Fatal("Should have failed since private key is nil")
 	}
 
 	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEMBytes([]byte(keyPem), cryptosuite.GetDefault(), true)
@@ -114,7 +114,7 @@ func TestPrivateKey(t *testing.T) {
 	}
 
 	if len(signed) == 0 {
-		t.Fatalf("Message not signed")
+		t.Fatal("Message not signed")
 	}
 
 }

@@ -228,27 +228,27 @@ func (r *Reference) setTimerRunning() bool {
 	defer r.lock.Unlock()
 
 	if r.running || r.closed {
-		logger.Debugf("Cannot start timer since timer is either already running or it is closed")
+		logger.Debug("Cannot start timer since timer is either already running or it is closed")
 		return false
 	}
 
 	r.running = true
 	r.wg.Add(1)
-	logger.Debugf("Timer started")
+	logger.Debug("Timer started")
 	return true
 }
 
 func (r *Reference) setTimerStopped() {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	logger.Debugf("Timer stopped")
+	logger.Debug("Timer stopped")
 	r.running = false
 	r.wg.Done()
 }
 
 func (r *Reference) ensureTimerStarted(initialExpiration time.Duration) {
 	if r.running {
-		logger.Debugf("Timer is already running")
+		logger.Debug("Timer is already running")
 		return
 	}
 
@@ -259,18 +259,18 @@ func (r *Reference) ensureTimerStarted(initialExpiration time.Duration) {
 
 func checkTimeStarted(r *Reference, initialExpiration time.Duration) {
 	if !r.setTimerRunning() {
-		logger.Debugf("Timer is already running")
+		logger.Debug("Timer is already running")
 		return
 	}
 	defer r.setTimerStopped()
 
-	logger.Debugf("Starting timer")
+	logger.Debug("Starting timer")
 
 	expiry := initialExpiration
 	for {
 		select {
 		case <-r.closech:
-			logger.Debugf("Got closed event. Exiting timer.")
+			logger.Debug("Got closed event. Exiting timer.")
 			return
 
 		case <-time.After(expiry):

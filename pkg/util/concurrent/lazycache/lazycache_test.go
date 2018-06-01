@@ -121,7 +121,7 @@ func TestMustGetPanic(t *testing.T) {
 	}()
 
 	cache.MustGet(NewStringKey("error"))
-	t.Fatalf("Expecting panic but got none")
+	t.Fatal("Expecting panic but got none")
 	cache.Close()
 }
 
@@ -157,7 +157,7 @@ func TestClose(t *testing.T) {
 		t.Fatalf("Expecting value [%s] but got [%s]", expectedValue, cvalue.str)
 	}
 	if cvalue.CloseCalled() {
-		t.Fatalf("Not expecting close to be called but is was")
+		t.Fatal("Not expecting close to be called but is was")
 	}
 
 	// Get again - should succeed
@@ -170,7 +170,7 @@ func TestClose(t *testing.T) {
 		t.Fatalf("Expecting value [%s] but got [%s]", expectedValue, cvalue.str)
 	}
 	if cvalue.CloseCalled() {
-		t.Fatalf("Not expecting close to be called but is was")
+		t.Fatal("Not expecting close to be called but is was")
 	}
 
 	// Close the cache
@@ -180,12 +180,12 @@ func TestClose(t *testing.T) {
 	cache.Close()
 
 	if !cvalue.CloseCalled() {
-		t.Fatalf("Expecting close to be called but is wasn't")
+		t.Fatal("Expecting close to be called but is wasn't")
 	}
 
 	_, err = cache.Get(NewStringKey("Key1"))
 	if err == nil {
-		t.Fatalf("Expecting error since cache is closed")
+		t.Fatal("Expecting error since cache is closed")
 	}
 }
 

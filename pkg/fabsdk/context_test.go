@@ -21,7 +21,7 @@ const (
 func TestWithUserValid(t *testing.T) {
 	sdk, err := New(config.FromFile(identityOptConfigFile))
 	if err != nil {
-		t.Fatalf("Expected no error from New, but got %v", err)
+		t.Fatalf("Expected no error from New, but got %s", err)
 	}
 	defer sdk.Close()
 
@@ -29,14 +29,14 @@ func TestWithUserValid(t *testing.T) {
 	opt := WithUser(identityValidOptUser)
 	err = opt(&opts)
 	if err != nil {
-		t.Fatalf("Expected no error from opt, but got %v", err)
+		t.Fatalf("Expected no error from opt, but got %s", err)
 	}
 }
 
 func TestWithIdentity(t *testing.T) {
 	sdk, err := New(config.FromFile(identityOptConfigFile))
 	if err != nil {
-		t.Fatalf("Expected no error from New, but got %v", err)
+		t.Fatalf("Expected no error from New, but got %s", err)
 	}
 	defer sdk.Close()
 
@@ -46,14 +46,14 @@ func TestWithIdentity(t *testing.T) {
 	}
 	identity, err := identityManager.GetSigningIdentity(identityValidOptUser)
 	if err != nil {
-		t.Fatalf("Unexpected error loading identity: %v", err)
+		t.Fatalf("Unexpected error loading identity: %s", err)
 	}
 
 	opts := identityOptions{}
 	opt := WithIdentity(identity)
 	err = opt(&opts)
 	if err != nil {
-		t.Fatalf("Expected no error from opt, but got %v", err)
+		t.Fatalf("Expected no error from opt, but got %s", err)
 	}
 	if opts.signingIdentity != identity {
 		t.Fatal("Expected identity to be populated")
@@ -64,7 +64,7 @@ func TestFabricSDKContext(t *testing.T) {
 
 	sdk, err := New(config.FromFile(identityOptConfigFile))
 	if err != nil {
-		t.Fatalf("Expected no error from New, but got %v", err)
+		t.Fatalf("Expected no error from New, but got %s", err)
 	}
 	defer sdk.Close()
 
@@ -78,7 +78,7 @@ func TestFabricSDKContext(t *testing.T) {
 	ctx, err := ctxProvider()
 
 	if err != nil {
-		t.Fatalf("expected to create anonymous context, err: %v", err)
+		t.Fatalf("expected to create anonymous context, err: %s", err)
 	}
 
 	if ctx == nil {
@@ -91,7 +91,7 @@ func TestFabricSDKContext(t *testing.T) {
 	ctx, err = ctxProvider()
 
 	if err == nil || err.Error() != "invalid options to create identity, invalid org name" {
-		t.Fatalf("getting context client supposed to fail with idenity error, err: %v", err)
+		t.Fatalf("getting context client supposed to fail with idenity error, err: %s", err)
 	}
 
 	if ctx == nil {
@@ -110,7 +110,7 @@ func checkValidUserAndInvalidOrg(sdk *FabricSDK, t *testing.T) {
 	ctxProvider := sdk.Context(WithUser(identityValidOptUser), WithOrg("INVALID_ORG_NAME"))
 	ctx, err := ctxProvider()
 	if err == nil || err.Error() != "invalid options to create identity, invalid org name" {
-		t.Fatalf("getting context client supposed to fail with idenity error, err: %v", err)
+		t.Fatalf("getting context client supposed to fail with idenity error, err: %s", err)
 	}
 	if ctx == nil {
 		t.Fatal("context client will have providers even if idenity fails")
@@ -121,14 +121,14 @@ func checkValidUserAndOrg(sdk *FabricSDK, t *testing.T) {
 	ctxProvider := sdk.Context(WithUser(identityValidOptUser), WithOrg(identityValidOptOrg))
 	_, err := ctxProvider()
 	if err != nil {
-		t.Fatalf("getting context supposed to succeed")
+		t.Fatal("getting context supposed to succeed")
 	}
 	ctxProvider = sdk.Context(WithUser(identityValidOptUser))
 	ctx, err := ctxProvider()
 	if err != nil {
-		t.Fatalf("getting context supposed to succeed")
+		t.Fatal("getting context supposed to succeed")
 	}
 	if ctx == nil || ctx.Identifier().MSPID == "" {
-		t.Fatalf("supposed to get valid context")
+		t.Fatal("supposed to get valid context")
 	}
 }

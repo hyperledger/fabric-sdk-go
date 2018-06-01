@@ -34,11 +34,11 @@ func TestNewPeerWithCertNoTLS(t *testing.T) {
 	p, err := New(config, WithURL(url))
 
 	if err != nil {
-		t.Fatalf("Expected peer to be constructed")
+		t.Fatal("Expected peer to be constructed")
 	}
 
 	if p.URL() != url {
-		t.Fatalf("Unexpected peer URL")
+		t.Fatal("Unexpected peer URL")
 	}
 }
 
@@ -55,7 +55,7 @@ func TestNewPeerTLSFromCert(t *testing.T) {
 	_, err := New(config, WithURL(url), WithTLSCert(mockfab.GoodCert))
 
 	if err != nil {
-		t.Fatalf("Expected peer to be constructed")
+		t.Fatal("Expected peer to be constructed")
 	}
 }
 
@@ -69,7 +69,7 @@ func TestNewPeerWithCertBadParams(t *testing.T) {
 	_, err := New(config)
 
 	if err == nil {
-		t.Fatalf("Peer should not be constructed - bad params")
+		t.Fatal("Peer should not be constructed - bad params")
 	}
 }
 
@@ -85,7 +85,7 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	_, err := New(config, WithURL(url))
 
 	if err == nil {
-		t.Fatalf("Expected peer construction to fail")
+		t.Fatal("Expected peer construction to fail")
 	}
 }
 
@@ -99,11 +99,11 @@ func TestMSPIDs(t *testing.T) {
 	peer, err := New(config, WithURL(peer1URL), WithMSPID(testMSP))
 
 	if err != nil {
-		t.Fatalf("Failed to create NewPeer error(%v)", err)
+		t.Fatalf("Failed to create NewPeer error(%s)", err)
 	}
 
 	if peer.MSPID() != testMSP {
-		t.Fatalf("Unexpected peer msp id")
+		t.Fatal("Unexpected peer msp id")
 	}
 }
 
@@ -124,7 +124,7 @@ func TestProposalProcessorSendProposal(t *testing.T) {
 	tpr1, err := p.ProcessTransactionProposal(ctx, tp)
 
 	if err != nil || !reflect.DeepEqual(&tpr, tpr1) {
-		t.Fatalf("Peer didn't proxy proposal processing")
+		t.Fatal("Peer didn't proxy proposal processing")
 	}
 }
 
@@ -137,13 +137,13 @@ func TestPeersToTxnProcessors(t *testing.T) {
 	peer1, err := New(config, WithURL(peer1URL))
 
 	if err != nil {
-		t.Fatalf("Failed to create NewPeer error(%v)", err)
+		t.Fatalf("Failed to create NewPeer error(%s)", err)
 	}
 
 	peer2, err := New(config, WithURL(peer2URL))
 
 	if err != nil {
-		t.Fatalf("Failed to create NewPeer error(%v)", err)
+		t.Fatalf("Failed to create NewPeer error(%s)", err)
 	}
 
 	peers := []fab.Peer{peer1, peer2}
@@ -151,7 +151,7 @@ func TestPeersToTxnProcessors(t *testing.T) {
 
 	for i := range peers {
 		if !reflect.DeepEqual(peers[i], processors[i]) {
-			t.Fatalf("Peer to Processors mismatch")
+			t.Fatal("Peer to Processors mismatch")
 		}
 	}
 }
@@ -162,14 +162,14 @@ func TestInterfaces(t *testing.T) {
 
 	apiPeer = &peer
 	if apiPeer == nil {
-		t.Fatalf("this shouldn't happen.")
+		t.Fatal("this shouldn't happen.")
 	}
 }
 
 func TestWithServerName(t *testing.T) {
 	option := WithServerName("name")
 	if option == nil {
-		t.Fatalf("Failed to get option for server name.")
+		t.Fatal("Failed to get option for server name.")
 	}
 }
 
@@ -202,19 +202,19 @@ func TestPeerOptions(t *testing.T) {
 	//from config with grpc
 	_, err := New(config, FromPeerConfig(networkPeer))
 	if err != nil {
-		t.Fatalf("Failed to create new peer FromPeerConfig (%v)", err)
+		t.Fatalf("Failed to create new peer FromPeerConfig (%s)", err)
 	}
 
 	//with peer processor
 	_, err = New(config, WithPeerProcessor(nil))
 	if err == nil {
-		t.Fatalf("Expected 'Failed to create new peer WithPeerProcessor ((target is required))")
+		t.Fatal("Expected 'Failed to create new peer WithPeerProcessor ((target is required))")
 	}
 
 	//with peer processor
 	_, err = New(config, WithServerName("server-name"))
 	if err == nil {
-		t.Fatalf("Expected 'Failed to create new peer WithServerName ((target is required))")
+		t.Fatal("Expected 'Failed to create new peer WithServerName ((target is required))")
 	}
 }
 
@@ -229,11 +229,11 @@ func TestNewPeerSecured(t *testing.T) {
 
 	conn, err := New(config, WithURL(url), WithInsecure())
 	if err != nil {
-		t.Fatalf("Peer conn should be constructed")
+		t.Fatal("Peer conn should be constructed")
 	}
 
 	if !conn.inSecure {
-		t.Fatalf("Expected insecure to be true")
+		t.Fatal("Expected insecure to be true")
 	}
 
 }
