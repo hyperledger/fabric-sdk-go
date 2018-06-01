@@ -97,8 +97,15 @@ func TestSendDeliver(t *testing.T) {
 	blocks, errs := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
-	case block := <-blocks:
-		t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
+	case block, ok := <-blocks:
+		if ok {
+			t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
+		}
+	case <-time.After(time.Second * 5):
+		t.Fatal("Did not receive closed response from SendDeliver")
+	}
+
+	select {
 	case err := <-errs:
 		t.Logf("There is an error as expected : %s", err)
 	case <-time.After(time.Second * 5):
@@ -250,6 +257,7 @@ func TestSendDeliverFailure(t *testing.T) {
 
 	broadcastServer := mocks.MockBroadcastServer{
 		DeliverResponse: &ab.DeliverResponse{},
+		DeliverError:    errors.New("fail me"),
 	}
 
 	addr := broadcastServer.Start(testOrdererURL)
@@ -259,17 +267,25 @@ func TestSendDeliverFailure(t *testing.T) {
 
 	ctx, cancel := reqContext.WithTimeout(reqContext.Background(), 5*time.Second)
 	defer cancel()
-	blocks, errors := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
+	blocks, errs := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
-	case block := <-blocks:
-		t.Fatalf("This usecase was not supposed to get valid block %+v", block)
-	case err := <-errors:
-		if err == nil || !strings.HasPrefix(err.Error(), "unknown response type from ordering service") {
-			t.Fatalf("Error response is not working as expected : '%s' ", err)
+	case block, ok := <-blocks:
+		if ok {
+			t.Fatalf("This usecase was not supposed to get valid block %+v", block)
+		} else {
+			t.Fatalf("did not receive any response or error from SendDeliver")
+		}
+	case err, ok := <-errs:
+		if ok {
+			if err == nil || !strings.HasPrefix(err.Error(), "recv from ordering service failed") {
+				t.Fatalf("Error response is not working as expected : '%s' ", err)
+			}
+		} else {
+			t.Fatalf("did not receive any response or error from SendDeliver")
 		}
 	case <-time.After(time.Second * 5):
-		t.Fatal("Did not receive any response or error from SendDeliver")
+		t.Fatal("Timeout: did not receive any response or error from SendDeliver")
 	}
 }
 
@@ -305,9 +321,9 @@ func TestSendBroadcastError(t *testing.T) {
 
 	orderer, _ := New(mocks.NewMockEndpointConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	statusCode, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
+	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
 
-	if err == nil || statusCode != nil {
+	if err == nil {
 		t.Fatalf("expected Send Broadcast to fail with error, but got %s", err)
 	}
 	statusError, ok := status.FromError(err)

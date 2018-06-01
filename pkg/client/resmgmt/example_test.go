@@ -387,10 +387,9 @@ func mockClientProvider() context.ClientProvider {
 
 	// Create mock orderer with simple mock block
 	orderer := mocks.NewMockOrderer("", nil)
-	defer orderer.Close()
-
 	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
 	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.CloseQueue()
 
 	setupCustomOrderer(ctx, orderer)
 

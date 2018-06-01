@@ -63,9 +63,9 @@ func TestJoinChannelFail(t *testing.T) {
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
-	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
 	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.CloseQueue()
 
 	setupCustomOrderer(ctx, orderer)
 
@@ -99,9 +99,9 @@ func TestJoinChannelSuccess(t *testing.T) {
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
-	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
 	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.CloseQueue()
 
 	setupCustomOrderer(ctx, orderer)
 
@@ -135,9 +135,9 @@ func TestJoinChannelWithFilter(t *testing.T) {
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
-	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
 	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.CloseQueue()
 	setupCustomOrderer(ctx, orderer)
 
 	//the target filter ( client option) will be set
@@ -224,9 +224,9 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
-	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
 	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.CloseQueue()
 	setupCustomOrderer(ctx, orderer)
 
 	rc := setupResMgmtClient(t, ctx, getDefaultTargetFilterOption())
@@ -262,12 +262,12 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
 	//Some cleanup before further test
 	orderer = fcmocks.NewMockOrderer("", nil)
-	defer orderer.Close()
+	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
+	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.CloseQueue()
 
 	ctx = setupTestContext("test", "Org1MSP")
 	setupCustomOrderer(ctx, orderer)
-	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
-	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
 
 	rc = setupResMgmtClientWithLocalPeers(t, ctx, peers, getDefaultTargetFilterOption())
 

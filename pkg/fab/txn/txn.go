@@ -11,6 +11,7 @@ import (
 	reqContext "context"
 	"math/rand"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
@@ -226,19 +227,32 @@ func sendEnvelope(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, order
 
 	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
 	blocks, errs := orderer.SendDeliver(reqCtx, envelope)
+
+	// This function currently returns the last received block and error.
 	var block *common.Block
+	var err multi.Errors
+
+read:
 	for {
 		select {
 		case b, ok := <-blocks:
 			// We need to block until SendDeliver releases the connection. Currently
-			// this is trigged by the go chan closing.
+			// this is triggered by the go chan closing.
 			// TODO: we may want to refactor (e.g., adding a synchronous SendDeliver)
 			if !ok {
-				return block, nil
+				break read
 			}
 			block = b
-		case err := <-errs:
-			return nil, errors.Wrap(err, "error from orderer")
+		case e := <-errs:
+			err = append(err, e)
 		}
 	}
+
+	// drain remaining errors.
+	for i := 0; i < len(errs); i++ {
+		e := <-errs
+		err = append(err, e)
+	}
+
+	return block, err.ToError()
 }

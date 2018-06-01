@@ -68,8 +68,6 @@ func delivery(o *MockOrderer) {
 		}
 		switch value.(type) {
 		case common.Status:
-			close(o.Deliveries)
-			return
 		case *common.Block:
 			o.Deliveries <- value.(*common.Block)
 		case error:
@@ -105,8 +103,8 @@ func (o *MockOrderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEn
 	return o.Deliveries, o.DeliveryErrors
 }
 
-// Close cleans up the instance and ends goroutines
-func (o *MockOrderer) Close() {
+// CloseQueue ends the mock broadcast and delivery queues
+func (o *MockOrderer) CloseQueue() {
 	close(o.BroadcastQueue)
 	close(o.DeliveryQueue)
 }
