@@ -27,7 +27,7 @@ func Example() {
 
 	block, err := c.QueryBlock(1)
 	if err != nil {
-		fmt.Printf("failed to query block: %v", err)
+		fmt.Printf("failed to query block: %s\n", err)
 	}
 
 	if block != nil {
@@ -98,7 +98,7 @@ func ExampleWithParentContext() {
 
 	bci, err := c.QueryInfo(WithParentContext(parentContext))
 	if err != nil {
-		fmt.Printf("failed to query for blockchain info: %v", err)
+		fmt.Printf("failed to query for blockchain info: %s\n", err)
 	}
 
 	if bci != nil {
@@ -117,11 +117,11 @@ func ExampleWithTargets() {
 
 	cfg, err := c.QueryConfig(WithTargets(mockPeerWithConfigBlock()))
 	if err != nil {
-		fmt.Printf("failed to query config with target peer: %v", err)
+		fmt.Printf("failed to query config with target peer: %s\n", err)
 	}
 
 	if cfg != nil {
-		fmt.Printf("Retrieved config from target peer")
+		fmt.Println("Retrieved config from target peer")
 	}
 
 	// Output: Retrieved config from target peer
@@ -136,7 +136,7 @@ func ExampleWithTargetFilter() {
 
 	block, err := c.QueryBlock(1, WithTargetFilter(&urlTargetFilter{url: "example.com"}))
 	if err != nil {
-		fmt.Printf("failed to query block: %v", err)
+		fmt.Printf("failed to query block: %s\n", err)
 	}
 
 	if block != nil {
@@ -155,7 +155,7 @@ func ExampleClient_QueryInfo() {
 
 	bci, err := c.QueryInfo()
 	if err != nil {
-		fmt.Printf("failed to query for blockchain info: %v", err)
+		fmt.Printf("failed to query for blockchain info: %s\n", err)
 	}
 
 	if bci != nil {
@@ -174,7 +174,7 @@ func ExampleClient_QueryBlock() {
 
 	block, err := c.QueryBlock(1)
 	if err != nil {
-		fmt.Printf("failed to query block: %v", err)
+		fmt.Printf("failed to query block: %s\n", err)
 	}
 
 	if block != nil {
@@ -193,7 +193,7 @@ func ExampleClient_QueryBlockByHash() {
 
 	block, err := c.QueryBlockByHash([]byte("hash"))
 	if err != nil {
-		fmt.Printf("failed to query block by hash: %v", err)
+		fmt.Printf("failed to query block by hash: %s\n", err)
 	}
 
 	if block != nil {
@@ -212,7 +212,7 @@ func ExampleClient_QueryBlockByTxID() {
 
 	block, err := c.QueryBlockByTxID("123")
 	if err != nil {
-		fmt.Printf("failed to query block by transaction ID: %v", err)
+		fmt.Printf("failed to query block by transaction ID: %s\n", err)
 	}
 
 	if block != nil {
@@ -231,11 +231,11 @@ func ExampleClient_QueryTransaction() {
 
 	t, err := c.QueryTransaction("123")
 	if err != nil {
-		fmt.Printf("failed to query transaction: %v", err)
+		fmt.Printf("failed to query transaction: %s\n", err)
 	}
 
 	if t != nil {
-		fmt.Printf("Retrieved transaction")
+		fmt.Println("Retrieved transaction")
 	}
 
 	// Output: Retrieved transaction
@@ -250,11 +250,11 @@ func ExampleClient_QueryConfig() {
 
 	cfg, err := c.QueryConfig(WithTargets(mockPeerWithConfigBlock()))
 	if err != nil {
-		fmt.Printf("failed to query config: %v", err)
+		fmt.Printf("failed to query config: %s\n", err)
 	}
 
 	if cfg != nil {
-		fmt.Printf("Retrieved channel configuration")
+		fmt.Println("Retrieved channel configuration")
 	}
 
 	// Output: Retrieved channel configuration

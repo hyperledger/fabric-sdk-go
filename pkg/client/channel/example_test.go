@@ -22,7 +22,7 @@ func Example() {
 
 	response, err := c.Query(Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("data")}})
 	if err != nil {
-		fmt.Printf("failed to query chaincode: %s", err)
+		fmt.Printf("failed to query chaincode: %s\n", err)
 	}
 
 	fmt.Println(string(response.Payload))
@@ -58,7 +58,7 @@ func ExampleClient_Query() {
 
 	response, err := c.Query(Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
 	if err != nil {
-		fmt.Printf("failed to query chaincode: %s", err)
+		fmt.Printf("failed to query chaincode: %s\n", err)
 	}
 
 	if len(response.Payload) > 0 {
@@ -113,7 +113,7 @@ func ExampleClient_InvokeHandler() {
 
 	response, err := c.InvokeHandler(&exampleHandler{}, Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("data")}})
 	if err != nil {
-		fmt.Printf("failed to query chaincode: %s", err)
+		fmt.Printf("failed to query chaincode: %s\n", err)
 	}
 
 	fmt.Println(string(response.Payload))

@@ -102,7 +102,7 @@ func ExampleLogLevel() {
 
 	level, err := LogLevel("debug")
 	if err != nil {
-		fmt.Printf("failed LogLevel: %s", err)
+		fmt.Printf("failed LogLevel: %s\n", err)
 		return
 	}
 

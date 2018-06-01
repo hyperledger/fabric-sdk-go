@@ -28,14 +28,14 @@ func StartMockEventServer(testAddress string) (*MockEventServer, error) {
 	grpcServer.GetServiceInfo()
 	lis, err := net.Listen("tcp", testAddress)
 	if err != nil {
-		return nil, fmt.Errorf("Error starting test server %s", err)
+		return nil, fmt.Errorf("starting test server failed %s", err)
 	}
 	eventServer := &MockEventServer{grpcServer: grpcServer}
 	pb.RegisterEventsServer(grpcServer, eventServer)
 	fmt.Printf("Starting mock event server\n")
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
-			fmt.Printf("StartMockEventServer failed %s", err)
+			fmt.Printf("StartMockEventServer failed %s\n", err)
 		}
 	}()
 

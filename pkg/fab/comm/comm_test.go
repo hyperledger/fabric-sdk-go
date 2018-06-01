@@ -73,7 +73,7 @@ func startEndorsers(count int, address string) ([]*grpc.Server, []string, error)
 func startEndorserServer(grpcServer *grpc.Server, address string) (*mocks.MockEndorserServer, string, bool) {
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
-		fmt.Printf("Error starting test server %s", err)
+		fmt.Printf("Error starting test server %s\n", err)
 		return nil, "", false
 	}
 	addr := lis.Addr().String()

@@ -31,14 +31,14 @@ func Example() {
 	// Read channel configuration
 	r, err := os.Open(channelConfig)
 	if err != nil {
-		fmt.Printf("failed to open channel config: %s", err)
+		fmt.Printf("failed to open channel config: %s\n", err)
 	}
 	defer r.Close()
 
 	// Create new channel 'mychannel'
 	_, err = c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r})
 	if err != nil {
-		fmt.Printf("failed to save channel: %s", err)
+		fmt.Printf("failed to save channel: %s\n", err)
 	}
 
 	peer := mockPeer()
@@ -46,14 +46,14 @@ func Example() {
 	// Peer joins channel 'mychannel'
 	err = c.JoinChannel("mychannel", WithTargets(peer))
 	if err != nil {
-		fmt.Printf("failed to join channel: %s", err)
+		fmt.Printf("failed to join channel: %s\n", err)
 	}
 
 	// Install example chaincode to peer
 	installReq := InstallCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Package: &resource.CCPackage{Type: 1, Code: []byte("bytes")}}
 	_, err = c.InstallCC(installReq, WithTargets(peer))
 	if err != nil {
-		fmt.Printf("failed to install chaincode: %s", err)
+		fmt.Printf("failed to install chaincode: %s\n", err)
 	}
 
 	// Instantiate example chaincode on channel 'mychannel'
@@ -61,7 +61,7 @@ func Example() {
 	instantiateReq := InstantiateCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Policy: ccPolicy}
 	_, err = c.InstantiateCC("mychannel", instantiateReq, WithTargets(peer))
 	if err != nil {
-		fmt.Printf("failed to install chaincode: %s", err)
+		fmt.Printf("failed to install chaincode: %s\n", err)
 	}
 
 	fmt.Println("Network setup completed")
@@ -130,7 +130,7 @@ func ExampleWithParentContext() {
 
 	channels, err := c.QueryChannels(WithParentContext(parentContext), WithTargets(mockPeer()))
 	if err != nil {
-		fmt.Printf("failed to query for blockchain info: %s", err)
+		fmt.Printf("failed to query for blockchain info: %s\n", err)
 	}
 
 	if channels != nil {
@@ -149,7 +149,7 @@ func ExampleWithTargets() {
 
 	response, err := c.QueryChannels(WithTargets(mockPeer()))
 	if err != nil {
-		fmt.Printf("failed to query channels: %s", err)
+		fmt.Printf("failed to query channels: %s\n", err)
 	}
 
 	if response != nil {
@@ -171,7 +171,7 @@ func ExampleWithTargetFilter() {
 
 	resp, err := c.InstantiateCC("mychannel", req, WithTargetFilter(&urlTargetFilter{url: "http://peer1.com"}))
 	if err != nil {
-		fmt.Printf("failed to install chaincode: %s", err)
+		fmt.Printf("failed to install chaincode: %s\n", err)
 	}
 
 	if resp.TransactionID == "" {
@@ -188,18 +188,18 @@ func ExampleClient_SaveChannel() {
 
 	c, err := New(mockClientProvider())
 	if err != nil {
-		fmt.Printf("failed to create client: %s", err)
+		fmt.Printf("failed to create client: %s\n", err)
 	}
 
 	r, err := os.Open(channelConfig)
 	if err != nil {
-		fmt.Printf("failed to open channel config: %s", err)
+		fmt.Printf("failed to open channel config: %s\n", err)
 	}
 	defer r.Close()
 
 	resp, err := c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r})
 	if err != nil {
-		fmt.Printf("failed to save channel: %s", err)
+		fmt.Printf("failed to save channel: %s\n", err)
 	}
 
 	if resp.TransactionID == "" {
@@ -215,18 +215,18 @@ func ExampleClient_SaveChannel_withOrdererEndpoint() {
 
 	c, err := New(mockClientProvider())
 	if err != nil {
-		fmt.Printf("failed to create client: %s", err)
+		fmt.Printf("failed to create client: %s\n", err)
 	}
 
 	r, err := os.Open(channelConfig)
 	if err != nil {
-		fmt.Printf("failed to open channel config: %s", err)
+		fmt.Printf("failed to open channel config: %s\n", err)
 	}
 	defer r.Close()
 
 	resp, err := c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererEndpoint("example.com"))
 	if err != nil {
-		fmt.Printf("failed to save channel: %s", err)
+		fmt.Printf("failed to save channel: %s\n", err)
 	}
 
 	if resp.TransactionID == "" {
@@ -248,7 +248,7 @@ func ExampleClient_JoinChannel() {
 
 	err = c.JoinChannel("mychannel", WithTargets(mockPeer()))
 	if err != nil {
-		fmt.Printf("failed to join channel: %s", err)
+		fmt.Printf("failed to join channel: %s\n", err)
 	}
 
 	fmt.Println("Joined channel")
@@ -266,7 +266,7 @@ func ExampleClient_InstallCC() {
 	req := InstallCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Package: &resource.CCPackage{Type: 1, Code: []byte("bytes")}}
 	responses, err := c.InstallCC(req, WithTargets(mockPeer()))
 	if err != nil {
-		fmt.Printf("failed to install chaincode: %s", err)
+		fmt.Printf("failed to install chaincode: %s\n", err)
 	}
 
 	if len(responses) > 0 {
@@ -288,7 +288,7 @@ func ExampleClient_InstantiateCC() {
 
 	resp, err := c.InstantiateCC("mychannel", req)
 	if err != nil {
-		fmt.Printf("failed to install chaincode: %s", err)
+		fmt.Printf("failed to install chaincode: %s\n", err)
 	}
 
 	if resp.TransactionID == "" {
@@ -312,7 +312,7 @@ func ExampleClient_UpgradeCC() {
 
 	resp, err := c.UpgradeCC("mychannel", req, WithTargets(mockPeer()))
 	if err != nil {
-		fmt.Printf("failed to upgrade chaincode: %s", err)
+		fmt.Printf("failed to upgrade chaincode: %s\n", err)
 	}
 
 	if resp.TransactionID == "" {
@@ -333,7 +333,7 @@ func ExampleClient_QueryChannels() {
 
 	response, err := c.QueryChannels(WithTargets(mockPeer()))
 	if err != nil {
-		fmt.Printf("failed to query channels: %s", err)
+		fmt.Printf("failed to query channels: %s\n", err)
 	}
 
 	if response != nil {
@@ -352,7 +352,7 @@ func ExampleClient_QueryInstalledChaincodes() {
 
 	response, err := c.QueryInstalledChaincodes(WithTargets(mockPeer()))
 	if err != nil {
-		fmt.Printf("failed to query installed chaincodes: %s", err)
+		fmt.Printf("failed to query installed chaincodes: %s\n", err)
 	}
 
 	if response != nil {
@@ -371,7 +371,7 @@ func ExampleClient_QueryInstantiatedChaincodes() {
 
 	response, err := c.QueryInstantiatedChaincodes("mychannel", WithTargets(mockPeer()))
 	if err != nil {
-		fmt.Printf("failed to query instantiated chaincodes: %s", err)
+		fmt.Printf("failed to query instantiated chaincodes: %s\n", err)
 	}
 
 	if response != nil {

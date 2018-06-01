@@ -824,7 +824,7 @@ func checkConcurrentEvents(blockTestErr chan error, t *testing.T, fblockTestErr 
 
 func checkIfAllEventsRecv(blockTestDone bool, fblockTestDone bool, ccTestDone bool, txStatusTestDone bool) bool {
 	if blockTestDone && fblockTestDone && ccTestDone && txStatusTestDone {
-		fmt.Print("All tests completed successfully\n")
+		fmt.Println("All tests completed successfully")
 		return true
 	}
 	return false
@@ -880,7 +880,7 @@ func listenBlockEvents(channelID string, eventch <-chan *fab.BlockEvent, expecte
 		select {
 		case _, ok := <-eventch:
 			if !ok {
-				fmt.Print("Block events channel was closed \n")
+				fmt.Println("Block events channel was closed")
 				return
 			}
 			numReceived++
@@ -935,7 +935,7 @@ func listenChaincodeEvents(channelID string, eventch <-chan *fab.CCEvent, expect
 		select {
 		case event, ok := <-eventch:
 			if !ok {
-				fmt.Print("CC events channel was closed \n")
+				fmt.Println("CC events channel was closed")
 				return
 			}
 			if event.BlockNumber > 0 && event.BlockNumber <= lastBlockNum {
@@ -1218,13 +1218,13 @@ func listenConnection(eventch chan *dispatcher.ConnectionEvent, outcome chan moc
 		e, ok := <-eventch
 		fmt.Printf("listenConnection - got event [%+v] - ok=[%t]\n", e, ok)
 		if !ok {
-			fmt.Print("listenConnection - Returning terminated outcome\n")
+			fmt.Println("listenConnection - Returning terminated outcome")
 			outcome <- mockconn.ClosedOutcome
 			break
 		}
 		if e.Connected {
 			if state == Disconnected {
-				fmt.Printf("listenConnection - Returning reconnected outcome\n")
+				fmt.Println("listenConnection - Returning reconnected outcome")
 				outcome <- mockconn.ReconnectedOutcome
 			}
 			state = Connected
@@ -1273,11 +1273,11 @@ var clientProvider = func(context context.Client, chConfig fab.ChannelCfg, disco
 	opts = append(opts, WithBlockEvents())
 	return newClient(context, chConfig, discoveryService, connectionProvider, opts,
 		func() error {
-			fmt.Print("AfterConnect called")
+			fmt.Println("AfterConnect called")
 			return nil
 		},
 		func() error {
-			fmt.Print("BeforeReconnect called")
+			fmt.Println("BeforeReconnect called")
 			return nil
 		})
 }
@@ -1294,11 +1294,11 @@ var failAfterConnectClientProvider = func(context context.Client, chConfig fab.C
 var filteredClientProvider = func(context context.Client, chConfig fab.ChannelCfg, discoveryService fab.DiscoveryService, connectionProvider api.ConnectionProvider, opts []options.Opt) (*Client, error) {
 	return newClient(context, chConfig, discoveryService, connectionProvider, opts,
 		func() error {
-			fmt.Print("AfterConnect called")
+			fmt.Println("AfterConnect called")
 			return nil
 		},
 		func() error {
-			fmt.Print("BeforeReconnect called")
+			fmt.Println("BeforeReconnect called")
 			return nil
 		})
 }

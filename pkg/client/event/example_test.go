@@ -28,7 +28,7 @@ func Example() {
 
 	select {
 	case ccEvent := <-notifier:
-		fmt.Printf("received chaincode event %v", ccEvent)
+		fmt.Printf("received chaincode event %v\n", ccEvent)
 	case <-time.After(time.Second * 5):
 		fmt.Println("timeout while waiting for chaincode event")
 	}
