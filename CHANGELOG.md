@@ -1,6 +1,179 @@
+## v1.0.0-alpha4
+Wed 13 Jun 2018 16:08:12 EDT
+
+* [e1d3ddbf](https://github.com/hyperledger/fabric-sdk-go/commit/e1d3ddbf) [[FAB-10625](https://jira.hyperledger.org/browse/FAB-10625)] fixing local integration test
+* [6c6462dd](https://github.com/hyperledger/fabric-sdk-go/commit/6c6462dd) [[FAB-10622](https://jira.hyperledger.org/browse/FAB-10622)] Add Invocation Chain to Channel Client
+* [7dca4ca5](https://github.com/hyperledger/fabric-sdk-go/commit/7dca4ca5) [[FAB-10568](https://jira.hyperledger.org/browse/FAB-10568)] refactoring endpointConfig.TLSCACertPool
+* [c235146d](https://github.com/hyperledger/fabric-sdk-go/commit/c235146d) [[FAB-10605](https://jira.hyperledger.org/browse/FAB-10605)] Choose Selection Service using capabilities
+* [74c04eaa](https://github.com/hyperledger/fabric-sdk-go/commit/74c04eaa) [[FAB-10610](https://jira.hyperledger.org/browse/FAB-10610)] Include prior version capabilities
+* [68e40669](https://github.com/hyperledger/fabric-sdk-go/commit/68e40669) [[FAB-10568](https://jira.hyperledger.org/browse/FAB-10568)] endpoint config refactoring
+* [65f5a15d](https://github.com/hyperledger/fabric-sdk-go/commit/65f5a15d) [[FAB-10595](https://jira.hyperledger.org/browse/FAB-10595)] Fabric Selection Integration Tests
+* [68e40669](https://github.com/hyperledger/fabric-sdk-go/commit/68e40669) [[FAB-10568](https://jira.hyperledger.org/browse/FAB-10568)] endpoint config refactoring
+* [83bfc050](https://github.com/hyperledger/fabric-sdk-go/commit/83bfc050) [[FAB-10568](https://jira.hyperledger.org/browse/FAB-10568)] endpoint config refactoring
+* [1fed3206](https://github.com/hyperledger/fabric-sdk-go/commit/1fed3206) [[FAB-9661](https://jira.hyperledger.org/browse/FAB-9661)] Selection based on Fabric's Discovery
+* [b99774ac](https://github.com/hyperledger/fabric-sdk-go/commit/b99774ac) [[FAB-10591](https://jira.hyperledger.org/browse/FAB-10591)] Discovery Client Endorser Tests
+* [aedc2268](https://github.com/hyperledger/fabric-sdk-go/commit/aedc2268) [[FAB-10568](https://jira.hyperledger.org/browse/FAB-10568)] identity config follow up fix
+* [6599f556](https://github.com/hyperledger/fabric-sdk-go/commit/6599f556) [[FAB-10568](https://jira.hyperledger.org/browse/FAB-10568)] identity config refactoring
+* [6b548678](https://github.com/hyperledger/fabric-sdk-go/commit/6b548678) [[FAB-10543](https://jira.hyperledger.org/browse/FAB-10543)] Fix SendDeliver tests to check closed chan
+* [49f88a3b](https://github.com/hyperledger/fabric-sdk-go/commit/49f88a3b) [[FAB-10568](https://jira.hyperledger.org/browse/FAB-10568)] remove client and CA from NetworkConfig
+* [6314b19a](https://github.com/hyperledger/fabric-sdk-go/commit/6314b19a) [[FAB-10575](https://jira.hyperledger.org/browse/FAB-10575)] update to release version of cfssl
+* [9cbdc1bb](https://github.com/hyperledger/fabric-sdk-go/commit/9cbdc1bb) [[FAB-10568](https://jira.hyperledger.org/browse/FAB-10568)] Identity Config refactoring
+* [ec9053cc](https://github.com/hyperledger/fabric-sdk-go/commit/ec9053cc) [[FAB-10547](https://jira.hyperledger.org/browse/FAB-10547)] Pvt Collections in Selection API
+* [7d9ebd2e](https://github.com/hyperledger/fabric-sdk-go/commit/7d9ebd2e) [[FAB-10556](https://jira.hyperledger.org/browse/FAB-10556)] CI: orderer panic on multi config update
+* [63d2604b](https://github.com/hyperledger/fabric-sdk-go/commit/63d2604b) [[FAB-10551](https://jira.hyperledger.org/browse/FAB-10551)] Fix CI error: could not find CC
+* [37c1b5a7](https://github.com/hyperledger/fabric-sdk-go/commit/37c1b5a7) [[FAB-10543](https://jira.hyperledger.org/browse/FAB-10543)] gracefully complete orderer calls
+* [478d0974](https://github.com/hyperledger/fabric-sdk-go/commit/478d0974) [[FAB-10549](https://jira.hyperledger.org/browse/FAB-10549)] gracefully stop mock servers
+* [cc5f23cd](https://github.com/hyperledger/fabric-sdk-go/commit/cc5f23cd) [[FAB-10518](https://jira.hyperledger.org/browse/FAB-10518)] Ensure testing prints to stdout is flushed
+* [9ef508fa](https://github.com/hyperledger/fabric-sdk-go/commit/9ef508fa) [[FAB-10417](https://jira.hyperledger.org/browse/FAB-10417)] endpointconfig TLS client certs preload
+* [df181da0](https://github.com/hyperledger/fabric-sdk-go/commit/df181da0) [[FAB-10518](https://jira.hyperledger.org/browse/FAB-10518)] Printf missing new lines
+* [81694dd6](https://github.com/hyperledger/fabric-sdk-go/commit/81694dd6) [[FAB-10511](https://jira.hyperledger.org/browse/FAB-10511)] clean up sdk log calls
+* [38d3ff88](https://github.com/hyperledger/fabric-sdk-go/commit/38d3ff88) [[FAB-10195](https://jira.hyperledger.org/browse/FAB-10195)] Bump to latest fabric
+* [f58e994d](https://github.com/hyperledger/fabric-sdk-go/commit/f58e994d) [[FAB-10456](https://jira.hyperledger.org/browse/FAB-10456)] Use dynamic selection by default
+* [428a1e62](https://github.com/hyperledger/fabric-sdk-go/commit/428a1e62) [[FAB-10417](https://jira.hyperledger.org/browse/FAB-10417)] Remove nil checks on NetworkConfig
+* [d8cbd7f1](https://github.com/hyperledger/fabric-sdk-go/commit/d8cbd7f1) [[FAB-10495](https://jira.hyperledger.org/browse/FAB-10495)] Make channel config parsing less verbose
+* [68c1ad06](https://github.com/hyperledger/fabric-sdk-go/commit/68c1ad06) [[FAB-10180](https://jira.hyperledger.org/browse/FAB-10180)] Discovery service based on capabilities
+* [e0670202](https://github.com/hyperledger/fabric-sdk-go/commit/e0670202) [[FAB-10417](https://jira.hyperledger.org/browse/FAB-10417)] endpointconfig return type refactoring
+* [a6ae0710](https://github.com/hyperledger/fabric-sdk-go/commit/a6ae0710) [[FAB-10491](https://jira.hyperledger.org/browse/FAB-10491)] Fix go routine leak in channel client
+* [9bae2501](https://github.com/hyperledger/fabric-sdk-go/commit/9bae2501) [[FAB-10453](https://jira.hyperledger.org/browse/FAB-10453)] Discovery, Selection moved to chprovider
+* [ced92a7e](https://github.com/hyperledger/fabric-sdk-go/commit/ced92a7e) [[FAB-10481](https://jira.hyperledger.org/browse/FAB-10481)] Fix data race in configless test
+* [58ce93d3](https://github.com/hyperledger/fabric-sdk-go/commit/58ce93d3) [[FAB-10472](https://jira.hyperledger.org/browse/FAB-10472)] Fix configless e2e test
+* [48f4a75d](https://github.com/hyperledger/fabric-sdk-go/commit/48f4a75d) [[FAB-10279](https://jira.hyperledger.org/browse/FAB-10279)] endpointConfig TLS/network refactoring
+* [c83d774e](https://github.com/hyperledger/fabric-sdk-go/commit/c83d774e) [[FAB-10455](https://jira.hyperledger.org/browse/FAB-10455)] Clean up user store after test completion
+* [1a4824e4](https://github.com/hyperledger/fabric-sdk-go/commit/1a4824e4) [[FAB-10325](https://jira.hyperledger.org/browse/FAB-10325)] Moved channel funcs out of InfraProvider
+* [f3528ca3](https://github.com/hyperledger/fabric-sdk-go/commit/f3528ca3) [[FAB-10279](https://jira.hyperledger.org/browse/FAB-10279)] refactoring endpointconfig
+* [9eaeaecb](https://github.com/hyperledger/fabric-sdk-go/commit/9eaeaecb) [[FAB-10422](https://jira.hyperledger.org/browse/FAB-10422)] Hide print of private keys
+* [1663815e](https://github.com/hyperledger/fabric-sdk-go/commit/1663815e) [[FAB-9574](https://jira.hyperledger.org/browse/FAB-9574)] overridable Identity & Crypto Configs
+* [e8566fe4](https://github.com/hyperledger/fabric-sdk-go/commit/e8566fe4) [[FAB-10279](https://jira.hyperledger.org/browse/FAB-10279)] pinning script updates for fabric-ca
+* [e255416d](https://github.com/hyperledger/fabric-sdk-go/commit/e255416d) [[FAB-10196](https://jira.hyperledger.org/browse/FAB-10196)] Bootstrap test
+* [300b3e74](https://github.com/hyperledger/fabric-sdk-go/commit/300b3e74) [[FAB-10279](https://jira.hyperledger.org/browse/FAB-10279)] fabric-ca client updates
+* [3cc5ea3f](https://github.com/hyperledger/fabric-sdk-go/commit/3cc5ea3f) [[FAB-10195](https://jira.hyperledger.org/browse/FAB-10195)] Bump to latest fabric
+* [81cbc396](https://github.com/hyperledger/fabric-sdk-go/commit/81cbc396) [[FAB-10179](https://jira.hyperledger.org/browse/FAB-10179)] Pick event service using capabilities
+* [c776993b](https://github.com/hyperledger/fabric-sdk-go/commit/c776993b) [[FAB-10178](https://jira.hyperledger.org/browse/FAB-10178)] Add Capabilities to Channel Config
+* [f3fee0ed](https://github.com/hyperledger/fabric-sdk-go/commit/f3fee0ed) [[FAB-10197](https://jira.hyperledger.org/browse/FAB-10197)] Fix CachingConnector deadlock
+* [e3515e52](https://github.com/hyperledger/fabric-sdk-go/commit/e3515e52) [[FAB-10186](https://jira.hyperledger.org/browse/FAB-10186)] suppress repetitive config WARNs
+* [2933804b](https://github.com/hyperledger/fabric-sdk-go/commit/2933804b) [[FAB-10079](https://jira.hyperledger.org/browse/FAB-10079)] Use successful response from discovery
+* [89d1ed6f](https://github.com/hyperledger/fabric-sdk-go/commit/89d1ed6f) [[FAB-10063](https://jira.hyperledger.org/browse/FAB-10063)] Fix Access Denied error in Local Discovery
+* [dd2868aa](https://github.com/hyperledger/fabric-sdk-go/commit/dd2868aa) [[FAB-9983](https://jira.hyperledger.org/browse/FAB-9983)] fixing endpointconfig channels
+* [5ac2d979](https://github.com/hyperledger/fabric-sdk-go/commit/5ac2d979) [[FAB-10016](https://jira.hyperledger.org/browse/FAB-10016)] Handle a non-existent organization
+* [0afd9938](https://github.com/hyperledger/fabric-sdk-go/commit/0afd9938) [[FAB-10009](https://jira.hyperledger.org/browse/FAB-10009)] Integration tests cleanup
+* [ad035410](https://github.com/hyperledger/fabric-sdk-go/commit/ad035410) [[FAB-9896](https://jira.hyperledger.org/browse/FAB-9896)] MSP Client: Identity Management
+* [5ea7cde7](https://github.com/hyperledger/fabric-sdk-go/commit/5ea7cde7) [[FAB-9983](https://jira.hyperledger.org/browse/FAB-9983)] fixing endpointconfig channels
+* [156c189d](https://github.com/hyperledger/fabric-sdk-go/commit/156c189d) [[FAB-9975](https://jira.hyperledger.org/browse/FAB-9975)] logging: Docs and Examples
+* [eadf6688](https://github.com/hyperledger/fabric-sdk-go/commit/eadf6688) [[FAB-9965](https://jira.hyperledger.org/browse/FAB-9965)] unit-test: Remove duplicated code
+* [3086d546](https://github.com/hyperledger/fabric-sdk-go/commit/3086d546) [[FAB-9954](https://jira.hyperledger.org/browse/FAB-9954)] added certpool instance unit test
+* [62edb3e1](https://github.com/hyperledger/fabric-sdk-go/commit/62edb3e1) [[FAB-9940](https://jira.hyperledger.org/browse/FAB-9940)] add "seek from" support for deliveryevent
+* [7ecb50df](https://github.com/hyperledger/fabric-sdk-go/commit/7ecb50df) [[FAB-9954](https://jira.hyperledger.org/browse/FAB-9954)] sdk.New() updating identityconfig
+* [491240c0](https://github.com/hyperledger/fabric-sdk-go/commit/491240c0) [[FAB-9952](https://jira.hyperledger.org/browse/FAB-9952)] Msp client: Docs and Examples
+* [f06da85b](https://github.com/hyperledger/fabric-sdk-go/commit/f06da85b) [[FAB-9935](https://jira.hyperledger.org/browse/FAB-9935)] fixing typo in peerendorser
+* [da948b4c](https://github.com/hyperledger/fabric-sdk-go/commit/da948b4c) [[FAB-9900](https://jira.hyperledger.org/browse/FAB-9900)] WithOrdererURL & WithTargetURLs renaming
+* [90930224](https://github.com/hyperledger/fabric-sdk-go/commit/90930224) [[FAB-9935](https://jira.hyperledger.org/browse/FAB-9935)] retry on 'chaincode is already launching'
+* [db6ac7bf](https://github.com/hyperledger/fabric-sdk-go/commit/db6ac7bf) [[FAB-9929](https://jira.hyperledger.org/browse/FAB-9929)] refactor pkg/fab/resource/api
+* [914555ea](https://github.com/hyperledger/fabric-sdk-go/commit/914555ea) [[FAB-9871](https://jira.hyperledger.org/browse/FAB-9871)] reverting devstable int-test workarounds
+* [56ed3fee](https://github.com/hyperledger/fabric-sdk-go/commit/56ed3fee) [[FAB-9850](https://jira.hyperledger.org/browse/FAB-9850)] Remove identity from channel cfg cache key
+* [ae5783a1](https://github.com/hyperledger/fabric-sdk-go/commit/ae5783a1) [[FAB-9068](https://jira.hyperledger.org/browse/FAB-9068)] META-INF directory in root of ccpackage
+* [93339443](https://github.com/hyperledger/fabric-sdk-go/commit/93339443) [[FAB-9808](https://jira.hyperledger.org/browse/FAB-9808)] test config file cleanup
+* [c13c937c](https://github.com/hyperledger/fabric-sdk-go/commit/c13c937c) [[FAB-9849](https://jira.hyperledger.org/browse/FAB-9849)] Document status, multi, retry packages
+* [0404e72e](https://github.com/hyperledger/fabric-sdk-go/commit/0404e72e) [[FAB-9822](https://jira.hyperledger.org/browse/FAB-9822)] Resource Mgmt: Docs and Examples
+* [ee50b2f7](https://github.com/hyperledger/fabric-sdk-go/commit/ee50b2f7) [[FAB-9574](https://jira.hyperledger.org/browse/FAB-9574)] Sub interfaces Integration Test
+* [72a5fdb4](https://github.com/hyperledger/fabric-sdk-go/commit/72a5fdb4) [[FAB-9808](https://jira.hyperledger.org/browse/FAB-9808)] override orderers configuration
+* [fc7ae840](https://github.com/hyperledger/fabric-sdk-go/commit/fc7ae840) [[FAB-9602](https://jira.hyperledger.org/browse/FAB-9602)] Config overrides inplace of custom backends
+* [08038bf8](https://github.com/hyperledger/fabric-sdk-go/commit/08038bf8) [[FAB-9602](https://jira.hyperledger.org/browse/FAB-9602)] refactoring network peers logic
+* [bd1e7b9f](https://github.com/hyperledger/fabric-sdk-go/commit/bd1e7b9f) [[FAB-9767](https://jira.hyperledger.org/browse/FAB-9767)] Ledger Client: Docs and Examples
+* [63b9e487](https://github.com/hyperledger/fabric-sdk-go/commit/63b9e487) [[FAB-9717](https://jira.hyperledger.org/browse/FAB-9717)] stabilising integration-tests-local
+* [0c8195c1](https://github.com/hyperledger/fabric-sdk-go/commit/0c8195c1) [[FAB-9736](https://jira.hyperledger.org/browse/FAB-9736)] TLS config should not be required
+* [4e624542](https://github.com/hyperledger/fabric-sdk-go/commit/4e624542) [[FAB-9717](https://jira.hyperledger.org/browse/FAB-9717)] support for multiple config backends
+* [a9d0d918](https://github.com/hyperledger/fabric-sdk-go/commit/a9d0d918) [[FAB-9710](https://jira.hyperledger.org/browse/FAB-9710)] Channel Client: Documentation
+* [29957cae](https://github.com/hyperledger/fabric-sdk-go/commit/29957cae) [[FAB-9678](https://jira.hyperledger.org/browse/FAB-9678)] Channel Client: Examples
+* [ab35fb89](https://github.com/hyperledger/fabric-sdk-go/commit/ab35fb89) [[FAB-9601](https://jira.hyperledger.org/browse/FAB-9601)] Move cert pool wrapper into its own package
+* [830bdeaa](https://github.com/hyperledger/fabric-sdk-go/commit/830bdeaa) [[FAB-9601](https://jira.hyperledger.org/browse/FAB-9601)] Make system cert pool access thread safe
+* [e328e9d6](https://github.com/hyperledger/fabric-sdk-go/commit/e328e9d6) [[FAB-9574](https://jira.hyperledger.org/browse/FAB-9574)] overridable Endpoint configs
+* [07288147](https://github.com/hyperledger/fabric-sdk-go/commit/07288147) [[FAB-9602](https://jira.hyperledger.org/browse/FAB-9602)] entity matcher refactoring
+* [92ada513](https://github.com/hyperledger/fabric-sdk-go/commit/92ada513) [[FAB-9597](https://jira.hyperledger.org/browse/FAB-9597)] Discovery Service Integration Tests
+* [637b6556](https://github.com/hyperledger/fabric-sdk-go/commit/637b6556) [[FAB-9555](https://jira.hyperledger.org/browse/FAB-9555)] Local Discovery Provider
+* [69158473](https://github.com/hyperledger/fabric-sdk-go/commit/69158473) [[FAB-9554](https://jira.hyperledger.org/browse/FAB-9554)] Dynamic Discovery Provider
+* [65a56e23](https://github.com/hyperledger/fabric-sdk-go/commit/65a56e23) [[FAB-9601](https://jira.hyperledger.org/browse/FAB-9601)] Load system cert pool at config init
+* [8b4777e6](https://github.com/hyperledger/fabric-sdk-go/commit/8b4777e6) [[FAB-8802](https://jira.hyperledger.org/browse/FAB-8802)] Integrate discovery client
+* [ed467a4f](https://github.com/hyperledger/fabric-sdk-go/commit/ed467a4f) [[FAB-9602](https://jira.hyperledger.org/browse/FAB-9602)] Fix for recursive calling of entitymatchers
+* [f7ec0aad](https://github.com/hyperledger/fabric-sdk-go/commit/f7ec0aad) [[FAB-9540](https://jira.hyperledger.org/browse/FAB-9540)] bccsp provider type - case insensitive
+* [8235b213](https://github.com/hyperledger/fabric-sdk-go/commit/8235b213) [[FAB-9601](https://jira.hyperledger.org/browse/FAB-9601)] Optimize system trust store loading
+* [50f07dd9](https://github.com/hyperledger/fabric-sdk-go/commit/50f07dd9) [[FAB-9598](https://jira.hyperledger.org/browse/FAB-9598)] Store config block number
+* [acb200e5](https://github.com/hyperledger/fabric-sdk-go/commit/acb200e5) [[FAB-9596](https://jira.hyperledger.org/browse/FAB-9596)] ChClientOptions vs ResMgmtOptions
+* [95c85744](https://github.com/hyperledger/fabric-sdk-go/commit/95c85744) [[FAB-9238](https://jira.hyperledger.org/browse/FAB-9238)] Identity Config - Resolving paths/pems
+* [f4e828f8](https://github.com/hyperledger/fabric-sdk-go/commit/f4e828f8) [[FAB-9543](https://jira.hyperledger.org/browse/FAB-9543)] Remove ephemeral from config
+* [91dfe653](https://github.com/hyperledger/fabric-sdk-go/commit/91dfe653) [[FAB-9312](https://jira.hyperledger.org/browse/FAB-9312)] Resolve metalinter warnings
+* [7b5d38e2](https://github.com/hyperledger/fabric-sdk-go/commit/7b5d38e2) [[FAB-9312](https://jira.hyperledger.org/browse/FAB-9312)] Resolve metalinter warnings
+* [dfc3d5c2](https://github.com/hyperledger/fabric-sdk-go/commit/dfc3d5c2) [[FAB-9312](https://jira.hyperledger.org/browse/FAB-9312)] Resolve metalinter warnings
+* [6c1b8bce](https://github.com/hyperledger/fabric-sdk-go/commit/6c1b8bce) [[FAB-9537](https://jira.hyperledger.org/browse/FAB-9537)] Import Discovery Client Local Peers
+* [d38bc9c9](https://github.com/hyperledger/fabric-sdk-go/commit/d38bc9c9) [[FAB-9238](https://jira.hyperledger.org/browse/FAB-9238)] PeerChannelConfig loading logic refactoring
+* [ea94ad20](https://github.com/hyperledger/fabric-sdk-go/commit/ea94ad20) [[FAB-9312](https://jira.hyperledger.org/browse/FAB-9312)] Resolve metalinter warnings
+* [ad4e489e](https://github.com/hyperledger/fabric-sdk-go/commit/ad4e489e) [[FAB-9509](https://jira.hyperledger.org/browse/FAB-9509)] JoinChannel: genesis block retrieval failed
+* [c8911f35](https://github.com/hyperledger/fabric-sdk-go/commit/c8911f35) [[FAB-9312](https://jira.hyperledger.org/browse/FAB-9312)] Resolve metalinter warnings
+* [f8fb6c2a](https://github.com/hyperledger/fabric-sdk-go/commit/f8fb6c2a) [[FAB-9238](https://jira.hyperledger.org/browse/FAB-9238)] revoke test to use config yaml
+* [66ac24ed](https://github.com/hyperledger/fabric-sdk-go/commit/66ac24ed) [[FAB-9490](https://jira.hyperledger.org/browse/FAB-9490)] Integration: Use require instead of assert
+* [6b90b5fe](https://github.com/hyperledger/fabric-sdk-go/commit/6b90b5fe) [[FAB-9471](https://jira.hyperledger.org/browse/FAB-9471)] Set attributes during user registration
+* [a5c9ea33](https://github.com/hyperledger/fabric-sdk-go/commit/a5c9ea33) [[FAB-9312](https://jira.hyperledger.org/browse/FAB-9312)] Resolve metalinter warnings
+* [b16df6df](https://github.com/hyperledger/fabric-sdk-go/commit/b16df6df) [[FAB-9476](https://jira.hyperledger.org/browse/FAB-9476)]: WithTargets() should check for nil targets
+* [f332abab](https://github.com/hyperledger/fabric-sdk-go/commit/f332abab) [[FAB-9238](https://jira.hyperledger.org/browse/FAB-9238)] local int tests to use configbackend
+* [1ed6f7fc](https://github.com/hyperledger/fabric-sdk-go/commit/1ed6f7fc) [[FAB-9312](https://jira.hyperledger.org/browse/FAB-9312)] Resolve metalinter warnings
+* [d2abffb4](https://github.com/hyperledger/fabric-sdk-go/commit/d2abffb4) [[FAB-9445](https://jira.hyperledger.org/browse/FAB-9445)] Endpoint Options: cc query, endorsing peer
+* [0842fffb](https://github.com/hyperledger/fabric-sdk-go/commit/0842fffb) [faB-9312] Resolve metalinter warnings
+* [65c0afe6](https://github.com/hyperledger/fabric-sdk-go/commit/65c0afe6) [[FAB-9450](https://jira.hyperledger.org/browse/FAB-9450)] Simplify path substitution
+* [0bab3c91](https://github.com/hyperledger/fabric-sdk-go/commit/0bab3c91) [faB-9312] Resolve metalinter warnings
+* [9160ae3e](https://github.com/hyperledger/fabric-sdk-go/commit/9160ae3e) [[FAB-9398](https://jira.hyperledger.org/browse/FAB-9398)] Mapping for channel config
+* [03bf99b1](https://github.com/hyperledger/fabric-sdk-go/commit/03bf99b1) [[FAB-9312](https://jira.hyperledger.org/browse/FAB-9312)] Resolve metalinter warnings
+* [3a2cb7c9](https://github.com/hyperledger/fabric-sdk-go/commit/3a2cb7c9) [[FAB-9238](https://jira.hyperledger.org/browse/FAB-9238)] config backend in integration tests
+* [9f82f8ec](https://github.com/hyperledger/fabric-sdk-go/commit/9f82f8ec) [[FAB-9412](https://jira.hyperledger.org/browse/FAB-9412)] Remove stream from connection
+* [9056f46f](https://github.com/hyperledger/fabric-sdk-go/commit/9056f46f) [[FAB-9238](https://jira.hyperledger.org/browse/FAB-9238)] config backend in unit-tests
+* [fe28d902](https://github.com/hyperledger/fabric-sdk-go/commit/fe28d902) [[FAB-9411](https://jira.hyperledger.org/browse/FAB-9411)] LazyRef finalizer should provide value
+* [db394dc0](https://github.com/hyperledger/fabric-sdk-go/commit/db394dc0) [[FAB-9410](https://jira.hyperledger.org/browse/FAB-9410)] Import Discovery Client
+* [0eaf2174](https://github.com/hyperledger/fabric-sdk-go/commit/0eaf2174) [[FAB-9077](https://jira.hyperledger.org/browse/FAB-9077)] Update go version to 1.10
+* [926bca6e](https://github.com/hyperledger/fabric-sdk-go/commit/926bca6e) [[FAB-9060](https://jira.hyperledger.org/browse/FAB-9060)]Expiry cert check on TLS connection
+* [b57bd108](https://github.com/hyperledger/fabric-sdk-go/commit/b57bd108) [[FAB-9381](https://jira.hyperledger.org/browse/FAB-9381)]: Endpoints: Ledger Query Option
+* [d6f75dfe](https://github.com/hyperledger/fabric-sdk-go/commit/d6f75dfe) [[FAB-9377](https://jira.hyperledger.org/browse/FAB-9377)] Define chaincode status group
+* [b3960887](https://github.com/hyperledger/fabric-sdk-go/commit/b3960887) [[FAB-9312](https://jira.hyperledger.org/browse/FAB-9312)] Resolve metalinter warnings
+* [601dcc50](https://github.com/hyperledger/fabric-sdk-go/commit/601dcc50) [[FAB-9367](https://jira.hyperledger.org/browse/FAB-9367)] Fix constructor of discovery services
+* [1231625d](https://github.com/hyperledger/fabric-sdk-go/commit/1231625d) [[FAB-9338](https://jira.hyperledger.org/browse/FAB-9338)] Increase def timeout with empty config
+* [4b15d651](https://github.com/hyperledger/fabric-sdk-go/commit/4b15d651) [[FAB-9238](https://jira.hyperledger.org/browse/FAB-9238)] Removed unmarshal lookup options
+* [33b74d45](https://github.com/hyperledger/fabric-sdk-go/commit/33b74d45) [[FAB-9312](https://jira.hyperledger.org/browse/FAB-9312)] Resolve metalinter warnings
+* [582c2fcc](https://github.com/hyperledger/fabric-sdk-go/commit/582c2fcc) [[FAB-9325](https://jira.hyperledger.org/browse/FAB-9325)] make CA matcher section consistent
+* [449a24db](https://github.com/hyperledger/fabric-sdk-go/commit/449a24db) [[FAB-9238](https://jira.hyperledger.org/browse/FAB-9238)] refactoring config implementations
+* [fbae5b75](https://github.com/hyperledger/fabric-sdk-go/commit/fbae5b75) [[FAB-9312](https://jira.hyperledger.org/browse/FAB-9312)] Resolve metalinter warnings
+* [1796d395](https://github.com/hyperledger/fabric-sdk-go/commit/1796d395) [[FAB-9321](https://jira.hyperledger.org/browse/FAB-9321)] Panic in caching connector
+* [5e8a2a17](https://github.com/hyperledger/fabric-sdk-go/commit/5e8a2a17) [[FAB-9304](https://jira.hyperledger.org/browse/FAB-9304)]: Event Client GoDoc
+* [0cb0cf98](https://github.com/hyperledger/fabric-sdk-go/commit/0cb0cf98) [[FAB-9241](https://jira.hyperledger.org/browse/FAB-9241)] Import discovery client
+* [64203484](https://github.com/hyperledger/fabric-sdk-go/commit/64203484) [[FAB-9238](https://jira.hyperledger.org/browse/FAB-9238)] refactoring configs to multiple interfaces
+* [71d1cde9](https://github.com/hyperledger/fabric-sdk-go/commit/71d1cde9) [[FAB-9229](https://jira.hyperledger.org/browse/FAB-9229)] Restore devstable tag
+* [429e1ef2](https://github.com/hyperledger/fabric-sdk-go/commit/429e1ef2) [[FAB-9229](https://jira.hyperledger.org/browse/FAB-9229)] Enable CI target for Fabric 1.2
+* [7b5bc2e7](https://github.com/hyperledger/fabric-sdk-go/commit/7b5bc2e7) [[FAB-9195](https://jira.hyperledger.org/browse/FAB-9195)]: Event Client
+* [213899c5](https://github.com/hyperledger/fabric-sdk-go/commit/213899c5) [[FAB-9200](https://jira.hyperledger.org/browse/FAB-9200)] Added retries to ResMgmt client
+* [d177ebb6](https://github.com/hyperledger/fabric-sdk-go/commit/d177ebb6) [[FAB-9169](https://jira.hyperledger.org/browse/FAB-9169)] remove unused options in config
+* [b02be7ab](https://github.com/hyperledger/fabric-sdk-go/commit/b02be7ab) [[FAB-9188](https://jira.hyperledger.org/browse/FAB-9188)] Add retries to integration tests
+* [6880d843](https://github.com/hyperledger/fabric-sdk-go/commit/6880d843) [[FAB-9170](https://jira.hyperledger.org/browse/FAB-9170)] Define one WithBlockEvents option
+* [84bff1ae](https://github.com/hyperledger/fabric-sdk-go/commit/84bff1ae) [[FAB-9121](https://jira.hyperledger.org/browse/FAB-9121)] Retry on premature execution error
+* [8a888320](https://github.com/hyperledger/fabric-sdk-go/commit/8a888320) [[FAB-9095](https://jira.hyperledger.org/browse/FAB-9095)] Panic when no channel policies defined
+* [a33102a6](https://github.com/hyperledger/fabric-sdk-go/commit/a33102a6) [[FAB-9094](https://jira.hyperledger.org/browse/FAB-9094)] Set correct status group for cc error
+* [14892a64](https://github.com/hyperledger/fabric-sdk-go/commit/14892a64) [[FAB-9092](https://jira.hyperledger.org/browse/FAB-9092)] Move response payload check
+* [02c85b37](https://github.com/hyperledger/fabric-sdk-go/commit/02c85b37) [[FAB-9062](https://jira.hyperledger.org/browse/FAB-9062)] set the response status on chaincode success
+* [b7343fe2](https://github.com/hyperledger/fabric-sdk-go/commit/b7343fe2) [[FAB-9058](https://jira.hyperledger.org/browse/FAB-9058)] add missing global cache entries
+* [7983364a](https://github.com/hyperledger/fabric-sdk-go/commit/7983364a) [[FAB-9038](https://jira.hyperledger.org/browse/FAB-9038)] Wrong tag for couchdb Docker image
+* [82ece9c0](https://github.com/hyperledger/fabric-sdk-go/commit/82ece9c0) [[FAB-9054](https://jira.hyperledger.org/browse/FAB-9054)] Ledger Client: Unit Tests
+* [a8e2b45d](https://github.com/hyperledger/fabric-sdk-go/commit/a8e2b45d) [[FAB-8900](https://jira.hyperledger.org/browse/FAB-8900)] retry options in ChConfig.Query
+* [35387b83](https://github.com/hyperledger/fabric-sdk-go/commit/35387b83) [[FAB-9053](https://jira.hyperledger.org/browse/FAB-9053)] Move util/errors/multi to common/
+* [a8567870](https://github.com/hyperledger/fabric-sdk-go/commit/a8567870) [[FAB-9051](https://jira.hyperledger.org/browse/FAB-9051)] Return InstallCC errors when applicable
+* [37f0a1a1](https://github.com/hyperledger/fabric-sdk-go/commit/37f0a1a1) [[FAB-9023](https://jira.hyperledger.org/browse/FAB-9023)] SaveChannel Response Struct
+* [2a697ced](https://github.com/hyperledger/fabric-sdk-go/commit/2a697ced) [[FAB-9009](https://jira.hyperledger.org/browse/FAB-9009)]Cert expiry check
+* [1230546f](https://github.com/hyperledger/fabric-sdk-go/commit/1230546f) [[FAB-7975](https://jira.hyperledger.org/browse/FAB-7975)] added test case for multi error
+* [1b6dbd48](https://github.com/hyperledger/fabric-sdk-go/commit/1b6dbd48) [[FAB-9036](https://jira.hyperledger.org/browse/FAB-9036)] Source URL and block num in events
+* [39fafe97](https://github.com/hyperledger/fabric-sdk-go/commit/39fafe97) [[FAB-8944](https://jira.hyperledger.org/browse/FAB-8944)] Refresh membership only on config update
+* [2061a932](https://github.com/hyperledger/fabric-sdk-go/commit/2061a932) [[FAB-8944](https://jira.hyperledger.org/browse/FAB-8944)] Add more unit tests for channel config cache
+* [b73b8942](https://github.com/hyperledger/fabric-sdk-go/commit/b73b8942) [[FAB-8900](https://jira.hyperledger.org/browse/FAB-8900)] policies section in SDK config
+* [9880e072](https://github.com/hyperledger/fabric-sdk-go/commit/9880e072) [[FAB-9023](https://jira.hyperledger.org/browse/FAB-9023)] return TransactionID for transactions
+* [15453a31](https://github.com/hyperledger/fabric-sdk-go/commit/15453a31) [[FAB-9031](https://jira.hyperledger.org/browse/FAB-9031)] Log success upon reading key from config
+
 ## v1.0.0-alpha3
 Tue 20 Mar 2018 17:52:25 EDT
 
+* [ccecff43](https://github.com/hyperledger/fabric-sdk-go/commit/ccecff43) [[FAB-7546](https://jira.hyperledger.org/browse/FAB-7546)] Release v1.0.0-alpha3
 * [aaeebdd3](https://github.com/hyperledger/fabric-sdk-go/commit/aaeebdd3) [[FAB-8983](https://jira.hyperledger.org/browse/FAB-8983)] make org names consistent in small case
 * [d7c5c6a0](https://github.com/hyperledger/fabric-sdk-go/commit/d7c5c6a0) [[FAB-7975](https://jira.hyperledger.org/browse/FAB-7975)] return status code for chaincode error
 * [8b74992f](https://github.com/hyperledger/fabric-sdk-go/commit/8b74992f) [[FAB-8912](https://jira.hyperledger.org/browse/FAB-8912)] Update stable target to 1.1.0
