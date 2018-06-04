@@ -115,53 +115,41 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 
 	//Test TLSCA Cert Pool (Positive test case)
 	config, err := ConfigFromBackend(embeddedBackend...)
-	if err != nil {
-		t.Fatalf("Failed to initialize identity config , reason: %s", err)
-	}
+	assert.Nil(t, err, "Failed to initialize identity config , reason: %s", err)
 
 	identityConfig := config.(*IdentityConfig)
 	certPem, _ := identityConfig.CAClientCert(org1)
 	certConfig := endpoint.TLSConfig{Pem: string(certPem)}
 
 	err = certConfig.LoadBytes()
-	if err != nil {
-		t.Fatalf("TLS CA cert parse failed, reason: %s", err)
-	}
+	assert.Nil(t, err, "TLS CA cert parse failed, reason: %s", err)
 
-	cert, err := certConfig.TLSCert()
-
-	if err != nil {
-		t.Fatalf("TLS CA cert parse failed, reason: %s", err)
-	}
+	cert, ok, err := certConfig.TLSCert()
+	assert.Nil(t, err, "TLS CA cert parse failed, reason: %s", err)
+	assert.True(t, ok, "TLS CA cert parse failed")
 
 	_, err = identityConfig.endpointConfig.TLSCACertPool(cert)
-
-	if err != nil {
-		t.Fatalf("TLS CA cert pool fetch failed, reason: %s", err)
-	}
+	assert.Nil(t, err, "TLS CA cert pool fetch failed, reason: %s", err)
 	//Test TLSCA Cert Pool (Negative test case)
 
 	badCertConfig := endpoint.TLSConfig{Pem: "some random invalid pem"}
+	err = badCertConfig.LoadBytes()
+	assert.Nil(t, err, "LoadBytes should not fail for bad pemgit g")
 
-	badCert, err := badCertConfig.TLSCert()
-
-	if err == nil {
-		t.Fatal("TLS CA cert parse was supposed to fail")
-	}
+	badCert, ok, err := badCertConfig.TLSCert()
+	assert.Nil(t, err, "TLS CA cert parse was supposed to fail")
+	assert.False(t, ok, "TLS CA cert parse was supposed to fail")
 
 	_, err = identityConfig.endpointConfig.TLSCACertPool(badCert)
-	if err != nil {
-		t.Fatalf("TLSCACertPool failed %s", err)
-	}
+	assert.Nil(t, err, "TLSCACertPool failed %s", err)
 
 	keyPem, _ := identityConfig.CAClientKey(org1)
 
 	keyConfig := endpoint.TLSConfig{Pem: string(keyPem)}
 
-	_, err = keyConfig.TLSCert()
-	if err == nil {
-		t.Fatal("TLS CA cert pool was supposed to fail when provided with wrong cert file")
-	}
+	_, ok, err = keyConfig.TLSCert()
+	assert.Nil(t, err, "TLS CA cert pool was supposed to fail when provided with wrong cert file")
+	assert.False(t, ok, "TLS CA cert pool was supposed to fail when provided with wrong cert file")
 
 }
 

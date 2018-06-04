@@ -95,10 +95,7 @@ func TestCreateCustomEndpointConfigRemainingFunctions(t *testing.T) {
 		t.Fatalf("ChannelPeers did not return expected interface value. Expected: 1 ChannelPeer, Received: %d", len(p))
 	}
 
-	c, err := eco.TLSClientCerts()
-	if err != nil {
-		t.Fatalf("TLSClientCerts returned unexpected error %s", err)
-	}
+	c := eco.TLSClientCerts()
 	if len(c) != 2 {
 		t.Fatalf("TLSClientCerts did not return expected interface value. Expected: 2 Certificates, Received: %d", len(c))
 	}
@@ -311,8 +308,8 @@ func (m *mockEventServiceType) EventServiceType() fab.EventServiceType {
 
 type mockTLSClientCerts struct{}
 
-func (m *mockTLSClientCerts) TLSClientCerts() ([]tls.Certificate, error) {
-	return []tls.Certificate{{}, {}}, nil
+func (m *mockTLSClientCerts) TLSClientCerts() []tls.Certificate {
+	return []tls.Certificate{{}, {}}
 }
 
 type mockCryptoConfigPath struct{}

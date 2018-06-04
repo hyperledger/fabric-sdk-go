@@ -142,14 +142,9 @@ func FromOrdererConfig(ordererCfg *fab.OrdererConfig) Option {
 
 		var err error
 
-		o.tlsCACert, err = ordererCfg.TLSCACerts.TLSCert()
-
+		o.tlsCACert, _, err = ordererCfg.TLSCACerts.TLSCert()
 		if err != nil {
-			//Ignore empty cert errors,
-			errStatus, ok := err.(*status.Status)
-			if !ok || errStatus.Code != status.EmptyCert.ToInt32() {
-				return err
-			}
+			return err
 		}
 
 		if ordererCfg.GRPCOptions["allow-insecure"] == false {

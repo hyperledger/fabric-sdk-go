@@ -80,7 +80,7 @@ func TestWithCorePkg(t *testing.T) {
 	factory := mockapisdk.NewMockCoreProviderFactory(mockCtrl)
 
 	factory.EXPECT().CreateCryptoSuiteProvider(gomock.Any()).Return(nil, nil)
-	factory.EXPECT().CreateSigningManager(nil).Return(nil, nil)
+	factory.EXPECT().CreateSigningManager(gomock.Any()).Return(nil, nil)
 	factory.EXPECT().CreateInfraProvider(gomock.Any()).Return(nil, nil)
 
 	_, err = New(c, WithCorePkg(factory))

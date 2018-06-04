@@ -144,8 +144,8 @@ func TestNewOrdererWithTLS(t *testing.T) {
 		t.Fatalf("tlsConfig.LoadBytes() failed, cause [%s]", err)
 	}
 
-	cert, err := tlsConfig.TLSCert()
-	if err != nil {
+	cert, ok, err := tlsConfig.TLSCert()
+	if err != nil || !ok {
 		t.Fatalf("Testing New with TLS failed, cause [%s]", err)
 	}
 	orderer, err := New(mocks.NewMockEndpointConfigCustomized(true, false, false), WithURL("grpcs://"), WithTLSCert(cert))
@@ -170,9 +170,9 @@ func TestNewOrdererWithMutualTLS(t *testing.T) {
 		t.Fatalf("tlsConfig.LoadBytes() failed, cause [%s]", err)
 	}
 
-	cert, err := tlsConfig.TLSCert()
+	cert, ok, err := tlsConfig.TLSCert()
 
-	if err != nil {
+	if err != nil || !ok {
 		t.Fatalf("Testing New with TLS failed, cause [%s]", err)
 	}
 

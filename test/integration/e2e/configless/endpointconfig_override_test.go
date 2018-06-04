@@ -678,13 +678,13 @@ type exampleTLSClientCerts struct {
 }
 
 // TLSClientCerts overrides EndpointConfig's TLSClientCerts function which will return the list of configured client certs
-func (m *exampleTLSClientCerts) TLSClientCerts() ([]tls.Certificate, error) {
+func (m *exampleTLSClientCerts) TLSClientCerts() []tls.Certificate {
 	var clientCerts tls.Certificate
 	cb := clientConfig.TLSCerts.Client.Cert.Bytes()
 
 	if len(cb) == 0 {
 		// if no cert found in the config, return empty cert chain
-		return []tls.Certificate{clientCerts}, nil
+		return []tls.Certificate{clientCerts}
 	}
 
 	// Load private key from cert using default crypto suite
@@ -695,16 +695,20 @@ func (m *exampleTLSClientCerts) TLSClientCerts() ([]tls.Certificate, error) {
 	if err != nil || pk == nil {
 		m.RWLock.Lock()
 		defer m.RWLock.Unlock()
-		return m.loadPrivateKeyFromConfig(&clientConfig, clientCerts, cb)
+		ccs, err := m.loadPrivateKeyFromConfig(&clientConfig, clientCerts, cb)
+		if err != nil {
+			return nil
+		}
+		return ccs
 	}
 
 	// private key was retrieved from cert
 	clientCerts, err = cryptoutil.X509KeyPair(cb, pk, cs)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
-	return []tls.Certificate{clientCerts}, nil
+	return []tls.Certificate{clientCerts}
 }
 func (m *exampleTLSClientCerts) loadPrivateKeyFromConfig(clientConfig *msp.ClientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
 

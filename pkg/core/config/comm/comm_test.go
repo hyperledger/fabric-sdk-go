@@ -43,7 +43,7 @@ func TestTLSConfigErrorFromClientCerts(t *testing.T) {
 
 	config := mockfab.BadTLSClientMockConfig(mockCtrl)
 
-	_, err := TLSConfig(mockfab.GoodCert, "", config)
+	_, err := TLSConfig(mockfab.BadCert, "", config)
 
 	if err == nil {
 		t.Fatal("Expected failure from loading client certs")
@@ -89,7 +89,7 @@ func TestNoTlsCertHash(t *testing.T) {
 	defer mockCtrl.Finish()
 	config := mockfab.NewMockEndpointConfig(mockCtrl)
 
-	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{}, nil)
+	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{})
 
 	tlsCertHash := TLSCertHash(config)
 
@@ -104,7 +104,7 @@ func TestEmptyTlsCertHash(t *testing.T) {
 	config := mockfab.NewMockEndpointConfig(mockCtrl)
 
 	emptyCert := tls.Certificate{}
-	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{emptyCert}, nil)
+	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{emptyCert})
 
 	tlsCertHash := TLSCertHash(config)
 
@@ -123,7 +123,7 @@ func TestTlsCertHash(t *testing.T) {
 		t.Fatalf("Unexpected error loading cert %s", err)
 	}
 
-	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{cert}, nil)
+	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{cert})
 	tlsCertHash := TLSCertHash(config)
 
 	// openssl x509 -fingerprint -sha256 -in testdata/server.crt

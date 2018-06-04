@@ -880,11 +880,7 @@ func TestTLSClientCertsFromFiles(t *testing.T) {
 	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Pem = ""
 	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Pem = ""
 
-	certs, err := endpointConfig.TLSClientCerts()
-	if err != nil {
-		t.Fatalf("Expected no errors but got error instead: %s", err)
-	}
-
+	certs := endpointConfig.TLSClientCerts()
 	if len(certs) != 1 {
 		t.Fatal("Expected only one tls cert struct")
 	}
@@ -956,11 +952,7 @@ c/EOc9wmgu+gBwYFK4EEACKhZANiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv
 YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
 -----END EC PRIVATE KEY-----`
 
-	certs, err := endpointConfig.TLSClientCerts()
-	if err != nil {
-		t.Fatalf("Expected no errors but got error instead: %s", err)
-	}
-
+	certs := endpointConfig.TLSClientCerts()
 	if len(certs) != 1 {
 		t.Fatal("Expected only one tls cert struct")
 	}
@@ -1003,11 +995,7 @@ NRCHI3uXUJ5/3zDZM3qtV8UYHou4KDS35Q==
 
 	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Pem = ""
 
-	certs, err := endpointConfig.TLSClientCerts()
-	if err != nil {
-		t.Fatalf("Expected no errors but got error instead: %s", err)
-	}
-
+	certs := endpointConfig.TLSClientCerts()
 	if len(certs) != 1 {
 		t.Fatal("Expected only one tls cert struct")
 	}
@@ -1038,11 +1026,7 @@ QSn674xQJ5N8rMHAA/DXtpIMKI5uulot0jJ5xFkpikLGd8+6soQp8pd5tkMqZB0a
 nFoUptdom8LjgRus6rnHbXxGqcIN6oA=
 -----END EC PRIVATE KEY-----`
 
-	certs, err := endpointConfig.TLSClientCerts()
-	if err != nil {
-		t.Fatalf("Expected no errors but got error instead: %s", err)
-	}
-
+	certs := endpointConfig.TLSClientCerts()
 	if len(certs) != 1 {
 		t.Fatal("Expected only one tls cert struct")
 	}
@@ -1091,11 +1075,7 @@ c/EOc9wmgu+gBwYFK4EEACKhZANiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv
 YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
 -----END EC PRIVATE KEY-----`
 
-	certs, err := endpointConfig.TLSClientCerts()
-	if err != nil {
-		t.Fatalf("Expected no errors but got error instead: %s", err)
-	}
-
+	certs := endpointConfig.TLSClientCerts()
 	if len(certs) != 1 {
 		t.Fatal("Expected only one tls cert struct")
 	}
@@ -1129,11 +1109,7 @@ func TestTLSClientCertsNoCerts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	certs, err := config.TLSClientCerts()
-	if err != nil {
-		t.Fatalf("Expected no errors but got error instead: %s", err)
-	}
-
+	certs := config.TLSClientCerts()
 	if len(certs) != 1 {
 		t.Fatal("Expected only empty tls cert struct")
 	}
@@ -1355,23 +1331,4 @@ func newViper(path string) *viper.Viper {
 		panic(err)
 	}
 	return myViper
-}
-
-func TestNetworkConfigurationLoading(t *testing.T) {
-	cfgBackend, err := config.FromFile(configTestFilePath)()
-	assert.Nil(t, err)
-	endpointCfg, err := ConfigFromBackend(cfgBackend...)
-	assert.Nil(t, err)
-	configImpl := endpointCfg.(*EndpointConfig)
-	fmt.Println(len(configImpl.networkPeers))
-	nwPeers := configImpl.NetworkPeers()
-	fmt.Println(len(nwPeers))
-	fmt.Println(len(configImpl.peerConfigsByOrg))
-	chPeers, ok := configImpl.ChannelPeers("orgchannel")
-	fmt.Println("chOrd :-", len(chPeers), ok)
-	chPeers, ok = configImpl.channelPeersByChannel["orgchannel"]
-	fmt.Println("chOrd MAP :-", len(chPeers), ok)
-	ordCfgs := configImpl.OrderersConfig()
-	fmt.Println("ordCfgs :-", len(ordCfgs))
-	fmt.Println("ordCfgs ARRAY :-", len(configImpl.ordererConfigs))
 }

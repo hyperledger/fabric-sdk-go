@@ -14,7 +14,6 @@ import (
 
 	"regexp"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/pkg/errors"
 )
 
@@ -108,19 +107,19 @@ func (cfg *TLSConfig) LoadBytes() error {
 
 // TLSCert returns the tls certificate as a *x509.Certificate by loading it either from the embedded Pem or Path
 //TODO to be removed since separate TLSConfig should only be used in parsing
-func (cfg *TLSConfig) TLSCert() (*x509.Certificate, error) {
+func (cfg *TLSConfig) TLSCert() (*x509.Certificate, bool, error) {
 
 	block, _ := pem.Decode(cfg.bytes)
 
 	if block != nil {
 		pub, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
-			return nil, errors.Wrap(err, "certificate parsing failed")
+			return nil, false, errors.Wrap(err, "certificate parsing failed")
 		}
 
-		return pub, nil
+		return pub, true, nil
 	}
 
-	// return an error with an error code for clients to test against status.EmptyCert code
-	return nil, status.New(status.ClientStatus, status.EmptyCert.ToInt32(), "pem data missing", nil)
+	//no cert found and there is no error
+	return nil, false, nil
 }

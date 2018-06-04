@@ -194,11 +194,10 @@ func (mr *MockEndpointConfigMockRecorder) TLSCACertPool(arg0 ...interface{}) *go
 }
 
 // TLSClientCerts mocks base method
-func (m *MockEndpointConfig) TLSClientCerts() ([]tls.Certificate, error) {
+func (m *MockEndpointConfig) TLSClientCerts() []tls.Certificate {
 	ret := m.ctrl.Call(m, "TLSClientCerts")
 	ret0, _ := ret[0].([]tls.Certificate)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // TLSClientCerts indicates an expected call of TLSClientCerts

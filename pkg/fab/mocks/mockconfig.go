@@ -296,8 +296,8 @@ func (c *MockConfig) IsSecurityEnabled() bool {
 }
 
 // TLSClientCerts ...
-func (c *MockConfig) TLSClientCerts() ([]tls.Certificate, error) {
-	return nil, nil
+func (c *MockConfig) TLSClientCerts() []tls.Certificate {
+	return nil
 }
 
 // EventServiceType returns the type of event service client to use

@@ -10,7 +10,6 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/spf13/cast"
@@ -148,13 +147,9 @@ type connectTimeoutSetter interface {
 
 // OptsFromPeerConfig returns a set of connection options from the given peer config
 func OptsFromPeerConfig(peerCfg *fab.PeerConfig) ([]options.Opt, error) {
-	certificate, err := peerCfg.TLSCACerts.TLSCert()
+	certificate, _, err := peerCfg.TLSCACerts.TLSCert()
 	if err != nil {
-		//Ignore empty cert errors,
-		errStatus, ok := err.(*status.Status)
-		if !ok || errStatus.Code != status.EmptyCert.ToInt32() {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	opts := []options.Opt{

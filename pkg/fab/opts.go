@@ -100,7 +100,7 @@ type eventServiceType interface {
 
 // tlsClientCerts interface allows to uniquely override EndpointConfig interface's TLSClientCerts() function
 type tlsClientCerts interface {
-	TLSClientCerts() ([]tls.Certificate, error)
+	TLSClientCerts() []tls.Certificate
 }
 
 // cryptoConfigPath interface allows to uniquely override EndpointConfig interface's CryptoConfigPath() function

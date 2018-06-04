@@ -81,7 +81,7 @@ type EndpointConfig interface {
 	ChannelOrderers(name string) ([]OrdererConfig, bool)
 	TLSCACertPool(certConfig ...*x509.Certificate) (*x509.CertPool, error)
 	EventServiceType() EventServiceType
-	TLSClientCerts() ([]tls.Certificate, error)
+	TLSClientCerts() []tls.Certificate
 	CryptoConfigPath() string
 }
 

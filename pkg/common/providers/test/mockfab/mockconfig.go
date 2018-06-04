@@ -39,7 +39,7 @@ func DefaultMockConfig(mockCtrl *gomock.Controller) *MockEndpointConfig {
 	config.EXPECT().TLSCACertPool(BadCert).Return(CertPool, errors.New(ErrorMessage)).AnyTimes()
 	config.EXPECT().TLSCACertPool().Return(CertPool, nil).AnyTimes()
 	config.EXPECT().Timeout(fab.EndorserConnection).Return(time.Second * 5).AnyTimes()
-	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{TLSCert}, nil).AnyTimes()
+	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{TLSCert}).AnyTimes()
 
 	return config
 }
@@ -52,7 +52,7 @@ func BadTLSClientMockConfig(mockCtrl *gomock.Controller) *MockEndpointConfig {
 	config.EXPECT().TLSCACertPool(BadCert).Return(CertPool, errors.New(ErrorMessage)).AnyTimes()
 	config.EXPECT().TLSCACertPool().Return(CertPool, nil).AnyTimes()
 	config.EXPECT().Timeout(fab.EndorserConnection).Return(time.Second * 5).AnyTimes()
-	config.EXPECT().TLSClientCerts().Return(nil, errors.Errorf(ErrorMessage)).AnyTimes()
+	config.EXPECT().TLSClientCerts().Return(nil).AnyTimes()
 
 	return config
 }

@@ -31,8 +31,9 @@ var logger = logging.NewLogger("fabsdk")
 
 // FabricSDK provides access (and context) to clients being managed by the SDK.
 type FabricSDK struct {
-	opts     options
-	provider *context.Provider
+	opts        options
+	provider    *context.Provider
+	cryptoSuite core.CryptoSuite
 }
 
 type configs struct {
@@ -206,24 +207,8 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		return errors.WithMessage(err, "failed to initialize configuration")
 	}
 
-	// Initialize crypto provider
-	cryptoSuite, err := sdk.opts.Core.CreateCryptoSuiteProvider(cfg.cryptoSuiteConfig)
-	if err != nil {
-		return errors.WithMessage(err, "failed to initialize crypto suite")
-	}
-
 	// Initialize rand (TODO: should probably be optional)
 	rand.Seed(time.Now().UnixNano())
-
-	// Setting this cryptosuite as the factory default
-	if !cryptosuite.DefaultInitialized() {
-		err = cryptosuite.SetDefault(cryptoSuite)
-		if err != nil {
-			return errors.WithMessage(err, "failed to set default crypto suite")
-		}
-	} else {
-		logger.Debug("default cryptosuite already initialized")
-	}
 
 	// Initialize state store
 	userStore, err := sdk.opts.MSP.CreateUserStore(cfg.identityConfig)
@@ -232,13 +217,13 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 	}
 
 	// Initialize Signing Manager
-	signingManager, err := sdk.opts.Core.CreateSigningManager(cryptoSuite)
+	signingManager, err := sdk.opts.Core.CreateSigningManager(sdk.cryptoSuite)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create signing manager")
 	}
 
 	// Initialize IdentityManagerProvider
-	identityManagerProvider, err := sdk.opts.MSP.CreateIdentityManagerProvider(cfg.endpointConfig, cryptoSuite, userStore)
+	identityManagerProvider, err := sdk.opts.MSP.CreateIdentityManagerProvider(cfg.endpointConfig, sdk.cryptoSuite, userStore)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create identity manager provider")
 	}
@@ -264,7 +249,7 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 	sdk.provider = context.NewProvider(context.WithCryptoSuiteConfig(cfg.cryptoSuiteConfig),
 		context.WithEndpointConfig(cfg.endpointConfig),
 		context.WithIdentityConfig(cfg.identityConfig),
-		context.WithCryptoSuite(cryptoSuite),
+		context.WithCryptoSuite(sdk.cryptoSuite),
 		context.WithSigningManager(signingManager),
 		context.WithUserStore(userStore),
 		context.WithLocalDiscoveryProvider(localDiscoveryProvider),
@@ -349,6 +334,26 @@ func (sdk *FabricSDK) ChannelContext(channelID string, options ...ContextOption)
 	return channelProvider
 }
 
+// initializeCryptoSuite Initializes crypto provider
+func (sdk *FabricSDK) initializeCryptoSuite(cryptoSuiteConfig core.CryptoSuiteConfig) error {
+	var err error
+	sdk.cryptoSuite, err = sdk.opts.Core.CreateCryptoSuiteProvider(cryptoSuiteConfig)
+	if err != nil {
+		return errors.WithMessage(err, "failed to initialize crypto suite")
+	}
+
+	// Setting this cryptosuite as the factory default
+	if !cryptosuite.DefaultInitialized() {
+		err = cryptosuite.SetDefault(sdk.cryptoSuite)
+		if err != nil {
+			return errors.WithMessage(err, "failed to set default crypto suite")
+		}
+	} else {
+		logger.Debug("default cryptosuite already initialized")
+	}
+	return nil
+}
+
 //loadConfigs load config from config backend when configs are not provided through opts
 func (sdk *FabricSDK) loadConfigs(configProvider core.ConfigProvider) (*configs, error) {
 	c := &configs{
@@ -368,16 +373,25 @@ func (sdk *FabricSDK) loadConfigs(configProvider core.ConfigProvider) (*configs,
 	}
 
 	//configs passed through opts take priority over default ones
+	// load crypto suite config
 	c.cryptoSuiteConfig, err = sdk.loadCryptoConfig(configBackend...)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to load crypto suite config")
 	}
 
+	//Initialize cryptosuite once crypto Suite config is available
+	err = sdk.initializeCryptoSuite(c.cryptoSuiteConfig)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to initialize cryptosuite using crypto suite config")
+	}
+
+	// load endpoint config
 	c.endpointConfig, err = sdk.loadEndpointConfig(configBackend...)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to load endpoint config")
 	}
 
+	// load identity config
 	c.identityConfig, err = sdk.loadIdentityConfig(c.endpointConfig, configBackend...)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unalbe to load identity config")
