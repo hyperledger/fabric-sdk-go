@@ -15,6 +15,7 @@ import (
 
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -73,14 +74,14 @@ func startEndorsers(count int, address string) ([]*grpc.Server, []string, error)
 func startEndorserServer(grpcServer *grpc.Server, address string) (*mocks.MockEndorserServer, string, bool) {
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
-		fmt.Printf("Error starting test server %s\n", err)
+		test.Logf("Error starting test server [%s]", err)
 		return nil, "", false
 	}
 	addr := lis.Addr().String()
 
 	endorserServer := &mocks.MockEndorserServer{}
 	pb.RegisterEndorserServer(grpcServer, endorserServer)
-	fmt.Printf("Starting test server on %s\n", addr)
+	test.Logf("Starting test server [%s]", addr)
 	go grpcServer.Serve(lis)
 	return endorserServer, addr, true
 }

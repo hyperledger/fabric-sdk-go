@@ -7,11 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -133,13 +133,13 @@ func send(eventch chan<- interface{}, event interface{}) {
 		// During shutdown, events may still be produced and we may
 		// get a 'send on closed channel' panic. Just log and ignore the error.
 		if p := recover(); p != nil {
-			fmt.Printf("panic while submitting event %#v: %s\n", event, p)
+			test.Logf("panic while submitting event %#v: %s", event, p)
 		}
 	}()
 
 	select {
 	case eventch <- event:
 	case <-time.After(5 * time.Second):
-		fmt.Print("***** Timed out sending event.\n")
+		test.Logf("***** Timed out sending event.")
 	}
 }

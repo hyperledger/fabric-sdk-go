@@ -261,7 +261,7 @@ func TestGenesisBlockWithRetry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GenesisBlock failed: %s", err)
 	}
-	fmt.Printf("Block: %#v\n", block)
+	t.Logf("Block [%#v]", block)
 }
 
 /*

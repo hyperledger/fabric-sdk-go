@@ -8,13 +8,13 @@ package config
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -244,7 +244,7 @@ func setUp(m *testing.M) {
 	var err error
 	cfgBackend, err := FromFile(configTestFilePath)()
 	if err != nil {
-		fmt.Println(err.Error())
+		test.Logf(err.Error())
 	}
 	if len(cfgBackend) != 1 {
 		panic("invalid backend found")

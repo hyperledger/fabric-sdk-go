@@ -7,12 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"io"
-
 	"fmt"
+	"io"
 	"net"
 
 	po "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"google.golang.org/grpc"
 )
@@ -98,11 +98,12 @@ func StartMockBroadcastServer(broadcastTestURL string, grpcServer *grpc.Server) 
 	}
 	addr := lis.Addr().String()
 
+	test.Logf("Starting MockEventServer [%s]", addr)
 	broadcastServer := new(MockBroadcastServer)
 	po.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
-			fmt.Printf("StartMockBroadcastServer failed to start %s\n", err)
+			test.Logf("StartMockBroadcastServer failed [%s]", err)
 		}
 	}()
 

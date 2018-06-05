@@ -11,6 +11,7 @@ import (
 	"net"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"google.golang.org/grpc"
 )
@@ -30,12 +31,13 @@ func StartMockEventServer(testAddress string) (*MockEventServer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("starting test server failed %s", err)
 	}
+
+	test.Logf("Starting MockEventServer [%s]", lis.Addr())
 	eventServer := &MockEventServer{grpcServer: grpcServer}
 	pb.RegisterEventsServer(grpcServer, eventServer)
-	fmt.Printf("Starting mock event server\n")
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
-			fmt.Printf("StartMockEventServer failed %s\n", err)
+			test.Logf("StartMockEventServer failed [%s]", err)
 		}
 	}()
 

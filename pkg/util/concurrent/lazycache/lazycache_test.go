@@ -11,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 )
 
 func ExampleCache_MustGet() {
@@ -69,25 +71,25 @@ func TestGet(t *testing.T) {
 
 			value, err := cache.Get(NewStringKey("Key1"))
 			if err != nil {
-				fail(t, "Error returned: %s", err)
+				test.Failf(t, "Error returned: %s", err)
 			}
 			expectedValue := "Value_for_key_Key1"
 			if value != expectedValue {
-				fail(t, "Expecting value [%s] but got [%s]", expectedValue, value)
+				test.Failf(t, "Expecting value [%s] but got [%s]", expectedValue, value)
 			}
 
 			value, err = cache.Get(NewStringKey("Key2"))
 			if err != nil {
-				fail(t, "Error returned: %s", err)
+				test.Failf(t, "Error returned: %s", err)
 			}
 			expectedValue = "Value_for_key_Key2"
 			if value != expectedValue {
-				fail(t, "Expecting value [%s] but got [%s]", expectedValue, value)
+				test.Failf(t, "Expecting value [%s] but got [%s]", expectedValue, value)
 			}
 
 			_, err = cache.Get(NewStringKey("error"))
 			if err == nil {
-				fail(t, "Expecting error but got none")
+				test.Failf(t, "Expecting error but got none")
 			}
 		}()
 	}
@@ -187,11 +189,4 @@ func TestClose(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expecting error since cache is closed")
 	}
-}
-
-// fail - as t.Fatalf() is not goroutine safe, this function behaves like t.Fatalf().
-func fail(t *testing.T, template string, args ...interface{}) {
-	fmt.Printf(template, args...)
-	fmt.Println()
-	t.Fail()
 }

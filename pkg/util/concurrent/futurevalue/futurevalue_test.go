@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 )
 
 func ExampleValue_Get() {
@@ -64,10 +66,10 @@ func TestFutureValueGet(t *testing.T) {
 			defer wg.Done()
 			value, err := fv.Get()
 			if err != nil {
-				fail(t, "received error: %s", err)
+				test.Failf(t, "received error: %s", err)
 			}
 			if value != expectedValue {
-				fail(t, "expecting value [%s] but received [%s]", expectedValue, value)
+				test.Failf(t, "expecting value [%s] but received [%s]", expectedValue, value)
 			}
 		}()
 	}
@@ -97,7 +99,7 @@ func TestFutureValueGetWithError(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			if _, err := fv.Get(); err == nil {
-				fail(t, "expecting error but received none")
+				test.Failf(t, "expecting error but received none")
 			}
 		}()
 	}
@@ -119,23 +121,16 @@ func TestMustGetPanic(t *testing.T) {
 	go func() {
 		defer func() {
 			if r := recover(); r == nil {
-				fail(t, "Expecting panic but got none")
+				test.Failf(t, "Expecting panic but got none")
 			}
 			done <- true
 		}()
 		fv.MustGet()
-		fail(t, "Expecting panic but got none")
+		test.Failf(t, "Expecting panic but got none")
 	}()
 
 	if _, err := fv.Initialize(); err == nil {
 		t.Fatal("expecting error but received none")
 	}
 	<-done
-}
-
-// fail - as t.Fatalf() is not goroutine safe, this function behaves like t.Fatalf().
-func fail(t *testing.T, template string, args ...interface{}) {
-	fmt.Printf(template, args...)
-	fmt.Println()
-	t.Fail()
 }

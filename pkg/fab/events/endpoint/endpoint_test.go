@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package endpoint
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -135,7 +135,7 @@ func newMockConfig(channelPeers ...fab.ChannelPeer) *mockConfig {
 }
 
 func (c *mockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
-	fmt.Printf("mockConfig.ChannelPeers - returning %#v\n", c.channelPeers)
+	test.Logf("mockConfig.ChannelPeers [%#n]", c.channelPeers)
 	return c.channelPeers, true
 }
 

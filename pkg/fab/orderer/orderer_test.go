@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	"google.golang.org/grpc"
 	grpccodes "google.golang.org/grpc/codes"
 
@@ -116,7 +117,7 @@ func startMockServer(grpcServer *grpc.Server) (*mocks.MockBroadcastServer, strin
 	if err != nil {
 		panic(fmt.Sprintf("Error starting test server %s", err))
 	}
-	fmt.Printf("Starting test server on %s\n", addr)
+	test.Logf("Starting test server on %s", addr)
 	go grpcServer.Serve(lis)
 
 	return broadcastServer, addr
