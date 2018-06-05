@@ -68,9 +68,9 @@ type EnrollmentRequest struct {
 	Label string `json:"label,omitempty" help:"Label to use in HSM operations"`
 	// CSR is Certificate Signing Request info
 	CSR *CSRInfo `json:"csr,omitempty" help:"Certificate Signing Request info"`
-	// The type of the enrollment request: x509 or idemix
+	// The type of the enrollment request
 	// The default is a request for an X509 enrollment certificate
-	Type string `def:"x509" help:"The type of enrollment request: 'x509' or 'idemix'"`
+	Type string `def:"x509" help:"The type of enrollment request"`
 }
 
 func (er EnrollmentRequest) String() string {

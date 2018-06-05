@@ -21,10 +21,10 @@ type CAInfoResponseNet struct {
 	CAName string
 	// Base64 encoding of PEM-encoded certificate chain
 	CAChain string
-	// Base64 encoding of Idemix issuer public key
-	IssuerPublicKey string
-	// Base64 encoding of PEM-encoded Idemix issuer revocation public key
-	IssuerRevocationPublicKey string
+	// // Base64 encoding of Idemix issuer public key
+	// IssuerPublicKey string
+	// // Base64 encoding of PEM-encoded Idemix issuer revocation public key
+	// IssuerRevocationPublicKey string
 	// Version of the server
 	Version string
 }

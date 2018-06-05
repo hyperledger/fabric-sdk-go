@@ -207,20 +207,20 @@ func (c *Client) net2LocalCAInfo(net *common.CAInfoResponseNet, local *GetCAInfo
 	if err != nil {
 		return errors.WithMessage(err, "Failed to decode CA chain")
 	}
-	if net.IssuerPublicKey != "" {
-		ipk, err := util.B64Decode(net.IssuerPublicKey)
-		if err != nil {
-			return errors.WithMessage(err, "Failed to decode issuer public key")
-		}
-		local.IssuerPublicKey = ipk
-	}
-	if net.IssuerRevocationPublicKey != "" {
-		rpk, err := util.B64Decode(net.IssuerRevocationPublicKey)
-		if err != nil {
-			return errors.WithMessage(err, "Failed to decode issuer revocation key")
-		}
-		local.IssuerRevocationPublicKey = rpk
-	}
+	// if net.IssuerPublicKey != "" {
+	// 	ipk, err := util.B64Decode(net.IssuerPublicKey)
+	// 	if err != nil {
+	// 		return errors.WithMessage(err, "Failed to decode issuer public key")
+	// 	}
+	// 	local.IssuerPublicKey = ipk
+	// }
+	// if net.IssuerRevocationPublicKey != "" {
+	// 	rpk, err := util.B64Decode(net.IssuerRevocationPublicKey)
+	// 	if err != nil {
+	// 		return errors.WithMessage(err, "Failed to decode issuer revocation key")
+	// 	}
+	// 	local.IssuerRevocationPublicKey = rpk
+	// }
 	local.CAName = net.CAName
 	local.CAChain = caChain
 	local.Version = net.Version
@@ -274,6 +274,7 @@ func (c *Client) handleX509Enroll(req *api.EnrollmentRequest) (*EnrollmentRespon
 // 3. Sends a request with the CredentialRequest object in the body to the
 //    /api/v1/idemix/credentail REST endpoint to get a credential
 func (c *Client) handleIdemixEnroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error) {
+	log.Infof("Successfully received Idemix credential from CA %s", req.CAName)
 	return nil, errors.New("idemix enroll not supported")
 }
 
