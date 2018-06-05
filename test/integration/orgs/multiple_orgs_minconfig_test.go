@@ -69,9 +69,9 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 }
 
 func testDynamicDiscovery(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) {
-	peersList := discoverLocalPeers(t, sdk, mc.org1AdminClientContext, 2)
+	peersList := discoverLocalPeers(t, mc.org1AdminClientContext, 2)
 	assert.Equal(t, 2, len(peersList), "Expected exactly 2 peers as per %s's channel and %s's org configs", channelID, org1)
-	peersList = discoverLocalPeers(t, sdk, mc.org2AdminClientContext, 1)
+	peersList = discoverLocalPeers(t, mc.org2AdminClientContext, 1)
 	assert.Equal(t, 1, len(peersList), "Expected exactly 1 peer as per %s's channel and %s's org configs", channelID, org2)
 
 	// example discovering the peers from the bootstap peer

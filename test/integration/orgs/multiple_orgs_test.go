@@ -141,10 +141,8 @@ func TestOrgsEndToEnd(t *testing.T) {
 		ccVersion:              "0",
 	}
 
-	peersList := discoverLocalPeers(t, sdk, mc.org1AdminClientContext, 2)
-	assert.Equal(t, 2, len(peersList), "Expected exactly 2 peers for MSP [%s]", org1)
-	peersList = discoverLocalPeers(t, sdk, mc.org2AdminClientContext, 1)
-	assert.Equal(t, 1, len(peersList), "Expected exactly 1 peer for MSP [%s]", org2)
+	discoverLocalPeers(t, mc.org1AdminClientContext, 2)
+	discoverLocalPeers(t, mc.org2AdminClientContext, 1)
 
 	expectedValue := testWithOrg1(t, sdk, &mc)
 	expectedValue = testWithOrg2(t, expectedValue, mc.ccName)
@@ -189,7 +187,7 @@ func setupClientContextsAndChannel(t *testing.T, sdk *fabsdk.FabricSDK, mc *mult
 	}
 }
 
-func discoverLocalPeers(t *testing.T, sdk *fabsdk.FabricSDK, ctxProvider contextAPI.ClientProvider, expected int) []fab.Peer {
+func discoverLocalPeers(t *testing.T, ctxProvider contextAPI.ClientProvider, expected int) []fab.Peer {
 	ctx, err := ctxProvider()
 	require.NoError(t, err, "Error creating context")
 
@@ -213,6 +211,7 @@ func discoverLocalPeers(t *testing.T, sdk *fabsdk.FabricSDK, ctxProvider context
 		// wait some time to allow the gossip to propagate the peers discovery
 		time.Sleep(3 * time.Second)
 	}
+	require.Equalf(t, expected, len(peers), "Did not get the required number of peers")
 	return peers
 }
 
@@ -453,31 +452,87 @@ func verifyErrorFromCC(chClientOrg1User *channel.Client, t *testing.T, ccName st
 	}
 }
 
-func queryInstantiatedCC(t *testing.T, resMgmt *resmgmt.Client, channelID, ccName string) bool {
-	found := false
-	for i := 0; i < 5; i++ {
-		// Verify that example CC is instantiated on Org1 peer
-		chaincodeQueryResponse, err := resMgmt.QueryInstantiatedChaincodes(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-		require.NoError(t, err, "QueryInstantiatedChaincodes return error")
-
-		t.Logf("Found %d instantiated chaincodes:", len(chaincodeQueryResponse.Chaincodes))
-		for _, chaincode := range chaincodeQueryResponse.Chaincodes {
-			t.Logf("Found instantiated chaincode Name: [%s], Version: [%s], Path: [%s]", chaincode.Name, chaincode.Version, chaincode.Path)
-			if chaincode.Name == ccName {
-				found = true
-				break
-			}
-		}
-		if found {
+func queryInstalledCC(t *testing.T, orgID string, resMgmt *resmgmt.Client, ccName, ccVersion string, peers []fab.Peer) bool {
+	for i := 0; i < 10; i++ {
+		if isCCInstalled(t, orgID, resMgmt, ccName, ccVersion, peers) {
+			t.Logf("Chaincode [%s:%s] is installed on all peers in Org1", ccName, ccVersion)
 			return true
 		}
-		time.Sleep(5 * time.Second)
+		t.Logf("Chaincode [%s:%s] is NOT installed on all peers in Org1. Trying again in 2 seconds...", ccName, ccVersion)
+		time.Sleep(2 * time.Second)
 	}
 	return false
 }
 
+func isCCInstalled(t *testing.T, orgID string, resMgmt *resmgmt.Client, ccName, ccVersion string, peers []fab.Peer) bool {
+	t.Logf("Querying [%s] peers to see if chaincode [%s:%s] was installed", orgID, ccName, ccVersion)
+	installedOnAllPeers := true
+	for _, peer := range peers {
+		t.Logf("Querying [%s] ...", peer.URL())
+		resp, err := resMgmt.QueryInstalledChaincodes(resmgmt.WithTargets(peer))
+		require.NoErrorf(t, err, "QueryInstalledChaincodes for peer [%s] failed", peer.URL())
+
+		found := false
+		for _, ccInfo := range resp.Chaincodes {
+			t.Logf("... found chaincode [%s:%s]", ccInfo.Name, ccInfo.Version)
+			if ccInfo.Name == ccName && ccInfo.Version == ccVersion {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Logf("... chaincode [%s:%s] is not installed on peer [%s]", ccName, ccVersion, peer.URL())
+			installedOnAllPeers = false
+		}
+	}
+	return installedOnAllPeers
+}
+
+func queryInstantiatedCC(t *testing.T, orgID string, resMgmt *resmgmt.Client, channelID, ccName, ccVersion string, peers []fab.Peer) bool {
+	require.Truef(t, len(peers) > 0, "Expecting one or more peers")
+
+	t.Logf("Querying [%s] peers to see if chaincode [%s] was instantiated on channel [%s]", orgID, ccName, channelID)
+	for i := 0; i < 10; i++ {
+		if isCCInstantiated(t, resMgmt, channelID, ccName, ccVersion, peers) {
+			return true
+		}
+		t.Logf("Did NOT find instantiated chaincode [%s:%s] on one or more peers in [%s]. Trying again in 2 seconds...", ccName, ccVersion, orgID)
+		time.Sleep(2 * time.Second)
+	}
+	return false
+}
+
+func isCCInstantiated(t *testing.T, resMgmt *resmgmt.Client, channelID, ccName, ccVersion string, peers []fab.Peer) bool {
+	installedOnAllPeers := true
+	for _, peer := range peers {
+		t.Logf("Querying peer [%s] for instantiated chaincode [%s:%s]...", peer.URL(), ccName, ccVersion)
+		chaincodeQueryResponse, err := resMgmt.QueryInstantiatedChaincodes(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithTargets(peer))
+		require.NoError(t, err, "QueryInstantiatedChaincodes return error")
+
+		t.Logf("Found %d instantiated chaincodes on peer [%s]:", len(chaincodeQueryResponse.Chaincodes), peer.URL())
+		found := false
+		for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+			t.Logf("Found instantiated chaincode Name: [%s], Version: [%s], Path: [%s] on peer [%s]", chaincode.Name, chaincode.Version, chaincode.Path, peer.URL())
+			if chaincode.Name == ccName && chaincode.Version == ccVersion {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Logf("... chaincode [%s:%s] is not instantiated on peer [%s]", ccName, ccVersion, peer.URL())
+			installedOnAllPeers = false
+		}
+	}
+	return installedOnAllPeers
+}
+
 func createCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccName, ccVersion string) {
 	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: "github.com/example_cc", Version: ccVersion, Package: ccPkg}
+
+	// Ensure that Gossip has propagated it's view of local peers before invoking
+	// install since some peers may be missed if we call InstallCC too early
+	org1Peers := discoverLocalPeers(t, mc.org1AdminClientContext, 2)
+	org2Peers := discoverLocalPeers(t, mc.org2AdminClientContext, 1)
 
 	// Install example cc to Org1 peers
 	_, err := mc.org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
@@ -487,69 +542,21 @@ func createCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccNa
 	_, err = mc.org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	require.NoError(t, err, "InstallCC for Org2 failed")
 
-	isInstalled := func(ctxProvider contextAPI.ClientProvider, resMgmt *resmgmt.Client) bool {
-		ctx, err := ctxProvider()
-		require.NoErrorf(t, err, "Getting client context for [%s] failed", ctx.Identifier().MSPID)
-		discoveryProvider := ctx.LocalDiscoveryProvider()
-		discovery, err := discoveryProvider.CreateLocalDiscoveryService(ctx.Identifier().MSPID)
-		require.NoErrorf(t, err, "Error creating local discovery service for [%s]", ctx.Identifier().MSPID)
-		peers, err := discovery.GetPeers()
-		require.NoErrorf(t, err, "Getting local peers for [%s] failed", ctx.Identifier().MSPID)
-
-		t.Logf("Querying [%s] peers to see if chaincode [%s:%s] was installed", ctx.Identifier().MSPID, ccName, ccVersion)
-		installedOnAllPeers := true
-		for _, peer := range peers {
-			t.Logf("Querying [%s] ...", peer.URL())
-			resp, err := resMgmt.QueryInstalledChaincodes(resmgmt.WithTargets(peer))
-			require.NoErrorf(t, err, "QueryInstalledChaincodes for peer [%s] failed", peer.URL())
-
-			found := false
-			for _, ccInfo := range resp.Chaincodes {
-				t.Logf("... found chaincode [%s:%s]", ccInfo.Name, ccInfo.Version)
-				if ccInfo.Name == ccName && ccInfo.Version == ccVersion {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Logf("... chaincode [%s:%s] is not installed on peer [%s]", ccName, ccVersion, peer.URL())
-				installedOnAllPeers = false
-			}
-		}
-		return installedOnAllPeers
-	}
-
-	installed := false
-	for i := 0; i < 10; i++ {
-		if isInstalled(mc.org1AdminClientContext, mc.org1ResMgmt) {
-			t.Logf("Chaincode [%s:%s] is installed on all peers in Org1", ccName, ccVersion)
-			installed = true
-			break
-		}
-		t.Logf("Chaincode [%s:%s] is NOT installed on all peers in Org1. Trying again in 2 seconds...", ccName, ccVersion)
-		time.Sleep(2 * time.Second)
-	}
+	// Ensure the CC is installed on all peers in both orgs
+	installed := queryInstalledCC(t, "Org1", mc.org1ResMgmt, ccName, ccVersion, org1Peers)
 	require.Truef(t, installed, "Expecting chaincode [%s:%s] to be installed on all peers in Org1")
 
-	installed = false
-	for i := 0; i < 10; i++ {
-		if isInstalled(mc.org2AdminClientContext, mc.org2ResMgmt) {
-			t.Logf("Chaincode [%s:%s] is installed on all peers in Org2", ccName, ccVersion)
-			installed = true
-			break
-		}
-		t.Logf("Chaincode [%s:%s] is NOT installed on all peers in Org2. Trying again in 2 seconds...", ccName, ccVersion)
-		time.Sleep(2 * time.Second)
-	}
+	installed = queryInstalledCC(t, "Org2", mc.org2ResMgmt, ccName, ccVersion, org2Peers)
 	require.Truef(t, installed, "Expecting chaincode [%s:%s] to be installed on all peers in Org2")
 
 	instantiateCC(t, mc.org1ResMgmt, ccName, ccVersion)
 
-	found := queryInstantiatedCC(t, mc.org1ResMgmt, channelID, ccName)
-	require.True(t, found, "QueryInstantiatedChaincodes failed to find instantiated '%s' chaincode", ccName)
+	// Ensure the CC is instantiated on all peers in both orgs
+	found := queryInstantiatedCC(t, "Org1", mc.org1ResMgmt, channelID, ccName, ccVersion, org1Peers)
+	require.True(t, found, "Failed to find instantiated chaincode [%s:%s] in at least one peer in Org1 on channel [%s]", ccName, ccVersion, channelID)
 
-	found = queryInstantiatedCC(t, mc.org2ResMgmt, channelID, ccName)
-	require.True(t, found, "QueryInstantiatedChaincodes failed to find instantiated '%s' chaincode", ccName)
+	found = queryInstantiatedCC(t, "Org2", mc.org2ResMgmt, channelID, ccName, ccVersion, org2Peers)
+	require.True(t, found, "Failed to find instantiated chaincode [%s:%s] in at least one peer in Org2 on channel [%s]", ccName, ccVersion, channelID)
 }
 
 func instantiateCC(t *testing.T, resMgmt *resmgmt.Client, ccName, ccVersion string) {
