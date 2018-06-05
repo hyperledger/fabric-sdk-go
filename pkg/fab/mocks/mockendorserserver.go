@@ -9,20 +9,23 @@ package mocks
 import (
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-
-	rwsetutil "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
-	kvrwset "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 // MockEndorserServer mock endoreser server to process endorsement proposals
 type MockEndorserServer struct {
 	ProposalError error
 	AddkvWrite    bool
+	srv           *grpc.Server
+	wg            sync.WaitGroup
 }
 
 // ProcessProposal mock implementation that returns success if error is not set
@@ -72,20 +75,39 @@ func (m *MockEndorserServer) createProposalResponsePayload() []byte {
 	return prpBytes
 }
 
-//StartEndorserServer starts mock server for unit testing purpose
-func StartEndorserServer(endorserTestURL string) *MockEndorserServer {
-	grpcServer := grpc.NewServer()
-	lis, err := net.Listen("tcp", endorserTestURL)
-	if err != nil {
-		panic(fmt.Sprintf("Error starting endorser server: %s", err))
+// Start the mock broadcast server
+func (m *MockEndorserServer) Start(address string) string {
+	if m.srv != nil {
+		panic("MockBroadcastServer already started")
 	}
-	endorserServer := &MockEndorserServer{}
-	pb.RegisterEndorserServer(grpcServer, endorserServer)
-	fmt.Print("Test endorser server started\n")
+	m.srv = grpc.NewServer()
+
+	lis, err := net.Listen("tcp", address)
+	if err != nil {
+		panic(fmt.Sprintf("Error starting BroadcastServer %s", err))
+	}
+	addr := lis.Addr().String()
+
+	test.Logf("Starting MockEventServer [%s]", addr)
+	pb.RegisterEndorserServer(m.srv, m)
+	m.wg.Add(1)
 	go func() {
-		if err := grpcServer.Serve(lis); err != nil {
-			panic(err.Error())
+		defer m.wg.Done()
+		if err := m.srv.Serve(lis); err != nil {
+			test.Logf("StartMockBroadcastServer failed [%s]", err)
 		}
 	}()
-	return endorserServer
+
+	return addr
+}
+
+// Stop the mock broadcast server and wait for completion.
+func (m *MockEndorserServer) Stop() {
+	if m.srv == nil {
+		panic("MockBroadcastServer not started")
+	}
+
+	m.srv.Stop()
+	m.wg.Wait()
+	m.srv = nil
 }

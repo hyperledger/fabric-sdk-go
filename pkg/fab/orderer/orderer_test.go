@@ -9,15 +9,12 @@ package orderer
 import (
 	reqContext "context"
 	"crypto/x509"
-	"fmt"
-	"net"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	"google.golang.org/grpc"
 	grpccodes "google.golang.org/grpc/codes"
 
@@ -26,21 +23,23 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
-	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
 var testOrdererURL = "127.0.0.1:0"
+var testOrdererMainURL = "127.0.0.1:0"
 
 var ordererAddr string
 var ordererMockSrv *mocks.MockBroadcastServer
 
 func TestMain(m *testing.M) {
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	ordererMockSrv, ordererAddr = startMockServer(grpcServer)
+	ordererMockSrv = &mocks.MockBroadcastServer{}
+	ordererAddr = ordererMockSrv.Start(testOrdererMainURL)
+	defer ordererMockSrv.Stop()
+
 	os.Exit(m.Run())
 }
 
@@ -106,36 +105,6 @@ func TestSendDeliver(t *testing.T) {
 		t.Fatal("Did not receive error from SendDeliver")
 	}
 
-}
-
-func startMockServer(grpcServer *grpc.Server) (*mocks.MockBroadcastServer, string) {
-	lis, err := net.Listen("tcp", testOrdererURL)
-	addr := lis.Addr().String()
-
-	broadcastServer := new(mocks.MockBroadcastServer)
-	ab.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
-	if err != nil {
-		panic(fmt.Sprintf("Error starting test server %s", err))
-	}
-	test.Logf("Starting test server on %s", addr)
-	go grpcServer.Serve(lis)
-
-	return broadcastServer, addr
-}
-
-func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.Server, broadcastServer *mocks.MockBroadcastServer) string {
-	lis, err := net.Listen("tcp", serverURL)
-	addr := lis.Addr().String()
-
-	ab.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
-	if err != nil {
-		t.Logf("Error starting test server %s", err)
-		t.FailNow()
-	}
-	t.Logf("Starting test customized server on %s\n", addr)
-	go grpcServer.Serve(lis)
-
-	return addr
 }
 
 func TestNewOrdererWithTLS(t *testing.T) {
@@ -225,9 +194,9 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 		},
 	}
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
+	addr := broadcastServer.Start(testOrdererURL)
+	defer broadcastServer.Stop()
+
 	orderer, _ := New(mocks.NewMockEndpointConfig(), WithURL("grpc://"+addr), WithInsecure())
 
 	ctx, cancel := reqContext.WithTimeout(reqContext.Background(), 5*time.Second)
@@ -256,9 +225,8 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 		},
 	}
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
+	addr := broadcastServer.Start(testOrdererURL)
+	defer broadcastServer.Stop()
 
 	orderer, _ := New(mocks.NewMockEndpointConfig(), WithURL("grpc://"+addr), WithInsecure())
 
@@ -284,9 +252,9 @@ func TestSendDeliverFailure(t *testing.T) {
 		DeliverResponse: &ab.DeliverResponse{},
 	}
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
+	addr := broadcastServer.Start(testOrdererURL)
+	defer broadcastServer.Stop()
+
 	orderer, _ := New(mocks.NewMockEndpointConfig(), WithURL("grpc://"+addr), WithInsecure())
 
 	ctx, cancel := reqContext.WithTimeout(reqContext.Background(), 5*time.Second)
@@ -311,9 +279,8 @@ func TestSendBroadcastServerBadResponse(t *testing.T) {
 		BroadcastInternalServerError: true,
 	}
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
+	addr := broadcastServer.Start(testOrdererURL)
+	defer broadcastServer.Stop()
 	orderer, _ := New(mocks.NewMockEndpointConfig(), WithURL("grpc://"+addr), WithInsecure())
 
 	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
@@ -333,9 +300,9 @@ func TestSendBroadcastError(t *testing.T) {
 		BroadcastError: errors.New("just to test error scenario"),
 	}
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
+	addr := broadcastServer.Start(testOrdererURL)
+	defer broadcastServer.Stop()
+
 	orderer, _ := New(mocks.NewMockEndpointConfig(), WithURL("grpc://"+addr), WithInsecure())
 
 	statusCode, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})

@@ -135,7 +135,7 @@ func newMockConfig(channelPeers ...fab.ChannelPeer) *mockConfig {
 }
 
 func (c *mockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
-	test.Logf("mockConfig.ChannelPeers [%#n]", c.channelPeers)
+	test.Logf("mockConfig.ChannelPeers [%#v]", c.channelPeers)
 	return c.channelPeers, true
 }
 

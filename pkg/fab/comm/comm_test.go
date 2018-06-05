@@ -11,13 +11,10 @@ import (
 	"net"
 	"os"
 	"testing"
-	"time"
 
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
 
@@ -51,37 +48,18 @@ func TestMain(m *testing.M) {
 	}
 	endorserAddr = addrs
 
-	time.Sleep(2 * time.Second)
 	os.Exit(m.Run())
 }
 
-func startEndorsers(count int, address string) ([]*grpc.Server, []string, error) {
-	srvs := make([]*grpc.Server, 0, count)
+func startEndorsers(count int, address string) ([]*mocks.MockEndorserServer, []string, error) {
+	srvs := make([]*mocks.MockEndorserServer, 0, count)
 	addrs := make([]string, 0, count)
 
 	for i := 0; i < count; i++ {
-		srv := grpc.NewServer()
-		_, addr, ok := startEndorserServer(srv, address)
-		if !ok {
-			return nil, nil, errors.New("unable to start GRPC server")
-		}
+		srv := &mocks.MockEndorserServer{}
+		addr := srv.Start(address)
 		srvs = append(srvs, srv)
 		addrs = append(addrs, addr)
 	}
 	return srvs, addrs, nil
-}
-
-func startEndorserServer(grpcServer *grpc.Server, address string) (*mocks.MockEndorserServer, string, bool) {
-	lis, err := net.Listen("tcp", address)
-	if err != nil {
-		test.Logf("Error starting test server [%s]", err)
-		return nil, "", false
-	}
-	addr := lis.Addr().String()
-
-	endorserServer := &mocks.MockEndorserServer{}
-	pb.RegisterEndorserServer(grpcServer, endorserServer)
-	test.Logf("Starting test server [%s]", addr)
-	go grpcServer.Serve(lis)
-	return endorserServer, addr, true
 }

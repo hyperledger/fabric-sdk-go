@@ -10,7 +10,6 @@ import (
 	reqContext "context"
 	"crypto/x509"
 	"fmt"
-	"net"
 	"reflect"
 	"testing"
 	"time"
@@ -192,9 +191,9 @@ func TestProcessProposalBadDial(t *testing.T) {
 // TestProcessProposalGoodDial validates that an up
 // endorser connects.
 func TestProcessProposalGoodDial(t *testing.T) {
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	_, addr := startEndorserServer(t, grpcServer)
+	srv := &mocks.MockEndorserServer{}
+	addr := srv.Start(testAddress)
+	defer srv.Stop()
 
 	_, err := testProcessProposal(t, "grpc://"+addr)
 	if err != nil {
@@ -239,25 +238,6 @@ func mockProcessProposalRequest() fab.ProcessProposalRequest {
 	}
 }
 
-func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockEndorserServer, string) {
-	return startEndorserServerWithError(t, grpcServer, nil)
-}
-
-func startEndorserServerWithError(t *testing.T, grpcServer *grpc.Server, testErr error) (*mocks.MockEndorserServer, string) {
-	lis, err := net.Listen("tcp", testAddress)
-	addr := lis.Addr().String()
-
-	endorserServer := &mocks.MockEndorserServer{ProposalError: testErr}
-	pb.RegisterEndorserServer(grpcServer, endorserServer)
-	if err != nil {
-		t.Logf("Error starting test server %s", err)
-		t.FailNow()
-	}
-	t.Logf("Starting test server (endorser server in peerendorser_test) on %s", addr)
-	go grpcServer.Serve(lis)
-	return endorserServer, addr
-}
-
 func TestEndorserConnectionError(t *testing.T) {
 	_, err := testProcessProposal(t, "grpc://"+testAddress)
 	assert.NotNil(t, err, "Expected connection error without server running")
@@ -271,9 +251,9 @@ func TestEndorserConnectionError(t *testing.T) {
 func TestEndorserRPCError(t *testing.T) {
 	testErrorMessage := "RPC error condition"
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	_, addr := startEndorserServerWithError(t, grpcServer, fmt.Errorf(testErrorMessage))
+	srv := &mocks.MockEndorserServer{ProposalError: fmt.Errorf(testErrorMessage)}
+	addr := srv.Start(testAddress)
+	defer srv.Stop()
 
 	_, err := testProcessProposal(t, "grpc://"+addr)
 	statusError, ok := status.FromError(err)

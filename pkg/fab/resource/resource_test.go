@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"path"
 	"testing"
 	"time"
@@ -26,10 +25,10 @@ import (
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 )
+
+const testAddress = "127.0.0.1:0"
 
 func TestSignChannelConfig(t *testing.T) {
 	ctx := setupContext()
@@ -112,10 +111,10 @@ func TestCreateChannel(t *testing.T) {
 func TestJoinChannel(t *testing.T) {
 	var peers []fab.ProposalProcessor
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
+	srv := mocks.MockEndorserServer{}
+	addr := srv.Start(testAddress)
+	defer srv.Stop()
 
-	endorserServer, addr := startEndorserServer(t, grpcServer)
 	peer, _ := peer.New(mocks.NewMockEndpointConfig(), peer.WithURL("grpc://"+addr), peer.WithInsecure())
 	peers = append(peers, peer)
 
@@ -141,7 +140,7 @@ func TestJoinChannel(t *testing.T) {
 	}
 
 	// Test failed proposal error handling
-	endorserServer.ProposalError = errors.New("Test Error")
+	srv.ProposalError = errors.New("Test Error")
 	request = JoinChannelRequest{}
 	err = JoinChannel(reqCtx, request, peers)
 	if err == nil {
@@ -297,21 +296,4 @@ func TestGenesisBlockOrderer(t *testing.T) {
 	if err == nil {
 		t.Fatal("GenesisBlock Test supposed to fail with error")
 	}
-}
-
-const testAddress = "127.0.0.1:0"
-
-func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockEndorserServer, string) {
-	lis, err := net.Listen("tcp", testAddress)
-	addr := lis.Addr().String()
-
-	endorserServer := &mocks.MockEndorserServer{}
-	pb.RegisterEndorserServer(grpcServer, endorserServer)
-	if err != nil {
-		t.Logf("Error starting test server %s", err)
-		t.FailNow()
-	}
-	t.Logf("Starting test server on %s\n", addr)
-	go grpcServer.Serve(lis)
-	return endorserServer, addr
 }

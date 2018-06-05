@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 
 	po "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
@@ -38,6 +39,8 @@ type MockBroadcastServer struct {
 	DeliverResponse              *po.DeliverResponse
 	BroadcastError               error
 	BroadcastCustomResponse      *po.BroadcastResponse
+	srv                          *grpc.Server
+	wg                           sync.WaitGroup
 }
 
 // Broadcast mock broadcast
@@ -90,22 +93,39 @@ func (m *MockBroadcastServer) Deliver(server po.AtomicBroadcast_DeliverServer) e
 	return nil
 }
 
-//StartMockBroadcastServer starts mock server for unit testing purpose
-func StartMockBroadcastServer(broadcastTestURL string, grpcServer *grpc.Server) (*MockBroadcastServer, string) {
-	lis, err := net.Listen("tcp", broadcastTestURL)
+// Start the mock broadcast server
+func (m *MockBroadcastServer) Start(address string) string {
+	if m.srv != nil {
+		panic("MockBroadcastServer already started")
+	}
+	m.srv = grpc.NewServer()
+
+	lis, err := net.Listen("tcp", address)
 	if err != nil {
 		panic(fmt.Sprintf("Error starting BroadcastServer %s", err))
 	}
 	addr := lis.Addr().String()
 
 	test.Logf("Starting MockEventServer [%s]", addr)
-	broadcastServer := new(MockBroadcastServer)
-	po.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
+	po.RegisterAtomicBroadcastServer(m.srv, m)
+	m.wg.Add(1)
 	go func() {
-		if err := grpcServer.Serve(lis); err != nil {
+		defer m.wg.Done()
+		if err := m.srv.Serve(lis); err != nil {
 			test.Logf("StartMockBroadcastServer failed [%s]", err)
 		}
 	}()
 
-	return broadcastServer, addr
+	return addr
+}
+
+// Stop the mock broadcast server and wait for completion.
+func (m *MockBroadcastServer) Stop() {
+	if m.srv == nil {
+		panic("MockBroadcastServer not started")
+	}
+
+	m.srv.Stop()
+	m.wg.Wait()
+	m.srv = nil
 }

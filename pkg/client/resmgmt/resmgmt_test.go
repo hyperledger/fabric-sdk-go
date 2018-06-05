@@ -8,7 +8,6 @@ package resmgmt
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -18,10 +17,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -40,12 +35,15 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
 	channelConfig = "../../../test/fixtures/fabric/v1.0/channel/mychannel.tx"
 	networkCfg    = "../../../test/fixtures/config/config_test.yaml"
 	configPath    = "../../core/config/testdata/config_test.yaml"
+	testAddress   = "127.0.0.1:0"
 )
 
 func withLocalContextProvider(provider context.LocalProvider) ClientOption {
@@ -57,10 +55,10 @@ func withLocalContextProvider(provider context.LocalProvider) ClientOption {
 
 func TestJoinChannelFail(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
+	srv := &fcmocks.MockEndorserServer{}
+	addr := srv.Start(testAddress)
+	defer srv.Stop()
 
-	endorserServer, addr := startEndorserServer(t, grpcServer)
 	ctx := setupTestContext("test", "Org1MSP")
 
 	// Create mock orderer with simple mock block
@@ -83,7 +81,7 @@ func TestJoinChannelFail(t *testing.T) {
 	peer1, _ := peer.New(fcmocks.NewMockEndpointConfig(), peer.WithURL("grpc://"+addr))
 
 	// Test fail with send proposal error
-	endorserServer.ProposalError = errors.New("Test Error")
+	srv.ProposalError = errors.New("Test Error")
 	err = rc.JoinChannel("mychannel", WithTargets(peer1))
 
 	if err == nil || !strings.Contains(err.Error(), "Test Error") {
@@ -93,10 +91,10 @@ func TestJoinChannelFail(t *testing.T) {
 }
 
 func TestJoinChannelSuccess(t *testing.T) {
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
+	srv := &fcmocks.MockEndorserServer{}
+	addr := srv.Start(testAddress)
+	defer srv.Stop()
 
-	_, addr := startEndorserServer(t, grpcServer)
 	ctx := setupTestContext("test", "Org1MSP")
 
 	// Create mock orderer with simple mock block
@@ -129,10 +127,10 @@ func TestWithFilterOption(t *testing.T) {
 }
 
 func TestJoinChannelWithFilter(t *testing.T) {
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
+	srv := &fcmocks.MockEndorserServer{}
+	addr := srv.Start(testAddress)
+	defer srv.Stop()
 
-	_, addr := startEndorserServer(t, grpcServer)
 	ctx := setupTestContext("test", "Org1MSP")
 
 	// Create mock orderer with simple mock block
@@ -216,10 +214,9 @@ func TestJoinChannelRequiredParameters(t *testing.T) {
 
 func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-
-	_, addr := startEndorserServer(t, grpcServer)
+	srv := &fcmocks.MockEndorserServer{}
+	addr := srv.Start(testAddress)
+	defer srv.Stop()
 
 	ctx := setupTestContext("test", "Org1MSP")
 	network := getNetworkConfig(t)
@@ -1003,21 +1000,6 @@ func setupCustomOrderer(ctx *fcmocks.MockContext, mockOrderer fab.Orderer) *fcmo
 	return ctx
 }
 
-func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*fcmocks.MockEndorserServer, string) {
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
-	addr := lis.Addr().String()
-
-	endorserServer := &fcmocks.MockEndorserServer{}
-	pb.RegisterEndorserServer(grpcServer, endorserServer)
-	if err != nil {
-		t.Logf("Error starting test server %s", err)
-		t.FailNow()
-	}
-	t.Logf("Starting test server on %s\n", addr)
-	go grpcServer.Serve(lis)
-	return endorserServer, addr
-}
-
 func getNetworkConfig(t *testing.T) fab.EndpointConfig {
 	configBackend, err := configImpl.FromFile(networkCfg)()
 	if err != nil {
@@ -1034,9 +1016,9 @@ func getNetworkConfig(t *testing.T) fab.EndpointConfig {
 
 func TestSaveChannelSuccess(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	_, addr := fcmocks.StartMockBroadcastServer("127.0.0.1:0", grpcServer)
+	mb := fcmocks.MockBroadcastServer{}
+	addr := mb.Start("127.0.0.1:0")
+	defer mb.Stop()
 
 	ctx := setupTestContext("test", "Org1MSP")
 
@@ -1137,9 +1119,9 @@ func TestSaveChannelFailure(t *testing.T) {
 
 func TestSaveChannelWithOpts(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	_, addr := fcmocks.StartMockBroadcastServer("127.0.0.1:0", grpcServer)
+	mb := fcmocks.MockBroadcastServer{}
+	addr := mb.Start("127.0.0.1:0")
+	defer mb.Stop()
 
 	ctx := setupTestContext("test", "Org1MSP")
 
@@ -1210,9 +1192,10 @@ func TestJoinChannelWithInvalidOpts(t *testing.T) {
 }
 
 func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	_, addr := fcmocks.StartMockBroadcastServer("127.0.0.1:0", grpcServer)
+	mb := fcmocks.MockBroadcastServer{}
+	addr := mb.Start("127.0.0.1:0")
+	defer mb.Stop()
+
 	ctx := setupTestContext("test", "Org1MSP")
 
 	mockConfig := &fcmocks.MockConfig{}
