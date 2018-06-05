@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // MockEventServer ...
@@ -22,6 +23,7 @@ type MockEventServer struct {
 	server  pb.Events_ChatServer
 	channel chan *pb.Event
 	srv     *grpc.Server
+	Creds   credentials.TransportCredentials
 	wg      sync.WaitGroup
 }
 
@@ -30,7 +32,13 @@ func (m *MockEventServer) Start(address string) string {
 	if m.srv != nil {
 		panic("MockEventServer already started")
 	}
-	m.srv = grpc.NewServer()
+
+	// pass in TLS creds if present
+	if m.Creds != nil {
+		m.srv = grpc.NewServer(grpc.Creds(m.Creds))
+	} else {
+		m.srv = grpc.NewServer()
+	}
 
 	lis, err := net.Listen("tcp", address)
 	if err != nil {

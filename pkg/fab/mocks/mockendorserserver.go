@@ -18,6 +18,7 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // MockEndorserServer mock endoreser server to process endorsement proposals
@@ -25,6 +26,7 @@ type MockEndorserServer struct {
 	ProposalError error
 	AddkvWrite    bool
 	srv           *grpc.Server
+	Creds         credentials.TransportCredentials
 	wg            sync.WaitGroup
 }
 
@@ -80,7 +82,13 @@ func (m *MockEndorserServer) Start(address string) string {
 	if m.srv != nil {
 		panic("MockBroadcastServer already started")
 	}
-	m.srv = grpc.NewServer()
+
+	// pass in TLS creds if present
+	if m.Creds != nil {
+		m.srv = grpc.NewServer(grpc.Creds(m.Creds))
+	} else {
+		m.srv = grpc.NewServer()
+	}
 
 	lis, err := net.Listen("tcp", address)
 	if err != nil {

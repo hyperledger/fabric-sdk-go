@@ -140,7 +140,7 @@ func (ed *Dispatcher) handleUnregInterestsResponse(e *pb.Event_Unregister) {
 
 func validateInterests(have []*pb.Interest, want []*pb.Interest) error {
 	if len(have) != len(want) {
-		return errors.New("all interests were not registered/unregistered")
+		return errors.Errorf("all interests were not registered/unregistered have: [%+v]\nwant:[%+v]", have, want)
 	}
 	for _, hi := range have {
 		found := false

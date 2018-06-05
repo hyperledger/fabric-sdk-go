@@ -50,6 +50,7 @@ func (i *identityImpl) Validate(serializedID []byte) error {
 
 	id, err := i.mspManager.DeserializeIdentity(serializedID)
 	if err != nil {
+		logger.Errorf("failed to deserialize identity: %s", err)
 		return err
 	}
 	return id.Validate()

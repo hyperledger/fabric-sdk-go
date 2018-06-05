@@ -20,7 +20,7 @@ import (
 	ledgerutil "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/util"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 	"github.com/pkg/errors"
 )
 
@@ -146,7 +146,7 @@ func (ed *Dispatcher) updateLastBlockNum(blockNum uint64) error {
 		atomic.StoreUint64(&ed.lastBlockNum, blockNum)
 		return nil
 	}
-	return errors.Errorf("Expecting a block number greater than %d but received block number %d", lastBlockNum, lastBlockNum)
+	return errors.Errorf("Expecting a block number greater than %d but received block number %d", lastBlockNum, blockNum)
 }
 
 // clearBlockRegistrations removes all block registrations and closes the corresponding event channels.
