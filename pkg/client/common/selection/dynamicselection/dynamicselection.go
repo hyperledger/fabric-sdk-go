@@ -103,12 +103,17 @@ func newService(context context.Client, channelID string, discovery fab.Discover
 }
 
 // GetEndorsersForChaincode returns the endorsing peers for the given chaincodes
-func (s *SelectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...copts.Opt) ([]fab.Peer, error) {
-	if len(chaincodeIDs) == 0 {
+func (s *SelectionService) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeCall, opts ...copts.Opt) ([]fab.Peer, error) {
+	if len(chaincodes) == 0 {
 		return nil, errors.New("no chaincode IDs provided")
 	}
 
 	params := options.NewParams(opts)
+
+	var chaincodeIDs []string
+	for _, cc := range chaincodes {
+		chaincodeIDs = append(chaincodeIDs, cc.ID)
+	}
 
 	resolver, err := s.getPeerGroupResolver(chaincodeIDs)
 	if err != nil {

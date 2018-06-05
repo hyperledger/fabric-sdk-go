@@ -217,8 +217,13 @@ func verify(t *testing.T, service fab.SelectionService, expectedPeerGroups []pgr
 	logging.SetLevel(module, logging.WARNING)
 	defer logging.SetLevel(module, level)
 
+	var chaincodes []*fab.ChaincodeCall
+	for _, ccID := range chaincodeIDs {
+		chaincodes = append(chaincodes, &fab.ChaincodeCall{ID: ccID})
+	}
+
 	for i := 0; i < len(expectedPeerGroups); i++ {
-		peers, err := service.GetEndorsersForChaincode(chaincodeIDs, getEndorsersOpts...)
+		peers, err := service.GetEndorsersForChaincode(chaincodes, getEndorsersOpts...)
 		if err != nil {
 			t.Fatalf("error getting endorsers: %s", err)
 		}

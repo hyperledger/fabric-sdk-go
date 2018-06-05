@@ -28,7 +28,7 @@ func NewService(discovery fab.DiscoveryService) (fab.SelectionService, error) {
 }
 
 // GetEndorsersForChaincode returns a set of endorsing peers
-func (s *SelectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...copts.Opt) ([]fab.Peer, error) {
+func (s *SelectionService) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeCall, opts ...copts.Opt) ([]fab.Peer, error) {
 	params := options.NewParams(opts)
 
 	channelPeers, err := s.discoveryService.GetPeers()

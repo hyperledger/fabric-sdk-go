@@ -70,7 +70,19 @@ func (h *ProposalProcessorHandler) Handle(requestContext *RequestContext, client
 		if requestContext.SelectionFilter != nil {
 			selectionOpts = append(selectionOpts, selectopts.WithPeerFilter(requestContext.SelectionFilter))
 		}
-		endorsers, err := clientContext.Selection.GetEndorsersForChaincode([]string{requestContext.Request.ChaincodeID}, selectionOpts...)
+
+		// TODO: Add optional meta-data to RequestContext that specifies invoked chaincodes
+		// (in CC-to-CC calls) where the policy of the invoked chaincodes need to be taken
+		// into consideration. Also, associatied private data collections may be specified
+		// in order to prioritize those endorsers which have read access to the private data
+		// collections.
+		chaincodes := []*fab.ChaincodeCall{
+			{
+				ID:          requestContext.Request.ChaincodeID,
+				Collections: nil,
+			},
+		}
+		endorsers, err := clientContext.Selection.GetEndorsersForChaincode(chaincodes, selectionOpts...)
 		if err != nil {
 			requestContext.Error = errors.WithMessage(err, "Failed to get endorsing peers")
 			return

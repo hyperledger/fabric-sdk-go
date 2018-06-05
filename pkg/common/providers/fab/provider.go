@@ -36,13 +36,21 @@ type InfraProvider interface {
 	Close()
 }
 
+// ChaincodeCall contains the ID of the chaincode as well
+// as an optional set of private data collections that may be
+// accessed by the chaincode.
+type ChaincodeCall struct {
+	ID          string
+	Collections []string
+}
+
 // SelectionService selects peers for endorsement and commit events
 type SelectionService interface {
 	// GetEndorsersForChaincode returns a set of peers that should satisfy the endorsement
 	// policies of all of the given chaincodes.
 	// A set of options may be provided to the selection service. Note that the type of options
 	// may vary depending on the specific selection service implementation.
-	GetEndorsersForChaincode(chaincodeIDs []string, opts ...options.Opt) ([]Peer, error)
+	GetEndorsersForChaincode(chaincodes []*ChaincodeCall, opts ...options.Opt) ([]Peer, error)
 }
 
 // DiscoveryService is used to discover eligible peers on specific channel
