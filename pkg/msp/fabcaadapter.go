@@ -382,12 +382,8 @@ func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config msp.I
 		Config: &calib.ClientConfig{},
 	}
 
-	conf, err := config.CAConfig(org)
-	if err != nil {
-		return nil, err
-	}
-
-	if conf == nil {
+	conf, ok := config.CAConfig(org)
+	if !ok {
 		return nil, errors.Errorf("Organization [%s] have no corresponding CA in the configs", org)
 	}
 
@@ -396,26 +392,20 @@ func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config msp.I
 	//set server URL
 	c.Config.URL = endpoint.ToAddress(conf.URL)
 	//certs file list
-	c.Config.TLS.CertFiles, err = config.CAServerCerts(org)
-	if err != nil {
-		return nil, err
+	c.Config.TLS.CertFiles, ok = config.CAServerCerts(org)
+	if !ok {
+		return nil, errors.Errorf("Organization [%s] have no corresponding server certs in the configs", org)
 	}
 
 	// set key file and cert file
-	c.Config.TLS.Client.CertFile, err = config.CAClientCert(org)
-	if err != nil {
-		return nil, err
+	c.Config.TLS.Client.CertFile, ok = config.CAClientCert(org)
+	if !ok {
+		return nil, errors.Errorf("Organization [%s] have no corresponding client certs in the configs", org)
 	}
 
-	c.Config.TLS.Client.KeyFile, err = config.CAClientKey(org)
-	if err != nil {
-		return nil, err
-	}
-
-	// get CAClient configs
-	_, err = config.Client()
-	if err != nil {
-		return nil, err
+	c.Config.TLS.Client.KeyFile, ok = config.CAClientKey(org)
+	if !ok {
+		return nil, errors.Errorf("Organization [%s] have no corresponding client keys in the configs", org)
 	}
 
 	//TLS flag enabled/disabled
@@ -425,7 +415,7 @@ func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config msp.I
 	//Factory opts
 	c.Config.CSP = cryptoSuite
 
-	err = c.Init()
+	err := c.Init()
 	if err != nil {
 		return nil, errors.Wrap(err, "CA Client init failed")
 	}

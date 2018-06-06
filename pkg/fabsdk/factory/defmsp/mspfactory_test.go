@@ -7,8 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package defmsp
 
 import (
-	"errors"
 	"testing"
+
+	"strings"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -49,7 +50,7 @@ func newMockUserStore(t *testing.T) msp.UserStore {
 			Path: "/tmp/fabsdkgo_test/store",
 		},
 	}
-	mockConfig.EXPECT().Client().Return(&mockClientConfig, nil)
+	mockConfig.EXPECT().Client().Return(&mockClientConfig)
 
 	userStore, err := factory.CreateUserStore(mockConfig)
 	if err != nil {
@@ -57,6 +58,7 @@ func newMockUserStore(t *testing.T) msp.UserStore {
 	}
 	return userStore
 }
+
 func TestCreateUserStoreByConfig(t *testing.T) {
 	userStore := newMockUserStore(t)
 
@@ -74,7 +76,7 @@ func TestCreateUserStoreEmptyConfig(t *testing.T) {
 	mockConfig := mockmsp.NewMockIdentityConfig(mockCtrl)
 
 	mockClientConfig := msp.ClientConfig{}
-	mockConfig.EXPECT().Client().Return(&mockClientConfig, nil)
+	mockConfig.EXPECT().Client().Return(&mockClientConfig)
 
 	_, err := factory.CreateUserStore(mockConfig)
 	if err == nil {
@@ -89,10 +91,11 @@ func TestCreateUserStoreFailConfig(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockConfig := mockmsp.NewMockIdentityConfig(mockCtrl)
 
-	mockConfig.EXPECT().Client().Return(nil, errors.New("error"))
+	mockClientConfig := msp.ClientConfig{}
+	mockConfig.EXPECT().Client().Return(&mockClientConfig)
 
 	_, err := factory.CreateUserStore(mockConfig)
-	if err == nil {
+	if err == nil || !strings.Contains(err.Error(), "FileKeyValueStore path is empty") {
 		t.Fatal("Expected error creating user store")
 	}
 }

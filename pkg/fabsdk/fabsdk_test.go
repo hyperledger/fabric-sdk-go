@@ -254,11 +254,7 @@ func TestWithConfigSuccess(t *testing.T) {
 		t.Fatalf("Error getting identity config: %s", err)
 	}
 
-	client1, err := identityConfig.Client()
-	if err != nil {
-		t.Fatalf("Error getting client from config: %s", err)
-	}
-
+	client1 := identityConfig.Client()
 	if client1.Organization != sdkValidClientOrg1 {
 		t.Fatalf("Unexpected org in config: %s", client1.Organization)
 	}

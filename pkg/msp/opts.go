@@ -29,27 +29,27 @@ type setter struct{ isSet bool }
 
 // client interface allows to uniquely override IdentityConfig interface's Client() function
 type client interface {
-	Client() (*msp.ClientConfig, error)
+	Client() *msp.ClientConfig
 }
 
 // caConfig interface allows to uniquely override IdentityConfig interface's CAConfig() function
 type caConfig interface {
-	CAConfig(org string) (*msp.CAConfig, error)
+	CAConfig(org string) (*msp.CAConfig, bool)
 }
 
 // caServerCerts interface allows to uniquely override IdentityConfig interface's CAServerCerts() function
 type caServerCerts interface {
-	CAServerCerts(org string) ([][]byte, error)
+	CAServerCerts(org string) ([][]byte, bool)
 }
 
 // caClientKey interface allows to uniquely override IdentityConfig interface's CAClientKey() function
 type caClientKey interface {
-	CAClientKey(org string) ([]byte, error)
+	CAClientKey(org string) ([]byte, bool)
 }
 
 // caClientCert interface allows to uniquely override IdentityConfig interface's CAClientCert() function
 type caClientCert interface {
-	CAClientCert(org string) ([]byte, error)
+	CAClientCert(org string) ([]byte, bool)
 }
 
 // caKeyStorePath interface allows to uniquely override IdentityConfig interface's CAKeyStorePath() function

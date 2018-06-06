@@ -36,11 +36,7 @@ type CAClientImpl struct {
 func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 
 	if orgName == "" {
-		clientConfig, err1 := ctx.IdentityConfig().Client()
-		if err1 != nil {
-			return nil, errors.Wrap(err1, "client config retrieval failed")
-		}
-		orgName = clientConfig.Organization
+		orgName = ctx.IdentityConfig().Client().Organization
 	}
 
 	if orgName == "" {
@@ -59,11 +55,12 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 
 	var adapter *fabricCAAdapter
 	var registrar msp.EnrollCredentials
+	var err error
 
 	// Currently, an organization can be associated with only one CA
 	caName := orgConfig.CertificateAuthorities[0]
-	caConfig, err := ctx.IdentityConfig().CAConfig(orgName)
-	if err == nil {
+	caConfig, ok := ctx.IdentityConfig().CAConfig(orgName)
+	if ok {
 		adapter, err = newFabricCAAdapter(orgName, ctx.CryptoSuite(), ctx.IdentityConfig())
 		if err == nil {
 			registrar = caConfig.Registrar
@@ -71,7 +68,7 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 			return nil, errors.Wrapf(err, "error initializing CA [%s]", caName)
 		}
 	} else {
-		return nil, errors.Wrapf(err, "error initializing CA [%s]", caName)
+		return nil, errors.Errorf("error initializing CA [%s]", caName)
 	}
 
 	identityManager, ok := ctx.IdentityManager(orgName)

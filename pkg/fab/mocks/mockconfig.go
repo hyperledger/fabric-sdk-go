@@ -62,7 +62,7 @@ func NewMockIdentityConfigCustomized(tlsEnabled, mutualTLSEnabled, errorCase boo
 }
 
 // Client ...
-func (c *MockConfig) Client() (*msp.ClientConfig, error) {
+func (c *MockConfig) Client() *msp.ClientConfig {
 	clientConfig := msp.ClientConfig{}
 
 	clientConfig.CredentialStore = msp.CredentialStoreType{
@@ -86,31 +86,31 @@ func (c *MockConfig) Client() (*msp.ClientConfig, error) {
 		clientConfig.TLSCerts = mutualTLSCerts
 	}
 
-	return &clientConfig, nil
+	return &clientConfig
 }
 
 // CAConfig not implemented
-func (c *MockConfig) CAConfig(org string) (*msp.CAConfig, error) {
+func (c *MockConfig) CAConfig(org string) (*msp.CAConfig, bool) {
 	caConfig := msp.CAConfig{
 		CAName: "org1",
 	}
 
-	return &caConfig, nil
+	return &caConfig, true
 }
 
 //CAServerCerts Read configuration option for the server certificates for given org
-func (c *MockConfig) CAServerCerts(org string) ([][]byte, error) {
-	return nil, nil
+func (c *MockConfig) CAServerCerts(org string) ([][]byte, bool) {
+	return nil, false
 }
 
 //CAClientKey Read configuration option for the fabric CA client key for given org
-func (c *MockConfig) CAClientKey(org string) ([]byte, error) {
-	return nil, nil
+func (c *MockConfig) CAClientKey(org string) ([]byte, bool) {
+	return nil, false
 }
 
 //CAClientCert Read configuration option for the fabric CA client cert for given org
-func (c *MockConfig) CAClientCert(org string) ([]byte, error) {
-	return nil, nil
+func (c *MockConfig) CAClientCert(org string) ([]byte, bool) {
+	return nil, false
 }
 
 //Timeout not implemented

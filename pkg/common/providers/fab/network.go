@@ -14,14 +14,16 @@ import (
 
 // NetworkConfig provides a static definition of a Hyperledger Fabric network
 type NetworkConfig struct {
-	Name                   string
-	Description            string
-	Version                string
-	Client                 msp.ClientConfig
-	Channels               map[string]ChannelNetworkConfig
-	Organizations          map[string]OrganizationConfig
-	Orderers               map[string]OrdererConfig
-	Peers                  map[string]PeerConfig
+	Name        string
+	Description string
+	Version     string
+	//TODO to be removed, no apparent reason to expose it in network config
+	Client        msp.ClientConfig
+	Channels      map[string]ChannelNetworkConfig
+	Organizations map[string]OrganizationConfig
+	Orderers      map[string]OrdererConfig
+	Peers         map[string]PeerConfig
+	//TODO to be removed, no apparent reason to expose it in network config
 	CertificateAuthorities map[string]msp.CAConfig
 }
 

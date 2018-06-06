@@ -435,6 +435,7 @@ func (c *EndpointConfig) loadNetworkConfiguration() error {
 	networkConfig.Description = c.backend.GetString("description")
 	networkConfig.Version = c.backend.GetString("version")
 
+	//TODO: to be removed from NetworkConfig, to be used only in identity Config
 	err := c.backend.UnmarshalKey("client", &networkConfig.Client)
 	logger.Debugf("Client is: %+v", networkConfig.Client)
 	if err != nil {
@@ -465,6 +466,7 @@ func (c *EndpointConfig) loadNetworkConfiguration() error {
 		return errors.WithMessage(err, "failed to parse 'peers' config item to networkConfig.Peers type")
 	}
 
+	//TODO: to be removed from NetworkConfig, to be used only in identity Config
 	err = c.backend.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 	logger.Debugf("certificateAuthorities are: %+v", networkConfig.CertificateAuthorities)
 	if err != nil {

@@ -53,24 +53,23 @@ func TestCreateCustomIdentityConfig(t *testing.T) {
 	require.NotNil(t, ico, "build ConfigIdentityOption returned is nil")
 
 	// test m1 implementation
-	clnt, err := ico.Client()
-	require.NoError(t, err, "Client() function failed")
+	clnt := ico.Client()
 	require.NotEmpty(t, clnt, "client returned must not be empty")
 
 	// test m2 implementation
-	caCfg, err := ico.CAConfig("testORG")
-	require.NoError(t, err, "CAConfig returned unexpected error")
+	caCfg, ok := ico.CAConfig("testORG")
+	require.True(t, ok, "CAConfig failed")
 	require.Equal(t, "test.url.com", caCfg.URL, "CAConfig did not return expected interface value")
 
 	// test m3 implementation
-	s, err := ico.CAServerCerts("testORG")
-	require.NoError(t, err, "CAServerCerts returned unexpected error")
+	s, ok := ico.CAServerCerts("testORG")
+	require.True(t, ok, "CAServerCerts failed")
 	require.Equal(t, []byte("testCAservercert1"), s[0], "CAServerCerts did not return the right cert")
 	require.Equal(t, []byte("testCAservercert2"), s[1], "CAServerCerts did not return the right cert")
 
 	// test m4 implementation
-	c, err := ico.CAClientKey("testORG")
-	require.NoError(t, err, "CAClientKey returned unexpected error")
+	c, ok := ico.CAClientKey("testORG")
+	require.True(t, ok, "CAClientKey failed")
 	require.Equal(t, []byte("testCAclientkey"), c, "CAClientKey did not return the right cert")
 
 	// verify if an interface was not passed as an option but was not nil, it should be nil (ie these implementations should not be populated in ico: m5, m6 and m7)
@@ -93,8 +92,8 @@ func TestCreateCustomIdentityConfigRemainingFunctions(t *testing.T) {
 	require.NotNil(t, ico, "build ConfigIdentityOption returned is nil")
 
 	// test m5 implementation
-	c, err := ico.CAClientCert("")
-	require.NoError(t, err, "CAClientCert returned unexpected error")
+	c, ok := ico.CAClientCert("")
+	require.True(t, ok, "CAClientCert failed")
 	require.Equal(t, []byte("testCAclientcert"), c, "CAClientCert did not return expected interface value")
 
 	// test m6 implementation
@@ -146,24 +145,23 @@ func TestCreateCustomIdentityConfigWithSomeDefaultFunctions(t *testing.T) {
 	// test implementations m1-m4 are still working
 
 	// test m1 implementation
-	clnt, err := identityConfigOptionWithSomeDefaults.Client()
-	require.NoError(t, err, "Client() function failed")
+	clnt := identityConfigOptionWithSomeDefaults.Client()
 	require.NotEmpty(t, clnt, "client returned must not be empty")
 
 	// test m2 implementation
-	caCfg, err := identityConfigOptionWithSomeDefaults.CAConfig("testORG")
-	require.NoError(t, err, "CAConfig returned unexpected error")
+	caCfg, ok := identityConfigOptionWithSomeDefaults.CAConfig("testORG")
+	require.True(t, ok, "CAConfig failed")
 	require.Equal(t, "test.url.com", caCfg.URL, "CAConfig did not return expected interface value")
 
 	// test m3 implementation
-	s, err := identityConfigOptionWithSomeDefaults.CAServerCerts("testORG")
-	require.NoError(t, err, "CAServerCerts returned unexpected error")
+	s, ok := identityConfigOptionWithSomeDefaults.CAServerCerts("testORG")
+	require.True(t, ok, "CAServerCerts failed")
 	require.Equal(t, []byte("testCAservercert1"), s[0], "CAServerCerts did not return the right cert")
 	require.Equal(t, []byte("testCAservercert2"), s[1], "CAServerCerts did not return the right cert")
 
 	// test m4 implementation
-	c, err := identityConfigOptionWithSomeDefaults.CAClientKey("testORG")
-	require.NoError(t, err, "CAClientKey returned unexpected error")
+	c, ok := identityConfigOptionWithSomeDefaults.CAClientKey("testORG")
+	require.True(t, ok, "CAClientKey failed")
 	require.Equal(t, []byte("testCAclientkey"), c, "CAClientKey did not return the right cert")
 
 	if ico, ok = identityConfigOptionWithSomeDefaults.(*IdentityConfigOptions); !ok {
@@ -183,42 +181,42 @@ func TestCreateCustomIdentityConfigWithSomeDefaultFunctions(t *testing.T) {
 type mockClient struct {
 }
 
-func (m *mockClient) Client() (*msp.ClientConfig, error) {
+func (m *mockClient) Client() *msp.ClientConfig {
 	return &msp.ClientConfig{
 		CryptoConfig:    msp.CCType{Path: ""},
 		CredentialStore: msp.CredentialStoreType{Path: "", CryptoStore: msp.CCType{Path: ""}},
 		Logging:         logApi.LoggingType{Level: "INFO"},
 		Organization:    "org1",
 		TLSCerts:        endpoint.MutualTLSConfig{Path: "", Client: endpoint.TLSKeyPair{Cert: endpoint.TLSConfig{Path: ""}, Key: endpoint.TLSConfig{Path: ""}}},
-	}, nil
+	}
 }
 
 type mockCaConfig struct{}
 
-func (m *mockCaConfig) CAConfig(org string) (*msp.CAConfig, error) {
+func (m *mockCaConfig) CAConfig(org string) (*msp.CAConfig, bool) {
 	return &msp.CAConfig{
 		URL:        "test.url.com",
 		Registrar:  msp.EnrollCredentials{EnrollSecret: "secret", EnrollID: ""},
 		TLSCACerts: endpoint.MutualTLSConfig{Path: "", Client: endpoint.TLSKeyPair{Cert: endpoint.TLSConfig{Path: ""}, Key: endpoint.TLSConfig{Path: ""}}},
-	}, nil
+	}, true
 }
 
 type mockCaServerCerts struct{}
 
-func (m *mockCaServerCerts) CAServerCerts(org string) ([][]byte, error) {
-	return [][]byte{[]byte("testCAservercert1"), []byte("testCAservercert2")}, nil
+func (m *mockCaServerCerts) CAServerCerts(org string) ([][]byte, bool) {
+	return [][]byte{[]byte("testCAservercert1"), []byte("testCAservercert2")}, true
 }
 
 type mockCaClientKey struct{}
 
-func (m *mockCaClientKey) CAClientKey(org string) ([]byte, error) {
-	return []byte("testCAclientkey"), nil
+func (m *mockCaClientKey) CAClientKey(org string) ([]byte, bool) {
+	return []byte("testCAclientkey"), true
 }
 
 type mockCaClientCert struct{}
 
-func (m *mockCaClientCert) CAClientCert(org string) ([]byte, error) {
-	return []byte("testCAclientcert"), nil
+func (m *mockCaClientCert) CAClientCert(org string) ([]byte, bool) {
+	return []byte("testCAclientcert"), true
 }
 
 type mockCaKeyStorePath struct{}

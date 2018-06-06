@@ -80,11 +80,7 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 	}
 
 	if msp.orgName == "" {
-		clientConfig, err := ctx.IdentityConfig().Client()
-		if err != nil {
-			return nil, errors.WithMessage(err, "failed to create Client")
-		}
-		msp.orgName = clientConfig.Organization
+		msp.orgName = ctx.IdentityConfig().Client().Organization
 	}
 	if msp.orgName == "" {
 		return nil, errors.New("organization is not provided")

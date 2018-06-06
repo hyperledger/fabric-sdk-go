@@ -1249,6 +1249,38 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 
 }
 
+func TestCAConfig(t *testing.T) {
+	//Test config
+	backend, err := config.FromFile(configTestFilePath)()
+	if err != nil {
+		t.Fatal("Failed to get config backend")
+	}
+
+	endpointConfig, err := ConfigFromBackend(backend...)
+	if err != nil {
+		t.Fatal("Failed to get identity config")
+	}
+
+	//Test Crypto config path
+
+	val, ok := backend[0].Lookup("client.cryptoconfig.path")
+	if !ok || val == nil {
+		t.Fatal("expected valid value")
+	}
+
+	assert.True(t, pathvar.Subst(val.(string)) == endpointConfig.CryptoConfigPath(), "Incorrect crypto config path", t)
+
+	//Testing MSPID
+	mspID, ok := comm.MSPID(endpointConfig, org1)
+	assert.True(t, ok, "Get MSP ID failed")
+	assert.True(t, mspID == "Org1MSP", "Get MSP ID failed")
+
+	// testing empty OrgMSP
+	_, ok = comm.MSPID(endpointConfig, "dummyorg1")
+	assert.False(t, ok, "Get MSP ID did not fail for dummyorg1")
+
+}
+
 func TestNetworkPeers(t *testing.T) {
 
 	endpointConfig, err := ConfigFromBackend(configBackend)

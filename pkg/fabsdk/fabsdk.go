@@ -392,7 +392,7 @@ func (sdk *FabricSDK) loadConfigs(configProvider core.ConfigProvider) (*configs,
 	}
 
 	// load identity config
-	c.identityConfig, err = sdk.loadIdentityConfig(c.endpointConfig, configBackend...)
+	c.identityConfig, err = sdk.loadIdentityConfig(configBackend...)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unalbe to load identity config")
 	}
@@ -448,11 +448,11 @@ func (sdk *FabricSDK) loadCryptoConfig(configBackend ...core.ConfigBackend) (cor
 	return cryptoConfigOpt, nil
 }
 
-func (sdk *FabricSDK) loadIdentityConfig(endpointConfig fab.EndpointConfig, configBackend ...core.ConfigBackend) (msp.IdentityConfig, error) {
+func (sdk *FabricSDK) loadIdentityConfig(configBackend ...core.ConfigBackend) (msp.IdentityConfig, error) {
 	identityConfigOpt, ok := sdk.opts.IdentityConfig.(*mspImpl.IdentityConfigOptions)
 
 	if sdk.opts.IdentityConfig == nil || (ok && !mspImpl.IsIdentityConfigFullyOverridden(identityConfigOpt)) {
-		defIdentityConfig, err := mspImpl.ConfigFromEndpointConfig(endpointConfig, configBackend...)
+		defIdentityConfig, err := mspImpl.ConfigFromBackend(configBackend...)
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to initialize identity config from config backend")
 		}

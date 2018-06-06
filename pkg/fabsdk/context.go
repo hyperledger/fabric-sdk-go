@@ -48,14 +48,9 @@ func WithOrg(org string) ContextOption {
 // don't include neither username nor identity
 var ErrAnonymousIdentity = errors.New("missing credentials")
 
-func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.SigningIdentity, error) { //nolint
-	clientConfig, err := sdk.provider.IdentityConfig().Client()
-	if err != nil {
-		return nil, errors.WithMessage(err, "retrieving client configuration failed")
-	}
-
+func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.SigningIdentity, error) {
 	opts := identityOptions{
-		orgName: clientConfig.Organization,
+		orgName: sdk.provider.IdentityConfig().Client().Organization,
 	}
 
 	for _, option := range options {

@@ -179,11 +179,7 @@ func getMyMSPID(t *testing.T, ctxProvider context.ClientProvider) string {
 		t.Fatalf("failed to get context: %s", err)
 	}
 
-	clientConfig, err := ctx.IdentityConfig().Client()
-	if err != nil {
-		t.Fatalf("config.Client() failed: %s", err)
-	}
-
+	clientConfig := ctx.IdentityConfig().Client()
 	netConfig := ctx.EndpointConfig().NetworkConfig()
 	myOrg, ok := netConfig.Organizations[strings.ToLower(clientConfig.Organization)]
 	if !ok {

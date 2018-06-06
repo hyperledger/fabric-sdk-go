@@ -56,16 +56,13 @@ func TestGetSigningIdentity(t *testing.T) {
 
 	cryptoConfig, endpointConfig, identityConfig, orgConfig := getConfigs(t)
 	mspID := orgConfig.MSPID
-	clientCofig, err := identityConfig.Client()
-	if err != nil {
-		t.Fatalf("Unable to retrieve client config: %s", err)
-	}
+	clientConfig := identityConfig.Client()
 
 	// Cleanup key store and user store
 	cleanupTestPath(t, cryptoConfig.KeyStorePath())
 	defer cleanupTestPath(t, cryptoConfig.KeyStorePath())
-	cleanupTestPath(t, clientCofig.CredentialStore.Path)
-	defer cleanupTestPath(t, clientCofig.CredentialStore.Path)
+	cleanupTestPath(t, clientConfig.CredentialStore.Path)
+	defer cleanupTestPath(t, clientConfig.CredentialStore.Path)
 
 	cryptoSuite, err := sw.GetSuiteByConfig(cryptoConfig)
 	if err != nil {

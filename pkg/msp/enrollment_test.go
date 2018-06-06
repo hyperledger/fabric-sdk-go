@@ -72,10 +72,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 		panic(fmt.Sprintf("Failed to read config: %s", err))
 	}
 
-	clientConfig, err := identityConfig.Client()
-	if err != nil {
-		t.Fatalf("Unable to retrieve client config: %s", err)
-	}
+	clientConfig := identityConfig.Client()
 	netConfig := endpointConfig.NetworkConfig()
 	if netConfig == nil {
 		t.Fatal("Failed to get network config")

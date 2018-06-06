@@ -138,10 +138,7 @@ func checkClientOrg(configBackend core.ConfigBackend, t *testing.T, orgName stri
 	if err != nil {
 		t.Fatalf("Error getting identity config : %s", err)
 	}
-	client, err := identityConfig.Client()
-	if err != nil {
-		t.Fatalf("Error getting client from config: %s", err)
-	}
+	client := identityConfig.Client()
 	if client.Organization != orgName {
 		t.Fatalf("Unexpected org in config: %s", client.Organization)
 	}

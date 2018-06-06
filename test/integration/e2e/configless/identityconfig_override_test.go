@@ -12,7 +12,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	"github.com/pkg/errors"
 )
 
 // identityconfig_override_test.go is an example of programmatically configuring the sdk by injecting instances that implement IdentityConfig's functions (representing the sdk's msp configs)
@@ -44,30 +43,28 @@ var (
 type exampleClient struct {
 }
 
-func (m *exampleClient) Client() (*msp.ClientConfig, error) {
+func (m *exampleClient) Client() *msp.ClientConfig {
 	client := networkConfig.Client
-
 	client.Organization = strings.ToLower(client.Organization)
-
-	return &client, nil
+	return &client
 }
 
 type exampleCaConfig struct{}
 
-func (m *exampleCaConfig) CAConfig(org string) (*msp.CAConfig, error) {
+func (m *exampleCaConfig) CAConfig(org string) (*msp.CAConfig, bool) {
 	return getCAConfig(&networkConfig, org)
 }
 
 // the below function is used in multiple implementations, this is fine because networkConfig is the same for all of them
-func getCAConfig(networkConfig *fab.NetworkConfig, org string) (*msp.CAConfig, error) {
+func getCAConfig(networkConfig *fab.NetworkConfig, org string) (*msp.CAConfig, bool) {
 	if len(networkConfig.Organizations[strings.ToLower(org)].CertificateAuthorities) == 0 {
-		return nil, errors.Errorf("organization [%s] has no Certificate Authorities setup. Make sure each org has at least 1 configured", org)
+		return nil, false
 	}
 	//for now, we're only loading the first Cert Authority by default. TODO add logic to support passing the Cert Authority ID needed by the client.
 	certAuthorityName := networkConfig.Organizations[strings.ToLower(org)].CertificateAuthorities[0]
 
 	if certAuthorityName == "" {
-		return nil, errors.Errorf("certificate authority empty for [%s]. Make sure each org has at least 1 non empty certificate authority name", org)
+		return nil, false
 	}
 
 	caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityName)]
@@ -75,20 +72,20 @@ func getCAConfig(networkConfig *fab.NetworkConfig, org string) (*msp.CAConfig, e
 		// EntityMatchers are not supported in this implementation. If needed, uncomment the below lines
 		//caConfig, mappedHost := m.tryMatchingCAConfig(networkConfig, strings.ToLower(certAuthorityName))
 		//if mappedHost == "" {
-		return nil, errors.Errorf("CA Server Name [%s] not found", certAuthorityName)
+		return nil, false
 		//}
 		//return caConfig, nil
 	}
 
-	return &caConfig, nil
+	return &caConfig, true
 }
 
 type exampleCaServerCerts struct{}
 
-func (m *exampleCaServerCerts) CAServerCerts(org string) ([][]byte, error) {
-	caConfig, err := getCAConfig(&networkConfig, org)
-	if err != nil {
-		return nil, err
+func (m *exampleCaServerCerts) CAServerCerts(org string) ([][]byte, bool) {
+	caConfig, ok := getCAConfig(&networkConfig, org)
+	if !ok {
+		return nil, false
 	}
 
 	var serverCerts [][]byte
@@ -99,7 +96,7 @@ func (m *exampleCaServerCerts) CAServerCerts(org string) ([][]byte, error) {
 		for i, pem := range pems {
 			serverCerts[i] = []byte(pem)
 		}
-		return serverCerts, nil
+		return serverCerts, true
 	}
 
 	//check for files if pems not found
@@ -108,33 +105,33 @@ func (m *exampleCaServerCerts) CAServerCerts(org string) ([][]byte, error) {
 	for i, certPath := range certFiles {
 		bytes, err := ioutil.ReadFile(certPath)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to load pem bytes from path '%s'", certPath)
+			return nil, false
 		}
 		serverCerts[i] = bytes
 	}
-	return serverCerts, nil
+	return serverCerts, true
 }
 
 type exampleCaClientKey struct{}
 
-func (m *exampleCaClientKey) CAClientKey(org string) ([]byte, error) {
-	caConfig, err := getCAConfig(&networkConfig, org)
-	if err != nil {
-		return nil, err
+func (m *exampleCaClientKey) CAClientKey(org string) ([]byte, bool) {
+	caConfig, ok := getCAConfig(&networkConfig, org)
+	if !ok {
+		return nil, false
 	}
 
-	return caConfig.TLSCACerts.Client.Key.Bytes(), err
+	return caConfig.TLSCACerts.Client.Key.Bytes(), true
 }
 
 type exampleCaClientCert struct{}
 
-func (m *exampleCaClientCert) CAClientCert(org string) ([]byte, error) {
-	caConfig, err := getCAConfig(&networkConfig, org)
-	if err != nil {
-		return nil, err
+func (m *exampleCaClientCert) CAClientCert(org string) ([]byte, bool) {
+	caConfig, ok := getCAConfig(&networkConfig, org)
+	if !ok {
+		return nil, false
 	}
 
-	return caConfig.TLSCACerts.Client.Cert.Bytes(), err
+	return caConfig.TLSCACerts.Client.Cert.Bytes(), true
 }
 
 type exampleCaKeyStorePath struct{}

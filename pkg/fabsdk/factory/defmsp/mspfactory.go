@@ -29,11 +29,7 @@ func NewProviderFactory() *ProviderFactory {
 // CreateUserStore creates a UserStore using the SDK's default implementation
 func (f *ProviderFactory) CreateUserStore(config msp.IdentityConfig) (msp.UserStore, error) {
 
-	clientCofig, err := config.Client()
-	if err != nil {
-		return nil, errors.WithMessage(err, "Unable to retrieve client config")
-	}
-	stateStorePath := clientCofig.CredentialStore.Path
+	stateStorePath := config.Client().CredentialStore.Path
 
 	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: stateStorePath})
 	if err != nil {

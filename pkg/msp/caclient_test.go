@@ -26,7 +26,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
-	"github.com/pkg/errors"
 )
 
 // TestEnrollAndReenroll tests enrol/reenroll scenarios
@@ -444,14 +443,14 @@ func TestCAConfigError(t *testing.T) {
 	mockContext := mockcontext.NewMockClient(mockCtrl)
 
 	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
-	mockIdentityConfig.EXPECT().CAConfig(org1).Return(nil, errors.New("CAConfig error"))
+	mockIdentityConfig.EXPECT().CAConfig(org1).Return(nil, false)
 	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
 
 	mockContext.EXPECT().IdentityConfig().Return(mockIdentityConfig)
 	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
 
 	_, err := NewCAClient(org1, mockContext)
-	if err == nil || !strings.Contains(err.Error(), "CAConfig error") {
+	if err == nil || !strings.Contains(err.Error(), "error initializing CA [ca.org1.example.com]") {
 		t.Fatalf("Expected error from CAConfig. Got: %s", err)
 	}
 }
@@ -466,9 +465,9 @@ func TestCAServerCertPathsError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
-	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, nil).AnyTimes()
+	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, true).AnyTimes()
 	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
-	mockIdentityConfig.EXPECT().CAServerCerts(org1).Return(nil, errors.New("CAServerCerts error"))
+	mockIdentityConfig.EXPECT().CAServerCerts(org1).Return(nil, false)
 
 	mockContext := mockcontext.NewMockClient(mockCtrl)
 	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
@@ -477,7 +476,7 @@ func TestCAServerCertPathsError(t *testing.T) {
 	mockContext.EXPECT().CryptoSuite().Return(f.cryptoSuite).AnyTimes()
 
 	_, err := NewCAClient(org1, mockContext)
-	if err == nil || !strings.Contains(err.Error(), "CAServerCerts error") {
+	if err == nil || !strings.Contains(err.Error(), "have no corresponding server certs in the configs") {
 		t.Fatalf("Expected error from CAServerCertPaths. Got: %s", err)
 	}
 }
@@ -492,10 +491,10 @@ func TestCAClientCertPathError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
-	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, nil).AnyTimes()
+	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, true).AnyTimes()
 	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
-	mockIdentityConfig.EXPECT().CAServerCerts(org1).Return([][]byte{[]byte("test")}, nil)
-	mockIdentityConfig.EXPECT().CAClientCert(org1).Return(nil, errors.New("CAClientCertPath error"))
+	mockIdentityConfig.EXPECT().CAServerCerts(org1).Return([][]byte{[]byte("test")}, true)
+	mockIdentityConfig.EXPECT().CAClientCert(org1).Return(nil, false)
 
 	mockContext := mockcontext.NewMockClient(mockCtrl)
 	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
@@ -504,7 +503,7 @@ func TestCAClientCertPathError(t *testing.T) {
 	mockContext.EXPECT().CryptoSuite().Return(f.cryptoSuite).AnyTimes()
 
 	_, err := NewCAClient(org1, mockContext)
-	if err == nil || !strings.Contains(err.Error(), "CAClientCertPath error") {
+	if err == nil || !strings.Contains(err.Error(), "have no corresponding client certs in the configs") {
 		t.Fatalf("Expected error from CAClientCertPath. Got: %s", err)
 	}
 }
@@ -520,11 +519,11 @@ func TestCAClientKeyPathError(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
-	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, nil).AnyTimes()
+	mockIdentityConfig.EXPECT().CAConfig(org1).Return(&msp.CAConfig{}, true).AnyTimes()
 	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
-	mockIdentityConfig.EXPECT().CAServerCerts(org1).Return([][]byte{[]byte("test")}, nil)
-	mockIdentityConfig.EXPECT().CAClientCert(org1).Return([]byte(""), nil)
-	mockIdentityConfig.EXPECT().CAClientKey(org1).Return(nil, errors.New("CAClientKeyPath error"))
+	mockIdentityConfig.EXPECT().CAServerCerts(org1).Return([][]byte{[]byte("test")}, true)
+	mockIdentityConfig.EXPECT().CAClientCert(org1).Return([]byte(""), true)
+	mockIdentityConfig.EXPECT().CAClientKey(org1).Return(nil, false)
 
 	mockContext := mockcontext.NewMockClient(mockCtrl)
 	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
@@ -533,7 +532,7 @@ func TestCAClientKeyPathError(t *testing.T) {
 	mockContext.EXPECT().CryptoSuite().Return(f.cryptoSuite).AnyTimes()
 
 	_, err := NewCAClient(org1, mockContext)
-	if err == nil || !strings.Contains(err.Error(), "CAClientKeyPath error") {
+	if err == nil || !strings.Contains(err.Error(), "have no corresponding client keys in the configs") {
 		t.Fatalf("Expected error from CAClientKeyPath. Got: %s", err)
 	}
 }
