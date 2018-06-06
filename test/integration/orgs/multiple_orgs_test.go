@@ -316,6 +316,10 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 	chMgmtClient, err := resmgmt.New(mc.ordererClientContext)
 	require.NoError(t, err, "failed to get a new channel management client")
 
+	var lastConfigBlock uint64
+	configQueryClient, err := resmgmt.New(mc.org1AdminClientContext)
+	require.NoError(t, err, "failed to get a new channel management client")
+
 	// create a channel for orgchannel.tx
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
@@ -323,6 +327,8 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil for SaveChannel of orgchannel")
 	require.NotEmpty(t, txID, "transaction ID should be populated")
+
+	lastConfigBlock = waitForOrdererConfigUpdate(t, configQueryClient, true, lastConfigBlock)
 
 	//do the same get ch client and create channel for each anchor peer as well (first for Org1MSP)
 	chMgmtClient, err = resmgmt.New(mc.org1AdminClientContext)
@@ -334,6 +340,8 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 	require.Nil(t, err, "error should be nil for SaveChannel for anchor peer 1")
 	require.NotEmpty(t, txID, "transaction ID should be populated for anchor peer 1")
 
+	lastConfigBlock = waitForOrdererConfigUpdate(t, configQueryClient, false, lastConfigBlock)
+
 	// lastly create channel for Org2MSP anchor peer
 	chMgmtClient, err = resmgmt.New(mc.org2AdminClientContext)
 	require.NoError(t, err, "failed to get a new channel management client for org2Admin")
@@ -343,6 +351,29 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 	txID, err = chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil for SaveChannel for anchor peer 2")
 	require.NotEmpty(t, txID, "transaction ID should be populated for anchor peer 2")
+
+	waitForOrdererConfigUpdate(t, configQueryClient, false, lastConfigBlock)
+}
+
+func waitForOrdererConfigUpdate(t *testing.T, client *resmgmt.Client, genesis bool, lastConfigBlock uint64) uint64 {
+	for i := 0; i < 10; i++ {
+		chConfig, err := client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+		if err != nil {
+			t.Logf("orderer returned err [%d, %d, %s]", i, lastConfigBlock, err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		currentBlock := chConfig.BlockNumber()
+		t.Logf("waitForOrdererConfigUpdate [%d, %d, %d]", i, currentBlock, lastConfigBlock)
+		if currentBlock > lastConfigBlock || genesis {
+			return currentBlock
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	t.Fatal("orderer did not update channel config")
+	return 0
 }
 
 func testCCPolicy(chClientOrg2User *channel.Client, t *testing.T, ccName string) {
