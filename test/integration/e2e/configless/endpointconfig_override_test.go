@@ -24,6 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
+	logApi "github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/pkg/errors"
@@ -44,10 +45,29 @@ import (
 //       or if you want to use an existing channel block but still want to change the orderer URL, then you can implement EntityMatchers logic for your orderers
 //       which is commented out in the code below for reference. Using EntityMatchers will allow the configs to be able to find mapped Orderers/Peers/CA URLs.
 
+// ClientConfig provides the definition of the client configuration
+type clientConfig struct {
+	Organization    string
+	Logging         logApi.LoggingType
+	CryptoConfig    msp.CCType
+	TLSCerts        endpoint.MutualTLSConfig
+	TLSKey          []byte
+	TLSCert         []byte
+	CredentialStore msp.CredentialStoreType
+}
+
+// caConfig defines a CA configuration in identity config
+type caConfig struct {
+	URL        string
+	TLSCACerts endpoint.MutualTLSConfig
+	Registrar  msp.EnrollCredentials
+	CAName     string
+}
+
 var (
 	localhostRep = "localhost:"
 	dnsMatchRegX = ".*:"
-	clientConfig = msp.ClientConfig{
+	client       = clientConfig{
 		Organization:    "org1",
 		Logging:         api.LoggingType{Level: "info"},
 		CryptoConfig:    msp.CCType{Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}")},
@@ -174,7 +194,7 @@ var (
 		},
 	}
 
-	caConfig = map[string]msp.CAConfig{
+	caConfigObj = map[string]caConfig{
 		"ca.org1.example.com": {
 			URL: "https://ca.org1.example.com:7054",
 			TLSCACerts: endpoint.MutualTLSConfig{
@@ -308,9 +328,9 @@ func PeerMSPID(name string) (string, bool) {
 	return "", false
 }
 
-func verifyIsLocalCAsURLs(caConfigs map[string]msp.CAConfig) map[string]msp.CAConfig {
+func verifyIsLocalCAsURLs(caConfigs map[string]caConfig) map[string]caConfig {
 	re := regexp.MustCompile(dnsMatchRegX)
-	var newCfg = make(map[string]msp.CAConfig)
+	var newCfg = make(map[string]caConfig)
 	// for local integration tests, replace all urls DNS to localhost:
 	if integration.IsLocal() {
 		for k, caCfg := range caConfigs {
@@ -321,9 +341,9 @@ func verifyIsLocalCAsURLs(caConfigs map[string]msp.CAConfig) map[string]msp.CACo
 	return newCfg
 }
 
-func newCAsConfig() map[string]msp.CAConfig {
-	c := verifyIsLocalCAsURLs(caConfig)
-	caConfig = c
+func newCAsConfig() map[string]caConfig {
+	c := verifyIsLocalCAsURLs(caConfigObj)
+	caConfigObj = c
 	return c
 }
 
@@ -678,7 +698,7 @@ type exampleTLSClientCerts struct {
 // TLSClientCerts overrides EndpointConfig's TLSClientCerts function which will return the list of configured client certs
 func (m *exampleTLSClientCerts) TLSClientCerts() []tls.Certificate {
 	var clientCerts tls.Certificate
-	cb := clientConfig.TLSCerts.Client.Cert.Bytes()
+	cb := client.TLSCerts.Client.Cert.Bytes()
 
 	if len(cb) == 0 {
 		// if no cert found in the config, return empty cert chain
@@ -693,7 +713,7 @@ func (m *exampleTLSClientCerts) TLSClientCerts() []tls.Certificate {
 	if err != nil || pk == nil {
 		m.RWLock.Lock()
 		defer m.RWLock.Unlock()
-		ccs, err := m.loadPrivateKeyFromConfig(&clientConfig, clientCerts, cb)
+		ccs, err := m.loadPrivateKeyFromConfig(&client, clientCerts, cb)
 		if err != nil {
 			return nil
 		}
@@ -708,7 +728,7 @@ func (m *exampleTLSClientCerts) TLSClientCerts() []tls.Certificate {
 
 	return []tls.Certificate{clientCerts}
 }
-func (m *exampleTLSClientCerts) loadPrivateKeyFromConfig(clientConfig *msp.ClientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
+func (m *exampleTLSClientCerts) loadPrivateKeyFromConfig(clientConfig *clientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
 
 	kb := clientConfig.TLSCerts.Client.Key.Bytes()
 
@@ -724,7 +744,7 @@ func (m *exampleTLSClientCerts) loadPrivateKeyFromConfig(clientConfig *msp.Clien
 type exampleCryptoConfigPath struct{}
 
 func (m *exampleCryptoConfigPath) CryptoConfigPath() string {
-	return clientConfig.CryptoConfig.Path
+	return client.CryptoConfig.Path
 }
 
 func newTLSConfig(path string) endpoint.TLSConfig {

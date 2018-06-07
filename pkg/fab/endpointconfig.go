@@ -20,7 +20,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	commtls "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
@@ -111,7 +110,18 @@ type entityMatchers struct {
 
 //endpointConfigEntity contains endpoint config elements needed by endpointconfig
 type endpointConfigEntity struct {
-	Client msp.ClientConfig
+	Client clientConfig
+}
+
+// ClientConfig provides the definition of the client configuration
+type clientConfig struct {
+	Organization string
+	TLSCerts     clientTLSConfig
+}
+
+type clientTLSConfig struct {
+	//Client TLS information
+	Client endpoint.TLSKeyPair
 }
 
 // Timeout reads timeouts for the given timeout type, if type is not found in the config
@@ -309,7 +319,7 @@ func (c *EndpointConfig) TLSClientCerts() []tls.Certificate {
 	return c.tlsClientCerts
 }
 
-func (c *EndpointConfig) loadPrivateKeyFromConfig(clientConfig *msp.ClientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
+func (c *EndpointConfig) loadPrivateKeyFromConfig(clientConfig *clientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
 
 	kb := clientConfig.TLSCerts.Client.Key.Bytes()
 
@@ -556,7 +566,6 @@ func (c *EndpointConfig) loadClientTLSConfig(configEntity *endpointConfigEntity)
 	//Clients Config
 	//resolve paths and org name
 	configEntity.Client.Organization = strings.ToLower(configEntity.Client.Organization)
-	configEntity.Client.TLSCerts.Path = pathvar.Subst(configEntity.Client.TLSCerts.Path)
 	configEntity.Client.TLSCerts.Client.Key.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Key.Path)
 	configEntity.Client.TLSCerts.Client.Cert.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Cert.Path)
 

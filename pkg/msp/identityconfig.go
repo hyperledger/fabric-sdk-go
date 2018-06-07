@@ -21,7 +21,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
+	logApi "github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 )
 
@@ -45,7 +47,6 @@ func ConfigFromBackend(coreBackend ...core.ConfigBackend) (msp.IdentityConfig, e
 type IdentityConfig struct {
 	client              *msp.ClientConfig
 	caConfigsByOrg      map[string][]*msp.CAConfig
-	serverCertsByOrg    map[string][][]byte
 	backend             *lookup.ConfigLookup
 	caKeyStorePath      string
 	credentialStorePath string
@@ -58,11 +59,34 @@ type entityMatchers struct {
 	matchers map[string][]fab.MatchConfig
 }
 
-//identityConfigEntity contains all config entities needed
+//identityConfigEntity contains all config definitions needed
 type identityConfigEntity struct {
-	Client                 msp.ClientConfig
+	Client                 ClientConfig
 	Organizations          map[string]fab.OrganizationConfig
-	CertificateAuthorities map[string]msp.CAConfig
+	CertificateAuthorities map[string]CAConfig
+}
+
+// ClientConfig defines client configuration in identity config
+type ClientConfig struct {
+	Organization    string
+	Logging         logApi.LoggingType
+	CryptoConfig    msp.CCType
+	TLSCerts        ClientTLSConfig
+	CredentialStore msp.CredentialStoreType
+}
+
+//ClientTLSConfig defines client TLS configuration in identity config
+type ClientTLSConfig struct {
+	//Client TLS information
+	Client endpoint.TLSKeyPair
+}
+
+// CAConfig defines a CA configuration in identity config
+type CAConfig struct {
+	URL        string
+	TLSCACerts endpoint.MutualTLSConfig
+	Registrar  msp.EnrollCredentials
+	CAName     string
 }
 
 // Client returns the Client config
@@ -85,7 +109,7 @@ func (c *IdentityConfig) CAClientCert(org string) ([]byte, bool) {
 	caConfigs, ok := c.caConfigsByOrg[strings.ToLower(org)]
 	if ok {
 		//for now, we're only loading the first Cert Authority by default.
-		return caConfigs[0].TLSCACerts.Client.Cert.Bytes(), true
+		return caConfigs[0].TLSCAClientCert, true
 	}
 
 	return nil, false
@@ -96,7 +120,7 @@ func (c *IdentityConfig) CAClientKey(org string) ([]byte, bool) {
 	caConfigs, ok := c.caConfigsByOrg[strings.ToLower(org)]
 	if ok {
 		//for now, we're only loading the first Cert Authority by default.
-		return caConfigs[0].TLSCACerts.Client.Key.Bytes(), true
+		return caConfigs[0].TLSCAClientKey, true
 	}
 
 	return nil, false
@@ -105,8 +129,12 @@ func (c *IdentityConfig) CAClientKey(org string) ([]byte, bool) {
 // CAServerCerts Read configuration option for the server certificates
 // will send a list of cert bytes for given org
 func (c *IdentityConfig) CAServerCerts(org string) ([][]byte, bool) {
-	serverCerts, ok := c.serverCertsByOrg[strings.ToLower(org)]
-	return serverCerts, ok
+	caConfigs, ok := c.caConfigsByOrg[strings.ToLower(org)]
+	if ok {
+		//for now, we're only loading the first Cert Authority by default.
+		return caConfigs[0].TLSCAServerCerts, true
+	}
+	return nil, false
 }
 
 // CAKeyStorePath returns the same path as KeyStorePath() without the
@@ -164,12 +192,6 @@ func (c *IdentityConfig) loadIdentityConfigEntities() error {
 		return errors.WithMessage(err, "failed to load all CA configs ")
 	}
 
-	err = c.loadAllServerCertByOrgs()
-	if err != nil {
-		return errors.WithMessage(err, "failed to load all CA server certs ")
-	}
-
-	c.client = &configEntity.Client
 	c.caKeyStorePath = pathvar.Subst(c.backend.GetString("client.credentialStore.cryptoStore.path"))
 	c.credentialStorePath = pathvar.Subst(c.backend.GetString("client.credentialStore.path"))
 
@@ -181,7 +203,6 @@ func (c *IdentityConfig) loadClientTLSConfig(configEntity *identityConfigEntity)
 	//Clients Config
 	//resolve paths and org name
 	configEntity.Client.Organization = strings.ToLower(configEntity.Client.Organization)
-	configEntity.Client.TLSCerts.Path = pathvar.Subst(configEntity.Client.TLSCerts.Path)
 	configEntity.Client.TLSCerts.Client.Key.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Key.Path)
 	configEntity.Client.TLSCerts.Client.Cert.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Cert.Path)
 
@@ -195,6 +216,16 @@ func (c *IdentityConfig) loadClientTLSConfig(configEntity *identityConfigEntity)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load client cert")
 	}
+
+	identityClient := &msp.ClientConfig{}
+	identityClient.Organization = configEntity.Client.Organization
+	identityClient.Logging = configEntity.Client.Logging
+	identityClient.CryptoConfig = configEntity.Client.CryptoConfig
+	identityClient.CredentialStore = configEntity.Client.CredentialStore
+	identityClient.TLSKey = configEntity.Client.TLSCerts.Client.Key.Bytes()
+	identityClient.TLSCert = configEntity.Client.TLSCerts.Client.Cert.Bytes()
+
+	c.client = identityClient
 
 	return nil
 }
@@ -243,7 +274,11 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 				caConfig = *matchedCaConfig
 				logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", caName, mappedHost)
 			}
-			caConfigs = append(caConfigs, &caConfig)
+			mspCAConfig, err := c.getMSPCAConfig(&caConfig)
+			if err != nil {
+				return err
+			}
+			caConfigs = append(caConfigs, mspCAConfig)
 		}
 		caConfigsByOrg[strings.ToLower(orgName)] = caConfigs
 	}
@@ -252,46 +287,49 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 	return nil
 }
 
-func (c *IdentityConfig) loadAllServerCertByOrgs() error {
+func (c *IdentityConfig) getMSPCAConfig(caConfig *CAConfig) (*msp.CAConfig, error) {
+	mspCAConfig := &msp.CAConfig{}
+	var err error
 
-	c.serverCertsByOrg = make(map[string][][]byte)
-
-	if len(c.caConfigsByOrg) == 0 {
-		return nil
+	mspCAConfig.URL = caConfig.URL
+	mspCAConfig.Registrar = caConfig.Registrar
+	mspCAConfig.CAName = caConfig.CAName
+	mspCAConfig.TLSCAClientCert = caConfig.TLSCACerts.Client.Cert.Bytes()
+	mspCAConfig.TLSCAClientKey = caConfig.TLSCACerts.Client.Key.Bytes()
+	mspCAConfig.TLSCAServerCerts, err = c.getServerCerts(caConfig)
+	if err != nil {
+		return nil, err
 	}
 
-	for org, caConfigs := range c.caConfigsByOrg {
-		//for now, we're only loading the first Cert Authority by default.
-		if len(caConfigs) == 0 {
-			continue
-		}
+	return mspCAConfig, nil
+}
 
-		var serverCerts [][]byte
-		//check for pems first
-		pems := caConfigs[0].TLSCACerts.Pem
-		if len(pems) > 0 {
-			serverCerts = make([][]byte, len(pems))
-			for i, pem := range pems {
-				serverCerts[i] = []byte(pem)
-			}
-			c.serverCertsByOrg[strings.ToLower(org)] = serverCerts
-			continue
-		}
+func (c *IdentityConfig) getServerCerts(caConfig *CAConfig) ([][]byte, error) {
 
-		//check for files if pems not found
-		certFiles := strings.Split(caConfigs[0].TLSCACerts.Path, ",")
-		serverCerts = make([][]byte, len(certFiles))
-		for i, certPath := range certFiles {
-			bytes, err := ioutil.ReadFile(pathvar.Subst(certPath))
-			if err != nil {
-				return errors.WithMessage(err, "failed to load server certs")
-			}
-			serverCerts[i] = bytes
+	var serverCerts [][]byte
+
+	//check for pems first
+	pems := caConfig.TLSCACerts.Pem
+	if len(pems) > 0 {
+		serverCerts = make([][]byte, len(pems))
+		for i, pem := range pems {
+			serverCerts[i] = []byte(pem)
 		}
-		c.serverCertsByOrg[strings.ToLower(org)] = serverCerts
+		return serverCerts, nil
 	}
 
-	return nil
+	//check for files if pems not found
+	certFiles := strings.Split(caConfig.TLSCACerts.Path, ",")
+	serverCerts = make([][]byte, len(certFiles))
+	for i, certPath := range certFiles {
+		bytes, err := ioutil.ReadFile(pathvar.Subst(certPath))
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to load server certs")
+		}
+		serverCerts[i] = bytes
+	}
+
+	return serverCerts, nil
 }
 
 func (c *IdentityConfig) compileMatchers() error {
@@ -319,7 +357,7 @@ func (c *IdentityConfig) compileMatchers() error {
 	return nil
 }
 
-func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity, caName string) (*msp.CAConfig, string) {
+func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity, caName string) (*CAConfig, string) {
 	//Return if no caMatchers are configured
 	if len(c.caMatchers) == 0 {
 		return nil, ""
@@ -343,7 +381,7 @@ func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity,
 	return nil, ""
 }
 
-func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, caName string, v *regexp.Regexp, k int) (*msp.CAConfig, string) {
+func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, caName string, v *regexp.Regexp, k int) (*CAConfig, string) {
 	// get the matching Config from the index number
 	certAuthorityMatchConfig := c.entityMatchers.matchers["certificateauthority"][k]
 	//Get the certAuthorityMatchConfig from mapped host

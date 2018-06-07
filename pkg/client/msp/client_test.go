@@ -38,7 +38,7 @@ const (
 var caServerURL string
 
 type nwConfig struct {
-	CertificateAuthorities map[string]msp.CAConfig
+	CertificateAuthorities map[string]mspImpl.CAConfig
 }
 
 // TestMSP is a unit test for Client enrollment and re-enrollment scenarios

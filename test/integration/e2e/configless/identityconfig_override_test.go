@@ -12,6 +12,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/pkg/errors"
 )
 
 // identityconfig_override_test.go is an example of programmatically configuring the sdk by injecting instances that implement IdentityConfig's functions (representing the sdk's msp configs)
@@ -44,15 +46,67 @@ type exampleClient struct {
 }
 
 func (m *exampleClient) Client() *msp.ClientConfig {
-	client := clientConfig
-	client.Organization = strings.ToLower(client.Organization)
-	return &client
+
+	mspClient := &msp.ClientConfig{}
+	mspClient.Organization = strings.ToLower(client.Organization)
+	mspClient.Logging = client.Logging
+	mspClient.CredentialStore = client.CredentialStore
+	mspClient.CryptoConfig = client.CryptoConfig
+	mspClient.TLSCert = client.TLSCerts.Client.Cert.Bytes()
+	mspClient.TLSKey = client.TLSCerts.Client.Key.Bytes()
+
+	return mspClient
 }
 
 type exampleCaConfig struct{}
 
 func (m *exampleCaConfig) CAConfig(org string) (*msp.CAConfig, bool) {
 	return getCAConfig(&networkConfig, org)
+}
+
+func getMSPCAConfig(caConfig *caConfig) (*msp.CAConfig, error) {
+	mspCAConfig := &msp.CAConfig{}
+	var err error
+
+	mspCAConfig.URL = caConfig.URL
+	mspCAConfig.Registrar = caConfig.Registrar
+	mspCAConfig.CAName = caConfig.CAName
+	mspCAConfig.TLSCAClientCert = caConfig.TLSCACerts.Client.Cert.Bytes()
+	mspCAConfig.TLSCAClientKey = caConfig.TLSCACerts.Client.Key.Bytes()
+	mspCAConfig.TLSCAServerCerts, err = getServerCerts(caConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return mspCAConfig, nil
+}
+
+func getServerCerts(caConfig *caConfig) ([][]byte, error) {
+
+	var serverCerts [][]byte
+
+	//check for pems first
+	pems := caConfig.TLSCACerts.Pem
+	if len(pems) > 0 {
+		serverCerts = make([][]byte, len(pems))
+		for i, pem := range pems {
+			serverCerts[i] = []byte(pem)
+		}
+		return serverCerts, nil
+	}
+
+	//check for files if pems not found
+	certFiles := strings.Split(caConfig.TLSCACerts.Path, ",")
+	serverCerts = make([][]byte, len(certFiles))
+	for i, certPath := range certFiles {
+		bytes, err := ioutil.ReadFile(pathvar.Subst(certPath))
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to load server certs")
+		}
+		serverCerts[i] = bytes
+	}
+
+	return serverCerts, nil
 }
 
 // the below function is used in multiple implementations, this is fine because networkConfig is the same for all of them
@@ -78,7 +132,11 @@ func getCAConfig(networkConfig *fab.NetworkConfig, org string) (*msp.CAConfig, b
 		//return caConfig, nil
 	}
 
-	return &caConfig, true
+	mspCAConfig, err := getMSPCAConfig(&caConfig)
+	if err != nil {
+		return nil, false
+	}
+	return mspCAConfig, true
 }
 
 type exampleCaServerCerts struct{}
@@ -89,28 +147,7 @@ func (m *exampleCaServerCerts) CAServerCerts(org string) ([][]byte, bool) {
 		return nil, false
 	}
 
-	var serverCerts [][]byte
-	//check for pems first
-	pems := caConfig.TLSCACerts.Pem
-	if len(pems) > 0 {
-		serverCerts = make([][]byte, len(pems))
-		for i, pem := range pems {
-			serverCerts[i] = []byte(pem)
-		}
-		return serverCerts, true
-	}
-
-	//check for files if pems not found
-	certFiles := strings.Split(caConfig.TLSCACerts.Path, ",")
-	serverCerts = make([][]byte, len(certFiles))
-	for i, certPath := range certFiles {
-		bytes, err := ioutil.ReadFile(certPath)
-		if err != nil {
-			return nil, false
-		}
-		serverCerts[i] = bytes
-	}
-	return serverCerts, true
+	return caConfig.TLSCAServerCerts, true
 }
 
 type exampleCaClientKey struct{}
@@ -121,7 +158,7 @@ func (m *exampleCaClientKey) CAClientKey(org string) ([]byte, bool) {
 		return nil, false
 	}
 
-	return caConfig.TLSCACerts.Client.Key.Bytes(), true
+	return caConfig.TLSCAClientKey, true
 }
 
 type exampleCaClientCert struct{}
@@ -132,7 +169,7 @@ func (m *exampleCaClientCert) CAClientCert(org string) ([]byte, bool) {
 		return nil, false
 	}
 
-	return caConfig.TLSCACerts.Client.Cert.Bytes(), true
+	return caConfig.TLSCAClientCert, true
 }
 
 type exampleCaKeyStorePath struct{}

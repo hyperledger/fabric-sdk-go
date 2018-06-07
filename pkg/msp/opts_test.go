@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	logApi "github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 	"github.com/stretchr/testify/require"
 )
@@ -187,7 +186,8 @@ func (m *mockClient) Client() *msp.ClientConfig {
 		CredentialStore: msp.CredentialStoreType{Path: "", CryptoStore: msp.CCType{Path: ""}},
 		Logging:         logApi.LoggingType{Level: "INFO"},
 		Organization:    "org1",
-		TLSCerts:        endpoint.MutualTLSConfig{Path: "", Client: endpoint.TLSKeyPair{Cert: endpoint.TLSConfig{Path: ""}, Key: endpoint.TLSConfig{Path: ""}}},
+		TLSKey:          []byte(""),
+		TLSCert:         []byte(""),
 	}
 }
 
@@ -195,9 +195,11 @@ type mockCaConfig struct{}
 
 func (m *mockCaConfig) CAConfig(org string) (*msp.CAConfig, bool) {
 	return &msp.CAConfig{
-		URL:        "test.url.com",
-		Registrar:  msp.EnrollCredentials{EnrollSecret: "secret", EnrollID: ""},
-		TLSCACerts: endpoint.MutualTLSConfig{Path: "", Client: endpoint.TLSKeyPair{Cert: endpoint.TLSConfig{Path: ""}, Key: endpoint.TLSConfig{Path: ""}}},
+		URL:              "test.url.com",
+		Registrar:        msp.EnrollCredentials{EnrollSecret: "secret", EnrollID: ""},
+		TLSCAClientKey:   []byte(""),
+		TLSCAClientCert:  []byte(""),
+		TLSCAServerCerts: [][]byte{[]byte("")},
 	}, true
 }
 

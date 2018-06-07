@@ -70,20 +70,21 @@ func (c *MockConfig) Client() *msp.ClientConfig {
 	}
 
 	if c.mutualTLSEnabled {
-		mutualTLSCerts := endpoint.MutualTLSConfig{
+		key := endpoint.TLSConfig{Path: "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem"}
+		cert := endpoint.TLSConfig{Path: "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"}
 
-			Client: endpoint.TLSKeyPair{
-				Key: endpoint.TLSConfig{
-					Path: "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem",
-					Pem:  "",
-				},
-				Cert: endpoint.TLSConfig{
-					Path: "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem",
-					Pem:  "",
-				},
-			},
+		err := key.LoadBytes()
+		if err != nil {
+			panic(err)
 		}
-		clientConfig.TLSCerts = mutualTLSCerts
+
+		err = cert.LoadBytes()
+		if err != nil {
+			panic(err)
+		}
+
+		clientConfig.TLSKey = key.Bytes()
+		clientConfig.TLSCert = cert.Bytes()
 	}
 
 	return &clientConfig

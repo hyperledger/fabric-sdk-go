@@ -13,13 +13,14 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	mockCore "github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -151,19 +152,30 @@ func getCustomBackend() ([]core.ConfigBackend, error) {
 	}
 
 	//read existing client config from config
-	clientConfig := &mspImpl.ClientConfig{}
 	configLookup := lookup.New(backend...)
-	err = configLookup.UnmarshalKey("client", clientConfig)
-	if err != nil {
-		return nil, err
+	res, ok := configLookup.Lookup("client")
+	if !ok {
+		return nil, errors.New("failed to created custom backend for test")
 	}
+	resMap := res.(map[string]interface{})
 	//update it
-	clientConfig.Organization = "org2"
+	resMap["organization"] = "org2"
 
 	//set it to backend map
 	backendMap := make(map[string]interface{})
-	backendMap["client"] = clientConfig
+	backendMap["client"] = resMap
 
 	backends := append([]core.ConfigBackend{}, &mockCore.MockConfigBackend{KeyValueMap: backendMap})
 	return append(backends, backend...), nil
+}
+
+// ClientConfig provides the definition of the client configuration
+type customClientConfig struct {
+	Organization string
+	TLSCerts     clientTLSConfig
+}
+
+type clientTLSConfig struct {
+	//Client TLS information
+	Client endpoint.TLSKeyPair
 }

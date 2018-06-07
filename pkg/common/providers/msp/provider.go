@@ -8,7 +8,6 @@ package msp
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	logApi "github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 )
 
@@ -39,7 +38,8 @@ type ClientConfig struct {
 	Organization    string
 	Logging         logApi.LoggingType
 	CryptoConfig    CCType
-	TLSCerts        endpoint.MutualTLSConfig
+	TLSKey          []byte
+	TLSCert         []byte
 	CredentialStore CredentialStoreType
 }
 
@@ -64,10 +64,12 @@ type EnrollCredentials struct {
 
 // CAConfig defines a CA configuration
 type CAConfig struct {
-	URL        string
-	TLSCACerts endpoint.MutualTLSConfig
-	Registrar  EnrollCredentials
-	CAName     string
+	URL              string
+	Registrar        EnrollCredentials
+	CAName           string
+	TLSCAServerCerts [][]byte
+	TLSCAClientCert  []byte
+	TLSCAClientKey   []byte
 }
 
 // Providers represents a provider of MSP service.
