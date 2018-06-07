@@ -109,6 +109,11 @@ type entityMatchers struct {
 	matchers map[string][]fab.MatchConfig
 }
 
+//endpointConfigEntity contains endpoint config elements needed by endpointconfig
+type endpointConfigEntity struct {
+	Client msp.ClientConfig
+}
+
 // Timeout reads timeouts for the given timeout type, if type is not found in the config
 // then default is set as per the const value above for the corresponding type
 func (c *EndpointConfig) Timeout(tType fab.TimeoutType) time.Duration {
@@ -434,12 +439,12 @@ func (c *EndpointConfig) loadNetworkConfiguration() error {
 	networkConfig.Name = c.backend.GetString("name")
 	networkConfig.Description = c.backend.GetString("description")
 	networkConfig.Version = c.backend.GetString("version")
+	endpointConfigEntity := endpointConfigEntity{}
 
-	//TODO: to be removed from NetworkConfig, to be used only in identity Config
-	err := c.backend.UnmarshalKey("client", &networkConfig.Client)
-	logger.Debugf("Client is: %+v", networkConfig.Client)
+	err := c.backend.UnmarshalKey("client", &endpointConfigEntity.Client)
+	logger.Debugf("Client is: %+v", endpointConfigEntity.Client)
 	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'client' config item to networkConfig.Client type")
+		return errors.WithMessage(err, "failed to parse 'client' config item to endpointConfigEntity.Client type")
 	}
 
 	err = c.backend.UnmarshalKey("channels", &networkConfig.Channels, lookup.WithUnmarshalHookFunction(peerChannelConfigHookFunc()))
@@ -466,15 +471,8 @@ func (c *EndpointConfig) loadNetworkConfiguration() error {
 		return errors.WithMessage(err, "failed to parse 'peers' config item to networkConfig.Peers type")
 	}
 
-	//TODO: to be removed from NetworkConfig, to be used only in identity Config
-	err = c.backend.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
-	logger.Debugf("certificateAuthorities are: %+v", networkConfig.CertificateAuthorities)
-	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'certificateAuthorities' config item to networkConfig.CertificateAuthorities type")
-	}
-
 	//load all endpointconfig entities
-	err = c.loadEndpointConfigEntities(&networkConfig)
+	err = c.loadEndpointConfigEntities(&networkConfig, &endpointConfigEntity)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load channel configs")
 	}
@@ -483,7 +481,7 @@ func (c *EndpointConfig) loadNetworkConfiguration() error {
 	return nil
 }
 
-func (c *EndpointConfig) loadEndpointConfigEntities(networkConfig *fab.NetworkConfig) error {
+func (c *EndpointConfig) loadEndpointConfigEntities(networkConfig *fab.NetworkConfig, configEntity *endpointConfigEntity) error {
 
 	//Compile the entityMatchers
 	matchError := c.compileMatchers()
@@ -492,7 +490,7 @@ func (c *EndpointConfig) loadEndpointConfigEntities(networkConfig *fab.NetworkCo
 	}
 
 	//load all TLS configs
-	err := c.loadAllTLSConfig(networkConfig)
+	err := c.loadAllTLSConfig(networkConfig, configEntity)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load network TLSConfig")
 	}
@@ -525,28 +523,27 @@ func (c *EndpointConfig) loadEndpointConfigEntities(networkConfig *fab.NetworkCo
 }
 
 //loadAllTLSConfig pre-loads all network TLS Configs
-func (c *EndpointConfig) loadAllTLSConfig(networkConfig *fab.NetworkConfig) error {
-	err := c.loadClientTLSConfig(networkConfig)
+func (c *EndpointConfig) loadAllTLSConfig(networkConfig *fab.NetworkConfig, configEntity *endpointConfigEntity) error {
+	//resolve path and load bytes
+	err := c.loadClientTLSConfig(configEntity)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load client TLSConfig ")
 	}
 
+	//resolve path and load bytes
 	err = c.loadOrgTLSConfig(networkConfig)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load org TLSConfig ")
 	}
 
+	//resolve path and load bytes
 	err = c.loadOrdererPeerTLSConfig(networkConfig)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load orderer/peer TLSConfig ")
 	}
 
-	err = c.loadCATLSConfig(networkConfig)
-	if err != nil {
-		return errors.WithMessage(err, "failed to load CA TLSConfig ")
-	}
-
-	err = c.loadTLSClientCerts(networkConfig)
+	//preload TLS client certs
+	err = c.loadTLSClientCerts(configEntity)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load TLS client certs ")
 	}
@@ -555,21 +552,21 @@ func (c *EndpointConfig) loadAllTLSConfig(networkConfig *fab.NetworkConfig) erro
 }
 
 //loadClientTLSConfig pre-loads all TLSConfig bytes in client config
-func (c *EndpointConfig) loadClientTLSConfig(networkConfig *fab.NetworkConfig) error {
+func (c *EndpointConfig) loadClientTLSConfig(configEntity *endpointConfigEntity) error {
 	//Clients Config
 	//resolve paths and org name
-	networkConfig.Client.Organization = strings.ToLower(networkConfig.Client.Organization)
-	networkConfig.Client.TLSCerts.Path = pathvar.Subst(networkConfig.Client.TLSCerts.Path)
-	networkConfig.Client.TLSCerts.Client.Key.Path = pathvar.Subst(networkConfig.Client.TLSCerts.Client.Key.Path)
-	networkConfig.Client.TLSCerts.Client.Cert.Path = pathvar.Subst(networkConfig.Client.TLSCerts.Client.Cert.Path)
+	configEntity.Client.Organization = strings.ToLower(configEntity.Client.Organization)
+	configEntity.Client.TLSCerts.Path = pathvar.Subst(configEntity.Client.TLSCerts.Path)
+	configEntity.Client.TLSCerts.Client.Key.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Key.Path)
+	configEntity.Client.TLSCerts.Client.Cert.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Cert.Path)
 
 	//pre load client key and cert bytes
-	err := networkConfig.Client.TLSCerts.Client.Key.LoadBytes()
+	err := configEntity.Client.TLSCerts.Client.Key.LoadBytes()
 	if err != nil {
 		return errors.WithMessage(err, "failed to load client key")
 	}
 
-	err = networkConfig.Client.TLSCerts.Client.Cert.LoadBytes()
+	err = configEntity.Client.TLSCerts.Client.Cert.LoadBytes()
 	if err != nil {
 		return errors.WithMessage(err, "failed to load client cert")
 	}
@@ -629,30 +626,6 @@ func (c *EndpointConfig) loadOrdererPeerTLSConfig(networkConfig *fab.NetworkConf
 			return errors.WithMessage(err, "failed to load peer cert")
 		}
 		networkConfig.Peers[peer] = peerConfig
-	}
-
-	return nil
-}
-
-//loadCATLSConfig pre-loads all TLSConfig bytes in certificate authorities
-func (c *EndpointConfig) loadCATLSConfig(networkConfig *fab.NetworkConfig) error {
-	//CA Config
-	for ca, caConfig := range networkConfig.CertificateAuthorities {
-		//resolve paths
-		caConfig.TLSCACerts.Path = pathvar.Subst(caConfig.TLSCACerts.Path)
-		caConfig.TLSCACerts.Client.Key.Path = pathvar.Subst(caConfig.TLSCACerts.Client.Key.Path)
-		caConfig.TLSCACerts.Client.Cert.Path = pathvar.Subst(caConfig.TLSCACerts.Client.Cert.Path)
-		//pre load key and cert bytes
-		err := caConfig.TLSCACerts.Client.Key.LoadBytes()
-		if err != nil {
-			return errors.WithMessage(err, "failed to load ca key")
-		}
-
-		err = caConfig.TLSCACerts.Client.Cert.LoadBytes()
-		if err != nil {
-			return errors.WithMessage(err, "failed to load ca cert")
-		}
-		networkConfig.CertificateAuthorities[ca] = caConfig
 	}
 
 	return nil
@@ -799,10 +772,10 @@ func (c *EndpointConfig) loadChannelOrderers(networkConfig *fab.NetworkConfig) e
 
 // loadTLSClientCerts loads the client's certs for mutual TLS
 // It checks the config for embedded pem files before looking for cert files
-func (c *EndpointConfig) loadTLSClientCerts(networkConfig *fab.NetworkConfig) error {
+func (c *EndpointConfig) loadTLSClientCerts(configEntity *endpointConfigEntity) error {
 
 	var clientCerts tls.Certificate
-	cb := networkConfig.Client.TLSCerts.Client.Cert.Bytes()
+	cb := configEntity.Client.TLSCerts.Client.Cert.Bytes()
 	if len(cb) == 0 {
 		// if no cert found in the config, empty cert chain should be used
 		c.tlsClientCerts = []tls.Certificate{clientCerts}
@@ -816,7 +789,7 @@ func (c *EndpointConfig) loadTLSClientCerts(networkConfig *fab.NetworkConfig) er
 	// If CryptoSuite fails to load private key from cert then load private key from config
 	if err != nil || pk == nil {
 		logger.Debugf("Reading pk from config, unable to retrieve from cert: %s", err)
-		tlsClientCerts, err := c.loadPrivateKeyFromConfig(&networkConfig.Client, clientCerts, cb)
+		tlsClientCerts, err := c.loadPrivateKeyFromConfig(&configEntity.Client, clientCerts, cb)
 		if err != nil {
 			return errors.WithMessage(err, "failed to load TLS client certs")
 		}

@@ -19,7 +19,6 @@ import (
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -37,6 +36,10 @@ const (
 )
 
 var caServerURL string
+
+type nwConfig struct {
+	CertificateAuthorities map[string]msp.CAConfig
+}
 
 // TestMSP is a unit test for Client enrollment and re-enrollment scenarios
 func TestMSP(t *testing.T) {
@@ -413,7 +416,7 @@ func getCustomBackend(currentBackends ...core.ConfigBackend) []core.ConfigBacken
 	backendMap := make(map[string]interface{})
 
 	//Custom URLs for ca configs
-	networkConfig := fab.NetworkConfig{}
+	networkConfig := nwConfig{}
 	configLookup := lookup.New(currentBackends...)
 	configLookup.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 

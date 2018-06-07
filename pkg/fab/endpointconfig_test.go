@@ -25,6 +25,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
@@ -869,45 +870,43 @@ func TestInitConfigFromRawWrongType(t *testing.T) {
 }
 
 func TestTLSClientCertsFromFiles(t *testing.T) {
-	config, err := ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	endpointConfig := config.(*EndpointConfig)
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Path = pathvar.Subst(certPath)
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Path = pathvar.Subst(keyPath)
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Pem = ""
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Pem = ""
+	clientTLSOverride := endpoint.MutualTLSConfig{}
+	clientTLSOverride.Client.Cert.Path = pathvar.Subst(certPath)
+	clientTLSOverride.Client.Key.Path = pathvar.Subst(keyPath)
+	clientTLSOverride.Client.Cert.Pem = ""
+	clientTLSOverride.Client.Key.Pem = ""
 
-	certs := endpointConfig.TLSClientCerts()
-	if len(certs) != 1 {
-		t.Fatal("Expected only one tls cert struct")
-	}
+	backends, err := overrideClientTLSInBackend(configBackend, &clientTLSOverride)
+	assert.Nil(t, err)
 
-	emptyCert := tls.Certificate{}
+	config, err := ConfigFromBackend(backends...)
+	assert.Nil(t, err)
 
-	if reflect.DeepEqual(certs[0], emptyCert) {
+	certs := config.TLSClientCerts()
+	assert.Equal(t, 1, len(certs), "Expected only one tls cert struct")
+
+	if reflect.DeepEqual(certs[0], tls.Certificate{}) {
 		t.Fatal("Actual cert is empty")
 	}
 }
 
 func TestTLSClientCertsFromFilesIncorrectPaths(t *testing.T) {
 
-	nwConfig := fab.NetworkConfig{}
+	configEntity := endpointConfigEntity{}
 	testlookup := lookup.New(configBackend)
-	testlookup.UnmarshalKey("client", &nwConfig.Client)
+	testlookup.UnmarshalKey("client", &configEntity.Client)
 
 	//Set client tls paths to empty strings
-	nwConfig.Client.TLSCerts.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
-	nwConfig.Client.TLSCerts.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
-	nwConfig.Client.TLSCerts.Client.Cert.Pem = ""
-	nwConfig.Client.TLSCerts.Client.Key.Pem = ""
+	configEntity.Client.TLSCerts.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	configEntity.Client.TLSCerts.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	configEntity.Client.TLSCerts.Client.Cert.Pem = ""
+	configEntity.Client.TLSCerts.Client.Key.Pem = ""
 
 	//Create backend override
 	configBackendOverride := &mocks.MockConfigBackend{}
 	configBackendOverride.KeyValueMap = make(map[string]interface{})
-	configBackendOverride.KeyValueMap["client"] = nwConfig.Client
+	configBackendOverride.KeyValueMap["client"] = configEntity.Client
 
 	_, err := ConfigFromBackend(configBackendOverride, configBackend)
 	if err == nil || !strings.Contains(err.Error(), "failed to load client key: failed to load pem bytes from path") {
@@ -917,16 +916,13 @@ func TestTLSClientCertsFromFilesIncorrectPaths(t *testing.T) {
 }
 
 func TestTLSClientCertsFromPem(t *testing.T) {
-	config, err := ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	endpointConfig := config.(*EndpointConfig)
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Path = ""
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Path = ""
+	clientTLSOverride := endpoint.MutualTLSConfig{}
 
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
+	clientTLSOverride.Client.Cert.Path = ""
+	clientTLSOverride.Client.Key.Path = ""
+
+	clientTLSOverride.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
 MIIC5TCCAkagAwIBAgIUMYhiY5MS3jEmQ7Fz4X/e1Dx33J0wCgYIKoZIzj0EAwQw
 gYwxCzAJBgNVBAYTAkNBMRAwDgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3Jv
 bnRvMREwDwYDVQQKEwhsaW51eGN0bDEMMAoGA1UECxMDTGFiMTgwNgYDVQQDEy9s
@@ -945,36 +941,35 @@ gw2rrxqbW67ulwmMQzp6EJbm/28T2pIoYWWyIwpzrquypI7BOuf8is5b7Jcgn9oz
 3YkZ9DhdH1tN4U/h+YulG/CkKOtUATtQxg==
 -----END CERTIFICATE-----`
 
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
+	clientTLSOverride.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
 MIGkAgEBBDByldj7VTpqTQESGgJpR9PFW9b6YTTde2WN6/IiBo2nW+CIDmwQgmAl
 c/EOc9wmgu+gBwYFK4EEACKhZANiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv
 2PotEEGuO6rMyaOupulj2VOj+YtgWw4ZtU49g4Nv6rq1QlKwRYyMwwRJSAZHIUMh
 YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
 -----END EC PRIVATE KEY-----`
 
-	certs := endpointConfig.TLSClientCerts()
-	if len(certs) != 1 {
-		t.Fatal("Expected only one tls cert struct")
-	}
+	backends, err := overrideClientTLSInBackend(configBackend, &clientTLSOverride)
+	assert.Nil(t, err)
 
-	emptyCert := tls.Certificate{}
+	config, err := ConfigFromBackend(backends...)
+	assert.Nil(t, err)
 
-	if reflect.DeepEqual(certs[0], emptyCert) {
+	certs := config.TLSClientCerts()
+	assert.Equal(t, 1, len(certs), "Expected only one tls cert struct")
+
+	if reflect.DeepEqual(certs[0], tls.Certificate{}) {
 		t.Fatal("Actual cert is empty")
 	}
 }
 
 func TestTLSClientCertFromPemAndKeyFromFile(t *testing.T) {
-	config, err := ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	endpointConfig := config.(*EndpointConfig)
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Path = ""
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Path = pathvar.Subst(keyPath)
+	clientTLSOverride := endpoint.MutualTLSConfig{}
 
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
+	clientTLSOverride.Client.Cert.Path = ""
+	clientTLSOverride.Client.Key.Path = pathvar.Subst(keyPath)
+
+	clientTLSOverride.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
 MIIC5TCCAkegAwIBAgIUBzAG7MTjO4n9GFkYTkJBnvCInRIwCgYIKoZIzj0EAwQw
 gYwxCzAJBgNVBAYTAkNBMRAwDgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3Jv
 bnRvMREwDwYDVQQKEwhsaW51eGN0bDEMMAoGA1UECxMDTGFiMTgwNgYDVQQDEy9s
@@ -993,63 +988,57 @@ rIYog3WBAkECntF217dk3VCZHXfl+rik6wm+ijzYk+k336UERiSJRu09YHHEh7x6
 NRCHI3uXUJ5/3zDZM3qtV8UYHou4KDS35Q==
 -----END CERTIFICATE-----`
 
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Pem = ""
+	clientTLSOverride.Client.Key.Pem = ""
 
-	certs := endpointConfig.TLSClientCerts()
-	if len(certs) != 1 {
-		t.Fatal("Expected only one tls cert struct")
-	}
+	backends, err := overrideClientTLSInBackend(configBackend, &clientTLSOverride)
+	assert.Nil(t, err)
 
-	emptyCert := tls.Certificate{}
+	config, err := ConfigFromBackend(backends...)
+	assert.Nil(t, err)
 
-	if reflect.DeepEqual(certs[0], emptyCert) {
+	certs := config.TLSClientCerts()
+	assert.Equal(t, 1, len(certs), "Expected only one tls cert struct")
+
+	if reflect.DeepEqual(certs[0], tls.Certificate{}) {
 		t.Fatal("Actual cert is empty")
 	}
 }
 
 func TestTLSClientCertFromFileAndKeyFromPem(t *testing.T) {
-	config, err := ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	endpointConfig := config.(*EndpointConfig)
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Path = pathvar.Subst(certPath)
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Path = ""
-
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Pem = ""
-
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
+	clientTLSOverride := endpoint.MutualTLSConfig{}
+	clientTLSOverride.Client.Cert.Path = pathvar.Subst(certPath)
+	clientTLSOverride.Client.Key.Path = ""
+	clientTLSOverride.Client.Cert.Pem = ""
+	clientTLSOverride.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
 MIGkAgEBBDAeWRhdAl+olgpLiI9mXHwcgJ1g4NNgPrYFSkkukISeAGfvK348izwG
 0Aub948H5IygBwYFK4EEACKhZANiAATJb6oe7bpmnuJwjYMaQX7D2YQ0vLHmRWKs
 QSn674xQJ5N8rMHAA/DXtpIMKI5uulot0jJ5xFkpikLGd8+6soQp8pd5tkMqZB0a
 nFoUptdom8LjgRus6rnHbXxGqcIN6oA=
 -----END EC PRIVATE KEY-----`
 
-	certs := endpointConfig.TLSClientCerts()
-	if len(certs) != 1 {
-		t.Fatal("Expected only one tls cert struct")
-	}
+	backends, err := overrideClientTLSInBackend(configBackend, &clientTLSOverride)
+	assert.Nil(t, err)
 
-	emptyCert := tls.Certificate{}
+	config, err := ConfigFromBackend(backends...)
+	assert.Nil(t, err)
 
-	if reflect.DeepEqual(certs[0], emptyCert) {
+	certs := config.TLSClientCerts()
+	assert.Equal(t, 1, len(certs), "Expected only one tls cert struct")
+
+	if reflect.DeepEqual(certs[0], tls.Certificate{}) {
 		t.Fatal("Actual cert is empty")
 	}
 }
 
 func TestTLSClientCertsPemBeforeFiles(t *testing.T) {
-	config, err := ConfigFromBackend(configBackend)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	endpointConfig := config.(*EndpointConfig)
+	clientTLSOverride := endpoint.MutualTLSConfig{}
 	// files have incorrect paths, but pems are loaded first
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	clientTLSOverride.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	clientTLSOverride.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
 
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
+	clientTLSOverride.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
 MIIC5TCCAkagAwIBAgIUMYhiY5MS3jEmQ7Fz4X/e1Dx33J0wCgYIKoZIzj0EAwQw
 gYwxCzAJBgNVBAYTAkNBMRAwDgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3Jv
 bnRvMREwDwYDVQQKEwhsaW51eGN0bDEMMAoGA1UECxMDTGFiMTgwNgYDVQQDEy9s
@@ -1068,41 +1057,47 @@ gw2rrxqbW67ulwmMQzp6EJbm/28T2pIoYWWyIwpzrquypI7BOuf8is5b7Jcgn9oz
 3YkZ9DhdH1tN4U/h+YulG/CkKOtUATtQxg==
 -----END CERTIFICATE-----`
 
-	endpointConfig.networkConfig.Client.TLSCerts.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
+	clientTLSOverride.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
 MIGkAgEBBDByldj7VTpqTQESGgJpR9PFW9b6YTTde2WN6/IiBo2nW+CIDmwQgmAl
 c/EOc9wmgu+gBwYFK4EEACKhZANiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv
 2PotEEGuO6rMyaOupulj2VOj+YtgWw4ZtU49g4Nv6rq1QlKwRYyMwwRJSAZHIUMh
 YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
 -----END EC PRIVATE KEY-----`
 
-	certs := endpointConfig.TLSClientCerts()
+	backends, err := overrideClientTLSInBackend(configBackend, &clientTLSOverride)
+	assert.Nil(t, err)
+
+	config, err := ConfigFromBackend(backends...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	certs := config.TLSClientCerts()
 	if len(certs) != 1 {
 		t.Fatal("Expected only one tls cert struct")
 	}
 
-	emptyCert := tls.Certificate{}
-
-	if reflect.DeepEqual(certs[0], emptyCert) {
+	if reflect.DeepEqual(certs[0], tls.Certificate{}) {
 		t.Fatal("Actual cert is empty")
 	}
 }
 
 func TestTLSClientCertsNoCerts(t *testing.T) {
 
-	nwConfig := fab.NetworkConfig{}
+	configEntity := endpointConfigEntity{}
 	testlookup := lookup.New(configBackend)
-	testlookup.UnmarshalKey("client", &nwConfig.Client)
+	testlookup.UnmarshalKey("client", &configEntity.Client)
 
 	//Set client tls paths to empty strings
-	nwConfig.Client.TLSCerts.Client.Cert.Path = ""
-	nwConfig.Client.TLSCerts.Client.Key.Path = ""
-	nwConfig.Client.TLSCerts.Client.Cert.Pem = ""
-	nwConfig.Client.TLSCerts.Client.Key.Pem = ""
+	configEntity.Client.TLSCerts.Client.Cert.Path = ""
+	configEntity.Client.TLSCerts.Client.Key.Path = ""
+	configEntity.Client.TLSCerts.Client.Cert.Pem = ""
+	configEntity.Client.TLSCerts.Client.Key.Pem = ""
 
 	//Create backend override
 	configBackendOverride := &mocks.MockConfigBackend{}
 	configBackendOverride.KeyValueMap = make(map[string]interface{})
-	configBackendOverride.KeyValueMap["client"] = nwConfig.Client
+	configBackendOverride.KeyValueMap["client"] = configEntity.Client
 
 	config, err := ConfigFromBackend(configBackendOverride, configBackend)
 	if err != nil {
@@ -1176,10 +1171,6 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
 
 	backendMap = make(map[string]interface{})
-	backendMap["certificateAuthorities"] = sampleViper.Get("certificateAuthorities")
-	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
-
-	backendMap = make(map[string]interface{})
 	backendMap["entityMatchers"] = sampleViper.Get("entityMatchers")
 	backends = append(backends, &mocks.MockConfigBackend{KeyValueMap: backendMap})
 
@@ -1205,9 +1196,6 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	networkConfig := endpointConfig.NetworkConfig()
 	assert.NotNil(t, networkConfig, "Invalid networkConfig")
 
-	//Client
-	assert.True(t, networkConfig.Client.Organization == "org1")
-
 	//Channel
 	assert.Equal(t, len(networkConfig.Channels), 3)
 	assert.Equal(t, len(networkConfig.Channels["mychannel"].Peers), 1)
@@ -1216,11 +1204,6 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.MaxBackoff.String(), (5 * time.Second).String())
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String(), (500 * time.Millisecond).String())
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor, 2.0)
-
-	//CertificateAuthorities
-	assert.Equal(t, len(networkConfig.CertificateAuthorities), 2)
-	assert.Equal(t, networkConfig.CertificateAuthorities["local.ca.org1.example.com"].URL, "https://ca.org1.example.com:7054")
-	assert.Equal(t, networkConfig.CertificateAuthorities["local.ca.org2.example.com"].URL, "https://ca.org2.example.com:8054")
 
 	//Organizations
 	assert.Equal(t, len(networkConfig.Organizations), 3)
@@ -1363,4 +1346,18 @@ func newViper(path string) *viper.Viper {
 		panic(err)
 	}
 	return myViper
+}
+
+func overrideClientTLSInBackend(backend core.ConfigBackend, tlsCerts *endpoint.MutualTLSConfig) ([]core.ConfigBackend, error) {
+	endpointEntity := endpointConfigEntity{}
+	err := lookup.New(backend).UnmarshalKey("client", &endpointEntity.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	backendOverride := mocks.MockConfigBackend{}
+	backendOverride.KeyValueMap = make(map[string]interface{})
+	backendOverride.KeyValueMap["client"] = endpointEntity.Client
+
+	return []core.ConfigBackend{&backendOverride, backend}, nil
 }
