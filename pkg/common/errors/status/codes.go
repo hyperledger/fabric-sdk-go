@@ -48,6 +48,10 @@ const (
 	// MissingEndorsement is if an endoresement is missing
 	MissingEndorsement Code = 9
 
+	// QueryEndorsers error indicates that no endorser group was found that would
+	// satisfy the chaincode policy
+	QueryEndorsers Code = 11
+
 	// PrematureChaincodeExecution indicates that an attempt was made to invoke a chaincode that's
 	// in the process of being launched.
 	PrematureChaincodeExecution Code = 21
@@ -69,6 +73,7 @@ var CodeName = map[int32]string{
 	8:  "SIGNATURE_VERIFICATION_FAILED",
 	9:  "MISSING_ENDORSEMENT",
 	10: "CHAINCODE_ERROR",
+	11: "QUERY_ENDORSERS",
 	21: "NO_MATCHING_CERTIFICATE_AUTHORITY_ENTITY",
 	22: "NO_MATCHING_PEER_ENTITY",
 	23: "NO_MATCHING_ORDERER_ENTITY",
