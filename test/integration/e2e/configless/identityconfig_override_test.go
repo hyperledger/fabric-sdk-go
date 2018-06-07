@@ -44,7 +44,7 @@ type exampleClient struct {
 }
 
 func (m *exampleClient) Client() *msp.ClientConfig {
-	client := networkConfig.Client
+	client := clientConfig
 	client.Organization = strings.ToLower(client.Organization)
 	return &client
 }
@@ -67,7 +67,8 @@ func getCAConfig(networkConfig *fab.NetworkConfig, org string) (*msp.CAConfig, b
 		return nil, false
 	}
 
-	caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityName)]
+	caConfigs := newCAsConfig()
+	caConfig, ok := caConfigs[strings.ToLower(certAuthorityName)]
 	if !ok {
 		// EntityMatchers are not supported in this implementation. If needed, uncomment the below lines
 		//caConfig, mappedHost := m.tryMatchingCAConfig(networkConfig, strings.ToLower(certAuthorityName))

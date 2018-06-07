@@ -209,7 +209,7 @@ func (p *identityManagerProvider) IdentityManager(orgName string) (msp.IdentityM
 func updateCAServerURL(caServerURL string, existingBackends []core.ConfigBackend) []core.ConfigBackend {
 
 	//get existing certificateAuthorities
-	networkConfig := fab.NetworkConfig{}
+	networkConfig := identityConfigEntity{}
 	lookup.New(existingBackends...).UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 
 	//update URLs

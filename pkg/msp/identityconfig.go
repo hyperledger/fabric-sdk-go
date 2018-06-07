@@ -58,6 +58,13 @@ type entityMatchers struct {
 	matchers map[string][]fab.MatchConfig
 }
 
+//identityConfigEntity contains all config entities needed
+type identityConfigEntity struct {
+	Client                 msp.ClientConfig
+	Organizations          map[string]fab.OrganizationConfig
+	CertificateAuthorities map[string]msp.CAConfig
+}
+
 // Client returns the Client config
 func (c *IdentityConfig) Client() *msp.ClientConfig {
 	return c.client
@@ -116,24 +123,24 @@ func (c *IdentityConfig) CredentialStorePath() string {
 
 //loadIdentityConfigEntities loads config entities and dictionaries for searches
 func (c *IdentityConfig) loadIdentityConfigEntities() error {
-	networkConfig := fab.NetworkConfig{}
+	configEntity := identityConfigEntity{}
 
-	err := c.backend.UnmarshalKey("client", &networkConfig.Client)
-	logger.Debugf("Client is: %+v", networkConfig.Client)
+	err := c.backend.UnmarshalKey("client", &configEntity.Client)
+	logger.Debugf("Client is: %+v", configEntity.Client)
 	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'client' config item to networkConfig.Client type")
+		return errors.WithMessage(err, "failed to parse 'client' config item to identityConfigEntity.Client type")
 	}
 
-	err = c.backend.UnmarshalKey("organizations", &networkConfig.Organizations)
-	logger.Debugf("organizations are: %+v", networkConfig.Organizations)
+	err = c.backend.UnmarshalKey("organizations", &configEntity.Organizations)
+	logger.Debugf("organizations are: %+v", configEntity.Organizations)
 	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'organizations' config item to networkConfig.Organizations type")
+		return errors.WithMessage(err, "failed to parse 'organizations' config item to identityConfigEntity.Organizations type")
 	}
 
-	err = c.backend.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
-	logger.Debugf("certificateAuthorities are: %+v", networkConfig.CertificateAuthorities)
+	err = c.backend.UnmarshalKey("certificateAuthorities", &configEntity.CertificateAuthorities)
+	logger.Debugf("certificateAuthorities are: %+v", configEntity.CertificateAuthorities)
 	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'certificateAuthorities' config item to networkConfig.CertificateAuthorities type")
+		return errors.WithMessage(err, "failed to parse 'certificateAuthorities' config item to identityConfigEntity.CertificateAuthorities type")
 	}
 
 	//compile CA matchers
@@ -142,17 +149,17 @@ func (c *IdentityConfig) loadIdentityConfigEntities() error {
 		return errors.WithMessage(err, "failed to compile certificate authority matchers")
 	}
 
-	err = c.loadClientTLSConfig(&networkConfig)
+	err = c.loadClientTLSConfig(&configEntity)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load client TLSConfig ")
 	}
 
-	err = c.loadCATLSConfig(&networkConfig)
+	err = c.loadCATLSConfig(&configEntity)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load CA TLSConfig ")
 	}
 
-	err = c.loadAllCAConfigs(&networkConfig)
+	err = c.loadAllCAConfigs(&configEntity)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load all CA configs ")
 	}
@@ -162,7 +169,7 @@ func (c *IdentityConfig) loadIdentityConfigEntities() error {
 		return errors.WithMessage(err, "failed to load all CA server certs ")
 	}
 
-	c.client = &networkConfig.Client
+	c.client = &configEntity.Client
 	c.caKeyStorePath = pathvar.Subst(c.backend.GetString("client.credentialStore.cryptoStore.path"))
 	c.credentialStorePath = pathvar.Subst(c.backend.GetString("client.credentialStore.path"))
 
@@ -170,21 +177,21 @@ func (c *IdentityConfig) loadIdentityConfigEntities() error {
 }
 
 //loadClientTLSConfig pre-loads all TLSConfig bytes in client config
-func (c *IdentityConfig) loadClientTLSConfig(networkConfig *fab.NetworkConfig) error {
+func (c *IdentityConfig) loadClientTLSConfig(configEntity *identityConfigEntity) error {
 	//Clients Config
 	//resolve paths and org name
-	networkConfig.Client.Organization = strings.ToLower(networkConfig.Client.Organization)
-	networkConfig.Client.TLSCerts.Path = pathvar.Subst(networkConfig.Client.TLSCerts.Path)
-	networkConfig.Client.TLSCerts.Client.Key.Path = pathvar.Subst(networkConfig.Client.TLSCerts.Client.Key.Path)
-	networkConfig.Client.TLSCerts.Client.Cert.Path = pathvar.Subst(networkConfig.Client.TLSCerts.Client.Cert.Path)
+	configEntity.Client.Organization = strings.ToLower(configEntity.Client.Organization)
+	configEntity.Client.TLSCerts.Path = pathvar.Subst(configEntity.Client.TLSCerts.Path)
+	configEntity.Client.TLSCerts.Client.Key.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Key.Path)
+	configEntity.Client.TLSCerts.Client.Cert.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Cert.Path)
 
 	//pre load client key and cert bytes
-	err := networkConfig.Client.TLSCerts.Client.Key.LoadBytes()
+	err := configEntity.Client.TLSCerts.Client.Key.LoadBytes()
 	if err != nil {
 		return errors.WithMessage(err, "failed to load client key")
 	}
 
-	err = networkConfig.Client.TLSCerts.Client.Cert.LoadBytes()
+	err = configEntity.Client.TLSCerts.Client.Cert.LoadBytes()
 	if err != nil {
 		return errors.WithMessage(err, "failed to load client cert")
 	}
@@ -193,9 +200,9 @@ func (c *IdentityConfig) loadClientTLSConfig(networkConfig *fab.NetworkConfig) e
 }
 
 //loadCATLSConfig pre-loads all TLSConfig bytes in certificate authorities
-func (c *IdentityConfig) loadCATLSConfig(networkConfig *fab.NetworkConfig) error {
+func (c *IdentityConfig) loadCATLSConfig(configEntity *identityConfigEntity) error {
 	//CA Config
-	for ca, caConfig := range networkConfig.CertificateAuthorities {
+	for ca, caConfig := range configEntity.CertificateAuthorities {
 		//resolve paths
 		caConfig.TLSCACerts.Path = pathvar.Subst(caConfig.TLSCACerts.Path)
 		caConfig.TLSCACerts.Client.Key.Path = pathvar.Subst(caConfig.TLSCACerts.Client.Key.Path)
@@ -210,26 +217,26 @@ func (c *IdentityConfig) loadCATLSConfig(networkConfig *fab.NetworkConfig) error
 		if err != nil {
 			return errors.WithMessage(err, "failed to load ca cert")
 		}
-		networkConfig.CertificateAuthorities[ca] = caConfig
+		configEntity.CertificateAuthorities[ca] = caConfig
 	}
 
 	return nil
 }
 
-func (c *IdentityConfig) loadAllCAConfigs(networkConfig *fab.NetworkConfig) error {
+func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) error {
 
 	caConfigsByOrg := make(map[string][]*msp.CAConfig)
 
-	for orgName, orgConfig := range networkConfig.Organizations {
+	for orgName, orgConfig := range configEntity.Organizations {
 		var caConfigs []*msp.CAConfig
 		for _, caName := range orgConfig.CertificateAuthorities {
 			if caName == "" {
 				continue
 			}
-			caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(caName)]
+			caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(caName)]
 			if !ok {
 				logger.Debugf("Could not find Certificate Authority for [%s], trying with Entity Matchers", caName)
-				matchedCaConfig, mappedHost := c.tryMatchingCAConfig(networkConfig, strings.ToLower(caName))
+				matchedCaConfig, mappedHost := c.tryMatchingCAConfig(configEntity, strings.ToLower(caName))
 				if mappedHost == "" {
 					return errors.Errorf("CA Server Name [%s] not found", caName)
 				}
@@ -312,7 +319,7 @@ func (c *IdentityConfig) compileMatchers() error {
 	return nil
 }
 
-func (c *IdentityConfig) tryMatchingCAConfig(networkConfig *fab.NetworkConfig, caName string) (*msp.CAConfig, string) {
+func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity, caName string) (*msp.CAConfig, string) {
 	//Return if no caMatchers are configured
 	if len(c.caMatchers) == 0 {
 		return nil, ""
@@ -329,18 +336,18 @@ func (c *IdentityConfig) tryMatchingCAConfig(networkConfig *fab.NetworkConfig, c
 	for _, k := range keys {
 		v := c.caMatchers[k]
 		if v.MatchString(caName) {
-			return c.findMatchingCert(networkConfig, caName, v, k)
+			return c.findMatchingCert(configEntity, caName, v, k)
 		}
 	}
 
 	return nil, ""
 }
 
-func (c *IdentityConfig) findMatchingCert(networkConfig *fab.NetworkConfig, caName string, v *regexp.Regexp, k int) (*msp.CAConfig, string) {
+func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, caName string, v *regexp.Regexp, k int) (*msp.CAConfig, string) {
 	// get the matching Config from the index number
 	certAuthorityMatchConfig := c.entityMatchers.matchers["certificateauthority"][k]
 	//Get the certAuthorityMatchConfig from mapped host
-	caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityMatchConfig.MappedHost)]
+	caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(certAuthorityMatchConfig.MappedHost)]
 	if !ok {
 		return nil, ""
 	}

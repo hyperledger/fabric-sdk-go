@@ -8,23 +8,18 @@ package fab
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
 
-// NetworkConfig provides a static definition of a Hyperledger Fabric network
+// NetworkConfig provides a static definition of endpoint configuration network
 type NetworkConfig struct {
-	Name        string
-	Description string
-	Version     string
-	//TODO to be removed, no apparent reason to expose it in network config
-	Client        msp.ClientConfig
+	Name          string
+	Description   string
+	Version       string
 	Channels      map[string]ChannelNetworkConfig
 	Organizations map[string]OrganizationConfig
 	Orderers      map[string]OrdererConfig
 	Peers         map[string]PeerConfig
-	//TODO to be removed, no apparent reason to expose it in network config
-	CertificateAuthorities map[string]msp.CAConfig
 }
 
 // ChannelNetworkConfig provides the definition of channels for the network

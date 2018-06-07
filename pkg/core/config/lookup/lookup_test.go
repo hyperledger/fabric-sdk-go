@@ -19,6 +19,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -33,6 +34,19 @@ var backend *mocks.MockConfigBackend
 
 type testEntityMatchers struct {
 	matchers map[string][]fab.MatchConfig
+}
+
+// networkConfig matches all network config elements
+type networkConfig struct {
+	Name                   string
+	Description            string
+	Version                string
+	Client                 msp.ClientConfig
+	Channels               map[string]fab.ChannelNetworkConfig
+	Organizations          map[string]fab.OrganizationConfig
+	Orderers               map[string]fab.OrdererConfig
+	Peers                  map[string]fab.PeerConfig
+	CertificateAuthorities map[string]msp.CAConfig
 }
 
 func TestMain(m *testing.M) {
@@ -180,7 +194,7 @@ func TestUnmarshal(t *testing.T) {
 	testLookup := New(backend)
 
 	//output struct
-	networkConfig := fab.NetworkConfig{}
+	networkConfig := networkConfig{}
 	testLookup.UnmarshalKey("channels", &networkConfig.Channels)
 
 	assert.Equal(t, len(networkConfig.Channels), 3)
@@ -230,7 +244,7 @@ func TestUnmarshalWithMultipleBackend(t *testing.T) {
 	testLookup := New(backends...)
 
 	//output struct
-	networkConfig := fab.NetworkConfig{}
+	networkConfig := networkConfig{}
 	entityMatchers := testEntityMatchers{}
 
 	assert.Nil(t, testLookup.UnmarshalKey("client", &networkConfig.Client), "unmarshalKey supposed to succeed")
@@ -291,9 +305,9 @@ func TestLookupUnmarshalAgainstViperUnmarshal(t *testing.T) {
 	//setup viper
 	sampleViper := newViper()
 	//viper network config
-	networkConfigViper := fab.NetworkConfig{}
+	networkConfigViper := networkConfig{}
 	//lookup network config
-	networkConfig := fab.NetworkConfig{}
+	networkConfig := networkConfig{}
 
 	/*
 		TEST NETWORK CONFIG CLIENT
@@ -454,7 +468,7 @@ func TestUnmarshalWithHookFunc(t *testing.T) {
 	testLookup := New(backend)
 	tamperPeerChannelConfig(backend)
 	//output struct
-	networkConfig := fab.NetworkConfig{}
+	networkConfig := networkConfig{}
 	testLookup.UnmarshalKey("channels", &networkConfig.Channels, WithUnmarshalHookFunction(setTrueDefaultForPeerChannelConfig()))
 
 	//Test if mandatory hook func is working as expected

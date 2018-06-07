@@ -14,7 +14,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	fabApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockcontext"
 	mockmspApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockmsp"
@@ -576,7 +575,7 @@ func getInvalidURLBackend() ([]core.ConfigBackend, error) {
 	}
 
 	//Create an invalid channel
-	networkConfig := fabApi.NetworkConfig{}
+	networkConfig := identityConfigEntity{}
 	//get valid certificate authorities
 	err = lookup.New(mockConfigBackend...).UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 	if err != nil {
@@ -609,7 +608,7 @@ func getNoRegistrarBackend() ([]core.ConfigBackend, error) {
 	}
 
 	//Create an invalid channel
-	networkConfig := fabApi.NetworkConfig{}
+	networkConfig := identityConfigEntity{}
 	//get valid certificate authorities
 	err = lookup.New(mockConfigBackend...).UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
 	if err != nil {
@@ -642,7 +641,7 @@ func getNoCAConfigBackend() ([]core.ConfigBackend, error) {
 	}
 
 	//Create an empty network config
-	networkConfig := fabApi.NetworkConfig{}
+	networkConfig := identityConfigEntity{}
 	//get valid certificate authorities
 	err = lookup.New(mockConfigBackend...).UnmarshalKey("organizations", &networkConfig.Organizations)
 	if err != nil {
@@ -676,7 +675,7 @@ func getEmbeddedRegistrarConfigBackend() ([]core.ConfigBackend, error) {
 	embeddedRegistrarID := "embeddedregistrar"
 
 	//Create an empty network config
-	networkConfig := fabApi.NetworkConfig{}
+	networkConfig := identityConfigEntity{}
 	//get valid certificate authorities
 	err = lookup.New(mockConfigBackend...).UnmarshalKey("organizations", &networkConfig.Organizations)
 	if err != nil {
