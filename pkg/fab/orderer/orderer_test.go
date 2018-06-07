@@ -52,7 +52,10 @@ func TestSendDeliverHappy(t *testing.T) {
 	blocks, errs := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
-	case block := <-blocks:
+	case block, ok := <-blocks:
+		if !ok {
+			t.Fatalf("Expected test block but got nothing")
+		}
 		if string(block.Data.Data[0]) != "test" {
 			t.Fatalf("Expected test block got: %#v", block)
 		}
@@ -61,6 +64,8 @@ func TestSendDeliverHappy(t *testing.T) {
 	case <-time.After(time.Second * 5):
 		t.Fatal("Did not receive block or error from SendDeliver")
 	}
+
+	assert.Len(t, errs, 0, "not supposed to get error")
 }
 
 func TestSendDeliverErr(t *testing.T) {
@@ -76,24 +81,33 @@ func TestSendDeliverErr(t *testing.T) {
 	defer cancel()
 	blocks, errs := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
-	select {
-	case block := <-blocks:
-		t.Fatalf("Expected error got block: %#v", block)
-	case err := <-errs:
-		if err == nil {
-			t.Fatalf("Expected test error when OS Recv() fails, got: %s", err)
+read:
+	for {
+		select {
+		case block, ok := <-blocks:
+			if ok {
+				t.Fatalf("Expected error got block: %#v", block)
+				break read
+			}
+		case err := <-errs:
+			if err == nil {
+				t.Fatal("Expected test error when OS Recv() fails, got nil")
+			} else {
+				t.Logf("There is an error as expected : %s", err)
+			}
+			break read
+		case <-time.After(time.Second * 5):
+			t.Fatal("Did not receive block or error from SendDeliver")
+			break read
 		}
-	case <-time.After(time.Second * 5):
-		t.Fatal("Did not receive block or error from SendDeliver")
 	}
 }
 
-func TestSendDeliver(t *testing.T) {
+func TestSendDeliverConnFailed(t *testing.T) {
 	orderer, _ := New(mocks.NewMockEndpointConfig(), WithURL(testOrdererURL+"invalid-test"))
-
-	// Test deliver happy path
 	ctx, cancel := reqContext.WithTimeout(reqContext.Background(), 5*time.Second)
 	defer cancel()
+
 	blocks, errs := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
@@ -210,15 +224,23 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 	defer cancel()
 	blocks, errors := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
-	select {
-	case block := <-blocks:
-		t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
-	case err := <-errors:
-		if !strings.Contains(err.Error(), "BAD_REQUEST") {
-			t.Fatalf("Ordering service error is not received as expected, %s", err)
+read:
+	for {
+		select {
+		case block, ok := <-blocks:
+			if ok {
+				t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
+				break read
+			}
+		case err := <-errors:
+			if !strings.Contains(err.Error(), "BAD_REQUEST") {
+				t.Fatalf("Ordering service error is not received as expected, %s", err)
+			}
+			break read
+		case <-time.After(time.Second * 5):
+			t.Fatal("Did not receive error from SendDeliver")
+			break read
 		}
-	case <-time.After(time.Second * 5):
-		t.Fatal("Did not receive error from SendDeliver")
 	}
 }
 
@@ -242,15 +264,15 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 	blocks, errors := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
-	case block := <-blocks:
-		if block != nil {
+	case _, ok := <-blocks:
+		if ok {
 			t.Fatal("This usecase was not supposed to get valid block")
 		}
-	case err := <-errors:
-		t.Fatalf("This usecase was not supposed to get error : %s ", err)
 	case <-time.After(time.Second * 5):
 		t.Fatal("Did not receive block from SendDeliver")
 	}
+
+	assert.Len(t, errors, 0, "not supposed to get error")
 }
 
 func TestSendDeliverFailure(t *testing.T) {
@@ -269,23 +291,23 @@ func TestSendDeliverFailure(t *testing.T) {
 	defer cancel()
 	blocks, errs := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
-	select {
-	case block, ok := <-blocks:
-		if ok {
-			t.Fatalf("This usecase was not supposed to get valid block %+v", block)
-		} else {
-			t.Fatalf("did not receive any response or error from SendDeliver")
-		}
-	case err, ok := <-errs:
-		if ok {
+read:
+	for {
+		select {
+		case block, ok := <-blocks:
+			if ok {
+				t.Fatalf("This usecase was not supposed to get valid block %+v", block)
+				break read
+			}
+		case err := <-errs:
 			if err == nil || !strings.HasPrefix(err.Error(), "recv from ordering service failed") {
 				t.Fatalf("Error response is not working as expected : '%s' ", err)
 			}
-		} else {
-			t.Fatalf("did not receive any response or error from SendDeliver")
+			break read
+		case <-time.After(time.Second * 5):
+			t.Fatal("Timeout: did not receive any response or error from SendDeliver")
+			break read
 		}
-	case <-time.After(time.Second * 5):
-		t.Fatal("Timeout: did not receive any response or error from SendDeliver")
 	}
 }
 
@@ -442,17 +464,28 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 	defer cancel()
 	blocks, errs := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
-	select {
-	case block := <-blocks:
-		if string(block.Data.Data[0]) != "test" {
-			t.Fatalf("Expected test block got: %#v", block)
+read:
+	for {
+		select {
+		case block, ok := <-blocks:
+			if !ok {
+				t.Fatalf("Expected test block got nothing")
+			}
+
+			if string(block.Data.Data[0]) != "test" {
+				t.Fatalf("Expected test block got: %#v", block)
+			}
+			break read
+		case err := <-errs:
+			t.Fatalf("Unexpected error from SendDeliver(): %s", err)
+			break read
+		case <-time.After(time.Second * 5):
+			t.Fatal("Did not receive block or error from SendDeliver")
+			break read
 		}
-	case err := <-errs:
-		t.Fatalf("Unexpected error from SendDeliver(): %s", err)
-	case <-time.After(time.Second * 5):
-		t.Fatal("Did not receive block or error from SendDeliver")
 	}
 
+	assert.Len(t, errs, 0, "not supposed to get error")
 }
 
 /*
