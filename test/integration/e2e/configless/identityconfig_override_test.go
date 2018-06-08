@@ -47,15 +47,14 @@ type exampleClient struct {
 
 func (m *exampleClient) Client() *msp.ClientConfig {
 
-	mspClient := &msp.ClientConfig{}
-	mspClient.Organization = strings.ToLower(client.Organization)
-	mspClient.Logging = client.Logging
-	mspClient.CredentialStore = client.CredentialStore
-	mspClient.CryptoConfig = client.CryptoConfig
-	mspClient.TLSCert = client.TLSCerts.Client.Cert.Bytes()
-	mspClient.TLSKey = client.TLSCerts.Client.Key.Bytes()
-
-	return mspClient
+	return &msp.ClientConfig{
+		Organization:    strings.ToLower(client.Organization),
+		Logging:         client.Logging,
+		CryptoConfig:    client.CryptoConfig,
+		CredentialStore: client.CredentialStore,
+		TLSKey:          client.TLSCerts.Client.Key.Bytes(),
+		TLSCert:         client.TLSCerts.Client.Cert.Bytes(),
+	}
 }
 
 type exampleCaConfig struct{}
@@ -65,20 +64,21 @@ func (m *exampleCaConfig) CAConfig(org string) (*msp.CAConfig, bool) {
 }
 
 func getMSPCAConfig(caConfig *caConfig) (*msp.CAConfig, error) {
-	mspCAConfig := &msp.CAConfig{}
-	var err error
 
-	mspCAConfig.URL = caConfig.URL
-	mspCAConfig.Registrar = caConfig.Registrar
-	mspCAConfig.CAName = caConfig.CAName
-	mspCAConfig.TLSCAClientCert = caConfig.TLSCACerts.Client.Cert.Bytes()
-	mspCAConfig.TLSCAClientKey = caConfig.TLSCACerts.Client.Key.Bytes()
-	mspCAConfig.TLSCAServerCerts, err = getServerCerts(caConfig)
+	serverCerts, err := getServerCerts(caConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	return mspCAConfig, nil
+	return &msp.CAConfig{
+		URL:              caConfig.URL,
+		Registrar:        caConfig.Registrar,
+		CAName:           caConfig.CAName,
+		TLSCAClientCert:  caConfig.TLSCACerts.Client.Cert.Bytes(),
+		TLSCAClientKey:   caConfig.TLSCACerts.Client.Key.Bytes(),
+		TLSCAServerCerts: serverCerts,
+	}, nil
+
 }
 
 func getServerCerts(caConfig *caConfig) ([][]byte, error) {

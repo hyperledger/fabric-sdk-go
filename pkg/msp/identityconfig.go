@@ -217,15 +217,14 @@ func (c *IdentityConfig) loadClientTLSConfig(configEntity *identityConfigEntity)
 		return errors.WithMessage(err, "failed to load client cert")
 	}
 
-	identityClient := &msp.ClientConfig{}
-	identityClient.Organization = configEntity.Client.Organization
-	identityClient.Logging = configEntity.Client.Logging
-	identityClient.CryptoConfig = configEntity.Client.CryptoConfig
-	identityClient.CredentialStore = configEntity.Client.CredentialStore
-	identityClient.TLSKey = configEntity.Client.TLSCerts.Client.Key.Bytes()
-	identityClient.TLSCert = configEntity.Client.TLSCerts.Client.Cert.Bytes()
-
-	c.client = identityClient
+	c.client = &msp.ClientConfig{
+		Organization:    configEntity.Client.Organization,
+		Logging:         configEntity.Client.Logging,
+		CryptoConfig:    configEntity.Client.CryptoConfig,
+		CredentialStore: configEntity.Client.CredentialStore,
+		TLSKey:          configEntity.Client.TLSCerts.Client.Key.Bytes(),
+		TLSCert:         configEntity.Client.TLSCerts.Client.Cert.Bytes(),
+	}
 
 	return nil
 }
@@ -288,20 +287,20 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 }
 
 func (c *IdentityConfig) getMSPCAConfig(caConfig *CAConfig) (*msp.CAConfig, error) {
-	mspCAConfig := &msp.CAConfig{}
-	var err error
 
-	mspCAConfig.URL = caConfig.URL
-	mspCAConfig.Registrar = caConfig.Registrar
-	mspCAConfig.CAName = caConfig.CAName
-	mspCAConfig.TLSCAClientCert = caConfig.TLSCACerts.Client.Cert.Bytes()
-	mspCAConfig.TLSCAClientKey = caConfig.TLSCACerts.Client.Key.Bytes()
-	mspCAConfig.TLSCAServerCerts, err = c.getServerCerts(caConfig)
+	serverCerts, err := c.getServerCerts(caConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	return mspCAConfig, nil
+	return &msp.CAConfig{
+		URL:              caConfig.URL,
+		Registrar:        caConfig.Registrar,
+		CAName:           caConfig.CAName,
+		TLSCAClientCert:  caConfig.TLSCACerts.Client.Cert.Bytes(),
+		TLSCAClientKey:   caConfig.TLSCACerts.Client.Key.Bytes(),
+		TLSCAServerCerts: serverCerts,
+	}, nil
 }
 
 func (c *IdentityConfig) getServerCerts(caConfig *CAConfig) ([][]byte, error) {
