@@ -56,6 +56,17 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 	// create channel and join orderer/orgs peers to it if was not done already
 	setupClientContextsAndChannel(t, sdk, &mc)
 
+	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
+	require.NoError(t, err)
+	_, err = integration.DiscoverLocalPeers(mc.org2AdminClientContext, 1)
+	require.NoError(t, err)
+
+	joined, err := integration.IsJoinedChannel(channelID, mc.org1ResMgmt, org1Peers[0])
+	require.NoError(t, err)
+	if !joined {
+		createAndJoinChannel(t, &mc)
+	}
+
 	testDynamicDiscovery(t, sdk, &mc)
 
 	// now run the same test as multiple_orgs_test.go to make sure it works with bootstrap config..
@@ -69,17 +80,17 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 }
 
 func testDynamicDiscovery(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) {
-	peersList := discoverLocalPeers(t, mc.org1AdminClientContext, 2)
-	assert.Equal(t, 2, len(peersList), "Expected exactly 2 peers as per %s's channel and %s's org configs", channelID, org1)
-	peersList = discoverLocalPeers(t, mc.org2AdminClientContext, 1)
-	assert.Equal(t, 1, len(peersList), "Expected exactly 1 peer as per %s's channel and %s's org configs", channelID, org2)
+	_, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
+	require.NoError(t, err)
+	_, err = integration.DiscoverLocalPeers(mc.org2AdminClientContext, 1)
+	require.NoError(t, err)
 
 	// example discovering the peers from the bootstap peer
 	// there should be three peers returned from discovery:
 	// 1 org1 anchor peer (peer0.org1.example.com)
 	// 1 discovered peer (not in config: peer1.org1.example.com)
 	// 1 org2 anchor peer (peer0.org2.example.com)
-	peersList = discoverPeers(t, sdk)
+	peersList := discoverPeers(t, sdk)
 	assert.Equal(t, 3, len(peersList), "Expected exactly 3 peers as per %s's channel and %s's org configs", channelID, org2)
 }
 

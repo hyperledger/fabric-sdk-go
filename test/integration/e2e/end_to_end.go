@@ -9,10 +9,12 @@ package e2e
 import (
 	"path"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/stretchr/testify/require"
 
@@ -96,15 +98,18 @@ func setupAndRun(t *testing.T, doSetup bool, configOpt core.ConfigProvider, sdkO
 	// Move funds
 	executeCC(client, t)
 
+	var ccEvent *fab.CCEvent
 	select {
-	case ccEvent := <-notifier:
+	case ccEvent = <-notifier:
 		t.Logf("Received CC event: %#v\n", ccEvent)
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
 	}
 
-	// Verify move funds transaction result
-	verifyFundsIsMoved(client, t, value)
+	i := strings.Index(ccEvent.SourceURL, ":")
+
+	// Verify move funds transaction result on the same peer where the event came from.
+	verifyFundsIsMoved(client, t, value, ccEvent.SourceURL[0:i])
 
 }
 
@@ -143,8 +148,8 @@ func createChannelAndCC(t *testing.T, sdk *fabsdk.FabricSDK) {
 	createCC(t, orgResMgmt)
 }
 
-func verifyFundsIsMoved(client *channel.Client, t *testing.T, value []byte) {
-	newValue := queryCC(client, t)
+func verifyFundsIsMoved(client *channel.Client, t *testing.T, value []byte, targetEndpoints ...string) {
+	newValue := queryCC(client, t, targetEndpoints...)
 	valueInt, err := strconv.Atoi(string(value))
 	if err != nil {
 		t.Fatal(err.Error())
@@ -166,9 +171,11 @@ func executeCC(client *channel.Client, t *testing.T) {
 	}
 }
 
-func queryCC(client *channel.Client, t *testing.T) []byte {
+func queryCC(client *channel.Client, t *testing.T, targetEndpoints ...string) []byte {
 	response, err := client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
-		channel.WithRetry(retry.DefaultChannelOpts))
+		channel.WithRetry(retry.DefaultChannelOpts),
+		channel.WithTargetEndpoints(targetEndpoints...),
+	)
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}

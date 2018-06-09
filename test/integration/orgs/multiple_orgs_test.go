@@ -65,8 +65,6 @@ var (
 	// Peers
 	orgTestPeer0 fab.Peer
 	orgTestPeer1 fab.Peer
-
-	isJoinedChannel bool
 )
 
 // used to create context for different tests in the orgs package
@@ -141,15 +139,25 @@ func TestOrgsEndToEnd(t *testing.T) {
 		ccVersion:              "0",
 	}
 
-	discoverLocalPeers(t, mc.org1AdminClientContext, 2)
-	discoverLocalPeers(t, mc.org2AdminClientContext, 1)
+	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
+	require.NoError(t, err)
+	_, err = integration.DiscoverLocalPeers(mc.org2AdminClientContext, 1)
+	require.NoError(t, err)
+
+	setupClientContextsAndChannel(t, sdk, &mc)
+
+	joined, err := integration.IsJoinedChannel(channelID, mc.org1ResMgmt, org1Peers[0])
+	require.NoError(t, err)
+	if !joined {
+		createAndJoinChannel(t, &mc)
+	}
 
 	expectedValue := testWithOrg1(t, sdk, &mc)
 	expectedValue = testWithOrg2(t, expectedValue, mc.ccName)
 	verifyWithOrg1(t, sdk, expectedValue, mc.ccName)
 }
 
-func setupClientContextsAndChannel(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) {
+func createAndJoinChannel(t *testing.T, mc *multiorgContext) {
 	// Get signing identity that is used to sign create channel request
 	org1AdminUser, err := org1MspClient.GetSigningIdentity(org1AdminUser)
 	if err != nil {
@@ -161,6 +169,17 @@ func setupClientContextsAndChannel(t *testing.T, sdk *fabsdk.FabricSDK, mc *mult
 		t.Fatalf("failed to get org2AdminUser, err : %s", err)
 	}
 
+	createChannel(org1AdminUser, org2AdminUser, mc, t)
+	// Org1 peers join channel
+	err = mc.org1ResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	require.NoError(t, err, "Org1 peers failed to JoinChannel")
+
+	// Org2 peers join channel
+	err = mc.org2ResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	require.NoError(t, err, "Org2 peers failed to JoinChannel")
+}
+
+func setupClientContextsAndChannel(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) {
 	// Org1 resource management client (Org1 is default org)
 	org1RMgmt, err := resmgmt.New(mc.org1AdminClientContext)
 	require.NoError(t, err, "failed to create org1 resource management client")
@@ -172,47 +191,6 @@ func setupClientContextsAndChannel(t *testing.T, sdk *fabsdk.FabricSDK, mc *mult
 	require.NoError(t, err, "failed to create org2 resource management client")
 
 	mc.org2ResMgmt = org2RMgmt
-
-	// create/join channel if was not already done
-	if !isJoinedChannel {
-		defer func() { isJoinedChannel = true }()
-		createChannel(org1AdminUser, org2AdminUser, mc, t)
-		// Org1 peers join channel
-		err = mc.org1ResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
-		require.NoError(t, err, "Org1 peers failed to JoinChannel")
-
-		// Org2 peers join channel
-		err = mc.org2ResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
-		require.NoError(t, err, "Org2 peers failed to JoinChannel")
-	}
-}
-
-func discoverLocalPeers(t *testing.T, ctxProvider contextAPI.ClientProvider, expected int) []fab.Peer {
-	ctx, err := ctxProvider()
-	require.NoError(t, err, "Error creating context")
-
-	discoveryProvider := ctx.LocalDiscoveryProvider()
-	discovery, err := discoveryProvider.CreateLocalDiscoveryService(ctx.Identifier().MSPID)
-	require.NoErrorf(t, err, "Error creating local discovery service")
-
-	var peers []fab.Peer
-	for i := 0; i < 10; i++ {
-		peers, err = discovery.GetPeers()
-		require.NoErrorf(t, err, "Error getting peers for MSP [%s]", ctx.Identifier().MSPID)
-
-		t.Logf("Peers for MSP [%s]:", ctx.Identifier().MSPID)
-		for i, p := range peers {
-			t.Logf("%d- [%s]", i, p.URL())
-		}
-		if len(peers) >= expected {
-			break
-		}
-
-		// wait some time to allow the gossip to propagate the peers discovery
-		time.Sleep(3 * time.Second)
-	}
-	require.Equalf(t, expected, len(peers), "Did not get the required number of peers")
-	return peers
 }
 
 func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int {
@@ -220,8 +198,6 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	org1AdminChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
 	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 	org2ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
-
-	setupClientContextsAndChannel(t, sdk, mc)
 
 	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
 	if err != nil {
@@ -562,11 +538,13 @@ func createCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccNa
 
 	// Ensure that Gossip has propagated it's view of local peers before invoking
 	// install since some peers may be missed if we call InstallCC too early
-	org1Peers := discoverLocalPeers(t, mc.org1AdminClientContext, 2)
-	org2Peers := discoverLocalPeers(t, mc.org2AdminClientContext, 1)
+	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
+	require.NoError(t, err)
+	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 1)
+	require.NoError(t, err)
 
 	// Install example cc to Org1 peers
-	_, err := mc.org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	_, err = mc.org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	require.NoError(t, err, "InstallCC for Org1 failed")
 
 	// Install example cc to Org2 peers
@@ -591,24 +569,8 @@ func createCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccNa
 }
 
 func instantiateCC(t *testing.T, resMgmt *resmgmt.Client, ccName, ccVersion string) {
-	// Set up chaincode policy to 'any of two msps'
-	ccPolicy, err := cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
-	require.NoErrorf(t, err, "Error creating CC policy")
-
-	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
-	instantiateResp, err := resMgmt.InstantiateCC(
-		channelID,
-		resmgmt.InstantiateCCRequest{
-			Name:    ccName,
-			Path:    "github.com/example_cc",
-			Version: ccVersion,
-			Args:    integration.ExampleCCInitArgs(),
-			Policy:  ccPolicy,
-		},
-		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
-	)
-
-	require.Nil(t, err, "error should be nil for instantiateCC")
+	instantiateResp, err := integration.InstantiateChaincode(resMgmt, channelID, ccName, ccVersion, "AND ('Org1MSP.member','Org2MSP.member')")
+	require.NoError(t, err)
 	require.NotEmpty(t, instantiateResp, "transaction response should be populated for instantateCC")
 }
 

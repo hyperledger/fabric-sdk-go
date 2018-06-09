@@ -9,6 +9,7 @@ package sdk
 import (
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
@@ -69,18 +70,24 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
 
-	// Verify move funds transaction result
-	response, err = chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
-	if err != nil {
-		t.Fatalf("Failed to query funds after transaction: %s", err)
-	}
-
 	valueInt, _ := strconv.Atoi(string(value))
-	valueAfterInvokeInt, _ := strconv.Atoi(string(response.Payload))
-	if valueInt+1 != valueAfterInvokeInt {
-		t.Fatalf("Execute failed. Before: %s, after: %s", value, response.Payload)
-	}
+	success := false
+	for i := 0; i < 5; i++ {
+		// Verify move funds transaction result
+		response, err = chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+		if err != nil {
+			t.Fatalf("Failed to query funds after transaction: %s", err)
+		}
 
+		valueAfterInvokeInt, _ := strconv.Atoi(string(response.Payload))
+		if valueInt+1 == valueAfterInvokeInt {
+			success = true
+			break
+		}
+		t.Logf("Execute failed. Before: %s, after: %s", value, response.Payload)
+		time.Sleep(2 * time.Second)
+	}
+	require.Truef(t, success, "Execute failed. Value was not updated")
 }
 
 // DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
