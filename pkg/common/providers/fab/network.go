@@ -14,9 +14,6 @@ import (
 
 // NetworkConfig provides a static definition of endpoint configuration network
 type NetworkConfig struct {
-	Name          string
-	Description   string
-	Version       string
 	Channels      map[string]ChannelEndpointConfig
 	Organizations map[string]OrganizationConfig
 	Orderers      map[string]OrdererConfig
@@ -89,21 +86,6 @@ type PeerConfig struct {
 	EventURL    string
 	GRPCOptions map[string]interface{}
 	TLSCACert   *x509.Certificate
-}
-
-// MatchConfig contains match pattern and substitution pattern
-// for pattern matching of network configured hostnames or channel names with static config
-type MatchConfig struct {
-	Pattern string
-
-	// these are used for hostname mapping
-	URLSubstitutionExp                  string
-	EventURLSubstitutionExp             string
-	SSLTargetOverrideURLSubstitutionExp string
-	MappedHost                          string
-
-	// this is used for Name mapping instead of hostname mappings
-	MappedName string
 }
 
 // CertKeyPair contains the private key and certificate

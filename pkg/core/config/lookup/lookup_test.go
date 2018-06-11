@@ -33,7 +33,7 @@ const orgChannelID = "orgchannel"
 var backend *mocks.MockConfigBackend
 
 type testEntityMatchers struct {
-	matchers map[string][]fab.MatchConfig
+	matchers map[string][]MatchConfig
 }
 
 // networkConfig matches all network config elements
@@ -47,6 +47,21 @@ type networkConfig struct {
 	Orderers               map[string]fab.OrdererConfig
 	Peers                  map[string]fab.PeerConfig
 	CertificateAuthorities map[string]msp.CAConfig
+}
+
+// MatchConfig contains match pattern and substitution pattern
+// for pattern matching of network configured hostnames or channel names with static config
+type MatchConfig struct {
+	Pattern string
+
+	// these are used for hostname mapping
+	URLSubstitutionExp                  string
+	EventURLSubstitutionExp             string
+	SSLTargetOverrideURLSubstitutionExp string
+	MappedHost                          string
+
+	// this is used for Name mapping instead of hostname mappings
+	MappedName string
 }
 
 func TestMain(m *testing.M) {

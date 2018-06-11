@@ -65,15 +65,12 @@ type MutualTLSConfig struct {
 }
 
 // TLSKeyPair contains the private key and certificate for TLS encryption
-//TODO to be removed from here, instead 'TLSKeyCertPair' should be used
-//deprecated
 type TLSKeyPair struct {
 	Key  TLSConfig
 	Cert TLSConfig
 }
 
 // TLSConfig TLS configuration used in the sdk's configs.
-//deprecated
 type TLSConfig struct {
 	// the following two fields are interchangeable.
 	// If Path is available, then it will be used to load the cert
@@ -94,7 +91,6 @@ func (cfg *TLSConfig) Bytes() []byte {
 
 //LoadBytes preloads bytes from Pem/Path
 //Pem takes precedence over Path
-//TODO to be removed since separate TLSConfig should only be used in parsing
 func (cfg *TLSConfig) LoadBytes() error {
 	var err error
 	if cfg.Pem != "" {
@@ -109,7 +105,6 @@ func (cfg *TLSConfig) LoadBytes() error {
 }
 
 // TLSCert returns the tls certificate as a *x509.Certificate by loading it either from the embedded Pem or Path
-//TODO to be removed since separate TLSConfig should only be used in parsing
 func (cfg *TLSConfig) TLSCert() (*x509.Certificate, bool, error) {
 
 	block, _ := pem.Decode(cfg.bytes)

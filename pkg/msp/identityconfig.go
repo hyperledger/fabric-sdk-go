@@ -19,7 +19,6 @@ import (
 	"io/ioutil"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
@@ -57,7 +56,7 @@ type IdentityConfig struct {
 
 //entityMatchers for identity configuration
 type entityMatchers struct {
-	matchers map[string][]fab.MatchConfig
+	matchers map[string][]MatchConfig
 }
 
 //identityConfigEntity contains all config definitions needed
@@ -88,6 +87,19 @@ type CAConfig struct {
 	TLSCACerts endpoint.MutualTLSConfig
 	Registrar  msp.EnrollCredentials
 	CAName     string
+}
+
+// MatchConfig contains match pattern and substitution pattern
+// for pattern matching of network configured hostnames or channel names with static config
+type MatchConfig struct {
+	Pattern string
+
+	// these are used for hostname mapping
+	URLSubstitutionExp string
+	MappedHost         string
+
+	// this is used for Name mapping instead of hostname mappings
+	MappedName string
 }
 
 // Client returns the Client config

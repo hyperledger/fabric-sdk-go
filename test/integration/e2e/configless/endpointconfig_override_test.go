@@ -232,8 +232,6 @@ var (
 	}
 
 	networkConfig = fab.NetworkConfig{
-		Name:          "config-overridden network",
-		Description:   "This config structure is an example of overriding the sdk config by injecting interfaces instead of using a config file",
 		Channels:      channelsConfig,
 		Organizations: orgsConfig,
 		Orderers:      newOrderersConfig(),
