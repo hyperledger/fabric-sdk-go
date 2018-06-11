@@ -27,6 +27,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
 
@@ -256,13 +257,13 @@ func JoinPeersToChannel(channelID string, orgsContext []*OrgContext) error {
 }
 
 // InstallAndInstantiateChaincode installs the given chaincode to all peers in the given orgs and instantiates it on the given channel
-func InstallAndInstantiateChaincode(channelID string, ccPkg *resource.CCPackage, ccID, ccVersion, ccPolicy string, orgs []*OrgContext) error {
+func InstallAndInstantiateChaincode(channelID string, ccPkg *resource.CCPackage, ccID, ccVersion, ccPolicy string, orgs []*OrgContext, collConfigs ...*cb.CollectionConfig) error {
 	for _, orgCtx := range orgs {
 		if err := InstallChaincode(orgCtx.ResMgmt, orgCtx.CtxProvider, ccPkg, ccID, ccVersion, orgCtx.Peers); err != nil {
 			return errors.Wrapf(err, "failed to install chaincode to peers in org [%s]", orgCtx.OrgID)
 		}
 	}
-	_, err := InstantiateChaincode(orgs[0].ResMgmt, channelID, ccID, ccVersion, ccPolicy)
+	_, err := InstantiateChaincode(orgs[0].ResMgmt, channelID, ccID, ccVersion, ccPolicy, collConfigs...)
 	return err
 }
 
@@ -274,7 +275,7 @@ func InstallChaincode(resMgmt *resmgmt.Client, ctxProvider contextAPI.ClientProv
 }
 
 // InstantiateChaincode instantiates the given chaincode to the given channel
-func InstantiateChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccVersion string, ccPolicyStr string) (resmgmt.InstantiateCCResponse, error) {
+func InstantiateChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccVersion string, ccPolicyStr string, collConfigs ...*cb.CollectionConfig) (resmgmt.InstantiateCCResponse, error) {
 	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
 	if err != nil {
 		return resmgmt.InstantiateCCResponse{}, errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
@@ -283,11 +284,12 @@ func InstantiateChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccVersion 
 	return resMgmt.InstantiateCC(
 		channelID,
 		resmgmt.InstantiateCCRequest{
-			Name:    ccName,
-			Path:    "github.com/example_cc",
-			Version: ccVersion,
-			Args:    ExampleCCInitArgs(),
-			Policy:  ccPolicy,
+			Name:       ccName,
+			Path:       "github.com/example_cc",
+			Version:    ccVersion,
+			Args:       ExampleCCInitArgs(),
+			Policy:     ccPolicy,
+			CollConfig: collConfigs,
 		},
 		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
 	)
