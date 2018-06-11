@@ -39,9 +39,9 @@ func (m *MockEndpointConfig) EXPECT() *MockEndpointConfigMockRecorder {
 }
 
 // ChannelConfig mocks base method
-func (m *MockEndpointConfig) ChannelConfig(arg0 string) (*fab.ChannelNetworkConfig, bool) {
+func (m *MockEndpointConfig) ChannelConfig(arg0 string) (*fab.ChannelEndpointConfig, bool) {
 	ret := m.ctrl.Call(m, "ChannelConfig", arg0)
-	ret0, _ := ret[0].(*fab.ChannelNetworkConfig)
+	ret0, _ := ret[0].(*fab.ChannelEndpointConfig)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }

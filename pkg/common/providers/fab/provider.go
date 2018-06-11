@@ -84,7 +84,7 @@ type EndpointConfig interface {
 	PeerConfig(nameOrURL string) (*PeerConfig, bool)
 	NetworkConfig() *NetworkConfig
 	NetworkPeers() []NetworkPeer
-	ChannelConfig(name string) (*ChannelNetworkConfig, bool)
+	ChannelConfig(name string) (*ChannelEndpointConfig, bool)
 	ChannelPeers(name string) ([]ChannelPeer, bool)
 	ChannelOrderers(name string) ([]OrdererConfig, bool)
 	TLSCACertPool(certConfig ...*x509.Certificate) (*x509.CertPool, error)

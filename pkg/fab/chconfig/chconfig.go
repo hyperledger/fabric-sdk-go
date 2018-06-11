@@ -247,19 +247,19 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 	return nil
 }
 
-func (c *ChannelConfig) resolveMaxResponsesOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
+func (c *ChannelConfig) resolveMaxResponsesOptsFromConfig(chSdkCfg *fab.ChannelEndpointConfig) {
 	if c.opts.MaxTargets == 0 && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
 		c.opts.MaxTargets = chSdkCfg.Policies.QueryChannelConfig.MaxTargets
 	}
 }
 
-func (c *ChannelConfig) resolveMinResponsesOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
+func (c *ChannelConfig) resolveMinResponsesOptsFromConfig(chSdkCfg *fab.ChannelEndpointConfig) {
 	if c.opts.MinResponses == 0 && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
 		c.opts.MinResponses = chSdkCfg.Policies.QueryChannelConfig.MinResponses
 	}
 }
 
-func (c *ChannelConfig) resolveRetryOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
+func (c *ChannelConfig) resolveRetryOptsFromConfig(chSdkCfg *fab.ChannelEndpointConfig) {
 	if c.opts.RetryOpts.RetryableCodes == nil {
 		if c.opts.RetryOpts.RetryableCodes == nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
 			c.opts.RetryOpts = chSdkCfg.Policies.QueryChannelConfig.RetryOpts

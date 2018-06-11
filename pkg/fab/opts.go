@@ -75,7 +75,7 @@ type networkPeers interface {
 
 // channelConfig interface allows to uniquely override EndpointConfig interface's ChannelConfig() function
 type channelConfig interface {
-	ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool)
+	ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool)
 }
 
 // channelPeers interface allows to uniquely override EndpointConfig interface's ChannelPeers() function

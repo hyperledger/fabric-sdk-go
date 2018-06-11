@@ -68,7 +68,7 @@ func TestChannelConfigWithPeerWithRetries(t *testing.T) {
 	defRetryOpts.InitialBackoff = 5 * time.Millisecond
 	defRetryOpts.BackoffFactor = 1.0
 
-	chConfig := &fab.ChannelNetworkConfig{
+	chConfig := &fab.ChannelEndpointConfig{
 		Policies: fab.ChannelPolicies{QueryChannelConfig: fab.QueryChannelConfigPolicy{
 			MinResponses: 2,
 			MaxTargets:   1, //Ignored since we pass targets
@@ -182,7 +182,7 @@ func TestResolveOptsFromConfig(t *testing.T) {
 
 	defRetryOpts := retry.DefaultOpts
 
-	chConfig := &fab.ChannelNetworkConfig{
+	chConfig := &fab.ChannelEndpointConfig{
 		Policies: fab.ChannelPolicies{QueryChannelConfig: fab.QueryChannelConfigPolicy{
 			MinResponses: 8,
 			MaxTargets:   9,
@@ -340,11 +340,11 @@ func (pp *mockProposalProcessor) ProcessTransactionProposal(reqCtx reqContext.Co
 //customMockConfig to mock config to override channel configuration options
 type customMockConfig struct {
 	*mocks.MockConfig
-	chConfig *fab.ChannelNetworkConfig
+	chConfig *fab.ChannelEndpointConfig
 	called   bool
 }
 
-func (c *customMockConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool) {
+func (c *customMockConfig) ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool) {
 	c.called = true
 	return c.chConfig, true
 }

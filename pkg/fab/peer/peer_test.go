@@ -15,7 +15,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/pkg/errors"
 )
 
@@ -185,14 +184,9 @@ func TestPeerOptions(t *testing.T) {
 	grpcOpts["allow-insecure"] = true
 	config := mockfab.DefaultMockConfig(mockCtrl)
 
-	tlsConfig := endpoint.TLSConfig{
-		Path: "",
-		Pem:  "",
-	}
 	peerConfig := fab.PeerConfig{
 		URL:         "abc.com",
 		GRPCOptions: grpcOpts,
-		TLSCACerts:  tlsConfig,
 	}
 
 	networkPeer := &fab.NetworkPeer{

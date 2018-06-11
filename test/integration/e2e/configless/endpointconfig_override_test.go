@@ -16,6 +16,10 @@ import (
 	"sync"
 	"time"
 
+	"encoding/pem"
+
+	"io/ioutil"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -77,7 +81,7 @@ var (
 			Cert: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go.pem")}},
 	}
 
-	channelsConfig = map[string]fab.ChannelNetworkConfig{
+	channelsConfig = map[string]fab.ChannelEndpointConfig{
 		"mychannel": {
 			Orderers: []string{"orderer.example.com"},
 			Peers: map[string]fab.PeerChannelConfig{
@@ -161,7 +165,7 @@ var (
 				"fail-fast":                false,
 				"allow-insecure":           false,
 			},
-			TLSCACerts: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem"),
+			TLSCACert: tlsCertByBytes("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem"),
 		},
 	}
 
@@ -177,7 +181,7 @@ var (
 				"fail-fast":                false,
 				"allow-insecure":           false,
 			},
-			TLSCACerts: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
+			TLSCACert: tlsCertByBytes("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
 		},
 		"peer0.org2.example.com": {
 			URL:      "peer0.org2.example.com:8051",
@@ -190,7 +194,7 @@ var (
 				"fail-fast":                false,
 				"allow-insecure":           false,
 			},
-			TLSCACerts: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem"),
+			TLSCACert: tlsCertByBytes("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem"),
 		},
 	}
 
@@ -395,7 +399,7 @@ func (m *exampleOrderersConfig) OrderersConfig() []fab.OrdererConfig {
 
 	for _, orderer := range orderersConfig {
 
-		if orderer.TLSCACerts.Path == "" && len(orderer.TLSCACerts.Pem) == 0 && !m.isSystemCertPool {
+		if orderer.TLSCACert == nil && !m.isSystemCertPool {
 			return nil
 		}
 		orderers = append(orderers, orderer)
@@ -479,7 +483,7 @@ func (m *examplePeersConfig) verifyPeerConfig(p fab.PeerConfig, peerName string,
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
-	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && !m.isSystemCertPool {
+	if tlsEnabled && p.TLSCACert == nil && !m.isSystemCertPool {
 		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil
@@ -524,15 +528,6 @@ func (m *exampleNetworkPeers) NetworkPeers() []fab.NetworkPeer {
 			return nil
 		}
 
-		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
-		}
-
-		err := p.TLSCACerts.LoadBytes()
-		if err != nil {
-			return nil
-		}
-
 		mspID, ok := PeerMSPID(name)
 		if !ok {
 			return nil
@@ -549,7 +544,7 @@ func (m *exampleNetworkPeers) verifyPeerConfig(p fab.PeerConfig, peerName string
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
-	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && !m.isSystemCertPool {
+	if tlsEnabled && p.TLSCACert == nil && !m.isSystemCertPool {
 		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil
@@ -558,7 +553,7 @@ func (m *exampleNetworkPeers) verifyPeerConfig(p fab.PeerConfig, peerName string
 type exampleChannelConfig struct{}
 
 // ChannelConfig overrides EndpointConfig's ChannelConfig function which returns the channelConfig instance for the channel name arg
-func (m *exampleChannelConfig) ChannelConfig(channelName string) (*fab.ChannelNetworkConfig, bool) {
+func (m *exampleChannelConfig) ChannelConfig(channelName string) (*fab.ChannelEndpointConfig, bool) {
 	ch, ok := channelsConfig[strings.ToLower(channelName)]
 	if !ok {
 		// EntityMatchers are not used in this implementation, below is an example of how to use them if needed
@@ -632,7 +627,7 @@ func (m *exampleChannelPeers) verifyPeerConfig(p fab.PeerConfig, peerName string
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
-	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && !m.isSystemCertPool {
+	if tlsEnabled && p.TLSCACert == nil && !m.isSystemCertPool {
 		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil
@@ -753,4 +748,26 @@ func newTLSConfig(path string) endpoint.TLSConfig {
 		panic(fmt.Sprintf("error loading bytes: %s", err))
 	}
 	return config
+}
+
+func tlsCertByBytes(path string) *x509.Certificate {
+
+	bytes, err := ioutil.ReadFile(pathvar.Subst(path))
+	if err != nil {
+		return nil
+	}
+
+	block, _ := pem.Decode(bytes)
+
+	if block != nil {
+		pub, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			panic(err)
+		}
+
+		return pub
+	}
+
+	//no cert found and there is no error
+	return nil
 }

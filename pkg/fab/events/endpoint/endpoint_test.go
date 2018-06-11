@@ -51,11 +51,7 @@ func TestEndpoint(t *testing.T) {
 	peerConfig.GRPCOptions["keep-alive-timeout"] = expectedKeepAliveTimeout
 	peerConfig.GRPCOptions["keep-alive-permit"] = expectedKeepAlivePermit
 
-	endpoint, err := FromPeerConfig(config, peer, peerConfig)
-	if err != nil {
-		t.Fatalf("unexpected error from peer config: %s", err)
-	}
-
+	endpoint := FromPeerConfig(config, peer, peerConfig)
 	if endpoint.EventURL() != expectedEventURL {
 		t.Fatalf("expecting eventURL %s but got %s", expectedEventURL, endpoint.EventURL())
 	}

@@ -146,23 +146,19 @@ type connectTimeoutSetter interface {
 }
 
 // OptsFromPeerConfig returns a set of connection options from the given peer config
-func OptsFromPeerConfig(peerCfg *fab.PeerConfig) ([]options.Opt, error) {
-	certificate, _, err := peerCfg.TLSCACerts.TLSCert()
-	if err != nil {
-		return nil, err
-	}
+func OptsFromPeerConfig(peerCfg *fab.PeerConfig) []options.Opt {
 
 	opts := []options.Opt{
 		WithHostOverride(getServerNameOverride(peerCfg)),
 		WithFailFast(getFailFast(peerCfg)),
 		WithKeepAliveParams(getKeepAliveOptions(peerCfg)),
-		WithCertificate(certificate),
+		WithCertificate(peerCfg.TLSCACert),
 	}
 	if isInsecureAllowed(peerCfg) {
 		opts = append(opts, WithInsecure())
 	}
 
-	return opts, nil
+	return opts
 }
 
 func getServerNameOverride(peerCfg *fab.PeerConfig) string {

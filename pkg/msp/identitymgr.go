@@ -15,7 +15,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
 
 // IdentityManager implements fab/IdentityManager
@@ -24,7 +23,7 @@ type IdentityManager struct {
 	orgMSPID        string
 	config          fab.EndpointConfig
 	cryptoSuite     core.CryptoSuite
-	embeddedUsers   map[string]endpoint.TLSKeyPair
+	embeddedUsers   map[string]fab.CertKeyPair
 	mspPrivKeyStore core.KVStore
 	mspCertStore    core.KVStore
 	userStore       msp.UserStore

@@ -7,10 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"crypto/x509"
 	"testing"
 
 	"os"
 	"strings"
+
+	"encoding/pem"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -18,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -188,16 +192,15 @@ Af8EBTADAQH/MCkGA1UdDgQiBCBxaEP3nVHQx4r7tC+WO//vrPRM1t86SKN0s6XB
 8LWbHTAKBggqhkjOPQQDAgNIADBFAiEA96HXwCsuMr7tti8lpcv1oVnXg0FlTxR/
 SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 -----END CERTIFICATE-----`
-	loadedOPem := strings.TrimSpace(o[0].TLSCACerts.Pem) // viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
-	if loadedOPem != oPem {
-		t.Fatalf("Orderer Pem doesn't match. Expected [%s], but got [%s]", oPem, loadedOPem)
-	}
+
+	oCert, err := tlsCertByBytes([]byte(oPem))
+	assert.Nil(t, err, "failed to cert from pem bytes")
+	assert.Equal(t, oCert.RawSubject, o[0].TLSCACert.RawSubject, "certs supposed to match")
 
 	pc, ok := endpointConfig.PeersConfig(org1)
 	assert.True(t, ok)
-	if len(pc) == 0 {
-		t.Fatalf("peers list of %s cannot be nil or empty", org1)
-	}
+	assert.NotEmpty(t, pc, "peers list cannot be nil or empty")
+
 	peer0 := "peer0.org1.example.com"
 	checkPeerPem(org1, endpointConfig, peer0, t)
 
@@ -223,9 +226,8 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 func checkPeerPem(org string, endpointConfig fabImpl.EndpointConfig, peer string, t *testing.T) {
 	p0, ok := endpointConfig.PeerConfig(peer)
 	assert.True(t, ok)
-	if p0 == nil {
-		t.Fatalf("%s of %s cannot be nil", peer, org)
-	}
+	assert.NotNil(t, p0, "cannot be nil")
+
 	pPem := `-----BEGIN CERTIFICATE-----
 MIICSTCCAfCgAwIBAgIRAPQIzfkrCZjcpGwVhMSKd0AwCgYIKoZIzj0EAwIwdjEL
 MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
@@ -241,37 +243,29 @@ V842OVjxCYYQwCjPIY+5e9ORR+8pxVzcMAoGCCqGSM49BAMCA0cAMEQCIGZ+KTfS
 eezqv0ml1VeQEmnAEt5sJ2RJA58+LegUYMd6AiAfEe6BKqdY03qFUgEYmtKG+3Dr
 O94CDp7l2k7hMQI0zQ==
 -----END CERTIFICATE-----`
-	loadedPPem := strings.TrimSpace(p0.TLSCACerts.Pem)
-	// viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
-	if loadedPPem != pPem {
-		t.Fatalf("%s Pem doesn't match. Expected [%s], but got [%s]", peer, pPem, loadedPPem)
-	}
+
+	oCert, err := tlsCertByBytes([]byte(pPem))
+	assert.Nil(t, err, "failed to cert from pem bytes")
+	assert.Equal(t, oCert.RawSubject, p0.TLSCACert.RawSubject, "certs supposed to match")
+
 }
 
 func checkCAServerCerts(org string, idConfig *IdentityConfig, t *testing.T) {
 	certs, ok := idConfig.CAServerCerts(org)
-	if !ok {
-		t.Fatal("Failed to load CAServerCertPems from config.")
-	}
-	if len(certs) == 0 {
-		t.Fatal("Got empty PEM certs for CAServerCertPems")
-	}
+	assert.True(t, ok, "Failed to load CAServerCertPems from config.")
+	assert.NotEmpty(t, certs, "Got empty PEM certs for CAServerCertPems")
 }
 
 func checkClientCert(idConfig *IdentityConfig, org string, t *testing.T) {
 	cert, ok := idConfig.CAClientCert(org)
-	if !ok {
-		t.Fatal("Failed to load CAClientCertPem from config.")
-	}
-	assert.True(t, len(cert) > 0, "Invalid cert")
+	assert.True(t, ok, "Failed to load CAClientCertPem from config.")
+	assert.NotEmpty(t, cert, "Invalid cert")
 }
 
 func checkClientKey(idConfig *IdentityConfig, org string, t *testing.T) {
 	key, ok := idConfig.CAClientKey(org)
-	if !ok {
-		t.Fatal("Failed to load CAClientKeyPem from config.")
-	}
-	assert.True(t, len(key) > 0, "Invalid key")
+	assert.True(t, ok, "Failed to load CAClientKeyPem from config.")
+	assert.NotEmpty(t, key, "Invalid key")
 }
 
 func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
@@ -473,4 +467,21 @@ func newViper(path string) *viper.Viper {
 		panic(err)
 	}
 	return myViper
+}
+
+func tlsCertByBytes(bytes []byte) (*x509.Certificate, error) {
+
+	block, _ := pem.Decode(bytes)
+
+	if block != nil {
+		pub, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+
+		return pub, nil
+	}
+
+	//no cert found and there is no error
+	return nil, errors.New("empty byte")
 }

@@ -73,7 +73,6 @@ func (s *DiscoveryWrapper) GetPeers() ([]fab.Peer, error) {
 	for _, peer := range peers {
 
 		var peerConfig *fab.PeerConfig
-		var err error
 		var found bool
 
 		chPeer := s.getChannelPeer(peer.URL())
@@ -94,10 +93,7 @@ func (s *DiscoveryWrapper) GetPeers() ([]fab.Peer, error) {
 			continue
 		}
 
-		eventEndpoint, err := FromPeerConfig(s.ctx.EndpointConfig(), peer, peerConfig)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to create event endpoint for [%s]", peer.URL())
-		}
+		eventEndpoint := FromPeerConfig(s.ctx.EndpointConfig(), peer, peerConfig)
 		eventEndpoints = append(eventEndpoints, eventEndpoint)
 	}
 

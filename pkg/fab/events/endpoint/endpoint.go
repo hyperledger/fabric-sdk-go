@@ -36,16 +36,13 @@ func (e *EventEndpoint) Opts() []options.Opt {
 }
 
 // FromPeerConfig creates a new EventEndpoint from the given config
-func FromPeerConfig(config fab.EndpointConfig, peer fab.Peer, peerCfg *fab.PeerConfig) (*EventEndpoint, error) {
-	opts, err := comm.OptsFromPeerConfig(peerCfg)
-	if err != nil {
-		return nil, err
-	}
+func FromPeerConfig(config fab.EndpointConfig, peer fab.Peer, peerCfg *fab.PeerConfig) *EventEndpoint {
+	opts := comm.OptsFromPeerConfig(peerCfg)
 	opts = append(opts, comm.WithConnectTimeout(config.Timeout(fab.EventHubConnection)))
 
 	return &EventEndpoint{
 		Peer:   peer,
 		EvtURL: peerCfg.EventURL,
 		opts:   opts,
-	}, nil
+	}
 }

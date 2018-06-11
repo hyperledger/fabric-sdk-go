@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
 
 var (
@@ -243,25 +242,25 @@ func (m *mockTimeoutConfig) Timeout(timeoutType fab.TimeoutType) time.Duration {
 type mockrderersConfig struct{}
 
 func (m *mockrderersConfig) OrderersConfig() []fab.OrdererConfig {
-	return []fab.OrdererConfig{{URL: "orderer1.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}}
+	return []fab.OrdererConfig{{URL: "orderer1.com", GRPCOptions: nil, TLSCACert: nil}}
 }
 
 type mockOrdererConfig struct{}
 
 func (m *mockOrdererConfig) OrdererConfig(name string) (*fab.OrdererConfig, bool) {
-	return &fab.OrdererConfig{URL: "o.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, true
+	return &fab.OrdererConfig{URL: "o.com", GRPCOptions: nil, TLSCACert: nil}, true
 }
 
 type mockPeersConfig struct{}
 
 func (m *mockPeersConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
-	return []fab.PeerConfig{{URL: "peer.com", EventURL: "event.peer.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}}, true
+	return []fab.PeerConfig{{URL: "peer.com", EventURL: "event.peer.com", GRPCOptions: nil, TLSCACert: nil}}, true
 }
 
 type mockPeerConfig struct{}
 
 func (m *mockPeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
-	return &fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, true
+	return &fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACert: nil}, true
 }
 
 type mockNetworkConfig struct{}
@@ -273,13 +272,13 @@ func (m *mockNetworkConfig) NetworkConfig() *fab.NetworkConfig {
 type mockNetworkPeers struct{}
 
 func (m *mockNetworkPeers) NetworkPeers() []fab.NetworkPeer {
-	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, MSPID: ""}}
+	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACert: nil}, MSPID: ""}}
 }
 
 type mockChannelConfig struct{}
 
-func (m *mockChannelConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool) {
-	return &fab.ChannelNetworkConfig{}, true
+func (m *mockChannelConfig) ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool) {
+	return &fab.ChannelEndpointConfig{}, true
 }
 
 type mockChannelPeers struct{}
