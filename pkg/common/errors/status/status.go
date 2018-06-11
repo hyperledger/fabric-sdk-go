@@ -78,6 +78,9 @@ const (
 
 	// ChaincodeStatus defines the status codes returned by chaincode
 	ChaincodeStatus
+
+	// DiscoveryServerStatus status returned by the Discovery Server
+	DiscoveryServerStatus
 )
 
 // GroupName maps the groups in this packages to human-readable strings
@@ -93,6 +96,7 @@ var GroupName = map[int32]string{
 	8:  "Orderer Client Status",
 	9:  "Client Status",
 	10: "Chaincode status",
+	11: "Discovery status",
 }
 
 func (g Group) String() string {

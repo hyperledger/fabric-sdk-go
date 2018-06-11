@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	dyndiscmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery/mocks"
+	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	pfab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
@@ -38,9 +38,9 @@ func TestLocalDiscoveryService(t *testing.T) {
 	}
 	config.SetCustomNetworkPeerCfg([]pfab.NetworkPeer{peer1})
 
-	discClient := dyndiscmocks.NewMockDiscoveryClient()
+	discClient := clientmocks.NewMockDiscoveryClient()
 	discClient.SetResponses(
-		&dyndiscmocks.MockDiscoverEndpointResponse{
+		&clientmocks.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 		},
 	)
@@ -72,7 +72,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 	assert.Equal(t, 0, len(peers))
 
 	discClient.SetResponses(
-		&dyndiscmocks.MockDiscoverEndpointResponse{
+		&clientmocks.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
@@ -90,7 +90,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 	assert.Equal(t, 1, len(peers), "Expecting 1 peer")
 
 	discClient.SetResponses(
-		&dyndiscmocks.MockDiscoverEndpointResponse{
+		&clientmocks.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
