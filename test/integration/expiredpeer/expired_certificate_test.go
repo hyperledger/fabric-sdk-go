@@ -13,11 +13,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -26,6 +26,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 )
 
 const (
@@ -110,17 +111,13 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 
 	return func() ([]core.ConfigBackend, error) {
 		configBackends, err := config.FromFile(configPath)()
-		if err != nil {
-			t.Fatalf("failed to read config backend from file, %s", err)
-		}
+		assert.Nil(t, err, "failed to read config backend from file", err)
 		backendMap := make(map[string]interface{})
 
-		networkConfig := fab.NetworkConfig{}
+		networkConfig := endpointConfigEntity{}
 		//get valid peer config
 		err = lookup.New(configBackends...).UnmarshalKey("peers", &networkConfig.Peers)
-		if err != nil {
-			t.Fatalf("failed to unmarshal peer network config, %s", err)
-		}
+		assert.Nil(t, err, "failed to unmarshal peer network config")
 		//change cert path to expired one
 		peer1 := networkConfig.Peers["peer0.org1.example.com"]
 		peer1.TLSCACerts.Path = expiredCertPath
@@ -130,4 +127,9 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		backends := append([]core.ConfigBackend{}, &mocks.MockConfigBackend{KeyValueMap: backendMap})
 		return append(backends, configBackends...), nil
 	}
+}
+
+//endpointConfigEntity contains endpoint config elements needed by endpointconfig
+type endpointConfigEntity struct {
+	Peers map[string]fabImpl.PeerConfig
 }

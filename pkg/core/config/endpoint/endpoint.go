@@ -65,12 +65,15 @@ type MutualTLSConfig struct {
 }
 
 // TLSKeyPair contains the private key and certificate for TLS encryption
+//TODO to be removed from here, instead 'TLSKeyCertPair' should be used
+//deprecated
 type TLSKeyPair struct {
 	Key  TLSConfig
 	Cert TLSConfig
 }
 
 // TLSConfig TLS configuration used in the sdk's configs.
+//deprecated
 type TLSConfig struct {
 	// the following two fields are interchangeable.
 	// If Path is available, then it will be used to load the cert

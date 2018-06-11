@@ -24,6 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	logApi "github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 )
 
@@ -62,7 +63,7 @@ type entityMatchers struct {
 //identityConfigEntity contains all config definitions needed
 type identityConfigEntity struct {
 	Client                 ClientConfig
-	Organizations          map[string]fab.OrganizationConfig
+	Organizations          map[string]fabImpl.OrganizationConfig
 	CertificateAuthorities map[string]CAConfig
 }
 

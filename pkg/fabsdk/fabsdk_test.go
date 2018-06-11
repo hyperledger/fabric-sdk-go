@@ -15,7 +15,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/test/mocksdkapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
@@ -309,7 +308,7 @@ func TestWithConfigEndpoint(t *testing.T) {
 	network := endpointConfig.NetworkPeers()
 	expectedNetwork := np.NetworkPeers()
 	if !reflect.DeepEqual(network, expectedNetwork) {
-		t.Fatalf("Expected NetworkPeer was not returned by the sdk's config. Expected: %s, Received: %s", expectedNetwork, network)
+		t.Fatalf("Expected NetworkPeer was not returned by the sdk's config. Expected: %v, Received: %v", expectedNetwork, network)
 	}
 
 	channelOrderers, ok := endpointConfig.ChannelOrderers("")
@@ -321,7 +320,7 @@ func TestWithConfigEndpoint(t *testing.T) {
 		t.Fatal("Error getting extecd ChannelOrderers from direct config")
 	}
 	if !reflect.DeepEqual(channelOrderers, expectedChannelOrderers) {
-		t.Fatalf("Expected ChannelOrderers was not returned by the sdk's config. Expected: %s, Received: %s", expectedChannelOrderers, channelOrderers)
+		t.Fatalf("Expected ChannelOrderers was not returned by the sdk's config. Expected: %v, Received: %v", expectedChannelOrderers, channelOrderers)
 	}
 
 }
@@ -343,7 +342,7 @@ func TestWithConfigEndpointAndBadOpt(t *testing.T) {
 type MockNetworkPeers struct{}
 
 func (M *MockNetworkPeers) NetworkPeers() []fab.NetworkPeer {
-	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, MSPID: ""}}
+	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com"}, MSPID: ""}}
 }
 
 type MockChannelOrderers struct{}

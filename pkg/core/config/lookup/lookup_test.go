@@ -42,7 +42,7 @@ type networkConfig struct {
 	Description            string
 	Version                string
 	Client                 msp.ClientConfig
-	Channels               map[string]fab.ChannelNetworkConfig
+	Channels               map[string]fab.ChannelEndpointConfig
 	Organizations          map[string]fab.OrganizationConfig
 	Orderers               map[string]fab.OrdererConfig
 	Peers                  map[string]fab.PeerConfig

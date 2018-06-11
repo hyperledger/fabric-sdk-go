@@ -235,8 +235,8 @@ func (c *MockConfig) NetworkConfig() *fab.NetworkConfig {
 }
 
 // ChannelConfig returns the channel configuration
-func (c *MockConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool) {
-	return &fab.ChannelNetworkConfig{Policies: fab.ChannelPolicies{}}, true
+func (c *MockConfig) ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool) {
+	return &fab.ChannelEndpointConfig{Policies: fab.ChannelPolicies{}}, true
 }
 
 // ChannelPeers returns the channel peers configuration

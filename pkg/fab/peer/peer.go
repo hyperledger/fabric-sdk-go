@@ -133,10 +133,7 @@ func FromPeerConfig(peerCfg *fab.NetworkPeer) Option {
 		p.inSecure = isInsecureConnectionAllowed(peerCfg)
 
 		var err error
-		p.certificate, _, err = peerCfg.TLSCACerts.TLSCert()
-		if err != nil {
-			return err
-		}
+		p.certificate = peerCfg.TLSCACert
 		if peerCfg.GRPCOptions["allow-insecure"] == false {
 			//verify if certificate was expired or not yet valid
 			err = verifier.ValidateCertificateDates(p.certificate)

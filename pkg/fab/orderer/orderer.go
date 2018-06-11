@@ -141,17 +141,11 @@ func WithInsecure() Option {
 func FromOrdererConfig(ordererCfg *fab.OrdererConfig) Option {
 	return func(o *Orderer) error {
 		o.url = ordererCfg.URL
-
-		var err error
-
-		o.tlsCACert, _, err = ordererCfg.TLSCACerts.TLSCert()
-		if err != nil {
-			return err
-		}
+		o.tlsCACert = ordererCfg.TLSCACert
 
 		if ordererCfg.GRPCOptions["allow-insecure"] == false {
 			//verify if certificate was expired or not yet valid
-			err = verifier.ValidateCertificateDates(o.tlsCACert)
+			err := verifier.ValidateCertificateDates(o.tlsCACert)
 			if err != nil {
 				//log this error
 				logger.Warn(err)
