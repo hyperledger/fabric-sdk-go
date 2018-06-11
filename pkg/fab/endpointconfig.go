@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -102,87 +101,6 @@ type EndpointConfig struct {
 	peerMatchers             map[int]*regexp.Regexp
 	ordererMatchers          map[int]*regexp.Regexp
 	channelMatchers          map[int]*regexp.Regexp
-}
-
-//entityMatchers for endpoint configuration
-type entityMatchers struct {
-	matchers map[string][]fab.MatchConfig
-}
-
-//endpointConfigEntity contains endpoint config elements needed by endpointconfig
-type endpointConfigEntity struct {
-	Client        clientConfig
-	Channels      map[string]ChannelEndpointConfig
-	Organizations map[string]OrganizationConfig
-	Orderers      map[string]OrdererConfig
-	Peers         map[string]PeerConfig
-}
-
-// ClientConfig provides the definition of the client configuration
-type clientConfig struct {
-	Organization string
-	TLSCerts     clientTLSConfig
-}
-
-type clientTLSConfig struct {
-	//Client TLS information
-	Client endpoint.TLSKeyPair
-}
-
-// OrdererConfig defines an orderer configuration
-type OrdererConfig struct {
-	URL         string
-	GRPCOptions map[string]interface{}
-	TLSCACerts  endpoint.TLSConfig
-}
-
-// PeerConfig defines a peer configuration
-type PeerConfig struct {
-	URL         string
-	EventURL    string
-	GRPCOptions map[string]interface{}
-	TLSCACerts  endpoint.TLSConfig
-}
-
-// OrganizationConfig provides the definition of an organization in the network
-type OrganizationConfig struct {
-	MSPID                  string
-	CryptoPath             string
-	Users                  map[string]endpoint.TLSKeyPair
-	Peers                  []string
-	CertificateAuthorities []string
-}
-
-// ChannelEndpointConfig provides the definition of channels for the network
-type ChannelEndpointConfig struct {
-	// Orderers list of ordering service nodes
-	Orderers []string
-	// Peers a list of peer-channels that are part of this organization
-	// to get the real Peer config object, use the Name field and fetch NetworkConfig.Peers[Name]
-	Peers map[string]PeerChannelConfig
-	//Policies list of policies for channel
-	Policies ChannelPolicies
-}
-
-//ChannelPolicies defines list of policies defined for a channel
-type ChannelPolicies struct {
-	//Policy for querying channel block
-	QueryChannelConfig QueryChannelConfigPolicy
-}
-
-//QueryChannelConfigPolicy defines opts for channelConfigBlock
-type QueryChannelConfigPolicy struct {
-	MinResponses int
-	MaxTargets   int
-	RetryOpts    retry.Opts
-}
-
-// PeerChannelConfig defines the peer capabilities
-type PeerChannelConfig struct {
-	EndorsingPeer  bool
-	ChaincodeQuery bool
-	LedgerQuery    bool
-	EventSource    bool
 }
 
 // Timeout reads timeouts for the given timeout type, if type is not found in the config
@@ -380,7 +298,7 @@ func (c *EndpointConfig) TLSClientCerts() []tls.Certificate {
 	return c.tlsClientCerts
 }
 
-func (c *EndpointConfig) loadPrivateKeyFromConfig(clientConfig *clientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
+func (c *EndpointConfig) loadPrivateKeyFromConfig(clientConfig *ClientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
 
 	kb := clientConfig.TLSCerts.Client.Key.Bytes()
 
@@ -597,10 +515,6 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 	}
 
 	networkConfig := fab.NetworkConfig{}
-
-	networkConfig.Name = c.backend.GetString("name")
-	networkConfig.Description = c.backend.GetString("description")
-	networkConfig.Version = c.backend.GetString("version")
 
 	//Channels
 	networkConfig.Channels = make(map[string]fab.ChannelEndpointConfig)
