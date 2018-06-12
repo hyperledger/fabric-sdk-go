@@ -8,14 +8,16 @@ package mocks
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 
+	"crypto/x509"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
 	"github.com/pkg/errors"
 )
 
@@ -140,11 +142,11 @@ func (c *MockConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
 }
 
 // TLSCACertPool ...
-func (c *MockConfig) TLSCACertPool(cert ...*x509.Certificate) (*x509.CertPool, error) {
+func (c *MockConfig) TLSCACertPool() fab.CertPool {
 	if c.errorCase {
-		return nil, errors.New("just to test error scenario")
+		return &mockfab.MockCertPool{Err: errors.New("just to test error scenario")}
 	}
-	return nil, nil
+	return &mockfab.MockCertPool{CertPool: x509.NewCertPool()}
 }
 
 // TcertBatchSize ...

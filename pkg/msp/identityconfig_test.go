@@ -123,7 +123,7 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	assert.Nil(t, err, "TLS CA cert parse failed, reason: %s", err)
 	assert.True(t, ok, "TLS CA cert parse failed")
 
-	_, err = endpointConfig.TLSCACertPool(cert)
+	_, err = endpointConfig.TLSCACertPool().Get(cert)
 	assert.Nil(t, err, "TLS CA cert pool fetch failed, reason: %s", err)
 	//Test TLSCA Cert Pool (Negative test case)
 
@@ -135,7 +135,7 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	assert.Nil(t, err, "TLS CA cert parse was supposed to fail")
 	assert.False(t, ok, "TLS CA cert parse was supposed to fail")
 
-	_, err = endpointConfig.TLSCACertPool(badCert)
+	_, err = endpointConfig.TLSCACertPool().Get(badCert)
 	assert.Nil(t, err, "TLSCACertPool failed %s", err)
 
 	keyPem, ok := identityConfig.CAClientKey(org1)

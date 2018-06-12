@@ -15,7 +15,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -77,8 +76,7 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mockfab.NewMockEndpointConfig(mockCtrl)
-	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("failed to get certpool")).AnyTimes()
+	config := mockfab.BadTLSClientMockConfig(mockCtrl)
 
 	url := "grpcs://0.0.0.0:1234"
 	_, err := New(config, WithURL(url))

@@ -360,7 +360,7 @@ func TestBroadcastBadDial(t *testing.T) {
 	config := mockfab.NewMockEndpointConfig(mockCtrl)
 
 	config.EXPECT().Timeout(fab.OrdererConnection).Return(time.Second * 1)
-	config.EXPECT().TLSCACertPool(gomock.Any()).Return(x509.NewCertPool(), nil).AnyTimes()
+	config.EXPECT().TLSCACertPool().Return(&mockfab.MockCertPool{CertPool: x509.NewCertPool()}).AnyTimes()
 
 	orderer, err := New(config, WithURL("grpc://127.0.0.1:0"))
 	assert.Nil(t, err)

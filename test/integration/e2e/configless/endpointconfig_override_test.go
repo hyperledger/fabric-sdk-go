@@ -657,7 +657,7 @@ func (m *exampleChannelOrderers) ChannelOrderers(channelName string) ([]fab.Orde
 }
 
 type exampleTLSCACertPool struct {
-	tlsCertPool commtls.CertPool
+	tlsCertPool fab.CertPool
 }
 
 //newTLSCACertPool will create a new exampleTLSCACertPool instance with useSystemCertPool bool flag
@@ -668,8 +668,8 @@ func newTLSCACertPool(useSystemCertPool bool) *exampleTLSCACertPool {
 }
 
 // TLSCACertPool overrides EndpointConfig's TLSCACertPool function which will add the list of cert args to the cert pool and return it
-func (m *exampleTLSCACertPool) TLSCACertPool(certs ...*x509.Certificate) (*x509.CertPool, error) {
-	return m.tlsCertPool.Get(certs...)
+func (m *exampleTLSCACertPool) TLSCACertPool() fab.CertPool {
+	return m.tlsCertPool
 }
 
 type exampleEventServiceType struct{}

@@ -114,7 +114,7 @@ func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mockfab.DefaultMockConfig(mockCtrl)
+	config := mockfab.BadTLSClientMockConfig(mockCtrl)
 
 	url := "grpcs://0.0.0.0:1234"
 	_, err := newPeerEndorser(getPeerEndorserRequest(url, mockfab.BadCert, "", config, kap, false, false))

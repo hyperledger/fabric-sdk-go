@@ -18,7 +18,7 @@ import (
 // TLSConfig returns the appropriate config for TLS including the root CAs,
 // certs for mutual TLS, and server host override. Works with certs loaded either from a path or embedded pem.
 func TLSConfig(cert *x509.Certificate, serverName string, config fab.EndpointConfig) (*tls.Config, error) {
-	certPool, err := config.TLSCACertPool()
+	certPool, err := config.TLSCACertPool().Get()
 	if err != nil {
 		return nil, err
 	}
@@ -28,8 +28,7 @@ func TLSConfig(cert *x509.Certificate, serverName string, config fab.EndpointCon
 		return &tls.Config{}, nil
 	}
 
-	tlsCaCertPool, err := config.TLSCACertPool(cert)
-
+	tlsCaCertPool, err := config.TLSCACertPool().Get(cert)
 	if err != nil {
 		return nil, err
 	}

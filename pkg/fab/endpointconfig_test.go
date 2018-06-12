@@ -662,7 +662,7 @@ func TestSystemCertPoolDisabled(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	_, err = endpointConfig.TLSCACertPool()
+	_, err = endpointConfig.TLSCACertPool().Get()
 	if err != nil {
 		t.Fatal("not supposed to get error")
 	}

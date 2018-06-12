@@ -208,7 +208,7 @@ func addCertsToConfig(config fab.EndpointConfig, pemCertsList [][]byte) {
 			certs = append(certs, cert)
 		}
 	}
-	_, err := config.TLSCACertPool(certs...)
+	_, err := config.TLSCACertPool().Get(certs...)
 	if err != nil {
 		logger.Warnf("TLSCACertPool failed %s", err)
 	}

@@ -25,7 +25,7 @@ func TestTLSConfigErrorAddingCertificate(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mockfab.DefaultMockConfig(mockCtrl)
+	config := mockfab.BadTLSClientMockConfig(mockCtrl)
 
 	_, err := TLSConfig(mockfab.BadCert, "", config)
 	if err == nil {

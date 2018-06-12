@@ -8,7 +8,6 @@ package fab
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -90,7 +89,7 @@ type channelOrderers interface {
 
 // tlsCACertPool interface allows to uniquely override EndpointConfig interface's TLSCACertPool() function
 type tlsCACertPool interface {
-	TLSCACertPool(certConfig ...*x509.Certificate) (*x509.CertPool, error)
+	TLSCACertPool() fab.CertPool
 }
 
 // eventServiceType interface allows to uniquely override EndpointConfig interface's EventServiceType() function

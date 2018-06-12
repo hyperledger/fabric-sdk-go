@@ -11,20 +11,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
 
-//endpointConfigEntity contains endpoint config elements needed by endpointconfig
-type endpointConfigEntity struct {
-	Client        ClientConfig
-	Channels      map[string]ChannelEndpointConfig
-	Organizations map[string]OrganizationConfig
-	Orderers      map[string]OrdererConfig
-	Peers         map[string]PeerConfig
-}
-
-//entityMatchers for endpoint configuration
-type entityMatchers struct {
-	matchers map[string][]MatchConfig
-}
-
 // ClientConfig provides the definition of the client configuration
 type ClientConfig struct {
 	Organization string

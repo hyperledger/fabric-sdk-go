@@ -68,18 +68,6 @@ func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, e
 		return nil, errors.WithMessage(err, "network configuration load failed")
 	}
 
-	config.tlsCertPool = commtls.NewCertPool(config.backend.GetBool("client.tlsCerts.systemCertPool"))
-
-	// preemptively add all TLS certs to cert pool as adding them at request time
-	// is expensive
-	certs, err := config.loadTLSCerts()
-	if err != nil {
-		logger.Infof("could not cache TLS certs: %s", err)
-	}
-	if _, err := config.TLSCACertPool(certs...); err != nil {
-		return nil, errors.WithMessage(err, "cert pool load failed")
-	}
-
 	//print deprecated warning
 	detectDeprecatedNetworkConfig(config)
 
@@ -90,7 +78,7 @@ func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, e
 type EndpointConfig struct {
 	backend                  *lookup.ConfigLookup
 	networkConfig            *fab.NetworkConfig
-	tlsCertPool              commtls.CertPool
+	tlsCertPool              fab.CertPool
 	entityMatchers           *entityMatchers
 	peerConfigsByOrg         map[string][]fab.PeerConfig
 	networkPeers             []fab.NetworkPeer
@@ -101,6 +89,20 @@ type EndpointConfig struct {
 	peerMatchers             map[int]*regexp.Regexp
 	ordererMatchers          map[int]*regexp.Regexp
 	channelMatchers          map[int]*regexp.Regexp
+}
+
+//endpointConfigEntity contains endpoint config elements needed by endpointconfig
+type endpointConfigEntity struct {
+	Client        ClientConfig
+	Channels      map[string]ChannelEndpointConfig
+	Organizations map[string]OrganizationConfig
+	Orderers      map[string]OrdererConfig
+	Peers         map[string]PeerConfig
+}
+
+//entityMatchers for endpoint configuration
+type entityMatchers struct {
+	matchers map[string][]MatchConfig
 }
 
 // Timeout reads timeouts for the given timeout type, if type is not found in the config
@@ -276,8 +278,8 @@ func (c *EndpointConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, bool
 
 // TLSCACertPool returns the configured cert pool. If a certConfig
 // is provided, the certificate is added to the pool
-func (c *EndpointConfig) TLSCACertPool(certs ...*x509.Certificate) (*x509.CertPool, error) {
-	return c.tlsCertPool.Get(certs...)
+func (c *EndpointConfig) TLSCACertPool() fab.CertPool {
+	return c.tlsCertPool
 }
 
 // EventServiceType returns the type of event service client to use
@@ -501,6 +503,12 @@ func (c *EndpointConfig) loadEndpointConfigEntities(configEntity *endpointConfig
 	err = c.loadChannelOrderers()
 	if err != nil {
 		return errors.WithMessage(err, "failed to load channel orderers")
+	}
+
+	//load tls cert pool
+	err = c.loadTLSCertPool()
+	if err != nil {
+		return errors.WithMessage(err, "failed to load TLS cert pool")
 	}
 
 	return nil
@@ -842,6 +850,23 @@ func (c *EndpointConfig) loadChannelOrderers() error {
 
 	c.channelOrderersByChannel = channelOrderersByChannel
 
+	return nil
+}
+
+func (c *EndpointConfig) loadTLSCertPool() error {
+
+	c.tlsCertPool = commtls.NewCertPool(c.backend.GetBool("client.tlsCerts.systemCertPool"))
+
+	// preemptively add all TLS certs to cert pool as adding them at request time
+	// is expensive
+	certs, err := c.loadTLSCerts()
+	if err != nil {
+		logger.Infof("could not cache TLS certs: %s", err)
+	}
+
+	if _, err := c.tlsCertPool.Get(certs...); err != nil {
+		return errors.WithMessage(err, "cert pool load failed")
+	}
 	return nil
 }
 

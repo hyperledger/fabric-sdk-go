@@ -8,7 +8,6 @@ package fab
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"testing"
 	"time"
 
@@ -295,8 +294,8 @@ func (m *mockChannelOrderers) ChannelOrderers(name string) ([]fab.OrdererConfig,
 
 type mockTLSCACertPool struct{}
 
-func (m *mockTLSCACertPool) TLSCACertPool(certConfig ...*x509.Certificate) (*x509.CertPool, error) {
-	return nil, nil
+func (m *mockTLSCACertPool) TLSCACertPool() fab.CertPool {
+	return nil
 }
 
 type mockEventServiceType struct{}
