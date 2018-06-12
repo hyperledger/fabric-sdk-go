@@ -235,10 +235,11 @@ func TestResolveOptsDefaultValuesWithInvalidChannel(t *testing.T) {
 }
 
 func TestCapabilities(t *testing.T) {
-	capability1 := fab.V1_1Capability
-	capability2 := fab.V1_2Capability
-	capability3 := "V1_1_PVTDATA_EXPERIMENTAL"
-	capability4 := "V1_1_RESOURCETREE_EXPERIMENTAL"
+	capability1 := "V1_1_PVTDATA_EXPERIMENTAL"
+	capability2 := "V1_1_RESOURCETREE_EXPERIMENTAL"
+	v1_12Capability := "V1_12"
+	v2_0Capability := "V2_0"
+	v2_1Capability := "V2_1"
 
 	builder := &mocks.MockConfigBlockBuilder{
 		MockConfigGroupBuilder: mocks.MockConfigGroupBuilder{
@@ -249,9 +250,9 @@ func TestCapabilities(t *testing.T) {
 			},
 			OrdererAddress:          "localhost:9999",
 			RootCA:                  validRootCA,
-			ChannelCapabilities:     []string{capability1},
-			OrdererCapabilities:     []string{capability1},
-			ApplicationCapabilities: []string{capability2, capability3},
+			ChannelCapabilities:     []string{fab.V1_1Capability},
+			OrdererCapabilities:     []string{fab.V1_1Capability, v2_0Capability},
+			ApplicationCapabilities: []string{fab.V1_2Capability, capability1},
 		},
 		Index:           0,
 		LastConfigIndex: 0,
@@ -260,11 +261,15 @@ func TestCapabilities(t *testing.T) {
 	chConfig, err := extractConfig("mychannel", builder.Build())
 	require.NoError(t, err)
 
-	assert.Truef(t, chConfig.HasCapability(fab.ChannelGroupKey, capability1), "expecting channel capability [%s]", capability1)
-	assert.Truef(t, chConfig.HasCapability(fab.OrdererGroupKey, capability1), "expecting orderer capability [%s]", capability1)
-	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, capability2), "expecting application capability [%s]", capability2)
-	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, capability3), "expecting application capability [%s]", capability3)
-	assert.Falsef(t, chConfig.HasCapability(fab.ApplicationGroupKey, capability4), "not expecting application capability [%s]", capability4)
+	assert.Truef(t, chConfig.HasCapability(fab.ChannelGroupKey, fab.V1_1Capability), "expecting channel capability [%s]", fab.V1_1Capability)
+	assert.Truef(t, chConfig.HasCapability(fab.OrdererGroupKey, fab.V1_1Capability), "expecting orderer capability [%s]", fab.V1_1Capability)
+	assert.Truef(t, chConfig.HasCapability(fab.OrdererGroupKey, v1_12Capability), "expecting orderer capability [%s] since [%s] is supported", v1_12Capability, v2_0Capability)
+	assert.Truef(t, chConfig.HasCapability(fab.OrdererGroupKey, v2_0Capability), "expecting orderer capability [%s]", v2_0Capability)
+	assert.Falsef(t, chConfig.HasCapability(fab.OrdererGroupKey, v2_1Capability), "not expecting orderer capability", v2_1Capability)
+	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_2Capability), "expecting application capability [%s]", fab.V1_2Capability)
+	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_1Capability), "expecting application capability [%s] since [%s] is supported", fab.V1_1Capability, fab.V1_2Capability)
+	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, capability1), "expecting application capability [%s]", capability1)
+	assert.Falsef(t, chConfig.HasCapability(fab.ApplicationGroupKey, capability2), "not expecting application capability [%s]", capability2)
 }
 
 func testResolveOptsDefaultValues(t *testing.T, channelID string) {

@@ -9,6 +9,7 @@ package chconfig
 import (
 	reqContext "context"
 	"math/rand"
+	"regexp"
 
 	"github.com/golang/protobuf/proto"
 
@@ -32,6 +33,7 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 //overrideRetryHandler is private and used for unit-tests to test query retry behaviors
 var overrideRetryHandler retry.Handler
+var versionCapabilityPattern = regexp.MustCompile(`^V(\d+)_(\d+)$`)
 
 const (
 	defaultMinResponses = 1
@@ -118,9 +120,16 @@ func (cfg *ChannelCfg) HasCapability(group fab.ConfigGroupKey, capability string
 	if groupCapabilities[capability] {
 		return true
 	}
-	if capability == fab.V1_1Capability {
-		// If V1_2 capability is supported then V1_1 is also supported
-		return groupCapabilities[fab.V1_2Capability]
+
+	// Special handling for version capabilities: V1_1 is supported if V1_2 or V1_3
+	// are supported; V1_2 is supported if V1_3 is supported, etc.
+	if isVersionCapability(capability) {
+		for c := range groupCapabilities {
+			if isVersionCapability(c) && c > capability {
+				logger.Debugf("[%s] is greater than [%s] and therefore capability is supported", c, capability)
+				return true
+			}
+		}
 	}
 	return false
 }
@@ -639,4 +648,8 @@ func randomMaxTargets(targets []fab.ProposalProcessor, max int) []fab.ProposalPr
 		targets[i], targets[j] = targets[j], targets[i]
 	}
 	return targets[:max]
+}
+
+func isVersionCapability(capability string) bool {
+	return versionCapabilityPattern.MatchString(capability)
 }
