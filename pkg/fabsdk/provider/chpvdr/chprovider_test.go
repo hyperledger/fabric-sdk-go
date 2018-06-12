@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/fabricselection"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -105,6 +106,12 @@ func TestBasicValidChannel(t *testing.T) {
 	require.NotNil(t, discovery)
 	_, ok = discovery.(*dynamicdiscovery.ChannelService)
 	assert.Truef(t, ok, "Expecting discovery to be Dynamic for v1_2")
+
+	selection, err = channelService.Selection()
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	_, ok = selection.(*fabricselection.Service)
+	assert.Truef(t, ok, "Expecting selection to be Fabric for v1_2")
 }
 
 func TestResolveEventServiceType(t *testing.T) {

@@ -353,14 +353,18 @@ func TestNoEndpoints(t *testing.T) {
 	// Test query chaincode: since peer has been disabled for chaincode query this query should fail
 	_, err = chClient.Query(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
-	if err == nil || !strings.Contains(err.Error(), "targets were not provided") {
+	require.Error(t, err)
+
+	expected1_1Err := "targets were not provided"                   // When running with 1.1 DynamicSelection
+	expected1_2Err := "no endorsement combination can be satisfied" // When running with 1.2 FabricSelection
+	if !strings.Contains(err.Error(), expected1_1Err) && !strings.Contains(err.Error(), expected1_2Err) {
 		t.Fatal("Should have failed due to no chaincode query peers")
 	}
 
 	// Test execute transaction: since peer has been disabled for endorsement this transaction should fail
 	_, err = chClient.Execute(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
-	if err == nil || !strings.Contains(err.Error(), "targets were not provided") {
-		t.Fatal("Should have failed due to no endorsing peers")
+	if !strings.Contains(err.Error(), expected1_1Err) && !strings.Contains(err.Error(), expected1_2Err) {
+		t.Fatal("Should have failed due to no chaincode query peers")
 	}
 }
