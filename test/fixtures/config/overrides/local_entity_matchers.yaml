@@ -20,11 +20,17 @@
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 entityMatchers:
   peer:
-    - pattern: (\w+).org1.example.(\w+)
+    - pattern: peer0.org1.example.(\w+)
       urlSubstitutionExp: localhost:7051
       eventUrlSubstitutionExp: localhost:7053
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
       mappedHost: local.peer0.org1.example.com
+
+    - pattern: peer1.org1.example.(\w+)
+      urlSubstitutionExp: localhost:7151
+      eventUrlSubstitutionExp: localhost:7153
+      sslTargetOverrideUrlSubstitutionExp: peer1.org1.example.com
+      mappedHost: local.peer1.org1.example.com
 
     - pattern: (\w+).org2.example.(\w+)
       urlSubstitutionExp: localhost:8051
@@ -33,12 +39,30 @@ entityMatchers:
       mappedHost: local.peer0.org2.example.com
 
     - pattern: (\w+).org1.example.(\w+):(\d+)
+      urlSubstitutionExp: localhost:$2
+      eventUrlSubstitutionExp: localhost:$2
+      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
+      mappedHost: local.$1.org1.example.com
+
+    - pattern: (\w+).org2.example.(\w+):(\d+)
+      urlSubstitutionExp: localhost:8051
+      eventUrlSubstitutionExp: localhost:8053
+      sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
+      mappedHost: local.peer0.org2.example.com
+
+    - pattern: (\w+):7051
       urlSubstitutionExp: localhost:7051
       eventUrlSubstitutionExp: localhost:7053
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
       mappedHost: local.peer0.org1.example.com
 
-    - pattern: (\w+).org2.example.(\w+):(\d+)
+    - pattern: (\w+):7151
+      urlSubstitutionExp: localhost:7151
+      eventUrlSubstitutionExp: localhost:7153
+      sslTargetOverrideUrlSubstitutionExp: peer1.org1.example.com
+      mappedHost: local.peer1.org1.example.com
+
+    - pattern: (\w+):8051
       urlSubstitutionExp: localhost:8051
       eventUrlSubstitutionExp: localhost:8053
       sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
