@@ -12,6 +12,7 @@ import (
 	"time"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
@@ -75,7 +76,10 @@ func TestChannelClient(t *testing.T) {
 	testQueryWithOpts("201", chaincodeID, chClient, t)
 
 	// transaction
-	testTransaction(chaincodeID, chClient, t)
+	nestedCCID := integration.GenerateRandomID()
+	_, err = integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, nestedCCID)
+	require.NoError(t, err)
+	testTransaction(chaincodeID, nestedCCID, chClient, t)
 
 	// Verify transaction
 	testQuery("202", chaincodeID, chClient, t)
@@ -128,15 +132,18 @@ func testQueryWithOpts(expected string, ccID string, chClient *channel.Client, t
 	}
 }
 
-func testTransaction(ccID string, chClient *channel.Client, t *testing.T) {
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
-		channel.WithRetry(retry.DefaultChannelOpts))
-	if err != nil {
-		t.Fatalf("Failed to move funds: %s", err)
-	}
-	if response.TxValidationCode != pb.TxValidationCode_VALID {
-		t.Fatalf("Expecting TxValidationCode to be TxValidationCode_VALID but received: %s", response.TxValidationCode)
-	}
+func testTransaction(ccID, nestedCCID string, chClient *channel.Client, t *testing.T) {
+	response, err := chClient.Execute(
+		channel.Request{
+			ChaincodeID:     ccID,
+			Fcn:             "invoke",
+			Args:            integration.ExampleCCTxArgs(),
+			InvocationChain: []*fab.ChaincodeCall{{ID: nestedCCID}},
+		},
+		channel.WithRetry(retry.DefaultChannelOpts),
+	)
+	require.NoError(t, err, "Failed to move funds")
+	assert.Equal(t, pb.TxValidationCode_VALID, response.TxValidationCode, "Expecting TxValidationCode to be TxValidationCode_VALID")
 }
 
 type testHandler struct {

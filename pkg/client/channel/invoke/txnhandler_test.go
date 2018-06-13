@@ -15,6 +15,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
@@ -266,6 +267,55 @@ func TestProposalProcessorHandler(t *testing.T) {
 	if requestContext.Opts.Targets[0] != peer2 {
 		t.Fatal("Didn't get expected peers")
 	}
+}
+
+func TestNewChaincodeCalls(t *testing.T) {
+	ccID1 := "cc1"
+	ccID2 := "cc2"
+	col1 := "col1"
+	col2 := "col2"
+
+	request := Request{
+		ChaincodeID: ccID1,
+		Fcn:         "invoke",
+		Args:        [][]byte{[]byte("query"), []byte("b")},
+		InvocationChain: []*fab.ChaincodeCall{
+			{
+				ID:          ccID2,
+				Collections: []string{col1},
+			},
+		},
+	}
+
+	ccCalls := newChaincodeCalls(request)
+	require.Truef(t, len(ccCalls) == 2, "expecting 2 CC calls")
+	require.Equal(t, ccID1, ccCalls[0].ID)
+	require.Equal(t, ccID2, ccCalls[1].ID)
+	require.Emptyf(t, ccCalls[0].Collections, "expecting no collections for [%s]", ccID1)
+	require.Truef(t, len(ccCalls[1].Collections) == 1, "expecting 1 collection for [%s]", ccID2)
+
+	request = Request{
+		ChaincodeID: ccID1,
+		Fcn:         "invoke",
+		Args:        [][]byte{[]byte("query"), []byte("b")},
+		InvocationChain: []*fab.ChaincodeCall{
+			{
+				ID:          ccID1,
+				Collections: []string{col1, col2},
+			},
+			{
+				ID:          ccID2,
+				Collections: []string{col1},
+			},
+		},
+	}
+
+	ccCalls = newChaincodeCalls(request)
+	require.Truef(t, len(ccCalls) == 2, "expecting 2 CC calls")
+	require.Equal(t, ccID1, ccCalls[0].ID)
+	require.Equal(t, ccID2, ccCalls[1].ID)
+	require.Truef(t, len(ccCalls[0].Collections) == 2, "expecting 2 collections for [%s]", ccID1)
+	require.Truef(t, len(ccCalls[1].Collections) == 1, "expecting 1 collection for [%s]", ccID2)
 }
 
 //prepareHandlerContexts prepares context objects for handlers

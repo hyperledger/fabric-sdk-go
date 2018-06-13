@@ -36,6 +36,16 @@ type Request struct {
 	Fcn          string
 	Args         [][]byte
 	TransientMap map[string][]byte
+
+	// InvocationChain contains meta-data that's used by some Selection Service implementations
+	// to choose endorsers that satisfy the endorsement policies of all chaincodes involved
+	// in an invocation chain (i.e. for CC-to-CC invocations).
+	// Each chaincode may also be associated with a set of private data collection names
+	// which are used by some Selection Services (e.g. Fabric Selection) to exclude endorsers
+	// that do NOT have read access to the collections.
+	// The invoked chaincode (specified by ChaincodeID) may optionally be added to the invocation
+	// chain along with any collections, otherwise it may be omitted.
+	InvocationChain []*fab.ChaincodeCall
 }
 
 //Response contains response parameters for query and execute an invocation transaction
