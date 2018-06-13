@@ -9,7 +9,6 @@ package e2e
 import (
 	"path"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -26,6 +25,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
+
+	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
@@ -106,10 +107,8 @@ func setupAndRun(t *testing.T, doSetup bool, configOpt core.ConfigProvider, sdkO
 		t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
 	}
 
-	i := strings.Index(ccEvent.SourceURL, ":")
-
 	// Verify move funds transaction result on the same peer where the event came from.
-	verifyFundsIsMoved(client, t, value, ccEvent.SourceURL[0:i])
+	verifyFundsIsMoved(client, t, value, ccEvent)
 
 }
 
@@ -148,8 +147,15 @@ func createChannelAndCC(t *testing.T, sdk *fabsdk.FabricSDK) {
 	createCC(t, orgResMgmt)
 }
 
-func verifyFundsIsMoved(client *channel.Client, t *testing.T, value []byte, targetEndpoints ...string) {
-	newValue := queryCC(client, t, targetEndpoints...)
+func verifyFundsIsMoved(client *channel.Client, t *testing.T, value []byte, ccevent *fab.CCEvent) {
+
+	//Fix for issue prev in release test, where 'ccEvent.SourceURL' has event URL
+	if !integration.IsLocal() {
+		portIndex := strings.Index(ccevent.SourceURL, ":")
+		ccevent.SourceURL = ccevent.SourceURL[0:portIndex]
+	}
+
+	newValue := queryCC(client, t, ccevent.SourceURL)
 	valueInt, err := strconv.Atoi(string(value))
 	if err != nil {
 		t.Fatal(err.Error())

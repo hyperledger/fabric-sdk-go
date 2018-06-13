@@ -406,17 +406,17 @@ certificateAuthorities:
  # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 #entityMatchers:
-entityMatchers:
-  peer:
-    - pattern: (\w+).org1.example.com:(\d+)
-      urlSubstitutionExp: $1.org1.example.com:$2
-      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
-      mappedHost: peer0.org1.example.com
-
-    - pattern: (\w+).org2.example.com:(\d+)
-      urlSubstitutionExp: $1.org2.example.com:$2
-      sslTargetOverrideUrlSubstitutionExp: $1.org2.example.com
-      mappedHost: peer0.org2.example.com
+#entityMatchers:
+#  peer:
+#    - pattern: (\w+).org1.example.com:(\d+)
+#      urlSubstitutionExp: $1.org1.example.com:$2
+#      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
+#      mappedHost: peer0.org1.example.com
+#
+#    - pattern: (\w+).org2.example.com:(\d+)
+#      urlSubstitutionExp: $1.org2.example.com:$2
+#      sslTargetOverrideUrlSubstitutionExp: $1.org2.example.com
+#      mappedHost: peer0.org2.example.com
 
 #    - pattern: (\w+).org1.example.(\w+)
 #      urlSubstitutionExp: peer0.org1.example.com:7051

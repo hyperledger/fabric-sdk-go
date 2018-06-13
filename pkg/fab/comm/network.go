@@ -17,7 +17,7 @@ import (
 func NetworkPeerConfig(cfg fab.EndpointConfig, key string) (*fab.NetworkPeer, error) {
 	peerCfg, ok := cfg.PeerConfig(key)
 	if !ok {
-		return nil, errors.Errorf("peer not found")
+		return nil, errors.Errorf("peer [%s] not found", key)
 	}
 
 	// find MSP ID

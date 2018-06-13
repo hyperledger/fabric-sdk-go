@@ -198,6 +198,35 @@ var (
 		},
 	}
 
+	peersByLocalURL = map[string]fab.PeerConfig{
+		"localhost:7051": {
+			URL:      "localhost:7051",
+			EventURL: "localhost:7053",
+			GRPCOptions: map[string]interface{}{
+				"ssl-target-name-override": "peer0.org1.example.com",
+				"keep-alive-time":          0 * time.Second,
+				"keep-alive-timeout":       20 * time.Second,
+				"keep-alive-permit":        false,
+				"fail-fast":                false,
+				"allow-insecure":           false,
+			},
+			TLSCACert: tlsCertByBytes("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
+		},
+		"localhost:8051": {
+			URL:      "localhost:8051",
+			EventURL: "localhost:8053",
+			GRPCOptions: map[string]interface{}{
+				"ssl-target-name-override": "peer0.org2.example.com",
+				"keep-alive-time":          0 * time.Second,
+				"keep-alive-timeout":       20 * time.Second,
+				"keep-alive-permit":        false,
+				"fail-fast":                false,
+				"allow-insecure":           false,
+			},
+			TLSCACert: tlsCertByBytes("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem"),
+		},
+	}
+
 	caConfigObj = map[string]caConfig{
 		"ca.org1.example.com": {
 			URL: "https://ca.org1.example.com:7054",
@@ -494,6 +523,13 @@ func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool)
 	pcfg, ok := peersConfig[nameOrURL]
 	if ok {
 		return &pcfg, true
+	}
+
+	if integration.IsLocal() {
+		pcfg, ok := peersByLocalURL[nameOrURL]
+		if ok {
+			return &pcfg, true
+		}
 	}
 
 	i := strings.Index(nameOrURL, ":")

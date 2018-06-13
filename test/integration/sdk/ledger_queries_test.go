@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/stretchr/testify/require"
 )
 
@@ -113,7 +114,13 @@ func TestNoLedgerEndpoints(t *testing.T) {
 	// Using shared SDK instance to increase test speed.
 	testSetup := mainTestSetup
 
-	sdk, err := fabsdk.New(config.FromFile("../../fixtures/config/config_test_endpoints.yaml"))
+	configProvider := config.FromFile("../../fixtures/config/config_test_endpoints.yaml")
+	//Add entity matchers if local test
+	if integration.IsLocal() {
+		configProvider = integration.AddLocalEntityMapping(configProvider, integration.LocalOrdererPeersConfig)
+	}
+
+	sdk, err := fabsdk.New(configProvider)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create new SDK: %s", err))
 	}
