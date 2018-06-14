@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	configPath        = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_test.yaml"
-	entityMangerLocal = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test//fixtures/config/overrides/local_entity_matchers.yaml"
+	configPath         = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_test.yaml"
+	entityMatcherLocal = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test//fixtures/config/overrides/local_entity_matchers.yaml"
 	//LocalOrdererPeersCAsConfig config file to override on local test having only peers, orderers and CA entity entries
 	LocalOrdererPeersCAsConfig = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/overrides/local_orderers_peers_ca.yaml"
 	//LocalOrdererPeersConfig config file to override on local test having only peers and orderers entity entries
@@ -24,9 +24,11 @@ const (
 )
 
 // ConfigBackend contains config backend for integration tests
-var ConfigBackend = fetchConfigBackend(configPath, LocalOrdererPeersCAsConfig)
+var ConfigBackend = FetchConfigBackend(configPath, LocalOrdererPeersCAsConfig, entityMatcherLocal)
 
-func fetchConfigBackend(configPath string, localOverride string) core.ConfigProvider {
+// FetchConfigBackend returns a ConfigProvider that retrieves config data from the given configPath,
+// or from the given overrides for local testing
+func FetchConfigBackend(configPath string, localOverride, entityMatcherOverride string) core.ConfigProvider {
 	configProvider := config.FromFile(pathvar.Subst(configPath))
 
 	args := os.Args[1:]
@@ -34,7 +36,7 @@ func fetchConfigBackend(configPath string, localOverride string) core.ConfigProv
 		//If testlocal is enabled, then update config backend to run 'local' test
 		if arg == "testLocal=true" {
 			return func() ([]core.ConfigBackend, error) {
-				return appendLocalEntityMappingBackend(configProvider, localOverride)
+				return appendLocalEntityMappingBackend(configProvider, localOverride, entityMatcherOverride)
 			}
 		}
 	}
@@ -57,12 +59,12 @@ func IsLocal() bool {
 // and returns updated config provider
 func AddLocalEntityMapping(configProvider core.ConfigProvider, configOverridePath string) core.ConfigProvider {
 	return func() ([]core.ConfigBackend, error) {
-		return appendLocalEntityMappingBackend(configProvider, configOverridePath)
+		return appendLocalEntityMappingBackend(configProvider, configOverridePath, entityMatcherLocal)
 	}
 }
 
 //appendLocalEntityMappingBackend appends entity matcher backend to given config provider
-func appendLocalEntityMappingBackend(configProvider core.ConfigProvider, configOverridePath string) ([]core.ConfigBackend, error) {
+func appendLocalEntityMappingBackend(configProvider core.ConfigProvider, configOverridePath, entityMatcherOverridePath string) ([]core.ConfigBackend, error) {
 	//Current backend
 	currentBackends, err := configProvider()
 	if err != nil {
@@ -70,7 +72,7 @@ func appendLocalEntityMappingBackend(configProvider core.ConfigProvider, configO
 	}
 
 	//Entity matcher config backend
-	configProvider = config.FromFile(pathvar.Subst(entityMangerLocal))
+	configProvider = config.FromFile(pathvar.Subst(entityMatcherOverridePath))
 	matcherBackends, err := configProvider()
 	if err != nil {
 		return nil, err

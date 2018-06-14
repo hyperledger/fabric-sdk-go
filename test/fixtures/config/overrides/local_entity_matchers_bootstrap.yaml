@@ -1,0 +1,37 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+entityMatchers:
+  peer:
+    - pattern: (\w+).org1.example.com:(\d+)
+      urlSubstitutionExp: localhost:$2
+      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
+      mappedHost: local.peer0.org1.example.com
+
+    - pattern: peer0.org2.example.com:8051
+      urlSubstitutionExp: localhost:8051
+      sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
+      mappedHost: local.peer0.org2.example.com
+
+  orderer:
+    - pattern: (\w+).example.(\w+)
+      urlSubstitutionExp: localhost:7050
+      sslTargetOverrideUrlSubstitutionExp: orderer.example.com
+      mappedHost: local.orderer.example.com
+
+    - pattern: (\w+).example.(\w+):(\d+)
+      urlSubstitutionExp: localhost:7050
+      sslTargetOverrideUrlSubstitutionExp: orderer.example.com
+      mappedHost: local.orderer.example.com
+
+  certificateAuthority:
+    - pattern: (\w+).org1.example.(\w+)
+      urlSubstitutionExp: https://localhost:7054
+      mappedHost: local.ca.org1.example.com
+
+    - pattern: (\w+).org2.example.(\w+)
+      urlSubstitutionExp: https://localhost:8054
+      mappedHost: local.ca.org2.example.com

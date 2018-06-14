@@ -52,25 +52,13 @@ var (
 	peer1Org3 = mocks.NewMockPeer("p31", peer1Org3URL)
 	peer2Org3 = mocks.NewMockPeer("p32", peer2Org3URL)
 
-	peerConfigOrg1 = fab.NetworkPeer{
-		PeerConfig: fab.PeerConfig{
-			URL: peer1Org1URL,
-		},
-		MSPID: mspID1,
-	}
-	peerConfigOrg2 = fab.NetworkPeer{
-		PeerConfig: fab.PeerConfig{
-			URL: peer1Org2URL,
-		},
-		MSPID: mspID2,
-	}
 	channelPeers = []fab.ChannelPeer{
-		{
-			NetworkPeer: peerConfigOrg1,
-		},
-		{
-			NetworkPeer: peerConfigOrg2,
-		},
+		{NetworkPeer: newPeerConfig(peer1Org1URL, mspID1)},
+		{NetworkPeer: newPeerConfig(peer2Org1URL, mspID1)},
+		{NetworkPeer: newPeerConfig(peer1Org2URL, mspID2)},
+		{NetworkPeer: newPeerConfig(peer2Org2URL, mspID2)},
+		{NetworkPeer: newPeerConfig(peer1Org3URL, mspID3)},
+		{NetworkPeer: newPeerConfig(peer2Org3URL, mspID3)},
 	}
 
 	peer1Org1Endpoint = &discmocks.MockDiscoveryPeerEndpoint{
@@ -191,10 +179,10 @@ func TestSelection(t *testing.T) {
 		options.WithPrioritySelector(func(peer1, peer2 fab.Peer) int {
 			// Return peers in alphabetical order
 			if peer1.URL() < peer2.URL() {
-				return 1
+				return -1
 			}
 			if peer1.URL() > peer2.URL() {
-				return -1
+				return 1
 			}
 			return 0
 		}),
@@ -279,4 +267,22 @@ func (c *config) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
 		return nil, false
 	}
 	return c.peers, true
+}
+
+func (c *config) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
+	for _, peer := range c.peers {
+		if peer.URL == nameOrURL {
+			return &peer.NetworkPeer.PeerConfig, true
+		}
+	}
+	return nil, false
+}
+
+func newPeerConfig(url, mspID string) fab.NetworkPeer {
+	return fab.NetworkPeer{
+		PeerConfig: fab.PeerConfig{
+			URL: url,
+		},
+		MSPID: mspID,
+	}
 }

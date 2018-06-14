@@ -11,16 +11,19 @@ import (
 
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
+	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
 type selectionFilter struct {
+	ctx    contextAPI.Client
 	peers  []fab.Peer
 	filter options.PeerFilter
 }
 
-func newFilter(filter options.PeerFilter, peers []fab.Peer) *selectionFilter {
+func newFilter(ctx contextAPI.Client, filter options.PeerFilter, peers []fab.Peer) *selectionFilter {
 	return &selectionFilter{
+		ctx:    ctx,
 		peers:  peers,
 		filter: filter,
 	}
@@ -29,7 +32,7 @@ func newFilter(filter options.PeerFilter, peers []fab.Peer) *selectionFilter {
 func (s *selectionFilter) Exclude(endpoint discclient.Peer) bool {
 	logger.Debugf("Calling peer filter on endpoint [%s]", endpoint.AliveMessage.GetAliveMsg().Membership.Endpoint)
 
-	peer := asPeerValue(&endpoint)
+	peer := asPeerValue(s.ctx, &endpoint)
 
 	// The peer must be included in the set of peers returned from fab.DiscoveryService.
 	// (Note that DiscoveryService may return a filtered set of peers, depending on how the
@@ -49,25 +52,35 @@ func (s *selectionFilter) Exclude(endpoint discclient.Peer) bool {
 }
 
 type prioritySelector struct {
+	ctx      contextAPI.Client
 	selector options.PrioritySelector
 }
 
-func newSelector(selector options.PrioritySelector) discclient.PrioritySelector {
+func newSelector(ctx contextAPI.Client, selector options.PrioritySelector) discclient.PrioritySelector {
 	if selector != nil {
-		return &prioritySelector{selector: selector}
+		return &prioritySelector{ctx: ctx, selector: selector}
 	}
 	return discclient.PrioritiesByHeight
 }
 
 func (s *prioritySelector) Compare(endpoint1, endpoint2 discclient.Peer) discclient.Priority {
 	logger.Debugf("Calling priority selector on endpoint1 [%s] and endpoint2 [%s]", endpoint1.AliveMessage.GetAliveMsg().Membership.Endpoint, endpoint2.AliveMessage.GetAliveMsg().Membership.Endpoint)
-	return discclient.Priority(s.selector(asPeerValue(&endpoint1), asPeerValue(&endpoint2)))
+	return discclient.Priority(s.selector(asPeerValue(s.ctx, &endpoint1), asPeerValue(s.ctx, &endpoint2)))
 }
 
 // asPeerValue converts the discovery endpoint into a light-weight peer value (i.e. without the GRPC config)
 // so that it may used by a peer filter
-func asPeerValue(endpoint *discclient.Peer) fab.Peer {
-	url := endpoint.AliveMessage.GetAliveMsg().Membership.Endpoint
+func asPeerValue(ctx contextAPI.Client, endpoint *discclient.Peer) fab.Peer {
+	url := endpoint.AliveMessage.GetAliveMsg().GetMembership().Endpoint
+
+	// Get the mapped URL of the peer
+	peerConfig, found := ctx.EndpointConfig().PeerConfig(url)
+	if found {
+		url = peerConfig.URL
+	} else {
+		logger.Warnf("Peer config not found for url [%s]", url)
+	}
+
 	return &peerEndpointValue{
 		mspID:       endpoint.MSPID,
 		url:         url,

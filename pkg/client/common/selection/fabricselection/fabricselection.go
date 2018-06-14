@@ -120,7 +120,7 @@ func (s *Service) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeCall, opts
 
 	params := options.NewParams(opts)
 
-	endpoints, err := chResponse.Endorsers(asInvocationChain(chaincodes), newSelector(params.PrioritySelector), newFilter(params.PeerFilter, peers))
+	endpoints, err := chResponse.Endorsers(asInvocationChain(chaincodes), newSelector(s.ctx, params.PrioritySelector), newFilter(s.ctx, params.PeerFilter, peers))
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting endorsers from channel response")
 	}

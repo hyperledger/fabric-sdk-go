@@ -15,7 +15,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
@@ -24,14 +23,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const bootStrapCC = "btspExampleCC"
+const (
+	bootStrapCC                    = "btspExampleCC"
+	configPath                     = "../../fixtures/config/config_test_multiorg_bootstrap.yaml"
+	localOrderersPeersCAConfigPath = "../../fixtures/config/overrides/local_orderers_peers_ca_bootstrap.yaml"
+	entityMatchersConfigPath       = "../../fixtures/config/overrides/local_entity_matchers_bootstrap.yaml"
+)
 
 //TestOrgsEndToEndWithBootstrapConfigs does the same as TestOrgsEndToEnd with the difference of loading
 // minimal configs instead of the normal config_test.yaml configs and with the help of discovery service to discover
 // other peers not in the config (example org1 has 2 peers and only peer0 is defined in the bootstrap configs)
 func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
-	configPath := "../../fixtures/config/config_test_multiorg_bootstrap.yaml"
-	sdk, err := fabsdk.New(config.FromFile(configPath),
+	sdk, err := fabsdk.New(integration.FetchConfigBackend(configPath, localOrderersPeersCAConfigPath, entityMatchersConfigPath),
 		fabsdk.WithServicePkg(&DynamicDiscoveryProviderFactory{}),
 	)
 	if err != nil {

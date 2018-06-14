@@ -15,7 +15,6 @@ import (
 	selectionopts "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
@@ -37,10 +36,6 @@ const (
 	peer1Org1 = "peer1.org1.example.com"
 	peer0Org2 = "peer0.org2.example.com"
 
-	peer0Org1URL = "peer0.org1.example.com:7051"
-	peer1Org1URL = "peer1.org1.example.com:7151"
-	peer0Org2URL = "peer0.org2.example.com:8051"
-
 	adminUser        = "Admin"
 	org2Name         = "Org2"
 	ordererAdminUser = "Admin"
@@ -48,8 +43,22 @@ const (
 	orgChannelID     = "orgchannel"
 )
 
+var (
+	hostToURLMap map[string]string = map[string]string{
+		peer0Org1: "peer0.org1.example.com:7051",
+		peer1Org1: "peer1.org1.example.com:7151",
+		peer0Org2: "peer0.org2.example.com:8051",
+	}
+
+	localHostToURLMap map[string]string = map[string]string{
+		peer0Org1: "localhost:7051",
+		peer1Org1: "localhost:7151",
+		peer0Org2: "localhost:8051",
+	}
+)
+
 func TestFabricSelection(t *testing.T) {
-	sdk, err := fabsdk.New(config.FromFile("../../fixtures/config/config_test.yaml"),
+	sdk, err := fabsdk.New(integration.ConfigBackend,
 		fabsdk.WithServicePkg(&fabricSelectionProviderFactory{}))
 	require.NoError(t, err, "Failed to create new SDK")
 	defer sdk.Close()
@@ -79,8 +88,8 @@ func TestFabricSelection(t *testing.T) {
 			t, selectionService,
 			chaincodes(newCCCall(ccID)),
 			expecting(
-				[]string{peer0Org1URL},
-				[]string{peer1Org1URL}),
+				[]string{getURL(peer0Org1)},
+				[]string{getURL(peer1Org1)}),
 		)
 	})
 
@@ -92,7 +101,7 @@ func TestFabricSelection(t *testing.T) {
 			t, selectionService,
 			chaincodes(newCCCall(ccID)),
 			expecting(
-				[]string{peer0Org2URL}),
+				[]string{getURL(peer0Org2)}),
 		)
 	})
 
@@ -104,9 +113,9 @@ func TestFabricSelection(t *testing.T) {
 			t, selectionService,
 			chaincodes(newCCCall(ccID)),
 			expecting(
-				[]string{peer0Org1URL},
-				[]string{peer1Org1URL},
-				[]string{peer0Org2URL}),
+				[]string{getURL(peer0Org1)},
+				[]string{getURL(peer1Org1)},
+				[]string{getURL(peer0Org2)}),
 		)
 	})
 
@@ -118,8 +127,8 @@ func TestFabricSelection(t *testing.T) {
 			t, selectionService,
 			chaincodes(newCCCall(ccID)),
 			expecting(
-				[]string{peer0Org1URL, peer0Org2URL},
-				[]string{peer1Org1URL, peer0Org2URL}),
+				[]string{getURL(peer0Org1), getURL(peer0Org2)},
+				[]string{getURL(peer1Org1), getURL(peer0Org2)}),
 		)
 
 		// With peer filter
@@ -127,9 +136,9 @@ func TestFabricSelection(t *testing.T) {
 			t, selectionService,
 			chaincodes(newCCCall(ccID)),
 			expecting(
-				[]string{peer1Org1URL, peer0Org2URL}),
+				[]string{getURL(peer1Org1), getURL(peer0Org2)}),
 			selectionopts.WithPeerFilter(func(peer fab.Peer) bool {
-				return peer.URL() != peer0Org1URL
+				return peer.URL() != getURL(peer0Org1)
 			}),
 		)
 	})
@@ -146,8 +155,8 @@ func TestFabricSelection(t *testing.T) {
 			t, selectionService,
 			chaincodes(newCCCall(ccID1), newCCCall(ccID2)),
 			expecting(
-				[]string{peer0Org1URL, peer0Org2URL},
-				[]string{peer1Org1URL, peer0Org2URL}),
+				[]string{getURL(peer0Org1), getURL(peer0Org2)},
+				[]string{getURL(peer1Org1), getURL(peer0Org2)}),
 		)
 	})
 
@@ -162,8 +171,8 @@ func TestFabricSelection(t *testing.T) {
 			t, selectionService,
 			chaincodes(newCCCall(ccID, coll1)),
 			expecting(
-				[]string{peer0Org1URL},
-				[]string{peer1Org1URL}),
+				[]string{getURL(peer0Org1)},
+				[]string{getURL(peer1Org1)}),
 		)
 	})
 }
@@ -390,4 +399,11 @@ func newCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int3
 			},
 		},
 	}, nil
+}
+
+func getURL(host string) string {
+	if integration.IsLocal() {
+		return localHostToURLMap[host]
+	}
+	return hostToURLMap[host]
 }

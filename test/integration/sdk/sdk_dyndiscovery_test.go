@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 
@@ -21,7 +22,6 @@ import (
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
@@ -29,7 +29,7 @@ func TestDynamicDiscovery(t *testing.T) {
 	testSetup := mainTestSetup
 
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(config.FromFile("../../fixtures/config/config_test.yaml"),
+	sdk, err := fabsdk.New(integration.ConfigBackend,
 		fabsdk.WithServicePkg(&dynamicDiscoveryProviderFactory{}))
 	require.NoError(t, err, "Failed to create new SDK")
 	defer sdk.Close()
@@ -58,7 +58,7 @@ func TestDynamicLocalDiscovery(t *testing.T) {
 	testSetup := mainTestSetup
 
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(config.FromFile("../../fixtures/config/config_test.yaml"),
+	sdk, err := fabsdk.New(integration.ConfigBackend,
 		fabsdk.WithServicePkg(&dynamicDiscoveryProviderFactory{}))
 	require.NoError(t, err, "Failed to create new SDK")
 	defer sdk.Close()
