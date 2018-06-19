@@ -163,6 +163,10 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 		requestContext.RetryHandler,
 		retry.WithBeforeRetry(
 			func(err error) {
+				if requestContext.Opts.BeforeRetry != nil {
+					requestContext.Opts.BeforeRetry(err)
+				}
+
 				cc.greylist.Greylist(err)
 
 				// Reset context parameters

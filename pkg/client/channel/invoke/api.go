@@ -23,6 +23,7 @@ type Opts struct {
 	Targets       []fab.Peer // targets
 	TargetFilter  fab.TargetFilter
 	Retry         retry.Opts
+	BeforeRetry   retry.BeforeRetryHandler
 	Timeouts      map[fab.TimeoutType]time.Duration
 	ParentContext reqContext.Context //parent grpc context
 }
