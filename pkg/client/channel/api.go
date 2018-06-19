@@ -23,6 +23,7 @@ type requestOptions struct {
 	Targets       []fab.Peer // targets
 	TargetFilter  fab.TargetFilter
 	Retry         retry.Opts
+	BeforeRetry   retry.BeforeRetryHandler
 	Timeouts      map[fab.TimeoutType]time.Duration //timeout options for channel client operations
 	ParentContext reqContext.Context                //parent grpc context for channel client operations (query, execute, invokehandler)
 }
@@ -113,6 +114,14 @@ func WithTargetFilter(filter fab.TargetFilter) RequestOption {
 func WithRetry(retryOpt retry.Opts) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		o.Retry = retryOpt
+		return nil
+	}
+}
+
+// WithBeforeRetry specifies a function to call before a retry attempt
+func WithBeforeRetry(beforeRetry retry.BeforeRetryHandler) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		o.BeforeRetry = beforeRetry
 		return nil
 	}
 }
