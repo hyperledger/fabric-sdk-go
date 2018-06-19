@@ -12,6 +12,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
@@ -95,6 +96,18 @@ func TestPeerGroupResolverPolicy1(t *testing.T) {
 		pg(p1, p8), pg(p1, p9), pg(p1, p10), pg(p2, p8), pg(p2, p9), pg(p2, p10),
 		// Org3 and Org4
 		pg(p5, p8), pg(p5, p9), pg(p5, p10), pg(p6, p8), pg(p6, p9), pg(p6, p10), pg(p7, p8), pg(p7, p9), pg(p7, p10),
+	}
+
+	testPeerGroupResolver(t, sigPolicyEnv, allPeers, expected, nil)
+}
+
+func TestPeerGroupResolverAcceptAllPolicy(t *testing.T) {
+
+	sigPolicyEnv := cauthdsl.AcceptAllPolicy
+
+	expected := []PeerGroup{
+		pg(p1), pg(p2), pg(p3), pg(p4), pg(p5), pg(p6),
+		pg(p7), pg(p8), pg(p9), pg(p10), pg(p11), pg(p12),
 	}
 
 	testPeerGroupResolver(t, sigPolicyEnv, allPeers, expected, nil)
@@ -352,7 +365,6 @@ func verify(t *testing.T, pgResolver PeerGroupResolver, peers []fab.Peer, expect
 	} else if expectedErr != nil {
 		t.Fatalf("expecting error [%s] but got none", expectedErr)
 	}
-
 	for i := 0; i < len(expectedPeerGroups); i++ {
 		if !containsPeerGroup(expectedPeerGroups, peerGroup) {
 			t.Fatalf("peer group %s is not one of the expected peer groups: %v", peerGroup, expectedPeerGroups)
