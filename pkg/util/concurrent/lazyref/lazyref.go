@@ -22,6 +22,10 @@ var logger = logging.NewLogger("fabsdk/util")
 // Initializer is a function that initializes the value
 type Initializer func() (interface{}, error)
 
+// InitializerWithData is a function that initializes the value
+// using the optional data.
+type InitializerWithData func(data interface{}) (interface{}, error)
+
 // Finalizer is a function that is called when the reference
 // is closed
 type Finalizer func(value interface{})
@@ -69,7 +73,7 @@ const (
 type Reference struct {
 	initialInit        time.Duration
 	wg                 sync.WaitGroup
-	initializer        Initializer
+	initializer        InitializerWithData
 	finalizer          Finalizer
 	expirationHandler  expirationHandler
 	expirationProvider ExpirationProvider
@@ -84,6 +88,15 @@ type Reference struct {
 
 // New creates a new reference
 func New(initializer Initializer, opts ...Opt) *Reference {
+	return NewWithData(func(interface{}) (interface{}, error) {
+		return initializer()
+	}, opts...)
+}
+
+// NewWithData creates a new reference where data is passed from the Get
+// function to the initializer. This is useful for refreshing the reference
+// with dynamic data.
+func NewWithData(initializer InitializerWithData, opts ...Opt) *Reference {
 	lazyRef := &Reference{
 		initializer: initializer,
 		initialInit: InitOnFirstAccess,
@@ -98,8 +111,8 @@ func New(initializer Initializer, opts ...Opt) *Reference {
 		// called, set a timer that will call the expiration handler.
 		initializer := lazyRef.initializer
 		initialExpiration := lazyRef.expirationProvider()
-		lazyRef.initializer = func() (interface{}, error) {
-			value, err := initializer()
+		lazyRef.initializer = func(data interface{}) (interface{}, error) {
+			value, err := initializer(data)
 			if err == nil {
 				lazyRef.ensureTimerStarted(initialExpiration)
 			}
@@ -121,7 +134,7 @@ func New(initializer Initializer, opts ...Opt) *Reference {
 }
 
 // Get returns the value, or an error if the initialiser returned an error.
-func (r *Reference) Get() (interface{}, error) {
+func (r *Reference) Get(data ...interface{}) (interface{}, error) {
 	// Try outside of a lock
 	if value, ok := r.get(); ok {
 		return value, nil
@@ -140,8 +153,7 @@ func (r *Reference) Get() (interface{}, error) {
 	}
 
 	// Value hasn't been set yet
-
-	value, err := r.initializer()
+	value, err := r.initializer(first(data))
 	if err != nil {
 		return nil, err
 	}
@@ -346,9 +358,16 @@ func (r *Reference) resetValue() {
 // Note: This function is invoked from inside a write
 // lock so there's no need to lock
 func (r *Reference) refreshValue() {
-	if value, err := r.initializer(); err != nil {
+	if value, err := r.initializer(nil); err != nil {
 		logger.Warnf("Error - initializer returned error: %s. Will retry again later", err)
 	} else {
 		r.set(value)
 	}
+}
+
+func first(data []interface{}) interface{} {
+	if len(data) == 0 {
+		return nil
+	}
+	return data[0]
 }
