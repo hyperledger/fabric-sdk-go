@@ -48,7 +48,7 @@ const (
 
 func TestDiscoveryClientPeers(t *testing.T) {
 	orgsContext := setupOrgContext(t)
-	err := ensureChannelCreatedAndPeersJoined(orgsContext)
+	err := ensureChannelCreatedAndPeersJoined(t, orgsContext)
 	require.NoError(t, err)
 
 	ctx, err := orgsContext[0].CtxProvider()
@@ -160,7 +160,7 @@ func TestDiscoveryClientLocalPeers(t *testing.T) {
 
 func TestDiscoveryClientEndorsers(t *testing.T) {
 	orgsContext := setupOrgContext(t)
-	err := ensureChannelCreatedAndPeersJoined(orgsContext)
+	err := ensureChannelCreatedAndPeersJoined(t, orgsContext)
 	require.NoError(t, err)
 
 	ccVersion := "v0"
@@ -269,7 +269,7 @@ func testEndorsers(t *testing.T, sdk *fabsdk.FabricSDK, interest *fabdiscovery.C
 	}
 }
 
-func ensureChannelCreatedAndPeersJoined(orgsContext []*integration.OrgContext) error {
+func ensureChannelCreatedAndPeersJoined(t *testing.T, orgsContext []*integration.OrgContext) error {
 	joined, err := integration.IsJoinedChannel(orgChannelID, orgsContext[0].ResMgmt, orgsContext[0].Peers[0])
 	if err != nil {
 		return err
@@ -280,7 +280,7 @@ func ensureChannelCreatedAndPeersJoined(orgsContext []*integration.OrgContext) e
 	}
 
 	// Create the channel and update anchor peers for all orgs
-	if err := integration.CreateChannelAndUpdateAnchorPeers(mainSDK, orgChannelID, "orgchannel.tx", orgsContext); err != nil {
+	if err := integration.CreateChannelAndUpdateAnchorPeers(t, mainSDK, orgChannelID, "orgchannel.tx", orgsContext); err != nil {
 		return err
 	}
 

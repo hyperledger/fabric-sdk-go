@@ -196,11 +196,9 @@ func NewQueryHandler(next ...Handler) Handler {
 
 //NewExecuteHandler returns query handler with EndorseTxHandler, EndorsementValidationHandler & CommitTxHandler Chained
 func NewExecuteHandler(next ...Handler) Handler {
-	return NewProposalProcessorHandler(
-		NewEndorsementHandler(
-			NewEndorsementValidationHandler(
-				NewSignatureValidationHandler(NewCommitHandler(next...)),
-			),
+	return NewSelectAndEndorseHandler(
+		NewEndorsementValidationHandler(
+			NewSignatureValidationHandler(NewCommitHandler(next...)),
 		),
 	)
 }

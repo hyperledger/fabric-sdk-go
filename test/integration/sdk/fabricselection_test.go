@@ -19,8 +19,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 
-	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -36,11 +34,8 @@ const (
 	peer1Org1 = "peer1.org1.example.com"
 	peer0Org2 = "peer0.org2.example.com"
 
-	adminUser        = "Admin"
-	org2Name         = "Org2"
 	ordererAdminUser = "Admin"
 	ordererOrgName   = "ordererorg"
-	orgChannelID     = "orgchannel"
 )
 
 var (
@@ -63,8 +58,8 @@ func TestFabricSelection(t *testing.T) {
 	require.NoError(t, err, "Failed to create new SDK")
 	defer sdk.Close()
 
-	orgsContext := setupOrgContext(t, sdk)
-	err = ensureChannelCreatedAndPeersJoined(sdk, orgsContext)
+	orgsContext := setupMultiOrgContext(t, sdk)
+	err = integration.EnsureChannelCreatedAndPeersJoined(t, sdk, orgChannelID, "orgchannel.tx", orgsContext)
 	require.NoError(t, err)
 
 	ccVersion := "v0"
@@ -183,70 +178,6 @@ func testEndorsers(t *testing.T, selectionService fab.SelectionService, chaincod
 		endorsers, err := selectionService.GetEndorsersForChaincode(chaincodes, opts...)
 		require.NoError(t, err, "error getting endorsers")
 		checkEndorsers(t, endorsers, expectedEndorserGroups)
-	}
-}
-
-func ensureChannelCreatedAndPeersJoined(sdk *fabsdk.FabricSDK, orgsContext []*integration.OrgContext) error {
-	joined, err := integration.IsJoinedChannel(orgChannelID, orgsContext[0].ResMgmt, orgsContext[0].Peers[0])
-	if err != nil {
-		return err
-	}
-
-	if joined {
-		return nil
-	}
-
-	// Create the channel and update anchor peers for all orgs
-	if err := integration.CreateChannelAndUpdateAnchorPeers(sdk, orgChannelID, "orgchannel.tx", orgsContext); err != nil {
-		return err
-	}
-
-	return integration.JoinPeersToChannel(orgChannelID, orgsContext)
-}
-
-func setupOrgContext(t *testing.T, sdk *fabsdk.FabricSDK) []*integration.OrgContext {
-	org1AdminContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrg(org1Name))
-	org1ResMgmt, err := resmgmt.New(org1AdminContext)
-	require.NoError(t, err)
-
-	org1MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org1Name))
-	require.NoError(t, err)
-	org1AdminUser, err := org1MspClient.GetSigningIdentity(adminUser)
-	require.NoError(t, err)
-
-	org2AdminContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrg(org2Name))
-	org2ResMgmt, err := resmgmt.New(org2AdminContext)
-	require.NoError(t, err)
-
-	org2MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org2Name))
-	require.NoError(t, err)
-	org2AdminUser, err := org2MspClient.GetSigningIdentity(adminUser)
-	require.NoError(t, err)
-
-	// Ensure that Gossip has propagated its view of local peers before invoking
-	// install since some peers may be missed if we call InstallCC too early
-	org1Peers, err := integration.DiscoverLocalPeers(org1AdminContext, 2)
-	require.NoError(t, err)
-	org2Peers, err := integration.DiscoverLocalPeers(org2AdminContext, 1)
-	require.NoError(t, err)
-
-	return []*integration.OrgContext{
-		{
-			OrgID:                org1Name,
-			CtxProvider:          org1AdminContext,
-			ResMgmt:              org1ResMgmt,
-			Peers:                org1Peers,
-			SigningIdentity:      org1AdminUser,
-			AnchorPeerConfigFile: "orgchannelOrg1MSPanchors.tx",
-		},
-		{
-			OrgID:                org2Name,
-			CtxProvider:          org2AdminContext,
-			ResMgmt:              org2ResMgmt,
-			Peers:                org2Peers,
-			SigningIdentity:      org2AdminUser,
-			AnchorPeerConfigFile: "orgchannelOrg2MSPanchors.tx",
-		},
 	}
 }
 

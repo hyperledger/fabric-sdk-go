@@ -10,6 +10,7 @@ import (
 	reqContext "context"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -26,6 +27,7 @@ type requestOptions struct {
 	BeforeRetry   retry.BeforeRetryHandler
 	Timeouts      map[fab.TimeoutType]time.Duration //timeout options for channel client operations
 	ParentContext reqContext.Context                //parent grpc context for channel client operations (query, execute, invokehandler)
+	CCFilter      invoke.CCFilter
 }
 
 // RequestOption func for each Opts argument
@@ -141,6 +143,14 @@ func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOpti
 func WithParentContext(parentContext reqContext.Context) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		o.ParentContext = parentContext
+		return nil
+	}
+}
+
+//WithChaincodeFilter adds a chaincode filter for figuring out additional endorsers
+func WithChaincodeFilter(ccFilter invoke.CCFilter) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		o.CCFilter = ccFilter
 		return nil
 	}
 }

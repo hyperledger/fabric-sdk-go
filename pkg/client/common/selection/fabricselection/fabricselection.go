@@ -224,7 +224,7 @@ func (s *Service) query(req *discclient.Request, chaincodes []*fab.ChaincodeCall
 		return chResp, nil
 	}
 
-	logger.Warn(lastErr.Error())
+	logger.Debug(lastErr.Error())
 
 	if strings.Contains(lastErr.Error(), "failed constructing descriptor for chaincodes") {
 		errMsg := fmt.Sprintf("error received from Discovery Server: %s", lastErr)

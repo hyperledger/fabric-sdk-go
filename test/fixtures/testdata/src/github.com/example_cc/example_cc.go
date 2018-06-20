@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -85,6 +86,10 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface) pb.Response {
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	fmt.Printf("[txID %s] ########### example_cc Invoke ###########\n", stub.GetTxID())
 	function, args := stub.GetFunctionAndParameters()
+
+	if function == "invokecc" {
+		return t.invokeCC(stub, args)
+	}
 
 	if function != "invoke" {
 		return shim.Error("Unknown function call")
@@ -222,6 +227,41 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 	jsonResp := "{\"Name\":\"" + A + "\",\"Amount\":\"" + string(Avalbytes) + "\"}"
 	fmt.Printf("[txID %s] Query Response:%s\n", stub.GetTxID(), jsonResp)
 	return shim.Success(Avalbytes)
+}
+
+type argStruct struct {
+	Args []string `json:"Args"`
+}
+
+func asBytes(args []string) [][]byte {
+	bytes := make([][]byte, len(args))
+	for i, arg := range args {
+		bytes[i] = []byte(arg)
+	}
+	return bytes
+}
+
+// invokeCC invokes another chaincode
+// arg0: ID of chaincode to invoke
+// arg1: Chaincode arguments in the form: {"Args": ["arg0", "arg1",...]}
+func (t *SimpleChaincode) invokeCC(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) < 2 {
+		return shim.Error("Incorrect number of arguments. Expecting ID of chaincode to invoke and args")
+	}
+
+	ccID := args[0]
+	invokeArgsJSON := args[1]
+
+	argStruct := argStruct{}
+	if err := json.Unmarshal([]byte(invokeArgsJSON), &argStruct); err != nil {
+		return shim.Error(fmt.Sprintf("Invalid invoke args: %s", err))
+	}
+
+	if err := stub.PutState(stub.GetTxID()+"_invokedcc", []byte(ccID)); err != nil {
+		return shim.Error(fmt.Sprintf("Error putting state: %s", err))
+	}
+
+	return stub.InvokeChaincode(ccID, asBytes(argStruct.Args), "")
 }
 
 func main() {

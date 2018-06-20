@@ -9,6 +9,7 @@ package integration
 import (
 	"os"
 	"path"
+	"testing"
 	"time"
 
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
@@ -202,7 +203,7 @@ type OrgContext struct {
 }
 
 // CreateChannelAndUpdateAnchorPeers creates the channel and updates all of the anchor peers for all orgs
-func CreateChannelAndUpdateAnchorPeers(sdk *fabsdk.FabricSDK, channelID string, channelConfigFile string, orgsContext []*OrgContext) error {
+func CreateChannelAndUpdateAnchorPeers(t *testing.T, sdk *fabsdk.FabricSDK, channelID string, channelConfigFile string, orgsContext []*OrgContext) error {
 	ordererCtx := sdk.Context(fabsdk.WithUser(AdminUser), fabsdk.WithOrg(OrdererOrgName))
 
 	// Channel management client is responsible for managing channels (create/update channel)
@@ -211,6 +212,7 @@ func CreateChannelAndUpdateAnchorPeers(sdk *fabsdk.FabricSDK, channelID string, 
 		return errors.New("failed to get a new resmgmt client for orderer")
 	}
 
+	var lastConfigBlock uint64
 	var signingIdentities []msp.SigningIdentity
 	for _, orgCtx := range orgsContext {
 		signingIdentities = append(signingIdentities, orgCtx.SigningIdentity)
@@ -226,6 +228,8 @@ func CreateChannelAndUpdateAnchorPeers(sdk *fabsdk.FabricSDK, channelID string, 
 		return err
 	}
 
+	lastConfigBlock = WaitForOrdererConfigUpdate(t, orgsContext[0].ResMgmt, channelID, true, lastConfigBlock)
+
 	for _, orgCtx := range orgsContext {
 		req := resmgmt.SaveChannelRequest{
 			ChannelID:         channelID,
@@ -235,6 +239,8 @@ func CreateChannelAndUpdateAnchorPeers(sdk *fabsdk.FabricSDK, channelID string, 
 		if _, err := orgCtx.ResMgmt.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
 			return err
 		}
+
+		lastConfigBlock = WaitForOrdererConfigUpdate(t, orgCtx.ResMgmt, channelID, false, lastConfigBlock)
 	}
 
 	return nil
@@ -319,4 +325,47 @@ func DiscoverLocalPeers(ctxProvider contextAPI.ClientProvider, expectedPeers int
 		return nil, errors.Errorf("Expecting %d peers but got %d", expectedPeers, len(peers))
 	}
 	return peers, nil
+}
+
+// EnsureChannelCreatedAndPeersJoined creates a channel, joins all peers in the given orgs to the channel and updates the anchor peers of each org.
+func EnsureChannelCreatedAndPeersJoined(t *testing.T, sdk *fabsdk.FabricSDK, channelID string, channelTxFile string, orgsContext []*OrgContext) error {
+	joined, err := IsJoinedChannel(channelID, orgsContext[0].ResMgmt, orgsContext[0].Peers[0])
+	if err != nil {
+		return err
+	}
+
+	if joined {
+		return nil
+	}
+
+	// Create the channel and update anchor peers for all orgs
+	if err := CreateChannelAndUpdateAnchorPeers(t, sdk, channelID, channelTxFile, orgsContext); err != nil {
+		return err
+	}
+
+	return JoinPeersToChannel(channelID, orgsContext)
+}
+
+// WaitForOrdererConfigUpdate waits until the config block update has been committed.
+// In Fabric 1.0 there is a bug that panics the orderer if more than one config update is added to the same block.
+// This function may be invoked after each config update as a workaround.
+func WaitForOrdererConfigUpdate(t *testing.T, client *resmgmt.Client, channelID string, genesis bool, lastConfigBlock uint64) uint64 {
+	for i := 0; i < 10; i++ {
+		chConfig, err := client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+		if err != nil {
+			t.Logf("orderer returned err [%d, %d, %s]", i, lastConfigBlock, err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		currentBlock := chConfig.BlockNumber()
+		t.Logf("WaitForOrdererConfigUpdate [%d, %d, %d]", i, currentBlock, lastConfigBlock)
+		if currentBlock > lastConfigBlock || genesis {
+			return currentBlock
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	t.Fatal("orderer did not update channel config")
+	return 0
 }

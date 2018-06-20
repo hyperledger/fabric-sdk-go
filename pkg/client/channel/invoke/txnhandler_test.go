@@ -56,14 +56,26 @@ func TestQueryHandlerSuccess(t *testing.T) {
 }
 
 func TestExecuteTxHandlerSuccess(t *testing.T) {
+	ccID1 := "test"
+	ccID2 := "invokedcc"
+	ccID3 := "lscc"
+	ccID4 := "somescc"
+
 	//Sample request
-	request := Request{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}}
+	request := Request{ChaincodeID: ccID1, Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}}
+
+	// Add a chaincode filter that will ignore ccID4 when examining the RWSet
+	ccFilter := func(ccID string) bool {
+		return ccID != ccID4
+	}
 
 	//Prepare context objects for handler
-	requestContext := prepareRequestContext(request, Opts{}, t)
+	requestContext := prepareRequestContext(request, Opts{CCFilter: ccFilter}, t)
 
 	mockPeer1 := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200, Payload: []byte("value")}
+	mockPeer1.SetRwSets(fcmocks.NewRwSet(ccID1), fcmocks.NewRwSet(ccID2), fcmocks.NewRwSet(ccID3), fcmocks.NewRwSet(ccID4))
 	mockPeer2 := &fcmocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200, Payload: []byte("value")}
+	mockPeer2.SetRwSets(mockPeer1.RwSets...)
 
 	clientContext := setupChannelClientContext(nil, nil, []fab.Peer{mockPeer1, mockPeer2}, t)
 
