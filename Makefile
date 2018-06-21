@@ -230,7 +230,7 @@ integration-tests-stable: clean depend populate
 integration-tests-prev: clean depend populate
 	@. $(FIXTURE_DOCKERENV_PATH)/prev-env.sh && \
 		cd $(FIXTURE_DOCKERENV_PATH) && \
-		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PREV_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PREV_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+		E2E_ONLY="true" FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PREV_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PREV_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
 	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
 
 .PHONY: integration-tests-prerelease

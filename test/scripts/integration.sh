@@ -33,6 +33,10 @@ PKGS=`$GO_CMD list $REPO/test/integration/... 2> /dev/null | \
       grep -v ^$REPO/test/integration/expiredpeer | \
       grep -v ^$REPO/test/integration\$`
 
+if [ "$E2E_ONLY" == "true" ]; then
+    PKGS=`$GO_CMD list $REPO/test/integration/e2e/... 2> /dev/null`
+fi
+
 echo "Running integration tests ..."
 RACEFLAG=""
 ARCH=$(uname -m)
