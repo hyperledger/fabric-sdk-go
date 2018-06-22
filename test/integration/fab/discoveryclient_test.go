@@ -1,4 +1,5 @@
-// +build devstable
+// +build !prev
+// +build !stable
 
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
@@ -32,18 +33,14 @@ import (
 
 const (
 	peer0Org1 = "peer0.org1.example.com"
-	peer1Org1 = "peer1.org1.example.com"
-	peer0Org2 = "peer0.org2.example.com"
 
 	peer0Org1URL = "peer0.org1.example.com:7051"
 	peer1Org1URL = "peer1.org1.example.com:7151"
 	peer0Org2URL = "peer0.org2.example.com:8051"
 
-	adminUser        = "Admin"
-	org2Name         = "Org2"
-	ordererAdminUser = "Admin"
-	ordererOrgName   = "ordererorg"
-	orgChannelID     = "orgchannel"
+	adminUser    = "Admin"
+	org2Name     = "Org2"
+	orgChannelID = "orgchannel"
 )
 
 func TestDiscoveryClientPeers(t *testing.T) {

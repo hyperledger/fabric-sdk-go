@@ -1,4 +1,5 @@
-// +build devstable
+// +build !prev
+// +build !stable
 
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
@@ -24,7 +25,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/stretchr/testify/require"
 
-	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
@@ -33,19 +33,16 @@ const (
 	peer0Org1 = "peer0.org1.example.com"
 	peer1Org1 = "peer1.org1.example.com"
 	peer0Org2 = "peer0.org2.example.com"
-
-	ordererAdminUser = "Admin"
-	ordererOrgName   = "ordererorg"
 )
 
 var (
-	hostToURLMap map[string]string = map[string]string{
+	hostToURLMap = map[string]string{
 		peer0Org1: "peer0.org1.example.com:7051",
 		peer1Org1: "peer1.org1.example.com:7151",
 		peer0Org2: "peer0.org2.example.com:8051",
 	}
 
-	localHostToURLMap map[string]string = map[string]string{
+	localHostToURLMap = map[string]string{
 		peer0Org1: "localhost:7051",
 		peer1Org1: "localhost:7151",
 		peer0Org2: "localhost:8051",
@@ -214,17 +211,6 @@ func newCCCall(ccID string, collections ...string) *fab.ChaincodeCall {
 
 func chaincodes(ccCalls ...*fab.ChaincodeCall) []*fab.ChaincodeCall {
 	return ccCalls
-}
-
-func asURLs(t *testing.T, endorsers discclient.Endorsers) []string {
-	var urls []string
-	for _, endorser := range endorsers {
-		aliveMsg := endorser.AliveMessage.GetAliveMsg()
-		require.NotNil(t, aliveMsg, "got nil AliveMessage")
-		require.NotNil(t, aliveMsg.Membership, "got nil Membership")
-		urls = append(urls, aliveMsg.Membership.Endpoint)
-	}
-	return urls
 }
 
 type fabricSelectionProviderFactory struct {
