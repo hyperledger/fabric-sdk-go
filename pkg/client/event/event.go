@@ -15,6 +15,7 @@ SPDX-License-Identifier: Apache-2.0
 package event
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
@@ -55,7 +56,15 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 
 	var es fab.EventService
 	if eventClient.permitBlockEvents {
-		es, err = channelContext.ChannelService().EventService(client.WithBlockEvents(), deliverclient.WithSeekType(eventClient.seekType), deliverclient.WithBlockNum(eventClient.fromBlock))
+		var opts []options.Opt
+		opts = append(opts, client.WithBlockEvents())
+		if eventClient.seekType != "" {
+			opts = append(opts, deliverclient.WithSeekType(eventClient.seekType))
+			if eventClient.seekType == seek.FromBlock {
+				opts = append(opts, deliverclient.WithBlockNum(eventClient.fromBlock))
+			}
+		}
+		es, err = channelContext.ChannelService().EventService(opts...)
 	} else {
 		es, err = channelContext.ChannelService().EventService()
 	}
