@@ -5,6 +5,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+set -e
+
+echo "Running check_license.sh"
+
 function filterExcludedFiles {
   CHECK=`echo "$CHECK" | grep -v .png$ | grep -v .rst$ | grep -v ^.git/ \
   | grep -v .pem$ | grep -v .block$ | grep -v .tx$ | grep -v ^LICENSE$ | grep -v _sk$ \
@@ -13,12 +17,26 @@ function filterExcludedFiles {
 }
 
 CHECK=$(git diff --name-only --diff-filter=ACMRTUXB HEAD)
-filterExcludedFiles
-if [[ -z "$CHECK" ]]; then
+REMOTE_REF=$(git log -1 --pretty=format:"%d" | grep '[(].*\/' | wc -l)
+
+# If CHECK is empty then there is no working directory changes: fallback to last two commits.
+# Else if REMOTE_REF=0 then working copy commits are even with remote: only use the working copy changes.
+# Otherwise assume that the change is amending the previous commit: use both last two commit and working copy changes.
+if [[ -z "${CHECK}" ]] || [[ "${REMOTE_REF}" -eq 0 ]]; then
+    if [[ ! -z "${CHECK}" ]]; then
+        echo "Examining last commit and working directory changes"
+        CHECK+=$'\n'
+    else
+        echo "Examining last commit changes"
+    fi
+
   LAST_COMMITS=($(git log -2 --pretty=format:"%h"))
-  CHECK=$(git diff-tree --no-commit-id --name-only --diff-filter=ACMRTUXB -r ${LAST_COMMITS[1]} ${LAST_COMMITS[0]})
-  filterExcludedFiles
+  CHECK+=$(git diff-tree --no-commit-id --name-only --diff-filter=ACMRTUXB -r ${LAST_COMMITS[1]} ${LAST_COMMITS[0]})
+else
+    echo "Examining working directory changes"
 fi
+
+filterExcludedFiles
 
 if [[ -z "$CHECK" ]]; then
    echo "All files are excluded from having license headers"

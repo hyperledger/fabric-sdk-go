@@ -7,7 +7,7 @@
 # Environment variables that affect this script:
 # GO_TESTFLAGS: Flags are added to the go test command.
 # GO_LDFLAGS: Flags are added to the go test command (example: -s).
-# TEST_CHANGED_ONLY: Boolean on whether to only run tests on changed packages (but does not inspect dependencies).
+# TEST_CHANGED_ONLY: Boolean on whether to only run tests on changed packages.
 # TEST_RACE_CONDITIONS: Boolean on whether to test for race conditions.
 # FABRIC_SDKGO_CODELEVEL_TAG: Go tag that represents the fabric code target
 # FABRIC_SDKGO_CODELEVEL_VER: Version that represents the fabric code target (primarily for fixture lookup)
@@ -26,30 +26,32 @@ REPO="github.com/hyperledger/fabric-sdk-go"
 
 source ${SCRIPT_DIR}/lib/find_packages.sh
 
+echo "Running" $(basename "$0")
 
 # Find all packages that should be tested.
 declare -a PKG_SRC=(
 "./pkg"
-"./test"
 )
 findPackages
 
 # Reduce unit tests to changed packages.
 if [ "$TEST_CHANGED_ONLY" = true ]; then
+    findChangedFiles
     findChangedPackages
     filterExcludedPackages
     appendDepPackages
+    PKGS=(${DEP_PKGS[@]})
 fi
 
 RACEFLAG=""
 if [ "$TEST_RACE_CONDITIONS" = true ]; then
     ARCH=$(uname -m)
 
-    if [ "$ARCH" == "x86_64" ]; then
-        echo "Enabling race condition flag for upcoming unit test run"
+    if [ "${ARCH}" = "x86_64" ]; then
+        echo "Enabling data race detection"
         RACEFLAG="-race"
     else
-        echo "Race condition flag not supported on $ARCH for upcoming unit test run"
+        echo "Data race detection not supported on ${ARCH}"
     fi
 fi
 

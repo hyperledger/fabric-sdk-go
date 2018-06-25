@@ -16,6 +16,7 @@ services:
       - FABRIC_SDKGO_CODELEVEL_VER
       - FABRIC_FIXTURE_VERSION
       - FABRIC_SDK_CLIENT_EVENTSERVICE_TYPE
+      - TEST_CHANGED_ONLY
     volumes:
       - ../../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
     command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/expiredorderer.sh
