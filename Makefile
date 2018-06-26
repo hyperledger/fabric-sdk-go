@@ -40,7 +40,7 @@ FABRIC_PREV_VERSION_MINOR       := 1.0
 
 # Build flags (overridable)
 GO_LDFLAGS                 ?=
-GO_TESTFLAGS               ?=
+GO_TESTFLAGS               ?= -count=1
 FABRIC_SDK_EXPERIMENTAL    ?= true
 FABRIC_SDK_EXTRA_GO_TAGS   ?=
 FABRIC_SDK_POPULATE_VENDOR ?= true
@@ -176,7 +176,7 @@ export DOCKER_CMD
 export DOCKER_COMPOSE_CMD
 
 .PHONY: all
-all: checks lint-all unit-test integration-test
+all: depend license unit-test integration-test
 
 .PHONY: depend
 depend:
@@ -216,7 +216,7 @@ build-softhsm2-image:
 unit-test: license depend populate lint-integration-tests
 	@TEST_CHANGED_ONLY=true TEST_WITH_LINTER=true FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
 ifeq ($(FABRIC_SDK_DEPRECATED_UNITTEST),true)
-	@GO_TAGS="$(GO_TAGS) deprecated" TEST_CHANGED_ONLY=true GO_TESTFLAGS="$(GO_TESTFLAGS) -count=1" FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
+	@GO_TAGS="$(GO_TAGS) deprecated" TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
 endif
 
 .PHONY: unit-tests

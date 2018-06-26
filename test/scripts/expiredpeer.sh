@@ -111,4 +111,4 @@ echo "Running integration tests for expired peer certificates ..."
 
 GO_TAGS="$GO_TAGS $FABRIC_SDKGO_CODELEVEL_TAG"
 GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
-$GO_CMD test $RACEFLAG -tags "$GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" ${PKGS[@]} -p 1 -timeout=40m -count=1 configFile=${CONFIG_FILE}
+$GO_CMD test $RACEFLAG -tags "$GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" ${PKGS[@]} -p 1 -timeout=40m configFile=${CONFIG_FILE}

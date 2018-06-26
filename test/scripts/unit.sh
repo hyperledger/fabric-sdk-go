@@ -36,7 +36,6 @@ declare -a PKG_SRC=(
     "./pkg"
 )
 declare PKG_EXCLUDE="(${REPO}/pkg/core/cryptosuite/bccsp/multisuite|${REPO}/pkg/core/cryptosuite/bccsp/pkcs11)"
-
 findPackages
 
 # Reduce unit tests to changed packages.

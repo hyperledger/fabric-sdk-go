@@ -23,6 +23,7 @@ declare -a PKG_SRC=(
     "./pkg"
     "./test"
 )
+declare PKG_EXCLUDE=""
 findPackages
 
 # Reduce Linter checks to changed packages.

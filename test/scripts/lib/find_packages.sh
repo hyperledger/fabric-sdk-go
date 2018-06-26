@@ -12,7 +12,7 @@ function findPackages {
        declare -a FOUND_PKGS=($(${GO_CMD} list ${i}/... 2> /dev/null | tr '\n' ' '))
        for pkg in "${FOUND_PKGS[@]}"
        do
-           if [[ ! "${pkg}" =~ $PKG_EXCLUDE ]]; then
+           if [ -z "${PKG_EXCLUDE}" ] || [[ ! "${pkg}" =~ $PKG_EXCLUDE ]]; then
                PKGS+=("${pkg}")
            fi
        done

@@ -22,6 +22,7 @@ source ${SCRIPT_DIR}/lib/linter.sh
 declare -a PKG_SRC=(
     "./test"
 )
+declare PKG_EXCLUDE=""
 findPackages
 
 # Reduce Linter checks to changed packages.
