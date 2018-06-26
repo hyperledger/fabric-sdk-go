@@ -30,7 +30,7 @@ DOCKER_COMPOSE_CMD ?= docker-compose
 FABRIC_STABLE_VERSION           := 1.1.0
 FABRIC_STABLE_VERSION_MINOR     := 1.1
 FABRIC_STABLE_VERSION_MAJOR     := 1
-FABRIC_BASEIMAGE_STABLE_VERSION := 0.4.6
+FABRIC_BASEIMAGE_STABLE_VERSION := 0.4.10
 
 FABRIC_PRERELEASE_VERSION       := 1.2.0-rc1
 FABRIC_PREV_VERSION             := 1.0.6
@@ -51,11 +51,11 @@ FABRIC_BASE_VERSION  ?= $(FABRIC_BASEIMAGE_STABLE_VERSION)
 
 # Fabric base docker image (overridable)
 FABRIC_BASE_IMAGE   ?= hyperledger/fabric-baseimage
-FABRIC_BASE_TAG     ?= $(ARCH)-$(FABRIC_BASE_VERSION)
+FABRIC_BASE_TAG     ?= $(FABRIC_ARCH)-$(FABRIC_BASE_VERSION)
 
 # Fabric tools docker image (overridable)
 FABRIC_TOOLS_IMAGE ?= hyperledger/fabric-tools
-FABRIC_TOOLS_TAG   ?= $(ARCH)-$(FABRIC_TOOLS_VERSION)
+FABRIC_TOOLS_TAG   ?= $(FABRIC_ARCH)-$(FABRIC_TOOLS_VERSION)
 
 # Fabric docker registries (overridable)
 FABRIC_RELEASE_REGISTRY     ?=
@@ -131,8 +131,8 @@ endif
 
 # Fabric tool docker tags at code levels
 FABRIC_TOOLS_STABLE_TAG     := $(ARCH)-$(FABRIC_STABLE_VERSION)
-FABRIC_TOOLS_PREV_TAG       := $(ARCH)-$(FABRIC_PREV_VERSION)
-FABRIC_TOOLS_PRERELEASE_TAG := $(ARCH)-$(FABRIC_PRERELEASE_VERSION)
+FABRIC_TOOLS_PREV_TAG       := $(FABRIC_ARCH)-$(FABRIC_PREV_VERSION)
+FABRIC_TOOLS_PRERELEASE_TAG := $(FABRIC_ARCH)-$(FABRIC_PRERELEASE_VERSION)
 FABRIC_TOOLS_DEVSTABLE_TAG  := stable
 
 # The version of dep that will be installed by depend-install (or in the CI)
@@ -165,16 +165,21 @@ export FABRIC_SDKGO_DEPEND_INSTALL=false
 FABRIC_SDK_POPULATE_VENDOR := false
 endif
 
-# DEVSTABLE images are currently only x86_64
+FABRIC_ARCH := $(ARCH)
+
 ifneq ($(ARCH),x86_64)
+# DEVSTABLE images are currently only x86_64
 FABRIC_DEVSTABLE_INTTEST := false
+else
+# Recent Fabric builds follow GOARCH (e.g., amd64)
+FABRIC_ARCH := amd64
 endif
 
 # Global environment exported for scripts
 export GO_CMD
 export GO_DEP_CMD
 export ARCH
-export BASE_ARCH=$(ARCH)
+export FABRIC_ARCH
 export GO_LDFLAGS
 export GO_DEP_COMMIT
 export GO_MOCKGEN_COMMIT

@@ -9,8 +9,6 @@ set -xe
 ARCH=`uname -m`
 
 if [ $ARCH = "s390x" ]; then
-  # TODO: Use a base image that doesn't have apt issues.
-  sed -i '/security.debian.org/d' /etc/apt/sources.list
   echo "deb http://ftp.us.debian.org/debian sid main" >> /etc/apt/sources.list
 fi
 
