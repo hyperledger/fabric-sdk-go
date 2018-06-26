@@ -20,7 +20,6 @@ source ${SCRIPT_DIR}/lib/linter.sh
 
 # Find all packages that should be linted.
 declare -a PKG_SRC=(
-    "./pkg"
     "./test"
 )
 findPackages

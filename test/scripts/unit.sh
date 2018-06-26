@@ -9,6 +9,7 @@
 # GO_LDFLAGS: Flags are added to the go test command (example: -s).
 # TEST_CHANGED_ONLY: Boolean on whether to only run tests on changed packages.
 # TEST_RACE_CONDITIONS: Boolean on whether to test for race conditions.
+# TEST_WITH_LINTER: Boolean on whether to run linter prior to unit tests.
 # FABRIC_SDKGO_CODELEVEL_TAG: Go tag that represents the fabric code target
 # FABRIC_SDKGO_CODELEVEL_VER: Version that represents the fabric code target (primarily for fixture lookup)
 # FABRIC_CRYPTOCONFIG_VERSION: Version of cryptoconfig fixture to use
@@ -20,27 +21,36 @@ FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-devstable}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
 TEST_CHANGED_ONLY="${TEST_CHANGED_ONLY:-false}"
 TEST_RACE_CONDITIONS="${TEST_RACE_CONDITIONS:-true}"
+TEST_WITH_LINTER="${TEST_WITH_LINTER:-false}"
 SCRIPT_DIR="$(dirname "$0")"
 
 REPO="github.com/hyperledger/fabric-sdk-go"
 
 source ${SCRIPT_DIR}/lib/find_packages.sh
+source ${SCRIPT_DIR}/lib/linter.sh
 
 echo "Running" $(basename "$0")
 
 # Find all packages that should be tested.
 declare -a PKG_SRC=(
-"./pkg"
+    "./pkg"
 )
+declare PKG_EXCLUDE="(${REPO}/pkg/core/cryptosuite/bccsp/multisuite|${REPO}/pkg/core/cryptosuite/bccsp/pkcs11)"
+
 findPackages
 
 # Reduce unit tests to changed packages.
 if [ "$TEST_CHANGED_ONLY" = true ]; then
     findChangedFiles
-    findChangedPackages
-    filterExcludedPackages
-    appendDepPackages
-    PKGS=(${DEP_PKGS[@]})
+
+    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)) ]]; then
+        echo "Test scripts, fixtures or metadata changed - running all tests"
+    else
+        findChangedPackages
+        filterExcludedPackages
+        appendDepPackages
+        PKGS=(${DEP_PKGS[@]})
+    fi
 fi
 
 RACEFLAG=""
@@ -56,8 +66,12 @@ if [ "$TEST_RACE_CONDITIONS" = true ]; then
 fi
 
 if [ ${#PKGS[@]} -eq 0 ]; then
-    echo "Skipping unit tests since no packages were changed"
+    echo "Skipping tests since no packages were changed"
     exit 0
+fi
+
+if [ "${TEST_WITH_LINTER}" = true ]; then
+    runLinter
 fi
 
 echo "Running unit tests..."
