@@ -197,6 +197,10 @@ license:
 lint: populate
 	@LINT_CHANGED_ONLY=true $(TEST_SCRIPTS_PATH)/check_lint.sh
 
+.PHONY: lint-integration-tests
+lint-integration-tests: populate
+	@LINT_CHANGED_ONLY=true $(TEST_SCRIPTS_PATH)/check_lint_tests.sh
+
 .PHONY: lint-all
 lint-all: populate
 	@$(TEST_SCRIPTS_PATH)/check_lint.sh
@@ -209,8 +213,8 @@ build-softhsm2-image:
 		-f $(FIXTURE_SOFTHSM2_PATH)/Dockerfile .
 
 .PHONY: unit-test
-unit-test: checks depend populate
-	@TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
+unit-test: license depend populate lint-integration-tests
+	@TEST_CHANGED_ONLY=true TEST_WITH_LINTER=true FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
 ifeq ($(FABRIC_SDK_DEPRECATED_UNITTEST),true)
 	@GO_TAGS="$(GO_TAGS) deprecated" TEST_CHANGED_ONLY=true GO_TESTFLAGS="$(GO_TESTFLAGS) -count=1" FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
 endif
@@ -219,8 +223,8 @@ endif
 unit-tests: unit-test
 
 .PHONY: unit-tests-pkcs11
-unit-tests-pkcs11: checks depend populate
-	@FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit-pkcs11.sh
+unit-tests-pkcs11: license depend populate
+	@TEST_CHANGED_ONLY=true TEST_WITH_LINTER=true FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit-pkcs11.sh
 
 .PHONY: integration-tests-stable
 integration-tests-stable: clean depend populate

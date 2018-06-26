@@ -9,13 +9,21 @@ function findPackages {
     PKGS=()
     for i in "${PKG_SRC[@]}"
     do
-       PKGS+=($(${GO_CMD} list ${i}/... 2> /dev/null | tr '\n' ' '))
+       declare -a FOUND_PKGS=($(${GO_CMD} list ${i}/... 2> /dev/null | tr '\n' ' '))
+       for pkg in "${FOUND_PKGS[@]}"
+       do
+           if [[ ! "${pkg}" =~ $PKG_EXCLUDE ]]; then
+               PKGS+=("${pkg}")
+           fi
+       done
     done
 }
 
 function findChangedFiles {
     CHANGED_FILES=($(git diff --name-only --diff-filter=ACMRTUXB HEAD | tr '\n' ' '))
     declare REMOTE_REF=$(git log -1 --pretty=format:"%d" | grep '[(].*\/' | wc -l)
+
+    # TODO: handle untracked files
 
     # If CHANGED_FILES is empty then there is no working directory changes: fallback to last two commits.
     # Else if REMOTE_REF=0 then working copy commits are even with remote: only use the working copy changes.
@@ -38,15 +46,22 @@ function findChangedPackages {
     CHANGED_PKGS=()
     for file in "${CHANGED_FILES[@]}"
     do
-        # TODO filter out non GO/YAML/JSON files
-        # TODO handle vendor
+        declare allowedExtensions="(go|yaml|json|tx|pem|block)"
+        declare fileExt=${file#*.}
 
-        if [ "$file" != "" ]; then
-            DIR=`dirname $file`
-            if [ "$DIR" = "." ]; then
-                CHANGED_PKG+=("$REPO")
+        if [ "${file}" != "" ] && [[ ${fileExt} =~ $allowedExtensions ]]; then
+            declare DIR=`dirname ${file}`
+
+            if [ "${DIR}" = "." ]; then
+                CHANGED_PKG+=("${REPO}")
+#            vendor is not currently included in the git repository
+#            also git list currently prints out packages including the vendor/ prefix.
+#            elif [[ "${DIR}" =~ ^vendor/(.*)$ ]]; then
+#                CHANGED_PKGS+=("${BASH_REMATCH[1]}")
+            elif [[ "${DIR}" =~ ^(.*)/testdata(.*)$ ]]; then
+                CHANGED_PKGS+=("${REPO}/${BASH_REMATCH[1]}")
             else
-                CHANGED_PKGS+=("$REPO/$DIR")
+                CHANGED_PKGS+=("${REPO}/${DIR}")
             fi
         fi
     done
@@ -71,23 +86,35 @@ function filterExcludedPackages {
 }
 
 function calcDepPackages {
-    echo "Calculating package dependencies ..."
+    printf "Calculating package dependencies ... (0%%)\r"
+    declare i=0
 
     for pkg in "${PKGS[@]}"
     do
+        declare progress=$((100 * ${i} / ${#PKGS[@]}))
+        i=$((${i} + 1))
+        if [ $((${progress} % 10)) -eq 0 ]; then
+            printf "Calculating package dependencies ... (${progress}%%)\r"
+        fi
+
         declare testImports=$(${GO_CMD} list -f '{{.TestImports}}' ${pkg} | tr -d '[]' | tr ' ' '\n' | \
             grep "^${REPO}" | \
             grep -v "^${REPO}/vendor/" | \
             grep -v "^${REPO}/internal/github.com/" | \
             grep -v "^${REPO}/third_party/github.com/" | \
+            sort -u | \
             tr '\n' ' ')
 
-        declare pkgDeps=$(${GO_CMD} list -f '{{.Deps}}' ${pkg} ${testImports} | tr -d '[]')
+        declare pkgDeps=$(${GO_CMD} list -f '{{.Deps}}' ${pkg} ${testImports} | tr -d '[]' | tr ' ' '\n' | \
+            grep "^${REPO}" | \
+            grep -v "^${REPO}/vendor/" | \
+            sort -u | \
+            tr '\n' ' ')
 
-        declare val=$(${GO_CMD} list ${testImports} ${pkgDeps} | tr '\n' ' ')
-
-        export PKGDEPS__${pkg//[-\.\/]/_}="${val}"
+        declare val=$(${GO_CMD} list ${testImports} ${pkgDeps} | sort -u | tr '\n' ' ')
+        eval "PKGDEPS__${pkg//[-\.\/]/_}=\"${val}\""
     done
+    printf "Calculating package dependencies ... (100%%)\n"
 }
 
 function appendDepPackages {
