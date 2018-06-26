@@ -270,7 +270,7 @@ func asPeers(ctx contextAPI.Client, endpoints []*discclient.Peer) []fab.Peer {
 	for _, endpoint := range endpoints {
 		peer, err := asPeer(ctx, endpoint)
 		if err != nil {
-			logger.Warnf(err.Error())
+			logger.Debugf(err.Error())
 			continue
 		}
 		peers = append(peers, peer)
@@ -283,7 +283,6 @@ func asPeer(ctx contextAPI.Client, endpoint *discclient.Peer) (fab.Peer, error) 
 
 	peerConfig, found := ctx.EndpointConfig().PeerConfig(url)
 	if !found {
-		logger.Warnf("Peer config not found for url [%s]", url)
 		return nil, errors.Errorf("peer config not found for [%s]", url)
 	}
 

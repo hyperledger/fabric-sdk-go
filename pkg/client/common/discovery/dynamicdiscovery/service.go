@@ -130,7 +130,7 @@ func asPeers(ctx contextAPI.Client, endpoints []*discclient.Peer) []fab.Peer {
 
 		peerConfig, found := ctx.EndpointConfig().PeerConfig(url)
 		if !found {
-			logger.Warnf("Peer config not found for url [%s]", url)
+			logger.Debugf("Peer config not found for url [%s]", url)
 			continue
 		}
 

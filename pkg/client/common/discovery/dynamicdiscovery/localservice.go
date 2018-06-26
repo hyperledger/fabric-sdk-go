@@ -102,7 +102,7 @@ func (s *LocalService) filterLocalMSP(peers []fab.Peer) []fab.Peer {
 	var filteredPeers []fab.Peer
 	for _, p := range peers {
 		if p.MSPID() != localMSPID {
-			logger.Warnf("Peer [%s] is not part of the local MSP [%s] but in MSP [%s]", p.URL(), localMSPID, p.MSPID())
+			logger.Debugf("Peer [%s] is not part of the local MSP [%s] but in MSP [%s]", p.URL(), localMSPID, p.MSPID())
 		} else {
 			filteredPeers = append(filteredPeers, p)
 		}
