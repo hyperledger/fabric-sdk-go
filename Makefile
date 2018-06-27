@@ -58,7 +58,7 @@ FABRIC_TOOLS_IMAGE ?= hyperledger/fabric-tools
 FABRIC_TOOLS_TAG   ?= $(ARCH)-$(FABRIC_TOOLS_VERSION)
 
 # Fabric docker registries (overridable)
-FABRIC_RELEASE_REGISTRY     ?= 
+FABRIC_RELEASE_REGISTRY     ?=
 FABRIC_DEV_REGISTRY         ?= nexus3.hyperledger.org:10001
 FABRIC_DEV_REGISTRY_PRE_CMD ?= docker login -u docker -p docker nexus3.hyperledger.org:10001
 
@@ -122,11 +122,11 @@ GO_LDFLAGS_ARG :=
 endif
 
 ifneq ($(FABRIC_RELEASE_REGISTRY),)
-FABRIC_RELEASE_REGISTRY += /
+FABRIC_RELEASE_REGISTRY := $(FABRIC_RELEASE_REGISTRY)/
 endif
 
 ifneq ($(FABRIC_DEV_REGISTRY),)
-FABRIC_DEV_REGISTRY += /
+FABRIC_DEV_REGISTRY := $(FABRIC_DEV_REGISTRY)/
 endif
 
 # Fabric tool docker tags at code levels
