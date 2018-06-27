@@ -16,7 +16,7 @@ import (
 
 const (
 	configPath         = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_test.yaml"
-	entityMatcherLocal = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test//fixtures/config/overrides/local_entity_matchers.yaml"
+	entityMatcherLocal = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/overrides/local_entity_matchers.yaml"
 	//LocalOrdererPeersCAsConfig config file to override on local test having only peers, orderers and CA entity entries
 	LocalOrdererPeersCAsConfig = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/overrides/local_orderers_peers_ca.yaml"
 	//LocalOrdererPeersConfig config file to override on local test having only peers and orderers entity entries
