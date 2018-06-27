@@ -31,7 +31,10 @@ source ${SCRIPT_DIR}/lib/linter.sh
 
 echo "Running" $(basename "$0")
 
-PKGS=("$PKGS $REPO/pkg/core/cryptosuite/bccsp/pkcs11 $REPO/pkg/core/cryptosuite/bccsp/multisuite")
+declare -a PKGS=(
+    "${REPO}/pkg/core/cryptosuite/bccsp/pkcs11"
+    "${REPO}/pkg/core/cryptosuite/bccsp/multisuite"
+)
 
 # Reduce unit tests to changed packages.
 if [ "$TEST_CHANGED_ONLY" = true ]; then

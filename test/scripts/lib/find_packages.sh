@@ -86,15 +86,20 @@ function filterExcludedPackages {
 }
 
 function calcDepPackages {
-    printf "Calculating package dependencies ... (0%%)\r"
-    declare i=0
 
+    declare progressDivider=10
+    declare progressNewline='\r'
+    if [ ${TERM} = 'dumb' ]; then
+        progressNewline='\n'
+    fi
+
+    declare i=0
     for pkg in "${PKGS[@]}"
     do
         declare progress=$((100 * ${i} / ${#PKGS[@]}))
         i=$((${i} + 1))
-        if [ $((${progress} % 10)) -eq 0 ]; then
-            printf "Calculating package dependencies ... (${progress}%%)\r"
+        if [ $((${progress} % ${progressDivider})) -eq 0 ]; then
+            printf "Calculating package dependencies ... (${progress}%%)${progressNewline}"
         fi
 
         declare testImports=$(${GO_CMD} list -f '{{.TestImports}}' ${pkg} | tr -d '[]' | tr ' ' '\n' | \
