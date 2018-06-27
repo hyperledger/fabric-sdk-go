@@ -178,7 +178,8 @@ func queryCC(org1ChannelClientContext contextAPI.ChannelProvider, t *testing.T) 
 	// Error in container is :
 	// .... identity 0 does not satisfy principal:
 	// Could not validate identity against certification chain, err The certificate has been revoked
-	_, err = chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	_, err = chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err == nil {
 		t.Fatal("Expected error: '....Description: could not find chaincode with name 'exampleCC',,, ")
 	}

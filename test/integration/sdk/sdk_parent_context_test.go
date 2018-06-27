@@ -64,7 +64,8 @@ func TestParentContext(t *testing.T) {
 	}
 
 	_, err = chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
-		channel.WithParentContext(parentContext))
+		channel.WithParentContext(parentContext),
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err == nil || !strings.Contains(err.Error(), "request timed out or been cancelled") {
 		t.Fatalf("expected context cancelled error but got: %s", err)
 	}

@@ -146,7 +146,7 @@ func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) 
 		Fcn:         "invoke",
 		Args:        integration.ExampleCCQueryArgs(),
 	}
-	resp, err := client.Query(req)
+	resp, err := client.Query(req, channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		return "", errors.WithMessage(err, "query funds failed")
 	}
@@ -158,7 +158,7 @@ func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) 
 		return "", errors.WithMessage(err, "move funds failed")
 	}
 
-	resp, err = client.Query(req)
+	resp, err = client.Query(req, channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		return "", errors.WithMessage(err, "query funds failed")
 	}
@@ -287,7 +287,7 @@ func moveFundsAndGetTxID(t *testing.T, client *channel.Client, chaincodeID strin
 		Args:         integration.ExampleCCTxArgs(),
 		TransientMap: transientDataMap,
 	}
-	resp, err := client.Execute(req)
+	resp, err := client.Execute(req, channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		return "", errors.WithMessage(err, "execute move funds failed")
 	}

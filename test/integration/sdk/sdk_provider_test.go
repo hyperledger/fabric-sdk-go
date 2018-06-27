@@ -74,7 +74,8 @@ func TestDynamicSelection(t *testing.T) {
 	success := false
 	for i := 0; i < 5; i++ {
 		// Verify move funds transaction result
-		response, err = chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+		response, err = chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+			channel.WithRetry(retry.DefaultChannelOpts))
 		if err != nil {
 			t.Fatalf("Failed to query funds after transaction: %s", err)
 		}

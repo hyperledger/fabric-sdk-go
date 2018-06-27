@@ -64,7 +64,8 @@ func TestChannelClient(t *testing.T) {
 			Fcn:          "invoke",
 			Args:         integration.ExampleCCTxArgs(),
 			TransientMap: transientDataMap,
-		})
+		},
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -338,7 +339,8 @@ func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T) {
 	}
 	defer chClient.UnregisterChaincodeEvent(reg)
 
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -365,7 +367,8 @@ func testChaincodeEventListener(ccID string, chClient *channel.Client, listener 
 	}
 	defer chClient.UnregisterChaincodeEvent(reg)
 
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: append(integration.ExampleCCTxArgs(), []byte(eventID))})
+	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: append(integration.ExampleCCTxArgs(), []byte(eventID))},
+		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
