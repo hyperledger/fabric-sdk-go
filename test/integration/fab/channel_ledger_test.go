@@ -10,6 +10,7 @@ import (
 	"path"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -105,10 +106,12 @@ func TestLedgerQueries(t *testing.T) {
 		t.Fatalf("creating channel failed: %s", err)
 	}
 
-	txID, err := changeBlockState(t, channelClient, chaincodeID)
+	txID, expectedQueryValue, err := changeBlockState(t, channelClient, chaincodeID)
 	if err != nil {
 		t.Fatalf("Failed to change block state (invoke transaction). Return error: %s", err)
 	}
+
+	verifyTargetsChangedBlockState(t, channelClient, chaincodeID, targets, expectedQueryValue)
 
 	// Test Query Info - retrieve values after transaction
 	bciAfterTx, err := ledgerClient.QueryInfo(ledger.WithTargetEndpoints(testTargets...))
@@ -139,7 +142,7 @@ func TestLedgerQueries(t *testing.T) {
 	testQueryConfigBlock(t, ledgerClient, targets)
 }
 
-func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) (fab.TransactionID, error) {
+func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) (fab.TransactionID, int, error) {
 
 	req := channel.Request{
 		ChaincodeID: chaincodeID,
@@ -148,31 +151,57 @@ func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) 
 	}
 	resp, err := client.Query(req, channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
-		return "", errors.WithMessage(err, "query funds failed")
+		return "", 0, errors.WithMessage(err, "query funds failed")
 	}
 	value := resp.Payload
 
 	// Start transaction that will change block state
 	txID, err := moveFundsAndGetTxID(t, client, chaincodeID)
 	if err != nil {
-		return "", errors.WithMessage(err, "move funds failed")
+		return "", 0, errors.WithMessage(err, "move funds failed")
 	}
 
-	resp, err = client.Query(req, channel.WithRetry(retry.DefaultChannelOpts))
-	if err != nil {
-		return "", errors.WithMessage(err, "query funds failed")
-	}
-	valueAfterInvoke := resp.Payload
-
-	// Verify that transaction changed block state
 	valueInt, _ := strconv.Atoi(string(value))
 	valueInt = valueInt + 1
-	valueAfterInvokeInt, _ := strconv.Atoi(string(valueAfterInvoke))
-	if valueInt != valueAfterInvokeInt {
-		return "", errors.Errorf("SendTransaction didn't change the QueryValue %s", value)
+
+	return txID, valueInt, nil
+}
+
+func verifyTargetsChangedBlockState(t *testing.T, client *channel.Client, chaincodeID string, targets []string, expectedValue int) {
+	for _, target := range targets {
+		verifyTargetChangedBlockState(t, client, chaincodeID, target, expectedValue)
+	}
+}
+
+func verifyTargetChangedBlockState(t *testing.T, client *channel.Client, chaincodeID string, target string, expectedValue int) {
+
+	const (
+		maxRetries = 10
+		retrySleep = 500 * time.Millisecond
+	)
+
+	for r := 0; r < 10; r++ {
+		req := channel.Request{
+			ChaincodeID: chaincodeID,
+			Fcn:         "invoke",
+			Args:        integration.ExampleCCQueryArgs(),
+		}
+
+		resp, err := client.Query(req, channel.WithTargetEndpoints(target), channel.WithRetry(retry.DefaultChannelOpts))
+		require.NoError(t, err, "query funds failed")
+		valueAfterInvoke := resp.Payload
+
+		// Verify that transaction changed block state
+		valueAfterInvokeInt, _ := strconv.Atoi(string(valueAfterInvoke))
+		if expectedValue == valueAfterInvokeInt {
+			return
+		}
+
+		t.Logf("On Attempt [%d / %d]: SendTransaction didn't change the QueryValue %d", r, maxRetries, expectedValue)
+		time.Sleep(retrySleep)
 	}
 
-	return txID, nil
+	t.Error("Exceeded max retries in verifyPeerChangedBlockState")
 }
 
 func testQueryTransaction(t *testing.T, ledgerClient *ledger.Client, txID fab.TransactionID, targets []string) {
