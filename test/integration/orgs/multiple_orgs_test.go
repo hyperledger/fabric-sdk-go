@@ -614,8 +614,7 @@ func verifyValue(t *testing.T, chClient *channel.Client, expected int, ccName st
 		}
 	}
 	if expected != valueInt {
-		t.Fatalf("Org2 'move funds' transaction result was not propagated to Org1. Expected %d, got: %d",
-			(expected), valueInt)
+		t.Fatalf("Org2 'move funds' transaction result was not propagated to Org1. Expected %d, got: %d", expected, valueInt)
 	}
 
 }

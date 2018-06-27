@@ -327,9 +327,17 @@ func TestChaincodeStatusFromResponse(t *testing.T) {
 	assert.Equal(t, status.ChaincodeStatus, s.Group)
 	assert.Equal(t, []byte("Unknown function"), s.Details[1])
 
-	//For successful response
+	//For successful response 200
 	response = &pb.ProposalResponse{
 		Response: &pb.Response{Status: 200, Payload: []byte("TEST"), Message: "Success"},
+	}
+	err = extractChaincodeErrorFromResponse(response)
+	assert.True(t, ok)
+	assert.Nil(t, err)
+
+	//For successful response 201
+	response = &pb.ProposalResponse{
+		Response: &pb.Response{Status: 201, Payload: []byte("TEST"), Message: "Success"},
 	}
 	err = extractChaincodeErrorFromResponse(response)
 	assert.True(t, ok)

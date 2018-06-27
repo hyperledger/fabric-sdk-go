@@ -31,7 +31,7 @@ type Signature struct {
 // Verify checks transaction proposal response
 func (v *Signature) Verify(response *fab.TransactionProposalResponse) error {
 
-	if response.ProposalResponse.GetResponse().Status != int32(common.Status_SUCCESS) {
+	if response.ProposalResponse.GetResponse().Status < int32(common.Status_SUCCESS) || response.ProposalResponse.GetResponse().Status >= int32(common.Status_BAD_REQUEST) {
 		return status.NewFromProposalResponse(response.ProposalResponse, response.Endorser)
 	}
 

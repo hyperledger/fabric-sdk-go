@@ -121,7 +121,8 @@ func (f *EndorsementValidationHandler) Handle(requestContext *RequestContext, cl
 func (f *EndorsementValidationHandler) validate(txProposalResponse []*fab.TransactionProposalResponse) error {
 	var a1 *pb.ProposalResponse
 	for n, r := range txProposalResponse {
-		if r.ProposalResponse.GetResponse().Status != int32(common.Status_SUCCESS) {
+		response := r.ProposalResponse.GetResponse()
+		if response.Status < int32(common.Status_SUCCESS) || response.Status >= int32(common.Status_BAD_REQUEST) {
 			return status.NewFromProposalResponse(r.ProposalResponse, r.Endorser)
 		}
 		if n == 0 {
@@ -130,7 +131,7 @@ func (f *EndorsementValidationHandler) validate(txProposalResponse []*fab.Transa
 		}
 
 		if !bytes.Equal(a1.Payload, r.ProposalResponse.Payload) ||
-			!bytes.Equal(a1.GetResponse().Payload, r.ProposalResponse.GetResponse().Payload) {
+			!bytes.Equal(a1.GetResponse().Payload, response.Payload) {
 			return status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
 				"ProposalResponsePayloads do not match", nil)
 		}

@@ -215,7 +215,7 @@ func extractChaincodeError(status *grpcstatus.Status) (int, string, error) {
 
 //extractChaincodeErrorFromResponse extracts chaincode error from proposal response
 func extractChaincodeErrorFromResponse(resp *pb.ProposalResponse) error {
-	if resp.Response.Status != int32(common.Status_SUCCESS) {
+	if resp.Response.Status < int32(common.Status_SUCCESS) || resp.Response.Status >= int32(common.Status_BAD_REQUEST) {
 		details := []interface{}{resp.Endorsement, resp.Response.Payload}
 		return status.New(status.ChaincodeStatus, resp.Response.Status, resp.Response.Message, details)
 	}
