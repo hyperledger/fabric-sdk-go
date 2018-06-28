@@ -197,11 +197,11 @@ func verifyTargetChangedBlockState(t *testing.T, client *channel.Client, chainco
 			return
 		}
 
-		t.Logf("On Attempt [%d / %d]: SendTransaction didn't change the QueryValue %d", r, maxRetries, expectedValue)
+		t.Logf("On Attempt [%d / %d]: Response didn't match expected value [%d, %d]", r, maxRetries, valueAfterInvokeInt, expectedValue)
 		time.Sleep(retrySleep)
 	}
 
-	t.Error("Exceeded max retries in verifyPeerChangedBlockState")
+	t.Fatal("Exceeded max retries")
 }
 
 func testQueryTransaction(t *testing.T, ledgerClient *ledger.Client, txID fab.TransactionID, targets []string) {

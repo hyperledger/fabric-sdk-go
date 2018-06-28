@@ -75,7 +75,7 @@ func TestChannelClient(t *testing.T) {
 	}
 
 	// Verify transaction using query
-	testQueryWithOpts("201", chaincodeID, chClient, t)
+	testQuery("201", chaincodeID, chClient, t)
 
 	// transaction
 	nestedCCID := integration.GenerateRandomID()
@@ -192,27 +192,26 @@ func TestCCToCC(t *testing.T) {
 }
 
 func testQuery(expected string, ccID string, chClient *channel.Client, t *testing.T) {
+	const (
+		maxRetries = 10
+		retrySleep = 500 * time.Millisecond
+	)
 
-	response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
-		channel.WithRetry(retry.DefaultChannelOpts))
-	if err != nil {
-		t.Fatalf("Failed to invoke example cc: %s", err)
+	for r := 0; r < 10; r++ {
+		response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+			channel.WithRetry(retry.DefaultChannelOpts))
+		require.NoError(t, err, "failed to invoke example cc")
+
+		actual := string(response.Payload)
+		if actual == expected {
+			return
+		}
+
+		t.Logf("On Attempt [%d / %d]: Response didn't match expected value [%s, %s]", r, maxRetries, actual, expected)
+		time.Sleep(retrySleep)
 	}
 
-	if string(response.Payload) != expected {
-		t.Fatalf("Expecting %s, got %s", expected, response.Payload)
-	}
-}
-
-func testQueryWithOpts(expected string, ccID string, chClient *channel.Client, t *testing.T) {
-	response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
-		channel.WithRetry(retry.DefaultChannelOpts))
-	if err != nil {
-		t.Fatalf("Query returned error: %s", err)
-	}
-	if string(response.Payload) != expected {
-		t.Fatalf("Expecting %s, got %s", expected, response.Payload)
-	}
+	t.Fatal("Exceeded max retries")
 }
 
 func testTransaction(ccID, nestedCCID string, chClient *channel.Client, t *testing.T) {
