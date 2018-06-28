@@ -419,7 +419,7 @@ func TestConcurrentEvents(t *testing.T) {
 
 	eventService, eventProducer, err := newServiceWithMockProducer(
 		[]options.Opt{
-			dispatcher.WithEventConsumerBufferSize(200),
+			dispatcher.WithEventConsumerBufferSize(numEvents),
 			dispatcher.WithEventConsumerTimeout(time.Second),
 		},
 		withBlockLedger(sourceURL),
