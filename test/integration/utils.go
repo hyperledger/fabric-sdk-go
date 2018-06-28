@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	adminUser      = "Admin"
-	ordererOrgName = "ordererorg"
+	adminUser       = "Admin"
+	ordererOrgName  = "ordererorg"
+	ordererEndpoint = "orderer.example.com"
 )
 
 // GenerateRandomID generates random ID
@@ -60,7 +61,7 @@ func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChan
 			return errors.Wrapf(err, "create channel failed")
 		}
 
-		_, err = JoinChannel(sdk, req.ChannelID, orgID)
+		_, err = JoinChannel(sdk, req.ChannelID, orgID, targets)
 		if err != nil {
 			return errors.Wrapf(err, "join channel failed")
 		}
@@ -106,7 +107,7 @@ func CreateChannel(sdk *fabsdk.FabricSDK, req resmgmt.SaveChannelRequest) (bool,
 	}
 
 	// Create channel (or update if it already exists)
-	if _, err = resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
+	if _, err = resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint(ordererEndpoint)); err != nil {
 		return false, err
 	}
 
@@ -114,7 +115,7 @@ func CreateChannel(sdk *fabsdk.FabricSDK, req resmgmt.SaveChannelRequest) (bool,
 }
 
 // JoinChannel attempts to save the named channel.
-func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string) (bool, error) {
+func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string, targets []string) (bool, error) {
 	//prepare context
 	clientContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrg(orgID))
 
@@ -124,7 +125,11 @@ func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string) (bool, error) {
 		return false, errors.WithMessage(err, "Failed to create new resource management client")
 	}
 
-	if err = resMgmtClient.JoinChannel(name, resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
+	if err := resMgmtClient.JoinChannel(
+		name,
+		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
+		resmgmt.WithTargetEndpoints(targets...),
+		resmgmt.WithOrdererEndpoint(ordererEndpoint)); err != nil {
 		return false, nil
 	}
 	return true, nil
