@@ -21,8 +21,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
-	"time"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
@@ -57,7 +55,6 @@ func TestExpiredCert(t *testing.T) {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
 	defer sdk.Close()
-	time.Sleep(100 * time.Millisecond)
 
 	// Delete all private keys from the crypto suite store
 	// and users from the user store at the end
@@ -102,7 +99,6 @@ func TestExpiredCert(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error: calling orderer 'orderer.example.com:7050' failed: Orderer Client Status Code: (2) CONNECTION_FAILED....")
 	}
-	time.Sleep(100 * time.Millisecond)
 
 }
 

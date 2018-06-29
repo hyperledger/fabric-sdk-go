@@ -45,7 +45,7 @@ const (
 	// SignatureVerificationFailed is when signature fails verification
 	SignatureVerificationFailed Code = 8
 
-	// MissingEndorsement is if an endoresement is missing
+	// MissingEndorsement is if an endorsement is missing
 	MissingEndorsement Code = 9
 
 	// QueryEndorsers error indicates that no endorser group was found that would
@@ -58,6 +58,9 @@ const (
 
 	// ChaincodeAlreadyLaunching indicates that an attempt for multiple simultaneous invokes was made to launch chaincode
 	ChaincodeAlreadyLaunching Code = 22
+
+	// GenericTransient is generally used by tests to indicate that a retry is possible
+	GenericTransient Code = 12
 )
 
 // CodeName maps the codes in this packages to human-readable strings
@@ -74,6 +77,7 @@ var CodeName = map[int32]string{
 	9:  "MISSING_ENDORSEMENT",
 	10: "CHAINCODE_ERROR",
 	11: "QUERY_ENDORSERS",
+	12: "GENERIC_TRANSIENT",
 	21: "NO_MATCHING_CERTIFICATE_AUTHORITY_ENTITY",
 	22: "NO_MATCHING_PEER_ENTITY",
 	23: "NO_MATCHING_ORDERER_ENTITY",
