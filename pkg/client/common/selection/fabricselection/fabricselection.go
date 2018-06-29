@@ -33,6 +33,14 @@ const moduleName = "fabsdk/client"
 
 var logger = logging.NewLogger(moduleName)
 
+var defaultRetryOpts = retry.Opts{
+	Attempts:       6,
+	InitialBackoff: 500 * time.Millisecond,
+	MaxBackoff:     5 * time.Second,
+	BackoffFactor:  1.75,
+	RetryableCodes: retry.ResMgmtDefaultRetryableCodes,
+}
+
 // PeerState provides state information about the Peer
 type PeerState interface {
 	BlockHeight() uint64
@@ -61,7 +69,7 @@ type Service struct {
 
 // New creates a new dynamic selection service using Fabric's Discovery Service
 func New(ctx contextAPI.Client, channelID string, discovery fab.DiscoveryService, opts ...coptions.Opt) (*Service, error) {
-	options := params{retryOpts: retry.DefaultResMgmtOpts}
+	options := params{retryOpts: defaultRetryOpts}
 	coptions.Apply(&options, opts)
 
 	if options.refreshInterval == 0 {
@@ -113,25 +121,41 @@ func (s *Service) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeCall, opts
 		return nil, errors.Wrapf(err, "error getting channel response for channel [%s]", s.channelID)
 	}
 
-	peers, err := s.discovery.GetPeers()
-	if err != nil {
-		return nil, errors.Wrapf(err, "error getting peers from discovery service for channel [%s]", s.channelID)
-	}
-
 	params := options.NewParams(opts)
 
-	endpoints, err := chResponse.Endorsers(asInvocationChain(chaincodes), newSelector(s.ctx, params.PrioritySelector), newFilter(s.ctx, params.PeerFilter, peers))
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting endorsers from channel response")
+	// Execute getEndorsers with retries since the discovered peers may be out of sync with
+	// the peers returned from the endorser query and it may take a while for them to sync.
+	endpoints, err := retry.NewInvoker(retry.New(s.retryOpts)).Invoke(
+		func() (interface{}, error) {
+			return s.getEndorsers(chaincodes, chResponse, newSelector(s.ctx, params.PrioritySelector), params.PeerFilter)
+		},
+	)
+
+	if err != nil || endpoints == nil {
+		return nil, err
 	}
 
-	return asPeers(s.ctx, endpoints), nil
+	return asPeers(s.ctx, endpoints.(discclient.Endorsers)), nil
 }
 
 // Close closes all resources associated with the service
 func (s *Service) Close() {
 	logger.Debug("Closing channel response cache")
 	s.chResponseCache.Close()
+}
+
+func (s *Service) getEndorsers(chaincodes []*fab.ChaincodeCall, chResponse discclient.ChannelResponse, prioritySelector discclient.PrioritySelector, peerFilter options.PeerFilter) (discclient.Endorsers, error) {
+	peers, err := s.discovery.GetPeers()
+	if err != nil {
+		return nil, errors.Wrapf(err, "error getting peers from discovery service for channel [%s]", s.channelID)
+	}
+
+	endpoints, err := chResponse.Endorsers(asInvocationChain(chaincodes), prioritySelector, newFilter(s.ctx, peerFilter, peers))
+	if err != nil && newDiscoveryError(err).isTransient() {
+		return nil, status.New(status.DiscoveryServerStatus, int32(status.QueryEndorsers), fmt.Sprintf("error getting endorsers: %s", err), []interface{}{})
+	}
+
+	return endpoints, err
 }
 
 func (s *Service) newChannelResponseRef(chaincodes []*fab.ChaincodeCall, refreshInterval time.Duration) *lazyref.Reference {
@@ -226,7 +250,7 @@ func (s *Service) query(req *discclient.Request, chaincodes []*fab.ChaincodeCall
 
 	logger.Debug(lastErr.Error())
 
-	if strings.Contains(lastErr.Error(), "failed constructing descriptor for chaincodes") {
+	if newDiscoveryError(lastErr).isTransient() {
 		errMsg := fmt.Sprintf("error received from Discovery Server: %s", lastErr)
 		return nil, status.New(status.DiscoveryServerStatus, int32(status.QueryEndorsers), errMsg, []interface{}{})
 	}
@@ -304,4 +328,19 @@ type peerEndpoint struct {
 
 func (p *peerEndpoint) BlockHeight() uint64 {
 	return p.blockHeight
+}
+
+type discoveryError string
+
+func newDiscoveryError(err error) discoveryError {
+	return discoveryError(err.Error())
+}
+
+func (e discoveryError) Error() string {
+	return string(e)
+}
+
+func (e discoveryError) isTransient() bool {
+	return strings.Contains(e.Error(), "failed constructing descriptor for chaincodes") ||
+		strings.Contains(e.Error(), "no endorsement combination can be satisfied")
 }

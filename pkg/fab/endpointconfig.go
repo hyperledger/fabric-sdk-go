@@ -50,7 +50,7 @@ const (
 	defaultChannelConfigRefreshInterval   = time.Second * 90
 	defaultChannelMemshpRefreshInterval   = time.Second * 60
 	defaultDiscoveryRefreshInterval       = time.Second * 5
-	defaultSelectionRefreshInterval       = time.Minute * 10
+	defaultSelectionRefreshInterval       = time.Minute * 1
 	defaultCacheSweepInterval             = time.Second * 15
 )
 
