@@ -7,12 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	"fmt"
 	"path"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -174,34 +175,26 @@ func verifyTargetsChangedBlockState(t *testing.T, client *channel.Client, chainc
 }
 
 func verifyTargetChangedBlockState(t *testing.T, client *channel.Client, chaincodeID string, target string, expectedValue int) {
-
-	const (
-		maxRetries = 10
-		retrySleep = 500 * time.Millisecond
-	)
-
-	for r := 0; r < 10; r++ {
-		req := channel.Request{
-			ChaincodeID: chaincodeID,
-			Fcn:         "invoke",
-			Args:        integration.ExampleCCQueryArgs(),
-		}
-
-		resp, err := client.Query(req, channel.WithTargetEndpoints(target), channel.WithRetry(retry.DefaultChannelOpts))
-		require.NoError(t, err, "query funds failed")
-		valueAfterInvoke := resp.Payload
-
-		// Verify that transaction changed block state
-		valueAfterInvokeInt, _ := strconv.Atoi(string(valueAfterInvoke))
-		if expectedValue == valueAfterInvokeInt {
-			return
-		}
-
-		t.Logf("On Attempt [%d / %d]: Response didn't match expected value [%d, %d]", r, maxRetries, valueAfterInvokeInt, expectedValue)
-		time.Sleep(retrySleep)
+	req := channel.Request{
+		ChaincodeID: chaincodeID,
+		Fcn:         "invoke",
+		Args:        integration.ExampleCCQueryArgs(),
 	}
 
-	t.Fatal("Exceeded max retries")
+	_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			resp, err := client.Query(req, channel.WithTargetEndpoints(target), channel.WithRetry(retry.DefaultChannelOpts))
+			require.NoError(t, err, "query funds failed")
+
+			// Verify that transaction changed block state
+			actualValue, _ := strconv.Atoi(string(resp.Payload))
+			if expectedValue != actualValue {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("ledger value didn't match expectation [%d, %d]", expectedValue, actualValue), nil)
+			}
+			return &actualValue, nil
+		},
+	)
+	require.NoError(t, err)
 }
 
 func testQueryTransaction(t *testing.T, ledgerClient *ledger.Client, txID fab.TransactionID, targets []string) {

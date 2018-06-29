@@ -7,13 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package orgs
 
 import (
-	"math"
+	"fmt"
+	"os"
 	"path"
 	"runtime"
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -33,8 +33,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
-	"os"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
@@ -42,7 +40,6 @@ import (
 )
 
 const (
-	pollRetries      = 5
 	org1             = "Org1"
 	org2             = "Org2"
 	ordererAdminUser = "Admin"
@@ -439,15 +436,17 @@ func verifyErrorFromCC(chClientOrg1User *channel.Client, t *testing.T, ccName st
 }
 
 func queryInstalledCC(t *testing.T, orgID string, resMgmt *resmgmt.Client, ccName, ccVersion string, peers []fab.Peer) bool {
-	for i := 0; i < 10; i++ {
-		if isCCInstalled(t, orgID, resMgmt, ccName, ccVersion, peers) {
-			t.Logf("Chaincode [%s:%s] is installed on all peers in Org1", ccName, ccVersion)
-			return true
-		}
-		t.Logf("Chaincode [%s:%s] is NOT installed on all peers in Org1. Trying again in 2 seconds...", ccName, ccVersion)
-		time.Sleep(2 * time.Second)
-	}
-	return false
+	installed, _ := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			ok := isCCInstalled(t, orgID, resMgmt, ccName, ccVersion, peers)
+			if !ok {
+				return &ok, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("Chaincode [%s:%s] is not installed on all peers in Org1", ccName, ccVersion), nil)
+			}
+			return &ok, nil
+		},
+	)
+
+	return *(installed).(*bool)
 }
 
 func isCCInstalled(t *testing.T, orgID string, resMgmt *resmgmt.Client, ccName, ccVersion string, peers []fab.Peer) bool {
@@ -476,16 +475,18 @@ func isCCInstalled(t *testing.T, orgID string, resMgmt *resmgmt.Client, ccName, 
 
 func queryInstantiatedCC(t *testing.T, orgID string, resMgmt *resmgmt.Client, channelID, ccName, ccVersion string, peers []fab.Peer) bool {
 	require.Truef(t, len(peers) > 0, "Expecting one or more peers")
-
 	t.Logf("Querying [%s] peers to see if chaincode [%s] was instantiated on channel [%s]", orgID, ccName, channelID)
-	for i := 0; i < 10; i++ {
-		if isCCInstantiated(t, resMgmt, channelID, ccName, ccVersion, peers) {
-			return true
-		}
-		t.Logf("Did NOT find instantiated chaincode [%s:%s] on one or more peers in [%s]. Trying again in 2 seconds...", ccName, ccVersion, orgID)
-		time.Sleep(2 * time.Second)
-	}
-	return false
+
+	instantiated, _ := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			ok := isCCInstantiated(t, resMgmt, channelID, ccName, ccVersion, peers)
+			if !ok {
+				return &ok, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("Did NOT find instantiated chaincode [%s:%s] on one or more peers in [%s].", ccName, ccVersion, orgID), nil)
+			}
+			return &ok, nil
+		},
+	)
+	return *(instantiated).(*bool)
 }
 
 func isCCInstantiated(t *testing.T, resMgmt *resmgmt.Client, channelID, ccName, ccVersion string, peers []fab.Peer) bool {
@@ -594,29 +595,27 @@ func verifyWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, expectedValue int, ccNa
 	verifyValue(t, chClientOrg1User, expectedValue, ccName)
 }
 
-func verifyValue(t *testing.T, chClient *channel.Client, expected int, ccName string) {
-	// Assert that funds have changed value on org1 peer
-	var valueInt int
-	for i := 0; i < pollRetries; i++ {
-		// Query final value on org1 peer
-		response, err := chClient.Query(channel.Request{ChaincodeID: ccName, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, channel.WithTargets(orgTestPeer0),
-			channel.WithRetry(retry.DefaultChannelOpts))
-		if err != nil {
-			t.Fatalf("Failed to query funds after transaction: %s", err)
-		}
-		// If value has not propogated sleep with exponential backoff
-		valueInt, _ = strconv.Atoi(string(response.Payload))
-		if expected != valueInt {
-			backoffFactor := math.Pow(2, float64(i))
-			time.Sleep(time.Millisecond * 50 * time.Duration(backoffFactor))
-		} else {
-			break
-		}
-	}
-	if expected != valueInt {
-		t.Fatalf("Org2 'move funds' transaction result was not propagated to Org1. Expected %d, got: %d", expected, valueInt)
+func verifyValue(t *testing.T, chClient *channel.Client, expectedValue int, ccName string) {
+	req := channel.Request{
+		ChaincodeID: ccName,
+		Fcn:         "invoke",
+		Args:        integration.ExampleCCQueryArgs(),
 	}
 
+	_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			resp, err := chClient.Query(req, channel.WithTargets(orgTestPeer0), channel.WithRetry(retry.DefaultChannelOpts))
+			require.NoError(t, err, "query funds failed")
+
+			// Verify that transaction changed block state
+			actualValue, _ := strconv.Atoi(string(resp.Payload))
+			if expectedValue != actualValue {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("ledger value didn't match expectation [%d, %d]", expectedValue, actualValue), nil)
+			}
+			return &actualValue, nil
+		},
+	)
+	require.NoError(t, err, "Org2 'move funds' transaction result was not propagated to Org1")
 }
 
 func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {

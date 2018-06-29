@@ -164,3 +164,30 @@ var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 var ChannelConfigRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: {status.EndorsementMismatch},
 }
+
+// TestRetryableCodes are used by tests to determine error situations that can be retried.
+var TestRetryableCodes = map[status.Group][]status.Code{
+	status.TestStatus: {
+		status.GenericTransient,
+	},
+}
+
+const (
+	// TestAttempts number of retry attempts made by default
+	TestAttempts = 10
+	// TestInitialBackoff default initial backoff
+	TestInitialBackoff = 200 * time.Millisecond
+	// TestMaxBackoff default maximum backoff
+	TestMaxBackoff = 5 * time.Second
+	// TestBackoffFactor default backoff factor
+	TestBackoffFactor = 1.75
+)
+
+// TestRetryOpts are used by tests to determine retry parameters.
+var TestRetryOpts = Opts{
+	Attempts:       TestAttempts,
+	InitialBackoff: TestInitialBackoff,
+	MaxBackoff:     TestMaxBackoff,
+	BackoffFactor:  TestBackoffFactor,
+	RetryableCodes: TestRetryableCodes,
+}

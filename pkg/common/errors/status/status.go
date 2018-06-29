@@ -81,6 +81,9 @@ const (
 
 	// DiscoveryServerStatus status returned by the Discovery Server
 	DiscoveryServerStatus
+
+	// TestStatus is used by tests to create retry codes.
+	TestStatus
 )
 
 // GroupName maps the groups in this packages to human-readable strings
@@ -97,6 +100,7 @@ var GroupName = map[int32]string{
 	9:  "Client Status",
 	10: "Chaincode status",
 	11: "Discovery status",
+	12: "Test status",
 }
 
 func (g Group) String() string {

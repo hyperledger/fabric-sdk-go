@@ -7,14 +7,15 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"testing"
-	"time"
 
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	fabAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -30,6 +31,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 )
 
 // BaseSetupImpl implementation of BaseTestSetup
@@ -309,22 +311,23 @@ func DiscoverLocalPeers(ctxProvider contextAPI.ClientProvider, expectedPeers int
 		return nil, errors.Wrap(err, "error creating local context")
 	}
 
-	var peers []fabAPI.Peer
-	for i := 0; i < 10; i++ {
-		peers, err = ctx.LocalDiscoveryService().GetPeers()
-		if err != nil {
-			return nil, errors.Wrapf(err, "error getting peers for MSP [%s]", ctx.Identifier().MSPID)
-		}
-		if len(peers) >= expectedPeers {
-			break
-		}
-		// wait some time to allow the gossip to propagate the peers discovery
-		time.Sleep(3 * time.Second)
+	discoveredPeers, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			peers, err := ctx.LocalDiscoveryService().GetPeers()
+			if err != nil {
+				return nil, errors.Wrapf(err, "error getting peers for MSP [%s]", ctx.Identifier().MSPID)
+			}
+			if len(peers) < expectedPeers {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("Expecting %d peers but got %d", expectedPeers, len(peers)), nil)
+			}
+			return peers, nil
+		},
+	)
+	if err != nil {
+		return nil, err
 	}
-	if expectedPeers != len(peers) {
-		return nil, errors.Errorf("Expecting %d peers but got %d", expectedPeers, len(peers))
-	}
-	return peers, nil
+
+	return discoveredPeers.([]fabAPI.Peer), nil
 }
 
 // EnsureChannelCreatedAndPeersJoined creates a channel, joins all peers in the given orgs to the channel and updates the anchor peers of each org.
@@ -350,22 +353,22 @@ func EnsureChannelCreatedAndPeersJoined(t *testing.T, sdk *fabsdk.FabricSDK, cha
 // In Fabric 1.0 there is a bug that panics the orderer if more than one config update is added to the same block.
 // This function may be invoked after each config update as a workaround.
 func WaitForOrdererConfigUpdate(t *testing.T, client *resmgmt.Client, channelID string, genesis bool, lastConfigBlock uint64) uint64 {
-	for i := 0; i < 10; i++ {
-		chConfig, err := client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererEndpoint("orderer.example.com"))
-		if err != nil {
-			t.Logf("orderer returned err [%d, %d, %s]", i, lastConfigBlock, err)
-			time.Sleep(2 * time.Second)
-			continue
-		}
 
-		currentBlock := chConfig.BlockNumber()
-		t.Logf("WaitForOrdererConfigUpdate [%d, %d, %d]", i, currentBlock, lastConfigBlock)
-		if currentBlock > lastConfigBlock || genesis {
-			return currentBlock
-		}
-		time.Sleep(2 * time.Second)
-	}
+	blockNum, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			chConfig, err := client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+			if err != nil {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), err.Error(), nil)
+			}
 
-	t.Fatal("orderer did not update channel config")
-	return 0
+			currentBlock := chConfig.BlockNumber()
+			if currentBlock <= lastConfigBlock && !genesis {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("Block number was not incremented [%d, %d]", currentBlock, lastConfigBlock), nil)
+			}
+			return &currentBlock, nil
+		},
+	)
+
+	require.NoError(t, err)
+	return *blockNum.(*uint64)
 }

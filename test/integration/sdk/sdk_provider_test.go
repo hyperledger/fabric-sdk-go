@@ -7,10 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package sdk
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
-	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -71,24 +72,30 @@ func TestDynamicSelection(t *testing.T) {
 	}
 
 	valueInt, _ := strconv.Atoi(string(value))
-	success := false
-	for i := 0; i < 5; i++ {
-		// Verify move funds transaction result
-		response, err = chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
-			channel.WithRetry(retry.DefaultChannelOpts))
-		if err != nil {
-			t.Fatalf("Failed to query funds after transaction: %s", err)
-		}
+	verifyValue(t, chClient, valueInt+1, chainCodeID)
+}
 
-		valueAfterInvokeInt, _ := strconv.Atoi(string(response.Payload))
-		if valueInt+1 == valueAfterInvokeInt {
-			success = true
-			break
-		}
-		t.Logf("Execute failed. Before: %s, after: %s", value, response.Payload)
-		time.Sleep(2 * time.Second)
+func verifyValue(t *testing.T, chClient *channel.Client, expectedValue int, ccID string) {
+	req := channel.Request{
+		ChaincodeID: ccID,
+		Fcn:         "invoke",
+		Args:        integration.ExampleCCQueryArgs(),
 	}
-	require.Truef(t, success, "Execute failed. Value was not updated")
+
+	_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			resp, err := chClient.Query(req, channel.WithRetry(retry.DefaultChannelOpts))
+			require.NoError(t, err, "query funds failed")
+
+			// Verify that transaction changed block state
+			actualValue, _ := strconv.Atoi(string(resp.Payload))
+			if expectedValue != actualValue {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("ledger value didn't match expectation [%d, %d]", expectedValue, actualValue), nil)
+			}
+			return &actualValue, nil
+		},
+	)
+	require.NoError(t, err, "Execute failed. Value was not updated")
 }
 
 // DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider

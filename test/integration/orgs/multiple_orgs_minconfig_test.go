@@ -11,9 +11,10 @@ package orgs
 
 import (
 	"testing"
-	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -108,23 +109,26 @@ func discoverPeers(t *testing.T, sdk *fabsdk.FabricSDK) []fab.Peer {
 	discovery, err := chCtx.ChannelService().Discovery()
 	require.NoErrorf(t, err, "Error getting discovery service for channel [%s]", channelID)
 
-	var peers []fab.Peer
-	for i := 0; i < 10; i++ {
-		peers, err = discovery.GetPeers()
-		require.NoErrorf(t, err, "Error getting peers for channel [%s]", channelID)
+	const expectedPeers = 3
 
-		t.Logf("Peers of channel [%s]:", channelID)
-		for i, p := range peers {
-			t.Logf("%d- [%s] - MSP [%s]", i, p.URL(), p.MSPID())
-		}
-		if len(peers) >= 3 {
-			break
-		}
+	discoveredPeers, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			peers, err := discovery.GetPeers()
+			require.NoErrorf(t, err, "Error getting peers for channel [%s]", channelID)
 
-		// wait some time to allow the gossip to propagate the peers discovery
-		time.Sleep(3 * time.Second)
-	}
-	return peers
+			t.Logf("Peers of channel [%s]:", channelID)
+			for i, p := range peers {
+				t.Logf("%d- [%s] - MSP [%s]", i, p.URL(), p.MSPID())
+			}
+			if len(peers) < expectedPeers {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), err.Error(), nil)
+			}
+			return peers, nil
+		},
+	)
+
+	require.NoError(t, err)
+	return discoveredPeers.([]fab.Peer)
 }
 
 // DynamicDiscoveryProviderFactory is configured with dynamic (endorser) selection provider

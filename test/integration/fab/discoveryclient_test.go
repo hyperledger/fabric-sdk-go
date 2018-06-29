@@ -16,12 +16,15 @@ import (
 
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -240,23 +243,23 @@ func testEndorsers(t *testing.T, sdk *fabsdk.FabricSDK, interest *fabdiscovery.C
 	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer0Org1)
 	require.NoErrorf(t, err, "error getting peer config for [%s]", peer0Org1)
 
-	var chanResp discclient.ChannelResponse
-	var lastErr error
-	for r := 0; r < 10; r++ {
-		chanResp, lastErr = sendEndorserQuery(t, ctx, client, interest, peerCfg1.PeerConfig)
-		if lastErr == nil {
-			break
-		}
-		if strings.Contains(lastErr.Error(), "failed constructing descriptor for chaincodes") {
-			// This error is a result of Gossip not being up-to-date with the instantiated chaincodes of all peers.
-			// A retry should resolve the error.
-			t.Logf("Got transient error from discovery: %s. Retrying in 3 seconds", lastErr)
-			time.Sleep(3 * time.Second)
-		} else {
-			t.Fatalf("Got error from discovery: %s", lastErr)
-		}
-	}
-	require.NoError(t, lastErr)
+	chResponse, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			chanResp, err := sendEndorserQuery(t, ctx, client, interest, peerCfg1.PeerConfig)
+			if err != nil && strings.Contains(err.Error(), "failed constructing descriptor for chaincodes") {
+				// This error is a result of Gossip not being up-to-date with the instantiated chaincodes of all peers.
+				// A retry should resolve the error.
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), err.Error(), nil)
+			} else if err != nil {
+				return nil, errors.WithMessage(err, "Got error from discovery")
+			}
+
+			return chanResp, nil
+		},
+	)
+
+	require.NoError(t, err)
+	chanResp := chResponse.(discclient.ChannelResponse)
 
 	// Get endorsers a few times, since each time a different set may be returned
 	for i := 0; i < 3; i++ {
