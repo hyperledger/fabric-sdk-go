@@ -46,9 +46,7 @@
 
 [[constraint]]
   name = "github.com/pkg/errors"
-  branch = "master"
-# Note: tagged version is old.
-# version = "0.8.0"
+  version = "0.8.0"
 
 [[constraint]]
   name = "golang.org/x/crypto"
