@@ -67,7 +67,9 @@ function findChangedPackages {
     done
 
     # Make result unique and filter out non-Go "packages".
-    CHANGED_PKGS=($(printf "%s\n" "${CHANGED_PKGS[@]}" | sort -u | xargs ${GO_CMD} list 2> /dev/null | tr '\n' ' '))
+    if [ ${#CHANGED_PKGS[@]} -gt 0 ]; then
+        CHANGED_PKGS=($(printf "%s\n" "${CHANGED_PKGS[@]}" | sort -u | xargs ${GO_CMD} list 2> /dev/null | tr '\n' ' '))
+    fi
 }
 
 function filterExcludedPackages {
@@ -81,8 +83,6 @@ function filterExcludedPackages {
             fi
         done
     done
-
-    FILTERED_PKGS=("${FILTERED_PKGS[@]}")
 }
 
 function calcDepPackages {
@@ -102,21 +102,27 @@ function calcDepPackages {
             printf "Calculating package dependencies ... (${progress}%%)${progressNewline}"
         fi
 
-        declare testImports=$(${GO_CMD} list -f '{{.TestImports}}' ${pkg} | tr -d '[]' | tr ' ' '\n' | \
+        declare -a testImports=($(${GO_CMD} list -f '{{.TestImports}}' ${pkg} | tr -d '[]' | tr ' ' '\n' | \
             grep "^${REPO}" | \
             grep -v "^${REPO}/vendor/" | \
             grep -v "^${REPO}/internal/github.com/" | \
             grep -v "^${REPO}/third_party/github.com/" | \
             sort -u | \
-            tr '\n' ' ')
+            tr '\n' ' '))
 
-        declare pkgDeps=$(${GO_CMD} list -f '{{.Deps}}' ${pkg} ${testImports} | tr -d '[]' | tr ' ' '\n' | \
+        declare -a pkgDeps=($(${GO_CMD} list -f '{{.Deps}}' ${pkg} ${testImports[@]} | tr -d '[]' | tr ' ' '\n' | \
             grep "^${REPO}" | \
             grep -v "^${REPO}/vendor/" | \
             sort -u | \
-            tr '\n' ' ')
+            tr '\n' ' '))
 
-        declare val=$(${GO_CMD} list ${testImports} ${pkgDeps} | sort -u | tr '\n' ' ')
+        declare -a depsAndImports=(${testImports[@]})
+        depsAndImports+=(${pkgDeps[@]})
+
+        declare val=""
+        if [ ${#depsAndImports[@]} -gt 0 ]; then
+            val=$(${GO_CMD} list ${depsAndImports[@]} | sort -u | tr '\n' ' ')
+        fi
         eval "PKGDEPS__${pkg//[-\.\/]/_}=\"${val}\""
     done
     printf "Calculating package dependencies ... (100%%)\n"
