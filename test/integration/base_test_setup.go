@@ -61,6 +61,7 @@ var txArgs = [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}
 // ExampleCC init and upgrade args
 var initArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte(ExampleCCInitB)}
 var upgradeArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte(ExampleCCUpgradeB)}
+var resetArgs = [][]byte{[]byte("a"), []byte("100"), []byte("b"), []byte(ExampleCCInitB)}
 
 // ExampleCCQueryArgs returns example cc query args
 func ExampleCCQueryArgs() [][]byte {
@@ -174,11 +175,6 @@ func goPath() string {
 	gps := filepath.SplitList(gpDefault)
 
 	return gps[0]
-}
-
-// InstallAndInstantiateExampleCC install and instantiate using resource management client
-func InstallAndInstantiateExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, chainCodeID string) (resmgmt.InstantiateCCResponse, error) {
-	return InstallAndInstantiateCC(sdk, user, orgName, chainCodeID, "github.com/example_cc", "v0", GetDeployPath(), initArgs)
 }
 
 // InstallAndInstantiateCC install and instantiate using resource management client

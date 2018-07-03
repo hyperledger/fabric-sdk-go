@@ -11,6 +11,7 @@
 # TEST_RACE_CONDITIONS: Boolean on whether to test for race conditions.
 # FABRIC_SDKGO_CODELEVEL_TAG: Go tag that represents the fabric code target
 # FABRIC_SDKGO_CODELEVEL_VER: Version that represents the fabric code target
+# FABRIC_SDKGO_TESTRUN_ID: An identifier for the current run of tests.
 # FABRIC_FIXTURE_VERSION: Version of fabric fixtures
 # FABRIC_CRYPTOCONFIG_VERSION: Version of cryptoconfig fixture to use
 # CONFIG_FILE: config file to use
@@ -20,6 +21,7 @@ set -e
 GO_CMD="${GO_CMD:-go}"
 GOPATH="${GOPATH:-$HOME/go}"
 FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-stable}"
+FABRIC_SDKGO_TESTRUN_ID="${FABRIC_SDKGO_TESTRUN_ID:-${RANDOM}}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
 FABRIC_FIXTURE_VERSION="${FABRIC_FIXTURE_VERSION:-v1.2}"
 CONFIG_FILE="${CONFIG_FILE:-config_test.yaml}"
@@ -86,5 +88,7 @@ echo "Code level ${FABRIC_SDKGO_CODELEVEL_TAG} (Fabric ${FABRIC_FIXTURE_VERSION}
 echo "Running integration tests ..."
 
 GO_TAGS="${GO_TAGS} ${FABRIC_SDKGO_CODELEVEL_TAG}"
-GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_FIXTURE_VERSION}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
+GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_FIXTURE_VERSION}/channel"
+GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
+GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.TestRunID=${FABRIC_SDKGO_TESTRUN_ID}"
 ${GO_CMD} test ${RACEFLAG} -tags "${GO_TAGS}" ${GO_TESTFLAGS} -ldflags="${GO_LDFLAGS}" ${PKGS[@]} -p 1 -timeout=40m configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}

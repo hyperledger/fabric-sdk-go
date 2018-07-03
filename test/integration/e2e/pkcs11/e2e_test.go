@@ -21,7 +21,7 @@ import (
 
 const (
 	// ConfigTestFile contains the path and filename of the config for integration tests
-	ConfigTestFilename = "config_pkcs11_test.yaml"
+	ConfigTestFilename = "config_e2e_pkcs11.yaml"
 )
 
 func TestE2E(t *testing.T) {

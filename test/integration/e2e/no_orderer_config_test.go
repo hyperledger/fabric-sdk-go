@@ -19,7 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
-// runWithNoOrdererConfig enables chclient scenarios using config and sdk options provided
+// runWithNoOrdererConfig enables chclient scenarios using config and client options provided
 func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
 
 	if integration.IsLocal() {

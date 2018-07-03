@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -35,7 +36,10 @@ const (
 	orgName        = "Org1"
 	orgAdmin       = "Admin"
 	ordererOrgName = "ordererorg"
-	ccID           = "e2eExampleCC"
+)
+
+var (
+	ccID = "example_cc_e2e" + metadata.TestRunID
 )
 
 // Run enables testing an end-to-end scenario against the supplied SDK options
@@ -218,7 +222,7 @@ func createChannel(sdk *fabsdk.FabricSDK, t *testing.T, resMgmtClient *resmgmt.C
 		t.Fatal(err)
 	}
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
-		ChannelConfigPath: integration.GetChannelConfigPath("mychannel.tx"),
+		ChannelConfigPath: integration.GetChannelConfigPath(channelID + ".tx"),
 		SigningIdentities: []msp.SigningIdentity{adminIdentity}}
 	txID, err := resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil")

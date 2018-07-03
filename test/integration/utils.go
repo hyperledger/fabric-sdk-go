@@ -7,14 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
+	"strings"
 	"testing"
 
-	"fmt"
-
-	"strings"
-
+	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -152,6 +151,69 @@ func OrgTargetPeers(orgs []string, configBackend ...core.ConfigBackend) ([]strin
 		peers = append(peers, orgConfig.Peers...)
 	}
 	return peers, nil
+}
+
+// SetupMultiOrgContext creates an OrgContext for two organizations in the org channel.
+func SetupMultiOrgContext(sdk *fabsdk.FabricSDK, org1Name string, org2Name string, org1AdminUser string, org2AdminUser string) ([]*OrgContext, error) {
+	org1AdminContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
+	org1ResMgmt, err := resmgmt.New(org1AdminContext)
+	if err != nil {
+		return nil, err
+	}
+
+	org1MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org1Name))
+	if err != nil {
+		return nil, err
+	}
+	org1Admin, err := org1MspClient.GetSigningIdentity(org1AdminUser)
+	if err != nil {
+		return nil, err
+	}
+
+	org2AdminContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2Name))
+	org2ResMgmt, err := resmgmt.New(org2AdminContext)
+	if err != nil {
+		return nil, err
+	}
+
+	org2MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org2Name))
+	if err != nil {
+		return nil, err
+	}
+	org2Admin, err := org2MspClient.GetSigningIdentity(org2AdminUser)
+	if err != nil {
+		return nil, err
+	}
+
+	// Ensure that Gossip has propagated its view of local peers before invoking
+	// install since some peers may be missed if we call InstallCC too early
+	org1Peers, err := DiscoverLocalPeers(org1AdminContext, 2)
+	if err != nil {
+		return nil, errors.WithMessage(err, "discovery of local peers failed")
+	}
+	org2Peers, err := DiscoverLocalPeers(org2AdminContext, 1)
+	if err != nil {
+		return nil, errors.WithMessage(err, "discovery of local peers failed")
+	}
+
+	return []*OrgContext{
+		{
+			OrgID:                org1Name,
+			CtxProvider:          org1AdminContext,
+			ResMgmt:              org1ResMgmt,
+			Peers:                org1Peers,
+			SigningIdentity:      org1Admin,
+			AnchorPeerConfigFile: "orgchannelOrg1MSPanchors.tx",
+		},
+		{
+			OrgID:                org2Name,
+			CtxProvider:          org2AdminContext,
+			ResMgmt:              org2ResMgmt,
+			Peers:                org2Peers,
+			SigningIdentity:      org2Admin,
+			AnchorPeerConfigFile: "orgchannelOrg2MSPanchors.tx",
+		},
+	}, nil
 }
 
 // HasPeerJoinedChannel checks whether the peer has already joined the channel.

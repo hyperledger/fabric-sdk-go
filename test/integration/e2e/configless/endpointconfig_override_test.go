@@ -35,7 +35,7 @@ import (
 )
 
 // endpointconfig_override_test.go is an example of programmatically configuring the sdk by injecting instances that implement EndpointConfig's functions (representing the sdk's configs)
-// for the sake of overriding EndpointConfig integration tests, the structure variables below are similar to what is found in /test/fixtures/config/config_test.yaml
+// for the sake of overriding EndpointConfig integration tests, the structure variables below are similar to what is found in /test/fixtures/config/config_e2e.yaml
 // application developers can fully override these functions to load configs in any way that suit their application need
 
 // NOTE: 1. to support test local (flag: TEST_LOCAL=true to use localhost:* URLs for peers, orderers, CAs everywhere), new...() constructor functions where created to test if this flag
