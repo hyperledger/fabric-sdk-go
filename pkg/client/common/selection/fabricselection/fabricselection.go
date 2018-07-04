@@ -162,7 +162,11 @@ func (s *Service) newChannelResponseRef(chaincodes []*fab.ChaincodeCall, refresh
 	return lazyref.New(
 		func() (interface{}, error) {
 			if logging.IsEnabledFor(moduleName, logging.DEBUG) {
-				key, _ := json.Marshal(chaincodes)
+				key, err := json.Marshal(chaincodes)
+				if err != nil {
+					panic(fmt.Sprintf("marshal of chaincodes failed: %s", err))
+				}
+
 				logger.Debugf("Refreshing endorsers for chaincodes [%s] in channel [%s] from discovery service...", key, s.channelID)
 			}
 			return s.queryEndorsers(chaincodes)

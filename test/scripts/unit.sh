@@ -42,7 +42,7 @@ findPackages
 if [ "$TEST_CHANGED_ONLY" = true ]; then
     findChangedFiles
 
-    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)) ]]; then
+    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)|gometalinter.json( |$)|ci.properties( |$)) ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"
     else
         findChangedPackages

@@ -144,7 +144,11 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 
 // GetDeployPath ..
 func GetDeployPath() string {
-	pwd, _ := os.Getwd()
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic(fmt.Sprintf("Getwd failed: %s", err))
+	}
+
 	return path.Join(pwd, "../../fixtures/testdata")
 }
 

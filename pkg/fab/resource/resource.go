@@ -361,7 +361,7 @@ func InstallChaincode(reqCtx reqContext.Context, req InstallChaincodeRequest, ta
 		return nil, fab.EmptyTransactionID, err
 	}
 
-	return resp.([]*fab.TransactionProposalResponse), prop.TxnID, err
+	return resp.([]*fab.TransactionProposalResponse), prop.TxnID, nil
 }
 
 func queryChaincodeWithTarget(reqCtx reqContext.Context, request fab.ChaincodeInvokeRequest, target fab.ProposalProcessor, opts options) ([]byte, error) {

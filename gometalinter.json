@@ -2,12 +2,14 @@
   "Deadline": "5m",
   "Exclude": [
     ".*seekInfo can be .*proto.Message.*",
-    "test/integration/msp/check_cert_attributes.go",
-    "test/integration/msp/check_cert_ser_attributes_prev.go",
-    "test/fixtures/testdata/..."
+    "^test/integration/msp/check_cert_attributes.go",
+    "^test/integration/msp/check_cert_ser_attributes_prev.go",
+    "^internal/github.com/",
+    "^third_party/"
   ],
   "EnableGC": true,
   "WarnUnmatchedDirective": true,
+  "Vendor": true,
   "Enable": [
     "deadcode",
     "gocyclo",
@@ -30,6 +32,16 @@
     "gas",
     "structcheck"
   ],
+  "Linters": {
+    "gas": {
+      "Command": "gas -fmt=csv",
+      "Pattern": "^(?P<path>.*?\\.go),(?P<line>\\d+)(-\\d+)?,(?P<message>[^,]+,[^,]+,[^,]+)",
+      "InstallFrom": "github.com/GoASTScanner/gas",
+      "PartitionStrategy": "packages",
+      "defaultEnabled": true,
+      "IsFast": true
+    }
+  },
   "Cyclo": 10,
   "Aggregate": true
 }

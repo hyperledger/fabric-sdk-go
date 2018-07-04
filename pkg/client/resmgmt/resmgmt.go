@@ -405,7 +405,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.ResMgmt), contextImpl.WithParent(parentReqCtx))
 	defer cancel()
 
-	responses = rc.sendIntallCCRequest(req, reqCtx, newTargets, responses)
+	responses, err = rc.sendInstallCCRequest(req, reqCtx, newTargets, responses)
 
 	if err != nil {
 		installErrs, ok := err.(multi.Errors)
@@ -419,16 +419,20 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	return responses, errs.ToError()
 }
 
-func (rc *Client) sendIntallCCRequest(req InstallCCRequest, reqCtx reqContext.Context, newTargets []fab.Peer, responses []InstallCCResponse) []InstallCCResponse {
+func (rc *Client) sendInstallCCRequest(req InstallCCRequest, reqCtx reqContext.Context, newTargets []fab.Peer, responses []InstallCCResponse) ([]InstallCCResponse, error) {
 	icr := resource.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package}
-	transactionProposalResponse, _, _ := resource.InstallChaincode(reqCtx, icr, peer.PeersToTxnProcessors(newTargets))
+	transactionProposalResponse, _, err := resource.InstallChaincode(reqCtx, icr, peer.PeersToTxnProcessors(newTargets))
+	if err != nil {
+		return nil, errors.WithMessage(err, "installing chaincode failed")
+	}
+
 	for _, v := range transactionProposalResponse {
 		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v", req.Name, v.Endorser, v.Status)
 
 		response := InstallCCResponse{Target: v.Endorser, Status: v.Status}
 		responses = append(responses, response)
 	}
-	return responses
+	return responses, nil
 }
 
 func (rc *Client) adjustTargets(targets []fab.Peer, req InstallCCRequest, retry retry.Opts, parentReqCtx reqContext.Context) ([]InstallCCResponse, []fab.Peer, multi.Errors) {

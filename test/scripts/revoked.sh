@@ -58,7 +58,7 @@ if [ "$TEST_CHANGED_ONLY" = true ]; then
     findChangedFiles
     cd ${PWD}
 
-    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)) ]]; then
+    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)|ci.properties( |$)) ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"
     else
         findChangedPackages

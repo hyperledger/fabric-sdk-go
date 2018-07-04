@@ -108,10 +108,15 @@ func (p *peerEndorser) ProcessTransactionProposal(ctx reqContext.Context, reques
 		return &tpr, errors.Wrapf(err, "Transaction processing for endorser [%s]", p.target)
 	}
 
+	chaincodeStatus, err := getChaincodeResponseStatus(proposalResponse)
+	if err != nil {
+		return nil, errors.WithMessage(err, "chaincode response status parsing failed")
+	}
+
 	tpr := fab.TransactionProposalResponse{
 		ProposalResponse: proposalResponse,
 		Endorser:         p.target,
-		ChaincodeStatus:  getChaincodeResponseStatus(proposalResponse),
+		ChaincodeStatus:  chaincodeStatus,
 		Status:           proposalResponse.GetResponse().Status,
 	}
 	return &tpr, nil
@@ -287,13 +292,21 @@ func extractChaincodeNameNotFoundError(grpcstat *grpcstatus.Status) (int32, stri
 }
 
 // getChaincodeResponseStatus gets the actual response status from response.Payload.extension.Response.status, as fabric always returns actual 200
-func getChaincodeResponseStatus(response *pb.ProposalResponse) int32 {
+func getChaincodeResponseStatus(response *pb.ProposalResponse) (int32, error) {
 	if response.Payload != nil {
-		payload, _ := protos_utils.GetProposalResponsePayload(response.Payload)
-		extension, _ := protos_utils.GetChaincodeAction(payload.Extension)
+		payload, err := protos_utils.GetProposalResponsePayload(response.Payload)
+		if err != nil {
+			return 0, errors.Wrap(err, "unmarshal of proposal response payload failed")
+		}
+
+		extension, err := protos_utils.GetChaincodeAction(payload.Extension)
+		if err != nil {
+			return 0, errors.Wrap(err, "unmarshal of chaincode action failed")
+		}
+
 		if extension != nil && extension.Response != nil {
-			return extension.Response.Status
+			return extension.Response.Status, nil
 		}
 	}
-	return response.Response.Status
+	return response.Response.Status, nil
 }
