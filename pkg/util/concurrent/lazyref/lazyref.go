@@ -15,6 +15,7 @@ import (
 	"unsafe"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 )
 
 var logger = logging.NewLogger("fabsdk/util")
@@ -71,23 +72,20 @@ const (
 // is closed (via a call to Close) or if it expires. (Note: The Finalizer function
 // is not called every time the value is refreshed with the periodic refresh feature.)
 type Reference struct {
-	initialInit        time.Duration
-	wg                 sync.WaitGroup
-	initializer        InitializerWithData
-	finalizer          Finalizer
-	expirationHandler  expirationHandler
-	expirationProvider ExpirationProvider
-	ref                unsafe.Pointer
-	lastTimeAccessed   unsafe.Pointer
-	expiryType         ExpirationType
-	closed             bool
-	running            bool
-	lock               sync.RWMutex
-	closech            chan bool
+	params
+	wg                sync.WaitGroup
+	expirationHandler expirationHandler
+	initializer       InitializerWithData
+	ref               unsafe.Pointer
+	lastTimeAccessed  unsafe.Pointer
+	closed            bool
+	running           bool
+	lock              sync.RWMutex
+	closech           chan bool
 }
 
 // New creates a new reference
-func New(initializer Initializer, opts ...Opt) *Reference {
+func New(initializer Initializer, opts ...options.Opt) *Reference {
 	return NewWithData(func(interface{}) (interface{}, error) {
 		return initializer()
 	}, opts...)
@@ -96,15 +94,15 @@ func New(initializer Initializer, opts ...Opt) *Reference {
 // NewWithData creates a new reference where data is passed from the Get
 // function to the initializer. This is useful for refreshing the reference
 // with dynamic data.
-func NewWithData(initializer InitializerWithData, opts ...Opt) *Reference {
+func NewWithData(initializer InitializerWithData, opts ...options.Opt) *Reference {
 	lazyRef := &Reference{
+		params: params{
+			initialInit: InitOnFirstAccess,
+		},
 		initializer: initializer,
-		initialInit: InitOnFirstAccess,
 	}
 
-	for _, opt := range opts {
-		opt(lazyRef)
-	}
+	options.Apply(lazyRef, opts)
 
 	if lazyRef.expirationProvider != nil {
 		// This is an expiring reference. After the initializer is
@@ -122,9 +120,13 @@ func NewWithData(initializer InitializerWithData, opts ...Opt) *Reference {
 		lazyRef.closech = make(chan bool, 1)
 
 		if lazyRef.expirationHandler == nil {
-			// Set a default expiration handler
-			lazyRef.expirationHandler = lazyRef.resetValue
+			if lazyRef.expiryType == Refreshing {
+				lazyRef.expirationHandler = lazyRef.refreshValue
+			} else {
+				lazyRef.expirationHandler = lazyRef.resetValue
+			}
 		}
+
 		if lazyRef.initialInit >= 0 {
 			lazyRef.ensureTimerStarted(lazyRef.initialInit)
 		}
@@ -222,12 +224,12 @@ func (r *Reference) isSet() bool {
 }
 
 func (r *Reference) set(value interface{}) {
-	atomic.StorePointer(&r.ref, unsafe.Pointer(&valueHolder{value: value})) //nolint
+	atomic.StorePointer(&r.ref, unsafe.Pointer(&valueHolder{value: value})) // nolint: gas
 }
 
 func (r *Reference) setLastAccessed() {
 	now := time.Now()
-	atomic.StorePointer(&r.lastTimeAccessed, unsafe.Pointer(&now)) //nolint
+	atomic.StorePointer(&r.lastTimeAccessed, unsafe.Pointer(&now)) // nolint: gas
 }
 
 func (r *Reference) lastAccessed() time.Time {

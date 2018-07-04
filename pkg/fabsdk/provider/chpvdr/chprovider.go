@@ -29,7 +29,7 @@ import (
 var logger = logging.NewLogger("fabsdk")
 
 type cache interface {
-	Get(lazycache.Key) (interface{}, error)
+	Get(lazycache.Key, ...interface{}) (interface{}, error)
 	Close()
 }
 

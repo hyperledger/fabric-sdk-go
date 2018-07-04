@@ -90,13 +90,9 @@ func newService(context context.Client, channelID string, discovery fab.Discover
 	service.pgResolvers = lazycache.New(
 		"PG_Resolver_Cache",
 		func(key lazycache.Key) (interface{}, error) {
-			return lazyref.New(
-				func() (interface{}, error) {
-					return service.createPGResolver(key.(*resolverKey))
-				},
-				lazyref.WithAbsoluteExpiration(service.cacheTimeout),
-			), nil
+			return service.createPGResolver(key.(*resolverKey))
 		},
+		lazyref.WithAbsoluteExpiration(service.cacheTimeout),
 	)
 
 	return service, nil
@@ -150,12 +146,7 @@ func (s *SelectionService) Close() {
 }
 
 func (s *SelectionService) getPeerGroupResolver(chaincodeIDs []string) (pgresolver.PeerGroupResolver, error) {
-	value, err := s.pgResolvers.Get(newResolverKey(s.channelID, chaincodeIDs...))
-	if err != nil {
-		return nil, err
-	}
-	lazyRef := value.(*lazyref.Reference)
-	resolver, err := lazyRef.Get()
+	resolver, err := s.pgResolvers.Get(newResolverKey(s.channelID, chaincodeIDs...))
 	if err != nil {
 		return nil, err
 	}

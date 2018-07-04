@@ -31,12 +31,12 @@ func ExampleReference_expiring() {
 			sequence++
 			return fmt.Sprintf("Data_%d", sequence), nil
 		},
-		WithIdleExpiration(2*time.Second),
+		WithIdleExpiration(200*time.Millisecond),
 	)
 
 	for i := 0; i < 5; i++ {
 		fmt.Println(ref.MustGet())
-		time.Sleep(time.Second)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
@@ -50,12 +50,12 @@ func ExampleReference_refreshing() {
 			sequence++
 			return fmt.Sprintf("Data_%d", sequence), nil
 		},
-		WithRefreshInterval(InitImmediately, 2*time.Second),
+		WithRefreshInterval(InitImmediately, 200*time.Millisecond),
 	)
 
 	for i := 0; i < 5; i++ {
 		fmt.Println(ref.MustGet())
-		time.Sleep(3 * time.Second)
+		time.Sleep(300 * time.Millisecond)
 	}
 }
 
@@ -255,8 +255,6 @@ func TestGetWithFinalizer(t *testing.T) {
 	if len(errors) > 0 {
 		t.Fatalf(errors[0].Error())
 	}
-
-	time.Sleep(time.Second)
 }
 
 func TestExpiring(t *testing.T) {

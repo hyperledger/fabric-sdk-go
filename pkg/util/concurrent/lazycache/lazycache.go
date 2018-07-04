@@ -12,7 +12,9 @@ import (
 	"sync/atomic"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/futurevalue"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazyref"
 	"github.com/pkg/errors"
 )
 
@@ -25,6 +27,12 @@ type Key interface {
 
 // EntryInitializer creates a cache value for the given key
 type EntryInitializer func(key Key) (interface{}, error)
+
+// EntryInitializerWithData creates a cache value for the given key and the
+// additional data passed in from Get(). With expiring cache entries, the
+// initializer is called with the same key, but the latest data is passed from
+// the Get() call that triggered the data to be cached/re-cached.
+type EntryInitializerWithData func(key Key, data interface{}) (interface{}, error)
 
 type future interface {
 	Get() (interface{}, error)
@@ -44,16 +52,42 @@ type Cache struct {
 	// name is useful for debugging
 	name        string
 	m           sync.Map
-	initializer EntryInitializer
+	initializer EntryInitializerWithData
 	closed      int32
+	useRef      bool
 }
 
-// New creates a new lazy cache with the given name
-// (Note that the name is only used for debugging purpose)
-func New(name string, initializer EntryInitializer) *Cache {
+// New creates a new lazy cache.
+// - name is the name of the cache and is only used for debugging purpose
+// - initializer is invoked the first time an entry is being cached
+// - opts are options for the cache. If any lazyref option is passed then a lazy reference
+//   is created for each of the cache entries to hold the actual value. This makes it possible
+//   to have expiring values and values that proactively refresh.
+func New(name string, initializer EntryInitializer, opts ...options.Opt) *Cache {
+	return NewWithData(name,
+		func(key Key, data interface{}) (interface{}, error) {
+			return initializer(key)
+		},
+		opts...,
+	)
+}
+
+// NewWithData creates a new lazy cache. The provided initializer accepts optional data that
+// is passed in from Get().
+// - name is the name of the cache and is only used for debugging purpose
+// - initializer is invoked the first time an entry is being cached
+// - opts are options for the cache. If any lazyref option is passed then a lazy reference
+//   is created for each of the cache entries to hold the actual value. This makes it possible
+//   to have expiring values and values that proactively refresh.
+func NewWithData(name string, initializer EntryInitializerWithData, opts ...options.Opt) *Cache {
+	useRef := useLazyRef(opts...)
+	if useRef {
+		initializer = newLazyRefInitializer(name, initializer, opts...)
+	}
 	return &Cache{
 		name:        name,
 		initializer: initializer,
+		useRef:      useRef,
 	}
 }
 
@@ -67,12 +101,16 @@ func (c *Cache) Name() string {
 // to create the value, and the key is inserted. If the
 // initializer returns an error then the key is removed
 // from the cache.
-func (c *Cache) Get(key Key) (interface{}, error) {
+func (c *Cache) Get(key Key, data ...interface{}) (interface{}, error) {
 	keyStr := key.String()
 
 	f, ok := c.m.Load(keyStr)
 	if ok {
-		return f.(future).Get()
+		v, err := f.(future).Get()
+		if err != nil {
+			return nil, err
+		}
+		return c.value(v, first(data))
 	}
 
 	// The key wasn't found. Attempt to add one.
@@ -81,24 +119,29 @@ func (c *Cache) Get(key Key) (interface{}, error) {
 			if closed := atomic.LoadInt32(&c.closed); closed == 1 {
 				return nil, errors.Errorf("%s - cache is closed", c.name)
 			}
-			return c.initializer(key)
+			return c.initializer(key, first(data))
 		},
 	)
 
 	f, loaded := c.m.LoadOrStore(keyStr, newFuture)
 	if loaded {
 		// Another thread has added the key before us. Return the value.
-		return f.(future).Get()
+		v, err := f.(future).Get()
+		if err != nil {
+			return nil, err
+		}
+		return c.value(v, first(data))
 	}
 
-	// We added the key. It must be initailized.
+	// We added the key. It must be initialized.
 	value, err := newFuture.Initialize()
 	if err != nil {
 		// Failed. Delete the key.
 		logger.Debugf("%s - Failed to initialize key [%s]: %s. Deleting key.", c.name, keyStr, err)
 		c.m.Delete(keyStr)
+		return nil, err
 	}
-	return value, err
+	return c.value(value, first(data))
 }
 
 // MustGet returns the value for the given key. If the key doesn't
@@ -149,4 +192,49 @@ func (c *Cache) close(key string, f future) {
 			clos.Close()
 		}
 	}
+}
+
+func newLazyRefInitializer(name string, initializer EntryInitializerWithData, opts ...options.Opt) EntryInitializerWithData {
+	return func(key Key, data interface{}) (interface{}, error) {
+		logger.Debugf("%s - Calling initializer for [%s], data [%#v]", name, key, data)
+		ref := lazyref.NewWithData(
+			func(data interface{}) (interface{}, error) {
+				logger.Debugf("%s - Calling lazyref initializer for [%s], data [%#v]", name, key, data)
+				return initializer(key, data)
+			},
+			opts...,
+		)
+
+		// Make sure no error is returned from lazyref.Get(). If there is
+		// then return the error. We don't want to cache a reference that always
+		// returns an error, especially if it's a refreshing reference.
+		_, err := ref.Get(data)
+		if err != nil {
+			logger.Debugf("%s - Error returned from lazyref initializer [%s], data [%#v]: %s", name, key, data, err)
+			return nil, err
+		}
+		logger.Debugf("%s - Returning lazyref for [%s], data [%#v]", name, key, data)
+		return ref, nil
+	}
+}
+
+func (c *Cache) value(value interface{}, data interface{}) (interface{}, error) {
+	if value != nil && c.useRef {
+		return value.(*lazyref.Reference).Get(data)
+	}
+	return value, nil
+}
+
+func first(data []interface{}) interface{} {
+	if len(data) == 0 {
+		return nil
+	}
+	return data[0]
+}
+
+// useLazyRef returns true if the cache should used lazy references to hold the actual value
+func useLazyRef(opts ...options.Opt) bool {
+	chk := &refOptCheck{}
+	options.Apply(chk, opts)
+	return chk.useRef
 }

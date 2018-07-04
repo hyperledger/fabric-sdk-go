@@ -47,7 +47,7 @@ func newChCfgRef(cfg fab.ChannelCfg) *chconfig.Ref {
 }
 
 // Get mock channel config reference
-func (m *chCfgCache) Get(k lazycache.Key) (interface{}, error) {
+func (m *chCfgCache) Get(k lazycache.Key, data ...interface{}) (interface{}, error) {
 	cfg, ok := m.cfgMap.Load(k.(chconfig.CacheKey).ChannelID())
 	if !ok {
 		return nil, errors.New("Channel config not found in cache")
