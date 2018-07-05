@@ -9,7 +9,10 @@
 # against the latest dev-stable target.
 
 # Uses nexus registry (see https://nexus3.hyperledger.org/#browse/browse/components:docker.snapshot)
-export FABRIC_FIXTURE_VERSION="v1.2"
+export FABRIC_ARCH=""
+export FABRIC_ARCH_SEP=""
+
+export FABRIC_FIXTURE_VERSION="v1.3"
 export FABRIC_CRYPTOCONFIG_VERSION="v1"
 
 export FABRIC_CA_FIXTURE_TAG="stable"
