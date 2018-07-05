@@ -211,6 +211,7 @@ func newLazyRefInitializer(name string, initializer EntryInitializerWithData, op
 		_, err := ref.Get(data)
 		if err != nil {
 			logger.Debugf("%s - Error returned from lazyref initializer [%s], data [%#v]: %s", name, key, data, err)
+			ref.Close()
 			return nil, err
 		}
 		logger.Debugf("%s - Returning lazyref for [%s], data [%#v]", name, key, data)
