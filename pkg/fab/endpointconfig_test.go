@@ -1368,3 +1368,27 @@ func tlsCertByBytes(bytes []byte) (*x509.Certificate, error) {
 	//no cert found and there is no error
 	return nil, errors.New("empty byte")
 }
+
+func TestEntityMatchers(t *testing.T) {
+
+	endpointConfig, err := ConfigFromBackend(getMatcherConfig())
+	assert.Nil(t, err, "Failed to get endpoint config from backend")
+	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
+
+	endpointConfigImpl := endpointConfig.(*EndpointConfig)
+	assert.Equal(t, 8, len(endpointConfigImpl.peerMatchers), "preloading matchers isn't working as expected")
+	assert.Equal(t, 4, len(endpointConfigImpl.ordererMatchers), "preloading matchers isn't working as expected")
+	assert.Equal(t, 1, len(endpointConfigImpl.channelMatchers), "preloading matchers isn't working as expected")
+
+	peerConfig, ok := endpointConfig.PeerConfig("xyz.org1.example.com")
+	assert.True(t, ok, "supposed to find peer config")
+	assert.NotNil(t, peerConfig, "supposed to find peer config")
+
+	ordererConfig, ok := endpointConfig.OrdererConfig("xyz.org1.example.com")
+	assert.True(t, ok, "supposed to find orderer config")
+	assert.NotNil(t, ordererConfig, "supposed to find orderer config")
+
+	channelConfig, ok := endpointConfig.ChannelConfig("samplexyzchannel")
+	assert.True(t, ok, "supposed to find channel config")
+	assert.NotNil(t, channelConfig, "supposed to find channel config")
+}

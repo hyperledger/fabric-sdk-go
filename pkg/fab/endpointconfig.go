@@ -11,7 +11,6 @@ import (
 	"crypto/x509"
 	"reflect"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -58,10 +57,7 @@ const (
 func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, error) {
 
 	config := &EndpointConfig{
-		backend:         lookup.New(coreBackend...),
-		peerMatchers:    make(map[int]*regexp.Regexp),
-		ordererMatchers: make(map[int]*regexp.Regexp),
-		channelMatchers: make(map[int]*regexp.Regexp),
+		backend: lookup.New(coreBackend...),
 	}
 
 	if err := config.loadEndpointConfiguration(); err != nil {
@@ -86,9 +82,9 @@ type EndpointConfig struct {
 	channelPeersByChannel    map[string][]fab.ChannelPeer
 	channelOrderersByChannel map[string][]fab.OrdererConfig
 	tlsClientCerts           []tls.Certificate
-	peerMatchers             map[int]*regexp.Regexp
-	ordererMatchers          map[int]*regexp.Regexp
-	channelMatchers          map[int]*regexp.Regexp
+	peerMatchers             []matcherEntry
+	ordererMatchers          []matcherEntry
+	channelMatchers          []matcherEntry
 }
 
 //endpointConfigEntity contains endpoint config elements needed by endpointconfig
@@ -105,6 +101,12 @@ type entityMatchers struct {
 	matchers map[string][]MatchConfig
 }
 
+//matcher entry mapping regex to match config
+type matcherEntry struct {
+	regex       *regexp.Regexp
+	matchConfig MatchConfig
+}
+
 // Timeout reads timeouts for the given timeout type, if type is not found in the config
 // then default is set as per the const value above for the corresponding type
 func (c *EndpointConfig) Timeout(tType fab.TimeoutType) time.Duration {
@@ -119,28 +121,27 @@ func (c *EndpointConfig) OrderersConfig() []fab.OrdererConfig {
 // OrdererConfig returns the requested orderer
 func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, bool) {
 
+	matchingOrdererConfig := c.tryMatchingOrdererConfig(strings.ToLower(nameOrURL))
+	if matchingOrdererConfig != nil {
+		return matchingOrdererConfig, true
+	}
+
+	logger.Debugf("Could not find Orderer for [%s] through entity matchers", nameOrURL)
 	orderer, ok := c.networkConfig.Orderers[strings.ToLower(nameOrURL)]
-	if !ok {
-		for _, ordererCfg := range c.OrderersConfig() {
-			if strings.EqualFold(ordererCfg.URL, nameOrURL) {
-				orderer = ordererCfg
-				ok = true
-				break
-			}
+	if ok {
+		return &orderer, true
+	}
+
+	//lookup by URL
+	for _, ordererCfg := range c.OrderersConfig() {
+		if strings.EqualFold(ordererCfg.URL, nameOrURL) {
+			return &ordererCfg, true
 		}
 	}
 
-	if !ok {
-		logger.Debugf("Could not find Orderer for [%s], trying with Entity Matchers", nameOrURL)
-		matchingOrdererConfig := c.tryMatchingOrdererConfig(strings.ToLower(nameOrURL))
-		if matchingOrdererConfig == nil {
-			return nil, false
-		}
-		logger.Debugf("Found matching Orderer Config for [%s]", nameOrURL)
-		orderer = *matchingOrdererConfig
-	}
+	logger.Debugf("Could not find Orderer for [%s] ", nameOrURL)
 
-	return &orderer, true
+	return nil, false
 }
 
 // PeersConfig Retrieves the fabric peers for the specified org from the
@@ -152,38 +153,29 @@ func (c *EndpointConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
 
 // PeerConfig Retrieves a specific peer from the configuration by name or url
 func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
+
+	matchPeerConfig := c.tryMatchingPeerConfig(nameOrURL)
+	if matchPeerConfig != nil {
+		return matchPeerConfig, true
+	}
+
+	logger.Debugf("Could not find Peer for name/url [%s] through Entity Matchers", nameOrURL)
+
 	//lookup by name in config
 	peerConfig, ok := c.networkConfig.Peers[strings.ToLower(nameOrURL)]
-
-	var matchPeerConfig *fab.PeerConfig
 	if ok {
-		matchPeerConfig = &peerConfig
-	} else {
-		for _, staticPeerConfig := range c.networkConfig.Peers {
-			if strings.EqualFold(staticPeerConfig.URL, nameOrURL) {
-				matchPeerConfig = c.tryMatchingPeerConfig(nameOrURL)
-				if matchPeerConfig == nil {
-					matchPeerConfig = &staticPeerConfig
-				}
-				break
-			}
+		return &peerConfig, true
+	}
+
+	//lookup by URL
+	for _, staticPeerConfig := range c.networkConfig.Peers {
+		if strings.EqualFold(staticPeerConfig.URL, nameOrURL) {
+			return &staticPeerConfig, true
 		}
 	}
 
-	//Not found through config lookup by name or URL, try matcher now
-	if matchPeerConfig == nil {
-		logger.Debugf("Could not find Peer for name/url [%s], trying with Entity Matchers", nameOrURL)
-		//try to match nameOrURL with peer entity matchers
-		matchPeerConfig = c.tryMatchingPeerConfig(nameOrURL)
-	}
-
-	if matchPeerConfig == nil {
-		return nil, false
-	}
-
-	logger.Debugf("Found MatchingPeerConfig for name/url [%s]", nameOrURL)
-
-	return matchPeerConfig, true
+	logger.Debugf("Could not found matching PeerConfig for name/url [%s]", nameOrURL)
+	return nil, false
 }
 
 // NetworkConfig returns the network configuration defined in the config file
@@ -214,20 +206,11 @@ func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, cha
 		return ""
 	}
 
-	//sort the keys
-	var keys []int
-	for k := range c.channelMatchers {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-
 	//loop over channelMatchers to find the matching channel name
-	for _, k := range keys {
-		v := c.channelMatchers[k]
-		if v.MatchString(channelName) {
+	for _, matcher := range c.channelMatchers {
+		if matcher.regex.MatchString(channelName) {
 			// get the matching matchConfig from the index number
-			channelMatchConfig := c.entityMatchers.matchers["channel"][k]
-			return channelMatchConfig.MappedName
+			return matcher.matchConfig.MappedName
 		}
 	}
 
@@ -723,15 +706,19 @@ func (c *EndpointConfig) loadPeerConfigsByOrg() {
 		peers := []fab.PeerConfig{}
 
 		for _, peerName := range orgPeers {
-			p := c.networkConfig.Peers[strings.ToLower(peerName)]
+
+			matchingPeerConfig := c.tryMatchingPeerConfig(peerName)
+			if matchingPeerConfig != nil {
+				peers = append(peers, *matchingPeerConfig)
+				continue
+			}
+
+			p, ok := c.networkConfig.Peers[strings.ToLower(peerName)]
+			if !ok {
+				continue
+			}
 			if err := c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
-				logger.Debugf("Could not verify Peer for [%s], trying with Entity Matchers", peerName)
-				matchingPeerConfig := c.tryMatchingPeerConfig(peerName)
-				if matchingPeerConfig == nil {
-					continue
-				}
-				logger.Debugf("Found a matchingPeerConfig for [%s]", peerName)
-				p = *matchingPeerConfig
+				continue
 			}
 			peers = append(peers, p)
 		}
@@ -788,17 +775,17 @@ func (c *EndpointConfig) loadChannelPeers() error {
 	for channelID, channelConfig := range c.networkConfig.Channels {
 		peers := []fab.ChannelPeer{}
 		for peerName, chPeerConfig := range channelConfig.Peers {
-
-			// Get generic peer configuration
-			p, ok := c.networkConfig.Peers[strings.ToLower(peerName)]
-			if !ok {
-				logger.Debugf("Could not find Peer for [%s], trying with Entity Matchers", peerName)
-				matchingPeerConfig := c.tryMatchingPeerConfig(strings.ToLower(peerName))
-				if matchingPeerConfig == nil {
+			var p fab.PeerConfig
+			matchedPeer := c.tryMatchingPeerConfig(strings.ToLower(peerName))
+			if matchedPeer != nil {
+				p = *matchedPeer
+			} else {
+				// Get generic peer configuration
+				nwPeer, ok := c.networkConfig.Peers[strings.ToLower(peerName)]
+				if !ok {
 					continue
 				}
-				logger.Debugf("Found matchingPeerConfig for [%s]", peerName)
-				p = *matchingPeerConfig
+				p = nwPeer
 			}
 
 			if err := c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
@@ -832,18 +819,20 @@ func (c *EndpointConfig) loadChannelOrderers() error {
 	for channelID, channelConfig := range c.networkConfig.Channels {
 		orderers := []fab.OrdererConfig{}
 		for _, ordererName := range channelConfig.Orderers {
-			orderer, ok := c.networkConfig.Orderers[strings.ToLower(ordererName)]
-			if !ok {
-				//try entityMatcher
-				logger.Debugf("Could not find Orderer for [%s], trying with Entity Matchers", ordererName)
-				matchingOrdererConfig := c.tryMatchingOrdererConfig(strings.ToLower(ordererName))
-				if matchingOrdererConfig == nil {
-					return errors.Errorf("Could not find Orderer Config for channel orderer [%s]", ordererName)
-				}
-				logger.Debugf("Found matching Orderer Config for [%s]", ordererName)
-				orderer = *matchingOrdererConfig
+
+			orderer := c.tryMatchingOrdererConfig(strings.ToLower(ordererName))
+			if orderer != nil {
+				orderers = append(orderers, *orderer)
+				continue
 			}
-			orderers = append(orderers, orderer)
+
+			logger.Debugf("Could not find Orderer for [%s] through Entity Matchers", ordererName)
+			nwOrderer, ok := c.networkConfig.Orderers[strings.ToLower(ordererName)]
+			if !ok {
+				return errors.Errorf("Could not find Orderer Config for channel orderer [%s]", ordererName)
+			}
+			orderers = append(orderers, nwOrderer)
+
 		}
 		channelOrderersByChannel[strings.ToLower(channelID)] = orderers
 	}
@@ -924,30 +913,21 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerName string) *fab.PeerConfig 
 		return nil
 	}
 
-	//sort the keys
-	var keys []int
-	for k := range c.peerMatchers {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-
 	//loop over peerentityMatchers to find the matching peer
-	for _, k := range keys {
-		v := c.peerMatchers[k]
-		logger.Debugf("Trying to match peer [%s] with matcher [%s]", peerName, v.String())
-		if v.MatchString(peerName) {
-			logger.Debugf("Peer [%s] matched using matcher [%s]", peerName, v.String())
-			return c.matchPeer(peerName, k, v)
+	for _, matcher := range c.peerMatchers {
+		logger.Debugf("Trying to match peer [%s] with matcher [%s]", peerName, matcher.regex.String())
+		if matcher.regex.MatchString(peerName) {
+			logger.Debugf("Peer [%s] matched using matcher [%s]", peerName, matcher.regex.String())
+			return c.matchPeer(peerName, matcher.regex, matcher.matchConfig)
 		}
-		logger.Debugf("Peer [%s] did not match using matcher [%s]", peerName, v.String())
+		logger.Debugf("Peer [%s] did not match using matcher [%s]", peerName, matcher.regex.String())
 	}
 
 	return nil
 }
 
-func (c *EndpointConfig) matchPeer(peerName string, k int, v *regexp.Regexp) *fab.PeerConfig {
-	// get the matching matchConfig from the index number
-	peerMatchConfig := c.entityMatchers.matchers["peer"][k]
+//TODO this function needs to be refactored
+func (c *EndpointConfig) matchPeer(peerName string, regex *regexp.Regexp, peerMatchConfig MatchConfig) *fab.PeerConfig {
 	//Get the peerConfig from mapped host
 	peerConfig, ok := c.networkConfig.Peers[strings.ToLower(peerMatchConfig.MappedHost)]
 	if !ok {
@@ -967,7 +947,7 @@ func (c *EndpointConfig) matchPeer(peerName string, k int, v *regexp.Regexp) *fa
 			peerConfig.URL = peerMatchConfig.URLSubstitutionExp
 		} else {
 			//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
-			peerConfig.URL = v.ReplaceAllString(peerName, peerMatchConfig.URLSubstitutionExp)
+			peerConfig.URL = regex.ReplaceAllString(peerName, peerMatchConfig.URLSubstitutionExp)
 		}
 
 	}
@@ -981,7 +961,7 @@ func (c *EndpointConfig) matchPeer(peerName string, k int, v *regexp.Regexp) *fa
 			peerConfig.EventURL = peerMatchConfig.EventURLSubstitutionExp
 		} else {
 			//if the eventUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
-			peerConfig.EventURL = v.ReplaceAllString(peerName, peerMatchConfig.EventURLSubstitutionExp)
+			peerConfig.EventURL = regex.ReplaceAllString(peerName, peerMatchConfig.EventURLSubstitutionExp)
 		}
 
 	}
@@ -1006,7 +986,7 @@ func (c *EndpointConfig) matchPeer(peerName string, k int, v *regexp.Regexp) *fa
 			peerConfig.GRPCOptions["ssl-target-name-override"] = peerMatchConfig.SSLTargetOverrideURLSubstitutionExp
 		} else {
 			//if the sslTargetOverrideUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
-			peerConfig.GRPCOptions["ssl-target-name-override"] = v.ReplaceAllString(peerName, peerMatchConfig.SSLTargetOverrideURLSubstitutionExp)
+			peerConfig.GRPCOptions["ssl-target-name-override"] = regex.ReplaceAllString(peerName, peerMatchConfig.SSLTargetOverrideURLSubstitutionExp)
 		}
 
 	}
@@ -1030,27 +1010,19 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererName string) *fab.Order
 		return nil
 	}
 
-	//sort the keys
-	var keys []int
-	for k := range c.ordererMatchers {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-
 	//loop over ordererentityMatchers to find the matching orderer
-	for _, k := range keys {
-		v := c.ordererMatchers[k]
-		if v.MatchString(ordererName) {
-			return c.matchOrderer(ordererName, k, v)
+	for _, matcher := range c.ordererMatchers {
+		if matcher.regex.MatchString(ordererName) {
+			return c.matchOrderer(ordererName, matcher.regex, matcher.matchConfig)
 		}
 	}
 
 	return nil
 }
 
-func (c *EndpointConfig) matchOrderer(ordererName string, k int, v *regexp.Regexp) *fab.OrdererConfig {
-	// get the matching matchConfig from the index number
-	ordererMatchConfig := c.entityMatchers.matchers["orderer"][k]
+//TODO this function needs to be refactored
+func (c *EndpointConfig) matchOrderer(ordererName string, regex *regexp.Regexp, ordererMatchConfig MatchConfig) *fab.OrdererConfig {
+
 	//Get the ordererConfig from mapped host
 	ordererConfig, ok := c.networkConfig.Orderers[strings.ToLower(ordererMatchConfig.MappedHost)]
 	if !ok {
@@ -1076,7 +1048,7 @@ func (c *EndpointConfig) matchOrderer(ordererName string, k int, v *regexp.Regex
 			ordererConfig.URL = ordererMatchConfig.URLSubstitutionExp
 		} else {
 			//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
-			ordererConfig.URL = v.ReplaceAllString(ordererName, ordererMatchConfig.URLSubstitutionExp)
+			ordererConfig.URL = regex.ReplaceAllString(ordererName, ordererMatchConfig.URLSubstitutionExp)
 		}
 	}
 
@@ -1100,7 +1072,7 @@ func (c *EndpointConfig) matchOrderer(ordererName string, k int, v *regexp.Regex
 			ordererConfig.GRPCOptions["ssl-target-name-override"] = ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp
 		} else {
 			//if the sslTargetOverrideUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
-			ordererConfig.GRPCOptions["ssl-target-name-override"] = v.ReplaceAllString(ordererName, ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp)
+			ordererConfig.GRPCOptions["ssl-target-name-override"] = regex.ReplaceAllString(ordererName, ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp)
 		}
 
 	}
@@ -1131,17 +1103,7 @@ func (c *EndpointConfig) compileMatchers() error {
 		return nil
 	}
 
-	err = c.compilePeerMatcher(&entityMatchers)
-	if err != nil {
-		return err
-	}
-
-	err = c.compileOrdererMatcher(&entityMatchers)
-	if err != nil {
-		return err
-	}
-
-	err = c.compileChannelMatcher(&entityMatchers)
+	err = c.compileAllMatchers(&entityMatchers)
 	if err != nil {
 		return err
 	}
@@ -1150,52 +1112,43 @@ func (c *EndpointConfig) compileMatchers() error {
 	return nil
 }
 
-func (c *EndpointConfig) compileChannelMatcher(matcherConfig *entityMatchers) error {
+func (c *EndpointConfig) compileAllMatchers(matcherConfig *entityMatchers) error {
+
 	var err error
-	if matcherConfig.matchers["channel"] != nil {
-		channelMatchers := matcherConfig.matchers["channel"]
-		for i, matcher := range channelMatchers {
-			if matcher.Pattern != "" {
-				c.channelMatchers[i], err = regexp.Compile(matcher.Pattern)
-				if err != nil {
-					return err
-				}
-			}
+	if len(matcherConfig.matchers["channel"]) > 0 {
+		c.channelMatchers, err = c.groupAllMatchers(matcherConfig.matchers["channel"])
+		if err != nil {
+			return err
 		}
 	}
+
+	if len(matcherConfig.matchers["orderer"]) > 0 {
+		c.ordererMatchers, err = c.groupAllMatchers(matcherConfig.matchers["orderer"])
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(matcherConfig.matchers["peer"]) > 0 {
+		c.peerMatchers, err = c.groupAllMatchers(matcherConfig.matchers["peer"])
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func (c *EndpointConfig) compileOrdererMatcher(matcherConfig *entityMatchers) error {
-	var err error
-	if matcherConfig.matchers["orderer"] != nil {
-		ordererMatchersConfig := matcherConfig.matchers["orderer"]
-		for i := 0; i < len(ordererMatchersConfig); i++ {
-			if ordererMatchersConfig[i].Pattern != "" {
-				c.ordererMatchers[i], err = regexp.Compile(ordererMatchersConfig[i].Pattern)
-				if err != nil {
-					return err
-				}
-			}
+func (c *EndpointConfig) groupAllMatchers(matchers []MatchConfig) ([]matcherEntry, error) {
+	matcherEntries := make([]matcherEntry, len(matchers))
+	for i, v := range matchers {
+		regex, err := regexp.Compile(v.Pattern)
+		if err != nil {
+			return nil, err
 		}
+		matcherEntries[i] = matcherEntry{regex: regex, matchConfig: v}
 	}
-	return nil
-}
-
-func (c *EndpointConfig) compilePeerMatcher(matcherConfig *entityMatchers) error {
-	var err error
-	if matcherConfig.matchers["peer"] != nil {
-		peerMatchersConfig := matcherConfig.matchers["peer"]
-		for i := 0; i < len(peerMatchersConfig); i++ {
-			if peerMatchersConfig[i].Pattern != "" {
-				c.peerMatchers[i], err = regexp.Compile(peerMatchersConfig[i].Pattern)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
+	return matcherEntries, nil
 }
 
 func (c *EndpointConfig) verifyPeerConfig(p fab.PeerConfig, peerName string, tlsEnabled bool) error {
@@ -1261,20 +1214,10 @@ func (c *EndpointConfig) findMatchingPeer(peerName string) (string, bool) {
 		return "", false
 	}
 
-	//sort the keys
-	var keys []int
-	for k := range c.peerMatchers {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-
 	//loop over peerentityMatchers to find the matching peer
-	for _, k := range keys {
-		v := c.peerMatchers[k]
-		if v.MatchString(peerName) {
-			// get the matching matchConfig from the index number
-			peerMatchConfig := c.entityMatchers.matchers["peer"][k]
-			return peerMatchConfig.MappedHost, true
+	for _, matcher := range c.peerMatchers {
+		if matcher.regex.MatchString(peerName) {
+			return matcher.matchConfig.MappedHost, true
 		}
 	}
 
