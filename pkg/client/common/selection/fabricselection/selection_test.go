@@ -119,85 +119,89 @@ func TestSelection(t *testing.T) {
 	service, err := New(
 		ctx, channelID,
 		mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
-		WithRefreshInterval(500*time.Millisecond),
-		WithResponseTimeout(2*time.Second),
+		WithRefreshInterval(100*time.Millisecond),
+		WithResponseTimeout(10*time.Millisecond),
 	)
 	require.NoError(t, err)
 	defer service.Close()
 
-	// Error condition
-	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
-			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
-			Error:         fmt.Errorf("simulated response error"),
-		},
-	)
-	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
-	assert.Error(t, err)
-	fmt.Printf("err: %s\n", err)
-	assert.Equal(t, 0, len(endorsers))
-
-	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
-			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
-				peer2Org1Endpoint, peer2Org3Endpoint, peer2Org2Endpoint,
-				peer1Org1Endpoint, peer1Org2Endpoint, peer1Org3Endpoint,
+	t.Run("Error", func(t *testing.T) {
+		// Error condition
+		discClient.SetResponses(
+			&clientmocks.MockDiscoverEndpointResponse{
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+				Error:         fmt.Errorf("simulated response error"),
 			},
-		},
-	)
+		)
+		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
+		assert.Error(t, err)
+		assert.Equal(t, 0, len(endorsers))
+	})
 
-	// Wait for cache to refresh
-	time.Sleep(1 * time.Second)
+	t.Run("CCtoCC", func(t *testing.T) {
+		discClient.SetResponses(
+			&clientmocks.MockDiscoverEndpointResponse{
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
+					peer2Org1Endpoint, peer2Org3Endpoint, peer2Org2Endpoint,
+					peer1Org1Endpoint, peer1Org2Endpoint, peer1Org3Endpoint,
+				},
+			},
+		)
 
-	// Test multiple chaincodes
-	endorsers, err = service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall, cc2ChaincodeCall})
+		// Wait for cache to refresh
+		time.Sleep(200 * time.Millisecond)
 
-	assert.NoError(t, err)
-	assert.Equalf(t, 6, len(endorsers), "Expecting 6 endorser")
+		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall, cc2ChaincodeCall})
 
-	// Test peer filter
-	endorsers, err = service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}},
-		options.WithPeerFilter(func(peer fab.Peer) bool {
-			return peer.(PeerState).BlockHeight() > 1001
-		}),
-	)
+		assert.NoError(t, err)
+		assert.Equalf(t, 6, len(endorsers), "Expecting 6 endorser")
+	})
 
-	assert.NoError(t, err)
-	assert.Equalf(t, 3, len(endorsers), "Expecting 3 endorser")
+	t.Run("Peer Filter", func(t *testing.T) {
+		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}},
+			options.WithPeerFilter(func(peer fab.Peer) bool {
+				return peer.(PeerState).BlockHeight() > 1001
+			}),
+		)
 
-	// Ensure the endorsers all have a block height > 1001 and they are returned in descending order of block height
-	lastBlockHeight := uint64(9999999)
-	for _, endorser := range endorsers {
-		blockHeight := endorser.(PeerState).BlockHeight()
-		assert.Truef(t, blockHeight > 1001, "Expecting block height to be > 1001")
-		assert.Truef(t, blockHeight <= lastBlockHeight, "Expecting endorsers to be returned in order of descending block height. Block Height: %d, Last Block Height: %d", blockHeight, lastBlockHeight)
-		lastBlockHeight = blockHeight
-	}
+		assert.NoError(t, err)
+		assert.Equalf(t, 3, len(endorsers), "Expecting 3 endorser")
 
-	// Test priority selector
-	endorsers, err = service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}},
-		options.WithPrioritySelector(func(peer1, peer2 fab.Peer) int {
-			// Return peers in alphabetical order
-			if peer1.URL() < peer2.URL() {
-				return -1
-			}
-			if peer1.URL() > peer2.URL() {
-				return 1
-			}
-			return 0
-		}),
-	)
-
-	assert.NoError(t, err)
-	assert.Equalf(t, 6, len(endorsers), "Expecting 6 endorser")
-
-	var lastURL string
-	for _, endorser := range endorsers {
-		if lastURL != "" {
-			assert.Truef(t, endorser.URL() <= lastURL, "Expecting endorsers in alphabetical order")
+		// Ensure the endorsers all have a block height > 1001 and they are returned in descending order of block height
+		lastBlockHeight := uint64(9999999)
+		for _, endorser := range endorsers {
+			blockHeight := endorser.(PeerState).BlockHeight()
+			assert.Truef(t, blockHeight > 1001, "Expecting block height to be > 1001")
+			assert.Truef(t, blockHeight <= lastBlockHeight, "Expecting endorsers to be returned in order of descending block height. Block Height: %d, Last Block Height: %d", blockHeight, lastBlockHeight)
+			lastBlockHeight = blockHeight
 		}
-		lastURL = endorser.URL()
-	}
+	})
+
+	t.Run("Priority Selector", func(t *testing.T) {
+		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}},
+			options.WithPrioritySelector(func(peer1, peer2 fab.Peer) int {
+				// Return peers in alphabetical order
+				if peer1.URL() < peer2.URL() {
+					return -1
+				}
+				if peer1.URL() > peer2.URL() {
+					return 1
+				}
+				return 0
+			}),
+		)
+
+		assert.NoError(t, err)
+		assert.Equalf(t, 6, len(endorsers), "Expecting 6 endorser")
+
+		var lastURL string
+		for _, endorser := range endorsers {
+			if lastURL != "" {
+				assert.Truef(t, endorser.URL() <= lastURL, "Expecting endorsers in alphabetical order")
+			}
+			lastURL = endorser.URL()
+		}
+	})
 }
 
 func TestWithDiscoveryFilter(t *testing.T) {
@@ -222,39 +226,53 @@ func TestWithDiscoveryFilter(t *testing.T) {
 		},
 	)
 
-	// DiscoveryService error
-	expectedDiscoveryErrMsg := "simulated discovery service error"
-	service, err := New(
-		ctx, channelID,
-		mocks.NewMockDiscoveryService(fmt.Errorf(expectedDiscoveryErrMsg)),
-		WithRefreshInterval(500*time.Millisecond),
-		WithResponseTimeout(2*time.Second),
-	)
-	require.NoError(t, err)
-	_, err = service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall})
-	assert.Truef(t, strings.Contains(err.Error(), expectedDiscoveryErrMsg), "expected error due to discovery error")
-	service.Close()
+	t.Run("Error", func(t *testing.T) {
+		expectedDiscoveryErrMsg := "simulated discovery service error"
+		service, err := New(
+			ctx, channelID,
+			mocks.NewMockDiscoveryService(fmt.Errorf(expectedDiscoveryErrMsg)),
+			WithRefreshInterval(500*time.Millisecond),
+			WithResponseTimeout(2*time.Second),
+		)
+		require.NoError(t, err)
+		defer service.Close()
 
-	// DiscoveryService - only 4 peers
-	service, err = New(
-		ctx, channelID,
-		mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer2Org2, peer2Org3),
-		WithRefreshInterval(500*time.Millisecond),
-		WithResponseTimeout(2*time.Second),
-	)
-	require.NoError(t, err)
-	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall})
-	assert.NoError(t, err)
-	assert.Equalf(t, 4, len(endorsers), "Expecting 4 endorser")
+		_, err = service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall})
+		assert.Truef(t, strings.Contains(err.Error(), expectedDiscoveryErrMsg), "expected error due to discovery error")
+	})
 
-	// With peer filter
-	endorsers, err = service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall},
-		options.WithPeerFilter(func(peer fab.Peer) bool {
-			return peer.(PeerState).BlockHeight() > 1001
-		}))
-	assert.NoError(t, err)
-	assert.Equalf(t, 3, len(endorsers), "Expecting 3 endorser")
-	service.Close()
+	t.Run("Peers Down", func(t *testing.T) {
+		service, err := New(
+			ctx, channelID,
+			mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer2Org2, peer2Org3),
+			WithRefreshInterval(500*time.Millisecond),
+			WithResponseTimeout(2*time.Second),
+		)
+		require.NoError(t, err)
+		defer service.Close()
+
+		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall})
+		assert.NoError(t, err)
+		assert.Equalf(t, 4, len(endorsers), "Expecting 4 endorser")
+	})
+
+	t.Run("Peer Filter", func(t *testing.T) {
+		service, err := New(
+			ctx, channelID,
+			mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer2Org2, peer2Org3),
+			WithRefreshInterval(500*time.Millisecond),
+			WithResponseTimeout(2*time.Second),
+		)
+		require.NoError(t, err)
+		defer service.Close()
+
+		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall},
+			options.WithPeerFilter(func(peer fab.Peer) bool {
+				return peer.(PeerState).BlockHeight() > 1001
+			}))
+		assert.NoError(t, err)
+		assert.Equalf(t, 3, len(endorsers), "Expecting 3 endorser")
+	})
 }
 
 type config struct {

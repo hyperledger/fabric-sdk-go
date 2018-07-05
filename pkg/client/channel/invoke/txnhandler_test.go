@@ -281,7 +281,7 @@ func TestProposalProcessorHandler(t *testing.T) {
 	}
 }
 
-func TestNewChaincodeCalls(t *testing.T) {
+func TestNewInvocationChain(t *testing.T) {
 	ccID1 := "cc1"
 	ccID2 := "cc2"
 	col1 := "col1"
@@ -299,7 +299,7 @@ func TestNewChaincodeCalls(t *testing.T) {
 		},
 	}
 
-	ccCalls := newChaincodeCalls(request)
+	ccCalls := newInvocationChain(&RequestContext{Request: request})
 	require.Truef(t, len(ccCalls) == 2, "expecting 2 CC calls")
 	require.Equal(t, ccID1, ccCalls[0].ID)
 	require.Equal(t, ccID2, ccCalls[1].ID)
@@ -322,12 +322,61 @@ func TestNewChaincodeCalls(t *testing.T) {
 		},
 	}
 
-	ccCalls = newChaincodeCalls(request)
+	ccCalls = newInvocationChain(&RequestContext{Request: request})
 	require.Truef(t, len(ccCalls) == 2, "expecting 2 CC calls")
 	require.Equal(t, ccID1, ccCalls[0].ID)
 	require.Equal(t, ccID2, ccCalls[1].ID)
 	require.Truef(t, len(ccCalls[0].Collections) == 2, "expecting 2 collections for [%s]", ccID1)
 	require.Truef(t, len(ccCalls[1].Collections) == 1, "expecting 1 collection for [%s]", ccID2)
+}
+
+func TestMergeInvocationChains(t *testing.T) {
+	ccID1 := "cc1"
+	ccID2 := "cc2"
+	ccID3 := "cc3"
+	col1 := "col1"
+	col2 := "col2"
+	col3 := "col3"
+
+	ccCall1A := &fab.ChaincodeCall{ID: ccID1}
+	ccCall1B := &fab.ChaincodeCall{ID: ccID2, Collections: []string{col1, col3}}
+
+	ccCall2A := &fab.ChaincodeCall{ID: ccID1, Collections: []string{col1}}
+	ccCall2B := &fab.ChaincodeCall{ID: ccID2, Collections: []string{col1, col2}}
+	ccCall2C := &fab.ChaincodeCall{ID: ccID3}
+
+	acceptAllFilter := func(ccID string) bool { return true }
+
+	t.Run("No change to invocation chain", func(t *testing.T) {
+		invocChain, changed := mergeInvocationChains([]*fab.ChaincodeCall{ccCall1A}, []*fab.ChaincodeCall{ccCall1A}, acceptAllFilter)
+		assert.Falsef(t, changed, "Expecting invocation chain NOT to have changed")
+		require.NotEmptyf(t, invocChain, "Invocation chain is empty")
+		assert.Equalf(t, []*fab.ChaincodeCall{ccCall1A}, invocChain, "Expecting the invocation chain the be the same")
+	})
+
+	t.Run("Additional chaincodes and collections", func(t *testing.T) {
+		invocChain, changed := mergeInvocationChains([]*fab.ChaincodeCall{ccCall1A, ccCall1B}, []*fab.ChaincodeCall{ccCall2A, ccCall2B, ccCall2C}, acceptAllFilter)
+		assert.Truef(t, changed, "Expecting invocation chain to have changed")
+		require.NotEmptyf(t, invocChain, "Invocation chain is empty")
+		assert.Equalf(t, 3, len(invocChain), "Expecting 3 chaincode calls in the invocation chain")
+
+		assertContainsAll := func(t *testing.T, expectedColls []string, colls []string, ccID string) {
+			for _, coll := range expectedColls {
+				assert.Containsf(t, colls, coll, ccID+" does not contain all collections")
+			}
+		}
+
+		for _, ccCall := range invocChain {
+			switch ccCall.ID {
+			case ccID1:
+				assertContainsAll(t, []string{col1}, ccCall.Collections, ccID1)
+			case ccID2:
+				assertContainsAll(t, []string{col1, col2, col3}, ccCall.Collections, ccID2)
+			case ccID3:
+				assertContainsAll(t, nil, ccCall.Collections, ccID3)
+			}
+		}
+	})
 }
 
 //prepareHandlerContexts prepares context objects for handlers

@@ -23,6 +23,7 @@ const (
 	adminUser = "Admin"
 	org1Name  = "Org1"
 	org2Name  = "Org2"
+	ccPath    = "github.com/example_cc"
 )
 
 var mainSDK *fabsdk.FabricSDK

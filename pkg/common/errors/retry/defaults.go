@@ -125,9 +125,6 @@ var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
 	status.GRPCTransportStatus: {
 		status.Code(grpcCodes.Unavailable),
 	},
-	status.DiscoveryServerStatus: {
-		status.QueryEndorsers,
-	},
 }
 
 // ChannelClientRetryableCodes are the suggested codes that should be treated as

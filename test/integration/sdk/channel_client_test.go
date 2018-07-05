@@ -124,11 +124,11 @@ func TestCCToCC(t *testing.T) {
 	require.NoError(t, err)
 
 	cc1ID := integration.GenerateRandomID()
-	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, cc1ID, ccVersion, "OR('Org1MSP.member')", orgsContext)
+	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, cc1ID, ccVersion, "OR('Org1MSP.member')", orgsContext)
 	require.NoError(t, err)
 
 	cc2ID := integration.GenerateRandomID()
-	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, cc2ID, ccVersion, "AND('Org1MSP.member','Org2MSP.member')", orgsContext)
+	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, cc2ID, ccVersion, "AND('Org1MSP.member','Org2MSP.member')", orgsContext)
 	require.NoError(t, err)
 
 	ctxProvider := sdk.ChannelContext(orgChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
@@ -139,56 +139,71 @@ func TestCCToCC(t *testing.T) {
 	// Invoke the chaincode with the ProposalProcessorHandler and EndorsementHandler.
 	// The transaction should fail since endorsers are chosen using only the first chaincode's
 	// policy.
-	handler := invoke.NewProposalProcessorHandler(
-		invoke.NewEndorsementHandler(
-			invoke.NewEndorsementValidationHandler(
-				invoke.NewSignatureValidationHandler(invoke.NewCommitHandler()),
+	t.Run("Should fail", func(t *testing.T) {
+		handler := invoke.NewProposalProcessorHandler(
+			invoke.NewEndorsementHandler(
+				invoke.NewEndorsementValidationHandler(
+					invoke.NewSignatureValidationHandler(invoke.NewCommitHandler()),
+				),
 			),
-		),
-	)
-	_, err = chClient.InvokeHandler(
-		handler,
-		channel.Request{
-			ChaincodeID: cc1ID,
-			Fcn:         "invokecc",
-			Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","move","a","b","1"]}`)},
-		},
-		channel.WithRetry(retry.DefaultChannelOpts),
-	)
-	require.Errorf(t, err, "expecting transaction to fail due to endorsement policy not being satisfied")
-	stat, ok := status.FromError(err)
-	assert.Truef(t, ok, "Expecting a status error")
-	assert.Equal(t, int32(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE), stat.Code)
+		)
+		_, err = chClient.InvokeHandler(
+			handler,
+			channel.Request{
+				ChaincodeID: cc1ID,
+				Fcn:         "invokecc",
+				Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","move","a","b","1"]}`)},
+			},
+			channel.WithRetry(retry.DefaultChannelOpts),
+		)
+		require.Errorf(t, err, "expecting transaction to fail due to endorsement policy not being satisfied")
+		stat, ok := status.FromError(err)
+		assert.Truef(t, ok, "Expecting a status error")
+		assert.Equal(t, int32(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE), stat.Code)
+	})
 
 	// Invoke the chaincode with the ProposalProcessorHandler and EndorsementHandler, but
 	// this time pass in the nested chaincode in the invocation chain so that the chaincode
 	// policy of the nested chaincode is also satisfied.
-	_, err = chClient.InvokeHandler(
-		handler,
-		channel.Request{
-			ChaincodeID: cc1ID,
-			Fcn:         "invokecc",
-			Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","move","a","b","1"]}`)},
-			InvocationChain: []*fab.ChaincodeCall{
-				{ID: cc2ID},
+	t.Run("Explicit Invocation Chain", func(t *testing.T) {
+		handler := invoke.NewProposalProcessorHandler(
+			invoke.NewEndorsementHandler(
+				invoke.NewEndorsementValidationHandler(
+					invoke.NewSignatureValidationHandler(invoke.NewCommitHandler()),
+				),
+			),
+		)
+		_, err := chClient.InvokeHandler(
+			handler,
+			channel.Request{
+				ChaincodeID: cc1ID,
+				Fcn:         "invokecc",
+				Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","move","a","b","1"]}`)},
+				InvocationChain: []*fab.ChaincodeCall{
+					{ID: cc2ID},
+				},
 			},
-		},
-		channel.WithRetry(retry.DefaultChannelOpts),
-	)
-	require.NoError(t, err)
+			channel.WithRetry(retry.DefaultChannelOpts),
+		)
+		require.NoError(t, err)
+	})
 
 	// Invoke the chaincode with the standard handlers which automatically detect the endorsers required
 	// for a chaincode-to-chaincode invocation. The channel client should automatically
 	// detect the additional endorsers required to satisfy the nested chaincode's policy.
-	_, err = chClient.Execute(
-		channel.Request{
-			ChaincodeID: cc1ID,
-			Fcn:         "invokecc",
-			Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","move","a","b","1"]}`)},
-		},
-		channel.WithRetry(retry.DefaultChannelOpts),
-	)
-	require.NoError(t, err)
+	t.Run("Automatic Detection of Additional Chaincodes", func(t *testing.T) {
+		response, err := chClient.Execute(
+			channel.Request{
+				ChaincodeID: cc1ID,
+				Fcn:         "invokecc",
+				Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","move","a","b","1"]}`)},
+			},
+			channel.WithRetry(retry.DefaultChannelOpts),
+		)
+		require.NoError(t, err)
+		require.NotNil(t, response)
+		require.Equalf(t, 2, len(response.Responses), "expecting exactly two endorsements")
+	})
 }
 
 func testQuery(expected string, ccID string, chClient *channel.Client, t *testing.T) {

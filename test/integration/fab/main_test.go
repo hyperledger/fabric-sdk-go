@@ -22,6 +22,7 @@ var mainChaincodeID string
 
 const (
 	org1Name = "Org1"
+	ccPath   = "github.com/example_cc"
 )
 
 func TestMain(m *testing.M) {

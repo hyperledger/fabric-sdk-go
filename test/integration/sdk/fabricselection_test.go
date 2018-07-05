@@ -74,7 +74,7 @@ func TestFabricSelection(t *testing.T) {
 
 	t.Run("Policy: Org1 Only", func(t *testing.T) {
 		ccID := integration.GenerateRandomID()
-		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccID, ccVersion, "OR('Org1MSP.member')", orgsContext)
+		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member')", orgsContext)
 		testEndorsers(
 			t, selectionService,
 			chaincodes(newCCCall(ccID)),
@@ -86,7 +86,7 @@ func TestFabricSelection(t *testing.T) {
 
 	t.Run("Policy: Org2 Only", func(t *testing.T) {
 		ccID := integration.GenerateRandomID()
-		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccID, ccVersion, "OR('Org2MSP.member')", orgsContext)
+		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
 			t, selectionService,
@@ -98,7 +98,7 @@ func TestFabricSelection(t *testing.T) {
 
 	t.Run("Policy: Org1 or Org2", func(t *testing.T) {
 		ccID := integration.GenerateRandomID()
-		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member')", orgsContext)
+		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
 			t, selectionService,
@@ -112,7 +112,7 @@ func TestFabricSelection(t *testing.T) {
 
 	t.Run("Policy: Org1 and Org2", func(t *testing.T) {
 		ccID := integration.GenerateRandomID()
-		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccID, ccVersion, "AND('Org1MSP.member','Org2MSP.member')", orgsContext)
+		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "AND('Org1MSP.member','Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
 			t, selectionService,
@@ -137,10 +137,10 @@ func TestFabricSelection(t *testing.T) {
 	// Chaincode to Chaincode
 	t.Run("Policy: CC1(Org1 Only) to CC2(Org2 Only)", func(t *testing.T) {
 		ccID1 := integration.GenerateRandomID()
-		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccID1, ccVersion, "OR('Org1MSP.member')", orgsContext)
+		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID1, ccVersion, "OR('Org1MSP.member')", orgsContext)
 		require.NoError(t, err)
 		ccID2 := integration.GenerateRandomID()
-		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccID2, ccVersion, "OR('Org2MSP.member')", orgsContext)
+		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID2, ccVersion, "OR('Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
 			t, selectionService,
@@ -156,7 +156,7 @@ func TestFabricSelection(t *testing.T) {
 		ccID := integration.GenerateRandomID()
 		collConfig, err := newCollectionConfig(coll1, "OR('Org1MSP.member')", 0, 2, 1000)
 		require.NoError(t, err)
-		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member')", orgsContext, collConfig)
+		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member')", orgsContext, collConfig)
 		require.NoError(t, err)
 		testEndorsers(
 			t, selectionService,

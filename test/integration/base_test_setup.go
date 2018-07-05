@@ -269,9 +269,9 @@ func JoinPeersToChannel(channelID string, orgsContext []*OrgContext) error {
 }
 
 // InstallAndInstantiateChaincode installs the given chaincode to all peers in the given orgs and instantiates it on the given channel
-func InstallAndInstantiateChaincode(channelID string, ccPkg *resource.CCPackage, ccID, ccVersion, ccPolicy string, orgs []*OrgContext, collConfigs ...*cb.CollectionConfig) error {
+func InstallAndInstantiateChaincode(channelID string, ccPkg *resource.CCPackage, ccPath, ccID, ccVersion, ccPolicy string, orgs []*OrgContext, collConfigs ...*cb.CollectionConfig) error {
 	for _, orgCtx := range orgs {
-		if err := InstallChaincode(orgCtx.ResMgmt, orgCtx.CtxProvider, ccPkg, ccID, ccVersion, orgCtx.Peers); err != nil {
+		if err := InstallChaincode(orgCtx.ResMgmt, orgCtx.CtxProvider, ccPkg, ccPath, ccID, ccVersion, orgCtx.Peers); err != nil {
 			return errors.Wrapf(err, "failed to install chaincode to peers in org [%s]", orgCtx.OrgID)
 		}
 	}
@@ -280,8 +280,8 @@ func InstallAndInstantiateChaincode(channelID string, ccPkg *resource.CCPackage,
 }
 
 // InstallChaincode installs the given chaincode to the given peers
-func InstallChaincode(resMgmt *resmgmt.Client, ctxProvider contextAPI.ClientProvider, ccPkg *resource.CCPackage, ccName, ccVersion string, localPeers []fabAPI.Peer) error {
-	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: "github.com/example_cc", Version: ccVersion, Package: ccPkg}
+func InstallChaincode(resMgmt *resmgmt.Client, ctxProvider contextAPI.ClientProvider, ccPkg *resource.CCPackage, ccPath, ccName, ccVersion string, localPeers []fabAPI.Peer) error {
+	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Package: ccPkg}
 	_, err := resMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	return err
 }
