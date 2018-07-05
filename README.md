@@ -59,8 +59,8 @@ client:
 ### Retired versions
 When the 'prev' code level is updated, the last tested fabric-sdk-go commit or tag is listed below.
 
-- fabric v1.0.0 & fabric-ca v1.0.0
-  - fabric-sdk-go: 79b343ba
+- fabric v1.0 & fabric-ca v1.0
+  - fabric-sdk-go: 5ac5226
 
 ### Running the test suite
 

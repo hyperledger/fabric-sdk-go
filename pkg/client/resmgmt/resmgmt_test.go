@@ -10,11 +10,13 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
@@ -39,11 +41,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	channelConfig = path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx")
+)
+
 const (
-	channelConfig = "../../../test/fixtures/fabric/v1.0/channel/mychannel.tx"
-	networkCfg    = "../../../test/fixtures/config/config_test.yaml"
-	configPath    = "../../core/config/testdata/config_test.yaml"
-	testAddress   = "127.0.0.1:0"
+	networkCfg  = "../../../test/fixtures/config/config_test.yaml"
+	configPath  = "../../core/config/testdata/config_test.yaml"
+	testAddress = "127.0.0.1:0"
 )
 
 func withLocalContextProvider(provider context.LocalProvider) ClientOption {

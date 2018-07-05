@@ -1,5 +1,3 @@
-// +build !prev
-
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -19,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func checkCertAttributes(t *testing.T, certBytes []byte, expected []msp.Attribute) {
+func checkCertAttributes(t *testing.T, certBytes []byte, expected []msp.Attribute) { // nolint: deadcode
 	decoded, _ := pem.Decode(certBytes)
 	if decoded == nil {
 		t.Fatal("Failed cert decoding")

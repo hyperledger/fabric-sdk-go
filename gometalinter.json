@@ -2,8 +2,6 @@
   "Deadline": "5m",
   "Exclude": [
     ".*seekInfo can be .*proto.Message.*",
-    "^test/integration/msp/check_cert_attributes.go",
-    "^test/integration/msp/check_cert_ser_attributes_prev.go",
     "^internal/github.com/",
     "^third_party/"
   ],

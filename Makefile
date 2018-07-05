@@ -27,16 +27,16 @@ DOCKER_CMD         ?= docker
 DOCKER_COMPOSE_CMD ?= docker-compose
 
 # Fabric versions used in the Makefile
-FABRIC_STABLE_VERSION           := 1.1.0
-FABRIC_STABLE_VERSION_MINOR     := 1.1
+FABRIC_STABLE_VERSION           := 1.2.0
+FABRIC_STABLE_VERSION_MINOR     := 1.2
 FABRIC_STABLE_VERSION_MAJOR     := 1
 FABRIC_BASEIMAGE_STABLE_VERSION := 0.4.10
 
-FABRIC_PRERELEASE_VERSION       := 1.2.0-rc1
-FABRIC_PREV_VERSION             := 1.0.6
+FABRIC_PRERELEASE_VERSION       := 1.2.0
+FABRIC_PREV_VERSION             := 1.1.0
 FABRIC_DEVSTABLE_VERSION_MINOR  := 1.2
 FABRIC_DEVSTABLE_VERSION_MAJOR  := 1
-FABRIC_PREV_VERSION_MINOR       := 1.0
+FABRIC_PREV_VERSION_MINOR       := 1.1
 
 # Build flags (overridable)
 GO_LDFLAGS                 ?=
@@ -149,7 +149,7 @@ FABRIC_STABLE_PKCS11_INTTEST     := true
 FABRIC_STABLE_REVOKED_INTTEST    := true
 FABRIC_STABLE_EXPIRED_INTTEST    := true
 FABRIC_PREV_INTTEST              := true
-FABRIC_PRERELEASE_INTTEST        := true
+FABRIC_PRERELEASE_INTTEST        := false
 FABRIC_DEVSTABLE_INTTEST         := false
 endif
 
@@ -285,7 +285,8 @@ integration-tests-stable-peer-cert-expired: clean depend populate
 
 .PHONY: integration-tests-stable-pkcs11
 integration-tests-stable-pkcs11: clean depend populate build-softhsm2-image
-	@cd $(FIXTURE_DOCKERENV_PATH) && \
+	@. $(FIXTURE_DOCKERENV_PATH)/nomutualtls-env.sh && \
+	cd $(FIXTURE_DOCKERENV_PATH) && \
 		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-pkcs11-test.yaml up --force-recreate --abort-on-container-exit
 	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-pkcs11-test.yaml"
 
