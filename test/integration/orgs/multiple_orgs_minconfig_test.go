@@ -121,7 +121,7 @@ func discoverPeers(t *testing.T, sdk *fabsdk.FabricSDK) []fab.Peer {
 				t.Logf("%d- [%s] - MSP [%s]", i, p.URL(), p.MSPID())
 			}
 			if len(peers) < expectedPeers {
-				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), err.Error(), nil)
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), "didn't get expected number of peers", nil)
 			}
 			return peers, nil
 		},

@@ -436,7 +436,7 @@ func verifyErrorFromCC(chClientOrg1User *channel.Client, t *testing.T, ccName st
 }
 
 func queryInstalledCC(t *testing.T, orgID string, resMgmt *resmgmt.Client, ccName, ccVersion string, peers []fab.Peer) bool {
-	installed, _ := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+	installed, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 		func() (interface{}, error) {
 			ok := isCCInstalled(t, orgID, resMgmt, ccName, ccVersion, peers)
 			if !ok {
@@ -446,6 +446,7 @@ func queryInstalledCC(t *testing.T, orgID string, resMgmt *resmgmt.Client, ccNam
 		},
 	)
 
+	require.NoErrorf(t, err, "Got error checking if chaincode was installed")
 	return *(installed).(*bool)
 }
 
@@ -477,7 +478,7 @@ func queryInstantiatedCC(t *testing.T, orgID string, resMgmt *resmgmt.Client, ch
 	require.Truef(t, len(peers) > 0, "Expecting one or more peers")
 	t.Logf("Querying [%s] peers to see if chaincode [%s] was instantiated on channel [%s]", orgID, ccName, channelID)
 
-	instantiated, _ := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+	instantiated, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 		func() (interface{}, error) {
 			ok := isCCInstantiated(t, resMgmt, channelID, ccName, ccVersion, peers)
 			if !ok {
@@ -486,6 +487,7 @@ func queryInstantiatedCC(t *testing.T, orgID string, resMgmt *resmgmt.Client, ch
 			return &ok, nil
 		},
 	)
+	require.NoErrorf(t, err, "Got error checking if chaincode was instantiated")
 	return *(instantiated).(*bool)
 }
 
