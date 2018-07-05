@@ -19,11 +19,13 @@ function findPackages {
     done
 }
 
+# findChangedFiles determines the files changed via git commits and the local working copy.
+# Note: findChangedFiles included deleted files (the license check script does not).
 function findChangedFiles {
-    CHANGED_FILES=($(git diff --name-only --diff-filter=ACMRTUXB HEAD | tr '\n' ' '))
-    declare REMOTE_REF=$(git log -1 --pretty=format:"%d" | grep '[(].*\/' | wc -l)
+    declare diffFilter="ACMRTUXBD"
 
-    # TODO: handle untracked files
+    CHANGED_FILES=($(git diff --name-only --diff-filter=${diffFilter} HEAD | tr '\n' ' '))
+    declare REMOTE_REF=$(git log -1 --pretty=format:"%d" | grep '[(].*\/' | wc -l)
 
     # If CHANGED_FILES is empty then there is no working directory changes: fallback to last two commits.
     # Else if REMOTE_REF=0 then working copy commits are even with remote: only use the working copy changes.
@@ -36,7 +38,7 @@ function findChangedFiles {
         fi
 
         declare -a LAST_COMMITS=($(git log -2 --pretty=format:"%h"))
-        CHANGED_FILES+=($(git diff-tree --no-commit-id --name-only --diff-filter=ACMRTUXB -r ${LAST_COMMITS[1]} ${LAST_COMMITS[0]} | tr '\n' ' '))
+        CHANGED_FILES+=($(git diff-tree --no-commit-id --name-only --diff-filter=${diffFilter} -r ${LAST_COMMITS[1]} ${LAST_COMMITS[0]} | tr '\n' ' '))
     else
         echo "Examining working directory changes"
     fi
