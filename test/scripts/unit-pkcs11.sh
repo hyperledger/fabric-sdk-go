@@ -75,6 +75,7 @@ if [ "${TEST_WITH_LINTER}" = true ]; then
     runLinter
 fi
 
+echo "Code level $FABRIC_SDKGO_CODELEVEL_TAG (Fabric ${FABRIC_SDKGO_CODELEVEL_VER})"
 echo "Running PKCS11 unit tests (libltdl and softhsm required)..."
 
 # detect softhsm
@@ -85,7 +86,6 @@ if [ "$SOFTHSM" == "" ]; then
     exit 1
 fi
 
-echo "Testing with code level $FABRIC_SDKGO_CODELEVEL_TAG (Fabric ${FABRIC_SDKGO_CODELEVEL_VER}) ..."
 GO_TAGS="$GO_TAGS $FABRIC_SDKGO_CODELEVEL_TAG"
 
 GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
