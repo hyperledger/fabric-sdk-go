@@ -34,8 +34,9 @@ echo "Running" $(basename "$0")
 # Find all packages that should be tested.
 declare -a PKG_SRC=(
     "./pkg"
+    "./test"
 )
-declare PKG_EXCLUDE="(${REPO}/pkg/core/cryptosuite/bccsp/multisuite|${REPO}/pkg/core/cryptosuite/bccsp/pkcs11)"
+declare PKG_EXCLUDE=""
 findPackages
 
 # Reduce unit tests to changed packages.
@@ -73,8 +74,15 @@ if [ "${TEST_WITH_LINTER}" = true ]; then
     runLinter
 fi
 
+# filter out excluded tests
+PKGS=($(echo "${PKGS[@]}" | tr ' ' '\n' | \
+    grep -v ^${REPO}/test | \
+    grep -v ^${REPO}/pkg/core/cryptosuite/bccsp/multisuite | \
+    grep -v ^${REPO}/pkg/core/cryptosuite/bccsp/pkcs11 | \
+    tr ' ' '\n'))
+
+echo "Code level $FABRIC_SDKGO_CODELEVEL_TAG (Fabric ${FABRIC_SDKGO_CODELEVEL_VER})"
 echo "Running unit tests..."
-echo "Testing with code level $FABRIC_SDKGO_CODELEVEL_TAG (Fabric ${FABRIC_SDKGO_CODELEVEL_VER}) ..."
 GO_TAGS="$GO_TAGS $FABRIC_SDKGO_CODELEVEL_TAG"
 
 GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"

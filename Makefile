@@ -210,10 +210,6 @@ license:
 lint: populate
 	@LINT_CHANGED_ONLY=true $(TEST_SCRIPTS_PATH)/check_lint.sh
 
-.PHONY: lint-integration-tests
-lint-integration-tests: populate
-	@LINT_CHANGED_ONLY=true $(TEST_SCRIPTS_PATH)/check_lint_tests.sh
-
 .PHONY: lint-all
 lint-all: populate
 	@$(TEST_SCRIPTS_PATH)/check_lint.sh
@@ -226,7 +222,7 @@ build-softhsm2-image:
 		-f $(FIXTURE_SOFTHSM2_PATH)/Dockerfile .
 
 .PHONY: unit-test
-unit-test: license depend populate lint-integration-tests
+unit-test: license depend populate
 	@TEST_CHANGED_ONLY=true TEST_WITH_LINTER=true FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
 ifeq ($(FABRIC_SDK_DEPRECATED_UNITTEST),true)
 	@GO_TAGS="$(GO_TAGS) deprecated" TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
