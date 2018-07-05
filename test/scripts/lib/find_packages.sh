@@ -86,15 +86,46 @@ function filterExcludedPackages {
 }
 
 function calcDepPackages {
+    PKG_DEPS_DIR=`mktemp -d 2>/dev/null || mktemp -d -t 'fabricsdkgo'`
 
-    declare progressDivider=10
+    taskRunner writePkgDeps 8 "${PKGS[@]}"
+    for pkg in "${PKGS[@]}"
+    do
+        evalPkgDeps ${pkg}
+    done
+
+    rm -Rf ${PKG_DEPS_DIR}
+}
+
+function taskRunner {
+    declare task=$1
+    declare maxBatchSize=$2
+    shift 2
+    declare items=($@)
+
+    declare progressDivider=20
     declare progressNewline='\r'
+    declare defaultBatchSize=4
+
+    # calculation of package dependencies is slow, so setup parallel batches.
+    declare numProcessors=$(getconf _NPROCESSORS_ONLN)
+    declare batchSize="${numProcessors:-${defaultBatchSize}}"
+    if [[ ! ${batchSize} =~ ^-?[0-9]+$ ]] || [ ${batchSize} -le 0 ]; then
+        batchSize=${defaultBatchSize}
+    fi
+    if [ ${batchSize} -gt ${maxBatchSize} ]; then
+        batchSize=${maxBatchSize}
+    fi
+    echo "Calculating package dependencies using parallel batches of ${batchSize}"
+
     if [ ${TERM} = 'dumb' ]; then
         progressNewline='\n'
     fi
 
+    declare pids=()
+
     declare i=0
-    for pkg in "${PKGS[@]}"
+    for item in "${items[@]}"
     do
         declare progress=$((100 * ${i} / ${#PKGS[@]}))
         i=$((${i} + 1))
@@ -102,31 +133,44 @@ function calcDepPackages {
             printf "Calculating package dependencies ... (${progress}%%)${progressNewline}"
         fi
 
-        declare -a testImports=($(${GO_CMD} list -f '{{.TestImports}}' ${pkg} | tr -d '[]' | tr ' ' '\n' | \
-            grep "^${REPO}" | \
-            grep -v "^${REPO}/vendor/" | \
-            grep -v "^${REPO}/internal/github.com/" | \
-            grep -v "^${REPO}/third_party/github.com/" | \
-            sort -u | \
-            tr '\n' ' '))
+        ${task} ${item} &
+        pids+=($!)
 
-        declare -a pkgDeps=($(${GO_CMD} list -f '{{.Deps}}' ${pkg} ${testImports[@]} | tr -d '[]' | tr ' ' '\n' | \
-            grep "^${REPO}" | \
-            grep -v "^${REPO}/vendor/" | \
-            sort -u | \
-            tr '\n' ' '))
-
-        declare -a depsAndImports=(${testImports[@]})
-        depsAndImports+=(${pkgDeps[@]})
-
-        declare val=""
-        if [ ${#depsAndImports[@]} -gt 0 ]; then
-            val=$(${GO_CMD} list ${depsAndImports[@]} | sort -u | tr '\n' ' ')
+        if [ ${#pids[@]} -eq ${batchSize} ]; then
+            wait ${pids[@]}
+            pids=()
         fi
-        eval "PKGDEPS__${pkg//[-\.\/]/_}=\"${val}\""
     done
+    wait ${pids[@]}
     printf "Calculating package dependencies ... (100%%)\n"
 }
+
+function writePkgDeps {
+    declare pkg=${1}
+    declare key="PKGDEPS__${pkg//[-\.\/]/_}"
+
+    declare -a depsAndImports=($(${GO_CMD} list -f '{{.TestImports}} {{.Deps}}' ${pkg} | tr -d '[]' | xargs | tr ' ' '\n' | \
+        grep "^${REPO}" | \
+        grep -v "^${REPO}/vendor/" | \
+        sort -u | \
+        tr '\n' ' '))
+
+    echo "${depsAndImports[@]}" > ${PKG_DEPS_DIR}/${key}.txt
+}
+
+function evalPkgDeps {
+    declare pkg=${1}
+    declare key="PKGDEPS__${pkg//[-\.\/]/_}"
+
+    declare -a depsAndImports=($(cat < ${PKG_DEPS_DIR}/${key}.txt))
+    declare val=""
+    if [ ${#depsAndImports[@]} -gt 0 ]; then
+        val=$(echo ${depsAndImports[@]} | sort -u | tr '\n' ' ')
+    fi
+    eval "PKGDEPS__${pkg//[-\.\/]/_}=\"${val}\""
+    eval "IS_CACHED_PKGDEPS__${pkg//[-\.\/]/_}=\"true\""
+}
+
 
 function appendDepPackages {
     calcDepPackages
