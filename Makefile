@@ -197,11 +197,13 @@ all: depend license unit-test integration-test
 
 .PHONY: depend
 depend:
+ifeq ($(FABRIC_SDKGO_DEPEND_INSTALL),true)
 	@$(TEST_SCRIPTS_PATH)/dependencies.sh
+endif
 
 .PHONY: depend-install
 depend-install:
-	@FABRIC_SDKGO_DEPEND_INSTALL="true" $(TEST_SCRIPTS_PATH)/dependencies.sh
+	@$(TEST_SCRIPTS_PATH)/dependencies.sh -f
 
 .PHONY: checks
 checks: depend license lint
