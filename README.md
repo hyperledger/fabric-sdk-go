@@ -69,7 +69,7 @@ When the 'prev' code level is updated, the last tested fabric-sdk-go commit or t
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/
 
 # Optional - Automatically install Go tools used by test suite
-# make depend-install
+# make depend
 
 # Running test suite
 make
@@ -105,13 +105,13 @@ To contribute patches, you will need to clone (or add a remote) from [Gerrit](ht
 # In the Fabric SDK Go directory
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/
 
-# Ensure dependencies are installed
-make depend
+# Optional - Automatically install Go tools used by test suite
+# make depend
 
-# Running code checks (license, linting, spelling, etc)
-make checks
+# Optional - Running only code checks (linters, license, spelling, etc)
+# make checks
 
-# Running all unit tests
+# Running all unit tests and checks
 make unit-test
 
 # Running all integration tests
