@@ -38,9 +38,7 @@ echo "Running" $(basename "$0")
 # Packages to include in test run
 PKGS=($($GO_CMD list $REPO/test/integration/... 2> /dev/null | \
       grep -v ^$REPO/test/integration/pkcs11 | \
-      grep -v ^$REPO/test/integration/revoked | \
-      grep -v ^$REPO/test/integration/expiredorderer | \
-      grep -v ^$REPO/test/integration/expiredpeer | \
+      grep -v ^$REPO/test/integration/negative | \
       grep -v ^$REPO/test/integration\$ | \
       tr '\n' ' '))
 

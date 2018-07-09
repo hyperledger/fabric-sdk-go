@@ -8,8 +8,10 @@ package integration
 
 import (
 	"fmt"
+	"go/build"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
@@ -142,14 +144,36 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	return nil
 }
 
-// GetDeployPath ..
+// GetDeployPath returns the path to the chaincode fixtures
 func GetDeployPath() string {
-	pwd, err := os.Getwd()
-	if err != nil {
-		panic(fmt.Sprintf("Getwd failed: %s", err))
-	}
+	const ccPath = "test/fixtures/testdata"
+	return path.Join(goPath(), "src", metadata.Project, ccPath)
+}
 
-	return path.Join(pwd, "../../fixtures/testdata")
+// GetChannelConfigPath returns the path to the named channel config file
+func GetChannelConfigPath(filename string) string {
+	return path.Join(goPath(), "src", metadata.Project, metadata.ChannelConfigPath, filename)
+}
+
+// GetConfigPath returns the path to the named config fixture file
+func GetConfigPath(filename string) string {
+	const configPath = "test/fixtures/config"
+	return path.Join(goPath(), "src", metadata.Project, configPath, filename)
+}
+
+// GetConfigOverridesPath returns the path to the named config override fixture file
+func GetConfigOverridesPath(filename string) string {
+	const configPath = "test/fixtures/config/overrides"
+	return path.Join(goPath(), "src", metadata.Project, configPath, "overrides", filename)
+}
+
+// goPath returns the current GOPATH. If the system
+// has multiple GOPATHs then the first is used.
+func goPath() string {
+	gpDefault := build.Default.GOPATH
+	gps := filepath.SplitList(gpDefault)
+
+	return gps[0]
 }
 
 // InstallAndInstantiateExampleCC install and instantiate using resource management client
@@ -226,7 +250,7 @@ func CreateChannelAndUpdateAnchorPeers(t *testing.T, sdk *fabsdk.FabricSDK, chan
 
 	req := resmgmt.SaveChannelRequest{
 		ChannelID:         channelID,
-		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, channelConfigFile),
+		ChannelConfigPath: GetChannelConfigPath(channelConfigFile),
 		SigningIdentities: signingIdentities,
 	}
 	_, err = chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
@@ -239,7 +263,7 @@ func CreateChannelAndUpdateAnchorPeers(t *testing.T, sdk *fabsdk.FabricSDK, chan
 	for _, orgCtx := range orgsContext {
 		req := resmgmt.SaveChannelRequest{
 			ChannelID:         channelID,
-			ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, orgCtx.AnchorPeerConfigFile),
+			ChannelConfigPath: GetChannelConfigPath(orgCtx.AnchorPeerConfigFile),
 			SigningIdentities: []msp.SigningIdentity{orgCtx.SigningIdentity},
 		}
 		if _, err := orgCtx.ResMgmt.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {

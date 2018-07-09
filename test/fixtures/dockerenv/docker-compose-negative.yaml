@@ -19,7 +19,7 @@ services:
       - TEST_CHANGED_ONLY
     volumes:
       - ../../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
-    command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/expiredorderer.sh
+    command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/negative.sh
     depends_on:
       - org1ca1
       - org2ca1

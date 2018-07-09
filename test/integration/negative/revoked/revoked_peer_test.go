@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package revoked
 
 import (
-	"path"
 	"strings"
 	"testing"
 
@@ -23,7 +22,6 @@ import (
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"os"
 
@@ -49,7 +47,7 @@ const (
 	org2AdminUser    = "Admin"
 	org1User         = "User1"
 	channelID        = "orgchannel"
-	configPath       = "../../fixtures/config/config_test.yaml"
+	configFilename   = "config_test.yaml"
 )
 
 // SDK
@@ -186,7 +184,7 @@ func queryCC(org1ChannelClientContext contextAPI.ChannelProvider, t *testing.T) 
 }
 
 func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Client) {
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,7 +222,7 @@ func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Cl
 
 func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningIdentity, chMgmtClient *resmgmt.Client, t *testing.T) {
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
-		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
+		ChannelConfigPath: integration.GetChannelConfigPath("orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
 	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil")
@@ -259,7 +257,7 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 func getConfigBackend() core.ConfigProvider {
 
 	return func() ([]core.ConfigBackend, error) {
-		configBackends, err := config.FromFile(configPath)()
+		configBackends, err := config.FromFile(integration.GetConfigPath(configFilename))()
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read config backend from file, %v")
 		}

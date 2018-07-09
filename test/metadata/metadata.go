@@ -12,3 +12,6 @@ var ChannelConfigPath = "test/fixtures/fabric/v1.2/channel"
 
 // CryptoConfigPath is the relative path to the generated crypto config directory
 var CryptoConfigPath = "test/fixtures/fabric/v1/crypto-config"
+
+// Project is the Go project name relative to the Go Path
+var Project = "github.com/hyperledger/fabric-sdk-go"
