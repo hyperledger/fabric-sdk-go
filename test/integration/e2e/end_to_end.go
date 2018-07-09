@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package e2e
 
 import (
-	"path"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,15 +18,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
-
-	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
@@ -189,7 +186,7 @@ func queryCC(client *channel.Client, t *testing.T, targetEndpoints ...string) []
 }
 
 func createCC(t *testing.T, orgResMgmt *resmgmt.Client) {
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +218,7 @@ func createChannel(sdk *fabsdk.FabricSDK, t *testing.T, resMgmtClient *resmgmt.C
 		t.Fatal(err)
 	}
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
-		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		ChannelConfigPath: integration.GetChannelConfigPath("mychannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{adminIdentity}}
 	txID, err := resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil")

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -18,10 +19,15 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration/e2e"
 )
 
+const (
+	// ConfigTestFile contains the path and filename of the config for integration tests
+	ConfigTestFilename = "config_pkcs11_test.yaml"
+)
+
 func TestE2E(t *testing.T) {
 	// Create SDK setup for the integration tests
 	e2e.Run(t,
-		config.FromFile("../"+ConfigTestFile),
+		config.FromFile(integration.GetConfigPath(ConfigTestFilename)),
 		fabsdk.WithCorePkg(&CustomCryptoSuiteProviderFactory{}))
 }
 

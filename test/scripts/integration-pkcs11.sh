@@ -37,15 +37,8 @@ echo "Running" $(basename "$0")
 
 # Packages to include in test run
 PKGS=($(${GO_CMD} list ${REPO}/test/integration/... 2> /dev/null | \
-      grep -v ^${REPO}/test/integration/e2e/pkcs11 | \
-      grep -v ^${REPO}/test/integration/negative | \
-      grep -v ^${REPO}/test/integration\$ | \
+      grep ^${REPO}/test/integration/e2e/pkcs11 | \
       tr '\n' ' '))
-
-if [ "$E2E_ONLY" == "true" ]; then
-    echo "Including E2E tests only"
-    PKGS=($(echo ${PKGS[@]} | tr ' ' '\n' | grep ^${REPO}/test/integration/e2e | tr '\n' ' '))
-fi
 
 # Reduce tests to changed packages.
 if [ "${TEST_CHANGED_ONLY}" = true ]; then
@@ -82,9 +75,28 @@ if [ ${#PKGS[@]} -eq 0 ]; then
     exit 0
 fi
 
+#Add entry here below for your key to be imported into softhsm
+declare -a PRIVATE_KEYS=(
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/ordererOrganizations/example.com/users/Admin@example.com/msp/keystore/f4aa194b12d13d7c2b7b275a7115af5e6f728e11710716f2c754df4587891511_sk"
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/ce142124e13093a3e13bc4708b0f2b26e1d4d2ea4d4cc59942790bfc0f3bcc6d_sk"
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/keystore/abbe8ee0f86c227b1917d208921497603d2ff28f4ba8e902d703744c4a6fa7b7_sk"
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/keystore/371ea01078b18f3b92c1fc8233dfa8d209d882ae40aeff4defd118ba9d572a15_sk"
+	"github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/users/User1@org2.example.com/msp/keystore/7777a174c9fe40ab5abe33199a4fe82f1e0a7c45715e395e73a78cc3480d0021_sk"
+)
+
+GO_SRC=/opt/gopath/src
+for i in "${PRIVATE_KEYS[@]}"
+do
+    echo "Importing key : ${GO_SRC}/${i}"
+    openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in ${GO_SRC}/${i} -out private.p8
+    pkcs11helper -action import -keyFile private.p8
+    rm -rf private.p8
+done
+
 echo "Code level ${FABRIC_SDKGO_CODELEVEL_TAG} (Fabric ${FABRIC_FIXTURE_VERSION})"
 echo "Running integration tests ..."
 
-GO_TAGS="${GO_TAGS} ${FABRIC_SDKGO_CODELEVEL_TAG}"
+GO_TAGS="$GO_TAGS ${FABRIC_SDKGO_CODELEVEL_TAG}"
 GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_FIXTURE_VERSION}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
-${GO_CMD} test ${RACEFLAG} -tags "${GO_TAGS}" ${GO_TESTFLAGS} -ldflags="${GO_LDFLAGS}" ${PKGS[@]} -p 1 -timeout=40m configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}
+$GO_CMD test ${RACEFLAG} -tags "${GO_TAGS}" ${GO_TESTFLAGS} -ldflags="${GO_LDFLAGS}" ${PKGS[@]} -p 1 -timeout=40m configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}
