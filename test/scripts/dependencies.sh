@@ -99,9 +99,17 @@ function installGoPkg {
     done
 }
 
+function isScriptCurrent {
+    declare filesModified=$(git diff --name-only --diff-filter=ACMRTUXBD HEAD | tr '\n' ' ' | xargs)
+    if [[ "${filesModified}" =~ ( |^)(test/scripts/dependencies.sh)( |$) ]]; then
+        echo "Dependencies script modified - will need to install dependencies"
+        return 1
+    fi
+}
+
 function isLastInstallCurrent {
     if [ -f "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}" ]; then
-        declare -a lastScriptUsage=($(cat < "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}"))
+        declare -a lastScriptUsage=($(< "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}"))
         echo "Dependency script last ran ${lastScriptUsage[1]} on revision ${lastScriptUsage[0]}"
 
         if [ "${lastScriptUsage[0]}" = "${DEPEND_SCRIPT_REVISION}" ] && [ "${lastScriptUsage[1]}" = "${DATE}" ]; then
@@ -110,6 +118,12 @@ function isLastInstallCurrent {
     fi
 
     return 1
+}
+
+function isDependencyCurrent {
+    if ! isScriptCurrent || ! isLastInstallCurrent; then
+        return 1
+    fi
 }
 
 # isDependenciesInstalled checks that Go tools are installed and help the user if they are missing
@@ -203,16 +217,14 @@ function installDependencies {
 }
 
 function isForceMode {
-    if [ "${BASH_ARGV[0]}" = "-f" ]; then
-        return 0
+    if [ "${BASH_ARGV[0]}" != "-f" ]; then
+        return 1
     fi
-
-    return 1
 }
 
 setCachePath
 
-if ! isLastInstallCurrent || ! isDependenciesInstalled false || isForceMode; then
+if ! isDependencyCurrent || ! isDependenciesInstalled false || isForceMode; then
     installDependencies
 else
     echo "No need to install dependencies"
