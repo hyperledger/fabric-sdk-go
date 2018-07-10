@@ -485,3 +485,19 @@ func tlsCertByBytes(bytes []byte) (*x509.Certificate, error) {
 	//no cert found and there is no error
 	return nil, errors.New("empty byte")
 }
+
+func TestEntityMatchers(t *testing.T) {
+
+	backend, err := config.FromFile(configTestEntityMatchersFilePath)()
+	if err != nil {
+		t.Fatal("Failed to get config backend")
+	}
+
+	identityConfig, err := ConfigFromBackend(backend...)
+	assert.Nil(t, err, "Failed to get endpoint config from backend")
+	assert.NotNil(t, identityConfig, "expected valid endpointconfig")
+
+	configImpl := identityConfig.(*IdentityConfig)
+	assert.Equal(t, 2, len(configImpl.caMatchers), "preloading matchers isn't working as expected")
+
+}

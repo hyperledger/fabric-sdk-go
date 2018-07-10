@@ -1,0 +1,42 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+# The network connection profile provides client applications the information about the target
+# blockchain network that are necessary for the applications to interact with it. These are all
+# knowledge that must be acquired from out-of-band sources. This file provides such a source.
+#
+
+# EntityMatchers enable substitution of network hostnames with static configurations
+ # so that properties can be mapped. Regex can be used for this purpose
+# UrlSubstitutionExp can be empty which means the same network hostname will be used
+# UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
+# UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
+ # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
+# EventUrlSubstitutionExp and sslTargetOverrideUrlSubstitutionExp follow in the same lines as
+ # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
+# In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
+entityMatchers:
+  peer:
+    - pattern: (\w+).org1.example.(\w+)
+      urlSubstitutionExp: peer0.org1.example.com:8888
+      eventUrlSubstitutionExp: peer0.org1.example.com:9999
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
+      mappedHost: peer0.org1.example.com
+
+  orderer:
+    - pattern: (\w+).example.(\w+)
+      urlSubstitutionExp: orderer.example.com:8888
+      sslTargetOverrideUrlSubstitutionExp: orderer.override.com
+      mappedHost: orderer.example.com
+
+  certificateAuthority:
+    - pattern: (\w+).org1.example.(\w+)
+      urlSubstitutionExp: https://ca.org1.example.com:8888
+      mappedHost: ca.org1.example.com
+
+  channel:
+    - pattern: ^(test)(\w*)(channel)$
+      mappedName: ch1

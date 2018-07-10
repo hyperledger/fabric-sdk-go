@@ -7,12 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
-
-	"sort"
 
 	"regexp"
 
@@ -31,8 +28,7 @@ import (
 func ConfigFromBackend(coreBackend ...core.ConfigBackend) (msp.IdentityConfig, error) {
 
 	//create identity config
-	config := &IdentityConfig{backend: lookup.New(coreBackend...),
-		caMatchers: make(map[int]*regexp.Regexp)}
+	config := &IdentityConfig{backend: lookup.New(coreBackend...)}
 
 	//preload config identities
 	err := config.loadIdentityConfigEntities()
@@ -50,13 +46,18 @@ type IdentityConfig struct {
 	backend             *lookup.ConfigLookup
 	caKeyStorePath      string
 	credentialStorePath string
-	entityMatchers      *entityMatchers
-	caMatchers          map[int]*regexp.Regexp
+	caMatchers          []matcherEntry
 }
 
 //entityMatchers for identity configuration
 type entityMatchers struct {
 	matchers map[string][]MatchConfig
+}
+
+//matcher entry mapping regex to match config
+type matcherEntry struct {
+	regex       *regexp.Regexp
+	matchConfig MatchConfig
 }
 
 //identityConfigEntity contains all config definitions needed
@@ -276,17 +277,14 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 			if caName == "" {
 				continue
 			}
-			caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(caName)]
-			if !ok {
-				logger.Debugf("Could not find Certificate Authority for [%s], trying with Entity Matchers", caName)
-				matchedCaConfig, mappedHost := c.tryMatchingCAConfig(configEntity, strings.ToLower(caName))
-				if mappedHost == "" {
-					return errors.Errorf("CA Server Name [%s] not found", caName)
-				}
-				caConfig = *matchedCaConfig
-				logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", caName, mappedHost)
+
+			matchedCaConfig := c.tryMatchingCAConfig(configEntity, strings.ToLower(caName))
+			if matchedCaConfig == nil {
+				return errors.Errorf("CA Server Name [%s] not found", caName)
 			}
-			mspCAConfig, err := c.getMSPCAConfig(&caConfig)
+
+			logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", caName)
+			mspCAConfig, err := c.getMSPCAConfig(matchedCaConfig)
 			if err != nil {
 				return err
 			}
@@ -353,83 +351,54 @@ func (c *IdentityConfig) compileMatchers() error {
 		return errors.WithMessage(err, "failed to parse 'entityMatchers' config item")
 	}
 
-	if entityMatchers.matchers["certificateauthority"] != nil {
-		certMatchersConfig := entityMatchers.matchers["certificateauthority"]
-		var err error
-		for i := 0; i < len(certMatchersConfig); i++ {
-			if certMatchersConfig[i].Pattern != "" {
-				c.caMatchers[i], err = regexp.Compile(certMatchersConfig[i].Pattern)
-				if err != nil {
-					return err
-				}
+	caMatcherConfigs := entityMatchers.matchers["certificateauthority"]
+	c.caMatchers = make([]matcherEntry, len(caMatcherConfigs))
+
+	if len(caMatcherConfigs) > 0 {
+		for i, v := range caMatcherConfigs {
+			regex, err := regexp.Compile(v.Pattern)
+			if err != nil {
+				return err
 			}
+			c.caMatchers[i] = matcherEntry{regex: regex, matchConfig: v}
 		}
 	}
-	c.entityMatchers = &entityMatchers
+
 	return nil
 }
 
-func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity, caName string) (*CAConfig, string) {
-	//Return if no caMatchers are configured
-	if len(c.caMatchers) == 0 {
-		return nil, ""
-	}
-
-	//sort the keys
-	var keys []int
-	for k := range c.caMatchers {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
+func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity, caName string) *CAConfig {
 
 	//loop over certAuthorityEntityMatchers to find the matching Cert
-	for _, k := range keys {
-		v := c.caMatchers[k]
-		if v.MatchString(caName) {
-			return c.findMatchingCert(configEntity, caName, v, k)
+	for _, matcher := range c.caMatchers {
+		if matcher.regex.MatchString(caName) {
+			return c.findMatchingCert(configEntity, caName, matcher)
 		}
 	}
 
-	return nil, ""
-}
-
-func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, caName string, v *regexp.Regexp, k int) (*CAConfig, string) {
-	// get the matching Config from the index number
-	certAuthorityMatchConfig := c.entityMatchers.matchers["certificateauthority"][k]
-	//Get the certAuthorityMatchConfig from mapped host
-	caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(certAuthorityMatchConfig.MappedHost)]
+	//Direct lookup, if no caMatchers are configured or no matcher matched
+	caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(caName)]
 	if !ok {
-		return nil, ""
-	}
-	_, isPortPresentInCAName := c.getPortIfPresent(caName)
-	//if substitution url is empty, use the same network certAuthority url
-	if certAuthorityMatchConfig.URLSubstitutionExp == "" {
-		port, isPortPresent := c.getPortIfPresent(caConfig.URL)
-
-		caConfig.URL = caName
-		//append port of matched config
-		if isPortPresent && !isPortPresentInCAName {
-			caConfig.URL += ":" + strconv.Itoa(port)
-		}
-	} else {
-		//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
-		if !strings.Contains(certAuthorityMatchConfig.URLSubstitutionExp, "$") {
-			caConfig.URL = certAuthorityMatchConfig.URLSubstitutionExp
-		} else {
-			//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
-			caConfig.URL = v.ReplaceAllString(caName, certAuthorityMatchConfig.URLSubstitutionExp)
-		}
+		return nil
 	}
 
-	return &caConfig, certAuthorityMatchConfig.MappedHost
+	return &caConfig
 }
 
-func (c *IdentityConfig) getPortIfPresent(url string) (int, bool) {
-	s := strings.Split(url, ":")
-	if len(s) > 1 {
-		if port, err := strconv.Atoi(s[len(s)-1]); err == nil {
-			return port, true
+func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, caName string, matcher matcherEntry) *CAConfig {
+	//Get the certAuthorityMatchConfig from mapped host
+	caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(matcher.matchConfig.MappedHost)]
+	if !ok {
+		return nil
+	}
+
+	if matcher.matchConfig.URLSubstitutionExp != "" {
+		caConfig.URL = matcher.matchConfig.URLSubstitutionExp
+		//check for regex replace '$'
+		if strings.Contains(caConfig.URL, "$") {
+			caConfig.URL = matcher.regex.ReplaceAllString(caName, caConfig.URL)
 		}
 	}
-	return 0, false
+
+	return &caConfig
 }

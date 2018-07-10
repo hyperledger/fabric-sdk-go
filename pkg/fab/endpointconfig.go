@@ -11,7 +11,6 @@ import (
 	"crypto/x509"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -121,27 +120,14 @@ func (c *EndpointConfig) OrderersConfig() []fab.OrdererConfig {
 // OrdererConfig returns the requested orderer
 func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, bool) {
 
-	matchingOrdererConfig := c.tryMatchingOrdererConfig(strings.ToLower(nameOrURL))
-	if matchingOrdererConfig != nil {
-		return matchingOrdererConfig, true
+	matchingOrdererConfig := c.tryMatchingOrdererConfig(nameOrURL, true)
+
+	if matchingOrdererConfig == nil {
+		logger.Debugf("Could not find Orderer for [%s] ", nameOrURL)
+		return nil, false
 	}
 
-	logger.Debugf("Could not find Orderer for [%s] through entity matchers", nameOrURL)
-	orderer, ok := c.networkConfig.Orderers[strings.ToLower(nameOrURL)]
-	if ok {
-		return &orderer, true
-	}
-
-	//lookup by URL
-	for _, ordererCfg := range c.OrderersConfig() {
-		if strings.EqualFold(ordererCfg.URL, nameOrURL) {
-			return &ordererCfg, true
-		}
-	}
-
-	logger.Debugf("Could not find Orderer for [%s] ", nameOrURL)
-
-	return nil, false
+	return matchingOrdererConfig, true
 }
 
 // PeersConfig Retrieves the fabric peers for the specified org from the
@@ -154,28 +140,13 @@ func (c *EndpointConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
 // PeerConfig Retrieves a specific peer from the configuration by name or url
 func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
 
-	matchPeerConfig := c.tryMatchingPeerConfig(nameOrURL)
-	if matchPeerConfig != nil {
-		return matchPeerConfig, true
+	matchPeerConfig := c.tryMatchingPeerConfig(nameOrURL, true)
+	if matchPeerConfig == nil {
+		logger.Debugf("Could not find Peer for [%s] ", nameOrURL)
+		return nil, false
 	}
 
-	logger.Debugf("Could not find Peer for name/url [%s] through Entity Matchers", nameOrURL)
-
-	//lookup by name in config
-	peerConfig, ok := c.networkConfig.Peers[strings.ToLower(nameOrURL)]
-	if ok {
-		return &peerConfig, true
-	}
-
-	//lookup by URL
-	for _, staticPeerConfig := range c.networkConfig.Peers {
-		if strings.EqualFold(staticPeerConfig.URL, nameOrURL) {
-			return &staticPeerConfig, true
-		}
-	}
-
-	logger.Debugf("Could not found matching PeerConfig for name/url [%s]", nameOrURL)
-	return nil, false
+	return matchPeerConfig, true
 }
 
 // NetworkConfig returns the network configuration defined in the config file
@@ -707,7 +678,7 @@ func (c *EndpointConfig) loadPeerConfigsByOrg() {
 
 		for _, peerName := range orgPeers {
 
-			matchingPeerConfig := c.tryMatchingPeerConfig(peerName)
+			matchingPeerConfig := c.tryMatchingPeerConfig(peerName, false)
 			if matchingPeerConfig != nil {
 				peers = append(peers, *matchingPeerConfig)
 				continue
@@ -749,7 +720,7 @@ func (c *EndpointConfig) loadOrdererConfigs() error {
 
 	ordererConfigs := []fab.OrdererConfig{}
 	for name, ordererConfig := range c.networkConfig.Orderers {
-		matchedOrderer := c.tryMatchingOrdererConfig(name)
+		matchedOrderer := c.tryMatchingOrdererConfig(name, false)
 		if matchedOrderer != nil {
 			//if found in entity matcher then use the matched one
 			ordererConfig = *matchedOrderer
@@ -776,7 +747,7 @@ func (c *EndpointConfig) loadChannelPeers() error {
 		peers := []fab.ChannelPeer{}
 		for peerName, chPeerConfig := range channelConfig.Peers {
 			var p fab.PeerConfig
-			matchedPeer := c.tryMatchingPeerConfig(strings.ToLower(peerName))
+			matchedPeer := c.tryMatchingPeerConfig(strings.ToLower(peerName), false)
 			if matchedPeer != nil {
 				p = *matchedPeer
 			} else {
@@ -820,7 +791,7 @@ func (c *EndpointConfig) loadChannelOrderers() error {
 		orderers := []fab.OrdererConfig{}
 		for _, ordererName := range channelConfig.Orderers {
 
-			orderer := c.tryMatchingOrdererConfig(strings.ToLower(ordererName))
+			orderer := c.tryMatchingOrdererConfig(strings.ToLower(ordererName), false)
 			if orderer != nil {
 				orderers = append(orderers, *orderer)
 				continue
@@ -896,195 +867,173 @@ func (c *EndpointConfig) loadTLSClientCerts(configEntity *endpointConfigEntity) 
 	return nil
 }
 
-func (c *EndpointConfig) getPortIfPresent(url string) (int, bool) {
-	s := strings.Split(url, ":")
-	if len(s) > 1 {
-		if port, err := strconv.Atoi(s[len(s)-1]); err == nil {
-			return port, true
-		}
-	}
-	return 0, false
-}
+func (c *EndpointConfig) tryMatchingPeerConfig(peerName string, searchByURL bool) *fab.PeerConfig {
 
-func (c *EndpointConfig) tryMatchingPeerConfig(peerName string) *fab.PeerConfig {
-
-	//Return if no peerMatchers are configured
-	if len(c.peerMatchers) == 0 {
-		return nil
-	}
-
-	//loop over peerentityMatchers to find the matching peer
+	//loop over peer entity matchers to find the matching peer
 	for _, matcher := range c.peerMatchers {
-		logger.Debugf("Trying to match peer [%s] with matcher [%s]", peerName, matcher.regex.String())
 		if matcher.regex.MatchString(peerName) {
-			logger.Debugf("Peer [%s] matched using matcher [%s]", peerName, matcher.regex.String())
-			return c.matchPeer(peerName, matcher.regex, matcher.matchConfig)
+			return c.matchPeer(peerName, matcher)
 		}
 		logger.Debugf("Peer [%s] did not match using matcher [%s]", peerName, matcher.regex.String())
 	}
 
+	//direct lookup if peer matchers are not configured or no matchers matched
+	peerConfig, ok := c.networkConfig.Peers[strings.ToLower(peerName)]
+	if ok {
+		return &peerConfig
+	}
+
+	if searchByURL {
+		//lookup by URL
+		for _, staticPeerConfig := range c.networkConfig.Peers {
+			if strings.EqualFold(staticPeerConfig.URL, peerName) {
+				return &staticPeerConfig
+			}
+		}
+	}
+
 	return nil
 }
 
-//TODO this function needs to be refactored
-func (c *EndpointConfig) matchPeer(peerName string, regex *regexp.Regexp, peerMatchConfig MatchConfig) *fab.PeerConfig {
+func (c *EndpointConfig) matchPeer(peerName string, matcher matcherEntry) *fab.PeerConfig {
+
+	matchedPeer := c.getMappedPeer(matcher.matchConfig.MappedHost)
+	if matchedPeer == nil {
+		logger.Debugf("Could not find mapped host [%s] for peer [%s]", matcher.matchConfig.MappedHost, peerName)
+		return nil
+	}
+
+	//URLSubstitutionExp if found use from entity matcher otherwise use from mapped host
+	if matcher.matchConfig.URLSubstitutionExp != "" {
+		matchedPeer.URL = matcher.matchConfig.URLSubstitutionExp
+		//check for regex replace '$'
+		if strings.Contains(matchedPeer.URL, "$") {
+			matchedPeer.URL = matcher.regex.ReplaceAllString(peerName, matchedPeer.URL)
+		}
+	}
+
+	//EventURLSubstitutionExp if found use from entity matcher otherwise use from mapped host
+	if matcher.matchConfig.EventURLSubstitutionExp != "" {
+		matchedPeer.EventURL = matcher.matchConfig.EventURLSubstitutionExp
+		//check for regex replace '$'
+		if strings.Contains(matchedPeer.EventURL, "$") {
+			matchedPeer.EventURL = matcher.regex.ReplaceAllString(peerName, matchedPeer.EventURL)
+		}
+	}
+
+	//SSLTargetOverrideURLSubstitutionExp if found use from entity matcher otherwise use from mapped host
+	if matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp != "" {
+		sslTargetOverride := matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp
+		if strings.Contains(sslTargetOverride, "$") {
+			sslTargetOverride = matcher.regex.ReplaceAllString(peerName, sslTargetOverride)
+		}
+		matchedPeer.GRPCOptions["ssl-target-name-override"] = sslTargetOverride
+	}
+
+	return matchedPeer
+}
+
+func (c *EndpointConfig) getMappedPeer(host string) *fab.PeerConfig {
 	//Get the peerConfig from mapped host
-	peerConfig, ok := c.networkConfig.Peers[strings.ToLower(peerMatchConfig.MappedHost)]
+	peerConfig, ok := c.networkConfig.Peers[strings.ToLower(host)]
 	if !ok {
 		return nil
 	}
 
-	// Make a copy of GRPC options (as it is manipulated below)
-	peerConfig.GRPCOptions = copyPropertiesMap(peerConfig.GRPCOptions)
-
-	_, isPortPresentInPeerName := c.getPortIfPresent(peerName)
-	//if substitution url is empty, use the same network peer url
-	if peerMatchConfig.URLSubstitutionExp == "" {
-		peerConfig.URL = getPeerConfigURL(c, peerName, peerConfig.URL, isPortPresentInPeerName)
-	} else {
-		//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
-		if !strings.Contains(peerMatchConfig.URLSubstitutionExp, "$") {
-			peerConfig.URL = peerMatchConfig.URLSubstitutionExp
-		} else {
-			//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
-			peerConfig.URL = regex.ReplaceAllString(peerName, peerMatchConfig.URLSubstitutionExp)
-		}
-
+	mappedConfig := fab.PeerConfig{
+		URL:         peerConfig.URL,
+		EventURL:    peerConfig.EventURL,
+		TLSCACert:   peerConfig.TLSCACert,
+		GRPCOptions: make(map[string]interface{}),
 	}
 
-	//if eventSubstitution url is empty, use the same network peer url
-	if peerMatchConfig.EventURLSubstitutionExp == "" {
-		peerConfig.EventURL = getPeerConfigURL(c, peerName, peerConfig.EventURL, isPortPresentInPeerName)
-	} else {
-		//else, replace url with eventUrlSubstitutionExp if it doesnt have any variable declarations like $
-		if !strings.Contains(peerMatchConfig.EventURLSubstitutionExp, "$") {
-			peerConfig.EventURL = peerMatchConfig.EventURLSubstitutionExp
-		} else {
-			//if the eventUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
-			peerConfig.EventURL = regex.ReplaceAllString(peerName, peerMatchConfig.EventURLSubstitutionExp)
-		}
-
+	for key, val := range peerConfig.GRPCOptions {
+		mappedConfig.GRPCOptions[key] = val
 	}
 
-	//if sslTargetOverrideUrlSubstitutionExp is empty, use the same network peer host
-	if peerMatchConfig.SSLTargetOverrideURLSubstitutionExp == "" {
-		if !strings.Contains(peerName, ":") {
-			peerConfig.GRPCOptions["ssl-target-name-override"] = peerName
-		} else {
-			//Remove port and protocol of the peerName
-			s := strings.Split(peerName, ":")
-			if isPortPresentInPeerName {
-				peerConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-2]
-			} else {
-				peerConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-1]
-			}
-		}
+	//TODO default grpc options
 
-	} else {
-		//else, replace url with sslTargetOverrideUrlSubstitutionExp if it doesnt have any variable declarations like $
-		if !strings.Contains(peerMatchConfig.SSLTargetOverrideURLSubstitutionExp, "$") {
-			peerConfig.GRPCOptions["ssl-target-name-override"] = peerMatchConfig.SSLTargetOverrideURLSubstitutionExp
-		} else {
-			//if the sslTargetOverrideUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
-			peerConfig.GRPCOptions["ssl-target-name-override"] = regex.ReplaceAllString(peerName, peerMatchConfig.SSLTargetOverrideURLSubstitutionExp)
-		}
-
-	}
-	return &peerConfig
+	return &mappedConfig
 }
 
-func getPeerConfigURL(c *EndpointConfig, peerName, peerConfigURL string, isPortPresentInPeerName bool) string {
-	port, isPortPresent := c.getPortIfPresent(peerConfigURL)
-	url := peerName
-	//append port of matched config
-	if isPortPresent && !isPortPresentInPeerName {
-		url += ":" + strconv.Itoa(port)
-	}
-	return url
-}
+func (c *EndpointConfig) tryMatchingOrdererConfig(ordererName string, searchByURL bool) *fab.OrdererConfig {
 
-func (c *EndpointConfig) tryMatchingOrdererConfig(ordererName string) *fab.OrdererConfig {
-
-	//Return if no ordererMatchers are configured
-	if len(c.ordererMatchers) == 0 {
-		return nil
-	}
-
-	//loop over ordererentityMatchers to find the matching orderer
+	//loop over orderer entity matchers to find the matching orderer
 	for _, matcher := range c.ordererMatchers {
 		if matcher.regex.MatchString(ordererName) {
-			return c.matchOrderer(ordererName, matcher.regex, matcher.matchConfig)
+			return c.matchOrderer(ordererName, matcher)
+		}
+		logger.Debugf("Orderer [%s] did not match using matcher [%s]", ordererName, matcher.regex.String())
+	}
+
+	//direct lookup if orderer matchers are not configured or no matchers matched
+	orderer, ok := c.networkConfig.Orderers[strings.ToLower(ordererName)]
+	if ok {
+		return &orderer
+	}
+
+	if searchByURL {
+		//lookup by URL
+		for _, ordererCfg := range c.OrderersConfig() {
+			if strings.EqualFold(ordererCfg.URL, ordererName) {
+				return &ordererCfg
+			}
 		}
 	}
 
 	return nil
 }
 
-//TODO this function needs to be refactored
-func (c *EndpointConfig) matchOrderer(ordererName string, regex *regexp.Regexp, ordererMatchConfig MatchConfig) *fab.OrdererConfig {
+func (c *EndpointConfig) matchOrderer(ordererName string, matcher matcherEntry) *fab.OrdererConfig {
 
 	//Get the ordererConfig from mapped host
-	ordererConfig, ok := c.networkConfig.Orderers[strings.ToLower(ordererMatchConfig.MappedHost)]
+	matchedOrderer := c.getMappedOrderer(matcher.matchConfig.MappedHost)
+	if matchedOrderer == nil {
+		logger.Debugf("Could not find mapped host [%s] for orderer [%s]", matcher.matchConfig.MappedHost, ordererName)
+		return nil
+	}
+
+	//URLSubstitutionExp if found use from entity matcher otherwise use from mapped host
+	if matcher.matchConfig.URLSubstitutionExp != "" {
+		matchedOrderer.URL = matcher.matchConfig.URLSubstitutionExp
+		//check for regex replace '$'
+		if strings.Contains(matchedOrderer.URL, "$") {
+			matchedOrderer.URL = matcher.regex.ReplaceAllString(ordererName, matchedOrderer.URL)
+		}
+	}
+
+	//SSLTargetOverrideURLSubstitutionExp if found use from entity matcher otherwise use from mapped host
+	if matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp != "" {
+		sslTargetOverride := matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp
+		if strings.Contains(sslTargetOverride, "$") {
+			sslTargetOverride = matcher.regex.ReplaceAllString(ordererName, sslTargetOverride)
+		}
+		matchedOrderer.GRPCOptions["ssl-target-name-override"] = sslTargetOverride
+	}
+
+	return matchedOrderer
+}
+
+func (c *EndpointConfig) getMappedOrderer(host string) *fab.OrdererConfig {
+	//Get the peerConfig from mapped host
+	ordererConfig, ok := c.networkConfig.Orderers[strings.ToLower(host)]
 	if !ok {
 		return nil
 	}
 
-	// Make a copy of GRPC options (as it is manipulated below)
-	ordererConfig.GRPCOptions = copyPropertiesMap(ordererConfig.GRPCOptions)
-
-	_, isPortPresentInOrdererName := c.getPortIfPresent(ordererName)
-	//if substitution url is empty, use the same network orderer url
-	if ordererMatchConfig.URLSubstitutionExp == "" {
-		port, isPortPresent := c.getPortIfPresent(ordererConfig.URL)
-		ordererConfig.URL = ordererName
-
-		//append port of matched config
-		if isPortPresent && !isPortPresentInOrdererName {
-			ordererConfig.URL += ":" + strconv.Itoa(port)
-		}
-	} else {
-		//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
-		if !strings.Contains(ordererMatchConfig.URLSubstitutionExp, "$") {
-			ordererConfig.URL = ordererMatchConfig.URLSubstitutionExp
-		} else {
-			//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
-			ordererConfig.URL = regex.ReplaceAllString(ordererName, ordererMatchConfig.URLSubstitutionExp)
-		}
+	mappedConfig := fab.OrdererConfig{
+		URL:         ordererConfig.URL,
+		TLSCACert:   ordererConfig.TLSCACert,
+		GRPCOptions: make(map[string]interface{}),
 	}
 
-	//if sslTargetOverrideUrlSubstitutionExp is empty, use the same network peer host
-	if ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp == "" {
-		if !strings.Contains(ordererName, ":") {
-			ordererConfig.GRPCOptions["ssl-target-name-override"] = ordererName
-		} else {
-			//Remove port and protocol of the ordererName
-			s := strings.Split(ordererName, ":")
-			if isPortPresentInOrdererName {
-				ordererConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-2]
-			} else {
-				ordererConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-1]
-			}
-		}
-
-	} else {
-		//else, replace url with sslTargetOverrideUrlSubstitutionExp if it doesnt have any variable declarations like $
-		if !strings.Contains(ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp, "$") {
-			ordererConfig.GRPCOptions["ssl-target-name-override"] = ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp
-		} else {
-			//if the sslTargetOverrideUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
-			ordererConfig.GRPCOptions["ssl-target-name-override"] = regex.ReplaceAllString(ordererName, ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp)
-		}
-
+	for key, val := range ordererConfig.GRPCOptions {
+		mappedConfig.GRPCOptions[key] = val
 	}
-	return &ordererConfig
-}
 
-func copyPropertiesMap(origMap map[string]interface{}) map[string]interface{} {
-	newMap := make(map[string]interface{}, len(origMap))
-	for k, v := range origMap {
-		newMap[k] = v
-	}
-	return newMap
+	//TODO default grpc options
+
+	return &mappedConfig
 }
 
 func (c *EndpointConfig) compileMatchers() error {

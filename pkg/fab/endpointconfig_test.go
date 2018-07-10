@@ -436,11 +436,11 @@ func TestOrdererWithSubstitutedConfig_WithADifferentSubstituteUrl(t *testing.T) 
 func TestOrdererWithSubstitutedConfig_WithEmptySubstituteUrl(t *testing.T) {
 	_, fetchedConfig := testCommonConfigOrderer(t, "orderer.example.com", "orderer.example3.com")
 
-	if fetchedConfig.URL != "orderer.example3.com:7050" {
+	if fetchedConfig.URL != "orderer.example.com:7050" {
 		t.Fatal("Fetched Config should have the same url")
 	}
 
-	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "orderer.example3.com" {
+	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "orderer.example.com" {
 		t.Fatal("Fetched config should have the same ssl-target-name-override as its hostname")
 	}
 }
@@ -584,15 +584,15 @@ func TestPeerWithSubstitutedConfig_WithADifferentSubstituteUrl(t *testing.T) {
 func TestPeerWithSubstitutedConfig_WithEmptySubstituteUrl(t *testing.T) {
 	_, fetchedConfig := testCommonConfigPeer(t, "peer0.org1.example.com", "peer4.org1.example3.com")
 
-	if fetchedConfig.URL != "peer4.org1.example3.com:7051" {
+	if fetchedConfig.URL != "peer0.org1.example.com:7051" {
 		t.Fatal("Fetched Config should have the same url")
 	}
 
-	if fetchedConfig.EventURL != "peer4.org1.example3.com:7053" {
+	if fetchedConfig.EventURL != "peer0.org1.example.com:7053" {
 		t.Fatal("Fetched Config should have the same event url")
 	}
 
-	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "peer4.org1.example3.com" {
+	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "peer0.org1.example.com" {
 		t.Fatal("Fetched config should have the same ssl-target-name-override as its hostname")
 	}
 }
