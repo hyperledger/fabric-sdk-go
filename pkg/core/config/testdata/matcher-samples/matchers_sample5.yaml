@@ -1,0 +1,121 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+# The network connection profile provides client applications the information about the target
+# blockchain network that are necessary for the applications to interact with it. These are all
+# knowledge that must be acquired from out-of-band sources. This file provides such a source.
+#
+
+
+orderers:
+  default:
+    # these are standard properties defined by the gRPC library
+    # they will be passed in as-is to gRPC client constructor
+    grpcOptions:
+#     These parameters should be set in coordination with the keepalive policy on the server,
+#     as incompatible settings can result in closing of connection.
+#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 1s
+      keep-alive-timeout: 21s
+      keep-alive-permit: true
+      fail-fast: true
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: true
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+
+  orderer.example.com:
+    url: orderer.example.com:7050
+
+    # these are standard properties defined by the gRPC library
+    # they will be passed in as-is to gRPC client constructor
+    grpcOptions:
+      ssl-target-name-override: orderer.example.com
+
+peers:
+  default:
+    grpcOptions:
+#     These parameters should be set in coordination with the keepalive policy on the server,
+#     as incompatible settings can result in closing of connection.
+#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 1s
+      keep-alive-timeout: 21s
+      keep-alive-permit: true
+      fail-fast: true
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: true
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
+  peer0.org1.example.com:
+    # this URL is used to send endorsement and query requests
+    url: peer0.org1.example.com:7051
+
+    # this URL is used to connect the EventHub and registering event listeners
+    eventUrl: peer0.org1.example.com:7053
+
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+
+# EntityMatchers enable substitution of network hostnames with static configurations
+ # so that properties can be mapped. Regex can be used for this purpose
+# UrlSubstitutionExp can be empty which means the same network hostname will be used
+# UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
+# UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
+ # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
+# EventUrlSubstitutionExp and sslTargetOverrideUrlSubstitutionExp follow in the same lines as
+ # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
+# In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
+entityMatchers:
+  peer:
+
+    - pattern: (\w+).org.example.(\w+)
+      urlSubstitutionExp: peer0.org1.example.com:8888
+      eventUrlSubstitutionExp: peer0.org1.example.com:9999
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
+      mappedHost: peer0.org1.example.com
+
+    - pattern: (\w+).replace.example.(\w+):(\d+)
+      urlSubstitutionExp: $1.org1.example.$2:$3
+      eventUrlSubstitutionExp: $1.org1.example.$2:$3
+      sslTargetOverrideUrlSubstitutionExp: $1.org1.override.$2
+      mappedHost: $1.org1.example.$2
+
+    - pattern: (\w+).missing.example.(\w+)
+      urlSubstitutionExp: peer0.org1.example.com:8888
+      eventUrlSubstitutionExp: peer0.org1.example.com:9999
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
+
+    - pattern: (\w+).random.example.(\w+)
+      urlSubstitutionExp: peer0.org1.example.com:8888
+      eventUrlSubstitutionExp: peer0.org1.example.com:9999
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
+      mappedHost: random.mappedhost.com
+
+  orderer:
+    - pattern: (\w+).org.example.(\w+)
+      urlSubstitutionExp: orderer.example.com:8888
+      sslTargetOverrideUrlSubstitutionExp: orderer.override.com
+      mappedHost: orderer.example.com
+
+    - pattern: (\w+).replace.example.(\w+):(\d+)
+      urlSubstitutionExp: $1.example.com:$3
+      sslTargetOverrideUrlSubstitutionExp: $1.override.$2
+      mappedHost: $1.example.$2
+
+    - pattern: (\w+).missing.example.(\w+)
+      urlSubstitutionExp: orderer.example.com:8888
+      sslTargetOverrideUrlSubstitutionExp: orderer.override.com
+
+    - pattern: (\w+).random.example.(\w+)
+      urlSubstitutionExp: orderer.example.com:8888
+      sslTargetOverrideUrlSubstitutionExp: orderer.override.com
+      mappedHost: random.mappedhost.com
+

@@ -1392,3 +1392,62 @@ func TestEntityMatchers(t *testing.T) {
 	assert.True(t, ok, "supposed to find channel config")
 	assert.NotNil(t, channelConfig, "supposed to find channel config")
 }
+
+func TestDefaultGRPCOpts(t *testing.T) {
+
+	endpointConfig, err := ConfigFromBackend(getMatcherConfig())
+	assert.Nil(t, err, "Failed to get endpoint config from backend")
+	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
+
+	peerConfig, ok := endpointConfig.PeerConfig("xyz.org1.example.com")
+	assert.True(t, ok, "supposed to find peer config")
+	assert.NotNil(t, peerConfig, "supposed to find peer config")
+	assert.NotEmpty(t, peerConfig.GRPCOptions)
+	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
+	assert.Equal(t, "0s", peerConfig.GRPCOptions["keep-alive-time"])
+	assert.Equal(t, "peer0.org1.example.com", peerConfig.GRPCOptions["ssl-target-name-override"])
+	assert.Equal(t, "20s", peerConfig.GRPCOptions["keep-alive-timeout"])
+	assert.Equal(t, false, peerConfig.GRPCOptions["keep-alive-permit"])
+	assert.Equal(t, false, peerConfig.GRPCOptions["fail-fast"])
+	assert.Equal(t, false, peerConfig.GRPCOptions["allow-insecure"])
+
+	//make sure map has all the expected grpc opts keys
+	_, ok = peerConfig.GRPCOptions["keep-alive-time"]
+	assert.True(t, ok)
+	_, ok = peerConfig.GRPCOptions["ssl-target-name-override"]
+	assert.True(t, ok)
+	_, ok = peerConfig.GRPCOptions["keep-alive-timeout"]
+	assert.True(t, ok)
+	_, ok = peerConfig.GRPCOptions["keep-alive-permit"]
+	assert.True(t, ok)
+	_, ok = peerConfig.GRPCOptions["fail-fast"]
+	assert.True(t, ok)
+	_, ok = peerConfig.GRPCOptions["allow-insecure"]
+	assert.True(t, ok)
+
+	ordererConfig, ok := endpointConfig.OrdererConfig("xyz.org1.example.com")
+	assert.True(t, ok, "supposed to find orderer config")
+	assert.NotNil(t, ordererConfig, "supposed to find orderer config")
+	assert.NotEmpty(t, ordererConfig.GRPCOptions)
+	assert.Equal(t, 6, len(ordererConfig.GRPCOptions))
+	assert.Equal(t, "0s", ordererConfig.GRPCOptions["keep-alive-time"])
+	assert.Equal(t, "orderer.example.com", ordererConfig.GRPCOptions["ssl-target-name-override"])
+	assert.Equal(t, "20s", ordererConfig.GRPCOptions["keep-alive-timeout"])
+	assert.Equal(t, false, ordererConfig.GRPCOptions["keep-alive-permit"])
+	assert.Equal(t, false, ordererConfig.GRPCOptions["fail-fast"])
+	assert.Equal(t, false, ordererConfig.GRPCOptions["allow-insecure"])
+
+	//make sure map has all the expected grpc opts keys
+	_, ok = ordererConfig.GRPCOptions["keep-alive-time"]
+	assert.True(t, ok)
+	_, ok = ordererConfig.GRPCOptions["ssl-target-name-override"]
+	assert.True(t, ok)
+	_, ok = ordererConfig.GRPCOptions["keep-alive-timeout"]
+	assert.True(t, ok)
+	_, ok = ordererConfig.GRPCOptions["keep-alive-permit"]
+	assert.True(t, ok)
+	_, ok = ordererConfig.GRPCOptions["fail-fast"]
+	assert.True(t, ok)
+	_, ok = ordererConfig.GRPCOptions["allow-insecure"]
+	assert.True(t, ok)
+}

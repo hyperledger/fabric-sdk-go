@@ -208,6 +208,39 @@ organizations:
 # SDK is implementation specific. Consult each SDK's documentation for its handling of orderers.
 #
 orderers:
+
+#  default:
+# 'default' orderer can contain common configuration between all config orderers to avoid repetitive config entries inside each orderer config element.
+# url: grpcs://orderer.example.com:7050
+
+    # these are standard properties defined by the gRPC library
+    # they will be passed in as-is to gRPC client constructor
+#    grpcOptions:
+#      ssl-target-name-override: orderer.example.com
+#   #these are keep alive client parameters:
+#      Make sure these parameters are set in coordination with the keepalive policy on the server,
+#      as incompatible settings can result in closing of connection.
+#      After a duration of this time if the client doesn't see any activity
+#      it pings the server to see if the transport is still alive.
+#      The current default value is infinity
+#      keep-alive-time: 5s
+#      After having pinged for keepalive check, the client waits for a duration of Timeout
+#      and if no activity is seen even after that the connection is closed.
+#      The current default value is 20 seconds
+#      keep-alive-timeout: 6s
+#      If true, client runs keepalive checks even with no active RPCs
+#      keep-alive-permit: false
+    #fail-fast is action to take when an RPC is attempted on broken connections or unreachable servers
+#      fail-fast: true
+
+#      will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+#      allow-insecure: false
+
+#    tlsCACerts:
+      # Certificate location absolute path
+#      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+
+
 #  orderer.example.com:
 #    url: grpcs://orderer.example.com:7050
 
@@ -243,6 +276,23 @@ orderers:
 # and event listener registration.
 #
 peers:
+#  default:
+# 'default' peer can contain common configuration between all config peers to avoid repetitive config entries inside each peer config element.
+#  peer0.org1.example.com:
+    # this URL is used to send endorsement and query requests
+#    url: grpcs://peer0.org1.example.com:7051
+
+    # this URL is used to connect the EventHub and registering event listeners
+#    eventUrl: grpcs://peer0.org1.example.com:7053
+
+#    grpcOptions:
+#      ssl-target-name-override: peer0.org1.example.com
+#      will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+#      allow-insecure: false
+
+#    tlsCACerts:
+      # Certificate location absolute path
+#      path: path/to/tls/cert/for/peer0/org1
 #  peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
 #    url: grpcs://peer0.org1.example.com:7051

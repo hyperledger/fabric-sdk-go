@@ -217,14 +217,10 @@ organizations:
 # SDK is implementation specific. Consult each SDK's documentation for its handling of orderers.
 #
 orderers:
-  local.orderer.example.com:
-    url: orderer.example.com:7050
-
+  default:
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
-    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
-      ssl-target-name-override: orderer.example.com
 #     These parameters should be set in coordination with the keepalive policy on the server,
 #     as incompatible settings can result in closing of connection.
 #     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
@@ -235,6 +231,14 @@ orderers:
       #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
 
+  local.orderer.example.com:
+    url: orderer.example.com:7050
+
+    # these are standard properties defined by the gRPC library
+    # they will be passed in as-is to gRPC client constructor
+    grpcOptions:
+      ssl-target-name-override: orderer.example.com
+
     tlsCACerts:
       # Certificate location absolute path
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
@@ -244,16 +248,9 @@ orderers:
 # and event listener registration.
 #
 peers:
-  local.peer0.org1.example.com:
-    # this URL is used to send endorsement and query requests
-    url: peer0.org1.example.com:7051
+  default:
 
-    # this URL is used to connect the EventHub and registering event listeners
-    eventUrl: peer0.org1.example.com:7053
-
-    #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
-      ssl-target-name-override: peer0.org1.example.com
 #     These parameters should be set in coordination with the keepalive policy on the server,
 #     as incompatible settings can result in closing of connection.
 #     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
@@ -268,21 +265,26 @@ peers:
       # Certificate location absolute path
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
+  local.peer0.org1.example.com:
+    # this URL is used to send endorsement and query requests
+    url: peer0.org1.example.com:7051
+
+    # this URL is used to connect the EventHub and registering event listeners
+    eventUrl: peer0.org1.example.com:7053
+
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
   local.peer0.org2.example.com:
     url: peer0.org2.example.com:8051
     eventUrl: peer0.org2.example.com:8053
-    #TODO to be moved to high level, common for all grpc connections
+
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
-#     These parameters should be set in coordination with the keepalive policy on the server,
-#     as incompatible settings can result in closing of connection.      
-#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
-      keep-alive-time: 0s
-      keep-alive-timeout: 20s
-      keep-alive-permit: false
-      fail-fast: false
-      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
-      allow-insecure: false
 
     tlsCACerts:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
