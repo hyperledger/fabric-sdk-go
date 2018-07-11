@@ -481,4 +481,4 @@ clean-temp:
 	-rm -f integration-report.xml report.xml
 
 .PHONY: clean-tests
-clean-test: clean-temp clean-fixtures
+clean-tests: clean-temp clean-fixtures
