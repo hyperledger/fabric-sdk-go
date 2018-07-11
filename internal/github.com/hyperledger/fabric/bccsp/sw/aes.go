@@ -52,7 +52,7 @@ func GetRandomBytes(len int) ([]byte, error) {
 }
 
 func pkcs7Padding(src []byte) []byte {
-	padding := aes.BlockSize - len(src)%aes.BlockSize
+	padding := (aes.BlockSize - len(src) % aes.BlockSize) % es.BlockSize
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
 	return append(src, padtext...)
 }
