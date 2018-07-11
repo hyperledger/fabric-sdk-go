@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	sampleMatchersOverrideAll = "../core/config/testdata/matcher-samples/matchers_sample1.yaml"
+	sampleMatchersOverrideAll  = "../core/config/testdata/matcher-samples/matchers_sample1.yaml"
+	sampleMatchersRegexReplace = "../core/config/testdata/matcher-samples/matchers_sample3.yaml"
 
 	actualCAURL    = "https://ca.org1.example.com:7054"
 	overridedCAURL = "https://ca.org1.example.com:8888"
@@ -25,6 +26,14 @@ const (
 //Scenario: Using entity mather to override CA URL
 func TestCAURLOverride(t *testing.T) {
 
+	//Test basic entity matcher
+	testCAEntityMatcher(t, sampleMatchersOverrideAll)
+
+	//Test entity matcher with regex replace feature '$'
+	testCAEntityMatcher(t, sampleMatchersRegexReplace)
+}
+
+func testCAEntityMatcher(t *testing.T, configPath string) {
 	//Without entity matcher
 	backends, err := getBackendsFromFiles(configTestFilePath)
 	assert.Nil(t, err, "not supposed to get error")
@@ -40,7 +49,7 @@ func TestCAURLOverride(t *testing.T) {
 	assert.Equal(t, actualCAURL, caConfig.URL)
 
 	//Using entity matcher to override CA URL
-	backends, err = getBackendsFromFiles(sampleMatchersOverrideAll, configTestFilePath)
+	backends, err = getBackendsFromFiles(configPath, configTestFilePath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 
@@ -52,7 +61,6 @@ func TestCAURLOverride(t *testing.T) {
 	assert.True(t, ok, "supposed to find caconfig")
 	assert.NotNil(t, caConfig)
 	assert.Equal(t, overridedCAURL, caConfig.URL)
-
 }
 
 func getBackendsFromFiles(files ...string) ([]core.ConfigBackend, error) {

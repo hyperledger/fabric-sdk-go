@@ -26,13 +26,24 @@ entityMatchers:
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
       mappedHost: peer0.org1.example.com
 
+    - pattern: (\w+).exampleY.(\w+):(\d+)
+      urlSubstitutionExp: $1.org1.example.$2:8888
+      eventUrlSubstitutionExp: $1.org1.example.$2:9999
+      sslTargetOverrideUrlSubstitutionExp: $1.org1.override.$2
+      mappedHost: $1.org1.example.$2
+
   orderer:
     - pattern: (\w+).exampleX.(\w+):(\d+)
       urlSubstitutionExp: orderer.example.com:8888
       sslTargetOverrideUrlSubstitutionExp: orderer.override.com
       mappedHost: orderer.example.com
 
+    - pattern: (\w+).exampleY.(\w+):(\d+)
+      urlSubstitutionExp: $1.example.$2:8888
+      sslTargetOverrideUrlSubstitutionExp: $1.override.$2
+      mappedHost: $1.example.$2
+
   certificateAuthority:
-    - pattern: (\w+).org1.exampleX.(\w+)
-      urlSubstitutionExp: https://ca.org1.example.com:8888
-      mappedHost: ca.org1.example.com
+    - pattern: (\w+).org1.example.(\w+)
+      urlSubstitutionExp: https://$1.org1.example.$2:8888
+      mappedHost: $1.org1.example.$2

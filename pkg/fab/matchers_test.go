@@ -198,6 +198,21 @@ func TestURLMapping(t *testing.T) {
 	assert.Equal(t, overridedOrdererHostNameOverride, ordererConfig.GRPCOptions["ssl-target-name-override"])
 	assert.Equal(t, 6, len(ordererConfig.GRPCOptions))
 
+	//PeerConfig Search Based on URL configured in config (using $ in entity matchers)
+	peerConfig, ok = config.PeerConfig("peer0.exampleY.com:1234")
+	assert.True(t, ok, "supposed to find peer config")
+	assert.Equal(t, overridedPeerURL, peerConfig.URL)
+	assert.Equal(t, overridedPeerEventURL, peerConfig.EventURL)
+	assert.Equal(t, overridedPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
+	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
+
+	//OrdererConfig Search Based on URL configured in config (using $ in entity matchers)
+	ordererConfig, ok = config.OrdererConfig("orderer.exampleY.com:1234")
+	assert.True(t, ok, "supposed to find orderer config")
+	assert.Equal(t, overridedOrdererURL, ordererConfig.URL)
+	assert.Equal(t, overridedOrdererHostNameOverride, ordererConfig.GRPCOptions["ssl-target-name-override"])
+	assert.Equal(t, 6, len(ordererConfig.GRPCOptions))
+
 }
 
 func getBackendsFromFiles(files ...string) ([]core.ConfigBackend, error) {

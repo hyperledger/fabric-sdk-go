@@ -897,7 +897,12 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerName string, searchByURL bool
 
 func (c *EndpointConfig) matchPeer(peerName string, matcher matcherEntry) *fab.PeerConfig {
 
-	matchedPeer := c.getMappedPeer(matcher.matchConfig.MappedHost)
+	mappedHost := matcher.matchConfig.MappedHost
+	if strings.Contains(mappedHost, "$") {
+		mappedHost = matcher.regex.ReplaceAllString(peerName, mappedHost)
+	}
+
+	matchedPeer := c.getMappedPeer(mappedHost)
 	if matchedPeer == nil {
 		logger.Debugf("Could not find mapped host [%s] for peer [%s]", matcher.matchConfig.MappedHost, peerName)
 		return nil
@@ -986,8 +991,13 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererName string, searchByUR
 
 func (c *EndpointConfig) matchOrderer(ordererName string, matcher matcherEntry) *fab.OrdererConfig {
 
+	mappedHost := matcher.matchConfig.MappedHost
+	if strings.Contains(mappedHost, "$") {
+		mappedHost = matcher.regex.ReplaceAllString(ordererName, mappedHost)
+	}
+
 	//Get the ordererConfig from mapped host
-	matchedOrderer := c.getMappedOrderer(matcher.matchConfig.MappedHost)
+	matchedOrderer := c.getMappedOrderer(mappedHost)
 	if matchedOrderer == nil {
 		logger.Debugf("Could not find mapped host [%s] for orderer [%s]", matcher.matchConfig.MappedHost, ordererName)
 		return nil

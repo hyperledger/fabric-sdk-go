@@ -386,8 +386,14 @@ func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity,
 }
 
 func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, caName string, matcher matcherEntry) *CAConfig {
+
+	mappedHost := matcher.matchConfig.MappedHost
+	if strings.Contains(mappedHost, "$") {
+		mappedHost = matcher.regex.ReplaceAllString(caName, mappedHost)
+	}
+
 	//Get the certAuthorityMatchConfig from mapped host
-	caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(matcher.matchConfig.MappedHost)]
+	caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(mappedHost)]
 	if !ok {
 		return nil
 	}
