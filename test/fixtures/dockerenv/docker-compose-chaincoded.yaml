@@ -9,7 +9,7 @@ services:
 
   dockerd:
     image: fabsdkgo-socat
-    command: TCP-LISTEN:2375,fork UNIX-CONNECT:/host/var/run/docker.sock
+    command: TCP-LISTEN:2375,fork,nodelay UNIX-CONNECT:/host/var/run/docker.sock,retry=10,interval=0.25
     volumes:
       - /var/run/:/host/var/run/
     expose:
