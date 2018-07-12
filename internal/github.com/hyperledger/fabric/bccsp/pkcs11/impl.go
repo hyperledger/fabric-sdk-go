@@ -27,14 +27,14 @@ import (
 	"crypto/x509"
 	"math/big"
 	"os"
-
 	"sync"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cachebridge"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/sessioncache"
 	"github.com/miekg/pkcs11"
 	"github.com/pkg/errors"
 )
@@ -76,8 +76,7 @@ func New(opts PKCS11Opts, keyStore bccsp.KeyStore) (bccsp.BCCSP, error) {
 	sessions := make(chan pkcs11.SessionHandle, sessionCacheSize)
 	csp := &impl{BCCSP: swCSP, conf: conf, ks: keyStore, ctx: ctx, sessions: sessions, slot: slot, lib: lib, noPrivImport: opts.Sensitive, softVerify: opts.SoftVerify}
 	csp.returnSession(*session)
-	sessioncache.ClearAllSession(csp.rwMtx)
-
+	cachebridge.ClearAllSession(csp.rwMtx)
 	return csp, nil
 }
 

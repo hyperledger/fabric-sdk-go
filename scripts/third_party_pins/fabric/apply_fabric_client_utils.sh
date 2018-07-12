@@ -36,6 +36,7 @@ declare -a PKGS=(
 
     "sdkpatch/logbridge"
     "sdkpatch/cryptosuitebridge"
+    "sdkpatch/cachebridge"
 
     "core/ledger/kvledger/txmgmt/version"
     "core/ledger/util"
@@ -111,6 +112,7 @@ declare -a FILES=(
     
     "sdkpatch/logbridge/logbridge.go"
     "sdkpatch/cryptosuitebridge/cryptosuitebridge.go"
+    "sdkpatch/cachebridge/cache.go"
 
     "core/ledger/ledger_interface.go"
     "core/ledger/kvledger/txmgmt/version/version.go"
@@ -155,6 +157,38 @@ gofilter() {
         -filters "$FILTERS_ENABLED" -fn "$FILTER_FN" -gen "$FILTER_GEN" -type "$FILTER_TYPE" \
         > "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 } 
+
+echo "Modifying go source files"
+FILTER_FILENAME="bccsp/pkcs11/impl.go"
+sed -i'' -e 's/impl{swCSP, conf, keyStore, ctx, sessions, slot, lib, opts.Sensitive, opts.SoftVerify}/impl{BCCSP: swCSP, conf: conf, ks: keyStore, ctx: ctx, sessions: sessions, slot: slot, lib: lib, noPrivImport: opts.Sensitive, softVerify: opts.SoftVerify}/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/"github.com\/hyperledger"/a "sync"/' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/"math\/big"/a "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cachebridge"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/softVerify   bool/a rwMtx  sync.RWMutex' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/csp.returnSession(\*session)/a cachebridge.ClearAllSession(csp.rwMtx)' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+FILTER_FILENAME="bccsp/pkcs11/pkcs11.go"
+sed -i'' -e '/"github.com\/hyperledger"/a "time"/' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/"math\/big"/a "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cachebridge"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/session = s/a cachebridge.ClearSession(csp.rwMtx, fmt.Sprintf("%d", session))' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= findKeyPairFromSKI/= csp.findKeyPairFromSKI/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/return session/i cachebridge.AddSession(csp.rwMtx, fmt.Sprintf("%d", session))' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/privateKey, err := csp.findKeyPairFromSKI(p11lib,/a defer timeTrack(time.Now(), fmt.Sprintf("signing [session: %d]", session))' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/func findKeyPairFromSKI(mod/func (csp \*impl) findKeyPairFromSKI(mod/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "func (csp \*impl) findKeyPairFromSKI(mod" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+let "START_LINE+=1"
+for i in {1..27}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+sed -i'' -e '/func (csp \*impl) findKeyPairFromSKI(mod/a return cachebridge.GetKeyPairFromSessionSKI(csp.rwMtx, &cachebridge.KeyPairCacheKey{Mod: mod, Session: session, SKI: ski, KeyType: keyType})' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/func (csp \*impl) findKeyPairFromSKI(mod/i \
+func timeTrack(start time.Time, msg string) {\
+	elapsed := time.Since(start)\
+	logger.Debugf("%s took %s", msg, elapsed)\
+}\
+
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
 
 echo "Filtering Go sources for allowed functions ..."
 FILTERS_ENABLED="fn"

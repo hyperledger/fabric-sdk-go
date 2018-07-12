@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
-
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cachebridge"
+
 	logging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/sessioncache"
 	"github.com/miekg/pkcs11"
 )
 
@@ -110,11 +110,9 @@ func (csp *impl) getSession() (session pkcs11.SessionHandle) {
 		}
 		logger.Debugf("Created new pkcs11 session %+v on slot %d\n", s, csp.slot)
 		session = s
-		sessioncache.ClearSession(csp.rwMtx, fmt.Sprintf("%d", session))
+		cachebridge.ClearSession(csp.rwMtx, fmt.Sprintf("%d", session))
 	}
-
-	sessioncache.AddSession(csp.rwMtx, fmt.Sprintf("%d", session))
-
+	cachebridge.AddSession(csp.rwMtx, fmt.Sprintf("%d", session))
 	return session
 }
 
@@ -450,8 +448,13 @@ const (
 	publicKeyFlag  = false
 )
 
+func timeTrack(start time.Time, msg string) {
+	elapsed := time.Since(start)
+	logger.Debugf("%s took %s", msg, elapsed)
+}
+
 func (csp *impl) findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
-	return sessioncache.GetKeyPairFromSessionSKI(csp.rwMtx, &sessioncache.KeyPairCacheKey{Mod: mod, Session: session, SKI: ski, KeyType: keyType})
+	return cachebridge.GetKeyPairFromSessionSKI(csp.rwMtx, &cachebridge.KeyPairCacheKey{Mod: mod, Session: session, SKI: ski, KeyType: keyType})
 }
 
 // Fairly straightforward EC-point query, other than opencryptoki
@@ -600,9 +603,4 @@ func nextIDCtr() *big.Int {
 	id_ctr = new(big.Int).Add(id_ctr, bigone)
 	id_mutex.Unlock()
 	return id_ctr
-}
-
-func timeTrack(start time.Time, msg string) {
-	elapsed := time.Since(start)
-	logger.Debugf("%s took %s", msg, elapsed)
 }
