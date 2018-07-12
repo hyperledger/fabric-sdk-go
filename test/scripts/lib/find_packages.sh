@@ -151,13 +151,24 @@ function writePkgDeps {
     declare pkg=${1}
     declare key="PKGDEPS__${pkg//[-\.\/]/_}"
 
-    declare -a depsAndImports=($(${GO_CMD} list -f '{{.TestImports}} {{.Deps}}' ${pkg} | tr -d '[]' | xargs | tr ' ' '\n' | \
+    declare -a testImports=($(${GO_CMD} list -f '{{.TestImports}}' ${pkg} | tr -d '[]' | xargs | tr ' ' '\n' | \
         grep "^${REPO}" | \
         grep -v "^${REPO}/vendor/" | \
         sort -u | \
         tr '\n' ' '))
 
-    echo "${depsAndImports[@]}" > ${PKG_DEPS_DIR}/${key}.txt
+    declare -a depsAndImports=($(${GO_CMD} list -f '{{.Deps}}' ${pkg} ${testImports[@]} | tr -d '[]' | xargs | tr ' ' '\n' | \
+        grep "^${REPO}" | \
+        grep -v "^${REPO}/vendor/" | \
+        sort -u | \
+        tr '\n' ' ') ${testImports[@]})
+
+    declare val=""
+    if [ ${#depsAndImports[@]} -gt 0 ]; then
+        val=$(echo ${depsAndImports[@]} | tr ' ' '\n' | sort -u | tr '\n' ' ')
+    fi
+
+    echo "${val}" > ${PKG_DEPS_DIR}/${key}.txt
 }
 
 function evalPkgDeps {
