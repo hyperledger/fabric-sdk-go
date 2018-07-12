@@ -20,7 +20,10 @@ import (
 	"math/big"
 	"sync"
 
+	"time"
+
 	logging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/sessioncache"
 	"github.com/miekg/pkcs11"
 )
 
@@ -107,7 +110,11 @@ func (csp *impl) getSession() (session pkcs11.SessionHandle) {
 		}
 		logger.Debugf("Created new pkcs11 session %+v on slot %d\n", s, csp.slot)
 		session = s
+		sessioncache.ClearSession(csp.rwMtx, fmt.Sprintf("%d", session))
 	}
+
+	sessioncache.AddSession(csp.rwMtx, fmt.Sprintf("%d", session))
+
 	return session
 }
 
@@ -128,13 +135,13 @@ func (csp *impl) getECKey(ski []byte) (pubKey *ecdsa.PublicKey, isPriv bool, err
 	session := csp.getSession()
 	defer csp.returnSession(session)
 	isPriv = true
-	_, err = findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
+	_, err = csp.findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
 	if err != nil {
 		isPriv = false
 		logger.Debugf("Private key not found [%s] for SKI [%s], looking for Public key", err, hex.EncodeToString(ski))
 	}
 
-	publicKey, err := findKeyPairFromSKI(p11lib, session, ski, publicKeyFlag)
+	publicKey, err := csp.findKeyPairFromSKI(p11lib, session, ski, publicKeyFlag)
 	if err != nil {
 		return nil, false, fmt.Errorf("Public key not found [%s] for SKI [%s]", err, hex.EncodeToString(ski))
 	}
@@ -306,7 +313,8 @@ func (csp *impl) signP11ECDSA(ski []byte, msg []byte) (R, S *big.Int, err error)
 	session := csp.getSession()
 	defer csp.returnSession(session)
 
-	privateKey, err := findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
+	privateKey, err := csp.findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
+	defer timeTrack(time.Now(), fmt.Sprintf("signing [session: %d]", session))
 	if err != nil {
 		return nil, nil, fmt.Errorf("Private key not found [%s]\n", err)
 	}
@@ -338,7 +346,7 @@ func (csp *impl) verifyP11ECDSA(ski []byte, msg []byte, R, S *big.Int, byteSize 
 
 	logger.Debugf("Verify ECDSA\n")
 
-	publicKey, err := findKeyPairFromSKI(p11lib, session, ski, publicKeyFlag)
+	publicKey, err := csp.findKeyPairFromSKI(p11lib, session, ski, publicKeyFlag)
 	if err != nil {
 		return false, fmt.Errorf("Public key not found [%s]\n", err)
 	}
@@ -442,34 +450,8 @@ const (
 	publicKeyFlag  = false
 )
 
-func findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
-	ktype := pkcs11.CKO_PUBLIC_KEY
-	if keyType == privateKeyFlag {
-		ktype = pkcs11.CKO_PRIVATE_KEY
-	}
-
-	template := []*pkcs11.Attribute{
-		pkcs11.NewAttribute(pkcs11.CKA_CLASS, ktype),
-		pkcs11.NewAttribute(pkcs11.CKA_ID, ski),
-	}
-	if err := mod.FindObjectsInit(session, template); err != nil {
-		return nil, err
-	}
-
-	// single session instance, assume one hit only
-	objs, _, err := mod.FindObjects(session, 1)
-	if err != nil {
-		return nil, err
-	}
-	if err = mod.FindObjectsFinal(session); err != nil {
-		return nil, err
-	}
-
-	if len(objs) == 0 {
-		return nil, fmt.Errorf("Key not found [%s]", hex.Dump(ski))
-	}
-
-	return &objs[0], nil
+func (csp *impl) findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
+	return sessioncache.GetKeyPairFromSessionSKI(csp.rwMtx, &sessioncache.KeyPairCacheKey{Mod: mod, Session: session, SKI: ski, KeyType: keyType})
 }
 
 // Fairly straightforward EC-point query, other than opencryptoki
@@ -585,7 +567,7 @@ func (csp *impl) getSecretValue(ski []byte) []byte {
 	session := csp.getSession()
 	defer csp.returnSession(session)
 
-	keyHandle, err := findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
+	keyHandle, err := csp.findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
 
 	var privKey []byte
 	template := []*pkcs11.Attribute{
@@ -618,4 +600,9 @@ func nextIDCtr() *big.Int {
 	id_ctr = new(big.Int).Add(id_ctr, bigone)
 	id_mutex.Unlock()
 	return id_ctr
+}
+
+func timeTrack(start time.Time, msg string) {
+	elapsed := time.Since(start)
+	logger.Debugf("%s took %s", msg, elapsed)
 }
