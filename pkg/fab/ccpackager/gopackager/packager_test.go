@@ -25,7 +25,7 @@ func TestNewCCPackage(t *testing.T) {
 	pwd, err := os.Getwd()
 	assert.Nil(t, err, "error from os.Getwd %s", err)
 
-	ccPackage, err := NewCCPackage("github.com", path.Join(pwd, "../../../../test/fixtures/testdata"))
+	ccPackage, err := NewCCPackage("github.com", path.Join(pwd, "testdata"))
 	assert.Nil(t, err, "error from Create %s", err)
 
 	r := bytes.NewReader(ccPackage.Code)
@@ -77,7 +77,7 @@ func TestBadPackagePathGoLangCC(t *testing.T) {
 		t.Fatalf("error from os.Getwd %s", err)
 	}
 
-	_, err = NewCCPackage("github.com", path.Join(pwd, "../../../../test/fixturesABC"))
+	_, err = NewCCPackage("github.com", path.Join(pwd, "testdata/fixturesABC"))
 	if err == nil {
 		t.Fatalf("error expected from Create %s", err)
 	}

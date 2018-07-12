@@ -13,17 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/*
-Copyright SecureKey Technologies Inc. All Rights Reserved.
-
-SPDX-License-Identifier: Apache-2.0
-*/
 
 package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -40,8 +34,34 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	txID := stub.GetTxID()
 	fmt.Printf("[txID %s] ########### example_cc Init ###########\n", txID)
 	_, args := stub.GetFunctionAndParameters()
+	var A, B string    // Entities
+	var Aval, Bval int // Asset holdings
+	var err error
 
-	err := t.reset(stub, txID, args)
+	if len(args) != 4 {
+		return shim.Error("Incorrect number of arguments. Expecting 4")
+	}
+
+	// Initialize the chaincode
+	A = args[0]
+	Aval, err = strconv.Atoi(args[1])
+	if err != nil {
+		return shim.Error("Expecting integer value for asset holding")
+	}
+	B = args[2]
+	Bval, err = strconv.Atoi(args[3])
+	if err != nil {
+		return shim.Error("Expecting integer value for asset holding")
+	}
+	fmt.Printf("[txID %s] Aval = %d, Bval = %d\n", txID, Aval, Bval)
+
+	// Write the state to the ledger
+	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	err = stub.PutState(B, []byte(strconv.Itoa(Bval)))
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -54,50 +74,6 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	}
 	return shim.Success(nil)
 
-}
-
-func (t *SimpleChaincode) resetCC(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	// Deletes an entity from its state
-	if err := t.reset(stub, stub.GetTxID(), args); err != nil {
-		return shim.Error(err.Error())
-	}
-	return shim.Success(nil)
-}
-
-func (t *SimpleChaincode) reset(stub shim.ChaincodeStubInterface, txID string, args []string) error {
-	var A, B string    // Entities
-	var Aval, Bval int // Asset holdings
-	var err error
-
-	if len(args) != 4 {
-		return errors.New("Incorrect number of arguments. Expecting 4")
-	}
-
-	// Initialize the chaincode
-	A = args[0]
-	Aval, err = strconv.Atoi(args[1])
-	if err != nil {
-		return errors.New("Expecting integer value for asset holding")
-	}
-	B = args[2]
-	Bval, err = strconv.Atoi(args[3])
-	if err != nil {
-		return errors.New("Expecting integer value for asset holding")
-	}
-	fmt.Printf("[txID %s] Aval = %d, Bval = %d\n", txID, Aval, Bval)
-
-	// Write the state to the ledger
-	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
-	if err != nil {
-		return err
-	}
-
-	err = stub.PutState(B, []byte(strconv.Itoa(Bval)))
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Query ...
@@ -113,10 +89,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 
 	if function == "invokecc" {
 		return t.invokeCC(stub, args)
-	}
-
-	if function == "reset" {
-		return t.resetCC(stub, args)
 	}
 
 	if function != "invoke" {
