@@ -1,0 +1,43 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '2'
+
+services:
+
+  dockerd:
+    image: fabsdkgo-socat
+    command: TCP-LISTEN:2375,fork UNIX-CONNECT:/host/var/run/docker.sock
+    volumes:
+      - /var/run/:/host/var/run/
+    expose:
+      - "2375"
+    networks:
+      default:
+        aliases:
+          - dockerd.example.com
+
+  chaincoded:
+    image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_BASEIMAGE_FIXTURE_IMAGE}:${FABRIC_ARCH}${FABRIC_ARCH_SEP}${FABRIC_BASEIMAGE_FIXTURE_TAG}
+    environment:
+      - DOCKER_HOST=http://dockerd.example.com:2375
+      #- CORE_CHAINCODE_LOGGING_LEVEL=debug
+    volumes:
+      - ../../../scripts/_go/src/chaincoded:/opt/gopath/src/chaincoded
+      - ../../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
+      - ../../../test/fixtures/testdata/src/github.com/example_cc:/opt/gopath/src/github.com/example_cc
+      - ../../../test/fixtures/testdata/src/github.com/example_pvt_cc:/opt/gopath/src/github.com/example_pvt_cc
+    command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/chaincoded.sh
+    #comment out logging.driver in order to render the debug logs
+    logging:
+      driver: none
+    networks:
+      default:
+        aliases:
+          - chaincoded.example.com
+    expose:
+      - "2375"
+    depends_on:
+      - dockerd

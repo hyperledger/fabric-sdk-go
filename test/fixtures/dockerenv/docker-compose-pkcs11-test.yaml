@@ -8,7 +8,7 @@ version: '2'
 services:
 
   pkcs11-integration-tests:
-    image: softhsm2-image
+    image: fabsdkgo-softhsm2
     environment:
       - FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER=PKCS11
       - GO_TAGS

@@ -43,6 +43,7 @@ GO_TESTFLAGS               ?= -count=1
 FABRIC_SDK_EXPERIMENTAL    ?= true
 FABRIC_SDK_EXTRA_GO_TAGS   ?=
 FABRIC_SDK_POPULATE_VENDOR ?= true
+FABRIC_SDK_CHAINCODED      ?= false
 
 # Fabric tool versions (overridable)
 FABRIC_TOOLS_VERSION ?= $(FABRIC_STABLE_VERSION)
@@ -71,7 +72,7 @@ THIRDPARTY_FABRIC_COMMIT    ?= v1.2.0
 FIXTURE_DOCKER_REMOVE_FORCE ?= false
 
 # Options for exercising unit tests (overridable)
-FABRIC_SDK_DEPRECATED_UNITTEST   ?= false
+FABRIC_SDK_DEPRECATED_UNITTEST ?= false
 
 # Code levels to exercise integration/e2e tests against (overridable)
 FABRIC_STABLE_INTTEST          ?= true
@@ -105,16 +106,18 @@ FABRIC_CODELEVEL_UNITTEST_VER ?= $(FABRIC_DEVSTABLE_CODELEVEL_VER)
 # Local variables used by makefile
 PACKAGE_NAME           := github.com/hyperledger/fabric-sdk-go
 ARCH                   := $(shell uname -m)
-OS                     := $(shell uname -s)
+OS_NAME                := $(shell uname -s)
 FIXTURE_PROJECT_NAME   := fabsdkgo
 MAKEFILE_THIS          := $(lastword $(MAKEFILE_LIST))
 THIS_PATH              := $(patsubst %/,%,$(dir $(abspath $(MAKEFILE_THIS))))
 TEST_SCRIPTS_PATH      := test/scripts
+SOCAT_DOCKER_IMG       := $(shell docker images -q fabsdkgo-socat 2> /dev/null)
 
 # Test fixture paths
 FIXTURE_SCRIPTS_PATH   := $(THIS_PATH)/test/scripts
 FIXTURE_DOCKERENV_PATH := $(THIS_PATH)/test/fixtures/dockerenv
 FIXTURE_SOFTHSM2_PATH  := $(THIS_PATH)/test/fixtures/softhsm2
+FIXTURE_SOCAT_PATH     := $(THIS_PATH)/test/fixtures/socat
 
 ifneq ($(GO_LDFLAGS),)
 GO_LDFLAGS_ARG := -ldflags=$(GO_LDFLAGS)
@@ -143,16 +146,24 @@ GO_DEP_COMMIT := v0.4.1
 # TODO introduce nightly and adjust verify
 ifdef JENKINS_URL
 export FABRIC_SDKGO_DEPEND_INSTALL=true
-
+FABRIC_SDK_CHAINCODED            := true
 FABRIC_SDK_DEPRECATED_UNITTEST   := false
 FABRIC_STABLE_INTTEST            := true
 FABRIC_STABLE_PKCS11_INTTEST     := true
-FABRIC_STABLE_NEGATIVE_INTTEST    := true
+FABRIC_STABLE_NEGATIVE_INTTEST   := true
 FABRIC_PREV_INTTEST              := true
 FABRIC_PRERELEASE_INTTEST        := false
 FABRIC_DEVSTABLE_INTTEST         := false
 FABRIC_STABLE_LOCAL_INTTEST      := false
 FABRIC_DEVSTABLE_LOCAL_INTTEST   := false
+endif
+
+# Determine if use mock chaincode daemon should be used
+FABRIC_SDK_ENABLE_CHAINCODED := false
+ifneq ($(SOCAT_DOCKER_IMG),)
+ifeq ($(FABRIC_SDK_CHAINCODED),true)
+FABRIC_SDK_ENABLE_CHAINCODED := true
+endif
 endif
 
 # Setup Go Tags
@@ -175,6 +186,15 @@ FABRIC_DEVSTABLE_INTTEST := false
 else
 # Recent Fabric builds follow GOARCH (e.g., amd64)
 FABRIC_ARCH := amd64
+endif
+
+# Docker-compose
+BASE_DOCKER_COMPOSE_FILES := -f ./docker-compose.yaml
+ifeq ($(FABRIC_SDK_ENABLE_CHAINCODED),true)
+BASE_DOCKER_COMPOSE_FILES := -f ./docker-compose-chaincoded.yaml $(BASE_DOCKER_COMPOSE_FILES)
+export CORE_VM_ENDPOINT=http://chaincoded.example.com:2375
+else
+BASE_DOCKER_COMPOSE_FILES := -f ./docker-compose-std.yaml $(BASE_DOCKER_COMPOSE_FILES)
 endif
 
 # Global environment exported for scripts
@@ -220,10 +240,17 @@ lint-all: populate-noforce
 
 .PHONY: build-softhsm2-image
 build-softhsm2-image:
-	 @$(DOCKER_CMD) build --no-cache -q -t "softhsm2-image" \
+	 @$(DOCKER_CMD) build --no-cache -q -t "fabsdkgo-softhsm2" \
 		--build-arg FABRIC_BASE_IMAGE=$(FABRIC_BASE_IMAGE) \
 		--build-arg FABRIC_BASE_TAG=$(FABRIC_BASE_TAG) \
 		-f $(FIXTURE_SOFTHSM2_PATH)/Dockerfile .
+
+.PHONY: build-socat-image
+build-socat-image:
+	 @$(DOCKER_CMD) build --no-cache -q -t "fabsdkgo-socat" \
+		--build-arg FABRIC_BASE_IMAGE=$(FABRIC_BASE_IMAGE) \
+		--build-arg FABRIC_BASE_TAG=$(FABRIC_BASE_TAG) \
+		-f $(FIXTURE_SOCAT_PATH)/Dockerfile .
 
 .PHONY: unit-test
 unit-test: clean-tests depend-noforce populate-noforce license
@@ -242,43 +269,43 @@ unit-tests-pkcs11: clean-tests depend-noforce populate-noforce license
 .PHONY: integration-tests-stable
 integration-tests-stable: clean-tests depend-noforce populate-noforce
 	@cd $(FIXTURE_DOCKERENV_PATH) && \
-		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
-	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
+		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "$(BASE_DOCKER_COMPOSE_FILES) -f ./docker-compose-nopkcs11-test.yaml"
 
 .PHONY: integration-tests-prev
 integration-tests-prev: clean-tests depend-noforce populate-noforce
 	@. $(FIXTURE_DOCKERENV_PATH)/prev-env.sh && \
 		cd $(FIXTURE_DOCKERENV_PATH) && \
-		TEST_CHANGED_ONLY=true E2E_ONLY="true" FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PREV_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PREV_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
-	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
+		TEST_CHANGED_ONLY=true E2E_ONLY="true" FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PREV_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PREV_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "$(BASE_DOCKER_COMPOSE_FILES) -f ./docker-compose-nopkcs11-test.yaml"
 
 .PHONY: integration-tests-prerelease
 integration-tests-prerelease: clean-tests depend-noforce populate-noforce
 	@. $(FIXTURE_DOCKERENV_PATH)/prerelease-env.sh && \
 		cd $(FIXTURE_DOCKERENV_PATH) && \
-		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PRERELEASE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PRERELEASE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
-	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
+		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PRERELEASE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PRERELEASE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "$(BASE_DOCKER_COMPOSE_FILES) -f ./docker-compose-nopkcs11-test.yaml"
 
 .PHONY: integration-tests-devstable
 integration-tests-devstable: clean-tests depend-noforce populate-noforce
 	@. $(FIXTURE_DOCKERENV_PATH)/devstable-env.sh && \
 		$(FABRIC_DEV_REGISTRY_PRE_CMD) && \
 		cd $(FIXTURE_DOCKERENV_PATH) && \
-		TEST_CHANGED_ONLY=true FABRIC_FIXTURE_VERSION=v$(FABRIC_DEVSTABLE_VERSION_MINOR) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
-	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
+		TEST_CHANGED_ONLY=true FABRIC_FIXTURE_VERSION=v$(FABRIC_DEVSTABLE_VERSION_MINOR) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "$(BASE_DOCKER_COMPOSE_FILES) -f ./docker-compose-nopkcs11-test.yaml"
 
 .PHONY: integration-tests-stable-negative
 integration-tests-stable-revoked: clean-tests depend-noforce populate-noforce
 	@cd $(FIXTURE_DOCKERENV_PATH) && \
-		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-negative.yaml up --force-recreate --abort-on-container-exit
-	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-negative.yaml"
+		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) -f docker-compose-negative.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "$(BASE_DOCKER_COMPOSE_FILES) -f ./docker-compose-negative.yaml"
 
 .PHONY: integration-tests-stable-pkcs11
 integration-tests-stable-pkcs11: clean-tests depend-noforce populate-noforce build-softhsm2-image
 	@. $(FIXTURE_DOCKERENV_PATH)/nomutualtls-env.sh && \
 	cd $(FIXTURE_DOCKERENV_PATH) && \
-		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-pkcs11-test.yaml up --force-recreate --abort-on-container-exit
-	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-pkcs11-test.yaml"
+		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) -f docker-compose-pkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "$(BASE_DOCKER_COMPOSE_FILES) -f ./docker-compose-pkcs11-test.yaml"
 
 # Additional test cases that aren't currently run by the CI
 .PHONY: integration-tests-devstable-nomutualtls
@@ -287,8 +314,8 @@ integration-tests-devstable-nomutualtls: clean-tests depend-noforce populate-nof
 		. $(FIXTURE_DOCKERENV_PATH)/nomutualtls-env.sh && \
 		$(FABRIC_DEV_REGISTRY_PRE_CMD) && \
 		cd $(FIXTURE_DOCKERENV_PATH) && \
-		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
-	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
+		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "$(BASE_DOCKER_COMPOSE_FILES) -f ./docker-compose-nopkcs11-test.yaml"
 
 .PHONY: integration-tests
 integration-tests: integration-test
@@ -337,47 +364,47 @@ integration-tests-local: clean-temp depend-noforce populate-noforce
 .PHONY: integration-tests-stable-local
 integration-tests-stable-local: clean-temp depend-noforce populate-noforce
 	@cd $(FIXTURE_DOCKERENV_PATH) && \
-		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)  $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up -d --force-recreate 
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)  $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) up -d --force-recreate
 	FABRIC_CRYPTOCONFIG_VERSION=$(FABRIC_CRYPTOCONFIG_VER) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_CODELEVEL_TAG) TEST_LOCAL=true  $(TEST_SCRIPTS_PATH)/integration.sh
-	@cd $(FIXTURE_DOCKERENV_PATH) && $(DOCKER_COMPOSE_CMD) down
+	@cd $(FIXTURE_DOCKERENV_PATH) && $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) down
 
 .PHONY: integration-tests-devstable-local
 integration-tests-devstable-local: clean-temp depend-noforce populate-noforce
 	@. $(FIXTURE_DOCKERENV_PATH)/devstable-env.sh && \
 		$(FABRIC_DEV_REGISTRY_PRE_CMD) && \
 		cd $(FIXTURE_DOCKERENV_PATH) && \
-		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)  $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up -d --force-recreate
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)  $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) up -d --force-recreate
 	FABRIC_FIXTURE_VERSION=v$(FABRIC_DEVSTABLE_VERSION_MINOR) FABRIC_CRYPTOCONFIG_VERSION=$(FABRIC_CRYPTOCONFIG_VER) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) TEST_LOCAL=true  $(TEST_SCRIPTS_PATH)/integration.sh
-	@cd $(FIXTURE_DOCKERENV_PATH) && $(DOCKER_COMPOSE_CMD) down
+	@cd $(FIXTURE_DOCKERENV_PATH) && $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) down
 
 .PHONY: dockerenv-prev-up
 dockerenv-prev-up: clean-tests
 	@cd $(FIXTURE_DOCKERENV_PATH) && \
-		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PREV_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PREV_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up --force-recreate
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PREV_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PREV_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) up --force-recreate
 
 .PHONY: dockerenv-stable-up
 dockerenv-stable-up: clean-tests
 	@cd $(FIXTURE_DOCKERENV_PATH) && \
-		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up --force-recreate
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) up --force-recreate
 
 .PHONY: dockerenv-prerelease-up
 dockerenv-prerelease-up: clean-tests
 	@cd $(FIXTURE_DOCKERENV_PATH) && \
-		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PRERELEASE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PRERELEASE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up --force-recreate
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PRERELEASE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PRERELEASE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) up --force-recreate
 
 .PHONY: dockerenv-devstable-up
 dockerenv-devstable-up: clean-tests
 	@. $(FIXTURE_DOCKERENV_PATH)/devstable-env.sh && \
 		$(FABRIC_DEV_REGISTRY_PRE_CMD) && \
 		cd $(FIXTURE_DOCKERENV_PATH) && \
-		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up --force-recreate
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) up --force-recreate
 
 .PHONY: dockerenv-latest-up
 dockerenv-latest-up: clean-tests
 	@. $(FIXTURE_DOCKERENV_PATH)/devstable-env.sh && \
 		. $(FIXTURE_DOCKERENV_PATH)/latest-env.sh && \
 		cd $(FIXTURE_DOCKERENV_PATH) && \
-		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY="" $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml up --force-recreate
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY="" $(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) up --force-recreate
 
 .PHONY: mock-gen
 mock-gen:
@@ -461,14 +488,20 @@ clean: clean-temp clean-fixtures clean-cache clean-populate
 .PHONY: clean-populate
 clean-populate:
 	rm -Rf vendor
+	rm -Rf scripts/_go/src/chaincoded/vendor
 
 .PHONY: clean-cache
 clean-cache:
-ifeq ($(OS),Darwin)
+ifeq ($(OS_NAME),Darwin)
 	rm -Rf ${HOME}/Library/Caches/fabric-sdk-go
 else
 	rm -Rf ${HOME}/.cache/fabric-sdk-go
 endif
+
+.PHONY: clean-depend-images
+clean-depend-images: clean-tests
+	docker rmi -f fabsdkgo-socat
+	docker rmi -f fabsdkgo-softhsm2
 
 .PHONY: clean-fixtures
 clean-fixtures:

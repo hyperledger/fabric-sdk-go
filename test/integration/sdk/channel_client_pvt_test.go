@@ -38,7 +38,7 @@ func TestPrivateData(t *testing.T) {
 	require.NoError(t, err)
 
 	coll1 := "collection1"
-	ccID := integration.GenerateRandomID()
+	ccID := "example_pvt_cc" + "_" + integration.GenerateRandomID()
 	collConfig, err := newCollectionConfig(coll1, "OR('Org2MSP.member')", 0, 2, 1000)
 	require.NoError(t, err)
 	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member')", orgsContext, collConfig)
@@ -99,7 +99,7 @@ func TestPrivateDataWithOrgDown(t *testing.T) {
 	require.NoError(t, err)
 
 	coll1 := "collection1"
-	ccID := integration.GenerateRandomID()
+	ccID := "example_pvt_cc" + "_" + integration.GenerateRandomID()
 	collConfig, err := newCollectionConfig(coll1, "OR('Org3MSP.member')", 0, 2, 1000)
 	require.NoError(t, err)
 	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member','Org3MSP.member')", orgsContext, collConfig)

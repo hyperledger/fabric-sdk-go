@@ -216,6 +216,12 @@ function installDependencies {
     rm -Rf ${BUILD_TMP}
 }
 
+function buildDockerImages {
+    echo "Creating docker images used by tests ..."
+    make build-socat-image
+    make build-softhsm2-image
+}
+
 function isForceMode {
     if [ "${BASH_ARGV[0]}" != "-f" ]; then
         return 1
@@ -226,6 +232,7 @@ setCachePath
 
 if ! isDependencyCurrent || ! isDependenciesInstalled false || isForceMode; then
     installDependencies
+    buildDockerImages
 else
     echo "No need to install dependencies"
 fi

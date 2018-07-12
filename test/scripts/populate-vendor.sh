@@ -93,6 +93,13 @@ function isForceMode {
 function populateVendor {
     echo "Populating vendor ..."
 	${GO_DEP_CMD} ensure -vendor-only
+
+    echo "Populating dockerd vendor ..."
+    declare chaincodedPath="scripts/_go/src/chaincoded"
+    rm -Rf ${chaincodedPath}/vendor/
+    mkdir -p ${chaincodedPath}/vendor/github.com/hyperledger/fabric
+    git clone --branch release-1.2 --depth=1 https://github.com/hyperledger/fabric.git ${chaincodedPath}/vendor/github.com/hyperledger/fabric
+
 }
 
 setCachePath
