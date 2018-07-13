@@ -60,8 +60,8 @@
     "ptypes/duration",
     "ptypes/timestamp"
   ]
-  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
-  version = "v1.0.0"
+  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/google/certificate-transparency-go"
@@ -240,6 +240,7 @@
     "connectivity",
     "credentials",
     "encoding",
+    "encoding/proto",
     "grpclb/grpc_lb_v1/messages",
     "grpclog",
     "internal",
@@ -253,10 +254,11 @@
     "stats",
     "status",
     "tap",
+    "testdata",
     "transport"
   ]
-  revision = "6b51017f791ae1cfbec89c52efdf444b13b550ef"
-  version = "v1.9.2"
+  revision = "d11072e7ca9811b1100b80ca0269ac831f06d024"
+  version = "v1.11.3"
 
 [[projects]]
   branch = "v2"
@@ -267,6 +269,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7af7de1871b83d01ba8e8b9cbc4787572073c04d71c29c23f5028de987e840ef"
+  inputs-digest = "44e76ddc7f66696852960af9d904a1bdb44ff6a3dc9ce77da8cb46c2eca5fbf9"
   solver-name = "gps-cdcl"
   solver-version = 1
