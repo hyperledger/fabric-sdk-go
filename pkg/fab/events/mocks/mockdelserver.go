@@ -25,7 +25,7 @@ type MockDeliverServer struct {
 
 	// Note: the mock broadcast server should setup either deliveries or fileteredDeliveries, not both at once.
 	//       the same for mock endorser server, it should either call NewMockDeliverServerWithDeliveries or NewMockDeliverServerWithFilteredDeliveries
-	//       to get a new instance of mockDeliveryServer
+	//       to get a new instance of MockDeliverServer
 
 	//for mocking communication with a mockBroadCastServer, this channel will receive common blocks sent by that mockBroadcastServer
 	deliveries <-chan *cb.Block

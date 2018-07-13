@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package benchmark
+package channel
 
 import (
 	"fmt"
@@ -48,6 +48,9 @@ var chClient *channel.Client
 var fixture *testFixture
 var ordererMockSrv *fcmocks.MockBroadcastServer
 var mockEndorserServer *MockEndorserServer
+var chRq = channel.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("b")}}
+var endorserURL = fmt.Sprintf("%s:%d", testhost, testport)
+var ordererURL = fmt.Sprintf("%s:%d", testBrodcasthost, testBroadcastport)
 
 func BenchmarkExecuteTx(b *testing.B) {
 	// report memory allocations for this benchmark
@@ -56,11 +59,28 @@ func BenchmarkExecuteTx(b *testing.B) {
 	// using channel Client, let's start the benchmark
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		chClient.Execute(channel.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("b")}})
+		chClient.Execute(chRq)
 		//require.NoError(b, err, "expected no error for valid channel client invoke")
 
 		//b.Logf("Execute Responses: %s", resp.Responses)
 	}
+}
+
+func BenchmarkExecuteTxParallel(b *testing.B) {
+	// report memory allocations for this benchmark
+	b.ReportAllocs()
+
+	// using channel Client, let's start the benchmark
+	b.ResetTimer()
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			chClient.Execute(chRq)
+			//require.NoError(b, err, "expected no error for valid channel client parallel invoke")
+
+			//b.Logf("Execute Responses: %s", resp.Responses)
+		}
+	})
 }
 
 func TestMain(m *testing.M) {
@@ -87,15 +107,15 @@ func setUp(m *testing.M) {
 
 	// setup mocked peer
 	mockEndorserServer = &MockEndorserServer{Creds: creds}
-	mockEndorserServer.SetMockPeer(&MockPeer{MockName: "Peer1", MockURL: fmt.Sprintf("%s:%d", testhost, testport), MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200,
+	mockEndorserServer.SetMockPeer(&MockPeer{MockName: "Peer1", MockURL: endorserURL, MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: 200,
 		Payload: payloadMap})
 
 	// create a delivery channel for the orderer and the deliveryservice
 	d := make(chan *pb.FilteredBlock, 10)
 
-	fmt.Println("***************** Mocked Peer Started: ", mockEndorserServer.Start(fmt.Sprintf("%s:%d", testhost, testport), d), " ******************************")
+	fmt.Println("***************** Mocked Peer Started: ", mockEndorserServer.Start(endorserURL, d), " ******************************")
 
-	// setup mocked CA
+	// setup real client sdk and context (no mocks for the client side)
 	fixture = &testFixture{}
 	var ctx context.Client
 	sdkClient, ctx = fixture.setup()
@@ -109,15 +129,15 @@ func setUp(m *testing.M) {
 		panic(fmt.Sprintf("Failed to create new orderer tls creds from file: %s", err))
 	}
 
-	// create a mock orderer broadCast server with a filteredDelivereies channel that communicates with a delivery server
+	// create a mock ordererBroadcastServer with a filteredDeliveries channel that communicates with a delivery server
 	ordererMockSrv = &fcmocks.MockBroadcastServer{Creds: creds, FilteredDeliveries: d}
-	fmt.Println("***************** Mocked Orderer Started: ", ordererMockSrv.Start(fmt.Sprintf("%s:%d", testBrodcasthost, testBroadcastport)), " ******************************")
+	fmt.Println("***************** Mocked Orderer Started: ", ordererMockSrv.Start(ordererURL), " ******************************")
 
 	chClient = setupChannelClient(fixture.endpointConfig, ctx)
 }
 
 func teardown() {
-	// do any teadown activities here ..
+	// do any teardown activities here ..
 	sdkClient.Close()
 	mockEndorserServer.Stop()
 	fixture.close()
