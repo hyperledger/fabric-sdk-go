@@ -50,6 +50,9 @@ type MockBroadcastServer struct {
 	Deliveries         chan *common.Block
 	FilteredDeliveries chan *pb.FilteredBlock
 	blkNum             uint64
+	// mutexes to ensure parallel channel deliveries are sent in sequence
+	delMtx         sync.Mutex
+	filteredDelMtx sync.Mutex
 }
 
 // Broadcast mock broadcast
@@ -99,21 +102,29 @@ func (m *MockBroadcastServer) mockBlockDelivery(payload []byte) error {
 		return err
 	}
 	if m.Deliveries != nil {
-		block := mocks.NewBlock(chdr.ChannelId,
-			mocks.NewTransaction(chdr.TxId, pb.TxValidationCode_VALID, common.HeaderType_MESSAGE),
-		)
-		// m.blkNum is used by FilteredBlock only
+		go func() {
+			m.delMtx.Lock()
+			defer m.delMtx.Unlock()
+			block := mocks.NewBlock(chdr.ChannelId,
+				mocks.NewTransaction(chdr.TxId, pb.TxValidationCode_VALID, common.HeaderType_MESSAGE),
+			)
+			// m.blkNum is used by FilteredBlock only
 
-		m.Deliveries <- block
+			m.Deliveries <- block
+		}()
 	} else if m.FilteredDeliveries != nil {
-		filteredBlock := mocks.NewFilteredBlock(chdr.ChannelId,
-			mocks.NewFilteredTx(chdr.TxId, pb.TxValidationCode_VALID),
-		)
-		// increase m.blkNum to mock adding of filtered blocks to the ledger
-		m.blkNum++
-		filteredBlock.Number = m.blkNum
+		go func() {
+			m.filteredDelMtx.Lock()
+			defer m.filteredDelMtx.Unlock()
+			filteredBlock := mocks.NewFilteredBlock(chdr.ChannelId,
+				mocks.NewFilteredTx(chdr.TxId, pb.TxValidationCode_VALID),
+			)
+			// increase m.blkNum to mock adding of filtered blocks to the ledger
+			m.blkNum++
+			filteredBlock.Number = m.blkNum
 
-		m.FilteredDeliveries <- filteredBlock
+			m.FilteredDeliveries <- filteredBlock
+		}()
 	}
 
 	return nil

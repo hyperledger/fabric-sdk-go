@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package benchmark
+package channel
 
 import (
 	"fmt"
@@ -19,10 +19,12 @@ import (
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"google.golang.org/grpc/testdata"
 )
 
 const (
-	configPath = "../../../core/config/testdata/config_test.yaml"
+	configPath = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/config_test.yaml"
 )
 
 type testFixture struct {
@@ -34,7 +36,7 @@ type testFixture struct {
 func (f *testFixture) setup() (*fabsdk.FabricSDK, context.Client) {
 	var err error
 
-	backend, err := config.FromFile(configPath)()
+	backend, err := config.FromFile(testdata.Path(pathvar.Subst(configPath)))()
 	if err != nil {
 		panic(err)
 	}
