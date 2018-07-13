@@ -85,10 +85,10 @@ func AddSession(rwMtx sync.RWMutex, key string) {
 	rwMtx.RUnlock()
 
 	if !ok {
+		rwMtx.Lock()
 		if sessionCache == nil {
 			sessionCache = make(map[string]*lazycache.Cache)
 		}
-		rwMtx.Lock()
 		sessionCache[key] = lazycache.New(
 			"KeyPair_Resolver_Cache",
 			func(key lazycache.Key) (interface{}, error) {
