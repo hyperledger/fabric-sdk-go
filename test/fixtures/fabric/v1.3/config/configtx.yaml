@@ -192,7 +192,7 @@ Orderer: &OrdererDefaults
         - orderer.example.com:7050
 
     # Batch Timeout: The amount of time to wait before creating a batch
-    BatchTimeout: 100ms
+    BatchTimeout: 500ms
 
     # Batch Size: Controls the number of messages batched into a block
     BatchSize:
