@@ -110,9 +110,8 @@ func (csp *impl) getSession() (session pkcs11.SessionHandle) {
 		}
 		logger.Debugf("Created new pkcs11 session %+v on slot %d\n", s, csp.slot)
 		session = s
-		cachebridge.ClearSession(csp.rwMtx, fmt.Sprintf("%d", session))
+		cachebridge.ClearSession(fmt.Sprintf("%d", session))
 	}
-	cachebridge.AddSession(csp.rwMtx, fmt.Sprintf("%d", session))
 	return session
 }
 
@@ -454,7 +453,7 @@ func timeTrack(start time.Time, msg string) {
 }
 
 func (csp *impl) findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
-	return cachebridge.GetKeyPairFromSessionSKI(csp.rwMtx, &cachebridge.KeyPairCacheKey{Mod: mod, Session: session, SKI: ski, KeyType: keyType})
+	return cachebridge.GetKeyPairFromSessionSKI(&cachebridge.KeyPairCacheKey{Mod: mod, Session: session, SKI: ski, KeyType: keyType})
 }
 
 // Fairly straightforward EC-point query, other than opencryptoki

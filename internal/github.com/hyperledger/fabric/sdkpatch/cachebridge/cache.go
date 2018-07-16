@@ -18,19 +18,16 @@ import (
 	"fmt"
 	"time"
 
-	"sync"
-
 	"encoding/hex"
 
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazyref"
 	"github.com/miekg/pkcs11"
 )
 
-var sessionCache map[string]*lazycache.Cache
-
 var logger = flogging.MustGetLogger("bccsp_p11_sessioncache")
+
+var sessionCache = newSessionCache()
 
 const (
 	privateKeyFlag = true
@@ -44,9 +41,31 @@ type KeyPairCacheKey struct {
 	KeyType bool
 }
 
-//String return string value for config key
+//String return string value for keyPairCacheKey
 func (keyPairCacheKey *KeyPairCacheKey) String() string {
 	return fmt.Sprintf("%x_%t", keyPairCacheKey.SKI, keyPairCacheKey.KeyType)
+}
+
+// SessionCacheKey
+type SessionCacheKey struct {
+	SessionID string
+}
+
+//String return string value for SessionCacheKey
+func (SessionCacheKey *SessionCacheKey) String() string {
+	return SessionCacheKey.SessionID
+}
+
+func newSessionCache() *lazycache.Cache {
+	return lazycache.New(
+		"Session_Resolver_Cache",
+		func(key lazycache.Key) (interface{}, error) {
+			return lazycache.New(
+				"KeyPair_Resolver_Cache",
+				func(key lazycache.Key) (interface{}, error) {
+					return getKeyPairFromSKI(key.(*KeyPairCacheKey))
+				}), nil
+		})
 }
 
 func timeTrack(start time.Time, msg string) {
@@ -54,70 +73,27 @@ func timeTrack(start time.Time, msg string) {
 	logger.Debugf("%s took %s", msg, elapsed)
 }
 
-func ClearAllSession(rwMtx sync.RWMutex) {
-
-	if sessionCache != nil && len(sessionCache) > 0 {
-		rwMtx.Lock()
-		for _, val := range sessionCache {
-			val.Close()
-		}
-		sessionCache = nil
-		rwMtx.Unlock()
-	}
+func ClearAllSession() {
+	sessionCache.DeleteAll()
 }
 
-func ClearSession(rwMtx sync.RWMutex, key string) {
-	rwMtx.RLock()
-	val, ok := sessionCache[key]
-	rwMtx.RUnlock()
-	if ok {
-		rwMtx.Lock()
-		val.Close()
-		sessionCache[key] = nil
-		rwMtx.Unlock()
-
-	}
+func ClearSession(key string) {
+	sessionCache.Delete(&SessionCacheKey{SessionID: key})
 }
 
-func AddSession(rwMtx sync.RWMutex, key string) {
-	rwMtx.RLock()
-	_, ok := sessionCache[key]
-	rwMtx.RUnlock()
-
-	if !ok {
-		rwMtx.Lock()
-		if sessionCache == nil {
-			sessionCache = make(map[string]*lazycache.Cache)
-		}
-		sessionCache[key] = lazycache.New(
-			"KeyPair_Resolver_Cache",
-			func(key lazycache.Key) (interface{}, error) {
-				return lazyref.New(
-					func() (interface{}, error) {
-						return getKeyPairFromSKI(key.(*KeyPairCacheKey))
-					},
-				), nil
-			})
-		rwMtx.Unlock()
+func GetKeyPairFromSessionSKI(keyPairCacheKey *KeyPairCacheKey) (*pkcs11.ObjectHandle, error) {
+	keyPairCache, err := sessionCache.Get(&SessionCacheKey{SessionID: fmt.Sprintf("%d", keyPairCacheKey.Session)})
+	if err != nil {
+		return nil, err
 	}
-}
-
-func GetKeyPairFromSessionSKI(rwMtx sync.RWMutex, keyPairCacheKey *KeyPairCacheKey) (*pkcs11.ObjectHandle, error) {
-	rwMtx.RLock()
-	val, ok := sessionCache[fmt.Sprintf("%d", keyPairCacheKey.Session)]
-	rwMtx.RUnlock()
-	if ok {
+	if keyPairCache != nil {
+		val := keyPairCache.(*lazycache.Cache)
 		defer timeTrack(time.Now(), fmt.Sprintf("finding  key [session: %d] [ski: %x]", keyPairCacheKey.Session, keyPairCacheKey.SKI))
 		value, err := val.Get(keyPairCacheKey)
 		if err != nil {
 			return nil, err
 		}
-		lazyRef := value.(*lazyref.Reference)
-		resolver, err := lazyRef.Get()
-		if err != nil {
-			return nil, err
-		}
-		return resolver.(*pkcs11.ObjectHandle), nil
+		return value.(*pkcs11.ObjectHandle), nil
 	}
 	return nil, fmt.Errorf("cannot find session in sessionCache")
 }

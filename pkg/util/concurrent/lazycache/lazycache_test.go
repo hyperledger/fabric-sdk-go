@@ -157,6 +157,34 @@ func TestGet(t *testing.T) {
 	cache.Close()
 }
 
+func TestDelete(t *testing.T) {
+
+	cache := New("Example_Cache", func(key Key) (interface{}, error) {
+		if key.String() == "error" {
+			return nil, fmt.Errorf("some error")
+		}
+		return fmt.Sprintf("Value_for_key_%s", key), nil
+	})
+	defer cache.Close()
+
+	_, err := cache.Get(NewStringKey("Key1"))
+	if err != nil {
+		test.Failf(t, "Error returned: %s", err)
+	}
+	_, ok := cache.m.Load("Key1")
+	if !ok {
+		test.Failf(t, "value not exist in map")
+	}
+
+	cache.Delete(NewStringKey("Key1"))
+
+	_, ok = cache.m.Load("Key1")
+	if ok {
+		test.Failf(t, "value exist in map after delete")
+	}
+
+}
+
 func TestMustGetPanic(t *testing.T) {
 	cache := New("Example_Cache", func(key Key) (interface{}, error) {
 		if key.String() == "error" {

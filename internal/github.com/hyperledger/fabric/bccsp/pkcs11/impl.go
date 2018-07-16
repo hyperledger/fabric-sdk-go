@@ -27,7 +27,6 @@ import (
 	"crypto/x509"
 	"math/big"
 	"os"
-	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cachebridge"
 
@@ -76,7 +75,7 @@ func New(opts PKCS11Opts, keyStore bccsp.KeyStore) (bccsp.BCCSP, error) {
 	sessions := make(chan pkcs11.SessionHandle, sessionCacheSize)
 	csp := &impl{BCCSP: swCSP, conf: conf, ks: keyStore, ctx: ctx, sessions: sessions, slot: slot, lib: lib, noPrivImport: opts.Sensitive, softVerify: opts.SoftVerify}
 	csp.returnSession(*session)
-	cachebridge.ClearAllSession(csp.rwMtx)
+	cachebridge.ClearAllSession()
 	return csp, nil
 }
 
@@ -93,7 +92,6 @@ type impl struct {
 	lib          string
 	noPrivImport bool
 	softVerify   bool
-	rwMtx        sync.RWMutex
 }
 
 // KeyGen generates a key using opts.
