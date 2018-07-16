@@ -349,60 +349,75 @@ certificateAuthorities:
  # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 entityMatchers:
-  #peer:
-    #- pattern: (\w+).example.(\w+)
-      #urlSubstitutionExp: localhost:7051
-      #eventUrlSubstitutionExp: localhost:7053
-      #sslTargetOverrideUrlSubstitutionExp: localhost
-      #mappedHost: peer0.org1.example.com
+#  peer:
+#    - pattern: (\w+).example.(\w+)
+#      urlSubstitutionExp: localhost:7051
+#      eventUrlSubstitutionExp: localhost:7053
+#      sslTargetOverrideUrlSubstitutionExp: localhost
+#      mappedHost: peer0.org1.example.com
+#
+#    - pattern: (\w+).example2.(\w+):(\d+)
+#      urlSubstitutionExp: localhost:7051
+#      eventUrlSubstitutionExp: localhost:7053
+#      sslTargetOverrideUrlSubstitutionExp: localhost
+#      mappedHost: peer0.org2.example.com
+#
+#    - pattern: (\w+).example3.(\w+)
+#      urlSubstitutionExp:
+#      eventUrlSubstitutionExp:
+#      sslTargetOverrideUrlSubstitutionExp:
+#      mappedHost: peer0.org1.example.com
+#
+#    - pattern: (\w+).example4.(\w+):(\d+)
+#      urlSubstitutionExp: $1.org1.example.$2:$3
+#      eventUrlSubstitutionExp: $1.org1.example.$2:7053
+#      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
+#      mappedHost: peer0.org1.example.com
+#
+#    - pattern: (\w+).example5.(\w+)
+#      ignoreEndpoint: true
+#
+#    - pattern: (\w+).example5.(\w+):(\d+)
+#      ignoreEndpoint: true
 
-    #- pattern: (\w+).example2.(\w+):(\d+)
-      #urlSubstitutionExp: localhost:7051
-      #eventUrlSubstitutionExp: localhost:7053
-      #sslTargetOverrideUrlSubstitutionExp: localhost
-      #mappedHost: peer0.org2.example.com
+#  orderer:
+#    - pattern: (\w+).example2.(\w+)
+#      urlSubstitutionExp: localhost:7050
+#      sslTargetOverrideUrlSubstitutionExp: localhost
+#      mappedHost: orderer.example.com
+#
+#    - pattern: (\w+).example.(\w+)
+#      urlSubstitutionExp: localhost:7050
+#      sslTargetOverrideUrlSubstitutionExp: localhost
+#      mappedHost: orderer.example.com
+#
+#    - pattern: (\w+).example3.(\w+)
+#      urlSubstitutionExp:
+#      sslTargetOverrideUrlSubstitutionExp:
+#      mappedHost: orderer.example.com
+#
+#    - pattern: (\w+).example4.(\w+):(\d+)
+#      urlSubstitutionExp: $1.example.$2:$3
+#      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
+#      mappedHost: orderer.example.com
 
-    #- pattern: (\w+).example3.(\w+)
-      #urlSubstitutionExp:
-      #eventUrlSubstitutionExp:
-      #sslTargetOverrideUrlSubstitutionExp:
-      #mappedHost: peer0.org1.example.com
+#    - pattern: (\w+).example5.(\w+)
+#      ignoreEndpoint: true
+#
+#    - pattern: (\w+).example5.(\w+):(\d+)
+#      ignoreEndpoint: true
 
-    #- pattern: (\w+).example4.(\w+):(\d+)
-      #urlSubstitutionExp: $1.org1.example.$2:$3
-      #eventUrlSubstitutionExp: $1.org1.example.$2:7053
-      #sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
-      #mappedHost: peer0.org1.example.com
+#  certificateAuthority:
+#    - pattern: (\w+).org1.example.(\w+)
+#      urlSubstitutionExp:
+#      mappedHost: ca.org1.example.com
+#
+#    - pattern: (\w+).org2.example.(\w+)
+#      urlSubstitutionExp:
+#      mappedHost: ca.org2.example.com
 
-  #orderer:
-    #- pattern: (\w+).example2.(\w+)
-      #urlSubstitutionExp: localhost:7050
-      #sslTargetOverrideUrlSubstitutionExp: localhost
-      #mappedHost: orderer.example.com
-
-    #- pattern: (\w+).example.(\w+)
-      #urlSubstitutionExp: localhost:7050
-      #sslTargetOverrideUrlSubstitutionExp: localhost
-      #mappedHost: orderer.example.com
-
-    #- pattern: (\w+).example3.(\w+)
-      #urlSubstitutionExp:
-      #sslTargetOverrideUrlSubstitutionExp:
-      #mappedHost: orderer.example.com
-
-    #- pattern: (\w+).example4.(\w+):(\d+)
-      #urlSubstitutionExp: $1.example.$2:$3
-      #sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
-      #mappedHost: orderer.example.com
-
-  #certificateAuthority:
-    #- pattern: (\w+).org1.example.(\w+)
-      #urlSubstitutionExp:
-      #mappedHost: ca.org1.example.com
-
-    #- pattern: (\w+).org2.example.(\w+)
-      #urlSubstitutionExp:
-      #mappedHost: ca.org2.example.com
+#    - pattern: (\w+).org.example5.(\w+):(\d+)
+#      ignoreEndpoint: true
 
 #  channel:
 #    - pattern: ^(sample)(\w*)(channel)$

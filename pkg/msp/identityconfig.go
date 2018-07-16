@@ -101,6 +101,9 @@ type MatchConfig struct {
 
 	// this is used for Name mapping instead of hostname mappings
 	MappedName string
+
+	//IgnoreEndpoint option to exclude given entity from any kind of search or from entity list
+	IgnoreEndpoint bool
 }
 
 // Client returns the Client config
@@ -280,7 +283,7 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 
 			matchedCaConfig := c.tryMatchingCAConfig(configEntity, strings.ToLower(caName))
 			if matchedCaConfig == nil {
-				return errors.Errorf("CA Server Name [%s] not found", caName)
+				continue
 			}
 
 			logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", caName)
@@ -290,7 +293,9 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 			}
 			caConfigs = append(caConfigs, mspCAConfig)
 		}
-		caConfigsByOrg[strings.ToLower(orgName)] = caConfigs
+		if len(caConfigs) > 0 {
+			caConfigsByOrg[strings.ToLower(orgName)] = caConfigs
+		}
 	}
 
 	c.caConfigsByOrg = caConfigsByOrg
@@ -386,6 +391,11 @@ func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity,
 }
 
 func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, caName string, matcher matcherEntry) *CAConfig {
+
+	if matcher.matchConfig.IgnoreEndpoint {
+		logger.Debugf(" Excluding CA `%s` since entity matcher exclude flag is on", caName)
+		return nil
+	}
 
 	mappedHost := matcher.matchConfig.MappedHost
 	if strings.Contains(mappedHost, "$") {

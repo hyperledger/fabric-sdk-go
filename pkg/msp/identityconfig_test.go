@@ -498,6 +498,6 @@ func TestEntityMatchers(t *testing.T) {
 	assert.NotNil(t, identityConfig, "expected valid endpointconfig")
 
 	configImpl := identityConfig.(*IdentityConfig)
-	assert.Equal(t, 2, len(configImpl.caMatchers), "preloading matchers isn't working as expected")
+	assert.Equal(t, 3, len(configImpl.caMatchers), "preloading matchers isn't working as expected")
 
 }

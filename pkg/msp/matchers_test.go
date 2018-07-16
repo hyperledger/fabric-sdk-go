@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	sampleMatchersOverrideAll  = "../core/config/testdata/matcher-samples/matchers_sample1.yaml"
-	sampleMatchersRegexReplace = "../core/config/testdata/matcher-samples/matchers_sample3.yaml"
+	sampleMatchersOverrideAll    = "../core/config/testdata/matcher-samples/matchers_sample1.yaml"
+	sampleMatchersRegexReplace   = "../core/config/testdata/matcher-samples/matchers_sample3.yaml"
+	sampleMatchersIgnoreEndpoint = "../core/config/testdata/matcher-samples/matchers_sample6.yaml"
 
 	actualCAURL    = "https://ca.org1.example.com:7054"
 	overridedCAURL = "https://ca.org1.example.com:8888"
@@ -61,6 +62,33 @@ func testCAEntityMatcher(t *testing.T, configPath string) {
 	assert.True(t, ok, "supposed to find caconfig")
 	assert.NotNil(t, caConfig)
 	assert.Equal(t, overridedCAURL, caConfig.URL)
+}
+
+//TestCAEntityMatcherIgnoreEndpoint tests CA entity matcher 'IgnoreEndpoint' option
+// If marked 'IgnoreEndpoint: true' then corresponding CA will be ignored
+func TestCAEntityMatcherIgnoreEndpoint(t *testing.T) {
+	//Without entity matcher
+	backends, err := getBackendsFromFiles(sampleMatchersIgnoreEndpoint, configTestFilePath)
+	assert.Nil(t, err, "not supposed to get error")
+	assert.Equal(t, 2, len(backends))
+
+	config, err := ConfigFromBackend(backends...)
+	assert.Nil(t, err, "not supposed to get error")
+	assert.NotNil(t, config)
+
+	caConfig, ok := config.CAConfig("org1")
+	assert.True(t, ok)
+	assert.NotNil(t, caConfig)
+	caConfig, ok = config.CAConfig("org2")
+	assert.False(t, ok)
+	assert.Nil(t, caConfig)
+
+	configImpl := config.(*IdentityConfig)
+	assert.Equal(t, 1, len(configImpl.caConfigsByOrg))
+	_, ok = configImpl.caConfigsByOrg["org1"]
+	assert.True(t, ok)
+	_, ok = configImpl.caConfigsByOrg["org2"]
+	assert.False(t, ok)
 }
 
 func getBackendsFromFiles(files ...string) ([]core.ConfigBackend, error) {

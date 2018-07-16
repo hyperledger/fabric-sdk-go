@@ -515,6 +515,10 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 
 		chPeers := make(map[string]fab.PeerChannelConfig)
 		for chPeer, chPeerCfg := range chNwCfg.Peers {
+			if c.isPeerToBeIgnored(chPeer) {
+				//filter peer to be ignored
+				continue
+			}
 			chPeers[chPeer] = fab.PeerChannelConfig{
 				EndorsingPeer:  chPeerCfg.EndorsingPeer,
 				ChaincodeQuery: chPeerCfg.ChaincodeQuery,
@@ -523,9 +527,17 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 			}
 		}
 
+		chOrderers := []string{}
+		for _, name := range chNwCfg.Orderers {
+			if !c.isOrdererToBeIgnored(name) {
+				//filter orderer to be ignored
+				chOrderers = append(chOrderers, name)
+			}
+		}
+
 		networkConfig.Channels[chID] = fab.ChannelEndpointConfig{
 			Peers:    chPeers,
-			Orderers: chNwCfg.Orderers,
+			Orderers: chOrderers,
 			Policies: fab.ChannelPolicies{
 				QueryChannelConfig: fab.QueryChannelConfigPolicy{
 					RetryOpts:    chNwCfg.Policies.QueryChannelConfig.RetryOpts,
@@ -577,7 +589,8 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 func (c *EndpointConfig) loadAllPeerConfigs(networkConfig *fab.NetworkConfig, entityPeers map[string]PeerConfig) error {
 	networkConfig.Peers = make(map[string]fab.PeerConfig)
 	for name, peerConfig := range entityPeers {
-		if name == "default" {
+		if name == "default" || c.isPeerToBeIgnored(name) {
+			//filter default and ignored peers
 			continue
 		}
 		tlsCert, _, err := peerConfig.TLSCACerts.TLSCert()
@@ -597,7 +610,8 @@ func (c *EndpointConfig) loadAllPeerConfigs(networkConfig *fab.NetworkConfig, en
 func (c *EndpointConfig) loadAllOrdererConfigs(networkConfig *fab.NetworkConfig, entityOrderers map[string]OrdererConfig) error {
 	networkConfig.Orderers = make(map[string]fab.OrdererConfig)
 	for name, ordererConfig := range entityOrderers {
-		if name == "default" {
+		if name == "default" || c.isOrdererToBeIgnored(name) {
+			//filter default and ignored orderers
 			continue
 		}
 		tlsCert, _, err := ordererConfig.TLSCACerts.TLSCert()
@@ -900,21 +914,16 @@ func (c *EndpointConfig) loadPeerConfigsByOrg() {
 		peers := []fab.PeerConfig{}
 
 		for _, peerName := range orgPeers {
-
-			matchingPeerConfig := c.tryMatchingPeerConfig(peerName, false)
-			if matchingPeerConfig != nil {
-				peers = append(peers, *matchingPeerConfig)
+			p := c.tryMatchingPeerConfig(peerName, false)
+			if p == nil {
 				continue
 			}
 
-			p, ok := c.networkConfig.Peers[strings.ToLower(peerName)]
-			if !ok {
-				continue
-			}
 			if err := c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
 				continue
 			}
-			peers = append(peers, p)
+
+			peers = append(peers, *p)
 		}
 		c.peerConfigsByOrg[strings.ToLower(orgName)] = peers
 	}
@@ -942,21 +951,22 @@ func (c *EndpointConfig) loadNetworkPeers() {
 func (c *EndpointConfig) loadOrdererConfigs() error {
 
 	ordererConfigs := []fab.OrdererConfig{}
-	for name, ordererConfig := range c.networkConfig.Orderers {
+	for name := range c.networkConfig.Orderers {
+
 		matchedOrderer := c.tryMatchingOrdererConfig(name, false)
-		if matchedOrderer != nil {
-			//if found in entity matcher then use the matched one
-			ordererConfig = *matchedOrderer
+		if matchedOrderer == nil {
+			continue
 		}
 
-		if ordererConfig.TLSCACert == nil && !c.backend.GetBool("client.tlsCerts.systemCertPool") {
+		if matchedOrderer.TLSCACert == nil && !c.backend.GetBool("client.tlsCerts.systemCertPool") {
 			//check for TLS config only if secured connection is enabled
-			allowInSecure := ordererConfig.GRPCOptions["allow-insecure"] == true
-			if endpoint.AttemptSecured(ordererConfig.URL, allowInSecure) {
-				return errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", ordererConfig.URL)
+			allowInSecure := matchedOrderer.GRPCOptions["allow-insecure"] == true
+			if endpoint.AttemptSecured(matchedOrderer.URL, allowInSecure) {
+				return errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", matchedOrderer.URL)
 			}
 		}
-		ordererConfigs = append(ordererConfigs, ordererConfig)
+
+		ordererConfigs = append(ordererConfigs, *matchedOrderer)
 	}
 	c.ordererConfigs = ordererConfigs
 	return nil
@@ -969,17 +979,9 @@ func (c *EndpointConfig) loadChannelPeers() error {
 	for channelID, channelConfig := range c.networkConfig.Channels {
 		peers := []fab.ChannelPeer{}
 		for peerName, chPeerConfig := range channelConfig.Peers {
-			var p fab.PeerConfig
-			matchedPeer := c.tryMatchingPeerConfig(strings.ToLower(peerName), false)
-			if matchedPeer != nil {
-				p = *matchedPeer
-			} else {
-				// Get generic peer configuration
-				nwPeer, ok := c.networkConfig.Peers[strings.ToLower(peerName)]
-				if !ok {
-					continue
-				}
-				p = nwPeer
+			p := c.tryMatchingPeerConfig(strings.ToLower(peerName), false)
+			if p == nil {
+				continue
 			}
 
 			if err := c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
@@ -992,7 +994,7 @@ func (c *EndpointConfig) loadChannelPeers() error {
 				return errors.Errorf("unable to find MSP ID for peer : %s", peerName)
 			}
 
-			networkPeer := fab.NetworkPeer{PeerConfig: p, MSPID: mspID}
+			networkPeer := fab.NetworkPeer{PeerConfig: *p, MSPID: mspID}
 
 			peer := fab.ChannelPeer{PeerChannelConfig: chPeerConfig, NetworkPeer: networkPeer}
 
@@ -1015,18 +1017,10 @@ func (c *EndpointConfig) loadChannelOrderers() error {
 		for _, ordererName := range channelConfig.Orderers {
 
 			orderer := c.tryMatchingOrdererConfig(strings.ToLower(ordererName), false)
-			if orderer != nil {
-				orderers = append(orderers, *orderer)
-				continue
-			}
-
-			logger.Debugf("Could not find Orderer for [%s] through Entity Matchers", ordererName)
-			nwOrderer, ok := c.networkConfig.Orderers[strings.ToLower(ordererName)]
-			if !ok {
+			if orderer == nil {
 				return errors.Errorf("Could not find Orderer Config for channel orderer [%s]", ordererName)
 			}
-			orderers = append(orderers, nwOrderer)
-
+			orderers = append(orderers, *orderer)
 		}
 		channelOrderersByChannel[strings.ToLower(channelID)] = orderers
 	}
@@ -1090,6 +1084,24 @@ func (c *EndpointConfig) loadTLSClientCerts(configEntity *endpointConfigEntity) 
 	return nil
 }
 
+func (c *EndpointConfig) isPeerToBeIgnored(peerName string) bool {
+	for _, matcher := range c.peerMatchers {
+		if matcher.regex.MatchString(peerName) {
+			return matcher.matchConfig.IgnoreEndpoint
+		}
+	}
+	return false
+}
+
+func (c *EndpointConfig) isOrdererToBeIgnored(ordererName string) bool {
+	for _, matcher := range c.ordererMatchers {
+		if matcher.regex.MatchString(ordererName) {
+			return matcher.matchConfig.IgnoreEndpoint
+		}
+	}
+	return false
+}
+
 func (c *EndpointConfig) tryMatchingPeerConfig(peerSearchKey string, searchByURL bool) *fab.PeerConfig {
 
 	//loop over peer entity matchers to find the matching peer
@@ -1129,10 +1141,12 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerSearchKey string, searchByURL
 
 func (c *EndpointConfig) matchPeer(peerSearchKey string, matcher matcherEntry) *fab.PeerConfig {
 
-	mappedHost := matcher.matchConfig.MappedHost
-	if strings.Contains(mappedHost, "$") {
-		mappedHost = matcher.regex.ReplaceAllString(peerSearchKey, mappedHost)
+	if matcher.matchConfig.IgnoreEndpoint {
+		logger.Debugf(" Ignoring peer `%s` since entity matcher IgnoreEndpoint flag is on", peerSearchKey)
+		return nil
 	}
+
+	mappedHost := c.regexMatchAndReplace(matcher.regex, peerSearchKey, matcher.matchConfig.MappedHost)
 
 	matchedPeer := c.getMappedPeer(mappedHost)
 	if matchedPeer == nil {
@@ -1142,29 +1156,17 @@ func (c *EndpointConfig) matchPeer(peerSearchKey string, matcher matcherEntry) *
 
 	//URLSubstitutionExp if found use from entity matcher otherwise use from mapped host
 	if matcher.matchConfig.URLSubstitutionExp != "" {
-		matchedPeer.URL = matcher.matchConfig.URLSubstitutionExp
-		//check for regex replace '$'
-		if strings.Contains(matchedPeer.URL, "$") {
-			matchedPeer.URL = matcher.regex.ReplaceAllString(peerSearchKey, matchedPeer.URL)
-		}
+		matchedPeer.URL = c.regexMatchAndReplace(matcher.regex, peerSearchKey, matcher.matchConfig.URLSubstitutionExp)
 	}
 
 	//EventURLSubstitutionExp if found use from entity matcher otherwise use from mapped host
 	if matcher.matchConfig.EventURLSubstitutionExp != "" {
-		matchedPeer.EventURL = matcher.matchConfig.EventURLSubstitutionExp
-		//check for regex replace '$'
-		if strings.Contains(matchedPeer.EventURL, "$") {
-			matchedPeer.EventURL = matcher.regex.ReplaceAllString(peerSearchKey, matchedPeer.EventURL)
-		}
+		matchedPeer.EventURL = c.regexMatchAndReplace(matcher.regex, peerSearchKey, matcher.matchConfig.EventURLSubstitutionExp)
 	}
 
 	//SSLTargetOverrideURLSubstitutionExp if found use from entity matcher otherwise use from mapped host
 	if matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp != "" {
-		sslTargetOverride := matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp
-		if strings.Contains(sslTargetOverride, "$") {
-			sslTargetOverride = matcher.regex.ReplaceAllString(peerSearchKey, sslTargetOverride)
-		}
-		matchedPeer.GRPCOptions["ssl-target-name-override"] = sslTargetOverride
+		matchedPeer.GRPCOptions["ssl-target-name-override"] = c.regexMatchAndReplace(matcher.regex, peerSearchKey, matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp)
 	}
 
 	//if no URL to add from entity matcher or from mapped host or from default peer
@@ -1243,10 +1245,12 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searc
 
 func (c *EndpointConfig) matchOrderer(ordererSearchKey string, matcher matcherEntry) *fab.OrdererConfig {
 
-	mappedHost := matcher.matchConfig.MappedHost
-	if strings.Contains(mappedHost, "$") {
-		mappedHost = matcher.regex.ReplaceAllString(ordererSearchKey, mappedHost)
+	if matcher.matchConfig.IgnoreEndpoint {
+		logger.Debugf(" Ignoring peer `%s` since entity matcher IgnoreEndpoint flag is on", ordererSearchKey)
+		return nil
 	}
+
+	mappedHost := c.regexMatchAndReplace(matcher.regex, ordererSearchKey, matcher.matchConfig.MappedHost)
 
 	//Get the ordererConfig from mapped host
 	matchedOrderer := c.getMappedOrderer(mappedHost)
@@ -1257,20 +1261,12 @@ func (c *EndpointConfig) matchOrderer(ordererSearchKey string, matcher matcherEn
 
 	//URLSubstitutionExp if found use from entity matcher otherwise use from mapped host
 	if matcher.matchConfig.URLSubstitutionExp != "" {
-		matchedOrderer.URL = matcher.matchConfig.URLSubstitutionExp
-		//check for regex replace '$'
-		if strings.Contains(matchedOrderer.URL, "$") {
-			matchedOrderer.URL = matcher.regex.ReplaceAllString(ordererSearchKey, matchedOrderer.URL)
-		}
+		matchedOrderer.URL = c.regexMatchAndReplace(matcher.regex, ordererSearchKey, matcher.matchConfig.URLSubstitutionExp)
 	}
 
 	//SSLTargetOverrideURLSubstitutionExp if found use from entity matcher otherwise use from mapped host
 	if matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp != "" {
-		sslTargetOverride := matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp
-		if strings.Contains(sslTargetOverride, "$") {
-			sslTargetOverride = matcher.regex.ReplaceAllString(ordererSearchKey, sslTargetOverride)
-		}
-		matchedOrderer.GRPCOptions["ssl-target-name-override"] = sslTargetOverride
+		matchedOrderer.GRPCOptions["ssl-target-name-override"] = c.regexMatchAndReplace(matcher.regex, ordererSearchKey, matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp)
 	}
 
 	//if no URL to add from entity matcher or from mapped host or from default peer
@@ -1365,8 +1361,8 @@ func (c *EndpointConfig) groupAllMatchers(matchers []MatchConfig) ([]matcherEntr
 	return matcherEntries, nil
 }
 
-func (c *EndpointConfig) verifyPeerConfig(p fab.PeerConfig, peerName string, tlsEnabled bool) error {
-	if p.URL == "" {
+func (c *EndpointConfig) verifyPeerConfig(p *fab.PeerConfig, peerName string, tlsEnabled bool) error {
+	if p == nil || p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
 	if tlsEnabled && p.TLSCACert == nil && !c.backend.GetBool("client.tlsCerts.systemCertPool") {
@@ -1436,6 +1432,14 @@ func (c *EndpointConfig) findMatchingPeer(peerName string) (string, bool) {
 	}
 
 	return "", false
+}
+
+//regexMatchAndReplace if 'repl' has $ then perform regex.ReplaceAllString otherwise return 'repl'
+func (c *EndpointConfig) regexMatchAndReplace(regex *regexp.Regexp, src, repl string) string {
+	if strings.Contains(repl, "$") {
+		return regex.ReplaceAllString(src, repl)
+	}
+	return repl
 }
 
 //peerChannelConfigHookFunc returns hook function for unmarshalling 'fab.PeerChannelConfig'

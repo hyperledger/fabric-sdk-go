@@ -92,4 +92,7 @@ type MatchConfig struct {
 
 	// this is used for Name mapping instead of hostname mappings
 	MappedName string
+
+	//IgnoreEndpoint option to exclude given entity from any kind of search or from entity list
+	IgnoreEndpoint bool
 }

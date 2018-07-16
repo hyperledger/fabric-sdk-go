@@ -393,6 +393,12 @@ entityMatchers:
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
       mappedHost: local.peer0.org1.example.com
 
+    - pattern: (\w+).example5.(\w+)
+      ignoreEndpoint: true
+
+    - pattern: (\w+).example5.(\w+):(\d+)
+      ignoreEndpoint: true
+
   orderer:
     - pattern: (\w+).example2.(\w+)
       urlSubstitutionExp: localhost:7050
@@ -414,6 +420,12 @@ entityMatchers:
       sslTargetOverrideUrlSubstitutionExp: $1.example.$2
       mappedHost: local.orderer.example.com
 
+    - pattern: (\w+).example5.(\w+)
+      ignoreEndpoint: true
+
+    - pattern: (\w+).example5.(\w+):(\d+)
+      ignoreEndpoint: true
+
   certificateAuthority:
     - pattern: (\w+).org1.example.(\w+)
       urlSubstitutionExp: https://ca.org1.example.com:7054
@@ -422,6 +434,10 @@ entityMatchers:
     - pattern: (\w+).org2.example.(\w+)
       urlSubstitutionExp: https://ca.org2.example.com:8054
       mappedHost: local.ca.org2.example.com
+
+    - pattern: (\w+).org2.example2.(\w+)
+      ignoreEndpoint: true
+
 
   channel:
     - pattern: ^(sample)(\w*)(channel)$

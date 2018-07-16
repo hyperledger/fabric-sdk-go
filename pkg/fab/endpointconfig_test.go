@@ -1211,11 +1211,11 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	//EntityMatchers
 	endpointConfigImpl := endpointConfig.(*EndpointConfig)
 	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers), 4)
-	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers["peer"]), 8)
+	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers["peer"]), 10)
 	assert.Equal(t, endpointConfigImpl.entityMatchers.matchers["peer"][0].MappedHost, "local.peer0.org1.example.com")
-	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers["orderer"]), 4)
+	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers["orderer"]), 6)
 	assert.Equal(t, endpointConfigImpl.entityMatchers.matchers["orderer"][0].MappedHost, "local.orderer.example.com")
-	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers["certificateauthority"]), 2)
+	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers["certificateauthority"]), 3)
 	assert.Equal(t, endpointConfigImpl.entityMatchers.matchers["certificateauthority"][0].MappedHost, "local.ca.org1.example.com")
 	assert.Equal(t, len(endpointConfigImpl.entityMatchers.matchers["channel"]), 1)
 	assert.Equal(t, endpointConfigImpl.entityMatchers.matchers["channel"][0].MappedName, "ch1")
@@ -1376,8 +1376,8 @@ func TestEntityMatchers(t *testing.T) {
 	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
 
 	endpointConfigImpl := endpointConfig.(*EndpointConfig)
-	assert.Equal(t, 8, len(endpointConfigImpl.peerMatchers), "preloading matchers isn't working as expected")
-	assert.Equal(t, 4, len(endpointConfigImpl.ordererMatchers), "preloading matchers isn't working as expected")
+	assert.Equal(t, 10, len(endpointConfigImpl.peerMatchers), "preloading matchers isn't working as expected")
+	assert.Equal(t, 6, len(endpointConfigImpl.ordererMatchers), "preloading matchers isn't working as expected")
 	assert.Equal(t, 1, len(endpointConfigImpl.channelMatchers), "preloading matchers isn't working as expected")
 
 	peerConfig, ok := endpointConfig.PeerConfig("xyz.org1.example.com")

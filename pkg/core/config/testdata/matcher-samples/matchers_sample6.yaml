@@ -1,0 +1,307 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+# The network connection profile provides client applications the information about the target
+# blockchain network that are necessary for the applications to interact with it. These are all
+# knowledge that must be acquired from out-of-band sources. This file provides such a source.
+#
+#
+# [Optional]. But most apps would have this section so that channel objects can be constructed
+# based on the content below. If an app is creating channels, then it likely will not need this
+# section.
+#
+channels:
+  # test channel
+  matcherchannel:
+
+    orderers:
+      - orderer.example.com
+      - orderer.exclude.example.com
+
+    peers:
+      peer0.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+      peer1.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+      peer1.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+
+
+organizations:
+  org1:
+    mspid: Org1MSP
+
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
+    cryptoPath:  peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp
+
+    peers:
+      - peer0.org1.example.com
+      - peer1.org1.example.com
+
+    # [Optional]. Certificate Authorities issue certificates for identification purposes in a Fabric based
+    # network. Typically certificates provisioning is done in a separate process outside of the
+    # runtime network. Fabric-CA is a special certificate authority that provides a REST APIs for
+    # dynamic certificate management (enroll, revoke, re-enroll). The following section is only for
+    # Fabric-CA servers.
+    certificateAuthorities:
+      - ca.org1.example.com
+
+  # the profile will contain public information about organizations other than the one it belongs to.
+  # These are necessary information to make transaction lifecycles work, including MSP IDs and
+  # peers with a public URL to send transaction proposals. The file will not contain private
+  # information reserved for members of the organization, such as admin key and certificate,
+  # fabric-ca registrar enroll ID and secret, etc.
+  org2:
+    mspid: Org2MSP
+
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
+    cryptoPath:  peerOrganizations/org2.example.com/users/{username}@org2.example.com/msp
+
+    peers:
+      - peer0.org2.example.com
+      - peer1.org2.example.com
+
+    certificateAuthorities:
+      - ca.org2.example.com
+
+  # Orderer Org name
+  ordererorg:
+      # Membership Service Provider ID for this organization
+      mspID: "OrdererOrg"
+
+      # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+      cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
+
+orderers:
+  default:
+    # these are standard properties defined by the gRPC library
+    # they will be passed in as-is to gRPC client constructor
+    grpcOptions:
+#     These parameters should be set in coordination with the keepalive policy on the server,
+#     as incompatible settings can result in closing of connection.
+#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 1s
+      keep-alive-timeout: 21s
+      keep-alive-permit: true
+      fail-fast: true
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: true
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+
+  orderer.example.com:
+    url: orderer.example.com:7050
+
+    # these are standard properties defined by the gRPC library
+    # they will be passed in as-is to gRPC client constructor
+    grpcOptions:
+      ssl-target-name-override: orderer.example.com
+
+  orderer.exclude.example.com:
+    url: orderer.exclude.example.com:8050
+
+    # these are standard properties defined by the gRPC library
+    # they will be passed in as-is to gRPC client constructor
+    grpcOptions:
+      ssl-target-name-override: orderer.example.com
+
+peers:
+  default:
+    grpcOptions:
+#     These parameters should be set in coordination with the keepalive policy on the server,
+#     as incompatible settings can result in closing of connection.
+#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 1s
+      keep-alive-timeout: 21s
+      keep-alive-permit: true
+      fail-fast: true
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: true
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
+  peer0.org1.example.com:
+    # this URL is used to send endorsement and query requests
+    url: peer0.org1.example.com:7051
+
+    # this URL is used to connect the EventHub and registering event listeners
+    eventUrl: peer0.org1.example.com:7053
+
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+
+  peer1.org1.example.com:
+    # this URL is used to send endorsement and query requests
+    url: peer1.org1.example.com:7151
+
+    # this URL is used to connect the EventHub and registering event listeners
+    eventUrl: peer1.org1.example.com:7153
+
+    grpcOptions:
+      ssl-target-name-override: peer1.org1.example.com
+
+  peer0.org2.example.com:
+    # this URL is used to send endorsement and query requests
+    url: peer0.org2.example.com:8051
+
+    # this URL is used to connect the EventHub and registering event listeners
+    eventUrl: peer0.org2.example.com:8053
+
+    grpcOptions:
+      ssl-target-name-override: peer0.org2.example.com
+
+  peer1.org2.example.com:
+    # this URL is used to send endorsement and query requests
+    url: peer1.org2.example.com:8151
+
+    # this URL is used to connect the EventHub and registering event listeners
+    eventUrl: peer1.org2.example.com:8153
+
+    grpcOptions:
+      ssl-target-name-override: peer1.org2.example.com
+
+#
+# Fabric-CA is a special kind of Certificate Authority provided by Hyperledger Fabric which allows
+# certificate management to be done via REST APIs. Application may choose to use a standard
+# Certificate Authority instead of Fabric-CA, in which case this section would not be specified.
+#
+certificateAuthorities:
+  ca.org1.example.com:
+    url: https://ca.org1.example.com:7054
+    tlsCACerts:
+      # Comma-Separated list of paths
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
+      # Client key and cert for SSL handshake with Fabric CA
+      client:
+        key:
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem
+        cert:
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem
+
+    # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
+    # needed to enroll and invoke new users.
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    # [Optional] The optional name of the CA.
+    caName: ca.org1.example.com
+
+  ca.org2.example.com:
+    url: https://ca.org2.example.com:8054
+    tlsCACerts:
+      # Comma-Separated list of paths
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
+      # Client key and cert for SSL handshake with Fabric CA
+      client:
+        key:
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem
+        cert:
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem
+
+     # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
+     # needed to enroll and invoke new users.
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    # [Optional] The optional name of the CA.
+    caName: ca.org2.example.com
+
+# EntityMatchers enable substitution of network hostnames with static configurations
+ # so that properties can be mapped. Regex can be used for this purpose
+# UrlSubstitutionExp can be empty which means the same network hostname will be used
+# UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
+# UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
+ # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
+# EventUrlSubstitutionExp and sslTargetOverrideUrlSubstitutionExp follow in the same lines as
+ # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
+# In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
+entityMatchers:
+  peer:
+
+    - pattern: (\w+).org.example.(\w+)
+      urlSubstitutionExp: peer0.org1.example.com:8888
+      eventUrlSubstitutionExp: peer0.org1.example.com:9999
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
+      mappedHost: peer0.org1.example.com
+
+    - pattern: (\w+).replace.example.(\w+):(\d+)
+      urlSubstitutionExp: $1.org1.example.$2:$3
+      eventUrlSubstitutionExp: $1.org1.example.$2:$3
+      sslTargetOverrideUrlSubstitutionExp: $1.org1.override.$2
+      mappedHost: $1.org1.example.$2
+
+    - pattern: (\w+).missing.example.(\w+)
+      urlSubstitutionExp: peer0.org1.example.com:8888
+      eventUrlSubstitutionExp: peer0.org1.example.com:9999
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
+
+    - pattern: (\w+).random.example.(\w+)
+      urlSubstitutionExp: peer0.org1.example.com:8888
+      eventUrlSubstitutionExp: peer0.org1.example.com:9999
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
+      mappedHost: random.mappedhost.com
+
+    - pattern: peer1.(\w+).example.(\w+)
+      ignoreEndpoint: true
+
+    - pattern: peer1.(\w+).example.(\w+):(\d+)
+      ignoreEndpoint: true
+
+  orderer:
+    - pattern: (\w+).org.example.(\w+)
+      urlSubstitutionExp: orderer.example.com:8888
+      sslTargetOverrideUrlSubstitutionExp: orderer.override.com
+      mappedHost: orderer.example.com
+
+    - pattern: (\w+).replace.example.(\w+):(\d+)
+      urlSubstitutionExp: $1.example.com:$3
+      sslTargetOverrideUrlSubstitutionExp: $1.override.$2
+      mappedHost: $1.example.$2
+
+    - pattern: (\w+).missing.example.(\w+)
+      urlSubstitutionExp: orderer.example.com:8888
+      sslTargetOverrideUrlSubstitutionExp: orderer.override.com
+
+    - pattern: (\w+).random.example.(\w+)
+      urlSubstitutionExp: orderer.example.com:8888
+      sslTargetOverrideUrlSubstitutionExp: orderer.override.com
+      mappedHost: random.mappedhost.com
+
+    - pattern: (\w+).exclude.example.(\w+)
+      ignoreEndpoint: true
+
+    - pattern: (\w+).exclude.example.(\w+):(\d+)
+      ignoreEndpoint: true
+
+  certificateAuthority:
+    - pattern: (\w+).org1.example.(\w+)
+      urlSubstitutionExp: https://ca.org1.example.com:7054
+      mappedHost: ca.org1.example.com
+
+    - pattern: (\w+).org2.example.(\w+)
+      ignoreEndpoint: true

@@ -9,7 +9,10 @@ package fab
 import (
 	"testing"
 
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,6 +23,7 @@ const (
 	sampleMatchersURLMapping       = "../core/config/testdata/matcher-samples/matchers_sample3.yaml"
 	sampleMatchersHostNameOverride = "../core/config/testdata/matcher-samples/matchers_sample4.yaml"
 	sampleMatchersDefaultConfigs   = "../core/config/testdata/matcher-samples/matchers_sample5.yaml"
+	sampleMatchersIgnoreEndpoint   = "../core/config/testdata/matcher-samples/matchers_sample6.yaml"
 
 	actualPeerURL                 = "peer0.org1.example.com:7051"
 	actualPeerEventURL            = "peer0.org1.example.com:7053"
@@ -32,6 +36,8 @@ const (
 	overridedPeerHostNameOverride    = "peer0.org1.override.com"
 	overridedOrdererURL              = "orderer.example.com:8888"
 	overridedOrdererHostNameOverride = "orderer.override.com"
+
+	testChannelID = "matcherchannel"
 )
 
 //TestAllOptionsOverride
@@ -387,3 +393,189 @@ func getBackendsFromFiles(files ...string) ([]core.ConfigBackend, error) {
 //	assert.True(t, ok)
 //
 //}
+
+//TestMatchersIgnoreEndpoint tests entity matcher ignore endpoint feature
+// If marked as `IgnoreEndpoint: true` then config for,
+//				peer excluded in org peers
+//				peer excluded in network peers
+//				peer excluded in peer search by name
+//				peer excluded in peer search by URL
+//				orderer excluded in all orderers list
+//				orderer excluded in orderer search by name
+//				orderer excluded in orderer search by URL
+//				peer/orderer excluded in networkconfig
+func TestMatchersIgnoreEndpoint(t *testing.T) {
+	backends, err := getBackendsFromFiles(sampleMatchersIgnoreEndpoint, configTestFilePath)
+	assert.Nil(t, err, "not supposed to get error")
+	assert.Equal(t, 2, len(backends))
+
+	config, err := ConfigFromBackend(backends...)
+	assert.Nil(t, err, "not supposed to get error")
+	assert.NotNil(t, config)
+
+	//Test if orderer excluded in channel orderers
+	orderers, ok := config.ChannelOrderers(testChannelID)
+	assert.True(t, ok)
+	assert.NotEmpty(t, orderers)
+	assert.Equal(t, 1, len(orderers))
+	checkOrdererConfigExcluded(orderers, "orderer.exclude.example.com", t)
+
+	//Test if peer excluded in channel peers
+	channelPeers, ok := config.ChannelPeers(testChannelID)
+	assert.True(t, ok)
+	assert.NotEmpty(t, channelPeers)
+	assert.Equal(t, 2, len(channelPeers))
+	checkChannelPeerExcluded(channelPeers, "peer1.org", t)
+
+	//Test if orderer/peer excluded in channel config
+	chNwConfig, ok := config.ChannelConfig(testChannelID)
+	assert.True(t, ok)
+	assert.NotNil(t, chNwConfig)
+	assert.NotEmpty(t, chNwConfig.Peers)
+	_, ok = chNwConfig.Peers["peer1.org1.example.com"]
+	assert.False(t, ok, "should not have excluded peer's entry in channel network config")
+	_, ok = chNwConfig.Peers["peer1.org2.example.com"]
+	assert.False(t, ok, "should not have excluded peer's entry in channel network config")
+	assert.NotEmpty(t, chNwConfig.Orderers)
+	assert.Equal(t, 1, len(orderers))
+	assert.NotEqual(t, "orderer.exclude.example.com", orderers[0])
+
+	//Test if peer excluded in org peers
+	// test org 1 peers
+	orgPeers, ok := config.PeersConfig("org1")
+	assert.True(t, ok)
+	assert.NotEmpty(t, orgPeers)
+	checkPeerConfigExcluded(orgPeers, "peer1.org1", t)
+
+	// test org 2 peers
+	orgPeers, ok = config.PeersConfig("org2")
+	assert.True(t, ok)
+	assert.NotEmpty(t, orgPeers)
+	checkPeerConfigExcluded(orgPeers, "peer1.org2", t)
+
+	//Test if peer excluded in network peers
+	nwPeers := config.NetworkPeers()
+	assert.NotEmpty(t, nwPeers)
+	checkNetworkPeerExcluded(nwPeers, "peer1.org", t)
+
+	//Test if peer excluded in peer search by URL
+	peerConfig, ok := config.PeerConfig("peer1.org1.example.com:7151")
+	assert.False(t, ok)
+	assert.Nil(t, peerConfig)
+
+	peerConfig, ok = config.PeerConfig("peer1.org2.example.com:8051")
+	assert.False(t, ok)
+	assert.Nil(t, peerConfig)
+
+	//arbitrary URLs
+	peerConfig, ok = config.PeerConfig("peer1.org1.example.com:1234")
+	assert.False(t, ok)
+	assert.Nil(t, peerConfig)
+
+	peerConfig, ok = config.PeerConfig("peer1.org2.example.com:4321")
+	assert.False(t, ok)
+	assert.Nil(t, peerConfig)
+
+	//Test if peer excluded in peer search by name
+	peerConfig, ok = config.PeerConfig("peer1.org1.example.com")
+	assert.False(t, ok)
+	assert.Nil(t, peerConfig)
+
+	peerConfig, ok = config.PeerConfig("peer1.org2.example.com")
+	assert.False(t, ok)
+	assert.Nil(t, peerConfig)
+
+	peerConfig, ok = config.PeerConfig("peer0.org1.example.com")
+	assert.True(t, ok)
+	assert.NotNil(t, peerConfig)
+
+	peerConfig, ok = config.PeerConfig("peer0.org2.example.com")
+	assert.True(t, ok)
+	assert.NotNil(t, peerConfig)
+
+	//Test if orderer excluded in all orderers
+
+	ordererConfigs := config.OrderersConfig()
+	assert.True(t, ok)
+	assert.NotEmpty(t, ordererConfigs)
+	checkOrdererConfigExcluded(ordererConfigs, "orderer.exclude.", t)
+
+	//Test if orderer excluded in orderer search by name
+	ordererConfig, ok := config.OrdererConfig("orderer.exclude.example.com")
+	assert.False(t, ok)
+	assert.Nil(t, ordererConfig)
+
+	ordererConfig, ok = config.OrdererConfig("orderer.exclude.example.com")
+	assert.False(t, ok)
+	assert.Nil(t, ordererConfig)
+
+	ordererConfig, ok = config.OrdererConfig("orderer.example.com")
+	assert.True(t, ok)
+	assert.NotNil(t, ordererConfig)
+
+	ordererConfig, ok = config.OrdererConfig("orderer.example.com")
+	assert.True(t, ok)
+	assert.NotNil(t, ordererConfig)
+
+	//Test if orderer excluded in orderer search by URL
+
+	ordererConfig, ok = config.OrdererConfig("orderer.exclude.example.com:8050")
+	assert.False(t, ok)
+	assert.Nil(t, ordererConfig)
+
+	ordererConfig, ok = config.OrdererConfig("orderer.exclude.example.com:8050")
+	assert.False(t, ok)
+	assert.Nil(t, ordererConfig)
+
+	//arbitrary URLs
+	ordererConfig, ok = config.OrdererConfig("orderer.exclude.example.com:1234")
+	assert.False(t, ok)
+	assert.Nil(t, ordererConfig)
+
+	ordererConfig, ok = config.OrdererConfig("orderer.exclude.example.com:4321")
+	assert.False(t, ok)
+	assert.Nil(t, ordererConfig)
+
+	//test NetworkConfig
+	networkConfig := config.NetworkConfig()
+	assert.NotNil(t, networkConfig)
+	assert.Equal(t, 2, len(networkConfig.Peers))
+	assert.Equal(t, 1, len(networkConfig.Orderers))
+	_, ok = networkConfig.Peers["peer1.org1.example.com"]
+	assert.False(t, ok)
+	_, ok = networkConfig.Peers["peer1.org2.example.com"]
+	assert.False(t, ok)
+	_, ok = networkConfig.Peers["peer0.org1.example.com"]
+	assert.True(t, ok)
+	_, ok = networkConfig.Peers["peer0.org2.example.com"]
+	assert.True(t, ok)
+	_, ok = networkConfig.Orderers["orderer.exclude.example.com"]
+	assert.False(t, ok)
+	_, ok = networkConfig.Orderers["orderer.example.com"]
+	assert.True(t, ok)
+
+}
+
+func checkOrdererConfigExcluded(ordererConfigs []fab.OrdererConfig, excluded string, t *testing.T) {
+	for _, v := range ordererConfigs {
+		assert.False(t, strings.Contains(strings.ToLower(v.URL), strings.ToLower(excluded)), "'%s' supposed to be excluded", v.URL)
+	}
+}
+
+func checkChannelPeerExcluded(peerConfigs []fab.ChannelPeer, excluded string, t *testing.T) {
+	for _, v := range peerConfigs {
+		assert.False(t, strings.Contains(strings.ToLower(v.URL), strings.ToLower(excluded)), "'%s' supposed to be excluded", v.URL)
+	}
+}
+
+func checkPeerConfigExcluded(peerConfigs []fab.PeerConfig, excluded string, t *testing.T) {
+	for _, v := range peerConfigs {
+		assert.False(t, strings.Contains(strings.ToLower(v.URL), strings.ToLower(excluded)), "'%s' supposed to be excluded", v.URL)
+	}
+}
+
+func checkNetworkPeerExcluded(peerConfigs []fab.NetworkPeer, excluded string, t *testing.T) {
+	for _, v := range peerConfigs {
+		assert.False(t, strings.Contains(strings.ToLower(v.URL), strings.ToLower(excluded)), "'%s' supposed to be excluded", v.URL)
+	}
+}
