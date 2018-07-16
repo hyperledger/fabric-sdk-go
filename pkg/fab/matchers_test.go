@@ -405,29 +405,62 @@ func getBackendsFromFiles(files ...string) ([]core.ConfigBackend, error) {
 //				orderer excluded in orderer search by URL
 //				peer/orderer excluded in networkconfig
 func TestMatchersIgnoreEndpoint(t *testing.T) {
+
+	//prepare backends for test
 	backends, err := getBackendsFromFiles(sampleMatchersIgnoreEndpoint, configTestFilePath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 
+	//get config from backend
 	config, err := ConfigFromBackend(backends...)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.NotNil(t, config)
 
 	//Test if orderer excluded in channel orderers
+	testIgnoreEndpointChannelOrderers(t, config)
+
+	//Test if peer excluded in channel peers
+	testIgnoreEndpointChannelPeers(t, config)
+
+	//Test if orderer/peer excluded in channel config
+	testIgnoreEndpointChannelConfig(t, config)
+
+	//Test if peer excluded in org peers
+	testIgnoreEndpointOrgPeers(t, config)
+
+	//Test if peer excluded in network peers
+	testIgnoreEndpointNetworkPeers(t, config)
+
+	//Test if peer excluded in peer search by URL
+	testIgnoreEndpointPeerSearch(t, config)
+
+	//Test if orderer excluded in all orderers
+	testIgnoreEndpointAllOrderers(t, config)
+
+	//Test if orderer excluded in orderer search by name/URL
+	testIgnoreEndpointOrdererSearch(t, config)
+
+	//test NetworkConfig
+	testIgnoreEndpointNetworkConfig(t, config)
+}
+
+func testIgnoreEndpointChannelOrderers(t *testing.T, config fab.EndpointConfig) {
 	orderers, ok := config.ChannelOrderers(testChannelID)
 	assert.True(t, ok)
 	assert.NotEmpty(t, orderers)
 	assert.Equal(t, 1, len(orderers))
 	checkOrdererConfigExcluded(orderers, "orderer.exclude.example.com", t)
+}
 
-	//Test if peer excluded in channel peers
+func testIgnoreEndpointChannelPeers(t *testing.T, config fab.EndpointConfig) {
 	channelPeers, ok := config.ChannelPeers(testChannelID)
 	assert.True(t, ok)
 	assert.NotEmpty(t, channelPeers)
 	assert.Equal(t, 2, len(channelPeers))
 	checkChannelPeerExcluded(channelPeers, "peer1.org", t)
+}
 
-	//Test if orderer/peer excluded in channel config
+func testIgnoreEndpointChannelConfig(t *testing.T, config fab.EndpointConfig) {
 	chNwConfig, ok := config.ChannelConfig(testChannelID)
 	assert.True(t, ok)
 	assert.NotNil(t, chNwConfig)
@@ -437,10 +470,11 @@ func TestMatchersIgnoreEndpoint(t *testing.T) {
 	_, ok = chNwConfig.Peers["peer1.org2.example.com"]
 	assert.False(t, ok, "should not have excluded peer's entry in channel network config")
 	assert.NotEmpty(t, chNwConfig.Orderers)
-	assert.Equal(t, 1, len(orderers))
-	assert.NotEqual(t, "orderer.exclude.example.com", orderers[0])
+	assert.Equal(t, 1, len(chNwConfig.Orderers))
+	assert.NotEqual(t, "orderer.exclude.example.com", chNwConfig.Orderers[0])
+}
 
-	//Test if peer excluded in org peers
+func testIgnoreEndpointOrgPeers(t *testing.T, config fab.EndpointConfig) {
 	// test org 1 peers
 	orgPeers, ok := config.PeersConfig("org1")
 	assert.True(t, ok)
@@ -452,11 +486,15 @@ func TestMatchersIgnoreEndpoint(t *testing.T) {
 	assert.True(t, ok)
 	assert.NotEmpty(t, orgPeers)
 	checkPeerConfigExcluded(orgPeers, "peer1.org2", t)
+}
 
-	//Test if peer excluded in network peers
+func testIgnoreEndpointNetworkPeers(t *testing.T, config fab.EndpointConfig) {
 	nwPeers := config.NetworkPeers()
 	assert.NotEmpty(t, nwPeers)
 	checkNetworkPeerExcluded(nwPeers, "peer1.org", t)
+}
+
+func testIgnoreEndpointPeerSearch(t *testing.T, config fab.EndpointConfig) {
 
 	//Test if peer excluded in peer search by URL
 	peerConfig, ok := config.PeerConfig("peer1.org1.example.com:7151")
@@ -492,15 +530,18 @@ func TestMatchersIgnoreEndpoint(t *testing.T) {
 	peerConfig, ok = config.PeerConfig("peer0.org2.example.com")
 	assert.True(t, ok)
 	assert.NotNil(t, peerConfig)
+}
 
-	//Test if orderer excluded in all orderers
-
+func testIgnoreEndpointAllOrderers(t *testing.T, config fab.EndpointConfig) {
 	ordererConfigs := config.OrderersConfig()
-	assert.True(t, ok)
 	assert.NotEmpty(t, ordererConfigs)
 	checkOrdererConfigExcluded(ordererConfigs, "orderer.exclude.", t)
+}
+
+func testIgnoreEndpointOrdererSearch(t *testing.T, config fab.EndpointConfig) {
 
 	//Test if orderer excluded in orderer search by name
+
 	ordererConfig, ok := config.OrdererConfig("orderer.exclude.example.com")
 	assert.False(t, ok)
 	assert.Nil(t, ordererConfig)
@@ -536,12 +577,14 @@ func TestMatchersIgnoreEndpoint(t *testing.T) {
 	assert.False(t, ok)
 	assert.Nil(t, ordererConfig)
 
-	//test NetworkConfig
+}
+
+func testIgnoreEndpointNetworkConfig(t *testing.T, config fab.EndpointConfig) {
 	networkConfig := config.NetworkConfig()
 	assert.NotNil(t, networkConfig)
 	assert.Equal(t, 2, len(networkConfig.Peers))
 	assert.Equal(t, 1, len(networkConfig.Orderers))
-	_, ok = networkConfig.Peers["peer1.org1.example.com"]
+	_, ok := networkConfig.Peers["peer1.org1.example.com"]
 	assert.False(t, ok)
 	_, ok = networkConfig.Peers["peer1.org2.example.com"]
 	assert.False(t, ok)
@@ -553,7 +596,6 @@ func TestMatchersIgnoreEndpoint(t *testing.T) {
 	assert.False(t, ok)
 	_, ok = networkConfig.Orderers["orderer.example.com"]
 	assert.True(t, ok)
-
 }
 
 func checkOrdererConfigExcluded(ordererConfigs []fab.OrdererConfig, excluded string, t *testing.T) {

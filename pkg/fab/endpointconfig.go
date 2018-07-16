@@ -128,15 +128,7 @@ func (c *EndpointConfig) OrderersConfig() []fab.OrdererConfig {
 
 // OrdererConfig returns the requested orderer
 func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, bool) {
-
-	matchingOrdererConfig := c.tryMatchingOrdererConfig(nameOrURL, true)
-
-	if matchingOrdererConfig == nil {
-		logger.Debugf("Could not find Orderer for [%s] ", nameOrURL)
-		return nil, false
-	}
-
-	return matchingOrdererConfig, true
+	return c.tryMatchingOrdererConfig(nameOrURL, true)
 }
 
 // PeersConfig Retrieves the fabric peers for the specified org from the
@@ -148,14 +140,7 @@ func (c *EndpointConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
 
 // PeerConfig Retrieves a specific peer from the configuration by name or url
 func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
-
-	matchPeerConfig := c.tryMatchingPeerConfig(nameOrURL, true)
-	if matchPeerConfig == nil {
-		logger.Debugf("Could not find Peer for [%s] ", nameOrURL)
-		return nil, false
-	}
-
-	return matchPeerConfig, true
+	return c.tryMatchingPeerConfig(nameOrURL, true)
 }
 
 // NetworkConfig returns the network configuration defined in the config file
@@ -914,8 +899,8 @@ func (c *EndpointConfig) loadPeerConfigsByOrg() {
 		peers := []fab.PeerConfig{}
 
 		for _, peerName := range orgPeers {
-			p := c.tryMatchingPeerConfig(peerName, false)
-			if p == nil {
+			p, ok := c.tryMatchingPeerConfig(peerName, false)
+			if !ok {
 				continue
 			}
 
@@ -953,8 +938,8 @@ func (c *EndpointConfig) loadOrdererConfigs() error {
 	ordererConfigs := []fab.OrdererConfig{}
 	for name := range c.networkConfig.Orderers {
 
-		matchedOrderer := c.tryMatchingOrdererConfig(name, false)
-		if matchedOrderer == nil {
+		matchedOrderer, ok := c.tryMatchingOrdererConfig(name, false)
+		if !ok {
 			continue
 		}
 
@@ -979,8 +964,8 @@ func (c *EndpointConfig) loadChannelPeers() error {
 	for channelID, channelConfig := range c.networkConfig.Channels {
 		peers := []fab.ChannelPeer{}
 		for peerName, chPeerConfig := range channelConfig.Peers {
-			p := c.tryMatchingPeerConfig(strings.ToLower(peerName), false)
-			if p == nil {
+			p, ok := c.tryMatchingPeerConfig(strings.ToLower(peerName), false)
+			if !ok {
 				continue
 			}
 
@@ -1016,8 +1001,8 @@ func (c *EndpointConfig) loadChannelOrderers() error {
 		orderers := []fab.OrdererConfig{}
 		for _, ordererName := range channelConfig.Orderers {
 
-			orderer := c.tryMatchingOrdererConfig(strings.ToLower(ordererName), false)
-			if orderer == nil {
+			orderer, ok := c.tryMatchingOrdererConfig(strings.ToLower(ordererName), false)
+			if !ok {
 				return errors.Errorf("Could not find Orderer Config for channel orderer [%s]", ordererName)
 			}
 			orderers = append(orderers, *orderer)
@@ -1102,7 +1087,7 @@ func (c *EndpointConfig) isOrdererToBeIgnored(ordererName string) bool {
 	return false
 }
 
-func (c *EndpointConfig) tryMatchingPeerConfig(peerSearchKey string, searchByURL bool) *fab.PeerConfig {
+func (c *EndpointConfig) tryMatchingPeerConfig(peerSearchKey string, searchByURL bool) (*fab.PeerConfig, bool) {
 
 	//loop over peer entity matchers to find the matching peer
 	for _, matcher := range c.peerMatchers {
@@ -1115,14 +1100,14 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerSearchKey string, searchByURL
 	//direct lookup if peer matchers are not configured or no matchers matched
 	peerConfig, ok := c.networkConfig.Peers[strings.ToLower(peerSearchKey)]
 	if ok {
-		return &peerConfig
+		return &peerConfig, true
 	}
 
 	if searchByURL {
 		//lookup by URL
 		for _, staticPeerConfig := range c.networkConfig.Peers {
 			if strings.EqualFold(staticPeerConfig.URL, peerSearchKey) {
-				return &staticPeerConfig
+				return &staticPeerConfig, true
 			}
 		}
 	}
@@ -1136,14 +1121,14 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerSearchKey string, searchByURL
 	//	}
 	//}
 
-	return nil
+	return nil, false
 }
 
-func (c *EndpointConfig) matchPeer(peerSearchKey string, matcher matcherEntry) *fab.PeerConfig {
+func (c *EndpointConfig) matchPeer(peerSearchKey string, matcher matcherEntry) (*fab.PeerConfig, bool) {
 
 	if matcher.matchConfig.IgnoreEndpoint {
 		logger.Debugf(" Ignoring peer `%s` since entity matcher IgnoreEndpoint flag is on", peerSearchKey)
-		return nil
+		return nil, false
 	}
 
 	mappedHost := c.regexMatchAndReplace(matcher.regex, peerSearchKey, matcher.matchConfig.MappedHost)
@@ -1151,7 +1136,7 @@ func (c *EndpointConfig) matchPeer(peerSearchKey string, matcher matcherEntry) *
 	matchedPeer := c.getMappedPeer(mappedHost)
 	if matchedPeer == nil {
 		logger.Debugf("Could not find mapped host [%s] for peer [%s]", matcher.matchConfig.MappedHost, peerSearchKey)
-		return nil
+		return nil, false
 	}
 
 	//URLSubstitutionExp if found use from entity matcher otherwise use from mapped host
@@ -1174,7 +1159,7 @@ func (c *EndpointConfig) matchPeer(peerSearchKey string, matcher matcherEntry) *
 		matchedPeer.URL = c.getDefaultMatchingURL(peerSearchKey)
 	}
 
-	return matchedPeer
+	return matchedPeer, true
 }
 
 //getDefaultMatchingURL if search key is a URL then returns search key as URL otherwise returns empty
@@ -1206,7 +1191,7 @@ func (c *EndpointConfig) getMappedPeer(host string) *fab.PeerConfig {
 	return &mappedConfig
 }
 
-func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searchByURL bool) *fab.OrdererConfig {
+func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searchByURL bool) (*fab.OrdererConfig, bool) {
 
 	//loop over orderer entity matchers to find the matching orderer
 	for _, matcher := range c.ordererMatchers {
@@ -1219,14 +1204,14 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searc
 	//direct lookup if orderer matchers are not configured or no matchers matched
 	orderer, ok := c.networkConfig.Orderers[strings.ToLower(ordererSearchKey)]
 	if ok {
-		return &orderer
+		return &orderer, true
 	}
 
 	if searchByURL {
 		//lookup by URL
 		for _, ordererCfg := range c.OrderersConfig() {
 			if strings.EqualFold(ordererCfg.URL, ordererSearchKey) {
-				return &ordererCfg
+				return &ordererCfg, true
 			}
 		}
 	}
@@ -1240,14 +1225,14 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searc
 	//	}
 	//}
 
-	return nil
+	return nil, false
 }
 
-func (c *EndpointConfig) matchOrderer(ordererSearchKey string, matcher matcherEntry) *fab.OrdererConfig {
+func (c *EndpointConfig) matchOrderer(ordererSearchKey string, matcher matcherEntry) (*fab.OrdererConfig, bool) {
 
 	if matcher.matchConfig.IgnoreEndpoint {
 		logger.Debugf(" Ignoring peer `%s` since entity matcher IgnoreEndpoint flag is on", ordererSearchKey)
-		return nil
+		return nil, false
 	}
 
 	mappedHost := c.regexMatchAndReplace(matcher.regex, ordererSearchKey, matcher.matchConfig.MappedHost)
@@ -1256,7 +1241,7 @@ func (c *EndpointConfig) matchOrderer(ordererSearchKey string, matcher matcherEn
 	matchedOrderer := c.getMappedOrderer(mappedHost)
 	if matchedOrderer == nil {
 		logger.Debugf("Could not find mapped host [%s] for orderer [%s]", matcher.matchConfig.MappedHost, ordererSearchKey)
-		return nil
+		return nil, false
 	}
 
 	//URLSubstitutionExp if found use from entity matcher otherwise use from mapped host
@@ -1274,7 +1259,7 @@ func (c *EndpointConfig) matchOrderer(ordererSearchKey string, matcher matcherEn
 		matchedOrderer.URL = c.getDefaultMatchingURL(ordererSearchKey)
 	}
 
-	return matchedOrderer
+	return matchedOrderer, true
 }
 
 func (c *EndpointConfig) getMappedOrderer(host string) *fab.OrdererConfig {

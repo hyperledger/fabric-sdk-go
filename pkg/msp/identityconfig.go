@@ -281,8 +281,8 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 				continue
 			}
 
-			matchedCaConfig := c.tryMatchingCAConfig(configEntity, strings.ToLower(caName))
-			if matchedCaConfig == nil {
+			matchedCaConfig, ok := c.tryMatchingCAConfig(configEntity, strings.ToLower(caName))
+			if !ok {
 				continue
 			}
 
@@ -372,7 +372,7 @@ func (c *IdentityConfig) compileMatchers() error {
 	return nil
 }
 
-func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity, caName string) *CAConfig {
+func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity, caName string) (*CAConfig, bool) {
 
 	//loop over certAuthorityEntityMatchers to find the matching Cert
 	for _, matcher := range c.caMatchers {
@@ -384,17 +384,17 @@ func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity,
 	//Direct lookup, if no caMatchers are configured or no matcher matched
 	caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(caName)]
 	if !ok {
-		return nil
+		return nil, false
 	}
 
-	return &caConfig
+	return &caConfig, true
 }
 
-func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, caName string, matcher matcherEntry) *CAConfig {
+func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, caName string, matcher matcherEntry) (*CAConfig, bool) {
 
 	if matcher.matchConfig.IgnoreEndpoint {
-		logger.Debugf(" Excluding CA `%s` since entity matcher exclude flag is on", caName)
-		return nil
+		logger.Debugf("Ignoring CA `%s` since entity matcher 'IgnoreEndpoint' flag is on", caName)
+		return nil, false
 	}
 
 	mappedHost := matcher.matchConfig.MappedHost
@@ -405,7 +405,7 @@ func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, ca
 	//Get the certAuthorityMatchConfig from mapped host
 	caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(mappedHost)]
 	if !ok {
-		return nil
+		return nil, false
 	}
 
 	if matcher.matchConfig.URLSubstitutionExp != "" {
@@ -416,5 +416,5 @@ func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, ca
 		}
 	}
 
-	return &caConfig
+	return &caConfig, true
 }
