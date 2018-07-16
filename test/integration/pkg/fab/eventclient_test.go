@@ -26,6 +26,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
+const eventTimeWindow = 10 * time.Second // the amount of time to watch for events, in order to compare to expectations.
+
 func TestEventClient(t *testing.T) {
 	chainCodeID := mainChaincodeID
 	sdk := mainSDK
@@ -170,7 +172,7 @@ func checkTxStatusEvent(wg *sync.WaitGroup, txstatusch <-chan *fab.TxStatusEvent
 			test.Failf(t, "Expecting non-zero block number")
 		}
 		atomic.AddUint32(numReceived, 1)
-	case <-time.After(5 * time.Second):
+	case <-time.After(eventTimeWindow):
 		return
 	}
 }
@@ -201,7 +203,7 @@ func checkCCEvent(wg *sync.WaitGroup, cceventch <-chan *fab.CCEvent, t *testing.
 			test.Failf(t, "Expecting non-zero block number")
 		}
 		atomic.AddUint32(numReceived, 1)
-	case <-time.After(5 * time.Second):
+	case <-time.After(eventTimeWindow):
 		return
 	}
 }
@@ -224,7 +226,7 @@ func checkFilteredBlockEvent(wg *sync.WaitGroup, fbeventch <-chan *fab.FilteredB
 				continue
 			}
 			atomic.AddUint32(numReceived, 1)
-		case <-time.After(5 * time.Second):
+		case <-time.After(eventTimeWindow):
 			return
 		}
 	}
@@ -242,7 +244,7 @@ func checkBlockEvent(wg *sync.WaitGroup, beventch <-chan *fab.BlockEvent, t *tes
 			test.Failf(t, "Expecting block in block event but got nil")
 		}
 		atomic.AddUint32(numReceived, 1)
-	case <-time.After(5 * time.Second):
+	case <-time.After(eventTimeWindow):
 	}
 }
 
