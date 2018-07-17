@@ -262,7 +262,7 @@ organizations:
 # SDK is implementation specific. Consult each SDK's documentation for its handling of orderers.
 #
 orderers:
-  default:
+  _default:
     # common orderer config items between all the orderers in  config
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
@@ -303,7 +303,7 @@ orderers:
 # and event listener registration.
 #
 peers:
-  default:
+  _default:
     #common grpc options between all the peers
     grpcOptions:
       # These parameters should be set in coordination with the keepalive policy on the server,

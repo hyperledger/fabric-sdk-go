@@ -574,7 +574,7 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 func (c *EndpointConfig) loadAllPeerConfigs(networkConfig *fab.NetworkConfig, entityPeers map[string]PeerConfig) error {
 	networkConfig.Peers = make(map[string]fab.PeerConfig)
 	for name, peerConfig := range entityPeers {
-		if name == "default" || c.isPeerToBeIgnored(name) {
+		if name == "_default" || c.isPeerToBeIgnored(name) {
 			//filter default and ignored peers
 			continue
 		}
@@ -595,7 +595,7 @@ func (c *EndpointConfig) loadAllPeerConfigs(networkConfig *fab.NetworkConfig, en
 func (c *EndpointConfig) loadAllOrdererConfigs(networkConfig *fab.NetworkConfig, entityOrderers map[string]OrdererConfig) error {
 	networkConfig.Orderers = make(map[string]fab.OrdererConfig)
 	for name, ordererConfig := range entityOrderers {
-		if name == "default" || c.isOrdererToBeIgnored(name) {
+		if name == "_default" || c.isOrdererToBeIgnored(name) {
 			//filter default and ignored orderers
 			continue
 		}
@@ -676,7 +676,7 @@ func (c *EndpointConfig) addMissingOrdererConfigItems(config fab.OrdererConfig) 
 
 func (c *EndpointConfig) loadDefaultOrderer(configEntity *endpointConfigEntity) error {
 
-	defaultEntityOrderer, ok := configEntity.Orderers["default"]
+	defaultEntityOrderer, ok := configEntity.Orderers["_default"]
 	if !ok {
 		defaultEntityOrderer = OrdererConfig{
 			GRPCOptions: make(map[string]interface{}),
@@ -730,7 +730,7 @@ func (c *EndpointConfig) loadDefaultOrderer(configEntity *endpointConfigEntity) 
 
 func (c *EndpointConfig) loadDefaultPeer(configEntity *endpointConfigEntity) error {
 
-	defaultEntityPeer, ok := configEntity.Peers["default"]
+	defaultEntityPeer, ok := configEntity.Peers["_default"]
 	if !ok {
 		defaultEntityPeer = PeerConfig{
 			GRPCOptions: make(map[string]interface{}),

@@ -209,8 +209,8 @@ organizations:
 #
 orderers:
 
-#  default:
-# 'default' orderer can contain common configuration between all config orderers to avoid repetitive config entries inside each orderer config element.
+#  _default:
+# '_default' orderer can contain common configuration between all config orderers to avoid repetitive config entries inside each orderer config element.
 # url: grpcs://orderer.example.com:7050
 
     # these are standard properties defined by the gRPC library
@@ -276,8 +276,8 @@ orderers:
 # and event listener registration.
 #
 peers:
-#  default:
-# 'default' peer can contain common configuration between all config peers to avoid repetitive config entries inside each peer config element.
+#  _default:
+# '_default' peer can contain common configuration between all config peers to avoid repetitive config entries inside each peer config element.
 #  peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
 #    url: grpcs://peer0.org1.example.com:7051

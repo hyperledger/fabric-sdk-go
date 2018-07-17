@@ -94,7 +94,7 @@ organizations:
       cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
 
 orderers:
-  default:
+  _default:
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
     grpcOptions:
@@ -129,7 +129,7 @@ orderers:
       ssl-target-name-override: orderer.example.com
 
 peers:
-  default:
+  _default:
     grpcOptions:
 #     These parameters should be set in coordination with the keepalive policy on the server,
 #     as incompatible settings can result in closing of connection.

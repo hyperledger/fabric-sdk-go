@@ -211,7 +211,7 @@ orderers:
 #
 peers:
 
-  default:
+  _default:
     #common grpc options between all the peers
     grpcOptions:
       # These parameters should be set in coordination with the keepalive policy on the server,
