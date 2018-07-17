@@ -10,6 +10,7 @@ import (
 	reqContext "context"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -83,18 +84,40 @@ func createAndSendTransactionProposal(transactor fab.ProposalSender, chainCodeID
 		ChaincodeID:  chainCodeID,
 	}
 
-	txh, err := transactor.CreateTransactionHeader()
-	if err != nil {
-		return nil, nil, errors.WithMessage(err, "creating transaction header failed")
+	type invokerResponse struct {
+		tpr []*fab.TransactionProposalResponse
+		tp  *fab.TransactionProposal
 	}
 
-	tp, err := txn.CreateChaincodeInvokeProposal(txh, propReq)
+	invokerResp, err := retry.NewInvoker(retry.New(retry.DefaultChannelOpts)).Invoke(
+		func() (interface{}, error) {
+			txh, err := transactor.CreateTransactionHeader()
+			if err != nil {
+				return nil, errors.WithMessage(err, "creating transaction header failed")
+			}
+
+			tp, err := txn.CreateChaincodeInvokeProposal(txh, propReq)
+			if err != nil {
+				return nil, errors.WithMessage(err, "creating transaction proposal failed")
+			}
+
+			tpr, err := transactor.SendTransactionProposal(tp, targets)
+			if err != nil {
+				return nil, errors.WithMessage(err, "invoking transaction proposal failed")
+			}
+
+			return &invokerResponse{
+				tpr,
+				tp,
+			}, nil
+		},
+	)
 	if err != nil {
-		return nil, nil, errors.WithMessage(err, "creating transaction proposal failed")
+		return nil, nil, err
 	}
 
-	tpr, err := transactor.SendTransactionProposal(tp, targets)
-	return tpr, tp, err
+	resp := invokerResp.(*invokerResponse)
+	return resp.tpr, resp.tp, err
 }
 
 func getTransactor(sdk *fabsdk.FabricSDK, channelID string, user string, orgName string) (reqContext.Context, reqContext.CancelFunc, fab.Transactor, error) {
