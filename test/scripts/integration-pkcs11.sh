@@ -34,6 +34,7 @@ SCRIPT_DIR="$(dirname "$0")"
 REPO="github.com/hyperledger/fabric-sdk-go"
 
 source ${SCRIPT_DIR}/lib/find_packages.sh
+source ${SCRIPT_DIR}/lib/docker.sh
 
 echo "Running" $(basename "$0")
 
@@ -95,6 +96,8 @@ do
     pkcs11helper -action import -keyFile private.p8
     rm -rf private.p8
 done
+
+waitForCoreVMUp
 
 echo "Code level ${FABRIC_SDKGO_CODELEVEL_TAG} (Fabric ${FABRIC_FIXTURE_VERSION})"
 echo "Running integration tests ..."

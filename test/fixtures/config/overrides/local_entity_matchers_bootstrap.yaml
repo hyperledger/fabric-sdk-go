@@ -11,9 +11,16 @@ entityMatchers:
       sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
       mappedHost: local.peer0.org1.example.com
 
-    - pattern: peer0.org2.example.com:8051
-      urlSubstitutionExp: localhost:8051
-      sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
+    ## TODO added below peer to ignore list, to avoid these revoked peer to conflict with bootstrap test
+    - pattern: peer1.org2.example.com:(\d+)
+      ignoreEndpoint: true
+
+    - pattern: peer1.org2.example.com
+      ignoreEndpoint: true
+
+    - pattern: (\w+).org2.example.com:(\d+)
+      urlSubstitutionExp: localhost:$2
+      sslTargetOverrideUrlSubstitutionExp: $1.org2.example.com
       mappedHost: local.peer0.org2.example.com
 
   orderer:

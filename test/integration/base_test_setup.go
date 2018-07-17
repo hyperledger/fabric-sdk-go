@@ -164,7 +164,7 @@ func GetConfigPath(filename string) string {
 
 // GetConfigOverridesPath returns the path to the named config override fixture file
 func GetConfigOverridesPath(filename string) string {
-	const configPath = "test/fixtures/config/overrides"
+	const configPath = "test/fixtures/config"
 	return path.Join(goPath(), "src", metadata.Project, configPath, "overrides", filename)
 }
 

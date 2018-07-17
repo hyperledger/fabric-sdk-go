@@ -19,6 +19,7 @@ services:
       - FABRIC_FIXTURE_VERSION
       - FABRIC_SDK_CLIENT_EVENTSERVICE_TYPE
       - TEST_CHANGED_ONLY
+      - CORE_VM_ENDPOINT
     volumes:
       - ../../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
     command: bash -c "/opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/unit-pkcs11.sh && /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration-pkcs11.sh"

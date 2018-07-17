@@ -19,6 +19,7 @@ services:
       - FABRIC_SDK_CLIENT_EVENTSERVICE_TYPE
       - E2E_ONLY
       - TEST_CHANGED_ONLY
+      - CORE_VM_ENDPOINT
     volumes:
       - ../../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
     command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration.sh

@@ -193,7 +193,7 @@ endif
 BASE_DOCKER_COMPOSE_FILES := -f ./docker-compose.yaml
 ifeq ($(FABRIC_SDK_ENABLE_CHAINCODED),true)
 BASE_DOCKER_COMPOSE_FILES := -f ./docker-compose-chaincoded.yaml $(BASE_DOCKER_COMPOSE_FILES)
-export CORE_VM_ENDPOINT=http://chaincoded.example.com:2375
+export CORE_VM_ENDPOINT=http://chaincoded.example.com:9375
 else
 BASE_DOCKER_COMPOSE_FILES := -f ./docker-compose-std.yaml $(BASE_DOCKER_COMPOSE_FILES)
 endif

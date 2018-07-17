@@ -31,6 +31,7 @@ SCRIPT_DIR="$(dirname "$0")"
 REPO="github.com/hyperledger/fabric-sdk-go"
 
 source ${SCRIPT_DIR}/lib/find_packages.sh
+source ${SCRIPT_DIR}/lib/docker.sh
 
 echo "Running" $(basename "$0")
 
@@ -72,6 +73,8 @@ if [ ${#PKGS[@]} -eq 0 ]; then
     echo "Skipping integration tests since no packages were changed"
     exit 0
 fi
+
+waitForCoreVMUp
 
 echo "Code level ${FABRIC_SDKGO_CODELEVEL_TAG} (Fabric ${FABRIC_FIXTURE_VERSION})"
 echo "Running integration tests for expired orderer certificates ..."
