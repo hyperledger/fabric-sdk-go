@@ -353,46 +353,86 @@ func getBackendsFromFiles(files ...string) ([]core.ConfigBackend, error) {
 	return backends, nil
 }
 
-//TODO to be enabled once default search result for peerConfig search by URL is available
-//func TestDefaultPeerForNonExistingURL(t *testing.T) {
-//	backends, err := getBackendsFromFiles(sampleMatchersDefaultConfigs, configTestFilePath)
-//	assert.Nil(t, err, "not supposed to get error")
-//	assert.Equal(t, 2, len(backends))
-//
-//	config, err := ConfigFromBackend(backends...)
-//	assert.Nil(t, err, "not supposed to get error")
-//	assert.NotNil(t, config)
-//
-//	//PeerConfig Search Based on unmatched URL, default peerconfig with searchkey as URL should be returned
-//	peerConfig, ok := config.PeerConfig("ABC.XYZ:2222")
-//	assert.True(t, ok, "supposed to find peer config")
-//	assert.Equal(t, "ABC.XYZ:2222", peerConfig.URL)
-//	assert.Equal(t, "", peerConfig.EventURL)
-//	assert.Equal(t, nil, peerConfig.GRPCOptions["ssl-target-name-override"])
-//	assert.NotNil(t, peerConfig.TLSCACert)
-//
-//	assert.Equal(t, "1s", peerConfig.GRPCOptions["keep-alive-time"])
-//	assert.Equal(t, nil, peerConfig.GRPCOptions["ssl-target-name-override"])
-//	assert.Equal(t, "21s", peerConfig.GRPCOptions["keep-alive-timeout"])
-//	assert.Equal(t, true, peerConfig.GRPCOptions["keep-alive-permit"])
-//	assert.Equal(t, true, peerConfig.GRPCOptions["fail-fast"])
-//	assert.Equal(t, true, peerConfig.GRPCOptions["allow-insecure"])
-//
-//	//make sure map has all the expected grpc opts keys
-//	_, ok = peerConfig.GRPCOptions["keep-alive-time"]
-//	assert.True(t, ok)
-//	_, ok = peerConfig.GRPCOptions["ssl-target-name-override"]
-//	assert.False(t, ok)
-//	_, ok = peerConfig.GRPCOptions["keep-alive-timeout"]
-//	assert.True(t, ok)
-//	_, ok = peerConfig.GRPCOptions["keep-alive-permit"]
-//	assert.True(t, ok)
-//	_, ok = peerConfig.GRPCOptions["fail-fast"]
-//	assert.True(t, ok)
-//	_, ok = peerConfig.GRPCOptions["allow-insecure"]
-//	assert.True(t, ok)
-//
-//}
+//TestDefaultPeerForNonExistingURL tests default peerConfig result for search by URL scenario
+func TestDefaultPeerForNonExistingURL(t *testing.T) {
+	backends, err := getBackendsFromFiles(sampleMatchersDefaultConfigs, configTestFilePath)
+	assert.Nil(t, err, "not supposed to get error")
+	assert.Equal(t, 2, len(backends))
+
+	config, err := ConfigFromBackend(backends...)
+	assert.Nil(t, err, "not supposed to get error")
+	assert.NotNil(t, config)
+
+	//PeerConfig Search Based on unmatched URL, default peerconfig with searchkey as URL should be returned
+	peerConfig, ok := config.PeerConfig("ABC.XYZ:2222")
+	assert.True(t, ok, "supposed to find peer config")
+	assert.Equal(t, "ABC.XYZ:2222", peerConfig.URL)
+	assert.Equal(t, "", peerConfig.EventURL)
+	assert.Equal(t, nil, peerConfig.GRPCOptions["ssl-target-name-override"])
+	assert.NotNil(t, peerConfig.TLSCACert)
+
+	assert.Equal(t, "1s", peerConfig.GRPCOptions["keep-alive-time"])
+	assert.Equal(t, nil, peerConfig.GRPCOptions["ssl-target-name-override"])
+	assert.Equal(t, "21s", peerConfig.GRPCOptions["keep-alive-timeout"])
+	assert.Equal(t, true, peerConfig.GRPCOptions["keep-alive-permit"])
+	assert.Equal(t, true, peerConfig.GRPCOptions["fail-fast"])
+	assert.Equal(t, true, peerConfig.GRPCOptions["allow-insecure"])
+
+	//make sure map has all the expected grpc opts keys
+	_, ok = peerConfig.GRPCOptions["keep-alive-time"]
+	assert.True(t, ok)
+	_, ok = peerConfig.GRPCOptions["ssl-target-name-override"]
+	assert.False(t, ok)
+	_, ok = peerConfig.GRPCOptions["keep-alive-timeout"]
+	assert.True(t, ok)
+	_, ok = peerConfig.GRPCOptions["keep-alive-permit"]
+	assert.True(t, ok)
+	_, ok = peerConfig.GRPCOptions["fail-fast"]
+	assert.True(t, ok)
+	_, ok = peerConfig.GRPCOptions["allow-insecure"]
+	assert.True(t, ok)
+
+}
+
+//TestDefaultOrdererForNonExistingURL tests default ordererConfig result for search by URL scenario
+func TestDefaultOrdererForNonExistingURL(t *testing.T) {
+	backends, err := getBackendsFromFiles(sampleMatchersDefaultConfigs, configTestFilePath)
+	assert.Nil(t, err, "not supposed to get error")
+	assert.Equal(t, 2, len(backends))
+
+	config, err := ConfigFromBackend(backends...)
+	assert.Nil(t, err, "not supposed to get error")
+	assert.NotNil(t, config)
+
+	//PeerConfig Search Based on unmatched URL, default peerconfig with searchkey as URL should be returned
+	ordererConfig, ok := config.OrdererConfig("ABC.XYZ:2222")
+	assert.True(t, ok, "supposed to find peer config")
+	assert.Equal(t, "ABC.XYZ:2222", ordererConfig.URL)
+	assert.Equal(t, nil, ordererConfig.GRPCOptions["ssl-target-name-override"])
+	assert.NotNil(t, ordererConfig.TLSCACert)
+
+	assert.Equal(t, "1s", ordererConfig.GRPCOptions["keep-alive-time"])
+	assert.Equal(t, nil, ordererConfig.GRPCOptions["ssl-target-name-override"])
+	assert.Equal(t, "21s", ordererConfig.GRPCOptions["keep-alive-timeout"])
+	assert.Equal(t, true, ordererConfig.GRPCOptions["keep-alive-permit"])
+	assert.Equal(t, true, ordererConfig.GRPCOptions["fail-fast"])
+	assert.Equal(t, true, ordererConfig.GRPCOptions["allow-insecure"])
+
+	//make sure map has all the expected grpc opts keys
+	_, ok = ordererConfig.GRPCOptions["keep-alive-time"]
+	assert.True(t, ok)
+	_, ok = ordererConfig.GRPCOptions["ssl-target-name-override"]
+	assert.False(t, ok)
+	_, ok = ordererConfig.GRPCOptions["keep-alive-timeout"]
+	assert.True(t, ok)
+	_, ok = ordererConfig.GRPCOptions["keep-alive-permit"]
+	assert.True(t, ok)
+	_, ok = ordererConfig.GRPCOptions["fail-fast"]
+	assert.True(t, ok)
+	_, ok = ordererConfig.GRPCOptions["allow-insecure"]
+	assert.True(t, ok)
+
+}
 
 //TestMatchersIgnoreEndpoint tests entity matcher ignore endpoint feature
 // If marked as `IgnoreEndpoint: true` then config for,

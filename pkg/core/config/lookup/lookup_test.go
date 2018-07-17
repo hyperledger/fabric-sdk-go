@@ -289,11 +289,11 @@ func TestUnmarshalWithMultipleBackend(t *testing.T) {
 
 	//EntityMatchers
 	assert.Equal(t, len(entityMatchers.matchers), 4)
-	assert.Equal(t, len(entityMatchers.matchers["peer"]), 8)
+	assert.Equal(t, len(entityMatchers.matchers["peer"]), 10)
 	assert.Equal(t, entityMatchers.matchers["peer"][0].MappedHost, "local.peer0.org1.example.com")
-	assert.Equal(t, len(entityMatchers.matchers["orderer"]), 4)
+	assert.Equal(t, len(entityMatchers.matchers["orderer"]), 6)
 	assert.Equal(t, entityMatchers.matchers["orderer"][0].MappedHost, "local.orderer.example.com")
-	assert.Equal(t, len(entityMatchers.matchers["certificateauthority"]), 2)
+	assert.Equal(t, len(entityMatchers.matchers["certificateauthority"]), 3)
 	assert.Equal(t, entityMatchers.matchers["certificateauthority"][0].MappedHost, "local.ca.org1.example.com")
 	assert.Equal(t, len(entityMatchers.matchers["channel"]), 1)
 	assert.Equal(t, entityMatchers.matchers["channel"][0].MappedName, "ch1")

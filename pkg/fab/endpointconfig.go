@@ -1112,14 +1112,13 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerSearchKey string, searchByURL
 		}
 	}
 
-	//TODO : for search by URL, return default if no result found
-	//if strings.Contains(peerSearchKey, ":") {
-	//	return &fab.PeerConfig{
-	//		URL:         peerSearchKey,
-	//		GRPCOptions: c.defaultPeerConfig.GRPCOptions,
-	//		TLSCACert:   c.defaultPeerConfig.TLSCACert,
-	//	}
-	//}
+	if searchByURL && strings.Contains(peerSearchKey, ":") {
+		return &fab.PeerConfig{
+			URL:         peerSearchKey,
+			GRPCOptions: c.defaultPeerConfig.GRPCOptions,
+			TLSCACert:   c.defaultPeerConfig.TLSCACert,
+		}, true
+	}
 
 	return nil, false
 }
@@ -1216,14 +1215,14 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searc
 		}
 	}
 
-	//TODO : for search by URL, return default if no result found
-	//if strings.Contains(ordererSearchKey, ":") {
-	//	return &fab.OrdererConfig{
-	//		URL:         ordererSearchKey,
-	//		GRPCOptions: c.defaultOrdererConfig.GRPCOptions,
-	//		TLSCACert:   c.defaultOrdererConfig.TLSCACert,
-	//	}
-	//}
+	//In case of URL search, return default orderer config where URL=SearchKey
+	if searchByURL && strings.Contains(ordererSearchKey, ":") {
+		return &fab.OrdererConfig{
+			URL:         ordererSearchKey,
+			GRPCOptions: c.defaultOrdererConfig.GRPCOptions,
+			TLSCACert:   c.defaultOrdererConfig.TLSCACert,
+		}, true
+	}
 
 	return nil, false
 }

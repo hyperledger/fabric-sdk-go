@@ -136,6 +136,26 @@ channels:
         # Default: true
         eventSource: true
 
+      peer1.org1.example.com:
+        # [Optional]. will this peer be sent transaction proposals for endorsement? The peer must
+        # have the chaincode installed. The app can also use this property to decide which peers
+        # to send the chaincode install request. Default: true
+        endorsingPeer: false
+
+        # [Optional]. will this peer be sent query proposals? The peer must have the chaincode
+        # installed. The app can also use this property to decide which peers to send the
+        # chaincode install request. Default: true
+        chaincodeQuery: false
+
+        # [Optional]. will this peer be sent query proposals that do not require chaincodes, like
+        # queryBlock(), queryTransaction(), etc. Default: true
+        ledgerQuery: false
+
+        # [Optional]. will this peer be the target of the SDK's listener registration? All peers can
+        # produce events but the app typically only needs to connect to one to listen to events.
+        # Default: true
+        eventSource: true
+
 #
 # list of participating organizations in this network
 #
@@ -148,6 +168,7 @@ organizations:
 
     peers:
       - peer0.org1.example.com
+      - peer1.org1.example.com
 
   # Orderer Org name
   ordererorg:
@@ -189,14 +210,10 @@ orderers:
 # and event listener registration.
 #
 peers:
-  peer0.org1.example.com:
-    # this URL is used to send endorsement and query requests
-    url: peer0.org1.example.com:7051
-    # eventUrl is only needed when using eventhub (default is delivery service)
-    eventUrl: peer0.org1.example.com:7053
 
+  default:
+    #common grpc options between all the peers
     grpcOptions:
-      ssl-target-name-override: peer0.org1.example.com
       # These parameters should be set in coordination with the keepalive policy on the server,
       # as incompatible settings can result in closing of connection.
       # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
@@ -206,6 +223,28 @@ peers:
       fail-fast: false
       # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
       allow-insecure: false
+
+  peer0.org1.example.com:
+    # this URL is used to send endorsement and query requests
+    url: peer0.org1.example.com:7051
+    # eventUrl is only needed when using eventhub (default is delivery service)
+    eventUrl: peer0.org1.example.com:7053
+
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
+  peer1.org1.example.com:
+    # this URL is used to send endorsement and query requests
+    url: peer1.org1.example.com:7151
+    # eventUrl is only needed when using eventhub (default is delivery service)
+    eventUrl: peer1.org1.example.com:7153
+
+    grpcOptions:
+      ssl-target-name-override: peer1.org1.example.com
 
     tlsCACerts:
       # Certificate location absolute path

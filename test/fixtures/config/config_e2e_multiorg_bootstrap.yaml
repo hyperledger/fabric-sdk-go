@@ -196,3 +196,10 @@ entityMatchers:
       urlSubstitutionExp: $1.org1.example.com:$2
       sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
       mappedHost: peer0.org1.example.com
+
+## TODO added below peer to ignore list, to avoid these revoked peer to conflict with bootstrap test
+    - pattern: peer1.org2.example.com:(\d+)
+      ignoreEndpoint: true
+
+    - pattern: peer1.org2.example.com
+      ignoreEndpoint: true
