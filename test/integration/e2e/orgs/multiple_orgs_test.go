@@ -48,6 +48,7 @@ const (
 	org1User         = "User1"
 	org2User         = "User1"
 	channelID        = "orgchannel"
+	ccPath           = "github.com/example_cc"
 )
 
 var (
@@ -195,7 +196,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 	org2ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
 
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
+	ccPkg, err := packager.NewCCPackage(ccPath, integration.GetDeployPath())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +231,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	checkLedgerInfo(ledgerClient, t, ledgerInfoBefore, transactionID)
 
 	// Start chaincode upgrade process (install and instantiate new version of exampleCC)
-	upgradeCC(ccPkg, mc.org1ResMgmt, t, mc.org2ResMgmt, mc.ccName, "1")
+	upgradeCC(t, mc, ccPkg, mc.ccName, "1")
 
 	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
 	testCCPolicy(chClientOrg2User, t, mc.ccName)
@@ -340,22 +341,37 @@ func testCCPolicy(chClientOrg2User *channel.Client, t *testing.T, ccName string)
 	}
 }
 
-func upgradeCC(ccPkg *resource.CCPackage, org1ResMgmt *resmgmt.Client, t *testing.T, org2ResMgmt *resmgmt.Client, ccName, ccVersion string) {
-	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: "github.com/example_cc", Version: ccVersion, Package: ccPkg}
+func upgradeCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccName, ccVersion string) {
+	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Package: ccPkg}
+
+	// Ensure that Gossip has propagated it's view of local peers before invoking
+	// install since some peers may be missed if we call InstallCC too early
+	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
+	require.NoError(t, err)
+	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 1)
+	require.NoError(t, err)
+
 	// Install example cc version '1' to Org1 peers
-	_, err := org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	_, err = mc.org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	require.Nil(t, err, "error should be nil for InstallCC version '1' or Org1 peers")
 
 	// Install example cc version '1' to Org2 peers
-	_, err = org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	_, err = mc.org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	require.Nil(t, err, "error should be nil for InstallCC version '1' or Org2 peers")
+
+	// Ensure the CC is installed on all peers in both orgs
+	installed := queryInstalledCC(t, "Org1", mc.org1ResMgmt, ccName, ccVersion, org1Peers)
+	require.Truef(t, installed, "Expecting chaincode [%s:%s] to be installed on all peers in Org1")
+
+	installed = queryInstalledCC(t, "Org2", mc.org2ResMgmt, ccName, ccVersion, org2Peers)
+	require.Truef(t, installed, "Expecting chaincode [%s:%s] to be installed on all peers in Org2")
 
 	// New chaincode policy (both orgs have to approve)
 	org1Andorg2Policy, err := cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
 	require.Nil(t, err, "error should be nil for getting cc policy with both orgs to approve")
 
 	// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
-	upgradeResp, err := org1ResMgmt.UpgradeCC(channelID, resmgmt.UpgradeCCRequest{Name: ccName, Path: "github.com/example_cc", Version: ccVersion, Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
+	upgradeResp, err := mc.org1ResMgmt.UpgradeCC(channelID, resmgmt.UpgradeCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
 	require.Nil(t, err, "error should be nil for UpgradeCC version '1' on 'orgchannel'")
 	require.NotEmpty(t, upgradeResp, "transaction response should be populated")
 }
@@ -515,7 +531,7 @@ func isCCInstantiated(t *testing.T, resMgmt *resmgmt.Client, channelID, ccName, 
 }
 
 func createCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccName, ccVersion string) {
-	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: "github.com/example_cc", Version: ccVersion, Package: ccPkg}
+	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Package: ccPkg}
 
 	// Ensure that Gossip has propagated it's view of local peers before invoking
 	// install since some peers may be missed if we call InstallCC too early

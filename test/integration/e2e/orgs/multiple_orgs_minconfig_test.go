@@ -20,12 +20,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	bootStrapCC                        = "btspExampleCC"
+	bootStrapCC                        = "example_cc_btsp"
 	configFilename                     = "config_e2e_multiorg_bootstrap.yaml"
 	localOrderersPeersCAConfigFilename = "local_orderers_peers_ca_bootstrap.yaml"
 	entityMatchersConfigFilename       = "local_entity_matchers_bootstrap.yaml"
@@ -56,7 +57,7 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 		ordererClientContext:   sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName)),
 		org1AdminClientContext: sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1)),
 		org2AdminClientContext: sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2)),
-		ccName:                 bootStrapCC,
+		ccName:                 bootStrapCC + metadata.TestRunID,
 		ccVersion:              "0",
 	}
 
