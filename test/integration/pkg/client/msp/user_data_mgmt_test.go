@@ -49,7 +49,7 @@ func TestWithCustomStores(t *testing.T) {
 	// never gets hold of them. When BCCSP is configured to use
 	// software crypto provider (SW), keys are by default stored
 	// in pem files, in a directory specified by
-	// cclient.credentialStore.cryptoStore.path in SDK configuration
+	// client.credentialStore.cryptoStore.path in SDK configuration
 	// file.
 	//
 	// Here we are replacing default key store with a simple
