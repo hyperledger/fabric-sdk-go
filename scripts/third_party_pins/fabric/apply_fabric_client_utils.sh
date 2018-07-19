@@ -33,6 +33,8 @@ declare -a PKGS=(
     "common/channelconfig"
     "common/attrmgr"
     "common/ledger"
+# TODO add metrics once it's officially released
+#    "common/metrics"
 
     "sdkpatch/logbridge"
     "sdkpatch/cryptosuitebridge"
@@ -109,7 +111,12 @@ declare -a FILES=(
     "common/channelconfig/organization.go"
 
     "common/ledger/ledger_interface.go"
-    
+
+# TODO add metrics once it's officially released
+#    "common/metrics/server.go"
+#    "common/metrics/tally_provider.go"
+#    "common/metrics/types.go"
+
     "sdkpatch/logbridge/logbridge.go"
     "sdkpatch/cryptosuitebridge/cryptosuitebridge.go"
     "sdkpatch/cachebridge/cache.go"
