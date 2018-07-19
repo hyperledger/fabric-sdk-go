@@ -21,7 +21,6 @@ const (
 	org2AdminUser = "Admin"
 	org1User      = "User1"
 	orgChannelID  = "orgchannel"
-	ccPath        = "github.com/example_cc"
 )
 
 var mainSDK *fabsdk.FabricSDK

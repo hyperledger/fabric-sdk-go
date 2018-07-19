@@ -19,8 +19,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
-	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -113,16 +111,16 @@ func TestCCToCC(t *testing.T) {
 	err := integration.EnsureChannelCreatedAndPeersJoined(t, sdk, orgChannelID, "orgchannel.tx", orgsContext)
 	require.NoError(t, err)
 
-	ccVersion := "v0"
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
-	require.NoError(t, err)
-
 	cc1ID := integration.GenerateExampleID(true)
-	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, cc1ID, ccVersion, "OR('Org1MSP.member')", orgsContext)
+	err = integration.InstallExampleChaincode(orgsContext, cc1ID)
+	require.NoError(t, err)
+	err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, cc1ID, "OR('Org1MSP.member')")
 	require.NoError(t, err)
 
 	cc2ID := integration.GenerateExampleID(true)
-	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, cc2ID, ccVersion, "AND('Org1MSP.member','Org2MSP.member')", orgsContext)
+	err = integration.InstallExampleChaincode(orgsContext, cc2ID)
+	require.NoError(t, err)
+	err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, cc2ID, "AND('Org1MSP.member','Org2MSP.member')")
 	require.NoError(t, err)
 
 	ctxProvider := sdk.ChannelContext(orgChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))

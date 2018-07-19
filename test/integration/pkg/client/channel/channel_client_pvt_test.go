@@ -16,7 +16,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
@@ -34,16 +33,14 @@ func TestPrivateData(t *testing.T) {
 	err := integration.EnsureChannelCreatedAndPeersJoined(t, sdk, orgChannelID, "orgchannel.tx", orgsContext)
 	require.NoError(t, err)
 
-	ccVersion := "v0"
-	ccPath := "github.com/example_pvt_cc"
-	ccPkg, err := packager.NewCCPackage(ccPath, integration.GetDeployPath())
-	require.NoError(t, err)
-
 	coll1 := "collection1"
 	ccID := integration.GenerateExamplePvtID(true)
 	collConfig, err := newCollectionConfig(coll1, "OR('Org2MSP.member')", 0, 2, 1000)
 	require.NoError(t, err)
-	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member')", orgsContext, collConfig)
+
+	err = integration.InstallExamplePvtChaincode(orgsContext, ccID)
+	require.NoError(t, err)
+	err = integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member')", collConfig)
 	require.NoError(t, err)
 
 	ctxProvider := sdk.ChannelContext(orgChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
@@ -95,16 +92,14 @@ func TestPrivateDataWithOrgDown(t *testing.T) {
 	err := integration.EnsureChannelCreatedAndPeersJoined(t, sdk, orgChannelID, "orgchannel.tx", orgsContext)
 	require.NoError(t, err)
 
-	ccVersion := "v0"
-	ccPath := "github.com/example_pvt_cc"
-	ccPkg, err := packager.NewCCPackage(ccPath, integration.GetDeployPath())
-	require.NoError(t, err)
-
 	coll1 := "collection1"
 	ccID := integration.GenerateExamplePvtID(true)
 	collConfig, err := newCollectionConfig(coll1, "OR('Org3MSP.member')", 0, 2, 1000)
 	require.NoError(t, err)
-	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member','Org3MSP.member')", orgsContext, collConfig)
+
+	err = integration.InstallExamplePvtChaincode(orgsContext, ccID)
+	require.NoError(t, err)
+	err = integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member','Org3MSP.member')", collConfig)
 	require.NoError(t, err)
 
 	ctxProvider := sdk.ChannelContext(orgChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))

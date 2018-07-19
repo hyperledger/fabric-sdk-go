@@ -566,7 +566,7 @@ func createCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccNa
 }
 
 func instantiateCC(t *testing.T, resMgmt *resmgmt.Client, ccName, ccVersion string) {
-	instantiateResp, err := integration.InstantiateChaincode(resMgmt, channelID, ccName, ccVersion, "AND ('Org1MSP.member','Org2MSP.member')")
+	instantiateResp, err := integration.InstantiateChaincode(resMgmt, channelID, ccName, ccPath, ccVersion, "AND ('Org1MSP.member','Org2MSP.member')", integration.ExampleCCInitArgs())
 	require.NoError(t, err)
 	require.NotEmpty(t, instantiateResp, "transaction response should be populated for instantateCC")
 }
