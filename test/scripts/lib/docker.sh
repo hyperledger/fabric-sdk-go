@@ -9,7 +9,7 @@ function waitForCoreVMUp {
     # When dockerd handles chaincode operation, we need to wait for it to be ready
     # (it takes time to start due to chaincode compilation).
     if [[ "${CORE_VM_ENDPOINT}" =~ http://(.*):(.*) ]]; then
-        declare attempt=0
+        declare attempt=1
         declare host=${BASH_REMATCH[1]}
         declare port=${BASH_REMATCH[2]}
 
@@ -20,7 +20,7 @@ function waitForCoreVMUp {
         echo "Waiting for VM endpoint to listen [${host}:${port}]..."
         while true; do
           if [ ${attempt} -gt 120 ]; then
-            echo "VM endpoint not listening after ${attempt} attempts"
+            echo "VM endpoint is not listening after ${attempt} attempt(s)"
             exit 1
           fi
 
@@ -32,6 +32,6 @@ function waitForCoreVMUp {
           sleep 1
           attempt=$((attempt + 1))
         done
-        echo "VM endpoint is listening after ${attempt} attempts"
+        echo "VM endpoint is listening after ${attempt} attempt(s)"
     fi
 }
