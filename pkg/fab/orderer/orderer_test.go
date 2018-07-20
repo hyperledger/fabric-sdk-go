@@ -129,7 +129,7 @@ func TestSendDeliverConnFailed(t *testing.T) {
 }
 
 func TestNewOrdererWithTLS(t *testing.T) {
-	tlsConfig := endpoint.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+	tlsConfig := endpoint.TLSConfig{Path: "testdata/ca.crt"}
 	err := tlsConfig.LoadBytes()
 	if err != nil {
 		t.Fatalf("tlsConfig.LoadBytes() failed, cause [%s]", err)
@@ -155,7 +155,7 @@ func TestNewOrdererWithTLS(t *testing.T) {
 
 func TestNewOrdererWithMutualTLS(t *testing.T) {
 	//Positive Test case
-	tlsConfig := endpoint.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+	tlsConfig := endpoint.TLSConfig{Path: "testdata/ca.crt"}
 	err := tlsConfig.LoadBytes()
 	if err != nil {
 		t.Fatalf("tlsConfig.LoadBytes() failed, cause [%s]", err)

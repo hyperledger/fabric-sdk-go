@@ -67,7 +67,7 @@ function isLastPopulateCurrent {
 
     if [ -f "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}" ]; then
         declare -a lastScriptUsage=($(< "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}"))
-        echo "Populate script last ran ${lastScriptUsage[2]} on revision ${lastScriptUsage[0]} with Gopkg.lock revision ${lastScriptUsage[1]}"
+        echo "Last populated vendor on ${lastScriptUsage[2]} using revision ${lastScriptUsage[0]} with Gopkg.lock revision ${lastScriptUsage[1]}"
 
         if [ "${lastScriptUsage[0]}" = "${SCRIPT_REVISION}" ] && [ "${lastScriptUsage[1]}" = "${LOCK_REVISION}" ]; then
             return 0
@@ -106,8 +106,7 @@ setCachePath
 
 if ! isPopulateCurrent || isForceMode; then
     populateVendor
+    recordCacheResult
 else
     echo "No need to populate vendor"
 fi
-
-recordCacheResult

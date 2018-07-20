@@ -110,7 +110,7 @@ function isScriptCurrent {
 function isLastInstallCurrent {
     if [ -f "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}" ]; then
         declare -a lastScriptUsage=($(< "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}"))
-        echo "Dependency script last ran ${lastScriptUsage[1]} on revision ${lastScriptUsage[0]}"
+        echo "Last installed dependencies on ${lastScriptUsage[1]} with revision ${lastScriptUsage[0]}"
 
         if [ "${lastScriptUsage[0]}" = "${DEPEND_SCRIPT_REVISION}" ] && [ "${lastScriptUsage[1]}" = "${DATE}" ]; then
             return 0
@@ -233,13 +233,13 @@ setCachePath
 if ! isDependencyCurrent || ! isDependenciesInstalled false || isForceMode; then
     installDependencies
     buildDockerImages
+    recordCacheResult
 else
     echo "No need to install dependencies"
 fi
 
 if ! isDependenciesInstalled true; then
     echo "Missing dependency. Aborting. You can fix by installing the tool listed above or running make depend-install."
+    rm ${CACHE_PATH}/${LASTRUN_INFO_FILENAME}
     exit 1
 fi
-
-recordCacheResult

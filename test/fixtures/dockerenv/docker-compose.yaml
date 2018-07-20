@@ -12,10 +12,12 @@ services:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca.org1.example.com
       - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org1.example.com-cert.pem
-      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/8791d1363e89515f9afa042b0693a2c704bb8dd95d28f97d3549a2b9e3c4352d_sk
+      - FABRIC_CA_SERVER_CA_KEYFILE=${ORG1CA1_FABRIC_CA_SERVER_CA_KEYFILE}
       - FABRIC_CA_SERVER_TLS_ENABLED=true
-      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls/server_wild_org1or2.example.com.pem
-      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls/server_wild_org1or2.example.com-key.pem
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/tls/peer/server.crt
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/tls/peer/server.key
+      - FABRIC_CA_SERVER_TLS_CLIENTAUTH_TYPE
+      - FABRIC_CA_SERVER_TLS_CERTFILES
       - FABRIC_CA_SERVER_CFG_AFFILIATIONS_ALLOWREMOVE=true
       - FABRIC_CA_SERVER_CFG_IDENTITIES_ALLOWREMOVE=true
     #comment out logging.driver in order to render the debug logs
@@ -26,7 +28,8 @@ services:
     command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
     volumes:
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/ca/:/etc/hyperledger/fabric-ca-server-config/
-      - ../fabricca/tls/certs/server/:/etc/hyperledger/fabric-ca-server-config/tls
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/ca.org1.example.com/tls:/etc/hyperledger/tls/peer
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
     networks:
       default:
         aliases:
@@ -38,10 +41,12 @@ services:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca.org2.example.com
       - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org2.example.com-cert.pem
-      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/a259204dbd6adb14c05a6e02de94567b2a9f7dbe9e6a063ba767d42bf0b544c1_sk
+      - FABRIC_CA_SERVER_CA_KEYFILE=${ORG2CA1_FABRIC_CA_SERVER_CA_KEYFILE}
       - FABRIC_CA_SERVER_TLS_ENABLED=true
-      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls/server_wild_org1or2.example.com.pem
-      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls/server_wild_org1or2.example.com-key.pem
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/tls/peer/server.crt
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/tls/peer/server.key
+      - FABRIC_CA_SERVER_TLS_CLIENTAUTH_TYPE
+      - FABRIC_CA_SERVER_TLS_CERTFILES
       - FABRIC_CA_SERVER_CFG_AFFILIATIONS_ALLOWREMOVE=true
       - FABRIC_CA_SERVER_CFG_IDENTITIES_ALLOWREMOVE=true
     #comment out logging.driver in order to render the debug logs
@@ -52,7 +57,8 @@ services:
     command: sh -c 'fabric-ca-server start -b admin:adminpw -d -p 8054'
     volumes:
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/ca/:/etc/hyperledger/fabric-ca-server-config/
-      - ../fabricca/tls/certs/server:/etc/hyperledger/fabric-ca-server-config/tls
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/peers/ca.org2.example.com/tls:/etc/hyperledger/tls/peer
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
     networks:
       default:
         aliases:
@@ -84,7 +90,7 @@ services:
       - ../fabric/${FABRIC_FIXTURE_VERSION}/channel:/etc/hyperledger/configtx
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp:/etc/hyperledger/msp/orderer
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls:/etc/hyperledger/tls/orderer
-      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/mutual_tls:/etc/hyperledger/mutual_tls/orderer
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
     networks:
       default:
         aliases:
@@ -142,7 +148,7 @@ services:
       - /var/run/:/host/var/run/
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp:/etc/hyperledger/msp/peer
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls:/etc/hyperledger/tls/peer
-      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/mutual_tls:/etc/hyperledger/mutual_tls/peer
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
     networks:
       default:
         aliases:
@@ -205,7 +211,7 @@ services:
       - /var/run/:/host/var/run/
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/msp:/etc/hyperledger/msp/peer
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/tls:/etc/hyperledger/tls/peer
-      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/mutual_tls:/etc/hyperledger/mutual_tls/peer
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
     networks:
       default:
         aliases:
@@ -269,7 +275,7 @@ services:
       - /var/run/:/host/var/run/
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp:/etc/hyperledger/msp/peer
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls:/etc/hyperledger/tls/peer
-      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/mutual_tls:/etc/hyperledger/mutual_tls/peer
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
     networks:
       default:
         aliases:
@@ -333,7 +339,7 @@ services:
       - /var/run/:/host/var/run/
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/msp:/etc/hyperledger/msp/peer
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/tls:/etc/hyperledger/tls/peer
-      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/mutual_tls:/etc/hyperledger/mutual_tls/peer
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
     networks:
       default:
         aliases:

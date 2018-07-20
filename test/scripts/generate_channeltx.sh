@@ -15,7 +15,7 @@ if [ -z "$FABRIC_VERSION_DIR" ]; then
   exit 1
 fi
 
-declare -a channels=("mychannel" "orgchannel" "testchannel")
+declare -a channels=("mychannel" "orgchannel")
 declare -a orgs=("Org1MSP" "Org2MSP")
 
 FIXTURES_CHANNEL_PATH=${FIXTURES_PATH}${FABRIC_VERSION_DIR}${CHANNEL_DIR}
@@ -23,8 +23,10 @@ export FABRIC_CFG_PATH=${FIXTURES_PATH}${FABRIC_VERSION_DIR}${CONFIG_DIR}
 
 echo "Generating channel fixtures into ${FIXTURES_CHANNEL_PATH}"
 
+mkdir -p ${FIXTURES_CHANNEL_PATH}
+
 echo "Generating Orderer Genesis block"
-$CONFIGTXGEN_CMD -profile TwoOrgsOrdererGenesis -outputBlock ${FIXTURES_CHANNEL_PATH}/twoorgs.genesis.block
+$CONFIGTXGEN_CMD -profile TwoOrgsOrdererGenesis -outputBlock ${FIXTURES_CHANNEL_PATH}/twoorgs.genesis.block -channelID testchannel
 
 for i in "${channels[@]}"
 do

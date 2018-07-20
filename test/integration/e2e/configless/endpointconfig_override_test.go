@@ -77,8 +77,8 @@ var (
 		CryptoConfig:    msp.CCType{Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}")},
 		CredentialStore: msp.CredentialStoreType{Path: "/tmp/msp"},
 		TLSCerts: endpoint.MutualTLSConfig{Client: endpoint.TLSKeyPair{
-			Key:  newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"),
-			Cert: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go.pem")}},
+			Key:  newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.key"),
+			Cert: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.crt")}},
 	}
 
 	channelsConfig = map[string]fab.ChannelEndpointConfig{
@@ -149,7 +149,7 @@ var (
 			CertificateAuthorities: []string{"ca.org2.example.com"},
 		},
 		"ordererorg": {
-			MSPID:      "OrdererOrg",
+			MSPID:      "OrdererMSP",
 			CryptoPath: "ordererOrganizations/example.com/users/{username}@example.com/msp",
 		},
 	}
@@ -231,10 +231,10 @@ var (
 		"ca.org1.example.com": {
 			URL: "https://ca.org1.example.com:7054",
 			TLSCACerts: endpoint.MutualTLSConfig{
-				Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem"),
+				Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
 				Client: endpoint.TLSKeyPair{
-					Key:  newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem"),
-					Cert: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem"),
+					Key:  newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.key"),
+					Cert: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.crt"),
 				},
 			},
 			Registrar: msp.EnrollCredentials{
@@ -246,10 +246,10 @@ var (
 		"ca.org2.example.com": {
 			URL: "https://ca.org2.example.com:8054",
 			TLSCACerts: endpoint.MutualTLSConfig{
-				Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem"),
+				Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem"),
 				Client: endpoint.TLSKeyPair{
-					Key:  newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem"),
-					Cert: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem"),
+					Key:  newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.key"),
+					Cert: newTLSConfig("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.crt"),
 				},
 			},
 			Registrar: msp.EnrollCredentials{

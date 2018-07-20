@@ -1,0 +1,39 @@
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+OrdererOrgs:
+  - Name: OrdererOrg
+    Domain: example.com
+    Specs:
+      - Hostname: orderer
+
+PeerOrgs:
+  - Name: Org1
+    Domain: org1.example.com
+    EnableNodeOUs: false
+    Specs:
+      - Hostname: peer0
+      - Hostname: peer1
+      - Hostname: ca
+    Users:
+      Count: 1
+
+  - Name: Org2
+    Domain: org2.example.com
+    EnableNodeOUs: false
+    Specs:
+      - Hostname: peer0
+      - Hostname: peer1
+      - Hostname: ca
+    Users:
+      Count: 1
+
+  - Name: TLSOrg
+    Domain: tls.example.com
+    EnableNodeOUs: false
+    Specs:
+      - Hostname: ca
+    Users:
+      Count: 1

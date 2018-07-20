@@ -51,7 +51,7 @@ const (
 	ExampleCCInitB    = "200"
 	ExampleCCUpgradeB = "400"
 	AdminUser         = "Admin"
-	OrdererOrgName    = "ordererorg"
+	OrdererOrgName    = "OrdererOrg"
 )
 
 // ExampleCC query and transaction arguments

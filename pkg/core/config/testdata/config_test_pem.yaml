@@ -186,7 +186,7 @@ organizations:
   # Orderer Org name
   ordererorg:
       # Membership Service Provider ID for this organization
-      mspID: "OrdererOrg"
+      mspID: OrdererMSP
 
       # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
       cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
@@ -322,7 +322,6 @@ certificateAuthorities:
           -----END CERTIFICATE-----
       # Comma-Separated list of paths
       path:
-      #path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
       # Client key and cert for SSL handshake with Fabric CA
       client:
         key:
@@ -333,7 +332,6 @@ certificateAuthorities:
             QSn674xQJ5N8rMHAA/DXtpIMKI5uulot0jJ5xFkpikLGd8+6soQp8pd5tkMqZB0a
             nFoUptdom8LjgRus6rnHbXxGqcIN6oA=
             -----END EC PRIVATE KEY-----
-#          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem
         cert:
           pem: |
             -----BEGIN CERTIFICATE-----
@@ -354,7 +352,6 @@ certificateAuthorities:
             rIYog3WBAkECntF217dk3VCZHXfl+rik6wm+ijzYk+k336UERiSJRu09YHHEh7x6
             NRCHI3uXUJ5/3zDZM3qtV8UYHou4KDS35Q==
             -----END CERTIFICATE-----
-#          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem
 
     # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
     # needed to enroll and invoke new users.
@@ -367,13 +364,13 @@ certificateAuthorities:
     url: https://ca_peerOrg2:7054
     tlsCACerts:
       # Comma-Separated list of paths
-      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/ca.crt
       # Client key and cert for SSL handshake with Fabric CA
       client:
         key:
-          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go-key.pem
         cert:
-          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem
+          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go.pem
 
      # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
      # needed to enroll and invoke new users.

@@ -40,8 +40,8 @@ const (
 	org2                             = "org2"
 	org1                             = "org1"
 	configTestFilePath               = "../core/config/testdata/config_test.yaml"
-	certPath                         = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem"
-	keyPath                          = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem"
+	certPath                         = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go.pem"
+	keyPath                          = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go-key.pem"
 	configPemTestFilePath            = "../core/config/testdata/config_test_pem.yaml"
 	configEmbeddedUsersTestFilePath  = "../core/config/testdata/config_test_embedded_pems.yaml"
 	configTestEntityMatchersFilePath = "../core/config/testdata/config_test_entity_matchers.yaml"
@@ -888,8 +888,8 @@ func TestTLSClientCertsFromFilesIncorrectPaths(t *testing.T) {
 	testlookup.UnmarshalKey("client", &configEntity.Client)
 
 	//Set client tls paths to empty strings
-	configEntity.Client.TLSCerts.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
-	configEntity.Client.TLSCerts.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	configEntity.Client.TLSCerts.Client.Cert.Path = "/pkg/config/testdata/certs/client_sdk_go.pem"
+	configEntity.Client.TLSCerts.Client.Key.Path = "/pkg/config/testdata/certs/client_sdk_go-key.pem"
 	configEntity.Client.TLSCerts.Client.Cert.Pem = ""
 	configEntity.Client.TLSCerts.Client.Key.Pem = ""
 
@@ -1025,8 +1025,8 @@ func TestTLSClientCertsPemBeforeFiles(t *testing.T) {
 
 	clientTLSOverride := endpoint.MutualTLSConfig{}
 	// files have incorrect paths, but pems are loaded first
-	clientTLSOverride.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
-	clientTLSOverride.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	clientTLSOverride.Client.Cert.Path = "/pkg/config/testdata/certs/client_sdk_go.pem"
+	clientTLSOverride.Client.Key.Path = "/pkg/config/testdata/certs/client_sdk_go-key.pem"
 
 	clientTLSOverride.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
 MIIC5TCCAkagAwIBAgIUMYhiY5MS3jEmQ7Fz4X/e1Dx33J0wCgYIKoZIzj0EAwQw

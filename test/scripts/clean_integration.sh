@@ -12,7 +12,6 @@ DOCKER_REMOVE_FORCE="${DOCKER_REMOVE_FORCE:-false}"
 
 SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-rm -f ${SCRIPT_PATH}/../fixtures/fabricca/tls/certs/server/ca.org*.example.com-cert.pem
 echo "Removing docker-compose network created from fixtures ..."
 COMPOSE_PROJECT_NAME=FIXTURE_PROJECT_NAME cd ${SCRIPT_PATH}/../fixtures/dockerenv && $DOCKER_COMPOSE_CMD -f docker-compose-chaincoded.yaml -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml -f docker-compose-pkcs11-test.yaml down
 

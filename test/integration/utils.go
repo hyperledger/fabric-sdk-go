@@ -27,7 +27,7 @@ import (
 
 const (
 	adminUser       = "Admin"
-	ordererOrgName  = "ordererorg"
+	ordererOrgName  = "OrdererOrg"
 	ordererEndpoint = "orderer.example.com"
 )
 

@@ -145,7 +145,7 @@ O94CDp7l2k7hMQI0zQ==
 
 func TestTLSConfig_TLSCertPostive(t *testing.T) {
 	tlsConfig := &TLSConfig{
-		Path: "../../../../test/fixtures/config/mutual_tls/client_sdk_go.pem",
+		Path: "../testdata/certs/client_sdk_go.pem",
 		Pem:  "",
 	}
 
@@ -163,7 +163,7 @@ func TestTLSConfig_TLSCertPostive(t *testing.T) {
 	}
 
 	// test with both correct pem and path set
-	tlsConfig.Path = "../../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	tlsConfig.Path = "../testdata/certs/client_sdk_go.pem"
 	tlsConfig.Pem = `-----BEGIN CERTIFICATE-----
 MIICSTCCAfCgAwIBAgIRAPQIzfkrCZjcpGwVhMSKd0AwCgYIKoZIzj0EAwIwdjEL
 MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG

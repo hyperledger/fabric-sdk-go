@@ -35,7 +35,7 @@ const (
 	channelID      = "mychannel"
 	orgName        = "Org1"
 	orgAdmin       = "Admin"
-	ordererOrgName = "ordererorg"
+	ordererOrgName = "OrdererOrg"
 )
 
 var (
