@@ -19,7 +19,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -158,13 +157,13 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	err := ensureChannelCreatedAndPeersJoined(t, orgsContext)
 	require.NoError(t, err)
 
-	ccVersion := "v0"
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
-	require.NoError(t, err)
-
 	t.Run("Policy: Org1 Only", func(t *testing.T) {
 		ccID := integration.GenerateExampleID(true)
-		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member')", orgsContext)
+		err = integration.InstallExampleChaincode(orgsContext, ccID)
+		require.NoError(t, err)
+		err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member')")
+		require.NoError(t, err)
+
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
@@ -175,8 +174,11 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 
 	t.Run("Policy: Org2 Only", func(t *testing.T) {
 		ccID := integration.GenerateExampleID(true)
-		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org2MSP.member')", orgsContext)
+		err = integration.InstallExampleChaincode(orgsContext, ccID)
 		require.NoError(t, err)
+		err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID, "OR('Org2MSP.member')")
+		require.NoError(t, err)
+
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
@@ -186,7 +188,11 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 
 	t.Run("Policy: Org1 or Org2", func(t *testing.T) {
 		ccID := integration.GenerateExampleID(true)
-		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member')", orgsContext)
+		err = integration.InstallExampleChaincode(orgsContext, ccID)
+		require.NoError(t, err)
+		err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member')")
+		require.NoError(t, err)
+
 		require.NoError(t, err)
 		testEndorsers(
 			t, mainSDK,
@@ -199,8 +205,11 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 
 	t.Run("Policy: Org1 and Org2", func(t *testing.T) {
 		ccID := integration.GenerateExampleID(true)
-		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "AND('Org1MSP.member','Org2MSP.member')", orgsContext)
+		err = integration.InstallExampleChaincode(orgsContext, ccID)
 		require.NoError(t, err)
+		err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID, "AND('Org1MSP.member','Org2MSP.member')")
+		require.NoError(t, err)
+
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
@@ -211,12 +220,19 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 
 	// Chaincode to Chaincode
 	t.Run("Policy: CC1(Org1 Only) to CC2(Org2 Only)", func(t *testing.T) {
+
 		ccID1 := integration.GenerateExampleID(true)
-		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID1, ccVersion, "OR('Org1MSP.member')", orgsContext)
+		err = integration.InstallExampleChaincode(orgsContext, ccID1)
 		require.NoError(t, err)
+		err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID1, "OR('Org1MSP.member')")
+		require.NoError(t, err)
+
 		ccID2 := integration.GenerateExampleID(true)
-		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID2, ccVersion, "OR('Org2MSP.member')", orgsContext)
+		err = integration.InstallExampleChaincode(orgsContext, ccID2)
 		require.NoError(t, err)
+		err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID2, "OR('Org2MSP.member')")
+		require.NoError(t, err)
+
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID1), newCCCall(ccID2)),
