@@ -55,3 +55,9 @@
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.2.0"
+
+# tally is used only if performance is enabled
+# using the pprof build tag (normal sdk build does not use this library)
+[[constraint]]
+  name = "github.com/uber-go/tally"
+  version = "=3.3.2"

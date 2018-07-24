@@ -8,6 +8,18 @@
   version = "v3.0.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/beorn7/perks"
+  packages = ["quantile"]
+  revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
+
+[[projects]]
+  name = "github.com/cactus/go-statsd-client"
+  packages = ["statsd"]
+  revision = "138b925ccdf617776955904ba7759fce64406cec"
+  version = "v3.1.1"
+
+[[projects]]
   name = "github.com/cloudflare/cfssl"
   packages = [
     "api",
@@ -32,6 +44,12 @@
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/facebookgo/clock"
+  packages = ["."]
+  revision = "600d898af40aa09a7a93ecb9265d87b0504b6f03"
 
 [[projects]]
   name = "github.com/fsnotify/fsnotify"
@@ -98,6 +116,12 @@
   version = "v1.7.4"
 
 [[projects]]
+  name = "github.com/matttproud/golang_protobuf_extensions"
+  packages = ["pbutil"]
+  revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
+  version = "v1.0.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/miekg/pkcs11"
   packages = ["."]
@@ -126,6 +150,42 @@
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/prometheus/client_golang"
+  packages = [
+    "prometheus",
+    "prometheus/promhttp"
+  ]
+  revision = "c5b7fccd204277076155f10851dad72b76a49317"
+  version = "v0.8.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/client_model"
+  packages = ["go"]
+  revision = "5c3871d89910bfb32f5fcab2aa4b9ec68e65a99f"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/common"
+  packages = [
+    "expfmt",
+    "internal/bitbucket.org/ww/goautoneg",
+    "model"
+  ]
+  revision = "7600349dcfe1abd18d72d3a1770870d9800a7801"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/procfs"
+  packages = [
+    ".",
+    "internal/util",
+    "nfs",
+    "xfs"
+  ]
+  revision = "ae68e2d4c00fed4943b5f6698d504a5fe083da8a"
 
 [[projects]]
   name = "github.com/spf13/afero"
@@ -168,6 +228,16 @@
   ]
   revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
   version = "v1.2.0"
+
+[[projects]]
+  name = "github.com/uber-go/tally"
+  packages = [
+    ".",
+    "prometheus",
+    "statsd"
+  ]
+  revision = "522328b48efad0c6034dba92bf39228694e9d31f"
+  version = "v3.3.2"
 
 [[projects]]
   branch = "master"
@@ -269,6 +339,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "44e76ddc7f66696852960af9d904a1bdb44ff6a3dc9ce77da8cb46c2eca5fbf9"
+  inputs-digest = "38cf6defb1fd2bbf164598259165c56b927fc81a43ee58ab3aadb56aade17649"
   solver-name = "gps-cdcl"
   solver-version = 1

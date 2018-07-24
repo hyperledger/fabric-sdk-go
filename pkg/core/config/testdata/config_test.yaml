@@ -332,3 +332,39 @@ certificateAuthorities:
     # [Optional] The optional name of the CA.
     caName: ca.org2.example.com
     #first one
+
+###############################################################################
+#
+#    Metrics section
+#
+#    Similar to what's introduced in Fabric 1.3, this section can now
+#    be used in the SDK (see test/performance for an example showing how this is used)
+#    Note: In order to use performance metrics, the SDK must be built with 'pprof' build tag
+###############################################################################
+metrics:
+        # enable or disable metrics server
+        enabled: true
+
+        # when enable metrics server, must specify metrics reporter type
+        # currently supported type: "statsd","prom"
+        reporter: prom
+
+        # determines frequency of report metrics(unit: second)
+        interval: 1s
+
+        statsdReporter:
+
+              # statsd server address to connect
+              address: peer0.org1.example.com:8125
+
+              # determines frequency of push metrics to statsd server(unit: second)
+              flushInterval: 2s
+
+              # max size bytes for each push metrics request
+              # intranet recommend 1432 and internet recommend 512
+              flushBytes: 1432
+
+        promReporter:
+
+              # prometheus http server listen address for pull metrics
+              listenAddress: peer0.org1.example.com:8080
