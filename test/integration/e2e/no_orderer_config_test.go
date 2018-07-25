@@ -24,7 +24,7 @@ func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts
 
 	if integration.IsLocal() {
 		//If it is a local test then add entity mapping to config backend to parse URLs
-		configOpt = integration.AddLocalEntityMapping(configOpt, integration.LocalOrdererPeersConfig)
+		configOpt = integration.AddLocalEntityMapping(configOpt)
 	}
 
 	sdk, err := fabsdk.New(configOpt, sdkOpts...)

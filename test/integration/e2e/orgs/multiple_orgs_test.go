@@ -152,6 +152,9 @@ func TestOrgsEndToEnd(t *testing.T) {
 	expectedValue := testWithOrg1(t, sdk, &mc)
 	expectedValue = testWithOrg2(t, expectedValue, mc.ccName)
 	verifyWithOrg1(t, sdk, expectedValue, mc.ccName)
+
+	//test multi orgs with SDK config having single config
+	TestMultiOrgWithSingleOrgConfig(t, exampleCC)
 }
 
 func createAndJoinChannel(t *testing.T, mc *multiorgContext) {
@@ -657,4 +660,5 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 }

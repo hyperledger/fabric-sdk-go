@@ -117,7 +117,7 @@ func TestNoLedgerEndpoints(t *testing.T) {
 	configProvider := config.FromFile(integration.GetConfigPath("config_test_endpoints.yaml"))
 	//Add entity matchers if local test
 	if integration.IsLocal() {
-		configProvider = integration.AddLocalEntityMapping(configProvider, integration.LocalOrdererPeersConfig)
+		configProvider = integration.AddLocalEntityMapping(configProvider)
 	}
 
 	sdk, err := fabsdk.New(configProvider)

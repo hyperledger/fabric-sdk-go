@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
@@ -26,22 +27,24 @@ import (
 )
 
 const (
-	bootStrapCC                        = "example_cc_btsp"
-	configFilename                     = "config_e2e_multiorg_bootstrap.yaml"
-	localOrderersPeersCAConfigFilename = "local_orderers_peers_ca_bootstrap.yaml"
-	entityMatchersConfigFilename       = "local_entity_matchers_bootstrap.yaml"
+	bootStrapCC    = "example_cc_btsp"
+	configFilename = "config_e2e_multiorg_bootstrap.yaml"
 )
 
 //TestOrgsEndToEndWithBootstrapConfigs does the same as TestOrgsEndToEnd with the difference of loading
 // minimal configs instead of the normal config_e2e.yaml configs and with the help of discovery service to discover
 // other peers not in the config (example org1 has 2 peers and only peer0 is defined in the bootstrap configs)
 func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
-	cfgBackend := integration.FetchConfigBackend(
-		integration.GetConfigPath(configFilename),
-		integration.GetConfigOverridesPath(localOrderersPeersCAConfigFilename),
-		integration.GetConfigOverridesPath(entityMatchersConfigFilename))
 
-	sdk, err := fabsdk.New(cfgBackend, fabsdk.WithServicePkg(&DynamicDiscoveryProviderFactory{}))
+	//load config provider
+	configProvider := config.FromFile(integration.GetConfigPath(configFilename))
+
+	//if local test, add entity matchers to override URLs to localhost
+	if integration.IsLocal() {
+		configProvider = integration.AddLocalEntityMapping(configProvider)
+	}
+
+	sdk, err := fabsdk.New(configProvider, fabsdk.WithServicePkg(&DynamicDiscoveryProviderFactory{}))
 	if err != nil {
 		require.NoError(t, err, "Failed to create new SDK")
 	}

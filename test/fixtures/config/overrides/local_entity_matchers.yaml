@@ -13,78 +13,84 @@
  # so that properties can be mapped. Regex can be used for this purpose
 # UrlSubstitutionExp can be empty which means the same network hostname will be used
 # UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
-# UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
- # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
+# UrlSubstitutionExp can have golang regex matchers like $1.example.$2:$3 for pattern
+ # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.example.com:1234
 # EventUrlSubstitutionExp and sslTargetOverrideUrlSubstitutionExp follow in the same lines as
  # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 entityMatchers:
   peer:
+
+    ## TODO added below peer to ignore list, to avoid these revoked peer to conflict with bootstrap test
+    - pattern: peer1.org2.example.com:(\d+)
+      ignoreEndpoint: true
+
+    - pattern: peer1.org2.example.com
+      ignoreEndpoint: true
+
+    - pattern: (\w+):9051
+      ignoreEndpoint: true
+
     - pattern: peer0.org1.example.(\w+)
       urlSubstitutionExp: localhost:7051
       eventUrlSubstitutionExp: localhost:7053
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
-      mappedHost: local.peer0.org1.example.com
+      mappedHost: peer0.org1.example.com
 
     - pattern: peer1.org1.example.(\w+)
       urlSubstitutionExp: localhost:7151
       eventUrlSubstitutionExp: localhost:7153
       sslTargetOverrideUrlSubstitutionExp: peer1.org1.example.com
-      mappedHost: local.peer1.org1.example.com
+      mappedHost: peer1.org1.example.com
 
-    - pattern: (\w+).org2.example.(\w+)
+    - pattern: peer0.org2.example.(\w+)
       urlSubstitutionExp: localhost:8051
       eventUrlSubstitutionExp: localhost:8053
       sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
-      mappedHost: local.peer0.org2.example.com
+      mappedHost: peer0.org2.example.com
 
     - pattern: (\w+).org1.example.(\w+):(\d+)
       urlSubstitutionExp: localhost:$2
       eventUrlSubstitutionExp: localhost:$2
       sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
-      mappedHost: local.$1.org1.example.com
-
-    - pattern: (\w+).org2.example.(\w+):(\d+)
-      urlSubstitutionExp: localhost:8051
-      eventUrlSubstitutionExp: localhost:8053
-      sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
-      mappedHost: local.peer0.org2.example.com
+      mappedHost: $1.org1.example.com
 
     - pattern: (\w+):7051
       urlSubstitutionExp: localhost:7051
       eventUrlSubstitutionExp: localhost:7053
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
-      mappedHost: local.peer0.org1.example.com
+      mappedHost: peer0.org1.example.com
 
     - pattern: (\w+):7151
       urlSubstitutionExp: localhost:7151
       eventUrlSubstitutionExp: localhost:7153
       sslTargetOverrideUrlSubstitutionExp: peer1.org1.example.com
-      mappedHost: local.peer1.org1.example.com
+      mappedHost: peer1.org1.example.com
 
     - pattern: (\w+):8051
       urlSubstitutionExp: localhost:8051
       eventUrlSubstitutionExp: localhost:8053
       sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
-      mappedHost: local.peer0.org2.example.com
+      mappedHost: peer0.org2.example.com
+
 
   orderer:
 
     - pattern: (\w+).example.(\w+)
       urlSubstitutionExp: localhost:7050
       sslTargetOverrideUrlSubstitutionExp: orderer.example.com
-      mappedHost: local.orderer.example.com
+      mappedHost: orderer.example.com
 
     - pattern: (\w+).example.(\w+):(\d+)
       urlSubstitutionExp: localhost:7050
       sslTargetOverrideUrlSubstitutionExp: orderer.example.com
-      mappedHost: local.orderer.example.com
+      mappedHost: orderer.example.com
 
   certificateAuthority:
     - pattern: (\w+).org1.example.(\w+)
       urlSubstitutionExp: https://localhost:7054
-      mappedHost: local.ca.org1.example.com
+      mappedHost: ca.org1.example.com
 
     - pattern: (\w+).org2.example.(\w+)
       urlSubstitutionExp: https://localhost:8054
-      mappedHost: local.ca.org2.example.com
+      mappedHost: ca.org2.example.com

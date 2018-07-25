@@ -410,7 +410,7 @@ func TestNoEndpoints(t *testing.T) {
 
 	if integration.IsLocal() {
 		//If it is a local test then add entity mapping to config backend to parse URLs
-		configProvider = integration.AddLocalEntityMapping(configProvider, integration.LocalOrdererPeersConfig)
+		configProvider = integration.AddLocalEntityMapping(configProvider)
 	}
 
 	sdk, err := fabsdk.New(configProvider)

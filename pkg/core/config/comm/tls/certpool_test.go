@@ -26,7 +26,6 @@ func TestTLSCAConfig(t *testing.T) {
 	_, err := tlsCertPool.Get(goodCert)
 	require.NoError(t, err)
 	assert.Equal(t, true, tlsCertPool.useSystemCertPool)
-	assert.NotNil(t, tlsCertPool.certPool)
 	assert.NotNil(t, tlsCertPool.certsByName)
 
 	originalLength := len(tlsCertPool.certs)
@@ -37,10 +36,10 @@ func TestTLSCAConfig(t *testing.T) {
 
 	// Test with system cert pool disabled
 	tlsCertPool = NewCertPool(false).(*certPool)
-	_, err = tlsCertPool.Get(goodCert)
+	certPool, err := tlsCertPool.Get(goodCert)
 	require.NoError(t, err)
 	assert.Len(t, tlsCertPool.certs, 1)
-	assert.Len(t, tlsCertPool.certPool.Subjects(), 1)
+	assert.Len(t, certPool.Subjects(), 1)
 }
 
 func TestTLSCAPoolManyCerts(t *testing.T) {
@@ -103,7 +102,9 @@ func TestConcurrent(t *testing.T) {
 	}
 
 	assert.Len(t, tlsCertPool.certs, concurrency)
-	assert.Len(t, tlsCertPool.certPool.Subjects(), concurrency)
+	certPool, err := tlsCertPool.Get()
+	require.NoError(t, err)
+	assert.Len(t, certPool.Subjects(), concurrency)
 }
 
 func createNCerts(n int) []*x509.Certificate {

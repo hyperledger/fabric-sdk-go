@@ -18,22 +18,18 @@ import (
 // TLSConfig returns the appropriate config for TLS including the root CAs,
 // certs for mutual TLS, and server host override. Works with certs loaded either from a path or embedded pem.
 func TLSConfig(cert *x509.Certificate, serverName string, config fab.EndpointConfig) (*tls.Config, error) {
-	certPool, err := config.TLSCACertPool().Get()
+
+	certPool, err := config.TLSCACertPool().Get(cert)
 	if err != nil {
 		return nil, err
 	}
 
-	if cert == nil && (certPool == nil || len(certPool.Subjects()) == 0) {
-		//Return empty tls config if there is no cert provided or if certpool unavailable
+	if certPool == nil || len(certPool.Subjects()) == 0 {
+		//Return empty tls config if certpool is unavailable
 		return &tls.Config{}, nil
 	}
 
-	tlsCaCertPool, err := config.TLSCACertPool().Get(cert)
-	if err != nil {
-		return nil, err
-	}
-
-	return &tls.Config{RootCAs: tlsCaCertPool, Certificates: config.TLSClientCerts(), ServerName: serverName}, nil
+	return &tls.Config{RootCAs: certPool, Certificates: config.TLSClientCerts(), ServerName: serverName}, nil
 }
 
 // TLSCertHash is a utility method to calculate the SHA256 hash of the configured certificate (for usage in channel headers)

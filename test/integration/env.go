@@ -15,20 +15,19 @@ import (
 )
 
 const (
-	configPath         = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_test.yaml"
+	configPath = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_test.yaml"
+	//entityMatcherLocal config file containing entity matchers for local test
 	entityMatcherLocal = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test//fixtures/config/overrides/local_entity_matchers.yaml"
-	//LocalOrdererPeersCAsConfig config file to override on local test having only peers, orderers and CA entity entries
-	LocalOrdererPeersCAsConfig = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/overrides/local_orderers_peers_ca.yaml"
-	//LocalOrdererPeersConfig config file to override on local test having only peers and orderers entity entries
-	LocalOrdererPeersConfig = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/overrides/local_orderers_peers.yaml"
+	//ConfigPathSingleOrg single org version of 'configPath' for testing discovery
+	ConfigPathSingleOrg = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_e2e_single_org.yaml"
 )
 
 // ConfigBackend contains config backend for integration tests
-var ConfigBackend = FetchConfigBackend(configPath, LocalOrdererPeersCAsConfig, entityMatcherLocal)
+var ConfigBackend = fetchConfigBackend(configPath, entityMatcherLocal)
 
-// FetchConfigBackend returns a ConfigProvider that retrieves config data from the given configPath,
+// fetchConfigBackend returns a ConfigProvider that retrieves config data from the given configPath,
 // or from the given overrides for local testing
-func FetchConfigBackend(configPath string, localOverride, entityMatcherOverride string) core.ConfigProvider {
+func fetchConfigBackend(configPath string, entityMatcherOverride string) core.ConfigProvider {
 	configProvider := config.FromFile(pathvar.Subst(configPath))
 
 	args := os.Args[1:]
@@ -36,7 +35,7 @@ func FetchConfigBackend(configPath string, localOverride, entityMatcherOverride 
 		//If testlocal is enabled, then update config backend to run 'local' test
 		if arg == "testLocal=true" {
 			return func() ([]core.ConfigBackend, error) {
-				return appendLocalEntityMappingBackend(configProvider, localOverride, entityMatcherOverride)
+				return appendLocalEntityMappingBackend(configProvider, entityMatcherOverride)
 			}
 		}
 	}
@@ -57,14 +56,14 @@ func IsLocal() bool {
 
 //AddLocalEntityMapping adds local test entity mapping to config backend
 // and returns updated config provider
-func AddLocalEntityMapping(configProvider core.ConfigProvider, configOverridePath string) core.ConfigProvider {
+func AddLocalEntityMapping(configProvider core.ConfigProvider) core.ConfigProvider {
 	return func() ([]core.ConfigBackend, error) {
-		return appendLocalEntityMappingBackend(configProvider, configOverridePath, entityMatcherLocal)
+		return appendLocalEntityMappingBackend(configProvider, entityMatcherLocal)
 	}
 }
 
 //appendLocalEntityMappingBackend appends entity matcher backend to given config provider
-func appendLocalEntityMappingBackend(configProvider core.ConfigProvider, configOverridePath, entityMatcherOverridePath string) ([]core.ConfigBackend, error) {
+func appendLocalEntityMappingBackend(configProvider core.ConfigProvider, entityMatcherOverridePath string) ([]core.ConfigBackend, error) {
 	//Current backend
 	currentBackends, err := configProvider()
 	if err != nil {
@@ -78,16 +77,22 @@ func appendLocalEntityMappingBackend(configProvider core.ConfigProvider, configO
 		return nil, err
 	}
 
-	//Local orderer/peer/CA config overrides
-	configProvider = config.FromFile(pathvar.Subst(configOverridePath))
-	localBackends, err := configProvider()
-	if err != nil {
-		return nil, err
-	}
-
 	//backends should fal back in this order - matcherBackends, localBackends, currentBackends
-	localBackends = append(localBackends, matcherBackends...)
+	localBackends := append([]core.ConfigBackend{}, matcherBackends...)
 	localBackends = append(localBackends, currentBackends...)
 
 	return localBackends, nil
+}
+
+//IsDynamicDiscoverySupported returns if fabric version on which tests are running supports dynamic discovery
+//any version greater than v1.1 supports dynamic discovery
+func IsDynamicDiscoverySupported() bool {
+	args := os.Args[1:]
+	for _, arg := range args {
+		if arg == "fabric-fixture=v1.1" {
+			//not supported for fabric fixture v1.1
+			return false
+		}
+	}
+	return true
 }

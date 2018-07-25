@@ -16,7 +16,7 @@ import (
 )
 
 const configTestFilePath = "../../core/config/testdata/config_test.yaml"
-const entityMatcherTestFilePath = "../../core/config/testdata/config_test_entity_matchers.yaml"
+const entityMatcherTestFilePath = "../../core/config/testdata/config_test.yaml"
 const localOverrideEntityMatcher = "../../../test/fixtures/config/overrides/local_entity_matchers.yaml"
 
 func TestNetworkPeerConfigFromURL(t *testing.T) {

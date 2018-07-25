@@ -43,6 +43,18 @@ func DefaultMockConfig(mockCtrl *gomock.Controller) *MockEndpointConfig {
 	return config
 }
 
+// CustomMockConfig returns a custom mock config with custom certpool for testing
+func CustomMockConfig(mockCtrl *gomock.Controller, certPool *x509.CertPool) *MockEndpointConfig {
+	config := NewMockEndpointConfig(mockCtrl)
+
+	config.EXPECT().TLSCACertPool().Return(&MockCertPool{CertPool: certPool}).AnyTimes()
+
+	config.EXPECT().Timeout(fab.EndorserConnection).Return(time.Second * 5).AnyTimes()
+	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{TLSCert}).AnyTimes()
+
+	return config
+}
+
 // BadTLSClientMockConfig returns a mock config for testing with TLSClientCerts() that always returns an error
 func BadTLSClientMockConfig(mockCtrl *gomock.Controller) *MockEndpointConfig {
 	config := NewMockEndpointConfig(mockCtrl)

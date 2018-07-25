@@ -9,6 +9,7 @@ package comm
 import (
 	"bytes"
 	"encoding/hex"
+	"strconv"
 	"testing"
 
 	"strings"
@@ -16,6 +17,8 @@ import (
 	"crypto/tls"
 
 	"reflect"
+
+	"crypto/x509"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
@@ -58,7 +61,11 @@ func TestTLSConfigHappyPath(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	config := mockfab.DefaultMockConfig(mockCtrl)
+	testCertPool := x509.NewCertPool()
+	certs := createNCerts(1)
+	testCertPool.AddCert(certs[0])
+
+	config := mockfab.CustomMockConfig(mockCtrl, testCertPool)
 
 	serverHostOverride := "servernamebeingoverriden"
 
@@ -71,7 +78,7 @@ func TestTLSConfigHappyPath(t *testing.T) {
 		t.Fatal("Incorrect server name!")
 	}
 
-	if tlsConfig.RootCAs != mockfab.CertPool {
+	if tlsConfig.RootCAs != testCertPool {
 		t.Fatal("Incorrect cert pool")
 	}
 
@@ -82,6 +89,18 @@ func TestTLSConfigHappyPath(t *testing.T) {
 	if !reflect.DeepEqual(tlsConfig.Certificates[0], mockfab.TLSCert) {
 		t.Fatal("Certs do not match")
 	}
+}
+
+func createNCerts(n int) []*x509.Certificate {
+	var certs []*x509.Certificate
+	for i := 0; i < n; i++ {
+		cert := &x509.Certificate{
+			RawSubject: []byte(strconv.Itoa(i)),
+			Raw:        []byte(strconv.Itoa(i)),
+		}
+		certs = append(certs, cert)
+	}
+	return certs
 }
 
 func TestNoTlsCertHash(t *testing.T) {
