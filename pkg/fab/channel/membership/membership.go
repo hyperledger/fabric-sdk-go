@@ -204,6 +204,7 @@ func addCertsToConfig(config fab.EndpointConfig, pemCertsList [][]byte) {
 			err = verifier.ValidateCertificateDates(cert)
 			if err != nil {
 				logger.Warn("%v", err)
+				continue
 			}
 
 			certs = append(certs, cert)
