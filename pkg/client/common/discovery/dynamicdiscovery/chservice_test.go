@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	pfab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -101,7 +102,7 @@ func TestDiscoveryService(t *testing.T) {
 				{
 					MSPID:        mspID2,
 					Endpoint:     peer1MSP2,
-					LedgerHeight: 5,
+					LedgerHeight: 15,
 				},
 			},
 		},
@@ -112,4 +113,20 @@ func TestDiscoveryService(t *testing.T) {
 	peers, err = service.GetPeers()
 	assert.NoError(t, err)
 	assert.Equalf(t, 2, len(peers), "Expected 2 peers")
+
+	filteredService := discovery.NewDiscoveryFilterService(service, &blockHeightFilter{minBlockHeight: 10})
+	peers, err = filteredService.GetPeers()
+	require.NoError(t, err)
+	require.Equalf(t, 1, len(peers), "expecting discovery filter to return only one peer")
+}
+
+type blockHeightFilter struct {
+	minBlockHeight uint64
+}
+
+func (f *blockHeightFilter) Accept(peer pfab.Peer) bool {
+	if p, ok := peer.(pfab.PeerState); ok {
+		return p.BlockHeight() >= f.minBlockHeight
+	}
+	panic("expecting peer to have state")
 }

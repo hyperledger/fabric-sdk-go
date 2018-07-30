@@ -52,11 +52,6 @@ var defaultRetryOpts = retry.Opts{
 	RetryableCodes: retryableCodes,
 }
 
-// PeerState provides state information about the Peer
-type PeerState interface {
-	BlockHeight() uint64
-}
-
 type discoveryClient interface {
 	Send(ctx context.Context, req *discclient.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error)
 }

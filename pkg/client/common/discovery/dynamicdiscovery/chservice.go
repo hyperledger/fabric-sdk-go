@@ -103,7 +103,31 @@ func (s *ChannelService) evaluate(ctx contextAPI.Client, responses []fabdiscover
 			logger.Warn(lastErr.Error())
 			continue
 		}
-		return asPeers(ctx, endpoints), nil
+		return s.asPeers(ctx, endpoints), nil
 	}
 	return nil, lastErr
+}
+
+func (s *ChannelService) asPeers(ctx contextAPI.Client, endpoints []*discclient.Peer) []fab.Peer {
+	var peers []fab.Peer
+	for _, endpoint := range endpoints {
+		peer, ok := asPeer(ctx, endpoint)
+		if !ok {
+			continue
+		}
+		peers = append(peers, &peerEndpoint{
+			Peer:        peer,
+			blockHeight: endpoint.StateInfoMessage.GetStateInfo().GetProperties().LedgerHeight,
+		})
+	}
+	return peers
+}
+
+type peerEndpoint struct {
+	fab.Peer
+	blockHeight uint64
+}
+
+func (p *peerEndpoint) BlockHeight() uint64 {
+	return p.blockHeight
 }

@@ -160,7 +160,7 @@ func TestSelection(t *testing.T) {
 	t.Run("Peer Filter", func(t *testing.T) {
 		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}},
 			options.WithPeerFilter(func(peer fab.Peer) bool {
-				return peer.(PeerState).BlockHeight() > 1001
+				return peer.(fab.PeerState).BlockHeight() > 1001
 			}),
 		)
 
@@ -170,7 +170,7 @@ func TestSelection(t *testing.T) {
 		// Ensure the endorsers all have a block height > 1001 and they are returned in descending order of block height
 		lastBlockHeight := uint64(9999999)
 		for _, endorser := range endorsers {
-			blockHeight := endorser.(PeerState).BlockHeight()
+			blockHeight := endorser.(fab.PeerState).BlockHeight()
 			assert.Truef(t, blockHeight > 1001, "Expecting block height to be > 1001")
 			assert.Truef(t, blockHeight <= lastBlockHeight, "Expecting endorsers to be returned in order of descending block height. Block Height: %d, Last Block Height: %d", blockHeight, lastBlockHeight)
 			lastBlockHeight = blockHeight
@@ -268,7 +268,7 @@ func TestWithDiscoveryFilter(t *testing.T) {
 
 		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall},
 			options.WithPeerFilter(func(peer fab.Peer) bool {
-				return peer.(PeerState).BlockHeight() > 1001
+				return peer.(fab.PeerState).BlockHeight() > 1001
 			}))
 		assert.NoError(t, err)
 		assert.Equalf(t, 3, len(endorsers), "Expecting 3 endorser")
