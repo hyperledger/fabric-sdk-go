@@ -100,6 +100,55 @@ func TestChannelClient(t *testing.T) {
 	}
 
 	testChaincodeEventListener(chaincodeID, chClient, listener, t)
+
+	testDuplicateTargets(chaincodeID, chClient, t)
+}
+
+func testDuplicateTargets(chaincodeID string, chClient *channel.Client, t *testing.T) {
+
+	// Using shared SDK instance to increase test speed.
+	sdk := mainSDK
+
+	// Synchronous query
+	testQuery("205", chaincodeID, chClient, t)
+
+	transientData := "Some data"
+	transientDataMap := make(map[string][]byte)
+	transientDataMap["result"] = []byte(transientData)
+
+	// get targets
+	configBackend, err := sdk.Config()
+	if err != nil {
+		t.Fatalf("failed to get config backend from SDK: %s", err)
+	}
+
+	targets, err := integration.OrgTargetPeers([]string{org1Name}, configBackend)
+	if err != nil {
+		t.Fatalf("creating peers failed: %s", err)
+	}
+
+	// Add the first peer again
+	targets = append(targets, targets[0])
+
+	// Synchronous transaction
+	response, err := chClient.Execute(
+		channel.Request{
+			ChaincodeID:  chaincodeID,
+			Fcn:          "invoke",
+			Args:         integration.ExampleCCTxArgs(),
+			TransientMap: transientDataMap,
+		},
+		channel.WithRetry(retry.DefaultChannelOpts), channel.WithTargetEndpoints(targets...))
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
+	}
+	// The example CC should return the transient data as a response
+	if string(response.Payload) != transientData {
+		t.Fatalf("Expecting response [%s] but got [%v]", transientData, response)
+	}
+
+	// Verify transaction using query
+	testQuery("206", chaincodeID, chClient, t)
 }
 
 // TestCCToCC tests one chaincode invoking another chaincode. The first chaincode

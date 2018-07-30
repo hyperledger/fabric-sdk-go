@@ -94,6 +94,8 @@ func SendProposal(reqCtx reqContext.Context, proposal *fab.TransactionProposal, 
 		}
 	}
 
+	targets = getTargetsWithoutDuplicates(targets)
+
 	ctx, ok := context.RequestClientContext(reqCtx)
 	if !ok {
 		return nil, errors.New("failed get client context from reqContext for signProposal")
@@ -134,4 +136,28 @@ func SendProposal(reqCtx reqContext.Context, proposal *fab.TransactionProposal, 
 	wg.Wait()
 
 	return transactionProposalResponses, errs.ToError()
+}
+
+// getTargetsWithoutDuplicates returns a list of targets without duplicates
+func getTargetsWithoutDuplicates(targets []fab.ProposalProcessor) []fab.ProposalProcessor {
+	peerUrlsToTargets := map[string]fab.ProposalProcessor{}
+	var uniqueTargets []fab.ProposalProcessor
+
+	for i := range targets {
+		peer, ok := targets[i].(fab.Peer)
+		if !ok {
+			// ProposalProcessor is not a fab.Peer... cannot remove duplicates
+			return targets
+		}
+		if _, present := peerUrlsToTargets[peer.URL()]; !present {
+			uniqueTargets = append(uniqueTargets, targets[i])
+			peerUrlsToTargets[peer.URL()] = targets[i]
+		}
+	}
+
+	if len(uniqueTargets) != len(targets) {
+		logger.Warn("Duplicate target peers in configuration")
+	}
+
+	return uniqueTargets
 }
