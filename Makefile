@@ -423,7 +423,7 @@ dockerenv-prev-up: clean-tests populate-fixtures-prev-noforce
 		$(DOCKER_COMPOSE_CMD) $(BASE_DOCKER_COMPOSE_FILES) up --force-recreate
 
 .PHONY: dockerenv-stable-up
-dockerenv-stable-up: clean-tests
+dockerenv-stable-up: clean-tests populate-fixtures-stable-noforce
 	@. $(FIXTURE_CRYPTOCONFIG_PATH)/env.sh && \
 		cd $(FIXTURE_DOCKERENV_PATH) && \
 		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) \
