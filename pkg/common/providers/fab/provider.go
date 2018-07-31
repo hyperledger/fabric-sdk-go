@@ -161,5 +161,8 @@ type Providers interface {
 // cert pool implementation.
 type CertPool interface {
 	// Get returns the cert pool, optionally adding the provided certs
-	Get(certs ...*x509.Certificate) (*x509.CertPool, error)
+	Get() (*x509.CertPool, error)
+	//Add allows adding certificates to CertPool
+	//Call Get() after Add() to get the updated certpool
+	Add(certs ...*x509.Certificate)
 }

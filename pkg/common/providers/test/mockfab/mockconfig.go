@@ -73,6 +73,11 @@ type MockCertPool struct {
 }
 
 //Get mock implementation of fab CertPool.Get()
-func (c *MockCertPool) Get(certs ...*x509.Certificate) (*x509.CertPool, error) {
+func (c *MockCertPool) Get() (*x509.CertPool, error) {
 	return c.CertPool, c.Err
+}
+
+//Add mock impl of adding certs to cert pool queue
+func (c *MockCertPool) Add(certs ...*x509.Certificate) {
+
 }

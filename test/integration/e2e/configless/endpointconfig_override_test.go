@@ -699,7 +699,11 @@ type exampleTLSCACertPool struct {
 //newTLSCACertPool will create a new exampleTLSCACertPool instance with useSystemCertPool bool flag
 func newTLSCACertPool(useSystemCertPool bool) *exampleTLSCACertPool {
 	m := &exampleTLSCACertPool{}
-	m.tlsCertPool = commtls.NewCertPool(useSystemCertPool)
+	var err error
+	m.tlsCertPool, err = commtls.NewCertPool(useSystemCertPool)
+	if err != nil {
+		panic(err)
+	}
 	return m
 }
 
