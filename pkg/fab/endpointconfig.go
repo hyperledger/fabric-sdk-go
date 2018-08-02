@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"math"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -524,11 +526,7 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 			Peers:    chPeers,
 			Orderers: chOrderers,
 			Policies: fab.ChannelPolicies{
-				QueryChannelConfig: fab.QueryChannelConfigPolicy{
-					RetryOpts:    chNwCfg.Policies.QueryChannelConfig.RetryOpts,
-					MaxTargets:   chNwCfg.Policies.QueryChannelConfig.MaxTargets,
-					MinResponses: chNwCfg.Policies.QueryChannelConfig.MinResponses,
-				},
+				QueryChannelConfig: c.getChannelPolicy(chNwCfg, len(chPeers)),
 			},
 		}
 	}
@@ -569,6 +567,21 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 
 	c.networkConfig = &networkConfig
 	return nil
+}
+
+func (c *EndpointConfig) getChannelPolicy(chNwCfg ChannelEndpointConfig, NoOfChPeers int) fab.QueryChannelConfigPolicy {
+
+	queryDiscovery := chNwCfg.Policies.QueryChannelConfig.QueryDiscovery
+	if queryDiscovery == 0 {
+		queryDiscovery = int(math.Min(2.0, float64(NoOfChPeers)))
+	}
+
+	return fab.QueryChannelConfigPolicy{
+		RetryOpts:      chNwCfg.Policies.QueryChannelConfig.RetryOpts,
+		MaxTargets:     chNwCfg.Policies.QueryChannelConfig.MaxTargets,
+		MinResponses:   chNwCfg.Policies.QueryChannelConfig.MinResponses,
+		QueryDiscovery: queryDiscovery,
+	}
 }
 
 func (c *EndpointConfig) loadAllPeerConfigs(networkConfig *fab.NetworkConfig, entityPeers map[string]PeerConfig) error {

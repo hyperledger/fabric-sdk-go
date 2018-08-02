@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -118,6 +120,127 @@ func TestDiscoveryService(t *testing.T) {
 	peers, err = filteredService.GetPeers()
 	require.NoError(t, err)
 	require.Equalf(t, 1, len(peers), "expecting discovery filter to return only one peer")
+}
+
+func TestPickRandomNPeerConfigs(t *testing.T) {
+	counter := 20
+	allChPeers := createNChannelPeers(counter)
+
+	result := pickRandomNPeerConfigs(allChPeers, 4)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 4, len(result))
+	verifyDuplicates(t, result)
+
+	result = pickRandomNPeerConfigs(allChPeers, 1)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 1, len(result))
+	verifyDuplicates(t, result)
+
+	result = pickRandomNPeerConfigs(allChPeers, 19)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 19, len(result))
+	verifyDuplicates(t, result)
+
+	result = pickRandomNPeerConfigs(allChPeers, 20)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 20, len(result))
+	verifyDuplicates(t, result)
+
+	result = pickRandomNPeerConfigs(allChPeers, 21)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 20, len(result))
+	verifyDuplicates(t, result)
+
+	result = pickRandomNPeerConfigs(allChPeers, 24)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 20, len(result))
+	verifyDuplicates(t, result)
+
+	counter = 7
+	allChPeers = createNChannelPeers(counter)
+
+	result = pickRandomNPeerConfigs(allChPeers, 6)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 6, len(result))
+	verifyDuplicates(t, result)
+
+	result = pickRandomNPeerConfigs(allChPeers, 7)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 7, len(result))
+	verifyDuplicates(t, result)
+
+	result = pickRandomNPeerConfigs(allChPeers, 8)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 7, len(result))
+	verifyDuplicates(t, result)
+
+	counter = 2
+	allChPeers = createNChannelPeers(counter)
+
+	result = pickRandomNPeerConfigs(allChPeers, 2)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 2, len(result))
+	verifyDuplicates(t, result)
+
+	result = pickRandomNPeerConfigs(allChPeers, 24)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 2, len(result))
+	verifyDuplicates(t, result)
+
+	counter = 1
+	allChPeers = createNChannelPeers(counter)
+
+	result = pickRandomNPeerConfigs(allChPeers, 1)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 1, len(result))
+	verifyDuplicates(t, result)
+
+	result = pickRandomNPeerConfigs(allChPeers, 2)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 1, len(result))
+	verifyDuplicates(t, result)
+
+	result = pickRandomNPeerConfigs(allChPeers, 24)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 1, len(result))
+	verifyDuplicates(t, result)
+
+}
+
+func createNChannelPeers(n int) []pfab.ChannelPeer {
+	allChPeers := make([]pfab.ChannelPeer, n)
+	for i := 0; i < n; i++ {
+		allChPeers[i] = pfab.ChannelPeer{
+			NetworkPeer: pfab.NetworkPeer{
+				PeerConfig: pfab.PeerConfig{URL: fmt.Sprintf("URL-%d", i)},
+			},
+		}
+	}
+	return allChPeers
+}
+
+func verifyDuplicates(t *testing.T, chPeers []pfab.PeerConfig) {
+	seen := make(map[string]bool)
+	for _, v := range chPeers {
+		if seen[v.URL] {
+			t.Fatalf("found duplicate channel peer: %s", v.URL)
+		}
+		seen[v.URL] = true
+	}
 }
 
 type blockHeightFilter struct {

@@ -1187,7 +1187,7 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	assert.NotNil(t, networkConfig, "Invalid networkConfig")
 
 	//Channel
-	assert.Equal(t, len(networkConfig.Channels), 3)
+	assert.Equal(t, len(networkConfig.Channels), 5)
 	assert.Equal(t, len(networkConfig.Channels["mychannel"].Peers), 1)
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses, 1)
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets, 1)
@@ -1196,7 +1196,7 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor, 2.0)
 
 	//Organizations
-	assert.Equal(t, len(networkConfig.Organizations), 3)
+	assert.Equal(t, len(networkConfig.Organizations), 4)
 	assert.Equal(t, networkConfig.Organizations["org1"].MSPID, "Org1MSP")
 
 	//Orderer
@@ -1450,4 +1450,29 @@ func TestDefaultGRPCOpts(t *testing.T) {
 	assert.True(t, ok)
 	_, ok = ordererConfig.GRPCOptions["allow-insecure"]
 	assert.True(t, ok)
+}
+
+func TestChannelConfigQueryDiscovery(t *testing.T) {
+	endpointConfig, err := ConfigFromBackend(getMatcherConfig())
+	assert.Nil(t, err, "Failed to get endpoint config from backend")
+	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
+
+	//When 'QueryDiscovery' not defined it should take default value Min(2, len(channel peers))
+	chConfig, ok := endpointConfig.ChannelConfig("ch1")
+	assert.True(t, ok)
+	assert.NotNil(t, chConfig)
+	assert.Equal(t, 1, chConfig.Policies.QueryChannelConfig.QueryDiscovery)
+
+	//When 'QueryDiscovery' not defined it should take default value Min(2, len(channel peers))
+	chConfig, ok = endpointConfig.ChannelConfig("ch2")
+	assert.True(t, ok)
+	assert.NotNil(t, chConfig)
+	assert.Equal(t, 2, chConfig.Policies.QueryChannelConfig.QueryDiscovery)
+
+	//When 'QueryDiscovery' defined
+	chConfig, ok = endpointConfig.ChannelConfig("ch3")
+	assert.True(t, ok)
+	assert.NotNil(t, chConfig)
+	assert.Equal(t, 4, chConfig.Policies.QueryChannelConfig.QueryDiscovery)
+
 }

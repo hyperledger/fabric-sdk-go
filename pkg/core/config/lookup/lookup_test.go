@@ -212,7 +212,7 @@ func TestUnmarshal(t *testing.T) {
 	networkConfig := networkConfig{}
 	testLookup.UnmarshalKey("channels", &networkConfig.Channels)
 
-	assert.Equal(t, len(networkConfig.Channels), 3)
+	assert.Equal(t, len(networkConfig.Channels), 5)
 	assert.Equal(t, len(networkConfig.Channels["mychannel"].Peers), 1)
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses, 1)
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets, 1)
@@ -274,7 +274,7 @@ func TestUnmarshalWithMultipleBackend(t *testing.T) {
 	assert.True(t, networkConfig.Client.Organization == "org1")
 
 	//Channel
-	assert.Equal(t, len(networkConfig.Channels), 3)
+	assert.Equal(t, len(networkConfig.Channels), 5)
 	assert.Equal(t, len(networkConfig.Channels["mychannel"].Peers), 1)
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses, 1)
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets, 1)
@@ -299,7 +299,7 @@ func TestUnmarshalWithMultipleBackend(t *testing.T) {
 	assert.Equal(t, entityMatchers.matchers["channel"][0].MappedName, "ch1")
 
 	//Organizations
-	assert.Equal(t, len(networkConfig.Organizations), 3)
+	assert.Equal(t, len(networkConfig.Organizations), 4)
 	assert.Equal(t, networkConfig.Organizations["org1"].MSPID, "Org1MSP")
 
 	//Orderer
@@ -487,7 +487,7 @@ func TestUnmarshalWithHookFunc(t *testing.T) {
 	testLookup.UnmarshalKey("channels", &networkConfig.Channels, WithUnmarshalHookFunction(setTrueDefaultForPeerChannelConfig()))
 
 	//Test if mandatory hook func is working as expected
-	assert.True(t, len(networkConfig.Channels) == 3)
+	assert.True(t, len(networkConfig.Channels) == 5)
 	assert.True(t, len(networkConfig.Channels["mychannel"].Peers) == 1)
 	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses == 1)
 	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets == 1)

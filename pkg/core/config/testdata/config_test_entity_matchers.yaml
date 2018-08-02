@@ -121,6 +121,8 @@ channels:
         minResponses: 1
         #[Optional] channel config will be retrieved for these number of random targets
         maxTargets: 1
+        #[Optional] number of peers to be queried for discovery = Min(queryDiscovery, len(channel.peers in config)), by default queryDiscovery=2
+        queryDiscovery: 1
         #[Optional] retry options for query config block
         retryOpts:
           #[Optional] number of retry attempts
@@ -164,6 +166,51 @@ channels:
         ledgerQuery: true
         eventSource: true
 
+  ch2:
+
+    orderers:
+      - orderer.example.com
+
+    peers:
+      peer0.org1.example.com:
+      peer0.org2.example.com:
+      peer0.orgx.example.com:
+      peer1.orgx.example.com:
+      peer2.orgx.example.com:
+      peer3.orgx.example.com:
+
+  ch3:
+
+    orderers:
+      - orderer.example.com
+
+    peers:
+      peer0.org1.example.com:
+      peer0.org2.example.com:
+      peer0.orgx.example.com:
+      peer1.orgx.example.com:
+      peer2.orgx.example.com:
+      peer3.orgx.example.com:
+
+    policies:
+      #[Optional] options for retrieving channel configuration blocks
+      queryChannelConfig:
+        #[Optional] min number of success responses (from targets/peers)
+        minResponses: 1
+        #[Optional] channel config will be retrieved for these number of random targets
+        maxTargets: 1
+        #[Optional] number of peers to be queried for discovery = Min(queryDiscover, len(channel.peers in config)), by default queryDiscover=2
+        queryDiscovery: 4
+        #[Optional] retry options for query config block
+        retryOpts:
+          #[Optional] number of retry attempts
+          attempts: 5
+          #[Optional] the back off interval for the first retry attempt
+          initialBackoff: 500ms
+          #[Optional] the maximum back off interval for any retry attempt
+          maxBackoff: 5s
+          #[Optional] he factor by which the initial back off period is exponentially incremented
+          backoffFactor: 2.0
 #
 # list of participating organizations in this network
 #
@@ -210,7 +257,28 @@ organizations:
       # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
       cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
 
+  orgx:
+    mspid: OrgXMSP
 
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
+    cryptoPath:  peerOrganizations/org2.example.com/users/{username}@org2.example.com/msp
+
+    peers:
+      - peer0.orgx.example.com
+      - peer1.orgx.example.com
+      - peer2.orgx.example.com
+      - peer3.orgx.example.com
+
+    certificateAuthorities:
+      - ca.org2.example.com
+
+  # Orderer Org name
+  ordererorg:
+      # Membership Service Provider ID for this organization
+      mspID: OrdererMSP
+
+      # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+      cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
 #
 # List of orderers to send transaction and channel create/update requests to. For the time
 # being only one orderer is needed. If more than one is defined, which one get used by the

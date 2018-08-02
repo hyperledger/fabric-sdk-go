@@ -197,6 +197,8 @@ channels:
         minResponses: 1
         #[Optional] channel config will be retrieved for these number of random targets
         maxTargets: 1
+        #[Optional] number of peers to be queried for discovery = Min(queryDiscover, len(channel.peers in config)), by default queryDiscover=2
+        queryDiscovery: 3
         #[Optional] retry options for query config block
         retryOpts:
           #[Optional] number of retry attempts

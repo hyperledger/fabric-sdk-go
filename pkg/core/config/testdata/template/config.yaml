@@ -152,24 +152,25 @@ channels:
         # Default: true
 #        eventSource: true
 
-    # [Optional]. The application can use these options to perform channel operations like retrieving channel
-    # config etc.
+#     #[Optional]. The application can use these options to perform channel operations like retrieving channel  config etc.
 #    policies:
-       #[Optional] options for retrieving channel configuration blocks
+#       #[Optional] options for retrieving channel configuration blocks
 #      queryChannelConfig:
-         #[Optional] min number of success responses (from targets/peers)
+#         #[Optional] min number of success responses (from targets/peers)
 #        minResponses: 1
-         #[Optional] channel config will be retrieved for these number of random targets
+#         #[Optional] channel config will be retrieved for these number of random targets
 #        maxTargets: 1
-        #[Optional] retry options for query config block
+#        #[Optional] number of peers to be queried for discovery = Min(queryDiscovery, len(channel.peers in config)), by default queryDiscovery=2
+#        queryDiscovery: 1
+#        #[Optional] retry options for query config block
 #        retryOpts:
-          #[Optional] number of retry attempts
+#          #[Optional] number of retry attempts
 #          attempts: 5
-          #[Optional] the back off interval for the first retry attempt
+#          #[Optional] the back off interval for the first retry attempt
 #          initialBackoff: 500ms
-          #[Optional] the maximum back off interval for any retry attempt
+#          #[Optional] the maximum back off interval for any retry attempt
 #          maxBackoff: 5s
-          #[Optional] he factor by which the initial back off is exponentially incremented
+#          #[Optional] he factor by which the initial back off is exponentially incremented
 #          backoffFactor: 2.0
 
   # sample channel with channel matcher (sample*channel will return ch1 config where * can be any word or '')
