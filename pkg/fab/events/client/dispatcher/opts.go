@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
 )
 
@@ -20,12 +21,12 @@ type params struct {
 	reconnectBlockHeightLagThreshold int
 }
 
-func defaultParams() *params {
+func defaultParams(config fab.EventServiceConfig) *params {
 	return &params{
 		loadBalancePolicy:                lbp.NewRoundRobin(),
-		blockHeightLagThreshold:          5,               // TODO: Use defaults from SDK config
-		reconnectBlockHeightLagThreshold: 0,               // TODO: Use defaults from SDK config
-		blockHeightMonitorPeriod:         5 * time.Second, // TODO: Use defaults from SDK config
+		blockHeightMonitorPeriod:         config.BlockHeightMonitorPeriod(),
+		blockHeightLagThreshold:          config.BlockHeightLagThreshold(),
+		reconnectBlockHeightLagThreshold: config.ReconnectBlockHeightLagThreshold(),
 	}
 }
 

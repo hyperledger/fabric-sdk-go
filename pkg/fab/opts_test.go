@@ -27,7 +27,7 @@ var (
 	m11 = &mockChannelPeers{}
 	m12 = &mockChannelOrderers{}
 	m13 = &mockTLSCACertPool{}
-	m14 = &mockEventServiceType{}
+	m14 = &mockEventServiceConfig{}
 	m15 = &mockTLSClientCerts{}
 	m16 = &mockCryptoConfigPath{}
 )
@@ -224,7 +224,9 @@ func TestCreateCustomEndpointConfigWithSomeDefaultFunctionsRemainingFunctions(t 
 	if m != "" {
 		t.Fatalf("CryptoConfigPath did not return expected interface value. Expected: '%s', Received: %s", "", m)
 	}
-	e := endpointConfigOptionWithSomeDefaults.EventServiceType()
+
+	eventServiceConfig := endpointConfigOptionWithSomeDefaults.EventServiceConfig()
+	e := eventServiceConfig.Type()
 
 	if e != fab.DeliverEventServiceType {
 		t.Fatalf("MSPID did not return expected interface value. Expected: %d, Received: %d", fab.DeliverEventServiceType, e)
@@ -298,10 +300,30 @@ func (m *mockTLSCACertPool) TLSCACertPool() fab.CertPool {
 	return nil
 }
 
-type mockEventServiceType struct{}
+type mockEventServiceConfig struct {
+}
 
-func (m *mockEventServiceType) EventServiceType() fab.EventServiceType {
+func (m *mockEventServiceConfig) EventServiceConfig() fab.EventServiceConfig {
+	return &mockEventServiceConfigImpl{}
+}
+
+type mockEventServiceConfigImpl struct {
+}
+
+func (m *mockEventServiceConfigImpl) Type() fab.EventServiceType {
 	return fab.DeliverEventServiceType
+}
+
+func (m *mockEventServiceConfigImpl) BlockHeightLagThreshold() int {
+	return 5
+}
+
+func (m *mockEventServiceConfigImpl) ReconnectBlockHeightLagThreshold() int {
+	return 10
+}
+
+func (m *mockEventServiceConfigImpl) BlockHeightMonitorPeriod() time.Duration {
+	return time.Second
 }
 
 type mockTLSClientCerts struct{}

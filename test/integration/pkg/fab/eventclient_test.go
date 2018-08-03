@@ -274,7 +274,7 @@ func testWithDeliverEvents(t *testing.T, chContext context.Channel) bool {
 	assert.NoError(t, err)
 	config := chContext.EndpointConfig()
 
-	switch config.EventServiceType() {
+	switch config.EventServiceConfig().Type() {
 	case fab.DeliverEventServiceType:
 		return true
 	case fab.EventHubEventServiceType:
@@ -282,7 +282,7 @@ func testWithDeliverEvents(t *testing.T, chContext context.Channel) bool {
 	case fab.AutoDetectEventServiceType:
 		return chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_1Capability)
 	default:
-		t.Fatalf("unsupported event service type: %d", config.EventServiceType())
+		t.Fatalf("unsupported event service type: %d", config.EventServiceConfig().Type())
 		return false
 	}
 }

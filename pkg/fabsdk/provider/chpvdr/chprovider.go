@@ -306,7 +306,8 @@ func (cs *ChannelService) loadChannelCfgRef() (*chconfig.Ref, error) {
 }
 
 func useDeliverEvents(ctx context.Client, chConfig fab.ChannelCfg) (bool, error) {
-	switch ctx.EndpointConfig().EventServiceType() {
+	eventServiceType := ctx.EndpointConfig().EventServiceConfig().Type()
+	switch eventServiceType {
 	case fab.DeliverEventServiceType:
 		return true, nil
 	case fab.EventHubEventServiceType:
@@ -315,6 +316,6 @@ func useDeliverEvents(ctx context.Client, chConfig fab.ChannelCfg) (bool, error)
 		logger.Debug("Determining event service type from channel capabilities...")
 		return chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_1Capability), nil
 	default:
-		return false, errors.Errorf("unsupported event service type: %d", ctx.EndpointConfig().EventServiceType())
+		return false, errors.Errorf("unsupported event service type: %d", eventServiceType)
 	}
 }

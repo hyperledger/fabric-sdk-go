@@ -88,9 +88,33 @@ type EndpointConfig interface {
 	ChannelPeers(name string) ([]ChannelPeer, bool)
 	ChannelOrderers(name string) ([]OrdererConfig, bool)
 	TLSCACertPool() CertPool
-	EventServiceType() EventServiceType
+	EventServiceConfig() EventServiceConfig
 	TLSClientCerts() []tls.Certificate
 	CryptoConfigPath() string
+}
+
+// EventServiceConfig specifies configuration options for the event service
+type EventServiceConfig interface {
+	// Type returns the type of event service to use
+	Type() EventServiceType
+
+	// BlockHeightLagThreshold returns the block height lag threshold. This value is used for choosing a peer
+	// to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
+	// blocks then it will be excluded from selection.
+	// If set to 0 then only the most up-to-date peers are considered.
+	// If set to -1 then all peers (regardless of block height) are considered for selection.
+	BlockHeightLagThreshold() int
+
+	// ReconnectBlockHeightLagThreshold - if >0 then the event client will disconnect from the peer if the peer's
+	// block height falls behind the specified number of blocks and will reconnect to a better performing peer.
+	// If set to 0 (default) then the peer will not disconnect based on block height.
+	// NOTE: Setting this value too low may cause the event client to disconnect/reconnect too frequently, thereby
+	// affecting performance.
+	ReconnectBlockHeightLagThreshold() int
+
+	// BlockHeightMonitorPeriod is the period in which the connected peer's block height is monitored. Note that this
+	// value is only relevant if reconnectBlockHeightLagThreshold >0.
+	BlockHeightMonitorPeriod() time.Duration
 }
 
 // TimeoutType enumerates the different types of outgoing connections

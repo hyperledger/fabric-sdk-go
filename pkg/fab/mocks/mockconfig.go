@@ -30,7 +30,7 @@ type MockConfig struct {
 	customPeerCfg          *fab.PeerConfig
 	customOrdererCfg       *fab.OrdererConfig
 	customRandomOrdererCfg *fab.OrdererConfig
-	EvtServiceType         fab.EventServiceType
+	EvtServiceConfig       fab.EventServiceConfig
 }
 
 // NewMockCryptoConfig ...
@@ -310,9 +310,12 @@ func (c *MockConfig) TLSClientCerts() []tls.Certificate {
 	return nil
 }
 
-// EventServiceType returns the type of event service client to use
-func (c *MockConfig) EventServiceType() fab.EventServiceType {
-	return c.EvtServiceType
+// EventServiceConfig returns the type of event service client to use
+func (c *MockConfig) EventServiceConfig() fab.EventServiceConfig {
+	if c.EvtServiceConfig != nil {
+		return c.EvtServiceConfig
+	}
+	return &MockEventServiceConfig{}
 }
 
 // Lookup gets the Value from config file by Key
@@ -325,4 +328,33 @@ func (c *MockConfig) Lookup(key string) (interface{}, bool) {
 		return nil, false
 	}
 	return value, true
+}
+
+// MockEventServiceConfig contains configuration options for the event service
+type MockEventServiceConfig struct {
+	EvtType               fab.EventServiceType
+	LagThreshold          int
+	ReconnectLagThreshold int
+	HeightMonitorPeriod   time.Duration
+}
+
+// Type returns the type of event service to use
+func (c *MockEventServiceConfig) Type() fab.EventServiceType {
+	return c.EvtType
+}
+
+// BlockHeightLagThreshold returns the block height lag threshold.
+func (c *MockEventServiceConfig) BlockHeightLagThreshold() int {
+	return c.LagThreshold
+}
+
+// ReconnectBlockHeightLagThreshold sets the ReconnectBlockHeightLagThreshold.
+func (c *MockEventServiceConfig) ReconnectBlockHeightLagThreshold() int {
+	return c.ReconnectLagThreshold
+}
+
+// BlockHeightMonitorPeriod is the period in which the connected peer's block height is monitored. Note that this
+// value is only relevant if reconnectBlockHeightLagThreshold >0.
+func (c *MockEventServiceConfig) BlockHeightMonitorPeriod() time.Duration {
+	return c.HeightMonitorPeriod
 }

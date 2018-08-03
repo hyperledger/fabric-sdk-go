@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,8 +51,11 @@ const (
 	defaultChannelConfigRefreshInterval   = time.Second * 90
 	defaultChannelMemshpRefreshInterval   = time.Second * 60
 	defaultDiscoveryRefreshInterval       = time.Second * 5
-	defaultSelectionRefreshInterval       = time.Minute * 1
+	defaultSelectionRefreshInterval       = time.Second * 5
 	defaultCacheSweepInterval             = time.Second * 15
+
+	defaultBlockHeightLagThreshold  = 5
+	defaultBlockHeightMonitorPeriod = 5 * time.Second
 
 	//default grpc opts
 	defaultKeepAliveTime    = 0
@@ -232,17 +236,9 @@ func (c *EndpointConfig) TLSCACertPool() fab.CertPool {
 	return c.tlsCertPool
 }
 
-// EventServiceType returns the type of event service client to use
-func (c *EndpointConfig) EventServiceType() fab.EventServiceType {
-	etype := c.backend.GetString("client.eventService.type")
-	switch etype {
-	case "eventhub":
-		return fab.EventHubEventServiceType
-	case "deliver":
-		return fab.DeliverEventServiceType
-	default:
-		return fab.AutoDetectEventServiceType
-	}
+// EventServiceConfig returns the event service config
+func (c *EndpointConfig) EventServiceConfig() fab.EventServiceConfig {
+	return &EventServiceConfig{backend: c.backend}
 }
 
 // TLSClientCerts loads the client's certs for mutual TLS
@@ -1444,6 +1440,61 @@ func (c *EndpointConfig) regexMatchAndReplace(regex *regexp.Regexp, src, repl st
 		return regex.ReplaceAllString(src, repl)
 	}
 	return repl
+}
+
+// EventServiceConfig contains config options for the event service
+type EventServiceConfig struct {
+	backend *lookup.ConfigLookup
+}
+
+// Type returns the type of event service to use
+func (c *EventServiceConfig) Type() fab.EventServiceType {
+	etype := c.backend.GetString("client.eventService.type")
+	switch etype {
+	case "eventhub":
+		return fab.EventHubEventServiceType
+	case "deliver":
+		return fab.DeliverEventServiceType
+	default:
+		return fab.AutoDetectEventServiceType
+	}
+}
+
+// BlockHeightLagThreshold returns the block height lag threshold. This value is used for choosing a peer
+// to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
+// blocks then it will be excluded from selection.
+// If set to 0 then only the most up-to-date peers are considered.
+// If set to -1 then all peers (regardless of block height) are considered for selection.
+func (c *EventServiceConfig) BlockHeightLagThreshold() int {
+	lagThresholdStr := c.backend.GetString("client.eventService.blockHeightLagThreshold")
+	if lagThresholdStr == "" {
+		return defaultBlockHeightLagThreshold
+	}
+	lagThreshold, err := strconv.Atoi(lagThresholdStr)
+	if err != nil {
+		logger.Warnf("Invalid numeric value for client.eventService.blockHeightLagThreshold. Setting to default value of %d", defaultBlockHeightLagThreshold)
+		return defaultBlockHeightLagThreshold
+	}
+	return lagThreshold
+}
+
+// ReconnectBlockHeightLagThreshold - if >0 then the event client will disconnect from the peer if the peer's
+// block height falls behind the specified number of blocks and will reconnect to a better performing peer.
+// If set to 0 then this feature is disabled.
+// NOTE: Setting this value too low may cause the event client to disconnect/reconnect too frequently, thereby
+// affecting performance.
+func (c *EventServiceConfig) ReconnectBlockHeightLagThreshold() int {
+	return c.backend.GetInt("client.eventService.reconnectBlockHeightLagThreshold")
+}
+
+// BlockHeightMonitorPeriod is the period in which the connected peer's block height is monitored. Note that this
+// value is only relevant if reconnectBlockHeightLagThreshold >0.
+func (c *EventServiceConfig) BlockHeightMonitorPeriod() time.Duration {
+	period := c.backend.GetDuration("client.eventService.blockHeightMonitorPeriod")
+	if period == 0 {
+		return defaultBlockHeightMonitorPeriod
+	}
+	return period
 }
 
 //peerChannelConfigHookFunc returns hook function for unmarshalling 'fab.PeerChannelConfig'

@@ -270,21 +270,21 @@ var (
 	}
 
 	// creating instances of each interface to be referenced in the integration tests:
-	timeoutImpl          = &exampleTimeout{}
-	orderersConfigImpl   = newOrderersConfigImpl()
-	ordererConfigImpl    = &exampleOrdererConfig{}
-	peersConfigImpl      = newPeersConfigImpl()
-	peerConfigImpl       = &examplePeerConfig{}
-	networkConfigImpl    = &exampleNetworkConfig{}
-	networkPeersImpl     = &exampleNetworkPeers{}
-	channelConfigImpl    = &exampleChannelConfig{}
-	channelPeersImpl     = &exampleChannelPeers{}
-	channelOrderersImpl  = &exampleChannelOrderers{}
-	tlsCACertPoolImpl    = newTLSCACertPool(false)
-	eventServiceTypeImpl = &exampleEventServiceType{}
-	tlsClientCertsImpl   = &exampleTLSClientCerts{}
-	cryptoConfigPathImpl = &exampleCryptoConfigPath{}
-	endpointConfigImpls  = []interface{}{
+	timeoutImpl            = &exampleTimeout{}
+	orderersConfigImpl     = newOrderersConfigImpl()
+	ordererConfigImpl      = &exampleOrdererConfig{}
+	peersConfigImpl        = newPeersConfigImpl()
+	peerConfigImpl         = &examplePeerConfig{}
+	networkConfigImpl      = &exampleNetworkConfig{}
+	networkPeersImpl       = &exampleNetworkPeers{}
+	channelConfigImpl      = &exampleChannelConfig{}
+	channelPeersImpl       = &exampleChannelPeers{}
+	channelOrderersImpl    = &exampleChannelOrderers{}
+	tlsCACertPoolImpl      = newTLSCACertPool(false)
+	eventServiceConfigImpl = &exampleEventServiceConfig{}
+	tlsClientCertsImpl     = &exampleTLSClientCerts{}
+	cryptoConfigPathImpl   = &exampleCryptoConfigPath{}
+	endpointConfigImpls    = []interface{}{
 		timeoutImpl,
 		orderersConfigImpl,
 		ordererConfigImpl,
@@ -296,7 +296,7 @@ var (
 		channelPeersImpl,
 		channelOrderersImpl,
 		tlsCACertPoolImpl,
-		eventServiceTypeImpl,
+		eventServiceConfigImpl,
 		tlsClientCertsImpl,
 		cryptoConfigPathImpl,
 	}
@@ -712,9 +712,16 @@ func (m *exampleTLSCACertPool) TLSCACertPool() fab.CertPool {
 	return m.tlsCertPool
 }
 
-type exampleEventServiceType struct{}
+type exampleEventServiceConfig struct{}
 
-func (m *exampleEventServiceType) EventServiceType() fab.EventServiceType {
+func (m *exampleEventServiceConfig) EventServiceConfig() fab.EventServiceConfig {
+	return &eventServiceConfig{}
+}
+
+type eventServiceConfig struct {
+}
+
+func (c *eventServiceConfig) Type() fab.EventServiceType {
 	// if this test is run for the previous release (1.0) then update the config with EVENT_HUB as it doesn't support deliveryService
 	if os.Getenv("FABRIC_SDK_CLIENT_EVENTSERVICE_TYPE") == "eventhub" {
 		return fab.EventHubEventServiceType
@@ -722,6 +729,18 @@ func (m *exampleEventServiceType) EventServiceType() fab.EventServiceType {
 	return fab.DeliverEventServiceType
 	//or for EventHub service type, but most configs use Delivery Service starting release 1.1
 	//return fab.EventHubEventServiceType
+}
+
+func (c *eventServiceConfig) BlockHeightLagThreshold() int {
+	return 5
+}
+
+func (c *eventServiceConfig) ReconnectBlockHeightLagThreshold() int {
+	return 10
+}
+
+func (c *eventServiceConfig) BlockHeightMonitorPeriod() time.Duration {
+	return 5 * time.Second
 }
 
 type exampleTLSClientCerts struct {

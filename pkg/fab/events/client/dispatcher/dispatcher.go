@@ -41,7 +41,7 @@ type Dispatcher struct {
 
 // New creates a new dispatcher
 func New(context context.Client, chConfig fab.ChannelCfg, discoveryService fab.DiscoveryService, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {
-	params := defaultParams()
+	params := defaultParams(context.EndpointConfig().EventServiceConfig())
 	options.Apply(params, opts)
 
 	return &Dispatcher{

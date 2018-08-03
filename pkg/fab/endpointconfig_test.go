@@ -11,6 +11,8 @@ import (
 	"crypto/x509"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"os"
 
 	"fmt"
@@ -198,6 +200,23 @@ func TestTimeouts(t *testing.T) {
 		t.Fatalf(errStr, "OrdererConnection", t1)
 	}
 	checkTimeouts(endpointConfig, t, errStr)
+}
+
+func TestEventServiceConfig(t *testing.T) {
+	customBackend := getCustomBackend()
+	customBackend.KeyValueMap["client.eventService.type"] = "deliver"
+	customBackend.KeyValueMap["client.eventService.blockHeightLagThreshold"] = "4"
+	customBackend.KeyValueMap["client.eventService.reconnectBlockHeightLagThreshold"] = "7"
+	customBackend.KeyValueMap["client.eventService.blockHeightMonitorPeriod"] = "7s"
+
+	endpointConfig, err := ConfigFromBackend(customBackend)
+	require.NoError(t, err)
+
+	eventServiceConfig := endpointConfig.EventServiceConfig()
+	assert.Equalf(t, fab.DeliverEventServiceType, eventServiceConfig.Type(), "invalid value for type")
+	assert.Equalf(t, 4, eventServiceConfig.BlockHeightLagThreshold(), "invalid value for blockHeightLagThreshold")
+	assert.Equalf(t, 7, eventServiceConfig.ReconnectBlockHeightLagThreshold(), "invalid value for reconnectBlockHeightLagThreshold")
+	assert.Equalf(t, 7*time.Second, eventServiceConfig.BlockHeightMonitorPeriod(), "invalid value for blockHeightMonitorPeriod")
 }
 
 func checkTimeouts(endpointConfig fab.EndpointConfig, t *testing.T, errStr string) {
