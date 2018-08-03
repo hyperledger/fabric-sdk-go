@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
@@ -38,8 +39,8 @@ const (
 )
 
 var (
-	peer1 = fabmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051")
-	peer2 = fabmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051")
+	peer1 = clientmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051", 100)
+	peer2 = clientmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051", 110)
 
 	sourceURL = "localhost:9051"
 )
@@ -1391,5 +1392,75 @@ func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expecte
 	}
 	if !found {
 		t.Fatalf("expecting one of [%v] but received [%s]", expectedEventNames, event.EventName)
+	}
+}
+
+func TestDisconnectIfBlockHeightLags(t *testing.T) {
+	p1 := clientmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051", 10)
+	p2 := clientmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051", 8)
+	p3 := clientmocks.NewMockPeer("peer3", "grpcs://peer3.example.com:7051", 8)
+
+	connectch := make(chan *dispatcher.ConnectionEvent)
+
+	conn := clientmocks.NewMockConnection(
+		clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL)),
+	)
+	connectionProvider := clientmocks.NewProviderFactory().Provider(conn)
+
+	channelID := "mychannel"
+
+	eventClient, _, err := newClientWithMockConnAndOpts(
+		fabmocks.NewMockContext(
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(p1, p2, p3),
+		connectionProvider, filteredClientProvider,
+		[]options.Opt{
+			esdispatcher.WithEventConsumerTimeout(3 * time.Second),
+			WithMaxConnectAttempts(1),
+			WithTimeBetweenConnectAttempts(time.Millisecond),
+			WithConnectionEvent(connectch),
+			WithResponseTimeout(2 * time.Second),
+			dispatcher.WithBlockHeightLagThreshold(5),
+			dispatcher.WithReconnectBlockHeightThreshold(10),
+			dispatcher.WithBlockHeightMonitorPeriod(250 * time.Millisecond),
+		},
+	)
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err != nil {
+		t.Fatalf("error connecting channel event client: %s", err)
+	}
+	defer eventClient.Close()
+
+	outcomech := make(chan mockconn.Outcome)
+	go listenConnection(connectch, outcomech)
+
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx1", pb.TxValidationCode_VALID))
+
+	time.Sleep(time.Second)
+
+	// Set the block height of another peer to be greater than the disconnect threshold
+	// so that the event client can reconnect to another peer
+	p2.SetBlockHeight(20)
+	time.Sleep(time.Second)
+
+	select {
+	case outcome := <-outcomech:
+		assert.Equal(t, mockconn.ReconnectedOutcome, outcome)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timed out waiting for reconnect")
+	}
+
+	p3.SetBlockHeight(30)
+	time.Sleep(time.Second)
+
+	select {
+	case outcome := <-outcomech:
+		assert.Equal(t, mockconn.ReconnectedOutcome, outcome)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timed out waiting for reconnect")
 	}
 }

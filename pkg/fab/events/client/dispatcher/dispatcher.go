@@ -8,6 +8,8 @@ package dispatcher
 
 import (
 	"fmt"
+	"math"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -34,6 +36,7 @@ type Dispatcher struct {
 	connectionRegistration *ConnectionReg
 	connectionProvider     api.ConnectionProvider
 	discoveryService       fab.DiscoveryService
+	ticker                 *time.Ticker
 }
 
 // New creates a new dispatcher
@@ -58,6 +61,10 @@ func (ed *Dispatcher) Start() error {
 	if err := ed.Dispatcher.Start(); err != nil {
 		return errors.WithMessage(err, "error starting client event dispatcher")
 	}
+	if ed.reconnectBlockHeightLagThreshold > 0 {
+		ed.ticker = time.NewTicker(ed.blockHeightMonitorPeriod)
+		go ed.monitorBlockHeight()
+	}
 	return nil
 }
 
@@ -77,6 +84,9 @@ func (ed *Dispatcher) HandleStopEvent(e esdispatcher.Event) {
 	// Remove all registrations and close the associated event channels
 	// so that the client is notified that the registration has been removed
 	ed.clearConnectionRegistration()
+	if ed.ticker != nil {
+		ed.ticker.Stop()
+	}
 
 	ed.Dispatcher.HandleStopEvent(e)
 }
@@ -108,7 +118,7 @@ func (ed *Dispatcher) HandleConnectEvent(e esdispatcher.Event) {
 		return
 	}
 
-	peer, err := ed.loadBalancePolicy.Choose(peers)
+	peer, err := ed.loadBalancePolicy.Choose(ed.filterByBlockHeght(peers))
 	if err != nil {
 		evt.ErrCh <- err
 		return
@@ -214,4 +224,115 @@ func (ed *Dispatcher) clearConnectionRegistration() {
 		close(ed.connectionRegistration.Eventch)
 		ed.connectionRegistration = nil
 	}
+}
+
+func (ed *Dispatcher) filterByBlockHeght(peers []fab.Peer) []fab.Peer {
+	if ed.blockHeightLagThreshold < 0 || len(peers) == 1 {
+		logger.Debugf("Returning all peers")
+		return peers
+	}
+
+	maxHeight := getMaxBlockHeight(peers)
+	logger.Debugf("Max block height of peers: %d", maxHeight)
+
+	if maxHeight <= uint64(ed.blockHeightLagThreshold) {
+		logger.Debugf("Max block height of peers is %d and lag threshold is %d so returning all peers", maxHeight, ed.blockHeightLagThreshold)
+		return peers
+	}
+
+	cutoffHeight := maxHeight - uint64(ed.blockHeightLagThreshold)
+
+	logger.Debugf("Choosing peers whose block heights are greater than the cutoff height %d ...", cutoffHeight)
+
+	var retPeers []fab.Peer
+	for _, p := range peers {
+		peerState, ok := p.(fab.PeerState)
+		if !ok {
+			logger.Debugf("Accepting peer [%s] since it does not have state (may be a local peer)", p.URL())
+			retPeers = append(retPeers, p)
+		} else if peerState.BlockHeight() >= cutoffHeight {
+			logger.Debugf("Accepting peer [%s] at block height %d which is greater than or equal to the cutoff %d", p.URL(), peerState.BlockHeight(), cutoffHeight)
+			retPeers = append(retPeers, p)
+		} else {
+			logger.Debugf("Rejecting peer [%s] at block height %d which is less than the cutoff %d", p.URL(), peerState.BlockHeight(), cutoffHeight)
+		}
+	}
+	return retPeers
+}
+
+func getMaxBlockHeight(peers []fab.Peer) uint64 {
+	var maxHeight uint64
+	for _, peer := range peers {
+		peerState, ok := peer.(fab.PeerState)
+		if ok {
+			blockHeight := peerState.BlockHeight()
+			if blockHeight > maxHeight {
+				maxHeight = blockHeight
+			}
+		}
+	}
+	return maxHeight
+}
+
+func (ed *Dispatcher) monitorBlockHeight() {
+	logger.Debugf("Starting block height monitor. Lag threshold: %d", ed.reconnectBlockHeightLagThreshold)
+	for {
+		if _, ok := <-ed.ticker.C; !ok {
+			logger.Debugf("Stopping block height monitor")
+			return
+		}
+		ed.checkBlockHeight()
+	}
+}
+
+func (ed *Dispatcher) checkBlockHeight() {
+	logger.Debugf("Checking block heights...")
+
+	lastBlockReceived := ed.LastBlockNum()
+	if lastBlockReceived == math.MaxUint64 {
+		logger.Debugf("No blocks have been received yet")
+		return
+	}
+
+	peers, err := ed.discoveryService.GetPeers()
+	if err != nil {
+		logger.Warnf("Error checking block height on peers: %s", err)
+		return
+	}
+
+	connectedPeerBlockHeight := lastBlockReceived + 1
+	maxHeight := getMaxBlockHeight(peers)
+
+	logger.Debugf("Block height from blocks received: %d, Max block height from Discovery: %d", connectedPeerBlockHeight, maxHeight)
+
+	cutoffHeight := maxHeight - uint64(ed.reconnectBlockHeightLagThreshold)
+
+	if connectedPeerBlockHeight >= cutoffHeight {
+		logger.Debugf("Block height from blocks received is %d which is greater than or equal to the cutoff %d", connectedPeerBlockHeight, cutoffHeight)
+	} else {
+		logger.Infof("Block height from blocks received is %d which is less than the cutoff %d. Disconnecting from the peer...", connectedPeerBlockHeight, cutoffHeight)
+		if err := ed.disconnect(); err != nil {
+			logger.Warnf("Error disconnecting event client: %s", err)
+		} else {
+			logger.Info("Successfully disconnected event client")
+		}
+	}
+}
+
+func (ed *Dispatcher) disconnect() error {
+	eventch, err := ed.EventCh()
+	if err != nil {
+		return errors.WithMessage(err, "unable to get event dispatcher channel")
+	}
+
+	errch := make(chan error)
+	eventch <- NewDisconnectEvent(errch)
+	err = <-errch
+	if err != nil {
+		return err
+	}
+
+	// Send a DisconnectedEvent. This will trigger a reconnect.
+	eventch <- NewDisconnectedEvent(nil)
+	return nil
 }

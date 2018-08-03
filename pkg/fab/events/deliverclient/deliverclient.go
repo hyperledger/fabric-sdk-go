@@ -116,8 +116,10 @@ func (c *Client) setSeekFromLastBlockReceived() error {
 	if lastBlockNum < math.MaxUint64 {
 		c.seekType = seek.FromBlock
 		c.fromBlock = c.Dispatcher().LastBlockNum() + 1
+		logger.Debugf("Setting seek info from last block received + 1: %d", c.fromBlock)
 	} else {
 		// We haven't received any blocks yet. Just ask for the newest
+		logger.Debugf("Setting seek info from newest")
 		c.seekType = seek.Newest
 	}
 	return nil
@@ -129,10 +131,13 @@ func (c *Client) seekInfo() (*ab.SeekInfo, error) {
 
 	switch c.seekType {
 	case seek.Newest:
+		logger.Debugf("Returning seek info: Newest")
 		return seek.InfoNewest(), nil
 	case seek.Oldest:
+		logger.Debugf("Returning seek info: Oldest")
 		return seek.InfoOldest(), nil
 	case seek.FromBlock:
+		logger.Debugf("Returning seek info: FromBlock(%d)", c.fromBlock)
 		return seek.InfoFrom(c.fromBlock), nil
 	default:
 		return nil, errors.Errorf("unsupported seek type:[%s]", c.seekType)

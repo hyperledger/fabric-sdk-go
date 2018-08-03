@@ -19,11 +19,13 @@ import (
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
-	peer1 = fabmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051")
-	peer2 = fabmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051")
+	peer1 = clientmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051", 100)
+	peer2 = clientmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051", 110)
+	peer3 = clientmocks.NewMockPeer("peer3", "grpcs://peer3.example.com:7051", 111)
 
 	sourceURL = "localhost:9051"
 )
@@ -36,7 +38,7 @@ func TestConnect(t *testing.T) {
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.NewDiscoveryService(peer1, peer2, peer3),
 		clientmocks.NewProviderFactory().Provider(
 			clientmocks.NewMockConnection(
 				clientmocks.WithLedger(
@@ -45,6 +47,7 @@ func TestConnect(t *testing.T) {
 			),
 		),
 		WithLoadBalancePolicy(lbp.NewRandom()),
+		WithBlockHeightLagThreshold(5),
 	)
 
 	if dispatcher.ChannelConfig().ID() != channelID {
@@ -158,7 +161,7 @@ func TestConnectionEvent(t *testing.T) {
 			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 		),
 		fabmocks.NewMockChannelCfg(channelID),
-		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientmocks.NewDiscoveryService(peer1, peer2, peer3),
 		clientmocks.NewProviderFactory().Provider(
 			clientmocks.NewMockConnection(
 				clientmocks.WithLedger(
@@ -215,6 +218,97 @@ func TestConnectionEvent(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 }
+
+func TestFilterByBlockHeight(t *testing.T) {
+	dispatcher := &Dispatcher{}
+
+	dispatcher.blockHeightLagThreshold = -1
+	filteredPeers := dispatcher.filterByBlockHeght([]fab.Peer{peer1, peer2, peer3})
+	assert.Equal(t, 3, len(filteredPeers))
+
+	dispatcher.blockHeightLagThreshold = 0
+	filteredPeers = dispatcher.filterByBlockHeght([]fab.Peer{peer1, peer2, peer3})
+	assert.Equal(t, 1, len(filteredPeers))
+
+	dispatcher.blockHeightLagThreshold = 5
+	filteredPeers = dispatcher.filterByBlockHeght([]fab.Peer{peer1, peer2, peer3})
+	assert.Equal(t, 2, len(filteredPeers))
+
+	dispatcher.blockHeightLagThreshold = 20
+	filteredPeers = dispatcher.filterByBlockHeght([]fab.Peer{peer1, peer2, peer3})
+	assert.Equal(t, 3, len(filteredPeers))
+}
+
+func TestDisconnectIfBlockHeightLags(t *testing.T) {
+	p1 := clientmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051", 10)
+	p2 := clientmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051", 8)
+	p3 := clientmocks.NewMockPeer("peer3", "grpcs://peer3.example.com:7051", 8)
+
+	channelID := "testchannel"
+
+	dispatcher := New(
+		fabmocks.NewMockContext(
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(p1, p2, p3),
+		clientmocks.NewProviderFactory().Provider(
+			clientmocks.NewMockConnection(
+				clientmocks.WithLedger(
+					servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL),
+				),
+			),
+		),
+		WithBlockHeightLagThreshold(5),
+		WithReconnectBlockHeightThreshold(10),
+		WithBlockHeightMonitorPeriod(250*time.Millisecond),
+	)
+
+	if err := dispatcher.Start(); err != nil {
+		t.Fatalf("Error starting dispatcher: %s", err)
+	}
+
+	dispatcherEventch, err := dispatcher.EventCh()
+	if err != nil {
+		t.Fatalf("Error getting event channel from dispatcher: %s", err)
+	}
+
+	// Register for connection events
+	regerrch := make(chan error)
+	regch := make(chan fab.Registration)
+	connch := make(chan *ConnectionEvent, 10)
+	dispatcherEventch <- NewRegisterConnectionEvent(connch, regch, regerrch)
+
+	select {
+	case <-regch:
+		// No need get the registration to unregister since we're relying on the
+		// connch channel being closed when the dispatcher is stopped.
+	case err := <-regerrch:
+		t.Fatalf("Error registering for connection events: %s", err)
+	}
+
+	// Connect
+	errch := make(chan error)
+	dispatcherEventch <- NewConnectEvent(errch)
+	err = <-errch
+	if err != nil {
+		t.Fatalf("Error connecting: %s", err)
+	}
+
+	dispatcherEventch <- esdispatcher.NewBlockEvent(servicemocks.NewBlockProducer().NewBlock(channelID), sourceURL)
+
+	time.Sleep(time.Second)
+	p2.SetBlockHeight(15)
+	time.Sleep(time.Second)
+
+	select {
+	case e := <-connch:
+		assert.Falsef(t, e.Connected, "expecting disconnected event")
+	default:
+		t.Fatal("Expecting disconnected event but got none")
+	}
+}
+
 func checkEvent(connch chan *ConnectionEvent, errch chan error, state, expectedDisconnectErr string) {
 	for {
 		select {

@@ -35,6 +35,15 @@ func (e *EventEndpoint) Opts() []options.Opt {
 	return e.opts
 }
 
+// BlockHeight returns the block height of the peer. If the peer doesn't contain any state info then 0 is returned.
+func (e *EventEndpoint) BlockHeight() uint64 {
+	peerState, ok := e.Peer.(fab.PeerState)
+	if !ok {
+		return 0
+	}
+	return peerState.BlockHeight()
+}
+
 // FromPeerConfig creates a new EventEndpoint from the given config
 func FromPeerConfig(config fab.EndpointConfig, peer fab.Peer, peerCfg *fab.PeerConfig) *EventEndpoint {
 	opts := comm.OptsFromPeerConfig(peerCfg)
