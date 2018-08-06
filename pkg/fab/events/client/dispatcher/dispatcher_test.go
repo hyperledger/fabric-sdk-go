@@ -240,9 +240,9 @@ func TestFilterByBlockHeight(t *testing.T) {
 }
 
 func TestDisconnectIfBlockHeightLags(t *testing.T) {
-	p1 := clientmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051", 10)
-	p2 := clientmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051", 8)
-	p3 := clientmocks.NewMockPeer("peer3", "grpcs://peer3.example.com:7051", 8)
+	p1 := clientmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051", 4)
+	p2 := clientmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051", 1)
+	p3 := clientmocks.NewMockPeer("peer3", "grpcs://peer3.example.com:7051", 1)
 
 	channelID := "testchannel"
 
@@ -259,8 +259,8 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 				),
 			),
 		),
-		WithBlockHeightLagThreshold(5),
-		WithReconnectBlockHeightThreshold(10),
+		WithBlockHeightLagThreshold(2),
+		WithReconnectBlockHeightThreshold(3),
 		WithBlockHeightMonitorPeriod(250*time.Millisecond),
 	)
 
@@ -295,16 +295,29 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 		t.Fatalf("Error connecting: %s", err)
 	}
 
-	dispatcherEventch <- esdispatcher.NewBlockEvent(servicemocks.NewBlockProducer().NewBlock(channelID), sourceURL)
+	dispatcherEventch <- NewConnectedEvent()
+
+	select {
+	case e := <-connch:
+		assert.Truef(t, e.Connected, "expecting connected event")
+	case <-time.After(time.Second):
+		t.Fatal("Expecting connected event but got none")
+	}
+
+	blockProducer := servicemocks.NewBlockProducer()
+	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
+	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
+	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
+	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
+	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
 
 	time.Sleep(time.Second)
 	p2.SetBlockHeight(15)
-	time.Sleep(time.Second)
 
 	select {
 	case e := <-connch:
 		assert.Falsef(t, e.Connected, "expecting disconnected event")
-	default:
+	case <-time.After(time.Second):
 		t.Fatal("Expecting disconnected event but got none")
 	}
 }

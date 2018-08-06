@@ -1396,9 +1396,9 @@ func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expecte
 }
 
 func TestDisconnectIfBlockHeightLags(t *testing.T) {
-	p1 := clientmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051", 10)
-	p2 := clientmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051", 8)
-	p3 := clientmocks.NewMockPeer("peer3", "grpcs://peer3.example.com:7051", 8)
+	p1 := clientmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051", 4)
+	p2 := clientmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051", 1)
+	p3 := clientmocks.NewMockPeer("peer3", "grpcs://peer3.example.com:7051", 1)
 
 	connectch := make(chan *dispatcher.ConnectionEvent)
 
@@ -1422,8 +1422,8 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 			WithTimeBetweenConnectAttempts(time.Millisecond),
 			WithConnectionEvent(connectch),
 			WithResponseTimeout(2 * time.Second),
-			dispatcher.WithBlockHeightLagThreshold(5),
-			dispatcher.WithReconnectBlockHeightThreshold(10),
+			dispatcher.WithBlockHeightLagThreshold(2),
+			dispatcher.WithReconnectBlockHeightThreshold(3),
 			dispatcher.WithBlockHeightMonitorPeriod(250 * time.Millisecond),
 		},
 	)
@@ -1439,28 +1439,21 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 	go listenConnection(connectch, outcomech)
 
 	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx1", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx2", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx3", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx4", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx5", pb.TxValidationCode_VALID))
 
 	time.Sleep(time.Second)
 
 	// Set the block height of another peer to be greater than the disconnect threshold
 	// so that the event client can reconnect to another peer
-	p2.SetBlockHeight(20)
-	time.Sleep(time.Second)
+	p2.SetBlockHeight(9)
 
 	select {
 	case outcome := <-outcomech:
 		assert.Equal(t, mockconn.ReconnectedOutcome, outcome)
-	case <-time.After(5 * time.Second):
-		t.Fatal("Timed out waiting for reconnect")
-	}
-
-	p3.SetBlockHeight(30)
-	time.Sleep(time.Second)
-
-	select {
-	case outcome := <-outcomech:
-		assert.Equal(t, mockconn.ReconnectedOutcome, outcome)
-	case <-time.After(5 * time.Second):
+	case <-time.After(3 * time.Second):
 		t.Fatal("Timed out waiting for reconnect")
 	}
 }
