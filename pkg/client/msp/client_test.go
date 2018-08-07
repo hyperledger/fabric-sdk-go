@@ -8,14 +8,13 @@ package msp
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
-
-	"fmt"
-	"os"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"

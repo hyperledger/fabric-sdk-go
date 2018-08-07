@@ -8,8 +8,9 @@ package channel
 
 import (
 	"testing"
-
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -21,7 +22,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateTxnID(t *testing.T) {
