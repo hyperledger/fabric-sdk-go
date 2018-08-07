@@ -1526,7 +1526,7 @@ func peerChannelConfigHookFunc() mapstructure.DecodeHookFunc {
 func setDefault(dataMap map[string]interface{}, key string, defaultVal bool) {
 	_, ok := dataMap[key]
 	if !ok {
-		dataMap[key] = true
+		dataMap[key] = defaultVal
 	}
 }
 

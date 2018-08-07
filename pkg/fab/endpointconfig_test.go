@@ -9,21 +9,18 @@ package fab
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"testing"
-
-	"github.com/stretchr/testify/require"
-
-	"os"
-
+	"encoding/pem"
 	"fmt"
-
+	"os"
+	"reflect"
+	"strings"
+	"testing"
 	"time"
 
-	"strings"
-
-	"reflect"
-
-	"encoding/pem"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -33,9 +30,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
-	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -1494,4 +1488,25 @@ func TestChannelConfigQueryDiscovery(t *testing.T) {
 	assert.NotNil(t, chConfig)
 	assert.Equal(t, 4, chConfig.Policies.QueryChannelConfig.QueryDiscovery)
 
+}
+
+func TestSetDefault(t *testing.T) {
+	dataMap := make(map[string]interface{})
+	key1 := "key1"
+	key2 := "key2"
+	key3 := "key3"
+	defaultVal1 := true
+	defaultVal2 := false
+	key3Val := true
+
+	setDefault(dataMap, key1, defaultVal1)
+	assert.Equal(t, defaultVal1, dataMap[key1])
+
+	setDefault(dataMap, key2, defaultVal2)
+	assert.Equal(t, defaultVal2, dataMap[key2])
+
+	// setDefault makes no effects
+	dataMap[key3] = key3Val
+	setDefault(dataMap, key3, !key3Val)
+	assert.Equal(t, key3Val, dataMap[key3])
 }
