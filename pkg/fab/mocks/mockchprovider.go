@@ -28,6 +28,7 @@ type MockChannelService struct {
 	mockOrderers []string
 	discovery    fab.DiscoveryService
 	selection    fab.SelectionService
+	membership   fab.ChannelMembership
 }
 
 // NewMockChannelProvider returns a mock ChannelProvider
@@ -91,7 +92,15 @@ func (cs *MockChannelService) Config() (fab.ChannelConfig, error) {
 
 // Membership returns member identification
 func (cs *MockChannelService) Membership() (fab.ChannelMembership, error) {
+	if cs.membership != nil {
+		return cs.membership, nil
+	}
 	return NewMockMembership(), nil
+}
+
+//SetCustomMembership sets custom channel membership for unit-test purposes
+func (cs *MockChannelService) SetCustomMembership(customMembership fab.ChannelMembership) {
+	cs.membership = customMembership
 }
 
 //ChannelConfig returns channel config

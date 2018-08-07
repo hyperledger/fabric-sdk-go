@@ -203,9 +203,14 @@ func (cp *channelProvider) ChannelService(ctx fab.ClientContext, channelID strin
 		return nil, err
 	}
 
+	membership, err := chService.Membership()
+	if err != nil {
+		return nil, err
+	}
+
 	discovery, ok := cp.services[channelID]
 	if !ok {
-		discovery, err = dynamicdiscovery.NewChannelService(ctx, channelID)
+		discovery, err = dynamicdiscovery.NewChannelService(ctx, membership, channelID)
 		if err != nil {
 			return nil, err
 		}

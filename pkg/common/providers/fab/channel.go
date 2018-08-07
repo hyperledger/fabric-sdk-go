@@ -63,6 +63,8 @@ type ChannelMembership interface {
 	Validate(serializedID []byte) error
 	// Verify the given signature
 	Verify(serializedID []byte, msg []byte, sig []byte) error
+	//Check is given MSP is available
+	ContainsMSP(msp string) bool
 }
 
 // Versions ...

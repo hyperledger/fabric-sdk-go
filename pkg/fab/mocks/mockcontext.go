@@ -185,6 +185,11 @@ func (pc *MockProviderContext) ChannelProvider() fab.ChannelProvider {
 	return pc.channelProvider
 }
 
+//SetCustomChannelProvider sets custom channel provider for unit-test purposes
+func (pc *MockProviderContext) SetCustomChannelProvider(customChannelProvider fab.ChannelProvider) {
+	pc.channelProvider = customChannelProvider
+}
+
 //InfraProvider returns fabric provider
 func (pc *MockProviderContext) InfraProvider() fab.InfraProvider {
 	return pc.infraProvider

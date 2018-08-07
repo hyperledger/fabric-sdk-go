@@ -31,6 +31,7 @@ type MockConfig struct {
 	customOrdererCfg       *fab.OrdererConfig
 	customRandomOrdererCfg *fab.OrdererConfig
 	EvtServiceConfig       fab.EventServiceConfig
+	CustomTLSCACertPool    fab.CertPool
 }
 
 // NewMockCryptoConfig ...
@@ -145,6 +146,8 @@ func (c *MockConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
 func (c *MockConfig) TLSCACertPool() fab.CertPool {
 	if c.errorCase {
 		return &mockfab.MockCertPool{Err: errors.New("just to test error scenario")}
+	} else if c.CustomTLSCACertPool != nil {
+		return c.CustomTLSCACertPool
 	}
 	return &mockfab.MockCertPool{CertPool: x509.NewCertPool()}
 }

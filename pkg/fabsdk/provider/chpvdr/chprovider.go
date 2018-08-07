@@ -147,7 +147,16 @@ func (cp *ChannelProvider) createEventClient(ctx context.Client, chConfig fab.Ch
 func (cp *ChannelProvider) createDiscoveryService(ctx context.Client, chConfig fab.ChannelCfg) (fab.DiscoveryService, error) {
 	if chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_2Capability) {
 		logger.Debugf("Using Dynamic Discovery based on V1_2 capability.")
-		return dynamicdiscovery.NewChannelService(ctx, chConfig.ID())
+		cs := ChannelService{
+			provider:  cp,
+			context:   ctx,
+			channelID: chConfig.ID(),
+		}
+		membership, err := cs.Membership()
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create discovery service")
+		}
+		return dynamicdiscovery.NewChannelService(ctx, membership, chConfig.ID())
 	}
 	return staticdiscovery.NewService(ctx.EndpointConfig(), ctx.InfraProvider(), chConfig.ID())
 }
@@ -264,7 +273,7 @@ func (cs *ChannelService) Membership() (fab.ChannelMembership, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, err := membership.NewCacheKey(membership.Context{Providers: cs.provider.providerContext, EndpointConfig: cs.context.EndpointConfig()},
+	key, err := membership.NewCacheKey(membership.Context{Providers: cs.context, EndpointConfig: cs.context.EndpointConfig()},
 		chCfgRef.Reference, cs.channelID)
 	if err != nil {
 		return nil, err

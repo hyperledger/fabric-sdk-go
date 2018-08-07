@@ -23,20 +23,23 @@ import (
 // are currently joined to the given channel.
 type ChannelService struct {
 	*service
-	channelID string
+	channelID  string
+	membership fab.ChannelMembership
 }
 
 // NewChannelService creates a Discovery Service to query the list of member peers on a given channel.
-func NewChannelService(ctx contextAPI.Client, channelID string, opts ...coptions.Opt) (*ChannelService, error) {
+func NewChannelService(ctx contextAPI.Client, membership fab.ChannelMembership, channelID string, opts ...coptions.Opt) (*ChannelService, error) {
 	logger.Debug("Creating new dynamic discovery service")
 	s := &ChannelService{
-		channelID: channelID,
+		channelID:  channelID,
+		membership: membership,
 	}
 	s.service = newService(ctx.EndpointConfig(), s.queryPeers, opts...)
 	err := s.service.initialize(ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	return s, nil
 }
 
@@ -118,10 +121,14 @@ func (s *ChannelService) asPeers(ctx contextAPI.Client, endpoints []*discclient.
 		if !ok {
 			continue
 		}
-		peers = append(peers, &peerEndpoint{
-			Peer:        peer,
-			blockHeight: endpoint.StateInfoMessage.GetStateInfo().GetProperties().LedgerHeight,
-		})
+
+		//check if cache is updated with tlscert if this is a new org joined and membership is not done yet updating cache
+		if s.membership.ContainsMSP(peer.MSPID()) {
+			peers = append(peers, &peerEndpoint{
+				Peer:        peer,
+				blockHeight: endpoint.StateInfoMessage.GetStateInfo().GetProperties().LedgerHeight,
+			})
+		}
 	}
 	return peers
 }

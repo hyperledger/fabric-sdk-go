@@ -57,6 +57,16 @@ func (ref *Ref) Verify(serializedID []byte, msg []byte, sig []byte) error {
 	return membership.Verify(serializedID, msg, sig)
 }
 
+// ContainsMSP checks if given MSP is available in the underlying reference
+func (ref *Ref) ContainsMSP(msp string) bool {
+	membership, err := ref.get()
+	if err != nil {
+		logger.Debugf("Failed to check ContainsMSP, err: %s", err)
+		return false
+	}
+	return membership.ContainsMSP(msp)
+}
+
 func (ref *Ref) get() (fab.ChannelMembership, error) {
 	m, err := ref.Get()
 	if err != nil {
