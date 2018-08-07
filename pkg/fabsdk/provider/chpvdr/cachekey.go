@@ -47,7 +47,7 @@ func (k *cacheKey) String() string {
 	return k.key
 }
 
-// cacheKey holds a key for the provider cache
+// eventCacheKey holds a key for the provider cache
 type eventCacheKey struct {
 	cacheKey
 	opts []options.Opt

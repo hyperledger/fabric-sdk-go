@@ -9,11 +9,10 @@ package mockmsp
 import (
 	"net"
 	"net/http"
-
 	"time"
 
-	cfapi "github.com/cloudflare/cfssl/api"
 	cfsslapi "github.com/cloudflare/cfssl/api"
+
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
@@ -143,7 +142,7 @@ func (s *MockFabricCAServer) enroll(w http.ResponseWriter, req *http.Request) {
 	}
 	resp := &enrollmentResponseNet{Cert: util.B64Encode([]byte(ecert))}
 	fillCAInfo(&resp.ServerInfo)
-	if err := cfapi.SendResponse(w, resp); err != nil {
+	if err := cfsslapi.SendResponse(w, resp); err != nil {
 		logger.Error(err)
 	}
 }

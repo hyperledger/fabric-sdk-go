@@ -7,16 +7,17 @@ SPDX-License-Identifier: Apache-2.0
 package endpoint
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
 
-// DiscoveryWrapper wraps a target discovery service and and adds endpoint data to each
+// DiscoveryWrapper wraps a target discovery service and adds endpoint data to each
 // of the discovered peers.
 type DiscoveryWrapper struct {
 	fab.DiscoveryService
