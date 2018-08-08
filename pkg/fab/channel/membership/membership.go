@@ -129,6 +129,13 @@ func createMSPManager(ctx Context, cfg fab.ChannelCfg) (msp.MSPManager, []string
 		}
 	}
 
+	//To make sure tls cert pool is updated in advance with all the new certs being added,
+	// to avoid delay in first endorsement connection with new peer
+	_, err := ctx.EndpointConfig.TLSCACertPool().Get()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return mspManager, mspNames, nil
 }
 
