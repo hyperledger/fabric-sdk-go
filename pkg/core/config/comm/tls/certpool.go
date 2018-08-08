@@ -25,7 +25,7 @@ type certPool struct {
 	certPool    *x509.CertPool
 	certs       []*x509.Certificate
 	certsByName map[string][]int
-	lock        sync.Mutex
+	lock        sync.RWMutex
 	dirty       int32
 	certQueue   []*x509.Certificate
 }
@@ -52,16 +52,19 @@ func (c *certPool) Get() (*x509.CertPool, error) {
 
 	//if dirty then add certs from queue to cert pool
 	if atomic.CompareAndSwapInt32(&c.dirty, 1, 0) {
-
 		c.lock.Lock()
-		defer c.lock.Unlock()
 
 		//add all new certs in queue to cert pool
 		for _, cert := range c.certQueue {
 			c.certPool.AddCert(cert)
 		}
 		c.certQueue = []*x509.Certificate{}
+
+		c.lock.Unlock()
 	}
+
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 
 	return c.certPool, nil
 }
