@@ -120,12 +120,6 @@ func (c *Client) Close() {
 func (c *Client) close(force bool) bool {
 	logger.Debug("Attempting to close event client...")
 
-	if !c.setStoppped() {
-		// Already stopped
-		logger.Debug("Client already stopped")
-		return true
-	}
-
 	if !force {
 		// Check if there are any outstanding registrations
 		regInfoCh := make(chan *esdispatcher.RegistrationInfo)
@@ -142,6 +136,12 @@ func (c *Client) close(force bool) bool {
 			logger.Debugf("Cannot stop client since there are %d outstanding registrations", regInfo.TotalRegistrations)
 			return false
 		}
+	}
+
+	if !c.setStoppped() {
+		// Already stopped
+		logger.Debug("Client already stopped")
+		return true
 	}
 
 	logger.Debug("Stopping client...")
@@ -389,6 +389,8 @@ func (c *Client) reconnect() {
 	if err := c.connectWithRetry(c.maxReconnAttempts, c.timeBetweenConnAttempts); err != nil {
 		logger.Warnf("Could not reconnect event client: %s. Closing.", err)
 		c.Close()
+	} else {
+		logger.Infof("Event client has reconnected")
 	}
 }
 
