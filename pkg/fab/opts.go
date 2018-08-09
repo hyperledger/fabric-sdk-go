@@ -10,8 +10,9 @@ import (
 	"crypto/tls"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
 // EndpointConfigOptions represents EndpointConfig interface with overridable interface functions

@@ -9,13 +9,15 @@ package fab
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"math"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"math"
+	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
@@ -27,8 +29,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
-	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
