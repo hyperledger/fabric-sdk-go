@@ -101,59 +101,59 @@ func TestTLSCAConfigWithMultipleCerts(t *testing.T) {
 	//Empty cert pool with just system cert pool certs
 	pool, err := tlsCertPool.Get()
 	assert.Nil(t, err)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 0, 0, 0, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 0, 0, 0, numberOfSubjects, 0)
 
 	//add 2 certs
 	tlsCertPool.Add(certOrderer, certOrg1)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 0, 2, 2, 2, numberOfSubjects, 1)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 0, 2, 2, numberOfSubjects, 1)
 	pool, err = tlsCertPool.Get()
 	assert.Nil(t, err)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, numberOfSubjects, 0)
 
 	//add 1 existing cert, queue should be unchanged and dirty flag should be off
 	tlsCertPool.Add(certOrg1)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, numberOfSubjects, 0)
 	pool, err = tlsCertPool.Get()
 	assert.Nil(t, err)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, numberOfSubjects, 0)
 
 	//try again, add 1 existing cert, queue should be unchanged and dirty flag should be off
 	tlsCertPool.Add(certOrg1)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, numberOfSubjects, 0)
 	pool, err = tlsCertPool.Get()
 	assert.Nil(t, err)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, numberOfSubjects, 0)
 
 	//add 2 existing certs, queue should be unchanged and dirty flag should be off
 	tlsCertPool.Add(certOrderer, certOrg1)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, numberOfSubjects, 0)
 	pool, err = tlsCertPool.Get()
 	assert.Nil(t, err)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, numberOfSubjects, 0)
 
 	//add 3 certs, (2 existing + 1 new), queue should have one extra cert and dirty flag should be on
 	tlsCertPool.Add(certOrderer, certOrg1, certOrg2)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 3, 3, 1, numberOfSubjects, 1)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 3, 3, numberOfSubjects, 1)
 	pool, err = tlsCertPool.Get()
 	assert.Nil(t, err)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 3, 3, 3, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 3, 3, 3, numberOfSubjects, 0)
 
 	//add all 3 existing certs, queue should be unchanged and dirty flag should be off
 	tlsCertPool.Add(certOrderer, certOrg1, certOrg2)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 3, 3, 3, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 3, 3, 3, numberOfSubjects, 0)
 	pool, err = tlsCertPool.Get()
 	assert.Nil(t, err)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 3, 3, 3, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 3, 3, 3, numberOfSubjects, 0)
 
 }
 
-func verifyCertPoolInstance(t *testing.T, pool *x509.CertPool, fabPool fab.CertPool, numberOfCertsInPool, numberOfCerts, numberOfCertsByName, numbersOfCertsInQueue, numberOfSubjects int, dirty int32) {
+func verifyCertPoolInstance(t *testing.T, pool *x509.CertPool, fabPool fab.CertPool, numberOfCertsInPool, numberOfCerts, numberOfCertsByName, numberOfSubjects int, dirty int32) {
 	assert.NotNil(t, fabPool)
 	tlsCertPool := fabPool.(*certPool)
 	assert.Equal(t, dirty, tlsCertPool.dirty)
 	assert.Equal(t, numberOfCerts, len(tlsCertPool.certs))
 	assert.Equal(t, numberOfCertsByName, len(tlsCertPool.certsByName))
-	assert.Equal(t, numbersOfCertsInQueue, len(tlsCertPool.certQueue))
+	assert.Equal(t, numberOfSubjects+numberOfCertsInPool, len(pool.Subjects()))
 	assert.Equal(t, numberOfSubjects+numberOfCertsInPool, len(pool.Subjects()))
 }
 
@@ -183,21 +183,21 @@ func TestAddingDuplicateCertsToPool(t *testing.T) {
 	//Empty cert pool with just system cert pool certs
 	pool, err := tlsCertPool.Get()
 	assert.Nil(t, err)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 0, 0, 0, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 0, 0, 0, numberOfSubjects, 0)
 
 	//add multiple certs with duplicate
 	tlsCertPool.Add(certOrderer, certOrg1, certOrderer, certOrg1, certOrg1, certOrg1, certOrderer, certOrderer)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 0, 2, 2, 2, numberOfSubjects, 1)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 0, 2, 2, numberOfSubjects, 1)
 	pool, err = tlsCertPool.Get()
 	assert.Nil(t, err)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 2, 2, numberOfSubjects, 0)
 
 	//add multiple certs with duplicate
 	tlsCertPool.Add(certOrderer, certOrg1, certOrderer, certOrg1, certOrg2, certOrg2, certOrg2, certOrderer, certOrderer)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 3, 3, 1, numberOfSubjects, 1)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 2, 3, 3, numberOfSubjects, 1)
 	pool, err = tlsCertPool.Get()
 	assert.Nil(t, err)
-	verifyCertPoolInstance(t, pool, tlsCertPool, 3, 3, 3, 0, numberOfSubjects, 0)
+	verifyCertPoolInstance(t, pool, tlsCertPool, 3, 3, 3, numberOfSubjects, 0)
 }
 
 func TestRemoveDuplicatesCerts(t *testing.T) {
@@ -293,7 +293,7 @@ func TestConcurrent(t *testing.T) {
 	concurrency := 1000
 	certs := createNCerts(concurrency)
 
-	fabCertPool, err := NewCertPool(true)
+	fabCertPool, err := NewCertPool(false)
 	require.NoError(t, err)
 
 	tlsCertPool := fabCertPool.(*certPool)
