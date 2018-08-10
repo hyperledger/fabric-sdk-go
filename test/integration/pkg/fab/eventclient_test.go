@@ -26,7 +26,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
-const eventTimeWindow = 10 * time.Second // the amount of time to watch for events, in order to compare to expectations.
+const eventTimeWindow = 30 * time.Second // the maximum amount of time to watch for events.
 
 func TestEventClient(t *testing.T) {
 	chainCodeID := mainChaincodeID
@@ -225,7 +225,9 @@ func checkFilteredBlockEvent(wg *sync.WaitGroup, fbeventch <-chan *fab.FilteredB
 				// Not our event
 				continue
 			}
+			t.Logf("Received correct filtered block event: %#v", event)
 			atomic.AddUint32(numReceived, 1)
+			return
 		case <-time.After(eventTimeWindow):
 			return
 		}
