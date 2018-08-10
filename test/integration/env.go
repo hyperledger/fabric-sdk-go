@@ -30,13 +30,9 @@ var ConfigBackend = fetchConfigBackend(configPath, entityMatcherLocal)
 func fetchConfigBackend(configPath string, entityMatcherOverride string) core.ConfigProvider {
 	configProvider := config.FromFile(pathvar.Subst(configPath))
 
-	args := os.Args[1:]
-	for _, arg := range args {
-		//If testlocal is enabled, then update config backend to run 'local' test
-		if arg == "testLocal=true" {
-			return func() ([]core.ConfigBackend, error) {
-				return appendLocalEntityMappingBackend(configProvider, entityMatcherOverride)
-			}
+	if IsLocal() {
+		return func() ([]core.ConfigBackend, error) {
+			return appendLocalEntityMappingBackend(configProvider, entityMatcherOverride)
 		}
 	}
 
@@ -62,10 +58,16 @@ func AddLocalEntityMapping(configProvider core.ConfigProvider) core.ConfigProvid
 	}
 }
 
+func extractBackend(configProvider core.ConfigProvider) ([]core.ConfigBackend, error) {
+	if configProvider == nil {
+		return []core.ConfigBackend{}, nil
+	}
+	return configProvider()
+}
+
 //appendLocalEntityMappingBackend appends entity matcher backend to given config provider
 func appendLocalEntityMappingBackend(configProvider core.ConfigProvider, entityMatcherOverridePath string) ([]core.ConfigBackend, error) {
-	//Current backend
-	currentBackends, err := configProvider()
+	currentBackends, err := extractBackend(configProvider)
 	if err != nil {
 		return nil, err
 	}
