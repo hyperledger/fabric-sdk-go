@@ -14,10 +14,13 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	configPath := integration.GetConfigPath("config_e2e.yaml")
-	//End to End testing
-	Run(t, config.FromFile(configPath))
+	t.Run("Base", func(t *testing.T) {
+		configPath := integration.GetConfigPath("config_e2e.yaml")
+		Run(t, config.FromFile(configPath))
+	})
 
-	//Using setup done set above by end to end test, run below test with new config which has no orderer config inside
-	runWithNoOrdererConfig(t, config.FromFile(integration.GetConfigPath("config_e2e_no_orderer.yaml")))
+	t.Run("NoOrderer", func(t *testing.T) {
+		//Using setup done set above by end to end test, run below test with new config which has no orderer config inside
+		runWithNoOrdererConfig(t, config.FromFile(integration.GetConfigPath("config_e2e_no_orderer.yaml")))
+	})
 }

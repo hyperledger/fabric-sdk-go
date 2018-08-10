@@ -8,7 +8,6 @@ package e2e
 
 import (
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -155,12 +154,6 @@ func moveFunds(t *testing.T, client *channel.Client) *fab.CCEvent {
 }
 
 func verifyFundsIsMoved(t *testing.T, client *channel.Client, value []byte, ccEvent *fab.CCEvent) {
-
-	//Fix for issue prev in release test, where 'ccEvent.SourceURL' has event URL
-	if !integration.IsLocal() {
-		portIndex := strings.Index(ccEvent.SourceURL, ":")
-		ccEvent.SourceURL = ccEvent.SourceURL[0:portIndex]
-	}
 
 	newValue := queryCC(t, client, ccEvent.SourceURL)
 	valueInt, err := strconv.Atoi(string(value))
