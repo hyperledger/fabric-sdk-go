@@ -144,7 +144,7 @@ FABRIC_TOOLS_PRERELEASE_TAG = $(FABRIC_ARCH)-$(FABRIC_PRERELEASE_VERSION)
 FABRIC_TOOLS_DEVSTABLE_TAG  := stable
 
 # The version of dep that will be installed by depend (or in the CI)
-GO_DEP_COMMIT := v0.4.1
+GO_DEP_COMMIT := v0.5.0
 
 # Detect CI
 # TODO introduce nightly and adjust verify
@@ -228,7 +228,7 @@ ifeq ($(FABRIC_SDKGO_DEPEND_INSTALL),true)
 endif
 
 .PHONY: checks
-checks: depend-noforce license lint
+checks: depend-noforce license check-dep lint
 
 .PHONY: license
 license:
@@ -241,6 +241,10 @@ lint: populate-noforce
 .PHONY: lint-all
 lint-all: populate-noforce
 	@$(TEST_SCRIPTS_PATH)/check_lint.sh
+
+.PHONY: check-dep
+check-dep:
+	@dep check -skip-vendor
 
 .PHONY: build-softhsm2-image
 build-softhsm2-image:
@@ -257,7 +261,7 @@ build-socat-image:
 		-f $(FIXTURE_SOCAT_PATH)/Dockerfile .
 
 .PHONY: unit-test
-unit-test: clean-tests depend-noforce populate-noforce license
+unit-test: clean-tests depend-noforce check-dep populate-noforce license
 	@TEST_CHANGED_ONLY=true TEST_WITH_LINTER=true FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) \
 	GO_TESTFLAGS="$(GO_TESTFLAGS_UNIT)" \
 	$(TEST_SCRIPTS_PATH)/unit.sh
