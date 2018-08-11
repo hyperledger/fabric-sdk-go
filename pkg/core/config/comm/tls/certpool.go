@@ -9,7 +9,6 @@ package tls
 import (
 	"crypto/x509"
 	"sync"
-
 	"sync/atomic"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"

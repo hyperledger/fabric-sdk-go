@@ -8,16 +8,16 @@ package tls
 
 import (
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"strconv"
 	"testing"
 	"time"
 
-	"encoding/pem"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
 var goodCert = &x509.Certificate{
@@ -153,7 +153,6 @@ func verifyCertPoolInstance(t *testing.T, pool *x509.CertPool, fabPool fab.CertP
 	assert.Equal(t, dirty, tlsCertPool.dirty)
 	assert.Equal(t, numberOfCerts, len(tlsCertPool.certs))
 	assert.Equal(t, numberOfCertsByName, len(tlsCertPool.certsByName))
-	assert.Equal(t, numberOfSubjects+numberOfCertsInPool, len(pool.Subjects()))
 	assert.Equal(t, numberOfSubjects+numberOfCertsInPool, len(pool.Subjects()))
 }
 
