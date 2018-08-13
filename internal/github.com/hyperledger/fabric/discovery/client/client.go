@@ -11,9 +11,9 @@ Please review third_party pinning scripts and patches for more details.
 package discovery
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -30,8 +30,6 @@ var (
 
 // Client interacts with the discovery server
 type Client struct {
-	lastRequest      []byte
-	lastSignature    []byte
 	createConnection Dialer
 	signRequest      Signer
 }
@@ -109,22 +107,36 @@ func (req *Request) AddLocalPeersQuery() *Request {
 	req.Queries = append(req.Queries, &discovery.Query{
 		Query: q,
 	})
-	req.addQueryMapping(discovery.LocalMembershipQueryType, "")
+	var ic InvocationChain
+	req.addQueryMapping(discovery.LocalMembershipQueryType, channnelAndInvocationChain("", ic))
 	return req
 }
 
 // AddPeersQuery adds to the request a peer query
-func (req *Request) AddPeersQuery() *Request {
+func (req *Request) AddPeersQuery(invocationChain ...*discovery.ChaincodeCall) *Request {
 	ch := req.lastChannel
 	q := &discovery.Query_PeerQuery{
-		PeerQuery: &discovery.PeerMembershipQuery{},
+		PeerQuery: &discovery.PeerMembershipQuery{
+			Filter: &discovery.ChaincodeInterest{
+				Chaincodes: invocationChain,
+			},
+		},
 	}
 	req.Queries = append(req.Queries, &discovery.Query{
 		Channel: ch,
 		Query:   q,
 	})
-	req.addQueryMapping(discovery.PeerMembershipQueryType, ch)
+	var ic InvocationChain
+	if len(invocationChain) > 0 {
+		ic = InvocationChain(invocationChain)
+	}
+	req.addChaincodeQueryMapping([]InvocationChain{ic})
+	req.addQueryMapping(discovery.PeerMembershipQueryType, channnelAndInvocationChain(ch, ic))
 	return req
+}
+
+func channnelAndInvocationChain(ch string, ic InvocationChain) string {
+	return fmt.Sprintf("%s %s", ch, ic.String())
 }
 
 // OfChannel sets the next queries added to be in the given channel's context
@@ -150,23 +162,11 @@ func (c *Client) Send(ctx context.Context, req *Request, auth *discovery.AuthInf
 	if err != nil {
 		return nil, errors.Wrap(err, "failed marshaling Request to bytes")
 	}
-	sig := c.lastSignature
-	// Only sign the Request if it is different than the previous Request sent.
-	// Otherwise, use the last signature from the previous send.
-	// This is not only to save CPU cycles in the Client-side,
-	// but also for the server side to be able to memoize the signature verification.
-	// We have the use the previous signature, because many signature schemes are not deterministic.
-	if !bytes.Equal(c.lastRequest, payload) {
-		sig, err = c.signRequest(payload)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed signing Request")
-		}
-	}
 
-	// Remember this Request and the corresponding signature, in order to skip signing next time
-	// and reuse the signature
-	c.lastRequest = payload
-	c.lastSignature = sig
+	sig, err := c.signRequest(payload)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed signing Request")
+	}
 
 	conn, err := c.createConnection()
 	if err != nil {
@@ -208,7 +208,7 @@ type channelResponse struct {
 func (cr *channelResponse) Config() (*discovery.ConfigResult, error) {
 	res, exists := cr.response[key{
 		queryType: discovery.ConfigQueryType,
-		channel:   cr.channel,
+		k:         cr.channel,
 	}]
 
 	if !exists {
@@ -222,11 +222,12 @@ func (cr *channelResponse) Config() (*discovery.ConfigResult, error) {
 	return nil, res.(error)
 }
 
-func parsePeers(queryType discovery.QueryType, r response, channel string) ([]*Peer, error) {
-	res, exists := r[key{
+func parsePeers(queryType discovery.QueryType, r response, channel string, invocationChain ...*discovery.ChaincodeCall) ([]*Peer, error) {
+	peerKeys := key{
 		queryType: queryType,
-		channel:   channel,
-	}]
+		k:         fmt.Sprintf("%s %s", channel, InvocationChain(invocationChain).String()),
+	}
+	res, exists := r[peerKeys]
 
 	if !exists {
 		return nil, ErrNotFound
@@ -239,8 +240,8 @@ func parsePeers(queryType discovery.QueryType, r response, channel string) ([]*P
 	return nil, res.(error)
 }
 
-func (cr *channelResponse) Peers() ([]*Peer, error) {
-	return parsePeers(discovery.PeerMembershipQueryType, cr.response, cr.channel)
+func (cr *channelResponse) Peers(invocationChain ...*discovery.ChaincodeCall) ([]*Peer, error) {
+	return parsePeers(discovery.PeerMembershipQueryType, cr.response, cr.channel, invocationChain...)
 }
 
 func (cr *channelResponse) Endorsers(invocationChain InvocationChain, ps PrioritySelector, ef ExclusionFilter) (Endorsers, error) {
@@ -248,7 +249,7 @@ func (cr *channelResponse) Endorsers(invocationChain InvocationChain, ps Priorit
 	// it means it's an error returned from the service
 	if err, exists := cr.response[key{
 		queryType: discovery.ChaincodeQueryType,
-		channel:   cr.channel,
+		k:         cr.channel,
 	}]; exists {
 		return nil, err.(error)
 	}
@@ -256,7 +257,7 @@ func (cr *channelResponse) Endorsers(invocationChain InvocationChain, ps Priorit
 	// Else, the service returned a response that isn't an error
 	res, exists := cr.response[key{
 		queryType:       discovery.ChaincodeQueryType,
-		channel:         cr.channel,
+		k:               cr.channel,
 		invocationChain: invocationChain.String(),
 	}]
 
@@ -310,7 +311,7 @@ func (resp response) ForChannel(ch string) ChannelResponse {
 
 type key struct {
 	queryType       discovery.QueryType
-	channel         string
+	k               string
 	invocationChain string
 }
 
@@ -322,7 +323,7 @@ func (req *Request) computeResponse(r *discovery.Response) (response, error) {
 		case discovery.ConfigQueryType:
 			err = resp.mapConfig(channel2index, r)
 		case discovery.ChaincodeQueryType:
-			err = resp.mapEndorsers(channel2index, r, req.queryMapping, req.invocationChainMapping)
+			err = resp.mapEndorsers(channel2index, r, req.invocationChainMapping)
 		case discovery.PeerMembershipQueryType:
 			err = resp.mapPeerMembership(channel2index, r, discovery.PeerMembershipQueryType)
 		case discovery.LocalMembershipQueryType:
@@ -344,7 +345,7 @@ func (resp response) mapConfig(channel2index map[string]int, r *discovery.Respon
 		}
 		key := key{
 			queryType: discovery.ConfigQueryType,
-			channel:   ch,
+			k:         ch,
 		}
 
 		if err != nil {
@@ -357,15 +358,16 @@ func (resp response) mapConfig(channel2index map[string]int, r *discovery.Respon
 	return nil
 }
 
-func (resp response) mapPeerMembership(channel2index map[string]int, r *discovery.Response, qt discovery.QueryType) error {
-	for ch, index := range channel2index {
+func (resp response) mapPeerMembership(key2Index map[string]int, r *discovery.Response, qt discovery.QueryType) error {
+	for k, index := range key2Index {
 		membersRes, err := r.MembershipAt(index)
 		if membersRes == nil && err == nil {
 			return errors.Errorf("expected QueryResult of either PeerMembershipResult or Error but got %v instead", r.Results[index])
 		}
+
 		key := key{
 			queryType: qt,
-			channel:   ch,
+			k:         k,
 		}
 
 		if err != nil {
@@ -422,7 +424,6 @@ func isStateInfoExpected(qt discovery.QueryType) bool {
 func (resp response) mapEndorsers(
 	channel2index map[string]int,
 	r *discovery.Response,
-	queryMapping map[discovery.QueryType]map[string]int,
 	chaincodeQueryMapping map[int][]InvocationChain) error {
 	for ch, index := range channel2index {
 		ccQueryRes, err := r.EndorsersAt(index)
@@ -433,7 +434,7 @@ func (resp response) mapEndorsers(
 		if err != nil {
 			key := key{
 				queryType: discovery.ChaincodeQueryType,
-				channel:   ch,
+				k:         ch,
 			}
 			resp[key] = errors.New(err.Content)
 			continue
@@ -457,7 +458,7 @@ func (resp response) mapEndorsersOfChannel(ccRs *discovery.ChaincodeQueryResult,
 		}
 		key := key{
 			queryType:       discovery.ChaincodeQueryType,
-			channel:         channel,
+			k:               channel,
 			invocationChain: invocationChain[i].String(),
 		}
 
@@ -538,10 +539,10 @@ type endorsementDescriptor struct {
 }
 
 // NewClient creates a new Client instance
-func NewClient(createConnection Dialer, s Signer) *Client {
+func NewClient(createConnection Dialer, s Signer, signerCacheSize uint) *Client {
 	return &Client{
 		createConnection: createConnection,
-		signRequest:      s,
+		signRequest:      NewMemoizeSigner(s, signerCacheSize).Sign,
 	}
 }
 

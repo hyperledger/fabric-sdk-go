@@ -21,6 +21,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	signerCacheSize = 10 // TODO: set an appropriate value (and perhaps make configurable)
+)
+
 // Client implements a Discovery client
 type Client struct {
 	ctx      fabcontext.Client
@@ -99,6 +103,7 @@ func (c *Client) send(reqCtx context.Context, req *discclient.Request, target fa
 		func(msg []byte) ([]byte, error) {
 			return c.ctx.SigningManager().Sign(msg, c.ctx.PrivateKey())
 		},
+		signerCacheSize,
 	)
 	return discClient.Send(reqCtx, req, c.authInfo)
 }

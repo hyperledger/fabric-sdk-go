@@ -33,8 +33,7 @@ declare -a PKGS=(
     "common/channelconfig"
     "common/attrmgr"
     "common/ledger"
-# TODO add metrics once it's officially released
-#    "common/metrics"
+    "common/metrics"
 
     "sdkpatch/logbridge"
     "sdkpatch/cryptosuitebridge"
@@ -110,10 +109,9 @@ declare -a FILES=(
 
     "common/ledger/ledger_interface.go"
 
-# TODO add metrics once it's officially released
-#    "common/metrics/server.go"
-#    "common/metrics/tally_provider.go"
-#    "common/metrics/types.go"
+    "common/metrics/server.go"
+    "common/metrics/tally_provider.go"
+    "common/metrics/types.go"
 
     "sdkpatch/logbridge/logbridge.go"
     "sdkpatch/cryptosuitebridge/cryptosuitebridge.go"
@@ -136,6 +134,7 @@ declare -a FILES=(
     "discovery/client/api.go"
     "discovery/client/client.go"
     "discovery/client/selection.go"
+    "discovery/client/signer.go"
 
     "gossip/util/misc.go"
 )
@@ -161,7 +160,7 @@ gofilter() {
 
 echo "Modifying go source files"
 FILTER_FILENAME="bccsp/pkcs11/impl.go"
-sed -i'' -e 's/impl{swCSP, conf, keyStore, ctx, sessions, slot, lib, opts.Sensitive, opts.SoftVerify}/impl{BCCSP: swCSP, conf: conf, ks: keyStore, ctx: ctx, sessions: sessions, slot: slot, lib: lib, noPrivImport: opts.Sensitive, softVerify: opts.SoftVerify}/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/impl{swCSP, conf, keyStore, ctx, sessions, slot, lib, opts.Sensitive, opts.SoftVerify}/impl{BCCSP: swCSP, conf: conf, ks: keyStore, ctx: ctx, sessions: sessions, slot: slot, lib: lib, privImport: opts.Sensitive, softVerify: opts.SoftVerify}/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/"math\/big"/a "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cachebridge"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/csp.returnSession(\*session)/a cachebridge.ClearAllSession()' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 

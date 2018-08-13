@@ -25,7 +25,7 @@ const (
 	// BatchTimeoutKey is the cb.ConfigItem type key name for the BatchTimeout message
 	BatchTimeoutKey = "BatchTimeout"
 
-	// ChannelRestrictions is the key name for the ChannelRestrictions message
+	// ChannelRestrictionsKey is the key name for the ChannelRestrictions message
 	ChannelRestrictionsKey = "ChannelRestrictions"
 
 	// KafkaBrokersKey is the cb.ConfigItem type key name for the KafkaBrokers message
