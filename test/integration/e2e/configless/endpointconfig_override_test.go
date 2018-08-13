@@ -9,16 +9,13 @@ package configless
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
-
-	"encoding/pem"
-
-	"io/ioutil"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -39,7 +36,7 @@ import (
 // application developers can fully override these functions to load configs in any way that suit their application need
 
 // NOTE: 1. to support test local (flag: TEST_LOCAL=true to use localhost:* URLs for peers, orderers, CAs everywhere), new...() constructor functions where created to test if this flag
-//       is enabled using verifyIsLocal...() function calls. These calls will basically switch config URLs (peers, orderers or CA configs) / EventURLs (peer configs) into "localhost:..."
+//       is enabled using verifyIsLocal...() function calls. These calls will basically switch config URLs (peers, orderers or CA configs) into "localhost:..."
 //       Make sure your local /etc/hosts file does not have any ip-dns mapping entries for peers/orderers/CAs
 //
 //       2. the test assumes the use of the default channel block used in the remaining regular integration tests (for example look at Orderer.Addresses value in
@@ -171,8 +168,7 @@ var (
 
 	peersConfig = map[string]fab.PeerConfig{
 		"peer0.org1.example.com": {
-			URL:      "peer0.org1.example.com:7051",
-			EventURL: "peer0.org1.example.com:7053",
+			URL: "peer0.org1.example.com:7051",
 			GRPCOptions: map[string]interface{}{
 				"ssl-target-name-override": "peer0.org1.example.com",
 				"keep-alive-time":          0 * time.Second,
@@ -184,8 +180,7 @@ var (
 			TLSCACert: tlsCertByBytes("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
 		},
 		"peer0.org2.example.com": {
-			URL:      "peer0.org2.example.com:8051",
-			EventURL: "peer0.org2.example.com:8053",
+			URL: "peer0.org2.example.com:8051",
 			GRPCOptions: map[string]interface{}{
 				"ssl-target-name-override": "peer0.org2.example.com",
 				"keep-alive-time":          0 * time.Second,
@@ -200,8 +195,7 @@ var (
 
 	peersByLocalURL = map[string]fab.PeerConfig{
 		"localhost:7051": {
-			URL:      "localhost:7051",
-			EventURL: "localhost:7053",
+			URL: "localhost:7051",
 			GRPCOptions: map[string]interface{}{
 				"ssl-target-name-override": "peer0.org1.example.com",
 				"keep-alive-time":          0 * time.Second,
@@ -213,8 +207,7 @@ var (
 			TLSCACert: tlsCertByBytes("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
 		},
 		"localhost:8051": {
-			URL:      "localhost:8051",
-			EventURL: "localhost:8053",
+			URL: "localhost:8051",
 			GRPCOptions: map[string]interface{}{
 				"ssl-target-name-override": "peer0.org2.example.com",
 				"keep-alive-time":          0 * time.Second,
@@ -305,10 +298,9 @@ var (
 type exampleTimeout struct{}
 
 var defaultTypes = map[fab.TimeoutType]time.Duration{
-	fab.EndorserConnection:       time.Second * 10,
+	fab.PeerConnection:           time.Second * 10,
 	fab.PeerResponse:             time.Minute * 3,
 	fab.DiscoveryGreylistExpiry:  time.Second * 10,
-	fab.EventHubConnection:       time.Second * 15,
 	fab.EventReg:                 time.Second * 15,
 	fab.OrdererConnection:        time.Second * 15,
 	fab.OrdererResponse:          time.Minute * 2,
@@ -464,7 +456,6 @@ func verifyIsLocalPeersURLs(pConfig map[string]fab.PeerConfig) map[string]fab.Pe
 	if integration.IsLocal() {
 		for k, peer := range pConfig {
 			peer.URL = re.ReplaceAllString(peer.URL, localhostRep)
-			peer.EventURL = re.ReplaceAllString(peer.EventURL, localhostRep)
 			newConfigs[k] = peer
 		}
 	}
@@ -475,7 +466,7 @@ func verifyIsLocalPeersURLs(pConfig map[string]fab.PeerConfig) map[string]fab.Pe
 	return newConfigs
 }
 
-//newPeersConfigImpl will create a new examplePeersConfig instance with proper peers URLs and EventURLs (local vs normal) tests
+//newPeersConfigImpl will create a new examplePeersConfig instance with proper peers URLs (local vs normal) tests
 // local tests use localhost urls, while the remaining tests use default values as set in peersConfig var
 func newPeersConfigImpl() *examplePeersConfig {
 	pConfig := verifyIsLocalPeersURLs(peersConfig)
@@ -719,16 +710,6 @@ func (m *exampleEventServiceConfig) EventServiceConfig() fab.EventServiceConfig 
 }
 
 type eventServiceConfig struct {
-}
-
-func (c *eventServiceConfig) Type() fab.EventServiceType {
-	// if this test is run for the previous release (1.0) then update the config with EVENT_HUB as it doesn't support deliveryService
-	if os.Getenv("FABRIC_SDK_CLIENT_EVENTSERVICE_TYPE") == "eventhub" {
-		return fab.EventHubEventServiceType
-	}
-	return fab.DeliverEventServiceType
-	//or for EventHub service type, but most configs use Delivery Service starting release 1.1
-	//return fab.EventHubEventServiceType
 }
 
 func (c *eventServiceConfig) BlockHeightLagThreshold() int {

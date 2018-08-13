@@ -149,18 +149,12 @@ peers:
     # this URL is used to send endorsement and query requests
     url: peer0.org1.example.com:7051
 
-    # this URL is used to connect the EventHub and registering event listeners
-    eventUrl: peer0.org1.example.com:7053
-
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
 
   peer1.org1.example.com:
     # this URL is used to send endorsement and query requests
     url: peer1.org1.example.com:7151
-
-    # this URL is used to connect the EventHub and registering event listeners
-    eventUrl: peer1.org1.example.com:7153
 
     grpcOptions:
       ssl-target-name-override: peer1.org1.example.com
@@ -169,18 +163,12 @@ peers:
     # this URL is used to send endorsement and query requests
     url: peer0.org2.example.com:8051
 
-    # this URL is used to connect the EventHub and registering event listeners
-    eventUrl: peer0.org2.example.com:8053
-
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
 
   peer1.org2.example.com:
     # this URL is used to send endorsement and query requests
     url: peer1.org2.example.com:8151
-
-    # this URL is used to connect the EventHub and registering event listeners
-    eventUrl: peer1.org2.example.com:8153
 
     grpcOptions:
       ssl-target-name-override: peer1.org2.example.com
@@ -237,32 +225,28 @@ certificateAuthorities:
 # UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
 # UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
  # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
-# EventUrlSubstitutionExp and sslTargetOverrideUrlSubstitutionExp follow in the same lines as
- # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
+# sslTargetOverrideUrlSubstitutionExp follow in the same lines as
+ # SubstitutionExp for the fields gprcOptions.ssl-target-name-override respectively
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 entityMatchers:
   peer:
 
     - pattern: (\w+).org.example.(\w+)
       urlSubstitutionExp: peer0.org1.example.com:8888
-      eventUrlSubstitutionExp: peer0.org1.example.com:9999
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
       mappedHost: peer0.org1.example.com
 
     - pattern: (\w+).replace.example.(\w+):(\d+)
       urlSubstitutionExp: $1.org1.example.$2:$3
-      eventUrlSubstitutionExp: $1.org1.example.$2:$3
       sslTargetOverrideUrlSubstitutionExp: $1.org1.override.$2
       mappedHost: $1.org1.example.$2
 
     - pattern: (\w+).missing.example.(\w+)
       urlSubstitutionExp: peer0.org1.example.com:8888
-      eventUrlSubstitutionExp: peer0.org1.example.com:9999
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
 
     - pattern: (\w+).random.example.(\w+)
       urlSubstitutionExp: peer0.org1.example.com:8888
-      eventUrlSubstitutionExp: peer0.org1.example.com:9999
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
       mappedHost: random.mappedhost.com
 

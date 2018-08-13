@@ -45,11 +45,8 @@ client:
 #        # to prevent re-selecting them in subsequent retries.
 #        # This interval will define how long a peer is greylisted
 #        greylistExpiry: 10s
-#  eventService:
-#    # Event service type (optional). If not specified then the type is automatically
-#    # determined from channel capabilities.
-#    type: (deliver|eventhub)
 #
+#  eventService:
 #    # blockHeightLagThreshold sets the block height lag threshold. This value is used for choosing a peer
 #    # to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
 #    # blocks then it will be excluded from selection.
@@ -78,7 +75,6 @@ client:
     # the client is free to override the default values by uncommenting and resetting
     # the values as they see fit in their config file
 #    timeout:
-#      connection: 15s
 #      registrationResponse: 15s
 #  orderer:
 #    timeout:
@@ -307,9 +303,6 @@ peers:
     # this URL is used to send endorsement and query requests
 #    url: grpcs://peer0.org1.example.com:7051
 
-    # this URL is used to connect the EventHub and registering event listeners
-#    eventUrl: grpcs://peer0.org1.example.com:7053
-
 #    grpcOptions:
 #      ssl-target-name-override: peer0.org1.example.com
 #      will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
@@ -321,9 +314,6 @@ peers:
 #  peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
 #    url: grpcs://peer0.org1.example.com:7051
-
-    # this URL is used to connect the EventHub and registering event listeners
-#    eventUrl: grpcs://peer0.org1.example.com:7053
 
 #    grpcOptions:
 #      ssl-target-name-override: peer0.org1.example.com
@@ -370,32 +360,28 @@ certificateAuthorities:
 # UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
 # UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
  # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
-# EventUrlSubstitutionExp and sslTargetOverrideUrlSubstitutionExp follow in the same lines as
- # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
+# sslTargetOverrideUrlSubstitutionExp follow in the same lines as
+ # SubstitutionExp for the fields gprcOptions.ssl-target-name-override respectively
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 entityMatchers:
 #  peer:
 #    - pattern: (\w+).example.(\w+)
 #      urlSubstitutionExp: localhost:7051
-#      eventUrlSubstitutionExp: localhost:7053
 #      sslTargetOverrideUrlSubstitutionExp: localhost
 #      mappedHost: peer0.org1.example.com
 #
 #    - pattern: (\w+).example2.(\w+):(\d+)
 #      urlSubstitutionExp: localhost:7051
-#      eventUrlSubstitutionExp: localhost:7053
 #      sslTargetOverrideUrlSubstitutionExp: localhost
 #      mappedHost: peer0.org2.example.com
 #
 #    - pattern: (\w+).example3.(\w+)
 #      urlSubstitutionExp:
-#      eventUrlSubstitutionExp:
 #      sslTargetOverrideUrlSubstitutionExp:
 #      mappedHost: peer0.org1.example.com
 #
 #    - pattern: (\w+).example4.(\w+):(\d+)
 #      urlSubstitutionExp: $1.org1.example.$2:$3
-#      eventUrlSubstitutionExp: $1.org1.example.$2:7053
 #      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
 #      mappedHost: peer0.org1.example.com
 #

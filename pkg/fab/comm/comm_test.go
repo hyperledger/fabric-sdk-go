@@ -33,9 +33,9 @@ func TestMain(m *testing.M) {
 		panic(fmt.Sprintf("Error starting events listener %s", err))
 	}
 
-	testServer = eventmocks.NewMockEventhubServer()
+	testServer = eventmocks.NewMockDeliverServer()
 
-	pb.RegisterEventsServer(grpcServer, testServer)
+	pb.RegisterDeliverServer(grpcServer, testServer)
 
 	go grpcServer.Serve(lis)
 

@@ -335,15 +335,9 @@ func (c *MockConfig) Lookup(key string) (interface{}, bool) {
 
 // MockEventServiceConfig contains configuration options for the event service
 type MockEventServiceConfig struct {
-	EvtType               fab.EventServiceType
 	LagThreshold          int
 	ReconnectLagThreshold int
 	HeightMonitorPeriod   time.Duration
-}
-
-// Type returns the type of event service to use
-func (c *MockEventServiceConfig) Type() fab.EventServiceType {
-	return c.EvtType
 }
 
 // BlockHeightLagThreshold returns the block height lag threshold.

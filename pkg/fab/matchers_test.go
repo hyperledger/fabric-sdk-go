@@ -26,13 +26,11 @@ const (
 	sampleMatchersIgnoreEndpoint   = "../core/config/testdata/matcher-samples/matchers_sample6.yaml"
 
 	actualPeerURL                 = "peer0.org1.example.com:7051"
-	actualPeerEventURL            = "peer0.org1.example.com:7053"
 	actualPeerHostNameOverride    = "peer0.org1.example.com"
 	actualOrdererURL              = "orderer.example.com:7050"
 	actualOrdererHostNameOverride = "orderer.example.com"
 
 	overridedPeerURL                 = "peer0.org1.example.com:8888"
-	overridedPeerEventURL            = "peer0.org1.example.com:9999"
 	overridedPeerHostNameOverride    = "peer0.org1.override.com"
 	overridedOrdererURL              = "orderer.example.com:8888"
 	overridedOrdererHostNameOverride = "orderer.override.com"
@@ -58,7 +56,6 @@ func TestAllOptionsOverride(t *testing.T) {
 	peerConfig, ok := config.PeerConfig("peer0.org1.example.com:7051")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, overridedPeerURL, peerConfig.URL)
-	assert.Equal(t, overridedPeerEventURL, peerConfig.EventURL)
 	assert.Equal(t, overridedPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
 
@@ -66,7 +63,6 @@ func TestAllOptionsOverride(t *testing.T) {
 	peerConfig, ok = config.PeerConfig("peer0.org1.example.com")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, overridedPeerURL, peerConfig.URL)
-	assert.Equal(t, overridedPeerEventURL, peerConfig.EventURL)
 	assert.Equal(t, overridedPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
 
@@ -107,7 +103,6 @@ func TestPartialOptionsOverride(t *testing.T) {
 	peerConfig, ok := config.PeerConfig("peer0.org1.example.com:7051")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, overridedPeerURL, peerConfig.URL)
-	assert.Equal(t, actualPeerEventURL, peerConfig.EventURL)
 	assert.Equal(t, actualPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
 
@@ -115,7 +110,6 @@ func TestPartialOptionsOverride(t *testing.T) {
 	peerConfig, ok = config.PeerConfig("peer0.org1.example.com")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, overridedPeerURL, peerConfig.URL)
-	assert.Equal(t, actualPeerEventURL, peerConfig.EventURL)
 	assert.Equal(t, actualPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
 
@@ -151,7 +145,6 @@ func TestOnlyHostNameOptionsOverride(t *testing.T) {
 	peerConfig, ok := config.PeerConfig("peer0.org1.example.com:7051")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, actualPeerURL, peerConfig.URL)
-	assert.Equal(t, actualPeerEventURL, peerConfig.EventURL)
 	assert.Equal(t, overridedPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
 
@@ -159,7 +152,6 @@ func TestOnlyHostNameOptionsOverride(t *testing.T) {
 	peerConfig, ok = config.PeerConfig("peer0.org1.example.com")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, actualPeerURL, peerConfig.URL)
-	assert.Equal(t, actualPeerEventURL, peerConfig.EventURL)
 	assert.Equal(t, overridedPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
 
@@ -194,7 +186,6 @@ func TestURLMapping(t *testing.T) {
 	peerConfig, ok := config.PeerConfig("my.org.exampleX.com:1234")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, overridedPeerURL, peerConfig.URL)
-	assert.Equal(t, overridedPeerEventURL, peerConfig.EventURL)
 	assert.Equal(t, overridedPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
 
@@ -209,7 +200,6 @@ func TestURLMapping(t *testing.T) {
 	peerConfig, ok = config.PeerConfig("peer0.exampleY.com:1234")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, overridedPeerURL, peerConfig.URL)
-	assert.Equal(t, overridedPeerEventURL, peerConfig.EventURL)
 	assert.Equal(t, overridedPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
 
@@ -235,7 +225,6 @@ func TestPeerMatchersWithDefaults(t *testing.T) {
 	peerConfig, ok := config.PeerConfig("XYZ.org.example.com:1234")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, overridedPeerURL, peerConfig.URL)
-	assert.Equal(t, overridedPeerEventURL, peerConfig.EventURL)
 	assert.Equal(t, overridedPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.NotNil(t, peerConfig.TLSCACert)
 	verifyGRPCOpts(t, peerConfig.GRPCOptions, "peer0.org1.override.com")
@@ -245,7 +234,6 @@ func TestPeerMatchersWithDefaults(t *testing.T) {
 	peerConfig, ok = config.PeerConfig("peerABC.replace.example.com:1234")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, "peerABC.org1.example.com:1234", peerConfig.URL)
-	assert.Equal(t, "peerABC.org1.example.com:1234", peerConfig.EventURL)
 	assert.Equal(t, "peerABC.org1.override.com", peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.NotNil(t, peerConfig.TLSCACert)
 	verifyGRPCOpts(t, peerConfig.GRPCOptions, "peerABC.org1.override.com")
@@ -255,7 +243,6 @@ func TestPeerMatchersWithDefaults(t *testing.T) {
 	peerConfig, ok = config.PeerConfig("peer0.missing.example.com:1234")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, overridedPeerURL, peerConfig.URL)
-	assert.Equal(t, overridedPeerEventURL, peerConfig.EventURL)
 	assert.Equal(t, overridedPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.NotNil(t, peerConfig.TLSCACert)
 	verifyGRPCOpts(t, peerConfig.GRPCOptions, "peer0.org1.override.com")
@@ -265,7 +252,6 @@ func TestPeerMatchersWithDefaults(t *testing.T) {
 	peerConfig, ok = config.PeerConfig("peer0.random.example.com:1234")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, overridedPeerURL, peerConfig.URL)
-	assert.Equal(t, overridedPeerEventURL, peerConfig.EventURL)
 	assert.Equal(t, overridedPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.NotNil(t, peerConfig.TLSCACert)
 	verifyGRPCOpts(t, peerConfig.GRPCOptions, "peer0.org1.override.com")
@@ -367,7 +353,6 @@ func TestDefaultPeerForNonExistingURL(t *testing.T) {
 	peerConfig, ok := config.PeerConfig("ABC.XYZ:2222")
 	assert.True(t, ok, "supposed to find peer config")
 	assert.Equal(t, "ABC.XYZ:2222", peerConfig.URL)
-	assert.Equal(t, "", peerConfig.EventURL)
 	assert.Equal(t, nil, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.NotNil(t, peerConfig.TLSCACert)
 

@@ -40,21 +40,11 @@ You're good to go, happy coding! Check out the examples for usage demonstrations
 
 ### Current Compatibility
 The SDK's integration tests run against three tagged Fabric versions:
-- prev (currently v1.0.6)
-- stable (currently v1.1.0)
+- prev (currently v1.1.0)
+- stable (currently v1.2.0)
 - prerelease (currently disabled)
 
 Additionally for development purposes integration tests also run against the devstable Fabric version as needed.
-
-### v1.0 Notes
-The SDK uses the Fabric v1.1 delivery service as the default event mechanism. When using Fabric v1.0, you must override this default by setting the event service type in the config:
-
-```
-client:
-  peer:
-    eventService:
-      type: eventhub
-```
 
 ### Retired versions
 When the 'prev' code level is updated, the last tested fabric-sdk-go commit or tag is listed below.

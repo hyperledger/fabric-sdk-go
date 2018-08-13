@@ -95,9 +95,6 @@ type EndpointConfig interface {
 
 // EventServiceConfig specifies configuration options for the event service
 type EventServiceConfig interface {
-	// Type returns the type of event service to use
-	Type() EventServiceType
-
 	// BlockHeightLagThreshold returns the block height lag threshold. This value is used for choosing a peer
 	// to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
 	// blocks then it will be excluded from selection.
@@ -121,10 +118,8 @@ type EventServiceConfig interface {
 type TimeoutType int
 
 const (
-	// EndorserConnection connection timeout
-	EndorserConnection TimeoutType = iota
-	// EventHubConnection connection timeout
-	EventHubConnection
+	// PeerConnection connection timeout
+	PeerConnection TimeoutType = iota
 	// EventReg connection timeout
 	EventReg
 	// Query timeout
@@ -159,18 +154,6 @@ const (
 	DiscoveryServiceRefresh
 	// SelectionServiceRefresh selection service refresh interval
 	SelectionServiceRefresh
-)
-
-// EventServiceType specifies the type of event service to use
-type EventServiceType int
-
-const (
-	// AutoDetectEventServiceType uses channel capabilities to determine which event service to use
-	AutoDetectEventServiceType EventServiceType = iota
-	// DeliverEventServiceType uses the Deliver Service for block and filtered-block events
-	DeliverEventServiceType
-	// EventHubEventServiceType uses the Event Hub for block events
-	EventHubEventServiceType
 )
 
 // Providers represents the SDK configured service providers context.

@@ -169,9 +169,9 @@ func TestTimeouts(t *testing.T) {
 	}
 
 	errStr := "%s timeout not read correctly. Got: %s"
-	t1 := endpointConfig.Timeout(fab.EndorserConnection)
+	t1 := endpointConfig.Timeout(fab.PeerConnection)
 	if t1 != time.Second*12 {
-		t.Fatalf(errStr, "EndorserConnection", t1)
+		t.Fatalf(errStr, "PeerConnection", t1)
 	}
 	t1 = endpointConfig.Timeout(fab.PeerResponse)
 	if t1 != time.Second*6 {
@@ -180,10 +180,6 @@ func TestTimeouts(t *testing.T) {
 	t1 = endpointConfig.Timeout(fab.DiscoveryGreylistExpiry)
 	if t1 != time.Minute*5 {
 		t.Fatalf(errStr, "DiscoveryGreylistExpiry", t1)
-	}
-	t1 = endpointConfig.Timeout(fab.EventHubConnection)
-	if t1 != time.Minute*2 {
-		t.Fatalf(errStr, "EventHubConnection", t1)
 	}
 	t1 = endpointConfig.Timeout(fab.EventReg)
 	if t1 != time.Hour*2 {
@@ -207,7 +203,6 @@ func TestEventServiceConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	eventServiceConfig := endpointConfig.EventServiceConfig()
-	assert.Equalf(t, fab.DeliverEventServiceType, eventServiceConfig.Type(), "invalid value for type")
 	assert.Equalf(t, 4, eventServiceConfig.BlockHeightLagThreshold(), "invalid value for blockHeightLagThreshold")
 	assert.Equalf(t, 7, eventServiceConfig.ReconnectBlockHeightLagThreshold(), "invalid value for reconnectBlockHeightLagThreshold")
 	assert.Equalf(t, 7*time.Second, eventServiceConfig.BlockHeightMonitorPeriod(), "invalid value for blockHeightMonitorPeriod")
@@ -265,9 +260,9 @@ func TestDefaultTimeouts(t *testing.T) {
 	}
 
 	errStr := "%s default timeout not read correctly. Got: %s"
-	t1 := endpointConfig.Timeout(fab.EndorserConnection)
-	if t1 != defaultEndorserConnectionTimeout {
-		t.Fatalf(errStr, "EndorserConnection", t1)
+	t1 := endpointConfig.Timeout(fab.PeerConnection)
+	if t1 != defaultPeerConnectionTimeout {
+		t.Fatalf(errStr, "PeerConnection", t1)
 	}
 	t1 = endpointConfig.Timeout(fab.PeerResponse)
 	if t1 != defaultPeerResponseTimeout {
@@ -276,10 +271,6 @@ func TestDefaultTimeouts(t *testing.T) {
 	t1 = endpointConfig.Timeout(fab.DiscoveryGreylistExpiry)
 	if t1 != defaultDiscoveryGreylistExpiryTimeout {
 		t.Fatalf(errStr, "DiscoveryGreylistExpiry", t1)
-	}
-	t1 = endpointConfig.Timeout(fab.EventHubConnection)
-	if t1 != defaultEventHubConnectionTimeout {
-		t.Fatalf(errStr, "EventHubConnection", t1)
 	}
 	t1 = endpointConfig.Timeout(fab.EventReg)
 	if t1 != defaultEventRegTimeout {
@@ -402,7 +393,7 @@ func testCommonConfigPeerByURL(t *testing.T, expectedConfigURL string, fetchedCo
 		t.Fatal("Expected Config and fetched config differ")
 	}
 
-	if fetchedConfig.URL != expectedConfig.URL || fetchedConfig.EventURL != expectedConfig.EventURL || fetchedConfig.GRPCOptions["ssl-target-name-override"] != expectedConfig.GRPCOptions["ssl-target-name-override"] {
+	if fetchedConfig.URL != expectedConfig.URL || fetchedConfig.GRPCOptions["ssl-target-name-override"] != expectedConfig.GRPCOptions["ssl-target-name-override"] {
 		t.Fatal("Expected Config and fetched config differ")
 	}
 }
@@ -531,9 +522,6 @@ func TestPeersConfig(t *testing.T) {
 		if value.URL == "" {
 			t.Fatal("Url value for the host is empty")
 		}
-		if value.EventURL == "" {
-			t.Fatal("EventUrl value is empty")
-		}
 	}
 
 	pc, ok = endpointConfig.PeersConfig(org1)
@@ -542,9 +530,6 @@ func TestPeersConfig(t *testing.T) {
 	for _, value := range pc {
 		if value.URL == "" {
 			t.Fatal("Url value for the host is empty")
-		}
-		if value.EventURL == "" {
-			t.Fatal("EventUrl value is empty")
 		}
 	}
 }
@@ -585,10 +570,6 @@ func TestPeerWithSubstitutedConfig_WithADifferentSubstituteUrl(t *testing.T) {
 		t.Fatal("Expected Config should have url that is given in urlSubstitutionExp of match pattern")
 	}
 
-	if fetchedConfig.EventURL == "peer3.org1.example5.com:7053" || fetchedConfig.EventURL == expectedConfig.EventURL {
-		t.Fatal("Expected Config should have event url that is given in eventUrlSubstitutionExp of match pattern")
-	}
-
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "localhost" {
 		t.Fatal("Config should have got localhost as its ssl-target-name-override url as per the matched config")
 	}
@@ -599,10 +580,6 @@ func TestPeerWithSubstitutedConfig_WithEmptySubstituteUrl(t *testing.T) {
 
 	if fetchedConfig.URL != "peer0.org1.example.com:7051" {
 		t.Fatal("Fetched Config should have the same url")
-	}
-
-	if fetchedConfig.EventURL != "peer0.org1.example.com:7053" {
-		t.Fatal("Fetched Config should have the same event url")
 	}
 
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "peer0.org1.example.com" {
@@ -617,10 +594,6 @@ func TestPeerWithSubstitutedConfig_WithSubstituteUrlExpression(t *testing.T) {
 		t.Fatal("fetched Config url should change to include org1 as given in the substituteexp in yaml file")
 	}
 
-	if fetchedConfig.EventURL != "peer5.org1.example.com:7053" {
-		t.Fatal("fetched Config event url should change to include org1 as given in the eventsubstituteexp in yaml file")
-	}
-
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "peer5.org1.example.com" {
 		t.Fatal("Fetched config should have the ssl-target-name-override as per sslTargetOverrideUrlSubstitutionExp in yaml file")
 	}
@@ -632,10 +605,6 @@ func TestPeerWithSubstitutedConfig_WithMultipleMatchings(t *testing.T) {
 	//Both 2nd and 5th entityMatchers match, however we are only taking 2nd one as its the first one to match
 	if fetchedConfig.URL == "peer0.org2.example.com:7051" {
 		t.Fatal("fetched Config url should be matched with the first suitable matcher")
-	}
-
-	if fetchedConfig.EventURL != "localhost:7053" {
-		t.Fatal("fetched Config event url should have the config from first suitable matcher")
 	}
 
 	if fetchedConfig.GRPCOptions["ssl-target-name-override"] != "localhost" {
@@ -1219,7 +1188,6 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	//Peer
 	assert.Equal(t, len(networkConfig.Peers), 2)
 	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].URL, "peer0.org1.example.com:7051")
-	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].EventURL, "peer0.org1.example.com:7053")
 
 	//EntityMatchers
 	endpointConfigImpl := endpointConfig.(*EndpointConfig)

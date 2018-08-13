@@ -56,7 +56,6 @@ type MatchConfig struct {
 
 	// these are used for hostname mapping
 	URLSubstitutionExp                  string
-	EventURLSubstitutionExp             string
 	SSLTargetOverrideURLSubstitutionExp string
 	MappedHost                          string
 
@@ -309,7 +308,6 @@ func TestUnmarshalWithMultipleBackend(t *testing.T) {
 	//Peer
 	assert.Equal(t, len(networkConfig.Peers), 3)
 	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].URL, "peer0.org1.example.com:7051")
-	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].EventURL, "peer0.org1.example.com:7053")
 
 }
 
