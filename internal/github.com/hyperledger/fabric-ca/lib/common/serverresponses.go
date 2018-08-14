@@ -21,10 +21,10 @@ type CAInfoResponseNet struct {
 	CAName string
 	// Base64 encoding of PEM-encoded certificate chain
 	CAChain string
-	// // Base64 encoding of Idemix issuer public key
-	// IssuerPublicKey string
-	// // Base64 encoding of PEM-encoded Idemix issuer revocation public key
-	// IssuerRevocationPublicKey string
+	// Base64 encoding of Idemix issuer public key
+	IssuerPublicKey string
+	// Base64 encoding of PEM-encoded Idemix issuer revocation public key
+	IssuerRevocationPublicKey string
 	// Version of the server
 	Version string
 }
@@ -42,7 +42,7 @@ type IdemixEnrollmentResponseNet struct {
 	// Base64 encoding of proto bytes of idemix.Credential
 	Credential string
 	// Attribute name-value pairs
-	Attrs map[string]string
+	Attrs map[string]interface{}
 	// Base64 encoding of proto bytes of idemix.CredentialRevocationInformation
 	CRI string
 	// Base64 encoding of the issuer nonce

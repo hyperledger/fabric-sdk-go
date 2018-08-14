@@ -37,6 +37,6 @@ type ClientConfig struct {
 	Revoke     api.RevocationRequest
 	CAInfo     api.GetCAInfoRequest
 	CAName     string           `help:"Name of CA"`
-	CSP        core.CryptoSuite `mapstructure:"bccsp"`
+	CSP        core.CryptoSuite `mapstructure:"bccsp" hide:"true"`
 	ServerName string           `help:"CA server name to be used in case of host name override"`
 }

@@ -169,7 +169,7 @@ func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, core.Key, error) {
 	cr := c.newCertificateRequest(req)
 	cr.CN = id
 
-	if cr.KeyRequest == nil {
+	if (cr.KeyRequest == nil) || (cr.KeyRequest.Size() == 0 && cr.KeyRequest.Algo() == "") {
 		cr.KeyRequest = newCfsslBasicKeyRequest(api.NewBasicKeyRequest())
 	}
 
@@ -210,20 +210,20 @@ func (c *Client) net2LocalCAInfo(net *common.CAInfoResponseNet, local *GetCAInfo
 	if err != nil {
 		return errors.WithMessage(err, "Failed to decode CA chain")
 	}
-	// if net.IssuerPublicKey != "" {
-	// 	ipk, err := util.B64Decode(net.IssuerPublicKey)
-	// 	if err != nil {
-	// 		return errors.WithMessage(err, "Failed to decode issuer public key")
-	// 	}
-	// 	local.IssuerPublicKey = ipk
-	// }
-	// if net.IssuerRevocationPublicKey != "" {
-	// 	rpk, err := util.B64Decode(net.IssuerRevocationPublicKey)
-	// 	if err != nil {
-	// 		return errors.WithMessage(err, "Failed to decode issuer revocation key")
-	// 	}
-	// 	local.IssuerRevocationPublicKey = rpk
-	// }
+	if net.IssuerPublicKey != "" {
+		ipk, err := util.B64Decode(net.IssuerPublicKey)
+		if err != nil {
+			return errors.WithMessage(err, "Failed to decode issuer public key")
+		}
+		local.IssuerPublicKey = ipk
+	}
+	if net.IssuerRevocationPublicKey != "" {
+		rpk, err := util.B64Decode(net.IssuerRevocationPublicKey)
+		if err != nil {
+			return errors.WithMessage(err, "Failed to decode issuer revocation key")
+		}
+		local.IssuerRevocationPublicKey = rpk
+	}
 	local.CAName = net.CAName
 	local.CAChain = caChain
 	local.Version = net.Version

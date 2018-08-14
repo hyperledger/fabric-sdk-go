@@ -67,10 +67,10 @@ type EnrollmentRequest struct {
 	// Label is the label to use in HSM operations
 	Label string `json:"label,omitempty" help:"Label to use in HSM operations"`
 	// CSR is Certificate Signing Request info
-	CSR *CSRInfo `json:"csr,omitempty" help:"Certificate Signing Request info"`
-	// The type of the enrollment request
+	CSR *CSRInfo `json:"csr,omitempty" skip:"true"` // Skipping this because we pull the CSR from the CSR flags
+	// The type of the enrollment request: x509 or idemix
 	// The default is a request for an X509 enrollment certificate
-	Type string `def:"x509" help:"The type of enrollment request"`
+	Type string `def:"x509" help:"The type of enrollment request: 'x509' or 'idemix'"`
 }
 
 func (er EnrollmentRequest) String() string {
@@ -317,7 +317,7 @@ type CSRInfo struct {
 	Names        []csr.Name       `json:"names,omitempty"`
 	Hosts        []string         `json:"hosts,omitempty"`
 	KeyRequest   *BasicKeyRequest `json:"key,omitempty"`
-	CA           *csr.CAConfig    `json:"ca,omitempty"`
+	CA           *csr.CAConfig    `json:"ca,omitempty" hide:"true"`
 	SerialNumber string           `json:"serial_number,omitempty"`
 }
 
@@ -350,8 +350,8 @@ type TimeRange struct {
 
 // BasicKeyRequest encapsulates size and algorithm for the key to be generated
 type BasicKeyRequest struct {
-	Algo string `json:"algo" yaml:"algo"`
-	Size int    `json:"size" yaml:"size"`
+	Algo string `json:"algo" yaml:"algo" help:"Specify key algorithm"`
+	Size int    `json:"size" yaml:"size" help:"Specify key size"`
 }
 
 // Attribute is a name and value pair

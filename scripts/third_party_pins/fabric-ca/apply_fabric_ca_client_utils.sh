@@ -103,6 +103,8 @@ sed -i'' -e '/log "github.com\// a\
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/\/\/ Initialize BCCSP (the crypto layer)/c.csp = cfg.CSP/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/\*idemix.IssuerPublicKey/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/\/\/[[[:space:]]Public[[:space:]]key[[:space:]]of[[:space:]]Idemix[[:space:]]issuer/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 START_LINE=`grep -n "c.csp, err = util.InitBCCSP(&cfg.CSP, mspDir, c.HomeDir)" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
 for i in {1..4}
 do
@@ -144,7 +146,7 @@ FILTER_FILENAME="lib/clientconfig.go"
 FILTER_FN=
 gofilter
 sed -i'' -e 's/*factory.FactoryOpts/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/core.CryptoSuite `mapstructure:"bccsp"`/ a\
+sed -i'' -e '/core.CryptoSuite `mapstructure:"bccsp" hide:"true"`/ a\
 ServerName string           `help:"CA server name to be used in case of host name override"`\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 

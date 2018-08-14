@@ -10,8 +10,7 @@ Signed-off-by: Troy Ronda <t.....@securekey.com>
 ---
  sdkpatch/logbridge/logbridge.go    | 51 +++++++++++++++++++++++++++++++++++++++++++
  sdkpatch/logbridge/syslogwriter.go | 41 ++++++++++++++++++++++++++++++++++++++
- util/flag.go                  | 13 ------------
- 3 files changed, 92 insertions(+), 13 deletions(-)
+ 2 files changed, 92 insertions(+), 0 deletions(-)
  create mode 100644 sdkpatch/logbridge/logbridge.go
  create mode 100644 sdkpatch/logbridge/syslogwriter.go
 
@@ -119,37 +118,6 @@ index 0000000..c391e91
 +func (log *cLogger) Emerg(s string) {
 +	logger.Error(s)
 +}
-diff --git a/util/flag.go b/util/flag.go
-index 6a13daa..060c250 100644
---- a/util/flag.go
-+++ b/util/flag.go
-@@ -30,7 +30,6 @@ import (
- 
- 	"github.com/cloudflare/cfssl/log"
- 	"github.com/mitchellh/mapstructure"
--	"github.com/op/go-logging"
- 	"github.com/spf13/cast"
- 	"github.com/spf13/pflag"
- 	"github.com/spf13/viper"
-@@ -146,18 +145,6 @@ func (fr *flagRegistrar) getTag(f *Field, tagName string) string {
- 	return val
- }
- 
--// CmdRunBegin is called at the beginning of each cobra run function
--func CmdRunBegin(v *viper.Viper) {
--	// If -d or --debug, set debug logging level
--	if v.GetBool("debug") {
--		log.Level = log.LevelDebug
--
--		logging.SetLevel(logging.INFO, "bccsp")
--		logging.SetLevel(logging.INFO, "bccsp_p11")
--		logging.SetLevel(logging.INFO, "bccsp_sw")
--	}
--}
--
- // FlagString sets up a flag for a string, binding it to its name
- func FlagString(v *viper.Viper, flags *pflag.FlagSet, name, short string, def string, desc string) {
- 	flags.StringP(name, short, def, desc)
 -- 
 2.14.1
 
