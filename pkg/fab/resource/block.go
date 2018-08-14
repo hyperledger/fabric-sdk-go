@@ -32,10 +32,16 @@ func retrieveBlock(reqCtx reqContext.Context, orderers []fab.Orderer, channel st
 		return nil, errors.Wrap(err, "generating TX ID failed")
 	}
 
+	hash, err := ccomm.TLSCertHash(ctx.EndpointConfig())
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get tls cert hash")
+	}
+
 	channelHeaderOpts := txn.ChannelHeaderOpts{
 		TxnHeader:   th,
-		TLSCertHash: ccomm.TLSCertHash(ctx.EndpointConfig()),
+		TLSCertHash: hash,
 	}
+
 	seekInfoHeader, err := txn.CreateChannelHeader(common.HeaderType_DELIVER_SEEK_INFO, channelHeaderOpts)
 	if err != nil {
 		return nil, errors.Wrap(err, "CreateChannelHeader failed")

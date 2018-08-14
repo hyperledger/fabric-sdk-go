@@ -240,9 +240,15 @@ func createOrUpdateChannel(reqCtx reqContext.Context, txh *txn.TransactionHeader
 	if !ok {
 		return errors.New("failed get client context from reqContext for Creating ChannelHeader")
 	}
+
+	hash, err := ccomm.TLSCertHash(ctx.EndpointConfig())
+	if err != nil {
+		return errors.WithMessage(err, "failed to get tls cert hash")
+	}
+
 	channelHeaderOpts := txn.ChannelHeaderOpts{
 		TxnHeader:   txh,
-		TLSCertHash: ccomm.TLSCertHash(ctx.EndpointConfig()),
+		TLSCertHash: hash,
 	}
 	channelHeader, err := txn.CreateChannelHeader(common.HeaderType_CONFIG_UPDATE, channelHeaderOpts)
 	if err != nil {

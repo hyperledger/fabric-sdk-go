@@ -22,6 +22,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTLSConfigErrorAddingCertificate(t *testing.T) {
@@ -110,11 +111,9 @@ func TestNoTlsCertHash(t *testing.T) {
 
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{})
 
-	tlsCertHash := TLSCertHash(config)
-
-	if len(tlsCertHash) != 0 {
-		t.Fatal("Unexpected non-empty cert hash")
-	}
+	tlsCertHash, err := TLSCertHash(config)
+	assert.NotNil(t, tlsCertHash)
+	assert.Nil(t, err)
 }
 
 func TestEmptyTlsCertHash(t *testing.T) {
@@ -125,11 +124,9 @@ func TestEmptyTlsCertHash(t *testing.T) {
 	emptyCert := tls.Certificate{}
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{emptyCert})
 
-	tlsCertHash := TLSCertHash(config)
-
-	if len(tlsCertHash) != 0 {
-		t.Fatal("Unexpected non-empty cert hash")
-	}
+	tlsCertHash, err := TLSCertHash(config)
+	assert.NotNil(t, tlsCertHash)
+	assert.Nil(t, err)
 }
 
 func TestTlsCertHash(t *testing.T) {
@@ -143,8 +140,9 @@ func TestTlsCertHash(t *testing.T) {
 	}
 
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{cert})
-	tlsCertHash := TLSCertHash(config)
-
+	tlsCertHash, err := TLSCertHash(config)
+	assert.NotNil(t, tlsCertHash)
+	assert.Nil(t, err)
 	// openssl x509 -fingerprint -sha256 -in testdata/server.crt
 	// SHA256 Fingerprint=0D:D5:90:B8:A5:0E:A6:04:3E:A8:75:16:BF:77:A8:FE:E7:C5:62:2D:4C:B3:CB:99:12:74:72:2A:D8:BA:B8:92
 	expectedHash, err := hex.DecodeString("0DD590B8A50EA6043EA87516BF77A8FEE7C5622D4CB3CB991274722AD8BAB892")
