@@ -96,7 +96,7 @@ func (cr *channelResponse) Config() (*discovery.ConfigResult, error) {
 }
 
 // Peers returns a response for a peer membership query, or error if something went wrong
-func (cr *channelResponse) Peers() ([]*discclient.Peer, error) {
+func (cr *channelResponse) Peers(invocationChain ...*discovery.ChaincodeCall) ([]*discclient.Peer, error) {
 	return cr.peers, cr.err
 }
 

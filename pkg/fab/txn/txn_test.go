@@ -126,8 +126,8 @@ func checkRepeatedFieldHeader(proposal fab.TransactionProposal, th TransactionHe
 		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
 	}
 	_, err := New(txnReq)
-	if err == nil || err.Error() != "proto: repeated field Endorsements has nil element" {
-		t.Fatal("Proposal response was supposed to fail in Create Transaction")
+	if err == nil || !strings.Contains(err.Error(), "proto: repeated field Endorsements has nil element") {
+		t.Fatalf("Proposal response was supposed to fail in Create Transaction [%s]", err)
 	}
 }
 
