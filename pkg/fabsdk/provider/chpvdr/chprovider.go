@@ -21,7 +21,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/membership"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/eventhubclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
 	"github.com/pkg/errors"
 )
@@ -125,23 +124,13 @@ func (cp *ChannelProvider) ChannelService(ctx fab.ClientContext, channelID strin
 }
 
 func (cp *ChannelProvider) createEventClient(ctx context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (fab.EventClient, error) {
-	useDeliver, err := useDeliverEvents(ctx, chConfig)
-	if err != nil {
-		return nil, err
-	}
-
 	discovery, err := cp.getDiscoveryService(ctx, chConfig.ID())
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not get discovery service")
 	}
 
-	if useDeliver {
-		logger.Debugf("Using deliver events for channel [%s]", chConfig.ID())
-		return deliverclient.New(ctx, chConfig, discovery, opts...)
-	}
-
-	logger.Debugf("Using event hub events for channel [%s]", chConfig.ID())
-	return eventhubclient.New(ctx, chConfig, discovery, opts...)
+	logger.Debugf("Using deliver events for channel [%s]", chConfig.ID())
+	return deliverclient.New(ctx, chConfig, discovery, opts...)
 }
 
 func (cp *ChannelProvider) createDiscoveryService(ctx context.Client, chConfig fab.ChannelCfg) (fab.DiscoveryService, error) {
@@ -312,19 +301,4 @@ func (cs *ChannelService) Selection() (fab.SelectionService, error) {
 
 func (cs *ChannelService) loadChannelCfgRef() (*chconfig.Ref, error) {
 	return cs.provider.loadChannelCfgRef(cs.context, cs.channelID)
-}
-
-func useDeliverEvents(ctx context.Client, chConfig fab.ChannelCfg) (bool, error) {
-	eventServiceType := ctx.EndpointConfig().EventServiceConfig().Type()
-	switch eventServiceType {
-	case fab.DeliverEventServiceType:
-		return true, nil
-	case fab.EventHubEventServiceType:
-		return false, nil
-	case fab.AutoDetectEventServiceType:
-		logger.Debug("Determining event service type from channel capabilities...")
-		return chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_1Capability), nil
-	default:
-		return false, errors.Errorf("unsupported event service type: %d", eventServiceType)
-	}
 }

@@ -14,19 +14,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 )
 
-// EventEndpoint extends a Peer endpoint and provides the
-// event URL, which, in the case of Eventhub, is different
-// from the peer endpoint
+// EventEndpoint extends a Peer endpoint
 type EventEndpoint struct {
 	Certificate *x509.Certificate
 	fab.Peer
-	EvtURL string
-	opts   []options.Opt
-}
-
-// EventURL returns the event URL
-func (e *EventEndpoint) EventURL() string {
-	return e.EvtURL
+	opts []options.Opt
 }
 
 // Opts returns additional options for the event connection
@@ -46,11 +38,10 @@ func (e *EventEndpoint) BlockHeight() uint64 {
 // FromPeerConfig creates a new EventEndpoint from the given config
 func FromPeerConfig(config fab.EndpointConfig, peer fab.Peer, peerCfg *fab.PeerConfig) *EventEndpoint {
 	opts := comm.OptsFromPeerConfig(peerCfg)
-	opts = append(opts, comm.WithConnectTimeout(config.Timeout(fab.EventHubConnection)))
+	opts = append(opts, comm.WithConnectTimeout(config.Timeout(fab.PeerConnection)))
 
 	return &EventEndpoint{
-		Peer:   peer,
-		EvtURL: peerCfg.EventURL,
-		opts:   opts,
+		Peer: peer,
+		opts: opts,
 	}
 }

@@ -273,7 +273,6 @@ func getConfigBackend() core.ConfigProvider {
 		//customize peer0.org2 to peer1.org2
 		peer2 := networkConfig.Peers["peer0.org2.example.com"]
 		peer2.URL = "peer1.org2.example.com:9051"
-		peer2.EventURL = ""
 		peer2.GRPCOptions["ssl-target-name-override"] = "peer1.org2.example.com"
 
 		//remove peer0.org2

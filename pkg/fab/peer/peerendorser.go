@@ -86,7 +86,7 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize),
 		grpc.MaxCallSendMsgSize(maxCallSendMsgSize)))
 
-	timeout := endorseReq.config.Timeout(fab.EndorserConnection)
+	timeout := endorseReq.config.Timeout(fab.PeerConnection)
 
 	pc := &peerEndorser{
 		grpcDialOption: grpcOpts,

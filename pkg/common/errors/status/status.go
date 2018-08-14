@@ -58,7 +58,7 @@ const (
 
 	// EndorserServerStatus status returned by the endorser server
 	EndorserServerStatus
-	// EventServerStatus status returned by the eventhub
+	// EventServerStatus status returned by the event service
 	EventServerStatus
 	// OrdererServerStatus status returned by the ordering service
 	OrdererServerStatus

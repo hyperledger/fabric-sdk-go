@@ -59,7 +59,7 @@ func TestCreateCustomEndpointConfig(t *testing.T) {
 	if eco == nil {
 		t.Fatal("build ConfigEndpointOption returned is nil")
 	}
-	tmout := eco.Timeout(fab.EndorserConnection)
+	tmout := eco.Timeout(fab.PeerConnection)
 	if tmout < 0 {
 		t.Fatalf("EndpointConfig was supposed to have Timeout function overridden from Options but was not %+v. Timeout: %s", eco, tmout)
 	}
@@ -131,7 +131,7 @@ func TestCreateCustomEndpointConfigWithSomeDefaultFunctions(t *testing.T) {
 	endpointConfigOptionWithSomeDefaults := UpdateMissingOptsWithDefaultConfig(eco, m0)
 
 	// test if options updated interfaces with options are still working
-	tmout := endpointConfigOptionWithSomeDefaults.Timeout(fab.EndorserConnection)
+	tmout := endpointConfigOptionWithSomeDefaults.Timeout(fab.PeerConnection)
 	expectedTimeout := 10 * time.Second
 	if tmout != expectedTimeout {
 		t.Fatalf("EndpointConfig was supposed to have Timeout function overridden from Options but was not %+v. Timeout: [expected: %s, received: %s]", eco, expectedTimeout, tmout)
@@ -224,14 +224,6 @@ func TestCreateCustomEndpointConfigWithSomeDefaultFunctionsRemainingFunctions(t 
 	if m != "" {
 		t.Fatalf("CryptoConfigPath did not return expected interface value. Expected: '%s', Received: %s", "", m)
 	}
-
-	eventServiceConfig := endpointConfigOptionWithSomeDefaults.EventServiceConfig()
-	e := eventServiceConfig.Type()
-
-	if e != fab.DeliverEventServiceType {
-		t.Fatalf("MSPID did not return expected interface value. Expected: %d, Received: %d", fab.DeliverEventServiceType, e)
-
-	}
 }
 
 type mockTimeoutConfig struct{}
@@ -255,13 +247,13 @@ func (m *mockOrdererConfig) OrdererConfig(name string) (*fab.OrdererConfig, bool
 type mockPeersConfig struct{}
 
 func (m *mockPeersConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
-	return []fab.PeerConfig{{URL: "peer.com", EventURL: "event.peer.com", GRPCOptions: nil, TLSCACert: nil}}, true
+	return []fab.PeerConfig{{URL: "peer.com", GRPCOptions: nil, TLSCACert: nil}}, true
 }
 
 type mockPeerConfig struct{}
 
 func (m *mockPeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
-	return &fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACert: nil}, true
+	return &fab.PeerConfig{URL: "p.com", GRPCOptions: nil, TLSCACert: nil}, true
 }
 
 type mockNetworkConfig struct{}
@@ -273,7 +265,7 @@ func (m *mockNetworkConfig) NetworkConfig() *fab.NetworkConfig {
 type mockNetworkPeers struct{}
 
 func (m *mockNetworkPeers) NetworkPeers() []fab.NetworkPeer {
-	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACert: nil}, MSPID: ""}}
+	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", GRPCOptions: nil, TLSCACert: nil}, MSPID: ""}}
 }
 
 type mockChannelConfig struct{}
@@ -308,10 +300,6 @@ func (m *mockEventServiceConfig) EventServiceConfig() fab.EventServiceConfig {
 }
 
 type mockEventServiceConfigImpl struct {
-}
-
-func (m *mockEventServiceConfigImpl) Type() fab.EventServiceType {
-	return fab.DeliverEventServiceType
 }
 
 func (m *mockEventServiceConfigImpl) BlockHeightLagThreshold() int {

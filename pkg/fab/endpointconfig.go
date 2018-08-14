@@ -34,10 +34,9 @@ import (
 var logger = logging.NewLogger("fabsdk/fab")
 
 const (
-	defaultEndorserConnectionTimeout      = time.Second * 10
+	defaultPeerConnectionTimeout          = time.Second * 10
 	defaultPeerResponseTimeout            = time.Minute * 3
 	defaultDiscoveryGreylistExpiryTimeout = time.Second * 10
-	defaultEventHubConnectionTimeout      = time.Second * 15
 	defaultEventRegTimeout                = time.Second * 15
 	defaultOrdererConnectionTimeout       = time.Second * 15
 	defaultOrdererResponseTimeout         = time.Minute * 2
@@ -269,10 +268,10 @@ func (c *EndpointConfig) CryptoConfigPath() string {
 func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration { //nolint
 	var timeout time.Duration
 	switch tType {
-	case fab.EndorserConnection:
+	case fab.PeerConnection:
 		timeout = c.backend.GetDuration("client.peer.timeout.connection")
 		if timeout == 0 {
-			timeout = defaultEndorserConnectionTimeout
+			timeout = defaultPeerConnectionTimeout
 		}
 	case fab.PeerResponse:
 		timeout = c.backend.GetDuration("client.peer.timeout.response")
@@ -283,11 +282,6 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration { //nol
 		timeout = c.backend.GetDuration("client.peer.timeout.discovery.greylistExpiry")
 		if timeout == 0 {
 			timeout = defaultDiscoveryGreylistExpiryTimeout
-		}
-	case fab.EventHubConnection:
-		timeout = c.backend.GetDuration("client.eventService.timeout.connection")
-		if timeout == 0 {
-			timeout = defaultEventHubConnectionTimeout
 		}
 	case fab.EventReg:
 		timeout = c.backend.GetDuration("client.eventService.timeout.registrationResponse")
@@ -593,7 +587,6 @@ func (c *EndpointConfig) loadAllPeerConfigs(networkConfig *fab.NetworkConfig, en
 		}
 		networkConfig.Peers[name] = c.addMissingPeerConfigItems(fab.PeerConfig{
 			URL:         peerConfig.URL,
-			EventURL:    peerConfig.EventURL,
 			GRPCOptions: peerConfig.GRPCOptions,
 			TLSCACert:   tlsCert,
 		})
@@ -626,11 +619,6 @@ func (c *EndpointConfig) addMissingPeerConfigItems(config fab.PeerConfig) fab.Pe
 	// peer URL
 	if config.URL == "" {
 		config.URL = c.defaultPeerConfig.URL
-	}
-
-	//event URL
-	if config.EventURL == "" {
-		config.EventURL = c.defaultPeerConfig.EventURL
 	}
 
 	//tls ca certs
@@ -1159,11 +1147,6 @@ func (c *EndpointConfig) matchPeer(peerSearchKey string, matcher matcherEntry) (
 		matchedPeer.URL = c.regexMatchAndReplace(matcher.regex, peerSearchKey, matcher.matchConfig.URLSubstitutionExp)
 	}
 
-	//EventURLSubstitutionExp if found use from entity matcher otherwise use from mapped host
-	if matcher.matchConfig.EventURLSubstitutionExp != "" {
-		matchedPeer.EventURL = c.regexMatchAndReplace(matcher.regex, peerSearchKey, matcher.matchConfig.EventURLSubstitutionExp)
-	}
-
 	//SSLTargetOverrideURLSubstitutionExp if found use from entity matcher otherwise use from mapped host
 	if matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp != "" {
 		matchedPeer.GRPCOptions["ssl-target-name-override"] = c.regexMatchAndReplace(matcher.regex, peerSearchKey, matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp)
@@ -1194,7 +1177,6 @@ func (c *EndpointConfig) getMappedPeer(host string) *fab.PeerConfig {
 
 	mappedConfig := fab.PeerConfig{
 		URL:         peerConfig.URL,
-		EventURL:    peerConfig.EventURL,
 		TLSCACert:   peerConfig.TLSCACert,
 		GRPCOptions: make(map[string]interface{}),
 	}
@@ -1445,19 +1427,6 @@ func (c *EndpointConfig) regexMatchAndReplace(regex *regexp.Regexp, src, repl st
 // EventServiceConfig contains config options for the event service
 type EventServiceConfig struct {
 	backend *lookup.ConfigLookup
-}
-
-// Type returns the type of event service to use
-func (c *EventServiceConfig) Type() fab.EventServiceType {
-	etype := c.backend.GetString("client.eventService.type")
-	switch etype {
-	case "eventhub":
-		return fab.EventHubEventServiceType
-	case "deliver":
-		return fab.DeliverEventServiceType
-	default:
-		return fab.AutoDetectEventServiceType
-	}
 }
 
 // BlockHeightLagThreshold returns the block height lag threshold. This value is used for choosing a peer

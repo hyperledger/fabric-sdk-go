@@ -84,7 +84,6 @@ type OrdererConfig struct {
 // PeerConfig defines a peer configuration
 type PeerConfig struct {
 	URL         string
-	EventURL    string
 	GRPCOptions map[string]interface{}
 	TLSCACert   *x509.Certificate
 }

@@ -15,14 +15,13 @@
 # UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
 # UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
  # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
-# EventUrlSubstitutionExp and sslTargetOverrideUrlSubstitutionExp follow in the same lines as
- # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
+# sslTargetOverrideUrlSubstitutionExp follow in the same lines as
+ # SubstitutionExp for the fields gprcOptions.ssl-target-name-override respectively
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 entityMatchers:
   peer:
     - pattern: (\w+).org1.example.(\w+)
       urlSubstitutionExp: peer0.org1.example.com:8888
-      eventUrlSubstitutionExp: peer0.org1.example.com:9999
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.override.com
       mappedHost: peer0.org1.example.com
 

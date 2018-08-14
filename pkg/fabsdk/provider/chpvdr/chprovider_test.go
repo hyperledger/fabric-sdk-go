@@ -113,18 +113,3 @@ func TestBasicValidChannel(t *testing.T) {
 	_, ok = selection.(*fabricselection.Service)
 	assert.Truef(t, ok, "Expecting selection to be Fabric for v1_2")
 }
-
-func TestResolveEventServiceType(t *testing.T) {
-	ctx := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", "Org1MSP"))
-	chConfig := mocks.NewMockChannelCfg("mychannel")
-
-	useDeliver, err := useDeliverEvents(ctx, chConfig)
-	assert.NoError(t, err)
-	assert.Falsef(t, useDeliver, "expecting deliver events not to be used")
-
-	chConfig.MockCapabilities[fab.ApplicationGroupKey][fab.V1_1Capability] = true
-
-	useDeliver, err = useDeliverEvents(ctx, chConfig)
-	assert.NoError(t, err)
-	assert.Truef(t, useDeliver, "expecting deliver events to be used")
-}

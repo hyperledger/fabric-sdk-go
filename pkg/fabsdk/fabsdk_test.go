@@ -342,7 +342,7 @@ func TestWithConfigEndpointAndBadOpt(t *testing.T) {
 type MockNetworkPeers struct{}
 
 func (M *MockNetworkPeers) NetworkPeers() []fab.NetworkPeer {
-	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com", EventURL: "event.p.com"}, MSPID: ""}}
+	return []fab.NetworkPeer{{PeerConfig: fab.PeerConfig{URL: "p.com"}, MSPID: ""}}
 }
 
 type MockChannelOrderers struct{}

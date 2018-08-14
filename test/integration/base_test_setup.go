@@ -94,7 +94,7 @@ func IsJoinedChannel(channelID string, resMgmtClient *resmgmt.Client, peer fabAP
 	return false, nil
 }
 
-// Initialize reads configuration from file and sets up client, channel and event hub
+// Initialize reads configuration from file and sets up client and channel
 func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 
 	mspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(setup.OrgID))

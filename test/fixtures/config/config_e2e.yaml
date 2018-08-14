@@ -40,15 +40,11 @@ client:
 #        # This interval will define how long a peer is greylisted
 #        greylistExpiry: 10s
 #  eventService:
-#    # Event service type (optional). If not specified then the type is automatically
-#    # determined from channel capabilities.
-#    type: (deliver|eventhub)
     # the below timeouts are commented out to use the default values that are found in
     # "pkg/fab/endpointconfig.go"
     # the client is free to override the default values by uncommenting and resetting
     # the values as they see fit in their config file
 #    timeout:
-#      connection: 15s
 #      registrationResponse: 15s
 #  orderer:
 #    timeout:
@@ -246,8 +242,6 @@ peers:
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
     url: peer0.org1.example.com:7051
-    # eventUrl is only needed when using eventhub (default is delivery service)
-    eventUrl: peer0.org1.example.com:7053
 
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
@@ -268,8 +262,6 @@ peers:
   peer1.org1.example.com:
     # this URL is used to send endorsement and query requests
     url: peer1.org1.example.com:7151
-    # eventUrl is only needed when using eventhub (default is delivery service)
-    eventUrl: peer1.org1.example.com:7153
 
     grpcOptions:
       ssl-target-name-override: peer1.org1.example.com
@@ -289,8 +281,6 @@ peers:
 
   peer0.org2.example.com:
     url: peer0.org2.example.com:8051
-    # eventUrl is only needed when using eventhub (default is delivery service)
-    eventUrl: peer0.org2.example.com:8053
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
       # These parameters should be set in coordination with the keepalive policy on the server,
@@ -357,8 +347,8 @@ certificateAuthorities:
 # UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
 # UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
  # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
-# EventUrlSubstitutionExp and sslTargetOverrideUrlSubstitutionExp follow in the same lines as
- # SubstitutionExp for the fields eventUrl and gprcOptions.ssl-target-name-override respectively
+# sslTargetOverrideUrlSubstitutionExp follow in the same lines as
+ # SubstitutionExp for the fields gprcOptions.ssl-target-name-override respectively
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 #entityMatchers:
 #entityMatchers:
@@ -375,25 +365,21 @@ certificateAuthorities:
 
 #    - pattern: (\w+).org1.example.(\w+)
 #      urlSubstitutionExp: peer0.org1.example.com:7051
-#      eventUrlSubstitutionExp: peer0.org1.example.com:7053
 #      sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
 #      mappedHost: peer0.org1.example.com
 #
 #    - pattern: (\w+).org2.example.(\w+)
 #      urlSubstitutionExp: peer0.org2.example.com:8051
-#      eventUrlSubstitutionExp: peer0.org2.example.com:8053
 #      sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
 #      mappedHost: peer0.org2.example.com
 #
 #    - pattern: (\w+).example1.(\w+):(\d+)
 #      urlSubstitutionExp: $1.org1.example.$2:$3
-#      eventUrlSubstitutionExp: $1.org1.example.$2:7053
 #      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
 #      mappedHost: peer0.org1.example.com
 #
 #    - pattern: (\w+).org1.example.(\w+):(\d+)
 #      urlSubstitutionExp: peer0.org1.example.com:7051
-#      eventUrlSubstitutionExp: peer0.org1.example.com:7053
 #      sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
 #      mappedHost: peer0.org1.example.com
 #

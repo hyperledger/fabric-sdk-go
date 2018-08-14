@@ -38,10 +38,6 @@ client:
         # to prevent re-selecting them in subsequent retries.
         # This interval will define how long a peer is greylisted
         greylistExpiry: 5s
-  # eventService:
-  #   # Event service type (optional). If not specified then the type is automatically
-  #   # determined from channel capabilities.
-  #   type: (deliver|eventhub)
     timeout:
       connection: 3s
       registrationResponse: 10s
@@ -227,8 +223,6 @@ peers:
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
     url: peer0.org1.example.com:7051
-    # eventUrl is only needed when using eventhub (default is delivery service)
-    eventUrl: peer0.org1.example.com:7053
 
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
@@ -240,8 +234,6 @@ peers:
   peer1.org1.example.com:
     # this URL is used to send endorsement and query requests
     url: peer1.org1.example.com:7151
-    # eventUrl is only needed when using eventhub (default is delivery service)
-    eventUrl: peer1.org1.example.com:7153
 
     grpcOptions:
       ssl-target-name-override: peer1.org1.example.com

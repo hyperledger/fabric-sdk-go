@@ -43,8 +43,6 @@ declare -a PKGS=(
     "core/ledger/kvledger/txmgmt/version"
     "core/ledger/util"
 
-    "events/consumer"
-
     "msp"
     "msp/cache"
 
@@ -123,10 +121,6 @@ declare -a FILES=(
 
     "core/ledger/ledger_interface.go"
     "core/ledger/kvledger/txmgmt/version/version.go"
-
-
-    "events/consumer/adapter.go"
-    "events/consumer/consumer.go"
 
     "msp/factory.go"
     "msp/cert.go"
@@ -242,15 +236,6 @@ FILTER_FN=
 gofilter
 
 FILTER_FILENAME="core/ledger/kvledger/txmgmt/version/version.go"
-FILTER_FN=
-gofilter
-
-
-FILTER_FILENAME="events/consumer/adapter.go"
-FILTER_FN=
-gofilter
-
-FILTER_FILENAME="events/consumer/consumer.go"
 FILTER_FN=
 gofilter
 

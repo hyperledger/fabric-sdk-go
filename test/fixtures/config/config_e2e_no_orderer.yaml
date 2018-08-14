@@ -27,11 +27,6 @@ client:
   logging:
     level: info
 
-  # eventService:
-  #   # Event service type (optional). If not specified then the type is automatically
-  #   # determined from channel capabilities.
-  #   type: (deliver|eventhub)
-
   # Needed to load users crypto keys and certs.
   cryptoconfig:
     path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}
@@ -142,9 +137,6 @@ peers:
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
     url: peer0.org1.example.com:7051
-
-    # this URL is used to connect the EventHub and registering event listeners
-    eventUrl: peer0.org1.example.com:7053
 
     #TODO to be moved to high level, common for all grpc connections
     grpcOptions:

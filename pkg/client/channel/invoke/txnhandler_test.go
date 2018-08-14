@@ -79,7 +79,7 @@ func TestExecuteTxHandlerSuccess(t *testing.T) {
 
 	clientContext := setupChannelClientContext(nil, nil, []fab.Peer{mockPeer1, mockPeer2}, t)
 
-	//Prepare mock eventhub
+	// Prepare mock event service
 	mockEventService := fcmocks.NewMockEventService()
 	clientContext.EventService = mockEventService
 

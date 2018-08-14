@@ -32,7 +32,6 @@ var p3 = fabmocks.NewMockPeer("p3", url3)
 var peers = []fab.Peer{p1, p2, p3}
 
 func TestEndpoint(t *testing.T) {
-	expectedEventURL := "localhost:7053"
 	expectedAllowInsecure := true
 	expectedFailfast := true
 	expectedKeepAliveTime := time.Second
@@ -44,7 +43,6 @@ func TestEndpoint(t *testing.T) {
 	peer := fabmocks.NewMockPeer("p1", "localhost:7051")
 	peerConfig := &fab.PeerConfig{
 		GRPCOptions: make(map[string]interface{}),
-		EventURL:    "localhost:7053",
 	}
 	peerConfig.GRPCOptions["allow-insecure"] = expectedAllowInsecure
 	peerConfig.GRPCOptions["fail-fast"] = expectedFailfast
@@ -53,9 +51,6 @@ func TestEndpoint(t *testing.T) {
 	peerConfig.GRPCOptions["keep-alive-permit"] = expectedKeepAlivePermit
 
 	endpoint := FromPeerConfig(config, peer, peerConfig)
-	if endpoint.EventURL() != expectedEventURL {
-		t.Fatalf("expecting eventURL %s but got %s", expectedEventURL, endpoint.EventURL())
-	}
 
 	opts := endpoint.Opts()
 	if len(opts) != expectedNumOpts {
