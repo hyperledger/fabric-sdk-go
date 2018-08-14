@@ -347,6 +347,8 @@ func TestCAConfig(t *testing.T) {
 	caConfig, ok := identityConfig.CAConfig(org1)
 	assert.True(t, ok, "Get CA Config failed")
 	assert.NotNil(t, caConfig, "Get CA Config failed")
+	assert.Equal(t, 1, len(caConfig.GRPCOptions))
+	assert.Equal(t, "ca.org1.example.com", caConfig.GRPCOptions["ssl-target-name-override"])
 
 	// Test CA KeyStore Path
 	testCAKeyStorePath(backend[0], t, identityConfig)
@@ -456,6 +458,8 @@ func TestIdentityConfigWithMultipleBackends(t *testing.T) {
 	caConfig, ok := identityConfig.CAConfig("org1")
 	assert.True(t, ok, "identityConfig.CAConfig(org1) should have been successful for multiple backends")
 	assert.Equal(t, caConfig.URL, "https://ca.org1.example.com:7054")
+	assert.Equal(t, 1, len(caConfig.GRPCOptions))
+	assert.Equal(t, "ca.org1.example.com", caConfig.GRPCOptions["ssl-target-name-override"])
 
 }
 

@@ -126,7 +126,7 @@ func (c *Client) Init() error {
 
 		c.csp = cfg.CSP
 		// Create http.Client object and associate it with this client
-		err = c.initHTTPClient()
+		err = c.initHTTPClient(cfg.ServerName)
 		if err != nil {
 			return err
 		}
@@ -137,7 +137,7 @@ func (c *Client) Init() error {
 	return nil
 }
 
-func (c *Client) initHTTPClient() error {
+func (c *Client) initHTTPClient(serverName string) error {
 	tr := new(http.Transport)
 	if c.Config.TLS.Enabled {
 		log.Info("TLS Enabled")
@@ -148,6 +148,9 @@ func (c *Client) initHTTPClient() error {
 		}
 		// set the default ciphers
 		tlsConfig.CipherSuites = tls.DefaultCipherSuites
+		//set the host name override
+		tlsConfig.ServerName = serverName
+
 		tr.TLSClientConfig = tlsConfig
 	}
 	c.httpClient = &http.Client{Transport: tr}
