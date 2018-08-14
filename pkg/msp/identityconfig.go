@@ -84,10 +84,11 @@ type ClientTLSConfig struct {
 
 // CAConfig defines a CA configuration in identity config
 type CAConfig struct {
-	URL        string
-	TLSCACerts endpoint.MutualTLSConfig
-	Registrar  msp.EnrollCredentials
-	CAName     string
+	URL         string
+	GRPCOptions map[string]interface{}
+	TLSCACerts  endpoint.MutualTLSConfig
+	Registrar   msp.EnrollCredentials
+	CAName      string
 }
 
 // MatchConfig contains match pattern and substitution pattern
@@ -96,8 +97,9 @@ type MatchConfig struct {
 	Pattern string
 
 	// these are used for hostname mapping
-	URLSubstitutionExp string
-	MappedHost         string
+	URLSubstitutionExp                  string
+	SSLTargetOverrideURLSubstitutionExp string
+	MappedHost                          string
 
 	// this is used for Name mapping instead of hostname mappings
 	MappedName string
@@ -311,6 +313,7 @@ func (c *IdentityConfig) getMSPCAConfig(caConfig *CAConfig) (*msp.CAConfig, erro
 
 	return &msp.CAConfig{
 		URL:              caConfig.URL,
+		GRPCOptions:      caConfig.GRPCOptions,
 		Registrar:        caConfig.Registrar,
 		CAName:           caConfig.CAName,
 		TLSCAClientCert:  caConfig.TLSCACerts.Client.Cert.Bytes(),
@@ -374,10 +377,10 @@ func (c *IdentityConfig) compileMatchers() error {
 
 func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity, caName string) (*CAConfig, bool) {
 
-	//loop over certAuthorityEntityMatchers to find the matching Cert
+	//loop over certAuthorityEntityMatchers to find the matching CA Config
 	for _, matcher := range c.caMatchers {
 		if matcher.regex.MatchString(caName) {
-			return c.findMatchingCert(configEntity, caName, matcher)
+			return c.findMatchingCAConfig(configEntity, caName, matcher)
 		}
 	}
 
@@ -387,10 +390,14 @@ func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity,
 		return nil, false
 	}
 
+	if caConfig.GRPCOptions == nil {
+		caConfig.GRPCOptions = make(map[string]interface{})
+	}
+
 	return &caConfig, true
 }
 
-func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, caName string, matcher matcherEntry) (*CAConfig, bool) {
+func (c *IdentityConfig) findMatchingCAConfig(configEntity *identityConfigEntity, caName string, matcher matcherEntry) (*CAConfig, bool) {
 
 	if matcher.matchConfig.IgnoreEndpoint {
 		logger.Debugf("Ignoring CA `%s` since entity matcher 'IgnoreEndpoint' flag is on", caName)
@@ -414,6 +421,20 @@ func (c *IdentityConfig) findMatchingCert(configEntity *identityConfigEntity, ca
 		if strings.Contains(caConfig.URL, "$") {
 			caConfig.URL = matcher.regex.ReplaceAllString(caName, caConfig.URL)
 		}
+	}
+
+	if caConfig.GRPCOptions == nil {
+		caConfig.GRPCOptions = make(map[string]interface{})
+	}
+
+	//SSLTargetOverrideURLSubstitutionExp if found use from entity matcher otherwise use from mapped host
+	if matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp != "" {
+		hostOverride := matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp
+		//check for regex replace '$'
+		if strings.Contains(hostOverride, "$") {
+			hostOverride = matcher.regex.ReplaceAllString(caName, hostOverride)
+		}
+		caConfig.GRPCOptions["ssl-target-name-override"] = hostOverride
 	}
 
 	return &caConfig, true

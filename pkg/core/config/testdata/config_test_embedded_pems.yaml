@@ -448,6 +448,9 @@ peers:
 certificateAuthorities:
   ca-org1:
     url: https://ca_peerOrg1:7054
+    # [Optional] The optional server name for target override
+    grpcOptions:
+      ssl-target-name-override: ca_peerOrg1
     tlsCACerts:
       pem:
         - |
@@ -511,6 +514,9 @@ certificateAuthorities:
     caName: ca-org1
   ca-org2:
     url: https://ca_peerOrg2:7054
+    # [Optional] The optional server name for target override
+    grpcOptions:
+      ssl-target-name-override: ca_peerOrg2
     tlsCACerts:
       # Comma-Separated list of paths
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/ca.crt

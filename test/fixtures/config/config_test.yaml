@@ -386,6 +386,9 @@ peers:
 certificateAuthorities:
   ca.org1.example.com:
     url: https://ca.org1.example.com:7054
+    # [Optional] The optional server name for target override
+    grpcOptions:
+      ssl-target-name-override: ca.org1.example.com
     tlsCACerts:
       # Comma-Separated list of paths
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
@@ -405,6 +408,9 @@ certificateAuthorities:
     caName: ca.org1.example.com
   ca.org2.example.com:
     url: https://ca.org2.example.com:8054
+    # [Optional] The optional server name for target override
+    grpcOptions:
+      ssl-target-name-override: ca.org2.example.com
     tlsCACerts:
       # Comma-Separated list of paths
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
@@ -493,8 +499,10 @@ certificateAuthorities:
 #  certificateAuthority:
 #    - pattern: (\w+).org1.example.(\w+)
 #      urlSubstitutionExp:
+#      sslTargetOverrideUrlSubstitutionExp: ca.example.com
 #      mappedHost: ca.org1.example.com
 #
 #    - pattern: (\w+).org2.example.(\w+)
 #      urlSubstitutionExp:
+#      sslTargetOverrideUrlSubstitutionExp: ca.example.com
 #      mappedHost: ca.org2.example.com

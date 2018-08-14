@@ -342,12 +342,15 @@ peers:
 certificateAuthorities:
 #  ca.org1.example.com:
 #    url: https://ca.org1.example.com:7054
+#    [Optional] The optional server name for target override
+#    grpcOptions:
+#      ssl-target-name-override: ca.org1.example.com
 #    tlsCACerts:
 #      dash-pipe ('- |') delimited pem strings of CA cert
 #      pem: 'pem strings of CA cert'
-      # Comma-Separated list of paths
+#       Comma-Separated list of paths
 #      path: path/to/tls/cert/for/ca-org1
-      # Client key and cert for SSL handshake with Fabric CA
+#       Client key and cert for SSL handshake with Fabric CA
 #      client:
 #        key:
 #          path: path/to/client_fabric_client-key.pem
@@ -355,13 +358,13 @@ certificateAuthorities:
 #        cert:
 #          path: path/to/client_fabric_client-key.pem
 #          pem: `cert pem`
-
-    # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
-    # needed to enroll and invoke new users.
+#
+#     Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
+#     needed to enroll and invoke new users.
 #    registrar:
 #      enrollId: usually-it-is_admin
 #      enrollSecret: adminpasswd
-    # [Optional] The optional name of the CA.
+#     [Optional] The optional name of the CA.
 #    caName: ca.org1.example.com
 
 # EntityMatchers enable substitution of network hostnames with static configurations
@@ -435,10 +438,12 @@ entityMatchers:
 #  certificateAuthority:
 #    - pattern: (\w+).org1.example.(\w+)
 #      urlSubstitutionExp:
+#      sslTargetOverrideUrlSubstitutionExp:
 #      mappedHost: ca.org1.example.com
 #
 #    - pattern: (\w+).org2.example.(\w+)
 #      urlSubstitutionExp:
+#      sslTargetOverrideUrlSubstitutionExp:
 #      mappedHost: ca.org2.example.com
 
 #    - pattern: (\w+).org.example5.(\w+):(\d+)

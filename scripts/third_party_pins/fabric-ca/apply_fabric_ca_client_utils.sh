@@ -122,6 +122,12 @@ do
 done
 sed -i'' -e 's/return c.newIdemixEnrollmentResponse(identity, &result, sk, req.Name)/return nil, errors.New("idemix enroll not supported")/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/x509Cred := x509cred.NewCredential(c.certFile, c.keyFile, c)/x509Cred := x509cred.NewCredential(key, certByte, c)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/func (c \*Client) initHTTPClient() error {/func (c \*Client) initHTTPClient(serverName string) error {/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/err = c.initHTTPClient()/err = c.initHTTPClient(cfg.ServerName)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/tlsConfig.CipherSuites = tls.DefaultCipherSuites/ a\
+//set the host name override \
+tlsConfig.ServerName = serverName\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 
 FILTER_FILENAME="lib/identity.go"
@@ -138,7 +144,9 @@ FILTER_FILENAME="lib/clientconfig.go"
 FILTER_FN=
 gofilter
 sed -i'' -e 's/*factory.FactoryOpts/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-
+sed -i'' -e '/core.CryptoSuite `mapstructure:"bccsp"`/ a\
+ServerName string           `help:"CA server name to be used in case of host name override"`\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="lib/util.go"
 FILTER_FN="GetCertID,BytesToX509Cert,addQueryParm"

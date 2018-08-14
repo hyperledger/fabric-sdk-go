@@ -35,6 +35,7 @@ entityMatchers:
   certificateAuthority:
     - pattern: (\w+).org1.example.(\w+)
       urlSubstitutionExp: https://ca.org1.example.com:8888
+      sslTargetOverrideUrlSubstitutionExp: ca.override.example.com
       mappedHost: ca.org1.example.com
 
   channel:

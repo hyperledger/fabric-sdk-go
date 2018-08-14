@@ -391,6 +391,8 @@ func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config msp.I
 	c.Config.CAName = conf.CAName
 	//set server URL
 	c.Config.URL = endpoint.ToAddress(conf.URL)
+	//set server name
+	c.Config.ServerName, _ = conf.GRPCOptions["ssl-target-name-override"].(string)
 	//certs file list
 	c.Config.TLS.CertFiles, ok = config.CAServerCerts(org)
 	if !ok {
