@@ -24,7 +24,6 @@ type params struct {
 func defaultParams() *params {
 	return &params{
 		connProvider: deliverFilteredProvider,
-		seekType:     seek.Newest,
 		respTimeout:  5 * time.Second,
 	}
 }

@@ -102,6 +102,10 @@ func TestChannelClient(t *testing.T) {
 	testChaincodeEventListener(chaincodeID, chClient, listener, t)
 
 	testDuplicateTargets(chaincodeID, chClient, t)
+
+	//test if CCEvents for chaincode events are in sync when new channel client are created
+	// for each transaction
+	testMultipleClientChaincodeEvent(chaincodeID, t)
 }
 
 func testDuplicateTargets(chaincodeID string, chClient *channel.Client, t *testing.T) {
@@ -387,6 +391,54 @@ func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T) {
 		}
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive CC for eventId(%s)\n", eventID)
+	}
+}
+
+//TestMultipleEventClient tests if CCEvents for chaincode events are in sync when new channel client are created
+// for each transaction
+func testMultipleClientChaincodeEvent(chainCodeID string, t *testing.T) {
+
+	channelID := mainTestSetup.ChannelID
+	eventID := "([a-zA-Z]+)"
+
+	for i := 0; i < 10; i++ {
+
+		sdk, err := fabsdk.New(integration.ConfigBackend)
+		if err != nil {
+			t.Fatalf("Failed to create new SDK: %s", err)
+		}
+
+		chContextProvider := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+
+		chClient, err := channel.New(chContextProvider)
+		if err != nil {
+			t.Fatalf("Failed to create new channel client: %s", err)
+		}
+
+		// Register chaincode event (pass in channel which receives event details when the event is complete)
+		reg, notifier, err := chClient.RegisterChaincodeEvent(chainCodeID, eventID)
+		if err != nil {
+			t.Fatalf("Failed to register cc event: %s", err)
+		}
+		defer chClient.UnregisterChaincodeEvent(reg)
+
+		// Move funds
+		resp, err := chClient.Execute(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke",
+			Args: integration.ExampleCCTxArgs()}, channel.WithRetry(retry.DefaultChannelOpts))
+		if err != nil {
+			t.Fatalf("Failed to move funds: %s", err)
+		}
+
+		txID := resp.TransactionID
+
+		var ccEvent *fab.CCEvent
+		select {
+		case ccEvent = <-notifier:
+			t.Logf("Received CC eventID: %#v\n", ccEvent.TxID)
+		case <-time.After(time.Second * 20):
+			t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
+		}
+		assert.Equal(t, string(txID), ccEvent.TxID, "mismatched ccEvent.TxID")
 	}
 }
 

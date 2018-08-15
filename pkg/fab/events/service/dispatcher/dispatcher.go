@@ -44,14 +44,15 @@ type HandlerRegistry map[reflect.Type]Handler
 // This also avoids the need for synchronization.
 type Dispatcher struct {
 	params
-	handlers                   map[reflect.Type]Handler
+	lastBlockNum               uint64
+	discardNextEvent           bool
+	state                      int32
 	eventch                    chan interface{}
 	blockRegistrations         []*BlockReg
 	filteredBlockRegistrations []*FilteredBlockReg
+	handlers                   map[reflect.Type]Handler
 	txRegistrations            map[string]*TxStatusReg
 	ccRegistrations            map[string]*ChaincodeReg
-	state                      int32
-	lastBlockNum               uint64
 }
 
 // New creates a new Dispatcher.
@@ -306,6 +307,11 @@ func (ed *Dispatcher) HandleBlock(block *cb.Block, sourceURL string) {
 		return
 	}
 
+	if ed.discardNextEvent {
+		ed.discardNextEvent = false
+		return
+	}
+
 	ed.publishBlockEvents(block, sourceURL)
 	ed.publishFilteredBlockEvents(toFilteredBlock(block), sourceURL)
 }
@@ -316,6 +322,11 @@ func (ed *Dispatcher) HandleFilteredBlock(fblock *pb.FilteredBlock, sourceURL st
 
 	if err := ed.updateLastBlockNum(fblock.Number); err != nil {
 		logger.Error(err.Error())
+		return
+	}
+
+	if ed.discardNextEvent {
+		ed.discardNextEvent = false
 		return
 	}
 
@@ -504,6 +515,11 @@ func (ed *Dispatcher) RegisterHandler(t interface{}, h Handler) {
 	} else {
 		logger.Debugf("Cannot register handler %s on dispatcher %T since it's already registered", htype, ed)
 	}
+}
+
+//DiscardNextEvent sets if next event needs to be published or not
+func (ed *Dispatcher) DiscardNextEvent() {
+	ed.discardNextEvent = true
 }
 
 func getCCKey(ccID, eventFilter string) string {
