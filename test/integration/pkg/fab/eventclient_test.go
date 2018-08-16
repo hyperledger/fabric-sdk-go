@@ -23,7 +23,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
-const eventTimeWindow = 30 * time.Second // the maximum amount of time to watch for events.
+const eventTimeWindow = 60 * time.Second // the maximum amount of time to watch for events.
 
 func TestEventClient(t *testing.T) {
 	chainCodeID := mainChaincodeID
