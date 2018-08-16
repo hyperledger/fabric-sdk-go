@@ -30,6 +30,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cachebridge"
 
+	"sync"
+
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
@@ -92,6 +94,9 @@ type impl struct {
 	lib        string
 	privImport bool
 	softVerify bool
+
+	opts    PKCS11Opts
+	ctxlock sync.RWMutex
 }
 
 // KeyGen generates a key using opts.

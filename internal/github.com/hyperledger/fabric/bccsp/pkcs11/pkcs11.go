@@ -89,11 +89,13 @@ func loadLib(lib, pin, label string) (*pkcs11.Ctx, uint, *pkcs11.SessionHandle, 
 }
 
 func (csp *impl) getSession() (session pkcs11.SessionHandle) {
+	csp.ctxlock.RLock()
 	select {
 	case session = <-csp.sessions:
 		logger.Debugf("Reusing existing pkcs11 session %+v on slot %d\n", session, csp.slot)
 
 	default:
+
 		// cache is empty (or completely in use), create a new session
 		var s pkcs11.SessionHandle
 		var err error
@@ -112,10 +114,134 @@ func (csp *impl) getSession() (session pkcs11.SessionHandle) {
 		session = s
 		cachebridge.ClearSession(fmt.Sprintf("%d", session))
 	}
-	return session
+	csp.ctxlock.RUnlock()
+
+	return csp.validateSession(session)
+}
+
+func (csp *impl) validateSession(currentSession pkcs11.SessionHandle) pkcs11.SessionHandle {
+
+	csp.ctxlock.RLock()
+	_, e := csp.ctx.GetSessionInfo(currentSession)
+
+	switch e {
+	case pkcs11.Error(pkcs11.CKR_OBJECT_HANDLE_INVALID),
+		pkcs11.Error(pkcs11.CKR_SESSION_HANDLE_INVALID),
+		pkcs11.Error(pkcs11.CKR_SESSION_CLOSED),
+		pkcs11.Error(pkcs11.CKR_TOKEN_NOT_PRESENT),
+		pkcs11.Error(pkcs11.CKR_DEVICE_ERROR),
+		pkcs11.Error(pkcs11.CKR_GENERAL_ERROR),
+		pkcs11.Error(pkcs11.CKR_USER_NOT_LOGGED_IN):
+
+		logger.Warnf("Found error condition [%s], attempting to recreate session and re-login....", e)
+
+		csp.ctxlock.RUnlock()
+		csp.ctxlock.Lock()
+		defer csp.ctxlock.Unlock()
+
+		//ignore error on close all sessions
+		csp.ctx.CloseAllSessions(csp.slot)
+
+		//clear cache
+		cachebridge.ClearAllSession()
+
+		//Destroy context
+		csp.ctx.Destroy()
+
+		//create new context
+		newCtx := pkcs11.New(csp.opts.Library)
+		if newCtx == nil {
+			logger.Warn("Failed to recreate new context for given library")
+			return currentSession
+		}
+
+		//initialize new context
+		newCtx.Initialize()
+
+		//get all slots
+		slots, err := newCtx.GetSlotList(true)
+		if err != nil {
+			logger.Warn("Failed to get slot list for recreated context")
+			return currentSession
+		}
+
+		found := false
+		var slot uint = 0
+
+		//find slot matching label
+		for _, s := range slots {
+			info, err := newCtx.GetTokenInfo(s)
+			if err != nil {
+				continue
+			}
+			logger.Debugf("Looking for %s, found label %s\n", csp.opts.Label, info.Label)
+			if csp.opts.Label == info.Label {
+				found = true
+				slot = s
+				break
+			}
+		}
+		if !found {
+			logger.Warnf("Unable to find slot for label :%s", csp.opts.Label)
+			return currentSession
+		}
+		logger.Debug("got the slot ", slot)
+
+		//open new session for given slot
+		var newSession pkcs11.SessionHandle
+		for i := 0; i < 10; i++ {
+			newSession, err = newCtx.OpenSession(slot, pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
+			if err != nil {
+				logger.Warningf("OpenSession failed, retrying [%s]\n", err)
+			} else {
+				break
+			}
+		}
+		if err != nil {
+			logger.Fatalf("OpenSession [%s]\n", err)
+		}
+		logger.Debugf("Recreated new pkcs11 session %+v on slot %d\n", newSession, slot)
+
+		//login with new session
+		err = newCtx.Login(newSession, pkcs11.CKU_USER, csp.opts.Pin)
+		if err != nil {
+			if err != pkcs11.Error(pkcs11.CKR_USER_ALREADY_LOGGED_IN) {
+				logger.Warnf("Unable to login with new session :%s", newSession)
+				return currentSession
+			}
+		}
+
+		csp.ctx = newCtx
+		csp.slot = slot
+		csp.sessions = make(chan pkcs11.SessionHandle, sessionCacheSize)
+
+		logger.Infof("Able to login with recreated session successfully")
+		return newSession
+
+	case pkcs11.Error(pkcs11.CKR_DEVICE_MEMORY),
+		pkcs11.Error(pkcs11.CKR_DEVICE_REMOVED):
+		csp.ctxlock.RUnlock()
+		panic(fmt.Sprintf("PKCS11 Session failure: [%s]", e))
+
+	default:
+		defer csp.ctxlock.RUnlock()
+		// default should be a valid session or valid error, return session as it is
+		return currentSession
+	}
+
 }
 
 func (csp *impl) returnSession(session pkcs11.SessionHandle) {
+	csp.ctxlock.RLock()
+	defer csp.ctxlock.RUnlock()
+
+	_, e := csp.ctx.GetSessionInfo(session)
+	if e != nil {
+		logger.Warnf("not returning session [%d], due to error [%s]. Discarding it", session, e)
+		csp.ctx.CloseSession(session)
+		return
+	}
+
 	select {
 	case csp.sessions <- session:
 		// returned session back to session cache
