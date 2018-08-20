@@ -16,44 +16,69 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
-// CreateConfigSignature creates a ConfigSignature for the current context.
+// CreateConfigSignature creates a ConfigSignature for the current context
 func CreateConfigSignature(ctx context.Client, config []byte) (*common.ConfigSignature, error) {
-
-	creator, err := ctx.Serialize()
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get user context's identity")
+	cfd, e := GetConfigSignatureData(ctx, config)
+	if e != nil {
+		return nil, e
 	}
 
-	// generate a random nonce
-	nonce, err := crypto.GetRandomNonce()
-	if err != nil {
-		return nil, errors.WithMessage(err, "nonce creation failed")
-	}
-
-	// signature is across a signature header and the config update
-	signatureHeader := &common.SignatureHeader{
-		Creator: creator,
-		Nonce:   nonce,
-	}
-	signatureHeaderBytes, err := proto.Marshal(signatureHeader)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal signatureHeader failed")
-	}
-
-	// get all the bytes to be signed together, then sign
-	signingBytes := fcutils.ConcatenateBytes(signatureHeaderBytes, config)
 	signingMgr := ctx.SigningManager()
-	signature, err := signingMgr.Sign(signingBytes, ctx.PrivateKey())
+	signature, err := signingMgr.Sign(cfd.SigningBytes, ctx.PrivateKey())
 	if err != nil {
 		return nil, errors.WithMessage(err, "signing of channel config failed")
 	}
 
 	// build the return object
 	configSignature := common.ConfigSignature{
-		SignatureHeader: signatureHeaderBytes,
+		SignatureHeader: cfd.SignatureHeaderBytes,
 		Signature:       signature,
 	}
 	return &configSignature, nil
+}
+
+// ConfigSignatureData holds data ready to be signed (SigningBytes) + Signature Header
+//    When building the common.ConfigSignature instance with the signed SigningBytes from the external tool,
+//    assign the returned ConfigSignatureData.SignatureHeader as part of the new ConfigSignature instance.
+type ConfigSignatureData struct {
+	SignatureHeader      common.SignatureHeader
+	SignatureHeaderBytes []byte
+	SigningBytes         []byte
+}
+
+// GetConfigSignatureData will prepare a ConfigSignatureData comprising:
+// SignatureHeader, its marshaled []byte and the full signing []byte to be used for signing (by an external tool) a Channel Config
+func GetConfigSignatureData(ctx crypto.IdentitySerializer, config []byte) (signatureHeaderData ConfigSignatureData, e error) {
+	creator, err := ctx.Serialize()
+	if err != nil {
+		e = errors.WithMessage(err, "failed to get user context's identity")
+		return
+	}
+
+	// generate a random nonce
+	nonce, err := crypto.GetRandomNonce()
+	if err != nil {
+		e = errors.WithMessage(err, "nonce creation failed")
+		return
+	}
+
+	signatureHeaderData = ConfigSignatureData{}
+	// signature is across a signature header and the config update
+	signatureHeaderData.SignatureHeader = common.SignatureHeader{
+		Creator: creator,
+		Nonce:   nonce,
+	}
+
+	signatureHeaderData.SignatureHeaderBytes, err = proto.Marshal(&signatureHeaderData.SignatureHeader)
+	if err != nil {
+		e = errors.Wrap(err, "marshal signatureHeader failed")
+		return
+	}
+
+	// get all the bytes to be signed together, then sign
+	signatureHeaderData.SigningBytes = fcutils.ConcatenateBytes(signatureHeaderData.SignatureHeaderBytes, config)
+
+	return
 }
 
 // ExtractChannelConfig extracts the protobuf 'ConfigUpdate' object out of the 'ConfigEnvelope'.
