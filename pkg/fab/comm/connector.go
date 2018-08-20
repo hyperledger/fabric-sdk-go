@@ -300,6 +300,7 @@ func (cc *CachingConnector) janitor() {
 	defer cc.waitgroup.Done()
 
 	ticker := time.NewTicker(cc.sweepTime)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-cc.janitorDone:
