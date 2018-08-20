@@ -15,6 +15,7 @@ import (
 
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/discovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/random"
 	soptions "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -226,7 +227,7 @@ func (s *Service) query(req *discclient.Request, chaincodes []*fab.ChaincodeCall
 	responses, err := s.discClient.Send(reqCtx, req, targets...)
 	if err != nil {
 		if len(responses) == 0 {
-			return nil, errors.Wrapf(err, "error calling discover service send")
+			return nil, errors.Wrapf(err, "error calling discover service send for selection")
 		}
 		logger.Warnf("Received %d response(s) and one or more errors from discovery client: %s", len(responses), err)
 	}
@@ -270,17 +271,19 @@ func (s *Service) query(req *discclient.Request, chaincodes []*fab.ChaincodeCall
 }
 
 func (s *Service) getTargets(ctx contextAPI.Client) ([]fab.PeerConfig, error) {
-	// TODO: The number of peers to query should be retrieved from the channel policy.
-	// This will done in a future patch.
+
 	chpeers, ok := ctx.EndpointConfig().ChannelPeers(s.channelID)
 	if !ok {
 		return nil, errors.Errorf("failed to get peer configs for channel [%s]", s.channelID)
 	}
-	targets := make([]fab.PeerConfig, len(chpeers))
-	for i := 0; i < len(targets); i++ {
-		targets[i] = chpeers[i].NetworkPeer.PeerConfig
+
+	chConfig, ok := ctx.EndpointConfig().ChannelConfig(s.channelID)
+	if !ok {
+		return nil, errors.Errorf("failed to get channel endpoint config for channel [%s]", s.channelID)
 	}
-	return targets, nil
+
+	//pick number of peers based on channel policy
+	return random.PickRandomNPeerConfigs(chpeers, chConfig.Policies.QueryChannelConfig.QueryDiscovery), nil
 }
 
 func asChaincodeInterests(chaincodes []*fab.ChaincodeCall) *discovery.ChaincodeInterest {

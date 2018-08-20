@@ -7,9 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicdiscovery
 
 import (
-	"math/rand"
-
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/random"
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -88,7 +87,7 @@ func (s *ChannelService) getTargets(ctx contextAPI.Client) ([]fab.PeerConfig, er
 	}
 
 	//pick number of peers given in channel policy
-	return pickRandomNPeerConfigs(chPeers, chConfig.Policies.QueryChannelConfig.QueryDiscovery), nil
+	return random.PickRandomNPeerConfigs(chPeers, chConfig.Policies.QueryChannelConfig.QueryDiscovery), nil
 }
 
 // evaluate validates the responses and returns the peers
@@ -140,17 +139,4 @@ type peerEndpoint struct {
 
 func (p *peerEndpoint) BlockHeight() uint64 {
 	return p.blockHeight
-}
-
-//pickRandomNPeerConfigs picks N random  unique peer configs from given channel peer list
-func pickRandomNPeerConfigs(chPeers []fab.ChannelPeer, n int) []fab.PeerConfig {
-
-	var result []fab.PeerConfig
-	for _, index := range rand.Perm(len(chPeers)) {
-		result = append(result, chPeers[index].PeerConfig)
-		if len(result) == n {
-			break
-		}
-	}
-	return result
 }
