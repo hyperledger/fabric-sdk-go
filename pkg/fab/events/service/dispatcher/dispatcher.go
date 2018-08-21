@@ -45,7 +45,7 @@ type HandlerRegistry map[reflect.Type]Handler
 type Dispatcher struct {
 	params
 	lastBlockNum               uint64
-	discardNextEvent           bool
+	updateLastBlockInfoOnly    bool
 	state                      int32
 	eventch                    chan interface{}
 	blockRegistrations         []*BlockReg
@@ -307,8 +307,8 @@ func (ed *Dispatcher) HandleBlock(block *cb.Block, sourceURL string) {
 		return
 	}
 
-	if ed.discardNextEvent {
-		ed.discardNextEvent = false
+	if ed.updateLastBlockInfoOnly {
+		ed.updateLastBlockInfoOnly = false
 		return
 	}
 
@@ -325,8 +325,8 @@ func (ed *Dispatcher) HandleFilteredBlock(fblock *pb.FilteredBlock, sourceURL st
 		return
 	}
 
-	if ed.discardNextEvent {
-		ed.discardNextEvent = false
+	if ed.updateLastBlockInfoOnly {
+		ed.updateLastBlockInfoOnly = false
 		return
 	}
 
@@ -517,9 +517,9 @@ func (ed *Dispatcher) RegisterHandler(t interface{}, h Handler) {
 	}
 }
 
-//DiscardNextEvent sets if next event needs to be published or not
-func (ed *Dispatcher) DiscardNextEvent() {
-	ed.discardNextEvent = true
+//UpdateLastBlockInfoOnly sets is next event should only be used for updating last block info.
+func (ed *Dispatcher) UpdateLastBlockInfoOnly() {
+	ed.updateLastBlockInfoOnly = true
 }
 
 func getCCKey(ccID, eventFilter string) string {

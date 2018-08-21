@@ -69,7 +69,7 @@ func New(context fabcontext.Client, chConfig fab.ChannelCfg, discoveryService fa
 		params.seekType = seek.Newest
 		//discard (do not publish) next BlockEvent/FilteredBlockEvent in dispatcher, since default seek type 'newest' is
 		// only needed for block height calculations
-		dispatcher.DiscardNextEvent()
+		dispatcher.UpdateLastBlockInfoOnly()
 	}
 
 	client := &Client{

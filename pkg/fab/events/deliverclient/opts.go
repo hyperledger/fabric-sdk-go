@@ -75,8 +75,6 @@ func (p *params) SetSeekType(value seek.Type) {
 	logger.Debugf("SeekType: %s", value)
 	if value != "" {
 		p.seekType = value
-	} else {
-		logger.Warnf("SeekType must not be empty. Defaulting to %s", p.seekType)
 	}
 }
 
