@@ -9,25 +9,27 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
+	"encoding/hex"
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path"
 	"regexp"
 	"strings"
-)
-
-const (
-	defaultDockerHost = "http://localhost:2375"
+	"sync"
+	"syscall"
+	"time"
 )
 
 var (
 	binaryRegExp         = regexp.MustCompile("(.*)_(.*)")
+	containerCreateRegEx = regexp.MustCompile("/containers/create")
 	containerNameRegEx   = regexp.MustCompile("(.*)-(.*)-(.*)-(.*)")
 	containerStartRegEx  = regexp.MustCompile("/containers/(.+)/start")
 	containerUploadRegEx = regexp.MustCompile("/containers/(.+)/archive")
@@ -36,7 +38,9 @@ var (
 var peerEndpoints map[string]string
 
 type chaincoded struct {
-	proxy *httputil.ReverseProxy
+	//proxy *httputil.ReverseProxy
+	wg   *sync.WaitGroup
+	done chan struct{}
 }
 
 type chaincodeParams struct {
@@ -46,33 +50,79 @@ type chaincodeParams struct {
 	ccVersion string
 }
 
-func newChaincoded() *chaincoded {
-	docker_host, ok := os.LookupEnv("DOCKER_HOST")
-	if !ok {
-		docker_host = defaultDockerHost
-	}
-
-	url, err := url.Parse(docker_host)
-	if err != nil {
-		log.Fatalf("invalid URL for docker host: %s", err)
-	}
-
-	proxy := httputil.NewSingleHostReverseProxy(url)
-
+func newChaincoded(wg *sync.WaitGroup, done chan struct{}) *chaincoded {
 	d := chaincoded{
-		proxy: proxy,
+		//proxy: createDockerReverseProxy(),
+		wg:   wg,
+		done: done,
 	}
 
 	return &d
 }
 
-func launchChaincode(ccParams *chaincodeParams, tlsPath string) error {
+// chaincoded is currently able to intercept the docker calls without need for forwarding.
+// (so reverse proxy to docker via socat is currently disabled).
+//
+//func createDockerReverseProxy() *httputil.ReverseProxy {
+//	const (
+//		defaultDockerHost = "http://localhost:2375"
+//	)
+//
+//	docker_host, ok := os.LookupEnv("DOCKER_HOST")
+//	if !ok {
+//		docker_host = defaultDockerHost
+//	}
+//
+//	url, err := url.Parse(docker_host)
+//	if err != nil {
+//		logFatalf("invalid URL for docker host: %s", err)
+//	}
+//
+//	return httputil.NewSingleHostReverseProxy(url)
+//}
+
+func launchChaincode(ccParams *chaincodeParams, tlsPath string, done chan struct{}) {
+	const (
+		relaunchWaitTime = time.Second
+	)
+
+	for {
+		logDebugf("Starting chaincode [%s, %s]", ccParams.chaincodeBinary(), ccParams.ccID)
+		cmd := createChaincodeCmd(ccParams, tlsPath)
+
+		cmdDone := make(chan struct{})
+
+		go func() {
+			defer close(cmdDone)
+
+			err := cmd.Run()
+			if v, ok := err.(*exec.ExitError); ok {
+				logWarningf("Chaincode had an exit error - will relaunch [%s, %s]", ccParams.ccID, v)
+			} else {
+				logFatalf("Chaincode had a non-exit error [%s, %s]", ccParams.ccID, err)
+			}
+		}()
+
+		select {
+		case <-done:
+			logDebugf("Stopping chaincode [%s, %s, %d]", ccParams.chaincodeBinary(), ccParams.ccID, cmd.Process.Pid)
+			err := cmd.Process.Kill()
+			if err != nil {
+				logWarningf("Killing process failed [%s, %s]", ccParams.ccID, err)
+			}
+			return
+		case <-cmdDone:
+			time.Sleep(relaunchWaitTime)
+		}
+	}
+}
+
+func createChaincodeCmd(ccParams *chaincodeParams, tlsPath string) *exec.Cmd {
 	rootCertFile := path.Join(tlsPath, "peer.crt")
 	keyPath := path.Join(tlsPath, "client.key")
 	certPath := path.Join(tlsPath, "client.crt")
 
 	cmd := exec.Command(ccParams.chaincodeBinary(), tlsPath)
-	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
 		"CORE_PEER_ADDRESS="+ccParams.peerAddr(),
@@ -81,13 +131,16 @@ func launchChaincode(ccParams *chaincodeParams, tlsPath string) error {
 		"CORE_PEER_TLS_ROOTCERT_FILE="+rootCertFile,
 		"CORE_TLS_CLIENT_KEY_PATH="+keyPath,
 		"CORE_TLS_CLIENT_CERT_PATH="+certPath,
+		"CORE_CHAINCODE_LOGGING_LEVEL="+getChaincodeLoggingLevel(),
 	)
 
-	if err := cmd.Start(); err != nil {
-		return err
+	// Chaincode and shim logs are output through Stderr.
+	// Some chaincodes also print messages to Stdout.
+	if isVerbose() {
+		cmd.Stdout = os.Stdout
 	}
 
-	return nil
+	return cmd
 }
 
 func extractChaincodeParams(containerName string) (*chaincodeParams, bool) {
@@ -133,39 +186,65 @@ func (cp *chaincodeParams) peerAddr() string {
 func (d *chaincoded) handleUploadToContainerRequest(w http.ResponseWriter, r *http.Request, containerName string) {
 	ccParams, ok := extractChaincodeParams(containerName)
 	if !ok {
-		d.proxy.ServeHTTP(w, r)
+		d.handleOtherRequest(w, r)
 		return
 	}
 
-	log.Printf("Handling upload to container request [%s]", containerName)
+	logDebugf("Handling upload to container request [%s]", containerName)
 	tmpDir, err := ioutil.TempDir("", "chaincoded")
 	if err != nil {
-		log.Printf("creation of temporary directory failed: %s", err)
+		logWarningf("creation of temporary directory failed: %s", err)
 		w.WriteHeader(500)
 		return
 	}
 
 	err = extractArchive(r.Body, tmpDir)
 	if err != nil {
-		log.Printf("extracting archive failed: %s", err)
+		logWarningf("extracting archive failed: %s", err)
 		w.WriteHeader(500)
 		return
 	}
 
 	tlsPath := path.Join(tmpDir, "etc", "hyperledger", "fabric")
-	err = launchChaincode(ccParams, tlsPath)
-	if err != nil {
-		log.Printf("launching chaincode failed: %s", err)
-		w.WriteHeader(500)
-		return
-	}
+	d.wg.Add(1)
+	go func() {
+		defer d.wg.Done()
+		launchChaincode(ccParams, tlsPath, d.done)
+	}()
 
 	w.WriteHeader(200)
 }
 
 func (d *chaincoded) handleStartContainerRequest(w http.ResponseWriter, r *http.Request, containerName string) {
-	log.Printf("Handling start container request [%s]", containerName)
+	logDebugf("Handling start container request [%s]", containerName)
 	w.WriteHeader(204)
+}
+
+func (d *chaincoded) handleCreateContainerRequest(w http.ResponseWriter, r *http.Request) {
+	logDebugf("Handling create container request [%s]", r.URL)
+
+	const dockerContainerIDLen = 6
+	containerID := randomHexString(dockerContainerIDLen)
+
+	logDebugf("Using container ID [%s]", containerID)
+	respBody := []byte("{\"Id\":\"" + containerID + "\",\"Warnings\":[]}")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	w.Write(respBody)
+}
+
+func (d *chaincoded) handleOtherRequest(w http.ResponseWriter, r *http.Request) {
+	// chaincoded is currently able to intercept the docker calls without need for forwarding.
+	// (so reverse proxy to docker via socat is currently disabled and instead we just return 200).
+	// d.proxy.ServeHTTP(w, r)
+
+	w.WriteHeader(200)
+}
+
+func randomHexString(len int) string {
+	b := make([]byte, len)
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
 func extractArchive(in io.Reader, basePath string) error {
@@ -219,14 +298,46 @@ func extractArchive(in io.Reader, basePath string) error {
 func (d *chaincoded) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	startMatches := containerStartRegEx.FindStringSubmatch(r.URL.Path)
 	uploadMatches := containerUploadRegEx.FindStringSubmatch(r.URL.Path)
+	createMatches := containerCreateRegEx.FindStringSubmatch(r.URL.Path)
 
+	logDebugf("Handling HTTP request [%s]", r.URL)
 	if startMatches != nil {
 		d.handleStartContainerRequest(w, r, startMatches[1])
 	} else if uploadMatches != nil {
 		d.handleUploadToContainerRequest(w, r, uploadMatches[1])
+	} else if createMatches != nil {
+		d.handleCreateContainerRequest(w, r)
 	} else {
-		d.proxy.ServeHTTP(w, r)
+		d.handleOtherRequest(w, r)
 	}
+}
+
+func runHTTPServer(addr string, h http.Handler, wg *sync.WaitGroup, done chan struct{}) {
+	srv := &http.Server{Addr: addr, Handler: h}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := srv.ListenAndServe()
+
+		if err != nil && err != http.ErrServerClosed {
+			logFatalf("HTTP server failed [%s]", err)
+		}
+		logDebugf("HTTP server stopped [%s]", addr)
+	}()
+
+	// wait for signal to exit and then gracefully shutdown
+	<-done
+	srv.Shutdown(context.Background())
+}
+
+func waitForTermination() {
+	s := make(chan os.Signal, 1)
+	signal.Notify(s,
+		syscall.SIGINT,
+		syscall.SIGTERM)
+
+	<-s
 }
 
 func main() {
@@ -239,7 +350,7 @@ func main() {
 	}
 
 	addr := os.Args[1]
-	log.Printf("Chaincoded starting on %s ...", addr)
+	logInfof("Chaincoded starting [%s] ...", addr)
 
 	for _, endpoint := range os.Args[2:] {
 		s := strings.Split(endpoint, ":")
@@ -249,10 +360,17 @@ func main() {
 		peerEndpoints[s[0]] = endpoint
 	}
 
-	dh := newChaincoded()
-	err := http.ListenAndServe(addr, dh)
+	rand.Seed(time.Now().UTC().UnixNano())
 
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+
+	dh := newChaincoded(&wg, done)
+	go runHTTPServer(addr, dh, &wg, done)
+
+	waitForTermination()
+	logInfof("Chaincoded stopping [%s] ...", addr)
+	close(done)
+	wg.Wait()
+	logInfof("Chaincoded stopped [%s]", addr)
 }

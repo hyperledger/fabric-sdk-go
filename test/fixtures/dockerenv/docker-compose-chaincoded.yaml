@@ -7,23 +7,27 @@ version: '2'
 
 services:
 
-  dockerd:
-    image: fabsdkgo-socat
-    command: TCP-LISTEN:2375,fork,nodelay UNIX-CONNECT:/host/var/run/docker.sock,retry=10,interval=0.25
-    volumes:
-      - /var/run/:/host/var/run/
-    expose:
-      - "2375"
-    networks:
-      default:
-        aliases:
-          - dockerd.example.com
+  # chaincoded is currently able to intercept the docker calls without need for forwarding.
+  # (as long as this remains true, socat is not needed).
+  #
+  #dockerd:
+  #  image: fabsdkgo-socat
+  #  command: TCP-LISTEN:2375,fork,nodelay UNIX-CONNECT:/host/var/run/docker.sock,retry=10,interval=0.25
+  #  volumes:
+  #    - /var/run/:/host/var/run/
+  #  expose:
+  #    - "2375"
+  #  networks:
+  #    default:
+  #      aliases:
+  #        - dockerd.example.com
 
   chaincoded:
     image: ${FABRIC_BASE_DOCKER_REGISTRY}${FABRIC_BASEIMAGE_FIXTURE_IMAGE}:${FABRIC_ARCH}${FABRIC_ARCH_SEP}${FABRIC_BASEIMAGE_FIXTURE_TAG}
     environment:
       - DOCKER_HOST=http://dockerd.example.com:2375
-      #- CORE_CHAINCODE_LOGGING_LEVEL=debug
+      - CHAINCODED_VERBOSE
+      - CORE_CHAINCODE_LOGGING_LEVEL
     volumes:
       - ../../../scripts/_go/src/chaincoded:/opt/gopath/src/chaincoded
       - ../../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
@@ -41,5 +45,6 @@ services:
       - "9375:9375"
     expose:
       - "9375"
-    depends_on:
-      - dockerd
+    # see above note (socat currently not needed).
+    #depends_on:
+    #  - dockerd
