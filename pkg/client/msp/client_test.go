@@ -405,6 +405,10 @@ func cleanup(storePath string) {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to remove dir %s: %s\n", storePath, err))
 	}
+	// Recreate the directory only
+	if err := os.MkdirAll(storePath, os.FileMode(os.ModePerm)); err != nil {
+		panic(fmt.Sprintf("Failed to recreate dir %s: %s\n", storePath, err))
+	}
 }
 
 func randomUsername() string {
