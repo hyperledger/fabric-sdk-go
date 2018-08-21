@@ -278,7 +278,6 @@ func (cc *CachingConnector) ensureJanitorStarted() {
 		cc.waitgroup.Add(1)
 		go cc.janitor()
 	default:
-		logger.Debug("janitor already started")
 	}
 }
 

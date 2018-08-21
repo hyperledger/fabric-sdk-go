@@ -67,7 +67,7 @@ services:
   orderer1:
     image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_ORDERER_FIXTURE_IMAGE}:${FABRIC_ARCH}${FABRIC_ARCH_SEP}${FABRIC_ORDERER_FIXTURE_TAG}
     environment:
-      - ORDERER_GENERAL_LOGLEVEL=debug
+      - ORDERER_GENERAL_LOGLEVEL=info
       - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
       - ORDERER_GENERAL_GENESISMETHOD=file
       - ORDERER_GENERAL_GENESISFILE=/etc/hyperledger/configtx/twoorgs.genesis.block
@@ -101,7 +101,7 @@ services:
     environment:
       - CORE_VM_ENDPOINT
       - CORE_PEER_ID=peer0.org1.example.com
-      - CORE_LOGGING_PEER=debug
+      - CORE_LOGGING_PEER=info
       # - CORE_LOGGING_GRPC=debug
       # - CORE_LOGGING_GOSSIP=debug
       # - CORE_CHAINCODE_STARTUPTIMEOUT=30s
@@ -112,12 +112,11 @@ services:
       - CORE_CHAINCODE_EXECUTETIMEOUT=120s
       - CORE_VM_DOCKER_ATTACHSTDOUT=false
       - CORE_PEER_LOCALMSPID=Org1MSP
-      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
-      - CORE_PEER_LISTENADDRESS=peer0.org1.example.com:7051
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=127.0.0.1:7051
       - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
-      - CORE_PEER_CHAINCODELISTENADDRESS=peer0.org1.example.com:7052
-      - CORE_PEER_ADDRESSAUTODETECT=true
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org1.example.com:7151
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.example.com:7051
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
@@ -144,7 +143,7 @@ services:
       - /var/run/:/host/var/run/
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp:/etc/hyperledger/msp/peer
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls:/etc/hyperledger/tls/peer
-      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/orgs/tls.example.com/tlsca
     networks:
       default:
         aliases:
@@ -160,7 +159,7 @@ services:
     environment:
       - CORE_VM_ENDPOINT
       - CORE_PEER_ID=peer1.org1.example.com
-      - CORE_LOGGING_PEER=debug
+      - CORE_LOGGING_PEER=info
       # - CORE_LOGGING_GRPC=debug
       # - CORE_LOGGING_GOSSIP=debug
       # - CORE_CHAINCODE_STARTUPTIMEOUT=30s
@@ -171,13 +170,12 @@ services:
       - CORE_CHAINCODE_EXECUTETIMEOUT=120s
       - CORE_VM_DOCKER_ATTACHSTDOUT=false
       - CORE_PEER_LOCALMSPID=Org1MSP
-      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
-      - CORE_PEER_LISTENADDRESS=peer1.org1.example.com:7151
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7151
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7152
       - CORE_PEER_ADDRESS=peer1.org1.example.com:7151
-      - CORE_PEER_CHAINCODELISTENADDRESS=peer1.org1.example.com:7152
-      - CORE_PEER_ADDRESSAUTODETECT=true
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org1.example.com:7051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.org1.example.com:7151
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org1.example.com:7051
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
@@ -203,7 +201,7 @@ services:
       - /var/run/:/host/var/run/
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/msp:/etc/hyperledger/msp/peer
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/tls:/etc/hyperledger/tls/peer
-      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/orgs/tls.example.com/tlsca
     networks:
       default:
         aliases:
@@ -219,7 +217,7 @@ services:
     environment:
       - CORE_VM_ENDPOINT
       - CORE_PEER_ID=peer0.org2.example.com
-      - CORE_LOGGING_PEER=debug
+      - CORE_LOGGING_PEER=info
       #- CORE_LOGGING_MSP=debug
       #- CORE_LOGGING_GRPC=debug
       # - CORE_LOGGING_GOSSIP=debug
@@ -231,13 +229,13 @@ services:
       - CORE_CHAINCODE_EXECUTETIMEOUT=120s
       - CORE_VM_DOCKER_ATTACHSTDOUT=false
       - CORE_PEER_LOCALMSPID=Org2MSP
-      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
-      - CORE_PEER_LISTENADDRESS=peer0.org2.example.com:8051
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:8052
       - CORE_PEER_ADDRESS=peer0.org2.example.com:8051
-      - CORE_PEER_CHAINCODELISTENADDRESS=peer0.org2.example.com:8052
-      - CORE_PEER_ADDRESSAUTODETECT=true
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org2.example.com:9051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org2.example.com:8051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=127.0.0.1:8051
+      #- CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org2.example.com:9051
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
@@ -263,7 +261,7 @@ services:
       - /var/run/:/host/var/run/
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp:/etc/hyperledger/msp/peer
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls:/etc/hyperledger/tls/peer
-      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/orgs/tls.example.com/tlsca
     networks:
       default:
         aliases:
@@ -279,7 +277,7 @@ services:
     environment:
       - CORE_VM_ENDPOINT
       - CORE_PEER_ID=peer1.org2.example.com
-      - CORE_LOGGING_PEER=debug
+      - CORE_LOGGING_PEER=info
       #- CORE_LOGGING_MSP=debug
       #- CORE_LOGGING_GRPC=debug
       # - CORE_LOGGING_GOSSIP=debug
@@ -291,13 +289,12 @@ services:
       - CORE_CHAINCODE_EXECUTETIMEOUT=120s
       - CORE_VM_DOCKER_ATTACHSTDOUT=false
       - CORE_PEER_LOCALMSPID=Org2MSP
-      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
-      - CORE_PEER_LISTENADDRESS=peer1.org2.example.com:9051
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
       - CORE_PEER_ADDRESS=peer1.org2.example.com:9051
-      - CORE_PEER_CHAINCODELISTENADDRESS=peer1.org2.example.com:9052
-      - CORE_PEER_ADDRESSAUTODETECT=true
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.example.com:8051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.org2.example.com:9051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.example.com:8051
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
@@ -323,7 +320,7 @@ services:
       - /var/run/:/host/var/run/
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/msp:/etc/hyperledger/msp/peer
       - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/tls:/etc/hyperledger/tls/peer
-      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/orgs/tls.example.com/tlsca
     networks:
       default:
         aliases:

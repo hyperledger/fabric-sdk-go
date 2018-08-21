@@ -266,6 +266,7 @@ organizations:
 
     peers:
       - peer0.org2.example.com
+      - peer1.org2.example.com
 
     certificateAuthorities:
       - ca.org2.example.com
@@ -306,16 +307,16 @@ orderers:
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
     grpcOptions:
-      ssl-target-name-override: orderer.example.com
+      #ssl-target-name-override: orderer.example.com
       # These parameters should be set in coordination with the keepalive policy on the server,
       # as incompatible settings can result in closing of connection.
       # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
-      keep-alive-time: 0s
-      keep-alive-timeout: 20s
-      keep-alive-permit: false
-      fail-fast: false
+      #keep-alive-time: 0s
+      #keep-alive-timeout: 20s
+      #keep-alive-permit: false
+      #fail-fast: false
       # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
-      allow-insecure: false
+      #allow-insecure: false
 
     tlsCACerts:
       # Certificate location absolute path
@@ -343,8 +344,8 @@ peers:
     # this URL is used to send endorsement and query requests
     url: peer0.org1.example.com:7051
 
-    grpcOptions:
-      ssl-target-name-override: peer0.org1.example.com
+    #grpcOptions:
+    #  ssl-target-name-override: peer0.org1.example.com
 
     tlsCACerts:
       # Certificate location absolute path
@@ -354,8 +355,8 @@ peers:
     # this URL is used to send endorsement and query requests
     url: peer1.org1.example.com:7151
 
-    grpcOptions:
-      ssl-target-name-override: peer1.org1.example.com
+    #grpcOptions:
+    #  ssl-target-name-override: peer1.org1.example.com
 
     tlsCACerts:
       # Certificate location absolute path
@@ -363,8 +364,16 @@ peers:
 
   peer0.org2.example.com:
     url: peer0.org2.example.com:8051
-    grpcOptions:
-      ssl-target-name-override: peer0.org2.example.com
+    #grpcOptions:
+    #  ssl-target-name-override: peer0.org2.example.com
+
+    tlsCACerts:
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+
+  peer1.org2.example.com:
+    url: peer1.org2.example.com:9051
+    #grpcOptions:
+    #  ssl-target-name-override: peer1.org2.example.com
 
     tlsCACerts:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
@@ -378,8 +387,8 @@ certificateAuthorities:
   ca.org1.example.com:
     url: https://ca.org1.example.com:7054
     # [Optional] The optional server name for target override
-    grpcOptions:
-      ssl-target-name-override: ca.org1.example.com
+    #grpcOptions:
+    #  ssl-target-name-override: ca.org1.example.com
     tlsCACerts:
       # Comma-Separated list of paths
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
@@ -400,8 +409,8 @@ certificateAuthorities:
   ca.org2.example.com:
     url: https://ca.org2.example.com:8054
     # [Optional] The optional server name for target override
-    grpcOptions:
-      ssl-target-name-override: ca.org2.example.com
+    #grpcOptions:
+    #  ssl-target-name-override: ca.org2.example.com
     tlsCACerts:
       # Comma-Separated list of paths
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem

@@ -411,6 +411,15 @@ Profiles:
                           Type: Signature
                           Rule: "OR('OrdererMSP.member')"
         Consortiums:
+            TestConsortium:
+                Organizations:
+                - <<: *Org1
+                  Policies:
+                      <<: *Org1Policies
+                      Admins:
+                          Type: Signature
+                          Rule: "OR('Org1MSP.member')"
+
             SampleConsortium:
                 Organizations:
                     - <<: *Org1
@@ -425,6 +434,13 @@ Profiles:
                           Admins:
                               Type: Signature
                               Rule: "OR('Org2MSP.member')"
+
+    OneOrgChannel:
+        Consortium: TestConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+            - *Org1
 
     TwoOrgsChannel:
         Consortium: SampleConsortium

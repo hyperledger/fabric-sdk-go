@@ -38,6 +38,7 @@ const (
 	peer0Org1URL = "peer0.org1.example.com:7051"
 	peer1Org1URL = "peer1.org1.example.com:7151"
 	peer0Org2URL = "peer0.org2.example.com:8051"
+	peer1Org2URL = "peer1.org2.example.com:9051"
 )
 
 func TestDiscoveryClientPeers(t *testing.T) {
@@ -183,6 +184,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
 			[]string{peer0Org2URL},
+			[]string{peer1Org2URL},
 		)
 	})
 
@@ -200,6 +202,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 			[]string{peer0Org1URL},
 			[]string{peer1Org1URL},
 			[]string{peer0Org2URL},
+			[]string{peer1Org2URL},
 		)
 	})
 
@@ -215,6 +218,8 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 			newInterest(newCCCall(ccID)),
 			[]string{peer0Org1URL, peer0Org2URL},
 			[]string{peer1Org1URL, peer0Org2URL},
+			[]string{peer0Org1URL, peer1Org2URL},
+			[]string{peer1Org1URL, peer1Org2URL},
 		)
 	})
 
@@ -238,6 +243,8 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 			newInterest(newCCCall(ccID1), newCCCall(ccID2)),
 			[]string{peer0Org1URL, peer0Org2URL},
 			[]string{peer1Org1URL, peer0Org2URL},
+			[]string{peer0Org1URL, peer1Org2URL},
+			[]string{peer1Org1URL, peer1Org2URL},
 		)
 	})
 }
@@ -323,7 +330,7 @@ func setupOrgContext(t *testing.T) []*integration.OrgContext {
 	// install since some peers may be missed if we call InstallCC too early
 	org1Peers, err := integration.DiscoverLocalPeers(org1AdminContext, 2)
 	require.NoError(t, err)
-	org2Peers, err := integration.DiscoverLocalPeers(org2AdminContext, 1)
+	org2Peers, err := integration.DiscoverLocalPeers(org2AdminContext, 2)
 	require.NoError(t, err)
 
 	return []*integration.OrgContext{

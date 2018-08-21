@@ -30,6 +30,7 @@ const (
 	peer0Org1 = "peer0.org1.example.com"
 	peer1Org1 = "peer1.org1.example.com"
 	peer0Org2 = "peer0.org2.example.com"
+	peer1Org2 = "peer1.org2.example.com"
 )
 
 var (
@@ -37,12 +38,14 @@ var (
 		peer0Org1: "peer0.org1.example.com:7051",
 		peer1Org1: "peer1.org1.example.com:7151",
 		peer0Org2: "peer0.org2.example.com:8051",
+		peer1Org2: "peer1.org2.example.com:9051",
 	}
 
 	localHostToURLMap = map[string]string{
 		peer0Org1: "localhost:7051",
 		peer1Org1: "localhost:7151",
 		peer0Org2: "localhost:8051",
+		peer1Org2: "localhost:9051",
 	}
 )
 
@@ -93,7 +96,8 @@ func TestFabricSelection(t *testing.T) {
 			t, selectionService,
 			chaincodes(newCCCall(ccID)),
 			expecting(
-				[]string{getURL(peer0Org2)}),
+				[]string{getURL(peer0Org2)},
+				[]string{getURL(peer1Org2)}),
 		)
 	})
 
@@ -110,7 +114,8 @@ func TestFabricSelection(t *testing.T) {
 			expecting(
 				[]string{getURL(peer0Org1)},
 				[]string{getURL(peer1Org1)},
-				[]string{getURL(peer0Org2)}),
+				[]string{getURL(peer0Org2)},
+				[]string{getURL(peer1Org2)}),
 		)
 	})
 
@@ -126,7 +131,9 @@ func TestFabricSelection(t *testing.T) {
 			chaincodes(newCCCall(ccID)),
 			expecting(
 				[]string{getURL(peer0Org1), getURL(peer0Org2)},
-				[]string{getURL(peer1Org1), getURL(peer0Org2)}),
+				[]string{getURL(peer0Org1), getURL(peer1Org2)},
+				[]string{getURL(peer1Org1), getURL(peer0Org2)},
+				[]string{getURL(peer1Org1), getURL(peer1Org2)}),
 		)
 
 		// With peer filter
@@ -134,7 +141,8 @@ func TestFabricSelection(t *testing.T) {
 			t, selectionService,
 			chaincodes(newCCCall(ccID)),
 			expecting(
-				[]string{getURL(peer1Org1), getURL(peer0Org2)}),
+				[]string{getURL(peer1Org1), getURL(peer0Org2)},
+				[]string{getURL(peer1Org1), getURL(peer1Org2)}),
 			selectionopts.WithPeerFilter(func(peer fab.Peer) bool {
 				return peer.URL() != getURL(peer0Org1)
 			}),
@@ -160,7 +168,9 @@ func TestFabricSelection(t *testing.T) {
 			chaincodes(newCCCall(ccID1), newCCCall(ccID2)),
 			expecting(
 				[]string{getURL(peer0Org1), getURL(peer0Org2)},
-				[]string{getURL(peer1Org1), getURL(peer0Org2)}),
+				[]string{getURL(peer1Org1), getURL(peer0Org2)},
+				[]string{getURL(peer0Org1), getURL(peer1Org2)},
+				[]string{getURL(peer1Org1), getURL(peer1Org2)}),
 		)
 	})
 
@@ -201,6 +211,10 @@ func checkEndorsers(t *testing.T, endorsers []fab.Peer, expectedGroups [][]strin
 			return
 		}
 	}
+	for _, endorser := range endorsers {
+		t.Logf("endorser URL: %s", endorser.URL())
+	}
+
 	t.Fatalf("Unexpected endorser group: %#v - Expecting one of: %#v", endorsers, expectedGroups)
 }
 

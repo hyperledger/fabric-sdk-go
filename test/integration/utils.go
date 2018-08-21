@@ -191,7 +191,7 @@ func SetupMultiOrgContext(sdk *fabsdk.FabricSDK, org1Name string, org2Name strin
 	if err != nil {
 		return nil, errors.WithMessage(err, "discovery of local peers failed")
 	}
-	org2Peers, err := DiscoverLocalPeers(org2AdminContext, 1)
+	org2Peers, err := DiscoverLocalPeers(org2AdminContext, 2)
 	if err != nil {
 		return nil, errors.WithMessage(err, "discovery of local peers failed")
 	}

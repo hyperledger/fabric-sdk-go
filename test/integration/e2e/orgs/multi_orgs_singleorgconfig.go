@@ -27,13 +27,11 @@ import (
 // 			if it is able to get endorsement from peers not mentioned in config
 //			if tlscacerts are being used by channel block anchor peers if not found in config
 func TestMultiOrgWithSingleOrgConfig(t *testing.T, examplecc string) {
-	peerToBeDisovered := "peer0.org2.example.com:8051"
 	//Config containing references to org1 only
 	configProvider := config.FromFile(pathvar.Subst(integration.ConfigPathSingleOrg))
 	//if local test, add entity matchers to override URLs to localhost
 	if integration.IsLocal() {
 		configProvider = integration.AddLocalEntityMapping(configProvider)
-		peerToBeDisovered = "localhost:8051"
 	}
 
 	org1sdk, err := fabsdk.New(configProvider)
@@ -63,11 +61,11 @@ func TestMultiOrgWithSingleOrgConfig(t *testing.T, examplecc string) {
 	foundOrg2Endorser := false
 	for _, v := range resp.Responses {
 		//check if response endorser is org2 peer and MSP ID 'Org2MSP' is found
-		if peerToBeDisovered == v.Endorser && strings.Contains(string(v.Endorsement.Endorser), "Org2MSP") {
+		if strings.Contains(string(v.Endorsement.Endorser), "Org2MSP") {
 			foundOrg2Endorser = true
 			break
 		}
 	}
 
-	require.True(t, foundOrg2Endorser, "couldnt not find org2 endorser and MSPID")
+	require.True(t, foundOrg2Endorser, "Org2 MSP ID was not in the endorsement")
 }

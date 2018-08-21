@@ -136,7 +136,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
 	require.NoError(t, err)
-	_, err = integration.DiscoverLocalPeers(mc.org2AdminClientContext, 1)
+	_, err = integration.DiscoverLocalPeers(mc.org2AdminClientContext, 2)
 	require.NoError(t, err)
 
 	setupClientContextsAndChannel(t, sdk, &mc)
@@ -349,7 +349,7 @@ func upgradeCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccN
 	// install since some peers may be missed if we call InstallCC too early
 	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
 	require.NoError(t, err)
-	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 1)
+	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 2)
 	require.NoError(t, err)
 
 	// Install example cc version '1' to Org1 peers
@@ -538,7 +538,7 @@ func createCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccNa
 	// install since some peers may be missed if we call InstallCC too early
 	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
 	require.NoError(t, err)
-	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 1)
+	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 2)
 	require.NoError(t, err)
 
 	// Install example cc to Org1 peers

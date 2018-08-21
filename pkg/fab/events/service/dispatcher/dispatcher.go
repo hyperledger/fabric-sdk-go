@@ -312,6 +312,7 @@ func (ed *Dispatcher) HandleBlock(block *cb.Block, sourceURL string) {
 		return
 	}
 
+	logger.Debug("Publishing block event...")
 	ed.publishBlockEvents(block, sourceURL)
 	ed.publishFilteredBlockEvents(toFilteredBlock(block), sourceURL)
 }

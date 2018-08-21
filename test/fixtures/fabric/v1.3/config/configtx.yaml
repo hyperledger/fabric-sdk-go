@@ -404,32 +404,48 @@ Profiles:
         Orderer:
             <<: *OrdererDefaults
             Organizations:
-                - <<: *OrdererOrg
+            - <<: *OrdererOrg
+              Policies:
+                  <<: *OrdererOrgPolicies
+                  Admins:
+                      Type: Signature
+                      Rule: "OR('OrdererMSP.member')"
+        Consortiums:
+            TestConsortium:
+                Organizations:
+                - <<: *Org1
                   Policies:
-                      <<: *OrdererOrgPolicies
+                      <<: *Org1Policies
                       Admins:
                           Type: Signature
-                          Rule: "OR('OrdererMSP.member')"
-        Consortiums:
+                          Rule: "OR('Org1MSP.member')"
+
             SampleConsortium:
                 Organizations:
-                    - <<: *Org1
-                      Policies:
-                          <<: *Org1Policies
-                          Admins:
-                              Type: Signature
-                              Rule: "OR('Org1MSP.member')"
-                    - <<: *Org2
-                      Policies:
-                          <<: *Org2Policies
-                          Admins:
-                              Type: Signature
-                              Rule: "OR('Org2MSP.member')"
+                - <<: *Org1
+                  Policies:
+                      <<: *Org1Policies
+                      Admins:
+                          Type: Signature
+                          Rule: "OR('Org1MSP.member')"
+                - <<: *Org2
+                  Policies:
+                      <<: *Org2Policies
+                      Admins:
+                          Type: Signature
+                          Rule: "OR('Org2MSP.member')"
+
+    OneOrgChannel:
+        Consortium: TestConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+            - *Org1
 
     TwoOrgsChannel:
         Consortium: SampleConsortium
         Application:
             <<: *ApplicationDefaults
             Organizations:
-                - *Org1
-                - *Org2
+            - *Org1
+            - *Org2

@@ -69,7 +69,7 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 
 	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
 	require.NoError(t, err)
-	_, err = integration.DiscoverLocalPeers(mc.org2AdminClientContext, 1)
+	_, err = integration.DiscoverLocalPeers(mc.org2AdminClientContext, 2)
 	require.NoError(t, err)
 
 	joined, err := integration.IsJoinedChannel(channelID, mc.org1ResMgmt, org1Peers[0])
@@ -93,7 +93,7 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 func testDynamicDiscovery(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) {
 	_, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
 	require.NoError(t, err)
-	_, err = integration.DiscoverLocalPeers(mc.org2AdminClientContext, 1)
+	_, err = integration.DiscoverLocalPeers(mc.org2AdminClientContext, 2)
 	require.NoError(t, err)
 
 	// example discovering the peers from the bootstap peer
@@ -101,8 +101,9 @@ func testDynamicDiscovery(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgConte
 	// 1 org1 anchor peer (peer0.org1.example.com)
 	// 1 discovered peer (not in config: peer1.org1.example.com)
 	// 1 org2 anchor peer (peer0.org2.example.com)
+	// 1 discovered peer (not in config: peer1.org2.example.com)
 	peersList := discoverPeers(t, sdk)
-	assert.Equal(t, 3, len(peersList), "Expected exactly 3 peers as per %s's channel and %s's org configs", channelID, org2)
+	assert.Equal(t, 4, len(peersList), "Expected exactly 4 peers as per %s's channel and %s's org configs", channelID, org2)
 }
 
 func discoverPeers(t *testing.T, sdk *fabsdk.FabricSDK) []fab.Peer {
@@ -115,7 +116,7 @@ func discoverPeers(t *testing.T, sdk *fabsdk.FabricSDK) []fab.Peer {
 	discovery, err := chCtx.ChannelService().Discovery()
 	require.NoErrorf(t, err, "Error getting discovery service for channel [%s]", channelID)
 
-	const expectedPeers = 3
+	const expectedPeers = 4
 
 	discoveredPeers, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 		func() (interface{}, error) {
