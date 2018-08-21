@@ -25,6 +25,10 @@ PEERS=(
     peer1.org2.example.com:9052
 )
 
-# Remove dev/null redirection to see chaincode logs
+# Chaincode logs are controlled via the CORE_CHAINCODE_LOGGING_LEVEL environment variable.
+#export CORE_CHAINCODE_LOGGING_LEVEL=debug
+# You can set CHAINCODED_VERBOSE environment variable to see additional chaincoded logs.
+#export CHAINCODED_VERBOSE=true
+
 echo "Running chaincoded ..."
-chaincoded ":9375" ${PEERS[@]} > /dev/null 2> /dev/null
+chaincoded ":9375" ${PEERS[@]}

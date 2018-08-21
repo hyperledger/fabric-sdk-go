@@ -218,8 +218,11 @@ function installDependencies {
 
 function buildDockerImages {
     echo "Creating docker images used by tests ..."
-    make build-socat-image
     make build-softhsm2-image
+
+    # chaincoded is currently able to intercept the docker calls without need for forwarding.
+    # (as long as this remains true, socat is not needed).
+    #make build-socat-image
 }
 
 function isForceMode {

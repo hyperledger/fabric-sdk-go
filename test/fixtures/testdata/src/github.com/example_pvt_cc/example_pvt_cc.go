@@ -15,6 +15,8 @@ import (
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
+var logger = shim.NewLogger("examplecc")
+
 type invokeFunc func(stub shim.ChaincodeStubInterface, args []string) pb.Response
 type funcMap map[string]invokeFunc
 
@@ -42,7 +44,7 @@ func (cc *ExampleCC) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
 // Invoke invoke the chaincode with a given function
 func (cc *ExampleCC) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("########### example2_cc Invoke ###########")
+	logger.Debug("########### example2_cc Invoke ###########")
 	function, args := stub.GetFunctionAndParameters()
 	if function == "" {
 		return shim.Error("Expecting function")
@@ -272,6 +274,6 @@ func main() {
 	cc.initRegistry()
 	err := shim.Start(cc)
 	if err != nil {
-		fmt.Printf("Error starting example chaincode: %s", err)
+		logger.Errorf("Error starting example chaincode: %s", err)
 	}
 }
