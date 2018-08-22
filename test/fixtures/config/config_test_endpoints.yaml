@@ -38,8 +38,6 @@ client:
         # to prevent re-selecting them in subsequent retries.
         # This interval will define how long a peer is greylisted
         greylistExpiry: 5s
-    timeout:
-      connection: 3s
       registrationResponse: 10s
   orderer:
     timeout:

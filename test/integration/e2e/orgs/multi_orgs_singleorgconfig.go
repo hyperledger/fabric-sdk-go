@@ -40,6 +40,7 @@ func TestMultiOrgWithSingleOrgConfig(t *testing.T, examplecc string) {
 	if err != nil {
 		t.Fatal("failed to created SDK,", err)
 	}
+	defer org1sdk.Close()
 
 	//prepare context
 	org1ChannelClientContext := org1sdk.ChannelContext("orgchannel", fabsdk.WithUser("User1"), fabsdk.WithOrg("Org1"))

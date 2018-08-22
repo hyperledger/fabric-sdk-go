@@ -9,7 +9,6 @@ package orgs
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -78,13 +77,12 @@ type multiorgContext struct {
 
 func TestMain(m *testing.M) {
 	err := setup()
-	defer teardown()
-	var r int
-	if err == nil {
-		r = m.Run()
+	if err != nil {
+		panic(fmt.Sprintf("unable to setup [%s]", err))
 	}
-	defer os.Exit(r)
-	runtime.Goexit()
+	r := m.Run()
+	teardown()
+	os.Exit(r)
 }
 
 func setup() error {
@@ -97,12 +95,12 @@ func setup() error {
 
 	org1MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org1))
 	if err != nil {
-		return errors.Wrap(err, "failed to create org1MspClient, err")
+		return errors.Wrap(err, "failed to create org1MspClient")
 	}
 
 	org2MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org2))
 	if err != nil {
-		return errors.Wrap(err, "failed to create org2MspClient, err")
+		return errors.Wrap(err, "failed to create org2MspClient")
 	}
 
 	return nil

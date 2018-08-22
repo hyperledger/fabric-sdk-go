@@ -124,6 +124,7 @@ func TestNoLedgerEndpoints(t *testing.T) {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create new SDK: %s", err))
 	}
+	defer sdk.Close()
 
 	//prepare contexts
 	org1AdminChannelContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
