@@ -198,23 +198,73 @@ func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	if _, ok := configBackend[0].Lookup("client.cryptoconfig"); ok {
+		t.Fatal("Expected that client.cryptoconfig is not defined")
+	}
+	if _, ok := configBackend[0].Lookup("client.credentialStore"); ok {
+		t.Fatal("Expected that client.credentialStore is not defined")
+	}
+
 	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read config: %s", err))
 	}
 
-	identityConfig, err := ConfigFromBackend(configBackend...)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to read config: %s", err))
-	}
-	userStore := userStoreFromConfig(t, identityConfig)
-
-	mgr, err := NewIdentityManager(orgName, userStore, cryptosuite.GetDefault(), endpointConfig)
+	mgr, err := NewIdentityManager(orgName, nil, cryptosuite.GetDefault(), endpointConfig)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
 
 	checkSigningIdentityFromEmbeddedCryptoConfig(mgr, t)
+}
+
+func TestGetSigningIdentityFromMSPDir(t *testing.T) {
+
+	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test_msp_only.yaml")()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := configBackend[0].Lookup("client.cryptoconfig.path"); !ok {
+		t.Fatal("Expected that client.cryptoconfig.path is defined")
+	}
+	if _, ok := configBackend[0].Lookup("client.credentialStore"); ok {
+		t.Fatal("Expected that client.credentialStore is not defined")
+	}
+
+	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read config: %s", err))
+	}
+
+	mgr, err := NewIdentityManager(orgName, nil, cryptosuite.GetDefault(), endpointConfig)
+	if err != nil {
+		t.Fatalf("Failed to setup credential manager: %s", err)
+	}
+
+	if len(mgr.embeddedUsers) > 0 {
+		t.Fatal("Expected no embedded users")
+	}
+
+	checkSigningIdentityFromMSPDir(mgr, t)
+}
+
+func checkSigningIdentityFromMSPDir(mgr *IdentityManager, t *testing.T) {
+	_, err := mgr.GetSigningIdentity("")
+	if err == nil {
+		t.Fatal("Should get error for empty user name")
+	}
+	_, err = mgr.GetSigningIdentity("Non-Existent")
+	if err != msp.ErrUserNotFound {
+		t.Fatalf("Should get ErrUserNotFound for non-existent user, got %s", err)
+	}
+	if err := checkSigningIdentity(mgr, "Admin"); err != nil {
+		t.Fatalf("checkSigningIdentity failes: %s", err)
+	}
+	if err := checkSigningIdentity(mgr, "User1"); err != nil {
+		t.Fatalf("checkSigningIdentity failes: %s", err)
+	}
 }
 
 func checkSigningIdentityFromEmbeddedCryptoConfig(mgr *IdentityManager, t *testing.T) {

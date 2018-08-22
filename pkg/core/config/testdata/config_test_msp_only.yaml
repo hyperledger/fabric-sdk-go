@@ -28,8 +28,8 @@ client:
     level: info
 
 # Needed to load users crypto keys and certs.
-  #cryptoconfig:
-    #path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}
+  cryptoconfig:
+    path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}
 
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"
   # are implementation specific
@@ -147,90 +147,7 @@ organizations:
   org1:
     mspid: Org1MSP
 
-    # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
-    users:
-      Admin:
-        key:
-          pem: |
-            -----BEGIN PRIVATE KEY-----
-            MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg5Ahcehypz6IpAYy6
-            DtIf5zZsRjP4PtsmDhLbBJsXmD6hRANCAAR+YRAn8dFpDQDyvDA7JKPl5PoZenj3
-            m1KOnMry/mOZcnXnTIh2ASV4ss8VluzBcyHGAv7BCmxXxDkjcV9eybv8
-            -----END PRIVATE KEY-----
-        cert:
-          pem: |
-            -----BEGIN CERTIFICATE-----
-            MIICGjCCAcCgAwIBAgIRAIQkbh9nsGnLmDalAVlj8sUwCgYIKoZIzj0EAwIwczEL
-            MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
-            cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
-            Lm9yZzEuZXhhbXBsZS5jb20wHhcNMTcwNzI4MTQyNzIwWhcNMjcwNzI2MTQyNzIw
-            WjBbMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
-            U2FuIEZyYW5jaXNjbzEfMB0GA1UEAwwWQWRtaW5Ab3JnMS5leGFtcGxlLmNvbTBZ
-            MBMGByqGSM49AgEGCCqGSM49AwEHA0IABH5hECfx0WkNAPK8MDsko+Xk+hl6ePeb
-            Uo6cyvL+Y5lydedMiHYBJXiyzxWW7MFzIcYC/sEKbFfEOSNxX17Ju/yjTTBLMA4G
-            A1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1UdIwQkMCKAIIeR0TY+iVFf
-            mvoEKwaToscEu43ZXSj5fTVJornjxDUtMAoGCCqGSM49BAMCA0gAMEUCIQDVf8cL
-            NrfToiPzJpEFPGF+/8CpzOkl91oz+XJsvdgf5wIgI/e8mpvpplUQbU52+LejA36D
-            CsbWERvZPjR/GFEDEvc=
-            -----END CERTIFICATE-----
-      EmbeddedUser:
-        key:
-          pem: |
-            -----BEGIN PRIVATE KEY-----
-            MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB
-            5Ul+GpjM1P5rqc6RhjD5OkTgl5OhRANCAATyFT0voXX7cA4PPtNstWleaTpwjvbS
-            J3+tMGTG67f+TdCfDxWYMpQYxLlE8VkbEzKWDwCYvDZRMKCQfv2ErNvb
-            -----END PRIVATE KEY-----
-        cert:
-          pem: |
-            -----BEGIN CERTIFICATE-----
-            MIICGTCCAcCgAwIBAgIRALR/1GXtEud5GQL2CZykkOkwCgYIKoZIzj0EAwIwczEL
-            MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
-            cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
-            Lm9yZzEuZXhhbXBsZS5jb20wHhcNMTcwNzI4MTQyNzIwWhcNMjcwNzI2MTQyNzIw
-            WjBbMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
-            U2FuIEZyYW5jaXNjbzEfMB0GA1UEAwwWVXNlcjFAb3JnMS5leGFtcGxlLmNvbTBZ
-            MBMGByqGSM49AgEGCCqGSM49AwEHA0IABPIVPS+hdftwDg8+02y1aV5pOnCO9tIn
-            f60wZMbrt/5N0J8PFZgylBjEuUTxWRsTMpYPAJi8NlEwoJB+/YSs29ujTTBLMA4G
-            A1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1UdIwQkMCKAIIeR0TY+iVFf
-            mvoEKwaToscEu43ZXSj5fTVJornjxDUtMAoGCCqGSM49BAMCA0cAMEQCID+dZ7H5
-            AiaiI2BjxnL3/TetJ8iFJYZyWvK//an13WV/AiARBJd/pI5A7KZgQxJhXmmR8bie
-            XdsmTcdRvJ3TS/6HCA==
-            -----END CERTIFICATE-----
-      EmbeddedUserWithPaths:
-        key:
-          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go-key.pem
-        cert:
-          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go.pem
-      EmbeddedUserMixed:
-        key:
-          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go-key.pem
-        cert:
-          pem: |
-            -----BEGIN CERTIFICATE-----
-            MIICGTCCAcCgAwIBAgIRALR/1GXtEud5GQL2CZykkOkwCgYIKoZIzj0EAwIwczEL
-            MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
-            cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
-            Lm9yZzEuZXhhbXBsZS5jb20wHhcNMTcwNzI4MTQyNzIwWhcNMjcwNzI2MTQyNzIw
-            WjBbMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
-            U2FuIEZyYW5jaXNjbzEfMB0GA1UEAwwWVXNlcjFAb3JnMS5leGFtcGxlLmNvbTBZ
-            MBMGByqGSM49AgEGCCqGSM49AwEHA0IABPIVPS+hdftwDg8+02y1aV5pOnCO9tIn
-            f60wZMbrt/5N0J8PFZgylBjEuUTxWRsTMpYPAJi8NlEwoJB+/YSs29ujTTBLMA4G
-            A1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1UdIwQkMCKAIIeR0TY+iVFf
-            mvoEKwaToscEu43ZXSj5fTVJornjxDUtMAoGCCqGSM49BAMCA0cAMEQCID+dZ7H5
-            AiaiI2BjxnL3/TetJ8iFJYZyWvK//an13WV/AiARBJd/pI5A7KZgQxJhXmmR8bie
-            XdsmTcdRvJ3TS/6HCA==
-            -----END CERTIFICATE-----
-      EmbeddedUserMixed2:
-        key:
-          pem: |
-            -----BEGIN PRIVATE KEY-----
-            MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB
-            5Ul+GpjM1P5rqc6RhjD5OkTgl5OhRANCAATyFT0voXX7cA4PPtNstWleaTpwjvbS
-            J3+tMGTG67f+TdCfDxWYMpQYxLlE8VkbEzKWDwCYvDZRMKCQfv2ErNvb
-            -----END PRIVATE KEY-----
-        cert:
-          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go.pem
+    cryptoPath:  peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp
 
     peers:
       - peer0.org1.example.com
@@ -251,57 +168,7 @@ organizations:
   org2:
     mspid: Org2MSP
 
-    users:
-      Admin:
-        key:
-          pem: |
-            -----BEGIN PRIVATE KEY-----
-            MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgJ+bYISOlJ2gS24gG
-            BN3wyp9xEkrTfIWGIQV8dQ0N1xWhRANCAASJ/SKMjyaqhyq5NjG9DWXWV2OZItn5
-            wX6ykELNC0UXXqS7Ivd58r2gmjsAX6I0YCie3P9gtDfem+nM1NN3c76b
-            -----END PRIVATE KEY-----
-        cert:
-          pem: |
-            -----BEGIN CERTIFICATE-----
-            MIICGDCCAb+gAwIBAgIQeIi7Jkt6rpWXkiSbOmf4xDAKBggqhkjOPQQDAjBzMQsw
-            CQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy
-            YW5jaXNjbzEZMBcGA1UEChMQb3JnMi5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu
-            b3JnMi5leGFtcGxlLmNvbTAeFw0xNzA3MjgxNDI3MjBaFw0yNzA3MjYxNDI3MjBa
-            MFsxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T
-            YW4gRnJhbmNpc2NvMR8wHQYDVQQDDBZBZG1pbkBvcmcyLmV4YW1wbGUuY29tMFkw
-            EwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEif0ijI8mqocquTYxvQ1l1ldjmSLZ+cF+
-            spBCzQtFF16kuyL3efK9oJo7AF+iNGAontz/YLQ33pvpzNTTd3O+m6NNMEswDgYD
-            VR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYDVR0jBCQwIoAgolkgTb1q2xTA
-            Wm4C3pRWeyqffb6eagY7p2fUK/C1RMEwCgYIKoZIzj0EAwIDRwAwRAIgGQA094Rt
-            HxCZ93sdCLiqs0GM8jq2uoa18DS48OqfLIYCIGhv/mMS6aK63cXPwJO/ViJRJvSH
-            STrxiXhat7xfrSAE
-            -----END CERTIFICATE-----
-      User1:
-        key:
-          pem: |
-            -----BEGIN PRIVATE KEY-----
-            MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgG94fUeLA85t5jQ/L
-            71crBw74XjGUDXbegJXy/SP2ax2hRANCAASIELcczJtLhW3jzc1ogd0R23F1hNwf
-            BqVR+VyEW2bREf7lrOLKj7cYl7BqcUx04kK8aS/6Di9lRH0EwK8775Su
-            -----END PRIVATE KEY-----
-        cert:
-          pem: |
-            -----BEGIN CERTIFICATE-----
-            MIICGDCCAb+gAwIBAgIQHMp+UdtCOLJAE7QMGIsXCTAKBggqhkjOPQQDAjBzMQsw
-            CQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy
-            YW5jaXNjbzEZMBcGA1UEChMQb3JnMi5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu
-            b3JnMi5leGFtcGxlLmNvbTAeFw0xNzA3MjgxNDI3MjBaFw0yNzA3MjYxNDI3MjBa
-            MFsxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T
-            YW4gRnJhbmNpc2NvMR8wHQYDVQQDDBZVc2VyMUBvcmcyLmV4YW1wbGUuY29tMFkw
-            EwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEiBC3HMybS4Vt483NaIHdEdtxdYTcHwal
-            UflchFtm0RH+5aziyo+3GJewanFMdOJCvGkv+g4vZUR9BMCvO++UrqNNMEswDgYD
-            VR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYDVR0jBCQwIoAgolkgTb1q2xTA
-            Wm4C3pRWeyqffb6eagY7p2fUK/C1RMEwCgYIKoZIzj0EAwIDRwAwRAIgd1pDGY8n
-            c/wNsriJt8aj+zlAM3RdOHFXbPY+Ea34pkwCIDwmMzF8NunzJ3m9GqrSltUneCa9
-            gg8FSinwbe6pVVX5
-            -----END CERTIFICATE-----
-    # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
-#    cryptoPath:  peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp
+    cryptoPath:  peerOrganizations/org2.example.com/users/{username}@org2.example.com/msp
 
     peers:
       - peer0.org2.example.com
@@ -314,34 +181,8 @@ organizations:
       # Membership Service Provider ID for this organization
       mspID: OrdererMSP
 
-      users:
-        Admin:
-          key:
-            pem: |
-              -----BEGIN PRIVATE KEY-----
-              MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgF0K9SLI1Ug5HaZQ3
-              tVJpvwiXO+PbKAD4rcQv8Rju+TmhRANCAAS11beFbJpl9MdVWYcuDk8q7eSUYIoh
-              UY/CLyCVNz+UAW32Ki00KWWlGnClXMEaiOicVSm+bUakog4m8Zk6EZQd
-              -----END PRIVATE KEY-----
-#            path:
-          cert:
-            pem: |
-              -----BEGIN CERTIFICATE-----
-              MIICCjCCAbGgAwIBAgIRAP6rTgrL8PUGUhDZBlTbttkwCgYIKoZIzj0EAwIwaTEL
-              MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
-              cmFuY2lzY28xFDASBgNVBAoTC2V4YW1wbGUuY29tMRcwFQYDVQQDEw5jYS5leGFt
-              cGxlLmNvbTAeFw0xNzA3MjgxNDI3MjBaFw0yNzA3MjYxNDI3MjBaMFYxCzAJBgNV
-              BAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNp
-              c2NvMRowGAYDVQQDDBFBZG1pbkBleGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqG
-              SM49AwEHA0IABLXVt4VsmmX0x1VZhy4OTyrt5JRgiiFRj8IvIJU3P5QBbfYqLTQp
-              ZaUacKVcwRqI6JxVKb5tRqSiDibxmToRlB2jTTBLMA4GA1UdDwEB/wQEAwIHgDAM
-              BgNVHRMBAf8EAjAAMCsGA1UdIwQkMCKAIJK458q8FXEj4wiUtP/T+j6Uy0mb2ntY
-              955X1fiUIWHkMAoGCCqGSM49BAMCA0cAMEQCIEUawoXMhrxTpSEbc771wftWbUmr
-              aMF8y6IHxWMDzB6HAiA+rr9DsGKN+rG+/r9OyUiKu/Hm+wULC5ejqJlhPciwug==
-              -----END CERTIFICATE-----
-#            path:
       # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
-#      cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
+      cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
 
 
 #

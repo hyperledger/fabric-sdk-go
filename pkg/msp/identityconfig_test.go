@@ -338,11 +338,6 @@ func TestCAConfig(t *testing.T) {
 	identityConfig := config.(*IdentityConfig)
 	//Test Crypto config path
 
-	val, ok := backend[0].Lookup("client.cryptoconfig.path")
-	if !ok || val == nil {
-		t.Fatal("expected valid value")
-	}
-
 	//Testing CAConfig
 	caConfig, ok := identityConfig.CAConfig(org1)
 	assert.True(t, ok, "Get CA Config failed")

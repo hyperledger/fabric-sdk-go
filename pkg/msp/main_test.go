@@ -182,7 +182,11 @@ func mspIDByOrgName(t *testing.T, c fab.EndpointConfig, orgName string) string {
 }
 
 func userStoreFromConfig(t *testing.T, config msp.IdentityConfig) msp.UserStore {
-	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: config.CredentialStorePath()})
+	csp := config.CredentialStorePath()
+	if csp == "" {
+		return nil
+	}
+	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: csp})
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore failed: %s", err)
 	}

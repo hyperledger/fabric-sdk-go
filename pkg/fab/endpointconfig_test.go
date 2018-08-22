@@ -1216,12 +1216,7 @@ func TestCAConfig(t *testing.T) {
 	}
 
 	//Test Crypto config path
-
-	val, ok := backend[0].Lookup("client.cryptoconfig.path")
-	if !ok || val == nil {
-		t.Fatal("expected valid value")
-	}
-
+	val, _ := backend[0].Lookup("client.cryptoconfig.path")
 	assert.True(t, pathvar.Subst(val.(string)) == endpointConfig.CryptoConfigPath(), "Incorrect crypto config path", t)
 
 	//Testing MSPID
