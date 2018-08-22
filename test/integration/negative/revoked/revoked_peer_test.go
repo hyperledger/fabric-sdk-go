@@ -1,3 +1,5 @@
+// +build disabled
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -14,90 +16,28 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 
-	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
-	"os"
-
-	"runtime"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	org1             = "Org1"
-	org2             = "Org2"
-	ordererAdminUser = "Admin"
-	ordererOrgName   = "OrdererOrg"
-	org1AdminUser    = "Admin"
-	org2AdminUser    = "Admin"
-	org1User         = "User1"
-	channelID        = "orgchannel"
-	configFilename   = "config_test.yaml"
+	org1AdminUser = "Admin"
+	org2AdminUser = "Admin"
+	org1User      = "User1"
 )
-
-// SDK
-var sdk *fabsdk.FabricSDK
-
-// Org MSP clients
-var org1MspClient *mspclient.Client
-var org2MspClient *mspclient.Client
 
 // Peers used for testing
 var orgTestPeer0 fab.Peer
 var orgTestPeer1 fab.Peer
-
-func TestMain(m *testing.M) {
-	err := setup()
-	defer teardown()
-	var r int
-	if err == nil {
-		r = m.Run()
-	}
-	defer os.Exit(r)
-	runtime.Goexit()
-}
-
-func setup() error {
-	// Create SDK setup for the integration tests
-	var err error
-	sdk, err = fabsdk.New(getConfigBackend())
-	if err != nil {
-		return errors.Wrap(err, "Failed to create new SDK")
-	}
-
-	org1MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org1))
-	if err != nil {
-		return errors.Wrap(err, "failed to create org1MspClient, err")
-	}
-
-	org2MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org2))
-	if err != nil {
-		return errors.Wrap(err, "failed to create org2MspClient, err")
-	}
-
-	return nil
-}
-
-func teardown() {
-	if sdk != nil {
-		sdk.Close()
-	}
-}
 
 // TestRevokedPeer
 func TestRevokedPeer(t *testing.T) {
@@ -108,29 +48,9 @@ func TestRevokedPeer(t *testing.T) {
 	defer integration.CleanupUserData(t, sdk)
 
 	//prepare contexts
-	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
 	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
 	org2AdminClientContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
 	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
-
-	// Channel management client is responsible for managing channels (create/update channel)
-	chMgmtClient, err := resmgmt.New(ordererClientContext)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Get signing identity that is used to sign create channel request
-	org1AdminUser, err := org1MspClient.GetSigningIdentity(org1AdminUser)
-	if err != nil {
-		t.Fatalf("failed to get org1AdminUser, err : %s", err)
-	}
-
-	org2AdminUser, err := org2MspClient.GetSigningIdentity(org2AdminUser)
-	if err != nil {
-		t.Fatalf("failed to get org2AdminUser, err : %s", err)
-	}
-
-	createChannel(org1AdminUser, org2AdminUser, chMgmtClient, t)
 
 	// Org1 resource management client (Org1 is default org)
 	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
@@ -212,21 +132,13 @@ func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Cl
 			Args:    integration.ExampleCCInitArgs(),
 			Policy:  ccPolicy,
 		},
+		resmgmt.WithTargetEndpoints("peer1.org2.example.com"),
 	)
 	require.Errorf(t, err, "Expecting error instantiating CC on peer with revoked certificate")
 	stat, ok := status.FromError(err)
 	require.Truef(t, ok, "Expecting error to be a status error")
 	require.Equalf(t, stat.Code, int32(status.SignatureVerificationFailed), "Expecting signature verification error due to revoked cert")
 	require.Truef(t, strings.Contains(err.Error(), "the creator certificate is not valid"), "Expecting error message to contain 'the creator certificate is not valid'")
-}
-
-func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningIdentity, chMgmtClient *resmgmt.Client, t *testing.T) {
-	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
-		ChannelConfigPath: integration.GetChannelConfigPath("orgchannel.tx"),
-		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
-	require.Nil(t, err, "error should be nil")
-	require.NotEmpty(t, txID, "transaction ID should be populated")
 }
 
 func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
@@ -252,69 +164,4 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 		t.Fatal(err)
 	}
 
-}
-
-func getConfigBackend() core.ConfigProvider {
-
-	return func() ([]core.ConfigBackend, error) {
-		configBackends, err := config.FromFile(integration.GetConfigPath(configFilename))()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to read config backend from file, %v")
-		}
-		backendMap := make(map[string]interface{})
-
-		networkConfig := fab.NetworkConfig{}
-		//get valid peer config
-		err = lookup.New(configBackends...).UnmarshalKey("peers", &networkConfig.Peers)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal peer network config, %v")
-		}
-
-		//customize peer0.org2 to peer1.org2
-		peer2 := networkConfig.Peers["peer0.org2.example.com"]
-		peer2.URL = "peer1.org2.example.com:9051"
-		peer2.GRPCOptions["ssl-target-name-override"] = "peer1.org2.example.com"
-
-		//remove peer0.org2
-		delete(networkConfig.Peers, "peer0.org2.example.com")
-
-		//add peer1.org2
-		networkConfig.Peers["peer1.org2.example.com"] = peer2
-
-		//get valid org2
-		err = lookup.New(configBackends...).UnmarshalKey("organizations", &networkConfig.Organizations)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal organizations network config, %v")
-		}
-
-		//Customize org2
-		org2 := networkConfig.Organizations["org2"]
-		org2.Peers = []string{"peer1.org2.example.com"}
-		org2.MSPID = "Org2MSP"
-		networkConfig.Organizations["org2"] = org2
-
-		//custom channel
-		err = lookup.New(configBackends...).UnmarshalKey("channels", &networkConfig.Channels)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal entityMatchers network config, %v")
-		}
-
-		orgChannel := networkConfig.Channels[channelID]
-		delete(orgChannel.Peers, "peer0.org2.example.com")
-		orgChannel.Peers["peer1.org2.example.com"] = fab.PeerChannelConfig{
-			EndorsingPeer:  true,
-			ChaincodeQuery: true,
-			LedgerQuery:    true,
-			EventSource:    false,
-		}
-		networkConfig.Channels[channelID] = orgChannel
-
-		//Customize backend with update peers, organizations, channels and entity matchers config
-		backendMap["peers"] = networkConfig.Peers
-		backendMap["organizations"] = networkConfig.Organizations
-		backendMap["channels"] = networkConfig.Channels
-
-		backends := append([]core.ConfigBackend{}, &mocks.MockConfigBackend{KeyValueMap: backendMap})
-		return append(backends, configBackends...), nil
-	}
 }
