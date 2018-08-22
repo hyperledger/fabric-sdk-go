@@ -100,6 +100,8 @@ func findSource(goPath string, filePath string) ([]*Descriptor, error) {
 				if err != nil {
 					return err
 				}
+				//support packaging in windows environment
+				relPath = strings.Join(strings.Split(relPath,"\\"),"/")							  												
 				if strings.Contains(relPath, "/META-INF/") {
 					relPath = relPath[strings.Index(relPath, "/META-INF/")+1:]
 				}
