@@ -43,7 +43,7 @@ func TestChannelClient(t *testing.T) {
 	}
 
 	// Synchronous query
-	testQuery("200", chaincodeID, chClient, t)
+	testQuery(t, chClient, "200", chaincodeID)
 
 	transientData := "Some data"
 	transientDataMap := make(map[string][]byte)
@@ -67,31 +67,31 @@ func TestChannelClient(t *testing.T) {
 	}
 
 	// Verify transaction using query
-	testQuery("201", chaincodeID, chClient, t)
+	testQuery(t, chClient, "201", chaincodeID)
 
 	// transaction
 	nestedCCID := integration.GenerateExampleID(true)
 	err = integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, nestedCCID)
 	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
-	testTransaction(chaincodeID, nestedCCID, chClient, t)
+	testTransaction(t, chClient, chaincodeID, nestedCCID)
 
 	// Verify transaction
-	testQuery("202", chaincodeID, chClient, t)
+	testQuery(t, chClient, "202", chaincodeID)
 
 	// Verify that filter error and commit error did not modify value
-	testQuery("202", chaincodeID, chClient, t)
+	testQuery(t, chClient, "202", chaincodeID)
 
 	// Test register and receive chaincode event
 	testChaincodeEvent(chaincodeID, chClient, t)
 
 	// Verify transaction with chain code event completed
-	testQuery("203", chaincodeID, chClient, t)
+	testQuery(t, chClient, "203", chaincodeID)
 
 	// Test invocation of custom handler
-	testInvokeHandler(chaincodeID, chClient, t)
+	testInvokeHandler(t, chClient, chaincodeID)
 
 	// Test chaincode error
-	testChaincodeError(chaincodeID, chClient, t)
+	testChaincodeError(t, chClient, chaincodeID)
 
 	// Test receive event using separate client
 	listener, err := channel.New(org1ChannelClientContext)
@@ -99,22 +99,22 @@ func TestChannelClient(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	testChaincodeEventListener(chaincodeID, chClient, listener, t)
+	testChaincodeEventListener(t, chaincodeID, chClient, listener)
 
-	testDuplicateTargets(chaincodeID, chClient, t)
+	testDuplicateTargets(t, chaincodeID, chClient)
 
 	//test if CCEvents for chaincode events are in sync when new channel client are created
 	// for each transaction
-	testMultipleClientChaincodeEvent(chaincodeID, t)
+	testMultipleClientChaincodeEventLoop(t, chaincodeID)
 }
 
-func testDuplicateTargets(chaincodeID string, chClient *channel.Client, t *testing.T) {
+func testDuplicateTargets(t *testing.T, chaincodeID string, chClient *channel.Client) {
 
 	// Using shared SDK instance to increase test speed.
 	sdk := mainSDK
 
 	// Synchronous query
-	testQuery("205", chaincodeID, chClient, t)
+	testQuery(t, chClient, "205", chaincodeID)
 
 	transientData := "Some data"
 	transientDataMap := make(map[string][]byte)
@@ -152,7 +152,7 @@ func testDuplicateTargets(chaincodeID string, chClient *channel.Client, t *testi
 	}
 
 	// Verify transaction using query
-	testQuery("206", chaincodeID, chClient, t)
+	testQuery(t, chClient, "206", chaincodeID)
 }
 
 // TestCCToCC tests one chaincode invoking another chaincode. The first chaincode
@@ -251,7 +251,7 @@ func TestCCToCC(t *testing.T) {
 	})
 }
 
-func testQuery(expected string, ccID string, chClient *channel.Client, t *testing.T) {
+func testQuery(t *testing.T, chClient *channel.Client, expected string, ccID string) {
 	const (
 		maxRetries = 10
 		retrySleep = 500 * time.Millisecond
@@ -274,7 +274,7 @@ func testQuery(expected string, ccID string, chClient *channel.Client, t *testin
 	t.Fatal("Exceeded max retries")
 }
 
-func testTransaction(ccID, nestedCCID string, chClient *channel.Client, t *testing.T) {
+func testTransaction(t *testing.T, chClient *channel.Client, ccID, nestedCCID string) {
 	response, err := chClient.Execute(
 		channel.Request{
 			ChaincodeID:     ccID,
@@ -315,7 +315,7 @@ func (h *testHandler) Handle(requestContext *invoke.RequestContext, clientContex
 	}
 }
 
-func testInvokeHandler(ccID string, chClient *channel.Client, t *testing.T) {
+func testInvokeHandler(t *testing.T, chClient *channel.Client, ccID string) {
 	// Insert a custom handler before and after the commit.
 	// Ensure that the handlers are being called by writing out some data
 	// and comparing with response.
@@ -396,53 +396,57 @@ func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T) {
 
 //TestMultipleEventClient tests if CCEvents for chaincode events are in sync when new channel client are created
 // for each transaction
-func testMultipleClientChaincodeEvent(chainCodeID string, t *testing.T) {
+func testMultipleClientChaincodeEventLoop(t *testing.T, chainCodeID string) {
 
 	channelID := mainTestSetup.ChannelID
 	eventID := "([a-zA-Z]+)"
 
 	for i := 0; i < 10; i++ {
-
-		sdk, err := fabsdk.New(integration.ConfigBackend)
-		if err != nil {
-			t.Fatalf("Failed to create new SDK: %s", err)
-		}
-
-		chContextProvider := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
-
-		chClient, err := channel.New(chContextProvider)
-		if err != nil {
-			t.Fatalf("Failed to create new channel client: %s", err)
-		}
-
-		// Register chaincode event (pass in channel which receives event details when the event is complete)
-		reg, notifier, err := chClient.RegisterChaincodeEvent(chainCodeID, eventID)
-		if err != nil {
-			t.Fatalf("Failed to register cc event: %s", err)
-		}
-		defer chClient.UnregisterChaincodeEvent(reg)
-
-		// Move funds
-		resp, err := chClient.Execute(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke",
-			Args: integration.ExampleCCTxArgs()}, channel.WithRetry(retry.DefaultChannelOpts))
-		if err != nil {
-			t.Fatalf("Failed to move funds: %s", err)
-		}
-
-		txID := resp.TransactionID
-
-		var ccEvent *fab.CCEvent
-		select {
-		case ccEvent = <-notifier:
-			t.Logf("Received CC eventID: %#v\n", ccEvent.TxID)
-		case <-time.After(time.Second * 20):
-			t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
-		}
-		assert.Equal(t, string(txID), ccEvent.TxID, "mismatched ccEvent.TxID")
+		testMultipleClientChaincodeEvent(t, channelID, chainCodeID, eventID)
 	}
 }
 
-func testChaincodeEventListener(ccID string, chClient *channel.Client, listener *channel.Client, t *testing.T) {
+func testMultipleClientChaincodeEvent(t *testing.T, channelID string, chainCodeID string, eventID string) {
+	sdk, err := fabsdk.New(integration.ConfigBackend)
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+	defer sdk.Close()
+
+	chContextProvider := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+
+	chClient, err := channel.New(chContextProvider)
+	if err != nil {
+		t.Fatalf("Failed to create new channel client: %s", err)
+	}
+
+	// Register chaincode event (pass in channel which receives event details when the event is complete)
+	reg, notifier, err := chClient.RegisterChaincodeEvent(chainCodeID, eventID)
+	if err != nil {
+		t.Fatalf("Failed to register cc event: %s", err)
+	}
+	defer chClient.UnregisterChaincodeEvent(reg)
+
+	// Move funds
+	resp, err := chClient.Execute(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke",
+		Args: integration.ExampleCCTxArgs()}, channel.WithRetry(retry.DefaultChannelOpts))
+	if err != nil {
+		t.Fatalf("Failed to move funds: %s", err)
+	}
+
+	txID := resp.TransactionID
+
+	var ccEvent *fab.CCEvent
+	select {
+	case ccEvent = <-notifier:
+		t.Logf("Received CC eventID: %#v\n", ccEvent.TxID)
+	case <-time.After(time.Second * 20):
+		t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
+	}
+	assert.Equal(t, string(txID), ccEvent.TxID, "mismatched ccEvent.TxID")
+}
+
+func testChaincodeEventListener(t *testing.T, ccID string, chClient *channel.Client, listener *channel.Client) {
 
 	eventID := integration.GenerateRandomID()
 
@@ -471,7 +475,7 @@ func testChaincodeEventListener(ccID string, chClient *channel.Client, listener 
 
 }
 
-func testChaincodeError(ccID string, client *channel.Client, t *testing.T) {
+func testChaincodeError(t *testing.T, client *channel.Client, ccID string) {
 	// Try calling unknown function call and expect an error
 	r, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
@@ -518,6 +522,7 @@ func TestNoEndpoints(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	// Prepare channel context
 	org1AdminChannelContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))

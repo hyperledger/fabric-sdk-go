@@ -89,6 +89,7 @@ func TestWithCustomStores(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
+	defer sdk.Close()
 
 	ctxProvider := sdk.Context()
 

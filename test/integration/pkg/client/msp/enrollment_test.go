@@ -25,10 +25,10 @@ func TestRegisterEnroll(t *testing.T) {
 
 	// Instantiate the SDK
 	sdk, err := fabsdk.New(integration.ConfigBackend)
-
 	if err != nil {
 		t.Fatalf("SDK init failed: %s", err)
 	}
+	defer sdk.Close()
 
 	// Delete all private keys from the crypto suite store
 	// and users from the user store at the end

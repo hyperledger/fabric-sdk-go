@@ -264,51 +264,58 @@ func createAndSendTransaction(transactor fab.Sender, proposal *fab.TransactionPr
 
 func TestMultipleEventsBySeekTypes(t *testing.T) {
 
-	chainCodeID := mainChaincodeID
+	chaincodeID := mainChaincodeID
 	testSetup := mainTestSetup
 
 	//Run with seek type default and test behaviour
 
 	for i := 0; i < 4; i++ {
-		//create new sdk
-		sdk, err := fabsdk.New(integration.ConfigBackend)
-		require.NoError(t, err, "failed to get new sdk instance")
-
-		//create new channel context
-		chContextProvider := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
-		chContext, err := chContextProvider()
-		require.NoError(t, err, "error getting channel context")
-
-		//create new event service with default opts
-		eventService, err := chContext.ChannelService().EventService()
-		require.NoError(t, err, "error getting event service")
-
-		testChannelEventsSeekOptions(t, testSetup, sdk, chContext, chainCodeID, false, eventService, "")
+		testSeekTypeDefault(t, testSetup, chaincodeID)
 	}
 
 	//Run with seek type newest and test behaviour
 	for i := 0; i < 4; i++ {
-		//create new sdk
-		sdk, err := fabsdk.New(integration.ConfigBackend)
-		require.NoError(t, err, "failed to get new sdk instance")
-
-		//create new channel context
-		chContextProvider := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
-		chContext, err := chContextProvider()
-		require.NoError(t, err, "error getting channel context")
-
-		//create new event service with deliver client opts
-		eventService, err := chContext.ChannelService().EventService(deliverclient.WithSeekType(seek.Newest))
-		require.NoError(t, err, "error getting event service")
-
-		testChannelEventsSeekOptions(t, testSetup, sdk, chContext, chainCodeID, false, eventService, seek.Newest)
+		testSeekTypeNewest(t, testSetup, chaincodeID)
 	}
+}
 
+func testSeekTypeDefault(t *testing.T, testSetup *integration.BaseSetupImpl, chaincodeID string) {
+	//create new sdk
+	sdk, err := fabsdk.New(integration.ConfigBackend)
+	require.NoError(t, err, "failed to get new sdk instance")
+	defer sdk.Close()
+
+	//create new channel context
+	chContextProvider := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+	chContext, err := chContextProvider()
+	require.NoError(t, err, "error getting channel context")
+
+	//create new event service with default opts
+	eventService, err := chContext.ChannelService().EventService()
+	require.NoError(t, err, "error getting event service")
+
+	testChannelEventsSeekOptions(t, testSetup, sdk, chContext, chaincodeID, false, eventService, "")
+}
+
+func testSeekTypeNewest(t *testing.T, testSetup *integration.BaseSetupImpl, chaincodeID string) {
+	//create new sdk
+	sdk, err := fabsdk.New(integration.ConfigBackend)
+	require.NoError(t, err, "failed to get new sdk instance")
+	defer sdk.Close()
+
+	//create new channel context
+	chContextProvider := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+	chContext, err := chContextProvider()
+	require.NoError(t, err, "error getting channel context")
+
+	//create new event service with deliver client opts
+	eventService, err := chContext.ChannelService().EventService(deliverclient.WithSeekType(seek.Newest))
+	require.NoError(t, err, "error getting event service")
+
+	testChannelEventsSeekOptions(t, testSetup, sdk, chContext, chaincodeID, false, eventService, seek.Newest)
 }
 
 func testChannelEventsSeekOptions(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *fabsdk.FabricSDK, chContext context.Channel, chainCodeID string, blockEvents bool, eventService fab.EventService, seekType seek.Type) {
-
-	defer sdk.Close()
 
 	//get transactor
 	_, cancel, transactor, err := getTransactor(sdk, testSetup.ChannelID, "Admin", testSetup.OrgID)

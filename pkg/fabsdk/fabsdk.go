@@ -279,22 +279,19 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		}
 	}
 
+	logger.Debug("SDK initialized successfully")
 	return nil
 }
 
 // Close frees up caches and connections being maintained by the SDK
 func (sdk *FabricSDK) Close() {
-	logger.Debug("Closing SDK... checking if local discovery provider is closable...")
+	logger.Debug("SDK closing")
 	if pvdr, ok := sdk.provider.LocalDiscoveryProvider().(closeable); ok {
-		logger.Debug("... closing local discovery provider")
 		pvdr.Close()
 	}
-	logger.Debug("... checking if channel provider is closable...")
 	if pvdr, ok := sdk.provider.ChannelProvider().(closeable); ok {
-		logger.Debug("... closing channel provider")
 		pvdr.Close()
 	}
-	logger.Debug("... closing infra provider")
 	sdk.provider.InfraProvider().Close()
 }
 
