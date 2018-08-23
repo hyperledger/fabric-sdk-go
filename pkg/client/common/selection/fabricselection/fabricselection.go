@@ -283,7 +283,7 @@ func (s *Service) getTargets(ctx contextAPI.Client) ([]fab.PeerConfig, error) {
 	}
 
 	//pick number of peers based on channel policy
-	return random.PickRandomNPeerConfigs(chpeers, chConfig.Policies.QueryChannelConfig.QueryDiscovery), nil
+	return random.PickRandomNPeerConfigs(chpeers, chConfig.Policies.Discovery.MaxTargets), nil
 }
 
 func asChaincodeInterests(chaincodes []*fab.ChaincodeCall) *discovery.ChaincodeInterest {

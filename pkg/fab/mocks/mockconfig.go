@@ -240,15 +240,9 @@ func (c *MockConfig) NetworkConfig() *fab.NetworkConfig {
 }
 
 // ChannelConfig returns the channel configuration
+// TODO: Return more cases
 func (c *MockConfig) ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool) {
-	queryDiscovery := 1
-	chPeers, ok := c.ChannelPeers(name)
-	if ok && len(chPeers) > 0 {
-		queryDiscovery = len(chPeers)
-	}
-	return &fab.ChannelEndpointConfig{Policies: fab.ChannelPolicies{QueryChannelConfig: fab.QueryChannelConfigPolicy{
-		QueryDiscovery: queryDiscovery,
-	}}}, true
+	return &fab.ChannelEndpointConfig{Policies: fab.ChannelPolicies{QueryChannelConfig: fab.QueryChannelConfigPolicy{}}}, true
 }
 
 // ChannelPeers returns the channel peers configuration

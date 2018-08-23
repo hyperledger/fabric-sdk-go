@@ -87,7 +87,7 @@ func (s *ChannelService) getTargets(ctx contextAPI.Client) ([]fab.PeerConfig, er
 	}
 
 	//pick number of peers given in channel policy
-	return random.PickRandomNPeerConfigs(chPeers, chConfig.Policies.QueryChannelConfig.QueryDiscovery), nil
+	return random.PickRandomNPeerConfigs(chPeers, chConfig.Policies.Discovery.MaxTargets), nil
 }
 
 // evaluate validates the responses and returns the peers
