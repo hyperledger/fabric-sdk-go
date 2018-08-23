@@ -24,7 +24,7 @@ type MockTransactor struct {
 }
 
 // CreateTransactionHeader creates a Transaction Header based on the current context.
-func (t *MockTransactor) CreateTransactionHeader() (fab.TransactionHeader, error) {
+func (t *MockTransactor) CreateTransactionHeader(opts ...fab.TxnHeaderOpt) (fab.TransactionHeader, error) {
 	txh, err := txn.NewHeader(t.Ctx, t.ChannelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "new transaction ID failed")

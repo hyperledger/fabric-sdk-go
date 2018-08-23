@@ -174,6 +174,19 @@ func TestEndorsementHandler(t *testing.T) {
 	handler.Handle(requestContext, clientContext)
 	assert.Nil(t, requestContext.Error)
 
+	optsProviderCalled := false
+	optsProvider := func() []fab.TxnHeaderOpt {
+		optsProviderCalled = true
+		var opts []fab.TxnHeaderOpt
+		opts = append(opts, fab.WithCreator([]byte("somecreator")))
+		opts = append(opts, fab.WithNonce([]byte("somenonce")))
+		return opts
+	}
+
+	handler = NewEndorsementHandlerWithOpts(nil, optsProvider)
+	handler.Handle(requestContext, clientContext)
+	assert.Nil(t, requestContext.Error)
+	assert.Truef(t, optsProviderCalled, "expecting opts provider to be called")
 }
 
 // Target filter

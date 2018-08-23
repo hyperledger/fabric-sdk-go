@@ -22,7 +22,7 @@ type MockTransactor struct {
 }
 
 // CreateTransactionHeader creates a Transaction Header based on the current context.
-func (t *MockTransactor) CreateTransactionHeader() (fab.TransactionHeader, error) {
+func (t *MockTransactor) CreateTransactionHeader(opts ...fab.TxnHeaderOpt) (fab.TransactionHeader, error) {
 	return &MockTransactionHeader{}, nil
 }
 

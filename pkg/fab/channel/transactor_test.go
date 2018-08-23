@@ -26,7 +26,19 @@ import (
 
 func TestCreateTxnID(t *testing.T) {
 	transactor := createTransactor(t)
-	createTxnID(t, transactor)
+
+	txh := createTxnID(t, transactor)
+	assert.NotEmpty(t, txh.Nonce())
+	assert.NotEmpty(t, txh.Creator())
+	assert.NotEmpty(t, txh.TransactionID())
+
+	creator := []byte("creator")
+	nonce := []byte("12345")
+
+	txh = createTxnID(t, transactor, fab.WithCreator(creator), fab.WithNonce(nonce))
+	assert.Equal(t, nonce, txh.Nonce())
+	assert.Equal(t, creator, txh.Creator())
+	assert.NotEmpty(t, txh.TransactionID())
 }
 
 func TestTransactionProposal(t *testing.T) {
@@ -78,8 +90,8 @@ func createTransactor(t *testing.T) *Transactor {
 	return transactor
 }
 
-func createTxnID(t *testing.T, transactor *Transactor) fab.TransactionHeader {
-	txh, err := transactor.CreateTransactionHeader()
+func createTxnID(t *testing.T, transactor *Transactor, opts ...fab.TxnHeaderOpt) fab.TransactionHeader {
+	txh, err := transactor.CreateTransactionHeader(opts...)
 	assert.Nil(t, err, "creation of transaction ID failed")
 
 	return txh

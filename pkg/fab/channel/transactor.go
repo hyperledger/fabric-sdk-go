@@ -147,14 +147,14 @@ func orderersByTarget(ctx context.Client) (map[string]fab.OrdererConfig, error) 
 }
 
 // CreateTransactionHeader creates a Transaction Header based on the current context.
-func (t *Transactor) CreateTransactionHeader() (fab.TransactionHeader, error) {
+func (t *Transactor) CreateTransactionHeader(opts ...fab.TxnHeaderOpt) (fab.TransactionHeader, error) {
 
 	ctx, ok := contextImpl.RequestClientContext(t.reqCtx)
 	if !ok {
 		return nil, errors.New("failed get client context from reqContext for txn Header")
 	}
 
-	txh, err := txn.NewHeader(ctx, t.ChannelID)
+	txh, err := txn.NewHeader(ctx, t.ChannelID, opts...)
 	if err != nil {
 		return nil, errors.WithMessage(err, "new transaction ID failed")
 	}

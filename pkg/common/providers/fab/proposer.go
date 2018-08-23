@@ -17,9 +17,32 @@ type ProposalProcessor interface {
 	ProcessTransactionProposal(reqContext.Context, ProcessProposalRequest) (*TransactionProposalResponse, error)
 }
 
+// TxnHeaderOptions contains options for creating a Transaction Header
+type TxnHeaderOptions struct {
+	Nonce   []byte
+	Creator []byte
+}
+
+// TxnHeaderOpt is a Transaction Header option
+type TxnHeaderOpt func(*TxnHeaderOptions)
+
+// WithNonce specifies the nonce to use when creating the Transaction Header
+func WithNonce(nonce []byte) TxnHeaderOpt {
+	return func(options *TxnHeaderOptions) {
+		options.Nonce = nonce
+	}
+}
+
+// WithCreator specifies the creator to use when creating the Transaction Header
+func WithCreator(creator []byte) TxnHeaderOpt {
+	return func(options *TxnHeaderOptions) {
+		options.Creator = creator
+	}
+}
+
 // ProposalSender provides the ability for a transaction proposal to be created and sent.
 type ProposalSender interface {
-	CreateTransactionHeader() (TransactionHeader, error)
+	CreateTransactionHeader(opts ...TxnHeaderOpt) (TransactionHeader, error)
 	SendTransactionProposal(*TransactionProposal, []ProposalProcessor) ([]*TransactionProposalResponse, error)
 }
 

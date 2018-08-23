@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -29,6 +31,29 @@ import (
 const (
 	testChannel = "testchannel"
 )
+
+func TestNewHeader(t *testing.T) {
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
+	ctx := mocks.NewMockContext(user)
+
+	creator, err := ctx.Serialize()
+	require.NoError(t, err)
+
+	txh, err := NewHeader(ctx, testChannel)
+	require.NoError(t, err)
+	require.NotEmptyf(t, txh.nonce, "Expecting nonce")
+	require.Equal(t, creator, txh.creator)
+	require.NotEmpty(t, txh.id)
+
+	creator = []byte("someothercreator")
+	nonce := []byte("123456")
+
+	txh, err = NewHeader(ctx, testChannel, fab.WithCreator(creator), fab.WithNonce(nonce))
+	require.NoError(t, err)
+	require.Equal(t, nonce, txh.nonce)
+	require.Equal(t, creator, txh.creator)
+	require.NotEmpty(t, txh.id)
+}
 
 func TestNewTransactionProposal(t *testing.T) {
 	user := mspmocks.NewMockSigningIdentity("test", "1234")
