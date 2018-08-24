@@ -36,6 +36,7 @@ echo "Running" $(basename "$0")
 declare -a PKGS=(
     "${REPO}/pkg/core/cryptosuite/bccsp/pkcs11"
     "${REPO}/pkg/core/cryptosuite/bccsp/multisuite"
+    "${REPO}/pkg/core/cryptosuite/common/pkcs11"
 )
 
 # Reduce unit tests to changed packages.
@@ -87,6 +88,9 @@ if [ "${SOFTHSM}" == "" ]; then
     echo "SoftHSM with ForFabric token not detected ..."
     exit 1
 fi
+
+echo "creating new slot and label..."
+softhsm2-util --init-token --slot 1 --label "ForFabric1" --pin 98765432 --so-pin 987654
 
 GO_TAGS="${GO_TAGS} ${FABRIC_SDKGO_CODELEVEL_TAG}"
 

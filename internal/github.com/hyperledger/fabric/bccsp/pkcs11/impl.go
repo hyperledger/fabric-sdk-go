@@ -28,15 +28,11 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cachebridge"
-
-	"sync"
-
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
-	"github.com/miekg/pkcs11"
+	handle "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/common/pkcs11"
 	"github.com/pkg/errors"
 )
 
@@ -65,19 +61,14 @@ func New(opts PKCS11Opts, keyStore bccsp.KeyStore) (bccsp.BCCSP, error) {
 		return nil, errors.New("Invalid bccsp.KeyStore instance. It must be different from nil")
 	}
 
-	lib := opts.Library
-	pin := opts.Pin
-	label := opts.Label
-	ctx, slot, session, err := loadLib(lib, pin, label)
+	//Load PKCS11 context handle
+	pkcs11Ctx, err := loadContext(opts.Library, opts.Pin, opts.Label)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed initializing PKCS11 library %s %s",
-			lib, label)
+		return nil, errors.Wrapf(err, "Failed initializing PKCS11 context")
 	}
 
-	sessions := make(chan pkcs11.SessionHandle, sessionCacheSize)
-	csp := &impl{BCCSP: swCSP, conf: conf, ks: keyStore, ctx: ctx, sessions: sessions, slot: slot, lib: lib, privImport: opts.Sensitive, softVerify: opts.SoftVerify}
-	csp.returnSession(*session)
-	cachebridge.ClearAllSession()
+	csp := &impl{BCCSP: swCSP, conf: conf, ks: keyStore, privImport: opts.Sensitive, softVerify: opts.SoftVerify, pkcs11Ctx: pkcs11Ctx}
+
 	return csp, nil
 }
 
@@ -87,16 +78,12 @@ type impl struct {
 	conf *config
 	ks   bccsp.KeyStore
 
-	ctx      *pkcs11.Ctx
-	sessions chan pkcs11.SessionHandle
-	slot     uint
-
-	lib        string
 	privImport bool
 	softVerify bool
 
-	opts    PKCS11Opts
-	ctxlock sync.RWMutex
+	opts PKCS11Opts
+
+	pkcs11Ctx *handle.ContextHandle
 }
 
 // KeyGen generates a key using opts.

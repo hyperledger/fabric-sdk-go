@@ -81,6 +81,7 @@ PKGS=($(echo "${PKGS[@]}" | tr ' ' '\n' | \
     grep -v ^${REPO}/test | \
     grep -v ^${REPO}/pkg/core/cryptosuite/bccsp/multisuite | \
     grep -v ^${REPO}/pkg/core/cryptosuite/bccsp/pkcs11 | \
+    grep -v ^${REPO}/pkg/core/cryptosuite/common/pkcs11 | \
     grep -v ^${REPO}/pkg/client/channel/benchmark | \
     tr ' ' '\n'))
 
