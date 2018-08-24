@@ -160,16 +160,35 @@ gofilter() {
 
 echo "Modifying go source files"
 FILTER_FILENAME="bccsp/pkcs11/impl.go"
-sed -i'' -e 's/impl{swCSP, conf, keyStore, ctx, sessions, slot, lib, opts.Sensitive, opts.SoftVerify}/impl{BCCSP: swCSP, conf: conf, ks: keyStore, ctx: ctx, sessions: sessions, slot: slot, lib: lib, privImport: opts.Sensitive, softVerify: opts.SoftVerify}/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/"math\/big"/a "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cachebridge"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/csp.returnSession(\*session)/a cachebridge.ClearAllSession()' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/"math\/big"/a sdkp11 "github.com\/hyperledger\/fabric-sdk-go\/pkg\/core\/cryptosuite\/common\/pkcs11"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "lib := opts.Library" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..12}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+sed -i "$START_LINE i \/\/Load PKCS11 context handle" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+let "START_LINE+=1"
+sed -i "$START_LINE i pkcs11Ctx, err := sdkp11.LoadContextAndLogin(opts.Library, opts.Pin, opts.Label)" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+let "START_LINE+=1"
+sed -i "$START_LINE i if err != nil {return nil, errors.Wrapf(err, \"Failed initializing PKCS11 context\")}" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+let "START_LINE+=1"
+sed -i "$START_LINE i csp := &impl{BCCSP: swCSP, conf: conf, ks: keyStore, softVerify: opts.SoftVerify, pkcs11Ctx: pkcs11Ctx}" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+START_LINE=`grep -n "type impl struct {" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+let "START_LINE+=6"
+for i in {1..5}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+
+sed -i "$START_LINE i pkcs11Ctx *sdkp11.ContextHandle" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="bccsp/pkcs11/pkcs11.go"
 sed -i'' -e '/"github.com\/hyperledger"/a "time"/' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/"math\/big"/a "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cachebridge"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/"math\/big"/a sdkp11 "github.com\/hyperledger\/fabric-sdk-go\/pkg\/core\/cryptosuite\/common\/pkcs11"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/session = s/a cachebridge.ClearSession(fmt.Sprintf("%d", session))' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/= findKeyPairFromSKI/= csp.findKeyPairFromSKI/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/privateKey, err := csp.findKeyPairFromSKI(p11lib,/a defer timeTrack(time.Now(), fmt.Sprintf("signing [session: %d]", session))' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= findKeyPairFromSKI(p11lib,/= csp.pkcs11Ctx.FindKeyPairFromSKI(/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/func findKeyPairFromSKI(mod/func (csp \*impl) findKeyPairFromSKI(mod/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 START_LINE=`grep -n "func (csp \*impl) findKeyPairFromSKI(mod" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
 let "START_LINE+=1"
@@ -186,6 +205,30 @@ func timeTrack(start time.Time, msg string) {\
 
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
+START_LINE=`grep -n "func loadLib(lib, pin, label string)" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..97}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+
+sed -i'' -e 's/p11lib := csp.ctx//g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/session := csp.getSession()/session := csp.pkcs11Ctx.GetSession()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/defer csp.returnSession(session)/defer csp.pkcs11Ctx.ReturnSession(session)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= ecPoint(p11lib/= ecPoint(csp.pkcs11Ctx/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= p11lib.GenerateKeyPair(/= csp.pkcs11Ctx.GenerateKeyPair(/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= p11lib.SetAttributeValue(/= csp.pkcs11Ctx.SetAttributeValue(/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= p11lib.GetAttributeValue(session/= csp.pkcs11Ctx.GetAttributeValue(session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= p11lib.CreateObject(/= csp.pkcs11Ctx.CreateObject(/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= p11lib.VerifyInit(session/= csp.pkcs11Ctx.VerifyInit(session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= p11lib.Verify(session/= csp.pkcs11Ctx.Verify(session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= p11lib.SignInit(session/= csp.pkcs11Ctx.SignInit(session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= p11lib.Sign(session/= csp.pkcs11Ctx.Sign(session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/listAttrs(p11lib, session/listAttrs(csp.pkcs11Ctx, session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/func listAttrs(p11lib \*pkcs11.Ctx,/func listAttrs(p11lib \*sdkp11.ContextHandle,/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/func ecPoint(p11lib \*pkcs11.Ctx,/func ecPoint(p11lib \*sdkp11.ContextHandle,/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/attr, err := csp.pkcs11Ctx.GetAttributeValue(session, key, template)/attr, err := p11lib.GetAttributeValue(session, key, template)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/attr, err := csp.pkcs11Ctx.GetAttributeValue(session, obj, template)/attr, err := p11lib.GetAttributeValue(session, obj, template)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/privateKey, err := csp.pkcs11Ctx.FindKeyPairFromSKI/a defer timeTrack(time.Now(), fmt.Sprintf("signing [session: %d]", session))' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 echo "Filtering Go sources for allowed functions ..."
 FILTERS_ENABLED="fn"
