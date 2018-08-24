@@ -164,10 +164,12 @@ endif
 
 # Determine if use mock chaincode daemon should be used
 FABRIC_SDK_ENABLE_CHAINCODED := false
-ifneq ($(SOCAT_DOCKER_IMG),)
+#chaincoded is currently able to intercept the docker calls without need for forwarding.
+#(so reverse proxy to docker via socat is currently disabled).
+#ifneq ($(SOCAT_DOCKER_IMG),)
 ifeq ($(FABRIC_SDK_CHAINCODED),true)
 FABRIC_SDK_ENABLE_CHAINCODED := true
-endif
+#endif
 endif
 
 # Setup Go Tags
