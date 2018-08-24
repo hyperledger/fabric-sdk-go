@@ -20,17 +20,6 @@
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 entityMatchers:
   peer:
-
-    ## TODO added below peer to ignore list, to avoid these revoked peer to conflict with bootstrap test
-    - pattern: peer1.org2.example.com:(\d+)
-      ignoreEndpoint: true
-
-    - pattern: peer1.org2.example.com
-      ignoreEndpoint: true
-
-    - pattern: (\w+):9051
-      ignoreEndpoint: true
-
     - pattern: peer0.org1.example.(\w+)
       urlSubstitutionExp: localhost:7051
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
@@ -46,10 +35,20 @@ entityMatchers:
       sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
       mappedHost: peer0.org2.example.com
 
+    - pattern: peer1.org2.example.(\w+)
+      urlSubstitutionExp: localhost:9051
+      sslTargetOverrideUrlSubstitutionExp: peer1.org2.example.com
+      mappedHost: peer1.org2.example.com
+
     - pattern: (\w+).org1.example.(\w+):(\d+)
       urlSubstitutionExp: localhost:$2
       sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
       mappedHost: $1.org1.example.com
+
+    - pattern: (\w+).org2.example.(\w+):(\d+)
+      urlSubstitutionExp: localhost:$2
+      sslTargetOverrideUrlSubstitutionExp: $1.org2.example.com
+      mappedHost: $1.org2.example.com
 
     - pattern: (\w+):7051
       urlSubstitutionExp: localhost:7051
@@ -66,6 +65,10 @@ entityMatchers:
       sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
       mappedHost: peer0.org2.example.com
 
+    - pattern: (\w+):9051
+      urlSubstitutionExp: localhost:9051
+      sslTargetOverrideUrlSubstitutionExp: peer1.org2.example.com
+      mappedHost: peer1.org2.example.com
 
   orderer:
 

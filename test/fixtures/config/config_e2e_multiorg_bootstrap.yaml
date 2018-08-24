@@ -144,6 +144,7 @@ peers:
 
   peer0.org2.example.com:
     url: peer0.org2.example.com:8051
+
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
       keep-alive-time: 0s
@@ -194,3 +195,8 @@ entityMatchers:
       urlSubstitutionExp: $1.org1.example.com:$2
       sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
       mappedHost: peer0.org1.example.com
+
+    - pattern: (\w+).org2.example.com:(\d+)
+      urlSubstitutionExp: $1.org2.example.com:$2
+      sslTargetOverrideUrlSubstitutionExp: $1.org2.example.com
+      mappedHost: peer0.org2.example.com
