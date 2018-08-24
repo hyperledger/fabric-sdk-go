@@ -22,40 +22,18 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cachebridge"
+	sdkp11 "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/common/pkcs11"
 
 	logging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
-	handle "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/common/pkcs11"
 	"github.com/miekg/pkcs11"
 )
-
-func loadContext(lib, pin, label string) (*handle.ContextHandle, error) {
-	pkcs11Context, err := handle.LoadPKCS11ContextHandle(lib, label, pin)
-	if err != nil {
-		return nil, err
-	}
-
-	session, err := pkcs11Context.OpenSession()
-	if err != nil {
-		return nil, err
-	}
-
-	err = pkcs11Context.Login(session)
-	if err != nil {
-		return nil, err
-	}
-
-	pkcs11Context.ReturnSession(session)
-	cachebridge.ClearAllSession()
-
-	return pkcs11Context, err
-}
 
 // Look for an EC key by SKI, stored in CKA_ID
 // This function can probably be adapted for both EC and RSA keys.
 func (csp *impl) getECKey(ski []byte) (pubKey *ecdsa.PublicKey, isPriv bool, err error) {
+
 	session := csp.pkcs11Ctx.GetSession()
 	defer csp.pkcs11Ctx.ReturnSession(session)
-
 	isPriv = true
 	_, err = csp.pkcs11Ctx.FindKeyPairFromSKI(session, ski, privateKeyFlag)
 	if err != nil {
@@ -232,6 +210,7 @@ func (csp *impl) generateECKey(curve asn1.ObjectIdentifier, ephemeral bool) (ski
 }
 
 func (csp *impl) signP11ECDSA(ski []byte, msg []byte) (R, S *big.Int, err error) {
+
 	session := csp.pkcs11Ctx.GetSession()
 	defer csp.pkcs11Ctx.ReturnSession(session)
 
@@ -352,13 +331,13 @@ func (csp *impl) findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandl
 // 00000020  19 de ef 32 46 50 68 02  24 62 36 db ed b1 84 7b  |...2FPh.$b6....{|
 // 00000030  93 d8 40 c3 d5 a6 b7 38  16 d2 35 0a 53 11 f9 51  |..@....8..5.S..Q|
 // 00000040  fc a7 16                                          |...|
-func ecPoint(handle *handle.ContextHandle, session pkcs11.SessionHandle, key pkcs11.ObjectHandle) (ecpt, oid []byte, err error) {
+func ecPoint(p11lib *sdkp11.ContextHandle, session pkcs11.SessionHandle, key pkcs11.ObjectHandle) (ecpt, oid []byte, err error) {
 	template := []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_EC_POINT, nil),
 		pkcs11.NewAttribute(pkcs11.CKA_EC_PARAMS, nil),
 	}
 
-	attr, err := handle.GetAttributeValue(session, key, template)
+	attr, err := p11lib.GetAttributeValue(session, key, template)
 	if err != nil {
 		return nil, nil, fmt.Errorf("PKCS11: get(EC point) [%s]", err)
 	}
@@ -392,11 +371,11 @@ func ecPoint(handle *handle.ContextHandle, session pkcs11.SessionHandle, key pkc
 	return ecpt, oid, nil
 }
 
-func listAttrs(handle *handle.ContextHandle, session pkcs11.SessionHandle, obj pkcs11.ObjectHandle) {
+func listAttrs(p11lib *sdkp11.ContextHandle, session pkcs11.SessionHandle, obj pkcs11.ObjectHandle) {
 	var cktype, ckclass uint
 	var ckaid, cklabel []byte
 
-	if handle == nil {
+	if p11lib == nil {
 		return
 	}
 
@@ -408,7 +387,7 @@ func listAttrs(handle *handle.ContextHandle, session pkcs11.SessionHandle, obj p
 	}
 
 	// certain errors are tolerated, if value is missing
-	attr, err := handle.GetAttributeValue(session, obj, template)
+	attr, err := p11lib.GetAttributeValue(session, obj, template)
 	if err != nil {
 		logger.Debugf("P11: get(attrlist) [%s]\n", err)
 	}

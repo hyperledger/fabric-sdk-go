@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
 Please review third_party pinning scripts and patches for more details.
 */
+
 package pkcs11
 
 import (
@@ -18,7 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
-	handle "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/common/pkcs11"
+	sdkp11 "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/common/pkcs11"
 	"github.com/pkg/errors"
 )
 
@@ -48,13 +49,11 @@ func New(opts PKCS11Opts, keyStore bccsp.KeyStore) (bccsp.BCCSP, error) {
 	}
 
 	//Load PKCS11 context handle
-	pkcs11Ctx, err := loadContext(opts.Library, opts.Pin, opts.Label)
+	pkcs11Ctx, err := sdkp11.LoadContextAndLogin(opts.Library, opts.Pin, opts.Label)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed initializing PKCS11 context")
 	}
-
-	csp := &impl{swCSP, conf, keyStore, opts.SoftVerify, pkcs11Ctx}
-
+	csp := &impl{BCCSP: swCSP, conf: conf, ks: keyStore, softVerify: opts.SoftVerify, pkcs11Ctx: pkcs11Ctx}
 	return csp, nil
 }
 
@@ -64,9 +63,8 @@ type impl struct {
 	conf *config
 	ks   bccsp.KeyStore
 
+	pkcs11Ctx  *sdkp11.ContextHandle
 	softVerify bool
-
-	pkcs11Ctx *handle.ContextHandle
 }
 
 // KeyGen generates a key using opts.
@@ -152,9 +150,8 @@ func (csp *impl) GetKey(ski []byte) (bccsp.Key, error) {
 	if err == nil {
 		if isPriv {
 			return &ecdsaPrivateKey{ski, ecdsaPublicKey{ski, pubKey}}, nil
-		} else {
-			return &ecdsaPublicKey{ski, pubKey}, nil
 		}
+		return &ecdsaPublicKey{ski, pubKey}, nil
 	}
 	return csp.BCCSP.GetKey(ski)
 }

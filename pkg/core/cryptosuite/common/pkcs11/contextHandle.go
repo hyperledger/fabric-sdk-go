@@ -33,6 +33,29 @@ func ReloadPKCS11ContextHandle(lib, label, pin string, opts ...Options) (*Contex
 	return getInstance(&pkcs11CtxCacheKey{lib: lib, label: label, pin: pin, opts: getCtxOpts(opts...)}, true)
 }
 
+//LoadContextAndLogin loads Context handle and performs login
+func LoadContextAndLogin(lib, pin, label string) (*ContextHandle, error) {
+	pkcs11Context, err := LoadPKCS11ContextHandle(lib, label, pin)
+	if err != nil {
+		return nil, err
+	}
+
+	session, err := pkcs11Context.OpenSession()
+	if err != nil {
+		return nil, err
+	}
+
+	err = pkcs11Context.Login(session)
+	if err != nil {
+		return nil, err
+	}
+
+	pkcs11Context.ReturnSession(session)
+	cachebridge.ClearAllSession()
+
+	return pkcs11Context, err
+}
+
 //ContextHandle encapsulate basic pkcs11.Ctx operations and manages sessions
 type ContextHandle struct {
 	ctx      *pkcs11.Ctx
