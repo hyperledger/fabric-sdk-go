@@ -1169,7 +1169,7 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	assert.NotNil(t, networkConfig, "Invalid networkConfig")
 
 	//Channel
-	assert.Equal(t, len(networkConfig.Channels), 6)
+	assert.Equal(t, len(networkConfig.Channels), 5)
 	assert.Equal(t, len(networkConfig.Channels["mychannel"].Peers), 1)
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses, 1)
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets, 1)
