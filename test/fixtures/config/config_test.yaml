@@ -134,7 +134,33 @@ client:
 channels:
 
   # Default channel is used if channel configuration is missing or if defined channel configuration is missing info
+  # If channel doesn't define peers then peers from default channel will be used
+  # If channel doesn't define orderes then orderes from default channel will be used
+  # If channel doesn't define policies then policies from default channel will be used. 
+  # Also, if channel defines policies and some policy info is missing than that missing info will be filled from default channel.
   _default:
+
+    # [Optional]. list of peers from participating orgs
+    peers:
+      peer0.org1.example.com:
+        # [Optional]. will this peer be sent transaction proposals for endorsement? The peer must
+        # have the chaincode installed. The app can also use this property to decide which peers
+        # to send the chaincode install request. Default: true
+        endorsingPeer: true
+
+        # [Optional]. will this peer be sent query proposals? The peer must have the chaincode
+        # installed. The app can also use this property to decide which peers to send the
+        # chaincode install request. Default: true
+        chaincodeQuery: true
+
+        # [Optional]. will this peer be sent query proposals that do not require chaincodes, like
+        # queryBlock(), queryTransaction(), etc. Default: true
+        ledgerQuery: true
+
+        # [Optional]. will this peer be the target of the SDK's listener registration? All peers can
+        # produce events but the app typically only needs to connect to one to listen to events.
+        # Default: true
+        eventSource: true
 
     # [Optional]. The application can use these options to perform channel operations like retrieving channel
     # config etc.
@@ -143,7 +169,7 @@ channels:
       discovery:
         #[Optional] discovery info will be retrieved for these number of random targets
         maxTargets: 2
-        #[Optional] retry options for query config block
+        #[Optional] retry options for retriving discovery info
         retryOpts:
           #[Optional] number of retry attempts
           attempts: 4
@@ -170,37 +196,14 @@ channels:
           #[Optional] he factor by which the initial back off period is exponentially incremented
           backoffFactor: 2.0
 
-  # name of the channel
+  # Mychannel overrides initialBackoff for discovery
   mychannel:
-    # Required. list of orderers designated by the application to use for transactions on this
-    # channel. This list can be a result of access control ("org1" can only access "ordererA"), or
-    # operational decisions to share loads from applications among the orderers.  The values must
-    # be "names" of orgs defined under "organizations/peers"
-    # deprecated: not recommended, to override any orderer configuration items, entity matchers should be used.
-#    orderers:
-#      - orderer.example.com
-
-    # Required. list of peers from participating orgs
-    peers:
-      peer0.org1.example.com:
-        # [Optional]. will this peer be sent transaction proposals for endorsement? The peer must
-        # have the chaincode installed. The app can also use this property to decide which peers
-        # to send the chaincode install request. Default: true
-        endorsingPeer: true
-
-        # [Optional]. will this peer be sent query proposals? The peer must have the chaincode
-        # installed. The app can also use this property to decide which peers to send the
-        # chaincode install request. Default: true
-        chaincodeQuery: true
-
-        # [Optional]. will this peer be sent query proposals that do not require chaincodes, like
-        # queryBlock(), queryTransaction(), etc. Default: true
-        ledgerQuery: true
-
-        # [Optional]. will this peer be the target of the SDK's listener registration? All peers can
-        # produce events but the app typically only needs to connect to one to listen to events.
-        # Default: true
-        eventSource: true
+    policies:
+      discovery:
+        retryOpts:
+          #[Required for override] number of retry attempts
+          attempts: 4
+          initialBackoff: 1s
 
   # multi-org test channel
   orgchannel:

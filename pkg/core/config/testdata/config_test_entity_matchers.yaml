@@ -78,6 +78,10 @@ client:
 channels:
 
   # Default channel is used if channel configuration is missing or if defined channel configuration is missing info
+  # If channel doesn't define peers then peers from default channel will be used
+  # If channel doesn't define orderes then orderes from default channel will be used
+  # If channel doesn't define policies then policies from default channel will be used. 
+  # Also, if channel defines policies and some policy info is missing than that missing info will be filled from default channel.
   _default:
 
     # [Optional]. List of bootstrap peers from participating orgs.

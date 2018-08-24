@@ -104,6 +104,7 @@ type EndpointConfig struct {
 	defaultPeerConfig        fab.PeerConfig
 	defaultOrdererConfig     fab.OrdererConfig
 	defaultChannelPolicies   fab.ChannelPolicies
+	defaultChannel           *fab.ChannelEndpointConfig
 }
 
 //endpointConfigEntity contains endpoint config elements needed by endpointconfig
@@ -180,8 +181,7 @@ func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, cha
 	//Return if no channelMatchers are configured
 	if len(c.channelMatchers) == 0 {
 		// try default channel
-		_, ok = networkConfig.Channels[defaultEntity]
-		if ok {
+		if c.defaultChannel != nil {
 			return defaultEntity
 		}
 		return ""
@@ -195,8 +195,7 @@ func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, cha
 		}
 	}
 
-	_, ok = networkConfig.Channels[defaultEntity]
-	if ok {
+	if c.defaultChannel != nil {
 		return defaultEntity
 	}
 
@@ -211,6 +210,10 @@ func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelEndpointConfig,
 	mappedChannelName := c.mappedChannelName(c.networkConfig, name)
 	if mappedChannelName == "" {
 		return nil, false
+	}
+
+	if mappedChannelName == defaultEntity {
+		return c.defaultChannel, true
 	}
 
 	//look up in network config by channelName
@@ -479,7 +482,17 @@ func (c *EndpointConfig) loadEndpointConfigEntities(configEntity *endpointConfig
 		return errors.WithMessage(err, "failed to load TLS cert pool")
 	}
 
+	c.loadDefaultChannel()
+
 	return nil
+}
+
+func (c *EndpointConfig) loadDefaultChannel() {
+	defChCfg, ok := c.networkConfig.Channels[defaultEntity]
+	if ok {
+		c.defaultChannel = &fab.ChannelEndpointConfig{Peers: defChCfg.Peers, Orderers: defChCfg.Orderers, Policies: defChCfg.Policies}
+		delete(c.networkConfig.Channels, defaultEntity)
+	}
 }
 
 func (c *EndpointConfig) loadDefaultConfigItems(configEntity *endpointConfigEntity) error {
@@ -510,36 +523,20 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 
 	//Channels
 	networkConfig.Channels = make(map[string]fab.ChannelEndpointConfig)
+
+	// Load default channel config first since it will be used for defaulting  other channels peers and orderers
+	defChNwCfg, ok := configEntity.Channels[defaultEntity]
+	if ok {
+		networkConfig.Channels[defaultEntity] = c.loadChannelEndpointConfig(defChNwCfg, ChannelEndpointConfig{})
+	}
+
 	for chID, chNwCfg := range configEntity.Channels {
-
-		chPeers := make(map[string]fab.PeerChannelConfig)
-		for chPeer, chPeerCfg := range chNwCfg.Peers {
-			if c.isPeerToBeIgnored(chPeer) {
-				//filter peer to be ignored
-				continue
-			}
-			chPeers[chPeer] = fab.PeerChannelConfig{
-				EndorsingPeer:  chPeerCfg.EndorsingPeer,
-				ChaincodeQuery: chPeerCfg.ChaincodeQuery,
-				LedgerQuery:    chPeerCfg.LedgerQuery,
-				EventSource:    chPeerCfg.EventSource,
-			}
+		if chID == defaultEntity {
+			// default entity has been loaded already
+			continue
 		}
 
-		chOrderers := []string{}
-		for _, name := range chNwCfg.Orderers {
-			if !c.isOrdererToBeIgnored(name) {
-				//filter orderer to be ignored
-				chOrderers = append(chOrderers, name)
-			}
-		}
-
-		// Policies use default channel policies if info is missing
-		networkConfig.Channels[chID] = fab.ChannelEndpointConfig{
-			Peers:    chPeers,
-			Orderers: chOrderers,
-			Policies: c.addMissingChannelPoliciesItems(chNwCfg),
-		}
+		networkConfig.Channels[chID] = c.loadChannelEndpointConfig(chNwCfg, defChNwCfg)
 	}
 
 	//Organizations
@@ -578,6 +575,52 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 
 	c.networkConfig = &networkConfig
 	return nil
+}
+
+func (c *EndpointConfig) loadChannelEndpointConfig(chNwCfg ChannelEndpointConfig, defChNwCfg ChannelEndpointConfig) fab.ChannelEndpointConfig {
+
+	chPeers := make(map[string]fab.PeerChannelConfig)
+
+	chNwCfgPeers := chNwCfg.Peers
+	if len(chNwCfgPeers) == 0 {
+		//fill peers in with default channel peers
+		chNwCfgPeers = defChNwCfg.Peers
+	}
+
+	for chPeer, chPeerCfg := range chNwCfgPeers {
+		if c.isPeerToBeIgnored(chPeer) {
+			//filter peer to be ignored
+			continue
+		}
+		chPeers[chPeer] = fab.PeerChannelConfig{
+			EndorsingPeer:  chPeerCfg.EndorsingPeer,
+			ChaincodeQuery: chPeerCfg.ChaincodeQuery,
+			LedgerQuery:    chPeerCfg.LedgerQuery,
+			EventSource:    chPeerCfg.EventSource,
+		}
+	}
+
+	chOrderers := []string{}
+
+	chNwCfgOrderers := chNwCfg.Orderers
+	if len(chNwCfgOrderers) == 0 {
+		//fill orderers in with default channel orderers
+		chNwCfgOrderers = defChNwCfg.Orderers
+	}
+
+	for _, name := range chNwCfgOrderers {
+		if !c.isOrdererToBeIgnored(name) {
+			//filter orderer to be ignored
+			chOrderers = append(chOrderers, name)
+		}
+	}
+
+	// Policies use default channel policies if info is missing
+	return fab.ChannelEndpointConfig{
+		Peers:    chPeers,
+		Orderers: chOrderers,
+		Policies: c.addMissingChannelPoliciesItems(chNwCfg),
+	}
 }
 
 func (c *EndpointConfig) getChannelPolicies(chNwCfg ChannelEndpointConfig) fab.ChannelPolicies {

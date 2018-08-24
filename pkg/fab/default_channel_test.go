@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -211,4 +212,93 @@ func TestMissingPartialChannelPoliciesInfo(t *testing.T) {
 	assert.Equal(t, "5s", chConfig.Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String())
 	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.RetryOpts.BackoffFactor, chConfig.Policies.QueryChannelConfig.RetryOpts.BackoffFactor)
 	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.RetryOpts.MaxBackoff, chConfig.Policies.QueryChannelConfig.RetryOpts.MaxBackoff)
+}
+
+func TestMissingPeersInfo(t *testing.T) {
+
+	// Default channel and no channel matchers test
+	defaultChannelBackend, err := config.FromFile(configEmbeddedUsersTestFilePath)()
+	assert.Nil(t, err, "Failed to get backend")
+
+	endpointConfig, err := ConfigFromBackend(defaultChannelBackend...)
+	assert.Nil(t, err, "Failed to get endpoint config from backend")
+	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
+
+	defChConfig, ok := endpointConfig.ChannelConfig("test")
+	assert.True(t, ok)
+	assert.NotNil(t, defChConfig)
+
+	//If peers are not defined for channel then peers should be filled in from "_default" channel
+	chConfig, ok := endpointConfig.ChannelConfig("nopeers")
+	assert.True(t, ok)
+	assert.NotNil(t, chConfig)
+	assert.Equal(t, 1, len(chConfig.Orderers))
+	assert.Equal(t, 1, len(chConfig.Peers))
+
+	// 'nopeers' channel is missing polices in config (should be equal to default channel)
+	assert.Equal(t, defChConfig.Policies.Discovery.MaxTargets, chConfig.Policies.Discovery.MaxTargets)
+	assert.Equal(t, defChConfig.Policies.Discovery.MinResponses, chConfig.Policies.Discovery.MinResponses)
+	assert.Equal(t, defChConfig.Policies.Discovery.RetryOpts.Attempts, chConfig.Policies.Discovery.RetryOpts.Attempts)
+	assert.Equal(t, defChConfig.Policies.Discovery.RetryOpts.InitialBackoff, chConfig.Policies.Discovery.RetryOpts.InitialBackoff)
+	assert.Equal(t, defChConfig.Policies.Discovery.RetryOpts.BackoffFactor, chConfig.Policies.Discovery.RetryOpts.BackoffFactor)
+	assert.Equal(t, defChConfig.Policies.Discovery.RetryOpts.MaxBackoff, chConfig.Policies.Discovery.RetryOpts.MaxBackoff)
+
+	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.MaxTargets, chConfig.Policies.QueryChannelConfig.MaxTargets)
+	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.MinResponses, chConfig.Policies.QueryChannelConfig.MinResponses)
+	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.RetryOpts.Attempts, chConfig.Policies.QueryChannelConfig.RetryOpts.Attempts)
+	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.RetryOpts.InitialBackoff, chConfig.Policies.QueryChannelConfig.RetryOpts.InitialBackoff)
+	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.RetryOpts.BackoffFactor, chConfig.Policies.QueryChannelConfig.RetryOpts.BackoffFactor)
+	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.RetryOpts.MaxBackoff, chConfig.Policies.QueryChannelConfig.RetryOpts.MaxBackoff)
+
+	// Since peers are not defined channel peers should equal peers from "_default"
+	chPeers, ok := endpointConfig.ChannelPeers("nopeers")
+	assert.True(t, ok)
+	assert.NotNil(t, chPeers)
+	assert.Equal(t, 1, len(chPeers))
+	assert.True(t, strings.Contains(chPeers[0].URL, "peer0.org2.example.com"))
+
+	// Orderer is defined for channel, verify orderer
+	chOrderers, ok := endpointConfig.ChannelOrderers("nopeers")
+	assert.True(t, ok)
+	assert.NotNil(t, chOrderers)
+	assert.Equal(t, 1, len(chOrderers))
+	assert.True(t, strings.Contains(chOrderers[0].URL, "orderer2.example.com"))
+
+}
+
+func TestMissingOrderersInfo(t *testing.T) {
+
+	// Default channel and no channel matchers test
+	defaultChannelBackend, err := config.FromFile(configEmbeddedUsersTestFilePath)()
+	assert.Nil(t, err, "Failed to get backend")
+
+	endpointConfig, err := ConfigFromBackend(defaultChannelBackend...)
+	assert.Nil(t, err, "Failed to get endpoint config from backend")
+	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
+
+	defChConfig, ok := endpointConfig.ChannelConfig("test")
+	assert.True(t, ok)
+	assert.NotNil(t, defChConfig)
+
+	//If orderers are not defined for channel then orderers should be filled in from "_default" channel
+	chConfig, ok := endpointConfig.ChannelConfig("noorderers")
+	assert.True(t, ok)
+	assert.NotNil(t, chConfig)
+	assert.Equal(t, 1, len(chConfig.Orderers))
+	assert.True(t, strings.Contains(chConfig.Orderers[0], "orderer.example.com"))
+	assert.Equal(t, 2, len(chConfig.Peers))
+
+	// Channel peers are defined, verify
+	chPeers, ok := endpointConfig.ChannelPeers("noorderers")
+	assert.True(t, ok)
+	assert.NotNil(t, chPeers)
+	assert.Equal(t, 2, len(chPeers))
+
+	//Verify channel orderers are from "_default"
+	chOrderers, ok := endpointConfig.ChannelOrderers("noorderers")
+	assert.True(t, ok)
+	assert.NotNil(t, chOrderers)
+	assert.Equal(t, 1, len(chOrderers))
+	assert.True(t, strings.Contains(chOrderers[0].URL, "orderer.example.com"))
+
 }
