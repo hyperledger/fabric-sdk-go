@@ -424,6 +424,12 @@ func (c *Client) GetSigningIdentity(id string) (mspctx.SigningIdentity, error) {
 	return si, nil
 }
 
+// CreateSigningIdentity creates a signing identity with the given options
+func (c *Client) CreateSigningIdentity(opts ...mspctx.SigningIdentityOption) (mspctx.SigningIdentity, error) {
+	im, _ := c.ctx.IdentityManager(c.orgName)
+	return im.CreateSigningIdentity(opts...)
+}
+
 //prepareOptsFromOptions reads request options from Option array
 func (c *Client) prepareOptsFromOptions(ctx context.Client, options ...RequestOption) (requestOptions, error) {
 	opts := requestOptions{}

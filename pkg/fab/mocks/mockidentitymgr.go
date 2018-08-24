@@ -80,3 +80,8 @@ func (mgr *MockIdentityManager) GetSigningIdentity(id string) (msp.SigningIdenti
 	}
 	return si, nil
 }
+
+// CreateSigningIdentity creates a signing identity with the given options
+func (mgr *MockIdentityManager) CreateSigningIdentity(opts ...msp.SigningIdentityOption) (msp.SigningIdentity, error) {
+	return nil, errors.New("not implemented")
+}
