@@ -134,3 +134,16 @@ func verifyDuplicates(t *testing.T, chPeers []pfab.PeerConfig) {
 		seen[v.URL] = true
 	}
 }
+
+func TestPickMorePeersThanChannelPeers(t *testing.T) {
+
+	// create 2 peers
+	allChPeers := createNChannelPeers(2)
+
+	// Ask for 4 peers
+	result := PickRandomNPeerConfigs(allChPeers, 4)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result)
+	assert.Equal(t, 2, len(result))
+	verifyDuplicates(t, result)
+}

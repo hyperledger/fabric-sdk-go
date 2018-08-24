@@ -35,14 +35,21 @@ type ChannelEndpointConfig struct {
 type ChannelPolicies struct {
 	//Policy for querying channel block
 	QueryChannelConfig QueryChannelConfigPolicy
+	Discovery          DiscoveryPolicy
 }
 
-//QueryChannelConfigPolicy defines opts for channelConfigBlock
+//QueryChannelConfigPolicy defines policy for channelConfigBlock
 type QueryChannelConfigPolicy struct {
-	MinResponses   int
-	MaxTargets     int
-	QueryDiscovery int
-	RetryOpts      retry.Opts
+	MinResponses int
+	MaxTargets   int
+	RetryOpts    retry.Opts
+}
+
+//DiscoveryPolicy defines policy for discovery
+type DiscoveryPolicy struct {
+	MinResponses int
+	MaxTargets   int
+	RetryOpts    retry.Opts
 }
 
 // PeerChannelConfig defines the peer capabilities

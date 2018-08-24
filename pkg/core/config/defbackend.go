@@ -39,7 +39,7 @@ func (c *defConfigBackend) loadTemplateConfig() error {
 	c.configViper.AddConfigPath(pathvar.Subst(templatePath))
 	err := c.configViper.ReadInConfig() // Find and read the config file
 	if err != nil {                     // Handle errors reading the config file
-		return errors.Wrap(err, "loading config file failed")
+		return errors.Wrapf(err, "loading config from template failed: %s", templatePath)
 	}
 	return nil
 }

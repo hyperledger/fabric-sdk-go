@@ -9,7 +9,6 @@ package fab
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"math"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -20,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -62,6 +62,11 @@ const (
 	defaultKeepAlivePermit  = false
 	defaultFailFast         = false
 	defaultAllowInsecure    = false
+
+	defaultMaxTargets   = 1
+	defaultMinResponses = 1
+
+	defaultEntity = "_default"
 )
 
 //ConfigFromBackend returns endpoint config implementation for given backend
@@ -98,6 +103,7 @@ type EndpointConfig struct {
 	channelMatchers          []matcherEntry
 	defaultPeerConfig        fab.PeerConfig
 	defaultOrdererConfig     fab.OrdererConfig
+	defaultChannelPolicies   fab.ChannelPolicies
 }
 
 //endpointConfigEntity contains endpoint config elements needed by endpointconfig
@@ -173,6 +179,11 @@ func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, cha
 
 	//Return if no channelMatchers are configured
 	if len(c.channelMatchers) == 0 {
+		// try default channel
+		_, ok = networkConfig.Channels[defaultEntity]
+		if ok {
+			return defaultEntity
+		}
 		return ""
 	}
 
@@ -184,7 +195,12 @@ func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, cha
 		}
 	}
 
-	// not matchers found, return empty
+	_, ok = networkConfig.Channels[defaultEntity]
+	if ok {
+		return defaultEntity
+	}
+
+	// not match and no default channel, return empty
 	return ""
 }
 
@@ -479,6 +495,12 @@ func (c *EndpointConfig) loadDefaultConfigItems(configEntity *endpointConfigEnti
 	if err != nil {
 		return errors.WithMessage(err, "failed to load default peer")
 	}
+
+	//default channel policies
+	err = c.loadDefaultChannelPolicies(configEntity)
+	if err != nil {
+		return errors.WithMessage(err, "failed to load default channel policies")
+	}
 	return nil
 }
 
@@ -512,12 +534,11 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 			}
 		}
 
+		// Policies use default channel policies if info is missing
 		networkConfig.Channels[chID] = fab.ChannelEndpointConfig{
 			Peers:    chPeers,
 			Orderers: chOrderers,
-			Policies: fab.ChannelPolicies{
-				QueryChannelConfig: c.getChannelPolicy(chNwCfg, len(chPeers)),
-			},
+			Policies: c.addMissingChannelPoliciesItems(chNwCfg),
 		}
 	}
 
@@ -559,25 +580,115 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 	return nil
 }
 
-func (c *EndpointConfig) getChannelPolicy(chNwCfg ChannelEndpointConfig, NoOfChPeers int) fab.QueryChannelConfigPolicy {
+func (c *EndpointConfig) getChannelPolicies(chNwCfg ChannelEndpointConfig) fab.ChannelPolicies {
 
-	queryDiscovery := chNwCfg.Policies.QueryChannelConfig.QueryDiscovery
-	if queryDiscovery == 0 {
-		queryDiscovery = int(math.Min(2.0, float64(NoOfChPeers)))
+	discoveryPolicy := fab.DiscoveryPolicy{
+
+		MaxTargets:   chNwCfg.Policies.Discovery.MaxTargets,
+		MinResponses: chNwCfg.Policies.Discovery.MinResponses,
+		RetryOpts:    chNwCfg.Policies.Discovery.RetryOpts,
 	}
 
-	return fab.QueryChannelConfigPolicy{
-		RetryOpts:      chNwCfg.Policies.QueryChannelConfig.RetryOpts,
-		MaxTargets:     chNwCfg.Policies.QueryChannelConfig.MaxTargets,
-		MinResponses:   chNwCfg.Policies.QueryChannelConfig.MinResponses,
-		QueryDiscovery: queryDiscovery,
+	channelCfgPolicy := fab.QueryChannelConfigPolicy{
+		MaxTargets:   chNwCfg.Policies.QueryChannelConfig.MaxTargets,
+		MinResponses: chNwCfg.Policies.QueryChannelConfig.MinResponses,
+		RetryOpts:    chNwCfg.Policies.QueryChannelConfig.RetryOpts,
 	}
+
+	return fab.ChannelPolicies{Discovery: discoveryPolicy, QueryChannelConfig: channelCfgPolicy}
+}
+
+func (c *EndpointConfig) addMissingChannelPoliciesItems(chNwCfg ChannelEndpointConfig) fab.ChannelPolicies {
+
+	policies := c.getChannelPolicies(chNwCfg)
+
+	policies.Discovery = c.addMissingDiscoveryPolicyInfo(policies.Discovery)
+	policies.QueryChannelConfig = c.addMissingQueryChannelConfigPolicyInfo(policies.QueryChannelConfig)
+
+	return policies
+}
+
+func (c *EndpointConfig) addMissingDiscoveryPolicyInfo(policy fab.DiscoveryPolicy) fab.DiscoveryPolicy {
+
+	if policy.MaxTargets == 0 {
+		policy.MaxTargets = c.defaultChannelPolicies.Discovery.MaxTargets
+	}
+
+	if policy.MinResponses == 0 {
+		policy.MinResponses = c.defaultChannelPolicies.Discovery.MinResponses
+	}
+
+	if isEmpty(policy.RetryOpts) {
+		policy.RetryOpts = c.defaultChannelPolicies.Discovery.RetryOpts
+	} else {
+		policy.RetryOpts = addMissingRetryOpts(policy.RetryOpts, c.defaultChannelPolicies.Discovery.RetryOpts)
+	}
+
+	return policy
+}
+
+func (c *EndpointConfig) addMissingQueryChannelConfigPolicyInfo(policy fab.QueryChannelConfigPolicy) fab.QueryChannelConfigPolicy {
+
+	if policy.MaxTargets == 0 {
+		policy.MaxTargets = c.defaultChannelPolicies.QueryChannelConfig.MaxTargets
+	}
+
+	if policy.MinResponses == 0 {
+		policy.MinResponses = c.defaultChannelPolicies.QueryChannelConfig.MinResponses
+	}
+
+	if isEmpty(policy.RetryOpts) {
+		policy.RetryOpts = c.defaultChannelPolicies.QueryChannelConfig.RetryOpts
+	} else {
+		policy.RetryOpts = addMissingRetryOpts(policy.RetryOpts, c.defaultChannelPolicies.QueryChannelConfig.RetryOpts)
+	}
+
+	return policy
+}
+
+func addMissingRetryOpts(opts retry.Opts, defaultOpts retry.Opts) retry.Opts {
+	// If retry opts are defined then Attempts must be defined, otherwise
+	// we cannot distinguish between default 0 and intentional 0 to disable retries for that channel
+
+	empty := retry.Opts{}
+
+	if opts.InitialBackoff == empty.InitialBackoff {
+		opts.InitialBackoff = defaultOpts.InitialBackoff
+	}
+
+	if opts.BackoffFactor == empty.BackoffFactor {
+		opts.BackoffFactor = defaultOpts.BackoffFactor
+	}
+
+	if opts.MaxBackoff == empty.MaxBackoff {
+		opts.MaxBackoff = defaultOpts.MaxBackoff
+	}
+
+	if len(opts.RetryableCodes) == len(empty.RetryableCodes) {
+		opts.RetryableCodes = defaultOpts.RetryableCodes
+	}
+
+	return opts
+}
+
+func isEmpty(opts retry.Opts) bool {
+
+	empty := retry.Opts{}
+	if opts.Attempts == empty.Attempts &&
+		opts.InitialBackoff == empty.InitialBackoff &&
+		opts.BackoffFactor == empty.BackoffFactor &&
+		opts.MaxBackoff == empty.MaxBackoff &&
+		len(opts.RetryableCodes) == len(empty.RetryableCodes) {
+		return true
+	}
+
+	return false
 }
 
 func (c *EndpointConfig) loadAllPeerConfigs(networkConfig *fab.NetworkConfig, entityPeers map[string]PeerConfig) error {
 	networkConfig.Peers = make(map[string]fab.PeerConfig)
 	for name, peerConfig := range entityPeers {
-		if name == "_default" || c.isPeerToBeIgnored(name) {
+		if name == defaultEntity || c.isPeerToBeIgnored(name) {
 			//filter default and ignored peers
 			continue
 		}
@@ -597,7 +708,7 @@ func (c *EndpointConfig) loadAllPeerConfigs(networkConfig *fab.NetworkConfig, en
 func (c *EndpointConfig) loadAllOrdererConfigs(networkConfig *fab.NetworkConfig, entityOrderers map[string]OrdererConfig) error {
 	networkConfig.Orderers = make(map[string]fab.OrdererConfig)
 	for name, ordererConfig := range entityOrderers {
-		if name == "_default" || c.isOrdererToBeIgnored(name) {
+		if name == defaultEntity || c.isOrdererToBeIgnored(name) {
 			//filter default and ignored orderers
 			continue
 		}
@@ -673,7 +784,7 @@ func (c *EndpointConfig) addMissingOrdererConfigItems(config fab.OrdererConfig) 
 
 func (c *EndpointConfig) loadDefaultOrderer(configEntity *endpointConfigEntity) error {
 
-	defaultEntityOrderer, ok := configEntity.Orderers["_default"]
+	defaultEntityOrderer, ok := configEntity.Orderers[defaultEntity]
 	if !ok {
 		defaultEntityOrderer = OrdererConfig{
 			GRPCOptions: make(map[string]interface{}),
@@ -725,9 +836,42 @@ func (c *EndpointConfig) loadDefaultOrderer(configEntity *endpointConfigEntity) 
 	return nil
 }
 
+func (c *EndpointConfig) loadDefaultChannelPolicies(configEntity *endpointConfigEntity) error {
+
+	var defaultChPolicies fab.ChannelPolicies
+	defaultChannel, ok := configEntity.Channels[defaultEntity]
+	if !ok {
+		defaultChPolicies = fab.ChannelPolicies{}
+	} else {
+		defaultChPolicies = c.getChannelPolicies(defaultChannel)
+	}
+
+	if defaultChPolicies.Discovery.MaxTargets == 0 {
+		defaultChPolicies.Discovery.MaxTargets = defaultMaxTargets
+	}
+
+	if defaultChPolicies.Discovery.MinResponses == 0 {
+		defaultChPolicies.Discovery.MinResponses = defaultMinResponses
+	}
+
+	if defaultChPolicies.QueryChannelConfig.MaxTargets == 0 {
+		defaultChPolicies.QueryChannelConfig.MaxTargets = defaultMaxTargets
+	}
+
+	if defaultChPolicies.QueryChannelConfig.MinResponses == 0 {
+		defaultChPolicies.QueryChannelConfig.MinResponses = defaultMinResponses
+	}
+
+	c.defaultChannelPolicies = defaultChPolicies
+
+	// TODO: Should we set missing retry options or leave it to services that consume it
+
+	return nil
+}
+
 func (c *EndpointConfig) loadDefaultPeer(configEntity *endpointConfigEntity) error {
 
-	defaultEntityPeer, ok := configEntity.Peers["_default"]
+	defaultEntityPeer, ok := configEntity.Peers[defaultEntity]
 	if !ok {
 		defaultEntityPeer = PeerConfig{
 			GRPCOptions: make(map[string]interface{}),

@@ -76,6 +76,68 @@ client:
 # section.
 #
 channels:
+
+  # Default channel is used if channel configuration is missing or if defined channel configuration is missing info
+  _default:
+
+    # [Optional]. List of bootstrap peers from participating orgs.
+    peers:
+      peer0.org2.example.com:
+        # [Optional]. will this peer be sent transaction proposals for endorsement? The peer must
+        # have the chaincode installed. The app can also use this property to decide which peers
+        # to send the chaincode install request. Default: true
+        endorsingPeer: true
+
+        # [Optional]. will this peer be sent query proposals? The peer must have the chaincode
+        # installed. The app can also use this property to decide which peers to send the
+        # chaincode install request. Default: true
+        chaincodeQuery: true
+
+        # [Optional]. will this peer be sent query proposals that do not require chaincodes, like
+        # queryBlock(), queryTransaction(), etc. Default: true
+        ledgerQuery: true
+
+        # [Optional]. will this peer be the target of the SDK's listener registration? All peers can
+        # produce events but the app typically only needs to connect to one to listen to events.
+        # Default: true
+        eventSource: true
+    
+    # [Optional]. Orderer used by this channel
+    orderers:
+      - orderer.example.com
+
+    # [Optional]. The application will use these option when using services such as discovery etc.
+    policies:
+      discovery: 
+        #[Optional] Maximum number of random targets
+        maxTargets: 3
+        #[Optional] retry options
+        retryOpts:
+          #[Optional] number of retry attempts
+          attempts: 2
+          #[Optional] the back off interval for the first retry attempt
+          initialBackoff: 2s
+          #[Optional] the maximum back off interval for any retry attempt
+          maxBackoff: 7s
+          #[Optional] he factor by which the initial back off period is exponentially incremented
+          backoffFactor: 2.0
+      #[Optional] options for retrieving channel configuration blocks
+      queryChannelConfig:
+        #[Optional] min number of success responses (from targets/peers)
+        minResponses: 1
+        #[Optional] Maximum number of random targets
+        maxTargets: 3
+        #[Optional] retry options
+        retryOpts:
+          #[Optional] number of retry attempts
+          attempts: 3
+          #[Optional] the back off interval for the first retry attempt
+          initialBackoff: 1s
+          #[Optional] the maximum back off interval for any retry attempt
+          maxBackoff: 9s
+          #[Optional] he factor by which the initial back off period is exponentially incremented
+          backoffFactor: 3.0
+
   # name of the channel
   mychannel:
     # Required. list of orderers designated by the application to use for transactions on this
@@ -116,8 +178,20 @@ channels:
         minResponses: 1
         #[Optional] channel config will be retrieved for these number of random targets
         maxTargets: 1
-        #[Optional] number of peers to be queried for discovery = Min(queryDiscovery, len(channel.peers in config)), by default queryDiscovery=2
-        queryDiscovery: 1
+        #[Optional] retry options for query config block
+        retryOpts:
+          #[Optional] number of retry attempts
+          attempts: 5
+          #[Optional] the back off interval for the first retry attempt
+          initialBackoff: 500ms
+          #[Optional] the maximum back off interval for any retry attempt
+          maxBackoff: 5s
+          #[Optional] he factor by which the initial back off period is exponentially incremented
+          backoffFactor: 2.0
+      #[Optional] options for discovery service
+      discovery:
+        #[Optional] channel config will be retrieved for these number of random targets
+        maxTargets: 1
         #[Optional] retry options for query config block
         retryOpts:
           #[Optional] number of retry attempts
@@ -160,6 +234,24 @@ channels:
         chaincodeQuery: true
         ledgerQuery: true
         eventSource: true
+
+    # [Optional]. The application can use these options to perform channel operations like retrieving channel
+    # config etc.
+    policies:
+      #[Optional] options for discovery service
+      discovery:
+        #[Optional] channel config will be retrieved for these number of random targets
+        maxTargets: 4
+        #[Optional] retry options for query config block
+        retryOpts:
+          #[Optional] number of retry attempts
+          attempts: 5
+          #[Optional] the back off interval for the first retry attempt
+          initialBackoff: 500ms
+          #[Optional] the maximum back off interval for any retry attempt
+          maxBackoff: 5s
+          #[Optional] he factor by which the initial back off period is exponentially incremented
+          backoffFactor: 2.0
 
   ch2:
 

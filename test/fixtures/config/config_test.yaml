@@ -132,6 +132,44 @@ client:
 # section.
 #
 channels:
+
+  # Default channel is used if channel configuration is missing or if defined channel configuration is missing info
+  _default:
+
+    # [Optional]. The application can use these options to perform channel operations like retrieving channel
+    # config etc.
+    policies:
+      #[Optional] options for retrieving discovery info
+      discovery:
+        #[Optional] discovery info will be retrieved for these number of random targets
+        maxTargets: 2
+        #[Optional] retry options for query config block
+        retryOpts:
+          #[Optional] number of retry attempts
+          attempts: 4
+          #[Optional] the back off interval for the first retry attempt
+          initialBackoff: 500ms
+          #[Optional] the maximum back off interval for any retry attempt
+          maxBackoff: 5s
+          #[Optional] he factor by which the initial back off period is exponentially incremented
+          backoffFactor: 2.0
+      #[Optional] options for retrieving channel configuration blocks
+      queryChannelConfig:
+        #[Optional] min number of success responses (from targets/peers)
+        minResponses: 1
+        #[Optional] channel config will be retrieved for these number of random targets
+        maxTargets: 1
+        #[Optional] retry options for query config block
+        retryOpts:
+          #[Optional] number of retry attempts
+          attempts: 5
+          #[Optional] the back off interval for the first retry attempt
+          initialBackoff: 500ms
+          #[Optional] the maximum back off interval for any retry attempt
+          maxBackoff: 5s
+          #[Optional] he factor by which the initial back off period is exponentially incremented
+          backoffFactor: 2.0
+
   # name of the channel
   mychannel:
     # Required. list of orderers designated by the application to use for transactions on this
@@ -164,26 +202,6 @@ channels:
         # Default: true
         eventSource: true
 
-    # [Optional]. The application can use these options to perform channel operations like retrieving channel
-    # config etc.
-    policies:
-      #[Optional] options for retrieving channel configuration blocks
-      queryChannelConfig:
-        #[Optional] min number of success responses (from targets/peers)
-        minResponses: 1
-        #[Optional] channel config will be retrieved for these number of random targets
-        maxTargets: 1
-        #[Optional] retry options for query config block
-        retryOpts:
-          #[Optional] number of retry attempts
-          attempts: 5
-          #[Optional] the back off interval for the first retry attempt
-          initialBackoff: 500ms
-          #[Optional] the maximum back off interval for any retry attempt
-          maxBackoff: 5s
-          #[Optional] he factor by which the initial back off period is exponentially incremented
-          backoffFactor: 2.0
-
   # multi-org test channel
   orgchannel:
 
@@ -208,28 +226,6 @@ channels:
         chaincodeQuery: true
         ledgerQuery: true
         eventSource: true
-
-    # [Optional]. The application can use these options to perform channel operations like retrieving channel
-    # config etc.
-    policies:
-      #[Optional] options for retrieving channel configuration blocks
-      queryChannelConfig:
-        #[Optional] min number of success responses (from targets/peers)
-        minResponses: 1
-        #[Optional] channel config will be retrieved for these number of random targets
-        maxTargets: 1
-        #[Optional] number of peers to be queried for discovery = Min(queryDiscover, len(channel.peers in config)), by default queryDiscover=2
-        queryDiscovery: 3
-        #[Optional] retry options for query config block
-        retryOpts:
-          #[Optional] number of retry attempts
-          attempts: 5
-          #[Optional] the back off interval for the first retry attempt
-          initialBackoff: 500ms
-          #[Optional] the maximum back off interval for any retry attempt
-          maxBackoff: 5s
-          #[Optional] he factor by which the initial back off period is exponentially incremented
-          backoffFactor: 2.0
 
 #
 # list of participating organizations in this network
