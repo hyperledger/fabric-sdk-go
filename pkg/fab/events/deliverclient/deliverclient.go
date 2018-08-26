@@ -28,6 +28,10 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 // deliverProvider is the connection provider used for connecting to the Deliver service
 var deliverProvider = func(context fabcontext.Client, chConfig fab.ChannelCfg, peer fab.Peer) (api.Connection, error) {
+	if peer == nil {
+		return nil, errors.New("Peer is nil")
+	}
+
 	eventEndpoint, ok := peer.(api.EventEndpoint)
 	if !ok {
 		panic("peer is not an EventEndpoint")
@@ -37,6 +41,10 @@ var deliverProvider = func(context fabcontext.Client, chConfig fab.ChannelCfg, p
 
 // deliverFilteredProvider is the connection provider used for connecting to the DeliverFiltered service
 var deliverFilteredProvider = func(context fabcontext.Client, chConfig fab.ChannelCfg, peer fab.Peer) (api.Connection, error) {
+	if peer == nil {
+		return nil, errors.New("Peer is nil")
+	}
+
 	eventEndpoint, ok := peer.(api.EventEndpoint)
 	if !ok {
 		panic("peer is not an EventEndpoint")

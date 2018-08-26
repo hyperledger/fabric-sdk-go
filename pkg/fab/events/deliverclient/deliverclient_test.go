@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
@@ -178,6 +180,117 @@ func TestReconnectRegistration(t *testing.T) {
 				clientmocks.NewConnectResult(clientmocks.SecondAttempt, clientmocks.SucceedResult)),
 		)
 	})
+}
+
+func TestTransferRegistrations(t *testing.T) {
+	// Tests the scenario where all event registrations are transferred to another event client.
+	t.Run("Transfer", func(t *testing.T) {
+		testTransferRegistrations(t, func(client *Client) (fab.EventSnapshot, error) {
+			return client.TransferRegistrations(false)
+		})
+	})
+
+	// Tests the scenario where one event client is stopped and all
+	// of the event registrations are transferred to another event client.
+	t.Run("CloseAndTransfer", func(t *testing.T) {
+		testTransferRegistrations(t, func(client *Client) (fab.EventSnapshot, error) {
+			return client.TransferRegistrations(true)
+		})
+	})
+}
+
+type transferFunc func(client *Client) (fab.EventSnapshot, error)
+
+func testTransferRegistrations(t *testing.T, transferFunc transferFunc) {
+	channelID := "mychannel"
+
+	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)
+
+	eventClient1, err := New(
+		newMockContext(),
+		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
+		client.WithBlockEvents(),
+		WithSeekType(seek.Newest),
+		withConnectionProvider(
+			clientmocks.NewProviderFactory().Provider(
+				delivermocks.NewConnection(
+					clientmocks.WithLedger(ledger),
+				),
+			),
+		),
+	)
+	require.NoErrorf(t, err, "error creating deliver event client")
+
+	err = eventClient1.Connect()
+	require.NoErrorf(t, err, "error connecting deliver event client")
+
+	breg, beventch, err := eventClient1.RegisterBlockEvent()
+	require.NoErrorf(t, err, "error registering block events")
+
+	ledger.NewBlock(channelID,
+		servicemocks.NewTransaction("txID", pb.TxValidationCode_VALID, cb.HeaderType_ENDORSER_TRANSACTION),
+	)
+	ledger.NewBlock(channelID,
+		servicemocks.NewTransaction("txID", pb.TxValidationCode_VALID, cb.HeaderType_ENDORSER_TRANSACTION),
+	)
+
+	expectBlockNum := uint64(0)
+
+	for i := 0; i < 2; i++ {
+		select {
+		case block := <-beventch:
+			require.Equal(t, expectBlockNum, block.Block.Header.Number)
+		case <-time.After(time.Second):
+			t.Fatalf("timed out waiting for block #%d", expectBlockNum)
+		}
+		expectBlockNum++
+	}
+
+	snapshot, err := transferFunc(eventClient1)
+	require.NoError(t, err)
+	require.Equalf(t, uint64(1), snapshot.LastBlockReceived(), "expecting last block received to be 1")
+
+	// Add a new block to the ledger before connecting new client. After connecting, the new client should request
+	// all blocks starting from the next block.
+	ledger.NewBlock(channelID,
+		servicemocks.NewTransaction("txID", pb.TxValidationCode_VALID, cb.HeaderType_ENDORSER_TRANSACTION),
+	)
+
+	eventClient2, err := New(
+		newMockContext(),
+		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
+		client.WithBlockEvents(),
+		esdispatcher.WithSnapshot(snapshot),
+		withConnectionProvider(
+			clientmocks.NewProviderFactory().Provider(
+				delivermocks.NewConnection(
+					clientmocks.WithLedger(ledger),
+				),
+			),
+		),
+	)
+	require.NoErrorf(t, err, "error creating deliver event client")
+
+	err = eventClient2.Connect()
+	require.NoErrorf(t, err, "error connecting deliver event client")
+
+	ledger.NewBlock(channelID,
+		servicemocks.NewTransaction("txID", pb.TxValidationCode_VALID, cb.HeaderType_ENDORSER_TRANSACTION),
+	)
+
+	for i := 0; i < 2; i++ {
+		select {
+		case block := <-beventch:
+			require.Equal(t, expectBlockNum, block.Block.Header.Number)
+		case <-time.After(time.Second):
+			t.Fatalf("timed out waiting for block #%d", expectBlockNum)
+		}
+		expectBlockNum++
+	}
+
+	eventClient2.Unregister(breg)
 }
 
 func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmocks.Outcome, connAttemptResult clientmocks.ConnectAttemptResults) {

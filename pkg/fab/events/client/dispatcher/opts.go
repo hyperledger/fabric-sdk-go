@@ -16,6 +16,7 @@ import (
 
 type params struct {
 	loadBalancePolicy                lbp.LoadBalancePolicy
+	minBlockHeight                   uint64
 	blockHeightMonitorPeriod         time.Duration
 	blockHeightLagThreshold          int
 	reconnectBlockHeightLagThreshold int
@@ -109,4 +110,15 @@ type blockHeightMonitorPeriodSetter interface {
 func (p *params) SetBlockHeightMonitorPeriod(value time.Duration) {
 	logger.Debugf("BlockHeightMonitorPeriod: %s", value)
 	p.blockHeightMonitorPeriod = value
+}
+
+func (p *params) SetFromBlock(value uint64) {
+	logger.Debugf("FromBlock: %d", value)
+	p.minBlockHeight = value + 1
+}
+
+func (p *params) SetSnapshot(value fab.EventSnapshot) error {
+	logger.Debugf("SetSnapshot.FromBlock: %d", value)
+	p.minBlockHeight = value.LastBlockReceived() + 1
+	return nil
 }

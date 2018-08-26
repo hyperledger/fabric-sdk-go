@@ -81,6 +81,8 @@ func (ed *Dispatcher) RegisterHandlers() {
 	ed.RegisterHandler(&RegisterFilteredBlockEvent{}, ed.handleRegisterFilteredBlockEvent)
 	ed.RegisterHandler(&UnregisterEvent{}, ed.handleUnregisterEvent)
 	ed.RegisterHandler(&StopEvent{}, ed.HandleStopEvent)
+	ed.RegisterHandler(&TransferEvent{}, ed.HandleTransferEvent)
+	ed.RegisterHandler(&StopAndTransferEvent{}, ed.HandleStopAndTransferEvent)
 	ed.RegisterHandler(&RegistrationInfoEvent{}, ed.handleRegistrationInfoEvent)
 
 	// The following events are used for testing only
@@ -105,6 +107,16 @@ func (ed *Dispatcher) Start() error {
 	}
 
 	ed.RegisterHandlers()
+
+	if err := ed.initRegistrations(); err != nil {
+		return errors.WithMessage(err, "error initializing registrations")
+	}
+
+	if ed.initialLastBlockNum > 0 {
+		if err := ed.updateLastBlockNum(ed.initialLastBlockNum); err != nil {
+			logger.Warnf("Unable to update last block num to %d: %s", ed.initialLastBlockNum, err)
+		}
+	}
 
 	go func() {
 		for {
@@ -150,40 +162,83 @@ func (ed *Dispatcher) updateLastBlockNum(blockNum uint64) error {
 	return errors.Errorf("Expecting a block number greater than %d but received block number %d", lastBlockNum, blockNum)
 }
 
+func (ed *Dispatcher) initRegistrations() error {
+	logger.Debugf("Initializing registrations...")
+	for _, reg := range ed.initialBlockRegistrations {
+		logger.Debugf("Adding block registration")
+		ed.registerBlockEvent(reg)
+	}
+	for _, reg := range ed.initialFilteredBlockRegistrations {
+		logger.Debugf("Adding filtered block registration")
+		ed.registerFilteredBlockEvent(reg)
+	}
+	for _, reg := range ed.initialCCRegistrations {
+		logger.Debugf("Adding CC registration: CC ID [%s], Event filter [%s]", reg.ChaincodeID, reg.EventFilter)
+		if err := ed.registerCCEvent(reg); err != nil {
+			logger.Warnf("Error adding CC registration: %s", err)
+			return err
+		}
+	}
+	for _, reg := range ed.initialTxStatusRegistrations {
+		logger.Debugf("Adding TxStatus registration: TxID [%s]", reg.TxID)
+		if err := ed.registerTxStatusEvent(reg); err != nil {
+			logger.Warnf("Error adding TxStatus registration: %s", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ed *Dispatcher) clearRegistrations(closeChannel bool) {
+	ed.clearBlockRegistrations(closeChannel)
+	ed.clearFilteredBlockRegistrations(closeChannel)
+	ed.clearTxRegistrations(closeChannel)
+	ed.clearChaincodeRegistrations(closeChannel)
+}
+
 // clearBlockRegistrations removes all block registrations and closes the corresponding event channels.
 // The listener will receive a 'closed' event to indicate that the channel has been closed.
-func (ed *Dispatcher) clearBlockRegistrations() {
-	for _, reg := range ed.blockRegistrations {
-		close(reg.Eventch)
+func (ed *Dispatcher) clearBlockRegistrations(closeChannel bool) {
+	if closeChannel {
+		for _, reg := range ed.blockRegistrations {
+			close(reg.Eventch)
+		}
 	}
 	ed.blockRegistrations = nil
 }
 
 // clearFilteredBlockRegistrations removes all filtered block registrations and closes the corresponding event channels.
 // The listener will receive a 'closed' event to indicate that the channel has been closed.
-func (ed *Dispatcher) clearFilteredBlockRegistrations() {
-	for _, reg := range ed.filteredBlockRegistrations {
-		close(reg.Eventch)
+func (ed *Dispatcher) clearFilteredBlockRegistrations(closeChannel bool) {
+	if closeChannel {
+		for _, reg := range ed.filteredBlockRegistrations {
+			close(reg.Eventch)
+		}
 	}
 	ed.filteredBlockRegistrations = nil
 }
 
 // clearTxRegistrations removes all transaction registrations and closes the corresponding event channels.
 // The listener will receive a 'closed' event to indicate that the channel has been closed.
-func (ed *Dispatcher) clearTxRegistrations() {
-	for _, reg := range ed.txRegistrations {
-		logger.Debugf("Closing TX registration event channel for TxID [%s].", reg.TxID)
-		close(reg.Eventch)
+func (ed *Dispatcher) clearTxRegistrations(closeChannel bool) {
+	if closeChannel {
+		for _, reg := range ed.txRegistrations {
+			logger.Debugf("Closing TX registration event channel for TxID [%s].", reg.TxID)
+			close(reg.Eventch)
+		}
 	}
 	ed.txRegistrations = make(map[string]*TxStatusReg)
 }
 
 // clearChaincodeRegistrations removes all chaincode registrations and closes the corresponding event channels.
 // The listener will receive a 'closed' event to indicate that the channel has been closed.
-func (ed *Dispatcher) clearChaincodeRegistrations() {
-	for _, reg := range ed.ccRegistrations {
-		logger.Debugf("Closing chaincode registration event channel for CC ID [%s] and event filter [%s].", reg.ChaincodeID, reg.EventFilter)
-		close(reg.Eventch)
+func (ed *Dispatcher) clearChaincodeRegistrations(closeChannel bool) {
+	if closeChannel {
+		for _, reg := range ed.ccRegistrations {
+			logger.Debugf("Closing chaincode registration event channel for CC ID [%s] and event filter [%s].", reg.ChaincodeID, reg.EventFilter)
+			close(reg.Eventch)
+		}
 	}
 	ed.ccRegistrations = make(map[string]*ChaincodeReg)
 }
@@ -196,59 +251,108 @@ func (ed *Dispatcher) HandleStopEvent(e Event) {
 	logger.Debugf("Stopping dispatcher...")
 	if !ed.setState(dispatcherStateStarted, dispatcherStateStopped) {
 		logger.Warn("Cannot stop event dispatcher since it's already stopped.")
+		event.ErrCh <- errors.New("dispatcher already stopped")
 		return
 	}
 
 	// Remove all registrations and close the associated event channels
 	// so that the client is notified that the registration has been removed
-	ed.clearBlockRegistrations()
-	ed.clearFilteredBlockRegistrations()
-	ed.clearTxRegistrations()
-	ed.clearChaincodeRegistrations()
+	ed.clearRegistrations(true)
 
 	event.ErrCh <- nil
+}
+
+// HandleTransferEvent transfers all event registrations into a EventSnapshot.
+func (ed *Dispatcher) HandleTransferEvent(e Event) {
+	event := e.(*TransferEvent)
+
+	event.SnapshotCh <- ed.newSnapshot()
+
+	// Remove all registrations but don't close the associated event channels
+	ed.clearRegistrations(false)
+}
+
+// HandleStopAndTransferEvent stops the dispatcher and transfers all event registrations
+// into a EventSnapshot.
+// The Dispatcher is no longer usable.
+func (ed *Dispatcher) HandleStopAndTransferEvent(e Event) {
+	event := e.(*StopAndTransferEvent)
+
+	logger.Debugf("Stopping dispatcher...")
+	if !ed.setState(dispatcherStateStarted, dispatcherStateStopped) {
+		logger.Warn("Cannot stop event dispatcher since it's already stopped.")
+		event.ErrCh <- errors.New("dispatcher already stopped")
+		return
+	}
+
+	event.SnapshotCh <- ed.newSnapshot()
+
+	// Remove all registrations but don't close the associated event channels
+	ed.clearRegistrations(false)
 }
 
 func (ed *Dispatcher) handleRegisterBlockEvent(e Event) {
 	event := e.(*RegisterBlockEvent)
 
-	ed.blockRegistrations = append(ed.blockRegistrations, event.Reg)
+	ed.registerBlockEvent(event.Reg)
 	event.RegCh <- event.Reg
+}
+
+func (ed *Dispatcher) registerBlockEvent(reg *BlockReg) {
+	ed.blockRegistrations = append(ed.blockRegistrations, reg)
 }
 
 func (ed *Dispatcher) handleRegisterFilteredBlockEvent(e Event) {
 	event := e.(*RegisterFilteredBlockEvent)
-	ed.filteredBlockRegistrations = append(ed.filteredBlockRegistrations, event.Reg)
+	ed.registerFilteredBlockEvent(event.Reg)
 	event.RegCh <- event.Reg
+}
+
+func (ed *Dispatcher) registerFilteredBlockEvent(reg *FilteredBlockReg) {
+	ed.filteredBlockRegistrations = append(ed.filteredBlockRegistrations, reg)
 }
 
 func (ed *Dispatcher) handleRegisterCCEvent(e Event) {
 	event := e.(*RegisterChaincodeEvent)
 
-	key := getCCKey(event.Reg.ChaincodeID, event.Reg.EventFilter)
-	if _, exists := ed.ccRegistrations[key]; exists {
-		event.ErrCh <- errors.Errorf("registration already exists for chaincode [%s] and event [%s]", event.Reg.ChaincodeID, event.Reg.EventFilter)
+	regExp, err := regexp.Compile(event.Reg.EventFilter)
+	if err != nil {
+		event.ErrCh <- errors.Wrapf(err, "error compiling regular expression for event filter [%s]", event.Reg.EventFilter)
 	} else {
-		regExp, err := regexp.Compile(event.Reg.EventFilter)
-		if err != nil {
-			event.ErrCh <- errors.Wrapf(err, "error compiling regular expression for event filter [%s]", event.Reg.EventFilter)
+		event.Reg.EventRegExp = regExp
+		if err := ed.registerCCEvent(event.Reg); err != nil {
+			event.ErrCh <- err
 		} else {
-			event.Reg.EventRegExp = regExp
-			ed.ccRegistrations[key] = event.Reg
 			event.RegCh <- event.Reg
 		}
 	}
 }
 
+func (ed *Dispatcher) registerCCEvent(reg *ChaincodeReg) error {
+	key := getCCKey(reg.ChaincodeID, reg.EventFilter)
+	if _, exists := ed.ccRegistrations[key]; exists {
+		return errors.Errorf("registration already exists for chaincode [%s] and event [%s]", reg.ChaincodeID, reg.EventFilter)
+	}
+	ed.ccRegistrations[key] = reg
+	return nil
+}
+
 func (ed *Dispatcher) handleRegisterTxStatusEvent(e Event) {
 	event := e.(*RegisterTxStatusEvent)
 
-	if _, exists := ed.txRegistrations[event.Reg.TxID]; exists {
-		event.ErrCh <- errors.Errorf("registration already exists for TX ID [%s]", event.Reg.TxID)
+	if err := ed.registerTxStatusEvent(event.Reg); err != nil {
+		event.ErrCh <- err
 	} else {
-		ed.txRegistrations[event.Reg.TxID] = event.Reg
 		event.RegCh <- event.Reg
 	}
+}
+
+func (ed *Dispatcher) registerTxStatusEvent(reg *TxStatusReg) error {
+	if _, exists := ed.txRegistrations[reg.TxID]; exists {
+		return errors.Errorf("registration already exists for TX ID [%s]", reg.TxID)
+	}
+	ed.txRegistrations[reg.TxID] = reg
+	return nil
 }
 
 func (ed *Dispatcher) handleUnregisterEvent(e Event) {
@@ -296,6 +400,28 @@ func (ed *Dispatcher) handleRegistrationInfoEvent(e Event) {
 		regInfo.NumBlockRegistrations + regInfo.NumFilteredBlockRegistrations + regInfo.NumCCRegistrations + regInfo.NumTxStatusRegistrations
 
 	evt.RegInfoCh <- regInfo
+}
+
+func (ed *Dispatcher) newSnapshot() fab.EventSnapshot {
+	var ccRegistrations []*ChaincodeReg
+	for _, reg := range ed.ccRegistrations {
+		logger.Debugf("Adding CC registration to snaphot - CC ID [%s], Event filter [%s]", reg.ChaincodeID, reg.EventFilter)
+		ccRegistrations = append(ccRegistrations, reg)
+	}
+
+	var txRegistrations []*TxStatusReg
+	for _, reg := range ed.txRegistrations {
+		logger.Debugf("Adding TxStatus registration to snaphot - TxID [%s]", reg.TxID)
+		txRegistrations = append(txRegistrations, reg)
+	}
+
+	return &snapshot{
+		lastBlockReceived:          ed.LastBlockNum(),
+		blockRegistrations:         ed.blockRegistrations,
+		filteredBlockRegistrations: ed.filteredBlockRegistrations,
+		ccRegistrations:            ccRegistrations,
+		txStatusRegistrations:      txRegistrations,
+	}
 }
 
 // HandleBlock handles a block event

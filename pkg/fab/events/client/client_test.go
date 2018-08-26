@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -1456,4 +1458,87 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("Timed out waiting for reconnect")
 	}
+}
+
+func TestTransferRegistrations(t *testing.T) {
+	// Tests the scenario where all event registrations are transferred to another event client.
+	t.Run("Transfer", func(t *testing.T) {
+		testTransferRegistrations(t, func(client *Client) (fab.EventSnapshot, error) {
+			return client.TransferRegistrations(false)
+		})
+	})
+
+	// Tests the scenario where one event client is stopped and all
+	// of the event registrations are transferred to another event client.
+	t.Run("TransferAndClose", func(t *testing.T) {
+		testTransferRegistrations(t, func(client *Client) (fab.EventSnapshot, error) {
+			return client.TransferRegistrations(true)
+		})
+	})
+}
+
+type transferFunc func(client *Client) (fab.EventSnapshot, error)
+
+// TestTransferRegistrations tests the scenario where one event client is stopped and all
+// of the event registrations are transferred to another event client.
+func testTransferRegistrations(t *testing.T, transferFunc transferFunc) {
+	channelID := "mychannel"
+	eventClient1, conn1, err := newClientWithMockConn(
+		fabmocks.NewMockContext(
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
+		clientProvider,
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory, sourceURL)),
+	)
+	require.NoErrorf(t, err, "error creating channel event client")
+
+	err = eventClient1.Connect()
+	require.NoErrorf(t, err, "error connecting channel event client")
+
+	breg, beventch, err := eventClient1.RegisterBlockEvent()
+	require.NoErrorf(t, err, "error registering for block events")
+
+	conn1.Ledger().NewBlock(channelID,
+		servicemocks.NewTransaction("txID", pb.TxValidationCode_VALID, cb.HeaderType_ENDORSER_TRANSACTION),
+	)
+
+	select {
+	case <-beventch:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for block event")
+	}
+
+	snapshot, err := transferFunc(eventClient1)
+	require.NoErrorf(t, err, "error transferring snapshot")
+
+	eventClient2, conn2, err := newClientWithMockConnAndOpts(
+		fabmocks.NewMockContext(
+			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+		),
+		fabmocks.NewMockChannelCfg("mychannel"),
+		clientmocks.NewDiscoveryService(peer1, peer2),
+		nil, clientProvider,
+		[]options.Opt{
+			esdispatcher.WithSnapshot(snapshot),
+		},
+		mockconn.WithLedger(servicemocks.NewMockLedger(servicemocks.BlockEventFactory, sourceURL)),
+	)
+	require.NoErrorf(t, err, "error creating channel event client")
+
+	err = eventClient2.Connect()
+	require.NoErrorf(t, err, "error connecting channel event client")
+
+	conn2.Ledger().NewBlock(channelID,
+		servicemocks.NewTransaction("txID", pb.TxValidationCode_VALID, cb.HeaderType_ENDORSER_TRANSACTION),
+	)
+
+	select {
+	case <-beventch:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for block event")
+	}
+
+	eventClient2.Unregister(breg)
 }

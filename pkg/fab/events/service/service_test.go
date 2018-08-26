@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
@@ -722,4 +724,66 @@ func newServiceWithMockProducer(opts []options.Opt, pOpts ...producerOpt) (*Serv
 	}()
 
 	return service, eventProducer, nil
+}
+
+func TestTransfer(t *testing.T) {
+	t.Run("Transfer", func(t *testing.T) {
+		testTransfer(t, func(service *Service) (fab.EventSnapshot, error) {
+			return service.Transfer()
+		})
+	})
+	t.Run("StopAndTransfer", func(t *testing.T) {
+		testTransfer(t, func(service *Service) (fab.EventSnapshot, error) {
+			return service.Transfer()
+		})
+	})
+}
+
+type transferFunc func(*Service) (fab.EventSnapshot, error)
+
+func testTransfer(t *testing.T, transferFunc transferFunc) {
+	channelID := "mychannel"
+	eventService1, eventProducer1, err := newServiceWithMockProducer(defaultOpts, withBlockLedger(sourceURL))
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+
+	breg, beventch, err := eventService1.RegisterBlockEvent()
+	require.NoErrorf(t, err, "error registering for block events")
+
+	eventProducer1.Ledger().NewBlock(channelID)
+
+	select {
+	case _, ok := <-beventch:
+		require.Truef(t, ok, "unexpected closed channel")
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for block event")
+	}
+
+	// Transfer all event registrations into a snapshot
+	snapshot, err := transferFunc(eventService1)
+	require.NoErrorf(t, err, "error in StopAndTransfer")
+	require.NotNil(t, snapshot)
+	eventProducer1.Close()
+
+	// Use the snapshot with a new event service
+	eventService2, eventProducer2, err := newServiceWithMockProducer(
+		[]options.Opt{dispatcher.WithSnapshot(snapshot)},
+		withBlockLedger(sourceURL))
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	defer eventProducer2.Close()
+	defer eventService2.Stop()
+
+	eventProducer2.Ledger().NewBlock(channelID)
+
+	select {
+	case _, ok := <-beventch:
+		require.Truef(t, ok, "unexpected closed channel")
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for block event")
+	}
+
+	eventService2.Unregister(breg)
 }
