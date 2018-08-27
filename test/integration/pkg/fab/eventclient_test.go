@@ -354,6 +354,7 @@ func testChannelEventsSeekOptions(t *testing.T, testSetup *integration.BaseSetup
 			test.Failf(t, "Expecting non-zero block number")
 		}
 	case <-time.After(eventTimeWindow):
+		t.Fatal("Timeout waiting for event")
 		return
 	}
 
